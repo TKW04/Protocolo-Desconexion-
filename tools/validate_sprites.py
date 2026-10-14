@@ -4,8 +4,10 @@
 Comprueba en cada PNG cuyo nombre no empiece por '_' ni contenga '_sheet':
   - nombre con patron <entidad>_<anim>_<NN>(_placeholder).png
   - tamano (por defecto DEFAULT_SIZE, 128x128: canvas de Isak a 1280x720)
-  - solo colores de la paleta, mas transparente (alfa 0); sin alfa parcial
+  - sin alfa parcial (cada pixel es opaco o transparente)
   - fondo transparente (las cuatro esquinas con alfa 0)
+  - solo colores de la paleta, pero solo en los *_placeholder.png; el arte
+    importado de hojas generadas con IA (sin sufijo) tiene paleta libre
 
 Uso:
     python3 tools/validate_sprites.py [DIR] [--palette GPL] [--size WxH]
@@ -56,6 +58,7 @@ def check(path, palette, size):
         if img.getpixel((x, y))[3] != 0:
             errors.append(f"fondo no transparente en la esquina ({x},{y})")
             break
+    check_palette = name.endswith("_placeholder.png")
     bad = set()
     partial = 0
     for r, g, b, a in img.getdata():
@@ -63,7 +66,7 @@ def check(path, palette, size):
             continue
         if a != 255:
             partial += 1
-        elif (r, g, b) not in palette:
+        elif check_palette and (r, g, b) not in palette:
             bad.add((r, g, b))
     if partial:
         errors.append(f"{partial} pixeles con alfa parcial")
@@ -103,13 +106,15 @@ def main():
         return 1
 
     failed = 0
+    imported = sum(1 for f in files if not f.endswith("_placeholder.png"))
     for f in files:
         errs = check(os.path.join(args.dir, f), palette, size)
         if errs:
             failed += 1
             for e in errs:
                 print(f"FALLO {f}: {e}")
-    print(f"{len(files) - failed}/{len(files)} sprites validos ({len(palette)} colores en paleta)")
+    print(f"{len(files) - failed}/{len(files)} sprites validos ({len(palette)} colores en paleta; "
+          f"{imported} importados sin comprobar paleta)")
     return 1 if failed else 0
 
 

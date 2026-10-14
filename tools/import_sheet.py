@@ -365,9 +365,10 @@ def main(argv=None):
     ap.add_argument("--target-height", type=int, default=96, help="altura visible del personaje en px (96)")
     ap.add_argument("--canvas", type=int, default=128, help="lado del canvas cuadrado (128)")
     ap.add_argument("--baseline", type=int, help="fila de la planta de los pies (por defecto la ultima)")
-    ap.add_argument("--align", choices=("sheet", "feet"), default="sheet",
+    ap.add_argument("--align", choices=("sheet", "feet", "ground"), default="sheet",
                     help="sheet: mismo desplazamiento para todos (no tiembla, respeta saltos); "
-                         "feet: cada cuadro anclado por sus pies")
+                         "feet: cada cuadro anclado por sus pies; ground: x de la referencia "
+                         "y planta de cada cuadro en la linea base (ciclos de paso con suelo irregular)")
     ap.add_argument("--height-tol", type=float, default=0.2,
                     help="tolerancia relativa de la altura visible (0.2; sube para salto o muerte)")
     ap.add_argument("--bg-tol", type=int, default=40, help="tolerancia del color de fondo (40)")
@@ -452,7 +453,13 @@ def main(argv=None):
     ref_anchor = feet_anchor(scaled[ref_idx])
     frames, failed, report = [], 0, []
     for i, sc in enumerate(scaled[:n]):
-        anchor = ref_anchor if args.align == "sheet" else (feet_anchor(sc) or ref_anchor)
+        own = feet_anchor(sc) or ref_anchor
+        if args.align == "sheet":
+            anchor = ref_anchor
+        elif args.align == "ground":
+            anchor = (ref_anchor[0], own[1])
+        else:
+            anchor = own
         dx = round(size / 2 - anchor[0])
         dy = baseline + 1 - anchor[1]
         canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))

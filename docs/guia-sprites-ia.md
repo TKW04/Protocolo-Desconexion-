@@ -906,3 +906,7 @@ El importador corta la rejilla, quita el fondo y la sombra del suelo, umbraliza 
 | Faltan cuadros o hay cuadros repetidos | **Reintentar**, o usar `--frames` para importar solo los buenos si el ciclo sigue funcionando. |
 
 Después de importar, revisa la vista previa ampliada (guía cian = centro, magenta = línea base) y prueba la animación en el juego antes de darla por buena.
+
+## Nota: entrega en carpeta (spritesheet.png + atlas.json + frames/)
+
+Algunas herramientas entregan una carpeta por estado (p. ej. `hojas/walk_right/`) con `spritesheet.png` (rejilla regular), `atlas.json` y `frames/0001.png...`. Basta importar `spritesheet.png` con `--cols`/`--rows` de la rejilla; `atlas.json` y `frames/` no se usan. Las hojas fuente viven en `hojas/` (con `.gdignore` para que Godot no las importe). Si el suelo de la hoja varía de un cuadro a otro (ciclos de paso), usa `--align ground`: mantiene el desplazamiento horizontal de la referencia y apoya la planta de cada cuadro en la línea base. Para que dos estados midan lo mismo, elige en cada hoja una `--ref-frame` con la misma altura en px de origen.
