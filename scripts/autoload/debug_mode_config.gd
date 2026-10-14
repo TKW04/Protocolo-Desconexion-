@@ -19,7 +19,10 @@ var vignette_steps: int = 3
 var vignette_shade: float = 0.45
 var tint_gain: float = 1.3
 var hidden_outline_width_px: int = 2
-var hidden_fill_alpha: float = 0.18
+var hidden_fill_alpha: float = 0.25
+## Halo oscuro por fuera del contorno de las plataformas ocultas (0 = sin halo).
+var hidden_halo_width_px: int = 2
+var hidden_halo_color: Color = Color("#0b0e1a")
 var high_contrast_outline_width_px: int = 4
 var high_contrast_lighten: float = 0.6
 var hidden_platforms_solid_only_in_debug: bool = true
@@ -52,6 +55,8 @@ static func load_from_file(path: String = DEFAULT_PATH) -> DebugModeConfig:
 		var current: Variant = config.get(key)
 		if current is bool:
 			config.set(key, bool(dict[key]))
+		elif current is Color:
+			config.set(key, Color.html(String(dict[key])))
 		elif current is int:
 			config.set(key, int(dict[key]))
 		else:

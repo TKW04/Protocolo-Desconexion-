@@ -11,6 +11,7 @@
 ## La colision cambia al instante con EventBus.debug_mode_changed; el dibujo
 ## sigue la transicion (DebugMode.get_intensity()). Accesibilidad:
 ## GameState.debug_high_contrast_outline usa un contorno mas claro y grueso.
+## Halo oscuro (hidden_halo_*) por fuera del contorno para que no se pierda.
 class_name HiddenPlatform
 extends StaticBody2D
 
@@ -77,6 +78,10 @@ func _draw() -> void:
 	var rect := Rect2(-size * 0.5, size)
 	var color: Color = get_outline_color()
 	draw_rect(rect, Color(color, _config.hidden_fill_alpha * _drawn_intensity))
+	# Halo oscuro por fuera: separa el contorno de los azules del fondo.
+	var halo: float = _config.hidden_halo_width_px
+	if halo > 0.0:
+		draw_rect(rect.grow(halo * 0.5), Color(_config.hidden_halo_color, _drawn_intensity), false, halo)
 	var width: float = get_outline_width()
 	# Contorno por dentro del rectangulo, con ancho en px enteros.
 	draw_rect(rect.grow(-width * 0.5), Color(color, _drawn_intensity), false, width)

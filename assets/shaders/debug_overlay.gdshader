@@ -6,7 +6,8 @@ shader_type canvas_item;
 render_mode unshaded;
 
 uniform sampler2D screen_texture : hint_screen_texture, filter_nearest;
-uniform vec4 tint_color : source_color = vec4(0.31, 0.89, 1.0, 1.0);
+// Por defecto: debug_cian del Mundo 1 (#3dfff5); DebugOverlay lo pone desde data/hud.json.
+uniform vec4 tint_color : source_color = vec4(0.239, 1.0, 0.961, 1.0);
 // 0 = sin efecto, 1 = efecto completo (transicion de entrada/salida).
 uniform float intensity : hint_range(0.0, 1.0) = 0.0;
 // Mezcla del tinte sobre la imagen.

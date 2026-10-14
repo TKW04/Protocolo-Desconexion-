@@ -1,10 +1,11 @@
 GIMP Palette
-Name: Mundo 1 Notificaciones - Variante B (recomendada) - Noche con resplandor de pantalla (PROPUESTA, pendiente de aprobacion)
+Name: Mundo 1 Notificaciones - Noche con resplandor de pantalla (DEFINITIVA)
 Columns: 4
-# Paleta del Mundo 1 (paso 10). Hex PROPUESTOS, no aprobados: no usar en assets.
-# 16 colores del mundo + debug_cian aparte (ultima fila).
+# Paleta DEFINITIVA del Mundo 1 (aprobada por el usuario el 2026-10-14; variante B del paso 10).
+# 16 colores del mundo + debug_cian aparte (ultima fila). Ningun asset del Mundo 1 usa
+# colores fuera de esta lista (salvo el arte de Isak, que tiene su propia paleta).
 # Generado por tools/palette_mundo1_preview.py
-# noche_profunda: Cielo superior, fondo del HUD/UI, contorno oscuro
+# noche_profunda: Cielo superior, fondo del HUD/UI, contorno oscuro y halo de lo oculto
  11  14  26	noche_profunda
 # cielo: Fondo lejano (cielo nocturno, más claro)
  28  42  88	cielo
@@ -28,13 +29,13 @@ Columns: 4
 255  74  42	alerta
 # alerta_sombra: Sombra/contorno de lo rojo anaranjado
 163  34  28	alerta_sombra
-# carmin: Punto débil del jefe (carmín puro, solo con Debug)
+# carmin: Punto débil del jefe (carmín puro, solo con Debug, por encima del tinte)
 224   0  74	carmin
 # carmin_brillo: Pulso/brillo del punto débil
 255  90 140	carmin_brillo
-# ambar: Puntos de atención, icono del HUD (ámbar: sigue dorado bajo el tinte cian)
+# ambar: Puntos de atención, icono del HUD (ámbar: sigue dorado bajo el tinte)
 255 160   0	ambar
 # ambar_sombra: Sombra de los puntos de atención
 168  95   0	ambar_sombra
-# debug_cian: Color del Debug (tinte, contornos de plataformas ocultas). Aparte de los 16.
- 79 227 255	debug_cian
+# debug_cian: Color del Debug (tinte, contornos de plataformas ocultas, bateria y anillo de carga del HUD). Aparte de los 16.
+ 61 255 245	debug_cian

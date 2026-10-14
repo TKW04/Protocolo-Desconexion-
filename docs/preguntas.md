@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V11, A4, A8, A10. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10, V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A11, A12, A13, A14, A15, A16.
+**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A11, A12, A13, A14, A15, A16.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -136,11 +136,15 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Propuesta:** el Debug se desbloquea al empezar el 1-2 (flag en `GameState`) con una pista visual, sin escena nueva. En el slice, ver C2.
 - **Por qué:** coincide con "Introducir el Debug Mode" del 1-2 y no añade historia.
 
-### V10 [BLOQUEA SLICE] Contenido del tileset del Mundo 1 y paleta
+### V10 [RESUELTO: paleta] Contenido del tileset del Mundo 1 y paleta
 - **Sección:** §6.1 y §15.3 (paleta solo descrita con palabras), §15.2, y `CLAUDE.md`/`pixel-art-pipeline` (hex pendientes de aprobación).
 - **Problema:** no hay lista de tiles ni colores exactos, y el skill exige aprobar la paleta antes de usarla.
 - **Propuesta:** un set mínimo: suelo/pared con autotile (bitmask 3x3), plataforma de una vía, puente en sus dos estados, receptor, pared con glitch, pinchos, fondo de pantalla de bloqueo con relojes en parallax, y una paleta de 16 colores (azul noche, blancos de banner, rojo anaranjado de alerta, carmín, cian) para aprobar como imagen.
 - **Por qué:** cubre todo lo que pide la ficha del 1-1, y la aprobación de la paleta ya está prevista en el skill.
+- **Decisión (2026-10-14), paleta:** aprobada la variante B del paso 10, definitiva en `assets/palettes/mundo1.gpl` (muestras `mundo1_paleta.png`, maqueta `mundo1_maqueta.png`; script `tools/palette_mundo1_preview.py`). Hex finales: noche_profunda `#0b0e1a`, cielo `#1c2a58`, fondo_medio `#2e4688`, resplandor `#4f71c4`, tile_sombra `#0c1022`, tile_base `#1a2138`, tile_luz `#343f66`, borde_luz `#9bb0e8`, banner_blanco `#f2f4f8`, banner_gris `#aeb8d2`, alerta `#ff4a2a`, alerta_sombra `#a3221c`, carmin `#e0004a`, carmin_brillo `#ff5a8c`, ambar `#ffa000`, ambar_sombra `#a85f00`; y debug_cian aparte.
+- **Decisión (2026-10-14), cian del Debug del Mundo 1:** el usuario notó que `#4fe3ff` "se pierde un poco" (ΔE 3,8 con el cian de la ropa de Isak `#29defa`). Se eligió **`#3dfff5`** (tono 177°, más claro y algo más verdoso) entre `#00f5ff`, `#3dfff5` y `#00ffe1` (`assets/palettes/mundo1_debug_cian_comparativa.png`): ΔE76 con el cian de Isak 3,8 → 24,6, con resplandor 60 → 84, con borde_luz 38 → 61 y con banner_blanco 40 → 49; contraste con resplandor tenido 3,06 → 3,61:1. `#00ffe1` separa más (ΔE 36) pero tira a aguamarina/verde. Refuerzo sin cambiar la lógica: halo oscuro de 2 px (noche_profunda) por fuera del contorno de las plataformas ocultas y relleno 0,18 → 0,25 (`data/debug_mode.json`, `hidden_halo_*`, `hidden_fill_alpha`); el tinte se queda al 25 % (A14). Se aplica en `data/hud.json` (`debug_colors` 1 y 6: tinte, contorno, batería y anillo de carga) y en el valor por defecto de `debug_overlay.gdshader`. El cian del efecto del pulso (`effects_pulse.gpl`, `isak.gpl` world_cyan) no se ha tocado.
+- **Decisión (2026-10-14), punto débil:** con el Debug activo el punto débil (carmín) se dibuja **por encima del tinte** (en una capa entre el efecto del Debug y el HUD) y pulsa de carmin a carmin_brillo; solo es visible con el Debug. Componente reutilizable `scenes/bosses/weak_point.tscn` (valores en `data/weak_point.json`); aún sin jefes.
+- **Decisión (2026-10-14), puntos de atención:** icono y objeto en ámbar `#ffa000` (antes `#ffd34a`, que se volvía verdoso con el tinte).
 
 ### V11 [RESUELTO] Framework de pruebas
 - **Sección:** skill `godot-isak-fix` ("GUT o gdUnit4, pregunta cuál") y `CLAUDE.md` (punto 4).
@@ -320,7 +324,7 @@ Sustituye por completo el "mantener para usar" de la activación del paso 9 (el 
 
 ## Notas del paso 10 (paleta del Mundo 1, 2026-10-14)
 
-**V10 (sigue abierta): propuesta de paleta pendiente de aprobación.** No se usa en ningún asset hasta que el usuario la apruebe. Generada con `tools/palette_mundo1_preview.py` (incluye la medición de contrastes y el tinte del Debug reproducido de `debug_overlay.gdshader`).
+**V10 (paleta resuelta el 2026-10-14, ver V10 arriba): esta era la propuesta.** Los archivos `mundo1_propuesta*` se borraron; la variante B quedó en `assets/palettes/mundo1.gpl`. Generada con `tools/palette_mundo1_preview.py` (incluye la medición de contrastes y el tinte del Debug reproducido de `debug_overlay.gdshader`).
 
 - **Variante B (recomendada), "noche con resplandor de pantalla":** `assets/palettes/mundo1_propuesta.gpl`, `mundo1_propuesta_paleta.png`, `mundo1_propuesta_maqueta.png`. Hex: noche_profunda `#0b0e1a`, cielo `#1c2a58`, fondo_medio `#2e4688`, resplandor `#4f71c4`, tile_sombra `#0c1022`, tile_base `#1a2138`, tile_luz `#343f66`, borde_luz `#9bb0e8`, banner_blanco `#f2f4f8`, banner_gris `#aeb8d2`, alerta `#ff4a2a`, alerta_sombra `#a3221c`, carmin `#e0004a`, carmin_brillo `#ff5a8c`, ambar `#ffa000`, ambar_sombra `#a85f00`; más debug_cian `#4fe3ff` aparte.
 - **Variante A, "noche profunda":** `assets/palettes/mundo1_propuesta_a.gpl` (+ `_paleta.png`, `_maqueta.png`). Cambian cielo `#161f40`, fondo_medio `#23336a`, resplandor `#3a55a0`, tile_sombra `#0f1428`, tile_base `#1f2742`, tile_luz `#3a4670`, borde_luz `#8fa3d9`; el resto igual.
