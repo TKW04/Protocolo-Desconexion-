@@ -64,3 +64,8 @@ signal debug_high_contrast_outline_changed(enabled: bool)
 ## (receptores del Mundo 1).
 @warning_ignore("unused_signal")
 signal pulse_fired(area: Area2D)
+
+## Un enemigo queda eliminado (p. ej. la Burbuja de alerta al reventar cuando
+## Isak cae sobre ella aturdida, C7). `enemy` sigue valido durante la senal.
+@warning_ignore("unused_signal")
+signal enemy_defeated(enemy: Node2D)
