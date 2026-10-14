@@ -24,9 +24,12 @@ Pasos (ver docs/guia-sprites-ia.md):
 
 Uso:
   python3 tools/import_sheet.py HOJA.png --anim idle [--cols 6 --rows 6]
-      [--frames 36] [--target-height 96] [--canvas 128]
-      [--out assets/sprites/isak] [--prefix isak] [--dry-run]
-      [--preview vista.png]
+      [--frames 36 | --cells 0-4,6,8-20:2] [--target-height 96 | --scale 0.5393]
+      [--anchor-x 130] [--canvas 128] [--out assets/sprites/isak] [--prefix isak]
+      [--dry-run] [--preview vista.png]
+
+La rejilla admite celdas de tamano fraccionario (p. ej. 15 filas en 1280 px):
+los bordes de cada celda se redondean desde i * lado / n.
 
 Devuelve 0 si todos los cuadros son validos y 1 si alguno falla (2 si los
 argumentos o la hoja no sirven).
@@ -351,6 +354,24 @@ def make_preview(frames, cols, size, zoom, path, baseline):
     out.save(path)
 
 
+def parse_cells(spec):
+    """'0-4,6,8-20:2' -> [0, 1, 2, 3, 4, 6, 8, 10, ..., 20] (rangos inclusivos)."""
+    out = []
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        rng, _, step = part.partition(":")
+        a, sep, b = rng.partition("-")
+        a = int(a)
+        b = int(b) if sep else a
+        st = int(step) if step else 1
+        if st < 1 or b < a:
+            raise ValueError(part)
+        out.extend(range(a, b + 1, st))
+    return out
+
+
 # --- principal ------------------------------------------------------------------
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Importa una hoja de sprites generada con IA.")
@@ -359,10 +380,19 @@ def main(argv=None):
     ap.add_argument("--cols", type=int, help="columnas de la rejilla (si no, autodetecta)")
     ap.add_argument("--rows", type=int, help="filas de la rejilla (si no, autodetecta)")
     ap.add_argument("--frames", type=int, help="cuadros usados, en orden de lectura (por defecto todos)")
+    ap.add_argument("--cells", help="celdas de origen en el orden de salida, separadas por comas: "
+                                    "indices (en orden de lectura, desde 0) o rangos a-b o a-b:paso "
+                                    "(incluyen b). Sustituye a --frames")
     ap.add_argument("--ref-frame", type=int, default=0,
                     help="celda de referencia (Isak de pie) para la escala y el anclaje (0); "
                          "puede ser una celda posterior a --frames, que no se exporta")
     ap.add_argument("--target-height", type=int, default=96, help="altura visible del personaje en px (96)")
+    ap.add_argument("--scale", type=float,
+                    help="factor de escala explicito (p. ej. 0.5393 = 96/178, el de idle y walk); "
+                         "si se omite, se calcula para que la referencia mida --target-height")
+    ap.add_argument("--anchor-x", type=float,
+                    help="x de los pies en px de la celda de origen que va al centro del canvas "
+                         "(con --align sheet o ground); por defecto la de la referencia")
     ap.add_argument("--canvas", type=int, default=128, help="lado del canvas cuadrado (128)")
     ap.add_argument("--baseline", type=int, help="fila de la planta de los pies (por defecto la ultima)")
     ap.add_argument("--align", choices=("sheet", "feet", "ground"), default="sheet",
@@ -398,10 +428,21 @@ def main(argv=None):
         print("ERROR: rejilla no valida; pasa --cols y --rows", file=sys.stderr)
         return 2
     if W % cols or H % rows:
-        print(f"AVISO: la hoja ({W}x{H}) no se divide exacto en {cols}x{rows}; se recorta el sobrante")
+        print(f"Aviso: la hoja ({W}x{H}) no se divide exacto en {cols}x{rows}; celdas de lado fraccionario con bordes redondeados")
     cw, ch = W // cols, H // rows
     total = cols * rows
-    n = args.frames or total
+    if args.cells:
+        try:
+            order = parse_cells(args.cells)
+        except ValueError:
+            print(f"ERROR: --cells no valido: '{args.cells}'", file=sys.stderr)
+            return 2
+        if not order or min(order) < 0 or max(order) >= total:
+            print(f"ERROR: --cells fuera de rango (0..{total - 1})", file=sys.stderr)
+            return 2
+    else:
+        order = list(range(args.frames or total))
+    n = len(order)
     if n > total or n < 1:
         print(f"ERROR: --frames {n} fuera de rango (1..{total})", file=sys.stderr)
         return 2
@@ -415,12 +456,16 @@ def main(argv=None):
     # la referencia puede ser una celda extra despues de los cuadros usados
     # (p. ej. Isak de pie en la ultima celda de la hoja de salto): se usa para
     # la escala y el anclaje, pero no se exporta
-    indices = list(range(n)) + ([args.ref_frame] if args.ref_frame >= n else [])
-    ref_idx = args.ref_frame if args.ref_frame < n else n
+    indices = order + ([] if args.ref_frame in order else [args.ref_frame])
+    ref_idx = indices.index(args.ref_frame)
     cells = []
     for i in indices:
-        x0, y0 = (i % cols) * cw, (i // cols) * ch
-        cell = sheet.crop((x0, y0, x0 + cw, y0 + ch))
+        c, r = i % cols, i // cols
+        # bordes redondeados: celdas de lado fraccionario (1280 px en 15 filas)
+        x0, x1 = round(c * W / cols), round((c + 1) * W / cols)
+        y0, y1 = round(r * H / rows), round((r + 1) * H / rows)
+        cell = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        cell.paste(sheet.crop((x0, y0, min(x1, x0 + cw), min(y1, y0 + ch))), (0, 0))
         cells.append(remove_background(cell, transparent, args.bg_tol))
 
     # 3: sombra
@@ -442,15 +487,18 @@ def main(argv=None):
         print("ERROR: el cuadro de referencia esta vacio", file=sys.stderr)
         return 2
     ref_h = rbb[3] - rbb[1]
-    factor = args.target_height / ref_h
+    factor = args.scale if args.scale else args.target_height / ref_h
     sw, sh = max(1, round(cw * factor)), max(1, round(ch * factor))
-    print(f"Altura del personaje en la referencia: {ref_h} px -> factor {factor:.4f} (celda {sw}x{sh})")
+    print(f"Altura del personaje en la referencia: {ref_h} px -> factor {factor:.4f}"
+          f"{' (--scale)' if args.scale else ''} (celda {sw}x{sh}, referencia a {ref_h * factor:.1f} px)")
     scaled = [c.resize((sw, sh), Image.NEAREST) for c in cells]
 
     # 6: anclaje
     size = args.canvas
     baseline = size - 1 if args.baseline is None else args.baseline
     ref_anchor = feet_anchor(scaled[ref_idx])
+    if args.anchor_x is not None:
+        ref_anchor = (args.anchor_x * sw / cw, ref_anchor[1])
     frames, failed, report = [], 0, []
     for i, sc in enumerate(scaled[:n]):
         own = feet_anchor(sc) or ref_anchor
@@ -502,7 +550,7 @@ def main(argv=None):
     else:
         print("Simulacion (--dry-run): no se guardo ningun cuadro")
     if args.preview:
-        make_preview(frames, cols if n >= cols else n, size, 4, args.preview, baseline)
+        make_preview(frames, min(cols, n, 10), size, 4, args.preview, baseline)
         print(f"Vista previa x4: {args.preview}")
 
     if failed:
