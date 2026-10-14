@@ -19,6 +19,10 @@ const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 ## ping-pong: tras el ultimo cuadro repite los intermedios al reves (sin
 ## archivos extra), para bucles cuyo final no empalma con el principio.
 ##
+## idle (25 cuadros, 8 fps = 3,1 s): dos respiraciones por vuelta (el pecho y la
+##   cabeza suben 1 px). A 12 fps cada respiracion duraba ~1 s y el salto de 1 px
+##   parecia un temblor; a 8 fps dura ~1,5 s. Los cuadros se importan con
+##   --stabilize (ruido temporal del arte de IA quitado).
 ## walk (25 cuadros): ~6 pasos por vuelta de ~36 px a escala del juego = ~216 px.
 ##   A walk_speed (220 px/s) la vuelta debe durar ~0,98 s -> ~25,5 fps; con 24 fps
 ##   los pies avanzan ~207 px/s: patina ~6 %.
@@ -35,10 +39,13 @@ const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 ##   celular al frente, cuando nace la onda.
 ## hurt (7 cuadros a 24 fps = 0,29 s, dentro de hurt_duration_s = 0,3 s).
 ## death (19 cuadros a 12 fps = 1,58 s): una vez y se queda en el ultimo.
-## terminal_*: 12 fps; intro 0,67 s, bucle 24 cuadros en ping-pong (46 pasos,
-##   3,8 s), salida 0,67 s.
+## terminal_*: 6 fps; intro 4 cuadros (0,67 s), bucle 12 cuadros en ping-pong
+##   (22 pasos, 3,7 s), salida 4 cuadros (0,67 s). Solo se usa un instante de
+##   cada 4 de la hoja: los 4 de cada bloque de 256 px estan a distinta fase
+##   de sub-pixel y al alternarlos (antes, 1 de cada 2 a 12 fps) Isak temblaba
+##   2 px a 6 Hz. Mismo ritmo que antes, sin temblor.
 const ANIMATIONS: Dictionary[String, Array] = {
-	"idle": [12.0, true, false],
+	"idle": [8.0, true, false],
 	"walk": [24.0, true, false],
 	"run": [20.0, true, false],
 	"jump_rise": [12.0, false, false],
@@ -48,9 +55,9 @@ const ANIMATIONS: Dictionary[String, Array] = {
 	"pulse": [24.0, false, false],
 	"hurt": [24.0, false, false],
 	"death": [12.0, false, false],
-	"terminal_intro": [12.0, false, false],
-	"terminal_loop": [12.0, true, true],
-	"terminal_outro": [12.0, false, false],
+	"terminal_intro": [6.0, false, false],
+	"terminal_loop": [6.0, true, true],
+	"terminal_outro": [6.0, false, false],
 }
 
 

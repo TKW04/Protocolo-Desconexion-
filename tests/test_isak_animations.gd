@@ -70,6 +70,59 @@ func test_all_frames_128_with_feet_on_last_row() -> void:
 			assert_eq(image.get_used_rect().end.y, image.get_height(), "%s %d: pies en la fila base" % [anim, i])
 
 
+## Sin temblor: pies quietos en la fila base y en la x comun (64), altura
+## ~96 px y pocos pixeles cambiando entre cuadros consecutivos (incluido el
+## empalme del bucle). Idle: importado con --stabilize (el ruido del arte de IA
+## cambiaba ~1100 px por cuadro). Terminal: un instante de cada 4 de la hoja y
+## --stabilize (antes los pies saltaban 2 px en cada cuadro y cambiaban ~2700 px).
+func test_idle_is_stable() -> void:
+	_assert_stable(Isak.ANIM_IDLE, 400, 150)
+
+
+func test_terminal_is_stable() -> void:
+	_assert_stable(Isak.ANIM_TERMINAL_LOOP, 400, 150)
+	# intro y salida mueven el brazo: solo se limita el maximo
+	_assert_stable(Isak.ANIM_TERMINAL_INTRO, 1000, 1000)
+	_assert_stable(Isak.ANIM_TERMINAL_OUTRO, 1000, 1000)
+
+
+func _assert_stable(anim: StringName, max_changed: int, max_mean: int) -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	var count: int = frames.get_frame_count(anim)
+	var feet_min: float = INF
+	var feet_max: float = -INF
+	var total_changed: int = 0
+	var prev: Image = frames.get_frame_texture(anim, count - 1).get_image()
+	for i: int in count:
+		var image: Image = frames.get_frame_texture(anim, i).get_image()
+		var used: Rect2i = image.get_used_rect()
+		assert_eq(used.end.y, 128, "%s %d: pies en la fila 127" % [anim, i])
+		assert_almost_eq(used.size.y, 96, 2, "%s %d: ~96 px de alto" % [anim, i])
+		var xs: Array[int] = []
+		for y: int in range(used.end.y - 7, used.end.y):
+			for x: int in image.get_width():
+				if image.get_pixel(x, y).a > 0.0:
+					xs.append(x)
+		var feet_x: float = (xs.min() + xs.max() + 1) / 2.0
+		feet_min = minf(feet_min, feet_x)
+		feet_max = maxf(feet_max, feet_x)
+		var changed: int = 0
+		for y: int in image.get_height():
+			for x: int in image.get_width():
+				var a: Color = image.get_pixel(x, y)
+				var b: Color = prev.get_pixel(x, y)
+				# el importador de Godot rellena el RGB de los transparentes
+				if (a.a > 0.0 or b.a > 0.0) and a != b:
+					changed += 1
+		if i > 0 or frames.get_animation_loop(anim):
+			assert_lt(changed, max_changed, "%s %d: menos de %d px cambian respecto al anterior" % [anim, i, max_changed])
+			total_changed += changed
+		prev = image
+	assert_lte(feet_max - feet_min, 1.0, "%s: los pies no se desplazan mas de 1 px" % anim)
+	assert_almost_eq(feet_min, 64.0, 1.0, "%s: pies en la x comun (centro del canvas)" % anim)
+	assert_lt(total_changed / count, max_mean, "%s: media de pixeles cambiados por cuadro < %d" % [anim, max_mean])
+
+
 func test_one_shot_animations_do_not_loop() -> void:
 	for anim: StringName in [Isak.ANIM_PULSE, Isak.ANIM_HURT, Isak.ANIM_DEATH, Isak.ANIM_JUMP_LAND,
 			Isak.ANIM_TERMINAL_INTRO, Isak.ANIM_TERMINAL_OUTRO]:
