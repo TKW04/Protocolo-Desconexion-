@@ -291,6 +291,7 @@ func set_pulse_area_active(active: bool) -> void:
 	if active:
 		_pulse_area.position = get_pulse_origin()
 		pulse_fired.emit(_pulse_area)
+		EventBus.pulse_fired.emit(_pulse_area)
 
 
 ## Crea la onda visual del pulso en el celular. Lo llama PulseState al entrar.

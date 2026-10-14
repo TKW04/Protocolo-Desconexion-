@@ -1,0 +1,81 @@
+{
+	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets).",
+	"tile_size": 64,
+	"types": {
+		"bridge_inactive": {
+			"scene": "res://scenes/levels/bridge.tscn",
+			"description": "Puente desactivado (Tramo 2 del 1-1). Retraido: solo un contorno discontinuo y sin colision. Su receptor lo extiende de forma permanente, un tile por paso, en la direccion indicada; extendido es solido.",
+			"required": ["id"],
+			"fields": {
+				"id": "object_id",
+				"length_tiles": "length_tiles",
+				"direction": "direction"
+			},
+			"defaults": {
+				"length_tiles": 4,
+				"direction": "right"
+			},
+			"example": {"type": "bridge_inactive", "x": 11, "y": 9, "params": {"id": "puente_1", "length_tiles": 5, "direction": "right"}}
+		},
+		"receiver": {
+			"scene": "res://scenes/levels/receiver.tscn",
+			"description": "Receptor del pulso (PROPUESTA V4: en el extremo del puente). Se activa cuando el area del pulso de Isak (circulo de pulse_radius_px en el celular) toca su zona de golpe, emite activated(target) y se queda activado.",
+			"required": ["target"],
+			"fields": {
+				"target": "target_id"
+			},
+			"defaults": {},
+			"example": {"type": "receiver", "x": 10, "y": 8, "params": {"target": "puente_1"}}
+		},
+		"glitch_wall": {
+			"scene": "res://scenes/levels/glitch_wall.tscn",
+			"description": "Secreto del 1-1: pared solida con un leve glitch, sin forma de acceder todavia. Gancho para el Debug (grupo debug_secret, senal debug_revealed); el contenido del secreto no esta implementado. El validador la excluye de la regla 4 (V7). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json).",
+			"required": [],
+			"fields": {
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"solid_neighbors": "solid_neighbors"
+			},
+			"defaults": {
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"solid_neighbors": 0
+			},
+			"example": {"type": "glitch_wall", "x": 22, "y": 7, "params": {"width_tiles": 1, "height_tiles": 2, "solid_neighbors": 7}}
+		}
+	},
+	"bridge": {
+		"_notes": "PROPUESTA. step_s: tiempo entre tiles al extenderse (tiempo del mundo: x0,5 con el Debug). collision_height_px: grosor de la tabla solida, arriba de la celda (igual que one_way_collision_height_px del tileset). one_way: false (docs no dicen que sea de una via).",
+		"texture": "res://assets/sprites/tiles/mundo1_bridge.png",
+		"frames": {"off": 0, "half": 1, "on": 2},
+		"step_s": 0.08,
+		"collision_height_px": 12,
+		"one_way": false
+	},
+	"receiver": {
+		"_notes": "PROPUESTA. hit_rect: zona de golpe en px relativa a la esquina superior izquierda de la celda (la caja y el poste). blink_s: parpadeo del punto de senal mientras esta apagado (tiempo del mundo). stays_active: un pulso basta y no se desactiva (V4).",
+		"texture": "res://assets/sprites/tiles/mundo1_receiver.png",
+		"frames": {"off_a": 0, "off_b": 1, "on": 2},
+		"hit_rect": [12, 0, 40, 64],
+		"blink_s": 0.5,
+		"stays_active": true
+	},
+	"glitch_wall": {
+		"_notes": "PROPUESTA. Cuadro 0 = pared limpia. Tras una pausa aleatoria entre idle_min_s e idle_max_s (tiempo del mundo, semilla fija por celda) hace una rafaga de los cuadros 1..3 a burst_fps.",
+		"texture": "res://assets/sprites/tiles/mundo1_glitch_wall.png",
+		"frames": 4,
+		"burst_fps": 12.0,
+		"idle_min_s": 0.6,
+		"idle_max_s": 1.8
+	},
+	"assets": [
+		{"path": "res://assets/sprites/tiles/mundo1_bridge.png", "frame_size": [64, 64], "columns": 3, "rows": 1, "seamless_x": true, "needs_transparency": true},
+		{"path": "res://assets/sprites/tiles/mundo1_receiver.png", "frame_size": [64, 64], "columns": 3, "rows": 1, "seamless_x": false, "needs_transparency": true},
+		{"path": "res://assets/sprites/tiles/mundo1_glitch_wall.png", "frame_size": [64, 64], "columns": 4, "rows": 16, "seamless_x": false, "needs_transparency": false},
+		{"path": "res://assets/sprites/backgrounds/mundo1_bg_cielo.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": false},
+		{"path": "res://assets/sprites/backgrounds/mundo1_bg_fondo_medio.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true},
+		{"path": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true}
+	],
+	"palette": "res://assets/palettes/mundo1.gpl",
+	"palette_exclude": ["debug_cian"]
+}

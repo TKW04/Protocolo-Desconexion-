@@ -57,3 +57,10 @@ signal world_time_scale_changed(scale: float)
 ## ocultas del Debug (daltonismo, docs 15.6).
 @warning_ignore("unused_signal")
 signal debug_high_contrast_outline_changed(enabled: bool)
+
+## Isak dispara el pulso de datos (lo reemite Isak.set_pulse_area_active junto
+## a su senal pulse_fired). `area` es PulseArea: un circulo de pulse_radius_px
+## centrado en el celular. Lo usan los objetos del entorno que el pulso activa
+## (receptores del Mundo 1).
+@warning_ignore("unused_signal")
+signal pulse_fired(area: Area2D)

@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/pulse_receiver.gd" id="1_receiver"]
+
+[node name="Receiver" type="Node2D" groups=["pulse_receiver"]]
+script = ExtResource("1_receiver")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+centered = false
+hframes = 3
