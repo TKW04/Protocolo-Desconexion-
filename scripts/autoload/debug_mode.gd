@@ -9,6 +9,8 @@
 #   pulsar (evita que se encienda y apague solo al recoger un punto).
 # - Entrada y salida suaves: `intensity` (0-1) sube en fade_in_s y baja en
 #   fade_out_s; de ella salen la escala de tiempo y el tinte.
+# - Crea y alimenta el efecto de pantalla (DebugOverlay: tinte + vineta en un
+#   CanvasLayer entre el mundo y el HUD), asi que vale para cualquier escena.
 # Los valores salen de data/debug_mode.json (DebugModeConfig). El estado
 # global (energia, escala de tiempo) vive en GameState; los avisos van por
 # EventBus (debug_mode_changed, world_time_scale_changed).
@@ -17,6 +19,7 @@ extends Node
 const ACTION_DEBUG: StringName = &"debug"
 const INTENSITY_OFF: float = 0.0
 const INTENSITY_FULL: float = 1.0
+const OVERLAY_SCENE: PackedScene = preload("res://scenes/effects/debug_overlay.tscn")
 
 ## Si es false, _physics_process no lee el Input Map (pruebas: llaman a step()).
 var input_enabled: bool = true
@@ -26,9 +29,12 @@ var _active: bool = false
 var _intensity: float = INTENSITY_OFF
 ## Tras un apagado forzado se espera a que se suelte la accion.
 var _await_release: bool = false
+var _overlay: DebugOverlay
 
 
 func _ready() -> void:
+	_overlay = OVERLAY_SCENE.instantiate() as DebugOverlay
+	add_child(_overlay)
 	EventBus.player_died.connect(_on_player_died)
 	EventBus.ability_unlock_changed.connect(_on_ability_unlock_changed)
 
@@ -67,6 +73,11 @@ func is_active() -> bool:
 ## 0 = apagado del todo, 1 = efecto completo. Sigue a `active` con transicion.
 func get_intensity() -> float:
 	return _intensity
+
+
+## Efecto de pantalla (pruebas y capturas).
+func get_overlay() -> DebugOverlay:
+	return _overlay
 
 
 ## Escala de tiempo que tendria el mundo con esta intensidad.
@@ -111,6 +122,8 @@ func _update_intensity(real_delta: float) -> void:
 
 func _apply_intensity() -> void:
 	GameState.world_time_scale = time_scale_for(_intensity)
+	if _overlay != null:
+		_overlay.set_intensity(_intensity)
 
 
 func _on_player_died() -> void:
