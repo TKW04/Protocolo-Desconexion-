@@ -3,13 +3,14 @@
 
 Comprueba en cada PNG cuyo nombre no empiece por '_' ni contenga '_sheet':
   - nombre con patron <entidad>_<anim>_<NN>(_placeholder).png
-  - tamano (por defecto 64x64)
+  - tamano (por defecto DEFAULT_SIZE, 128x128: canvas de Isak a 1280x720)
   - solo colores de la paleta, mas transparente (alfa 0); sin alfa parcial
   - fondo transparente (las cuatro esquinas con alfa 0)
 
 Uso:
     python3 tools/validate_sprites.py [DIR] [--palette GPL] [--size WxH]
-Por defecto: assets/sprites/isak con assets/palettes/isak.gpl y 64x64.
+Por defecto: assets/sprites/isak con assets/palettes/isak.gpl y 128x128.
+--size acepta WxH o un solo numero para lienzos cuadrados (p. ej. --size 64).
 Devuelve 0 si todo es correcto y 1 si hay algun fallo.
 """
 
@@ -21,6 +22,8 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+## Tamano esperado del canvas por defecto (Isak: 128x128 a 1280x720).
+DEFAULT_SIZE = "128x128"
 NAME_RE = re.compile(r"^[a-z0-9]+_[a-z0-9]+_\d{2}(_placeholder)?\.png$")
 
 
@@ -74,10 +77,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("dir", nargs="?", default=os.path.join(ROOT, "assets", "sprites", "isak"))
     ap.add_argument("--palette", default=os.path.join(ROOT, "assets", "palettes", "isak.gpl"))
-    ap.add_argument("--size", default="64x64")
+    ap.add_argument("--size", default=DEFAULT_SIZE, help="tamano esperado WxH o N (por defecto %(default)s)")
     args = ap.parse_args()
 
-    size = tuple(int(v) for v in args.size.lower().split("x"))
+    try:
+        parts = [int(v) for v in args.size.lower().split("x")]
+        size = (parts[0], parts[0]) if len(parts) == 1 else (parts[0], parts[1])
+        if len(parts) > 2 or min(size) <= 0:
+            raise ValueError
+    except ValueError:
+        print(f"ERROR: --size invalido '{args.size}' (usa WxH o N)")
+        return 1
     try:
         palette = load_gpl(args.palette)
     except (OSError, ValueError) as e:

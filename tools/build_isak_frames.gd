@@ -1,5 +1,8 @@
 ## Genera scenes/player/isak_frames.tres (SpriteFrames) desde los PNG placeholder.
 ## Requiere que los PNG esten importados antes (Godot --headless --import).
+## Todos los cuadros deben medir FRAME_SIZE (canvas de Isak a 1280x720) con los
+## pies abajo y centrados; isak.tscn coloca el AnimatedSprite2D (centrado) en
+## (0, -FRAME_SIZE.y / 2) para que los pies queden en el origen del personaje.
 ## Uso: Godot --headless --path . -s tools/build_isak_frames.gd
 extends SceneTree
 
@@ -7,6 +10,8 @@ const SPRITE_DIR: String = "res://assets/sprites/isak/"
 const OUTPUT_PATH: String = "res://scenes/player/isak_frames.tres"
 const FILE_PATTERN: String = "isak_%s_%02d_placeholder.png"
 const ANIMATION_FPS: float = 12.0
+## Tamano esperado de cada cuadro (px).
+const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 
 ## Animaciones de varios cuadros: nombre del archivo -> bucle.
 const LOOPING_ANIMS: Dictionary[String, bool] = {
@@ -67,6 +72,10 @@ func _load_sequence(anim: String) -> Array[Texture2D]:
 		var texture: Texture2D = load(path) as Texture2D
 		if texture == null:
 			push_error("build_isak_frames: no se pudo cargar '%s' (falta importar?)." % path)
+			break
+		if Vector2i(texture.get_size()) != FRAME_SIZE:
+			push_error("build_isak_frames: '%s' mide %s y se esperaba %s." % [path, Vector2i(texture.get_size()), FRAME_SIZE])
+			textures.clear()
 			break
 		textures.append(texture)
 		index += 1

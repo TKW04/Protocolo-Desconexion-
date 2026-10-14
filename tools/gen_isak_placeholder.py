@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """Genera los sprites PROVISIONALES (_placeholder) de Isak y su paleta.
 
-Dibuja con indices de paleta en un canvas de 64x64 (unos 48 px visibles,
-pies abajo y centrados). Isak mira a la derecha.
+Estos placeholders son temporales: se reemplazaran por el arte importado
+(hojas importadas con tools/import_sheet.py). No los tomes como referencia
+de estilo.
+
+Dibuja con indices de paleta en una rejilla de 64x64 (unos 48 px visibles,
+pies abajo y centrados) y despues escala cada cuadro por --scale con vecino
+mas cercano. Con la escala por defecto (2) el canvas final es de 128x128 con
+unos 96 px visibles, la escala del juego a 1280x720. Isak mira a la derecha.
 
 Uso:
-    python3 tools/gen_isak_placeholder.py [--preview DIR]
+    python3 tools/gen_isak_placeholder.py [--scale N] [--preview DIR]
     (no uses -I: Pillow esta en el site-packages de usuario)
 
 Salidas:
@@ -28,7 +34,8 @@ from PIL import Image, ImageDraw
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAL_DIR = os.path.join(ROOT, "assets", "palettes")
 OUT_DIR = os.path.join(ROOT, "assets", "sprites", "isak")
-SIZE = 64
+SIZE = 64  # rejilla de dibujo (pixeles de arte); el PNG mide SIZE * --scale
+DEFAULT_SCALE = 2
 GROUND_Y = 62  # ultima fila de la suela (la fila 63 es el contorno)
 
 # --- Paleta (PROPUESTA) ------------------------------------------------------
@@ -466,7 +473,12 @@ def contact_sheet(all_frames, path, scale=8):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preview", help="carpeta donde guardar la vista ampliada x8")
+    ap.add_argument("--scale", type=int, default=DEFAULT_SCALE,
+                    help="factor entero de escalado nearest de cada cuadro (por defecto %d)" % DEFAULT_SCALE)
     args = ap.parse_args()
+    if args.scale < 1:
+        ap.error("--scale debe ser un entero >= 1")
+    out_size = SIZE * args.scale
 
     os.makedirs(PAL_DIR, exist_ok=True)
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -476,18 +488,20 @@ def main():
     all_frames = []
     for name, fn in ANIMS:
         frames = [draw_isak(p) for p in fn()]
-        for i, img in enumerate(frames):
+        # escalado entero nearest: los pies siguen abajo y centrados
+        scaled = [img.resize((out_size, out_size), Image.NEAREST) for img in frames]
+        for i, img in enumerate(scaled):
             img.save(os.path.join(OUT_DIR, f"isak_{name}_{i:02d}_placeholder.png"))
-        sheet = Image.new("RGBA", (SIZE * len(frames), SIZE), (0, 0, 0, 0))
-        for i, img in enumerate(frames):
-            sheet.paste(img, (i * SIZE, 0))
+        sheet = Image.new("RGBA", (out_size * len(frames), out_size), (0, 0, 0, 0))
+        for i, img in enumerate(scaled):
+            sheet.paste(img, (i * out_size, 0))
         sheet.save(os.path.join(OUT_DIR, f"isak_{name}_sheet_placeholder.png"))
         all_frames.append((name, frames))
 
     if args.preview:
         os.makedirs(args.preview, exist_ok=True)
         contact_sheet(all_frames, os.path.join(args.preview, "isak_contact_x8.png"))
-    print(f"OK: {sum(len(f) for _, f in all_frames)} cuadros en {OUT_DIR}")
+    print(f"OK: {sum(len(f) for _, f in all_frames)} cuadros de {out_size}x{out_size} en {OUT_DIR}")
 
 
 if __name__ == "__main__":

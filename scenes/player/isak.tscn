@@ -7,7 +7,7 @@
 script = ExtResource("1_isak")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(0, -32)
+position = Vector2(0, -64)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
 
@@ -19,6 +19,6 @@ animation = &"idle"
 disabled = true
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(0, -32)
+position = Vector2(0, -64)
 position_smoothing_enabled = true
 position_smoothing_speed = 8.0
