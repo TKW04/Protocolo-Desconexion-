@@ -20,13 +20,26 @@ Pasos (ver docs/guia-sprites-ia.md):
      desplazamiento para todos los cuadros, medido en el cuadro de referencia,
      asi el movimiento relativo de la hoja se conserva y no se introduce
      temblor. Con --align feet cada cuadro se ancla por sus propios pies.
-  7. Valida cada salida y guarda <prefix>_<anim>_<NN>.png.
+  7. Opcional (--stabilize TOL): estabiliza el ruido temporal de bucles casi
+     quietos (idle). El arte de IA cambia de color cientos de pixeles en cada
+     cuadro aunque la pose sea la misma; reescalado y a 12 fps se ve como un
+     temblor. Cada pixel conserva el valor del cuadro anterior (ya
+     estabilizado) si sigue opaco y su color cambia <= TOL por canal; los
+     cambios aislados (grupos de <= 2 pixeles cambiados, p. ej. pixeles de
+     borde que aparecen y desaparecen) tambien se descartan. Los
+     cambios reales (respiracion, parpadeo) son grandes o coherentes y pasan.
+     Se recorre el bucle dos veces para que el ultimo cuadro empalme con el
+     primero.
+  8. Valida cada salida y guarda <prefix>_<anim>_<NN>.png. Con --split
+     a:4,b:12 los cuadros se reparten en orden entre varias animaciones
+     (estabilizadas como una sola secuencia).
 
 Uso:
   python3 tools/import_sheet.py HOJA.png --anim idle [--cols 6 --rows 6]
       [--frames 36 | --cells 0-4,6,8-20:2] [--target-height 96 | --scale 0.5393]
       [--anchor-x 130] [--canvas 128] [--out assets/sprites/isak] [--prefix isak]
-      [--dry-run] [--preview vista.png]
+      [--stabilize 40] [--split a:4,b:12] [--dry-run]
+      [--preview vista.png]
 
 La rejilla admite celdas de tamano fraccionario (p. ej. 15 filas en 1280 px):
 los bordes de cada celda se redondean desde i * lado / n.
@@ -301,6 +314,68 @@ def feet_anchor(img):
     return ((min(xs) + max(xs) + 1) / 2.0, bottom)
 
 
+# --- estabilizacion temporal -----------------------------------------------------
+def stabilize_frames(frames, tol, isolated=2):
+    """Quita el ruido temporal de una secuencia en bucle (ver paso 7). Devuelve
+    cuadros nuevos; el primero de la primera vuelta es la semilla. Un pixel
+    toma el valor del cuadro anterior ya estabilizado si ambos son opacos y su
+    color difiere <= tol por canal, o si es un cambio aislado: forma un grupo
+    8-conectado de <= isolated pixeles que cambian."""
+    n = len(frames)
+    out = [f.copy() for f in frames]
+    if n < 2:
+        return out
+    held = out[0]
+    for lap in range(2):
+        for i in range(n):
+            if lap == 0 and i == 0:
+                continue
+            res = frames[i].copy()
+            r, h = res.load(), held.load()
+            w, hh = res.size
+            changed = bytearray(w * hh)
+            for y in range(hh):
+                for x in range(w):
+                    a, b = h[x, y], r[x, y]
+                    if a == b:
+                        continue
+                    if a[3] and b[3] and color_dist(a, b) <= tol:
+                        r[x, y] = a
+                    else:
+                        changed[y * w + x] = 1
+            if isolated:
+                # cambios aislados: grupos (8-conectados) de <= isolated pixeles
+                seen = bytearray(w * hh)
+                for start in range(w * hh):
+                    if not changed[start] or seen[start]:
+                        continue
+                    comp, q = [start], deque([start])
+                    seen[start] = 1
+                    while q:
+                        k = q.popleft()
+                        cx, cy = k % w, k // w
+                        for yy in range(max(0, cy - 1), min(hh, cy + 2)):
+                            for xx in range(max(0, cx - 1), min(w, cx + 2)):
+                                j = yy * w + xx
+                                if changed[j] and not seen[j]:
+                                    seen[j] = 1
+                                    comp.append(j)
+                                    q.append(j)
+                    if len(comp) <= isolated:
+                        for k in comp:
+                            r[k % w, k // w] = h[k % w, k // w]
+            out[i] = res
+            held = res
+    return out
+
+
+def changed_pixels(a, b):
+    """Numero de pixeles distintos (RGBA) entre dos cuadros del mismo tamano."""
+    pa, pb = a.load(), b.load()
+    w, h = a.size
+    return sum(1 for y in range(h) for x in range(w) if pa[x, y] != pb[x, y])
+
+
 # --- validacion -----------------------------------------------------------------
 def validate(img, size, target, tol, clipped):
     errors = []
@@ -407,6 +482,15 @@ def main(argv=None):
     ap.add_argument("--alpha-cut", type=int, default=128, help="umbral de alfa (128)")
     ap.add_argument("--out", default=os.path.join("assets", "sprites", "isak"), help="carpeta de salida")
     ap.add_argument("--prefix", default="isak", help="prefijo de los archivos (isak)")
+    ap.add_argument("--stabilize", type=int, default=0, metavar="TOL",
+                    help="estabiliza el ruido temporal de un bucle casi quieto (idle): conserva el "
+                         "pixel anterior si su color cambia <= TOL por canal y descarta cambios "
+                         "aislados; 0 = desactivado (por defecto). Recomendado: 40")
+    ap.add_argument("--split", metavar="ANIM:N,...",
+                    help="reparte los cuadros, en orden, en varias animaciones (p. ej. "
+                         "terminal_intro:4,terminal_loop:12,terminal_outro:4); la suma debe ser el "
+                         "numero de cuadros. Asi --stabilize trata la secuencia entera y no hay salto "
+                         "de ruido al pasar de una animacion a otra. --anim queda como nombre del informe")
     ap.add_argument("--dry-run", action="store_true", help="no escribe los cuadros")
     ap.add_argument("--preview", help="guarda una vista ampliada x4 de los cuadros en esta ruta")
     args = ap.parse_args(argv)
@@ -449,6 +533,14 @@ def main(argv=None):
     if not 0 <= args.ref_frame < total:
         print(f"ERROR: --ref-frame fuera de rango (0..{total - 1})", file=sys.stderr)
         return 2
+    if args.split:
+        try:
+            split_total = sum(int(p.partition(":")[2]) for p in args.split.split(","))
+        except ValueError:
+            split_total = -1
+        if split_total != n:
+            print(f"ERROR: --split debe repartir exactamente {n} cuadros", file=sys.stderr)
+            return 2
     print(f"Hoja {W}x{H}, celdas de {cw}x{ch}, {n} cuadros, fondo "
           f"{'transparente' if transparent else 'de color (se quita)'}")
 
@@ -499,7 +591,7 @@ def main(argv=None):
     ref_anchor = feet_anchor(scaled[ref_idx])
     if args.anchor_x is not None:
         ref_anchor = (args.anchor_x * sw / cw, ref_anchor[1])
-    frames, failed, report = [], 0, []
+    frames, clips, failed, report = [], [], 0, []
     for i, sc in enumerate(scaled[:n]):
         own = feet_anchor(sc) or ref_anchor
         if args.align == "sheet":
@@ -515,12 +607,22 @@ def main(argv=None):
         # pixeles que caen fuera del canvas
         total_px = sum(sc.getchannel("A").histogram()[1:])
         in_px = sum(canvas.getchannel("A").histogram()[1:])
-        clipped = total_px - in_px
+        clips.append(total_px - in_px)
         threshold_alpha(canvas, args.alpha_cut)
-        errs, vis_h, vbb = validate(canvas, size, args.target_height, args.height_tol, clipped)
+        frames.append(canvas)
+
+    # 7: estabilizacion temporal (opcional)
+    if args.stabilize > 0 and n > 1:
+        before = [changed_pixels(frames[i - 1], frames[i]) for i in range(n)]
+        frames = stabilize_frames(frames, args.stabilize)
+        after = [changed_pixels(frames[i - 1], frames[i]) for i in range(n)]
+        print(f"Estabilizado (tol {args.stabilize}): pixeles que cambian entre cuadros consecutivos "
+              f"media {sum(before) / n:.0f} -> {sum(after) / n:.0f}, max {max(before)} -> {max(after)}")
+
+    for i, canvas in enumerate(frames):
+        errs, vis_h, vbb = validate(canvas, size, args.target_height, args.height_tol, clips[i])
         fa = feet_anchor(canvas)
         report.append((i, vis_h, fa, errs))
-        frames.append(canvas)
         if errs:
             failed += 1
 
@@ -535,18 +637,28 @@ def main(argv=None):
         print(f"Deriva de los pies entre cuadros: x {min(xs):.1f}..{max(xs):.1f} "
               f"({max(xs) - min(xs):.1f} px), base {min(bs) - 1}..{max(bs) - 1}")
 
-    # 7: guardar
+    # 8: guardar
     out_dir = args.out if os.path.isabs(args.out) else os.path.join(os.getcwd(), args.out)
+    # --split reparte los cuadros en varias animaciones (en orden)
+    segments = [(args.anim, n)]
+    if args.split:
+        segments = []
+        for part in args.split.split(","):
+            name, _, cnt = part.strip().partition(":")
+            segments.append((name, int(cnt)))
     if not args.dry_run:
         os.makedirs(out_dir, exist_ok=True)
-        for i, fr in enumerate(frames):
-            fr.save(os.path.join(out_dir, f"{args.prefix}_{args.anim}_{i:02d}.png"))
-        stale = [f for f in os.listdir(out_dir)
-                 if f.startswith(f"{args.prefix}_{args.anim}_") and f[len(args.prefix) + len(args.anim) + 2:-4].isdigit()
-                 and int(f[len(args.prefix) + len(args.anim) + 2:-4]) >= n]
-        print(f"Guardados {n} cuadros en {out_dir}")
-        if stale:
-            print(f"AVISO: quedan cuadros antiguos de esta animacion: {', '.join(sorted(stale))}")
+        start = 0
+        for anim, cnt in segments:
+            for i in range(cnt):
+                frames[start + i].save(os.path.join(out_dir, f"{args.prefix}_{anim}_{i:02d}.png"))
+            start += cnt
+            stale = [f for f in os.listdir(out_dir)
+                     if f.startswith(f"{args.prefix}_{anim}_") and f[len(args.prefix) + len(anim) + 2:-4].isdigit()
+                     and int(f[len(args.prefix) + len(anim) + 2:-4]) >= cnt]
+            print(f"Guardados {cnt} cuadros de '{anim}' en {out_dir}")
+            if stale:
+                print(f"AVISO: quedan cuadros antiguos de esta animacion: {', '.join(sorted(stale))}")
     else:
         print("Simulacion (--dry-run): no se guardo ningun cuadro")
     if args.preview:
