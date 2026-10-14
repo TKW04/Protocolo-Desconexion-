@@ -34,7 +34,9 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 ### 3.4 Daño y muerte
 
 - **Recibir daño:** en lugar de sangre, Isak desprende glitches, píxeles que parpadean y se desplazan aleatoriamente.
-- **Muerte:** Isak no cae al suelo. Su cuerpo se pixela por completo y se desintegra en líneas de código que suben hacia el cielo del mundo virtual.
+- **Muerte:** Isak cae y queda en el suelo mientras su cuerpo se pixela por completo y se desintegra en líneas de código que suben hacia el cielo del mundo virtual.
+
+> **Cambio aprobado 2026-10-14:** la hoja de muerte entregada muestra a Isak tumbado.
 
 ### 3.5 Gestos del celular (mejoras por mundo)
 

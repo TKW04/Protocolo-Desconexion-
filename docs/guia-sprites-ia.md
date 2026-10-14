@@ -684,7 +684,7 @@ no particles, no motion lines, no change of facing direction, no shadow.
 
 ### 3.8 Muerte (4 cuadros + 1 de referencia, 3x2)
 
-Solo la pose; **el pixelado y las líneas de código que suben los aplica el juego**. El documento dice que "Isak no cae al suelo": se pixela y se desintegra. Por eso la pose es de derrota y **no termina tumbado**. La pose final propuesta es con una rodilla en el suelo; si prefieres que siga de pie, cambia el cuadro 4 antes de generar.
+Solo la pose; **el pixelado y las líneas de código que suben los aplica el juego**. El documento dice que "Isak no cae al suelo": se pixela y se desintegra. Por eso la pose es de derrota y **no termina tumbado**. (Nota: la hoja final entregada sí termina tumbado; esa es la hoja aprobada, cambio del 2026-10-14.) La pose final propuesta es con una rodilla en el suelo; si prefieres que siga de pie, cambia el cuadro 4 antes de generar.
 
 ```text
 === ISAK CHARACTER SHEET (always paste unchanged) ===
@@ -748,7 +748,7 @@ no particles, no glow, no fading, no transparency, no ghost, no change of facing
       --height-tol 0.4
   ```
   La celda 6 no se lee: con `--frames 4 --ref-frame 4` el importador solo usa las celdas 1 a 5.
-- **Revisar:** Isak nunca queda tumbado; sin pixelado ni partículas; la celda 5 es la pose de `isak_ref.png`; la celda 6 está vacía (si la herramienta la llena, da igual, pero no debe invadir otra celda).
+- **Revisar:** (Nota 2026-10-14: la hoja final entregada sí termina con Isak tumbado; es la aprobada.) Sin pixelado ni partículas; la celda 5 es la pose de `isak_ref.png`; la celda 6 está vacía (si la herramienta la llena, da igual, pero no debe invadir otra celda).
 
 ## 4. Alternativa cuadro por cuadro
 
