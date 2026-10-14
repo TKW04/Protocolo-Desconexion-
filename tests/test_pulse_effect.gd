@@ -1,11 +1,16 @@
 # Pruebas del efecto visual del pulso: se crea al entrar en Pulse, se libera al
 # salir, su tamano sale de pulse_radius_px y no aparece si el pulso esta bloqueado.
 # Tambien valida los cuadros: lienzo multiplo de 8, fondo transparente y solo
-# colores de assets/palettes/effects_pulse.gpl.
+# colores de assets/palettes/effects_pulse.gpl. PulseArea (zona de golpe) y la
+# onda comparten centro: el celular.
+# Los cuadros se dibujan en pixeles de arte de PulseEffect.PIXEL_SIZE px y se
+# amplian: el radio medido en px de pantalla puede pasarse hasta un pixel de
+# arte (el bloque del borde exterior), de ahi la tolerancia RADIUS_TOLERANCE.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const PALETTE_PATH: String = "res://assets/palettes/effects_pulse.gpl"
+const RADIUS_TOLERANCE: float = PulseEffect.PIXEL_SIZE
 
 var _sim: IsakSim
 var _isak: Isak
@@ -50,6 +55,26 @@ func test_effect_mirrors_when_facing_left() -> void:
 	_isak.facing = -1.0
 	_fire_pulse()
 	assert_lt(_isak.get_pulse_effect().position.x, 0.0, "Mirando a la izquierda el celular esta a la izquierda")
+
+
+func test_pulse_area_centered_on_phone_and_effect() -> void:
+	for facing: float in [1.0, -1.0]:
+		_isak.facing = facing
+		_fire_pulse()
+		var area: Area2D = _isak.get_node("PulseArea") as Area2D
+		var phone := Vector2(_isak.pulse_effect_origin.x * facing, _isak.pulse_effect_origin.y)
+		assert_eq(area.position, phone, "PulseArea centrada en el celular (facing %s)" % facing)
+		assert_eq(area.position, _isak.get_pulse_effect().position, "La onda coincide con la zona de golpe")
+		var circle: CircleShape2D = (area.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
+		assert_eq(circle.radius, _isak.abilities.pulse_radius_px, "Radio de la zona = pulse_radius_px")
+		_sim.step_until(func() -> bool: return _sim.state() != PlayerState.PULSE,
+				_sim.steps_for(_isak.abilities.pulse_duration_s))
+
+
+func test_phone_origin_on_art_pixel_grid() -> void:
+	# El centro de la onda cae en la rejilla de pixeles de arte del sprite de Isak.
+	assert_eq(int(_isak.pulse_effect_origin.x) % PulseEffect.PIXEL_SIZE, 0)
+	assert_eq(int(_isak.pulse_effect_origin.y) % PulseEffect.PIXEL_SIZE, 0)
 
 
 func test_effect_advances_and_freed_on_exit() -> void:
@@ -101,8 +126,8 @@ func test_max_size_matches_pulse_radius() -> void:
 	assert_eq(fx.get_max_radius_px(), roundi(radius))
 	var count: int = fx.get_frame_count()
 	assert_eq(PulseEffect.ring_radius(radius, count - 1, count), roundi(radius), "El ultimo anillo mide el radio")
-	assert_eq(_measure_radius(PulseEffect.build_image(radius, count - 1, count)), roundi(radius),
-			"El pixel opaco mas lejano esta a pulse_radius_px del centro")
+	assert_almost_eq(float(_measure_radius(PulseEffect.build_image(radius, count - 1, count))), radius,
+			RADIUS_TOLERANCE, "El pixel opaco mas lejano esta a pulse_radius_px del centro")
 
 
 func test_size_scales_with_radius() -> void:
@@ -111,11 +136,15 @@ func test_size_scales_with_radius() -> void:
 		assert_eq(side % 8, 0, "Lienzo multiplo de 8 para radio %s" % radius)
 		assert_gte(side, 2 * roundi(radius) + 1, "Cabe el anillo para radio %s" % radius)
 		var last: Image = PulseEffect.build_image(radius, 7, 8)
-		assert_eq(_measure_radius(last), roundi(radius), "Radio medido para radio %s" % radius)
+		assert_eq(last.get_width(), side, "El cuadro mide el lienzo para radio %s" % radius)
+		# Un radio impar no cae en la rejilla de arte: se ajusta al pixel de arte mas cercano.
+		var snapped: int = PulseEffect.ring_radius(radius, 7, 8)
+		assert_almost_eq(float(snapped), radius, float(PulseEffect.PIXEL_SIZE), "Radio en la rejilla de arte para %s" % radius)
+		assert_almost_eq(float(_measure_radius(last)), float(snapped), RADIUS_TOLERANCE, "Radio medido para radio %s" % radius)
 
 
 func test_ring_grows_every_frame() -> void:
-	var radius: float = 48.0
+	var radius: float = 96.0
 	var previous: int = 0
 	for i: int in 8:
 		var r: int = PulseEffect.ring_radius(radius, i, 8)
@@ -128,7 +157,7 @@ func test_frames_use_palette_and_transparent_background() -> void:
 	assert_eq(palette.size(), PulseEffect.PALETTE.size(), "El script copia la paleta .gpl")
 	for color: Color in PulseEffect.PALETTE:
 		assert_true(palette.has(color), "Color %s en la paleta" % color.to_html(false))
-	for image: Image in PulseEffect.build_images(48.0, 8):
+	for image: Image in PulseEffect.build_images(96.0, 8):
 		var side: int = image.get_width()
 		assert_eq(image.get_height(), side)
 		for corner: Vector2i in [Vector2i(0, 0), Vector2i(side - 1, 0), Vector2i(0, side - 1), Vector2i(side - 1, side - 1)]:

@@ -1,5 +1,6 @@
-## Banco de pruebas del movimiento de Isak (tiles de 32 px, suelo en y = 320):
-## plataforma baja (48 px libres debajo, encima a 2 tiles), escalones de 1, 2 y
+## Banco de pruebas del movimiento de Isak (tiles de 64 px, suelo en y = 640,
+## resolucion 1280x720): plataforma baja (96 px libres debajo, encima a 2
+## tiles), escalones de 1, 2 y
 ## 2,5 tiles, hueco de 2 tiles (caminando), hueco de 3 tiles (corriendo),
 ## plataforma de una via y pared. Caer por un hueco devuelve a Isak al inicio.
 ## Solo para jugar y ajustar valores; no es un nivel del juego.
@@ -17,7 +18,7 @@ const JUMP_BUFFER: String = "buffer"
 ## por defecto de GameState sigue bloqueado).
 @export var unlock_pulse: bool = true
 ## Si Isak cae por debajo de esta Y vuelve al punto de inicio.
-@export var fall_limit_y: float = 480.0
+@export var fall_limit_y: float = 960.0
 
 var _spawn_position: Vector2
 var _last_jump: String = "-"
@@ -71,8 +72,8 @@ func _setup_debug_overlay() -> void:
 	layer.name = "DebugOverlay"
 	layer.layer = 100
 	_debug_label = Label.new()
-	_debug_label.position = Vector2(8.0, 8.0)
-	_debug_label.add_theme_font_size_override("font_size", 8)
+	_debug_label.position = Vector2(16.0, 16.0)
+	_debug_label.add_theme_font_size_override("font_size", 16)
 	_debug_label.add_theme_color_override("font_color", Color(0.9, 0.95, 0.6))
 	layer.add_child(_debug_label)
 	add_child(layer)

@@ -5,7 +5,7 @@
 extends RefCounted
 
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
-const FLOOR_SIZE: Vector2 = Vector2(4096.0, 64.0)
+const FLOOR_SIZE: Vector2 = Vector2(8192.0, 128.0)
 ## Margen de pasos extra sobre los calculados con los datos.
 const STEP_MARGIN: int = 10
 ## Limite de tiempo para esperar algo que deberia ocurrir en pocos segundos.

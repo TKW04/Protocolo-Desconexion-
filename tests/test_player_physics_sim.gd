@@ -10,8 +10,11 @@ const ARENA_SCENE: PackedScene = preload("res://scenes/levels/test_arena.tscn")
 const DELTAS: Array[float] = [1.0 / 60.0, 1.0 / 120.0]
 ## Holgura para comparaciones que solo sufren error de coma flotante.
 const FLOAT_TOLERANCE: float = 0.01
-## Distancia horizontal desde el borde a la que se coloca a Isak antes de salir caminando.
-const EDGE_START_OFFSET_PX: float = 16.0
+## Distancia horizontal desde el borde, en tiles, a la que se coloca a Isak
+## antes de salir caminando (medio tile).
+const EDGE_START_OFFSET_TILES: float = 0.5
+## Margenes de la arena en tiles (antes 8 px con tiles de 32: un cuarto de tile).
+const MARGIN_TILES: float = 0.25
 ## Cuadros reales maximos a esperar a que el motor adopte la nueva frecuencia de fisica.
 const MAX_TICK_SYNC_FRAMES: int = 10
 
@@ -72,7 +75,7 @@ func _make_sim(delta: float) -> IsakSim:
 ## deja de tocar el suelo (sin saltar). Al volver, el ultimo paso fue el
 ## primero en el aire.
 func _walk_off_edge(sim: IsakSim) -> void:
-	sim.isak.global_position.x = IsakSim.FLOOR_SIZE.x * 0.5 - EDGE_START_OFFSET_PX
+	sim.isak.global_position.x = IsakSim.FLOOR_SIZE.x * 0.5 - EDGE_START_OFFSET_TILES * sim.isak.physics.tile_size
 	sim.settle()
 	sim.input.move_axis = 1.0
 	sim.step_until(func() -> bool: return not sim.isak.is_on_floor())
@@ -100,7 +103,8 @@ func _measure_jump(sim: IsakSim) -> Dictionary:
 # --- Salto ---
 
 ## Integracion semi-implicita (v += g*dt; x += v*dt): la altura discreta queda
-## por debajo de la continua en ~|v0|*dt/2 (4 px a 60 Hz, 2 px a 120 Hz).
+## por debajo de la continua en ~|v0|*dt/2 (8 px a 60 Hz, 4 px a 120 Hz con
+## |v0| = 960 px/s).
 ## Tolerancia: un cuadro entero de subida a velocidad de despegue, |v0|*dt.
 func test_jump_reaches_jump_height_and_apex_time() -> void:
 	var heights: Array[float] = []
@@ -322,7 +326,7 @@ func _jump_gap(sim: IsakSim, gap_start: float, gap_end: float, run: bool) -> boo
 	assert_true(isak.is_on_floor(), "Debe saltar con los pies en el suelo")
 	assert_almost_eq(isak.velocity.x, speed, FLOAT_TOLERANCE, "Debe ir a velocidad maxima")
 	sim.press_jump()
-	sim.step_until(func() -> bool: return isak.is_on_floor() or isak.global_position.y > _body_rect("GroundB").end.y + 64.0, sim.steps_for(2.0))
+	sim.step_until(func() -> bool: return isak.is_on_floor() or isak.global_position.y > _body_rect("GroundB").end.y + 2.0 * isak.physics.tile_size, sim.steps_for(2.0))
 	gut.p("dt=%.4f hueco=%.0f px %s: x=%.1f (borde %.0f) suelo=%s" % [sim.delta, gap_end - gap_start,
 			"corriendo" if run else "caminando", isak.global_position.x, gap_end, isak.is_on_floor()])
 	return isak.is_on_floor() and isak.global_position.x > gap_end
@@ -354,7 +358,8 @@ func test_arena_isak_fits_under_low_platform() -> void:
 		var isak: Isak = sim.isak
 		var plat: Rect2 = _body_rect("PlatformLow")
 		var floor_y: float = _body_rect("GroundA").position.y
-		assert_gte(floor_y - plat.end.y, isak.hitbox_size.y + 8.0, "Hueco bajo PlatformLow con margen")
+		assert_gte(floor_y - plat.end.y, isak.hitbox_size.y + MARGIN_TILES * isak.physics.tile_size,
+				"Hueco bajo PlatformLow con margen")
 		_approach(sim, plat.position.x - isak.physics.tile_size, false)
 		var steps: int = sim.step_until(func() -> bool:
 				return isak.global_position.x > plat.end.x + isak.hitbox_size.x or not isak.is_on_floor())
@@ -367,18 +372,21 @@ func test_arena_isak_fits_under_low_platform() -> void:
 ## PlatformLow y los escalones de 1, 2 y 2,5 tiles se alcanzan con un salto
 ## caminando desde el suelo.
 func test_arena_platform_and_steps_are_reachable() -> void:
-	var expected_heights: Dictionary[String, float] = {
-		"PlatformLow": 64.0, "Step1": 32.0, "Step2": 64.0, "Step3": 80.0,
+	# Alturas en tiles; se pasan a px con tile_size de data/isak_physics.json.
+	var expected_tiles: Dictionary[String, float] = {
+		"PlatformLow": 2.0, "Step1": 1.0, "Step2": 2.0, "Step3": 2.5,
 	}
 	for delta: float in DELTAS:
 		var sim: IsakSim = await _make_arena_sim(delta)
 		var isak: Isak = sim.isak
 		var floor_y: float = _body_rect("GroundA").position.y
-		for target: String in expected_heights:
+		var tile: float = isak.physics.tile_size
+		for target: String in expected_tiles:
 			var rect: Rect2 = _body_rect(target)
-			assert_almost_eq(floor_y - rect.position.y, expected_heights[target], FLOAT_TOLERANCE,
+			var height: float = expected_tiles[target] * tile
+			assert_almost_eq(floor_y - rect.position.y, height, FLOAT_TOLERANCE,
 					"Altura de %s" % target)
-			assert_lt(expected_heights[target], isak.physics.jump_height_px - 8.0, "%s con margen" % target)
+			assert_lt(height, isak.physics.jump_height_px - MARGIN_TILES * tile, "%s con margen" % target)
 			_approach(sim, rect.position.x - 2.0 * isak.physics.tile_size, false)
 			sim.step_until(func() -> bool: return isak.global_position.x >= rect.position.x - isak.physics.tile_size)
 			sim.press_jump()

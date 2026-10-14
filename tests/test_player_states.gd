@@ -224,3 +224,18 @@ func test_terminal_animation_after_threshold_and_input_cuts_it() -> void:
 	_sim.step()
 	assert_false(_isak.is_terminal_playing(), "Cualquier input corta la terminal")
 	assert_eq(_isak.get_idle_time(), 0.0)
+
+
+## Escala 1280x720: cuadros de 128x128 con los pies en el origen de Isak y
+## capsula de colision apoyada en el suelo.
+func test_sprite_and_hitbox_feet_at_origin() -> void:
+	var sprite: AnimatedSprite2D = _isak.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	var frame: Texture2D = sprite.sprite_frames.get_frame_texture(sprite.animation, 0)
+	assert_eq(Vector2i(frame.get_size()), Vector2i(128, 128), "Canvas de Isak de 128x128")
+	assert_true(sprite.centered)
+	assert_eq(sprite.position + sprite.offset + Vector2(0.0, frame.get_height() * 0.5), Vector2.ZERO,
+			"El borde inferior del cuadro (pies) cae en el origen")
+	var hitbox: CollisionShape2D = _isak.get_node("Hitbox") as CollisionShape2D
+	var capsule: CapsuleShape2D = hitbox.shape as CapsuleShape2D
+	assert_eq(hitbox.position.y + capsule.height * 0.5, 0.0, "La capsula apoya en los pies")
+	assert_eq(Vector2(capsule.radius * 2.0, capsule.height), _isak.hitbox_size)

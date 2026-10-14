@@ -3,239 +3,239 @@
 [ext_resource type="Script" path="res://scripts/levels/test_arena.gd" id="1_arena"]
 [ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="2_isak"]
 
-[sub_resource type="RectangleShape2D" id="Shape_32x320"]
-size = Vector2(32, 320)
+[sub_resource type="RectangleShape2D" id="Shape_64x640"]
+size = Vector2(64, 640)
 
-[sub_resource type="RectangleShape2D" id="Shape_864x32"]
-size = Vector2(864, 32)
+[sub_resource type="RectangleShape2D" id="Shape_1728x64"]
+size = Vector2(1728, 64)
 
-[sub_resource type="RectangleShape2D" id="Shape_96x16"]
-size = Vector2(96, 16)
+[sub_resource type="RectangleShape2D" id="Shape_192x32"]
+size = Vector2(192, 32)
 
-[sub_resource type="RectangleShape2D" id="Shape_64x32"]
-size = Vector2(64, 32)
+[sub_resource type="RectangleShape2D" id="Shape_128x64"]
+size = Vector2(128, 64)
 
-[sub_resource type="RectangleShape2D" id="Shape_64x64"]
-size = Vector2(64, 64)
+[sub_resource type="RectangleShape2D" id="Shape_128x128"]
+size = Vector2(128, 128)
 
-[sub_resource type="RectangleShape2D" id="Shape_64x80"]
-size = Vector2(64, 80)
+[sub_resource type="RectangleShape2D" id="Shape_128x160"]
+size = Vector2(128, 160)
 
-[sub_resource type="RectangleShape2D" id="Shape_320x32"]
-size = Vector2(320, 32)
+[sub_resource type="RectangleShape2D" id="Shape_640x64"]
+size = Vector2(640, 64)
 
-[sub_resource type="RectangleShape2D" id="Shape_544x32"]
-size = Vector2(544, 32)
+[sub_resource type="RectangleShape2D" id="Shape_1088x64"]
+size = Vector2(1088, 64)
 
-[sub_resource type="RectangleShape2D" id="Shape_128x16"]
-size = Vector2(128, 16)
+[sub_resource type="RectangleShape2D" id="Shape_256x32"]
+size = Vector2(256, 32)
 
 [node name="TestArena" type="Node2D"]
 script = ExtResource("1_arena")
 
 [node name="Background" type="ColorRect" parent="."]
-offset_left = -320.0
-offset_top = -360.0
-offset_right = 2240.0
-offset_bottom = 720.0
+offset_left = -640.0
+offset_top = -720.0
+offset_right = 4480.0
+offset_bottom = 1440.0
 color = Color(0.08, 0.09, 0.12, 1)
 
 [node name="LeftWall" type="StaticBody2D" parent="."]
-position = Vector2(16, 160)
+position = Vector2(32, 320)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall"]
-shape = SubResource("Shape_32x320")
+shape = SubResource("Shape_64x640")
 
 [node name="Visual" type="ColorRect" parent="LeftWall"]
-offset_left = -16
-offset_top = -160
-offset_right = 16
-offset_bottom = 160
+offset_left = -32
+offset_top = -320
+offset_right = 32
+offset_bottom = 320
 color = Color(0.24, 0.27, 0.34, 1)
 
 [node name="GroundA" type="StaticBody2D" parent="."]
-position = Vector2(432, 336)
+position = Vector2(864, 672)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="GroundA"]
-shape = SubResource("Shape_864x32")
+shape = SubResource("Shape_1728x64")
 
 [node name="Visual" type="ColorRect" parent="GroundA"]
-offset_left = -432
-offset_top = -16
-offset_right = 432
-offset_bottom = 16
+offset_left = -864
+offset_top = -32
+offset_right = 864
+offset_bottom = 32
 color = Color(0.3, 0.34, 0.42, 1)
 
 [node name="PlatformLow" type="StaticBody2D" parent="."]
-position = Vector2(208, 264)
+position = Vector2(416, 528)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformLow"]
-shape = SubResource("Shape_96x16")
+shape = SubResource("Shape_192x32")
 
 [node name="Visual" type="ColorRect" parent="PlatformLow"]
-offset_left = -48
-offset_top = -8
-offset_right = 48
-offset_bottom = 8
+offset_left = -96
+offset_top = -16
+offset_right = 96
+offset_bottom = 16
 color = Color(0.3, 0.34, 0.42, 1)
 
 [node name="Step1" type="StaticBody2D" parent="."]
-position = Vector2(384, 304)
+position = Vector2(768, 608)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Step1"]
-shape = SubResource("Shape_64x32")
+shape = SubResource("Shape_128x64")
 
 [node name="Visual" type="ColorRect" parent="Step1"]
-offset_left = -32
-offset_top = -16
-offset_right = 32
-offset_bottom = 16
-color = Color(0.36, 0.42, 0.5, 1)
-
-[node name="Step2" type="StaticBody2D" parent="."]
-position = Vector2(544, 288)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Step2"]
-shape = SubResource("Shape_64x64")
-
-[node name="Visual" type="ColorRect" parent="Step2"]
-offset_left = -32
+offset_left = -64
 offset_top = -32
-offset_right = 32
+offset_right = 64
 offset_bottom = 32
 color = Color(0.36, 0.42, 0.5, 1)
 
+[node name="Step2" type="StaticBody2D" parent="."]
+position = Vector2(1088, 576)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step2"]
+shape = SubResource("Shape_128x128")
+
+[node name="Visual" type="ColorRect" parent="Step2"]
+offset_left = -64
+offset_top = -64
+offset_right = 64
+offset_bottom = 64
+color = Color(0.36, 0.42, 0.5, 1)
+
 [node name="Step3" type="StaticBody2D" parent="."]
-position = Vector2(704, 280)
+position = Vector2(1408, 560)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Step3"]
-shape = SubResource("Shape_64x80")
+shape = SubResource("Shape_128x160")
 
 [node name="Visual" type="ColorRect" parent="Step3"]
-offset_left = -32
-offset_top = -40
-offset_right = 32
-offset_bottom = 40
+offset_left = -64
+offset_top = -80
+offset_right = 64
+offset_bottom = 80
 color = Color(0.36, 0.42, 0.5, 1)
 
 [node name="GroundB" type="StaticBody2D" parent="."]
-position = Vector2(1088, 336)
+position = Vector2(2176, 672)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="GroundB"]
-shape = SubResource("Shape_320x32")
+shape = SubResource("Shape_640x64")
 
 [node name="Visual" type="ColorRect" parent="GroundB"]
-offset_left = -160
-offset_top = -16
-offset_right = 160
-offset_bottom = 16
+offset_left = -320
+offset_top = -32
+offset_right = 320
+offset_bottom = 32
 color = Color(0.3, 0.34, 0.42, 1)
 
 [node name="GroundC" type="StaticBody2D" parent="."]
-position = Vector2(1616, 336)
+position = Vector2(3232, 672)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="GroundC"]
-shape = SubResource("Shape_544x32")
+shape = SubResource("Shape_1088x64")
 
 [node name="Visual" type="ColorRect" parent="GroundC"]
-offset_left = -272
-offset_top = -16
-offset_right = 272
-offset_bottom = 16
+offset_left = -544
+offset_top = -32
+offset_right = 544
+offset_bottom = 32
 color = Color(0.3, 0.34, 0.42, 1)
 
 [node name="OneWayPlatform" type="StaticBody2D" parent="."]
-position = Vector2(1536, 264)
+position = Vector2(3072, 528)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="OneWayPlatform"]
-shape = SubResource("Shape_128x16")
+shape = SubResource("Shape_256x32")
 one_way_collision = true
 
 [node name="Visual" type="ColorRect" parent="OneWayPlatform"]
-offset_left = -64
-offset_top = -8
-offset_right = 64
-offset_bottom = 8
+offset_left = -128
+offset_top = -16
+offset_right = 128
+offset_bottom = 16
 color = Color(0.32, 0.55, 0.6, 1)
 
 [node name="Wall" type="StaticBody2D" parent="."]
-position = Vector2(1872, 160)
+position = Vector2(3744, 320)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Wall"]
-shape = SubResource("Shape_32x320")
+shape = SubResource("Shape_64x640")
 
 [node name="Visual" type="ColorRect" parent="Wall"]
-offset_left = -16
-offset_top = -160
-offset_right = 16
-offset_bottom = 160
+offset_left = -32
+offset_top = -320
+offset_right = 32
+offset_bottom = 320
 color = Color(0.24, 0.27, 0.34, 1)
 
 [node name="DebugSigns" type="Node2D" parent="."]
 
 [node name="PlatformLow" type="Label" parent="DebugSigns"]
-offset_left = 160.0
-offset_top = 224.0
+offset_left = 320.0
+offset_top = 448.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
-text = "bajo: 48 px libres
+theme_override_font_sizes/font_size = 16
+text = "bajo: 96 px libres
 encima: 2 tiles"
 
 [node name="Step1" type="Label" parent="DebugSigns"]
-offset_left = 352.0
-offset_top = 256.0
+offset_left = 704.0
+offset_top = 512.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "1 tile
-32 px"
-
-[node name="Step2" type="Label" parent="DebugSigns"]
-offset_left = 512.0
-offset_top = 224.0
-theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
-text = "2 tiles
 64 px"
 
-[node name="Step3" type="Label" parent="DebugSigns"]
-offset_left = 672.0
-offset_top = 208.0
+[node name="Step2" type="Label" parent="DebugSigns"]
+offset_left = 1024.0
+offset_top = 448.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
+text = "2 tiles
+128 px"
+
+[node name="Step3" type="Label" parent="DebugSigns"]
+offset_left = 1344.0
+offset_top = 416.0
+theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
+theme_override_font_sizes/font_size = 16
 text = "2,5 tiles
-80 px"
+160 px"
 
 [node name="Gap2" type="Label" parent="DebugSigns"]
-offset_left = 864.0
-offset_top = 288.0
+offset_left = 1728.0
+offset_top = 576.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "hueco 2 tiles
-64 px: caminando"
+128 px: caminando"
 
 [node name="Gap3" type="Label" parent="DebugSigns"]
-offset_left = 1248.0
-offset_top = 288.0
+offset_left = 2496.0
+offset_top = 576.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "hueco 3 tiles
-96 px: corriendo"
+192 px: corriendo"
 
 [node name="OneWay" type="Label" parent="DebugSigns"]
-offset_left = 1472.0
-offset_top = 224.0
+offset_left = 2944.0
+offset_top = 448.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "una via
 (salta desde abajo)"
 
 [node name="Wall" type="Label" parent="DebugSigns"]
-offset_left = 1760.0
-offset_top = 64.0
+offset_left = 3520.0
+offset_top = 128.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 16
 text = "pared"
 
 [node name="Isak" parent="." instance=ExtResource("2_isak")]
-position = Vector2(64, 320)
-camera_limits = Rect2i(0, 0, 1888, 360)
+position = Vector2(128, 640)
+camera_limits = Rect2i(0, 0, 3776, 720)
