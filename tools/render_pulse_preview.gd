@@ -12,7 +12,7 @@ const DEFAULT_OUT: String = "res://assets/sprites/effects/_pulse_wave_preview_x8
 ## Fondo oscuro neutro (outline de isak.gpl).
 const BACKGROUND: Color = Color8(22, 20, 28)
 ## Origen del celular respecto a los pies (igual que Isak.pulse_effect_origin).
-const PHONE: Vector2i = Vector2i(13, -35)
+const PHONE: Vector2i = Vector2i(26, -70)
 
 
 func _init() -> void:
@@ -36,9 +36,10 @@ func _init() -> void:
 	for i: int in count:
 		var origin := Vector2i((i % COLUMNS) * cell + MARGIN, (i / COLUMNS) * cell + MARGIN)
 		var center: Vector2i = origin + Vector2i(side >> 1, side >> 1)
-		# Isak: el sprite de 64x64 tiene los pies en (32, 64)
+		# Isak: los pies estan abajo y centrados en el canvas (128x128 -> (64, 128))
 		var feet: Vector2i = center - PHONE
-		sheet.blend_rect(isak, Rect2i(Vector2i.ZERO, isak.get_size()), feet - Vector2i(32, 64))
+		var feet_in_sprite := Vector2i(isak.get_width() >> 1, isak.get_height())
+		sheet.blend_rect(isak, Rect2i(Vector2i.ZERO, isak.get_size()), feet - feet_in_sprite)
 		var fx: Image = images[i].duplicate()
 		var alpha: float = PulseEffect.frame_alpha(i, count)
 		for y: int in side:

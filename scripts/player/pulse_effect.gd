@@ -1,15 +1,20 @@
 ## Efecto visual del pulso de datos: onda pixelada que nace del celular de
 ## Isak y crece hasta pulse_radius_px en pulse_duration_s. Solo presentacion.
 ## Los cuadros se rasterizan en Image (pixeles exactos, sin interpolacion) a
-## partir del radio, asi que el tamano escala si cambian los datos.
+## partir del radio, asi que el tamano escala si cambian los datos. Se dibujan
+## en pixeles de arte (PIXEL_SIZE px de pantalla cada uno, igual que el sprite
+## de Isak a 1280x720) y se amplian con vecino mas cercano.
 ## Avanza con advance(delta), que llama PulseState en cada paso de fisica.
 class_name PulseEffect
 extends Node2D
 
 ## Velocidad de los efectos (pixel-art-pipeline).
 const FPS: float = 24.0
-## Lado del lienzo: multiplo de este valor.
+## Lado del lienzo en pixeles de arte: multiplo de este valor.
 const CANVAS_STEP: int = 8
+## Px de pantalla por pixel de arte (sprites de Isak escalados x2 a 1280x720).
+## El grosor de la onda y los bits de datos se miden en pixeles de arte.
+const PIXEL_SIZE: int = 2
 ## Colores de assets/palettes/effects_pulse.gpl (PROPUESTA: cian del Mundo 1).
 const COLOR_CORE: Color = Color8(200, 250, 255)
 const COLOR_MID: Color = Color8(79, 227, 255)
@@ -87,7 +92,7 @@ func get_frame_count() -> int:
 	return _frames.size()
 
 
-## Lado del lienzo en px (multiplo de 8).
+## Lado del lienzo en px de pantalla (multiplo de 8 * PIXEL_SIZE).
 func get_canvas_size() -> int:
 	return canvas_size_for(radius_px)
 
@@ -104,15 +109,29 @@ static func frame_count_for(duration: float) -> int:
 
 
 static func canvas_size_for(radius: float) -> int:
-	var side: int = 2 * roundi(radius) + 2
+	return _art_canvas_size(_art_radius(radius)) * PIXEL_SIZE
+
+
+## Radio del anillo principal en px de pantalla en el cuadro `index` (sale
+## rapido y frena). Siempre multiplo de PIXEL_SIZE.
+static func ring_radius(radius: float, index: int, count: int) -> int:
+	return _art_ring_radius(_art_radius(radius), index, count) * PIXEL_SIZE
+
+
+## Radio en pixeles de arte.
+static func _art_radius(radius: float) -> float:
+	return radius / PIXEL_SIZE
+
+
+static func _art_canvas_size(art_radius: float) -> int:
+	var side: int = 2 * roundi(art_radius) + 2
 	return ceili(float(side) / CANVAS_STEP) * CANVAS_STEP
 
 
-## Radio del anillo principal en el cuadro `index` (sale rapido y frena).
-static func ring_radius(radius: float, index: int, count: int) -> int:
+static func _art_ring_radius(art_radius: float, index: int, count: int) -> int:
 	var t: float = float(index + 1) / float(count)
 	var eased: float = 1.0 - pow(1.0 - t, EASE_POWER)
-	return maxi(1, roundi(radius * eased))
+	return maxi(1, roundi(art_radius * eased))
 
 
 ## Opacidad del cuadro: fija hasta la mitad y luego baja en escalones.
@@ -142,13 +161,16 @@ static func build_images(radius: float, count: int) -> Array[Image]:
 	return images
 
 
-## Un cuadro opaco sobre fondo transparente; el centro es el pixel (c, c).
+## Un cuadro opaco sobre fondo transparente, en px de pantalla. Se dibuja en
+## pixeles de arte (centro en el pixel (c, c)) y se amplia x PIXEL_SIZE: el
+## pixel de arte central ocupa el bloque que empieza en (side / 2, side / 2).
 static func build_image(radius: float, index: int, count: int) -> Image:
-	var side: int = canvas_size_for(radius)
+	var art_radius: float = _art_radius(radius)
+	var side: int = _art_canvas_size(art_radius)
 	var c: int = side >> 1
 	var image := Image.create_empty(side, side, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0, 0, 0, 0))
-	var r: int = ring_radius(radius, index, count)
+	var r: int = _art_ring_radius(art_radius, index, count)
 	var trail: int = roundi(r * TRAIL_RATIO)
 	var spin: float = SPIN_DEG * index
 	for y: int in side:
@@ -160,6 +182,8 @@ static func build_image(radius: float, index: int, count: int) -> Image:
 			if color != null:
 				image.set_pixel(x, y, color)
 	_draw_spark(image, c, index)
+	if PIXEL_SIZE > 1:
+		image.resize(side * PIXEL_SIZE, side * PIXEL_SIZE, Image.INTERPOLATE_NEAREST)
 	return image
 
 
@@ -200,6 +224,7 @@ func _show_frame(index: int) -> void:
 	_frame = index
 	var side: int = get_canvas_size()
 	_sprite.texture = _frames[index]
-	# el pixel central del lienzo queda sobre el origen del nodo
+	# el pixel de arte central empieza en el origen del nodo (el celular),
+	# alineado con la rejilla de pixeles de arte del sprite de Isak
 	_sprite.position = -Vector2(side >> 1, side >> 1)
 	_sprite.modulate.a = frame_alpha(index, _frames.size())

@@ -33,10 +33,12 @@ const PULSE_EFFECT_SCENE: PackedScene = preload("res://scenes/player/pulse_effec
 @export_file("*.json") var abilities_path: String = PlayerAbilities.DEFAULT_PATH
 ## Segundos quieto antes de la animacion de terminal (propuesta, ajustar jugando).
 @export var terminal_idle_threshold_s: float = 4.0
-## Tamano de la caja de colision (ancho, alto). Los pies estan en el origen.
-@export var hitbox_size: Vector2 = Vector2(16.0, 40.0)
-## Posicion del celular en el cuadro de pulso, mirando a la derecha (px desde los pies).
-@export var pulse_effect_origin: Vector2 = Vector2(13.0, -35.0)
+## Tamano de la capsula de colision (ancho, alto) en px a 1280x720. Los pies
+## estan en el origen.
+@export var hitbox_size: Vector2 = Vector2(32.0, 80.0)
+## Posicion del celular en el cuadro de pulso, mirando a la derecha (px desde
+## los pies). La onda visual y PulseArea nacen aqui (ver get_pulse_origin()).
+@export var pulse_effect_origin: Vector2 = Vector2(26.0, -70.0)
 ## Limites de la camara en px. Sin area = sin limites.
 @export var camera_limits: Rect2i = Rect2i()
 
@@ -239,9 +241,16 @@ func is_terminal_playing() -> bool:
 
 # --- Pulso ---
 
+## Centro del pulso (celular) relativo a los pies, segun hacia donde mira Isak.
+## Lo comparten PulseArea (zona de golpe) y la onda visual.
+func get_pulse_origin() -> Vector2:
+	return Vector2(pulse_effect_origin.x * facing, pulse_effect_origin.y)
+
+
 func set_pulse_area_active(active: bool) -> void:
 	_pulse_shape.set_deferred(&"disabled", not active)
 	if active:
+		_pulse_area.position = get_pulse_origin()
 		pulse_fired.emit(_pulse_area)
 
 
@@ -250,7 +259,7 @@ func start_pulse_effect() -> void:
 	stop_pulse_effect()
 	_pulse_effect = PULSE_EFFECT_SCENE.instantiate() as PulseEffect
 	_pulse_effect.setup(abilities.pulse_radius_px, abilities.pulse_duration_s)
-	_pulse_effect.position = Vector2(pulse_effect_origin.x * facing, pulse_effect_origin.y)
+	_pulse_effect.position = get_pulse_origin()
 	add_child(_pulse_effect)
 
 
@@ -291,7 +300,7 @@ func _setup_shapes() -> void:
 	circle.radius = abilities.pulse_radius_px
 	_pulse_shape.shape = circle
 	_pulse_shape.disabled = true
-	_pulse_area.position = Vector2(0.0, -hitbox_size.y * 0.5)
+	_pulse_area.position = get_pulse_origin()
 
 
 func _setup_camera() -> void:

@@ -1,9 +1,9 @@
 {
-	"_notes": "propuesta, ajustar jugando. pulse_duration_s = 4 cuadros a 12 fps. pulse_radius_px: radio del area del pulso. hurt_*: retroceso breve e invulnerabilidad tras recibir dano. Unidades: px, s, px/s.",
+	"_notes": "propuesta, ajustar jugando. Escala 1280x720: distancias y velocidades en px x2 respecto a 640x360, tiempos sin cambio. pulse_duration_s = 4 cuadros a 12 fps. pulse_radius_px: radio del area del pulso, centrada en el celular de Isak (igual que la onda visual). hurt_*: retroceso breve e invulnerabilidad tras recibir dano. Unidades: px, s, px/s.",
 	"pulse_duration_s": 0.3333,
-	"pulse_radius_px": 48.0,
+	"pulse_radius_px": 96.0,
 	"hurt_duration_s": 0.3,
-	"hurt_knockback_x": 120.0,
-	"hurt_knockback_y": -180.0,
+	"hurt_knockback_x": 240.0,
+	"hurt_knockback_y": -360.0,
 	"hurt_invulnerability_s": 1.0
 }
