@@ -16,13 +16,29 @@ signal hurt
 ## Isak ha muerto.
 signal died
 
+## Nombres de animacion de scenes/player/isak_frames.tres (los fija
+## tools/build_isak_frames.gd, con sus fps).
 const ANIM_IDLE: StringName = &"idle"
-const ANIM_TERMINAL: StringName = &"terminal"
+const ANIM_TERMINAL_INTRO: StringName = &"terminal_intro"
+const ANIM_TERMINAL_LOOP: StringName = &"terminal_loop"
+const ANIM_TERMINAL_OUTRO: StringName = &"terminal_outro"
 const ANIM_WALK: StringName = &"walk"
 const ANIM_RUN: StringName = &"run"
 const ANIM_JUMP_RISE: StringName = &"jump_rise"
+const ANIM_JUMP_APEX: StringName = &"jump_apex"
 const ANIM_JUMP_FALL: StringName = &"jump_fall"
+const ANIM_JUMP_LAND: StringName = &"jump_land"
 const ANIM_PULSE: StringName = &"pulse"
+const ANIM_HURT: StringName = &"hurt"
+const ANIM_DEATH: StringName = &"death"
+## Cuadro de la animacion de pulso en el que nace la onda (celular al frente).
+const PULSE_WAVE_FRAME: int = 0
+## Velocidad vertical (px/s, valor absoluto) por debajo de la cual se muestra el
+## apogeo del salto; por encima, subida o caida. Solo visual.
+const AIR_APEX_SPEED: float = 240.0
+## Parpadeo durante la invulnerabilidad: periodo (s) y opacidad del medio ciclo apagado.
+const BLINK_PERIOD_S: float = 0.12
+const BLINK_ALPHA: float = 0.35
 
 ## Evita bucles si dos estados se devolvieran el control en el mismo paso.
 const MAX_TRANSITIONS_PER_STEP: int = 4
@@ -38,7 +54,8 @@ const PULSE_EFFECT_SCENE: PackedScene = preload("res://scenes/player/pulse_effec
 @export var hitbox_size: Vector2 = Vector2(32.0, 80.0)
 ## Posicion del celular en el cuadro de pulso, mirando a la derecha (px desde
 ## los pies). La onda visual y PulseArea nacen aqui (ver get_pulse_origin()).
-@export var pulse_effect_origin: Vector2 = Vector2(26.0, -70.0)
+## Medido en isak_pulse_00.png (brazo extendido): celular en (36, -56).
+@export var pulse_effect_origin: Vector2 = Vector2(36.0, -56.0)
 ## Limites de la camara en px. Sin area = sin limites.
 @export var camera_limits: Rect2i = Rect2i()
 
@@ -58,6 +75,8 @@ var _invulnerable_left: float = 0.0
 var _idle_time: float = 0.0
 var _terminal_playing: bool = false
 var _knockback_direction: float = 0.0
+## El ultimo cambio de estado fue un aterrizaje (Fall -> Idle).
+var _landed: bool = false
 var _ready_ok: bool = false
 var _pulse_effect: PulseEffect
 
@@ -89,6 +108,7 @@ func _ready() -> void:
 		PlayerState.DEAD: DeadState.new(self),
 	}
 	EventBus.sync_rate_changed.connect(_on_sync_rate_changed)
+	_sprite.animation_finished.connect(_on_animation_finished)
 	_ready_ok = true
 	change_state(PlayerState.IDLE)
 
@@ -111,6 +131,7 @@ func step(delta: float) -> void:
 	_state.physics_update(delta)
 	move_and_slide()
 	_update_coyote(delta)
+	_update_blink()
 
 
 func change_state(state_name: StringName) -> void:
@@ -122,6 +143,7 @@ func change_state(state_name: StringName) -> void:
 		_state.exit()
 	_state = _states[state_name]
 	_state_name = state_name
+	_landed = previous == PlayerState.FALL and state_name == PlayerState.IDLE
 	_state.enter()
 	state_changed.emit(previous, state_name)
 
@@ -154,6 +176,11 @@ func is_dead() -> bool:
 
 func is_invulnerable() -> bool:
 	return _invulnerable_left > 0.0
+
+
+## Verdadero si se acaba de entrar en Idle aterrizando (lo usa IdleState).
+func just_landed() -> bool:
+	return _landed
 
 
 # --- Fisica comun ---
@@ -226,7 +253,7 @@ func add_idle_time(delta: float) -> void:
 	_idle_time += delta
 	if not _terminal_playing and _idle_time >= terminal_idle_threshold_s:
 		_terminal_playing = true
-		play_animation(ANIM_TERMINAL)
+		play_animation(ANIM_TERMINAL_INTRO)
 		idle_terminal_started.emit()
 
 
@@ -237,6 +264,18 @@ func reset_idle_time() -> void:
 
 func is_terminal_playing() -> bool:
 	return _terminal_playing
+
+
+## Corta la terminal por input sin cambiar de estado: si el holograma estaba a
+## la vista, reproduce la salida y luego vuelve a idle. Reinicia el tiempo quieto.
+func cut_terminal() -> void:
+	if _terminal_playing:
+		var anim: StringName = _sprite.animation
+		if anim == ANIM_TERMINAL_INTRO or anim == ANIM_TERMINAL_LOOP:
+			play_animation(ANIM_TERMINAL_OUTRO)
+		else:
+			play_animation(ANIM_IDLE)
+	reset_idle_time()
 
 
 # --- Pulso ---
@@ -290,6 +329,51 @@ func play_animation(anim: StringName) -> void:
 		_sprite.play(anim)
 
 
+## Reproduce `anim` desde el cuadro 0 aunque ya fuera la animacion actual
+## (acciones de un solo uso: pulso, golpe, muerte).
+func restart_animation(anim: StringName) -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	if frames == null or not frames.has_animation(anim):
+		return
+	_sprite.play(anim)
+	_sprite.set_frame_and_progress(0, 0.0)
+
+
+## Animacion actual del sprite (para pruebas y depuracion).
+func get_animation() -> StringName:
+	return _sprite.animation
+
+
+## Cuadro actual de la animacion del sprite.
+func get_animation_frame() -> int:
+	return _sprite.frame
+
+
+## En el aire: subida, apogeo o caida segun velocity.y, y el cuadro dentro de
+## cada fase segun la velocidad (no por tiempo). Lo llaman JumpState y FallState.
+func update_air_animation() -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	if frames == null:
+		return
+	var vy: float = velocity.y
+	var anim: StringName = ANIM_JUMP_APEX
+	var t: float = (vy + AIR_APEX_SPEED) / (2.0 * AIR_APEX_SPEED)
+	if vy < -AIR_APEX_SPEED:
+		anim = ANIM_JUMP_RISE
+		t = inverse_lerp(physics.jump_velocity, -AIR_APEX_SPEED, vy)
+	elif vy > AIR_APEX_SPEED:
+		anim = ANIM_JUMP_FALL
+		t = inverse_lerp(AIR_APEX_SPEED, -physics.jump_velocity, vy)
+	if not frames.has_animation(anim):
+		return
+	var count: int = frames.get_frame_count(anim)
+	var index: int = clampi(floori(clampf(t, 0.0, 1.0) * count), 0, count - 1)
+	if _sprite.animation != anim:
+		_sprite.animation = anim
+	_sprite.pause()
+	_sprite.frame = index
+
+
 func _setup_shapes() -> void:
 	var capsule := CapsuleShape2D.new()
 	capsule.radius = hitbox_size.x * 0.5
@@ -318,6 +402,25 @@ func _update_timers(delta: float) -> void:
 	else:
 		_jump_buffer_left = maxf(_jump_buffer_left - delta, 0.0)
 	_invulnerable_left = maxf(_invulnerable_left - delta, 0.0)
+
+
+## Parpadeo mientras dura la invulnerabilidad tras un golpe (no al morir).
+func _update_blink() -> void:
+	var dim: bool = is_invulnerable() and not is_dead() \
+			and fmod(_invulnerable_left, BLINK_PERIOD_S) < BLINK_PERIOD_S * 0.5
+	_sprite.modulate.a = BLINK_ALPHA if dim else 1.0
+
+
+func _on_animation_finished() -> void:
+	if _state_name != PlayerState.IDLE:
+		return
+	match _sprite.animation:
+		ANIM_TERMINAL_INTRO:
+			if _terminal_playing:
+				play_animation(ANIM_TERMINAL_LOOP)
+		ANIM_TERMINAL_OUTRO, ANIM_JUMP_LAND:
+			if not _terminal_playing:
+				play_animation(ANIM_IDLE)
 
 
 func _update_coyote(delta: float) -> void:

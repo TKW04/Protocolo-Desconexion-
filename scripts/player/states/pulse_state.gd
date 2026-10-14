@@ -8,7 +8,7 @@ var _time_left: float = 0.0
 
 func enter() -> void:
 	_time_left = isak.abilities.pulse_duration_s
-	isak.play_animation(Isak.ANIM_PULSE)
+	isak.restart_animation(Isak.ANIM_PULSE)
 	isak.set_pulse_area_active(true)
 	isak.start_pulse_effect()
 

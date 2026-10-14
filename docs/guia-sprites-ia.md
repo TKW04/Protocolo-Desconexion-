@@ -910,3 +910,21 @@ Después de importar, revisa la vista previa ampliada (guía cian = centro, mage
 ## Nota: entrega en carpeta (spritesheet.png + atlas.json + frames/)
 
 Algunas herramientas entregan una carpeta por estado (p. ej. `hojas/walk_right/`) con `spritesheet.png` (rejilla regular), `atlas.json` y `frames/0001.png...`. Basta importar `spritesheet.png` con `--cols`/`--rows` de la rejilla; `atlas.json` y `frames/` no se usan. Las hojas fuente viven en `hojas/` (con `.gdignore` para que Godot no las importe). Si el suelo de la hoja varía de un cuadro a otro (ciclos de paso), usa `--align ground`: mantiene el desplazamiento horizontal de la referencia y apoya la planta de cada cuadro en la línea base. Para que dos estados midan lo mismo, elige en cada hoja una `--ref-frame` con la misma altura en px de origen.
+
+## Cómo quedaron integradas las hojas
+
+Hojas del usuario en `hojas/` (5x5 cuadros de 256 px salvo la terminal). Escala común **0,5393** (96/178: Isak de pie mide 178-179 px en todas las hojas 5x5) con `--scale 0.539326`; todas con `--align ground` (pies en la fila base del canvas 128x128). Las celdas se indican con `--cells` (índices en orden de lectura desde 0). fps y bucles: `tools/build_isak_frames.gd`.
+
+| Animación | Celdas de origen | Cuadros | fps | Notas |
+|---|---|---|---|---|
+| run | 0-24 (`--anchor-x 141`) | 25 | 20 | 8 pasos por vuelta de ~57 px: ~453 px a 360 px/s, patina ~1 %. |
+| jump_rise / jump_apex / jump_fall | 3-5 / 6-8 / 9-11 | 3 / 3 / 3 | — | El cuadro lo elige `velocity.y` (apogeo con \|vy\| < 240 px/s). La anticipación (0-2) se descarta: el salto sigue siendo instantáneo. |
+| jump_land | 13, 15, 17, 18, 19 | 5 | 24 | Solo al aterrizar en Idle; no bloquea el control. |
+| pulse | 14-20, 22 | 8 | 24 | 0,333 s = `pulse_duration_s`. El cuadro 0 ya tiene el celular al frente, cuando nace la onda; `pulse_effect_origin` (26, -70) → (36, -56). Se descartan 6-13 (onda y tinte azul dibujados). |
+| hurt | 6, 7, 9, 11, 13, 14, 15 | 7 | 24 | 0,29 s dentro de `hurt_duration_s`. Se descartan 4-5 (destello rojo dibujado). Parpadeo de invulnerabilidad en el juego. |
+| death | 2-19, 24 | 19 | 12 | Una vez y queda en el último cuadro. La hoja termina con Isak tumbado (el diseño dice que no cae): se usa como la entregó el usuario. |
+| terminal_intro / loop / outro | ver abajo | 8 / 24 / 8 | 12 | Bucle en ping-pong (sin archivos extra). |
+
+Terminal (`Isak-terminal_holografica-v1.png`, 1280x1280): 20 columnas x 15 filas de ~64x85,3 px (300 celdas, bordes redondeados). Las 3 filas de cada banda de 256 px son variantes casi iguales del mismo instante; la secuencia real son 100 instantes (banda x 20 + columna). Se usa la primera fila de cada banda, uno de cada dos instantes: intro = instantes 12-27 (levanta la mano y aparece el holograma), bucle = 28-74, salida = 76-90 (el holograma se apaga y baja la mano). Escala 1,2 (Isak mide 80 px en la celda): se nota algo más blando que el resto.
+
+Revisión visual: `Godot --headless --path . -s tools/render_isak_mosaic.gd -- mosaico.png [anim,anim]`.

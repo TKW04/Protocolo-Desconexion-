@@ -5,6 +5,8 @@ extends PlayerState
 
 func enter() -> void:
 	isak.set_pulse_area_active(false)
+	# Una sola vez (sin bucle): se queda en el ultimo cuadro.
+	isak.restart_animation(Isak.ANIM_DEATH)
 	isak.notify_died()
 
 

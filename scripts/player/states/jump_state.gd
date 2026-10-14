@@ -6,7 +6,7 @@ extends PlayerState
 
 func enter() -> void:
 	isak.start_jump()
-	isak.play_animation(Isak.ANIM_JUMP_RISE)
+	isak.update_air_animation()
 
 
 func get_transition() -> StringName:
@@ -18,3 +18,4 @@ func get_transition() -> StringName:
 func physics_update(delta: float) -> void:
 	isak.apply_horizontal(isak.input.move_axis, delta)
 	isak.apply_gravity(delta)
+	isak.update_air_animation()

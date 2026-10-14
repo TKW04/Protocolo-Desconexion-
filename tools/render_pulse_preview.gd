@@ -7,12 +7,12 @@ extends SceneTree
 const SCALE: int = 8
 const COLUMNS: int = 4
 const MARGIN: int = 8
-const ISAK_FRAME: String = "res://assets/sprites/isak/isak_pulse_02_placeholder.png"
+const ISAK_FRAME: String = "res://assets/sprites/isak/isak_pulse_00.png"
 const DEFAULT_OUT: String = "res://assets/sprites/effects/_pulse_wave_preview_x8.png"
 ## Fondo oscuro neutro (outline de isak.gpl).
 const BACKGROUND: Color = Color8(22, 20, 28)
 ## Origen del celular respecto a los pies (igual que Isak.pulse_effect_origin).
-const PHONE: Vector2i = Vector2i(26, -70)
+const PHONE: Vector2i = Vector2i(36, -56)
 
 
 func _init() -> void:

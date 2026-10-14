@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Valida sprites de animacion contra una paleta GIMP (.gpl).
+"""Valida los sprites de animacion importados (tools/import_sheet.py).
 
 Comprueba en cada PNG cuyo nombre no empiece por '_' ni contenga '_sheet':
-  - nombre con patron <entidad>_<anim>_<NN>(_placeholder).png
+  - nombre con patron <entidad>_<anim>_<NN>.png (anim puede llevar '_',
+    p. ej. isak_jump_rise_00.png); ya no hay *_placeholder.png
   - tamano (por defecto DEFAULT_SIZE, 128x128: canvas de Isak a 1280x720)
   - sin alfa parcial (cada pixel es opaco o transparente)
   - fondo transparente (las cuatro esquinas con alfa 0)
-  - solo colores de la paleta, pero solo en los *_placeholder.png; el arte
-    importado de hojas generadas con IA (sin sufijo) tiene paleta libre
+  - pies en la fila base: el pixel opaco mas bajo esta en la ultima fila
+  - en las animaciones de pie (STANDING_ANIMS) la altura visible esta en
+    TARGET_HEIGHT +/- HEIGHT_TOL
+La paleta del arte importado es libre (hojas generadas con IA): --palette solo
+se usa si se pide con --check-palette.
 
 Uso:
-    python3 tools/validate_sprites.py [DIR] [--palette GPL] [--size WxH]
-Por defecto: assets/sprites/isak con assets/palettes/isak.gpl y 128x128.
+    python3 tools/validate_sprites.py [DIR] [--size WxH] [--check-palette GPL]
+Por defecto: assets/sprites/isak y 128x128.
 --size acepta WxH o un solo numero para lienzos cuadrados (p. ej. --size 64).
 Devuelve 0 si todo es correcto y 1 si hay algun fallo.
 """
@@ -26,7 +30,12 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ## Tamano esperado del canvas por defecto (Isak: 128x128 a 1280x720).
 DEFAULT_SIZE = "128x128"
-NAME_RE = re.compile(r"^[a-z0-9]+_[a-z0-9]+_\d{2}(_placeholder)?\.png$")
+NAME_RE = re.compile(r"^[a-z0-9]+_[a-z0-9]+(_[a-z0-9]+)*_\d{2}\.png$")
+## Altura visible de Isak de pie (px) y tolerancia.
+TARGET_HEIGHT = 96
+HEIGHT_TOL = 4
+## Animaciones en las que Isak esta de pie en todos los cuadros.
+STANDING_ANIMS = ("idle", "terminal_intro", "terminal_loop", "terminal_outro")
 
 
 def load_gpl(path):
@@ -45,11 +54,16 @@ def load_gpl(path):
     return colors
 
 
+def anim_of(name):
+    """isak_jump_rise_00.png -> 'jump_rise'."""
+    return name[:-4].split("_", 1)[1].rsplit("_", 1)[0] if name.count("_") >= 2 else ""
+
+
 def check(path, palette, size):
     errors = []
     name = os.path.basename(path)
     if not NAME_RE.match(name):
-        errors.append("nombre no cumple <entidad>_<anim>_<NN>(_placeholder).png")
+        errors.append("nombre no cumple <entidad>_<anim>_<NN>.png")
     img = Image.open(path).convert("RGBA")
     if img.size != size:
         errors.append(f"tamano {img.size[0]}x{img.size[1]}, se esperaba {size[0]}x{size[1]}")
@@ -58,7 +72,15 @@ def check(path, palette, size):
         if img.getpixel((x, y))[3] != 0:
             errors.append(f"fondo no transparente en la esquina ({x},{y})")
             break
-    check_palette = name.endswith("_placeholder.png")
+    check_palette = palette is not None
+    bb = img.getchannel("A").point(lambda v: 255 if v else 0).getbbox()
+    if not bb:
+        errors.append("cuadro vacio")
+    else:
+        if bb[3] != h:
+            errors.append(f"pies en la fila {bb[3] - 1}, se esperaba la fila base {h - 1}")
+        if anim_of(name) in STANDING_ANIMS and abs((bb[3] - bb[1]) - TARGET_HEIGHT) > HEIGHT_TOL:
+            errors.append(f"altura de pie {bb[3] - bb[1]} px fuera de {TARGET_HEIGHT} +/- {HEIGHT_TOL}")
     bad = set()
     partial = 0
     for r, g, b, a in img.getdata():
@@ -79,7 +101,8 @@ def check(path, palette, size):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("dir", nargs="?", default=os.path.join(ROOT, "assets", "sprites", "isak"))
-    ap.add_argument("--palette", default=os.path.join(ROOT, "assets", "palettes", "isak.gpl"))
+    ap.add_argument("--check-palette", metavar="GPL",
+                    help="exige que los colores opacos esten en esta paleta GIMP (desactivado por defecto)")
     ap.add_argument("--size", default=DEFAULT_SIZE, help="tamano esperado WxH o N (por defecto %(default)s)")
     args = ap.parse_args()
 
@@ -91,11 +114,13 @@ def main():
     except ValueError:
         print(f"ERROR: --size invalido '{args.size}' (usa WxH o N)")
         return 1
-    try:
-        palette = load_gpl(args.palette)
-    except (OSError, ValueError) as e:
-        print(f"ERROR paleta: {e}")
-        return 1
+    palette = None
+    if args.check_palette:
+        try:
+            palette = load_gpl(args.check_palette)
+        except (OSError, ValueError) as e:
+            print(f"ERROR paleta: {e}")
+            return 1
 
     files = sorted(
         f for f in os.listdir(args.dir)
@@ -106,15 +131,19 @@ def main():
         return 1
 
     failed = 0
-    imported = sum(1 for f in files if not f.endswith("_placeholder.png"))
+    placeholders = [f for f in files if "_placeholder" in f]
+    for f in placeholders:
+        print(f"FALLO {f}: quedan placeholders; el arte importado los sustituye")
+    failed += len(placeholders)
     for f in files:
         errs = check(os.path.join(args.dir, f), palette, size)
         if errs:
             failed += 1
             for e in errs:
                 print(f"FALLO {f}: {e}")
-    print(f"{len(files) - failed}/{len(files)} sprites validos ({len(palette)} colores en paleta; "
-          f"{imported} importados sin comprobar paleta)")
+    anims = sorted({anim_of(f) for f in files})
+    print(f"{len(files) - failed}/{len(files)} sprites validos en {len(anims)} animaciones "
+          f"({', '.join(anims)}); paleta {'comprobada' if palette else 'libre'}")
     return 1 if failed else 0
 
 
