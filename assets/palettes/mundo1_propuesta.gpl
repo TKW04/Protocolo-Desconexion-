@@ -1,0 +1,40 @@
+GIMP Palette
+Name: Mundo 1 Notificaciones - Variante B (recomendada) - Noche con resplandor de pantalla (PROPUESTA, pendiente de aprobacion)
+Columns: 4
+# Paleta del Mundo 1 (paso 10). Hex PROPUESTOS, no aprobados: no usar en assets.
+# 16 colores del mundo + debug_cian aparte (ultima fila).
+# Generado por tools/palette_mundo1_preview.py
+# noche_profunda: Cielo superior, fondo del HUD/UI, contorno oscuro
+ 11  14  26	noche_profunda
+# cielo: Fondo lejano (cielo nocturno, más claro)
+ 28  42  88	cielo
+# fondo_medio: Fondo medio: siluetas de relojes/pantalla de bloqueo
+ 46  70 136	fondo_medio
+# resplandor: Resplandor de pantalla tras la zona de juego
+ 79 113 196	resplandor
+# tile_sombra: Tile sólido: sombra/interior profundo
+ 12  16  34	tile_sombra
+# tile_base: Tile sólido: base (más oscuro que el fondo)
+ 26  33  56	tile_base
+# tile_luz: Tile sólido: luz/bisel
+ 52  63 102	tile_luz
+# borde_luz: Borde superior de tiles y plataforma de una vía
+155 176 232	borde_luz
+# banner_blanco: Banners/pop-ups, texto del HUD, brillo de borde
+242 244 248	banner_blanco
+# banner_gris: Sombra de banners, metal de pinchos
+174 184 210	banner_gris
+# alerta: Rojo anaranjado: burbujas de alerta, badges, puntas de pinchos, daño
+255  74  42	alerta
+# alerta_sombra: Sombra/contorno de lo rojo anaranjado
+163  34  28	alerta_sombra
+# carmin: Punto débil del jefe (carmín puro, solo con Debug)
+224   0  74	carmin
+# carmin_brillo: Pulso/brillo del punto débil
+255  90 140	carmin_brillo
+# ambar: Puntos de atención, icono del HUD (ámbar: sigue dorado bajo el tinte cian)
+255 160   0	ambar
+# ambar_sombra: Sombra de los puntos de atención
+168  95   0	ambar_sombra
+# debug_cian: Color del Debug (tinte, contornos de plataformas ocultas). Aparte de los 16.
+ 79 227 255	debug_cian
