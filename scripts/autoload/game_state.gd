@@ -5,8 +5,10 @@
 # - Puntos de atención (la moneda).
 # - Fragmentos recuperados y nivel actual.
 # - Habilidades desbloqueadas (se desbloquean por mundo).
+# - Mundo actual y el ajuste de accesibilidad de Sync Rate bajo.
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
-# No contiene reglas de juego: quién gasta, cura o desbloquea vive en otros scripts.
+# Apenas contiene reglas de juego (solo la recarga de energía por punto de
+# atención, A10): quién gasta, cura o desbloquea vive en otros scripts.
 extends Node
 
 const SYNC_RATE_MAX: float = 100.0
@@ -17,6 +19,10 @@ const DEBUG_ENERGY_MIN: float = 0.0
 const ATTENTION_POINTS_MIN: int = 0
 const FRAGMENTS_MIN: int = 0
 const NO_LEVEL: StringName = &""
+const FIRST_WORLD: int = 1
+const LAST_WORLD: int = 6
+## Energia que repone cada punto de atencion recogido (A10, aprobado).
+const ENERGY_PER_ATTENTION_POINT: float = 10.0
 
 const ABILITY_PULSE: StringName = &"pulse"
 const ABILITY_DEBUG: StringName = &"debug"
@@ -37,6 +43,7 @@ var sync_rate: float = SYNC_RATE_MAX:
 	set(value):
 		sync_rate = clampf(value, SYNC_RATE_MIN, SYNC_RATE_MAX)
 		EventBus.sync_rate_changed.emit(sync_rate, SYNC_RATE_MAX)
+		_update_low_sync()
 
 var debug_energy: float = DEBUG_ENERGY_MAX:
 	set(value):
@@ -54,7 +61,57 @@ var fragments_recovered: int = FRAGMENTS_MIN:
 
 var current_level: StringName = NO_LEVEL
 
+## Mundo actual (1-6). Decide el color del Debug.
+var current_world: int = FIRST_WORLD:
+	set(value):
+		current_world = clampi(value, FIRST_WORLD, LAST_WORLD)
+		EventBus.world_changed.emit(current_world)
+
+## Ajuste de accesibilidad (docs 3.3 y 15.6): reducir el ruido y la distorsion
+## de Sync Rate bajo. Aun no se guarda en disco (no hay menu de opciones).
+var reduce_low_sync_effects: bool = false:
+	set(value):
+		reduce_low_sync_effects = value
+		EventBus.reduce_low_sync_effects_changed.emit(value)
+
+## Umbral (en % de Sync Rate) del estado de Sync Rate bajo; de data/hud.json.
+var low_sync_threshold: float = HudConfig.shared().low_sync_threshold
+
+var _is_sync_low: bool = false
+
 var abilities_unlocked: Dictionary[StringName, bool] = _build_locked_abilities()
+
+
+func _ready() -> void:
+	EventBus.state_refresh_requested.connect(emit_state)
+
+
+## Sync Rate bajo: por debajo del umbral (estrictamente menor, docs: "menor al 20%").
+func is_sync_low() -> bool:
+	return _is_sync_low
+
+
+## Resta Sync Rate (dano de prueba de la arena; el dano real llega en el paso 9).
+func apply_sync_damage(amount: float) -> void:
+	sync_rate -= maxf(amount, 0.0)
+
+
+## Suma puntos de atencion; cada uno repone energia de Debug (A10).
+func add_attention_points(amount: int) -> void:
+	if amount <= 0:
+		return
+	attention_points += amount
+	debug_energy += amount * ENERGY_PER_ATTENTION_POINT
+
+
+## Reemite todo el estado que muestra el HUD (al aparecer un HUD nuevo).
+func emit_state() -> void:
+	EventBus.world_changed.emit(current_world)
+	EventBus.reduce_low_sync_effects_changed.emit(reduce_low_sync_effects)
+	EventBus.sync_rate_changed.emit(sync_rate, SYNC_RATE_MAX)
+	EventBus.energy_changed.emit(debug_energy, DEBUG_ENERGY_MAX)
+	EventBus.attention_points_changed.emit(attention_points)
+	EventBus.low_sync_changed.emit(_is_sync_low)
 
 
 func is_ability_unlocked(ability: StringName) -> bool:
@@ -69,6 +126,14 @@ func set_ability_unlocked(ability: StringName, unlocked: bool) -> void:
 		return
 	abilities_unlocked[ability] = unlocked
 	EventBus.ability_unlock_changed.emit(ability, unlocked)
+
+
+func _update_low_sync() -> void:
+	var low: bool = sync_rate < low_sync_threshold
+	if low == _is_sync_low:
+		return
+	_is_sync_low = low
+	EventBus.low_sync_changed.emit(low)
 
 
 func _build_locked_abilities() -> Dictionary[StringName, bool]:
