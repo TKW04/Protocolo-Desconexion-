@@ -9,7 +9,7 @@ extends Node2D
 ## Ayudas de depuracion en pantalla (estado, velocidad, tipo del ultimo salto
 ## y carteles de medidas). Solo para esta escena de pruebas; no es el HUD.
 const DEBUG_OVERLAY: bool = true
-## Teclas de depuracion del HUD (acciones debug_* del Input Map: F1-F4).
+## Teclas de depuracion del HUD (acciones hud_debug_* del Input Map: F1-F4).
 ## Solo en esta escena; ponlo a false para desactivarlas.
 const DEBUG_HUD_KEYS: bool = true
 ## Cambios que aplican las teclas de depuracion del HUD.
@@ -51,13 +51,13 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not DEBUG_HUD_KEYS:
 		return
-	if event.is_action_pressed(&"debug_sync_down"):
+	if event.is_action_pressed(&"hud_debug_sync_down"):
 		apply_test_damage(DEBUG_SYNC_STEP)
-	elif event.is_action_pressed(&"debug_sync_up"):
+	elif event.is_action_pressed(&"hud_debug_sync_up"):
 		GameState.sync_rate += DEBUG_SYNC_STEP
-	elif event.is_action_pressed(&"debug_energy_down"):
+	elif event.is_action_pressed(&"hud_debug_energy_down"):
 		GameState.debug_energy -= DEBUG_ENERGY_STEP
-	elif event.is_action_pressed(&"debug_attention_add"):
+	elif event.is_action_pressed(&"hud_debug_attention_add"):
 		GameState.add_attention_points(DEBUG_ATTENTION_STEP)
 	else:
 		return

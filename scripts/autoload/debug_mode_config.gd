@@ -1,0 +1,54 @@
+## Ajustes del Debug Mode leidos de data/debug_mode.json (consumo, escala de
+## tiempo del mundo, transiciones, tinte, vineta y plataformas ocultas).
+## La logica (DebugMode, DebugOverlay, HiddenPlatform) no tiene numeros sueltos.
+class_name DebugModeConfig
+extends RefCounted
+
+const DEFAULT_PATH: String = "res://data/debug_mode.json"
+
+var world_time_scale: float = 0.5
+var drain_per_second: float = 20.0
+var fade_in_s: float = 0.15
+var fade_out_s: float = 0.25
+var tint_strength: float = 0.25
+var vignette_size: float = 0.15
+var vignette_strength: float = 0.55
+var hidden_outline_width_px: int = 2
+var hidden_fill_alpha: float = 0.18
+var high_contrast_outline_width_px: int = 4
+var high_contrast_lighten: float = 0.6
+var hidden_platforms_solid_only_in_debug: bool = true
+
+static var _cached: DebugModeConfig
+
+
+## Config compartida (se lee una vez).
+static func shared() -> DebugModeConfig:
+	if _cached == null:
+		_cached = load_from_file()
+		if _cached == null:
+			_cached = DebugModeConfig.new()
+	return _cached
+
+
+static func load_from_file(path: String = DEFAULT_PATH) -> DebugModeConfig:
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not data is Dictionary:
+		push_error("DebugModeConfig: no se pudo leer '%s'" % path)
+		return null
+	var config := DebugModeConfig.new()
+	var dict: Dictionary = data
+	for key: String in dict:
+		if key.begins_with("_"):
+			continue
+		if not key in config:
+			push_error("DebugModeConfig: clave desconocida '%s'" % key)
+			continue
+		var current: Variant = config.get(key)
+		if current is bool:
+			config.set(key, bool(dict[key]))
+		elif current is int:
+			config.set(key, int(dict[key]))
+		else:
+			config.set(key, float(dict[key]))
+	return config

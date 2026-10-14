@@ -5,7 +5,9 @@
 # - Puntos de atención (la moneda).
 # - Fragmentos recuperados y nivel actual.
 # - Habilidades desbloqueadas (se desbloquean por mundo).
-# - Mundo actual y el ajuste de accesibilidad de Sync Rate bajo.
+# - Mundo actual y los ajustes de accesibilidad (Sync Rate bajo, contorno del Debug).
+# - Escala de tiempo del mundo (world_time_scale): la fija DebugMode y la leen
+#   los objetos del mundo con WorldTime.scaled_delta() (Isak y el HUD no).
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
 # Apenas contiene reglas de juego (solo la recarga de energía por punto de
 # atención, A10): quién gasta, cura o desbloquea vive en otros scripts.
@@ -21,6 +23,8 @@ const FRAGMENTS_MIN: int = 0
 const NO_LEVEL: StringName = &""
 const FIRST_WORLD: int = 1
 const LAST_WORLD: int = 6
+## Escala de tiempo del mundo sin Debug (ver WorldTime).
+const WORLD_TIME_SCALE_NORMAL: float = 1.0
 ## Energia que repone cada punto de atencion recogido (A10, aprobado).
 const ENERGY_PER_ATTENTION_POINT: float = 10.0
 
@@ -74,6 +78,24 @@ var reduce_low_sync_effects: bool = false:
 		reduce_low_sync_effects = value
 		EventBus.reduce_low_sync_effects_changed.emit(value)
 
+## Ajuste de accesibilidad (docs 15.6, "contorno claro para daltonismo"): las
+## plataformas ocultas del Debug usan un contorno mas claro y grueso
+## (data/debug_mode.json, high_contrast_*). Aun no se guarda en disco.
+var debug_high_contrast_outline: bool = false:
+	set(value):
+		debug_high_contrast_outline = value
+		EventBus.debug_high_contrast_outline_changed.emit(value)
+
+## Escala de tiempo del mundo (1 = normal). Solo la escribe DebugMode; el
+## mundo la consume con WorldTime.scaled_delta(). No es Engine.time_scale.
+var world_time_scale: float = WORLD_TIME_SCALE_NORMAL:
+	set(value):
+		var clamped: float = maxf(value, 0.0)
+		if clamped == world_time_scale:
+			return
+		world_time_scale = clamped
+		EventBus.world_time_scale_changed.emit(world_time_scale)
+
 ## Umbral (en % de Sync Rate) del estado de Sync Rate bajo; de data/hud.json.
 var low_sync_threshold: float = HudConfig.shared().low_sync_threshold
 
@@ -97,6 +119,9 @@ func apply_sync_damage(amount: float) -> void:
 
 
 ## Suma puntos de atencion; cada uno repone energia de Debug (A10).
+## GANCHO (pendiente de decidir): otras fuentes de recarga de energia o de
+## Sync Rate (puntos de sincronizacion, objetos, mejoras del hub) iran en
+## funciones propias aqui; de momento no hay regeneracion pasiva ni curacion.
 func add_attention_points(amount: int) -> void:
 	if amount <= 0:
 		return
@@ -108,6 +133,7 @@ func add_attention_points(amount: int) -> void:
 func emit_state() -> void:
 	EventBus.world_changed.emit(current_world)
 	EventBus.reduce_low_sync_effects_changed.emit(reduce_low_sync_effects)
+	EventBus.debug_high_contrast_outline_changed.emit(debug_high_contrast_outline)
 	EventBus.sync_rate_changed.emit(sync_rate, SYNC_RATE_MAX)
 	EventBus.energy_changed.emit(debug_energy, DEBUG_ENERGY_MAX)
 	EventBus.attention_points_changed.emit(attention_points)

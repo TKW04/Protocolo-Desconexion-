@@ -36,3 +36,18 @@ signal ability_unlock_changed(ability: StringName, unlocked: bool)
 
 @warning_ignore("unused_signal")
 signal player_died
+
+## El Debug Mode se activa o se apaga (DebugMode). `active` cambia al instante;
+## la transicion visual y de tiempo sigue unos instantes (data/debug_mode.json).
+@warning_ignore("unused_signal")
+signal debug_mode_changed(active: bool)
+
+## Cambia la escala de tiempo del mundo (1 = normal; 0,5 con el Debug). La
+## consumen los objetos del mundo (ver scripts/autoload/world_time.gd).
+@warning_ignore("unused_signal")
+signal world_time_scale_changed(scale: float)
+
+## Opcion de accesibilidad: contorno mas claro y grueso en las plataformas
+## ocultas del Debug (daltonismo, docs 15.6).
+@warning_ignore("unused_signal")
+signal debug_high_contrast_outline_changed(enabled: bool)

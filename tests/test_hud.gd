@@ -1,7 +1,7 @@
 # Pruebas del HUD (scenes/ui/hud.tscn): refleja GameState via EventBus,
 # acota valores, sigue el color del Debug del mundo, estado de Sync Rate bajo,
 # animacion de rastro de dano y liberacion limpia. Tambien las teclas de
-# depuracion de la arena (acciones debug_*).
+# depuracion de la arena (acciones hud_debug_*).
 extends GutTest
 
 const HUD_SCENE: PackedScene = preload("res://scenes/ui/hud.tscn")
@@ -257,7 +257,7 @@ func _press(action: StringName) -> InputEventAction:
 func test_arena_has_hud_and_debug_actions() -> void:
 	var arena: Node = add_child_autofree(ARENA_SCENE.instantiate())
 	assert_true(arena.get_node_or_null(^"Hud") is Hud, "La arena instancia el HUD")
-	for action: StringName in [&"debug_sync_down", &"debug_sync_up", &"debug_energy_down", &"debug_attention_add"]:
+	for action: StringName in [&"hud_debug_sync_down", &"hud_debug_sync_up", &"hud_debug_energy_down", &"hud_debug_attention_add"]:
 		assert_true(InputMap.has_action(action), "Accion %s en el Input Map" % action)
 		assert_false(InputMap.action_get_events(action).is_empty(), "%s tiene tecla" % action)
 
@@ -267,13 +267,13 @@ func test_arena_debug_keys_change_game_state() -> void:
 	(arena.get_node(^"Isak") as Isak).input = PlayerInput.new()
 	await wait_process_frames(1)
 	GameState.debug_energy = 50.0
-	arena._unhandled_input(_press(&"debug_sync_down"))
+	arena._unhandled_input(_press(&"hud_debug_sync_down"))
 	assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX - ArenaScript.DEBUG_SYNC_STEP, EPS)
-	arena._unhandled_input(_press(&"debug_sync_up"))
+	arena._unhandled_input(_press(&"hud_debug_sync_up"))
 	assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, EPS)
-	arena._unhandled_input(_press(&"debug_energy_down"))
+	arena._unhandled_input(_press(&"hud_debug_energy_down"))
 	assert_almost_eq(GameState.debug_energy, 50.0 - ArenaScript.DEBUG_ENERGY_STEP, EPS)
-	arena._unhandled_input(_press(&"debug_attention_add"))
+	arena._unhandled_input(_press(&"hud_debug_attention_add"))
 	assert_eq(GameState.attention_points, ArenaScript.DEBUG_ATTENTION_STEP)
 	assert_almost_eq(GameState.debug_energy,
 		50.0 - ArenaScript.DEBUG_ENERGY_STEP + GameState.ENERGY_PER_ATTENTION_POINT, EPS)
