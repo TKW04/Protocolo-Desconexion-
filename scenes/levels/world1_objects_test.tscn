@@ -1,0 +1,31 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/world1_objects_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="3_isak"]
+[ext_resource type="PackedScene" path="res://scenes/levels/receiver.tscn" id="4_receiver"]
+[ext_resource type="PackedScene" path="res://scenes/levels/bridge.tscn" id="5_bridge"]
+[ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="6_glitch"]
+
+[node name="World1ObjectsTest" type="Node2D"]
+script = ExtResource("1_test")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+
+[node name="Receiver" parent="." instance=ExtResource("4_receiver")]
+position = Vector2(640, 512)
+target_id = &"puente_1"
+
+[node name="Bridge" parent="." instance=ExtResource("5_bridge")]
+position = Vector2(704, 576)
+object_id = &"puente_1"
+length_tiles = 5
+
+[node name="GlitchWall" parent="." instance=ExtResource("6_glitch")]
+position = Vector2(1408, 448)
+solid_neighbors = 7
+
+[node name="Isak" parent="." instance=ExtResource("3_isak")]
+position = Vector2(224, 575)
