@@ -1,0 +1,121 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_00.png" id="1_ube83"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_01.png" id="2_qgfn8"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_02.png" id="3_ljjlc"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_03.png" id="4_t8fge"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_04.png" id="5_pyehf"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_05.png" id="6_y3cgn"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_06.png" id="7_4cvwn"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_07.png" id="8_jvnbl"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_anticipate_08.png" id="9_gyov4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_idle_00.png" id="10_nklkb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_idle_01.png" id="11_g6c5d"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_idle_02.png" id="12_uagiy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_idle_03.png" id="13_fwhj4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_idle_04.png" id="14_2wh2f"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_idle_05.png" id="15_23vo3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_pop_00.png" id="16_txtbd"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_pop_01.png" id="17_nma2c"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_pop_02.png" id="18_0doij"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_pop_03.png" id="19_c3yba"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_pop_04.png" id="20_u506x"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_stunned_00.png" id="21_m6p4e"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_stunned_01.png" id="22_3opcy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_stunned_02.png" id="23_rs3wm"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/bubble_stunned_03.png" id="24_r66sc"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ube83")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_qgfn8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ljjlc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_t8fge")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_pyehf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_y3cgn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_4cvwn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_jvnbl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_gyov4")
+}],
+"loop": 0,
+"name": &"anticipate",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_nklkb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_g6c5d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_uagiy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_fwhj4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_2wh2f")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_23vo3")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("16_txtbd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_nma2c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_0doij")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_c3yba")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_u506x")
+}],
+"loop": 0,
+"name": &"pop",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("21_m6p4e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_3opcy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_rs3wm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_r66sc")
+}],
+"loop": 1,
+"name": &"stunned",
+"speed": 8.0
+}]
