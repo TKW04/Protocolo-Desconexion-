@@ -295,3 +295,16 @@ Propuestas adoptadas **de forma provisional** en el HUD (arte con primitivas; la
 - **Animaciones:** al perder valor, la barra cae al instante y un rastro rojo se vacía tras 0,35 s (en 0,4 s); al ganar, pulso de escala ×1,25 durante 0,18 s.
 - **C8 (sigue abierta):** hueco oculto `ClockSlot` a la izquierda de la barra de estado, reservado para la hora del Mundo 2.
 - **A10 (resuelta):** `GameState.add_attention_points()` suma al contador y repone 10 de energía por punto.
+
+## Notas del paso 9 (Debug Mode, 2026-10-14)
+
+Decisiones aprobadas por el usuario en este paso y **propuestas** adoptadas de forma provisional. Los valores están en `data/debug_mode.json`.
+
+- **Activación (aprobada; sustituye a "interruptor" y "mínimo de 10" de A4):** se activa **manteniendo** la acción `debug` (K / Y del mando) y solo entra con `GameState.abilities_unlocked["debug"]` y energía > 0. Se apaga al soltar, al llegar a 0 (salida suave), si Isak muere o si se bloquea la habilidad. **Propuesta:** tras agotarse la energía hay que soltar y volver a pulsar (si no, recoger un punto con la tecla mantenida lo encendería y apagaría solo).
+- **Consumo y tiempo (A4, aprobada):** 20/s en tiempo real (no ralentizado); el mundo va a ×0,5 con un factor propio, `GameState.world_time_scale` (no `Engine.time_scale`). Isak y el HUD usan el delta real: la física de Isak no cambia. Los objetos del mundo usan `WorldTime.scaled_delta(delta)` (instrucciones en `scripts/autoload/world_time.gd`). Sin LED en la mochila: la energía se ve en la batería del HUD. Se pueden recoger puntos de atención durante el Debug.
+- **Transición (propuesta):** entrada en 0,15 s y salida en 0,25 s (tinte, viñeta y escala de tiempo).
+- **Efecto visual (A14, propuesta):** tinte del color del Debug del mundo (`data/hud.json`) al 25 %, viñeta en el 15 % del borde con 3 escalones (pixel art) y opacidad 0,4, en una capa entre el mundo y el HUD (el HUD no se tiñe). En las capturas, la viñeta al 0,55 apagaba demasiado los bordes; se bajó a 0,4. **A revisar jugando:** el tinte cian vuelve verdosos los puntos de atención amarillos.
+- **Plataformas ocultas (`h`, propuesta):** solo visibles **y sólidas** mientras el Debug está activo, con contorno de 2 px del color del Debug (1 px de A14 a 640x360, ×2) y relleno al 18 %; si Isak está encima al apagarse, cae. **Alternativa:** siempre sólidas y solo visibles con el Debug; se cambia con `hidden_platforms_solid_only_in_debug: false`.
+- **Accesibilidad (propuesta):** `GameState.debug_high_contrast_outline` hace el contorno más claro (60 % hacia blanco) y más grueso (4 px). Aún no se guarda en disco (no hay menú de opciones).
+- **Recargas (pendiente):** la recarga de energía y de Sync Rate fuera de los puntos de atención se decidirá más adelante. Hay un gancho comentado en `GameState.add_attention_points()`; no hay regeneración pasiva ni curación.
+- **Desbloqueo (C2):** el Debug sigue bloqueado por defecto y en la arena; solo `scenes/levels/debug_sandbox.tscn` lo desbloquea (y lo restaura al salir). Las teclas de depuración del HUD se renombraron a `hud_debug_*` para no confundirlas con la acción `debug`.

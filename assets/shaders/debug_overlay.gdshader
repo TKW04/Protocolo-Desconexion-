@@ -14,9 +14,9 @@ uniform float tint_strength : hint_range(0.0, 1.0) = 0.25;
 // Fraccion de la pantalla, desde cada borde, que ocupa la vineta.
 uniform float vignette_size : hint_range(0.0, 0.5) = 0.15;
 // Opacidad de la vineta en el borde.
-uniform float vignette_strength : hint_range(0.0, 1.0) = 0.55;
+uniform float vignette_strength : hint_range(0.0, 1.0) = 0.4;
 // Escalones de la vineta (pixel art: sin degradado continuo). 0 = continuo.
-uniform float vignette_steps = 4.0;
+uniform float vignette_steps = 3.0;
 // Brillo de la version monocroma tenida (compensa la luminancia del color).
 uniform float tint_gain = 1.3;
 // Oscurecimiento del color del Debug en la vineta.
