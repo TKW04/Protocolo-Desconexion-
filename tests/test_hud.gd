@@ -1,4 +1,6 @@
-# Pruebas del HUD (scenes/ui/hud.tscn): refleja GameState via EventBus,
+# Pruebas del HUD (scenes/ui/hud.tscn): assets pixel art y fuente bitmap del
+# paso 12 (cargan, tramos de senal y bateria, icono ambar, glifos, pixel base),
+# refleja GameState via EventBus,
 # acota valores, sigue el color del Debug del mundo, estado de Sync Rate bajo,
 # animacion de rastro de dano y liberacion limpia. Tambien las teclas de
 # depuracion de la arena (acciones hud_debug_*).
@@ -52,14 +54,111 @@ func test_config_loads_from_json() -> void:
 	assert_almost_eq(config.low_sync_threshold, 20.0, EPS, "Umbral de Sync Rate bajo: docs 3.3 (menor al 20%)")
 	for world: int in range(GameState.FIRST_WORLD, GameState.LAST_WORLD + 1):
 		assert_true(config.debug_colors.has(world), "Color del Debug para el mundo %d" % world)
-	for name: StringName in [&"background", &"text", &"signal", &"empty", &"damage", &"low_sync",
-			&"battery_border", &"attention_icon"]:
+	for name: StringName in [&"text", &"signal", &"damage", &"low_sync", &"attention_icon", &"debug_key"]:
 		assert_true(config.colors.has(name), "Color '%s' en data/hud.json" % name)
 
 
 func test_world_1_debug_color_is_cyan() -> void:
 	var c: Color = _config.debug_color_for_world(1)
 	assert_true(c.b > c.r and c.g > c.r, "El Debug del Mundo 1 es cian")
+
+
+# --- Arte definitivo (paso 12) ---
+
+func test_hud_assets_exist_and_load() -> void:
+	assert_false(_config.assets.is_empty(), "data/hud.json lista los assets")
+	for name: StringName in _config.assets:
+		var tex: Texture2D = _config.asset_texture(name)
+		assert_not_null(tex, "El asset '%s' carga" % name)
+		if tex == null:
+			continue
+		var frame: Vector2i = _config.asset_frame_size(name)
+		var info: Dictionary = _config.assets[name]
+		assert_eq(Vector2i(tex.get_size()), Vector2i(frame.x * int(info.columns), frame.y * int(info.rows)),
+			"Tamano de '%s' segun su rejilla" % name)
+		assert_eq(frame.x % 8 + frame.y % 8, 0, "Cuadro de '%s' multiplo de 8" % name)
+	assert_not_null(_config.load_font(), "La fuente bitmap carga")
+	assert_true(ResourceLoader.exists(_config.key_swap_shader_path), "Shader de cambio de color")
+
+
+func test_pixel_base_is_integer_scale() -> void:
+	var hud: Hud = _make_hud()
+	assert_eq(_config.hud_pixel_scale, 2, "Pixel base del HUD: x2 a 1280x720")
+	assert_eq(hud.get_pixel_scale(), Vector2.ONE * _config.hud_pixel_scale)
+
+
+## Tramos de data/hud.json: la barra i se enciende con Sync Rate > signal_thresholds[i].
+func test_signal_bars_by_sync_rate_band() -> void:
+	var hud: Hud = _make_hud()
+	var cases: Dictionary = {100.0: 4, 76.0: 4, 75.0: 3, 51.0: 3, 50.0: 2, 26.0: 2, 25.0: 1, 15.0: 1, 1.0: 1, 0.0: 0}
+	for sync: float in cases:
+		GameState.sync_rate = sync
+		assert_eq(hud.get_signal_bars(), cases[sync], "Barras con Sync Rate %d" % sync)
+	assert_eq(_config.signal_thresholds.size(), 4, "4 barras de senal")
+
+
+func test_battery_segments_by_energy() -> void:
+	var hud: Hud = _make_hud()
+	var cases: Dictionary = {100.0: 5, 81.0: 5, 80.0: 4, 60.0: 3, 40.0: 2, 21.0: 2, 20.0: 1, 5.0: 1, 0.0: 0}
+	for energy: float in cases:
+		GameState.debug_energy = energy
+		assert_eq(hud.get_battery_segments(), cases[energy], "Segmentos con energia %d" % energy)
+	assert_eq(_config.battery_thresholds.size(), 5, "Bateria de 5 segmentos")
+
+
+func test_charge_ring_steps_are_discrete() -> void:
+	var ring := HudMeter.new()
+	ring.kind = HudMeter.Kind.CHARGE_RING
+	ring.setup(_config)
+	ring.value = 0.0
+	assert_eq(ring.get_ring_frame(), -1, "Sin carga no hay cuadro")
+	ring.value = 0.55
+	assert_eq(ring.get_ring_frame(), ceili(0.55 * _config.charge_ring_steps) - 1)
+	ring.value = 1.0
+	assert_eq(ring.get_ring_frame(), _config.charge_ring_steps - 1)
+	assert_eq(_config.asset_columns(&"charge_ring"), _config.charge_ring_steps, "Un cuadro por paso")
+	ring.free()
+
+
+func test_attention_icon_is_amber() -> void:
+	var hud: Hud = _make_hud()
+	var amber := Color.html("#ffa000")
+	assert_eq(hud.get_attention_icon_color(), amber)
+	var image: Image = _config.asset_texture(&"attention_icon").get_image()
+	image.decompress()
+	var counts: Dictionary = {}
+	for y: int in image.get_height():
+		for x: int in image.get_width():
+			var c: Color = image.get_pixel(x, y)
+			if c.a > 0.5:
+				var key: String = c.to_html(false)
+				counts[key] = counts.get(key, 0) + 1
+	var best: String = ""
+	for key: String in counts:
+		if best.is_empty() or counts[key] > counts[best]:
+			best = key
+	assert_eq(best, amber.to_html(false), "El color dominante del icono es el ambar")
+	assert_true(counts.has(Color.html("#a85f00").to_html(false)), "Con ambar_sombra")
+
+
+func test_font_has_all_hud_glyphs() -> void:
+	var hud: Hud = _make_hud()
+	var font: Font = hud.get_font()
+	assert_true(font is FontFile, "Fuente bitmap propia (FontFile)")
+	assert_eq(font.resource_path, _config.font_path)
+	for ch: String in _config.font_glyphs:
+		assert_true(font.has_char(ch.unicode_at(0)), "Glifo '%s'" % ch)
+	# Todo lo que el HUD escribe usa solo glifos de la fuente.
+	var texts: Array[String] = [Hud.PERCENT_FORMAT % 100, Hud.PERCENT_FORMAT % 0, Hud.WIDEST_ATTENTION, "0123456789"]
+	for text: String in texts:
+		for ch: String in text:
+			assert_true(ch in _config.font_glyphs, "'%s' de '%s' esta en font_glyphs" % [ch, text])
+
+
+func test_battery_uses_world_debug_color_for_world_1() -> void:
+	assert_eq(_config.debug_color_for_world(1), Color.html("#3dfff5"), "HUD del Mundo 1: #3dfff5")
+	assert_eq(_config.color(&"debug_key"), _config.debug_color_for_world(1),
+		"El arte de la bateria esta dibujado en el cian del Mundo 1")
 
 
 # --- Estado inicial ---
