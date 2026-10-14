@@ -1,0 +1,36 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/eco_text_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="3_isak"]
+[ext_resource type="PackedScene" path="res://scenes/levels/eco_line.tscn" id="4_eco_line"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="6_box"]
+
+[node name="EcoTextTest" type="Node2D"]
+script = ExtResource("1_test")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+
+[node name="EcoBienvenida" parent="." instance=ExtResource("4_eco_line")]
+position = Vector2(64, 192)
+object_id = &"eco_bienvenida"
+text = "Bienvenido. He optimizado tu espacio."
+width_tiles = 6
+height_tiles = 6
+
+[node name="EcoHumor" parent="." instance=ExtResource("4_eco_line")]
+position = Vector2(1280, 192)
+object_id = &"eco_humor"
+text = "Hemos detectado que estás feliz. Esto es un error."
+width_tiles = 2
+height_tiles = 6
+
+[node name="Isak" parent="." instance=ExtResource("3_isak")]
+position = Vector2(256, 96)
+
+[node name="Hud" parent="." instance=ExtResource("5_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("6_box")]

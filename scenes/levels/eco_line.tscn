@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/eco_line.gd" id="1_eco_line"]
+
+[node name="EcoLine" type="Area2D" groups=["eco_line"]]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("1_eco_line")

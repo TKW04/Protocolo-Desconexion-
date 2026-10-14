@@ -81,9 +81,8 @@
 			"example": {"type": "exit_door", "x": 40, "y": 8, "params": {"id": "puerta_1", "text": "Marcar como leído"}}
 		},
 		"eco_line": {
-			"scene": "",
-			"status": "pendiente (paso 14b)",
-			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida.",
+			"scene": "res://scenes/levels/eco_line.tscn",
+			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Al entrar Isak emite EventBus.eco_line_requested(text, duration_s) y la muestra el cuadro de texto de Eco (scenes/ui/eco_text_box.tscn, data/eco_text_box.json), que el nivel debe incluir; duration_s es el tiempo minimo con el texto completo (el cuadro alarga los textos largos). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida.",
 			"required": ["text"],
 			"fields": {
 				"id": "object_id",

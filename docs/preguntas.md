@@ -390,3 +390,14 @@ Las alturas de repisa se miden desde el suelo donde está la Burbuja. Como el sa
 
 - **Burbuja:** un pulso sobre una Burbuja ya aturdida reinicia el aturdimiento (aprobado).
 - **Respawn de enemigos:** se decidirá más adelante; por ahora una Burbuja reventada no reaparece, salvo en la escena de prueba (aprobado provisional).
+
+## Notas del paso 14b: fuente de textos y voz de Eco (2026-10-14)
+
+Implementa la propuesta V6 (sigue abierta hasta que se apruebe jugando) y la parte de letras de A11. Valores en `data/text_font.json` y `data/eco_text_box.json`.
+
+- **Fuente de textos (propuesta adoptada):** archivo aparte de la del HUD (`assets/sprites/ui/text_font.png` + `text_font.fnt`, generada por `tools/gen_text_font.py`; la fuente del HUD no cambia). 96 glifos propios en `banner_blanco`: A–Z, a–z, `á é í ó ú Á É Í Ó Ú ü Ü ñ Ñ`, dígitos (los mismos del HUD), `. , ; : ¿ ? ¡ ! - – — " ' ( ) / % + …` y espacio. Celda de 12 filas de arte: 3 de acentos de mayúscula, 7 de mayúscula, 2 de descendentes (base en la fila 10); altura x de 5; interlineado 13. Ancho proporcional (la mayoría 5 px; `i`, `l`, `!` 1–2 px). Tamaño 12, escalada ×2 entera en pantalla.
+- **Cuadro de Eco (propuesta V6):** notificación arriba y centrada, debajo de la barra de estado (capa 11, por encima del HUD sin taparlo), con la esfera de Eco de 16×16 (blanca y azul con sonrisa de píxeles, §12.1), el nombre «Eco» y el texto. Panel `noche_profunda` con línea `borde_luz`, como la barra del HUD; ancho entre 320 y 560 px según el texto.
+- **Color de Eco (propuesta):** el nombre va en `borde_luz` (#9bb0e8, azul claro). Los docs no fijan un color para Eco; se eligió por «esfera de luz blanca y azul» (§12.1).
+- **Velocidad del texto (propuesta):** máquina de escribir a 40 caracteres por segundo, con una entrada en 0,12 s y una salida en 0,2 s.
+- **Tiempos (propuesta):** el texto completo queda en pantalla al menos `duration_s` del disparador (4 s en el 1-1, V6) y más en textos largos: `max(duration_s, 1,5 + 0,06 × caracteres)`. Se cierra solo; no hay tecla para cerrarlo. No pausa el juego ni bloquea a Isak, y usa tiempo real (el Debug no lo ralentiza). Si llega otra línea, se pone en cola.
+- **Dudas:** (1) ¿se quiere poder cerrar o acelerar el texto con una acción? Ahora no, para no añadir entradas. (2) ¿La esfera de Eco debe animarse (parpadeo, sonrisa) al hablar?

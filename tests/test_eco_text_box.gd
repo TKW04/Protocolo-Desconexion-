@@ -1,0 +1,391 @@
+# Pruebas del cuadro de texto de Eco (scenes/ui/eco_text_box.tscn) y del
+# disparador eco_line (scenes/levels/eco_line.tscn): maquina de escribir por
+# tiempo, ajuste de linea con acentos, cierre automatico, cola, posicion y
+# capa, no bloquea a Isak, el Debug no lo ralentiza, el disparador se dispara
+# una sola vez con el texto correcto y el texto exacto del 1-1 aparece.
+extends GutTest
+
+const IsakSim = preload("res://tests/support/isak_sim.gd")
+const BOX_SCENE: PackedScene = preload("res://scenes/ui/eco_text_box.tscn")
+const LINE_SCENE: PackedScene = preload("res://scenes/levels/eco_line.tscn")
+const HUD_SCENE: PackedScene = preload("res://scenes/ui/hud.tscn")
+const TEST_SCENE: String = "res://scenes/levels/eco_text_test.tscn"
+const LEVEL_PATH: String = "res://data/levels/1-1.json"
+const WELCOME: String = "Bienvenido. He optimizado tu espacio."
+## Frases de Eco del documento (docs/04-personajes.md 12.1).
+const LONG_TEXT: String = "Te hice mejor. ¿Por qué querrías volver? Yo decido por ti, así no te equivocas. No puedes irte. Eres demasiado optimizable."
+const SPANISH_GLYPHS: String = "áéíóúÁÉÍÓÚüÜñÑ¿?¡!"
+const DT: float = 1.0 / 60.0
+const T: float = 64.0
+const EPS: float = 0.001
+
+var _config: EcoTextBoxConfig = EcoTextBoxConfig.shared()
+var _saved: Dictionary = {}
+
+
+func before_each() -> void:
+	_saved = {
+		"energy": GameState.debug_energy,
+		"debug": GameState.is_ability_unlocked(GameState.ABILITY_DEBUG),
+	}
+	DebugMode.input_enabled = false
+	DebugMode.reset()
+
+
+func after_each() -> void:
+	DebugMode.reset()
+	DebugMode.input_enabled = true
+	GameState.debug_energy = _saved.energy
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _saved.debug)
+
+
+# --- Utilidades ---
+
+## Cuadro sin _process: avanza solo con advance() (tiempo controlado).
+func _box() -> EcoTextBox:
+	var box := BOX_SCENE.instantiate() as EcoTextBox
+	add_child_autofree(box)
+	box.set_process(false)
+	return box
+
+
+func _type_time(box: EcoTextBox) -> float:
+	return "\n".join(box.get_lines()).length() / _config.chars_per_second
+
+
+## Tiempo total en pantalla de la linea actual (escribir + mantener + salir).
+func _total_time(box: EcoTextBox) -> float:
+	return _type_time(box) + box.get_hold_time() + _config.fade_out_s
+
+
+func _advance(box: EcoTextBox, seconds: float) -> void:
+	for i: int in roundi(seconds / DT):
+		box.advance(DT)
+
+
+func _eco_line_from_level() -> Dictionary:
+	var level: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_PATH))
+	for obj: Dictionary in level["objects"]:
+		if obj["type"] == "eco_line":
+			return obj
+	return {}
+
+
+## Instancia un eco_line como lo haria el generador: escena del catalogo y
+## params -> propiedades segun `fields` (data/world1_objects.json).
+func _line_from_object(obj: Dictionary) -> EcoLine:
+	var entry: Dictionary = World1ObjectsConfig.type_entry("eco_line")
+	var line := (load(String(entry["scene"])) as PackedScene).instantiate() as EcoLine
+	var params: Dictionary = entry["defaults"].duplicate()
+	params.merge(obj["params"], true)
+	for field: String in params:
+		line.set(String(entry["fields"][field]), params[field])
+	line.position = Vector2(obj["x"], obj["y"]) * World1ObjectsConfig.tile_size()
+	return line
+
+
+func _activate_debug() -> void:
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
+	GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
+	for i: int in roundi(DebugMode.config.activation_hold_s / DT) + 1:
+		DebugMode.step(DT, true)
+	for i: int in 60:
+		DebugMode.step(DT, false)
+
+
+# --- Fuente ---
+
+func test_font_has_spanish_glyphs() -> void:
+	var box: EcoTextBox = _box()
+	var font: Font = box.get_font()
+	assert_not_null(font)
+	for ch: String in SPANISH_GLYPHS:
+		assert_true(font.has_char(ch.unicode_at(0)), "La fuente tiene '%s'" % ch)
+	assert_eq(roundi(font.get_height(_config.font_size)), 13, "Interlineado 13 px de arte")
+
+
+# --- Maquina de escribir ---
+
+func test_typewriter_progress_follows_time() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME)
+	assert_eq(box.get_typed_count(), 0)
+	assert_eq(box.get_phase(), EcoTextBox.Phase.TYPING)
+	box.advance(0.25)
+	assert_eq(box.get_typed_count(), floori(0.25 * _config.chars_per_second))
+	box.advance(0.25)
+	var half: int = floori(0.5 * _config.chars_per_second)
+	assert_eq(box.get_typed_count(), half)
+	assert_eq(box.get_visible_text(), WELCOME.substr(0, half), "Se ve solo lo escrito")
+	box.advance(_type_time(box))
+	assert_eq(box.get_typed_count(), WELCOME.length())
+	assert_eq(box.get_visible_text(), WELCOME)
+	assert_eq(box.get_phase(), EcoTextBox.Phase.HOLD)
+
+
+func test_finish_typing_shows_everything() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(LONG_TEXT)
+	box.finish_typing()
+	assert_eq(box.get_visible_text(), "\n".join(box.get_lines()))
+	assert_eq(box.get_phase(), EcoTextBox.Phase.HOLD)
+
+
+# --- Ajuste de linea ---
+
+func test_wrap_with_accents_fits_width_and_keeps_text() -> void:
+	var box: EcoTextBox = _box()
+	var font: Font = box.get_font()
+	var max_width: float = 120.0
+	var lines: PackedStringArray = EcoTextBox.wrap_text(LONG_TEXT, font, _config.font_size, max_width)
+	assert_gt(lines.size(), 3, "Se parte en varias lineas")
+	for line: String in lines:
+		var w: float = font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _config.font_size).x
+		assert_lte(w, max_width, "'%s' cabe" % line)
+		assert_false(line.begins_with(" ") or line.ends_with(" "))
+	assert_eq(" ".join(lines), LONG_TEXT, "No se pierde ni se anade texto")
+
+
+func test_wrap_cuts_a_word_wider_than_the_line() -> void:
+	var box: EcoTextBox = _box()
+	var font: Font = box.get_font()
+	var word: String = "ÁÉÍÓÚáéíóúÑñÜü¿¡"
+	var lines: PackedStringArray = EcoTextBox.wrap_text(word, font, _config.font_size, 30.0)
+	assert_gt(lines.size(), 1)
+	assert_eq("".join(lines), word)
+	for line: String in lines:
+		assert_lte(font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _config.font_size).x, 30.0)
+
+
+func test_box_wraps_long_text_to_panel_width() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(LONG_TEXT)
+	box.finish_typing()
+	assert_gt(box.get_lines().size(), 1)
+	var font: Font = box.get_font()
+	for line: String in box.get_lines():
+		var w: float = font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _config.font_size).x
+		assert_lte(w, box.get_text_width())
+	var rect: Rect2 = box.get_panel_rect()
+	assert_lte(rect.size.x, float(_config.width_px * _config.pixel_scale), "No pasa del ancho maximo")
+	assert_gt(rect.size.x, float(_config.min_width_px * _config.pixel_scale), "Texto largo: panel ancho")
+
+
+func test_short_line_is_one_line_and_narrower_panel() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME)
+	assert_eq(box.get_lines().size(), 1)
+	var rect: Rect2 = box.get_panel_rect()
+	assert_lte(rect.size.x, float(_config.width_px * _config.pixel_scale))
+	assert_gte(rect.size.x, float(_config.min_width_px * _config.pixel_scale))
+
+
+# --- Cierre automatico y cola ---
+
+func test_hold_time_is_proportional_and_at_least_duration() -> void:
+	assert_almost_eq(_config.hold_time(WELCOME.length(), 4.0), 4.0, EPS, "V6: 4 s para la bienvenida")
+	assert_gt(_config.hold_time(LONG_TEXT.length(), 4.0), 4.0, "Textos largos duran mas")
+	assert_almost_eq(_config.hold_time(1, -1.0), _config.default_duration_s, EPS)
+
+
+func test_auto_close_after_time() -> void:
+	var box: EcoTextBox = _box()
+	watch_signals(EventBus)
+	box.show_line(WELCOME, 4.0)
+	assert_signal_emitted_with_parameters(EventBus, "eco_line_started", [WELCOME])
+	var total: float = _total_time(box)
+	_advance(box, total - 0.1)
+	assert_true(box.is_showing(), "Sigue antes de tiempo")
+	assert_signal_not_emitted(EventBus, "eco_line_finished")
+	_advance(box, 0.2)
+	assert_false(box.is_showing(), "Se cierra solo")
+	assert_signal_emit_count(EventBus, "eco_line_finished", 1)
+	assert_eq(box.get_visible_text(), "")
+	assert_almost_eq(box.get_alpha(), 0.0, EPS)
+
+
+func test_second_line_waits_in_queue() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME)
+	box.show_line(LONG_TEXT)
+	assert_eq(box.get_text(), WELCOME)
+	assert_eq(box.get_queue_size(), 1)
+	_advance(box, _total_time(box) + 0.1)
+	assert_eq(box.get_text(), LONG_TEXT, "La segunda empieza al cerrar la primera")
+	assert_true(box.is_showing())
+
+
+func test_event_bus_request_shows_line() -> void:
+	var box: EcoTextBox = _box()
+	EventBus.eco_line_requested.emit(WELCOME, 4.0)
+	assert_eq(box.get_text(), WELCOME)
+	assert_almost_eq(box.get_hold_time(), 4.0, EPS)
+
+
+# --- Aspecto y posicion ---
+
+func test_layer_position_and_speaker() -> void:
+	var box: EcoTextBox = _box()
+	var hud := HUD_SCENE.instantiate() as Hud
+	add_child_autofree(hud)
+	box.show_line(WELCOME)
+	assert_gt(box.layer, hud.layer, "Por encima del HUD")
+	assert_eq(box.get_speaker_text(), "Eco")
+	assert_eq(box.get_pixel_scale(), Vector2.ONE * 2.0, "Escala x2 entera")
+	var rect: Rect2 = box.get_panel_rect()
+	var hud_bar_bottom: float = HudConfig.shared().bar_height_px * HudConfig.shared().hud_pixel_scale
+	assert_gt(rect.position.y, hud_bar_bottom, "Debajo de la barra de estado, sin taparla")
+	var screen: Vector2 = box.get_viewport().get_visible_rect().size
+	assert_true(Rect2(Vector2.ZERO, screen).encloses(rect), "Dentro de la pantalla")
+	assert_lt(rect.end.y, screen.y * 0.25, "En la franja superior (Isak va en el centro)")
+	assert_eq(fmod(rect.position.x, 2.0), 0.0, "Alineado a pixel de arte")
+
+
+# --- No bloquea a Isak ni lo frena el Debug ---
+
+func test_isak_keeps_moving_while_eco_talks() -> void:
+	var sim := IsakSim.new(DT)
+	var world: Node2D = sim.build_flat_world()
+	add_child_autofree(world)
+	var box: EcoTextBox = _box()
+	sim.take_manual_control()
+	await wait_physics_frames(1)
+	sim.settle()
+	box.show_line(WELCOME)
+	var start_x: float = sim.isak.global_position.x
+	sim.input.move_axis = 1.0
+	sim.step(sim.frames(1.0))
+	box.advance(1.0)
+	assert_true(box.is_showing())
+	assert_gt(sim.isak.global_position.x - start_x, 100.0, "Isak camina con Eco hablando")
+	sim.input.move_axis = 0.0
+	sim.input.jump_pressed = true
+	sim.input.jump_held = true
+	sim.step()
+	assert_lt(sim.isak.velocity.y, 0.0, "y puede saltar")
+
+
+func test_debug_does_not_slow_the_box() -> void:
+	var box: EcoTextBox = _box()
+	_activate_debug()
+	assert_true(DebugMode.is_active())
+	assert_almost_eq(WorldTime.scaled_delta(1.0), 0.5, 0.01, "El mundo va a x0,5")
+	box.show_line(WELCOME)
+	box._process(0.5)
+	assert_eq(box.get_typed_count(), floori(0.5 * _config.chars_per_second), "Tiempo real")
+
+
+func test_debug_does_not_slow_the_box_in_real_frames() -> void:
+	var box := BOX_SCENE.instantiate() as EcoTextBox
+	add_child_autofree(box)
+	_activate_debug()
+	box.show_line(WELCOME)
+	await wait_seconds(0.5)
+	# Un cuadro de margen por el redondeo de los cuadros reales.
+	assert_almost_eq(float(box.get_typed_count()), 0.5 * _config.chars_per_second, 3.0)
+
+
+# --- Disparador eco_line ---
+
+func test_trigger_fires_once_with_its_text() -> void:
+	var sim := IsakSim.new(DT)
+	var world: Node2D = sim.build_flat_world()
+	var line := LINE_SCENE.instantiate() as EcoLine
+	line.text = WELCOME
+	line.width_tiles = 2
+	line.height_tiles = 3
+	line.position = Vector2(4.0 * T, -3.0 * T)
+	world.add_child(line)
+	add_child_autofree(world)
+	var box: EcoTextBox = _box()
+	sim.take_manual_control()
+	watch_signals(line)
+	watch_signals(EventBus)
+	await wait_physics_frames(2)
+	assert_false(line.has_fired(), "Isak empieza fuera")
+	for i: int in 2:
+		sim.isak.global_position = Vector2(5.0 * T, -1.0)
+		await wait_physics_frames(3)
+		sim.isak.global_position = Vector2(0.0, -1.0)
+		await wait_physics_frames(3)
+	assert_eq(line.get_fired_count(), 1, "Una sola vez")
+	assert_signal_emit_count(line, "triggered", 1)
+	assert_signal_emitted_with_parameters(line, "triggered", [WELCOME])
+	assert_signal_emit_count(EventBus, "eco_line_requested", 1)
+	assert_eq(box.get_text(), WELCOME, "El cuadro muestra el texto del disparador")
+	assert_eq(box.get_queue_size(), 0)
+
+
+func test_trigger_without_once_fires_each_entry() -> void:
+	var sim := IsakSim.new(DT)
+	var world: Node2D = sim.build_flat_world()
+	var line := LINE_SCENE.instantiate() as EcoLine
+	line.text = WELCOME
+	line.once = false
+	line.position = Vector2(4.0 * T, -3.0 * T)
+	world.add_child(line)
+	add_child_autofree(world)
+	sim.take_manual_control()
+	await wait_physics_frames(2)
+	for i: int in 2:
+		sim.isak.global_position = Vector2(4.5 * T, -1.0)
+		await wait_physics_frames(3)
+		sim.isak.global_position = Vector2(0.0, -1.0)
+		await wait_physics_frames(3)
+	assert_eq(line.get_fired_count(), 2)
+
+
+func test_trigger_ignores_other_bodies_and_uses_player_layer() -> void:
+	var line := LINE_SCENE.instantiate() as EcoLine
+	add_child_autofree(line)
+	assert_eq(line.collision_mask, 2, "Solo la capa player")
+	assert_eq(line.collision_layer, 0)
+	assert_true(line.is_in_group(EcoLine.GROUP))
+	var other := StaticBody2D.new()
+	add_child_autofree(other)
+	line._on_body_entered(other)
+	assert_false(line.has_fired())
+
+
+func test_trigger_zone_size_from_tiles() -> void:
+	var line := LINE_SCENE.instantiate() as EcoLine
+	line.width_tiles = 6
+	line.height_tiles = 6
+	add_child_autofree(line)
+	assert_eq(line.get_zone_rect(), Rect2(0.0, 0.0, 6.0 * T, 6.0 * T))
+
+
+# --- Texto exacto del diseno ---
+
+func test_level_1_1_eco_line_has_design_text() -> void:
+	var obj: Dictionary = _eco_line_from_level()
+	assert_false(obj.is_empty(), "El 1-1 tiene un eco_line")
+	assert_eq(obj["params"]["text"], WELCOME, "docs 6.3 y 12.1")
+	var line: EcoLine = _line_from_object(obj)
+	add_child_autofree(line)
+	assert_eq(line.text, WELCOME)
+	assert_eq(line.object_id, &"eco_bienvenida")
+	assert_eq(line.width_tiles, 6)
+	assert_eq(line.height_tiles, 6)
+	assert_almost_eq(line.duration_s, 4.0, EPS)
+	assert_true(line.once)
+	assert_eq(line.position, Vector2(3.0 * T, 4.0 * T))
+
+
+func test_design_text_appears_in_test_scene() -> void:
+	var scene: Node = (load(TEST_SCENE) as PackedScene).instantiate()
+	var sim := IsakSim.new(DT)
+	sim.attach(scene.get_node("Isak") as Isak)
+	var box := scene.get_node("EcoTextBox") as EcoTextBox
+	var welcome := scene.get_node("EcoBienvenida") as EcoLine
+	assert_eq(welcome.text, _eco_line_from_level()["params"]["text"], "Mismo texto que el 1-1")
+	add_child_autofree(scene)
+	# Isak cae al mundo dentro de la zona (fisica real).
+	for i: int in 120:
+		await wait_physics_frames(1)
+		if box.is_showing():
+			break
+	assert_true(welcome.has_fired(), "Isak entra en la zona")
+	assert_eq(box.get_text(), WELCOME)
+	box.finish_typing()
+	assert_eq(box.get_visible_text(), WELCOME, "Se lee el texto exacto")

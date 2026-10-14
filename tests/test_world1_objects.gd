@@ -389,7 +389,7 @@ func test_background_uses_parallax_speeds_from_data() -> void:
 
 func test_catalog_types_have_scene_fields_and_example() -> void:
 	var types: Dictionary = World1ObjectsConfig.data()["types"]
-	for type: String in ["bridge_inactive", "receiver", "glitch_wall"]:
+	for type: String in ["bridge_inactive", "receiver", "glitch_wall", "eco_line"]:
 		assert_true(types.has(type), "Tipo %s en el catalogo" % type)
 		var entry: Dictionary = types[type]
 		var scene := load(String(entry["scene"])) as PackedScene
