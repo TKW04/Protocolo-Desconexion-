@@ -26,11 +26,19 @@ Están en `.claude/skills/`:
 
 ## Decisiones abiertas (no las decidas tú, pregúntame)
 
-- Cómo se controlan los gestos (deslizar, mantener, pellizcar, agitar) con teclado y mando.
 - Tamaño final del sprite: 64x64 o 48x48, tras probar el prototipo.
 - Hex exactos de las paletas por mundo.
 - La familia de Isak, que aparece en los recuerdos del Mundo 2.
 - Música y efectos de sonido.
+
+## Decisiones tomadas
+
+`docs/preguntas.md` registra estas decisiones y su contexto.
+
+- Pruebas con GUT. Se ejecutan con `tools/run_tests.sh`.
+- Los controles leen solo acciones del Input Map de `project.godot`, pensando en un futuro port a móvil. Los gestos usan las acciones `gesture_swipe`, `gesture_hold`, `gesture_pinch` y `gesture_shake`; `gesture_hold` aún no tiene tecla asignada.
+- El Debug se implementa completo, pero se desbloquea por nivel mediante `GameState.abilities_unlocked`.
+- Al terminar un nivel se vuelve al hub.
 
 ## Cómo trabajar
 
