@@ -239,3 +239,16 @@ func test_sprite_and_hitbox_feet_at_origin() -> void:
 	var capsule: CapsuleShape2D = hitbox.shape as CapsuleShape2D
 	assert_eq(hitbox.position.y + capsule.height * 0.5, 0.0, "La capsula apoya en los pies")
 	assert_eq(Vector2(capsule.radius * 2.0, capsule.height), _isak.hitbox_size)
+
+
+## Arte importado: en cada cuadro de idle y walk la planta de los pies toca la
+## ultima fila del canvas (el suelo) y no hay pixeles opacos por debajo.
+func test_imported_frames_feet_on_last_row() -> void:
+	var sprite: AnimatedSprite2D = _isak.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	for anim: StringName in [&"idle", &"walk"]:
+		var count: int = sprite.sprite_frames.get_frame_count(anim)
+		assert_eq(count, 25, "%s tiene los 25 cuadros de la hoja" % anim)
+		for i: int in count:
+			var image: Image = sprite.sprite_frames.get_frame_texture(anim, i).get_image()
+			var used: Rect2i = image.get_used_rect()
+			assert_eq(used.end.y, image.get_height(), "%s %d: pies en la ultima fila" % [anim, i])

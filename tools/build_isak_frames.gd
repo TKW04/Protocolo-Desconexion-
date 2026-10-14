@@ -1,4 +1,7 @@
-## Genera scenes/player/isak_frames.tres (SpriteFrames) desde los PNG placeholder.
+## Genera scenes/player/isak_frames.tres (SpriteFrames) desde los PNG de Isak.
+## Cada animacion cuenta sus cuadros (00, 01, ...) hasta el primero que falte.
+## Usa el arte importado (isak_<anim>_NN.png, tools/import_sheet.py) y, si no
+## existe, el placeholder (isak_<anim>_NN_placeholder.png).
 ## Requiere que los PNG esten importados antes (Godot --headless --import).
 ## Todos los cuadros deben medir FRAME_SIZE (canvas de Isak a 1280x720) con los
 ## pies abajo y centrados; isak.tscn coloca el AnimatedSprite2D (centrado) en
@@ -8,8 +11,25 @@ extends SceneTree
 
 const SPRITE_DIR: String = "res://assets/sprites/isak/"
 const OUTPUT_PATH: String = "res://scenes/player/isak_frames.tres"
-const FILE_PATTERN: String = "isak_%s_%02d_placeholder.png"
-const ANIMATION_FPS: float = 12.0
+## Arte importado primero; el placeholder solo si no hay arte para esa animacion.
+const FILE_PATTERNS: PackedStringArray = [
+	"isak_%s_%02d.png",
+	"isak_%s_%02d_placeholder.png",
+]
+## Velocidad por defecto (cuadros/s) de las animaciones sin entrada en ANIMATION_FPS.
+const DEFAULT_FPS: float = 12.0
+## Velocidad de cada animacion en cuadros/s (unico sitio donde se fija).
+## walk (25 cuadros de la hoja del usuario): el ciclo tiene ~6 pasos (posiciones
+## de paso, piernas juntas, en los cuadros ~4, 8, 12, 16-17, 21 y de nuevo ~25:
+## un paso cada ~4,2 cuadros). A escala del juego (factor 96/178) las zancadas
+## miden 47-52 px de punta a talon y la bota ~14 px, asi que cada paso avanza
+## ~36 px: 6 x 36 = ~216 px por vuelta. A walk_speed (220 px/s) la vuelta debe
+## durar ~0,98 s -> 25 / 0,98 = ~25,5 fps. Con 24 fps la vuelta dura 1,04 s
+## (~207 px/s en los pies): patina ~6 %, imperceptible.
+const ANIMATION_FPS: Dictionary[String, float] = {
+	"idle": 12.0,
+	"walk": 24.0,
+}
 ## Tamano esperado de cada cuadro (px).
 const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 
@@ -65,8 +85,13 @@ func _init() -> void:
 func _load_sequence(anim: String) -> Array[Texture2D]:
 	var textures: Array[Texture2D] = []
 	var index: int = 0
-	while true:
-		var path: String = SPRITE_DIR + FILE_PATTERN % [anim, index]
+	var pattern: String = ""
+	for candidate: String in FILE_PATTERNS:
+		if ResourceLoader.exists(SPRITE_DIR + candidate % [anim, 0]):
+			pattern = candidate
+			break
+	while pattern != "":
+		var path: String = SPRITE_DIR + pattern % [anim, index]
 		if not ResourceLoader.exists(path):
 			break
 		var texture: Texture2D = load(path) as Texture2D
@@ -86,7 +111,7 @@ func _load_sequence(anim: String) -> Array[Texture2D]:
 
 func _add_animation(frames: SpriteFrames, anim: String, textures: Array[Texture2D], loop: bool) -> void:
 	frames.add_animation(anim)
-	frames.set_animation_speed(anim, ANIMATION_FPS)
+	frames.set_animation_speed(anim, ANIMATION_FPS.get(anim, DEFAULT_FPS))
 	frames.set_animation_loop(anim, loop)
 	for texture: Texture2D in textures:
 		frames.add_frame(anim, texture)
