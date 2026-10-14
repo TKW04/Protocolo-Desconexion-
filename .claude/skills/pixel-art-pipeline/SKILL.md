@@ -58,5 +58,5 @@ Nombres de archivo: `<entidad>_<animacion>_<NN>.png`, por ejemplo `isak_walk_00.
 ## Límites que debes respetar
 
 - Tiles, interfaz, efectos y enemigos geométricos se pueden generar de forma procedural con buena calidad.
-- Isak, Isak Optimizado y los jefes complejos se entregan como borrador con sufijo `_placeholder`. Dilo explícitamente: el usuario decidirá si se rehacen a mano.
+- Isak lo aporta el usuario como hoja generada con IA, importada con `tools/import_sheet.py` (guía en `docs/guia-sprites-ia.md`). Isak Optimizado y los jefes complejos se entregan como borrador con sufijo `_placeholder`, salvo que el usuario aporte arte. Dilo explícitamente: el usuario decidirá si se rehacen a mano.
 - Si un resultado no se ve bien en la vista ampliada, no lo entregues. Ajusta o pide dirección.

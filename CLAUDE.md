@@ -45,6 +45,6 @@ Están en `.claude/skills/`:
 
 1. Orden de producción: Isak jugable (caminar, saltar, idle, pulso), luego el tileset del Mundo 1 y el nivel 1-1. Este es el vertical slice. No avances a otros mundos hasta que yo apruebe el ritmo del movimiento.
 2. Cambios de movimiento o de física: explica el valor anterior y el nuevo. Los valores se ajustan jugando.
-3. Los sprites de Isak, de Isak Optimizado y de los jefes se entregan como borrador con sufijo `_placeholder`. Yo decidiré si se rehacen a mano.
+3. El arte de Isak lo aporta el usuario: hojas generadas con IA en `hojas/`, importadas con `tools/import_sheet.py` (guía en `docs/guia-sprites-ia.md`). Los sprites de Isak Optimizado y de los jefes siguen como borrador con sufijo `_placeholder`, salvo que el usuario aporte arte. Yo decidiré si se rehacen a mano.
 4. Antes de dar un nivel por terminado, ejecuta la validación de alcanzabilidad de `level-builder` y las pruebas.
 5. Haz commits pequeños con mensajes claros.
