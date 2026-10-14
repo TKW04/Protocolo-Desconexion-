@@ -2,7 +2,8 @@
 # dano por contacto (C7: de lado y desde arriba, 10 % con la invulnerabilidad de
 # 1 s de Isak), aturdimiento por el pulso solo dentro del radio, plataforma de
 # una via aturdida, pop con rebote por encima del umbral y pisada suave por
-# debajo, anticipacion de 6-12 cuadros a 12 fps antes de volver a danar (A8) y
+# debajo (los casos de salto y caida reales estan en
+# test_alert_bubble_threshold.gd), anticipacion de 6-12 cuadros a 12 fps antes de volver a danar (A8) y
 # ralentizacion x0,5 del Debug sin afectar a Isak.
 # Isak y la Burbuja avanzan paso a paso con delta fijo (sin frames reales).
 extends GutTest
@@ -306,9 +307,10 @@ func test_hard_fall_pops_and_bounces() -> void:
 	var on_defeat := func(enemy: Node2D) -> void: defeated.append(enemy)
 	EventBus.enemy_defeated.connect(on_defeat)
 	var top: float = b.get_platform_top_y()
-	_place_isak(Vector2(BUBBLE_X, top - 100.0))
+	# Caida de ~4,7 tiles sobre el canto (como saltar desde una repisa de 6 tiles).
+	_place_isak(Vector2(BUBBLE_X, top - 300.0))
 	var vy_before: float = 0.0
-	for i: int in 60:
+	for i: int in 90:
 		vy_before = _isak.velocity.y
 		_step([b])
 		if b.get_state() == AlertBubble.STATE_POPPED:
@@ -326,8 +328,9 @@ func test_hard_fall_pops_and_bounces() -> void:
 
 
 func test_threshold_separates_step_and_pop() -> void:
-	# Isak justo encima del canto con velocidad bajo y sobre el umbral.
-	for vy: float in [150.0, 450.0]:
+	# Isak justo encima del canto con velocidad bajo y sobre el umbral (1150):
+	# la de un salto normal (780) la pisa y la de una caida muy alta la revienta.
+	for vy: float in [780.0, 1400.0]:
 		var b: AlertBubble = _bubble(Vector2(BUBBLE_X, 0.0), 0.0)
 		_step([b], 2)
 		b.stun()
@@ -335,6 +338,7 @@ func test_threshold_separates_step_and_pop() -> void:
 		b.step(DT)
 		_step([b], 4)
 		var expect_pop: bool = vy >= b.pop_speed_threshold_px_s
+		assert_eq(expect_pop, vy > 1000.0, "El umbral queda entre los dos casos")
 		assert_eq(b.get_state() == AlertBubble.STATE_POPPED, expect_pop, "vy %.0f" % vy)
 		b.free()
 		_place_isak(FAR)

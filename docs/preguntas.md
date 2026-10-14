@@ -364,6 +364,24 @@ Lo que dice el diseño (§6.2): "Patrulla de lado a lado. Hace daño al contacto
 - **A6 (propuesta):** 10 % de Sync Rate por contacto; la invulnerabilidad de 1 s y el retroceso son los de Isak (`data/isak_abilities.json`).
 - **A2 (propuesta):** aturdimiento de 3 s, que incluye el aviso final de 9 cuadros a 12 fps (0,75 s, A8): la Burbuja alterna su aspecto aturdido y el de alerta, se hincha y tiembla; sigue inofensiva y pisable hasta que termina.
 - **A5 (propuesta, adaptada al sprite):** lienzo de 96x96 con burbuja visible de 78 px; cuerpo 64x76, zona de daño 56x56 (más pequeña que el dibujo), plataforma de una vía de 64 px a 74 px sobre los pies (el canto plano y claro del sprite aturdido).
-- **C7, umbral (propuesta):** caer sobre ella aturdida a ≥ 300 px/s la revienta (≈ 14 px de caída libre) y Isak rebota a −720 px/s (≈ 108 px); por debajo del umbral la pisa.
+- **C7, umbral (propuesta):** caer sobre ella aturdida a ≥ 300 px/s la revienta (≈ 14 px de caída libre) y Isak rebota a −720 px/s (≈ 108 px); por debajo del umbral la pisa. *Ajustado después a 1150 px/s (ver «C7: umbral de pop ajustado» más abajo).*
 - **Capas de física (nuevas):** 1 world, 2 player, 3 enemy, 4 pulse. Isak pasó de la capa 1 a la 2 (su máscara no cambia: su física es la misma), su PulseArea a la 4 y los puntos de atención detectan la capa 2. La Burbuja (capa 3) no choca con Isak; su plataforma está en la capa 1.
 - **Dudas:** ¿el pulso sobre una Burbuja ya aturdida debe reiniciar el aturdimiento (ahora sí)? ¿Una Burbuja reventada reaparece en el nivel (ahora no; solo en la escena de prueba)?
+
+## C7: umbral de pop ajustado (Burbuja de alerta, 2026-10-14)
+
+Con 300 px/s la Burbuja aturdida casi nunca servía de plataforma: solo la pisaba quien bajaba menos de unos 14 px. El umbral `pop_speed_threshold_px_s` de `data/enemies/alert_bubble.json` pasa de **300 a 1150 px/s** (≈ 212 px de caída libre sobre el canto, unos 3,3 tiles). La física de Isak no cambia (salto de 192 px, gravedad de caída 2400 × 1,3 = 3120 px/s²). Velocidades medidas con simulación headless (`tests/test_alert_bubble_threshold.gd`, pasos de 1/60 s, Burbuja aturdida en el suelo con el canto a 74 px): es la velocidad vertical con la que la Burbuja ve llegar a Isak (la de su último paso en el aire).
+
+| Caso | Caída sobre el canto | Velocidad de aterrizaje | Resultado con 1150 |
+|---|---|---|---|
+| a) salto completo desde el suelo | 118 px | 780 px/s | pisa (32 % por debajo) |
+| b) salto desde un escalón de 1 tile | 182 px | 988 px/s | pisa (14 % por debajo) |
+| c) salto corriendo | 118 px | 780 px/s | pisa |
+| d) caída desde repisa de 2 tiles | 54 px | 520 px/s | pisa |
+| e) caída desde repisa de 3 tiles | 118 px | 780 px/s | pisa |
+| f) caída desde repisa de 4 tiles | 182 px | 988 px/s | pisa (14 % por debajo) |
+| caída desde repisa de 5 tiles | 246 px | 1196 px/s | revienta, pero solo un 4 % por encima (zona límite) |
+| g) caída desde repisa de 6 tiles | 310 px | 1352 px/s | revienta (18 % por encima) |
+| h) caída desde repisa de 7 tiles | 374 px | 1456 px/s | revienta |
+
+Las alturas de repisa se miden desde el suelo donde está la Burbuja. Como el salto no tiene altura variable ni velocidad máxima de caída, la velocidad solo depende de cuánto cae Isak sobre el canto: un salto desde un escalón de 1 tile cae lo mismo que una repisa de 4 tiles, y una repisa de 3 tiles lo mismo que un salto desde el suelo. Por eso no se puede pedir que la repisa de 3 o 4 tiles la reviente sin que también la reviente un salto normal. Regla resultante: todo salto desde el suelo o desde un escalón la pisa; para reventarla hay que caer desde unos 5 tiles o más sobre el canto (repisa de 6 tiles). La repisa de 5 tiles queda en el límite y conviene no usarla en niveles. **Se afina jugando**; si se prefiere que reviente más a menudo, la otra opción es reventarla con una acción explícita (p. ej., pulsar abajo en el aire) en lugar de por velocidad.
