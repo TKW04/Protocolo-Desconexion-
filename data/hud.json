@@ -1,5 +1,5 @@
 {
-	"_notes": "PROPUESTA (A11 de docs/preguntas.md, abierta), ajustar en el paso 12. Arte provisional: todo el aspecto del HUD sale de aqui (colores, tamanos, tiempos); scripts/ui/hud.gd no tiene numeros sueltos. Escala 1280x720: A11 pedia 16 px de alto a 640x360 -> 32 px. Hex PROVISIONALES: los hex exactos por mundo son una decision abierta. debug_colors: color del Debug por mundo (docs 15.3); el 1 es debug_cian de assets/palettes/mundo1.gpl (#3dfff5, decision 2026-10-14: mas verdoso y claro que el cian de la ropa de Isak para no confundirse); el 6 cambia por zona (A16, abierta): de momento repite el cian. low_sync_threshold: Sync Rate (en %) por debajo del cual se activa el estado de Sync Rate bajo (docs 3.3 y 15.6: menor al 20%). charge_ring_*: anillo de carga de la pulsacion larga del Debug, a la izquierda de la bateria, en el color del Debug del mundo (pista en el color empty); solo se dibuja mientras se mantiene K / Y antes de activar (PROPUESTA, cambio 2026-10-14). Unidades: px, s, Hz.",
+	"_notes": "PROPUESTA (A11 de docs/preguntas.md, abierta), ajustar en el paso 12. Arte provisional: todo el aspecto del HUD sale de aqui (colores, tamanos, tiempos); scripts/ui/hud.gd no tiene numeros sueltos. Escala 1280x720: A11 pedia 16 px de alto a 640x360 -> 32 px. Hex PROVISIONALES: los hex exactos por mundo son una decision abierta. debug_colors: color del Debug por mundo (docs 15.3); el 1 es debug_cian de assets/palettes/mundo1.gpl (#3dfff5, decision 2026-10-14: mas verdoso y claro que el cian de la ropa de Isak para no confundirse); el 6 cambia por zona (A16, abierta): de momento repite el cian. low_sync_threshold: Sync Rate (en %) por debajo del cual se activa el estado de Sync Rate bajo (docs 3.3 y 15.6: menor al 20%). attention_icon: ambar #ffa000 de assets/palettes/mundo1.gpl (decision 2026-10-14; el #ffd34a anterior se volvia verdoso con el tinte del Debug); lo usan el icono del HUD y el objeto punto de atencion. charge_ring_*: anillo de carga de la pulsacion larga del Debug, a la izquierda de la bateria, en el color del Debug del mundo (pista en el color empty); solo se dibuja mientras se mantiene K / Y antes de activar (PROPUESTA, cambio 2026-10-14). Unidades: px, s, Hz.",
 	"low_sync_threshold": 20.0,
 	"bar_height_px": 32,
 	"margin_px": 16,
@@ -36,7 +36,7 @@
 		"gain": "#ffffff",
 		"low_sync": "#ff4a2a",
 		"battery_border": "#f2f4f8",
-		"attention_icon": "#ffd34a"
+		"attention_icon": "#ffa000"
 	},
 	"debug_colors": {
 		"1": "#3dfff5",

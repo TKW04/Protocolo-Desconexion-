@@ -1,0 +1,12 @@
+{
+	"_notes": "Punto debil de los jefes (regla fija: rojo = dano y puntos debiles; en el Mundo 1 carmin puro y pulsante). Decision 2026-10-14: solo visible con el Debug y dibujado POR ENCIMA del tinte del Debug, en un CanvasLayer propio (layer) entre el efecto del Debug (DebugOverlay.OVERLAY_LAYER = 5) y el HUD (10), asi el tinte no lo apaga. Pulsa de color a pulse_color (carmin -> carmin_brillo de assets/palettes/mundo1.gpl) a pulse_hz en tiempo real. outline_color: halo oscuro (noche_profunda) que lo separa del fondo. Aun no hay jefes: lo usaran como componente (scenes/bosses/weak_point.tscn). Unidades: px, Hz.",
+	"layer": 6,
+	"radius_px": 24.0,
+	"ring_width_px": 4.0,
+	"core_radius_px": 8.0,
+	"outline_width_px": 4.0,
+	"pulse_hz": 2.0,
+	"color": "#e0004a",
+	"pulse_color": "#ff5a8c",
+	"outline_color": "#0b0e1a"
+}
