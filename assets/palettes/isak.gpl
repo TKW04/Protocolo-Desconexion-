@@ -1,0 +1,26 @@
+GIMP Palette
+Name: Isak (PROPUESTA, pendiente de aprobacion)
+Columns: 4
+# Paleta de Isak. Hex PROPUESTOS, no aprobados.
+# Pelo y piel no estan definidos en docs/: valores provisionales.
+# world_cyan* = color del Mundo 1 (contorno, reflejo, LED); cambia por mundo.
+# El transparente (alfa 0) se admite aparte.
+ 22  20  28	outline
+ 38  37  45	tee_black
+239 228 196	logo_cream
+ 72  76  54	jacket_shadow
+104 109  78	jacket
+136 140 106	jacket_light
+176 122  90	skin_shadow
+220 164 128	skin
+ 51  37  30	hair
+ 85  62  48	hair_light
+ 42  61  94	jeans_shadow
+ 62  88 134	jeans
+ 58  56  64	shoe
+214 212 204	sole
+ 44  46  54	pack_shadow
+ 69  72  82	pack
+ 30  74  82	led_off
+ 79 227 255	world_cyan
+200 250 255	world_cyan_hi
