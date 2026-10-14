@@ -1,8 +1,10 @@
 # Prueba de humo de scenes/levels/test_arena.tscn: carga, Isak cae al suelo
-# y queda en Idle con la fisica real del motor.
+# y queda en Idle con la fisica real del motor; clasificacion de saltos de la
+# ayuda de depuracion.
 extends GutTest
 
 const ARENA_SCENE: PackedScene = preload("res://scenes/levels/test_arena.tscn")
+const ArenaScript = preload("res://scripts/levels/test_arena.gd")
 const SETTLE_FRAMES: int = 60
 
 var _pulse_was_unlocked: bool
@@ -24,3 +26,11 @@ func test_isak_lands_idle_in_arena() -> void:
 	assert_true(isak.is_on_floor(), "Isak debe apoyarse en el suelo de la arena")
 	assert_eq(isak.get_state_name(), PlayerState.IDLE)
 	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "La arena desbloquea el pulso")
+
+
+func test_jump_classification_for_debug_overlay() -> void:
+	assert_eq(ArenaScript.classify_jump(PlayerState.FALL, false, true), "coyote")
+	assert_eq(ArenaScript.classify_jump(PlayerState.FALL, true, false), "buffer")
+	assert_eq(ArenaScript.classify_jump(PlayerState.IDLE, true, false), "buffer")
+	assert_eq(ArenaScript.classify_jump(PlayerState.RUN, true, true), "normal")
+

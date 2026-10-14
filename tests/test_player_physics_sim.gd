@@ -275,35 +275,115 @@ func test_running_jump_reach_matches_formula() -> void:
 			"El alcance no debe depender del framerate")
 
 
-## El hueco entre GroundLeft y GroundRight de test_arena se salva caminando,
-## saltando en el ultimo momento con los pies todavia en el suelo.
-func test_arena_gap_is_jumpable_walking() -> void:
+# --- Arena de pruebas (scenes/levels/test_arena.tscn) ---
+
+## Carga la arena, cede a Isak a la simulacion y lo deja quieto en el inicio.
+func _make_arena_sim(delta: float) -> IsakSim:
+	var arena: Node2D = ARENA_SCENE.instantiate() as Node2D
+	var sim := IsakSim.new(delta)
+	sim.attach(arena.get_node("Isak") as Isak)
+	arena.set_physics_process(false)
+	await _use_world(sim, arena)
+	return sim
+
+
+## Rectangulo global de la forma de colision de un cuerpo de la arena.
+func _body_rect(name: String) -> Rect2:
+	var body: StaticBody2D = _world.get_node(name) as StaticBody2D
+	var size: Vector2 = ((body.get_node("CollisionShape2D") as CollisionShape2D).shape as RectangleShape2D).size
+	return Rect2(body.global_position - size * 0.5, size)
+
+
+## Coloca a Isak quieto sobre GroundA en x, camina (o corre) a la derecha hasta
+## llegar a walk_speed/run_speed y vuelve.
+func _approach(sim: IsakSim, x: float, run: bool) -> void:
+	sim.isak.global_position = Vector2(x, _body_rect("GroundA").position.y)
+	sim.isak.velocity = Vector2.ZERO
+	sim.input.move_axis = 0.0
+	sim.input.run_held = false
+	sim.settle()
+	sim.input.move_axis = 1.0
+	sim.input.run_held = run
+
+
+## Salta en el ultimo paso con los pies en el suelo antes del borde y avanza
+## hasta aterrizar. Devuelve verdadero si aterriza pasado gap_end.
+func _jump_gap(sim: IsakSim, gap_start: float, gap_end: float, run: bool) -> bool:
+	var isak: Isak = sim.isak
+	var speed: float = isak.physics.run_speed if run else isak.physics.walk_speed
+	isak.global_position = Vector2(gap_start - 3.0 * isak.physics.tile_size, _body_rect("GroundB").position.y)
+	isak.velocity = Vector2.ZERO
+	sim.input.move_axis = 0.0
+	sim.input.run_held = false
+	sim.settle()
+	sim.input.move_axis = 1.0
+	sim.input.run_held = run
+	sim.step_until(func() -> bool: return isak.global_position.x >= gap_start - isak.hitbox_size.x * 0.5)
+	assert_true(isak.is_on_floor(), "Debe saltar con los pies en el suelo")
+	assert_almost_eq(isak.velocity.x, speed, FLOAT_TOLERANCE, "Debe ir a velocidad maxima")
+	sim.press_jump()
+	sim.step_until(func() -> bool: return isak.is_on_floor() or isak.global_position.y > _body_rect("GroundB").end.y + 64.0, sim.steps_for(2.0))
+	gut.p("dt=%.4f hueco=%.0f px %s: x=%.1f (borde %.0f) suelo=%s" % [sim.delta, gap_end - gap_start,
+			"corriendo" if run else "caminando", isak.global_position.x, gap_end, isak.is_on_floor()])
+	return isak.is_on_floor() and isak.global_position.x > gap_end
+
+
+## Hueco de 2 tiles (GroundA -> GroundB) caminando y de 3 tiles
+## (GroundB -> GroundC) corriendo, saltando desde el borde.
+func test_arena_gaps_are_jumpable() -> void:
 	for delta: float in DELTAS:
-		var arena: Node2D = ARENA_SCENE.instantiate() as Node2D
-		var sim := IsakSim.new(delta)
-		sim.attach(arena.get_node("Isak") as Isak)
-		arena.set_physics_process(false)
-		await _use_world(sim, arena)
-		var left: StaticBody2D = arena.get_node("GroundLeft") as StaticBody2D
-		var right: StaticBody2D = arena.get_node("GroundRight") as StaticBody2D
-		var left_size: Vector2 = ((left.get_node("CollisionShape2D") as CollisionShape2D).shape as RectangleShape2D).size
-		var right_size: Vector2 = ((right.get_node("CollisionShape2D") as CollisionShape2D).shape as RectangleShape2D).size
-		var gap_start: float = left.global_position.x + left_size.x * 0.5
-		var gap_end: float = right.global_position.x - right_size.x * 0.5
-		var right_top: float = right.global_position.y - right_size.y * 0.5
-		assert_gt(gap_end - gap_start, 0.0, "La arena debe tener un hueco")
+		var sim: IsakSim = await _make_arena_sim(delta)
+		var tile: float = sim.isak.physics.tile_size
+		var a: Rect2 = _body_rect("GroundA")
+		var b: Rect2 = _body_rect("GroundB")
+		var c: Rect2 = _body_rect("GroundC")
+		assert_almost_eq(b.position.x - a.end.x, 2.0 * tile, FLOAT_TOLERANCE, "Hueco de 2 tiles")
+		assert_almost_eq(c.position.x - b.end.x, 3.0 * tile, FLOAT_TOLERANCE, "Hueco de 3 tiles")
+		# GroundA -> GroundB: _jump_gap coloca a Isak a la altura de GroundB,
+		# que es la misma que GroundA.
+		assert_true(_jump_gap(sim, a.end.x, b.position.x, false), "Hueco de 2 tiles caminando (dt=%.4f)" % delta)
+		assert_true(_jump_gap(sim, b.end.x, c.position.x, true), "Hueco de 3 tiles corriendo (dt=%.4f)" % delta)
+		assert_false(_jump_gap(sim, b.end.x, c.position.x, false),
+				"Hueco de 3 tiles: caminando desde el borde no llega (dt=%.4f)" % delta)
+
+
+## Isak cabe bajo PlatformLow caminando y sin tocarla.
+func test_arena_isak_fits_under_low_platform() -> void:
+	for delta: float in DELTAS:
+		var sim: IsakSim = await _make_arena_sim(delta)
 		var isak: Isak = sim.isak
-		# Se empieza pasada PlatformLow (Isak no cabe debajo) y con sitio para
-		# llegar a walk_speed antes del borde.
-		isak.global_position.x = gap_start - 2.0 * isak.physics.tile_size
-		sim.settle()
-		sim.input.move_axis = 1.0
-		sim.step_until(func() -> bool: return isak.global_position.x >= gap_start - isak.hitbox_size.x * 0.5)
-		assert_true(isak.is_on_floor(), "Debe saltar con los pies en el suelo")
-		assert_almost_eq(isak.velocity.x, isak.physics.walk_speed, FLOAT_TOLERANCE, "Debe ir caminando")
-		sim.press_jump()
-		sim.step_until(func() -> bool: return isak.is_on_floor())
-		gut.p("dt=%.4f hueco=%.0f px, aterriza en x=%.1f (borde %.0f)" % [delta, gap_end - gap_start, isak.global_position.x, gap_end])
-		assert_true(isak.is_on_floor(), "Debe aterrizar (dt=%.4f)" % delta)
-		assert_gt(isak.global_position.x, gap_end, "Debe aterrizar pasado el hueco (dt=%.4f)" % delta)
-		assert_almost_eq(isak.global_position.y, right_top, 1.0, "Debe estar sobre GroundRight")
+		var plat: Rect2 = _body_rect("PlatformLow")
+		var floor_y: float = _body_rect("GroundA").position.y
+		assert_gte(floor_y - plat.end.y, isak.hitbox_size.y + 8.0, "Hueco bajo PlatformLow con margen")
+		_approach(sim, plat.position.x - isak.physics.tile_size, false)
+		var steps: int = sim.step_until(func() -> bool:
+				return isak.global_position.x > plat.end.x + isak.hitbox_size.x or not isak.is_on_floor())
+		assert_lt(steps, sim.steps_for(2.0), "Debe cruzar bajo la plataforma")
+		assert_true(isak.is_on_floor(), "Debe seguir en el suelo al pasar por debajo")
+		assert_almost_eq(isak.global_position.y, floor_y, 1.0, "Sin choques con la plataforma")
+		assert_almost_eq(isak.velocity.x, isak.physics.walk_speed, FLOAT_TOLERANCE, "Sin frenar debajo")
+
+
+## PlatformLow y los escalones de 1, 2 y 2,5 tiles se alcanzan con un salto
+## caminando desde el suelo.
+func test_arena_platform_and_steps_are_reachable() -> void:
+	var expected_heights: Dictionary[String, float] = {
+		"PlatformLow": 64.0, "Step1": 32.0, "Step2": 64.0, "Step3": 80.0,
+	}
+	for delta: float in DELTAS:
+		var sim: IsakSim = await _make_arena_sim(delta)
+		var isak: Isak = sim.isak
+		var floor_y: float = _body_rect("GroundA").position.y
+		for target: String in expected_heights:
+			var rect: Rect2 = _body_rect(target)
+			assert_almost_eq(floor_y - rect.position.y, expected_heights[target], FLOAT_TOLERANCE,
+					"Altura de %s" % target)
+			assert_lt(expected_heights[target], isak.physics.jump_height_px - 8.0, "%s con margen" % target)
+			_approach(sim, rect.position.x - 2.0 * isak.physics.tile_size, false)
+			sim.step_until(func() -> bool: return isak.global_position.x >= rect.position.x - isak.physics.tile_size)
+			sim.press_jump()
+			sim.step_until(func() -> bool: return isak.is_on_floor() and isak.velocity.y >= 0.0)
+			sim.input.move_axis = 0.0
+			assert_almost_eq(isak.global_position.y, rect.position.y, 1.0, "Debe subir a %s (dt=%.4f)" % [target, delta])
+			assert_between(isak.global_position.x, rect.position.x, rect.end.x, "Debe quedar sobre %s" % target)
+
