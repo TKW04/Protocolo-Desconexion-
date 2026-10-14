@@ -1,0 +1,9 @@
+{
+	"_notes": "Fondo de pantalla de bloqueo del Mundo 1 con parallax (PROPUESTA de V10). Capas de atras hacia delante; scripts/levels/world1_background.gd crea un Parallax2D por capa. scroll_scale: 0 = fija en pantalla (infinitamente lejos), 1 = se mueve con el nivel. En y las capas van casi fijas para que la camara no deje ver el borde de la imagen (1280x720, igual que la resolucion base). repeat_size: ancho de la imagen (se repite sin costura). Todo el fondo va en el lienzo del mundo con z_index negativo: por debajo de los tiles y de la capa del Debug (CanvasLayer 5), que lo tine como al resto del mundo. Imagenes de tools/gen_world1_objects.py.",
+	"z_index": -100,
+	"layers": [
+		{"name": "Cielo", "texture": "res://assets/sprites/backgrounds/mundo1_bg_cielo.png", "scroll_scale": [0.1, 0.0], "repeat_size": [1280, 0], "repeat_times": 3},
+		{"name": "FondoMedio", "texture": "res://assets/sprites/backgrounds/mundo1_bg_fondo_medio.png", "scroll_scale": [0.25, 0.0], "repeat_size": [1280, 0], "repeat_times": 3},
+		{"name": "Resplandor", "texture": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "scroll_scale": [0.45, 0.0], "repeat_size": [1280, 0], "repeat_times": 3}
+	]
+}
