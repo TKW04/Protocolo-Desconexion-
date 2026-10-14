@@ -27,12 +27,16 @@ const ANIM_PULSE: StringName = &"pulse"
 ## Evita bucles si dos estados se devolvieran el control en el mismo paso.
 const MAX_TRANSITIONS_PER_STEP: int = 4
 
+const PULSE_EFFECT_SCENE: PackedScene = preload("res://scenes/player/pulse_effect.tscn")
+
 @export_file("*.json") var physics_path: String = PlayerPhysics.DEFAULT_PATH
 @export_file("*.json") var abilities_path: String = PlayerAbilities.DEFAULT_PATH
 ## Segundos quieto antes de la animacion de terminal (propuesta, ajustar jugando).
 @export var terminal_idle_threshold_s: float = 4.0
 ## Tamano de la caja de colision (ancho, alto). Los pies estan en el origen.
 @export var hitbox_size: Vector2 = Vector2(16.0, 40.0)
+## Posicion del celular en el cuadro de pulso, mirando a la derecha (px desde los pies).
+@export var pulse_effect_origin: Vector2 = Vector2(13.0, -35.0)
 ## Limites de la camara en px. Sin area = sin limites.
 @export var camera_limits: Rect2i = Rect2i()
 
@@ -53,6 +57,7 @@ var _idle_time: float = 0.0
 var _terminal_playing: bool = false
 var _knockback_direction: float = 0.0
 var _ready_ok: bool = false
+var _pulse_effect: PulseEffect
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -238,6 +243,32 @@ func set_pulse_area_active(active: bool) -> void:
 	_pulse_shape.set_deferred(&"disabled", not active)
 	if active:
 		pulse_fired.emit(_pulse_area)
+
+
+## Crea la onda visual del pulso en el celular. Lo llama PulseState al entrar.
+func start_pulse_effect() -> void:
+	stop_pulse_effect()
+	_pulse_effect = PULSE_EFFECT_SCENE.instantiate() as PulseEffect
+	_pulse_effect.setup(abilities.pulse_radius_px, abilities.pulse_duration_s)
+	_pulse_effect.position = Vector2(pulse_effect_origin.x * facing, pulse_effect_origin.y)
+	add_child(_pulse_effect)
+
+
+func advance_pulse_effect(delta: float) -> void:
+	if _pulse_effect != null:
+		_pulse_effect.advance(delta)
+
+
+## Libera la onda. Lo llama PulseState al salir (tambien si un golpe lo corta).
+func stop_pulse_effect() -> void:
+	if _pulse_effect != null and is_instance_valid(_pulse_effect):
+		_pulse_effect.queue_free()
+	_pulse_effect = null
+
+
+## Onda activa o null.
+func get_pulse_effect() -> PulseEffect:
+	return _pulse_effect
 
 
 # --- Presentacion ---
