@@ -1,0 +1,250 @@
+"""Pruebas de tools/validate_level_schema.py sobre data/levels/1-1.json y variantes rotas.
+Uso: python3 -m unittest tests/test_level_schema.py
+"""
+
+import copy
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import validate_level_schema as vls  # noqa: E402
+
+LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-1.json")
+SCRIPT = os.path.join(ROOT, "tools", "validate_level_schema.py")
+
+
+def load_level():
+    with open(LEVEL_PATH, encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def set_cell(level, x, y, char):
+    row = level["grid"][y]
+    level["grid"][y] = row[:x] + char + row[x + 1:]
+
+
+def find(level, char):
+    for y, row in enumerate(level["grid"]):
+        x = row.find(char)
+        if x >= 0:
+            return x, y
+    raise AssertionError("no hay '%s' en el grid" % char)
+
+
+def obj(level, kind):
+    return next(o for o in level["objects"] if o["type"] == kind)
+
+
+class LevelSchemaTest(unittest.TestCase):
+    def setUp(self):
+        self.level = load_level()
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(errors, "se esperaba un error con '%s'" % fragment)
+        self.assertTrue(any(fragment in e for e in errors),
+                        "ningun error contiene '%s': %s" % (fragment, errors))
+
+    # --- Nivel real ---
+
+    def test_level_1_1_is_valid(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_level_1_1_design_requirements(self):
+        lvl = self.level
+        self.assertEqual((lvl["id"], lvl["name"], lvl["world"], lvl["tile_size"], lvl["debug_color"]),
+                         ("1-1", "Bandeja de entrada", 1, 64, "cyan"))
+        self.assertEqual(lvl["abilities_available"], {"pulse": True, "debug": False})
+        self.assertNotIn("debug", json.dumps(lvl["unlocks"]))
+        self.assertGreaterEqual(len(lvl["grid"]), 12)
+        self.assertEqual("".join(lvl["grid"]).count("^"), 0, "1-1 sin pinchos")
+        points = "".join(lvl["grid"]).count("o")
+        self.assertTrue(10 <= points <= 20, "V8: entre 10 y 20 puntos, hay %d" % points)
+        kinds = [o["type"] for o in lvl["objects"]]
+        for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_door", "glitch_wall"):
+            self.assertIn(kind, kinds)
+        self.assertEqual(obj(lvl, "eco_line")["params"]["text"], "Bienvenido. He optimizado tu espacio.")
+        self.assertEqual(obj(lvl, "exit_door")["params"]["text"], "Marcar como leído")
+        # Orden de los tramos: aterrizaje -> puente -> Burbuja -> pop-up -> puerta.
+        xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], lvl["enemies"][0]["x"],
+              obj(lvl, "popup_blocker")["x"], obj(lvl, "exit_door")["x"]]
+        self.assertEqual(xs, sorted(xs))
+        # Checkpoint entre el puente y la Burbuja (A12).
+        cx = lvl["checkpoints"][0]["x"]
+        self.assertTrue(xs[1] < cx < xs[2])
+
+    def test_level_1_1_jumps_within_margin(self):
+        """Saltos del 1-1 dentro del 85 % del alcance (mismas formulas que PlayerPhysics).
+        No es la validacion de alcanzabilidad (paso 15): solo las medidas pensadas."""
+        with open(os.path.join(ROOT, "data", "isak_physics.json"), encoding="utf-8") as handle:
+            phys = json.load(handle)
+        tile = phys["tile_size"]
+        g, v, m = phys["gravity"], phys["jump_velocity"], phys["fall_gravity_multiplier"]
+        max_height = v * v / (2.0 * g)
+        t_air = abs(v) / g + (2.0 * max_height / (g * m)) ** 0.5
+        walk_gap_tiles = 0.85 * phys["walk_speed"] * t_air / tile
+        step_tiles = 0.85 * max_height / tile
+        real_height_tiles = 0.92 * max_height / tile  # el salto real a 60 Hz llega a ~92 %
+        grid = self.level["grid"]
+        rows = len(grid)
+
+        def surface(x):
+            return next((y for y in range(rows) if grid[y][x] == "#"), rows)
+
+        bridge = obj(self.level, "bridge_inactive")
+        bridge_cols = set(range(bridge["x"], bridge["x"] + bridge["params"]["length_tiles"]))
+        width = len(grid[0])
+        for x in range(1, width - 2):
+            if x in bridge_cols or x + 1 in bridge_cols or surface(x + 1) == 0:
+                continue  # puente o pared de limite hasta arriba
+            rise = surface(x) - surface(x + 1)
+            if rise > 0:
+                self.assertLessEqual(rise, step_tiles,
+                                     "subida de %d tiles en la columna %d" % (rise, x + 1))
+        # Fosos: tramos de suelo al mismo nivel con los dos vecinos >= 2 tiles mas altos.
+        # Fuera del puente deben poder saltarse caminando.
+        segments = []
+        for x in range(1, width - 1):
+            if segments and segments[-1][2] == surface(x):
+                segments[-1][1] = x
+            else:
+                segments.append([x, x, surface(x)])
+        for left, seg, right in zip(segments, segments[1:], segments[2:]):
+            if seg[0] in bridge_cols or seg[1] in bridge_cols:
+                continue
+            if seg[2] - left[2] >= 2 and seg[2] - right[2] >= 2:
+                gap = seg[1] - seg[0] + 1
+                self.assertLessEqual(gap, walk_gap_tiles, "foso de %d tiles en la columna %d" % (gap, seg[0]))
+        # El foso del puente no se puede saltar ni trepar: el puente es necesario.
+        after = bridge["x"] + bridge["params"]["length_tiles"]
+        self.assertGreater(len(bridge_cols), 0.85 * phys["run_speed"] * t_air / tile)
+        self.assertGreater(surface(after - 1) - surface(after), real_height_tiles)
+
+    # --- Variantes rotas ---
+
+    def test_missing_field(self):
+        del self.level["objects"]
+        self.assert_fails(self.level, "falta el campo obligatorio 'objects'")
+
+    def test_tile_size_must_match_physics(self):
+        self.level["tile_size"] = 32
+        self.assert_fails(self.level, "tile_size 32")
+
+    def test_non_rectangular_grid(self):
+        self.level["grid"][5] = self.level["grid"][5][:-1]
+        self.assert_fails(self.level, "fila 5, columna")
+
+    def test_invalid_char(self):
+        set_cell(self.level, 10, 3, "X")
+        self.assert_fails(self.level, "fila 3, columna 10: caracter no valido 'X'")
+
+    def test_too_few_rows(self):
+        self.level["grid"] = self.level["grid"][-11:]
+        self.assert_fails(self.level, "al menos 12")
+
+    def test_two_starts(self):
+        set_cell(self.level, 10, 3, "P")
+        self.assert_fails(self.level, "exactamente un inicio (P)")
+
+    def test_no_goal(self):
+        x, y = find(self.level, "G")
+        set_cell(self.level, x, y, ".")
+        self.assert_fails(self.level, "exactamente un meta (G)")
+
+    def test_checkpoint_not_on_c(self):
+        self.level["checkpoints"][0]["x"] += 1
+        self.assert_fails(self.level, "no esta sobre una celda 'C'")
+        self.assert_fails(self.level, "celda 'C' sin entrada")
+
+    def test_spike_next_to_checkpoint(self):
+        x, y = find(self.level, "C")
+        set_cell(self.level, x + 1, y + 1, "^")
+        self.assert_fails(self.level, "fila %d, columna %d: pinchos junto al punto de sincronizacion" % (y + 1, x + 1))
+
+    def test_spike_under_start(self):
+        x, y = find(self.level, "P")
+        set_cell(self.level, x, y + 1, "^")
+        self.assert_fails(self.level, "pinchos justo debajo del inicio P")
+
+    def test_enemy_unknown_type(self):
+        self.level["enemies"][0]["type"] = "banner_inexistente"
+        self.assert_fails(self.level, "sin data/enemies/banner_inexistente.json")
+
+    def test_enemy_cell_without_entry(self):
+        self.level["enemies"] = []
+        self.assert_fails(self.level, "celda 'E' sin entrada")
+
+    def test_unknown_object_type(self):
+        self.level["objects"].append({"type": "teleport", "x": 2, "y": 2, "params": {}})
+        self.assert_fails(self.level, "tipo 'teleport' no esta en data/world1_objects.json")
+
+    def test_object_missing_required_param(self):
+        del obj(self.level, "popup_blocker")["params"]["close_button_px"]
+        self.assert_fails(self.level, "falta el param obligatorio 'close_button_px'")
+
+    def test_object_unknown_param(self):
+        obj(self.level, "exit_door")["params"]["color"] = "rojo"
+        self.assert_fails(self.level, "param desconocido 'color'")
+
+    def test_object_missing_fields(self):
+        self.level["objects"].append({"type": "receiver", "x": 2})
+        self.assert_fails(self.level, "faltan y, params")
+
+    def test_receiver_bad_target(self):
+        obj(self.level, "receiver")["params"]["target"] = "puente_x"
+        self.assert_fails(self.level, "target 'puente_x' no es el id de ningun bridge_inactive")
+
+    def test_blocking_object_over_terrain(self):
+        popup = obj(self.level, "popup_blocker")
+        set_cell(self.level, popup["x"] + 1, popup["y"] + 1, "#")
+        self.assert_fails(self.level, "fila %d, columna %d: objects" % (popup["y"] + 1, popup["x"] + 1))
+
+    def test_object_out_of_grid(self):
+        obj(self.level, "bridge_inactive")["params"]["length_tiles"] = 500
+        self.assert_fails(self.level, "se sale del grid")
+
+    def test_exit_door_must_contain_goal(self):
+        obj(self.level, "exit_door")["x"] -= 3
+        self.assert_fails(self.level, "no contiene la meta G")
+
+    def test_duplicate_ids(self):
+        self.level["checkpoints"][0]["id"] = "burbuja_1"
+        self.assert_fails(self.level, "id duplicado 'burbuja_1'")
+
+    def test_secret_without_object(self):
+        self.level["secrets"][0]["x"] -= 1
+        self.assert_fails(self.level, "no hay ningun objeto 'glitch_wall' en esa celda")
+
+    def test_unknown_ability(self):
+        self.level["abilities_available"]["dash"] = True
+        self.assert_fails(self.level, "habilidad desconocida")
+
+    def test_sections_out_of_order(self):
+        self.level["sections"].reverse()
+        self.assert_fails(self.level, "se solapa o va antes")
+
+    # --- Linea de comandos ---
+
+    def _run(self, level):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "nivel.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(level, handle, ensure_ascii=False)
+            return subprocess.run([sys.executable, SCRIPT, path], capture_output=True, text=True)
+
+    def test_cli_exit_codes(self):
+        self.assertEqual(self._run(self.level).returncode, 0)
+        broken = copy.deepcopy(self.level)
+        set_cell(broken, 10, 3, "X")
+        result = self._run(broken)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("fila 3, columna 10", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

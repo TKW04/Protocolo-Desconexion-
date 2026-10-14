@@ -1,0 +1,61 @@
+{
+	"_notes": "Nivel 1-1 (docs/mundo-1-notificaciones.md 6.3). Geometria con tiles de 64 px, 140x14 (A12: ~150 tiles de la propuesta; a 1280x720 se ven 20x11,25 tiles, igual que 640x360 con tiles de 32, asi que el numero de tiles no cambia). Saltos <= 85 % del alcance (data/isak_physics.json): huecos de 2 tiles (128 px <= 140 px caminando), subidas de 1 y 2 tiles (128 px <= 163 px). P en el aire: Isak cae al mundo. Todo lo que no es de la leyenda base va en `objects` (V7). Valores de params marcados PROPUESTA en data/world1_objects.json.",
+	"id": "1-1",
+	"name": "Bandeja de entrada",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"target_duration_s": 180,
+	"difficulty": 1,
+	"abilities_available": {
+		"pulse": true,
+		"debug": false
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"sections": [
+		{"name": "Tramo 1: Aterrizaje", "x_from": 1, "x_to": 39},
+		{"name": "Tramo 2: Puente desactivado", "x_from": 40, "x_to": 67},
+		{"name": "Tramo 3: Primera Burbuja", "x_from": 68, "x_to": 99},
+		{"name": "Tramo 4: Pop-up", "x_from": 100, "x_to": 123},
+		{"name": "Cierre: Marcar como leído", "x_from": 124, "x_to": 138}
+	],
+	"grid": [
+		"#.........................................................................................................................................##",
+		"#.........................................................................................................................................##",
+		"#.........................................................................................................................................##",
+		"#...P.....................................................................................................................................##",
+		"#.........................................................................................................................................##",
+		"#.........................................................................................................................................##",
+		"#.........................................................................................................................................##",
+		"#..........................o......o.......................................................................................................##",
+		"#.............o........o..----..####.............................................................o.........................................#",
+		"#.......o...######..............####..o.....o.....o.o.....o.....C.........o...o.....E...........####....o...o.........o.......o...G........#",
+		"######################..########################......######################################################################################",
+		"######################..########################......######################################################################################",
+		"#################################################.....######################################################################################",
+		"############################################################################################################################################"
+	],
+	"checkpoints": [
+		{"id": "sync_1", "x": 64, "y": 9}
+	],
+	"secrets": [
+		{"id": "secreto_pared_glitch", "x": 138, "y": 8, "object": "glitch_wall", "reward": null, "note": "Sin forma de acceder todavia; se retoma con el Debug (V12: contenido pendiente)."}
+	],
+	"enemies": [
+		{"id": "burbuja_1", "type": "alert_bubble", "x": 84, "y": 9, "params": {"patrol_range_px": 320.0, "patrol_speed_px_s": 80.0}}
+	],
+	"objects": [
+		{"type": "eco_line", "x": 3, "y": 4, "params": {"id": "eco_bienvenida", "text": "Bienvenido. He optimizado tu espacio.", "width_tiles": 6, "height_tiles": 6, "duration_s": 4.0, "once": true}},
+		{"type": "receiver", "x": 47, "y": 9, "params": {"target": "puente_1"}},
+		{"type": "bridge_inactive", "x": 48, "y": 10, "params": {"id": "puente_1", "length_tiles": 6, "direction": "right"}},
+		{"type": "popup_blocker", "x": 112, "y": 6, "params": {"id": "popup_1", "text": "¿Seguro que quieres seguir concentrado? Tenemos ofertas", "width_tiles": 3, "height_tiles": 4, "close_button_px": [4, 192], "close_button_size_px": 16}},
+		{"type": "exit_door", "x": 130, "y": 8, "params": {"id": "puerta_salida", "text": "Marcar como leído", "width_tiles": 1, "height_tiles": 2}},
+		{"type": "glitch_wall", "x": 138, "y": 8, "params": {"width_tiles": 1, "height_tiles": 2, "solid_neighbors": 7}}
+	],
+	"unlocks": [
+		{"type": "level", "id": "1-2"}
+	]
+}
