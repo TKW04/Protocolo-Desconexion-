@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10, A11. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16.
+**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10, A11. Aplazado: V15. En C9 la propuesta de una escala de dificultad global única sigue sin confirmar (abierta). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -385,3 +385,8 @@ Con 300 px/s la Burbuja aturdida casi nunca servía de plataforma: solo la pisab
 | h) caída desde repisa de 7 tiles | 374 px | 1456 px/s | revienta |
 
 Las alturas de repisa se miden desde el suelo donde está la Burbuja. Como el salto no tiene altura variable ni velocidad máxima de caída, la velocidad solo depende de cuánto cae Isak sobre el canto: un salto desde un escalón de 1 tile cae lo mismo que una repisa de 4 tiles, y una repisa de 3 tiles lo mismo que un salto desde el suelo. Por eso no se puede pedir que la repisa de 3 o 4 tiles la reviente sin que también la reviente un salto normal. Regla resultante: todo salto desde el suelo o desde un escalón la pisa; para reventarla hay que caer desde unos 5 tiles o más sobre el canto (repisa de 6 tiles). La repisa de 5 tiles queda en el límite y conviene no usarla en niveles. **Se afina jugando**; si se prefiere que reviente más a menudo, la otra opción es reventarla con una acción explícita (p. ej., pulsar abajo en el aire) en lugar de por velocidad.
+
+## Decisiones del usuario sobre la Burbuja de alerta (2026-10-14)
+
+- **Burbuja:** un pulso sobre una Burbuja ya aturdida reinicia el aturdimiento (aprobado).
+- **Respawn de enemigos:** se decidirá más adelante; por ahora una Burbuja reventada no reaparece, salvo en la escena de prueba (aprobado provisional).

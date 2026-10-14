@@ -1,5 +1,5 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets).",
+	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Tipos con scene vacia y status 'pendiente (paso 14b)': definidos para el JSON de nivel y su validador (tools/validate_level_schema.py), aun sin escena.",
 	"tile_size": 64,
 	"types": {
 		"bridge_inactive": {
@@ -42,6 +42,64 @@
 				"solid_neighbors": 0
 			},
 			"example": {"type": "glitch_wall", "x": 22, "y": 7, "params": {"width_tiles": 1, "height_tiles": 2, "solid_neighbors": 7}}
+		},
+		"popup_blocker": {
+			"scene": "",
+			"status": "pendiente (paso 14b)",
+			"description": "Pop-up bloqueante (Tramo 4 del 1-1, PROPUESTA V5): objeto solido de width_tiles x height_tiles con un texto de humor de 6.1 y un boton de cerrar diminuto. Un pulso que toque el boton lo cierra con una animacion y desaparece para siempre. close_button_px: esquina superior izquierda del boton en px relativa a la esquina superior izquierda del pop-up; close_button_size_px: lado del boton (8 px de V5 a 640x360, x2).",
+			"required": ["text", "close_button_px"],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"close_button_px": "close_button_position",
+				"close_button_size_px": "close_button_size"
+			},
+			"defaults": {
+				"width_tiles": 3,
+				"height_tiles": 4,
+				"close_button_size_px": 16
+			},
+			"example": {"type": "popup_blocker", "x": 30, "y": 6, "params": {"id": "popup_1", "text": "Tienes 99+ mensajes que no son importantes", "close_button_px": [4, 192], "close_button_size_px": 16}}
+		},
+		"exit_door": {
+			"scene": "",
+			"status": "pendiente (paso 14b)",
+			"description": "Puerta de salida del nivel (Cierre del 1-1: puerta \"Marcar como leido\"). Contiene la celda G del grid; al cruzarla termina el nivel (se aplican los unlocks del nivel). No es solida.",
+			"required": ["text"],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"width_tiles": 1,
+				"height_tiles": 2
+			},
+			"example": {"type": "exit_door", "x": 40, "y": 8, "params": {"id": "puerta_1", "text": "Marcar como leído"}}
+		},
+		"eco_line": {
+			"scene": "",
+			"status": "pendiente (paso 14b)",
+			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida.",
+			"required": ["text"],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"duration_s": "duration_s",
+				"once": "once"
+			},
+			"defaults": {
+				"width_tiles": 1,
+				"height_tiles": 4,
+				"duration_s": 4.0,
+				"once": true
+			},
+			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}
 		}
 	},
 	"bridge": {

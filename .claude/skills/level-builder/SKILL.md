@@ -24,9 +24,19 @@ Un archivo por nivel en `data/levels/<mundo>-<nivel>.json`:
   "checkpoints": [],
   "secrets": [],
   "enemies": [],
+  "objects": [],
   "unlocks": []
 }
 ```
+
+Ejemplo completo: `data/levels/1-1.json`. Las coordenadas `x, y` de todas las listas son celdas del grid (columna, fila), con tiles de 64 px (igual que `tile_size` de `data/isak_physics.json`). El grid tiene al menos `ceil(720 / tile_size)` = 12 filas.
+
+- `checkpoints`: `{id, x, y}`, uno por cada `C` del grid.
+- `enemies`: `{id, type, x, y, params}`, uno por cada `E`; `type` es un archivo de `data/enemies/<type>.json` y `params` sobrescribe sus valores (p. ej. `patrol_range_px`).
+- `secrets`: `{id, x, y}` sobre una `S`, o `{id, x, y, object: <tipo>}` si el secreto es un objeto (la pared con glitch del 1-1).
+- `objects` (V7): `{type, x, y, params}` para todo lo que no está en la leyenda. Los tipos, sus params obligatorios y sus valores por defecto están en `data/world<N>_objects.json`: `bridge_inactive`, `receiver`, `glitch_wall`, `popup_blocker`, `exit_door` (contiene la `G`) y `eco_line` (zona que dispara una línea de Eco). Los objetos sólidos (`bridge_inactive`, `glitch_wall`, `popup_blocker`) ocupan celdas que el grid deja en `.`.
+- `unlocks`: `{type, id}`, p. ej. `{"type": "level", "id": "1-2"}`.
+- Campos opcionales: `abilities_available` (`{"pulse": true, "debug": false}`), `sections` (tramos del documento en orden, `{name, x_from, x_to}`), `camera`, `target_duration_s`, `difficulty`.
 
 `grid` es una lista de cadenas, una por fila, con esta leyenda:
 
@@ -49,6 +59,10 @@ Las mecánicas de cada mundo (scroll forzado, plataformas de likes, burbujas de 
 ## De dónde sale cada nivel
 
 Cada nivel tiene su ficha en `docs/mundo-N-*.md` (el archivo del mundo correspondiente) con objetivo, dificultad, tramos, secreto y punto de sincronización. Respeta esa estructura: un tramo del documento equivale a una sección del nivel, en el mismo orden. Si la ficha pide algo que el formato no soporta, pregunta antes de improvisar.
+
+## Validación de esquema
+
+`tools/validate_level_schema.py` comprueba solo la forma del archivo (no la alcanzabilidad): campos y tipos, grid rectangular con caracteres de la leyenda, exactamente un `P` y un `G`, listas coincidentes con las celdas `C`, `E` y `S`, objetos del catálogo con sus params obligatorios, ids únicos y sin pinchos en `P` ni junto a una `C`. Sus pruebas (`tests/test_level_schema.py`) se ejecutan desde `tools/run_tests.sh`.
 
 ## Validación de alcanzabilidad
 
