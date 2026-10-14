@@ -1,0 +1,34 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/alert_bubble_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="3_isak"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/alert_bubble.tscn" id="4_bubble"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
+
+[node name="AlertBubbleTest" type="Node2D"]
+script = ExtResource("1_test")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+
+[node name="Signs" type="Node2D" parent="."]
+
+[node name="Controls" type="Label" parent="Signs"]
+offset_left = 96.0
+offset_top = 96.0
+theme_override_colors/font_color = Color(0.95, 0.96, 0.97, 0.85)
+theme_override_font_sizes/font_size = 18
+text = "BURBUJA DE ALERTA (prueba)
+J pulso: la aturde. Aturdida se pisa; caer encima la revienta.
+A/D mover, Espacio saltar, Shift correr. Mantén K 1 s: Debug"
+
+[node name="AlertBubble" parent="." instance=ExtResource("4_bubble")]
+position = Vector2(960, 576)
+patrol_range_px = 320.0
+
+[node name="Isak" parent="." instance=ExtResource("3_isak")]
+position = Vector2(224, 575)
+
+[node name="Hud" parent="." instance=ExtResource("5_hud")]

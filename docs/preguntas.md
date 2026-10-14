@@ -355,3 +355,15 @@ Sustituye el arte provisional con primitivas del paso 8. Todo el aspecto está e
 - **Hueco del reloj (C8):** `ClockSlot` sigue oculto a la izquierda y ya usa la fuente (`:` incluido).
 - **Propuesta (no implementada), letras para textos de interfaz en español:** mismo alto (7 px de mayúscula, 5x7) con A–Z y a–z (minúsculas con descendentes: alto de línea 10), tildes `á é í ó ú Á É Í Ó Ú`, `ñ Ñ`, `ü`, `¿ ? ¡ !`, `. , ; - / ( ) "` y `+`. Unos 75 glifos, en un atlas de 16 columnas. **Duda:** ¿hace falta ya (menús, diálogos) o se espera al hub?
 - **Dudas:** (1) la barra es opaca y tapa 32 px del juego; ¿se prefiere solo un panel tras el grupo de la derecha? (2) ¿el rastro de consumo de la batería en rojo oscuro molesta durante el Debug (se ve a cada segmento gastado)?
+
+## Notas del paso 13 (Burbuja de alerta, 2026-10-14)
+
+Lo que dice el diseño (§6.2): "Patrulla de lado a lado. Hace daño al contacto. Pulso para aturdir y pasar, o saltar sobre ella aturdida." No persigue ni embiste, así que no tiene ataque activo: la anticipación de 6-12 cuadros se aplica al fin del aturdimiento (A8). Reglas C7 aplicadas tal cual. Valores en `data/enemies/alert_bubble.json`; los que vienen de puntos abiertos son **propuestas** (se ajustan jugando):
+
+- **A7 (propuesta):** por el suelo a 80 px/s (40 × 2), gira en paredes, bordes y al límite del rango; rango por defecto 256 px (4 tiles en total centrados en el punto de aparición), configurable por nivel (`patrol_range_px`).
+- **A6 (propuesta):** 10 % de Sync Rate por contacto; la invulnerabilidad de 1 s y el retroceso son los de Isak (`data/isak_abilities.json`).
+- **A2 (propuesta):** aturdimiento de 3 s, que incluye el aviso final de 9 cuadros a 12 fps (0,75 s, A8): la Burbuja alterna su aspecto aturdido y el de alerta, se hincha y tiembla; sigue inofensiva y pisable hasta que termina.
+- **A5 (propuesta, adaptada al sprite):** lienzo de 96x96 con burbuja visible de 78 px; cuerpo 64x76, zona de daño 56x56 (más pequeña que el dibujo), plataforma de una vía de 64 px a 74 px sobre los pies (el canto plano y claro del sprite aturdido).
+- **C7, umbral (propuesta):** caer sobre ella aturdida a ≥ 300 px/s la revienta (≈ 14 px de caída libre) y Isak rebota a −720 px/s (≈ 108 px); por debajo del umbral la pisa.
+- **Capas de física (nuevas):** 1 world, 2 player, 3 enemy, 4 pulse. Isak pasó de la capa 1 a la 2 (su máscara no cambia: su física es la misma), su PulseArea a la 4 y los puntos de atención detectan la capa 2. La Burbuja (capa 3) no choca con Isak; su plataforma está en la capa 1.
+- **Dudas:** ¿el pulso sobre una Burbuja ya aturdida debe reiniciar el aturdimiento (ahora sí)? ¿Una Burbuja reventada reaparece en el nivel (ahora no; solo en la escena de prueba)?
