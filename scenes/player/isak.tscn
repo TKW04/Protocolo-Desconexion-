@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/isak.gd" id="1_isak"]
+[ext_resource type="SpriteFrames" path="res://scenes/player/isak_frames.tres" id="2_frames"]
+
+[node name="Isak" type="CharacterBody2D"]
+script = ExtResource("1_isak")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -32)
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
+
+[node name="Hitbox" type="CollisionShape2D" parent="."]
+
+[node name="PulseArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PulseArea"]
+disabled = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(0, -32)
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0

@@ -1,0 +1,79 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/test_arena.gd" id="1_arena"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="2_isak"]
+
+[sub_resource type="RectangleShape2D" id="Shape_ground_left"]
+size = Vector2(512, 32)
+
+[sub_resource type="RectangleShape2D" id="Shape_ground_right"]
+size = Vector2(704, 32)
+
+[sub_resource type="RectangleShape2D" id="Shape_platform"]
+size = Vector2(96, 32)
+
+[node name="TestArena" type="Node2D"]
+script = ExtResource("1_arena")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_left = -320.0
+offset_top = -360.0
+offset_right = 1600.0
+offset_bottom = 720.0
+color = Color(0.08, 0.09, 0.12, 1)
+
+[node name="GroundLeft" type="StaticBody2D" parent="."]
+position = Vector2(256, 336)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GroundLeft"]
+shape = SubResource("Shape_ground_left")
+
+[node name="Visual" type="ColorRect" parent="GroundLeft"]
+offset_left = -256.0
+offset_top = -16.0
+offset_right = 256.0
+offset_bottom = 16.0
+color = Color(0.3, 0.34, 0.42, 1)
+
+[node name="GroundRight" type="StaticBody2D" parent="."]
+position = Vector2(928, 336)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GroundRight"]
+shape = SubResource("Shape_ground_right")
+
+[node name="Visual" type="ColorRect" parent="GroundRight"]
+offset_left = -352.0
+offset_top = -16.0
+offset_right = 352.0
+offset_bottom = 16.0
+color = Color(0.3, 0.34, 0.42, 1)
+
+[node name="PlatformLow" type="StaticBody2D" parent="."]
+position = Vector2(224, 272)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformLow"]
+shape = SubResource("Shape_platform")
+
+[node name="Visual" type="ColorRect" parent="PlatformLow"]
+offset_left = -48.0
+offset_top = -16.0
+offset_right = 48.0
+offset_bottom = 16.0
+color = Color(0.3, 0.34, 0.42, 1)
+
+[node name="PlatformHigh" type="StaticBody2D" parent="."]
+position = Vector2(384, 208)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformHigh"]
+shape = SubResource("Shape_platform")
+
+[node name="Visual" type="ColorRect" parent="PlatformHigh"]
+offset_left = -48.0
+offset_top = -16.0
+offset_right = 48.0
+offset_bottom = 16.0
+color = Color(0.3, 0.34, 0.42, 1)
+
+[node name="Isak" parent="." instance=ExtResource("2_isak")]
+position = Vector2(64, 320)
+camera_limits = Rect2i(0, 0, 1280, 360)
