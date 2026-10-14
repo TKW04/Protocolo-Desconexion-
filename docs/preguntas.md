@@ -282,3 +282,16 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Problema:** no se dice si el color del Debug tiene efecto de juego (por ejemplo, si un secreto solo aparece con cierto color) o solo es estético.
 - **Propuesta:** solo estético. El color lo fija cada zona del nivel.
 - **Por qué:** es la lectura más simple y no añade ninguna mecánica.
+
+---
+
+## Notas del paso 8 (HUD funcional, 2026-10-14)
+
+Propuestas adoptadas **de forma provisional** en el HUD (arte con primitivas; la interfaz definitiva se hace en el paso 12). Todos los valores están en `data/hud.json`:
+
+- **A11 (sigue abierta):** barra de estado arriba, de 32 px de alto a 1280x720 (los 16 px de A11 a 640x360, ×2), alineada a la derecha. Señal = Sync Rate con 4 barras (25 % cada una, se llenan de forma parcial) más el porcentaje; batería = energía de Debug con 5 segmentos; contador de puntos de atención con un icono de 16 px (8 px de A11, ×2) junto a la batería. **Fuente pendiente:** se usa la fuente por defecto de Godot hasta aprobar una fuente pixel art con tildes y ñ.
+- **Sync Rate bajo:** estado activo con Sync Rate **menor** que 20 (`low_sync_threshold`; justo 20 no cuenta). La señal y el porcentaje se ponen en rojo y parpadean (3 Hz). Con la opción de accesibilidad `GameState.reduce_low_sync_effects` se quedan en rojo sin parpadear. **Pendiente:** el ruido y la distorsión de pantalla (shader nuevo, sin propuesta concreta) y la música deformada; el gancho es `EventBus.low_sync_changed`. La opción aún no se guarda en disco (no hay menú de opciones).
+- **Colores del Debug por mundo:** hex provisionales (los hex exactos son decisión abierta). Mundo 1 = `#4fe3ff` (el `world_cyan` de `isak.gpl`). Mundo 6 (A16, abierta) repite el cian hasta que cada zona fije el suyo. Rojo de daño/alerta `#ff4a2a` (rojo anaranjado del Mundo 1).
+- **Animaciones:** al perder valor, la barra cae al instante y un rastro rojo se vacía tras 0,35 s (en 0,4 s); al ganar, pulso de escala ×1,25 durante 0,18 s.
+- **C8 (sigue abierta):** hueco oculto `ClockSlot` a la izquierda de la barra de estado, reservado para la hora del Mundo 2.
+- **A10 (resuelta):** `GameState.add_attention_points()` suma al contador y repone 10 de energía por punto.

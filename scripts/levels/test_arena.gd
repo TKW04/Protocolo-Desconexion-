@@ -9,6 +9,15 @@ extends Node2D
 ## Ayudas de depuracion en pantalla (estado, velocidad, tipo del ultimo salto
 ## y carteles de medidas). Solo para esta escena de pruebas; no es el HUD.
 const DEBUG_OVERLAY: bool = true
+## Teclas de depuracion del HUD (acciones debug_* del Input Map: F1-F4).
+## Solo en esta escena; ponlo a false para desactivarlas.
+const DEBUG_HUD_KEYS: bool = true
+## Cambios que aplican las teclas de depuracion del HUD.
+const DEBUG_SYNC_STEP: float = 10.0
+const DEBUG_ENERGY_STEP: float = 20.0
+const DEBUG_ATTENTION_STEP: int = 1
+## Posicion de la ayuda en pantalla: debajo de la barra del HUD.
+const DEBUG_LABEL_POSITION: Vector2 = Vector2(16.0, 48.0)
 
 const JUMP_NORMAL: String = "normal"
 const JUMP_COYOTE: String = "coyote"
@@ -35,6 +44,31 @@ func _ready() -> void:
 	_debug_signs.visible = DEBUG_OVERLAY
 	if DEBUG_OVERLAY:
 		_setup_debug_overlay()
+
+
+## Teclas de depuracion del HUD: F1 -10 % Sync Rate (dano de prueba),
+## F2 +10 % Sync Rate, F3 -20 de energia, F4 +1 punto de atencion (+10 energia).
+func _unhandled_input(event: InputEvent) -> void:
+	if not DEBUG_HUD_KEYS:
+		return
+	if event.is_action_pressed(&"debug_sync_down"):
+		apply_test_damage(DEBUG_SYNC_STEP)
+	elif event.is_action_pressed(&"debug_sync_up"):
+		GameState.sync_rate += DEBUG_SYNC_STEP
+	elif event.is_action_pressed(&"debug_energy_down"):
+		GameState.debug_energy -= DEBUG_ENERGY_STEP
+	elif event.is_action_pressed(&"debug_attention_add"):
+		GameState.add_attention_points(DEBUG_ATTENTION_STEP)
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+## Dano de prueba: quita Sync Rate y reproduce el golpe de Isak (retroceso).
+## El dano real (enemigos, i-frames que bloquean el dano) llega en el paso 9.
+func apply_test_damage(amount: float) -> void:
+	_isak.take_hit()
+	GameState.apply_sync_damage(amount)
 
 
 func _physics_process(_delta: float) -> void:
@@ -72,7 +106,7 @@ func _setup_debug_overlay() -> void:
 	layer.name = "DebugOverlay"
 	layer.layer = 100
 	_debug_label = Label.new()
-	_debug_label.position = Vector2(16.0, 16.0)
+	_debug_label.position = DEBUG_LABEL_POSITION
 	_debug_label.add_theme_font_size_override("font_size", 16)
 	_debug_label.add_theme_color_override("font_color", Color(0.9, 0.95, 0.6))
 	layer.add_child(_debug_label)
