@@ -1,11 +1,15 @@
 GIMP Palette
-Name: Efecto pulso de datos (PROPUESTA, pendiente de aprobacion)
+Name: Efecto pulso de datos (cian del Debug del Mundo 1)
 Columns: 3
 # Paleta minima del efecto del pulso de datos (scenes/player/pulse_effect.tscn).
 # docs/ no define el color del pulso: se usa el cian del Debug del Mundo 1
-# (mismos hex que world_cyan y world_cyan_hi de isak.gpl). PROPUESTA.
+# (debug_cian #3dfff5 de assets/palettes/mundo1.gpl, aprobado el 2026-10-14;
+# antes #4fe3ff). pulse_core y pulse_dim se derivan del nuevo cian en HSV con la
+# misma relacion que antes: core = mismo tono con el 31 % de la saturacion
+# (casi blanco); dim = mismo tono, algo mas saturado y con luminancia ~0,23
+# de pulse_mid (antes 0,23). Mismos hex que world_cyan y world_cyan_hi de isak.gpl.
 # La transparencia se aplica por cuadro con modulate; los pixeles son opacos.
 # scripts/player/pulse_effect.gd copia estos valores (lo comprueba una prueba).
-200 250 255	pulse_core
- 79 227 255	pulse_mid
- 30 116 140	pulse_dim
+194 255 252	pulse_core
+ 61 255 245	pulse_mid
+ 18 133 127	pulse_dim

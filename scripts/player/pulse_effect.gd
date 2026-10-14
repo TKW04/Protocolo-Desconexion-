@@ -15,10 +15,11 @@ const CANVAS_STEP: int = 8
 ## Px de pantalla por pixel de arte (sprites de Isak escalados x2 a 1280x720).
 ## El grosor de la onda y los bits de datos se miden en pixeles de arte.
 const PIXEL_SIZE: int = 2
-## Colores de assets/palettes/effects_pulse.gpl (PROPUESTA: cian del Mundo 1).
-const COLOR_CORE: Color = Color8(200, 250, 255)
-const COLOR_MID: Color = Color8(79, 227, 255)
-const COLOR_DIM: Color = Color8(30, 116, 140)
+## Colores de assets/palettes/effects_pulse.gpl (cian del Debug del Mundo 1,
+## #3dfff5; core y dim derivados de el).
+const COLOR_CORE: Color = Color8(194, 255, 252)
+const COLOR_MID: Color = Color8(61, 255, 245)
+const COLOR_DIM: Color = Color8(18, 133, 127)
 const PALETTE: Array[Color] = [COLOR_CORE, COLOR_MID, COLOR_DIM]
 ## Opacidad maxima de la onda (deja ver lo que hay detras).
 const BASE_ALPHA: float = 0.85

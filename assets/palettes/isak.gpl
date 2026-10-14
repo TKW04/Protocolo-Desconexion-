@@ -3,7 +3,9 @@ Name: Isak (PROPUESTA, pendiente de aprobacion)
 Columns: 4
 # Paleta de Isak. Hex PROPUESTOS, no aprobados.
 # Pelo y piel no estan definidos en docs/: valores provisionales.
-# world_cyan* = color del Mundo 1 (contorno, reflejo, LED); cambia por mundo.
+# world_cyan* = color del Debug del Mundo 1 (#3dfff5 desde el 2026-10-14; antes
+# #4fe3ff) y su brillo; cambia por mundo. No es el cian de la ropa de Isak
+# (#29defa en sus sprites, que no se toca).
 # El transparente (alfa 0) se admite aparte.
  22  20  28	outline
  38  37  45	tee_black
@@ -22,5 +24,5 @@ Columns: 4
  44  46  54	pack_shadow
  69  72  82	pack
  30  74  82	led_off
- 79 227 255	world_cyan
-200 250 255	world_cyan_hi
+ 61 255 245	world_cyan
+194 255 252	world_cyan_hi
