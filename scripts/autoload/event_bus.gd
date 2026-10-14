@@ -16,3 +16,6 @@ signal attention_points_changed(new_value: int)
 
 @warning_ignore("unused_signal")
 signal ability_unlock_changed(ability: StringName, unlocked: bool)
+
+@warning_ignore("unused_signal")
+signal player_died

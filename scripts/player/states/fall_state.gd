@@ -1,0 +1,23 @@
+## En el aire bajando (o tras salir de un borde). Permite saltar durante el
+## coyote time y aterriza en Idle o Run.
+class_name FallState
+extends PlayerState
+
+
+func enter() -> void:
+	isak.play_animation(Isak.ANIM_JUMP_FALL)
+
+
+func get_transition() -> StringName:
+	if isak.is_on_floor():
+		if isak.wants_jump():
+			return JUMP
+		return resting_state()
+	if isak.wants_jump() and isak.can_jump():
+		return JUMP
+	return NONE
+
+
+func physics_update(delta: float) -> void:
+	isak.apply_horizontal(isak.input.move_axis, delta)
+	isak.apply_gravity(delta)
