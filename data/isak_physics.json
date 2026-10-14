@@ -1,0 +1,16 @@
+{
+	"_notes": "Fisica inicial de Isak (punto de partida, ajustar jugando). jump_velocity = -2h/t y gravity = 2h/t^2 con h = jump_height_px y t = time_to_apex_s. ground_acceleration, ground_friction y air_acceleration son una propuesta (aceleracion y friccion suaves para sentir peso), no vienen del documento de diseno: valores a ajustar jugando. Unidades: px, s, px/s, px/s^2.",
+	"jump_height_px": 96.0,
+	"time_to_apex_s": 0.4,
+	"jump_velocity": -480.0,
+	"gravity": 1200.0,
+	"fall_gravity_multiplier": 1.3,
+	"walk_speed": 110.0,
+	"run_speed": 180.0,
+	"coyote_time_s": 0.1,
+	"jump_buffer_s": 0.1,
+	"tile_size": 32.0,
+	"ground_acceleration": 900.0,
+	"ground_friction": 1200.0,
+	"air_acceleration": 600.0
+}
