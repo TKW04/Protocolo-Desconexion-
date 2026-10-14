@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Valida el arte del HUD (tools/gen_hud_assets.py y tools/gen_hud_font.py).
+"""Valida el arte de la interfaz (HUD, fuente de textos y cuadro de Eco).
 
-Lee la seccion "assets" de data/hud.json y comprueba en cada PNG:
-  - nombre hud_<nombre>.png (minusculas, digitos y '_') dentro de assets/sprites/ui/
+Generadores: tools/gen_hud_assets.py, tools/gen_hud_font.py, tools/gen_text_font.py y
+tools/gen_eco_text_box.py. Lee la seccion "assets" de cada archivo de datos de la interfaz
+(data/hud.json, data/text_font.json y data/eco_text_box.json si existen) y comprueba en cada PNG:
+  - nombre <hud|text|eco>_<nombre>.png (minusculas, digitos y '_') dentro de assets/sprites/ui/
   - tamano = frame_size x (columns, rows), con cuadros y lienzo multiplos de 8
   - solo colores de assets/palettes/mundo1.gpl (16 colores + debug_cian)
   - alfa 0 o 255 (sin semitransparencias)
   - ningun cuadro vacio (salvo los huecos del atlas de la fuente)
 Ademas:
-  - todo PNG de assets/sprites/ui/ esta en la lista o es una vista (empieza por '_')
-  - la fuente (data/hud.json -> font, BMFont de texto) apunta al atlas de la lista, tiene
-    todos los glifos de font_glyphs, sus glifos caben en el atlas y su tamano es font_size
+  - todo PNG de assets/sprites/ui/ esta en alguna lista o es una vista (empieza por '_')
+  - cada fuente (clave "font" de un archivo con font_glyphs, BMFont de texto) apunta al atlas
+    de su lista, tiene todos los glifos de font_glyphs, sus glifos caben en el atlas y su
+    tamano es font_size
 
-Uso: python3 tools/validate_ui_assets.py [--data data/hud.json]
+Uso: python3 tools/validate_ui_assets.py [--data data/hud.json data/text_font.json ...]
 Devuelve 0 si todo es correcto y 1 si hay algun fallo.
 """
 import argparse
@@ -26,7 +29,8 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GPL = os.path.join(ROOT, "assets", "palettes", "mundo1.gpl")
 UI_DIR = os.path.join(ROOT, "assets", "sprites", "ui")
-NAME_RE = re.compile(r"^hud_[a-z0-9]+(_[a-z0-9]+)*\.png$")
+NAME_RE = re.compile(r"^(hud|text|eco)_[a-z0-9]+(_[a-z0-9]+)*\.png$")
+DATA_FILES = [os.path.join(ROOT, "data", n) for n in ("hud.json", "text_font.json", "eco_text_box.json")]
 GRID = 8
 # Assets cuyo atlas puede tener celdas vacias (la fuente no llena todas las celdas).
 SPARSE = ("font",)
@@ -56,7 +60,7 @@ def check_asset(key, entry, palette):
     if os.path.dirname(os.path.abspath(path)) != UI_DIR:
         errors.append(f"{key}: {entry['path']} no esta en assets/sprites/ui/")
     if not NAME_RE.match(name):
-        errors.append(f"{key}: nombre '{name}' no sigue hud_<nombre>.png")
+        errors.append(f"{key}: nombre '{name}' no sigue <hud|text|eco>_<nombre>.png")
     if not os.path.exists(path):
         return errors + [f"{name}: no existe"]
     img = Image.open(path).convert("RGBA")
@@ -132,23 +136,26 @@ def check_font(data, assets):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--data", default=os.path.join(ROOT, "data", "hud.json"))
+    parser.add_argument("--data", nargs="+", default=[p for p in DATA_FILES if os.path.exists(p)])
     args = parser.parse_args()
-    with open(args.data, encoding="utf-8") as fh:
-        data = json.load(fh)
-    assets = data["assets"]
     palette = load_gpl(GPL)
-    errors = []
-    for key, entry in assets.items():
-        errors += check_asset(key, entry, palette)
-    listed = {os.path.basename(res_to_path(e["path"])) for e in assets.values()}
+    errors, listed, count = [], set(), 0
+    for data_path in args.data:
+        with open(data_path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        assets = data.get("assets", {})
+        count += len(assets)
+        for key, entry in assets.items():
+            errors += check_asset(key, entry, palette)
+        listed |= {os.path.basename(res_to_path(e["path"])) for e in assets.values()}
+        if "font_glyphs" in data:
+            errors += check_font(data, assets)
     for name in sorted(os.listdir(UI_DIR)):
         if name.endswith(".png") and not name.startswith("_") and name not in listed:
-            errors.append(f"{name}: PNG del HUD que no esta en data/hud.json (o es una vista sin '_')")
-    errors += check_font(data, assets)
+            errors.append(f"{name}: PNG de la interfaz que no esta en ningun data/*.json (o es una vista sin '_')")
     for e in errors:
         print("ERROR:", e)
-    print(f"validate_ui_assets: {len(assets)} assets, {len(errors)} errores")
+    print(f"validate_ui_assets: {count} assets, {len(errors)} errores")
     return 1 if errors else 0
 
 

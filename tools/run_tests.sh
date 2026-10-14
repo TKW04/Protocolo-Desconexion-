@@ -25,13 +25,13 @@ if ! "$GODOT" --headless --path "$PROJECT_DIR" --import >"$IMPORT_LOG" 2>&1 \
 fi
 rm -f "$IMPORT_LOG"
 
-# Validador de esquema de niveles (Python, unittest). Si falla, el script sale con 4
+# Validador de esquema de niveles y fuente de textos (Python, unittest). Si falla, el script sale con 4
 # aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 if command -v python3 >/dev/null 2>&1; then
-	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py \
+	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json); then
-		echo "run_tests.sh: fallaron las pruebas del esquema de niveles." >&2
+		echo "run_tests.sh: fallaron las pruebas Python (esquema de niveles o fuente de textos)." >&2
 		PY_STATUS=4
 	fi
 else
