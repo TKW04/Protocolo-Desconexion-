@@ -146,6 +146,49 @@ func test_row_width_stable_when_numbers_change() -> void:
 	assert_almost_eq(hud.get_row_width(), width, EPS, "La fila no se mueve al cambiar los numeros")
 
 
+# --- Indicador de carga del Debug ---
+
+func test_charge_ring_follows_activation_progress() -> void:
+	var hud: Hud = _make_hud()
+	await wait_process_frames(1)
+	assert_almost_eq(hud.get_activation_progress(), 0.0, EPS, "Sin carga no se dibuja")
+	var width: float = hud.get_row_width()
+	EventBus.debug_activation_progress_changed.emit(0.5)
+	assert_almost_eq(hud.get_activation_progress(), 0.5, EPS)
+	EventBus.debug_activation_progress_changed.emit(1.0)
+	assert_almost_eq(hud.get_activation_progress(), 1.0, EPS)
+	await wait_process_frames(1)
+	assert_almost_eq(hud.get_row_width(), width, EPS, "El anillo conserva su hueco: la fila no se mueve")
+	EventBus.debug_activation_progress_changed.emit(0.0)
+	assert_almost_eq(hud.get_activation_progress(), 0.0, EPS)
+
+
+func test_charge_ring_uses_world_debug_color() -> void:
+	var hud: Hud = _make_hud()
+	assert_eq(hud.get_charge_color(), _config.debug_color_for_world(GameState.FIRST_WORLD))
+	GameState.current_world = 3
+	assert_eq(hud.get_charge_color(), _config.debug_color_for_world(3))
+	assert_eq(hud.get_charge_color(), hud.get_energy_color(), "Mismo color que la bateria")
+
+
+func test_charge_ring_driven_by_debug_mode() -> void:
+	var saved_debug: bool = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
+	var hud: Hud = _make_hud()
+	var dt: float = 1.0 / 60.0
+	var hold_s: float = DebugModeConfig.shared().activation_hold_s
+	DebugMode.input_enabled = false
+	DebugMode.reset()
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
+	for i: int in roundi(hold_s * 0.5 / dt):
+		DebugMode.step(dt, true)
+	assert_almost_eq(hud.get_activation_progress(), 0.5, 0.02, "El HUD recibe la carga por EventBus")
+	DebugMode.step(dt, false)
+	assert_almost_eq(hud.get_activation_progress(), 0.0, EPS, "Soltar antes la borra")
+	DebugMode.reset()
+	DebugMode.input_enabled = true
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, saved_debug)
+
+
 # --- Animaciones ---
 
 func test_damage_trail_drains_after_delay() -> void:

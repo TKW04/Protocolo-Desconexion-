@@ -3,6 +3,9 @@
 ## - Senal = Sync Rate (barras + porcentaje); parpadea por debajo del umbral.
 ## - Bateria = energia de Debug, en el color del Debug del mundo actual.
 ## - Contador de puntos de atencion con un icono pequeno, junto a la bateria.
+## - Anillo de carga del Debug a la izquierda de la bateria: se llena mientras
+##   se mantiene la accion `debug` (EventBus.debug_activation_progress_changed)
+##   y desaparece al cancelar o activar.
 ## Solo escucha a EventBus (no lee nodos de juego). Al aparecer pide a
 ## GameState que reemita su estado con EventBus.state_refresh_requested.
 ## Aspecto provisional: todo sale de data/hud.json (HudConfig); el arte
@@ -22,6 +25,8 @@ const WIDEST_ATTENTION: String = "999"
 ## Valor del rastro de dano/brillo cuando no hay animacion.
 const NO_TRAIL: float = 0.0
 const FULL: float = 1.0
+## Anillo de carga del Debug sin carga (no se dibuja).
+const NO_CHARGE: float = 0.0
 ## Parpadeo: fraccion de cada ciclo en que la senal se ve entera.
 const BLINK_ON_FRACTION: float = 0.5
 
@@ -44,6 +49,7 @@ var _all_tweens: Array[Tween] = []
 @onready var _signal: HudMeter = $Row/Signal
 @onready var _sync_label: Label = $Row/SyncLabel
 @onready var _battery: HudMeter = $Row/Battery
+@onready var _charge: HudMeter = $Row/DebugCharge
 @onready var _attention_icon: HudMeter = $Row/AttentionIcon
 @onready var _attention_label: Label = $Row/AttentionLabel
 
@@ -56,6 +62,7 @@ func _ready() -> void:
 	EventBus.world_changed.connect(_on_world_changed)
 	EventBus.low_sync_changed.connect(_on_low_sync_changed)
 	EventBus.reduce_low_sync_effects_changed.connect(_on_reduce_effects_changed)
+	EventBus.debug_activation_progress_changed.connect(_on_debug_activation_progress_changed)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -94,6 +101,15 @@ func get_energy_trail() -> float:
 
 func get_energy_color() -> Color:
 	return _battery.fill_color
+
+
+## Progreso del anillo de carga del Debug (0-1).
+func get_activation_progress() -> float:
+	return _charge.value
+
+
+func get_charge_color() -> Color:
+	return _charge.fill_color
 
 
 func get_attention_text() -> String:
@@ -160,12 +176,14 @@ func _apply_config() -> void:
 	_row.add_theme_constant_override("separation", c.spacing_px)
 	_clock_slot.offset_left = c.margin_px
 	_clock_slot.offset_bottom = c.bar_height_px
-	for meter: HudMeter in [_signal, _battery, _attention_icon]:
+	for meter: HudMeter in [_signal, _battery, _attention_icon, _charge]:
 		meter.setup(c)
 	_signal.fill_color = c.color(&"signal")
 	_attention_icon.fill_color = c.color(&"attention_icon")
 	_attention_icon.empty_color = c.color(&"background")
 	_battery.fill_color = c.debug_color_for_world(_world)
+	_charge.fill_color = c.debug_color_for_world(_world)
+	_charge.value = NO_CHARGE
 	for label: Label in [_sync_label, _attention_label, _clock_slot]:
 		label.add_theme_font_size_override("font_size", c.font_size)
 		label.add_theme_color_override("font_color", c.color(&"text"))
@@ -210,6 +228,11 @@ func _on_attention_points_changed(new_value: int) -> void:
 func _on_world_changed(world: int) -> void:
 	_world = world
 	_battery.fill_color = _config.debug_color_for_world(world)
+	_charge.fill_color = _config.debug_color_for_world(world)
+
+
+func _on_debug_activation_progress_changed(progress: float) -> void:
+	_charge.value = progress
 
 
 func _on_low_sync_changed(is_low: bool) -> void:

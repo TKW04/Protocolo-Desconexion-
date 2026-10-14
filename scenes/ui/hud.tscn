@@ -42,6 +42,12 @@ layout_mode = 2
 text = "100 %"
 vertical_alignment = 1
 
+[node name="DebugCharge" type="Control" parent="Row"]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("2_meter")
+kind = 3
+
 [node name="Battery" type="Control" parent="Row"]
 layout_mode = 2
 mouse_filter = 2

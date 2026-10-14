@@ -2,11 +2,13 @@
 ## - SIGNAL: barras de senal (Sync Rate), cada barra es una fraccion igual.
 ## - BATTERY: bateria por segmentos (energia de Debug).
 ## - ATTENTION_ICON: icono del contador de puntos de atencion.
+## - CHARGE_RING: anillo de carga de la pulsacion larga del Debug (0 = no se
+##   dibuja, pero conserva su hueco para que la fila no se mueva).
 ## Todos los tamanos salen de HudConfig (data/hud.json).
 class_name HudMeter
 extends Control
 
-enum Kind { SIGNAL, BATTERY, ATTENTION_ICON }
+enum Kind { SIGNAL, BATTERY, ATTENTION_ICON, CHARGE_RING }
 
 @export var kind: Kind = Kind.SIGNAL
 
@@ -48,6 +50,8 @@ func get_meter_size() -> Vector2:
 				_config.signal_bar_max_height_px)
 		Kind.BATTERY:
 			return Vector2(_config.battery_width_px + _config.battery_tip_width_px, _config.battery_height_px)
+		Kind.CHARGE_RING:
+			return Vector2(_config.charge_ring_size_px, _config.charge_ring_size_px)
 		_:
 			return Vector2(_config.attention_icon_size_px, _config.attention_icon_size_px)
 
@@ -62,6 +66,8 @@ func _draw() -> void:
 			_draw_battery(top)
 		Kind.ATTENTION_ICON:
 			_draw_attention_icon(top)
+		Kind.CHARGE_RING:
+			_draw_charge_ring(top)
 
 
 ## Fraccion (0-1) de la parte `index` de `count` que cubre `amount` (0-1).
@@ -121,3 +127,19 @@ func _draw_attention_icon(top: float) -> void:
 	var center := Vector2(s * 0.5, top + s * 0.5)
 	draw_circle(center, s * 0.5, fill_color)
 	draw_circle(center, s * 0.25, empty_color)
+
+
+## Anillo de carga: pista tenue y arco del color del Debug que crece en el
+## sentido de las agujas del reloj desde arriba. Sin antialiasing (pixel art).
+func _draw_charge_ring(top: float) -> void:
+	if value <= 0.0:
+		return
+	var s: float = _config.charge_ring_size_px
+	var w: float = _config.charge_ring_thickness_px
+	var center := Vector2(s * 0.5, top + s * 0.5)
+	var radius: float = (s - w) * 0.5
+	var points: int = _config.charge_ring_point_count
+	draw_arc(center, radius, 0.0, TAU, points, empty_color, w, false)
+	var start: float = -PI * 0.5
+	var arc_points: int = maxi(ceili(points * value), 2)
+	draw_arc(center, radius, start, start + TAU * value, arc_points, fill_color, w, false)
