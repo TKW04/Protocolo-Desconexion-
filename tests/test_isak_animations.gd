@@ -86,6 +86,68 @@ func test_terminal_is_stable() -> void:
 	_assert_stable(Isak.ANIM_TERMINAL_OUTRO, 1000, 1000)
 
 
+## Correr: 2 pasos de 3 cuadros (contacto, paso por debajo, despegue; celdas
+## 21,16,17,18,19,20 de hojas/run_right). Sin cuadros de doble apoyo (tercer
+## pie), sin pulsacion de tamano (cabeza a +/-1 px) y con el pie apoyado
+## retrocediendo cerca de run_speed (ver RUN_FPS en tools/build_isak_frames.gd).
+func test_run_cycle_is_clean() -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	var count: int = frames.get_frame_count(Isak.ANIM_RUN)
+	assert_eq(count, 6, "run: 6 cuadros (2 pasos de 3)")
+	assert_false(ResourceLoader.exists("res://assets/sprites/isak/isak_run_06.png"),
+			"run: no quedan cuadros descartados")
+	var fps: float = frames.get_animation_speed(Isak.ANIM_RUN)
+	assert_almost_eq(fps, 14.0, 0.01, "run a 14 fps")
+	assert_almost_eq(count / fps, 0.43, 0.01, "vuelta de ~0,43 s (4,7 pasos/s)")
+	var head_min: int = 128
+	var head_max: int = 0
+	var boot_x: Array[float] = []
+	for i: int in count:
+		var image: Image = frames.get_frame_texture(Isak.ANIM_RUN, i).get_image()
+		var used: Rect2i = image.get_used_rect()
+		assert_eq(Vector2i(image.get_size()), FRAME_SIZE, "run %d: 128x128" % i)
+		assert_eq(used.end.y, 128, "run %d: pie apoyado en la fila base" % i)
+		assert_between(used.size.y, 90, 94, "run %d: alto visible estable" % i)
+		head_min = mini(head_min, used.position.y)
+		head_max = maxi(head_max, used.position.y)
+		boot_x.append(_ground_boot_x(image))
+	assert_lte(head_max - head_min, 2, "run: la cabeza sube y baja como mucho 2 px")
+	var travel: float = 0.0
+	for step: int in 2:
+		for k: int in 2:
+			var moved: float = boot_x[step * 3 + k] - boot_x[step * 3 + k + 1]
+			assert_gt(moved, 8.0, "run: el pie apoyado retrocede (cuadro %d)" % (step * 3 + k))
+			travel += moved
+	var foot_speed: float = travel / 4.0 * fps
+	var run_speed: float = _isak.physics.run_speed
+	assert_almost_eq(foot_speed, run_speed, run_speed * 0.2, "run: el pie apoyado va a ~run_speed (patina < 20 %)")
+
+
+## x media de la bota que toca la fila base (la que esta mas a la derecha si
+## hay dos), en las ultimas 14 filas.
+func _ground_boot_x(image: Image) -> float:
+	var last: int = image.get_height() - 1
+	var seed_x: int = -1
+	for x: int in image.get_width():
+		if image.get_pixel(x, last).a > 0.5:
+			seed_x = x
+	var top: int = last - 13
+	var seen: Dictionary[Vector2i, bool] = {}
+	var stack: Array[Vector2i] = [Vector2i(seed_x, last)]
+	var sum_x: float = 0.0
+	while not stack.is_empty():
+		var p: Vector2i = stack.pop_back()
+		if seen.has(p) or p.x < 0 or p.x >= image.get_width() or p.y < top or p.y > last:
+			continue
+		if image.get_pixel(p.x, p.y).a <= 0.5:
+			continue
+		seen[p] = true
+		sum_x += p.x
+		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			stack.append(p + d)
+	return sum_x / seen.size()
+
+
 func _assert_stable(anim: StringName, max_changed: int, max_mean: int) -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
 	var count: int = frames.get_frame_count(anim)

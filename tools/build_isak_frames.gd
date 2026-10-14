@@ -26,12 +26,17 @@ const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 ## walk (25 cuadros): ~6 pasos por vuelta de ~36 px a escala del juego = ~216 px.
 ##   A walk_speed (220 px/s) la vuelta debe durar ~0,98 s -> ~25,5 fps; con 24 fps
 ##   los pies avanzan ~207 px/s: patina ~6 %.
-## run (25 cuadros): 8 pasos por vuelta (piernas juntas en los cuadros ~2, 5, 8,
-##   11, 14, 16-17, 19 y 22: un paso cada ~3,1 cuadros). La apertura maxima de
-##   piernas mide ~130 px de origen y la bota ~25, asi que cada paso avanza
-##   ~105 x 0,5393 = ~57 px: 8 x 57 = ~453 px por vuelta. A run_speed (360 px/s)
-##   la vuelta debe durar ~1,26 s -> 25 / 1,26 = ~19,9 fps. Con 20 fps los pies
-##   avanzan ~363 px/s: patina ~1 % (la estimacion de zancada tiene +/-15 %).
+## run (6 cuadros = celdas 21,16,17 + 18,19,20 de la hoja: 2 pasos de 3 cuadros,
+##   contacto -> paso por debajo -> despegue). Medido en los cuadros de 128 px:
+##   el pie apoyado retrocede 13+26 y 20+29 px por cuadro (media 22 px). A
+##   RUN_FPS 14: pie a ~309 px/s frente a run_speed 360 (patina -14 %), 4,7
+##   pasos/s, vuelta 0,43 s. Alternativa B: RUN_FPS 10 -> 3,3 pasos/s, patina
+##   -39 %. Sin patinaje harian falta ~16 fps (5,3 pasos/s): la zancada del arte
+##   (~50 px por apoyo) es corta para 360 px/s. Antes: 25 cuadros a 20 fps =
+##   6,4 pasos/s; se descartaron las celdas con doble apoyo (3, 6, 9, 23: tercer
+##   pie y cuerpo 4-5 px mas bajo), las duplicadas (12 = 0, 24 = 7) y las de
+##   pie apoyado quieto o que avanza (0-1-24, 10-15, 22).
+const RUN_FPS: float = 14.0
 ## jump_rise / jump_apex / jump_fall: no se reproducen en el tiempo; Isak elige
 ##   el cuadro por la velocidad vertical (Isak.update_air_animation).
 ## jump_land (5 cuadros a 24 fps = 0,21 s): solo visual al aterrizar en Idle.
@@ -47,7 +52,7 @@ const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
 	"walk": [24.0, true, false],
-	"run": [20.0, true, false],
+	"run": [RUN_FPS, true, false],
 	"jump_rise": [12.0, false, false],
 	"jump_apex": [12.0, false, false],
 	"jump_fall": [12.0, false, false],
