@@ -1,0 +1,30 @@
+# Índice del documento de diseño
+
+*The Horizon: Protocolo de Desconexión.* El documento original completo está en `docs/original/diseno.md` (solo lectura). Estos archivos lo dividen por tema sin cambiar el contenido.
+
+| Archivo | Qué contiene | Cuándo leerlo |
+|---|---|---|
+| [01-ficha-reglas.md](01-ficha-reglas.md) | Ficha del juego (tipo, estilo, resolución, motor, tono, objetivos) y estructura de mundos: tabla de los 6 mundos (qué se llevó Eco, gesto, mecánica propia) y progresión. | Siempre primero. Para tener la visión general o planificar el orden de mundos. |
+| [02-isak-habilidades.md](02-isak-habilidades.md) | Isak Fix (edad, apariencia, perfil, nombre) y sus habilidades: movimiento, pulso de datos, Debug Mode, barras (Sync Rate, Energía de Debug), daño y muerte, gestos por mundo y combinaciones. | Para implementar el control, la física, el combate, el HUD de barras o un gesto nuevo. |
+| [03-historia.md](03-historia.md) | Premisa: Eco, los fragmentos robados, el Protocolo de Desconexión y la copia. | Para escribir diálogos o escenas, o entender por qué existe cada mundo. |
+| [mundo-1-notificaciones.md](mundo-1-notificaciones.md) | Mundo 1: ambientación, enemigos, niveles 1-1 a 1-3 y jefe Alerta Mayor. | Para implementar un nivel, enemigo o jefe del Mundo 1 (vertical slice: nivel 1-1). |
+| [mundo-2-feed.md](mundo-2-feed.md) | Mundo 2: ambientación, scroll forzado, enemigos, niveles 2-1 a 2-3 y jefe Autoplay. | Para implementar contenido del Mundo 2. |
+| [mundo-3-vitrina.md](mundo-3-vitrina.md) | Mundo 3: ambientación, likes, filtros, espejos, enemigos, niveles 3-1 a 3-3 y jefe La Curadora. | Para implementar contenido del Mundo 3. |
+| [mundo-4-chat.md](mundo-4-chat.md) | Mundo 4: ambientación, burbujas, "Visto", ghosting, enemigos, niveles 4-1 a 4-3 y jefe El Visto. | Para implementar contenido del Mundo 4. |
+| [mundo-5-tienda.md](mundo-5-tienda.md) | Mundo 5: ambientación, moneda, atajos con trampa, tentación, enemigos, niveles 5-1 a 5-3 y jefe El Vendedor. | Para implementar contenido del Mundo 5 o la economía de puntos de atención. |
+| [mundo-6-nube.md](mundo-6-nube.md) | Mundo 6: ambientación, zonas remix, copias optimizadas, nodos, niveles 6-1 a 6-3 y jefe final Isak Optimizado. | Para implementar contenido del Mundo 6 o el combate final. |
+| [04-personajes.md](04-personajes.md) | Eco (rol, apariencia, voz, evolución por mundo y frases), Isak Optimizado, aliados (Calc, Linterna, Notas, Papelera) y los amigos (Lía, Marco, Tomi). | Para diálogos, jefes (Eco habla a través de ellos), el jefe final o los aliados. |
+| [05-hub.md](05-hub.md) | Hub "Pantalla de Inicio": concepto, distribución por páginas, aliados y sus funciones, cambios durante el juego, ambientación. | Para implementar el hub, el menú de mundos, las mejoras permanentes o el progreso. |
+| [06-finales.md](06-finales.md) | Momento de decisión, Final A (Desconexión), Final B (Aceptación), epílogo de amistades y comparación. | Para implementar el cierre del juego o las condiciones del epílogo. |
+| [07-estilo-visual.md](07-estilo-visual.md) | Resolución, tamaños de sprites y tiles, cámara, reglas de arte, paletas por mundo, diseño y animaciones de Isak y su copia, enemigos, efectos, HUD, referencias y producción del arte. | Antes de crear cualquier sprite, tileset, efecto o elemento de interfaz. |
+| [08-pendientes.md](08-pendientes.md) | Lista de temas aún sin decidir. | Antes de implementar algo afectado (familia de Isak, finales, resolución/sprite, paletas). No los decidas: pregunta. |
+
+## Atajos según la tarea
+
+- **Isak (movimiento, combate):** 02 → 07 (sección 15.4 y animaciones) → 08.
+- **Un nivel:** el archivo `mundo-N` del mundo → 02 (gestos disponibles en ese punto) → 07 (paleta del mundo).
+- **Un enemigo:** tabla "Enemigos y elementos del mundo" del `mundo-N` → 07 (15.5 y regla de telegrafiar ataques).
+- **Un jefe:** sección "Jefe" del `mundo-N` → 04 (Eco y su frase en ese mundo) → 07 (15.5).
+- **Arte:** 07 → paleta en la "Ambientación" del `mundo-N` → 08.
+- **Hub o progreso:** 05 → 04 (aliados).
+- **Historia y diálogos:** 03 → 04 → 06.

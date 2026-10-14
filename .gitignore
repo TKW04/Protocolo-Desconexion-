@@ -1,0 +1,15 @@
+# Godot 4
+.godot/
+export_presets.cfg
+*.tmp
+*.translation.bak
+
+# macOS
+.DS_Store
+
+# Office lock files
+~$*.docx
+
+# Python
+__pycache__/
+*.pyc

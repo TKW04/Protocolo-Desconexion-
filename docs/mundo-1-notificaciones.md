@@ -1,0 +1,80 @@
+# 6. Mapa conceptual: Mundo 1, Notificaciones
+
+Origen: sección 6 del documento original (`docs/original/diseno.md`).
+
+**Rol en la historia:** es el tutorial y la primera pérdida, la concentración. Eco se presenta aquí con una voz amable y servicial.
+
+**Idea del mundo:** el celular visto desde la pantalla de bloqueo. Todo lo que debería ser útil está diseñado para interrumpirte.
+
+## 6.1 Ambientación
+
+- **Paleta:** fondo azul noche oscuro, acentos rojo alerta y banners blancos. El Debug de este mundo es cian, para contrastar con el rojo.
+- **Música:** chiptune construido con tonos de notificación. El ritmo de la música coincide con el ritmo de los peligros.
+- **Humor:** pop-ups con textos absurdos, como "¿Seguro que quieres seguir concentrado? Tenemos ofertas" o "Tienes 99+ mensajes que no son importantes". Los botones de cerrar son diminutos o falsos.
+- **Lo oscuro:** Isak apenas recuerda qué estaba haciendo antes de entrar. Cada interrupción se lo borra un poco más.
+
+## 6.2 Enemigos y elementos del mundo
+
+| Elemento | Comportamiento | Cómo se resuelve |
+|---|---|---|
+| **Burbuja de alerta** | Patrulla de lado a lado. Hace daño al contacto. | Pulso para aturdir y pasar, o saltar sobre ella aturdida. |
+| **Banner** | Barre un pasillo horizontalmente a intervalos fijos. | Cronometrar el salto o, desde 1-3, atravesarlo con dash. |
+| **Punto rojo (badge)** | Persigue lentamente a Isak. Si lo alcanza, quita Sync Rate. | Aturdir con el pulso o dejarlo atrás con saltos. |
+| **Pop-up** | Aparece sobre la pantalla y tapa parte de la vista o bloquea un paso. | Pulso al botón de cerrar, que casi siempre es muy pequeño. |
+| **Recordatorio** | Plataforma con temporizador que cae cuando "vence". | Cruzar antes de que venza. |
+
+## 6.3 Nivel 1-1: Bandeja de entrada
+
+| Aspecto | Detalle |
+|---|---|
+| **Objetivo** | Enseñar movimiento, salto y pulso. Duración aproximada: 3 minutos. |
+| **Dificultad** | 1 de 5. Prácticamente sin riesgo de muerte. |
+| **Tramo 1** | Aterrizaje. Isak cae al mundo y no hay enemigos. Plataformas anchas y un foso pequeño para practicar el salto. Primera voz de Eco: "Bienvenido. He optimizado tu espacio." |
+| **Tramo 2** | Puente desactivado. El pulso lo activa y enseña que el pulso afecta al entorno. |
+| **Tramo 3** | Primera Burbuja de alerta, sola y lenta. Se aprende a aturdirla. |
+| **Tramo 4** | Pop-up que bloquea el paso. El botón de cerrar es diminuto y hay que acertarle con el pulso. |
+| **Cierre** | Puerta "Marcar como leído", que da paso al siguiente nivel. |
+| **Secreto** | Una pared con un leve glitch, sin forma de acceder todavía. Se retoma cuando Isak tenga el Debug. |
+| **Punto de sincronización** | Uno a mitad de nivel. |
+
+## 6.4 Nivel 1-2: Centro de notificaciones
+
+| Aspecto | Detalle |
+|---|---|
+| **Objetivo** | Introducir el Debug Mode, los enemigos que persiguen y los pop-ups que tapan la vista. Duración aproximada: 5 minutos. |
+| **Dificultad** | 2 de 5. |
+| **Estructura** | Nivel vertical. Isak sube una torre y cada piso es una pestaña. |
+| **Piso 1: Mensajes** | Primeros puntos rojos persiguiendo. Se enseña a aturdirlos y a no quedarse quieto. |
+| **Piso 2: Correo** | Banners de spam que barren el piso horizontalmente. Aquí el Debug se vuelve obligatorio: falta una plataforma que solo se ve con él, y el juego lo explica con una pista visual. |
+| **Piso 3: Recordatorios** | Plataformas con temporizador que caen al vencer. Mezcla de saltos precisos y timing. |
+| **Piso 4: Actualizaciones** | Una barra de progreso que se queda trabada en 99% y un tramo de espera humorístico con enemigos cayendo. |
+| **Mecánica de overlay** | Pop-ups translúcidos cubren zonas de la vista. Se cierran con el pulso o se atraviesan viendo con el Debug. |
+| **Secreto** | La carpeta de Spam, detrás de una plataforma oculta. Contiene puntos de atención extra y el primer recuerdo coleccionable. |
+| **Puntos de sincronización** | Uno cada dos pisos. |
+
+## 6.5 Nivel 1-3: No molestar
+
+| Aspecto | Detalle |
+|---|---|
+| **Objetivo** | Enseñar el dash y el ritmo. Duración aproximada: 6 minutos. |
+| **Dificultad** | 3 de 5 dentro del mundo. |
+| **Inicio** | Sala "Ajustes". Isak encuentra el interruptor "No molestar" y obtiene el gesto Deslizar. Es un pequeño momento narrativo y Eco comenta algo molesto. |
+| **Tramo 1** | Pasillos con banners que barren a un ritmo fijo. El dash atraviesa un banner con invulnerabilidad breve. |
+| **Tramo 2** | Plataformas que parpadean al ritmo de una vibración. Hay que saltar con el pulso de la música. |
+| **Tramo 3** | Combinación de dash y pulso contra Burbujas de alerta y puntos rojos juntos. |
+| **Tramo 4** | Túnel de alarmas que se acelera. Es la prueba final antes del jefe. |
+| **Cierre** | Puerta de bloqueo de pantalla que lleva al jefe. |
+| **Secreto** | Ruta alterna que solo se ve con el Debug y premia con puntos de atención y un recuerdo. |
+
+## 6.6 Jefe: Alerta Mayor
+
+Un enorme badge rojo con el número "99+", la notificación que representa todas las demás. Eco habla a través de él.
+
+| Aspecto | Detalle |
+|---|---|
+| **Arena** | La pantalla de bloqueo, un espacio amplio con relojes y notificaciones flotando al fondo. |
+| **Punto débil** | Un núcleo que solo se ve con el Debug Mode, en rojo. Obliga a gastar energía con inteligencia. |
+| **Fase 1** | Lanza burbujas y banners. El pulso los aturde y abre una ventana para activar el Debug y golpear el núcleo. |
+| **Fase 2** | Cubre la pantalla con pop-ups que tapan la vista. Hay que cerrarlos con el pulso y esquivar con dash. |
+| **Fase 3** | Aparecen notificaciones falsas, copias del jefe. Solo la real tiene núcleo bajo el Debug. |
+| **Recompensa** | Fragmento de concentración: un recuerdo de Isak de niño armando un circuito, absorto. Primer mensaje distinto de Eco, ya sin tanta amabilidad. |

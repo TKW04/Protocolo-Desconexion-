@@ -1,0 +1,73 @@
+---
+name: godot-isak-fix
+description: Convenciones de arquitectura, física y configuración de Godot 4 para Isak Fix. Úsalo al escribir o modificar cualquier script, escena, estado del personaje, enemigo, jefe, HUD o configuración del proyecto.
+---
+
+# Godot 4 para Isak Fix
+
+## Configuración del proyecto
+
+- Display, ventana: ancho 640, alto 360. Stretch mode `viewport`, scale mode `integer`.
+- Rendering, texturas: default texture filter en `Nearest`.
+- Activa el ajuste de transformaciones 2D a píxel (`snap_2d_transforms_to_pixel`) para evitar temblor.
+- Usa `TileMapLayer` para los niveles. Tiles de 32x32.
+
+## Estructura de carpetas
+
+```
+res://
+  assets/
+    sprites/        # por entidad: isak/, enemies/, bosses/, ui/
+    palettes/       # un .gpl por mundo
+    audio/
+  data/
+    isak_physics.json
+    levels/         # un archivo por nivel, ver level-builder
+  scenes/
+    player/ enemies/ bosses/ levels/ hub/ ui/
+  scripts/
+    autoload/       # GameState, EventBus
+    player/ enemies/ bosses/ levels/ ui/
+  tests/
+```
+
+## Convenciones de código
+
+- GDScript tipado siempre: `var speed: float = 180.0`, `func take_damage(amount: int) -> void:`.
+- Nombres en inglés con snake_case. Clases en PascalCase. Constantes en MAYUSCULAS.
+- Comunicación entre nodos con señales. Para eventos globales, un autoload `EventBus`.
+- Estado global (Sync Rate, energía de Debug, puntos de atención, fragmentos recuperados, nivel actual) en un autoload `GameState`. Nada de estado del jugador repartido por escenas.
+- Los valores de ajuste (velocidades, tiempos, daños) van en archivos de datos o `@export`, nunca como números sueltos dentro de la lógica.
+
+## El jugador (Isak)
+
+`CharacterBody2D` con una máquina de estados: `Idle`, `Run`, `Jump`, `Fall`, `Pulse`, `Dash`, `GroundPound`, `Compressed`, `Hurt`, `Dead`. Cada estado es un nodo o un script propio. Las habilidades se desbloquean por mundo, así que `GameState` guarda cuáles están activas.
+
+### Física inicial (ajustar jugando, son punto de partida)
+
+Altura de salto de 3 tiles (96 px) y tiempo al apogeo de 0.4 s:
+
+- `jump_velocity = -2 * h / t = -480`
+- `gravity = 2 * h / t^2 = 1200`
+- Velocidad de caminar 110 px/s y de correr 180 px/s, con aceleración y fricción suaves para sentir peso.
+- Coyote time 0.1 s. Jump buffer 0.1 s. Caída con gravedad un 30% mayor que la subida.
+- Guarda estos valores en `data/isak_physics.json`. El validador de `level-builder` los lee de ahí.
+
+### Idle
+Tras unos segundos quieto, Isak reproduce la animación de la terminal holográfica. Es un detalle de personalidad y en el combate final tiene un uso de gameplay (detenerse), así que el estado `Idle` debe poder detectar "tiempo quieto".
+
+### Habilidades (ver docs/02-isak-habilidades.md)
+- Pulso de datos: aturde enemigos y activa objetos del entorno.
+- Debug Mode: ralentiza el tiempo, muestra plataformas ocultas y puntos débiles. Gasta energía. Su color depende del mundo.
+- Gestos por mundo: dash, golpe al suelo, compresión, onda de aturdimiento y combos. El mapeo a controles es una decisión abierta: pregunta antes de fijarlo.
+
+## Efectos
+
+- Debug: ralentizar con `Engine.time_scale` o con un factor propio que no afecte a la UI. Teñido con shader y viñeta del color del mundo.
+- Daño: shader de desplazamiento de píxeles (glitch) de corta duración.
+- Sync Rate menor al 20%: ruido y distorsión con una opción de accesibilidad para reducirlos.
+
+## Pruebas
+
+- Ejecuta Godot sin ventana: `godot --headless` con el framework de pruebas que se elija (GUT o gdUnit4, pregunta cuál).
+- Mínimo: pruebas de la física del salto, de coyote time, de jump buffer y de las transiciones de estado.
