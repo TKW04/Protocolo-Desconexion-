@@ -1,0 +1,52 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/eco_text_box.gd" id="1_eco"]
+
+[node name="EcoTextBox" type="CanvasLayer"]
+layer = 11
+script = ExtResource("1_eco")
+
+[node name="Frame" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 640.0
+offset_bottom = 360.0
+scale = Vector2(2, 2)
+mouse_filter = 2
+
+[node name="Panel" type="NinePatchRect" parent="Frame"]
+visible = false
+layout_mode = 0
+offset_left = 180.0
+offset_top = 22.0
+offset_right = 460.0
+offset_bottom = 59.0
+mouse_filter = 2
+patch_margin_left = 3
+patch_margin_top = 3
+patch_margin_right = 3
+patch_margin_bottom = 3
+
+[node name="Icon" type="TextureRect" parent="Frame/Panel"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 22.0
+offset_bottom = 22.0
+mouse_filter = 2
+
+[node name="Speaker" type="Label" parent="Frame/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 6.0
+offset_right = 274.0
+offset_bottom = 19.0
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="Frame/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 19.0
+offset_right = 274.0
+offset_bottom = 32.0
+mouse_filter = 2

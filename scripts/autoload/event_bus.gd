@@ -69,3 +69,18 @@ signal pulse_fired(area: Area2D)
 ## Isak cae sobre ella aturdida, C7). `enemy` sigue valido durante la senal.
 @warning_ignore("unused_signal")
 signal enemy_defeated(enemy: Node2D)
+
+## Alguien (p. ej. un disparador eco_line del nivel) pide mostrar una linea de
+## Eco en el cuadro de texto (EcoTextBox). `duration_s` <= 0: tiempo por
+## defecto de data/eco_text_box.json. Si ya hay una linea en pantalla, se pone
+## en cola.
+@warning_ignore("unused_signal")
+signal eco_line_requested(text: String, duration_s: float)
+
+## El cuadro de Eco empieza a mostrar `text` (comienza la maquina de escribir).
+@warning_ignore("unused_signal")
+signal eco_line_started(text: String)
+
+## El cuadro de Eco termina de mostrar la linea actual (ya se ha ocultado).
+@warning_ignore("unused_signal")
+signal eco_line_finished
