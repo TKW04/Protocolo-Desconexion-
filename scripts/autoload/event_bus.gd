@@ -42,6 +42,12 @@ signal player_died
 @warning_ignore("unused_signal")
 signal debug_mode_changed(active: bool)
 
+## Progreso (0-1) de la pulsacion larga que activa el Debug (DebugMode). Vale
+## 0 cuando no se esta cargando (cancelado, ya activo o bloqueado). Lo usa el
+## indicador de carga del HUD.
+@warning_ignore("unused_signal")
+signal debug_activation_progress_changed(progress: float)
+
 ## Cambia la escala de tiempo del mundo (1 = normal; 0,5 con el Debug). La
 ## consumen los objetos del mundo (ver scripts/autoload/world_time.gd).
 @warning_ignore("unused_signal")

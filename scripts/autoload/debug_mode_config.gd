@@ -1,4 +1,4 @@
-## Ajustes del Debug Mode leidos de data/debug_mode.json (consumo, escala de
+## Ajustes del Debug Mode leidos de data/debug_mode.json (activacion, consumo, escala de
 ## tiempo del mundo, transiciones, tinte, vineta y plataformas ocultas).
 ## La logica (DebugMode, DebugOverlay, HiddenPlatform) no tiene numeros sueltos.
 class_name DebugModeConfig
@@ -6,6 +6,8 @@ extends RefCounted
 
 const DEFAULT_PATH: String = "res://data/debug_mode.json"
 
+## Segundos (reales) de pulsacion larga para activar el Debug.
+var activation_hold_s: float = 1.0
 var world_time_scale: float = 0.5
 var drain_per_second: float = 20.0
 var fade_in_s: float = 0.15

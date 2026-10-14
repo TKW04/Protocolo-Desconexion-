@@ -1,7 +1,8 @@
 ## Escena de prueba del Debug Mode (no es un nivel del juego). Tiles de 64 px,
 ## suelo en y = 640, resolucion 1280x720.
 ## - Camino de plataformas ocultas (tipo `h`) para subir a una repisa con un
-##   punto de atencion: solo se ve y se pisa manteniendo K (mando: Y).
+##   punto de atencion: solo se ve y se pisa con el Debug activo (mantener K /
+##   mando Y para activar, pulsar de nuevo para desactivar).
 ## - Plataforma movil y pelota que botan con el tiempo del mundo (se ve la
 ##   ralentizacion x0,5 mientras Isak va a velocidad normal).
 ## - Puntos de atencion de prueba (+1 punto, +10 de energia cada uno).

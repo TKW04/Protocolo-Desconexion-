@@ -43,12 +43,28 @@ func after_each() -> void:
 	GameState.debug_high_contrast_outline = _saved.contrast
 
 
-func _debug_on() -> void:
-	for i: int in ceili(_config.fade_in_s / DT) + 1:
+## Pulsacion larga hasta activar (sin esperar la transicion).
+func _hold_to_activate() -> void:
+	for i: int in roundi(_config.activation_hold_s / DT):
 		DebugMode.step(DT, true)
 
 
+## Activa con la pulsacion larga, suelta y espera la transicion de entrada.
+func _debug_on() -> void:
+	_hold_to_activate()
+	for i: int in ceili(_config.fade_in_s / DT) + 1:
+		DebugMode.step(DT, false)
+
+
+## Pulsacion corta: apaga el Debug si esta activo (empieza la salida suave).
+func _press_off() -> void:
+	DebugMode.step(DT, true)
+	DebugMode.step(DT, false)
+
+
+## Apaga con una pulsacion y espera la transicion de salida.
 func _debug_off() -> void:
+	_press_off()
 	for i: int in ceili(_config.fade_out_s / DT) + 1:
 		DebugMode.step(DT, false)
 
@@ -73,7 +89,7 @@ func test_overlay_between_world_and_hud() -> void:
 func test_overlay_fades_with_debug() -> void:
 	var overlay: DebugOverlay = DebugMode.get_overlay()
 	assert_false(overlay.is_effect_visible(), "Sin Debug no hay efecto")
-	DebugMode.step(DT, true)
+	_hold_to_activate()
 	assert_true(overlay.is_effect_visible())
 	assert_between(overlay.get_intensity(), EPS, 1.0 - EPS, "Entrada gradual")
 	_debug_on()
@@ -105,8 +121,8 @@ func test_hidden_platform_only_in_debug() -> void:
 	await wait_process_frames(1)
 	assert_true(platform.is_solid(), "Con Debug es solida")
 	assert_true(platform.is_shown(), "Con Debug se ve")
-	DebugMode.step(DT, false)
-	assert_false(platform.is_solid(), "Al soltar deja de ser solida al instante")
+	_press_off()
+	assert_false(platform.is_solid(), "Al apagarlo deja de ser solida al instante")
 	_debug_off()
 	await wait_process_frames(1)
 	assert_false(platform.is_shown(), "Y desaparece tras la transicion")
@@ -141,7 +157,7 @@ func test_isak_stands_on_hidden_platform_and_falls_when_debug_ends() -> void:
 	sim.settle()
 	assert_true(isak.is_on_floor(), "Con Debug Isak se apoya en la plataforma oculta")
 	assert_almost_eq(isak.global_position.y, 0.0, 1.0)
-	DebugMode.step(DT, false)
+	_press_off()
 	sim.step(FALL_CHECK_STEPS)
 	assert_false(isak.is_on_floor(), "Sin Debug la plataforma desaparece")
 	assert_gt(isak.global_position.y, 0.0, "Isak cae")
@@ -172,7 +188,7 @@ func _measure(debug: bool) -> Dictionary:
 		min_y = minf(min_y, sim.isak.global_position.y)
 		sim.step()
 		if debug:
-			DebugMode.step(DT, true)
+			DebugMode.step(DT, false)
 	sim.settle()
 	sim.input.move_axis = 1.0
 	var p: PlayerPhysics = sim.isak.physics

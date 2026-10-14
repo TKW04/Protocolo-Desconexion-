@@ -1,6 +1,7 @@
 # Pruebas de scenes/levels/debug_sandbox.tscn y de sus objetos: solo la
 # sandbox desbloquea el Debug (en la arena K no hace nada), empieza con energia
-# 100, el camino oculto es alcanzable, world_time_scale llega a la plataforma
+# 100, K se mantiene para activar y se pulsa para desactivar, el camino oculto
+# es alcanzable, world_time_scale llega a la plataforma
 # movil y a la pelota, y los puntos de atencion suman +1 y +10 de energia
 # (tambien con el Debug activo).
 extends GutTest
@@ -52,9 +53,17 @@ func _make_sandbox() -> Node:
 	return add_child_autofree(sandbox)
 
 
+## Pulsacion larga hasta activar, soltar y esperar la transicion de entrada.
 func _debug_on() -> void:
-	for i: int in ceili(_config.fade_in_s / DT) + 1:
+	for i: int in roundi(_config.activation_hold_s / DT):
 		DebugMode.step(DT, true)
+	for i: int in ceili(_config.fade_in_s / DT) + 1:
+		DebugMode.step(DT, false)
+
+
+## Cuadros de fisica que dura la pulsacion larga.
+func _hold_frames() -> int:
+	return roundi(_config.activation_hold_s / DT)
 
 
 # --- Desbloqueo por escena ---
@@ -79,8 +88,9 @@ func test_k_does_nothing_in_test_arena() -> void:
 	var energy: float = GameState.debug_energy
 	DebugMode.input_enabled = true
 	Input.action_press(ACTION_DEBUG)
-	await wait_physics_frames(SETTLE_FRAMES)
+	await wait_physics_frames(SETTLE_FRAMES + _hold_frames())
 	assert_false(DebugMode.is_active(), "K no activa el Debug en la arena")
+	assert_almost_eq(DebugMode.get_activation_progress(), 0.0, EPS, "Ni muestra carga")
 	assert_almost_eq(GameState.debug_energy, energy, EPS, "Ni gasta energia")
 	assert_eq(GameState.world_time_scale, 1.0)
 	Input.action_release(ACTION_DEBUG)
@@ -92,11 +102,19 @@ func test_k_activates_debug_in_sandbox() -> void:
 	DebugMode.input_enabled = true
 	Input.action_press(ACTION_DEBUG)
 	await wait_physics_frames(SETTLE_FRAMES)
+	assert_false(DebugMode.is_active(), "Una pulsacion breve aun no lo activa")
+	assert_almost_eq(GameState.debug_energy, GameState.DEBUG_ENERGY_MAX, EPS, "La carga no gasta")
+	await wait_physics_frames(_hold_frames())
 	assert_true(DebugMode.is_active(), "Mantener K activa el Debug en la sandbox")
+	Input.action_release(ACTION_DEBUG)
+	await wait_physics_frames(SETTLE_FRAMES)
+	assert_true(DebugMode.is_active(), "Soltar K no lo apaga")
 	assert_lt(GameState.debug_energy, GameState.DEBUG_ENERGY_MAX, "Gasta energia")
+	Input.action_press(ACTION_DEBUG)
+	await wait_physics_frames(2)
 	Input.action_release(ACTION_DEBUG)
 	await wait_physics_frames(2)
-	assert_false(DebugMode.is_active(), "Soltar K lo apaga")
+	assert_false(DebugMode.is_active(), "Pulsar K de nuevo lo apaga")
 
 
 # --- Geometria ---

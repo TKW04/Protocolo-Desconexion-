@@ -13,8 +13,11 @@ const ACTION_DEBUG: StringName = &"debug"
 const SEPARATOR: int = 4
 const SEPARATOR_COLOR: Color = Color(1, 0, 1)
 const SETTLE_FRAMES: int = 45
-## Cuadros con el Debug mantenido antes de capturar (transicion completa).
+## Cuadros tras activar el Debug antes de capturar (transicion completa).
 const DEBUG_FRAMES: int = 30
+## Cuadros de la pulsacion larga que activa el Debug (activation_hold_s = 1 s
+## a 60 Hz) mas margen.
+const HOLD_FRAMES: int = 66
 ## Isak sobre Hidden2 (superficie en y = 384) mirando a la derecha.
 const ISAK_SHOT_POSITION: Vector2 = Vector2(704, 384)
 
@@ -36,6 +39,10 @@ func _run() -> void:
 	var shots: Array[Image] = []
 	shots.append(await _shot())
 	Input.action_press(ACTION_DEBUG)
+	for i: int in HOLD_FRAMES:
+		await physics_frame
+	# Una vez activo se queda activo al soltar.
+	Input.action_release(ACTION_DEBUG)
 	for i: int in DEBUG_FRAMES:
 		await physics_frame
 	# Con el Debug activo la plataforma oculta es solida: Isak se queda encima.
@@ -46,7 +53,6 @@ func _run() -> void:
 	shots.append(await _shot())
 	game_state.set(&"debug_high_contrast_outline", true)
 	shots.append(await _shot())
-	Input.action_release(ACTION_DEBUG)
 	var width: int = shots[0].get_width()
 	var height: int = shots.size() * shots[0].get_height() + (shots.size() - 1) * SEPARATOR
 	var sheet: Image = Image.create(width, height, false, Image.FORMAT_RGBA8)
