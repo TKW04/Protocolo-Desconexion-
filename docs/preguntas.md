@@ -308,3 +308,12 @@ Decisiones aprobadas por el usuario en este paso y **propuestas** adoptadas de f
 - **Accesibilidad (propuesta):** `GameState.debug_high_contrast_outline` hace el contorno más claro (60 % hacia blanco) y más grueso (4 px). Aún no se guarda en disco (no hay menú de opciones).
 - **Recargas (pendiente):** la recarga de energía y de Sync Rate fuera de los puntos de atención se decidirá más adelante. Hay un gancho comentado en `GameState.add_attention_points()`; no hay regeneración pasiva ni curación.
 - **Desbloqueo (C2):** el Debug sigue bloqueado por defecto y en la arena; solo `scenes/levels/debug_sandbox.tscn` lo desbloquea (y lo restaura al salir). Las teclas de depuración del HUD se renombraron a `hud_debug_*` para no confundirlas con la acción `debug`.
+
+## Debug: pulsación larga para activar, pulsar para desactivar (cambio 2026-10-14 pedido por el usuario)
+
+Sustituye por completo el "mantener para usar" de la activación del paso 9 (el resto del paso 9 no cambia: ×0,5, tinte, viñeta, 20/s en tiempo real, bloqueo por nivel, plataformas ocultas).
+
+- **Activar:** mantener la acción `debug` (K / Y del mando) durante `activation_hold_s` = **1,0 s (propuesta**; el usuario pidió "unos segundos", se ajusta jugando en `data/debug_mode.json`). Solo carga con la habilidad desbloqueada y energía > 0; si no, mantener no hace nada ni muestra carga. Soltar antes cancela sin coste ni efecto. La carga no gasta energía; el gasto empieza al activarse.
+- **Activo:** se queda activo sin mantener nada. Ni seguir manteniendo ni soltar la pulsación que lo activó lo apaga.
+- **Desactivar:** una pulsación nueva de `debug` (salida suave), o al llegar la energía a 0, si Isak muere o si se bloquea la habilidad. Para volver a entrar hay que repetir la pulsación larga (recargar energía no lo reactiva).
+- **Indicador de carga (propuesta, arte provisional):** anillo pequeño a la izquierda de la batería del HUD, en el color del Debug del mundo, que se llena mientras se mantiene y desaparece al cancelar o activar. Lo alimenta `EventBus.debug_activation_progress_changed(progress)` (0-1); apariencia en `data/hud.json` (`charge_ring_*`).
