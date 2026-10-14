@@ -7,60 +7,70 @@
 layer = 10
 script = ExtResource("1_hud")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Frame" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 640.0
+offset_bottom = 360.0
+scale = Vector2(2, 2)
+mouse_filter = 2
+
+[node name="Background" type="NinePatchRect" parent="Frame"]
+layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 32.0
+offset_bottom = 16.0
 grow_horizontal = 2
 mouse_filter = 2
-color = Color(0.043, 0.055, 0.102, 0.8)
 
-[node name="ClockSlot" type="Label" parent="."]
+[node name="ClockSlot" type="Label" parent="Frame"]
 visible = false
-offset_left = 16.0
-offset_bottom = 32.0
+layout_mode = 0
+offset_left = 8.0
+offset_bottom = 16.0
 vertical_alignment = 1
 
-[node name="Row" type="HBoxContainer" parent="."]
+[node name="Row" type="HBoxContainer" parent="Frame"]
+layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_right = -16.0
-offset_bottom = 32.0
+offset_right = -8.0
+offset_bottom = 16.0
 grow_horizontal = 0
 mouse_filter = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 5
 alignment = 2
 
-[node name="Signal" type="Control" parent="Row"]
+[node name="Signal" type="Control" parent="Frame/Row"]
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("2_meter")
 
-[node name="SyncLabel" type="Label" parent="Row"]
+[node name="SyncLabel" type="Label" parent="Frame/Row"]
 layout_mode = 2
 text = "100 %"
 vertical_alignment = 1
 
-[node name="DebugCharge" type="Control" parent="Row"]
+[node name="DebugCharge" type="Control" parent="Frame/Row"]
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("2_meter")
 kind = 3
 
-[node name="Battery" type="Control" parent="Row"]
+[node name="Battery" type="Control" parent="Frame/Row"]
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("2_meter")
 kind = 1
 
-[node name="AttentionIcon" type="Control" parent="Row"]
+[node name="AttentionIcon" type="Control" parent="Frame/Row"]
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("2_meter")
 kind = 2
 
-[node name="AttentionLabel" type="Label" parent="Row"]
+[node name="AttentionLabel" type="Label" parent="Frame/Row"]
 layout_mode = 2
 text = "0"
 vertical_alignment = 1

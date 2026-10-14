@@ -8,8 +8,10 @@
 ##   y desaparece al cancelar o activar.
 ## Solo escucha a EventBus (no lee nodos de juego). Al aparecer pide a
 ## GameState que reemita su estado con EventBus.state_refresh_requested.
-## Aspecto provisional: todo sale de data/hud.json (HudConfig); el arte
-## definitivo con la paleta del Mundo 1 se hace en el paso 12.
+## Aspecto definitivo del Mundo 1 (paso 12): texturas pixel art de
+## assets/sprites/ui/ y fuente bitmap propia; todo se configura en
+## data/hud.json (HudConfig). Pixel base: el HUD se maqueta en pixeles de arte
+## dentro de Frame, que se escala x hud_pixel_scale (entero) a 1280x720.
 ## PENDIENTE: ruido/distorsion de pantalla con Sync Rate bajo (shader nuevo,
 ## sin propuesta concreta en docs). Gancho: EventBus.low_sync_changed y
 ## GameState.reduce_low_sync_effects.
@@ -29,6 +31,10 @@ const FULL: float = 1.0
 const NO_CHARGE: float = 0.0
 ## Parpadeo: fraccion de cada ciclo en que la senal se ve entera.
 const BLINK_ON_FRACTION: float = 0.5
+## Modulacion neutra de los textos: el color lo pone el shader de cambio de
+## color clave (la fuente esta dibujada en el color "text").
+const NEUTRAL_MODULATE: Color = Color.WHITE
+const PANEL_ASSET: StringName = &"panel"
 
 var _config: HudConfig = HudConfig.shared()
 var _sync_ratio: float = FULL
@@ -43,19 +49,21 @@ var _drain_tweens: Dictionary[HudMeter, Tween] = {}
 ## Todas las animaciones creadas (para cortarlas de golpe).
 var _all_tweens: Array[Tween] = []
 
-@onready var _background: ColorRect = $Background
-@onready var _row: HBoxContainer = $Row
-@onready var _clock_slot: Label = $ClockSlot
-@onready var _signal: HudMeter = $Row/Signal
-@onready var _sync_label: Label = $Row/SyncLabel
-@onready var _battery: HudMeter = $Row/Battery
-@onready var _charge: HudMeter = $Row/DebugCharge
-@onready var _attention_icon: HudMeter = $Row/AttentionIcon
-@onready var _attention_label: Label = $Row/AttentionLabel
+@onready var _frame: Control = $Frame
+@onready var _background: NinePatchRect = $Frame/Background
+@onready var _row: HBoxContainer = $Frame/Row
+@onready var _clock_slot: Label = $Frame/ClockSlot
+@onready var _signal: HudMeter = $Frame/Row/Signal
+@onready var _sync_label: Label = $Frame/Row/SyncLabel
+@onready var _battery: HudMeter = $Frame/Row/Battery
+@onready var _charge: HudMeter = $Frame/Row/DebugCharge
+@onready var _attention_icon: HudMeter = $Frame/Row/AttentionIcon
+@onready var _attention_label: Label = $Frame/Row/AttentionLabel
 
 
 func _ready() -> void:
 	_apply_config()
+	get_viewport().size_changed.connect(_fit_frame)
 	EventBus.sync_rate_changed.connect(_on_sync_rate_changed)
 	EventBus.energy_changed.connect(_on_energy_changed)
 	EventBus.attention_points_changed.connect(_on_attention_points_changed)
@@ -129,7 +137,30 @@ func get_signal_color() -> Color:
 
 
 func get_sync_text_color() -> Color:
-	return _sync_label.get_theme_color(&"font_color")
+	return _label_color(_sync_label)
+
+
+func get_attention_icon_color() -> Color:
+	return _attention_icon.fill_color
+
+
+## Barras de senal y segmentos de bateria encendidos (tramos de data/hud.json).
+func get_signal_bars() -> int:
+	return _signal.get_lit_count()
+
+
+func get_battery_segments() -> int:
+	return _battery.get_lit_count()
+
+
+## Fuente de los numeros del HUD.
+func get_font() -> Font:
+	return _sync_label.get_theme_font(&"font")
+
+
+## Pixeles de pantalla por pixel de arte.
+func get_pixel_scale() -> Vector2:
+	return _frame.scale
 
 
 func get_row_width() -> float:
@@ -168,7 +199,11 @@ func _new_tween() -> Tween:
 
 func _apply_config() -> void:
 	var c: HudConfig = _config
-	_background.color = c.color(&"background")
+	_frame.scale = Vector2.ONE * c.hud_pixel_scale
+	_fit_frame()
+	_background.texture = c.asset_texture(PANEL_ASSET)
+	_background.patch_margin_bottom = c.panel_border_px
+	_background.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE
 	_background.offset_bottom = c.bar_height_px
 	_row.offset_top = 0
 	_row.offset_bottom = c.bar_height_px
@@ -180,18 +215,33 @@ func _apply_config() -> void:
 		meter.setup(c)
 	_signal.fill_color = c.color(&"signal")
 	_attention_icon.fill_color = c.color(&"attention_icon")
-	_attention_icon.empty_color = c.color(&"background")
 	_battery.fill_color = c.debug_color_for_world(_world)
 	_charge.fill_color = c.debug_color_for_world(_world)
 	_charge.value = NO_CHARGE
+	var font: Font = c.load_font()
 	for label: Label in [_sync_label, _attention_label, _clock_slot]:
+		label.add_theme_font_override("font", font)
 		label.add_theme_font_size_override("font_size", c.font_size)
-		label.add_theme_color_override("font_color", c.color(&"text"))
+		label.add_theme_color_override("font_color", NEUTRAL_MODULATE)
+		label.material = c.new_key_swap_material(c.color(&"text"), c.color(&"text"))
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_reserve_width(_sync_label, WIDEST_PERCENT, HORIZONTAL_ALIGNMENT_RIGHT)
 	_reserve_width(_attention_label, WIDEST_ATTENTION, HORIZONTAL_ALIGNMENT_LEFT)
 	_sync_label.text = PERCENT_FORMAT % roundi(GameState.SYNC_RATE_MAX)
 	_attention_label.text = str(_attention_points)
+
+
+## Frame ocupa la pantalla en pixeles de arte (su escala la lleva a 1280x720).
+func _fit_frame() -> void:
+	_frame.size = get_viewport().get_visible_rect().size / _frame.scale
+
+
+func _set_label_color(label: Label, color: Color) -> void:
+	(label.material as ShaderMaterial).set_shader_parameter(&"target_color", color)
+
+
+func _label_color(label: Label) -> Color:
+	return (label.material as ShaderMaterial).get_shader_parameter(&"target_color")
 
 
 func _reserve_width(label: Label, widest: String, align: HorizontalAlignment) -> void:
@@ -239,8 +289,8 @@ func _on_low_sync_changed(is_low: bool) -> void:
 	_is_low_sync = is_low
 	_blink_time = 0.0
 	_signal.fill_color = _config.color(&"low_sync") if is_low else _config.color(&"signal")
-	_sync_label.add_theme_color_override("font_color",
-		_config.color(&"low_sync") if is_low else _config.color(&"text"))
+	_signal.low = is_low
+	_set_label_color(_sync_label, _config.color(&"low_sync") if is_low else _config.color(&"text"))
 	_update_low_sync_visual()
 
 

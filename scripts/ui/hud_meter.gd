@@ -1,14 +1,29 @@
-## Indicador del HUD dibujado con primitivas (arte provisional; paso 12).
-## - SIGNAL: barras de senal (Sync Rate), cada barra es una fraccion igual.
-## - BATTERY: bateria por segmentos (energia de Debug).
+## Indicador del HUD dibujado con las texturas pixel art de assets/sprites/ui/
+## (tools/gen_hud_assets.py), en pixeles de arte (el HUD entero se escala).
+## - SIGNAL: barras de senal (Sync Rate), encendidas por tramos.
+## - BATTERY: bateria de segmentos (energia de Debug), encendidos por tramos.
 ## - ATTENTION_ICON: icono del contador de puntos de atencion.
-## - CHARGE_RING: anillo de carga de la pulsacion larga del Debug (0 = no se
-##   dibuja, pero conserva su hueco para que la fila no se mueva).
-## Todos los tamanos salen de HudConfig (data/hud.json).
+## - CHARGE_RING: anillo de carga de la pulsacion larga del Debug en pasos
+##   discretos (0 = no se dibuja, pero conserva su hueco para que la fila no
+##   se mueva).
+## Rutas, cuadros y tramos salen de HudConfig (data/hud.json). La bateria y el
+## anillo estan dibujados en el color clave (debug_key) y un shader lo cambia
+## por fill_color (color del Debug del mundo).
 class_name HudMeter
 extends Control
 
 enum Kind { SIGNAL, BATTERY, ATTENTION_ICON, CHARGE_RING }
+
+## Filas de hud_signal.png (orden de SIGNAL_STATES en tools/gen_hud_assets.py).
+enum SignalRow { OFF, ON, LOW, TRAIL }
+## Filas de hud_battery_segments.png (orden de SEG_STATES).
+enum SegmentRow { EMPTY, FULL, TRAIL }
+
+const SIGNAL_ASSET: StringName = &"signal"
+const SHELL_ASSET: StringName = &"battery_shell"
+const SEGMENTS_ASSET: StringName = &"battery_segments"
+const ATTENTION_ASSET: StringName = &"attention_icon"
+const RING_ASSET: StringName = &"charge_ring"
 
 @export var kind: Kind = Kind.SIGNAL
 
@@ -17,129 +32,136 @@ var value: float = 1.0:
 	set(v):
 		value = clampf(v, 0.0, 1.0)
 		queue_redraw()
-## Rastro del dano (0-1): lo que se acaba de perder, en el color de dano.
+## Rastro del dano (0-1): lo que se acaba de perder, en el estado de rastro.
 var trail: float = 1.0:
 	set(v):
 		trail = clampf(v, 0.0, 1.0)
 		queue_redraw()
+## Color principal: senal (blanco o rojo de Sync Rate bajo), color del Debug
+## (bateria y anillo) o ambar (icono). Lo consultan el HUD y las pruebas.
 var fill_color: Color = Color.WHITE:
 	set(v):
 		fill_color = v
+		_update_material()
 		queue_redraw()
-var empty_color: Color = Color(1, 1, 1, 0.2)
-var trail_color: Color = Color.RED
-var border_color: Color = Color.WHITE
+## Senal en estado de Sync Rate bajo (barras en alerta).
+var low: bool = false:
+	set(v):
+		low = v
+		queue_redraw()
 
 var _config: HudConfig = HudConfig.shared()
+var _texture: Texture2D
+var _shell: Texture2D
 
 
 func setup(config: HudConfig) -> void:
 	_config = config
-	empty_color = config.color(&"empty")
-	trail_color = config.color(&"damage")
-	border_color = config.color(&"battery_border")
+	match kind:
+		Kind.SIGNAL:
+			_texture = config.asset_texture(SIGNAL_ASSET)
+		Kind.BATTERY:
+			_texture = config.asset_texture(SEGMENTS_ASSET)
+			_shell = config.asset_texture(SHELL_ASSET)
+		Kind.CHARGE_RING:
+			_texture = config.asset_texture(RING_ASSET)
+		_:
+			_texture = config.asset_texture(ATTENTION_ASSET)
+	if kind == Kind.BATTERY or kind == Kind.CHARGE_RING:
+		material = config.new_key_swap_material(config.color(&"debug_key"), fill_color)
 	custom_minimum_size = get_meter_size()
 	queue_redraw()
 
 
+func _update_material() -> void:
+	var swap: ShaderMaterial = material as ShaderMaterial
+	if swap != null:
+		swap.set_shader_parameter(&"target_color", fill_color)
+
+
 func get_meter_size() -> Vector2:
+	return Vector2(_config.asset_frame_size(_asset_name()))
+
+
+func _asset_name() -> StringName:
 	match kind:
 		Kind.SIGNAL:
-			var n: int = _config.signal_bar_count
-			return Vector2(n * _config.signal_bar_width_px + (n - 1) * _config.signal_bar_gap_px,
-				_config.signal_bar_max_height_px)
+			return SIGNAL_ASSET
 		Kind.BATTERY:
-			return Vector2(_config.battery_width_px + _config.battery_tip_width_px, _config.battery_height_px)
+			return SHELL_ASSET
 		Kind.CHARGE_RING:
-			return Vector2(_config.charge_ring_size_px, _config.charge_ring_size_px)
+			return RING_ASSET
 		_:
-			return Vector2(_config.attention_icon_size_px, _config.attention_icon_size_px)
+			return ATTENTION_ASSET
+
+
+## Barras de senal encendidas con el valor actual (tramos de data/hud.json).
+func get_lit_count() -> int:
+	return HudConfig.lit_count(value, _thresholds())
+
+
+## Partes en estado de rastro (entre el valor y el rastro).
+func get_trail_count() -> int:
+	return maxi(HudConfig.lit_count(trail, _thresholds()) - get_lit_count(), 0)
+
+
+## Cuadro del anillo de carga (0 a steps-1) o -1 si no se dibuja.
+func get_ring_frame() -> int:
+	if value <= 0.0:
+		return -1
+	var steps: int = _config.charge_ring_steps
+	return clampi(ceili(value * steps) - 1, 0, steps - 1)
+
+
+func _thresholds() -> Array[float]:
+	return _config.battery_thresholds if kind == Kind.BATTERY else _config.signal_thresholds
 
 
 func _draw() -> void:
-	# Centrado vertical dentro del alto que le de el contenedor.
+	if _texture == null:
+		return
+	# Centrado vertical (en pixeles enteros) dentro del alto del contenedor.
 	var top: float = floorf((size.y - get_meter_size().y) * 0.5)
 	match kind:
 		Kind.SIGNAL:
-			_draw_signal(top)
+			_draw_parts(top, _signal_row)
 		Kind.BATTERY:
-			_draw_battery(top)
+			draw_texture(_shell, Vector2(0.0, top))
+			_draw_parts(top, _segment_row)
 		Kind.ATTENTION_ICON:
-			_draw_attention_icon(top)
+			draw_texture(_texture, Vector2(0.0, top))
 		Kind.CHARGE_RING:
-			_draw_charge_ring(top)
+			var frame: int = get_ring_frame()
+			if frame >= 0:
+				_draw_frame(frame, 0, top)
 
 
-## Fraccion (0-1) de la parte `index` de `count` que cubre `amount` (0-1).
-static func part_fill(amount: float, index: int, count: int) -> float:
-	return clampf(amount * count - index, 0.0, 1.0)
+func _signal_row(lit: bool, in_trail: bool) -> int:
+	if lit:
+		return SignalRow.LOW if low else SignalRow.ON
+	return SignalRow.TRAIL if in_trail else SignalRow.OFF
 
 
-func _draw_signal(top: float) -> void:
-	var n: int = _config.signal_bar_count
-	var max_h: float = _config.signal_bar_max_height_px
-	var w: float = _config.signal_bar_width_px
-	for i: int in n:
-		var t: float = float(i) / maxf(n - 1, 1)
-		var h: float = roundf(lerpf(_config.signal_bar_min_height_px, max_h, t))
-		var x: float = i * (w + _config.signal_bar_gap_px)
-		var bottom: float = top + max_h
-		draw_rect(Rect2(x, bottom - h, w, h), empty_color)
-		var trail_h: float = roundf(h * part_fill(trail, i, n))
-		if trail_h > 0.0:
-			draw_rect(Rect2(x, bottom - trail_h, w, trail_h), trail_color)
-		var fill_h: float = roundf(h * part_fill(value, i, n))
-		if fill_h > 0.0:
-			draw_rect(Rect2(x, bottom - fill_h, w, fill_h), fill_color)
+func _segment_row(lit: bool, in_trail: bool) -> int:
+	if lit:
+		return SegmentRow.FULL
+	return SegmentRow.TRAIL if in_trail else SegmentRow.EMPTY
 
 
-func _draw_battery(top: float) -> void:
-	var b: float = _config.battery_border_px
-	var w: float = _config.battery_width_px
-	var h: float = _config.battery_height_px
-	var body := Rect2(0, top, w, h)
-	# Borde (cuatro lados) y punta del polo.
-	draw_rect(Rect2(body.position, Vector2(w, b)), border_color)
-	draw_rect(Rect2(0, top + h - b, w, b), border_color)
-	draw_rect(Rect2(0, top, b, h), border_color)
-	draw_rect(Rect2(w - b, top, b, h), border_color)
-	var tip_h: float = _config.battery_tip_height_px
-	draw_rect(Rect2(w, top + floorf((h - tip_h) * 0.5), _config.battery_tip_width_px, tip_h), border_color)
-	# Segmentos dentro del borde, con un hueco de 1 borde.
-	var n: int = _config.battery_segments
-	var gap: float = _config.battery_segment_gap_px
-	var inner := Rect2(b + gap, top + b + gap, w - 2.0 * (b + gap), h - 2.0 * (b + gap))
-	var seg_w: float = floorf((inner.size.x - (n - 1) * gap) / n)
-	for j: int in n:
-		var x: float = inner.position.x + j * (seg_w + gap)
-		draw_rect(Rect2(x, inner.position.y, seg_w, inner.size.y), empty_color)
-		var trail_w: float = roundf(seg_w * part_fill(trail, j, n))
-		if trail_w > 0.0:
-			draw_rect(Rect2(x, inner.position.y, trail_w, inner.size.y), trail_color)
-		var fill_w: float = roundf(seg_w * part_fill(value, j, n))
-		if fill_w > 0.0:
-			draw_rect(Rect2(x, inner.position.y, fill_w, inner.size.y), fill_color)
+## Cada parte (columna del atlas) en su estado; los cuadros se superponen.
+func _draw_parts(top: float, row_for: Callable) -> void:
+	var lit: int = get_lit_count()
+	var trailing: int = lit + get_trail_count()
+	for i: int in _thresholds().size():
+		_draw_frame(i, row_for.call(i < lit, i < trailing), top)
 
 
-## Icono provisional: un punto con brillo (como el coleccionable `o`).
-func _draw_attention_icon(top: float) -> void:
-	var s: float = _config.attention_icon_size_px
-	var center := Vector2(s * 0.5, top + s * 0.5)
-	draw_circle(center, s * 0.5, fill_color)
-	draw_circle(center, s * 0.25, empty_color)
+func _draw_frame(column: int, row: int, top: float) -> void:
+	var frame := Vector2(_config.asset_frame_size(_asset_name_for_atlas()))
+	var src := Rect2(Vector2(column, row) * frame, frame)
+	draw_texture_rect_region(_texture, Rect2(Vector2(0.0, top), frame), src)
 
 
-## Anillo de carga: pista tenue y arco del color del Debug que crece en el
-## sentido de las agujas del reloj desde arriba. Sin antialiasing (pixel art).
-func _draw_charge_ring(top: float) -> void:
-	if value <= 0.0:
-		return
-	var s: float = _config.charge_ring_size_px
-	var w: float = _config.charge_ring_thickness_px
-	var center := Vector2(s * 0.5, top + s * 0.5)
-	var radius: float = (s - w) * 0.5
-	var points: int = _config.charge_ring_point_count
-	draw_arc(center, radius, 0.0, TAU, points, empty_color, w, false)
-	var start: float = -PI * 0.5
-	var arc_points: int = maxi(ceili(points * value), 2)
-	draw_arc(center, radius, start, start + TAU * value, arc_points, fill_color, w, false)
+## La bateria mide como su marco, pero sus segmentos vienen de otra hoja.
+func _asset_name_for_atlas() -> StringName:
+	return SEGMENTS_ASSET if kind == Kind.BATTERY else _asset_name()

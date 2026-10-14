@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A11, A12, A13, A14, A15, A16.
+**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10, A11. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -252,7 +252,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Por qué:** el diseño solo menciona los puntos como fuente de energía, y 10 por punto hace que la recolección importe.
 - **Decisión (2026-10-14):** aprobadas las propuestas.
 
-### A11 [BLOQUEA SLICE] Representación del HUD
+### A11 [RESUELTO] Representación del HUD
 - **Sección:** §15.7.
 - **Problema:** no se define cuántas barras de señal hay, cómo se segmenta la batería, ni la posición, la escala o la fuente concreta.
 - **Propuesta:** barra de estado en la parte superior, de 16 px de alto, a resolución base. Señal con 4 barras (25% cada una) más el porcentaje, y parpadeo por debajo del 20%. Batería de 5 segmentos. Contador con icono de 8x8 px. Fuente pixel art libre con tildes y ñ (para aprobar).
@@ -341,3 +341,17 @@ Lo que dice el diseño (§3.2, §6.1, §6.3, §15.2): el pulso "si golpea un obj
 - **Pared con glitch:** bloque sólido con el aspecto del tileset y ráfagas cortas (cada 0,6-1,8 s) de líneas de píxeles desplazadas. Sin interacción; gancho para el Debug: grupo `debug_secret` y señal `debug_revealed(active)`. El contenido del secreto queda pendiente (V12). **Duda:** ¿el glitch debe verse siempre o solo de cerca / con el Debug?
 - **Fondo de pantalla de bloqueo (V10):** tres capas con parallax (cielo con relojes, fondo medio con relojes y avisos, resplandor con edificios), 1280x720, repetibles sin costura, por debajo de la capa del Debug (que las tiñe).
 - **Color del pulso:** el efecto usa ahora el cian del Debug `#3dfff5` (`effects_pulse.gpl`: core `#c2fffc`, mid `#3dfff5`, dim `#12857f`; `isak.gpl` world_cyan igual). El arte de Isak no cambia.
+
+## A11 [RESUELTO] HUD definitivo del Mundo 1 (paso 12, 2026-10-14)
+
+Sustituye el arte provisional con primitivas del paso 8. Todo el aspecto está en `data/hud.json` y en `assets/sprites/ui/`; los assets se rehacen con `tools/gen_hud_assets.py` y `tools/gen_hud_font.py` y se validan con `tools/validate_ui_assets.py` (paleta `mundo1.gpl` + debug_cian, alfa 0/255, tamaños múltiplos de 8, nombres `hud_*.png`, glifos de la fuente).
+
+- **Pixel base:** el HUD se dibuja en píxeles de arte y se escala ×2 (`hud_pixel_scale`, entero) a 1280x720, como los tiles. Barra de estado de 16 px de arte (32 en pantalla) a todo lo ancho: `noche_profunda` con línea `borde_luz` abajo (opaca; antes era semitransparente). Iconos en cuadros de 16x16 (señal, punto de atención, anillo de carga) y batería de 32x16; márgenes 8 y separación 5 (px de arte).
+- **Señal (Sync Rate):** 4 barras de 3 px (alturas 4, 7, 10, 13), encendidas por **tramos** (`signal_thresholds` = 0, 25, 50, 75): la barra *i* se enciende si el Sync Rate es **mayor** que el tramo *i* → 76–100 % = 4 barras, 51–75 = 3, 26–50 = 2, 1–25 = 1, 0 = ninguna. Con Sync Rate bajo (< 20 %) las barras encendidas y el porcentaje pasan a `alerta`/`alerta_sombra` y parpadean (sin parpadeo con `reduce_low_sync_effects`). Rastro de daño: las barras perdidas quedan en `alerta_sombra` y se apagan tras 0,35 s.
+- **Batería (energía de Debug):** marco `banner_blanco`/`banner_gris` con polo y 5 segmentos de 4x8 (`battery_thresholds` = 0, 20, 40, 60, 80, mismo criterio): llenos en el color del Debug del mundo (dibujados en `#3dfff5`; el shader `assets/shaders/hud_key_swap.gdshader` cambia ese color clave por `debug_colors` de cada mundo), vacíos en `tile_luz`, rastro de consumo/daño en `alerta_sombra`.
+- **Puntos de atención:** rombo de 13 px en ámbar `#ffa000` con borde inferior y punto central en `ambar_sombra` (misma forma que el objeto del nivel).
+- **Anillo de carga del Debug:** anillo de 12 px de diámetro y 2 de grosor en 16 pasos discretos (`charge_ring_steps`), pista `tile_luz`, relleno en el color del Debug.
+- **Fuente:** bitmap propia (`assets/sprites/ui/hud_font.png` + `hud_font.fnt`, BMFont que Godot importa como FontFile), glifos de 5x7 (dígitos monoespaciados, avance 6) en `banner_blanco`: `0-9`, `%`, `x`, `:` y espacio (`font_glyphs`). Tamaño 8 (sin escalado fraccionario). El color rojo del porcentaje con Sync Rate bajo sale del mismo shader de color clave.
+- **Hueco del reloj (C8):** `ClockSlot` sigue oculto a la izquierda y ya usa la fuente (`:` incluido).
+- **Propuesta (no implementada), letras para textos de interfaz en español:** mismo alto (7 px de mayúscula, 5x7) con A–Z y a–z (minúsculas con descendentes: alto de línea 10), tildes `á é í ó ú Á É Í Ó Ú`, `ñ Ñ`, `ü`, `¿ ? ¡ !`, `. , ; - / ( ) "` y `+`. Unos 75 glifos, en un atlas de 16 columnas. **Duda:** ¿hace falta ya (menús, diálogos) o se espera al hub?
+- **Dudas:** (1) la barra es opaca y tapa 32 px del juego; ¿se prefiere solo un panel tras el grupo de la derecha? (2) ¿el rastro de consumo de la batería en rojo oscuro molesta durante el Debug (se ve a cada segmento gastado)?
