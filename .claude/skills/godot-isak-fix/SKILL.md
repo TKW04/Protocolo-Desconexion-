@@ -7,10 +7,10 @@ description: Convenciones de arquitectura, física y configuración de Godot 4 p
 
 ## Configuración del proyecto
 
-- Display, ventana: ancho 640, alto 360. Stretch mode `viewport`, scale mode `integer`.
+- Display, ventana: ancho 1280, alto 720. Stretch mode `viewport`, scale mode `integer` (decisión del 2026-10-14; antes 640x360).
 - Rendering, texturas: default texture filter en `Nearest`.
 - Activa el ajuste de transformaciones 2D a píxel (`snap_2d_transforms_to_pixel`) para evitar temblor.
-- Usa `TileMapLayer` para los niveles. Tiles de 32x32.
+- Usa `TileMapLayer` para los niveles. Tiles de 64x64. El sprite de Isak usa un canvas de 128x128 con unos 96 px visibles y los pies abajo-centro.
 
 ## Estructura de carpetas
 
@@ -33,7 +33,7 @@ res://
 
 ## Convenciones de código
 
-- GDScript tipado siempre: `var speed: float = 180.0`, `func take_damage(amount: int) -> void:`.
+- GDScript tipado siempre: `var speed: float = 360.0`, `func take_damage(amount: int) -> void:`.
 - Nombres en inglés con snake_case. Clases en PascalCase. Constantes en MAYUSCULAS.
 - Comunicación entre nodos con señales. Para eventos globales, un autoload `EventBus`.
 - Estado global (Sync Rate, energía de Debug, puntos de atención, fragmentos recuperados, nivel actual) en un autoload `GameState`. Nada de estado del jugador repartido por escenas.
@@ -45,11 +45,11 @@ res://
 
 ### Física inicial (ajustar jugando, son punto de partida)
 
-Altura de salto de 3 tiles (96 px) y tiempo al apogeo de 0.4 s:
+Altura de salto de 3 tiles (192 px, con tiles de 64) y tiempo al apogeo de 0.4 s. Valores ×2 respecto a la versión de 640x360, con los mismos tiempos:
 
-- `jump_velocity = -2 * h / t = -480`
-- `gravity = 2 * h / t^2 = 1200`
-- Velocidad de caminar 110 px/s y de correr 180 px/s, con aceleración y fricción suaves para sentir peso.
+- `jump_velocity = -2 * h / t = -960`
+- `gravity = 2 * h / t^2 = 2400`
+- Velocidad de caminar 220 px/s y de correr 360 px/s, con aceleración y fricción suaves para sentir peso.
 - Coyote time 0.1 s. Jump buffer 0.1 s. Caída con gravedad un 30% mayor que la subida.
 - Guarda estos valores en `data/isak_physics.json`. El validador de `level-builder` los lee de ahí.
 

@@ -18,7 +18,7 @@ Un archivo por nivel en `data/levels/<mundo>-<nivel>.json`:
   "id": "1-1",
   "name": "Bandeja de entrada",
   "world": 1,
-  "tile_size": 32,
+  "tile_size": 64,
   "debug_color": "cyan",
   "grid": ["...", "..."],
   "checkpoints": [],

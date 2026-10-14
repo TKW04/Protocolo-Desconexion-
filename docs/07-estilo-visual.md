@@ -6,6 +6,8 @@ Pixel art 2D con paletas limitadas por mundo. El objetivo es que el juego se vea
 
 ## 15.1 Resolución y técnica
 
+> **Cambio aprobado 2026-10-14:** resolución base **1280x720** (stretch `viewport`, escala `integer`, filtro nearest). **Sprite de Isak** en canvas de **128x128** con unos **96 px** de altura visible y los pies abajo-centro. **Tiles de 64x64** (Isak sigue midiendo un tile y medio). Enemigos entre 64x64 y 128x128, jefes entre 256x256 y 512x512, efectos en múltiplos de 8. La tabla siguiente es la propuesta original y se conserva como referencia histórica; donde choque con esta nota, manda la nota.
+
 | Elemento | Propuesta |
 |---|---|
 | **Resolución base** | 640x360 (16:9). Escala por múltiplos enteros: x3 da 1920x1080, y x2 da 1280x720. Sin interpolación, con filtro nearest. |
@@ -39,6 +41,23 @@ El tamaño del sprite es la decisión con más consecuencias. Un sprite de 64 p�
 | **6. La Nube** | Plata, blanco y gris frío | Azul pálido, con filtraciones de colores anteriores | Cambia por zona |
 
 ## 15.4 Isak y su copia
+
+> **Cambio aprobado 2026-10-14:** el diseño de Isak de la hoja de referencia `../Ejemplo/Idle.png` (fuera del repo; arte generado con IA, no pixel art verdadero) **reemplaza** el diseño de la tabla siguiente y se usa como guía. Lo que se ve en la referencia:
+>
+> | Elemento | Diseño aprobado |
+> |---|---|
+> | **Cuerpo** | Chico de proporciones algo chibi (cabeza grande), ojos oscuros grandes, **sin lentes**. |
+> | **Pelo** | Castaño oscuro, desordenado y en punta. |
+> | **Chaqueta** | Gris oscura tipo táctica, holgada, con **detalles cian luminosos** en el cuello alto y un parche cian en el hombro. Ya no es verde oliva. |
+> | **Camiseta** | Camiseta/chaleco negro con un **logo claro** (blanco) en el pecho. |
+> | **Mochila** | Marrón, con la correa visible sobre el hombro. |
+> | **Pantalón** | Gris oscuro, tipo cargo, con bolsillos y una funda o bolsillo oscuro en el muslo. |
+> | **Botas** | Grises, robustas, con **detalles naranja**. |
+> | **Celular** | Siempre lo lleva; en el idle lo sostiene y lo mira. |
+>
+> El cian y el celular se mantienen como rasgos de identidad. La luz de contorno y el LED de la mochila de la tabla original no aparecen en la referencia y siguen sin decidir. Las hojas se generan con [guia-sprites-ia.md](guia-sprites-ia.md) y se importan con `tools/import_sheet.py`. `docs/original/diseno.md` queda intacto.
+
+Diseño original (reemplazado, se conserva como referencia):
 
 Isak aparece en todos los fondos, así que su diseño debe leerse sobre cualquier paleta. La camiseta negra es un riesgo en los mundos oscuros, y por eso se compensa con la chaqueta y una luz de contorno.
 
@@ -95,6 +114,6 @@ Como inspiración, sin copiar, se pueden mirar juegos con rasgos que buscamos: C
 ## 15.9 Producción del arte
 
 - **Herramienta:** Aseprite para sprites y tilesets, con las paletas fijas por mundo.
-- **Motor:** Godot con la resolución base de 640x360, modo de escala por viewport y filtro nearest en todos los recursos.
+- **Motor:** Godot con la resolución base de 640x360 (cambiada a 1280x720 el 2026-10-14, ver nota de 15.1), modo de escala por viewport y filtro nearest en todos los recursos.
 - **Arte con apoyo de IA:** se puede usar para explorar conceptos y referencias, pero cada sprite final conviene limpiarlo a mano en Aseprite para mantener la coherencia de paleta y de tamaño.
 - **Orden de producción:** primero Isak (caminar, saltar, idle y pulso), luego el tileset del Mundo 1 y el nivel 1-1 jugable. Con eso se prueba el tamaño del sprite y el ritmo del movimiento antes de producir el resto.

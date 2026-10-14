@@ -5,7 +5,9 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 ## 2. Personaje: Isak Fix
 
 - **Edad:** 17 años
-- **Apariencia:** t-shirt negro con logo en el centro, chaqueta de tela, jeans y lentes.
+> **Cambio aprobado 2026-10-14:** el diseño de Isak de la hoja de referencia `../Ejemplo/Idle.png` (fuera del repo, arte generado con IA) reemplaza la apariencia del documento original y sirve de guía: pelo castaño oscuro desordenado, sin lentes; chaqueta gris oscura tipo táctica con detalles cian luminosos en el cuello y un parche cian en el hombro; camiseta/chaleco negro con un logo claro en el pecho; mochila marrón; pantalón gris oscuro con bolsillos; botas grises con detalles naranja; celular en la mano. Detalle en [07-estilo-visual.md](07-estilo-visual.md) §15.4. La línea siguiente es la apariencia original, que se conserva como referencia histórica (`docs/original/diseno.md` queda intacto).
+
+- **Apariencia (original, reemplazada):** t-shirt negro con logo en el centro, chaqueta de tela, jeans y lentes.
 - **Perfil:** ingeniero por vocación. Pasa las noches haciendo scroll hasta que un celular lo traga.
 - **El nombre:** "Fix" juega con arreglar y con fijación, estar fijo, enganchado. Isak Fix es el chico que se quedó fijo.
 

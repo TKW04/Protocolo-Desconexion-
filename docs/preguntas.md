@@ -1,6 +1,8 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-14):** resueltos C1, C7, C9, V2, V3, V7, V11, A4, A8, A10. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C6, C8, V1, V4, V5, V6, V8, V9, V10, V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A11, A12, A13, A14, A15, A16.
+**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V11, A4, A8, A10. Aplazado: V15. Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10, V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A11, A12, A13, A14, A15, A16.
+
+**Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
 Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los skills `godot-isak-fix`, `pixel-art-pipeline` y `level-builder`.
 
@@ -46,11 +48,12 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Propuesta:** el dash es una variante del pulso que se activa con el gesto, y el pulso normal sigue disponible. El mapeo de controles queda pendiente, porque es una decisión abierta de `CLAUDE.md`.
 - **Por qué:** es la única lectura compatible con los niveles y el jefe del Mundo 1.
 
-### C6 [BLOQUEA SLICE (arte e hitbox)] Tamaño del sprite: ¿regla fija o decisión abierta?
+### C6 [RESUELTO] Tamaño del sprite: ¿regla fija o decisión abierta?
 - **Sección:** `CLAUDE.md` ("Reglas fijas": canvas de 64x64, y "Decisiones abiertas": 64x64 o 48x48), §15.1 (64x64, alternativa de 48x48) y §16.
 - **Problema:** el mismo archivo declara el tamaño a la vez como regla fija y como decisión abierta. Si cambia, cambian la altura de Isak (§15.1: "un tile y medio") y la validación de niveles.
 - **Propuesta:** usar 64x64 como provisional para el slice y desacoplar la hitbox del canvas (ver A5), de modo que pasar a 48x48 solo afecte al arte y no a la física ni a los niveles.
 - **Por qué:** así el slice puede servir de prueba del tamaño, como pide §15.9, sin rehacer los niveles.
+- **Decisión (2026-10-14):** resolución base 1280x720 (stretch `viewport`, escala `integer`); Isak a unos 96 px visibles en un canvas de 128x128 con los pies abajo-centro; tiles de 64x64. La física se duplica con los mismos tiempos (salto de 192 px, `jump_velocity` −960, gravedad 2400, caminar 220 px/s, correr 360 px/s). Además, el diseño de Isak de `../Ejemplo/Idle.png` reemplaza al del documento (ver `07-estilo-visual.md` §15.4).
 
 ### C7 [RESUELTO] ¿Saltar sobre un enemigo aturdido lo elimina o lo usa como plataforma?
 - **Sección:** §3.2 ("el enemigo aturdido se puede eliminar o usar como plataforma") frente a §6.2 (Burbuja: "saltar sobre ella aturdida").

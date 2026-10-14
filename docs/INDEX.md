@@ -17,6 +17,7 @@
 | [05-hub.md](05-hub.md) | Hub "Pantalla de Inicio": concepto, distribución por páginas, aliados y sus funciones, cambios durante el juego, ambientación. | Para implementar el hub, el menú de mundos, las mejoras permanentes o el progreso. |
 | [06-finales.md](06-finales.md) | Momento de decisión, Final A (Desconexión), Final B (Aceptación), epílogo de amistades y comparación. | Para implementar el cierre del juego o las condiciones del epílogo. |
 | [07-estilo-visual.md](07-estilo-visual.md) | Resolución, tamaños de sprites y tiles, cámara, reglas de arte, paletas por mundo, diseño y animaciones de Isak y su copia, enemigos, efectos, HUD, referencias y producción del arte. | Antes de crear cualquier sprite, tileset, efecto o elemento de interfaz. |
+| [guia-sprites-ia.md](guia-sprites-ia.md) | Guía para generar las hojas de sprites de Isak con una herramienta de IA de imágenes (prompts, animaciones, comprobaciones) e importarlas con `tools/import_sheet.py`. | Antes de generar o importar una hoja de sprites de Isak. |
 | [08-pendientes.md](08-pendientes.md) | Lista de temas aún sin decidir. | Antes de implementar algo afectado (familia de Isak, finales, resolución/sprite, paletas). No los decidas: pregunta. |
 
 ## Atajos según la tarea
@@ -25,6 +26,6 @@
 - **Un nivel:** el archivo `mundo-N` del mundo → 02 (gestos disponibles en ese punto) → 07 (paleta del mundo).
 - **Un enemigo:** tabla "Enemigos y elementos del mundo" del `mundo-N` → 07 (15.5 y regla de telegrafiar ataques).
 - **Un jefe:** sección "Jefe" del `mundo-N` → 04 (Eco y su frase en ese mundo) → 07 (15.5).
-- **Arte:** 07 → paleta en la "Ambientación" del `mundo-N` → 08.
+- **Arte:** 07 → `guia-sprites-ia.md` (sprites de Isak) → paleta en la "Ambientación" del `mundo-N` → 08.
 - **Hub o progreso:** 05 → 04 (aliados).
 - **Historia y diálogos:** 03 → 04 → 06.

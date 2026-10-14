@@ -10,7 +10,7 @@ Origen: secciones 1 y 5 (y el encabezado del documento) del documento original (
 
 - **Tipo de juego:** plataformas 2D
 - **Estilo:** pixel art 2D
-- **Resolución:** base de 640x360, con el sprite de Isak en un canvas de 64x64 (ver [07-estilo-visual.md](07-estilo-visual.md))
+- **Resolución:** base de 640x360, con el sprite de Isak en un canvas de 64x64 (ver [07-estilo-visual.md](07-estilo-visual.md)) — *cambio aprobado 2026-10-14: 1280x720, Isak en canvas de 128x128 (unos 96 px visibles) y tiles de 64x64*
 - **Motor previsto:** Godot con GDScript. Se rehace desde cero, sin reutilizar el código anterior.
 - **Tono:** mezcla de oscuro y reflexivo con humorístico y satírico. El humor está en la superficie del mundo y lo oscuro en lo que cada mundo le quitó a Isak.
 - **Objetivos de diseño:** que se vea bien, que sea interesante y que la complejidad aumente a medida que avanza.

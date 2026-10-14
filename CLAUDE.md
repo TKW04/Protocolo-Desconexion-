@@ -15,18 +15,17 @@ Están en `.claude/skills/`:
 
 ## Reglas fijas del diseño
 
-- Resolución base 640x360, escala por múltiplos enteros, filtro nearest. Sprite de Isak en canvas de 64x64, tiles de 32x32.
+- Resolución base 1280x720 (stretch `viewport`, escala `integer`), filtro nearest. Sprite de Isak en canvas de 128x128 con unos 96 px de altura visible (pies abajo-centro), tiles de 64x64.
 - Sync Rate es la vida. La energía de Debug es una barra aparte. Los puntos de atención son la moneda.
 - Debug por mundo: 1 cian, 2 ámbar, 3 verde ácido, 4 coral, 5 blanco, 6 cambia por zona.
 - Rojo significa daño y puntos débiles. En el Mundo 1 las alertas usan un rojo anaranjado y el punto débil un carmín puro y pulsante.
-- La chaqueta de Isak es verde oliva desaturado, un color que no usa ninguna otra paleta.
+- Isak lleva chaqueta gris oscura tipo táctica con detalles cian luminosos en cuello y hombro, y siempre su celular. No lleva lentes ni chaqueta verde oliva. La referencia visual es `../Ejemplo/Idle.png` (fuera del repo) (ver `docs/07-estilo-visual.md`, §15.4).
 - Todo ataque enemigo se anticipa visualmente de 6 a 12 cuadros antes de dañar.
 - Sin marcas reales. Todos los nombres de apps y redes son inventados.
 - Textos del juego y del documento en español. Identificadores del código en inglés.
 
 ## Decisiones abiertas (no las decidas tú, pregúntame)
 
-- Tamaño final del sprite: 64x64 o 48x48, tras probar el prototipo.
 - Hex exactos de las paletas por mundo.
 - La familia de Isak, que aparece en los recuerdos del Mundo 2.
 - Música y efectos de sonido.
@@ -39,6 +38,8 @@ Están en `.claude/skills/`:
 - Los controles leen solo acciones del Input Map de `project.godot`, pensando en un futuro port a móvil. Los gestos usan las acciones `gesture_swipe`, `gesture_hold`, `gesture_pinch` y `gesture_shake`; `gesture_hold` aún no tiene tecla asignada.
 - El Debug se implementa completo, pero se desbloquea por nivel mediante `GameState.abilities_unlocked`.
 - Al terminar un nivel se vuelve al hub.
+- Resolución 1280x720, Isak a 96 px visibles en canvas de 128x128 y tiles de 64x64 (C6, 2026-10-14).
+- El diseño de Isak de `../Ejemplo/Idle.png` (arte generado con IA) reemplaza al del documento original y sirve de guía. Las hojas generadas con IA se importan con `tools/import_sheet.py` siguiendo `docs/guia-sprites-ia.md`.
 
 ## Cómo trabajar
 
