@@ -31,7 +31,7 @@ Paleta: solo `assets/palettes/mundo1.gpl` (sin `ambar`, `alerta` ni `carmin`) y 
 | Punto de habilidad (`ability_pickup`) | `pickups/ability_pickup_idle_00..03.png` | 40x40 | disponible | 4 (las patas encendidas giran: arriba, derecha, abajo, izquierda; el núcleo late) |
 | | `pickups/ability_pickup_collected_00.png` | 40x40 | recogido | 1 (chip apagado) |
 
-Validación: tamaño, colores solo de las dos paletas, alfa 0 o 255 y fondo transparente en cada cuadro (`check_asset` de `tools/validate_world1_assets.py`). Generador y validador: ver «Pendiente».
+Validación: tamaño, colores solo de las dos paletas, alfa 0 o 255 y fondo transparente en cada cuadro (`check_asset` de `tools/validate_world1_assets.py`). Generador: `tools/gen_energy_objects.py`; validador: `tools/validate_energy_objects.py` (ver «Regenerar»).
 
 ## Notas para integrar en cada escena
 
@@ -42,7 +42,15 @@ Se recomienda un `AnimatedSprite2D` con `SpriteFrames` (una animación por estad
 - **charger:** el lienzo de 32x64 ocupa la mitad central de la celda de 64x64, apoyado en el borde inferior (como el `size_px` actual). Lista: `charger_ready` a 8 fps en bucle. En recarga: cuadro `floor(progress * 8)` limitado a 7 (con progress = tiempo enfriado / `cooldown_s`), sin reproducir. Gastado: `charger_spent_00`.
 - **ability_pickup:** disponible: `ability_pickup_idle` a 6–8 fps; el chip mide 28x28 con las patas, igual que el `size_px` actual, dentro de un lienzo de 40x40 que deja sitio a los brillos. Como el objeto no aparece si la habilidad ya está obtenida, `ability_pickup_collected_00` sirve para el cuadro de transición al recogerlo (o para mostrarlo apagado si eso se decide en el futuro).
 
+## Regenerar
+
+Desde la raíz del repo:
+
+- `python3 tools/gen_energy_objects.py` rehace los 32 PNG (`--dry-run` no escribe; `--preview <png> [--scale N]` guarda una hoja ampliada para revisarlos). La salida es determinista: sin cambios en el script, los PNG salen idénticos.
+- `python3 tools/validate_energy_objects.py` los valida (sale con 1 si hay errores).
+
+Ambos usan Pillow. Si está instalado en el site de usuario (`pip3 install --user Pillow`), los scripts lo añaden a `sys.path` a mano, así que funcionan también con `python3 -I`.
+
 ## Pendiente
 
-- El generador (`gen_energy_objects.py`, Pillow) y su validador se han quedado fuera del repo porque esta tarea solo podía crear archivos en `assets/` y en este documento. La skill pide guardar los generadores en `tools/`: falta moverlos a `tools/` (p. ej. `tools/gen_energy_objects.py`) para poder rehacer los PNG.
-- Los `.import` de Godot se crean la primera vez que se abre el editor.
+- Los `.import` de Godot se crean la primera vez que se abre el editor (o con `tools/run_tests.sh`, que importa el proyecto); se commitean como los del resto de `assets/sprites/`.
