@@ -65,6 +65,15 @@ var fragments_recovered: int = FRAGMENTS_MIN:
 
 var current_level: StringName = NO_LEVEL
 
+## Ultimo punto de sincronizacion tocado en cada nivel (id de nivel -> id de
+## checkpoint). Solo hay uno activo por nivel: el mas reciente. Lo escribe
+## Checkpoint y lo borra el flujo de nivel (LevelRunner) al empezar de cero.
+var last_checkpoint: Dictionary[StringName, StringName] = {}
+## Niveles completados y niveles desbloqueados (por `unlocks` del JSON del
+## nivel). Los guarda LevelRunner al terminar un nivel; aun no van a disco.
+var completed_levels: Dictionary[StringName, bool] = {}
+var unlocked_levels: Dictionary[StringName, bool] = {}
+
 ## Mundo actual (1-6). Decide el color del Debug.
 var current_world: int = FIRST_WORLD:
 	set(value):
@@ -138,6 +147,39 @@ func emit_state() -> void:
 	EventBus.energy_changed.emit(debug_energy, DEBUG_ENERGY_MAX)
 	EventBus.attention_points_changed.emit(attention_points)
 	EventBus.low_sync_changed.emit(_is_sync_low)
+
+
+## Fija el ultimo punto de sincronizacion de `level` (sustituye al anterior).
+func set_last_checkpoint(level: StringName, checkpoint_id: StringName) -> void:
+	if last_checkpoint.get(level, NO_LEVEL) == checkpoint_id:
+		return
+	last_checkpoint[level] = checkpoint_id
+	EventBus.checkpoint_activated.emit(String(level), checkpoint_id)
+
+
+## Ultimo punto de sincronizacion de `level` o &"" si no hay ninguno.
+func get_last_checkpoint(level: StringName) -> StringName:
+	return last_checkpoint.get(level, NO_LEVEL)
+
+
+func clear_last_checkpoint(level: StringName) -> void:
+	last_checkpoint.erase(level)
+
+
+func mark_level_completed(level: StringName) -> void:
+	completed_levels[level] = true
+
+
+func is_level_completed(level: StringName) -> bool:
+	return completed_levels.get(level, false)
+
+
+func unlock_level(level: StringName) -> void:
+	unlocked_levels[level] = true
+
+
+func is_level_unlocked(level: StringName) -> bool:
+	return unlocked_levels.get(level, false)
 
 
 func is_ability_unlocked(ability: StringName) -> bool:

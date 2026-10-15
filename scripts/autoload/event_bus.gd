@@ -91,3 +91,13 @@ signal eco_line_finished
 ## (scenes/hub/hub_placeholder.tscn).
 @warning_ignore("unused_signal")
 signal level_completed(level_id: String)
+
+## Isak ha tocado un punto de sincronizacion: pasa a ser el ultimo de `level_id`
+## (GameState.last_checkpoint). Lo emite GameState.set_last_checkpoint.
+@warning_ignore("unused_signal")
+signal checkpoint_activated(level_id: String, checkpoint_id: StringName)
+
+## Isak reaparece (LevelRunner) tras morir (`after_death`) o tras caer fuera del
+## nivel (red de seguridad), en `position` (pies).
+@warning_ignore("unused_signal")
+signal player_respawned(position: Vector2, after_death: bool)

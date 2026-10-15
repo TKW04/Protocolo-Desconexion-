@@ -236,6 +236,28 @@ func die() -> void:
 	change_state(PlayerState.DEAD)
 
 
+## Reaparece en `at` (pies) tras morir o caer fuera del nivel (lo llama
+## LevelRunner): quieto, vivo y con `invulnerable_s` de invulnerabilidad (con
+## el mismo parpadeo que tras un golpe). No toca el Sync Rate (GameState).
+func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
+	if not _ready_ok:
+		return
+	global_position = at
+	velocity = Vector2.ZERO
+	_jump_buffer_left = 0.0
+	_coyote_left = 0.0
+	_knockback_direction = 0.0
+	_invulnerable_left = maxf(invulnerable_s, 0.0)
+	modulate.a = 1.0
+	stop_pulse_effect()
+	set_pulse_area_active(false)
+	reset_idle_time()
+	change_state(PlayerState.IDLE)
+	play_animation(ANIM_IDLE)
+	_camera.reset_smoothing()
+	_update_blink()
+
+
 ## Lo llama DeadState al entrar.
 func notify_died() -> void:
 	died.emit()
@@ -343,6 +365,21 @@ func restart_animation(anim: StringName) -> void:
 ## Animacion actual del sprite (para pruebas y depuracion).
 func get_animation() -> StringName:
 	return _sprite.animation
+
+
+## Duracion en segundos de `anim` a velocidad normal (0 si no existe o hace
+## bucle). La usa LevelRunner para esperar a que acabe la animacion de muerte.
+func get_animation_length(anim: StringName) -> float:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	if frames == null or not frames.has_animation(anim) or frames.get_animation_loop(anim):
+		return 0.0
+	var fps: float = frames.get_animation_speed(anim)
+	if fps <= 0.0:
+		return 0.0
+	var total: float = 0.0
+	for i: int in frames.get_frame_count(anim):
+		total += frames.get_frame_duration(anim, i)
+	return total / fps
 
 
 ## Cuadro actual de la animacion del sprite.

@@ -91,6 +91,7 @@ var target: Isak
 var _state: StringName = &""
 var _direction: float = 1.0
 var _origin_x: float = 0.0
+var _spawn_position: Vector2 = Vector2.ZERO
 ## Velocidad en px/s de tiempo del mundo (sin escalar).
 var _world_velocity: Vector2 = Vector2.ZERO
 var _stun_left: float = 0.0
@@ -120,6 +121,7 @@ func _ready() -> void:
 	_setup_shapes()
 	_direction = 1.0 if start_direction >= 0.0 else -1.0
 	_origin_x = global_position.x
+	_spawn_position = global_position
 	EventBus.pulse_fired.connect(_on_pulse_fired)
 	_ready_ok = true
 	_change_state(STATE_PATROL)
@@ -224,6 +226,19 @@ func receive_pulse(area: Area2D) -> bool:
 		return false
 	stun()
 	return true
+
+
+## Vuelve a su punto de aparicion patrullando, sin aturdimiento (reaparicion de
+## Isak, LevelRunner). Sin efecto si ha reventado (sigue reventada).
+func reset_patrol() -> void:
+	if not _ready_ok or _state == STATE_POPPED:
+		return
+	global_position = _spawn_position
+	velocity = Vector2.ZERO
+	_world_velocity = Vector2.ZERO
+	_direction = 1.0 if start_direction >= 0.0 else -1.0
+	_has_prev = false
+	_change_state(STATE_PATROL)
 
 
 ## Revienta y hace rebotar a `bouncer` (si lo hay).
