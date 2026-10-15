@@ -23,5 +23,6 @@ disabled = true
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, -64)
+process_callback = 0
 position_smoothing_enabled = true
 position_smoothing_speed = 8.0
