@@ -35,13 +35,13 @@ func _action(name: StringName) -> InputEventAction:
 
 func test_catalog_matches_proposal_and_targets_exist() -> void:
 	var expected: Dictionary = {
-		# Costes: economia del 2026-10-15 (docs/propuesta-1-1-ampliado.md §6).
+		# Costes: economia del 2026-10-15, revisada (9 puntos por mapa; docs/propuesta-1-1-ampliado.md §6).
 		&"wide_pulse": [&"isak_abilities.pulse_radius_px", 96.0, 112.0, 25, 0],
-		&"reinforced_sync": [&"game_state.sync_rate_max", 100.0, 120.0, 150, 1],
-		&"efficient_debug": [&"debug_mode.drain_per_second", 20.0, 15.0, 200, 1],
-		&"extended_battery": [&"game_state.debug_energy_max", 100.0, 150.0, 120, 1],
-		&"quick_start": [&"debug_mode.activation_hold_s", 1.0, 0.5, 60, 0],
-		&"improved_recharge": [&"game_state.energy_per_attention_point", 10.0, 15.0, 90, 0],
+		&"reinforced_sync": [&"game_state.sync_rate_max", 100.0, 120.0, 45, 1],
+		&"efficient_debug": [&"debug_mode.drain_per_second", 20.0, 15.0, 60, 1],
+		&"extended_battery": [&"game_state.debug_energy_max", 100.0, 150.0, 35, 1],
+		&"quick_start": [&"debug_mode.activation_hold_s", 1.0, 0.5, 20, 0],
+		&"improved_recharge": [&"game_state.energy_per_attention_point", 10.0, 15.0, 25, 0],
 	}
 	var catalog := UpgradeCatalog.load_from_file()
 	assert_eq(catalog.entries().size(), expected.size())
@@ -80,7 +80,7 @@ func test_buying_spends_and_changes_effective_values_only() -> void:
 	assert_eq(GameState.purchase_upgrade(&"extended_battery"), GameState.PurchaseResult.OK)
 	assert_eq(GameState.purchase_upgrade(&"quick_start"), GameState.PurchaseResult.OK)
 	assert_eq(GameState.purchase_upgrade(&"improved_recharge"), GameState.PurchaseResult.OK)
-	assert_eq(GameState.attention_points, 700 - 150 - 200 - 120 - 60 - 90)
+	assert_eq(GameState.attention_points, 700 - 45 - 60 - 35 - 20 - 25)
 	assert_eq(GameState.power_banks, 0)
 	assert_eq(GameState.purchase_upgrade(&"reinforced_sync"), GameState.PurchaseResult.ALREADY_OWNED)
 	assert_almost_eq(GameState.get_sync_rate_max(), 120.0, EPS)

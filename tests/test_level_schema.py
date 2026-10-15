@@ -63,27 +63,34 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertNotIn("debug", json.dumps(lvl["unlocks"]))
         self.assertGreaterEqual(len(lvl["grid"]), 12)
         self.assertEqual("".join(lvl["grid"]).count("^"), 0, "1-1 sin pinchos")
-        # Economia (decision 2026-10-15, docs/propuesta-1-1-ampliado.md §6): pocos puntos por mapa
-        # (los puntos no se recapturan). Solo la ruta no paga ninguna mejora; la ruta y los secretos
-        # sin mejora pagan la primera (Pulso amplio) y ninguna otra cabe en un recorrido completo.
+        # Economia (decision 2026-10-15, revisada el mismo dia; docs/propuesta-1-1-ampliado.md §6): unos 9
+        # puntos por mapa (los puntos no se recapturan). Un mapa solo no paga ninguna mejora; tres mapas
+        # completos (1-1 a 1-3) pagan justo Pulso amplio, sin que sobren muchos; una vuelta (18 mapas)
+        # no paga todas.
         points = "".join(lvl["grid"]).count("o")
         with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
             upgrades = {u["id"]: u for u in json.load(handle)["upgrades"]}
         secret_points = sum(int(s.get("points", 0)) for s in lvl["secrets"])
         gated_points = sum(int(s.get("points", 0)) for s in lvl["secrets"] if s.get("requires_upgrade"))
         route = points - secret_points
-        self.assertEqual((points, route, secret_points, gated_points), (35, 20, 15, 5))
+        self.assertEqual((points, route, secret_points, gated_points), (9, 6, 3, 0))
         costs = {uid: u["cost"]["attention_points"] for uid, u in upgrades.items()}
-        self.assertLess(route, min(costs.values()), "la ruta sola no paga ninguna mejora")
-        self.assertGreaterEqual(points - gated_points, costs["wide_pulse"], "el 1-1 completo paga Pulso amplio")
-        for uid, cost in costs.items():
-            if uid != "wide_pulse":
-                self.assertGreater(cost, points, "%s no se paga con un solo 1-1" % uid)
+        self.assertLess(points, min(costs.values()), "un solo mapa completo no paga ninguna mejora")
+        self.assertGreaterEqual(3 * points, costs["wide_pulse"], "tres mapas completos pagan Pulso amplio")
+        self.assertLess(3 * points - costs["wide_pulse"], 5, "y sobran pocos puntos")
+        self.assertLess(3 * route, costs["wide_pulse"], "solo con la ruta de tres mapas no llega")
+        self.assertGreater(sum(costs.values()), 18 * points, "una vuelta no paga todas las mejoras")
         self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (300, 14))
+        # Un solo power bank (vacio) en el 1-1: el del secreto que exige Pulso amplio.
         banks = [o for o in lvl["objects"] if o["type"] == "power_bank_pickup"]
-        self.assertEqual(banks, [], "sin power banks en el 1-1: aparecen desde el 1-2 (con el Debug)")
+        self.assertEqual(len(banks), 1, "un solo power bank en el 1-1")
         wide = next(s for s in lvl["secrets"] if s.get("requires_upgrade"))
-        self.assertEqual((wide["id"], wide["requires_upgrade"]), ("secreto_pulso_amplio", "wide_pulse"))
+        self.assertEqual((wide["id"], wide["requires_upgrade"], wide["object"]),
+                         ("secreto_pulso_amplio", "wide_pulse", "power_bank_pickup"))
+        self.assertEqual((banks[0]["x"], banks[0]["y"]), (wide["x"], wide["y"]))
+        # Burbujas: solo la del Tramo 3a bajo techo bajo; las demas en abierto ("open").
+        self.assertEqual([e["id"] for e in lvl["enemies"] if not e.get("open")], ["burbuja_1"])
+        self.assertGreaterEqual(sum(1 for e in lvl["enemies"] if e.get("open")), 3)
         kinds = [o["type"] for o in lvl["objects"]]
         for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_door", "glitch_wall"):
             self.assertIn(kind, kinds)
@@ -161,14 +168,39 @@ class LevelSchemaTest(unittest.TestCase):
     def test_level_1_1_tramo3_low_ceiling(self):
         """Tramo 3 (decision 2026-10-14): techo bajo de 2 tiles sobre toda la patrulla de la
         Burbuja (y algo mas), con escalones de 3 tiles a los lados y la cara de arriba fuera
-        del alcance del salto. La prueba de simulacion es tests/test_tramo3_ceiling.gd."""
+        del alcance del salto. Desde el 2026-10-15 solo burbuja_1 (3a); las demas van en abierto
+        ("open": test_level_1_1_open_bubbles). La prueba de simulacion es tests/test_tramo3_ceiling.gd."""
         with open(os.path.join(ROOT, "data", "isak_physics.json"), encoding="utf-8") as handle:
             phys = json.load(handle)
         with open(os.path.join(ROOT, "data", "enemies", "alert_bubble.json"), encoding="utf-8") as handle:
             bubble_data = json.load(handle)
         for bubble in self.level["enemies"]:
+            if bubble.get("open"):
+                continue
             with self.subTest(bubble=bubble["id"]):
                 self._check_low_ceiling(bubble, phys, bubble_data)
+
+    def test_level_1_1_open_bubbles(self):
+        """Burbujas en abierto (2026-10-15): sin techo sobre su patrulla y con una repisa de una via a
+        3 tiles sobre su suelo junto a la patrulla (aturdida sirve de escalon para subir; saltando desde
+        la repisa se cae encima por encima del umbral de pop). Simulacion: tests/test_level_1_1.gd."""
+        with open(os.path.join(ROOT, "data", "enemies", "alert_bubble.json"), encoding="utf-8") as handle:
+            bubble_data = json.load(handle)
+        grid = self.level["grid"]
+        tile = self.level["tile_size"]
+        for bubble in self.level["enemies"]:
+            if not bubble.get("open"):
+                continue
+            with self.subTest(bubble=bubble["id"]):
+                half = bubble["params"]["patrol_range_px"] / 2.0 + bubble_data["body_size"][0] / 2.0
+                center = (bubble["x"] + 0.5) * tile
+                c0, c1 = int((center - half) // tile), int((center + half - 1e-6) // tile)
+                for c in range(c0, c1 + 1):
+                    self.assertFalse(any(grid[r][c] == "#" for r in range(bubble["y"] + 1)),
+                                     "techo sobre la patrulla en la columna %d" % c)
+                ledge_row = bubble["y"] + 1 - 3
+                near = [c for c in range(c0 - 1, c1 + 2) if grid[ledge_row][c] == "-"]
+                self.assertTrue(near, "repisa de una via a 3 tiles junto a la patrulla")
 
     def _check_low_ceiling(self, bubble, phys, bubble_data):
         tile = phys["tile_size"]
