@@ -84,3 +84,34 @@ Las dice Eco con su voz: amable, servicial y corporativa, sin amenazar (§12.1).
 4. **Puntos de atención al rejugar:** ¿cada punto se recoge una sola vez por partida guardada (sin farmeo) o reaparece? ¿Se aceptan 28 en la ruta en lugar de los 10 a 20 de V8?
 5. **Desvíos de la ficha:** ¿se aceptan un segundo punto de sincronización y pinchos (10 %) en el 1-1?
 6. **Pistas de Eco:** ¿se muestran una vez por partida guardada o cada vez que se juega el nivel? ¿Se enseña la tecla dentro del texto?
+
+## 6. Economía de puntos y mejoras (decisión del usuario, 2026-10-15; IMPLEMENTADA)
+
+Sustituye los costes de §2 y el reparto de puntos de «Notas del 1-1 ampliado» (`docs/preguntas.md`). Los valores son **propuestas** y se ajustan jugando.
+
+**Decisiones:** (a) menos puntos de atención por mapa, dispersos y no en filas seguidas, y mejoras más caras: ninguna se compra «de regalo» con un solo recorrido del 1-1, salvo la primera; (b) los power banks no aparecen en el 1-1, sino desde el 1-2, cuando se aprende el Debug; (c) «Pulso amplio» se presenta como necesidad con un secreto del 1-1 que solo se abre con la mejora.
+
+**Criterio y fórmula:**
+
+- **Puntos por mapa objetivo:** como máximo unos **30** (unos 20 en la ruta y unos 10 en los secretos), más los de algún secreto que pida una mejora. Una vuelta (18 mapas) da como mucho 18 × 30 = **540** puntos (360 solo con la ruta). Los puntos no se recapturan.
+- **Coste de una mejora** = 30 × N redondeado a 5, donde N son los mapas completos (con secretos) que hay que ahorrar para pagarla. N crece con la potencia de la mejora y con el momento del juego en que es útil.
+- **Comprobaciones:** (1) la ruta del 1-1 sola (20) no paga ninguna mejora; (2) el 1-1 completo sin mejoras (30) solo paga Pulso amplio; (3) ninguna otra mejora cuesta menos que todo el 1-1 (35); (4) la suma de todas (645) supera lo que da una vuelta (540), así que en la primera vuelta no se compran todas (propuesta de tres vueltas en `docs/preguntas.md`). `tests/test_level_schema.py` comprueba (1) a (3).
+
+| Mejora | Coste anterior → nuevo (puntos) | Power banks | N (mapas completos, 30 por mapa) | Mapas solo con la ruta (20 por mapa) |
+|---|---|---|---|---|
+| Pulso amplio | 15 → **25** | 0 | 0,83 (un 1-1 completo) | 1,25 |
+| Arranque rápido | 20 → **60** | 0 | 2 | 3 |
+| Recarga mejorada | 25 → **90** | 0 | 3 | 4,5 |
+| Batería ampliada | 30 → **120** | 1 | 4 | 6 |
+| Sync reforzado | 30 → **150** | 1 | 5 | 7,5 |
+| Debug eficiente | 50 → **200** | 1 | 6,7 | 10 |
+| **Total** | 170 → **645** | 3 | 21,5 (> 18) | 32 |
+
+**Puntos del 1-1 (anterior → nuevo):** ruta 79 → **20** (uno cada 14 columnas aproximadamente, sueltos y a distintas alturas); secretos A 8 → **3**, B 8 → **3** y C 8 → **4**; secreto nuevo del Pulso amplio: **5**. Total 103 → **35** (30 sin la mejora).
+
+**Secretos del 1-1:** A, B y C dejan de dar un power bank vacío y pasan a ser secretos de puntos (celda `S` con `reward: "attention_points"` y `points`). Se quita la frase de Eco del power bank («Batería externa detectada…»); queda para el 1-2. El tipo `power_bank_pickup` y sus pruebas se mantienen.
+
+**Secreto del Pulso amplio (`secreto_pulso_amplio`):** un nicho cerrado a la izquierda del techo de 3a (columnas 121-125, fila 4, con 5 puntos), tapado por el pop-up `popup_lejano` (columnas 126-128, filas 1-4). Se ve al hacer el secreto B: encima del techo, Isak llega andando hasta pegarse al pop-up, en la columna 129, mirando a la izquierda. Es el único sitio desde el que puede lanzar el pulso hacia el botón (el pulso solo sale de pie; el nicho tiene techo y paredes). El botón de cerrar está en `close_button_px` [52, 192]. Con la geometría del juego (centro de Isak a 16 px de la cara del pop-up y celular en `pulse_effect_origin` (36, -56)), el botón queda a **104 px** del celular, más que el radio base (96) y no más que el mejorado (112). Hay que volver al nivel tras comprar la mejora en el hub, y los puntos ya capturados no se repiten. Línea de Eco de primera vez: «Ese botón queda un poco lejos. Con un pulso más amplio llegarías.» Se usa un pop-up en lugar de un receptor porque la zona de golpe del receptor es fija (`hit_rect` [12, 0, 40, 64]) y, en la cuadrícula de 64 px, desde una pared ninguna posición queda entre 96 y 112 px. Desde el borde de una repisa sí cabría, pero el resultado dependería de cuánto se asoma Isak.
+
+**Validador:** `validate_level.py` usa los valores base y admite `--upgrades wide_pulse`. En cada pasada comprueba que un secreto con `requires_upgrade` no se alcanza sin la mejora y sí con ella, y que la meta se alcanza sin mejoras. `tools/run_tests.sh` lo ejecuta con y sin la mejora.
+
