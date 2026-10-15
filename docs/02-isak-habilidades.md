@@ -22,6 +22,8 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 ### 3.2 Combate y utilidad
 
 - **Pulso de datos (acción rápida):** no es un arma de fuego. Es un pulso a corta distancia. Si golpea a un enemigo (un programa de seguridad) lo aturde unos segundos. Si golpea un objeto del entorno (un puente desactivado) lo activa. El aturdimiento debe abrir algo: el enemigo aturdido se puede eliminar o usar como plataforma.
+> **Cambio aprobado 2026-10-15 (decisión del usuario):** nueva habilidad **Láser**, desbloqueable (se obtiene con un objeto del nivel): dispara un proyectil horizontal hacia donde mira Isak que hace daño. Gasta la misma energía que el Debug Mode. Los enemigos tienen vida y el láser es lo que los elimina; el enemigo aturdido sigue sirviendo de plataforma, pero caer sobre él ya no lo elimina. El texto original de esta sección se conserva; valores y detalle en `docs/preguntas.md` («Láser, vida de enemigos y energía (2026-10-15)»).
+
 - **Debug Mode (modo especial):** el tiempo se ralentiza. Isak ve plataformas ocultas que son errores del sistema y el punto débil de los jefes, marcado en rojo. Consume la barra de energía. El color de la pantalla cambia según el mundo, para evitar el cliché del verde tipo matriz.
 
 ### 3.3 Barras
@@ -30,6 +32,8 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 |---|---|
 | **Sync Rate** | Es la vida. Representa cuánto está sincronizado Isak con su cuerpo. Por debajo del 20% la música se distorsiona y aparece ruido visual, con una opción de accesibilidad para reducirlo. |
 | **Energía de Debug** | Barra secundaria. Se gasta con el Debug Mode y se recupera con puntos de atención. |
+
+> **Cambio aprobado 2026-10-15:** la energía también la gasta el láser y se recupera, además de con puntos de atención, con los drops de los enemigos, en el hub y con cargadores en los mapas.
 
 ### 3.4 Daño y muerte
 

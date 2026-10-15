@@ -59,6 +59,8 @@ Tras unos segundos quieto, Isak reproduce la animación de la terminal holográf
 ### Habilidades (ver docs/02-isak-habilidades.md)
 - Pulso de datos: aturde enemigos y activa objetos del entorno.
 - Debug Mode: ralentiza el tiempo, muestra plataformas ocultas y puntos débiles. Gasta energía. Su color depende del mundo.
+- Láser (2026-10-15): acción `laser` (F / gatillo izquierdo), proyectil horizontal (`LaserProjectile`) que gasta la misma energía que el Debug; desbloqueable con `ability_pickup`. A quien alcanza le llama `on_laser_hit(damage, source)`; los objetos del entorno que reaccionen en el futuro implementan ese método (y, si son Area2D, van en el grupo `laser_activatable`).
+- Enemigos y jefes: vida con `EnemyHealth` (`health` en el JSON del enemigo, `params.health` del nivel la sobrescribe) y `drops` al morir.
 - Gestos por mundo: dash, golpe al suelo, compresión, onda de aturdimiento y combos. El mapeo a controles es una decisión abierta: pregunta antes de fijarlo.
 
 ## Efectos
