@@ -130,7 +130,8 @@ func test_scene_structure_matches_json() -> void:
 		assert_eq((node as Node2D).position, Vector2(float(obj["x"]), float(obj["y"])) * _tile,
 				"Posicion de %s" % obj["type"])
 	assert_eq((_object("receiver_56_9") as PulseReceiver).target_id, &"puente_1")
-	assert_eq(_find(func(n: Node) -> bool: return n is PowerBankPickup).size(), 3, "Un power bank por secreto")
+	assert_eq(_find(func(n: Node) -> bool: return n is PowerBankPickup).size(), 0,
+			"Sin power banks en el 1-1: aparecen desde el 1-2 (2026-10-15)")
 	var popup := _object("popup_1") as PopupBlocker
 	assert_eq(popup.close_button_position, Vector2(4, 192), "close_button_px -> Vector2")
 	assert_eq((_object("puerta_salida") as ExitDoor).level_id, "1-1")
@@ -316,3 +317,41 @@ func test_popup_blocks_until_pulse() -> void:
 	_sim.input.move_axis = 1.0
 	_sim.step_until(func() -> bool: return _isak.global_position.x >= 219.0 * _tile, _sim.steps_for(4.0))
 	assert_gte(_isak.global_position.x, 219.0 * _tile, "Pasa tras cerrar el pop-up")
+
+
+# --- Secreto del Pulso amplio (2026-10-15) ---
+
+## Isak pegado a la cara derecha del pop-up popup_lejano (encima del techo de 3a,
+## columna 129, fila 4), mirando a la izquierda, lanza el pulso. Devuelve el pop-up.
+func _pulse_at_far_popup() -> PopupBlocker:
+	await _load(true)
+	var popup := _object("popup_lejano") as PopupBlocker
+	_place(129, 4)
+	_sim.input.move_axis = -1.0
+	_sim.step(_sim.steps_for(1.0))
+	assert_almost_eq(_isak.global_position.x, popup.global_position.x + popup.get_size_px().x
+			+ _isak.hitbox_size.x * 0.5, 1.0, "Pegado al pop-up")
+	assert_eq(_isak.facing, -1.0, "Mira al pop-up")
+	_sim.input.move_axis = 0.0
+	_sim.settle()
+	_pulse()
+	return popup
+
+
+func test_far_popup_out_of_base_pulse_reach() -> void:
+	var popup: PopupBlocker = await _pulse_at_far_popup()
+	assert_almost_eq(_isak.abilities.pulse_radius_px, 96.0, 0.001)
+	assert_eq(popup.get_state(), PopupBlocker.State.OPEN, "Con el pulso base el boton queda fuera (104 px)")
+
+
+func test_far_popup_closes_with_wide_pulse() -> void:
+	var saved_path: String = GameState.save_path
+	GameState.use_save_path("user://test_level_1_1_save.json", true)
+	GameState.attention_points = 25
+	assert_eq(GameState.purchase_upgrade(&"wide_pulse"), GameState.PurchaseResult.OK)
+	var popup: PopupBlocker = await _pulse_at_far_popup()
+	assert_almost_eq(_isak.abilities.pulse_radius_px, 112.0, 0.001)
+	assert_ne(popup.get_state(), PopupBlocker.State.OPEN, "Con Pulso amplio el pulso llega al boton")
+	GameState.reset_progress()
+	SaveFile.delete("user://test_level_1_1_save.json")
+	GameState.save_path = saved_path

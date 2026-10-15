@@ -63,25 +63,36 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertNotIn("debug", json.dumps(lvl["unlocks"]))
         self.assertGreaterEqual(len(lvl["grid"]), 12)
         self.assertEqual("".join(lvl["grid"]).count("^"), 0, "1-1 sin pinchos")
-        # 1-1 ampliado (decision 2026-10-14): los puntos no se recapturan, asi que el total del mapa
-        # debe alcanzar para las tres mejoras iniciales sin farmear.
+        # Economia (decision 2026-10-15, docs/propuesta-1-1-ampliado.md §6): pocos puntos por mapa
+        # (los puntos no se recapturan). Solo la ruta no paga ninguna mejora; la ruta y los secretos
+        # sin mejora pagan la primera (Pulso amplio) y ninguna otra cabe en un recorrido completo.
         points = "".join(lvl["grid"]).count("o")
         with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
             upgrades = {u["id"]: u for u in json.load(handle)["upgrades"]}
-        needed = sum(upgrades[u]["cost"]["attention_points"]
-                     for u in ("wide_pulse", "reinforced_sync", "efficient_debug"))
-        self.assertGreaterEqual(points, needed, "puntos del mapa (%d) < coste de las mejoras iniciales" % points)
+        secret_points = sum(int(s.get("points", 0)) for s in lvl["secrets"])
+        gated_points = sum(int(s.get("points", 0)) for s in lvl["secrets"] if s.get("requires_upgrade"))
+        route = points - secret_points
+        self.assertEqual((points, route, secret_points, gated_points), (35, 20, 15, 5))
+        costs = {uid: u["cost"]["attention_points"] for uid, u in upgrades.items()}
+        self.assertLess(route, min(costs.values()), "la ruta sola no paga ninguna mejora")
+        self.assertGreaterEqual(points - gated_points, costs["wide_pulse"], "el 1-1 completo paga Pulso amplio")
+        for uid, cost in costs.items():
+            if uid != "wide_pulse":
+                self.assertGreater(cost, points, "%s no se paga con un solo 1-1" % uid)
         self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (300, 14))
         banks = [o for o in lvl["objects"] if o["type"] == "power_bank_pickup"]
-        self.assertGreaterEqual(len(banks), 2, "power banks de mapa en los secretos")
+        self.assertEqual(banks, [], "sin power banks en el 1-1: aparecen desde el 1-2 (con el Debug)")
+        wide = next(s for s in lvl["secrets"] if s.get("requires_upgrade"))
+        self.assertEqual((wide["id"], wide["requires_upgrade"]), ("secreto_pulso_amplio", "wide_pulse"))
         kinds = [o["type"] for o in lvl["objects"]]
         for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_door", "glitch_wall"):
             self.assertIn(kind, kinds)
         self.assertEqual(obj(lvl, "eco_line")["params"]["text"], "Bienvenido. He optimizado tu espacio.")
         self.assertEqual(obj(lvl, "exit_door")["params"]["text"], "Marcar como leído")
         # Orden de los tramos: aterrizaje -> puente -> Burbuja -> pop-up -> puerta.
+        popup_1 = next(o for o in lvl["objects"] if o["params"].get("id") == "popup_1")
         xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], lvl["enemies"][0]["x"],
-              obj(lvl, "popup_blocker")["x"], obj(lvl, "exit_door")["x"]]
+              popup_1["x"], obj(lvl, "exit_door")["x"]]
         self.assertEqual(xs, sorted(xs))
         # Un solo punto de sincronizacion, a mitad del mapa (decision 2026-10-14).
         self.assertEqual(len(lvl["checkpoints"]), 1)
@@ -297,6 +308,15 @@ class LevelSchemaTest(unittest.TestCase):
         glitch = next(e for e in self.level["secrets"] if e.get("object") == "glitch_wall")
         glitch["x"] -= 1
         self.assert_fails(self.level, "no hay ningun objeto 'glitch_wall' en esa celda")
+
+    def test_secret_requires_unknown_upgrade(self):
+        wide = next(e for e in self.level["secrets"] if e.get("requires_upgrade"))
+        wide["requires_upgrade"] = "no_existe"
+        self.assert_fails(self.level, "requires_upgrade 'no_existe' no esta en data/upgrades.json")
+
+    def test_secret_needs_debug_must_be_bool(self):
+        self.level["secrets"][0]["needs_debug"] = "si"
+        self.assert_fails(self.level, "needs_debug debe ser booleano")
 
     def test_unknown_ability(self):
         self.level["abilities_available"]["dash"] = True

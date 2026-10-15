@@ -1,5 +1,5 @@
 ## Power bank de mapa (objeto `power_bank_pickup` del catalogo del Mundo 1;
-## secretos del 1-1 ampliado, 2026-10-14). Al tocarlo Isak suma un power bank
+## desde el 1-2; el 1-1 no tiene ninguno desde el 2026-10-15). Al tocarlo Isak suma un power bank
 ## VACIO (carga 0, decision 2026-10-14: se carga con el sobrante de energia de
 ## los drops) con GameState.collect_power_bank_pickup(). Como los puntos de
 ## atencion, no se vuelve a recoger en el mismo mapa: el id (object_id o, si esta

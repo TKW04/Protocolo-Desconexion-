@@ -131,7 +131,9 @@ func _fail(text: String) -> bool:
 ## Juega hasta que se muestra el hub. Falso si se atasca o se agota el tiempo.
 ## Generico (1-1 ampliado): recorre todos los receptores, puentes, pop-ups y
 ## Burbujas del nivel. Solo atiende a los de la ruta (a la altura de los pies de
-## Isak): el receptor y el pop-up de los secretos quedan en lo alto y se ignoran.
+## Isak): el receptor y los pop-ups de los secretos (popup_alto y popup_lejano, el
+## del Pulso amplio) quedan en lo alto y se ignoran. Solo recoge los puntos de la
+## ruta (20 en el 1-1 desde la economia del 2026-10-15).
 func _play() -> bool:
 	var level: GeneratedLevel = _runner.get_level()
 	var receivers: Array[PulseReceiver] = []

@@ -83,7 +83,15 @@ class BuildLevelTest(unittest.TestCase):
         # P en (4, 3): pies abajo-centro de la celda.
         self.assertRegex(text, r'\[node name="Isak" parent="\." instance=ExtResource\("[^"]+"\)\]\nposition = Vector2\(288, 256\)')
         self.assertEqual(text.count('parent="AttentionPoints"'), "".join(load_level()["grid"]).count("o"))
+        self.assertIn('[node name="popup_lejano" parent="Objects"', text)
+        self.assertIn("close_button_position = Vector2(52, 192)", text)
+        # El 1-1 no tiene power banks (2026-10-15); el tipo se sigue generando (1-2 en adelante).
+        self.assertNotIn("power_bank_pickup.tscn", text)
+        level = copy.deepcopy(load_level())
+        level["objects"].append({"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}})
+        text = bl.build_scene(level)
         self.assertIn('[node name="power_bank_a" parent="Objects"', text)
+        self.assertIn('object_id = &"power_bank_a"', text)
 
     def test_spikes_get_hazard_area(self):
         level = copy.deepcopy(load_level())
