@@ -85,8 +85,9 @@ class BuildLevelTest(unittest.TestCase):
         self.assertEqual(text.count('parent="AttentionPoints"'), "".join(load_level()["grid"]).count("o"))
         self.assertIn('[node name="popup_lejano" parent="Objects"', text)
         self.assertIn("close_button_position = Vector2(52, 192)", text)
-        # El 1-1 no tiene power banks (2026-10-15); el tipo se sigue generando (1-2 en adelante).
-        self.assertNotIn("power_bank_pickup.tscn", text)
+        # El 1-1 tiene un solo power bank, el del secreto del Pulso amplio (2026-10-15).
+        self.assertEqual(text.count("instance=ExtResource(\"10_power_bank_pickup\")"), 1)
+        self.assertIn('[node name="power_bank_pulso_amplio" parent="Objects"', text)
         level = copy.deepcopy(load_level())
         level["objects"].append({"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}})
         text = bl.build_scene(level)

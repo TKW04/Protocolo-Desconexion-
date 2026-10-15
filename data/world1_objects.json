@@ -100,7 +100,7 @@
 		},
 		"power_bank_pickup": {
 			"scene": "res://scenes/levels/power_bank_pickup.tscn",
-			"description": "Power bank de mapa (desde el 1-2, cuando se aprende el Debug; el 1-1 no tiene ninguno desde el 2026-10-15): coleccionable que suma un power bank VACIO (carga 0; se carga con el sobrante de energia de los drops de enemigos, data/power_bank.json; solo sirve para pagar mejoras, data/upgrades.json) al tocarlo Isak. No es solido. Como los puntos de atencion, no se vuelve a recoger en el mismo mapa: el id se guarda por nivel en user://save.json (collected_pickups). Aspecto PROVISIONAL dibujado por codigo (seccion power_bank_pickup).",
+			"description": "Power bank de mapa (en general desde el 1-2, cuando se aprende el Debug; el 1-1 tiene uno solo, en el secreto que exige Pulso amplio, desde el 2026-10-15): coleccionable que suma un power bank VACIO (carga 0; se carga con el sobrante de energia de los drops de enemigos, data/power_bank.json; solo sirve para pagar mejoras, data/upgrades.json) al tocarlo Isak. No es solido. Como los puntos de atencion, no se vuelve a recoger en el mismo mapa: el id se guarda por nivel en user://save.json (collected_pickups). Aspecto PROVISIONAL dibujado por codigo (seccion power_bank_pickup).",
 			"required": ["id"],
 			"fields": {
 				"id": "object_id"

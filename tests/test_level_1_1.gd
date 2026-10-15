@@ -3,7 +3,9 @@
 # camara, Debug bloqueado) y pasajes criticos simulados con la fisica real de
 # Isak sobre la escena real (patron de tests/support/isak_sim.gd): salto del
 # foso del Tramo 1, escalon de 2 tiles, plataforma de una via, puente con y sin
-# pulso, y el pop-up que bloquea hasta el pulso.
+# pulso, el pop-up que bloquea hasta el pulso, el nicho del Pulso amplio (con su
+# unico power bank) y las Burbujas en abierto: escalon aturdidas y pop saltando
+# desde su repisa.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -130,8 +132,9 @@ func test_scene_structure_matches_json() -> void:
 		assert_eq((node as Node2D).position, Vector2(float(obj["x"]), float(obj["y"])) * _tile,
 				"Posicion de %s" % obj["type"])
 	assert_eq((_object("receiver_56_9") as PulseReceiver).target_id, &"puente_1")
-	assert_eq(_find(func(n: Node) -> bool: return n is PowerBankPickup).size(), 0,
-			"Sin power banks en el 1-1: aparecen desde el 1-2 (2026-10-15)")
+	var banks: Array[Node] = _find(func(n: Node) -> bool: return n is PowerBankPickup)
+	assert_eq(banks.size(), 1, "Un solo power bank en el 1-1: el del nicho del Pulso amplio (2026-10-15)")
+	assert_eq(String(banks[0].get(&"object_id")), "power_bank_pulso_amplio")
 	var popup := _object("popup_1") as PopupBlocker
 	assert_eq(popup.close_button_position, Vector2(4, 192), "close_button_px -> Vector2")
 	assert_eq((_object("puerta_salida") as ExitDoor).level_id, "1-1")
@@ -352,6 +355,111 @@ func test_far_popup_closes_with_wide_pulse() -> void:
 	var popup: PopupBlocker = await _pulse_at_far_popup()
 	assert_almost_eq(_isak.abilities.pulse_radius_px, 112.0, 0.001)
 	assert_ne(popup.get_state(), PopupBlocker.State.OPEN, "Con Pulso amplio el pulso llega al boton")
+	# Detras, el unico power bank (vacio) del 1-1.
+	await wait_physics_frames(60)
+	var bank := _object("power_bank_pulso_amplio") as PowerBankPickup
+	var banks_before: int = GameState.empty_power_banks
+	_sim.input.move_axis = -1.0
+	_sim.step_until(func() -> bool: return _isak.global_position.x <= bank.global_position.x + _tile * 0.5,
+			_sim.steps_for(3.0))
+	_sim.input.move_axis = 0.0
+	await wait_physics_frames(3)
+	assert_true(not is_instance_valid(bank) or bank.is_taken(), "Con el pop-up cerrado se llega al power bank")
+	assert_true(GameState.is_pickup_collected(&"1-1", &"power_bank_pulso_amplio"), "Queda recogido en el guardado")
+	assert_eq(GameState.empty_power_banks, banks_before + 1, "Suma un power bank vacio")
 	GameState.reset_progress()
 	SaveFile.delete("user://test_level_1_1_save.json")
 	GameState.save_path = saved_path
+
+
+# --- Burbujas en abierto con su repisa (2026-10-15) ---
+
+## Burbujas en abierto ("open" en el JSON) -> [columna del borde de su repisa de una via
+## que da a la Burbuja, fila donde Isak se queda de pie en la repisa].
+const OPEN_BUBBLE_LEDGES: Dictionary = {
+	"burbuja_2": [166, 5],
+	"burbuja_3": [184, 6],
+	"burbuja_4": [188, 6],
+	"burbuja_5": [232, 6],
+}
+
+
+## Avanza Isak y la Burbuja (sin su _physics_process) un paso.
+func _step_with(bubble: AlertBubble) -> void:
+	_sim.step()
+	bubble.step(DT)
+
+
+## Salta (mantenido) dirigiendo a Isak en el aire hacia `target_x`; para al aterrizar o si
+## la Burbuja revienta. Devuelve los pasos dados.
+func _jump_towards(bubble: AlertBubble, target_x: float, run: bool = false) -> int:
+	_sim.input.run_held = run
+	_sim.input.jump_pressed = true
+	_sim.input.jump_held = true
+	var left_ground: bool = false
+	var steps: int = 0
+	for i: int in roundi(2.0 / DT):
+		_sim.input.move_axis = clampf((target_x - _isak.global_position.x) / 24.0, -1.0, 1.0)
+		_step_with(bubble)
+		steps += 1
+		if not _isak.is_on_floor():
+			left_ground = true
+		if bubble.get_state() == AlertBubble.STATE_POPPED or (left_ground and _isak.is_on_floor()):
+			break
+	_sim.input.jump_held = false
+	_sim.input.run_held = false
+	_sim.input.move_axis = 0.0
+	_sim.input.clear_just_pressed()
+	return steps
+
+
+func test_open_bubbles_have_no_low_ceiling() -> void:
+	var opened: Array = []
+	for enemy: Dictionary in _data["enemies"]:
+		if bool(enemy.get("open", false)):
+			opened.append(enemy["id"])
+			var col: int = int(enemy["x"])
+			for row: int in int(enemy["y"]):
+				assert_ne((_data["grid"][row] as String)[col], "#", "%s sin techo encima" % enemy["id"])
+		else:
+			assert_eq(enemy["id"], "burbuja_1", "Solo la Burbuja de 3a va bajo techo bajo")
+	opened.sort()
+	assert_eq(opened, OPEN_BUBBLE_LEDGES.keys(), "Cuatro Burbujas en abierto")
+
+
+## Aturdida desde el suelo, Isak la usa de escalon para subir a la repisa (3 tiles sobre
+## su suelo) y salta desde la repisa sobre ella: revienta sin dano y dentro del aturdimiento.
+func test_open_bubbles_step_to_ledge_and_pop() -> void:
+	await _load(true)
+	for id: String in OPEN_BUBBLE_LEDGES:
+		var bubble := _level.get_node(NodePath("Enemies/" + id)) as AlertBubble
+		bubble.set_physics_process(false)
+		# Con el paso manual el espacio fisico no se actualiza: se le da a Isak como objetivo
+		# (en el juego lo detecta al acercarse a aturdirla, como en test_alert_bubble_threshold.gd).
+		bubble.target = _isak
+		bubble.free_on_pop = false
+		var ledge: Array = OPEN_BUBBLE_LEDGES[id]
+		var edge_x: float = float(ledge[0]) * _tile
+		var away: float = -1.0 if bubble.global_position.x < edge_x else 1.0
+		if away > 0.0:
+			edge_x += _tile
+		var bx: float = bubble.global_position.x
+		var floor_row: int = roundi(bubble.global_position.y / _tile) - 1
+		# Isak en el suelo, al otro lado de la Burbuja, y la aturde.
+		_place(bx / _tile - 0.5 + away * 1.5, floor_row)
+		bubble.stun()
+		var steps: int = _jump_towards(bubble, bx)
+		assert_almost_eq(_isak.global_position.y, bubble.get_platform_top_y(), 2.0, "%s: de pie encima (escalon)" % id)
+		assert_eq(bubble.get_state(), AlertBubble.STATE_STUNNED, "%s: pisarla no la revienta" % id)
+		steps += _jump_towards(bubble, edge_x - away * _tile)
+		assert_almost_eq(_isak.global_position.y, _floor_y(int(ledge[1])), 2.0, "%s: sube a la repisa desde la Burbuja" % id)
+		# Hasta el borde de la repisa y salto hacia la Burbuja.
+		_sim.input.move_axis = away * -1.0
+		while (edge_x - _isak.global_position.x) * -away > _isak.hitbox_size.x * 0.5 and steps < 600:
+			_step_with(bubble)
+			steps += 1
+		steps += _jump_towards(bubble, bx)
+		assert_eq(bubble.get_state(), AlertBubble.STATE_POPPED, "%s: saltando desde la repisa revienta" % id)
+		gut.p("%s: escalon, repisa y pop en %.2f s (aturdimiento %.2f s)" % [id, steps * DT, bubble.stun_duration_s])
+		assert_lt(steps * DT, bubble.stun_duration_s, "%s: cabe en el aturdimiento" % id)
+		assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, "%s: sin dano" % id)

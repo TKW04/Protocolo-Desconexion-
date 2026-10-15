@@ -132,8 +132,10 @@ func _fail(text: String) -> bool:
 ## Generico (1-1 ampliado): recorre todos los receptores, puentes, pop-ups y
 ## Burbujas del nivel. Solo atiende a los de la ruta (a la altura de los pies de
 ## Isak): el receptor y los pop-ups de los secretos (popup_alto y popup_lejano, el
-## del Pulso amplio) quedan en lo alto y se ignoran. Solo recoge los puntos de la
-## ruta (20 en el 1-1 desde la economia del 2026-10-15).
+## del Pulso amplio) quedan en lo alto y se ignoran. Las Burbujas en abierto (3b, 3c
+## y 4b, 2026-10-15) se aturden igual al tenerlas delante y se cruzan andando; no
+## usa sus repisas. Solo recoge los puntos que encuentra andando por la ruta (el de
+## la repisa del 3b y los de los secretos no).
 func _play() -> bool:
 	var level: GeneratedLevel = _runner.get_level()
 	var receivers: Array[PulseReceiver] = []
