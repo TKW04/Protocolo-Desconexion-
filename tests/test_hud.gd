@@ -192,6 +192,26 @@ func test_energy_updates_bar() -> void:
 	assert_almost_eq(hud.get_energy_ratio(), 0.6, EPS)
 
 
+## Al gastar la ultima energia (ultimo disparo del laser) la bateria se ve
+## vacia al instante: ningun segmento encendido ni en rastro, tambien con
+## disparos seguidos (el rastro iba por detras) y con restos de coma flotante.
+func test_battery_fully_empty_at_zero_energy() -> void:
+	var hud: Hud = _make_hud()
+	GameState.debug_energy = 30.0
+	hud.finish_animations()
+	for energy: float in [20.0, 10.0, 0.0]:
+		GameState.debug_energy = energy
+	assert_eq(hud.get_battery_segments(), 0, "Ningun segmento encendido")
+	assert_almost_eq(hud.get_energy_trail(), 0.0, EPS, "Sin rastro de consumo pendiente")
+	var battery := hud.get_node("Frame/Row/Battery") as HudMeter
+	assert_eq(battery.get_trail_count(), 0, "Ningun segmento en rastro")
+	GameState.debug_energy = 0.00001
+	assert_eq(hud.get_battery_segments(), 0, "Restos de coma flotante: vacia")
+	await wait_seconds(_config.drain_delay_s + _config.drain_duration_s + DRAIN_MARGIN_S)
+	assert_eq(hud.get_battery_segments(), 0)
+	assert_almost_eq(hud.get_energy_trail(), 0.0, EPS)
+
+
 func test_attention_counter_updates() -> void:
 	var hud: Hud = _make_hud()
 	GameState.attention_points = 12

@@ -33,6 +33,10 @@ const WIDEST_ATTENTION: String = "999"
 ## Valor del rastro de dano/brillo cuando no hay animacion.
 const NO_TRAIL: float = 0.0
 const FULL: float = 1.0
+## Fraccion de la bateria por debajo de la cual se ve vacia (restos de coma
+## flotante del gasto continuo del Debug): con 0 de energia no queda ningun
+## segmento encendido ni rastro.
+const EMPTY_BATTERY_RATIO: float = 0.0001
 ## Anillo de carga del Debug sin carga (no se dibuja).
 const NO_CHARGE: float = 0.0
 ## Parpadeo: fraccion de cada ciclo en que la senal se ve entera.
@@ -289,9 +293,19 @@ func _on_sync_rate_changed(new_value: float, max_value: float) -> void:
 	_sync_ratio = ratio
 
 
+## Con la bateria a 0 (p. ej. tras el ultimo disparo del laser) se vacia del
+## todo y al instante: sin segmentos encendidos ni rastro de consumo pendiente
+## (con disparos seguidos el rastro se quedaba atras y, durante una pausa, se
+## congelaba).
 func _on_energy_changed(new_value: float, max_value: float) -> void:
 	var ratio: float = _ratio(new_value, max_value)
-	_set_meter(_battery, ratio, _energy_ratio)
+	if ratio < EMPTY_BATTERY_RATIO:
+		ratio = 0.0
+		_stop_drain(_battery)
+		_battery.value = ratio
+		_battery.trail = ratio
+	else:
+		_set_meter(_battery, ratio, _energy_ratio)
 	_energy_ratio = ratio
 
 
@@ -391,9 +405,7 @@ func _set_meter(meter: HudMeter, ratio: float, previous: float) -> void:
 	if is_equal_approx(ratio, previous):
 		meter.value = ratio
 		return
-	if _drain_tweens.has(meter) and _drain_tweens[meter].is_valid():
-		_drain_tweens[meter].kill()
-	_drain_tweens.erase(meter)
+	_stop_drain(meter)
 	if ratio < previous:
 		meter.trail = maxf(meter.trail, previous)
 		meter.value = ratio
@@ -406,6 +418,12 @@ func _set_meter(meter: HudMeter, ratio: float, previous: float) -> void:
 		meter.trail = ratio
 		meter.value = ratio
 		_pulse(meter)
+
+
+func _stop_drain(meter: HudMeter) -> void:
+	if _drain_tweens.has(meter) and _drain_tweens[meter].is_valid():
+		_drain_tweens[meter].kill()
+	_drain_tweens.erase(meter)
 
 
 func _pulse(node: Control) -> void:
