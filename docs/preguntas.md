@@ -518,7 +518,7 @@ Decisiones del usuario del 2026-10-15. Esta fase es solo el núcleo (sistemas, d
 - **Habilitación:** habilidad desbloqueable `laser` en `GameState.abilities_unlocked`, bloqueada hasta obtenerla con un objeto `ability_pickup` (param `ability`). La habilidad obtenida se guarda (`abilities_obtained` en `user://save.json`) y emite `EventBus.ability_obtained`; el cuadro de Eco muestra un aviso simple (texto de interfaz provisional, no es línea de guion). Los `abilities_available` de un nivel no bloquean una habilidad obtenida.
 - **Idea anotada (sin implementar):** el láser podrá activar objetos del entorno. Interfaz preparada: el proyectil llama a `on_laser_hit(damage, source)` en el nodo alcanzado (o en un padre); una Area2D debe estar en el grupo `laser_activatable` para que el láser la toque. Ningún objeto la usa todavía.
 - **Vida de enemigos:** todo enemigo tiene `health` en su JSON (sin valor estándar; `params.health` del nivel la sobrescribe por instancia, vía `GeneratedLevel` → `max_health`). Interfaz común `EnemyHealth` (`scripts/enemies/enemy_health.gd`), pensada también para los jefes. Burbuja: `health` 2 (dos disparos). Al recibir daño parpadea; a 0 muere (animación pop) y suelta sus `drops` (energía +25, Sync +10; el desborde de energía a un power bank vacío sigue siendo solo de los drops). El pulso sigue aturdiendo igual y no quita vida.
-- **Pop por caída (cambio de C7):** anterior: caer sobre la Burbuja aturdida a ≥ 1150 px/s la reventaba → nuevo: pisarla nunca la mata, solo es plataforma/escalón. Constante `stomp_pop_enabled: false`; `pop_speed_threshold_px_s` queda solo como referencia. Pruebas adaptadas lo mínimo (`test_alert_bubble*.gd`, la prueba simulada de repisas de `test_level_1_1.gd`, `test_power_bank_and_drops.gd`). **Pendiente del rediseño:** `tools/validate_level.py` sigue buscando la "repisa de pop" de las Burbujas `open` (regla ya obsoleta) y las cuatro Burbujas en abierto del 1-1 ya no se pueden eliminar sin láser.
+- **Pop por caída (cambio de C7):** anterior: caer sobre la Burbuja aturdida a ≥ 1150 px/s la reventaba → nuevo: pisarla nunca la mata, solo es plataforma/escalón. Constante `stomp_pop_enabled: false`; `pop_speed_threshold_px_s` queda solo como referencia. Pruebas adaptadas lo mínimo (`test_alert_bubble*.gd`, la prueba simulada de repisas de `test_level_1_1.gd`, `test_power_bank_and_drops.gd`). **Pendiente del rediseño:** `tools/validate_level.py` sigue buscando la "repisa de pop" de las Burbujas `open` (regla ya obsoleta) y las cuatro Burbujas en abierto del 1-1 ya no se pueden eliminar sin láser. **Resuelto el 2026-10-15** (ver «Rediseño del 1-1 para el láser»).
 - **Energía:** la comparten el Debug y el láser. Todos los enemigos sueltan energía al morir (sección `drops` de su JSON, generalizada con `EnemyHealth.parse_drops`). En el hub se recarga: la pantalla provisional del hub llena la barra al entrar (`refill_debug_energy` en `data/hub_placeholder.json`). En los mapas habrá **cargadores** (`charger`).
 - **Cargador (`charger`, PROPUESTA):** se activa **al tocarlo** (como el punto de sincronización y la puerta, sin acción nueva). Repone `amount` 50 (media barra = 5 disparos) sin desbordar a los power banks; con la barra llena no se gasta. Por defecto **reutilizable** con `cooldown_s` 20 (tiempo del mundo); con `reusable: false` es de un solo uso y queda gastado en el guardado por nivel (`collected_pickups`, como los power banks de mapa); el enfriamiento del reutilizable no se guarda. Gráfico provisional por código (poste con pantalla en la paleta del Mundo 1).
 - **Generador y validador:** `charger` y `ability_pickup` están en el catálogo `data/world1_objects.json`, en `tools/validate_level_schema.py` (no pueden estar dentro de terreno; `ability` admitida: pulse, debug, laser; `amount` > 0, `cooldown_s` ≥ 0, `reusable` booleano; `laser` admitida en `abilities_available`) y en `tools/build_level.py` (`ability` como StringName). No se ha colocado ninguno en el 1-1.
@@ -530,3 +530,34 @@ Decisiones del usuario del 2026-10-15. Esta fase es solo el núcleo (sistemas, d
   3. ¿El láser necesita animación propia de Isak? Ahora dispara sin cambiar de animación (solo el destello).
   4. ¿Energía inicial del 1-1 al 100 % o menor?
   5. El aviso del `ability_pickup` sale en el cuadro de Eco: ¿lo dice Eco con su voz (texto de guion) o debe ser un aviso de interfaz aparte?
+
+## Rediseño del 1-1 para el láser (2026-10-15)
+
+Implementa las decisiones del usuario del 2026-10-15 (láser obligatorio a mitad del 1-1, más Burbujas al principio, cargadores, vida por instancia y Burbujas en abierto sin repisa). El detalle y las tablas están en `docs/propuesta-1-1-ampliado.md` §7. No cambian la física de Isak ni los valores del láser o de la Burbuja.
+
+- **Sala del láser (3b):** está tras el checkpoint de la columna 150. Primero, el receptor del suelo extiende un puente en alto. Desde ese puente se activa el receptor de una repisa flotante, que extiende un segundo puente hasta un pop-up en alto. Su botón solo se alcanza desde el final de ese puente. Detrás hay un túnel bajo con el `ability_pickup` del láser. Recogerlo es obligatorio (la base de la sala corta el suelo) y la meta se alcanza sin disparar.
+- **Burbujas:** pasan de 5 a 9:
+  - Antes del láser, tres en abierto que se saltan o se aturden (Tramo 1 a 60 px/s, final del Tramo 1 a 80 y 2c a 100).
+  - La del 3a, bajo techo bajo.
+  - Después del láser, cinco en abierto que se pueden matar (3c ×2, 4a, 4b y Cierre). La del Cierre tiene vida 3.
+- **Cargadores:** dos, con los valores por defecto. `cargador_1` va tras la sala, antes de la primera Burbuja que cuesta energía, y `cargador_2` al empezar el Cierre.
+- **Repisas:** la del 4b se quita, porque solo servía para reventar la Burbuja. La del 3c se queda y guarda el punto de la ruta que antes estaba en la repisa del 3b. Siguen siendo 9 puntos (6 en la ruta y 3 en los secretos) y la economía no cambia.
+- **Herramientas:**
+  - `eco_line.trigger_event` (`laser_fired`): la línea del primer disparo.
+  - Validador: puentes como tabla fina, `ability_pickup` como estado del grafo y láser como forma de abrir Burbujas; ya no busca la repisa de pop.
+  - Bot: dispara a las Burbujas a su altura cuando tiene el láser.
+  - Capturas nuevas en `tools/render_level_1_1.gd`.
+- **Duración (bot):** 93,8 s caminando y 62,5 s corriendo (antes 89,7 y 57,0), matando las cinco Burbujas con 11 disparos y sin golpes.
+- **Dudas abiertas:**
+  1. **Energía demasiado holgada.** Se llega al láser con la barra llena (nada la gasta antes en el 1-1). Cada Burbuja de vida 2 cuesta 20 y suelta 25, así que sin fallar la energía nunca baja de verdad: el bot termina con 100 y los cargadores no llegan a usarse. ¿Se empieza el 1-1 con menos energía (p. ej. un 30 %; haría falta un `start_state` por nivel, que hoy no existe) o se bajan los drops? Es la duda 4 de «Láser, vida de enemigos y energía».
+  2. El punto de la repisa del 3c solo se alcanza usando una Burbuja aturdida como escalón. Si el jugador mata antes las dos, pierde ese punto en esa partida (vuelve a estar al rejugar). ¿Vale así, o se mueve el punto?
+  3. ¿Se aprueban las líneas de Eco nuevas (PROPUESTA)?
+     - Techo bajo del 3a: «Aquí no hay sitio para saltarla. Un pulso y la dejo en pausa por ti.»
+     - Antes de la sala: «Ahí arriba guardo algo útil para ti. Los receptores conocen el camino.»
+     - En el túnel: «Herramienta nueva. Dispara hacia donde miras; cada disparo gasta energía.»
+     - Primer disparo: «Dos impactos bastan para cerrar una alerta. Lo que suelta, recógelo: es tuyo.»
+     - Texto del pop-up de la sala: «Función premium bloqueada. Mira este anuncio para continuar».
+  4. La tercera Burbuja previa al láser va en el 2c, no al inicio del Tramo 2: el 2a y el 2b ya están ocupados por receptores y puentes, y una Burbuja junto a un puente podría subirse a él. ¿Vale?
+  5. El segundo cargador no está «cerca del checkpoint» porque antes del láser la barra siempre está llena. Está al empezar el Cierre, antes de la Burbuja con vida 3. ¿Vale esa posición?
+  6. Con 9 Burbujas (antes 5), ¿el 1-1 sigue siendo de dificultad 1/5? El bot no recibe golpes, pero un jugador nuevo puede recibir alguno en el Tramo 1.
+  7. La línea del primer disparo sale la primera vez que se dispara en cada carga del nivel (`once` por nodo, como las demás líneas), no una vez por partida guardada.

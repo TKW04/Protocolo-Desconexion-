@@ -1,6 +1,6 @@
 # Propuesta: 1-1 ampliado y mejoras permanentes
 
-**Estado:** APROBADA con cambios e IMPLEMENTADA (2026-10-14): ver «Notas del 1-1 ampliado» en `docs/preguntas.md`. Lo de abajo es el texto original de la propuesta. No cambia código, datos ni escenas. Lo marcado **[propuesta nueva]** no está en `docs/` y necesita aprobación expresa.
+**Estado:** APROBADA con cambios e IMPLEMENTADA (2026-10-14): ver «Notas del 1-1 ampliado» en `docs/preguntas.md`. El rediseño para el láser (2026-10-15) está en §7 y sustituye lo que contradiga de las secciones anteriores. Lo de abajo es el texto original de la propuesta. No cambia código, datos ni escenas. Lo marcado **[propuesta nueva]** no está en `docs/` y necesita aprobación expresa.
 
 **Punto de partida.** El 1-1 actual (`data/levels/1-1.json`) mide 140x14 tiles, con 5 tramos, 1 Burbuja, 1 punto de sincronización y 17 puntos de atención, y dura unos 25 s corriendo y 38 s caminando. La ficha (`mundo-1-notificaciones.md` §6.3) pide unos 3 min, dificultad 1/5 y "prácticamente sin riesgo de muerte", y `target_duration_s` ya vale 180. Física de referencia (`isak_physics.json`): 220 px/s caminando (3,4 tiles/s), 360 px/s corriendo (5,6 tiles/s), salto efectivo de 177 px (192 × 0,92), límite de exigencia del validador del 85 %.
 
@@ -127,3 +127,48 @@ Sustituye los costes de §2 y el reparto de puntos de «Notas del 1-1 ampliado»
 
 **Validador:** `validate_level.py` usa los valores base y admite `--upgrades wide_pulse`. En cada pasada comprueba que un secreto con `requires_upgrade` no se alcanza sin la mejora y sí con ella, y que la meta se alcanza sin mejoras. `tools/run_tests.sh` lo ejecuta con y sin la mejora. El secreto del Pulso amplio es ahora el power bank (con la mejora se alcanza, sin ella no). Una Burbuja con `"open": true` no avisa de que su pulso no es obligatorio; avisa si en realidad bloquea o si no tiene cerca una repisa desde la que, saltando, se caiga sobre ella por encima del umbral de pop con un 10 % de margen, e informa de esa repisa.
 
+## 7. Rediseño para el láser (decisiones del usuario, 2026-10-15; IMPLEMENTADO)
+
+Decisiones: (a) más Burbujas al principio, de forma gradual, que se esquivan o se aturden con el pulso sin obligar a matarlas; (b) el láser se obtiene en el 1-1, obligatoriamente y a mitad del nivel, con un puzle hecho con el pulso y mecánicas existentes; (c) dos cargadores; (d) energía compartida con el Debug (bloqueado en el 1-1); (e) vida por instancia (`params.health`); (f) las Burbujas en abierto ya no necesitan repisa; (g) se mantienen el checkpoint único, sin pinchos, los 9 puntos, los secretos y la longitud. Física de Isak y valores del láser y de la Burbuja: sin cambios. Los textos nuevos de Eco son **propuestas**.
+
+**Sala del láser (Tramo 3b, columnas 146-176, justo tras el punto de sincronización de la columna 150).** La base de la sala (columnas 169-175, 4 tiles de alto) corta el paso por el suelo, así que hay que subir y cruzarla por dentro:
+
+1. Receptor 1 en el suelo (columna 153): extiende `puente_laser_1` **en alto** (columnas 159-162, fila 8, 2 tiles sobre el suelo), a continuación de un escalón de 2 tiles (155-157), con un hueco de un tile entre ambos.
+2. Desde ese puente se sube a una repisa flotante (163-164, fila 6) con el receptor 2 (164, 5), que también se alcanza con el pulso desde el final del primer puente.
+3. El receptor 2 extiende `puente_laser_2` (165-168, fila 6), a 4 tiles del suelo, hasta la sala.
+4. La entrada está tapada por el pop-up `popup_laser` («Función premium bloqueada. Mira este anuncio para continuar»), con un techo encima. Su botón solo se alcanza de pie al final del segundo puente.
+5. Detrás, un túnel de 2 tiles de alto (172-175, filas 4-5) guarda el `ability_pickup` `laser_1_1` (173, 5). Con ese techo no se puede saltar por encima. Al salir por la derecha se cae al suelo.
+
+Sin cada puente no se llega al siguiente nivel de altura: del escalón a la repisa hay 4 tiles en horizontal y de la repisa a la sala otros 4, más que un salto corriendo (unos 3,2 tiles). Sin el pulso no se cierra el pop-up. El suelo bajo los puentes está unido al resto del tramo, así que no hay soft-lock: si Isak cae, vuelve al escalón por el hueco de la columna 158. El puzle es una escalera de dos receptores en la que el primer puente sirve de apoyo para alcanzar el segundo receptor, y acaba con un pop-up en alto.
+
+**Burbujas (9; antes 5).** Todas con `open: true` salvo `burbuja_1`.
+
+| Burbuja | Tramo | Posición | px/s | Rango | Vida | Papel |
+|---|---|---|---|---|---|---|
+| `burbuja_t1a` | 1 | (30, 9) | 60 | 128 | 2 | Primera, lenta, bajo la plataforma de una vía (se salta, se pasa por arriba o se aturde). Antes, la línea de Eco «Una alerta. Un pulso y se queda en pausa unos segundos.» |
+| `burbuja_t1b` | 1 (final) | (50, 9) | 80 | 192 | 2 | Antes del receptor del 2a |
+| `burbuja_t2c` | 2c | (104, 9) | 100 | 256 | 2 | La primera rápida |
+| `burbuja_1` | 3a | (132, 9) | 80 | 320 | 2 | Techo bajo: aturdirla es obligatorio. Línea nueva: «Aquí no hay sitio para saltarla. Un pulso y la dejo en pausa por ti.» |
+| `burbuja_3`, `burbuja_4` | 3c | (182, 9), (190, 9) | 80, 100 | 128 | 2 | Las primeras tras el láser. Su repisa de una vía (184-188, fila 7) guarda ahora el punto de la ruta de la antigua repisa del 3b (186, 6), al que se sube con una de ellas aturdida como escalón. Aquí se mueve la línea «Una alerta en pausa también sirve de escalón. Nada se desperdicia.» |
+| `burbuja_t4a` | 4a | (210, 9) | 80 | 192 | 2 | Delante del pop-up del 4a |
+| `burbuja_5` | 4b | (230, 9) | 100 | 128 | 2 | Sin repisa (la del 4b solo servía para reventarla) |
+| `burbuja_cierre` | Cierre | (283, 9) | 80 | 128 | **3** | Final: tres disparos |
+
+**Cargadores** (valores por defecto: 50 de energía, reutilizables, 20 s): `cargador_1` (178, 9), entre la sala del láser y la primera Burbuja que cuesta energía, y `cargador_2` (279, 9), al empezar el Cierre, antes de la Burbuja con vida 3. No se pone ninguno junto al checkpoint porque antes del láser no se gasta energía: la barra está llena y el cargador no haría nada.
+
+**Energía.** Isak llega al láser con la barra llena (100, `start_state`), porque en el 1-1 nada gasta energía antes. Matar las cinco Burbujas posteriores cuesta 11 disparos (110). Sus drops dan 5 × 25 = 125 y cada Burbuja de vida 2 deja un saldo de +5, así que sin fallar disparos la energía no se agota (el bot termina con 100). El reto real es apuntar. Con un 30 % de fallos harían falta unos 16 disparos (160), y siguen sobrando 100 + 125. Los cargadores son una red de seguridad para quien falla mucho. La duda 1 de «Rediseño del 1-1 para el láser» en `docs/preguntas.md` propone empezar con menos energía.
+
+**Eco (propuestas).** Al recoger el láser sale el aviso de interfaz del catálogo («Láser obtenido. F o gatillo izquierdo: dispara. Gasta energía.») y, en el túnel, «Herramienta nueva. Dispara hacia donde miras; cada disparo gasta energía.». Al disparar por primera vez en el nivel sale «Dos impactos bastan para cerrar una alerta. Lo que suelta, recógelo: es tuyo.». Para esta última, `eco_line` tiene un param nuevo, `trigger_event`, con un valor admitido: `laser_fired`, una señal de EventBus. Con ese param la línea no usa zona. Antes de la sala sale «Ahí arriba guardo algo útil para ti. Los receptores conocen el camino.». Las líneas de Eco no nombran teclas, como las demás.
+
+**Puntos:** siguen siendo 9 (6 en la ruta y 1 en cada secreto A, B y C). El de la repisa del 3b pasa a la repisa del 3c. La economía no cambia.
+
+**Validador (`tools/validate_level.py`):**
+- Ya no busca la repisa de pop.
+- Un puente extendido es una tabla fina (`bridge.collision_height_px`, 12 px) en lo alto de su celda: se puede estar de pie debajo, pero no atravesarla. Antes se modelaba como un tile sólido, y el suelo bajo un puente en alto parecía un soft-lock.
+- Los `ability_pickup` son un estado del grafo que se activa al tocar su celda. El validador comprueba que se alcanzan y que son obligatorios: sin pisar la celda no se llega a la meta.
+- Con el láser, una Burbuja se abre disparando en horizontal hasta 768 px, salvo que el terreno corte el disparo. La meta debe alcanzarse **sin** usar el láser.
+- Informa de la vida de cada Burbuja y de desde dónde la alcanza el láser.
+
+Resultado del 1-1: el láser se alcanza, es obligatorio y la meta se alcanza sin dispararlo. Margen mínimo: 12,5 puntos, sin cambios.
+
+**Bot:** recoge el láser con la política genérica y mata a distancia las cinco Burbujas posteriores (11 disparos). Duración: **93,8 s caminando** y **62,5 s corriendo** (antes 89,7 y 57,0), sin golpes.
