@@ -1,0 +1,30 @@
+{
+	"_notes": "Pantalla PROVISIONAL de regreso al hub (C4: al terminar un nivel se vuelve al hub; el hub no existe en el vertical slice). NO es el hub: no muestra contenido del hub (docs/05-hub.md) ni de Eco; solo el titulo provisional, el nivel completado (nombre de data/levels/<id>.json), los puntos de atencion recogidos (GameState) y la ayuda para volver a jugar con la accion existente restart_action (jump). La carga la conectara el flujo de nivel (paso 16) con EventBus.level_completed; aqui solo show_result(level_id, attention_points). PIXEL BASE: como el HUD, se maqueta en pixeles de arte (640x360) y se escala x pixel_scale (2). Fuente de textos (text_font, banner_blanco) recoloreada con el shader de color clave a cada color de colors (todos de assets/palettes/mundo1.gpl). Panel: el mismo NinePatch del cuadro de Eco (eco_text_panel.png, noche_profunda con linea borde_luz); no anade assets. input_delay_s: tiempo real antes de aceptar la accion (para que el salto que entra por la puerta no reinicie al instante). layer: por encima del HUD (10) y del cuadro de Eco (11). Unidades: px de arte, s.",
+	"layer": 20,
+	"pixel_scale": 2,
+	"font": "res://assets/sprites/ui/text_font.fnt",
+	"font_size": 12,
+	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
+	"panel": "res://assets/sprites/ui/eco_text_panel.png",
+	"panel_margin_px": 3,
+	"panel_width_px": 280,
+	"padding_px": 12,
+	"line_gap_px": 8,
+	"input_delay_s": 0.5,
+	"restart_action": "jump",
+	"level_data_dir": "res://data/levels/",
+	"texts": {
+		"title": "Regreso al hub (provisional)",
+		"completed": "Nivel completado: %s",
+		"points": "Puntos de atención: %d",
+		"help": "Pulsa salto para volver a jugar"
+	},
+	"colors": {
+		"background": "#0b0e1a",
+		"key": "#f2f4f8",
+		"title": "#f2f4f8",
+		"completed": "#9bb0e8",
+		"points": "#ffa000",
+		"help": "#aeb8d2"
+	}
+}

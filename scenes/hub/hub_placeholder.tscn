@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/hub/hub_placeholder.gd" id="1_hub"]
+
+[node name="HubPlaceholder" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_hub")

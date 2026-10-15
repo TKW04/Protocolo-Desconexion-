@@ -1,0 +1,38 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/tramo4_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="3_isak"]
+[ext_resource type="PackedScene" path="res://scenes/levels/popup_blocker.tscn" id="4_popup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_door.tscn" id="5_door"]
+[ext_resource type="PackedScene" path="res://scenes/levels/attention_point.tscn" id="6_point"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7_hud"]
+
+[node name="Tramo4Test" type="Node2D"]
+script = ExtResource("1_test")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+
+[node name="PointA" parent="." instance=ExtResource("6_point")]
+position = Vector2(480, 608)
+
+[node name="PointB" parent="." instance=ExtResource("6_point")]
+position = Vector2(1248, 608)
+
+[node name="PopupBlocker" parent="." instance=ExtResource("4_popup")]
+position = Vector2(768, 384)
+object_id = &"popup_1"
+text = "¿Seguro que quieres seguir concentrado? Tenemos ofertas"
+close_button_position = Vector2(4, 192)
+
+[node name="ExitDoor" parent="." instance=ExtResource("5_door")]
+position = Vector2(1536, 512)
+object_id = &"puerta_salida"
+level_id = "1-1"
+
+[node name="Isak" parent="." instance=ExtResource("3_isak")]
+position = Vector2(288, 639)
+
+[node name="Hud" parent="." instance=ExtResource("7_hud")]
