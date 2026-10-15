@@ -77,7 +77,7 @@ Isak ya no cae del cielo al empezar el nivel (P está en el suelo, columna 4, fi
 | Giro | `vortex_spin_00..03.png` | 96x96 | 4 a 12 fps, bucle |
 | Cierre | `vortex_close_00..05.png` | 96x96 | 6 a 12 fps (se cierran hacia el centro; destello) |
 
-Comportamiento (`WarpVortex`, `scripts/levels/warp_vortex.gd`; valores en `data/warp.json`): el vórtice se centra a 48 px sobre los pies de Isak, detrás de él, y avanza con tiempo del mundo. Llegada: Isak oculto y sin control (entrada quieta, no recibe golpes) mientras el fundido de entrada termina; luego el vórtice se abre, gira una vuelta y, al empezar a cerrarse, Isak se muestra (salen entonces las líneas de Eco que esperaban, como la bienvenida, que pausa con el vórtice en pantalla) y se materializa en 4 pasos de opacidad; el control vuelve al terminar el cierre (unos 1,2 s tras el fundido). Salida: igual, pero Isak se desvanece al cerrarse.
+Comportamiento (`WarpVortex`, `scripts/levels/warp_vortex.gd`; valores en `data/warp.json`): el vórtice se centra a 48 px sobre los pies de Isak, detrás de él, y avanza con tiempo del mundo. Llegada: Isak oculto y sin control (entrada quieta, no recibe golpes) mientras el fundido de entrada termina; luego el vórtice se abre, gira una vuelta y, al empezar a cerrarse, Isak se muestra (salen entonces las líneas de Eco que esperaban, como la bienvenida, que pausa con el vórtice en pantalla) y se materializa en 4 pasos de opacidad; el control vuelve al terminar el cierre (unos 1,2 s tras el fundido). Salida: igual, pero Isak se desvanece al cerrarse; como llega de espaldas (ver «Terminal de salida»), el vórtice se centra en esa pose (`back_center_offset_px`, 2 px a la derecha de los pies) y se dibuja detrás de él, entre Isak y el monitor.
 
 Regenerar: `python3 -I tools/gen_warp_objects.py` (`--preview <png>` para la hoja ampliada); validar: `python3 -I tools/validate_warp_objects.py` (paletas, alfa, PNG y `assets/sprites/warp_objects_frames.tres` al día con el generador; lo ejecuta `tools/run_tests.sh`).
 
@@ -92,9 +92,19 @@ Sustituye a la puerta «Marcar como leído» del Cierre del 1-1 (columna 290; co
 | Encendido | `terminal_boot_00..03.png` | 64x128 | 4 a 12 fps, sin bucle: línea central que se abre hasta llenar la pantalla de cian |
 | Activa | `terminal_on_00..01.png` | 64x128 | 2 a 4 fps: pantalla `pulse_dim` con líneas de código cian que suben, LED cian y halo cian que late |
 
-Comportamiento (`ExitTerminal`, `scripts/levels/exit_terminal.gd`; sección `exit_terminal` de `data/world1_objects.json`): tocarla no termina el nivel. Con Isak a menos de 1,5 tiles pasa a prompt y encima del monitor sale la tecla del pulso (leída del Input Map, hoy «G») en la fuente de textos sobre una placa con borde cian. Al recibir el pulso (misma prueba que el receptor) se activa una vez: Isak queda sin control, la pantalla se enciende y se abre el vórtice de salida a su alrededor; al cerrarse, Isak ha sido absorbido y se emite `EventBus.level_completed` (vuelta al hub como antes). Solo necesita el pulso, que el 1-1 tiene desde el principio; `tools/validate_level.py` comprueba que el nivel tiene el pulso y que alcanza la terminal desde el camino a la meta.
+Comportamiento (`ExitTerminal`, `scripts/levels/exit_terminal.gd`; sección `exit_terminal` de `data/world1_objects.json`): tocarla no termina el nivel. Con Isak a menos de 1,5 tiles pasa a prompt y encima del monitor sale la tecla del pulso (leída del Input Map, hoy «G») en la fuente de textos sobre una placa con borde cian. Al recibir el pulso (misma prueba que el receptor) se activa una vez: Isak queda sin control y la pantalla se enciende (0,33 s); luego Isak **gira de espaldas** mirando al monitor (estado `TURN`, 3 pasos de 1/12 s = 0,25 s: en los dos primeros la pantalla se queda llena de cian e Isak se tiñe de cian con `modulate`, sin arte nuevo; en el segundo cambia a la pose de espaldas), se abre el vórtice de salida a su alrededor y, al cerrarse, Isak ha sido absorbido y se emite `EventBus.level_completed` (vuelta al hub como antes). Valores `turn_*` en la sección `exit_terminal` de `data/world1_objects.json`. La salida dura 0,25 s más que antes. Solo necesita el pulso, que el 1-1 tiene desde el principio; `tools/validate_level.py` comprueba que el nivel tiene el pulso y que alcanza la terminal desde el camino a la meta.
 
 Línea `eco_glitch` (columna 293, entre la terminal y la pared con glitch de la columna 298): con la puerta solo salía si se saltaba la puerta, porque tocarla terminaba el nivel; con la terminal, quien pase de largo sin pulsar G la oye. Encaja mejor: Eco intenta que el jugador no mire la pared con glitch (secreto D) justo cuando la terminal ya le espera. No se ha cambiado.
+
+### Pose de espaldas de Isak (2026-10-15)
+
+`assets/sprites/isak/isak_back_idle_00.png` (un cuadro, AutoSprite; importado y limpiado con `python3 -I tools/import_isak_back_idle.py`, `--clean-only` reaplica solo la limpieza del borde) es la animación `back_idle` de `scenes/player/isak_frames.tres` (`tools/build_isak_frames.gd`). Se usa desde código, no por estado:
+
+- `isak.face_back()`: Isak se pone de espaldas (sin voltear), queda quieto (los estados ven una entrada quieta, como en el vórtice; la gravedad sigue), no recibe golpes ni arranca la terminal holográfica. Corta el láser.
+- `isak.face_side()`: vuelve de perfil hacia `facing` con la animación de su estado y recupera el control (salvo que siga una llegada o salida).
+- `isak.is_facing_back()`: consulta. Morir o reaparecer quitan la pose.
+
+Para el hub (aún sin hacer): llamar a `face_back()` cuando Isak se acerque a un monitor o terminal del hub (p. ej. al abrir la selección de nivel o la tienda) y a `face_side()` al cerrarla. Capturas de la secuencia: `$GODOT --path . -s tools/render_warp_terminal.gd -- <carpeta>` (05 destello, 06 de espaldas, 07 vórtice).
 
 ## Pendiente
 
