@@ -629,7 +629,7 @@ Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de No
 3. **Rollback por mapa:** qué cambia en concreto en cada mapa (geometría, rutas, enemigos, peligros, puntos débiles, aspecto) y cómo se ve el paso de una vuelta a otra.
 4. **Narrativa de cada vuelta:** qué cambia para Eco, los aliados, los amigos y los recuerdos; cómo se cuenta el escape (Easy) y el engaño (Normal).
 5. **Avisos de puntos débiles nuevos:** si los puntos débiles de cada vuelta siguen la regla de color (rojo/carmín) y el telegrafiado de 6 a 12 cuadros, y cómo se avisa al jugador del cambio.
-6. **Guardado (detalle):** cómo es la acción de guardar en el hub (objeto o menú), cómo se enseña en el 1-1 sin hub (punto de guardado en el nivel u otra forma) y qué guarda además (vuelta actual, puntos capturados por vuelta, power banks de mapa, secretos).
+6. **Guardado (detalle):** cómo es la acción de guardar en el hub (objeto o menú), cómo se enseña en el 1-1 sin hub (punto de guardado en el nivel u otra forma) y qué guarda además (vuelta actual, puntos capturados por vuelta, power banks de mapa, secretos). **Propuesta (2026-10-15, pendiente de revisión):** `docs/propuesta-hub-y-guardado.md` (hub del Mundo 1, guardado manual con esquema v2 y tutorial en el 1-1, con 10 preguntas al final).
 
 ## Llegada por vórtice, pausa de inicio y terminal de salida (2026-10-15)
 
@@ -641,4 +641,5 @@ Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de No
 ## Batería vacía por debajo del coste del láser (2026-10-15)
 
 - Con el láser desbloqueado, el HUD muestra la batería vacía (sin segmentos, rayo apagado) si la energía es menor que el coste de un disparo (`laser_energy_cost`, 10). Antes, un resto de 0,01 a 9,99 dejaba 1 segmento encendido sin poder disparar. Solo cambia el dibujo: la energía real se conserva. Sin el láser se sigue viendo el resto (vacía solo con 0).
-- **Duda:** el Debug se activa con cualquier energía > 0 (`DebugMode`, sin cambios). Cuando el jugador tenga láser y Debug a la vez (en el 1-1 el Debug está bloqueado), con un resto menor que 10 la batería se verá vacía pero el Debug aún se podrá activar unos instantes. ¿Se acepta así, se exige un mínimo de energía para activar el Debug, o la batería debe verse vacía solo cuando no se pueda usar ninguna de las dos?
+- **[RESUELTO] Duda:** el Debug se activa con cualquier energía > 0 (`DebugMode`, sin cambios). Cuando el jugador tenga láser y Debug a la vez (en el 1-1 el Debug está bloqueado), con un resto menor que 10 la batería se verá vacía pero el Debug aún se podrá activar unos instantes. ¿Se acepta así, se exige un mínimo de energía para activar el Debug, o la batería debe verse vacía solo cuando no se pueda usar ninguna de las dos?
+  - **Decisión del usuario (2026-10-15):** se acepta así. El Debug **conserva su regla** (se activa con energía > 0) aunque la batería se vea vacía por debajo del coste del láser. No se cambia `DebugMode` ni el HUD.
