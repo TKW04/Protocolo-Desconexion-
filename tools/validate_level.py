@@ -13,10 +13,16 @@ movimiento por celdas:
      maximo de Isak caminando (horizontal y vertical por separado; corriendo
      solo si el nivel declara "allow_run": true o se pasa --run). Informa del
      margen minimo.
-  4. Si hay plataformas ocultas 'h': cada S solo se alcanza pasando por ellas
-     (con Debug) y la meta se alcanza sin Debug. Los secretos que son un objeto
-     (glitch_wall) quedan fuera (V7). Los secretos que son otro objeto (p. ej.
-     power_bank_pickup) tienen que alcanzarse sin Debug.
+  4. Los secretos S con "needs_debug": true solo se alcanzan pasando por
+     plataformas ocultas 'h' (con Debug) y la meta se alcanza sin Debug. Los
+     secretos que son un objeto (glitch_wall) quedan fuera (V7). Los secretos
+     que son otro objeto (p. ej. power_bank_pickup) y las S sin needs_debug
+     (secretos de puntos) tienen que alcanzarse sin Debug.
+     Mejoras (data/upgrades.json): el modelo usa los valores BASE salvo las
+     mejoras de --upgrades (hoy solo afecta isak_abilities.pulse_radius_px). Un
+     secreto con "requires_upgrade": <id> NO debe alcanzarse sin esa mejora y SI
+     con ella (se comprueban las dos cosas en cada pasada); la meta se valida
+     siempre sin ella.
   5. Sin pinchos en P (ni donde cae Isak al aparecer) ni en el primer tile de
      una C (la propia celda, la de debajo y las de los lados).
   6. Objetos que hacen de puerta: el puente no existe hasta que el pulso
@@ -55,6 +61,7 @@ Modelo de movimiento:
 Uso:
   python3 tools/validate_level.py data/levels/1-1.json [--json] [--limit 0.85]
           [--jump-efficiency 0.92] [--run] [--physics data/isak_physics.json]
+          [--upgrades wide_pulse[,otra]]
 Sale con 0 si no hay errores (los avisos no fallan), 1 si los hay y 2 si no se
 pueden leer los datos. Los mensajes dicen fila y columna (y objeto).
 """
@@ -88,6 +95,22 @@ def load_json(path):
         return json.load(handle)
 
 
+def load_upgrades(root=ROOT):
+    """Catalogo de mejoras (data/upgrades.json) como dict id -> entrada, en orden."""
+    data = load_json(os.path.join(root, "data", "upgrades.json"))
+    return {str(u["id"]): u for u in data.get("upgrades", [])}
+
+
+def effective_value(catalog, purchased, target, base):
+    """Igual que GameState.effective_value: si varias mejoras compradas tocan el mismo
+    target gana la ultima del catalogo."""
+    value = base
+    for uid, entry in catalog.items():
+        if uid in purchased and entry.get("target") == target:
+            value = float(entry["value"])
+    return value
+
+
 def _export_vector2(source, name):
     match = re.search(r"var %s\s*:\s*Vector2\s*=\s*Vector2\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)" % name, source)
     if not match:
@@ -99,7 +122,7 @@ class Rules:
     """Valores de juego que usa el modelo (todos leidos de los datos del proyecto)."""
 
     def __init__(self, root=ROOT, physics_path=None, jump_efficiency=DEFAULT_JUMP_EFFICIENCY,
-                 limit=DEFAULT_LIMIT, allow_run=False):
+                 limit=DEFAULT_LIMIT, allow_run=False, upgrades=()):
         physics = load_json(physics_path or os.path.join(root, "data", "isak_physics.json"))
         abilities = load_json(os.path.join(root, "data", "isak_abilities.json"))
         with open(os.path.join(root, "scripts", "player", "isak.gd"), encoding="utf-8") as handle:
@@ -120,7 +143,20 @@ class Rules:
         self.allow_run = bool(allow_run)
         self.hitbox_w, self.hitbox_h = _export_vector2(isak_source, "hitbox_size")
         self.phone_x, self.phone_y = _export_vector2(isak_source, "pulse_effect_origin")
-        self.pulse_radius = float(abilities["pulse_radius_px"])
+        self.base_pulse_radius = float(abilities["pulse_radius_px"])
+        self.physics_path = physics_path
+        self.upgrades = tuple(upgrades)
+        catalog = load_upgrades(root)
+        unknown = [u for u in self.upgrades if u not in catalog]
+        if unknown:
+            raise ValueError("mejora desconocida en data/upgrades.json: %s" % ", ".join(unknown))
+        self.pulse_radius = effective_value(catalog, self.upgrades, "isak_abilities.pulse_radius_px",
+                                            self.base_pulse_radius)
+
+    def with_upgrades(self, extra):
+        """Las mismas reglas con mas mejoras compradas."""
+        ups = self.upgrades + tuple(u for u in extra if u not in self.upgrades)
+        return Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, ups)
 
     def speeds(self):
         out = [("walk", self.walk_speed)]
@@ -731,7 +767,7 @@ class Validator:
         self._check_checkpoints(start, main)
         # Regla 4 y secretos que son un objeto recogible.
         self._check_secrets(start, goal_cells)
-        self._check_object_secrets(start)
+        self._check_reachable_secrets(start)
         # Regla 6: puertas obligatorias.
         if main["ok"]:
             self._check_mandatory(start, goal_cells)
@@ -940,10 +976,11 @@ class Validator:
                                   cp["id"])
 
     def _check_secrets(self, start, goal_cells):
-        hidden = self.find("h")
+        """Regla 4: los secretos S con "needs_debug": true solo se alcanzan por plataformas ocultas."""
         info = []
-        if not hidden:
-            self.result["secrets"] = {"rule_4": "sin plataformas ocultas 'h': no aplica", "items": info}
+        debug_secrets = [s for s in self.level.get("secrets", []) if s.get("needs_debug") and not s.get("object")]
+        if not debug_secrets:
+            self.result["secrets"] = {"rule_4": "sin secretos con needs_debug: no aplica", "items": info}
             for s in self.level.get("secrets", []):
                 if s.get("object"):
                     info.append({"id": s["id"], "object": s["object"], "note": "objeto (V7): fuera de la regla 4"})
@@ -951,6 +988,8 @@ class Validator:
         for s in self.level.get("secrets", []):
             if s.get("object"):
                 info.append({"id": s["id"], "object": s["object"], "note": "objeto (V7): fuera de la regla 4"})
+                continue
+            if not s.get("needs_debug"):
                 continue
             cell = {(s["x"], s["y"])}
             without = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=False)
@@ -972,22 +1011,49 @@ class Validator:
             ids.update(str(i) for i in s.get("gates", []))
         return frozenset(g.gid for g in self.model.gates if g.obj_id in ids)
 
-    def _check_object_secrets(self, start):
-        """Los secretos que son un objeto recogible (no la pared con glitch) se alcanzan sin Debug,
-        abriendo las puertas que hagan falta (las suyas incluidas)."""
+    def _check_reachable_secrets(self, start):
+        """Secretos que se recogen sin Debug: los que son un objeto recogible (no la pared con
+        glitch) y los de una celda S sin "needs_debug" (regla 4). Se alcanzan
+        abriendo las puertas que hagan falta (las suyas incluidas). Con "requires_upgrade" no deben
+        alcanzarse sin esa mejora y si con ella."""
         info = self.result.setdefault("secrets", {}).setdefault("items", [])
         for s in self.level.get("secrets", []):
-            if not s.get("object") or s["object"] == "glitch_wall":
+            obj = s.get("object")
+            if obj == "glitch_wall" or (not obj and s.get("needs_debug")):
                 continue
-            run = self.progression(start, frozenset(), self.rules.limit, targets={(s["x"], s["y"])})
-            opened = sorted(g for g in run["state"] if g in self.secret_gates())
+            cell = {(s["x"], s["y"])}
+            what = "%s (%s)" % (s["id"], obj) if obj else s["id"]
             item = next((i for i in info if i.get("id") == s["id"]), None)
             if item is None:
-                item = {"id": s["id"], "object": s["object"]}
+                item = {"id": s["id"], "object": obj}
                 info.append(item)
-            item.update({"reachable": run["ok"], "secret_gates_opened": opened})
-            if not run["ok"]:
-                self.report.error("el secreto %s (%s) no se alcanza" % (s["id"], s["object"]), s["y"], s["x"], s["id"])
+            required = s.get("requires_upgrade")
+            run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
+            item.update({"reachable": run["ok"],
+                         "secret_gates_opened": sorted(g for g in run["state"] if g in self.secret_gates())})
+            if not required or required in self.rules.upgrades:
+                if not run["ok"]:
+                    self.report.error("el secreto %s no se alcanza%s" % (
+                        what, " con la mejora %s" % required if required else ""), s["y"], s["x"], s["id"])
+                continue
+            item["requires_upgrade"] = required
+            item["reachable_without_upgrade"] = run["ok"]
+            if run["ok"]:
+                self.report.error("el secreto %s se alcanza sin la mejora %s (radio del pulso %.0f px)"
+                                  % (what, required, self.rules.pulse_radius), s["y"], s["x"], s["id"])
+            try:
+                upgraded = Validator(self.level, self.rules.with_upgrades([required]))
+            except ValueError as exc:
+                self.report.error("el secreto %s pide una mejora que no existe: %s" % (what, exc),
+                                  s["y"], s["x"], s["id"])
+                continue
+            up_start, _ = upgraded.spawn_node(self.find("P")[0])
+            up_run = upgraded.progression(up_start, frozenset(), upgraded.rules.limit, targets=cell)
+            item["reachable_with_upgrade"] = up_run["ok"]
+            item["pulse_radius_with_upgrade_px"] = upgraded.rules.pulse_radius
+            if not up_run["ok"]:
+                self.report.error("el secreto %s no se alcanza ni con la mejora %s (radio del pulso %.0f px)"
+                                  % (what, required, upgraded.rules.pulse_radius), s["y"], s["x"], s["id"])
 
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
@@ -1077,6 +1143,8 @@ class Validator:
             "allow_run": self.rules.allow_run,
             "coyote_time_used": False,
             "pulse_radius_px": self.rules.pulse_radius,
+            "base_pulse_radius_px": self.rules.base_pulse_radius,
+            "upgrades": list(self.rules.upgrades),
         }
         gates = []
         for g in self.model.gates:
@@ -1090,14 +1158,15 @@ class Validator:
 
 
 def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP_EFFICIENCY, run=False,
-             physics_path=None, check_schema=True):
+             physics_path=None, check_schema=True, upgrades=()):
     """Valida un nivel ya cargado. Devuelve el dict de resultado (ok, errors, warnings, path, margins...)."""
     if check_schema:
         schema_errors = validate_level_schema.validate_level(level, root)
         if schema_errors:
             return {"ok": False, "errors": [{"message": "esquema: " + e, "row": None, "col": None, "object": None}
                                             for e in schema_errors], "warnings": [], "path": []}
-    rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)))
+    rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
+                  tuple(upgrades))
     return Validator(level, rules).run()
 
 
@@ -1112,6 +1181,15 @@ def format_text(path, result):
                                         rules["jump_efficiency"], rules["walk_reach_px"],
                                         (", %.0f corriendo" % rules["run_reach_px"]) if rules["allow_run"] else "",
                                         rules["limit"] * 100))
+        out.append("  pulso: radio %.0f px (base %.0f; mejoras: %s)" % (
+            rules["pulse_radius_px"], rules["base_pulse_radius_px"], ", ".join(rules["upgrades"]) or "ninguna"))
+    for item in (result.get("secrets") or {}).get("items", []):
+        if "requires_upgrade" in item:
+            out.append("  secreto %s: sin %s %s; con ella %s (radio %.0f px)" % (
+                item["id"], item["requires_upgrade"],
+                "se alcanza" if item["reachable_without_upgrade"] else "no se alcanza",
+                "se alcanza" if item.get("reachable_with_upgrade") else "no se alcanza",
+                item.get("pulse_radius_with_upgrade_px", 0.0)))
     margins = result.get("margins")
     if margins:
         out.append("  exigencia maxima: horizontal %.1f %%, vertical %.1f %% -> margen minimo %.1f puntos "
@@ -1154,6 +1232,8 @@ def main(argv):
                         help="altura real del salto / nominal (0.92, medido a 60 Hz)")
     parser.add_argument("--run", action="store_true", help="permite saltos corriendo (run_speed)")
     parser.add_argument("--physics", default=None, help="JSON de fisica (data/isak_physics.json)")
+    parser.add_argument("--upgrades", default="",
+                        help="mejoras compradas (ids de data/upgrades.json separados por comas); por defecto ninguna")
     args = parser.parse_args(argv[1:])
     failed = False
     outputs = {}
@@ -1161,7 +1241,8 @@ def main(argv):
         try:
             level = load_json(path)
             result = validate(level, limit=args.limit, jump_efficiency=args.jump_efficiency, run=args.run,
-                              physics_path=args.physics)
+                              physics_path=args.physics,
+                              upgrades=[u.strip() for u in args.upgrades.split(",") if u.strip()])
         except (OSError, ValueError, KeyError) as exc:
             print("%s: no se pudo validar (%s)" % (path, exc), file=sys.stderr)
             return 2

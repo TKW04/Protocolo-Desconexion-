@@ -51,6 +51,14 @@ def obj(level, kind):
     return next(o for o in level["objects"] if o["type"] == kind)
 
 
+def obj_id(level, oid):
+    return next(o for o in level["objects"] if o.get("params", {}).get("id") == oid)
+
+
+def secret(level, sid):
+    return next(s for s in level["secrets"] if s["id"] == sid)
+
+
 def messages(result, key="errors"):
     return [e["message"] for e in result[key]]
 
@@ -75,11 +83,48 @@ class RealLevelTest(unittest.TestCase):
         self.assertEqual(result["checkpoints"][0]["reachable_from"], "P")
         for bubble in (g for g in result["gates"] if g["kind"] == "bubble"):
             self.assertFalse(bubble["bypassable"], bubble["id"])
-        # Los secretos con objeto recogible se alcanzan (y sus puertas son opcionales: sin avisos).
+        # Los secretos de puntos (celdas S, sin 'h') se alcanzan (y sus puertas son opcionales: sin avisos).
         items = {i["id"]: i for i in result["secrets"]["items"]}
         for sid in ("secreto_puente_servicio", "secreto_techo", "secreto_popup_alto"):
             self.assertTrue(items[sid]["reachable"], sid)
         self.assertIn("bridge:puente_servicio", items["secreto_puente_servicio"]["secret_gates_opened"])
+        # Secreto del Pulso amplio (2026-10-15): sin la mejora no se llega, con ella si.
+        wide = items["secreto_pulso_amplio"]
+        self.assertEqual(wide["requires_upgrade"], "wide_pulse")
+        self.assertFalse(wide["reachable_without_upgrade"])
+        self.assertTrue(wide["reachable_with_upgrade"])
+        self.assertEqual(result["rules"]["pulse_radius_px"], 96.0)
+
+    def test_level_1_1_with_wide_pulse_upgrade(self):
+        """Con Pulso amplio comprado el nivel sigue valido (meta, soft-locks) y el secreto se alcanza."""
+        result = vl.validate(base_level(), upgrades=["wide_pulse"])
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(result["rules"]["pulse_radius_px"], 112.0)
+        self.assertEqual(result["rules"]["base_pulse_radius_px"], 96.0)
+        items = {i["id"]: i for i in result["secrets"]["items"]}
+        self.assertTrue(items["secreto_pulso_amplio"]["reachable"])
+        self.assertIn("popup:popup_lejano", items["secreto_pulso_amplio"]["secret_gates_opened"])
+
+    def test_wide_pulse_button_distance_is_between_radii(self):
+        """Pegado al pop-up (columna 129, fila 4, mirando a la izquierda) el boton queda a 104 px del
+        celular: mas que el radio base (96) y no mas que el mejorado (112)."""
+        level = base_level()
+        rules = vl.Rules()
+        model = vl.LevelModel(level, rules)
+        gate = model.gate("popup:popup_lejano")
+        T = model.T
+        x = 130 * T - 64 + rules.hitbox_w * 0.5  # centro de Isak pegado a la cara derecha del pop-up
+        px, py = x - rules.phone_x, 5 * T + rules.phone_y
+        bx0, by0, bx1, by1, _ = gate.openers[0]
+        dist = ((px - min(max(px, bx0), bx1)) ** 2 + (py - min(max(py, by0), by1)) ** 2) ** 0.5
+        self.assertAlmostEqual(dist, 104.0)
+        catalog = vl.load_upgrades()
+        self.assertGreater(dist, rules.pulse_radius)
+        self.assertLessEqual(dist, float(catalog["wide_pulse"]["value"]))
+        self.assertFalse(model.can_open(gate, (129, 4), frozenset()))
+        upgraded = vl.LevelModel(level, rules.with_upgrades(["wide_pulse"]))
+        self.assertTrue(upgraded.can_open(upgraded.gate("popup:popup_lejano"), (129, 4), frozenset()))
 
     def test_uses_game_physics_file(self):
         rules = vl.Rules()
@@ -96,6 +141,13 @@ class RealLevelTest(unittest.TestCase):
         data = json.loads(ok.stdout)[LEVEL_PATH]
         self.assertTrue(data["ok"])
         self.assertIn("min_margin", data["margins"])
+        upgraded = subprocess.run([sys.executable, SCRIPT, "--upgrades", "wide_pulse", LEVEL_PATH],
+                                  capture_output=True, text=True)
+        self.assertEqual(upgraded.returncode, 0, upgraded.stdout + upgraded.stderr)
+        self.assertIn("radio 112 px", upgraded.stdout)
+        unknown = subprocess.run([sys.executable, SCRIPT, "--upgrades", "no_existe", LEVEL_PATH],
+                                 capture_output=True, text=True)
+        self.assertEqual(unknown.returncode, 2)
         strict = subprocess.run([sys.executable, SCRIPT, "--limit", "0.7", LEVEL_PATH], capture_output=True, text=True)
         self.assertNotEqual(strict.returncode, 0)
         self.assertIn("exige", strict.stdout)
@@ -133,12 +185,12 @@ class BrokenVariantsTest(unittest.TestCase):
 
     def test_without_popup_button(self):
         level = base_level()
-        del obj(level, "popup_blocker")["params"]["close_button_px"]
+        del obj_id(level, "popup_1")["params"]["close_button_px"]
         self.assert_fails(level, "pop-up popup_1 no tiene boton", schema=False)
 
     def test_popup_button_out_of_pulse_reach(self):
         level = base_level()
-        obj(level, "popup_blocker")["params"]["close_button_px"] = [4, 8]
+        obj_id(level, "popup_1")["params"]["close_button_px"] = [4, 8]
         self.assert_fails(level, "el pulso no alcanza boton de cerrar", "columna 215")
 
     def test_raised_ceiling_only_warns_that_pulse_is_optional(self):
@@ -180,13 +232,35 @@ class BrokenVariantsTest(unittest.TestCase):
         self.assertTrue(any("puente puente_1 no es obligatorio" in w for w in messages(result, "warnings")),
                         messages(result, "warnings"))
 
+    def test_upgrade_secret_reachable_without_upgrade_fails(self):
+        level = base_level()
+        obj_id(level, "popup_lejano")["params"]["close_button_px"] = [60, 192]  # 96 px: llega el pulso base
+        self.assert_fails(level, "secreto_pulso_amplio se alcanza sin la mejora wide_pulse")
+
+    def test_upgrade_secret_unreachable_even_with_upgrade_fails(self):
+        level = base_level()
+        obj_id(level, "popup_lejano")["params"]["close_button_px"] = [36, 192]  # 120 px: ni con 112
+        self.assert_fails(level, "secreto_pulso_amplio no se alcanza ni con la mejora wide_pulse")
+
+    def test_points_secret_must_be_reachable(self):
+        level = base_level()
+        del secret(level, "secreto_pulso_amplio")["requires_upgrade"]
+        self.assert_fails(level, "el secreto secreto_pulso_amplio no se alcanza")
+        # Con la mejora comprada se alcanza y no hay error.
+        result = vl.validate(level, upgrades=["wide_pulse"])
+        self.assertTrue(result["ok"], messages(result))
+
+    def test_unknown_upgrade(self):
+        with self.assertRaises(ValueError):
+            vl.validate(base_level(), upgrades=["no_existe"])
+
     def test_hidden_platform_secret(self):
         level = base_level()
         # Secreto en lo alto, solo accesible por dos plataformas ocultas.
         set_cell(level, 66, 8, "h")
         set_cell(level, 68, 6, "h")
         set_cell(level, 68, 5, "S")
-        level["secrets"].append({"id": "secreto_h", "x": 68, "y": 5})
+        level["secrets"].append({"id": "secreto_h", "x": 68, "y": 5, "needs_debug": True})
         result = vl.validate(level, check_schema=False)
         self.assertTrue(result["ok"], messages(result))
         item = next(i for i in result["secrets"]["items"] if i["id"] == "secreto_h")
@@ -194,7 +268,7 @@ class BrokenVariantsTest(unittest.TestCase):
         self.assertTrue(item["with_debug"])
         # Si se llega sin Debug, falla.
         set_cell(level, 69, 8, "S")
-        level["secrets"].append({"id": "secreto_facil", "x": 69, "y": 8})
+        level["secrets"].append({"id": "secreto_facil", "x": 69, "y": 8, "needs_debug": True})
         self.assert_fails(level, "secreto_facil se alcanza sin pasar por plataformas ocultas", schema=False)
 
 

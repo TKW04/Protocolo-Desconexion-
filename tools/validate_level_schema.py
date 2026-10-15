@@ -10,6 +10,7 @@ Reglas:
   - exactamente un P y un G;
   - checkpoints <-> celdas C del grid (uno a uno), enemigos <-> celdas E (uno a uno),
     secretos <-> celdas S, o {object: <tipo>} con un objeto de ese tipo en su x, y;
+    requires_upgrade (si esta) es un id de data/upgrades.json y needs_debug un booleano;
   - enemigos con tipo existente (data/enemies/<type>.json);
   - objects {type, x, y, params} con tipo del catalogo (data/world<N>_objects.json),
     params obligatorios presentes y sin params desconocidos, dentro del grid, y sin
@@ -334,6 +335,15 @@ class LevelValidator:
             pos = self._check_point_entry(entry, what)
             if pos is None:
                 continue
+            if "requires_upgrade" in entry:
+                path = os.path.join(self.root, "data", "upgrades.json")
+                with open(path, encoding="utf-8") as handle:
+                    ids = {u.get("id") for u in json.load(handle).get("upgrades", [])}
+                if entry["requires_upgrade"] not in ids:
+                    self.error("%s '%s': requires_upgrade '%s' no esta en data/upgrades.json"
+                               % (what, entry.get("id"), entry["requires_upgrade"]), pos[1], pos[0])
+            if "needs_debug" in entry and not isinstance(entry["needs_debug"], bool):
+                self.error("%s '%s': needs_debug debe ser booleano" % (what, entry.get("id")), pos[1], pos[0])
             if "object" in entry:
                 if (entry["object"], pos) not in self.object_anchors:
                     self.error("%s '%s': no hay ningun objeto '%s' en esa celda"

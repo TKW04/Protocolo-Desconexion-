@@ -53,6 +53,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_validate_level.py tests/test_build_level.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& python3 tools/validate_level.py data/levels/*.json >/dev/null \
+		&& python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null \
 		&& python3 tools/build_level.py --check data/levels/*.json); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2

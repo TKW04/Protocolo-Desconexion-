@@ -33,7 +33,7 @@ Ejemplo completo: `data/levels/1-1.json`. Las coordenadas `x, y` de todas las li
 
 - `checkpoints`: `{id, x, y}`, uno por cada `C` del grid.
 - `enemies`: `{id, type, x, y, params}`, uno por cada `E`; `type` es un archivo de `data/enemies/<type>.json` y `params` sobrescribe sus valores (p. ej. `patrol_range_px`).
-- `secrets`: `{id, x, y}` sobre una `S`, o `{id, x, y, object: <tipo>}` si el secreto es un objeto (la pared con glitch del 1-1).
+- `secrets`: `{id, x, y}` sobre una `S`, o `{id, x, y, object: <tipo>}` si el secreto es un objeto (la pared con glitch del 1-1). Opcionales: `reward` y `points` (recompensa), `gates` (ids de las puertas propias del secreto, opcionales a propósito), `needs_debug: true` (solo se llega por plataformas `h`) y `requires_upgrade: <id de data/upgrades.json>` (solo se llega con esa mejora comprada, p. ej. `wide_pulse`).
 - `objects` (V7): `{type, x, y, params}` para todo lo que no está en la leyenda. Los tipos, sus params obligatorios y sus valores por defecto están en `data/world<N>_objects.json`: `bridge_inactive`, `receiver`, `glitch_wall`, `popup_blocker`, `exit_door` (contiene la `G`) y `eco_line` (zona que dispara una línea de Eco). Los objetos sólidos (`bridge_inactive`, `glitch_wall`, `popup_blocker`) ocupan celdas que el grid deja en `.`.
 - `unlocks`: `{type, id}`, p. ej. `{"type": "level", "id": "1-2"}`.
 - Campos opcionales: `abilities_available` (`{"pulse": true, "debug": false}`), `sections` (tramos del documento en orden, `{name, x_from, x_to}`), `camera`, `target_duration_s`, `difficulty`.
@@ -70,13 +70,14 @@ Cada nivel tiene su ficha en `docs/mundo-N-*.md` (el archivo del mundo correspon
 
 ## Validación de alcanzabilidad
 
-`python3 tools/validate_level.py data/levels/<id>.json [--json] [--limit 0.85] [--jump-efficiency 0.92] [--run]` (pruebas en `tests/test_validate_level.py`, se ejecuta desde `tools/run_tests.sh`). Lee `data/isak_physics.json` (los mismos valores que usa el juego) y comprueba:
+`python3 tools/validate_level.py data/levels/<id>.json [--json] [--limit 0.85] [--jump-efficiency 0.92] [--run] [--upgrades wide_pulse]` (pruebas en `tests/test_validate_level.py`, se ejecuta desde `tools/run_tests.sh`). Lee `data/isak_physics.json` (los mismos valores que usa el juego) y comprueba:
 
 1. Existe un camino desde `P` hasta `G`.
 2. Cada `C` es alcanzable desde la anterior o desde `P`.
 3. Ningún salto exige más del 85% del alcance máximo de Isak (margen de seguridad). Alcance horizontal y vertical se calculan con velocidad y gravedad del archivo de física.
-4. Los secretos con `h` solo se alcanzan pasando por plataformas ocultas, y existe un camino sin Debug hacia la meta.
+4. Los secretos con `needs_debug` solo se alcanzan pasando por plataformas ocultas `h`, y existe un camino sin Debug hacia la meta. Los demás secretos (de puntos o con objeto recogible) se alcanzan sin Debug.
 5. No hay pinchos en el punto de aparición ni en el primer tile de un checkpoint.
+6. Mejoras: valida con los valores **base**; `--upgrades wide_pulse` valida con mejoras compradas (hoy solo se modela el radio del pulso). Un secreto con `requires_upgrade` no debe alcanzarse sin la mejora y sí con ella (se comprueba en cada pasada); la meta siempre sin mejoras.
 
 El script termina con código distinto de cero si algo falla, y explica qué fila y columna causan el problema.
 
