@@ -24,7 +24,8 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
     exit_door recibe level_id; glitch_wall recibe solid_neighbors calculado del grid.
   - Enemies: scenes/enemies/<type>.tscn en los pies (abajo-centro de la celda E);
     `params` va como metadata "params" y GeneratedLevel lo aplica tras _ready
-    (patrol_range_px tambien como propiedad).
+    (patrol_range_px tambien como propiedad; params.health -> max_health, la vida
+    de esa instancia, 2026-10-15).
   - Goal: Marker2D (grupo "goal") en la G (la puerta de salida la contiene).
   - Isak (P, pies abajo-centro de la celda) con camera_limits = tamano del grid,
     Hud y EcoTextBox.
@@ -52,7 +53,7 @@ POINT_SCENE = "res://scenes/levels/attention_point.tscn"
 HIDDEN_SCENE = "res://scenes/levels/hidden_platform.tscn"
 HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
-STRING_NAME_PROPERTIES = {"object_id", "target_id"}
+STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 

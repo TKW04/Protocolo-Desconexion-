@@ -93,6 +93,16 @@ class BuildLevelTest(unittest.TestCase):
         text = bl.build_scene(level)
         self.assertIn('[node name="power_bank_a" parent="Objects"', text)
         self.assertIn('object_id = &"power_bank_a"', text)
+        # Cargador y objeto de habilidad (2026-10-15): defaults del catalogo y ability como StringName.
+        level["objects"].append({"type": "charger", "x": 97, "y": 4, "params": {"id": "cargador_a", "reusable": False}})
+        level["objects"].append({"type": "ability_pickup", "x": 98, "y": 4, "params": {"id": "laser_a", "ability": "laser"}})
+        text = bl.build_scene(level)
+        self.assertIn('[node name="cargador_a" parent="Objects"', text)
+        self.assertIn("amount = 50.0", text)
+        self.assertIn("reusable = false", text)
+        self.assertIn("cooldown_s = 20.0", text)
+        self.assertIn('[node name="laser_a" parent="Objects"', text)
+        self.assertIn('ability = &"laser"', text)
 
     def test_spikes_get_hazard_area(self):
         level = copy.deepcopy(load_level())

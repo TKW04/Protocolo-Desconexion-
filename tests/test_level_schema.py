@@ -324,6 +324,43 @@ class LevelSchemaTest(unittest.TestCase):
         set_cell(self.level, popup["x"] + 1, popup["y"] + 1, "#")
         self.assert_fails(self.level, "fila %d, columna %d: objects" % (popup["y"] + 1, popup["x"] + 1))
 
+    # --- Cargador y objeto de habilidad (2026-10-15) ---
+
+    def _add(self, kind, params):
+        x, y = find(self.level, "P")
+        entry = {"type": kind, "x": x + 1, "y": y, "params": params}
+        self.level["objects"].append(entry)
+        return entry
+
+    def test_charger_and_ability_pickup_are_valid(self):
+        self._add("charger", {"id": "cargador_1", "amount": 50.0, "reusable": False, "cooldown_s": 20.0})
+        self._add("ability_pickup", {"id": "laser_1", "ability": "laser"})
+        self.level["abilities_available"]["laser"] = False
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_ability_pickup_unknown_ability(self):
+        self._add("ability_pickup", {"id": "laser_1", "ability": "teletransporte"})
+        self.assert_fails(self.level, "ability 'teletransporte' no admitido")
+
+    def test_ability_pickup_requires_ability(self):
+        self._add("ability_pickup", {"id": "laser_1"})
+        self.assert_fails(self.level, "falta el param obligatorio 'ability'")
+
+    def test_charger_bad_params(self):
+        self._add("charger", {"id": "c1", "amount": 0})
+        self.assert_fails(self.level, "amount debe ser un numero > 0")
+        self.level = load_level()
+        self._add("charger", {"id": "c1", "cooldown_s": -1})
+        self.assert_fails(self.level, "cooldown_s debe ser un numero >= 0")
+        self.level = load_level()
+        self._add("charger", {"id": "c1", "reusable": "si"})
+        self.assert_fails(self.level, "reusable debe ser true o false")
+
+    def test_charger_inside_terrain(self):
+        entry = self._add("charger", {"id": "c1"})
+        set_cell(self.level, entry["x"], entry["y"], "#")
+        self.assert_fails(self.level, "charger) dentro de terreno")
+
     def test_object_out_of_grid(self):
         obj(self.level, "bridge_inactive")["params"]["length_tiles"] = 500
         self.assert_fails(self.level, "se sale del grid")

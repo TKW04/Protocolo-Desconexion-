@@ -14,8 +14,9 @@ Reglas:
   - enemigos con tipo existente (data/enemies/<type>.json);
   - objects {type, x, y, params} con tipo del catalogo (data/world<N>_objects.json),
     params obligatorios presentes y sin params desconocidos, dentro del grid, y sin
-    pisar terreno; receptores apuntando a un puente existente; la puerta de salida
-    contiene la G;
+    pisar terreno; params con valores de `allowed` del catalogo (ability_pickup.ability);
+    cargador (charger) con amount > 0, cooldown_s >= 0 y reusable booleano;
+    receptores apuntando a un puente existente; la puerta de salida contiene la G;
   - ids unicos (checkpoints, enemigos, secretos y params.id de los objetos);
   - sin pinchos en P ni en C ni en las 8 celdas vecinas de una C.
 
@@ -45,11 +46,11 @@ REQUIRED_FIELDS = {
     "objects": list,
     "unlocks": list,
 }
-KNOWN_ABILITIES = {"pulse", "debug"}
+KNOWN_ABILITIES = {"pulse", "debug", "laser"}
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
-NON_SOLID_PLACED = {"receiver", "exit_door"}
+NON_SOLID_PLACED = {"receiver", "exit_door", "charger", "ability_pickup"}
 
 
 def _is_int(value):
@@ -293,6 +294,12 @@ class LevelValidator:
             for field in ("text",):
                 if field in params and (not isinstance(params[field], str) or not params[field].strip()):
                     self.error("%s: '%s' debe ser un texto no vacio" % (what, field), y, x)
+            for field, allowed in entry.get("allowed", {}).items():
+                if field in params and params[field] not in allowed:
+                    self.error("%s: %s '%s' no admitido (validos: %s)"
+                               % (what, field, params[field], ", ".join(allowed)), y, x)
+            if kind == "charger":
+                self._check_charger(what, x, y, params)
             self.object_anchors.add((kind, (x, y)))
             if "id" in params:
                 self._register_id(params["id"], what)
@@ -326,6 +333,15 @@ class LevelValidator:
             if len(goals) == 1 and goals[0] not in cells:
                 self.error("%s no contiene la meta G (fila %d, columna %d)"
                            % (what, goals[0][1], goals[0][0]), y, x)
+
+    def _check_charger(self, what, x, y, params):
+        """Cargador (2026-10-15): amount > 0, cooldown_s >= 0 y reusable booleano."""
+        if "amount" in params and (not _is_number(params["amount"]) or params["amount"] <= 0):
+            self.error("%s: amount debe ser un numero > 0" % what, y, x)
+        if "cooldown_s" in params and (not _is_number(params["cooldown_s"]) or params["cooldown_s"] < 0):
+            self.error("%s: cooldown_s debe ser un numero >= 0" % what, y, x)
+        if "reusable" in params and not isinstance(params["reusable"], bool):
+            self.error("%s: reusable debe ser true o false" % what, y, x)
 
     def _check_secrets(self):
         listed = set()
