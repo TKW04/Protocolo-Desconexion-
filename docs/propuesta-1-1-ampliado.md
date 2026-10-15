@@ -85,33 +85,45 @@ Las dice Eco con su voz: amable, servicial y corporativa, sin amenazar (§12.1).
 5. **Desvíos de la ficha:** ¿se aceptan un segundo punto de sincronización y pinchos (10 %) en el 1-1?
 6. **Pistas de Eco:** ¿se muestran una vez por partida guardada o cada vez que se juega el nivel? ¿Se enseña la tecla dentro del texto?
 
-## 6. Economía de puntos y mejoras (decisión del usuario, 2026-10-15; IMPLEMENTADA)
+## 6. Economía de puntos y mejoras (decisión del usuario, 2026-10-15; revisada el mismo día tras jugar el 1-1; IMPLEMENTADA)
 
-Sustituye los costes de §2 y el reparto de puntos de «Notas del 1-1 ampliado» (`docs/preguntas.md`). Los valores son **propuestas** y se ajustan jugando.
+Sustituye los costes de §2 y el reparto de puntos de «Notas del 1-1 ampliado» (`docs/preguntas.md`). Los valores son **propuestas** y se ajustan jugando. La primera versión de esta sección (30 puntos por mapa) daba demasiados puntos; los valores «anterior» de las tablas son los de esa versión.
 
-**Decisiones:** (a) menos puntos de atención por mapa, dispersos y no en filas seguidas, y mejoras más caras: ninguna se compra «de regalo» con un solo recorrido del 1-1, salvo la primera; (b) los power banks no aparecen en el 1-1, sino desde el 1-2, cuando se aprende el Debug; (c) «Pulso amplio» se presenta como necesidad con un secreto del 1-1 que solo se abre con la mejora.
+**Decisiones:** (a) pocos puntos de atención por mapa, dispersos y no en filas seguidas: el jugador reúne lo justo para comprar «Pulso amplio» (25) al terminar el 1-3, tres mapas completos, sin que sobren muchos; ningún mapa solo paga una mejora; (b) el 1-1 tiene **un solo** power bank (vacío), escondido en el secreto que exige «Pulso amplio»; los demás llegan desde el 1-2, cuando se aprende el Debug; (c) «Pulso amplio» se presenta como necesidad con ese secreto del 1-1, al que se vuelve tras comprar la mejora en el hub.
 
 **Criterio y fórmula:**
 
-- **Puntos por mapa objetivo:** como máximo unos **30** (unos 20 en la ruta y unos 10 en los secretos), más los de algún secreto que pida una mejora. Una vuelta (18 mapas) da como mucho 18 × 30 = **540** puntos (360 solo con la ruta). Los puntos no se recapturan.
-- **Coste de una mejora** = 30 × N redondeado a 5, donde N son los mapas completos (con secretos) que hay que ahorrar para pagarla. N crece con la potencia de la mejora y con el momento del juego en que es útil.
-- **Comprobaciones:** (1) la ruta del 1-1 sola (20) no paga ninguna mejora; (2) el 1-1 completo sin mejoras (30) solo paga Pulso amplio; (3) ninguna otra mejora cuesta menos que todo el 1-1 (35); (4) la suma de todas (645) supera lo que da una vuelta (540), así que en la primera vuelta no se compran todas (propuesta de tres vueltas en `docs/preguntas.md`). `tests/test_level_schema.py` comprueba (1) a (3).
+- **Puntos por mapa objetivo:** unos **9** (unos 6 en la ruta y unos 3 en los secretos). Antes: unos 30 (20 + 10). Una vuelta (18 mapas) da como mucho 18 × 9 = **162** puntos (108 solo con la ruta). Los puntos no se recapturan.
+- **Coste de una mejora** = 9 × N redondeado a 5, donde N son los mapas completos (con secretos) que hay que ahorrar para pagarla. Antes: 30 × N. N crece con la potencia de la mejora y con el momento del juego en que es útil; se mantiene el de la versión anterior, salvo Pulso amplio, que pasa de 0,83 a unos 3 mapas (1-1, 1-2 y 1-3).
+- **Comprobaciones:** (1) un mapa completo (9) no paga ninguna mejora; (2) tres mapas completos (27) pagan Pulso amplio y sobran menos de 5 puntos; (3) la ruta sola de tres mapas (18) no llega: hacen falta los secretos; (4) la suma de todas (210) supera lo que da una vuelta (162), así que en la primera vuelta no se compran todas (propuesta de tres vueltas en `docs/preguntas.md`). `tests/test_level_schema.py` comprueba las cuatro.
 
-| Mejora | Coste anterior → nuevo (puntos) | Power banks | N (mapas completos, 30 por mapa) | Mapas solo con la ruta (20 por mapa) |
+| Mejora | Coste anterior → nuevo (puntos) | Power banks | N (mapas completos, 9 por mapa) | Mapas solo con la ruta (6 por mapa) |
 |---|---|---|---|---|
-| Pulso amplio | 15 → **25** | 0 | 0,83 (un 1-1 completo) | 1,25 |
-| Arranque rápido | 20 → **60** | 0 | 2 | 3 |
-| Recarga mejorada | 25 → **90** | 0 | 3 | 4,5 |
-| Batería ampliada | 30 → **120** | 1 | 4 | 6 |
-| Sync reforzado | 30 → **150** | 1 | 5 | 7,5 |
-| Debug eficiente | 50 → **200** | 1 | 6,7 | 10 |
-| **Total** | 170 → **645** | 3 | 21,5 (> 18) | 32 |
+| Pulso amplio | 25 → **25** | 0 | 2,8 (1-1, 1-2 y 1-3 completos) | 4,2 |
+| Arranque rápido | 60 → **20** | 0 | 2,2 | 3,3 |
+| Recarga mejorada | 90 → **25** | 0 | 2,8 | 4,2 |
+| Batería ampliada | 120 → **35** | 1 | 3,9 | 5,8 |
+| Sync reforzado | 150 → **45** | 1 | 5 | 7,5 |
+| Debug eficiente | 200 → **60** | 1 | 6,7 | 10 |
+| **Total** | 645 → **210** | 3 | 23,3 (> 18) | 35 |
 
-**Puntos del 1-1 (anterior → nuevo):** ruta 79 → **20** (uno cada 14 columnas aproximadamente, sueltos y a distintas alturas); secretos A 8 → **3**, B 8 → **3** y C 8 → **4**; secreto nuevo del Pulso amplio: **5**. Total 103 → **35** (30 sin la mejora).
+(N de la tabla = coste / 9 tras redondear a 5; antes de redondear, 3, 2, 3, 4, 5 y 6,7 mapas.)
 
-**Secretos del 1-1:** A, B y C dejan de dar un power bank vacío y pasan a ser secretos de puntos (celda `S` con `reward: "attention_points"` y `points`). Se quita la frase de Eco del power bank («Batería externa detectada…»); queda para el 1-2. El tipo `power_bank_pickup` y sus pruebas se mantienen.
+**Puntos del 1-1 (anterior → nuevo):** ruta 20 → **6** (uno al principio del Tramo 1 junto a la línea de Eco de los puntos, uno en lo alto del Tramo 1, uno en la meseta del 2b, uno en la repisa de la Burbuja escalón del 3b, que solo se alcanza subiendo por la Burbuja aturdida, uno en el escalón del pop-up del 4b y uno antes de la puerta); secretos A 3 → **1**, B 3 → **1** y C 4 → **1**; secreto del Pulso amplio 5 puntos → **1 power bank vacío** (0 puntos). Total 35 → **9** (todos sin mejoras).
 
-**Secreto del Pulso amplio (`secreto_pulso_amplio`):** un nicho cerrado a la izquierda del techo de 3a (columnas 121-125, fila 4, con 5 puntos), tapado por el pop-up `popup_lejano` (columnas 126-128, filas 1-4). Se ve al hacer el secreto B: encima del techo, Isak llega andando hasta pegarse al pop-up, en la columna 129, mirando a la izquierda. Es el único sitio desde el que puede lanzar el pulso hacia el botón (el pulso solo sale de pie; el nicho tiene techo y paredes). El botón de cerrar está en `close_button_px` [52, 192]. Con la geometría del juego (centro de Isak a 16 px de la cara del pop-up y celular en `pulse_effect_origin` (36, -56)), el botón queda a **104 px** del celular, más que el radio base (96) y no más que el mejorado (112). Hay que volver al nivel tras comprar la mejora en el hub, y los puntos ya capturados no se repiten. Línea de Eco de primera vez: «Ese botón queda un poco lejos. Con un pulso más amplio llegarías.» Se usa un pop-up en lugar de un receptor porque la zona de golpe del receptor es fija (`hit_rect` [12, 0, 40, 64]) y, en la cuadrícula de 64 px, desde una pared ninguna posición queda entre 96 y 112 px. Desde el borde de una repisa sí cabría, pero el resultado dependería de cuánto se asoma Isak.
+**Secretos del 1-1:** A, B y C son secretos de puntos (celda `S` con `reward: "attention_points"` y `points`). El del Pulso amplio es un objeto: `{"object": "power_bank_pickup", "reward": "power_bank", "requires_upgrade": "wide_pulse"}` sobre el power bank `power_bank_pulso_amplio`, el único del 1-1. Vuelve la frase de Eco del power bank («Batería externa detectada. Guárdala, quizá te ahorre tiempo.»), dentro del nicho.
 
-**Validador:** `validate_level.py` usa los valores base y admite `--upgrades wide_pulse`. En cada pasada comprueba que un secreto con `requires_upgrade` no se alcanza sin la mejora y sí con ella, y que la meta se alcanza sin mejoras. `tools/run_tests.sh` lo ejecuta con y sin la mejora.
+**Secreto del Pulso amplio (`secreto_pulso_amplio`):** un nicho cerrado a la izquierda del techo de 3a (columnas 121-125, filas 1-4; el power bank está en la columna 122, fila 4), tapado por el pop-up `popup_lejano` (columnas 126-128, filas 1-4). Se ve al hacer el secreto B: encima del techo, Isak llega andando hasta pegarse al pop-up, en la columna 129, mirando a la izquierda. Es el único sitio desde el que puede lanzar el pulso hacia el botón (el pulso solo sale de pie; el nicho tiene techo y paredes). El botón de cerrar está en `close_button_px` [52, 192]. Con la geometría del juego (centro de Isak a 16 px de la cara del pop-up y celular en `pulse_effect_origin` (36, -56)), el botón queda a **104 px** del celular, más que el radio base (96) y no más que el mejorado (112). Hay que volver al nivel tras comprar la mejora en el hub; el power bank recogido se guarda por id y no se repite. Línea de Eco de primera vez: «Ese botón queda un poco lejos. Con un pulso más amplio llegarías.» Se usa un pop-up en lugar de un receptor porque la zona de golpe del receptor es fija (`hit_rect` [12, 0, 40, 64]) y, en la cuadrícula de 64 px, desde una pared ninguna posición queda entre 96 y 112 px. Desde el borde de una repisa sí cabría, pero el resultado dependería de cuánto se asoma Isak.
+
+**Burbujas del 1-1 (2026-10-15, tras jugarlo):** antes las cinco iban bajo techo bajo y no se podían pisar ni reventar. Ahora solo `burbuja_1` (3a) sigue bajo techo bajo, como puzle obligatorio del Tramo 3. Las otras cuatro van en abierto (campo `"open": true` del enemigo) con una patrulla corta y una repisa de una vía 3 tiles por encima de su suelo, junto a la patrulla. Con la Burbuja aturdida, Isak la usa de escalón (74 px + salto de 177 px = 251 px, el 76 % para subir 192 px) para llegar a la repisa. Desde la repisa, saltando, cae sobre ella a unos 1357 px/s, por encima del umbral de pop (1150), así que revienta y suelta sus recargas (energía +25, Sync +10). Bajando andando cae a unos 860 px/s y solo la pisa. Una caída sin salto desde 5 o 6 tiles no sirve aquí, porque la Burbuja solo revienta si está aturdida (C7) y el aturdimiento dura 3 s: no da tiempo a subir tan alto. Saltar desde la repisa de 3 tiles equivale a caer desde unos 5,8 tiles. El escalón, la repisa y el pop caben en unos 2,1 s de los 3 s (`tests/test_level_1_1.gd`). No cambia ningún valor de `data/enemies/alert_bubble.json`.
+
+| Burbuja | Tramo | Antes | Ahora |
+|---|---|---|---|
+| `burbuja_1` | 3a | techo bajo, (132, 9), 80 px/s, rango 320 | igual (único techo bajo) |
+| `burbuja_2` | 3b | techo bajo sobre la meseta, (164, 8), 100 px/s, rango 320 | en abierto, (164, 8), 80 px/s, rango 128; repisa en las columnas 166-168 (fila 6) con un punto: «Burbuja escalón», con la línea de Eco «Una alerta en pausa también sirve de escalón. Nada se desperdicia.» |
+| `burbuja_3` | 3c | techo bajo, (184, 9), 80 px/s, rango 256 | en abierto, (182, 9), 80 px/s, rango 128 |
+| `burbuja_4` | 3c | techo bajo, (193, 9), 100 px/s, rango 256 | en abierto, (190, 9), 100 px/s, rango 128; repisa compartida con `burbuja_3` en las columnas 184-188 (fila 7) |
+| `burbuja_5` | 4b | techo bajo, (230, 9), 80 px/s, rango 320 | en abierto, (230, 9), 100 px/s, rango 128; repisa en las columnas 232-233 (fila 7) |
+
+**Validador:** `validate_level.py` usa los valores base y admite `--upgrades wide_pulse`. En cada pasada comprueba que un secreto con `requires_upgrade` no se alcanza sin la mejora y sí con ella, y que la meta se alcanza sin mejoras. `tools/run_tests.sh` lo ejecuta con y sin la mejora. El secreto del Pulso amplio es ahora el power bank (con la mejora se alcanza, sin ella no). Una Burbuja con `"open": true` no avisa de que su pulso no es obligatorio; avisa si en realidad bloquea o si no tiene cerca una repisa desde la que, saltando, se caiga sobre ella por encima del umbral de pop con un 10 % de margen, e informa de esa repisa.
 

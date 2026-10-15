@@ -498,3 +498,12 @@ Implementa `docs/propuesta-1-1-ampliado.md` con las decisiones del usuario del 2
   5. Guardado: los puntos de atención capturados se apuntan por nivel; para que reaparezcan en una vuelta superior habría que guardar también la vuelta. ¿Pasa lo mismo con los power banks de mapa y los secretos?
   6. ¿Qué mejoras se pueden conseguir en cada vuelta y cuáles quedan para las siguientes?
   7. ¿Cómo convive esta progresión con la dificultad por nivel que dan los `mundo-N` ("X de 5")? ¿Es la base de la primera vuelta?
+
+## Cambios del 1-1 tras jugarlo (2026-10-15)
+
+Pedidos por el usuario tras jugar el 1-1. Detalle y tablas en `docs/propuesta-1-1-ampliado.md` §6.
+
+- **Burbujas:** las cinco iban bajo techo bajo y no se podían pisar ni reventar. Ahora solo `burbuja_1` (3a) sigue bajo techo bajo, como puzle obligatorio del Tramo 3. Las otras cuatro (3b, dos en 3c y 4b) van en abierto (`"open": true`), con una patrulla de 128 px y una repisa de una vía 3 tiles por encima de su suelo. Aturdida, la Burbuja sirve de escalón para subir a la repisa, y saltando desde la repisa revienta (unos 1357 px/s frente al umbral de 1150) y suelta energía +25 y Sync +10. Así se resuelve la duda (1) de «Notas del 1-1 ampliado»: el 1-1 ya tiene drops para cargar power banks. No cambia ningún valor de `data/enemies/alert_bubble.json`. El nivel se completa sin reventar ninguna. **Nota:** una caída sin salto de 5 o 6 tiles no sirve, porque solo revienta aturdida y el aturdimiento (3 s) no da tiempo a subir tan alto. Saltar desde 3 tiles equivale a caer desde unos 5,8.
+- **Puntos:** unos 9 por mapa, para que «Pulso amplio» (25) se pague justo al terminar el 1-3. El 1-1 pasa de 35 a 9 (6 en la ruta y 1 en cada secreto A, B y C). Costes (anterior → nuevo): Pulso amplio 25 → 25, Arranque rápido 60 → 20, Recarga mejorada 90 → 25, Batería ampliada 120 → 35, Sync reforzado 150 → 45 y Debug eficiente 200 → 60 (fórmula 9 × N mapas, redondeado a 5).
+- **Nicho del Pulso amplio:** en vez de 5 puntos guarda el único power bank (vacío) del 1-1 (`power_bank_pulso_amplio`). Vuelve la línea de Eco del power bank.
+- **Dudas:** (1) ¿Bastan las repisas de 3 tiles, o se quiere una caída mayor? Haría falta un aturdimiento más largo para esas Burbujas (`stun_duration_s` por enemigo). (2) El punto de la repisa del 3b solo se alcanza usando la Burbuja aturdida de escalón: ¿cuenta como punto de la ruta?
