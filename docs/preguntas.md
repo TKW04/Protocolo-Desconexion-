@@ -118,6 +118,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Problema:** no hay sistema de diálogo: no se sabe si es texto, si detiene el juego, cuánto dura ni si tiene voz. La música y el sonido son decisiones abiertas.
 - **Propuesta:** una notificación con la esfera de Eco en la parte superior de la pantalla, solo texto, que no pausa el juego, se dispara al entrar en una zona y desaparece a los 4 s. Sin audio por ahora.
 - **Por qué:** encaja con "aparece en pop-ups" y con el tema del Mundo 1 sin cortar el ritmo del tutorial.
+- **Decisión del usuario (2026-10-15):** los mensajes **importantes** (habilidad adquirida, historia, cosas relevantes) pausan el juego y se cierran con una acción del jugador; los menores (ayuda contextual) siguen sin pausar, en tiempo real y en cola. Motivo: si el jugador avanza rápido, un aviso pisaba a otro y no sabía a qué acción correspondía cada uno. Detalle en las notas del paso 14b.
 
 ### V7 [RESUELTO] Formato de nivel: elementos del 1-1 que el grid no soporta
 - **Sección:** skill `level-builder` (leyenda) frente a §6.3 (puente desactivado, pop-up, puerta "Marcar como leído", pared con glitch, disparador de Eco).
@@ -401,8 +402,9 @@ Implementa la propuesta V6 (sigue abierta hasta que se apruebe jugando) y la par
 - **Cuadro de Eco (propuesta V6):** notificación arriba y centrada, debajo de la barra de estado (capa 11, por encima del HUD sin taparlo), con la esfera de Eco de 16×16 (blanca y azul con sonrisa de píxeles, §12.1), el nombre «Eco» y el texto. Panel `noche_profunda` con línea `borde_luz`, como la barra del HUD; ancho entre 320 y 560 px según el texto.
 - **Color de Eco (propuesta):** el nombre va en `borde_luz` (#9bb0e8, azul claro). Los docs no fijan un color para Eco; se eligió por «esfera de luz blanca y azul» (§12.1).
 - **Velocidad del texto (propuesta):** máquina de escribir a 40 caracteres por segundo, con una entrada en 0,12 s y una salida en 0,2 s.
-- **Tiempos (propuesta):** el texto completo queda en pantalla al menos `duration_s` del disparador (4 s en el 1-1, V6) y más en textos largos: `max(duration_s, 1,5 + 0,06 × caracteres)`. Se cierra solo; no hay tecla para cerrarlo. No pausa el juego ni bloquea a Isak, y usa tiempo real (el Debug no lo ralentiza). Si llega otra línea, se pone en cola.
-- **Dudas:** (1) ¿se quiere poder cerrar o acelerar el texto con una acción? Ahora no, para no añadir entradas. (2) ¿La esfera de Eco debe animarse (parpadeo, sonrisa) al hablar?
+- **Tiempos (propuesta):** el texto completo queda en pantalla al menos `duration_s` del disparador (4 s en el 1-1, V6) y más en textos largos: `max(duration_s, 1,5 + 0,06 × caracteres)`. Las líneas normales se cierran solas, no pausan el juego ni bloquean a Isak, y usan tiempo real (el Debug no las ralentiza). Si llega otra línea, se pone en cola.
+- **Líneas importantes (decisión del usuario, 2026-10-15):** campo `important` (por defecto `false`) en el `eco_line` del nivel y en `EventBus.eco_line_requested`. Una línea importante pausa el árbol (`get_tree().paused`; el cuadro procesa siempre), no se cierra sola y espera a que el jugador pulse saltar o `ui_accept` (Espacio / A del mando / Intro): la primera pulsación durante la escritura completa el texto y la siguiente lo cierra. El juego se reanuda al terminar de desvanecerse (o sigue en pausa si la siguiente en cola también es importante) y siempre que el cuadro sale del árbol (cambio de escena, nivel quitado); si la pausa la puso otro, no la quita. Pasa delante de las normales en cola, y si hay una normal en pantalla la desplaza: esa vuelve a la cola, delante de las demás normales, así que no se pierde ninguna. En pausa no avanzan el mundo, las Burbujas, el Debug, los temporizadores de los nodos ni el retraso de los avisos de control. Marcadas como importantes: los avisos de control de habilidades (`AbilityNotices`), el texto de `ability_pickup` y, en el 1-1, `eco_bienvenida` (primera voz de Eco) y `eco_laser` («Herramienta nueva…»). El bot de recorrido las confirma solo.
+- **Dudas:** (1) Resuelta (2026-10-15): las líneas importantes se cierran con una acción; las normales, no. (2) ¿La esfera de Eco debe animarse (parpadeo, sonrisa) al hablar?
 
 ## Notas del paso 14b: techo del Tramo 3, pop-up, puerta y pantalla provisional del hub (2026-10-14)
 
@@ -461,7 +463,7 @@ Valores de movimiento: sin cambios.
 - **Decisión 3, enemigos y farmeo:** los enemigos reaparecen al rejugar un nivel y sus drops se pueden farmear. Se deja así por ahora.
 - **Decisión 4, dificultad:** la dificultad ya no se elige. C9 queda sustituida por una dificultad que evoluciona con el juego (el usuario lo confirma).
 - **Dudas abiertas (power banks):**
-  1. **Interpretación de Claude, pendiente de confirmar:** sin ningún power bank vacío, el sobrante de los drops **se pierde** (antes creaba power banks de la nada). ¿Es así?
+  1. **Resuelta (decisión del usuario, 2026-10-15):** sin ningún power bank vacío, el sobrante de los drops **se pierde**: no se acumula ni se devuelve al obtener después un power bank vacío. `GameState.add_power_bank_charge` ya lo hacía así; la prueba `test_overflow_is_lost_without_empty_power_banks` lo comprueba.
   2. Al pagar una mejora, el power bank completo se gasta y desaparece (no vuelve como vacío). ¿Es así, o se recarga y se reutiliza?
   3. Hoy no hay forma de **comprar** un power bank: el catálogo `data/upgrades.json` no tiene esa entrada. ¿Dónde se compra y cuánto cuesta?
   4. **Resuelta:** los textos de `power_bank_pickup` (`data/world1_objects.json` y `scripts/levels/power_bank_pickup.gd`) ya dicen "vacío".
@@ -573,7 +575,7 @@ Generaliza el aviso que salía al recoger el láser («Láser obtenido. F o gati
   - Láser: al recogerlo, antes de la línea de Eco «Herramienta nueva…».
   - Debug: al desbloquearse durante un nivel o al empezar un nivel con él desbloqueado. Aún no ocurre en el 1-1; lo cubren las pruebas.
 - **Una sola vez por partida guardada:** `seen_notices` en el guardado. En los guardados antiguos, las habilidades ya obtenidas cuentan como avisadas, así que el aviso del láser no se repite. Marcar un aviso no fuerza una escritura: se guarda con el siguiente cambio que guarde, como capturar un punto, obtener una habilidad o completar el nivel. Así, abrir el juego unos segundos no escribe el guardado.
-- **Aspecto:** el mismo cuadro de Eco y la fuente `text_font` que el aviso anterior. Se cierra solo a los 4 s (o el tiempo de `duration_s`), no pausa ni espera una tecla, como el aviso que había. El HUD no cambia. Solo lo muestra el flujo de juego (`scenes/main.tscn`), no las escenas de prueba ni el bot.
+- **Aspecto:** el mismo cuadro de Eco y la fuente `text_font` que el aviso anterior. Desde el 2026-10-15 (decisión del usuario) es una línea **importante**: pausa el juego y espera a que el jugador lo cierre (Espacio / A / Intro), y pasa delante de las líneas normales en cola (ver las notas del paso 14b). El HUD no cambia. Solo lo muestra el flujo de juego (`scenes/main.tscn`), no las escenas de prueba ni el bot.
 - **Dudas abiertas:**
   1. El cuadro muestra el nombre «Eco» encima del aviso, igual que el aviso del láser de antes, aunque es texto de interfaz y no una línea de Eco. ¿Se quita el nombre en los avisos? Sería un cambio pequeño en el cuadro de Eco.
   2. Si un jugador ya tenía un guardado, verá una vez el aviso del pulso al volver a jugar el 1-1. ¿Vale así?

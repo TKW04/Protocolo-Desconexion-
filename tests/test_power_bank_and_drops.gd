@@ -73,11 +73,19 @@ func test_map_pickup_gives_an_empty_power_bank() -> void:
 	assert_eq(GameState.empty_power_banks, 1)
 
 
+## Decision 2026-10-15 (docs/preguntas.md, duda 1 de power banks): sin power
+## bank vacio, el sobrante de los drops SE PIERDE; no se acumula ni se devuelve
+## al recibir despues un power bank vacio.
 func test_overflow_is_lost_without_empty_power_banks() -> void:
 	var unused: float = GameState.add_power_bank_charge(50.0)
 	assert_almost_eq(unused, 50.0, EPS)
-	GameState.add_debug_energy(25.0)
+	var overflow: float = GameState.add_debug_energy(25.0)
+	assert_almost_eq(overflow, 25.0, EPS, "La barra estaba llena: todo sobra")
 	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "Sin power bank vacio no se carga nada")
+	assert_eq(GameState.power_banks, 0, "No crea power banks de la nada")
+	assert_eq(GameState.empty_power_banks, 0)
+	GameState.add_empty_power_bank()
+	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "El sobrante perdido no vuelve")
 	assert_eq(GameState.power_banks, 0)
 
 
