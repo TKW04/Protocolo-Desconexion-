@@ -48,3 +48,14 @@ Están en `.claude/skills/`:
 3. El arte de Isak lo aporta el usuario: hojas generadas con IA en `hojas/`, importadas con `tools/import_sheet.py` (guía en `docs/guia-sprites-ia.md`). Los sprites de Isak Optimizado y de los jefes siguen como borrador con sufijo `_placeholder`, salvo que el usuario aporte arte. Yo decidiré si se rehacen a mano.
 4. Antes de dar un nivel por terminado, ejecuta la validación de alcanzabilidad de `level-builder` y las pruebas.
 5. Haz commits pequeños con mensajes claros.
+
+## Cómo ejecutar
+
+Desde la raíz del repo (`GODOT=/Applications/Godot.app/Contents/MacOS/Godot`):
+
+- Jugar (escena principal `scenes/main.tscn`: el 1-1 completo, con punto de sincronización, muerte, final y pantalla provisional del hub): `/Applications/Godot.app/Contents/MacOS/Godot --path "/Users/isaachiraldo/Projects/PersonalsProyects/Protocolo Desconexion/isak-fix-claude-code"`. Controles: A/D o flechas (mover), Espacio (saltar), Mayús (correr), J (pulso), mantener K (Debug; bloqueado en el 1-1). En la pantalla del hub, Espacio vuelve a jugar.
+- Pruebas (GUT, Python y validadores): `tools/run_tests.sh`.
+- Bot que recorre el 1-1 de principio a fin (código 0 si lo termina): `$GODOT --headless --fixed-fps 60 --path . -s tools/play_level_bot.gd` (añade `-- --no-die` para no forzar la muerte tras el checkpoint; sin `--headless` se ve jugar).
+- Validar el nivel: `python3 tools/validate_level_schema.py data/levels/1-1.json` y `python3 tools/validate_level.py data/levels/1-1.json`.
+- Regenerar la escena del nivel desde el JSON (no editar `scenes/levels/1-1.tscn` a mano): `python3 tools/build_level.py data/levels/1-1.json`; comprobar que está al día: `python3 tools/build_level.py --check data/levels/*.json`.
+- Escenas de prueba (no son niveles): `$GODOT --path . res://scenes/levels/test_arena.tscn` (movimiento; F1/F2 bajan/suben el Sync Rate, F3 gasta energía, F4 suma un punto de atención; caer por un hueco devuelve al inicio), `debug_sandbox.tscn` (Debug: mantener K), `alert_bubble_test.tscn` (Burbuja), `eco_text_test.tscn` (cuadro de Eco), `tramo4_test.tscn` y `world1_objects_test.tscn` (objetos del Mundo 1).
