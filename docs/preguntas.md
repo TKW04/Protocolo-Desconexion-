@@ -603,3 +603,10 @@ Decisión de diseño del usuario. Sustituye el estado «pendiente de aprobar» d
   6. **Guardar en el hub:** ¿es una acción explícita (un objeto o un menú) o se guarda al entrar en el hub? ¿Qué se guarda antes de que exista el hub (1-1 a 1-3 y el jefe del Mundo 1)? ¿Se mantiene el guardado automático actual o se sustituye? Hace falta guardar también la vuelta actual y los puntos capturados por vuelta.
   7. **Puntos tras el rollback de Hard:** si lo lanza Isak, ¿también restaura los puntos?
   8. Siguen abiertas las preguntas 1, 4 y 6 de la propuesta anterior (narrativa por vuelta, color y telegrafiado de los puntos débiles nuevos, qué mejoras se consiguen en cada vuelta).
+
+## Llegada por vórtice, pausa de inicio y terminal de salida (2026-10-15)
+
+- La bienvenida de Eco (importante, pausa) salía con el fundido de entrada aún en negro. Ahora Isak llega oculto y sin control; el vórtice de llegada espera a que acabe el fundido, se abre y, al empezar a cerrarse, Isak se muestra y salen las líneas de Eco de zona que esperaban: la pausa llega con el nivel y el vórtice en pantalla. El control vuelve al cerrarse el vórtice (unos 1,2 s tras el fundido). Lo mismo al reaparecer (sin línea de Eco).
+- P del 1-1 pasa de (4, 3) a (4, 9), en el suelo: Isak ya no cae del cielo.
+- Durante el vórtice (llegada y salida) Isak no recibe golpes (no puede moverse). Tras reaparecer siguen los 1 s de invulnerabilidad de siempre, que corren a la vez.
+- La puerta de salida del 1-1 es ahora una terminal que se activa con el pulso (`exit_terminal`); `exit_door` sigue en el catálogo para las escenas de prueba. PROPUESTA para revisar jugando: zona de cercanía de 1,5 tiles a cada lado y el vórtice de salida centrado en Isak, no en la pantalla.

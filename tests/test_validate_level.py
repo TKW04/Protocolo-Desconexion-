@@ -87,6 +87,8 @@ class RealLevelTest(unittest.TestCase):
         self.assertEqual([a["object"] for a in pickups], ["objeto de habilidad laser_1_1"])
         self.assertLess(actions.index("pickup"), [a.get("object") for a in result["path"]].index("pop-up popup_1"))
         self.assertEqual(result["checkpoints"][0]["reachable_from"], "P")
+        # Terminal de salida (2026-10-15): se activa con el pulso desde la propia celda G.
+        self.assertEqual(result["exit_terminals"], [{"id": "terminal_salida", "pulse_from": [9, 290]}])
         # El laser: se alcanza, es obligatorio (en el camino de la meta) y la meta se alcanza sin usarlo.
         abilities = result["abilities"]
         self.assertEqual(abilities["pickups"], [{"id": "laser_1_1", "ability": "laser", "row": 5, "col": 173,
@@ -182,6 +184,22 @@ class BrokenVariantsTest(unittest.TestCase):
         for needle in needles:
             self.assertIn(needle, text)
         return result
+
+    def test_exit_terminal_needs_the_pulse(self):
+        level = base_level()
+        level["abilities_available"]["pulse"] = False
+        self.assert_fails(level, "terminal de salida terminal_salida necesita el pulso", schema=False)
+
+    def test_exit_terminal_out_of_pulse_reach(self):
+        level = base_level()
+        catalog_rect = [0, -900, 64, 32]  # zona de golpe muy por encima: el pulso no llega
+        rules = vl.Rules()
+        validator = vl.Validator(level, rules)
+        validator.model.catalog = dict(validator.model.catalog)
+        validator.model.catalog["exit_terminal"] = {"hit_rect_px": catalog_rect}
+        result = validator.run()
+        self.assertFalse(result["ok"])
+        self.assertIn("el pulso no la alcanza", "\n".join(messages(result)))
 
     def test_gap_of_five_tiles(self):
         level = base_level()

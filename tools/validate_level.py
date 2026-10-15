@@ -49,6 +49,11 @@ movimiento por celdas:
      alcanza SIN usar el laser. Informa de desde donde alcanza el laser a cada
      Burbuja y avisa si una Burbuja en abierto posterior al laser no se puede
      alcanzar con el.
+  6c. Terminal de salida (exit_terminal, 2026-10-15): tocar G no basta, hay que
+     activarla con el pulso. El nivel debe tener el pulso
+     (abilities_available.pulse) y el pulso (radio base, sin mejoras ni laser)
+     debe alcanzar su hit_rect_px desde alguna celda de pie alcanzable en el
+     camino principal hacia G.
   7. Sin soft-locks: desde cualquier sitio alcanzable (en cada estado de las
      puertas, abriendolas tambien desde dentro de un foso) se puede llegar a la
      meta (p. ej. caer al foso del puente). Grafo producto (nodo, puertas
@@ -246,7 +251,8 @@ class Gate:
         self.col_span = (min(cols), max(cols)) if cols else (col, col)
 
     def label(self):
-        names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad"}
+        names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
+                 "terminal": "terminal de salida"}
         return "%s %s" % (names[self.kind], self.obj_id)
 
 
@@ -899,6 +905,8 @@ class Validator:
         # Regla 4 y secretos que son un objeto recogible.
         self._check_secrets(start, goal_cells)
         self._check_reachable_secrets(start)
+        # Regla 6c: terminal de salida activable con el pulso.
+        self._check_exit_terminals(main)
         # Regla 6: puertas obligatorias.
         if main["ok"]:
             self._check_mandatory(start, goal_cells)
@@ -907,6 +915,39 @@ class Validator:
             # Regla 7: soft-locks (y desde donde alcanza el laser a cada Burbuja).
             self._check_softlocks(main, goal_cells)
         return self.finish()
+
+    def _check_exit_terminals(self, main):
+        """La terminal de salida se activa con el pulso desde el camino principal (sin mejoras ni laser)."""
+        m = self.model
+        T = m.T
+        hit = m.catalog.get("exit_terminal", {}).get("hit_rect_px", [0, 0, T, 2 * T])
+        last = main["stages"][-1]
+        terminals = []
+        for obj in self.level.get("objects", []):
+            if obj["type"] != "exit_terminal":
+                continue
+            tid = str(obj.get("params", {}).get("id", "terminal_%d_%d" % (obj["x"], obj["y"])))
+            x0, y0 = obj["x"] * T + hit[0], obj["y"] * T + hit[1]
+            gate = Gate("terminal:" + tid, "terminal", tid, openers=[(x0, y0, x0 + hit[2], y0 + hit[3], "terminal")],
+                        col=obj["x"], row=obj["y"], tile=T)
+            if not m.pulse:
+                self.report.error("%s necesita el pulso y el nivel no lo tiene (abilities_available.pulse)"
+                                  % gate.label(), obj["y"], obj["x"], gate.label())
+                continue
+            if not main["ok"]:
+                continue
+            source = None
+            for n in sorted(last["cost"], key=lambda n: (abs(n[0] - obj["x"]), last["cost"][n], n[1])):
+                if abs(n[0] - obj["x"]) > 3:
+                    break
+                if m.can_open(gate, n, last["state"], use_laser=False):
+                    source = n
+                    break
+            if source is None:
+                self.report.error("%s: el pulso no la alcanza desde ninguna celda del camino hacia la meta"
+                                  % gate.label(), obj["y"], obj["x"], gate.label())
+            terminals.append({"id": tid, "pulse_from": None if source is None else [source[1], source[0]]})
+        self.result["exit_terminals"] = terminals
 
     def _check_bubbles(self):
         """La Burbuja bloquea si bajo su patrulla Isak no puede pasarle por encima."""
@@ -1435,6 +1476,10 @@ def format_text(path, result):
                 "se alcanza" if item["reachable"] else "NO se alcanza",
                 "obligatorio (en el camino de la meta)" if item["mandatory"] else "opcional"))
         out.append("  meta sin usar el laser: %s" % ("si" if abilities["goal_without_laser"] else "no"))
+    for item in result.get("exit_terminals", []):
+        frm = item["pulse_from"]
+        out.append("  terminal de salida %s: %s" % (
+            item["id"], "se activa con el pulso desde (fila %d, columna %d)" % tuple(frm) if frm else "NO se activa"))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
     for w in result["warnings"]:

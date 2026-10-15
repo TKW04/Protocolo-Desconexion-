@@ -163,6 +163,14 @@ def render(level, palette):
             d.rectangle((x0 + 1, y0, x1 - 1, y1), fill=palette["banner_blanco"], outline=palette["borde_luz"])
             d.rectangle((x1 - 5, (y0 + y1) // 2, x1 - 3, (y0 + y1) // 2 + 2), fill=palette["alerta"])
             label((x0 + x1) // 2, y0 - 8, p.get("text", "puerta"), palette["banner_blanco"])
+        elif kind == "exit_terminal":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 2))
+            mx = (x0 + x1) // 2
+            d.rectangle((x0 + 1, y0 + (y1 - y0) // 4, x1 - 1, (y0 + y1) // 2 + 2), fill=palette["tile_sombra"],
+                        outline=palette["debug_cian"])
+            d.line((mx, (y0 + y1) // 2 + 2, mx, y1), fill=palette["tile_luz"])
+            d.line((x0 + 3, y1, x1 - 3, y1), fill=palette["tile_luz"])
+            label(mx, y0 - 8, p.get("text", "terminal"), palette["banner_blanco"])
         elif kind == "eco_line":
             x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 4))
             for xx in range(x0, x1, 6):

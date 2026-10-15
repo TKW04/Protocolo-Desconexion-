@@ -81,6 +81,21 @@ Comportamiento (`WarpVortex`, `scripts/levels/warp_vortex.gd`; valores en `data/
 
 Regenerar: `python3 -I tools/gen_warp_objects.py` (`--preview <png>` para la hoja ampliada); validar: `python3 -I tools/validate_warp_objects.py` (paletas, alfa, PNG y `assets/sprites/warp_objects_frames.tres` al día con el generador; lo ejecuta `tools/run_tests.sh`).
 
+## Terminal de salida (2026-10-15)
+
+Sustituye a la puerta «Marcar como leído» del Cierre del 1-1 (columna 290; conserva la etiqueta). Monitor moderno de marco fino (bisel `borde_luz`/`tile_luz`/`tile_sombra`) sobre un pedestal con una traza `resplandor` y nodos `borde_luz`; LED de encendido en el marco.
+
+| Estado | Archivos (`assets/sprites/props/exit_terminal/`) | Tamaño | Cuadros |
+|---|---|---|---|
+| Apagada (Isak lejos) | `terminal_off_00..01.png` | 64x128 | 2 a 2 fps: pantalla `tile_sombra` con reflejo, `>` y cursor `pulse_dim` parpadeando |
+| Prompt (Isak cerca) | `terminal_prompt_00..01.png` | 64x128 | 2 a 4 fps: marco interior `pulse_dim`, `>` y cursor cian; LED `pulse_dim` |
+| Encendido | `terminal_boot_00..03.png` | 64x128 | 4 a 12 fps, sin bucle: línea central que se abre hasta llenar la pantalla de cian |
+| Activa | `terminal_on_00..01.png` | 64x128 | 2 a 4 fps: pantalla `pulse_dim` con líneas de código cian que suben, LED cian y halo cian que late |
+
+Comportamiento (`ExitTerminal`, `scripts/levels/exit_terminal.gd`; sección `exit_terminal` de `data/world1_objects.json`): tocarla no termina el nivel. Con Isak a menos de 1,5 tiles pasa a prompt y encima del monitor sale la tecla del pulso (leída del Input Map, hoy «G») en la fuente de textos sobre una placa con borde cian. Al recibir el pulso (misma prueba que el receptor) se activa una vez: Isak queda sin control, la pantalla se enciende y se abre el vórtice de salida a su alrededor; al cerrarse, Isak ha sido absorbido y se emite `EventBus.level_completed` (vuelta al hub como antes). Solo necesita el pulso, que el 1-1 tiene desde el principio; `tools/validate_level.py` comprueba que el nivel tiene el pulso y que alcanza la terminal desde el camino a la meta.
+
+Línea `eco_glitch` (columna 293, entre la terminal y la pared con glitch de la columna 298): con la puerta solo salía si se saltaba la puerta, porque tocarla terminaba el nivel; con la terminal, quien pase de largo sin pulsar G la oye. Encaja mejor: Eco intenta que el jugador no mire la pared con glitch (secreto D) justo cuando la terminal ya le espera. No se ha cambiado.
+
 ## Pendiente
 
 - Los `.import` de Godot se crean la primera vez que se abre el editor (o con `tools/run_tests.sh`, que importa el proyecto); se commitean como los del resto de `assets/sprites/`.

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/exit_terminal.gd" id="1_terminal"]
+
+[node name="ExitTerminal" type="Area2D" groups=["exit_terminal"]]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("1_terminal")

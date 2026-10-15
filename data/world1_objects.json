@@ -78,6 +78,22 @@
 			},
 			"example": {"type": "exit_door", "x": 40, "y": 8, "params": {"id": "puerta_1", "text": "Marcar como leído"}}
 		},
+		"exit_terminal": {
+			"scene": "res://scenes/levels/exit_terminal.tscn",
+			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, se abre un vortice de salida (WarpVortex) alrededor de Isak, que queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador.",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"width_tiles": 1,
+				"height_tiles": 2
+			},
+			"example": {"type": "exit_terminal", "x": 40, "y": 8, "params": {"id": "terminal_1", "text": "Marcar como leído"}}
+		},
 		"eco_line": {
 			"scene": "res://scenes/levels/eco_line.tscn",
 			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Al entrar Isak emite EventBus.eco_line_requested(text, duration_s) y la muestra el cuadro de texto de Eco (scenes/ui/eco_text_box.tscn, data/eco_text_box.json), que el nivel debe incluir; duration_s es el tiempo minimo con el texto completo (el cuadro alarga los textos largos). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida. trigger_event (rediseno del 1-1, 2026-10-15): en vez de la zona, la linea salta al emitirse esa senal de EventBus (laser_fired: primera vez que Isak dispara el laser en el nivel). important (decision 2026-10-15; por defecto false): linea importante (habilidad adquirida, historia), el cuadro pausa el juego hasta que el jugador la cierra (Espacio / A / Intro) y pasa delante de las normales en cola.",
@@ -229,6 +245,28 @@
 		"font_size": 12,
 		"font_scale": 2,
 		"label_gap_px": 12,
+		"label_padding_px": 3,
+		"label_plate_color": "#0b0e1a",
+		"label_border_color": "#9bb0e8"
+	},
+	"exit_terminal": {
+		"_notes": "PROPUESTA (2026-10-15). Terminal de 64x128 (frames: SpriteFrames de tools/gen_warp_objects.py; animaciones terminal_off, terminal_prompt, terminal_boot y terminal_on con sus fps), dibujada desde la esquina superior izquierda de su primera celda y apoyada en el suelo. prompt_zone_px: zona [x, y, ancho, alto] relativa a ese origen en la que Isak 'esta cerca' (prompt e icono de la tecla). hit_rect_px: zona que el pulso debe tocar (monitor, cuello y pedestal). Icono de la tecla: la primera tecla de pulse_action en el Input Map (G), con la fuente de textos a font_scale sobre una placa key_plate_color con borde key_border_color, centrado sobre el monitor a key_gap_px por encima de su borde (monitor_top_px), con un bote de key_bob_px cada key_bob_s. Etiqueta (text, opcional): como la de la puerta, a label_gap_px por encima del monitor. El vortice de salida empieza al acabar terminal_boot. Tiempo del mundo (Debug x0,5).",
+		"frames": "res://assets/sprites/warp_objects_frames.tres",
+		"frame_size": [64, 128],
+		"monitor_top_px": 30,
+		"prompt_zone_px": [-96, 0, 256, 128],
+		"hit_rect_px": [4, 30, 56, 98],
+		"pulse_action": "pulse",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_scale": 2,
+		"key_gap_px": 8,
+		"key_padding_px": 3,
+		"key_plate_color": "#0b0e1a",
+		"key_border_color": "#3dfff5",
+		"key_bob_px": 2,
+		"key_bob_s": 0.35,
+		"label_gap_px": 44,
 		"label_padding_px": 3,
 		"label_plate_color": "#0b0e1a",
 		"label_border_color": "#9bb0e8"

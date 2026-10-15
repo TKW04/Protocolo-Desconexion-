@@ -114,15 +114,16 @@ class LevelSchemaTest(unittest.TestCase):
         first_shot = [o for o in lvl["objects"] if o["params"].get("trigger_event") == "laser_fired"]
         self.assertEqual(len(first_shot), 1, "linea de Eco del primer disparo")
         kinds = [o["type"] for o in lvl["objects"]]
-        for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_door", "glitch_wall"):
+        for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_terminal", "glitch_wall"):
             self.assertIn(kind, kinds)
         self.assertEqual(obj(lvl, "eco_line")["params"]["text"], "Bienvenido. He optimizado tu espacio.")
-        self.assertEqual(obj(lvl, "exit_door")["params"]["text"], "Marcar como leído")
-        # Orden de los tramos: aterrizaje -> puente -> Burbuja bajo techo -> laser -> pop-up -> puerta.
+        self.assertEqual(obj(lvl, "exit_terminal")["params"]["text"], "Marcar como leído")
+        self.assertNotIn("exit_door", kinds, "la puerta se sustituyo por la terminal (2026-10-15)")
+        # Orden de los tramos: aterrizaje -> puente -> Burbuja bajo techo -> laser -> pop-up -> terminal.
         popup_1 = next(o for o in lvl["objects"] if o["params"].get("id") == "popup_1")
         low = next(e for e in lvl["enemies"] if e["id"] == "burbuja_1")
         xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], low["x"], laser_x,
-              popup_1["x"], obj(lvl, "exit_door")["x"]]
+              popup_1["x"], obj(lvl, "exit_terminal")["x"]]
         self.assertEqual(xs, sorted(xs))
         # Un solo punto de sincronizacion, a mitad del mapa (decision 2026-10-14).
         self.assertEqual(len(lvl["checkpoints"]), 1)
@@ -348,7 +349,7 @@ class LevelSchemaTest(unittest.TestCase):
         self.assert_fails(self.level, "falta el param obligatorio 'close_button_px'")
 
     def test_object_unknown_param(self):
-        obj(self.level, "exit_door")["params"]["color"] = "rojo"
+        obj(self.level, "exit_terminal")["params"]["color"] = "rojo"
         self.assert_fails(self.level, "param desconocido 'color'")
 
     def test_object_missing_fields(self):
@@ -411,8 +412,14 @@ class LevelSchemaTest(unittest.TestCase):
         obj(self.level, "bridge_inactive")["params"]["length_tiles"] = 500
         self.assert_fails(self.level, "se sale del grid")
 
+    def test_exit_terminal_must_contain_goal(self):
+        obj(self.level, "exit_terminal")["x"] -= 3
+        self.assert_fails(self.level, "no contiene la meta G")
+
     def test_exit_door_must_contain_goal(self):
-        obj(self.level, "exit_door")["x"] -= 3
+        terminal = obj(self.level, "exit_terminal")
+        terminal["type"] = "exit_door"
+        terminal["x"] -= 3
         self.assert_fails(self.level, "no contiene la meta G")
 
     def test_duplicate_ids(self):

@@ -10,7 +10,9 @@
 ##   Burbujas que tiene delante a su altura hasta matarlas (si le queda energia; si
 ##   no, vuelve al pulso); toca el punto
 ##   de sincronizacion y, con --die (por defecto), fuerza una muerte (Sync Rate 0)
-##   tras tocarlo y comprueba que reaparece alli con el 100 %; entra por la puerta,
+##   tras tocarlo y comprueba que reaparece alli con el 100 %; se para en la
+##   terminal de salida (2026-10-15: tocarla no basta) y la activa con el pulso
+##   (Isak es absorbido por el vortice de salida),
 ##   comprueba la pantalla provisional del hub (nivel completado, 1-2 desbloqueado,
 ##   puntos) y pulsa salto (accion jump) para reiniciar: Sync Rate y objetos
 ##   desde cero, pero los puntos de atencion se conservan y los ya capturados no
@@ -22,7 +24,7 @@
 ## ni clases que los usen al compilar, asi que la logica va aqui).
 ## Uso (rapido, sin ventana):
 ##   Godot --headless --fixed-fps 60 --path . -s tools/play_level_bot.gd [-- --no-die] [--run]
-## --run recorre el nivel corriendo. Al entrar por la puerta anota la duracion del
+## --run recorre el nivel corriendo. Al activar la terminal anota la duracion del
 ## recorrido (sin la muerte forzada). Con ventana (para verlo): quita --headless.
 extends Node
 
@@ -46,6 +48,9 @@ const BUBBLE_PULSE_GAP: float = 70.0
 ## el laser (alcance del laser: 768 px).
 const BUBBLE_LASER_GAP: float = 6.0 * TILE
 const LAYER_WORLD: int = 1
+## Se para a esta distancia (px) del borde izquierdo de la terminal de salida (en
+## su celda G) para lanzarle el pulso.
+const TERMINAL_STOP_PX: float = 24.0
 const BOT_SAVE_PATH: String = "user://bot_save.json"
 
 var _input := PlayerInput.new()
@@ -179,7 +184,7 @@ func _play() -> bool:
 	_isak.laser_fired.connect(func(_p: LaserProjectile) -> void: _shots += 1)
 	var had_laser: bool = GameState.is_ability_unlocked(GameState.ABILITY_LASER)
 	var checkpoint: Checkpoint = level.get_node(^"Checkpoints").get_child(0) as Checkpoint
-	var door: ExitDoor = level.get_node(^"Objects/puerta_salida")
+	var terminal: ExitTerminal = level.get_node(^"Objects/terminal_salida")
 	_points_total = level.get_node(^"AttentionPoints").get_child_count()
 	var best_x: float = 0.0
 	var best_frame: int = 0
@@ -206,6 +211,18 @@ func _play() -> bool:
 		if _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead() or _isak.is_warping():
 			_input.move_axis = 0.0
 			waiting = true
+		elif _terminal_waiting(terminal):
+			_input.move_axis = 0.0
+			waiting = true
+			if x >= terminal.global_position.x + TERMINAL_STOP_PX:
+				if not announced.has("terminal_prompt"):
+					announced["terminal_prompt"] = true
+					_note("terminal de salida: prompt %s con la tecla '%s'" % [
+						"visible" if terminal.is_key_hint_visible() else "NO visible", terminal.get_key_hint_text()])
+				_try_pulse("terminal", announced)
+			else:
+				_input.move_axis = 1.0
+				waiting = false
 		elif not gate.is_empty():
 			_input.move_axis = 0.0
 			waiting = true
@@ -220,13 +237,13 @@ func _play() -> bool:
 			_input.jump_pressed = true
 		_input.jump_held = _jump_left > 0
 		_jump_left = maxi(_jump_left - 1, 0)
-		if door.get_state() == ExitDoor.State.OPENING and not announced.has("door"):
-			announced["door"] = true
-			_note("entra por la puerta (recorrido: %.1f s de juego sin contar la muerte forzada)" % (
+		if terminal.get_state() >= ExitTerminal.State.BOOT and not announced.has("terminal"):
+			announced["terminal"] = true
+			_note("activa la terminal con el pulso (recorrido: %.1f s de juego sin contar la muerte forzada)" % (
 					(_frame - _death_frames) / 60.0))
 			_note("laser: %d disparos, %d Burbujas eliminadas (%s); energia al final %.0f" % [_shots, _kills.size(),
 					", ".join(_kills), GameState.debug_energy])
-			_shot_in("7_puerta", 6)
+			_shot_in("7_terminal", 30)
 		if checkpoint.is_taken() and not announced.has("checkpoint"):
 			announced["checkpoint"] = true
 			_shot_in("2_checkpoint", 20)
@@ -247,6 +264,14 @@ func _play() -> bool:
 		await _tick()
 		_input.clear_just_pressed()
 	return _fail("tiempo agotado en x=%.0f" % _isak.global_position.x)
+
+
+## La terminal de salida esta delante, sin activar, e Isak ya esta cerca (prompt)
+## o la ha alcanzado.
+func _terminal_waiting(terminal: ExitTerminal) -> bool:
+	if terminal == null or terminal.get_state() >= ExitTerminal.State.BOOT:
+		return false
+	return terminal.is_player_near() and _isak.is_on_floor()
 
 
 ## Puerta de la ruta que obliga a pararse delante: {what, pulse} o vacio.

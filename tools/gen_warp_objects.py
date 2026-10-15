@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Genera los sprites del vortice de llegada y salida de Isak (estilo circuito limpio).
+"""Genera los sprites del vortice de llegada y salida de Isak y de la terminal de
+salida del nivel (estilo circuito limpio).
 
 Vortice (assets/sprites/effects/vortex/, 96x96): tres anillos cian partidos en
 arcos que giran en sentidos alternos, con nodos de 2x2 en los extremos de los
@@ -7,6 +8,14 @@ arcos y patillas cortas en el anillo exterior (como las trazas de un circuito).
 Animaciones: vortex_open (4 cuadros: los anillos crecen desde el centro),
 vortex_spin (4, bucle: abierto y girando) y vortex_close (6: los anillos se
 cierran hacia el centro y acaban en un destello en cruz).
+
+Terminal de salida (assets/sprites/props/exit_terminal/, 64x128 = 1x2 tiles,
+apoyada en el borde inferior): monitor moderno de marco fino sobre un pedestal
+con una traza de circuito. Animaciones: terminal_off (2: pantalla apagada con
+el cursor parpadeando en pulse_dim), terminal_prompt (2: Isak cerca; marco
+interior y cursor en cian), terminal_boot (4, sin bucle: la pantalla se enciende
+en cian desde una linea central) y terminal_on (2, bucle: pantalla cian con
+lineas de codigo, LED encendido y halo cian).
 
 Solo colores de assets/palettes/mundo1.gpl y assets/palettes/effects_pulse.gpl
 (sin rojo, carmin ni ambar). Fondo transparente, alfa 0 o 255. La salida es
@@ -137,12 +146,136 @@ def vortex_frames():
     return out
 
 
+# ------------------------------------------------------------------ terminal (64x128)
+TS = PAL["tile_sombra"]
+TB = PAL["tile_base"]
+TL = PAL["tile_luz"]
+
+TERMINAL_W, TERMINAL_H = 64, 128
+# Monitor y pantalla (inclusivos).
+MON = (4, 30, 59, 75)
+SCREEN = (8, 34, 55, 69)
+# (nombre, cuadros, fps, bucle)
+TERMINAL_ANIMS = [
+    ("terminal_off", 2, 2.0, True),
+    ("terminal_prompt", 2, 4.0, True),
+    ("terminal_boot", 4, 12.0, False),
+    ("terminal_on", 2, 4.0, True),
+]
+# Lineas de "codigo" de la pantalla encendida: (x, ancho) por fila de 3 px.
+CODE = [(0, 18), (4, 24), (4, 12), (8, 20), (4, 28), (0, 10), (4, 16), (8, 22), (0, 26), (4, 14)]
+
+
+def terminal_body(cv, led):
+    """Pedestal, cuello y monitor (sin la pantalla)."""
+    # Base del pedestal.
+    cv.box(12, 119, 51, 127, TB)
+    cv.hline(13, 50, 120, TL)
+    cv.hline(13, 50, 126, TS)
+    # Cuello con traza de circuito.
+    cv.rect(27, 78, 36, 118, N)
+    cv.rect(28, 78, 35, 118, TB)
+    cv.vline(28, 78, 118, TL)
+    cv.vline(35, 78, 118, TS)
+    cv.vline(31, 80, 114, R)
+    cv.rect(31, 115, 32, 116, BL)
+    cv.rect(30, 80, 33, 81, BL)
+    # Soporte bajo el monitor.
+    cv.rect(22, 75, 41, 79, N)
+    cv.rect(23, 76, 40, 78, TB)
+    cv.hline(23, 40, 76, TL)
+    # Monitor: marco fino con bisel.
+    x0, y0, x1, y1 = MON
+    cv.box(x0, y0, x1, y1, TB)
+    cv.hline(x0 + 1, x1 - 1, y0 + 1, BL)
+    cv.vline(x0 + 1, y0 + 1, y1 - 1, TL)
+    cv.vline(x1 - 1, y0 + 2, y1 - 1, TS)
+    cv.hline(x0 + 2, x1 - 1, y1 - 1, TS)
+    sx0, sy0, sx1, sy1 = SCREEN
+    cv.rect(sx0 - 1, sy0 - 1, sx1 + 1, sy1 + 1, N)
+    # LED de encendido abajo a la derecha del marco.
+    cv.rect(x1 - 6, y1 - 4, x1 - 5, y1 - 3, led)
+
+
+def screen_fill(cv, color):
+    sx0, sy0, sx1, sy1 = SCREEN
+    cv.rect(sx0, sy0, sx1, sy1, color)
+
+
+def cursor(cv, x, y, color):
+    cv.rect(x, y, x + 4, y + 1, color)
+
+
+def prompt_glyph(cv, x, y, color):
+    """'>' de 3x5."""
+    for (dx, dy) in ((0, 0), (1, 1), (2, 2), (1, 3), (0, 4)):
+        cv.p(x + dx, y + dy, color)
+
+
+def terminal(state, f):
+    cv = Canvas(TERMINAL_W, TERMINAL_H)
+    sx0, sy0, sx1, sy1 = SCREEN
+    if state == "off":
+        terminal_body(cv, TL)
+        screen_fill(cv, TS)
+        # Reflejo diagonal tenue de pantalla apagada.
+        for k in range(6):
+            cv.p(sx1 - 10 + k, sy0 + 2 + k, TB)
+            cv.p(sx1 - 6 + k, sy0 + 2 + k, TB)
+        prompt_glyph(cv, sx0 + 3, sy1 - 7, CD)
+        if f == 0:
+            cursor(cv, sx0 + 8, sy1 - 4, CD)
+    elif state == "prompt":
+        terminal_body(cv, CD)
+        screen_fill(cv, TS)
+        cv.rect(sx0, sy0, sx1, sy0, CD)
+        cv.rect(sx0, sy1, sx1, sy1, CD)
+        cv.rect(sx0, sy0, sx0, sy1, CD)
+        cv.rect(sx1, sy0, sx1, sy1, CD)
+        prompt_glyph(cv, sx0 + 3, sy1 - 7, C)
+        if f == 0:
+            cursor(cv, sx0 + 8, sy1 - 4, C)
+    elif state == "boot":
+        terminal_body(cv, C)
+        screen_fill(cv, TS)
+        cy = (sy0 + sy1) // 2
+        half = [1, 5, 11, 18][f]
+        if f == 0:
+            cv.hline(sx0 + 8, sx1 - 8, cy, C)
+            cv.hline(sx0 + 18, sx1 - 18, cy, CC)
+        else:
+            cv.rect(sx0, max(sy0, cy - half), sx1, min(sy1, cy + half), CD if f < 3 else C)
+            cv.hline(sx0, sx1, max(sy0, cy - half), C)
+            cv.hline(sx0, sx1, min(sy1, cy + half), C)
+            cv.hline(sx0 + 4, sx1 - 4, cy, CC)
+    else:  # on
+        terminal_body(cv, C)
+        screen_fill(cv, CD)
+        shift = f * 3
+        for i, (x, w) in enumerate(CODE):
+            y = sy0 + 2 + i * 3 - shift
+            if sy0 + 1 <= y <= sy1 - 10:
+                cv.hline(sx0 + 3 + x, min(sx0 + 3 + x + w, sx1 - 3), y, C if i % 3 else CC)
+        prompt_glyph(cv, sx0 + 3, sy1 - 7, CC)
+        cursor(cv, sx0 + 8, sy1 - 4, CC if f == 0 else C)
+        # Halo cian alrededor del monitor (solo en el cuadro 0: late).
+        if f == 0:
+            x0, y0, x1, y1 = MON
+            cv.hline(x0 + 1, x1 - 1, y0 - 1, C)
+            cv.vline(x0 - 1, y0 + 1, y1 - 1, C)
+            cv.vline(x1 + 1, y0 + 1, y1 - 1, C)
+    return cv.img
+
+
 def outputs():
     """{ruta relativa a assets/sprites: imagen}."""
     out = {}
     for name, imgs in vortex_frames().items():
         for i, im in enumerate(imgs):
             out[f"effects/vortex/{name}_{i:02d}.png"] = im
+    for name, count, _fps, _loop in TERMINAL_ANIMS:
+        for f in range(count):
+            out[f"props/exit_terminal/{name}_{f:02d}.png"] = terminal(name.split("_", 1)[1], f)
     return out
 
 
@@ -151,6 +284,9 @@ def animations():
     anims = []
     for name, scales, _step, fps, loop in VORTEX_ANIMS:
         paths = ["res://assets/sprites/effects/vortex/%s_%02d.png" % (name, i) for i in range(len(scales))]
+        anims.append((name, paths, fps, loop))
+    for name, count, fps, loop in TERMINAL_ANIMS:
+        paths = ["res://assets/sprites/props/exit_terminal/%s_%02d.png" % (name, i) for i in range(count)]
         anims.append((name, paths, fps, loop))
     return anims
 

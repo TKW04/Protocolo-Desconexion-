@@ -12,7 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/popup_blocker.tscn" id="10_popup_blocker"]
 [ext_resource type="PackedScene" path="res://scenes/levels/ability_pickup.tscn" id="11_ability_pickup"]
 [ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="12_charger"]
-[ext_resource type="PackedScene" path="res://scenes/levels/exit_door.tscn" id="13_exit_door"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="13_exit_terminal"]
 [ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="14_glitch_wall"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/alert_bubble.tscn" id="15_alert_bubble"]
 [ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="16_isak"]
@@ -400,10 +400,10 @@ once = true
 text = "Marca todo como leído. Así no te preocupas de nada."
 width_tiles = 1
 
-[node name="puerta_salida" parent="Objects" instance=ExtResource("13_exit_door")]
+[node name="terminal_salida" parent="Objects" instance=ExtResource("13_exit_terminal")]
 position = Vector2(18560, 512)
 height_tiles = 2
-object_id = &"puerta_salida"
+object_id = &"terminal_salida"
 text = "Marcar como leído"
 width_tiles = 1
 level_id = "1-1"

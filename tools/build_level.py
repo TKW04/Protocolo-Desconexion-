@@ -21,7 +21,7 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
   - Objects: la escena del catalogo (data/world<N>_objects.json) en (x, y) * tile
     (esquina superior izquierda de la celda), con cada param asignado a su
     propiedad (`fields`); arrays de 2 numeros -> Vector2, ids -> StringName.
-    exit_door recibe level_id; glitch_wall recibe solid_neighbors calculado del grid.
+    exit_door y exit_terminal reciben level_id; glitch_wall recibe solid_neighbors calculado del grid.
   - Enemies: scenes/enemies/<type>.tscn en los pies (abajo-centro de la celda E);
     `params` va como metadata "params" y GeneratedLevel lo aplica tras _ready
     (patrol_range_px tambien como propiedad; params.health -> max_health, la vida
@@ -394,7 +394,7 @@ def build_scene(level, root=ROOT, warnings=None):
             if prop is None:
                 raise ValueError("%s: param '%s' sin propiedad en el catalogo" % (obj["type"], field))
             props.append((prop, fmt_value(params[field], prop in STRING_NAME_PROPERTIES)))
-        if obj["type"] == "exit_door":
+        if obj["type"] in ("exit_door", "exit_terminal"):
             props.append(("level_id", fmt_string(level["id"])))
         scene.node(name, parent="Objects", instance=scene.ext_resource("PackedScene", entry["scene"]),
                    props=props)

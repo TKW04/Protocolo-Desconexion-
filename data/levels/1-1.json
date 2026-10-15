@@ -26,7 +26,7 @@
 		{"name": "Tramo 4a: Pop-up y Burbuja", "x_from": 206, "x_to": 222},
 		{"name": "Tramo 4b: Burbuja y pop-up en alto", "x_from": 223, "x_to": 249},
 		{"name": "Tramo 4c: Pop-up al final del puente", "x_from": 250, "x_to": 278},
-		{"name": "Cierre: Burbuja reforzada y puerta", "x_from": 279, "x_to": 298}
+		{"name": "Cierre: Burbuja reforzada y terminal", "x_from": 279, "x_to": 298}
 	],
 	"grid": [
 		"#.......................................................................................................................#########.........................................................................................................................................................................##",
@@ -106,7 +106,7 @@
 		{"type": "popup_blocker", "x": 269, "y": 2, "params": {"id": "popup_alto", "text": "Oferta exclusiva solo para ti, solo hoy, solo ahora", "width_tiles": 3, "height_tiles": 4, "close_button_px": [4, 192], "close_button_size_px": 16}},
 		{"type": "charger", "x": 279, "y": 9, "params": {"id": "cargador_2", "amount": 50.0, "reusable": true, "cooldown_s": 20.0}},
 		{"type": "eco_line", "x": 284, "y": 6, "params": {"id": "eco_puerta", "text": "Marca todo como leído. Así no te preocupas de nada.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},
-		{"type": "exit_door", "x": 290, "y": 8, "params": {"id": "puerta_salida", "text": "Marcar como leído", "width_tiles": 1, "height_tiles": 2}},
+		{"type": "exit_terminal", "x": 290, "y": 8, "params": {"id": "terminal_salida", "text": "Marcar como leído", "width_tiles": 1, "height_tiles": 2}},
 		{"type": "eco_line", "x": 293, "y": 6, "params": {"id": "eco_glitch", "text": "Eso es un error de visualización. Ignóralo, por favor.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},
 		{"type": "glitch_wall", "x": 298, "y": 8, "params": {"width_tiles": 1, "height_tiles": 2, "solid_neighbors": 7}}
 	],

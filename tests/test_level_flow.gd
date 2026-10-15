@@ -101,9 +101,10 @@ func _die_and_respawn() -> void:
 
 
 func _complete_level() -> void:
-	var door: ExitDoor = _level().get_node(^"Objects/puerta_salida") as ExitDoor
-	door.enter(_isak)
-	door.advance(LONG_STEP_S)
+	var terminal: ExitTerminal = _level().get_node(^"Objects/terminal_salida") as ExitTerminal
+	assert_true(terminal.activate(_isak), "La terminal se activa")
+	terminal.advance(LONG_STEP_S)
+	terminal.get_vortex().advance(LONG_STEP_S)
 	_main.advance(LONG_STEP_S)
 	_main.advance(LONG_STEP_S)
 

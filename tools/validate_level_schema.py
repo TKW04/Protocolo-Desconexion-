@@ -50,7 +50,7 @@ KNOWN_ABILITIES = {"pulse", "debug", "laser"}
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
-NON_SOLID_PLACED = {"receiver", "exit_door", "charger", "ability_pickup"}
+NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup"}
 
 
 def _is_int(value):
@@ -323,7 +323,7 @@ class LevelValidator:
                 bridges.add(params.get("id"))
             elif kind == "receiver":
                 receivers.append((what, x, y, params.get("target")))
-            elif kind == "exit_door":
+            elif kind in ("exit_door", "exit_terminal"):
                 doors.append((what, x, y, set(cells)))
         for (what, x, y, target) in receivers:
             if target not in bridges:

@@ -1,4 +1,4 @@
-[gd_resource type="SpriteFrames" load_steps=15 format=3]
+[gd_resource type="SpriteFrames" load_steps=25 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_open_00.png" id="1_vortex_open_00"]
 [ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_open_01.png" id="2_vortex_open_01"]
@@ -14,6 +14,16 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_03.png" id="12_vortex_close_03"]
 [ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_04.png" id="13_vortex_close_04"]
 [ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_05.png" id="14_vortex_close_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_off_00.png" id="15_terminal_off_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_off_01.png" id="16_terminal_off_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_prompt_00.png" id="17_terminal_prompt_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_prompt_01.png" id="18_terminal_prompt_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_boot_00.png" id="19_terminal_boot_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_boot_01.png" id="20_terminal_boot_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_boot_02.png" id="21_terminal_boot_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_boot_03.png" id="22_terminal_boot_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_on_00.png" id="23_terminal_on_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/exit_terminal/terminal_on_01.png" id="24_terminal_on_01"]
 
 [resource]
 animations = [{
@@ -73,4 +83,54 @@ animations = [{
 "loop": false,
 "name": &"vortex_close",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_terminal_off_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_terminal_off_01")
+}],
+"loop": true,
+"name": &"terminal_off",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("17_terminal_prompt_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_terminal_prompt_01")
+}],
+"loop": true,
+"name": &"terminal_prompt",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_terminal_boot_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_terminal_boot_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_terminal_boot_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_terminal_boot_03")
+}],
+"loop": false,
+"name": &"terminal_boot",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("23_terminal_on_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_terminal_on_01")
+}],
+"loop": true,
+"name": &"terminal_on",
+"speed": 4.0
 }]

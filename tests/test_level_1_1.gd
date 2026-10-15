@@ -145,7 +145,7 @@ func test_scene_structure_matches_json() -> void:
 	assert_eq(String(banks[0].get(&"object_id")), "power_bank_pulso_amplio")
 	var popup := _object("popup_1") as PopupBlocker
 	assert_eq(popup.close_button_position, Vector2(4, 192), "close_button_px -> Vector2")
-	assert_eq((_object("puerta_salida") as ExitDoor).level_id, "1-1")
+	assert_eq((_object("terminal_salida") as ExitTerminal).level_id, "1-1")
 	assert_eq((_object("glitch_wall_298_8") as GlitchWall).solid_neighbors, 7)
 	# Checkpoint minimo.
 	var checkpoints: Array[Node] = get_tree().get_nodes_in_group(Checkpoint.GROUP)
