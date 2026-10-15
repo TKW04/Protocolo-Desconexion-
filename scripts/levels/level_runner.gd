@@ -3,8 +3,11 @@
 ##
 ## - Carga el nivel actual (GameState.current_level o default_level) como hijo
 ##   instanciando scenes/levels/<id>.tscn (escena generada: no se toca) y deja
-##   el estado de Isak como al empezar: Sync Rate y energia segun start_state,
-##   0 puntos de atencion, sin ultimo punto de sincronizacion y Debug apagado.
+##   el estado de Isak como al empezar: Sync Rate y energia segun start_state
+##   (porcentaje del maximo efectivo, que las mejoras pueden subir), sin ultimo
+##   punto de sincronizacion y Debug apagado. Los puntos de atencion NO se
+##   reinician: son el total acumulado y persistente (decision 2026-10-14); los
+##   ya capturados en el nivel no reaparecen (AttentionPoint).
 ##   Las habilidades las aplica el propio nivel (abilities_available).
 ## - Muerte (Isak.died, al llegar el Sync Rate a 0): espera a que acabe la
 ##   animacion death y death_pause_s, funde a negro, reaparece en el ultimo
@@ -212,9 +215,10 @@ func _reset_player_state(level_id: String) -> void:
 	DebugMode.reset()
 	Engine.time_scale = 1.0
 	GameState.world_time_scale = GameState.WORLD_TIME_SCALE_NORMAL
-	GameState.sync_rate = float(start.get("sync_rate", GameState.SYNC_RATE_MAX))
-	GameState.debug_energy = float(start.get("debug_energy", GameState.DEBUG_ENERGY_MAX))
-	GameState.attention_points = int(start.get("attention_points", 0))
+	var sync_percent: float = float(start.get("sync_rate", GameState.SYNC_RATE_MAX))
+	var energy_percent: float = float(start.get("debug_energy", GameState.DEBUG_ENERGY_MAX))
+	GameState.sync_rate = GameState.get_sync_rate_max() * sync_percent / GameState.SYNC_RATE_MAX
+	GameState.debug_energy = GameState.get_debug_energy_max() * energy_percent / GameState.DEBUG_ENERGY_MAX
 	GameState.clear_last_checkpoint(StringName(level_id))
 
 
@@ -225,7 +229,7 @@ func _respawn(after_death: bool) -> void:
 	DebugMode.reset()
 	Engine.time_scale = 1.0
 	if after_death:
-		GameState.sync_rate = GameState.SYNC_RATE_MAX
+		GameState.sync_rate = GameState.get_sync_rate_max()
 	else:
 		GameState.apply_sync_damage(float(_data.get("fall_sync_penalty", 0.0)))
 	_isak.respawn(at, float(_data.get("respawn_invulnerability_s", 1.0)))

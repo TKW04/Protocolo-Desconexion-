@@ -76,7 +76,7 @@ func activate() -> bool:
 		return false
 	_taken = true
 	_time = 0.0
-	GameState.sync_rate = GameState.SYNC_RATE_MAX
+	GameState.sync_rate = GameState.get_sync_rate_max()
 	GameState.set_last_checkpoint(GameState.current_level, checkpoint_id)
 	_update_frame()
 	activated.emit(checkpoint_id)

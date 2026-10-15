@@ -101,3 +101,18 @@ signal checkpoint_activated(level_id: String, checkpoint_id: StringName)
 ## nivel (red de seguridad), en `position` (pies).
 @warning_ignore("unused_signal")
 signal player_respawned(position: Vector2, after_death: bool)
+
+## Cambian los power banks: `full` completos y `charge` de carga parcial sobre
+## `capacity` (data/power_bank.json). Lo emite GameState.
+@warning_ignore("unused_signal")
+signal power_banks_changed(full: int, charge: float, capacity: float)
+
+## Se ha comprado la mejora permanente `id` (data/upgrades.json). Lo emite
+## GameState.purchase_upgrade.
+@warning_ignore("unused_signal")
+signal upgrade_purchased(id: StringName)
+
+## Isak recoge una recarga (RechargePickup): `kind` es "debug_energy" o
+## "sync_rate" y `amount` lo que valia.
+@warning_ignore("unused_signal")
+signal recharge_collected(kind: StringName, amount: float)

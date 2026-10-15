@@ -94,6 +94,9 @@ func _ready() -> void:
 		push_error("Isak: no se pudieron cargar los datos; Isak queda desactivado.")
 		set_physics_process(false)
 		return
+	# Mejoras permanentes compradas (p. ej. "Pulso amplio"): cambian el valor
+	# efectivo; data/isak_abilities.json no se toca.
+	GameState.apply_upgrades(abilities, "isak_abilities")
 	if input == null:
 		input = ActionPlayerInput.new()
 	_setup_shapes()

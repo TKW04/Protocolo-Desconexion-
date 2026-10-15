@@ -1,0 +1,59 @@
+{
+	"_notes": "Catalogo de MEJORAS PERMANENTES (decision del usuario 2026-10-14, docs/preguntas.md; propuesta en docs/propuesta-1-1-ampliado.md §2). Se compran en el hub con puntos de atencion (y power banks completos si cost.power_banks > 0); mientras no exista el hub real, en la pantalla provisional (scenes/hub/hub_placeholder.tscn). Una mejora comprada se guarda en user://save.json y se aplica sobre el valor EFECTIVO; los JSON base (isak_abilities.json, debug_mode.json) y las constantes de GameState NO se modifican. Catalogo extensible: para anadir una mejora basta otra entrada. Campos: id (identificador, ingles), name (texto del juego), label y unit (texto del detalle en el hub: '<label>: <base><unit> a <value><unit>'), target ('<origen>.<clave>' que modifica: game_state.sync_rate_max | game_state.debug_energy_max | game_state.energy_per_attention_point | debug_mode.<clave de debug_mode.json> | isak_abilities.<clave de isak_abilities.json>), value (valor nuevo; si varias compradas tocan el mismo target gana la ultima del catalogo), cost.attention_points y cost.power_banks (se gastan al comprar). Todos los valores son PROPUESTA de la propuesta del 1-1 ampliado; se ajustan jugando. Aun no hay requisito de 'desbloqueo por secreto' (la propuesta lo sugeria; no aprobado todavia).",
+	"upgrades": [
+		{
+			"id": "wide_pulse",
+			"name": "Pulso amplio",
+			"label": "Radio del pulso",
+			"unit": " px",
+			"target": "isak_abilities.pulse_radius_px",
+			"value": 112.0,
+			"cost": {"attention_points": 15, "power_banks": 0}
+		},
+		{
+			"id": "reinforced_sync",
+			"name": "Sync reforzado",
+			"label": "Sync Rate máximo",
+			"unit": " %",
+			"target": "game_state.sync_rate_max",
+			"value": 120.0,
+			"cost": {"attention_points": 30, "power_banks": 1}
+		},
+		{
+			"id": "efficient_debug",
+			"name": "Debug eficiente",
+			"label": "Gasto del Debug",
+			"unit": "/s",
+			"target": "debug_mode.drain_per_second",
+			"value": 15.0,
+			"cost": {"attention_points": 50, "power_banks": 1}
+		},
+		{
+			"id": "extended_battery",
+			"name": "Batería ampliada",
+			"label": "Energía máxima",
+			"unit": "",
+			"target": "game_state.debug_energy_max",
+			"value": 150.0,
+			"cost": {"attention_points": 30, "power_banks": 1}
+		},
+		{
+			"id": "quick_start",
+			"name": "Arranque rápido",
+			"label": "Carga del Debug",
+			"unit": " s",
+			"target": "debug_mode.activation_hold_s",
+			"value": 0.5,
+			"cost": {"attention_points": 20, "power_banks": 0}
+		},
+		{
+			"id": "improved_recharge",
+			"name": "Recarga mejorada",
+			"label": "Energía por punto",
+			"unit": "",
+			"target": "game_state.energy_per_attention_point",
+			"value": 15.0,
+			"cost": {"attention_points": 25, "power_banks": 0}
+		}
+	]
+}

@@ -8,7 +8,11 @@
 ##   de sincronizacion y, con --die (por defecto), fuerza una muerte (Sync Rate 0)
 ##   tras tocarlo y comprueba que reaparece alli con el 100 %; entra por la puerta,
 ##   comprueba la pantalla provisional del hub (nivel completado, 1-2 desbloqueado,
-##   puntos) y pulsa salto (accion jump) para reiniciar desde cero.
+##   puntos) y pulsa salto (accion jump) para reiniciar: Sync Rate y objetos
+##   desde cero, pero los puntos de atencion se conservan y los ya capturados no
+##   reaparecen (decision 2026-10-14).
+## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH
+## si esta definida): nunca toca el user://save.json del jugador.
 ## Termina con codigo 0 si todo sale bien y 1 si algo falla (con el motivo).
 ## Lo lanza tools/play_level_bot.gd (los scripts -s no pueden nombrar autoloads
 ## ni clases que los usen al compilar, asi que la logica va aqui).
@@ -27,6 +31,7 @@ const POPUP_STOP_X: float = 7110.0
 ## Distancia (px) entre el celular de Isak y el costado de la Burbuja para lanzar el pulso.
 const BUBBLE_PULSE_GAP: float = 70.0
 const LAYER_WORLD: int = 1
+const BOT_SAVE_PATH: String = "user://bot_save.json"
 
 var _input := PlayerInput.new()
 var _runner: LevelRunner
@@ -37,6 +42,8 @@ var _hits: int = 0
 var _die: bool = true
 var _died_done: bool = false
 var _log: PackedStringArray = []
+## Puntos de atencion del mapa al empezar (guardado limpio).
+var _points_total: int = 0
 
 
 ## Fin del recorrido: 0 si todo ha ido bien, 1 si algo ha fallado.
@@ -48,6 +55,8 @@ var _shots: Dictionary = {}
 
 
 func _ready() -> void:
+	var env_path: String = OS.get_environment(GameState.SAVE_PATH_ENV)
+	GameState.use_save_path(BOT_SAVE_PATH if env_path.is_empty() else env_path, true)
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_die = not args.has("--no-die")
 	var at: int = args.find("--shots")
@@ -115,6 +124,7 @@ func _play() -> bool:
 	var checkpoint: Checkpoint = level.get_node(^"Checkpoints/sync_1")
 	var bubble: AlertBubble = level.get_node(^"Enemies/burbuja_1")
 	var door: ExitDoor = level.get_node(^"Objects/puerta_salida")
+	_points_total = level.get_node(^"AttentionPoints").get_child_count()
 	var best_x: float = 0.0
 	var best_frame: int = 0
 	var announced: Dictionary = {}
@@ -254,10 +264,17 @@ func _hub_and_restart() -> bool:
 	await get_tree().physics_frame
 	var bridge: PulseBridge = _runner.get_level().get_node(^"Objects/puente_1")
 	var popup: PopupBlocker = _runner.get_level().get_node(^"Objects/popup_1")
-	if GameState.attention_points != 0 or GameState.sync_rate != GameState.SYNC_RATE_MAX \
+	if GameState.attention_points != points or GameState.sync_rate != GameState.SYNC_RATE_MAX \
 			or bridge.is_extended() or not popup.is_open():
-		return _fail("el reinicio no empieza desde cero")
-	_note("reinicio desde cero: Sync 100 %, 0 puntos, puente retraido, pop-up abierto")
+		return _fail("el reinicio no empieza desde cero (o pierde los puntos)")
+	var left: int = 0
+	for node: Node in _runner.get_level().get_node(^"AttentionPoints").get_children():
+		if node is AttentionPoint and not node.is_queued_for_deletion():
+			left += 1
+	var captured: int = GameState.get_captured_points(&"1-1").size()
+	if captured != points or left + captured != _points_total:
+		return _fail("puntos capturados: %d guardados, %d quedan en el mapa" % [captured, left])
+	_note("reinicio: Sync 100 %%, %d puntos conservados, %d capturados no reaparecen, puente retraido, pop-up abierto" % [points, captured])
 	if not _shots_dir.is_empty():
 		_shot_in("9_reinicio", 40)
 		for i: int in 45:

@@ -85,10 +85,21 @@ func step(real_delta: float, held: bool) -> void:
 			if pressed:
 				_set_active(false)
 	if was_active and is_active():
-		GameState.debug_energy -= config.drain_per_second * real_delta
+		GameState.debug_energy -= get_drain_per_second() * real_delta
 		if GameState.debug_energy <= GameState.DEBUG_ENERGY_MIN:
 			_set_active(false)
 	_update_intensity(real_delta)
+
+
+## Gasto de energia por segundo real: data/debug_mode.json con las mejoras
+## compradas ("Debug eficiente"). config no se modifica.
+func get_drain_per_second() -> float:
+	return GameState.effective_value(&"debug_mode.drain_per_second", config.drain_per_second)
+
+
+## Segundos de pulsacion larga para activar, con mejoras ("Arranque rapido").
+func get_activation_hold_s() -> float:
+	return GameState.effective_value(&"debug_mode.activation_hold_s", config.activation_hold_s)
 
 
 ## Requisitos para entrar: habilidad desbloqueada y energia por encima de 0.
@@ -138,7 +149,7 @@ func reset() -> void:
 ## Suma tiempo a la pulsacion larga; al llegar a `activation_hold_s` entra.
 func _charge(real_delta: float) -> void:
 	_hold_s += real_delta
-	var hold_s: float = config.activation_hold_s
+	var hold_s: float = get_activation_hold_s()
 	if hold_s <= 0.0 or _hold_s >= hold_s - HOLD_EPSILON_S:
 		_set_progress(PROGRESS_FULL)
 		_hold_s = 0.0

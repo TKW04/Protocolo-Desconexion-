@@ -40,10 +40,8 @@ func after_each() -> void:
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _saved_debug)
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
 	GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
-	GameState.attention_points = 0
+	GameState.reset_progress()
 	GameState.last_checkpoint.clear()
-	GameState.completed_levels.clear()
-	GameState.unlocked_levels.clear()
 
 
 # --- Utilidades ---
@@ -145,7 +143,7 @@ func test_main_scene_is_project_main_and_loads_1_1_with_initial_state() -> void:
 	assert_eq(_level().level_id, "1-1")
 	assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX)
 	assert_eq(GameState.debug_energy, 100.0)
-	assert_eq(GameState.attention_points, 0)
+	assert_eq(GameState.attention_points, 5, "Los puntos acumulados se conservan (2026-10-14)")
 	assert_eq(GameState.get_last_checkpoint(&"1-1"), &"")
 	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Pulso en el 1-1")
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_DEBUG), "Sin Debug en el 1-1")
@@ -345,7 +343,7 @@ func test_level_completed_goes_to_hub_and_restart_resets_everything() -> void:
 	assert_eq(_main.get_level_id(), "1-1")
 	await wait_physics_frames(5)
 	assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX)
-	assert_eq(GameState.attention_points, 0, "Puntos a 0")
+	assert_eq(GameState.attention_points, 7, "Los puntos acumulados se conservan (2026-10-14)")
 	assert_eq(GameState.get_last_checkpoint(&"1-1"), &"", "Sin checkpoint")
 	assert_false((_level().get_node(^"Objects/puente_1") as PulseBridge).is_extended(), "Puente retraido")
 	assert_true((_level().get_node(^"Objects/popup_1") as PopupBlocker).is_open(), "Pop-up abierto")
