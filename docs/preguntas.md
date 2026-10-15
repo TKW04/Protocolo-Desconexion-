@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10, A11. Aplazado: V15. En C9 la propuesta de una escala de dificultad global única sigue sin confirmar (abierta). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16.
+**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10, A11. Aplazado: V15. En C9 la dificultad ya no se elige: la sustituye una dificultad que evoluciona con el juego (confirmado el 2026-10-14); cómo evoluciona sigue abierto (ver «Decisiones del 2026-10-14 (2)»). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -74,6 +74,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Propuesta:** considerar §14 como el estado vigente (pendiente de revisión) e interpretar toda la dificultad como escala global.
 - **Por qué:** §14 es la sección más reciente y detallada, y una sola escala sirve de guía para la duración y la densidad de peligros.
 - **Decisión (2026-10-14):** se dejan sin cambios; se mejorarán durante el desarrollo.
+- **Decisión (2026-10-14, actualización):** la dificultad **ya no se elige**. C9 queda sustituida por una dificultad que evoluciona con el juego (confirmado por el usuario). Cómo evoluciona está abierto; hay una propuesta en discusión de tres vueltas (ver «Decisiones del 2026-10-14 (2)», al final).
 
 ---
 
@@ -444,8 +445,41 @@ Respuestas del usuario a las dudas 1, 2 y 4 de `docs/propuesta-1-1-ampliado.md` 
 - **Decisión 4, puntos de atención:** no se pueden volver a capturar en el mismo mapa. Se guardan por nivel los ids de los puntos ya capturados (el nombre del nodo generado, p. ej. `Point_8_9`, o `point_id`), así que no reaparecen ni cuentan al rejugar. El total acumulado persiste entre partidas: el flujo de nivel ya no lo pone a 0 al empezar o reiniciar.
 - **Decisión 5, guardado:** `user://save.json` (`GameState` + `SaveFile`), con esquema versión 1: `version`, `attention_points`, `captured_points` (nivel → ids), `upgrades_purchased`, `power_banks` (`full`, `charge`), `completed_levels` y `unlocked_levels`. La escritura es atómica: se escribe un `.tmp` y se renombra (si queda un `.tmp` huérfano, se recupera). Si el archivo no existe, se empieza de cero. Si está corrupto o tiene una versión desconocida, se aparta como `save.json.corrupt` y se empieza de cero. Los campos con tipos raros se ignoran. Se guarda al final del cuadro (agrupando cambios) al capturar un punto, cargar un power bank, comprar una mejora y completar o desbloquear un nivel. Las pruebas GUT usan `user://test_save.json` y el bot `user://bot_save.json`, así que nunca tocan el guardado real. La variable de entorno `ISAK_SAVE_PATH` cambia la ruta.
 - **Dudas abiertas:**
-  1. ¿La energía de los puntos de atención también debe desbordar al power bank? Ahora sí (`attention_point_energy_overflows: true`). Con el 1-1 actual y la barra llena, una partida da 17 × 10 + 25 = 195, casi un power bank.
-  2. Los enemigos reaparecen al rejugar un nivel, así que sus drops se pueden farmear para conseguir power banks. ¿Se limita (drops una sola vez por enemigo, como los puntos) o se deja así?
+  1. ¿La energía de los puntos de atención también debe desbordar al power bank? Ahora sí (`attention_point_energy_overflows: true`). Con el 1-1 actual y la barra llena, una partida da 17 × 10 + 25 = 195, casi un power bank. **Resuelta el 2026-10-14:** no; solo desbordan los drops (ver «Decisiones del 2026-10-14 (2)»).
+  2. Los enemigos reaparecen al rejugar un nivel, así que sus drops se pueden farmear para conseguir power banks. ¿Se limita (drops una sola vez por enemigo, como los puntos) o se deja así? **Resuelta el 2026-10-14:** se deja así por ahora.
   3. ¿Las mejoras deben desbloquearse antes con un secreto, como sugería la propuesta, o basta con pagarlas, como ahora?
   4. Aspecto provisional: las recargas son dibujos simples (pila en el color del Debug y cruz blanca) y el contador del HUD usa un icono dibujado. ¿Se hacen sprites propios y se integra el contador en la barra del HUD definitivo?
   5. Con "Sync reforzado", el umbral de Sync Rate bajo sigue en 20 de Sync Rate absoluto, no en el 20 % del máximo. ¿Se prefiere en porcentaje?
+
+## Decisiones del 2026-10-14 (2): power banks, enemigos, dificultad y propuesta de tres vueltas
+
+Valores de movimiento: sin cambios.
+
+- **Decisión 1, el sobrante solo desborda desde los drops:** la energía de Debug sobrante (barra llena) solo carga el power bank cuando viene de los **drops** de enemigos y jefes. Los puntos de atención llenan la barra, pero no desbordan. `data/power_bank.json`: `attention_point_energy_overflows` pasa de `true` a `false` (si falta la clave, `GameState` también usa `false`). Prueba: `test_attention_point_energy_does_not_overflow`.
+- **Decisión 2, un power bank llega vacío:** un power bank comprado u obtenido (p. ej. el `power_bank_pickup` de mapa) se recibe **vacío** (carga 0) y se llena con el sobrante de los drops. `GameState` separa ahora `power_banks` (completos; son los únicos que pagan mejoras), `empty_power_banks` (vacíos o cargándose) y `power_bank_charge` (carga del vacío que se está llenando). `add_empty_power_bank()` suma uno vacío; `collect_power_bank_pickup()` lo usa. Cada `capacity_energy` (200) de sobrante llena un vacío, que pasa a completo. El guardado añade `power_banks.empty` (sin cambiar la versión 1); un guardado antiguo con carga y sin `empty` conserva la carga en un power bank vacío. El HUD muestra el contador también si solo hay power banks vacíos.
+- **Decisión 3, enemigos y farmeo:** los enemigos reaparecen al rejugar un nivel y sus drops se pueden farmear. Se deja así por ahora.
+- **Decisión 4, dificultad:** la dificultad ya no se elige. C9 queda sustituida por una dificultad que evoluciona con el juego (el usuario lo confirma).
+- **Dudas abiertas (power banks):**
+  1. **Interpretación de Claude, pendiente de confirmar:** sin ningún power bank vacío, el sobrante de los drops **se pierde** (antes creaba power banks de la nada). ¿Es así?
+  2. Al pagar una mejora, el power bank completo se gasta y desaparece (no vuelve como vacío). ¿Es así, o se recarga y se reutiliza?
+  3. Hoy no hay forma de **comprar** un power bank: el catálogo `data/upgrades.json` no tiene esa entrada. ¿Dónde se compra y cuánto cuesta?
+  4. El texto de `data/world1_objects.json` (`power_bank_pickup`) y de `scripts/levels/power_bank_pickup.gd` aún dice "power bank completo"; hay que actualizarlo a "vacío" cuando se cierre el trabajo del 1-1 ampliado.
+
+### Propuesta en discusión: tres vueltas a los 18 mapas y "rollback" (sin implementar)
+
+**Estado: propuesta en discusión, pendiente de aprobar.** No se implementa nada. No se añade a `06-finales.md` ni a `03-historia.md` porque choca con texto aprobado: §14.1 dice que al terminar la fase 3 del combate final Isak Optimizado queda de rodillas y llega el momento de decisión (Final A o B); aquí, en las dos primeras vueltas, el jefe lanza un rollback antes de eso.
+
+- **Idea del usuario:** el juego se recorre **tres vueltas** de los 18 mapas (6 mundos × 3 niveles): Fácil, Normal y Difícil máxima.
+- **Rollback:** al estar a punto de morir, el jefe final lanza un "rollback" que reinicia los mapas con enemigos más difíciles y puntos débiles distintos. En la **tercera vuelta**, el jefe engaña al jugador para que sea él quien lance el rollback.
+- **Único final real:** terminar el juego en la dificultad máxima.
+- **Qué se conserva:** el rollback "falla", así que Isak conserva sus habilidades. Los puntos de atención reaparecen para comprar las habilidades nuevas, pero solo en un ciclo de dificultad superior.
+- **Mapas:** en cada rollback los mapas pueden fallar, cambiar o destruirse (por pensar).
+- **Prioridad de producción:** primero los 18 mapas de la primera vuelta en modo fácil, sin que se puedan conseguir todas las mejoras en esa vuelta.
+- **Preguntas abiertas:**
+  1. ¿Qué cambia narrativamente en cada vuelta (Eco, aliados, amigos, recuerdos)? Lo piensan juntos el usuario y Claude.
+  2. ¿Cómo encaja con §14.1? ¿El momento de decisión y los finales A y B solo llegan al vencer al jefe en la tercera vuelta? Si en la tercera el jugador lanza el rollback engañado, ¿cuándo y cómo se llega al final real?
+  3. ¿Qué significa en el juego "fallar, cambiar o destruirse" para un mapa? ¿Cambia la geometría o solo los enemigos, los peligros y los puntos débiles?
+  4. Puntos débiles distintos en cada vuelta: ¿siguen la regla de color (rojo/carmín) y el telegrafiado de 6 a 12 cuadros?
+  5. Guardado: los puntos de atención capturados se apuntan por nivel; para que reaparezcan en una vuelta superior habría que guardar también la vuelta. ¿Pasa lo mismo con los power banks de mapa y los secretos?
+  6. ¿Qué mejoras se pueden conseguir en cada vuelta y cuáles quedan para las siguientes?
+  7. ¿Cómo convive esta progresión con la dificultad por nivel que dan los `mundo-N` ("X de 5")? ¿Es la base de la primera vuelta?
