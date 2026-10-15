@@ -64,6 +64,15 @@ func test_obtained_power_bank_arrives_empty() -> void:
 	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "Carga 0")
 
 
+func test_map_pickup_gives_an_empty_power_bank() -> void:
+	assert_true(GameState.collect_power_bank_pickup(&"1-1", &"power_bank_a"))
+	assert_eq(GameState.empty_power_banks, 1)
+	assert_eq(GameState.power_banks, 0)
+	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS)
+	assert_false(GameState.collect_power_bank_pickup(&"1-1", &"power_bank_a"), "Una sola vez")
+	assert_eq(GameState.empty_power_banks, 1)
+
+
 func test_overflow_is_lost_without_empty_power_banks() -> void:
 	var unused: float = GameState.add_power_bank_charge(50.0)
 	assert_almost_eq(unused, 50.0, EPS)
@@ -273,4 +282,27 @@ func test_captured_points_do_not_reappear_when_replaying() -> void:
 			alive += 1
 	assert_eq(alive, total - 1, "El punto capturado no reaparece")
 	assert_eq(GameState.attention_points, 1, "Ni cuenta otra vez")
+	level.free()
+
+
+func test_map_power_bank_pickup_in_level_gives_empty_bank_once() -> void:
+	var level := LEVEL_SCENE.instantiate() as GeneratedLevel
+	add_child(level)
+	var pickup := level.get_node(^"Objects/power_bank_a") as PowerBankPickup
+	assert_not_null(pickup, "Power bank del secreto A en el 1-1")
+	assert_eq(pickup.get_level_id(), &"1-1")
+	assert_eq(pickup.get_pickup_id(), &"power_bank_a")
+	pickup._on_body_entered(level.get_isak())
+	assert_true(pickup.is_taken())
+	assert_eq(GameState.empty_power_banks, 1, "Llega vacio")
+	assert_eq(GameState.power_banks, 0)
+	assert_true(GameState.is_pickup_collected(&"1-1", &"power_bank_a"))
+	assert_true((GameState.to_save_data()["collected_pickups"] as Dictionary).has("1-1"), "Se guarda")
+	level.free()
+	# Rejugar: el power bank recogido no reaparece.
+	level = LEVEL_SCENE.instantiate() as GeneratedLevel
+	add_child(level)
+	var again: Node = level.get_node_or_null(^"Objects/power_bank_a")
+	assert_true(again == null or again.is_queued_for_deletion(), "No reaparece")
+	assert_eq(GameState.empty_power_banks, 1)
 	level.free()

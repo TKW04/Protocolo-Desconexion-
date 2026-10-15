@@ -114,6 +114,9 @@ var power_bank_charge: float = 0.0:
 ## Ids de puntos de atencion ya capturados por nivel (id de nivel -> {id: true}).
 ## No reaparecen ni cuentan al rejugar el nivel.
 var captured_points: Dictionary[StringName, Dictionary] = {}
+## Ids de power banks de mapa (power_bank_pickup) ya recogidos por nivel (id de
+## nivel -> {id: true}). Como los puntos: no reaparecen al rejugar el nivel.
+var collected_pickups: Dictionary[StringName, Dictionary] = {}
 ## Mejoras compradas (id de data/upgrades.json -> true).
 var purchased_upgrades: Dictionary[StringName, bool] = {}
 
@@ -245,6 +248,24 @@ func get_captured_points(level: StringName) -> Array[StringName]:
 	for id: String in names:
 		out.append(StringName(id))
 	return out
+
+
+## Recoge el power bank de mapa `pickup_id` del nivel `level`: suma un power
+## bank VACIO (decision 2026-10-14; se carga con el sobrante de los drops) y lo apunta como recogido (persistente). Falso si ya estaba
+## recogido. Sin nivel (escenas de prueba) no se apunta nada y siempre cuenta.
+func collect_power_bank_pickup(level: StringName, pickup_id: StringName) -> bool:
+	if level != NO_LEVEL:
+		if is_pickup_collected(level, pickup_id):
+			return false
+		if not collected_pickups.has(level):
+			collected_pickups[level] = {}
+		collected_pickups[level][pickup_id] = true
+	add_empty_power_bank()
+	return true
+
+
+func is_pickup_collected(level: StringName, pickup_id: StringName) -> bool:
+	return collected_pickups.has(level) and collected_pickups[level].has(pickup_id)
 
 
 ## Recarga de energia de Debug (drops de enemigos y jefes, puntos de atencion).
@@ -425,6 +446,7 @@ static func is_running_tests() -> bool:
 func reset_progress() -> void:
 	attention_points = ATTENTION_POINTS_MIN
 	captured_points.clear()
+	collected_pickups.clear()
 	purchased_upgrades.clear()
 	power_banks = 0
 	empty_power_banks = 0
@@ -470,10 +492,14 @@ func to_save_data() -> Dictionary:
 		for id: StringName in get_captured_points(level):
 			ids.append(String(id))
 		captured[String(level)] = ids
+	var pickups: Dictionary = {}
+	for level: StringName in collected_pickups:
+		pickups[String(level)] = _keys_sorted(collected_pickups[level])
 	return {
 		"version": SAVE_VERSION,
 		"attention_points": attention_points,
 		"captured_points": captured,
+		"collected_pickups": pickups,
 		"upgrades_purchased": _keys_sorted(purchased_upgrades),
 		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
 		"completed_levels": _keys_sorted(completed_levels),
@@ -500,6 +526,14 @@ func apply_save_data(data: Dictionary) -> bool:
 				if id is String:
 					ids_set[StringName(id)] = true
 			captured_points[StringName(String(level))] = ids_set
+	var pickups: Variant = data.get("collected_pickups", {})
+	if pickups is Dictionary:
+		for level: Variant in pickups:
+			var picked: Dictionary = {}
+			for id: StringName in _string_names(pickups[level]):
+				picked[id] = true
+			if not picked.is_empty():
+				collected_pickups[StringName(String(level))] = picked
 	for id: StringName in _string_names(data.get("upgrades_purchased", [])):
 		if UpgradeCatalog.shared().has(id):
 			purchased_upgrades[id] = true

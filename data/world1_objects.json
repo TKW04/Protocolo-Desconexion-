@@ -97,7 +97,26 @@
 				"once": true
 			},
 			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}
+		},
+		"power_bank_pickup": {
+			"scene": "res://scenes/levels/power_bank_pickup.tscn",
+			"description": "Power bank de mapa (secretos del 1-1 ampliado, 2026-10-14): coleccionable que suma un power bank VACIO (carga 0; se carga con el sobrante de energia de los drops de enemigos, data/power_bank.json; solo sirve para pagar mejoras, data/upgrades.json) al tocarlo Isak. No es solido. Como los puntos de atencion, no se vuelve a recoger en el mismo mapa: el id se guarda por nivel en user://save.json (collected_pickups). Aspecto PROVISIONAL dibujado por codigo (seccion power_bank_pickup).",
+			"required": ["id"],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}}
 		}
+	},
+	"power_bank_pickup": {
+		"_notes": "PROPUESTA (2026-10-14). Dibujo provisional sin sprite: pila de size_px (centrada en la celda, borne de 8x4 arriba) con contorno outline (noche_profunda), cuerpo body (banner_blanco) y franja fill (debug_cian, el color del Debug del Mundo 1: admitido por ser interactivo). Flota bob_px a bob_hz (tiempo del mundo). La zona de recogida es el rectangulo de la pila.",
+		"size_px": [24, 36],
+		"bob_px": 4.0,
+		"bob_hz": 1.5,
+		"outline": "#0b0e1a",
+		"body": "#f2f4f8",
+		"fill": "#3dfff5"
 	},
 	"bridge": {
 		"_notes": "PROPUESTA. step_s: tiempo entre tiles al extenderse (tiempo del mundo: x0,5 con el Debug). collision_height_px: grosor de la tabla solida, arriba de la celda (igual que one_way_collision_height_px del tileset). one_way: false (docs no dicen que sea de una via).",
