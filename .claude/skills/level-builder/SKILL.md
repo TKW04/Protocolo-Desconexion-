@@ -64,9 +64,13 @@ Cada nivel tiene su ficha en `docs/mundo-N-*.md` (el archivo del mundo correspon
 
 `tools/validate_level_schema.py` comprueba solo la forma del archivo (no la alcanzabilidad): campos y tipos, grid rectangular con caracteres de la leyenda, exactamente un `P` y un `G`, listas coincidentes con las celdas `C`, `E` y `S`, objetos del catálogo con sus params obligatorios, ids únicos y sin pinchos en `P` ni junto a una `C`. Sus pruebas (`tests/test_level_schema.py`) se ejecutan desde `tools/run_tests.sh`.
 
+## Generador de la escena
+
+`python3 tools/build_level.py data/levels/<id>.json` escribe `scenes/levels/<id>.tscn` (raíz `GeneratedLevel`, `scripts/levels/generated_level.gd`): TileMapLayer con auto-tile según `data/tileset_mundo<N>.json`, pinchos con Area de daño (`data/hazards.json`), plataformas ocultas, puntos de atención, checkpoints mínimos, objetos del catálogo con sus params, enemigos con sus `params`, Isak con los límites de cámara del grid, HUD y cuadro de Eco. Es idempotente: no edites la escena a mano, regenera. `--check` sale con 1 si la escena no está al día (lo usa `tools/run_tests.sh`).
+
 ## Validación de alcanzabilidad
 
-Escribe `tools/validate_level.py` que lea `data/isak_physics.json` (los mismos valores que usa el juego) y compruebe:
+`python3 tools/validate_level.py data/levels/<id>.json [--json] [--limit 0.85] [--jump-efficiency 0.92] [--run]` (pruebas en `tests/test_validate_level.py`, se ejecuta desde `tools/run_tests.sh`). Lee `data/isak_physics.json` (los mismos valores que usa el juego) y comprueba:
 
 1. Existe un camino desde `P` hasta `G`.
 2. Cada `C` es alcanzable desde la anterior o desde `P`.
@@ -75,6 +79,8 @@ Escribe `tools/validate_level.py` que lea `data/isak_physics.json` (los mismos v
 5. No hay pinchos en el punto de aparición ni en el primer tile de un checkpoint.
 
 El script termina con código distinto de cero si algo falla, y explica qué fila y columna causan el problema.
+
+Además modela los objetos que hacen de puerta (puente tras su receptor, pop-up hasta que el pulso alcance su botón, Burbuja bajo un techo bajo hasta aturdirla), avisa si una puerta no es obligatoria y busca soft-locks. Informa del camino (lista de acciones) y del margen mínimo. La altura real del salto es la nominal × `--jump-efficiency` (0,92, medido a 60 Hz) y no cuenta con el coyote time.
 
 ## Criterios por nivel
 
