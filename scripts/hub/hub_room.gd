@@ -14,12 +14,17 @@
 ## Estaciones (stations: escena HubStation en una celda) y huecos apagados del
 ## dock (dormant: Calc dormida sin logica aun y siluetas de Notas, Linterna y
 ## Papelera) se crean desde los datos, con arte PROVISIONAL (HubProvisionalArt)
-## en un nodo "Visual" sustituible por el arte final (`frames`).
+## en un nodo "Visual" sustituible por el arte final (`frames`). La copia local
+## (CopyLocalStation) guarda; mientras el hub esta abierto, el aviso al salir
+## con cambios ofrece guardar (grupo QuitGuard.SAVE_STATION_GROUP).
 ## AUN NO esta en el flujo del juego (paso 9): LevelRunner sigue llevando a
 ## hub_placeholder. Se prueba abriendo scenes/hub/hub.tscn o con
 ## tools/render_hub.gd.
 class_name HubRoom
 extends Node2D
+
+## Estacion donde se guarda (copia local).
+const SAVE_STATION_ID: StringName = &"copia_local"
 
 ## Isak termino de llegar (tiene el control).
 signal arrived
@@ -62,6 +67,7 @@ func _ready() -> void:
 	_build_room()
 	_build_dormant()
 	_build_stations()
+	add_to_group(QuitGuard.SAVE_STATION_GROUP)
 	if bool(_room.get("refill_on_enter", true)):
 		GameState.refill_debug_energy()
 		GameState.sync_rate = GameState.get_sync_rate_max()
@@ -72,6 +78,12 @@ func _ready() -> void:
 
 
 # --- Consultas ---
+
+## Se puede guardar aqui (QuitGuard: el aviso al salir ofrece «Guardar y
+## salir»): el hub tiene la estacion copia local.
+func can_save_now() -> bool:
+	return is_inside_tree() and get_station(SAVE_STATION_ID) != null
+
 
 func get_isak() -> Isak:
 	return _isak

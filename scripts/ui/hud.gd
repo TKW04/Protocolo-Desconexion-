@@ -481,8 +481,10 @@ func is_airplane_mode_shown() -> bool:
 	return _hub_mode and _airplane.visible and not _signal.visible
 
 
+## El indicador ocupa siempre su sitio (la fila no se mueve al guardar): se
+## oculta con la opacidad.
 func is_unsaved_indicator_shown() -> bool:
-	return _hub_mode and _unsaved_box.visible
+	return _hub_mode and _unsaved_box.modulate.a > 0.0
 
 
 func get_unsaved_text() -> String:
@@ -495,7 +497,7 @@ func get_unsaved_color() -> Color:
 
 func _on_unsaved_changes_changed(has_changes: bool) -> void:
 	if _unsaved_box != null:
-		_unsaved_box.visible = has_changes
+		_unsaved_box.modulate.a = 1.0 if has_changes else 0.0
 
 
 func _on_debug_activation_progress_changed(progress: float) -> void:

@@ -31,7 +31,9 @@
 		"page_dot_row": 10,
 		"refill_on_enter": true,
 		"abilities_available": {"pulse": true, "debug": false},
-		"stations": [],
+		"stations": [
+			{"id": "copia_local", "node": "CopiaLocal", "scene": "res://scenes/hub/copy_local_station.tscn", "cell": [1, 7]}
+		],
 		"dormant": [
 			{"id": "calc", "node": "Calc", "kind": "calc_dormant", "col": 7, "size_px": [64, 96]},
 			{"id": "notas", "node": "SlotNotas", "kind": "slot", "col": 10, "size_px": [64, 96]},
@@ -50,6 +52,41 @@
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 12,
 		"font_key_color": "#f2f4f8"
+	},
+	"copy_local": {
+		"_notes": "Estacion copia local (CopyLocalStation + CopyLocalPanel; propuesta §4.2 y §4.3). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), vuelta (lap_names), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo glifos de la fuente de textos.",
+		"level_data_pattern": "res://data/levels/%s.json",
+		"save_flash_s": 0.3,
+		"texts": {
+			"title": "Copia local",
+			"confirm_title": "¿Guardar copia local?",
+			"last_level": "Último nivel: %s",
+			"level_with_id": "%s (%s)",
+			"no_level": "ninguno",
+			"points": "Puntos de atención: %d",
+			"lap": "Vuelta %d (%s)",
+			"lap_names": {"1": "Easy", "2": "Normal", "3": "Hard"},
+			"saved_at": "Última copia: %s",
+			"never_saved": "nunca",
+			"status_unsaved": "Sin guardar",
+			"status_saved": "Todo guardado",
+			"option_save": "Guardar",
+			"option_back": "Volver",
+			"option_yes": "Sí, guardar",
+			"option_no": "No",
+			"message_saved": "Copia guardada",
+			"message_nothing_to_save": "Todo está guardado",
+			"message_save_failed": "No se pudo guardar",
+			"help": "Arriba/abajo: elegir. Pulso: aceptar. Salto: volver"
+		},
+		"colors": {
+			"summary": "texto_tenue",
+			"points": "ambar",
+			"unsaved": "ambar",
+			"saved": "texto_tenue",
+			"message": "texto_claro",
+			"message_saved": "acento_cian"
+		}
 	},
 	"station": {
 		"_notes": "HubStation (patron de ExitTerminal, data/world1_objects.json exit_terminal). Medidas para una estacion de 64x128 (1x2 tiles; se escalan con su tamano). prompt_zone_px: zona [x, y, ancho, alto] desde la esquina superior izquierda en la que Isak 'esta cerca' (1,5 tiles a cada lado): prompt y tecla del pulso. hit_rect_px: zona que el circulo del pulso debe tocar. Tecla: primera tecla de pulse_action en el Input Map (G) sobre una placa key_plate_color con borde key_border_color (roles de colors), a key_gap_px sobre top_px, con un bote de key_bob_px cada key_bob_s. Al abrir: destello (modulate flash_modulate, open_flash_s) e Isak de espaldas (face_back). Al cerrar, Isak sigue de espaldas return_physics_frames pasos de fisica (el salto que cierra el panel no le hace saltar) y luego face_side().",
