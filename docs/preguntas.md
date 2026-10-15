@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-14):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, A4, A8, A10, A11. Aplazado: V15. En C9 la dificultad ya no se elige: la sustituye una dificultad que evoluciona con el juego (confirmado el 2026-10-14); cómo evoluciona sigue abierto (ver «Decisiones del 2026-10-14 (2)»). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V12, V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16.
+**Estado (2026-10-15):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11. Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -75,7 +75,8 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Propuesta:** considerar §14 como el estado vigente (pendiente de revisión) e interpretar toda la dificultad como escala global.
 - **Por qué:** §14 es la sección más reciente y detallada, y una sola escala sirve de guía para la duración y la densidad de peligros.
 - **Decisión (2026-10-14):** se dejan sin cambios; se mejorarán durante el desarrollo.
-- **Decisión (2026-10-14, actualización):** la dificultad **ya no se elige**. C9 queda sustituida por una dificultad que evoluciona con el juego (confirmado por el usuario). Cómo evoluciona está abierto; hay una propuesta en discusión de tres vueltas (ver «Decisiones del 2026-10-14 (2)», al final).
+- **Decisión (2026-10-14, actualización):** la dificultad **ya no se elige**. C9 queda sustituida por una dificultad que evoluciona con el juego (confirmado por el usuario).
+- **Decisión (2026-10-15):** la dificultad evoluciona por **tres vueltas** (Easy, Normal y Hard); no hay selector de dificultad. Aprobada a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado»). Sigue abierto cómo encaja con la escala «X de 5» de cada nivel.
 
 ---
 
@@ -157,11 +158,12 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Por qué:** está escrito en GDScript puro, tiene CLI headless estable y requiere menos configuración para un proyecto pequeño.
 - **Decisión (2026-10-14):** GUT.
 
-### V12 [Fuera del slice] Revisitar secretos de niveles anteriores
+### V12 [RESUELTO] Revisitar secretos de niveles anteriores
 - **Sección:** §6.3 (pared con glitch del 1-1), §8.4/§8.5 (marco del 3-1) y §13.2 (se pueden rejugar las carpetas de los mundos completados).
 - **Problema:** no se dice si se pueden elegir niveles sueltos ni cómo volver al 1-1 antes de completar el Mundo 1.
 - **Propuesta:** la carpeta de cada mundo completado permite elegir cualquiera de sus niveles. El secreto del 1-1 se recupera al rejugarlo desde el hub.
 - **Por qué:** es lo mínimo para que los secretos "retomables" tengan sentido.
+- **Decisión (2026-10-15):** sí. Cuando exista el hub, desde él se elige la zona (1 a 6) y el subnivel. Antes del hub (Mundo 1 hasta vencer a Alerta Mayor) no hay selección. Ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado» y `05-hub.md` §13.6.
 
 ### V13 [Fuera del slice] Valores de los sistemas de mundos posteriores
 - **Sección:** §8.2 (umbrales de likes), §10.2/§10.3/§13.3 (precios de tienda, atajos, Calc y drenaje de suscripción), §13.3 (cuánto guarda Papelera) y §12.3 (cuánto sube Calc la energía máxima).
@@ -461,7 +463,7 @@ Valores de movimiento: sin cambios.
 - **Decisión 1, el sobrante solo desborda desde los drops:** la energía de Debug sobrante (barra llena) solo carga el power bank cuando viene de los **drops** de enemigos y jefes. Los puntos de atención llenan la barra, pero no desbordan. `data/power_bank.json`: `attention_point_energy_overflows` pasa de `true` a `false` (si falta la clave, `GameState` también usa `false`). Prueba: `test_attention_point_energy_does_not_overflow`.
 - **Decisión 2, un power bank llega vacío:** un power bank comprado u obtenido (p. ej. el `power_bank_pickup` de mapa) se recibe **vacío** (carga 0) y se llena con el sobrante de los drops. `GameState` separa ahora `power_banks` (completos; son los únicos que pagan mejoras), `empty_power_banks` (vacíos o cargándose) y `power_bank_charge` (carga del vacío que se está llenando). `add_empty_power_bank()` suma uno vacío; `collect_power_bank_pickup()` lo usa. Cada `capacity_energy` (200) de sobrante llena un vacío, que pasa a completo. El guardado añade `power_banks.empty` (sin cambiar la versión 1); un guardado antiguo con carga y sin `empty` conserva la carga en un power bank vacío. El HUD muestra el contador también si solo hay power banks vacíos.
 - **Decisión 3, enemigos y farmeo:** los enemigos reaparecen al rejugar un nivel y sus drops se pueden farmear. Se deja así por ahora.
-- **Decisión 4, dificultad:** la dificultad ya no se elige. C9 queda sustituida por una dificultad que evoluciona con el juego (el usuario lo confirma).
+- **Decisión 4, dificultad:** la dificultad ya no se elige. C9 queda sustituida por una dificultad que evoluciona con el juego (el usuario lo confirma). **Concretada el 2026-10-15:** tres vueltas Easy, Normal y Hard (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado»).
 - **Dudas abiertas (power banks):**
   1. **Resuelta (decisión del usuario, 2026-10-15):** sin ningún power bank vacío, el sobrante de los drops **se pierde**: no se acumula ni se devuelve al obtener después un power bank vacío. `GameState.add_power_bank_charge` ya lo hacía así; la prueba `test_overflow_is_lost_without_empty_power_banks` lo comprueba.
   2. Al pagar una mejora, el power bank completo se gasta y desaparece (no vuelve como vacío). ¿Es así, o se recarga y se reutiliza?
@@ -483,9 +485,9 @@ Implementa `docs/propuesta-1-1-ampliado.md` con las decisiones del usuario del 2
 - **Dudas:** (1) Con los power banks vacíos y sin drops en el 1-1, ¿de dónde sale la carga para las mejoras que cuestan power bank? ¿Se deja una Burbuja al aire libre que se pueda reventar (su pulso no sería obligatorio) o se cargan en el 1-2? (2) ¿La duración (unos 90 s caminando la ruta) basta o se alarga el mapa?
 
 
-### Propuesta en discusión: tres vueltas a los 18 mapas y "rollback" (sin implementar)
+### Propuesta de tres vueltas a los 18 mapas y "rollback" (histórico; aprobada el 2026-10-15)
 
-**Estado: propuesta en discusión, pendiente de aprobar.** No se implementa nada. No se añade a `06-finales.md` ni a `03-historia.md` porque choca con texto aprobado: §14.1 dice que al terminar la fase 3 del combate final Isak Optimizado queda de rodillas y llega el momento de decisión (Final A o B); aquí, en las dos primeras vueltas, el jefe lanza un rollback antes de eso.
+**Estado: aprobada como decisión de diseño el 2026-10-15, a falta de detalle** (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», que manda sobre esta sección). Donde difieran, vale la decisión del 2026-10-15 (p. ej. en Easy el jefe final **escapa** y lanza el rollback; en Hard engaña a Isak para que lo lance él). Sin implementar. No se añade a `06-finales.md` ni a `03-historia.md` porque choca con texto aprobado: §14.1 dice que al terminar la fase 3 del combate final Isak Optimizado queda de rodillas y llega el momento de decisión (Final A o B); aquí, en las dos primeras vueltas, el jefe lanza un rollback antes de eso.
 
 - **Idea del usuario:** el juego se recorre **tres vueltas** de los 18 mapas (6 mundos × 3 niveles): Fácil, Normal y Difícil máxima.
 - **Rollback:** al estar a punto de morir, el jefe final lanza un "rollback" que reinicia los mapas con enemigos más difíciles y puntos débiles distintos. En la **tercera vuelta**, el jefe engaña al jugador para que sea él quien lance el rollback.
@@ -493,7 +495,7 @@ Implementa `docs/propuesta-1-1-ampliado.md` con las decisiones del usuario del 2
 - **Qué se conserva:** el rollback "falla", así que Isak conserva sus habilidades. Los puntos de atención reaparecen para comprar las habilidades nuevas, pero solo en un ciclo de dificultad superior.
 - **Mapas:** en cada rollback los mapas pueden fallar, cambiar o destruirse (por pensar).
 - **Prioridad de producción:** primero los 18 mapas de la primera vuelta en modo fácil, sin que se puedan conseguir todas las mejoras en esa vuelta.
-- **Preguntas abiertas:**
+- **Preguntas abiertas** (las 2, 3, 5 y 7 siguen en las dudas de «Decisiones del 2026-10-15: tres vueltas, hub y guardado»):
   1. ¿Qué cambia narrativamente en cada vuelta (Eco, aliados, amigos, recuerdos)? Lo piensan juntos el usuario y Claude.
   2. ¿Cómo encaja con §14.1? ¿El momento de decisión y los finales A y B solo llegan al vencer al jefe en la tercera vuelta? Si en la tercera el jugador lanza el rollback engañado, ¿cuándo y cómo se llega al final real?
   3. ¿Qué significa en el juego "fallar, cambiar o destruirse" para un mapa? ¿Cambia la geometría o solo los enemigos, los peligros y los puntos débiles?
@@ -580,3 +582,24 @@ Generaliza el aviso que salía al recoger el láser («Láser obtenido. F o gati
   1. El cuadro muestra el nombre «Eco» encima del aviso, igual que el aviso del láser de antes, aunque es texto de interfaz y no una línea de Eco. ¿Se quita el nombre en los avisos? Sería un cambio pequeño en el cuadro de Eco.
   2. Si un jugador ya tenía un guardado, verá una vez el aviso del pulso al volver a jugar el 1-1. ¿Vale así?
 
+## Decisiones del 2026-10-15: tres vueltas, hub y guardado
+
+Decisión de diseño del usuario. Sustituye el estado «pendiente de aprobar» de la «Propuesta de tres vueltas…» (arriba): queda **aprobada a falta de detalle**. Resuelve V12. Por ahora importa tener la idea; no se implementa nada.
+
+- **Tres vueltas:** el juego se recorre tres veces: **Easy**, **Normal** y **Hard**. No hay selector de dificultad: la dificultad es la progresión por vueltas (concreta C9).
+- **Rollback:** en la primera vuelta (Easy) el jefe final **escapa** y hace un **rollback**: el mundo vuelve atrás. En Hard es igual, pero el jefe final **engaña** a Isak para que sea él quien haga el rollback.
+- **Qué cambia entre vueltas:** sube la dificultad, cambia el diseño visual de los mapas y se añaden rutas nuevas. Los enemigos y los subniveles (1-1, 1-2, 1-3, 2-1…) tienen contenido nuevo en cada vuelta. Ejemplo: el 1-1 Easy es el actual; en Normal, en vez de la misma ruta, el camino se bloquea y los activadores de puente fallan.
+- **Plan de producción:** primero los 6 mundos con sus 3 subniveles en **Easy** (18 niveles); después se da forma a Normal y Hard.
+- **Selección de nivel:** cuando exista el hub, desde él se elige la zona (1 a 6) y el subnivel (ver `05-hub.md` §13.6).
+- **Puntos de atención:** no se restauran al rejugar un nivel; solo vuelven si el jefe final hace el rollback (coherente con «Decisión 4, puntos de atención» del 2026-10-14).
+- **Mejoras:** se compran en el hub (ya decidido el 2026-10-14, decisión 1).
+- **Guardado en el hub:** el progreso se guarda en el hub. Si se cierra el juego sin haber guardado en el hub, el progreso no guardado se pierde. **Diferencia con lo implementado:** hoy `user://save.json` se escribe **automáticamente** al capturar un punto, obtener una habilidad, comprar una mejora o completar un nivel (ver «Decisión 5, guardado»); no hay que pasar por el hub. Sin cambios en el código todavía.
+- **Dudas abiertas:**
+  1. **Encaje con §14.1** (`06-finales.md`): tras la fase 3 del combate final llega el momento de decisión (Final A o B). Con las vueltas, ¿solo llega al final de Hard? Si en Hard es Isak quien hace el rollback engañado, ¿cuándo y cómo se llega al final real? `06-finales.md` y `03-historia.md` no se tocan hasta decidirlo.
+  2. **Final de la vuelta Normal:** no se ha dicho qué hace el jefe; ¿escapa y hace el rollback, como en Easy?
+  3. **Dificultad dentro de una vuelta:** ¿cómo evoluciona del 1-1 al 6-3 en cada vuelta?
+  4. **«X de 5» frente a Easy/Normal/Hard:** ¿la dificultad por nivel de los `mundo-N` es la base de Easy? ¿Cómo se escala en Normal y Hard?
+  5. **Rollback por mapa:** qué cambia en concreto en cada mapa (geometría, rutas, enemigos, peligros, puntos débiles, aspecto) y cómo se ve el paso de una vuelta a otra.
+  6. **Guardar en el hub:** ¿es una acción explícita (un objeto o un menú) o se guarda al entrar en el hub? ¿Qué se guarda antes de que exista el hub (1-1 a 1-3 y el jefe del Mundo 1)? ¿Se mantiene el guardado automático actual o se sustituye? Hace falta guardar también la vuelta actual y los puntos capturados por vuelta.
+  7. **Puntos tras el rollback de Hard:** si lo lanza Isak, ¿también restaura los puntos?
+  8. Siguen abiertas las preguntas 1, 4 y 6 de la propuesta anterior (narrativa por vuelta, color y telegrafiado de los puntos débiles nuevos, qué mejoras se consiguen en cada vuelta).
