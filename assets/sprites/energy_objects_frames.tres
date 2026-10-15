@@ -1,0 +1,183 @@
+[gd_resource type="SpriteFrames" load_steps=33 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/energy_drop_idle_00.png" id="1_energy_drop_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/energy_drop_idle_01.png" id="2_energy_drop_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/energy_drop_idle_02.png" id="3_energy_drop_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/energy_drop_idle_03.png" id="4_energy_drop_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/sync_drop_idle_00.png" id="5_sync_drop_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/sync_drop_idle_01.png" id="6_sync_drop_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/sync_drop_idle_02.png" id="7_sync_drop_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/sync_drop_idle_03.png" id="8_sync_drop_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/power_bank_empty_00.png" id="9_power_bank_empty_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/power_bank_empty_01.png" id="10_power_bank_empty_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/power_bank_partial_00.png" id="11_power_bank_partial_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/power_bank_partial_01.png" id="12_power_bank_partial_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/power_bank_full_00.png" id="13_power_bank_full_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/power_bank_full_01.png" id="14_power_bank_full_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_ready_00.png" id="15_charger_ready_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_ready_01.png" id="16_charger_ready_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_ready_02.png" id="17_charger_ready_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_ready_03.png" id="18_charger_ready_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_00.png" id="19_charger_cooling_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_01.png" id="20_charger_cooling_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_02.png" id="21_charger_cooling_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_03.png" id="22_charger_cooling_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_04.png" id="23_charger_cooling_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_05.png" id="24_charger_cooling_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_06.png" id="25_charger_cooling_06"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_cooling_07.png" id="26_charger_cooling_07"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/charger_spent_00.png" id="27_charger_spent_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/ability_pickup_idle_00.png" id="28_ability_pickup_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/ability_pickup_idle_01.png" id="29_ability_pickup_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/ability_pickup_idle_02.png" id="30_ability_pickup_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/ability_pickup_idle_03.png" id="31_ability_pickup_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/ability_pickup_collected_00.png" id="32_ability_pickup_collected_00"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_energy_drop_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_energy_drop_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_energy_drop_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_energy_drop_idle_03")
+}],
+"loop": true,
+"name": &"energy_drop_idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_sync_drop_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_sync_drop_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_sync_drop_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_sync_drop_idle_03")
+}],
+"loop": true,
+"name": &"sync_drop_idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_power_bank_empty_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_power_bank_empty_01")
+}],
+"loop": true,
+"name": &"power_bank_empty",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_power_bank_partial_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_power_bank_partial_01")
+}],
+"loop": true,
+"name": &"power_bank_partial",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_power_bank_full_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_power_bank_full_01")
+}],
+"loop": true,
+"name": &"power_bank_full",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_charger_ready_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_charger_ready_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_charger_ready_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_charger_ready_03")
+}],
+"loop": true,
+"name": &"charger_ready",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_charger_cooling_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_charger_cooling_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_charger_cooling_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_charger_cooling_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_charger_cooling_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_charger_cooling_05")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_charger_cooling_06")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_charger_cooling_07")
+}],
+"loop": false,
+"name": &"charger_cooling",
+"speed": 0.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("27_charger_spent_00")
+}],
+"loop": false,
+"name": &"charger_spent",
+"speed": 0.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("28_ability_pickup_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_ability_pickup_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_ability_pickup_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_ability_pickup_idle_03")
+}],
+"loop": true,
+"name": &"ability_pickup_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("32_ability_pickup_collected_00")
+}],
+"loop": false,
+"name": &"ability_pickup_collected",
+"speed": 0.0
+}]

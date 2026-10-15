@@ -1,8 +1,10 @@
 ## Recarga que suelta un enemigo o jefe al ser eliminado (decision 2026-10-14):
 ## al tocarla Isak suma `amount` de energia de Debug (el sobrante con la barra
 ## llena carga el power bank, GameState.add_debug_energy) o de Sync Rate
-## (GameState.heal_sync). Comportamiento y aspecto PROVISIONAL en
-## data/recharge_pickup.json; cuanto suelta cada enemigo, en su JSON (drops).
+## (GameState.heal_sync). Comportamiento en data/recharge_pickup.json; cuanto
+## suelta cada enemigo, en su JSON (drops). Aspecto: sprite energy_drop_idle o
+## sync_drop_idle segun `kind` (EnergySprite, docs/estilizacion-energia.md),
+## centrado en el nodo; la flotacion la hace el codigo.
 ## Uso: RechargePickup.spawn_drops(padre, posicion_pies, drops).
 class_name RechargePickup
 extends Area2D
@@ -25,6 +27,7 @@ static var _data: Dictionary = {}
 var _age: float = 0.0
 var _taken: bool = false
 var _base_y: float = 0.0
+var _sprite: EnergySprite
 
 
 ## Crea una recarga por cada tipo de `drops` ({"debug_energy": 25, ...}) con
@@ -74,6 +77,8 @@ func _ready() -> void:
 	shape.shape = circle
 	add_child(shape)
 	body_entered.connect(_on_body_entered)
+	var anim: StringName = &"sync_drop_idle" if kind == KIND_SYNC else &"energy_drop_idle"
+	_sprite = EnergySprite.attach(self, anim, Vector2.ZERO, true)
 	if _base_y == 0.0:
 		_base_y = position.y
 
@@ -97,7 +102,8 @@ func advance(dt: float) -> void:
 			if body is Isak:
 				collect()
 				return
-	queue_redraw()
+	if _sprite != null:
+		_sprite.advance(dt)
 
 
 func is_armed() -> bool:
@@ -122,30 +128,6 @@ func collect() -> bool:
 	EventBus.recharge_collected.emit(kind, amount)
 	queue_free()
 	return true
-
-
-func _draw() -> void:
-	var style: Dictionary = data().get("kinds", {}).get(String(kind), {})
-	var color := Color.html(String(style.get("color", "#f2f4f8")))
-	if bool(style.get("use_world_debug_color", false)):
-		color = HudConfig.shared().debug_color_for_world(GameState.current_world)
-	var outline := Color.html(String(style.get("outline", "#0b0e1a")))
-	var r: float = float(data().get("radius_px", 18.0)) * 0.6
-	if kind == KIND_SYNC:
-		# Cruz (curacion): barra horizontal y vertical con contorno.
-		var t: float = r * 0.45
-		for rect: Rect2 in [Rect2(-r, -t, r * 2.0, t * 2.0), Rect2(-t, -r, t * 2.0, r * 2.0)]:
-			draw_rect(rect.grow(2.0), outline)
-		for rect: Rect2 in [Rect2(-r, -t, r * 2.0, t * 2.0), Rect2(-t, -r, t * 2.0, r * 2.0)]:
-			draw_rect(rect, color)
-	else:
-		# Pila: cuerpo y borne.
-		var body := Rect2(-r * 0.6, -r, r * 1.2, r * 2.0)
-		var cap := Rect2(-r * 0.25, -r - 4.0, r * 0.5, 4.0)
-		draw_rect(body.grow(2.0), outline)
-		draw_rect(cap.grow(2.0), outline)
-		draw_rect(body, color)
-		draw_rect(cap, color)
 
 
 func _on_body_entered(body: Node2D) -> void:

@@ -4,9 +4,10 @@
 ## user://save.json (abilities_obtained) y emite EventBus.ability_obtained. El
 ## aviso del control lo da AbilityNotices (data/ability_notices.json, una vez
 ## por partida guardada); solo si el nivel da `message`, el cuadro de Eco
-## muestra ademas ese texto. Si la habilidad ya estaba obtenida no aparece. No es solido. Aspecto PROVISIONAL dibujado por
-## codigo: un chip con contorno noche_profunda y nucleo en el color del Debug
-## del Mundo 1 que flota (tiempo del mundo).
+## muestra ademas ese texto. Si la habilidad ya estaba obtenida no aparece. No es
+## solido. Aspecto (EnergySprite, docs/estilizacion-energia.md): chip
+## ability_pickup_idle que flota (tiempo del mundo); al recogerlo pasa a
+## ability_pickup_collected justo antes de liberarse.
 class_name AbilityPickup
 extends Area2D
 
@@ -27,10 +28,8 @@ var _time: float = 0.0
 var _size := Vector2(28.0, 28.0)
 var _bob_px: float = 4.0
 var _bob_hz: float = 1.5
-var _outline := Color("#0b0e1a")
-var _body := Color("#f2f4f8")
-var _core := Color("#3dfff5")
 var _message_s: float = 4.0
+var _sprite: EnergySprite
 
 
 func _ready() -> void:
@@ -46,25 +45,15 @@ func _ready() -> void:
 	shape.position = _center()
 	add_child(shape)
 	body_entered.connect(_on_body_entered)
+	_sprite = EnergySprite.attach(self, &"ability_pickup_idle", _center())
 
 
 func _process(delta: float) -> void:
-	_time += WorldTime.scaled_delta(delta)
-	queue_redraw()
-
-
-func _draw() -> void:
-	var offset: float = roundf(sin(_time * TAU * _bob_hz) * _bob_px)
-	var center: Vector2 = (_center() + Vector2(0.0, offset)).round()
-	var half: Vector2 = _size * 0.5
-	# Rombo escalonado (pixel art): tres franjas que se estrechan.
-	var outer := Rect2(center - half, _size)
-	draw_rect(outer.grow_individual(-half.x * 0.5, 0.0, -half.x * 0.5, 0.0), _outline)
-	draw_rect(outer.grow_individual(0.0, -half.y * 0.5, 0.0, -half.y * 0.5), _outline)
-	var inner := outer.grow(-2.0)
-	draw_rect(inner.grow_individual(-half.x * 0.5, 0.0, -half.x * 0.5, 0.0), _body)
-	draw_rect(inner.grow_individual(0.0, -half.y * 0.5, 0.0, -half.y * 0.5), _body)
-	draw_rect(Rect2(center - half * 0.4, _size * 0.4), _core)
+	var dt: float = WorldTime.scaled_delta(delta)
+	_time += dt
+	if _sprite != null:
+		_sprite.advance(dt)
+		_sprite.position = (_center() + Vector2(0.0, roundf(sin(_time * TAU * _bob_hz) * _bob_px))).round()
 
 
 func is_taken() -> bool:
@@ -81,6 +70,8 @@ func collect_by(body: Node) -> bool:
 	if _taken or not body is Isak:
 		return false
 	_taken = true
+	if _sprite != null:
+		_sprite.show_state(&"ability_pickup_collected")
 	var obtained: bool = GameState.obtain_ability(ability)
 	if obtained:
 		var text: String = get_message()
@@ -91,7 +82,7 @@ func collect_by(body: Node) -> bool:
 	return obtained
 
 
-## Centro del dibujo y de la zona de recogida: centro de la celda (x, y).
+## Centro del sprite y de la zona de recogida: centro de la celda (x, y).
 func _center() -> Vector2:
 	return Vector2(32.0, 32.0)
 
@@ -106,9 +97,6 @@ func _load_config() -> void:
 		_size = Vector2(float(size[0]), float(size[1]))
 	_bob_px = float(cfg.get("bob_px", _bob_px))
 	_bob_hz = float(cfg.get("bob_hz", _bob_hz))
-	_outline = Color(String(cfg.get("outline", _outline.to_html(false))))
-	_body = Color(String(cfg.get("body", _body.to_html(false))))
-	_core = Color(String(cfg.get("core", _core.to_html(false))))
 	_message_s = float(cfg.get("message_s", _message_s))
 
 

@@ -1,6 +1,6 @@
 # Estilización de los objetos de energía y progreso (1-1)
 
-Estado: **propuesta** (2026-10-15), pendiente de revisión del usuario. Sustituye en lo visual a los dibujos provisionales `_draw` de `recharge_pickup`, `power_bank_pickup`, `charger` y `ability_pickup`. Aún no están conectados a ninguna escena.
+Estado: **integrado** (2026-10-15), pendiente de revisión del usuario. Sustituye en lo visual a los dibujos provisionales `_draw` de `recharge_pickup`, `power_bank_pickup`, `charger` y `ability_pickup`. Cada objeto crea en `_ready` un `EnergySprite` (`scripts/levels/energy_sprite.gd`, un `AnimatedSprite2D`) con las animaciones de `assets/sprites/energy_objects_frames.tres` (una por estado, con sus fps); el objeto la avanza con tiempo del mundo, así que se ralentiza con el Debug y se detiene con la pausa. Las colisiones no cambian. Los colores de los `_draw` que quedan en `data/world1_objects.json` y `data/recharge_pickup.json` ya no se usan.
 
 ## Lenguaje visual común: «circuito limpio»
 

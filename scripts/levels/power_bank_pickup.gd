@@ -4,9 +4,10 @@
 ## los drops) con GameState.collect_power_bank_pickup(). Como los puntos de
 ## atencion, no se vuelve a recoger en el mismo mapa: el id (object_id o, si esta
 ## vacio, el nombre del nodo) se guarda por nivel y, si ya estaba recogido, no
-## aparece. Aspecto PROVISIONAL (sin sprite): una pila dibujada con contorno
-## noche_profunda y una franja en el color del Debug del mundo, como el icono del
-## HUD, que flota (valores en la seccion power_bank_pickup de data/world1_objects.json).
+## aparece. Aspecto: sprite power_bank_empty / partial / full (EnergySprite,
+## docs/estilizacion-energia.md) segun display_charge; en el mapa siempre llega
+## vacio. Flota con bob_px / bob_hz de la seccion power_bank_pickup de
+## data/world1_objects.json.
 class_name PowerBankPickup
 extends Area2D
 
@@ -16,15 +17,25 @@ const CONFIG_PATH: String = "res://data/world1_objects.json"
 
 ## Id persistente; vacio = el nombre del nodo.
 @export var object_id: StringName = &""
+## Carga que se MUESTRA (solo aspecto; el power bank que se recoge siempre llega
+## vacio). Para el hub o la tienda: 0 vacio, menos de la capacidad parcial, llena.
+@export var display_charge: float = 0.0
 
 var _taken: bool = false
 var _time: float = 0.0
 var _size := Vector2(24.0, 36.0)
 var _bob_px: float = 4.0
 var _bob_hz: float = 1.5
-var _outline := Color("#0b0e1a")
-var _body := Color("#f2f4f8")
-var _fill := Color("#3dfff5")
+var _sprite: EnergySprite
+
+
+## Estado del sprite para una carga `charge` de `capacity`.
+static func state_for_charge(charge: float, capacity: float) -> StringName:
+	if charge <= 0.0:
+		return &"power_bank_empty"
+	if charge < capacity:
+		return &"power_bank_partial"
+	return &"power_bank_full"
 
 
 func _ready() -> void:
@@ -40,22 +51,20 @@ func _ready() -> void:
 	shape.position = _center()
 	add_child(shape)
 	body_entered.connect(_on_body_entered)
+	_sprite = EnergySprite.attach(self, _state(), _center())
 
 
 func _process(delta: float) -> void:
-	_time += WorldTime.scaled_delta(delta)
-	queue_redraw()
+	var dt: float = WorldTime.scaled_delta(delta)
+	_time += dt
+	if _sprite != null:
+		_sprite.show_state(_state())
+		_sprite.advance(dt)
+		_sprite.position = (_center() + Vector2(0.0, roundf(sin(_time * TAU * _bob_hz) * _bob_px))).round()
 
 
-func _draw() -> void:
-	var offset: float = roundf(sin(_time * TAU * _bob_hz) * _bob_px)
-	var top_left: Vector2 = (_center() - _size * 0.5 + Vector2(0.0, offset)).round()
-	var body := Rect2(top_left + Vector2(0.0, 4.0), _size - Vector2(0.0, 4.0))
-	draw_rect(Rect2(top_left + Vector2(_size.x * 0.5 - 4.0, 0.0), Vector2(8.0, 4.0)), _outline)
-	draw_rect(body, _outline)
-	draw_rect(body.grow(-2.0), _body)
-	var inner := body.grow(-6.0)
-	draw_rect(inner, _fill)
+func _state() -> StringName:
+	return state_for_charge(display_charge, GameState.get_power_bank_capacity())
 
 
 func is_taken() -> bool:
@@ -76,7 +85,7 @@ func get_level_id() -> StringName:
 	return GameState.NO_LEVEL
 
 
-## Centro del dibujo y de la zona de recogida: centro de la celda (x, y).
+## Centro del sprite y de la zona de recogida: centro de la celda (x, y).
 func _center() -> Vector2:
 	return Vector2(32.0, 32.0)
 
@@ -91,9 +100,6 @@ func _load_config() -> void:
 		_size = Vector2(float(size[0]), float(size[1]))
 	_bob_px = float(cfg.get("bob_px", _bob_px))
 	_bob_hz = float(cfg.get("bob_hz", _bob_hz))
-	_outline = Color(String(cfg.get("outline", _outline.to_html(false))))
-	_body = Color(String(cfg.get("body", _body.to_html(false))))
-	_fill = Color(String(cfg.get("fill", _fill.to_html(false))))
 
 
 func _on_body_entered(body: Node2D) -> void:

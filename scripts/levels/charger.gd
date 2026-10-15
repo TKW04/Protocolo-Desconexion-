@@ -8,9 +8,11 @@
 ##   (tiempo del mundo) y vuelve a estar listo. El enfriamiento no se guarda.
 ## - reusable false: un solo uso; queda gastado y se guarda por nivel en
 ##   user://save.json (collected_pickups, como los power banks de mapa).
-## Aspecto PROVISIONAL dibujado por codigo (seccion charger de
-## data/world1_objects.json, paleta del Mundo 1): poste con pantalla; lista en
-## el color del Debug, enfriandose con una barra que se llena, gastado apagado.
+## Aspecto (EnergySprite, docs/estilizacion-energia.md): charger_ready en bucle
+## cuando esta listo; enfriandose, el cuadro floor(progress * 8) de
+## charger_cooling (progress = tiempo enfriado / cooldown_s); gastado,
+## charger_spent. Lienzo de 32x64 centrado en x en la celda y apoyado en su
+## borde inferior.
 class_name Charger
 extends Area2D
 
@@ -31,11 +33,7 @@ const CONFIG_PATH: String = "res://data/world1_objects.json"
 var _spent: bool = false
 var _cooldown_left: float = 0.0
 var _size := Vector2(32.0, 64.0)
-var _outline := Color("#0b0e1a")
-var _body := Color("#343f66")
-var _screen_off := Color("#1a2138")
-var _ready_color := Color("#3dfff5")
-var _cooling_color := Color("#9bb0e8")
+var _sprite: EnergySprite
 
 
 func _ready() -> void:
@@ -49,6 +47,11 @@ func _ready() -> void:
 	shape.position = _center()
 	add_child(shape)
 	body_entered.connect(_on_body_entered)
+	_sprite = EnergySprite.attach(self, &"charger_ready", Vector2.ZERO)
+	# Apoyado en el borde inferior de la celda (x, y).
+	var canvas_h: float = _sprite.sprite_frames.get_frame_texture(&"charger_ready", 0).get_height()
+	_sprite.position = Vector2(32.0, 64.0 - canvas_h * 0.5)
+	_update_sprite(0.0)
 
 
 func _physics_process(delta: float) -> void:
@@ -64,7 +67,7 @@ func _physics_process(delta: float) -> void:
 func advance(dt: float) -> void:
 	if _cooldown_left > 0.0:
 		_cooldown_left = maxf(_cooldown_left - dt, 0.0)
-		queue_redraw()
+	_update_sprite(dt)
 
 
 func is_ready() -> bool:
@@ -106,36 +109,32 @@ func try_use(body: Node) -> float:
 	else:
 		_spent = true
 		GameState.mark_pickup_collected(get_level_id(), get_charger_id())
-	queue_redraw()
+	_update_sprite(0.0)
 	used.emit(gained)
 	EventBus.charger_used.emit(get_charger_id(), gained)
 	return gained
 
 
-func _draw() -> void:
-	var top_left := Vector2(_center() - _size * 0.5).round()
-	var body := Rect2(top_left, _size)
-	draw_rect(body, _outline)
-	draw_rect(body.grow(-2.0), _body)
-	var screen := Rect2(top_left + Vector2(6.0, 8.0), Vector2(_size.x - 12.0, _size.y * 0.5))
-	draw_rect(screen, _outline)
-	var inner := screen.grow(-2.0)
+## Progreso del enfriamiento: 0 recien usado, 1 listo.
+func get_cooldown_progress() -> float:
+	if _cooldown_left <= 0.0:
+		return 1.0
+	return 1.0 - _cooldown_left / maxf(cooldown_s, 0.001)
+
+
+func _update_sprite(dt: float) -> void:
+	if _sprite == null:
+		return
 	if _spent:
-		draw_rect(inner, _screen_off)
+		_sprite.show_state(&"charger_spent")
 	elif _cooldown_left > 0.0:
-		draw_rect(inner, _screen_off)
-		var progress: float = 1.0 - _cooldown_left / maxf(cooldown_s, 0.001)
-		var h: float = roundf(inner.size.y * progress * 0.5) * 2.0
-		draw_rect(Rect2(Vector2(inner.position.x, inner.end.y - h), Vector2(inner.size.x, h)), _cooling_color)
+		_sprite.show_progress(&"charger_cooling", get_cooldown_progress())
 	else:
-		draw_rect(inner, _ready_color)
-		# Rayo (dos escalones de noche_profunda).
-		var c: Vector2 = inner.get_center().round()
-		draw_rect(Rect2(c + Vector2(-2.0, -8.0), Vector2(4.0, 8.0)), _outline)
-		draw_rect(Rect2(c + Vector2(0.0, 0.0), Vector2(4.0, 8.0)), _outline)
+		_sprite.show_state(&"charger_ready")
+		_sprite.advance(dt)
 
 
-## Centro del dibujo y de la zona de contacto: centrado en x en la celda (x, y)
+## Centro de la zona de contacto: centrado en x en la celda (x, y)
 ## y apoyado en su borde inferior (con size_px 32x64 ocupa justo esa celda).
 func _center() -> Vector2:
 	return Vector2(32.0, 64.0 - _size.y * 0.5)
@@ -149,11 +148,6 @@ func _load_config() -> void:
 	var size: Variant = cfg.get("size_px", [])
 	if size is Array and (size as Array).size() == 2:
 		_size = Vector2(float(size[0]), float(size[1]))
-	_outline = Color(String(cfg.get("outline", _outline.to_html(false))))
-	_body = Color(String(cfg.get("body", _body.to_html(false))))
-	_screen_off = Color(String(cfg.get("screen_off", _screen_off.to_html(false))))
-	_ready_color = Color(String(cfg.get("ready", _ready_color.to_html(false))))
-	_cooling_color = Color(String(cfg.get("cooling", _cooling_color.to_html(false))))
 
 
 func _on_body_entered(body: Node2D) -> void:
