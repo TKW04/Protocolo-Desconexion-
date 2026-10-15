@@ -1,0 +1,86 @@
+# Propuesta: 1-1 ampliado y mejoras permanentes
+
+**Estado:** PROPUESTA (2026-10-14), pendiente de aprobación. No cambia código, datos ni escenas. Lo marcado **[propuesta nueva]** no está en `docs/` y necesita aprobación expresa.
+
+**Punto de partida.** El 1-1 actual (`data/levels/1-1.json`) mide 140x14 tiles, con 5 tramos, 1 Burbuja, 1 punto de sincronización y 17 puntos de atención, y dura unos 25 s corriendo y 38 s caminando. La ficha (`mundo-1-notificaciones.md` §6.3) pide unos 3 min, dificultad 1/5 y "prácticamente sin riesgo de muerte", y `target_duration_s` ya vale 180. Física de referencia (`isak_physics.json`): 220 px/s caminando (3,4 tiles/s), 360 px/s corriendo (5,6 tiles/s), salto efectivo de 177 px (192 × 0,92), límite de exigencia del validador del 85 %.
+
+## 1. Estructura de tramos
+
+Se mantienen los 4 tramos de la ficha y el cierre, en el mismo orden. Cada tramo se divide en partes (a, b, c) que repiten la mecánica con más exigencia. El nivel pasa a **300x14 tiles**. Las columnas son aproximadas y se ajustan con el validador.
+
+| Tramo (columnas, tiles) | Qué enseña y cómo sube la exigencia | Enemigos y objetos | Puntos de atención | Tiempo caminando / corriendo |
+|---|---|---|---|---|
+| **1. Aterrizaje** (1-55, 55) | Salto, subidas de 1 y 2 tiles y plataformas de una vía. Un segundo foso de 2 tiles, también con fondo (V3). | Sin enemigos. `eco_line` de bienvenida (ya existe). | 6, en la ruta (x 8-45) | 20 s / 12 s |
+| **2. Puente** (56-115, 60) | 2a: el puente actual (receptor a ras de suelo, 6 tiles). 2b: el receptor está sobre una repisa de 1 tile y hay que subir antes de pulsar; después vienen dos puentes seguidos (4 y 5 tiles) sobre fosos con fondo. | 3 receptores y 3 puentes en la ruta. | 6 | 30 s / 20 s |
+| **Punto de sincronización 1** (x≈118) | Entre el Tramo 2 y el 3, como propone A12. | `C` | | |
+| **3. Burbuja** (118-195, 78) | 3a: el techo bajo actual con 1 Burbuja (80 px/s, rango de 320 px), desplazado sin cambios. 3b: una Burbuja delante de una repisa de 3 tiles (192 px, más alta que el salto). Hay que aturdirla y usarla de escalón (plataforma a 74 px). Es obligatorio y enseña que "el aturdimiento abre algo" (§3.2). 3c: dos Burbujas (80 y 100 px/s) con una franja de pinchos de 2 tiles entre ellas (quita un 10 %). | 4 Burbujas y los primeros `^` del juego. | 8 | 45 s / 30 s |
+| **Punto de sincronización 2** (x≈198) | Antes del último tramo. Es un desvío de la ficha, que pide "uno": ver la duda 5. | `C` | | |
+| **4. Pop-up** (198-265, 68) | 4a: el pop-up actual a ras de suelo. 4b: un pop-up sobre un escalón de 1 tile, con una Burbuja patrullando delante: primero se aturde y luego se cierra el pop-up. 4c: receptor, puente y un pop-up al final del puente, que se cierra de pie sobre el puente. | 3 pop-ups, 1 Burbuja, 1 receptor y 1 puente. | 6 | 40 s / 25 s |
+| **Cierre** (266-298, 33) | Recta tranquila. Puerta "Marcar como leído" en x≈288 y pared con glitch detrás (x≈297, como ahora). | `exit_door`, `glitch_wall` | 2 | 10 s / 6 s |
+
+**Totales:** ruta principal de unos 145 s caminando y 95 s corriendo; con los secretos, unos 185 s. Hay 28 puntos de atención en la ruta y 8 más en los secretos (V8 proponía de 10 a 20; ver la duda 4). La dificultad sigue siendo 1/5: no hay huecos sin fondo, la red de seguridad del 1-1 no quita Sync Rate y harían falta 10 golpes para morir.
+
+### Secretos (obligan a fijarse en el mapa y volver atrás)
+
+| Id | Dónde se ve y cómo se llega | Recompensa |
+|---|---|---|
+| **A. Puente de servicio** | El nicho se ve en lo alto (x≈92-97, fila 4) al cruzar 2a, pero desde ahí no se alcanza. Al final del Tramo 2, unas plataformas de una vía suben hasta un receptor escondido (x≈110, fila 5). Su puente se extiende **hacia la izquierda** (`direction: "left"`, 10 tiles) y hay que volver por él. | Mejora "Pulso amplio" |
+| **B. Sobre el techo** | Desde la repisa de 3b se sube por plataformas de una vía hasta el techo de 3a (cara superior a 320 px del suelo) y se vuelve a la izquierda por encima, hasta x≈126-130. | 1 power bank y 5 puntos |
+| **C. Pop-up alto** | Un pop-up opcional en una repisa alta (x≈240) tapa un nicho. Para subir hay que usar como escalón la Burbuja de 4b, aturdida, y después volver atrás. | Mejora "Sync reforzado" y 3 puntos |
+| **D. Pared con glitch** | La de siempre. No se puede abrir hasta tener el Debug: al rejugar el nivel desde el hub (V12). | 1 power bank y la mejora "Debug eficiente" (V12 sigue pendiente) |
+
+Regla de diseño: ninguna caída sobre una Burbuja debe superar 4 tiles, porque desde 5 tiles ya revienta (`alert_bubble.json`, `pop_speed_threshold_px_s`). Todo secreto debe tener una salida de vuelta a la ruta.
+
+## 2. Mejoras permanentes
+
+Funcionamiento propuesto: un secreto **desbloquea** la mejora y queda guardada como "disponible". Se **activa pagando** en el hub con Calc, que según §13.3 vende "mejoras permanentes a cambio de puntos de atención". Como el hub no existe hasta vencer a Alerta Mayor, mientras tanto la pantalla provisional del hub tendría una lista "Mejoras" para probarlas. Una mejora comprada se aplica en todos los niveles y se guarda en disco.
+
+| Mejora | Efecto (valor actual → nuevo) | Coste | Se consigue en | ¿Se puede usar ya? |
+|---|---|---|---|---|
+| **Pulso amplio** [propuesta nueva] | `pulse_radius_px` 96 → 112 | 15 puntos | Secreto A (1-1) | Sí, en el 1-1 al rejugarlo |
+| **Sync reforzado** (§13.3: "más Sync Rate") | Sync Rate máximo 100 → 120 (el HUD tendría que mostrar más de 100 %) | 30 puntos + 1 power bank | Secreto C (1-1) | Sí, en el 1-1 al rejugarlo |
+| **Debug eficiente** (idea del usuario) | `drain_per_second` 20 → 15 (de 5 s a 6,7 s con la barra llena) | 50 puntos + 1 power bank | Secreto D (1-1 con Debug) | No: el Debug llega en el 1-2. Ahora solo se prueba en `debug_sandbox.tscn` |
+| **Batería ampliada** (§13.3 y Calc en §12.3) | Energía máxima 100 → 150 | 30 puntos + 1 power bank | Secreto de un nivel posterior (por decidir) | No, desde el 1-2 |
+| **Arranque rápido** (idea "cargar el Debug") | `activation_hold_s` 1,0 → 0,5 s | 20 puntos | Por decidir (1-2 o 1-3) | No, desde el 1-2 |
+| **Recarga mejorada** | Energía que repone cada punto: 10 → 15 (A10) | 25 puntos | Por decidir | Depende de cómo se decida la recarga |
+
+**Power bank** [propuesta nueva]: es un coleccionable que solo sirve para pagar mejoras. No es una mecánica de juego. En el 1-1 hay 2 (los secretos B y D). Con los 36 puntos del 1-1 no alcanza para "Debug eficiente": hay que sumar los del 1-2, y eso tiene sentido porque el Debug se aprende allí.
+
+**Guardado:** un archivo `user://save.json` con número de versión que guarda `attention_points`, los power banks recogidos (por id), las mejoras disponibles y compradas, los secretos encontrados, las pistas de Eco ya vistas y los niveles completados. Se escribe al tocar un punto de sincronización, al recoger un secreto, al terminar el nivel y al comprar una mejora. `GameState` lo carga al arrancar.
+
+## 3. Frases de Eco para las primeras veces
+
+Las dice Eco con su voz: amable, servicial y corporativa, sin amenazar (§12.1). No añaden historia. Se muestran con el cuadro de Eco que ya existe (`eco_line`), una vez por partida guardada. `[pulso]` se cambia por la tecla asignada en el Input Map.
+
+| Primera vez | Frase |
+|---|---|
+| Foso (T1) | "Ese hueco no es un problema. Salta y seguimos." |
+| Punto de atención | "Cada punto de atención cuenta. Yo también los cuento." |
+| Receptor (2a) | "Ese receptor espera un pulso. Acércate y pulsa [pulso]. Te ahorro la búsqueda." |
+| Puente extendido | "¿Ves? Todo funciona mejor cuando colaboras." |
+| Punto de sincronización | "Punto de sincronización. Guardo tu progreso. Para eso estoy." |
+| Burbuja (3a) | "Una alerta. Un pulso y se queda en pausa unos segundos." |
+| Burbuja aturdida como escalón (3b) | "Una alerta en pausa también sirve de escalón. Nada se desperdicia." |
+| Pinchos (3c) | "Zona sin optimizar. Mejor no la pises." |
+| Pop-up (4a) | "Un aviso importante. El botón de cerrar es pequeño, por tu bien. Pulso de cerca." |
+| Power bank | "Batería externa detectada. Guárdala, quizá te ahorre tiempo." |
+| Pared con glitch | "Eso es un error de visualización. Ignóralo, por favor." |
+| Puerta | "Marca todo como leído. Así no te preocupas de nada." |
+
+## 4. Impacto técnico y riesgos
+
+- **`data/levels/1-1.json`:** el grid pasa de 140 a 300 columnas, con nuevos rangos en `sections`. Se pasa de 1 a 5 Burbujas (con `params` propios), de 1 a 5 receptores y puentes (uno con `direction: "left"`), de 1 a 4 pop-ups, de 1 a unas 12 `eco_line` y de 1 a 2 checkpoints. Aparecen `^` y `S` con un campo `reward`. Se regenera la escena con `build_level.py`.
+- **`data/world1_objects.json`:** nuevo tipo `power_bank` [propuesta nueva] (escena y sprite con la paleta del Mundo 1) y un parámetro `hint_id` en `eco_line` para la regla "una vez por partida guardada".
+- **Nuevo `data/upgrades.json`:** id, archivo y clave que modifica, valor nuevo y coste. El juego aplica la mejora sobre el valor base, sin reescribir `isak_physics.json`, `isak_abilities.json` ni `debug_mode.json`.
+- **Validadores:** `validate_level_schema.py` tiene que aceptar `reward` en los secretos y el tipo nuevo. `validate_level.py` tiene que modelar la Burbuja aturdida como escalón (hoy solo la modela como puerta bajo el techo bajo), comprobar que los secretos son opcionales y tienen salida, y validar con los valores **base** (sin mejoras).
+- **Pruebas que se rompen:** `play_level_bot.gd`, `test_tramo3_ceiling.gd` y las demás pruebas que usan columnas fijas del 1-1. Hay que desplazarlas o leer las columnas del JSON.
+- **Riesgos:** (1) un tutorial demasiado largo: la skill `level-builder` avisa de que alargar sin motivo hace el nivel pesado, así que hay que medirlo jugando y recortar 3c o 4c si sobra; (2) que se puedan farmear puntos al rejugar (duda 4); (3) que una mejora como "Pulso amplio" abarate el reto del pop-up; (4) migrar el formato del guardado cuando cambie; (5) que las mejoras de Debug no se puedan probar en el 1-1.
+
+## 5. Dudas para el usuario (en orden de importancia)
+
+1. **¿Dónde se activan las mejoras?** Opción a: en el hub con Calc, como dicen los docs (no existe hasta vencer a Alerta Mayor; mientras tanto, en la pantalla provisional del hub). Opción b: se activan solas al recogerlas, si se tienen los puntos y el power bank.
+2. **¿Se aprueba el power bank** como coleccionable nuevo, y **"Pulso amplio"** como mejora que no viene de los docs?
+3. **Recarga de energía y "cargar el Debug":** ¿"cargar" significa activarlo más rápido (Arranque rápido) o recargar la energía? La "Recarga mejorada" depende de esta decisión.
+4. **Puntos de atención al rejugar:** ¿cada punto se recoge una sola vez por partida guardada (sin farmeo) o reaparece? ¿Se aceptan 28 en la ruta en lugar de los 10 a 20 de V8?
+5. **Desvíos de la ficha:** ¿se aceptan un segundo punto de sincronización y pinchos (10 %) en el 1-1?
+6. **Pistas de Eco:** ¿se muestran una vez por partida guardada o cada vez que se juega el nivel? ¿Se enseña la tecla dentro del texto?
