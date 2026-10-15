@@ -1,5 +1,5 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Tipos con scene vacia y status 'pendiente (paso 14b)': definidos para el JSON de nivel y su validador (tools/validate_level_schema.py), aun sin escena.",
+	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Assets del pop-up y la puerta generados por tools/gen_popup.py. Todos los tipos tienen escena (paso 14b).",
 	"tile_size": 64,
 	"types": {
 		"bridge_inactive": {
@@ -44,9 +44,8 @@
 			"example": {"type": "glitch_wall", "x": 22, "y": 7, "params": {"width_tiles": 1, "height_tiles": 2, "solid_neighbors": 7}}
 		},
 		"popup_blocker": {
-			"scene": "",
-			"status": "pendiente (paso 14b)",
-			"description": "Pop-up bloqueante (Tramo 4 del 1-1, PROPUESTA V5): objeto solido de width_tiles x height_tiles con un texto de humor de 6.1 y un boton de cerrar diminuto. Un pulso que toque el boton lo cierra con una animacion y desaparece para siempre. close_button_px: esquina superior izquierda del boton en px relativa a la esquina superior izquierda del pop-up; close_button_size_px: lado del boton (8 px de V5 a 640x360, x2).",
+			"scene": "res://scenes/levels/popup_blocker.tscn",
+			"description": "Pop-up bloqueante (Tramo 4 del 1-1, PROPUESTA V5): ventana solida (capa world) de width_tiles x height_tiles con un texto de humor de 6.1 (fuente de textos) y un boton de cerrar diminuto (rojo alerta: lo unico interactivo). Solo lo cierra un pulso cuya area (circulo de pulse_radius_px en el celular) toque el boton (Area2D propia), no el resto de la ventana. Se cierra con una animacion por pasos (glitch, se aplasta, raya, restos), deja de ser solido y no se vuelve a abrir. El Debug no le cambia nada (solo ralentiza la animacion, tiempo del mundo). close_button_px: esquina superior izquierda del boton en px relativa a la del pop-up ([x, y]; el generador lo pasa a Vector2); close_button_size_px: lado del boton (8 px de V5 a 640x360, x2). PROPUESTA 1-1: [4, 192] con 16 px = boton en el borde izquierdo con el centro a 200 px de la parte de arriba, o sea a 56 px del suelo en un pop-up de 4 tiles apoyado en el suelo: justo a la altura del celular de Isak de pie (pulse_effect_origin y = -56). Lo alcanza un pulso desde menos de ~1,75 tiles de la cara del pop-up (de pie o al empezar un salto); desde el apogeo de un salto o lejos, no.",
 			"required": ["text", "close_button_px"],
 			"fields": {
 				"id": "object_id",
@@ -64,9 +63,8 @@
 			"example": {"type": "popup_blocker", "x": 30, "y": 6, "params": {"id": "popup_1", "text": "Tienes 99+ mensajes que no son importantes", "close_button_px": [4, 192], "close_button_size_px": 16}}
 		},
 		"exit_door": {
-			"scene": "",
-			"status": "pendiente (paso 14b)",
-			"description": "Puerta de salida del nivel (Cierre del 1-1: puerta \"Marcar como leido\"). Contiene la celda G del grid; al cruzarla termina el nivel (se aplican los unlocks del nivel). No es solida.",
+			"scene": "res://scenes/levels/exit_door.tscn",
+			"description": "Puerta de salida del nivel (Cierre del 1-1: puerta \"Marcar como leido\"). Contiene la celda G del grid. No es solida. PROPUESTA: Isak entra con solo tocarla (sin accion nueva): la puerta emite entered(level_id), bloquea la entrada de Isak, se abre por pasos mientras Isak se desvanece y al terminar emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. La etiqueta (text) va encima de la puerta con la fuente de textos sobre una placa noche_profunda; la puerta brilla (parpadeo de borde) por ser interactiva. level_id: lo pone el generador con el id del nivel (si esta vacio usa GameState.current_level).",
 			"required": ["text"],
 			"fields": {
 				"id": "object_id",
@@ -125,10 +123,47 @@
 		"idle_min_s": 0.6,
 		"idle_max_s": 1.8
 	},
+	"popup_blocker": {
+		"_notes": "PROPUESTA. Ventana de 192x256 (cuadro 0 abierta; 1-4 cierre a close_fps, tiempo del mundo) y boton de 16x16 (normal y brillo alternos cada button_blink_s; hit al acertarle). Texto: fuente de textos (data/text_font.json) a font_scale (x2 entero), partido por palabras dentro de text_rect_px ([x, y, ancho, alto] en px del pop-up) y recoloreado con el shader de color clave (banner_blanco -> text_color, noche_profunda).",
+		"texture": "res://assets/sprites/tiles/mundo1_popup.png",
+		"frame_size": [192, 256],
+		"frames": 5,
+		"close_fps": 12.0,
+		"button_texture": "res://assets/sprites/tiles/mundo1_popup_close.png",
+		"button_frames": {"normal": 0, "glow": 1, "hit": 2},
+		"button_frame_px": 16,
+		"button_blink_s": 0.4,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_scale": 2,
+		"text_rect_px": [12, 28, 168, 160],
+		"text_color": "#0b0e1a",
+		"key_color": "#f2f4f8",
+		"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader"
+	},
+	"exit_door": {
+		"_notes": "PROPUESTA. Puerta de 64x128: cuadros 0/1 cerrada (brillo alterno cada glow_blink_s), 2-3 abriendose y 4 abierta, a open_fps (tiempo del mundo). Isak se desvanece en fade_steps pasos discretos durante la apertura. Etiqueta: fuente de textos a font_scale sobre una placa label_plate_color con borde label_border_color; label_gap_px: separacion entre la placa y la parte de arriba de la puerta; label_padding_px: margen de la placa (px de arte).",
+		"texture": "res://assets/sprites/tiles/mundo1_exit_door.png",
+		"frame_size": [64, 128],
+		"frames": {"closed": 0, "glow": 1, "open_first": 2, "open": 4},
+		"glow_blink_s": 0.5,
+		"open_fps": 8.0,
+		"fade_steps": 4,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_scale": 2,
+		"label_gap_px": 12,
+		"label_padding_px": 3,
+		"label_plate_color": "#0b0e1a",
+		"label_border_color": "#9bb0e8"
+	},
 	"assets": [
 		{"path": "res://assets/sprites/tiles/mundo1_bridge.png", "frame_size": [64, 64], "columns": 3, "rows": 1, "seamless_x": true, "needs_transparency": true},
 		{"path": "res://assets/sprites/tiles/mundo1_receiver.png", "frame_size": [64, 64], "columns": 3, "rows": 1, "seamless_x": false, "needs_transparency": true},
 		{"path": "res://assets/sprites/tiles/mundo1_glitch_wall.png", "frame_size": [64, 64], "columns": 4, "rows": 16, "seamless_x": false, "needs_transparency": false},
+		{"path": "res://assets/sprites/tiles/mundo1_popup.png", "frame_size": [192, 256], "columns": 5, "rows": 1, "seamless_x": false, "needs_transparency": true},
+		{"path": "res://assets/sprites/tiles/mundo1_popup_close.png", "frame_size": [16, 16], "columns": 3, "rows": 1, "seamless_x": false, "needs_transparency": false},
+		{"path": "res://assets/sprites/tiles/mundo1_exit_door.png", "frame_size": [64, 128], "columns": 5, "rows": 1, "seamless_x": false, "needs_transparency": false},
 		{"path": "res://assets/sprites/backgrounds/mundo1_bg_cielo.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": false},
 		{"path": "res://assets/sprites/backgrounds/mundo1_bg_fondo_medio.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true},
 		{"path": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true}

@@ -84,3 +84,10 @@ signal eco_line_started(text: String)
 ## El cuadro de Eco termina de mostrar la linea actual (ya se ha ocultado).
 @warning_ignore("unused_signal")
 signal eco_line_finished
+
+## Isak ha cruzado la puerta de salida del nivel `level_id` (ExitDoor, al
+## terminar su animacion de apertura). El flujo de nivel (paso 16) lo usara
+## para volver al hub (C4); de momento hay una pantalla provisional
+## (scenes/hub/hub_placeholder.tscn).
+@warning_ignore("unused_signal")
+signal level_completed(level_id: String)

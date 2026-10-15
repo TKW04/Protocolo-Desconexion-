@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/popup_blocker.gd" id="1_popup"]
+
+[node name="PopupBlocker" type="StaticBody2D" groups=["popup_blocker"]]
+collision_mask = 0
+script = ExtResource("1_popup")
