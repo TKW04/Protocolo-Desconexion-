@@ -67,14 +67,14 @@ func test_scripts_and_tools_never_resolve_to_the_real_save() -> void:
 
 func test_round_trip_keeps_all_progress() -> void:
 	_fill_progress()
-	assert_eq(GameState.attention_points, 42 + 2 - 15)
+	assert_eq(GameState.attention_points, 42 + 2 - 25, "Pulso amplio cuesta 25 (economia 2026-10-15)")
 	assert_true(GameState.save_game())
 	assert_true(FileAccess.file_exists(PATH))
 	assert_false(FileAccess.file_exists(PATH + SaveFile.TMP_SUFFIX), "Sin .tmp: renombrado atomico")
 	GameState.reset_progress()
 	assert_eq(GameState.attention_points, 0)
 	assert_true(GameState.load_game())
-	assert_eq(GameState.attention_points, 29)
+	assert_eq(GameState.attention_points, 19)
 	assert_eq(GameState.get_captured_points(&"1-1"), [&"Point_14_8", &"Point_8_9"] as Array[StringName])
 	assert_eq(GameState.power_banks, 2)
 	assert_eq(GameState.empty_power_banks, 1)

@@ -237,7 +237,7 @@ func test_hud_shows_power_banks_only_when_there_are_some() -> void:
 
 
 func test_hud_sync_percent_shows_real_value_above_100() -> void:
-	GameState.attention_points = 30
+	GameState.attention_points = 150
 	GameState.power_banks = 1
 	assert_eq(GameState.purchase_upgrade(&"reinforced_sync"), GameState.PurchaseResult.OK)
 	var hud := HUD_SCENE.instantiate() as Hud
@@ -285,11 +285,22 @@ func test_captured_points_do_not_reappear_when_replaying() -> void:
 	level.free()
 
 
-func test_map_power_bank_pickup_in_level_gives_empty_bank_once() -> void:
+## Un power bank de mapa dentro de un nivel generado. El 1-1 ya no tiene ninguno
+## (2026-10-15: aparecen desde el 1-2, con el Debug), asi que se anade a su escena.
+func _level_with_pickup() -> GeneratedLevel:
 	var level := LEVEL_SCENE.instantiate() as GeneratedLevel
+	var pickup := (load("res://scenes/levels/power_bank_pickup.tscn") as PackedScene).instantiate() as PowerBankPickup
+	pickup.name = "power_bank_a"
+	pickup.object_id = &"power_bank_a"
+	level.get_node(^"Objects").add_child(pickup)
 	add_child(level)
+	return level
+
+
+func test_map_power_bank_pickup_in_level_gives_empty_bank_once() -> void:
+	var level: GeneratedLevel = _level_with_pickup()
 	var pickup := level.get_node(^"Objects/power_bank_a") as PowerBankPickup
-	assert_not_null(pickup, "Power bank del secreto A en el 1-1")
+	assert_not_null(pickup, "Power bank de mapa en un nivel generado")
 	assert_eq(pickup.get_level_id(), &"1-1")
 	assert_eq(pickup.get_pickup_id(), &"power_bank_a")
 	pickup._on_body_entered(level.get_isak())
@@ -300,8 +311,7 @@ func test_map_power_bank_pickup_in_level_gives_empty_bank_once() -> void:
 	assert_true((GameState.to_save_data()["collected_pickups"] as Dictionary).has("1-1"), "Se guarda")
 	level.free()
 	# Rejugar: el power bank recogido no reaparece.
-	level = LEVEL_SCENE.instantiate() as GeneratedLevel
-	add_child(level)
+	level = _level_with_pickup()
 	var again: Node = level.get_node_or_null(^"Objects/power_bank_a")
 	assert_true(again == null or again.is_queued_for_deletion(), "No reaparece")
 	assert_eq(GameState.empty_power_banks, 1)
