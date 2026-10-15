@@ -1,17 +1,15 @@
 ## Arte PROVISIONAL del hub (2026-10-15): rectangulos dibujados con _draw en los
-## colores de assets/palettes/hub.gpl (roles de data/hub.json, colors). Es la
-## capa que se sustituye por el arte final (assets/sprites/hub/, de
-## tools/gen_hub_objects.py): cada estacion o hueco tiene un nodo "Visual"; si su
-## entrada de datos trae "frames" (SpriteFrames que existan), se usa un
-## AnimatedSprite2D con animaciones off / prompt / active y este nodo no se crea
-## (ver HubStation._build_visual y HubRoom). El origen es la esquina superior
-## izquierda; `size` en px de pantalla.
+## colores de assets/palettes/hub.gpl (roles de data/hub.json, colors). Desde la
+## integracion del arte final (assets/sprites/hub/, tools/gen_hub_objects.py)
+## solo queda como respaldo de una estacion o un hueco SIN arte: si su entrada
+## de datos trae `frames` (SpriteFrames) o `texture`, se usa ese arte y este
+## nodo no se crea (ver HubStation._build_visual y HubRoom). El origen es la
+## esquina superior izquierda; `size` en px de pantalla.
 ## Tipos (kind):
-## - terminal: monitor sobre pedestal (copia local). state off (pantalla en
-##   sombra, cursor), prompt (cian_tenue) o active (cian_brillo); icon "copy"
-##   dibuja dos hojas superpuestas en la pantalla.
-## - calc_dormant: calculadora gris apagada (visor con ojos cerrados, teclado).
-## - slot: silueta apagada (hueco del dock para un aliado futuro).
+## - terminal: monitor sobre pedestal. state off (pantalla en sombra, cursor),
+##   prompt (cian_tenue) o active (cian_brillo); icon "copy" dibuja dos hojas
+##   superpuestas en la pantalla.
+## - slot: silueta apagada.
 class_name HubProvisionalArt
 extends Node2D
 
@@ -22,11 +20,6 @@ const STATE_ACTIVE: StringName = &"active"
 @export var kind: StringName = &"terminal"
 @export var size: Vector2 = Vector2(64.0, 128.0)
 @export var icon: StringName = &""
-## kind room: altura del suelo (dock), foto rota y punto del indicador de pagina.
-var room_floor_y: float = 576.0
-var room_photo: Rect2 = Rect2()
-var room_page_dot: Vector2 = Vector2.ZERO
-
 var state: StringName = STATE_OFF:
 	set(value):
 		state = value
@@ -43,12 +36,8 @@ func _draw() -> void:
 	match kind:
 		&"terminal":
 			_draw_terminal()
-		&"calc_dormant":
-			_draw_calc()
 		&"slot":
 			_draw_slot()
-		&"room":
-			_draw_room()
 		_:
 			draw_rect(Rect2(Vector2.ZERO, size), HubData.color("gris_apagado"))
 
@@ -94,67 +83,6 @@ func _draw_terminal() -> void:
 		draw_rect(front, ink, false, 2.0)
 	else:
 		draw_rect(Rect2(screen.position + Vector2(4.0, screen.size.y - 10.0), Vector2(6.0, 4.0)), ink)
-
-
-func _draw_calc() -> void:
-	var w: float = size.x
-	var h: float = size.y
-	_box(Rect2(0.0, 0.0, w, h), _c("gris_apagado"))
-	draw_rect(Rect2(2.0, 2.0, w - 4.0, 2.0), _c("gris_foto"))
-	var display := Rect2(w * 0.15, h * 0.1, w * 0.7, h * 0.24)
-	_box(display, _c("sombra"))
-	# Ojos cerrados (dormida): dos rayas.
-	var eye_y: float = display.get_center().y
-	draw_rect(Rect2(display.position.x + display.size.x * 0.2, eye_y, display.size.x * 0.2, 2.0), _c("texto_tenue"))
-	draw_rect(Rect2(display.position.x + display.size.x * 0.6, eye_y, display.size.x * 0.2, 2.0), _c("texto_tenue"))
-	# Teclado 3x3.
-	var key_w: float = w * 0.18
-	var key_h: float = h * 0.12
-	for row: int in 3:
-		for col: int in 3:
-			var pos := Vector2(w * 0.15 + col * (key_w + w * 0.08), h * 0.42 + row * (key_h + h * 0.06))
-			draw_rect(Rect2(pos, Vector2(key_w, key_h)), _c("base"))
-
-
-## Sala: fondo, foto rota en 5 piezas (gris; pieza 1 con contorno cian
-## tenue), marco de paredes, dock (suelo) y punto de pagina.
-func _draw_room() -> void:
-	var w: float = size.x
-	var h: float = size.y
-	draw_rect(Rect2(0.0, 0.0, w, h), _c("base"))
-	# Trazas de circuito de 1 px.
-	for y: float in [room_floor_y - 200.0, room_floor_y - 120.0]:
-		draw_rect(Rect2(24.0, y, w - 48.0, 1.0), _c("traza"))
-	if room_photo.has_area():
-		_box(room_photo, _c("gris_apagado"))
-		var inner: Rect2 = room_photo.grow(-2.0)
-		draw_rect(Rect2(inner.position, Vector2(inner.size.x, 2.0)), _c("gris_foto"))
-		# Grietas entre las 5 piezas (sombra) y contorno de la pieza 1.
-		var xs: Array[float] = []
-		for i: int in range(1, 5):
-			xs.append(inner.position.x + inner.size.x * i / 5.0 + (8.0 if i % 2 == 0 else -8.0))
-		var prev: float = inner.position.x
-		for i: int in xs.size():
-			var x: float = xs[i]
-			draw_rect(Rect2(x - 1.0, inner.position.y, 2.0, inner.size.y * 0.5), _c("sombra"))
-			draw_rect(Rect2(x + (6.0 if i % 2 == 0 else -6.0) - 1.0, inner.position.y + inner.size.y * 0.5, 2.0,
-				inner.size.y * 0.5), _c("sombra"))
-			if i == 0:
-				draw_rect(Rect2(prev, inner.position.y, x - prev, inner.size.y), _c("cian_tenue"), false, 2.0)
-			prev = x
-	# Paredes: marco a los lados.
-	for x: float in [0.0, w - 6.0]:
-		draw_rect(Rect2(x, 0.0, 6.0, room_floor_y), _c("dock"))
-	draw_rect(Rect2(6.0, 0.0, 1.0, room_floor_y), _c("borde"))
-	draw_rect(Rect2(w - 7.0, 0.0, 1.0, room_floor_y), _c("borde"))
-	# Dock (suelo).
-	draw_rect(Rect2(0.0, room_floor_y, w, h - room_floor_y), _c("dock"))
-	draw_rect(Rect2(0.0, room_floor_y, w, 4.0), _c("borde"))
-	draw_rect(Rect2(0.0, room_floor_y + 4.0, w, 2.0), _c("gris_foto"))
-	draw_rect(Rect2(16.0, room_floor_y + 16.0, w - 32.0, 1.0), _c("traza"))
-	draw_rect(Rect2(0.0, h - 8.0, w, 8.0), _c("sombra"))
-	if room_page_dot != Vector2.ZERO:
-		draw_rect(Rect2(room_page_dot - Vector2(4.0, 4.0), Vector2(8.0, 8.0)), _c("texto_claro"))
 
 
 func _draw_slot() -> void:

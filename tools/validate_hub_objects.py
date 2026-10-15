@@ -6,7 +6,8 @@ tamano segun su carpeta y prefijo, colores solo de assets/palettes/hub.gpl, alfa
 0 o 255 y fondo transparente (el fondo de pantalla debe ser opaco); los tiles que
 se repiten en horizontal, sin costura. Ademas: ningun rojo reservado
 (#dc0000, #ff3838), estan todos los archivos que produce el generador (y ninguno
-mas) y los PNG estan al dia con el generador (mismos pixeles).
+mas), los PNG estan al dia con el generador (mismos pixeles) y los SpriteFrames
+(assets/sprites/hub/*_frames.tres) coinciden con los que escribiria.
 
 Uso (desde la raiz del repo, sin argumentos): python3 -I tools/validate_hub_objects.py
 Sale con 1 si hay errores. Pillow puede estar en el site de usuario: se anade a
@@ -70,6 +71,14 @@ def main():
             cur = Image.open(f).convert("RGBA")
             if cur.size == expected[k].size and cur.tobytes() != expected[k].convert("RGBA").tobytes():
                 errs.append(f"{k}: distinto de lo que genera tools/gen_hub_objects.py (regenera)")
+    for k, text in gen_hub_objects.frames_resources().items():
+        tres = os.path.join(HUB, k)
+        if not os.path.exists(tres):
+            errs.append(f"falta {k} (regenera con python3 -I tools/gen_hub_objects.py)")
+        else:
+            with open(tres, encoding="utf-8") as fh:
+                if fh.read() != text:
+                    errs.append(f"{k}: distinto de lo que genera tools/gen_hub_objects.py (regenera)")
     print("\n".join(errs) if errs else f"validate_hub_objects: OK ({len(files)} PNG, {len(pal)} colores de hub.gpl)")
     return 1 if errs else 0
 

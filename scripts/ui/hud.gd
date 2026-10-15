@@ -92,9 +92,9 @@ var _power_banks: int = 0
 ## Modo hub (enable_hub_mode): Modo Avion en lugar de la senal e indicador
 ## «sin guardar». Se crea por codigo (no toca hud.tscn ni data/hud.json).
 var _hub_mode: bool = false
-var _airplane: HudHubIcon
+var _airplane: TextureRect
 var _unsaved_box: HBoxContainer
-var _unsaved_dot: HudHubIcon
+var _unsaved_icon: TextureRect
 var _unsaved_label: Label
 
 
@@ -426,21 +426,15 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 ## Modo Avion (en el hub no hay dano) y, junto al contador de puntos, sale el
 ## indicador «sin guardar» (punto y texto en el rol unsaved_color, ambar) cuando
 ## GameState.has_unsaved_changes(). `config`: seccion hud de data/hub.json.
-## Iconos PROVISIONALES (HudHubIcon) hasta integrar assets/sprites/hub/icons/.
+## Iconos de assets/sprites/hub/icons/ (airplane_icon y unsaved_icon).
 func enable_hub_mode(config: Dictionary) -> void:
 	if _hub_mode:
 		return
 	_hub_mode = true
 	_signal.visible = false
 	_sync_label.visible = false
-	var icon_size: Array = config.get("icon_size_px", [10, 10])
-	_airplane = HudHubIcon.new()
-	_airplane.name = "AirplaneMode"
-	_airplane.kind = &"airplane"
-	_airplane.color = HubData.color(String(config.get("airplane_color", "texto_claro")))
-	_airplane.custom_minimum_size = Vector2(float(icon_size[0]), float(icon_size[1]))
-	_airplane.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_airplane.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon_size: Array = config.get("icon_size_px", [16, 16])
+	_airplane = _hub_icon("AirplaneMode", String(config.get("airplane_icon", "")), icon_size)
 	_row.add_child(_airplane)
 	_row.move_child(_airplane, 0)
 	var unsaved_color: Color = HubData.color(String(config.get("unsaved_color", "ambar")))
@@ -449,15 +443,8 @@ func enable_hub_mode(config: Dictionary) -> void:
 	_unsaved_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_unsaved_box.add_theme_constant_override("separation", int(config.get("unsaved_spacing_px", 3)))
 	_row.add_child(_unsaved_box)
-	_unsaved_dot = HudHubIcon.new()
-	_unsaved_dot.name = "Dot"
-	_unsaved_dot.kind = &"dot"
-	_unsaved_dot.color = unsaved_color
-	var dot_size: float = float(config.get("unsaved_dot_px", 4))
-	_unsaved_dot.custom_minimum_size = Vector2(dot_size, dot_size)
-	_unsaved_dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_unsaved_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_unsaved_box.add_child(_unsaved_dot)
+	_unsaved_icon = _hub_icon("Icon", String(config.get("unsaved_icon", "")), icon_size)
+	_unsaved_box.add_child(_unsaved_icon)
 	_unsaved_label = Label.new()
 	_unsaved_label.name = "Text"
 	_unsaved_label.add_theme_font_override("font", load(String(config.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font)
@@ -470,6 +457,28 @@ func enable_hub_mode(config: Dictionary) -> void:
 	_unsaved_box.add_child(_unsaved_label)
 	EventBus.unsaved_changes_changed.connect(_on_unsaved_changes_changed)
 	_on_unsaved_changes_changed(GameState.has_unsaved_changes())
+
+
+## Icono del HUD del hub (TextureRect de `size_px` px de arte).
+func _hub_icon(node_name: String, path: String, size_px: Array) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.name = node_name
+	icon.texture = load(path) as Texture2D if not path.is_empty() else null
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.custom_minimum_size = Vector2(float(size_px[0]), float(size_px[1]))
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
+
+## Iconos del modo hub (Modo Avion y «sin guardar»), para pruebas.
+func get_hub_icons() -> Array[TextureRect]:
+	var out: Array[TextureRect] = []
+	if _hub_mode:
+		out.append(_airplane)
+		out.append(_unsaved_icon)
+	return out
 
 
 func is_hub_mode() -> bool:

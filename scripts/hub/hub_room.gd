@@ -11,15 +11,19 @@
 ## - Habilidades del hub (abilities_available: pulso si, Debug no; se restauran
 ##   al salir, como en GeneratedLevel); las obtenidas no se tocan.
 ## - El HUD pasa al modo hub (Modo Avion e indicador «sin guardar» en ambar).
-## Estaciones (stations: escena HubStation en una celda) y huecos apagados del
-## dock (dormant: Calc dormida sin logica aun y siluetas de Notas, Linterna y
-## Papelera) se crean desde los datos, con arte PROVISIONAL (HubProvisionalArt)
-## en un nodo "Visual" sustituible por el arte final (`frames`). La copia local
+## Arte final (assets/sprites/hub/, tools/gen_hub_objects.py): fondo con la foto
+## rota (Background: animacion off, pieza 1 con contorno cian que parpadea; on,
+## pieza 1 encendida cuando la carpeta del mundo background_on_world esta
+## completada), dock de tiles (suelo), indicador de pagina, repisas de una via y
+## carpetas. Estaciones (stations: escena HubStation en una celda, con su
+## SpriteFrames `frames`) y huecos apagados del dock (dormant: Calc dormida sin
+## logica aun y siluetas de Notas, Linterna y Papelera; `frames` + `animation`
+## o `texture`) se crean desde los datos en un nodo "Visual". La copia local
 ## (CopyLocalStation) guarda; mientras el hub esta abierto, el aviso al salir
 ## con cambios ofrece guardar (grupo QuitGuard.SAVE_STATION_GROUP).
 ## AUN NO esta en el flujo del juego (paso 9): LevelRunner sigue llevando a
-## hub_placeholder. Se prueba abriendo scenes/hub/hub.tscn o con
-## tools/render_hub.gd.
+## hub_placeholder. Se prueba abriendo scenes/hub/hub.tscn
+## o con tools/render_hub.gd.
 class_name HubRoom
 extends Node2D
 
@@ -36,6 +40,7 @@ var _arrival: WarpVortex
 var _arrived: bool = false
 var _stations: Dictionary[StringName, HubStation] = {}
 var _dormant: Dictionary[StringName, Node2D] = {}
+var _background: AnimatedSprite2D
 var _previous_abilities: Dictionary = {}
 
 
@@ -118,6 +123,11 @@ func get_dormant_ids() -> Array[StringName]:
 	return _dormant.keys()
 
 
+## Animacion del fondo: off (pieza 1 con contorno) u on (encendida).
+func get_background_state() -> StringName:
+	return _background.animation if _background != null else &""
+
+
 ## Tamano de la sala en tiles y en px.
 func get_size_tiles() -> Vector2i:
 	var s: Array = _room.get("size_tiles", [20, 11])
@@ -184,14 +194,20 @@ func _build_room() -> void:
 	room.name = "Room"
 	add_child(room)
 	move_child(room, 0)
-	var art := HubProvisionalArt.new()
-	art.name = "Visual"
-	art.kind = &"room"
-	art.size = screen.size
-	art.room_floor_y = floor_y
-	art.room_photo = _rect_from_cells(_room.get("photo_cells", [6, 1, 8, 5]))
-	art.room_page_dot = Vector2(size.x * 0.5, (float(_room.get("page_dot_row", 10)) + 0.5) * t)
-	room.add_child(art)
+	_background = AnimatedSprite2D.new()
+	_background.name = "Background"
+	_background.centered = false
+	_background.sprite_frames = load(String(_room.get("background", ""))) as SpriteFrames
+	room.add_child(_background)
+	refresh_background()
+	_build_dock(room, screen, floor_y)
+	var dot_path: String = String(_room.get("page_dot", ""))
+	if not dot_path.is_empty():
+		var dot := Sprite2D.new()
+		dot.name = "PageDot"
+		dot.texture = load(dot_path) as Texture2D
+		dot.position = Vector2(size.x * 0.5, (float(_room.get("page_dot_row", 10)) + 0.5) * t)
+		room.add_child(dot)
 	var bodies := StaticBody2D.new()
 	bodies.name = "Collision"
 	bodies.collision_layer = 1
@@ -206,6 +222,52 @@ func _build_room() -> void:
 	_add_box(bodies, "Ceiling", Rect2(0.0, -thick, size.x, thick))
 
 
+## Fondo: pieza 1 encendida si la carpeta de background_on_world esta completada.
+func refresh_background() -> void:
+	if _background == null or _background.sprite_frames == null:
+		return
+	var on_world: int = int(_room.get("background_on_world", 1))
+	var lit: bool = false
+	for entry: Dictionary in HubWorlds.worlds():
+		if int(entry.get("world", 0)) == on_world:
+			lit = HubWorlds.folder_state(entry) == HubWorlds.STATE_COMPLETED
+	var anim: StringName = &"on" if lit else &"off"
+	if _background.sprite_frames.has_animation(anim) and (_background.animation != anim or not _background.is_playing()):
+		_background.play(anim)
+
+
+## Dock de tiles: fila del suelo (bordes y centro) y relleno hasta el borde de
+## la pantalla.
+func _build_dock(room: Node2D, screen: Rect2, floor_y: float) -> void:
+	var dock: Dictionary = _room.get("dock", {})
+	if dock.is_empty():
+		return
+	var t: float = HubData.tile_size()
+	var holder := Node2D.new()
+	holder.name = "Dock"
+	room.add_child(holder)
+	var cols: int = get_size_tiles().x
+	var every: int = maxi(1, int(dock.get("fill_alt_every", 5)))
+	var offset: int = int(dock.get("fill_alt_offset", 2))
+	for c: int in cols:
+		var top_key: String = "top_left" if c == 0 else ("top_right" if c == cols - 1 else "top_center")
+		_add_tile(holder, String(dock.get(top_key, "")), Vector2(c * t, floor_y))
+		var y: float = floor_y + t
+		while y < screen.end.y:
+			var fill_key: String = "fill_alt" if c % every == offset else "fill"
+			_add_tile(holder, String(dock.get(fill_key, "")), Vector2(c * t, y))
+			y += t
+
+
+func _add_tile(parent: Node, path: String, pos: Vector2) -> Sprite2D:
+	var tile := Sprite2D.new()
+	tile.centered = false
+	tile.texture = load(path) as Texture2D if not path.is_empty() else null
+	tile.position = pos
+	parent.add_child(tile)
+	return tile
+
+
 func _add_box(body: StaticBody2D, node_name: String, rect: Rect2) -> void:
 	var shape := CollisionShape2D.new()
 	shape.name = node_name
@@ -214,11 +276,6 @@ func _add_box(body: StaticBody2D, node_name: String, rect: Rect2) -> void:
 	shape.shape = box
 	shape.position = rect.get_center()
 	body.add_child(shape)
-
-
-func _rect_from_cells(cells: Array) -> Rect2:
-	var t: float = HubData.tile_size()
-	return Rect2(float(cells[0]) * t, float(cells[1]) * t, float(cells[2]) * t, float(cells[3]) * t)
 
 
 ## Huecos apagados del dock, de pie sobre el suelo en su columna.
@@ -265,17 +322,24 @@ func _build_stations() -> void:
 		_stations[id] = station
 
 
-## Arte final si la entrada trae `frames` que existan (animacion off); si no,
-## el provisional de `kind`.
+## Arte final: `frames` (SpriteFrames; animacion `animation`, por defecto off)
+## o `texture`. Si no hay ninguno, el provisional de `kind`.
 func _visual_for(entry: Dictionary, size: Vector2) -> Node2D:
 	var frames_path: String = String(entry.get("frames", ""))
 	if not frames_path.is_empty() and ResourceLoader.exists(frames_path):
 		var sprite := AnimatedSprite2D.new()
 		sprite.sprite_frames = load(frames_path) as SpriteFrames
 		sprite.centered = false
-		if sprite.sprite_frames.has_animation(&"off"):
-			sprite.play(&"off")
+		var anim := StringName(String(entry.get("animation", "off")))
+		if sprite.sprite_frames.has_animation(anim):
+			sprite.play(anim)
 		return sprite
+	var texture_path: String = String(entry.get("texture", ""))
+	if not texture_path.is_empty() and ResourceLoader.exists(texture_path):
+		var image := Sprite2D.new()
+		image.centered = false
+		image.texture = load(texture_path) as Texture2D
+		return image
 	var art := HubProvisionalArt.new()
 	art.kind = StringName(String(entry.get("kind", "slot")))
 	art.size = size

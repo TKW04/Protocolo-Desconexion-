@@ -2,7 +2,7 @@
 # docs/propuesta-hub-y-guardado.md §6.2): sala de 20x11 tiles con camara fija,
 # Isak llega por un vortice en P y recupera el control, la energia se llena al
 # entrar, paredes y suelo (dock), huecos apagados (Calc dormida, Notas,
-# Linterna, Papelera) y HUD en modo hub (Modo Avion e indicador «sin guardar»
+# Linterna, Papelera) con el arte final y HUD en modo hub (Modo Avion e indicador «sin guardar»
 # en ambar). Usa su propia ruta de guardado.
 extends GutTest
 
@@ -107,7 +107,7 @@ func test_walls_keep_isak_inside_the_screen() -> void:
 	assert_lt(isak.global_position.x, 1280.0, "Pared derecha")
 
 
-func test_dormant_slots_stand_on_the_dock() -> void:
+func test_dormant_slots_stand_on_the_dock_with_final_art() -> void:
 	_spawn()
 	for id: StringName in [&"calc", &"notas", &"linterna", &"papelera"]:
 		var node: Node2D = _hub.get_dormant(id)
@@ -116,12 +116,48 @@ func test_dormant_slots_stand_on_the_dock() -> void:
 			continue
 		var visual: Node2D = node.get_node_or_null(^"Visual")
 		assert_not_null(visual, "Visual sustituible")
-		assert_true(visual is HubProvisionalArt, "Arte provisional")
-		var art := visual as HubProvisionalArt
-		assert_almost_eq(node.position.y + art.size.y, _hub.get_floor_y(), 0.5, "%s de pie sobre el dock" % id)
-	assert_eq((_hub.get_dormant(&"calc").get_node(^"Visual") as HubProvisionalArt).kind, &"calc_dormant",
-		"Calc dormida")
+		assert_false(visual is HubProvisionalArt, "%s: arte final, no provisional" % id)
+		var height: float = 0.0
+		if visual is AnimatedSprite2D:
+			var sprite := visual as AnimatedSprite2D
+			height = sprite.sprite_frames.get_frame_texture(sprite.animation, 0).get_size().y
+		elif visual is Sprite2D:
+			height = (visual as Sprite2D).texture.get_size().y
+		assert_eq(height, 96.0, "%s: 64x96" % id)
+		assert_almost_eq(node.position.y + height, _hub.get_floor_y(), 0.5, "%s de pie sobre el dock" % id)
+	var calc := _hub.get_dormant(&"calc").get_node(^"Visual") as AnimatedSprite2D
+	assert_not_null(calc, "Calc animada")
+	if calc != null:
+		assert_eq(calc.animation, &"sleep", "Calc dormida")
+		assert_true(calc.is_playing())
 	assert_eq(_hub.get_dormant(&"calc").position.x, 7.0 * T, "Calc en la columna 7")
+
+
+func test_room_uses_final_background_dock_and_page_dot() -> void:
+	_spawn()
+	var room: Node = _hub.get_node(^"Room")
+	var bg := room.get_node_or_null(^"Background") as AnimatedSprite2D
+	assert_not_null(bg, "Fondo con la foto rota")
+	assert_eq(bg.sprite_frames.get_frame_texture(&"off", 0).get_size(), Vector2(1280.0, 720.0))
+	assert_eq(bg.sprite_frames.get_frame_count(&"off"), 2, "Contorno cian que parpadea")
+	assert_eq(_hub.get_background_state(), &"off", "Sin el Mundo 1 completo: pieza 1 apagada")
+	var dock: Node = room.get_node_or_null(^"Dock")
+	assert_not_null(dock, "Dock de tiles")
+	var top_row: int = 0
+	for tile: Node in dock.get_children():
+		var sprite := tile as Sprite2D
+		assert_not_null(sprite.texture, "Tile con textura")
+		if is_equal_approx(sprite.position.y, _hub.get_floor_y()):
+			top_row += 1
+	assert_eq(top_row, 20, "Una fila de 20 tiles de superficie sobre el suelo")
+	assert_not_null(room.get_node_or_null(^"PageDot"), "Indicador de pagina")
+
+
+func test_background_lights_piece_one_when_world_1_is_completed() -> void:
+	for id: StringName in [&"1-1", &"1-2", &"1-3"]:
+		GameState.mark_level_completed(id)
+	_spawn()
+	assert_eq(_hub.get_background_state(), &"on", "Mundo 1 completo: pieza 1 encendida")
 
 
 func test_hub_unlocks_the_pulse_and_restores_abilities_on_exit() -> void:
@@ -144,6 +180,10 @@ func test_hud_shows_airplane_mode_and_amber_unsaved_indicator() -> void:
 	assert_true(hud.is_unsaved_indicator_shown(), "Cambios sin guardar: indicador")
 	assert_eq(hud.get_unsaved_text(), "Sin guardar")
 	assert_eq(hud.get_unsaved_color(), Color.html("#ffa000"), "Ambar de hub.gpl")
+	var icons: Array[TextureRect] = hud.get_hub_icons()
+	assert_eq(icons.size(), 2, "Modo Avion y «sin guardar»")
+	assert_eq(icons[0].texture.resource_path, "res://assets/sprites/hub/icons/icon_airplane_mode_00.png")
+	assert_eq(icons[1].texture.resource_path, "res://assets/sprites/hub/icons/icon_unsaved_00.png")
 	assert_true(GameState.save_game())
 	assert_false(hud.is_unsaved_indicator_shown(), "Tras guardar se apaga")
 

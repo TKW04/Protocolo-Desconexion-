@@ -738,6 +738,54 @@ def outputs():
     return out
 
 
+# ------------------------------------------------------------- SpriteFrames
+# Recursos SpriteFrames de Godot 4 (assets/sprites/hub/<nombre>_frames.tres) que
+# usa el hub (HubRoom, HubStation, FolderStation): (animacion, prefijo de los
+# PNG, cuadros, fps, bucle). Los escribe main() junto a los PNG y el validador
+# comprueba que estan al dia.
+FRAMES = {
+    "hub_bg_frames.tres": [("off", "background/hub_bg_photo_off", 2, 1.5, True),
+                           ("on", "background/hub_bg_photo_on", 1, 1.0, True)],
+    "local_copy_frames.tres": [("off", "local_copy/local_copy_off", 2, 2.0, True),
+                               ("prompt", "local_copy/local_copy_prompt", 2, 3.0, True),
+                               ("active", "local_copy/local_copy_active", 2, 6.0, True)],
+    "folder_frames.tres": [("locked", "folders/folder_locked", 1, 1.0, True),
+                           ("available", "folders/folder_available", 2, 2.0, True),
+                           ("completed", "folders/folder_completed", 1, 1.0, True)],
+    "calc_frames.tres": [("sleep", "calc/calc_sleep", 3, 2.0, True),
+                         ("awake", "calc/calc_awake", 4, 3.0, True)],
+}
+
+
+def frames_resources():
+    """{ruta relativa a assets/sprites/hub: texto del .tres} (orden estable)."""
+    out = {}
+    for name, anims in FRAMES.items():
+        out[name] = sprite_frames_tres([
+            (anim, ["res://%s/%s_%02d.png" % (OUT, prefix, i) for i in range(n)], fps, loop)
+            for anim, prefix, n, fps, loop in anims])
+    return out
+
+
+def sprite_frames_tres(anims):
+    """Texto de un recurso SpriteFrames de Godot 4 con las animaciones dadas
+    (mismo formato que tools/gen_warp_objects.py)."""
+    paths = [p for _, ps, _, _ in anims for p in ps]
+    lines = ['[gd_resource type="SpriteFrames" load_steps=%d format=3]' % (len(paths) + 1), ""]
+    ids = {}
+    for i, p in enumerate(paths, start=1):
+        ids[p] = "%d_%s" % (i, os.path.splitext(os.path.basename(p))[0])
+        lines.append('[ext_resource type="Texture2D" path="%s" id="%s"]' % (p, ids[p]))
+    lines += ["", "[resource]"]
+    blocks = []
+    for name, ps, fps, loop in anims:
+        frames = ", ".join('{\n"duration": 1.0,\n"texture": ExtResource("%s")\n}' % ids[p] for p in ps)
+        blocks.append('{\n"frames": [%s],\n"loop": %s,\n"name": &"%s",\n"speed": %.1f\n}'
+                      % (frames, "true" if loop else "false", name, fps))
+    lines.append("animations = [" + ", ".join(blocks) + "]")
+    return "\n".join(lines) + "\n"
+
+
 def preview(imgs, path, scale=4):
     """Hoja de contacto: una fila por animacion/estado (el fondo, a x1 aparte)."""
     groups = {}
@@ -821,6 +869,9 @@ def main(argv):
             p = os.path.join(REPO, OUT, k)
             os.makedirs(os.path.dirname(p), exist_ok=True)
             im.save(p, optimize=True)
+        for k, text in frames_resources().items():
+            with open(os.path.join(REPO, OUT, k), "w", encoding="utf-8") as fh:
+                fh.write(text)
     if "--preview" in argv:
         preview(imgs, argv[argv.index("--preview") + 1],
                 int(argv[argv.index("--scale") + 1]) if "--scale" in argv else 4)
