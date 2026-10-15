@@ -67,6 +67,20 @@ Desde la raíz del repo:
 
 Ambos usan Pillow. Si está instalado en el site de usuario (`pip3 install --user Pillow`), los scripts lo añaden a `sys.path` a mano, así que funcionan también con `python3 -I`.
 
+## Vórtice de llegada y salida (2026-10-15)
+
+Isak ya no cae del cielo al empezar el nivel (P está en el suelo, columna 4, fila 9 del 1-1): llega por un **vórtice** al empezar o reiniciar el nivel y al reaparecer tras morir o caer. Mismo lenguaje «circuito limpio»: tres anillos partidos en arcos que giran en sentidos alternos (exterior `pulse_dim` con nodos `borde_luz` y patillas `resplandor`; medio `debug_cian` con nodos `pulse_core`; interior `pulse_core` con nodos `debug_cian`), sin fondo. Al cerrarse acaba en un destello en cruz.
+
+| Animación | Archivos (`assets/sprites/effects/vortex/`) | Tamaño | Cuadros |
+|---|---|---|---|
+| Apertura | `vortex_open_00..03.png` | 96x96 | 4 a 12 fps (los anillos crecen) |
+| Giro | `vortex_spin_00..03.png` | 96x96 | 4 a 12 fps, bucle |
+| Cierre | `vortex_close_00..05.png` | 96x96 | 6 a 12 fps (se cierran hacia el centro; destello) |
+
+Comportamiento (`WarpVortex`, `scripts/levels/warp_vortex.gd`; valores en `data/warp.json`): el vórtice se centra a 48 px sobre los pies de Isak, detrás de él, y avanza con tiempo del mundo. Llegada: Isak oculto y sin control (entrada quieta, no recibe golpes) mientras el fundido de entrada termina; luego el vórtice se abre, gira una vuelta y, al empezar a cerrarse, Isak se muestra (salen entonces las líneas de Eco que esperaban, como la bienvenida, que pausa con el vórtice en pantalla) y se materializa en 4 pasos de opacidad; el control vuelve al terminar el cierre (unos 1,2 s tras el fundido). Salida: igual, pero Isak se desvanece al cerrarse.
+
+Regenerar: `python3 -I tools/gen_warp_objects.py` (`--preview <png>` para la hoja ampliada); validar: `python3 -I tools/validate_warp_objects.py` (paletas, alfa, PNG y `assets/sprites/warp_objects_frames.tres` al día con el generador; lo ejecuta `tools/run_tests.sh`).
+
 ## Pendiente
 
 - Los `.import` de Godot se crean la primera vez que se abre el editor (o con `tools/run_tests.sh`, que importa el proyecto); se commitean como los del resto de `assets/sprites/`.

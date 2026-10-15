@@ -1,0 +1,76 @@
+[gd_resource type="SpriteFrames" load_steps=15 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_open_00.png" id="1_vortex_open_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_open_01.png" id="2_vortex_open_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_open_02.png" id="3_vortex_open_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_open_03.png" id="4_vortex_open_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_spin_00.png" id="5_vortex_spin_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_spin_01.png" id="6_vortex_spin_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_spin_02.png" id="7_vortex_spin_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_spin_03.png" id="8_vortex_spin_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_00.png" id="9_vortex_close_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_01.png" id="10_vortex_close_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_02.png" id="11_vortex_close_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_03.png" id="12_vortex_close_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_04.png" id="13_vortex_close_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/vortex/vortex_close_05.png" id="14_vortex_close_05"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_vortex_open_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_vortex_open_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_vortex_open_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_vortex_open_03")
+}],
+"loop": false,
+"name": &"vortex_open",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_vortex_spin_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_vortex_spin_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_vortex_spin_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_vortex_spin_03")
+}],
+"loop": true,
+"name": &"vortex_spin",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_vortex_close_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_vortex_close_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_vortex_close_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_vortex_close_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_vortex_close_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_vortex_close_05")
+}],
+"loop": false,
+"name": &"vortex_close",
+"speed": 12.0
+}]

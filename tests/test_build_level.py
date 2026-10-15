@@ -80,8 +80,8 @@ class BuildLevelTest(unittest.TestCase):
         self.assertIn("camera_limits = Rect2i(0, 0, 19200, 896)", text)
         self.assertIn('abilities_available = {"debug": false, "pulse": true}', text)
         self.assertIn('metadata/params = {"patrol_range_px": 320.0, "patrol_speed_px_s": 80.0}', text)
-        # P en (4, 3): pies abajo-centro de la celda.
-        self.assertRegex(text, r'\[node name="Isak" parent="\." instance=ExtResource\("[^"]+"\)\]\nposition = Vector2\(288, 256\)')
+        # P en (4, 9) (en el suelo, 2026-10-15): pies abajo-centro de la celda.
+        self.assertRegex(text, r'\[node name="Isak" parent="\." instance=ExtResource\("[^"]+"\)\]\nposition = Vector2\(288, 640\)')
         self.assertEqual(text.count('parent="AttentionPoints"'), "".join(load_level()["grid"]).count("o"))
         self.assertIn('[node name="popup_lejano" parent="Objects"', text)
         self.assertIn("close_button_position = Vector2(52, 192)", text)

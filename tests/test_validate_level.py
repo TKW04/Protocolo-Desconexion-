@@ -292,6 +292,7 @@ class BrokenVariantsTest(unittest.TestCase):
 
     def test_spikes_at_spawn(self):
         level = base_level()
+        set_cell(level, 4, 3, "P")  # P en el aire (el 1-1 la tiene en el suelo desde 2026-10-15)
         set_cell(level, 4, 9, "^")  # donde cae Isak desde P
         self.assert_fails(level, "pinchos en el punto de aparicion P", "columna 4", schema=False)
 

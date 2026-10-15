@@ -235,7 +235,7 @@ func test_death_respawns_at_checkpoint_with_full_sync_and_no_debug() -> void:
 func test_death_without_checkpoint_respawns_at_start() -> void:
 	await _start()
 	var start: Vector2 = _main.get_start_position()
-	assert_eq(start, Vector2(4.5 * TILE, 4.0 * TILE), "P del grid (4, 3)")
+	assert_eq(start, Vector2(4.5 * TILE, 10.0 * TILE), "P del grid (4, 9), en el suelo")
 	_teleport(30.0)
 	await wait_physics_frames(5)
 	_die_and_respawn()

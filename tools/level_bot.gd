@@ -203,7 +203,7 @@ func _play() -> bool:
 			had_laser = true
 			_note("recoge el laser (x=%.0f, columna %d; energia %.0f)" % [x, int(x / TILE), GameState.debug_energy])
 			_shot_in("6_laser", 30)
-		if _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead():
+		if _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead() or _isak.is_warping():
 			_input.move_axis = 0.0
 			waiting = true
 		elif not gate.is_empty():

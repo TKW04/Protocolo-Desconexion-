@@ -475,7 +475,7 @@ metadata/params = {"health": 3.0, "patrol_range_px": 128.0, "patrol_speed_px_s":
 position = Vector2(18592, 640)
 
 [node name="Isak" parent="." instance=ExtResource("16_isak")]
-position = Vector2(288, 256)
+position = Vector2(288, 640)
 camera_limits = Rect2i(0, 0, 19200, 896)
 
 [node name="Hud" parent="." instance=ExtResource("17_hud")]

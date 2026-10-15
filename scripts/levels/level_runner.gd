@@ -30,12 +30,14 @@
 ## - Avisos de control de las habilidades (AbilityNotices, hijo
 ##   AbilityNotices; data/ability_notices.json): se arman al empezar cada nivel
 ##   y se desarman en el hub.
-## - Pausa de inicio (2026-10-15): al empezar el nivel y al reaparecer, Isak
-##   llega "oculto" (Isak.begin_warp(true): control bloqueado) hasta que el
-##   fundido de entrada deja ver el nivel; solo entonces se muestra
-##   (present_isak) y salen las lineas de Eco de zona que esperaban
-##   (EcoLine), p. ej. la bienvenida importante del 1-1, que pausa el juego ya
-##   con el nivel en pantalla.
+## - Llegada por un vortice y pausa de inicio (2026-10-15): al empezar o
+##   reiniciar el nivel y al reaparecer, Isak llega oculto y sin control por un
+##   vortice (WarpVortex.arrive, data/warp.json) que espera a que el fundido de
+##   entrada deje ver el nivel (present_isak lo suelta). Isak se muestra al
+##   empezar a cerrarse el vortice; entonces salen las lineas de Eco de zona que
+##   esperaban (EcoLine), p. ej. la bienvenida importante del 1-1, que pausa el
+##   juego con el nivel y el vortice ya en pantalla. El control vuelve al
+##   cerrarse el vortice.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -90,6 +92,7 @@ var _prompt_layer: CanvasLayer
 var _prompt_label: Label
 var _prompt_bar: ColorRect
 var _notices: AbilityNotices
+var _arrival: WarpVortex
 
 
 func _ready() -> void:
@@ -237,7 +240,7 @@ func start_level(level_id: String) -> bool:
 	_isak = _level.get_isak()
 	_spawn_position = _isak.global_position
 	_isak.died.connect(_on_isak_died)
-	_isak.begin_warp(true)
+	_start_arrival()
 	_deaths = 0
 	_falls = 0
 	level_started.emit(level_id)
@@ -314,13 +317,17 @@ func advance(delta: float) -> void:
 				present_isak()
 
 
-## El nivel ya se ve: termina la llegada de Isak (devuelve el control y suelta
-## las lineas de Eco que esperaban). Falso si no habia llegada pendiente.
+## El nivel ya se ve: suelta el vortice de llegada de Isak, que lo materializa
+## y le devuelve el control. Falso si no habia llegada pendiente.
 func present_isak() -> bool:
-	if _isak == null or not is_instance_valid(_isak) or not _isak.is_warping():
+	if _arrival == null or not is_instance_valid(_arrival):
 		return false
-	_isak.end_warp()
-	return true
+	return _arrival.release()
+
+
+## Vortice de llegada en curso o esperando al fundido (null si no hay).
+func get_arrival_vortex() -> WarpVortex:
+	return _arrival if _arrival != null and is_instance_valid(_arrival) else null
 
 
 ## Red de seguridad: Isak por debajo del nivel -> reaparece. Verdadero si salta.
@@ -359,12 +366,19 @@ func _respawn(after_death: bool) -> void:
 	else:
 		GameState.apply_sync_damage(float(_data.get("fall_sync_penalty", 0.0)))
 	_isak.respawn(at, float(_data.get("respawn_invulnerability_s", 1.0)))
-	_isak.begin_warp(true)
+	_start_arrival()
 	for enemy: Node in get_tree().get_nodes_in_group(AlertBubble.GROUP):
 		if _level.is_ancestor_of(enemy) and enemy.has_method(&"reset_patrol"):
 			enemy.call(&"reset_patrol")
 	respawned.emit(at, after_death)
 	EventBus.player_respawned.emit(at, after_death)
+
+
+## Isak llega por un vortice que espera al fundido de entrada (present_isak).
+func _start_arrival() -> void:
+	if _arrival != null and is_instance_valid(_arrival):
+		_arrival.queue_free()
+	_arrival = WarpVortex.arrive(_isak, _level, true)
 
 
 func _show_hub(level_id: String, attention_points: int) -> void:
