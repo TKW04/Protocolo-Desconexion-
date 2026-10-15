@@ -6,6 +6,7 @@
 extends GutTest
 
 const PATH: String = "user://test_save_game.json"
+const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 var _saved_path: String
 var _saved_autosave: bool
@@ -63,6 +64,41 @@ func test_scripts_and_tools_never_resolve_to_the_real_save() -> void:
 			assert_eq(GameState.resolve_save_path(args, ""), GameState.SAVE_PATH_TOOLS, tool)
 	assert_eq(GameState.resolve_save_path(gut, "user://env.json"), "user://env.json", "ISAK_SAVE_PATH manda")
 	assert_eq(GameState.resolve_save_path(PackedStringArray(), "user://env.json"), "user://env.json")
+
+
+# El flujo de juego real (scenes/main.tscn) con autoguardado: el aviso del pulso
+# y un punto de atencion se guardan en la ruta de prueba; el user://save.json del
+# jugador no cambia (ni se crea) y la ruta resuelta al arrancar GUT no es la real.
+func test_main_scene_under_gut_never_touches_the_real_save() -> void:
+	var resolved: String = GameState.resolve_save_path(OS.get_cmdline_args(),
+		OS.get_environment(GameState.SAVE_PATH_ENV))
+	assert_ne(resolved, GameState.SAVE_PATH_DEFAULT, "GUT arranca con otra ruta")
+	var real_before: String = _fingerprint(GameState.SAVE_PATH_DEFAULT)
+	var saved_level: StringName = GameState.current_level
+	var saved_pulse: bool = GameState.is_ability_unlocked(&"pulse")
+	GameState.autosave_enabled = true
+	var main: LevelRunner = MAIN_SCENE.instantiate() as LevelRunner
+	main.auto_advance = false
+	main.start_level_id = "1-1"
+	add_child(main)
+	assert_ne(GameState.save_path, GameState.SAVE_PATH_DEFAULT, "main.tscn no cambia la ruta")
+	var notices: AbilityNotices = main.get_ability_notices()
+	notices.auto_advance = false
+	notices.advance(float(AbilityNotices.load_data()["start_delay_s"]) + 0.01)
+	assert_true(GameState.capture_attention_point(&"1-1", &"Point_8_9", 1))
+	await wait_process_frames(2)
+	var written: Dictionary = SaveFile.read(PATH)
+	assert_eq(written.get("captured_points", {}).get("1-1"), ["Point_8_9"], "Guardado en la ruta de prueba")
+	assert_true(GameState.is_notice_seen(&"pulse"))
+	main.free()
+	DebugMode.reset()
+	GameState.set_ability_unlocked(&"pulse", saved_pulse)
+	GameState.current_level = saved_level
+	assert_eq(_fingerprint(GameState.SAVE_PATH_DEFAULT), real_before, "user://save.json intacto")
+
+
+static func _fingerprint(path: String) -> String:
+	return FileAccess.get_md5(path) if FileAccess.file_exists(path) else "ausente"
 
 
 func test_round_trip_keeps_all_progress() -> void:
