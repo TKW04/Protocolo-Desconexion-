@@ -14,7 +14,6 @@ const LONG_STEP_S: float = 5.0
 
 var _main: LevelRunner
 var _saved_path: String
-var _saved_autosave: bool
 var _saved_level: StringName
 
 
@@ -30,9 +29,7 @@ func after_all() -> void:
 
 func before_each() -> void:
 	_saved_path = GameState.save_path
-	_saved_autosave = GameState.autosave_enabled
 	_saved_level = GameState.current_level
-	GameState.autosave_enabled = false
 	GameState.use_save_path(PATH, true)
 	DebugMode.input_enabled = false
 
@@ -53,7 +50,6 @@ func after_each() -> void:
 	GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
 	GameState.current_level = _saved_level
 	GameState.save_path = _saved_path
-	GameState.autosave_enabled = _saved_autosave
 
 
 func _start() -> void:

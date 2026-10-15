@@ -2,20 +2,20 @@
 # vuelta de todo el progreso persistente, escritura atomica (sin .tmp al
 # terminar; se recupera un .tmp huerfano), archivo ausente, corrupto (se aparta
 # como .corrupt y se empieza de cero), version no soportada y campos con tipos
-# raros. Usa una ruta propia: nunca el user://save.json del jugador.
+# raros. Guardado manual (2026-10-15): request_save solo marca "sin guardar";
+# esquema v2 (lap, found_secrets, hub_tutorial_done, saved_at, play_time_s),
+# migracion desde v1 y copia anterior (.bak). Usa una ruta propia: nunca el
+# user://save.json del jugador.
 extends GutTest
 
 const PATH: String = "user://test_save_game.json"
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 var _saved_path: String
-var _saved_autosave: bool
 
 
 func before_each() -> void:
 	_saved_path = GameState.save_path
-	_saved_autosave = GameState.autosave_enabled
-	GameState.autosave_enabled = false
 	GameState.use_save_path(PATH, true)
 
 
@@ -23,7 +23,6 @@ func after_each() -> void:
 	SaveFile.delete(PATH)
 	GameState.reset_progress()
 	GameState.save_path = _saved_path
-	GameState.autosave_enabled = _saved_autosave
 
 
 func _fill_progress() -> void:
@@ -66,9 +65,10 @@ func test_scripts_and_tools_never_resolve_to_the_real_save() -> void:
 	assert_eq(GameState.resolve_save_path(PackedStringArray(), "user://env.json"), "user://env.json")
 
 
-# El flujo de juego real (scenes/main.tscn) con autoguardado: el aviso del pulso
-# y un punto de atencion se guardan en la ruta de prueba; el user://save.json del
-# jugador no cambia (ni se crea) y la ruta resuelta al arrancar GUT no es la real.
+# El flujo de juego real (scenes/main.tscn): capturar un punto solo marca "sin
+# guardar" (no escribe); una copia manual escribe en la ruta de prueba el aviso
+# del pulso y el punto; el user://save.json del jugador no cambia (ni se crea)
+# y la ruta resuelta al arrancar GUT no es la real.
 func test_main_scene_under_gut_never_touches_the_real_save() -> void:
 	var resolved: String = GameState.resolve_save_path(OS.get_cmdline_args(),
 		OS.get_environment(GameState.SAVE_PATH_ENV))
@@ -76,7 +76,6 @@ func test_main_scene_under_gut_never_touches_the_real_save() -> void:
 	var real_before: String = _fingerprint(GameState.SAVE_PATH_DEFAULT)
 	var saved_level: StringName = GameState.current_level
 	var saved_pulse: bool = GameState.is_ability_unlocked(&"pulse")
-	GameState.autosave_enabled = true
 	var main: LevelRunner = MAIN_SCENE.instantiate() as LevelRunner
 	main.auto_advance = false
 	main.start_level_id = "1-1"
@@ -87,6 +86,9 @@ func test_main_scene_under_gut_never_touches_the_real_save() -> void:
 	notices.advance(float(AbilityNotices.load_data()["start_delay_s"]) + 0.01)
 	assert_true(GameState.capture_attention_point(&"1-1", &"Point_8_9", 1))
 	await wait_process_frames(2)
+	assert_false(FileAccess.file_exists(PATH), "Jugando no se escribe nada")
+	assert_true(GameState.has_unsaved_changes())
+	assert_true(GameState.save_game())
 	var written: Dictionary = SaveFile.read(PATH)
 	assert_eq(written.get("captured_points", {}).get("1-1"), ["Point_8_9"], "Guardado en la ruta de prueba")
 	assert_true(GameState.is_notice_seen(&"pulse"))
@@ -203,13 +205,167 @@ func test_orphan_tmp_is_recovered() -> void:
 	assert_eq(GameState.attention_points, 12)
 
 
-func test_request_save_writes_once_at_end_of_frame() -> void:
-	GameState.autosave_enabled = true
+func test_request_save_only_marks_unsaved_changes() -> void:
+	var events: Array[bool] = []
+	var on_change := func(value: bool) -> void: events.append(value)
+	EventBus.unsaved_changes_changed.connect(on_change)
+	assert_false(GameState.has_unsaved_changes(), "Recien cargado: nada pendiente")
 	GameState.capture_attention_point(&"1-1", &"Point_8_9", 1)
 	GameState.capture_attention_point(&"1-1", &"Point_14_8", 1)
-	assert_false(FileAccess.file_exists(PATH), "Aun no: se agrupa al final del cuadro")
+	assert_true(GameState.has_unsaved_changes())
 	await wait_process_frames(2)
-	assert_true(FileAccess.file_exists(PATH))
+	assert_false(FileAccess.file_exists(PATH), "Guardado manual: nada se escribe solo")
+	assert_true(GameState.save_game())
+	assert_false(GameState.has_unsaved_changes(), "Guardar limpia la marca")
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	assert_eq(int(data["attention_points"]), 2)
 	assert_eq((data["captured_points"]["1-1"] as Array).size(), 2)
+	assert_eq(events, [true, false] as Array[bool], "Una senal al ensuciar y otra al guardar")
+	EventBus.unsaved_changes_changed.disconnect(on_change)
+
+
+func test_every_progress_change_marks_unsaved() -> void:
+	var changes: Dictionary[String, Callable] = {
+		"punto": func() -> void: GameState.capture_attention_point(&"1-1", &"Point_8_9", 1),
+		"objeto": func() -> void: GameState.mark_pickup_collected(&"1-1", &"cargador_x"),
+		"power bank": func() -> void: GameState.add_empty_power_bank(),
+		"habilidad": func() -> void: GameState.obtain_ability(&"laser"),
+		"nivel completado": func() -> void: GameState.mark_level_completed(&"1-1"),
+		"nivel desbloqueado": func() -> void: GameState.unlock_level(&"1-2"),
+		"secreto": func() -> void: GameState.mark_secret_found(&"1-1", &"secreto_a"),
+	}
+	for name: String in changes:
+		assert_true(GameState.save_game())
+		assert_false(GameState.has_unsaved_changes())
+		changes[name].call()
+		assert_true(GameState.has_unsaved_changes(), name)
+	GameState.attention_points = 30
+	assert_true(GameState.save_game())
+	assert_eq(GameState.purchase_upgrade(&"wide_pulse"), GameState.PurchaseResult.OK)
+	assert_true(GameState.has_unsaved_changes(), "Comprar una mejora")
+
+
+func test_seen_notice_and_play_time_do_not_mark_unsaved() -> void:
+	assert_true(GameState.mark_notice_seen(&"pulse"))
+	await wait_process_frames(2)
+	assert_false(GameState.has_unsaved_changes(), "Abrir el juego unos segundos no pide guardar")
+
+
+func test_load_and_reset_clear_unsaved_changes() -> void:
+	GameState.capture_attention_point(&"1-1", &"Point_8_9", 1)
+	assert_true(GameState.save_game())
+	GameState.mark_level_completed(&"1-1")
+	assert_true(GameState.has_unsaved_changes())
+	assert_true(GameState.load_game())
+	assert_false(GameState.has_unsaved_changes(), "Lo cargado es lo que hay en disco")
+	assert_false(GameState.is_level_completed(&"1-1"), "Lo no guardado se pierde")
+	GameState.mark_level_completed(&"1-1")
+	GameState.reset_progress()
+	assert_false(GameState.has_unsaved_changes())
+
+
+# --- Esquema v2 ---
+
+func test_v2_round_trip_keeps_new_fields() -> void:
+	GameState.lap = GameState.LAP_NORMAL
+	assert_true(GameState.mark_secret_found(&"1-1", &"secreto_b"))
+	assert_true(GameState.mark_secret_found(&"1-1", &"secreto_a"))
+	assert_false(GameState.mark_secret_found(&"1-1", &"secreto_a"), "Una vez")
+	GameState.hub_tutorial_done = true
+	GameState.play_time_s = 123.5
+	assert_true(GameState.save_game())
+	var stamp: String = GameState.saved_at
+	assert_true(stamp.ends_with("Z") and stamp.length() == 20, "Fecha UTC: %s" % stamp)
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	assert_eq(int(data["version"]), 2)
+	assert_eq(int(data["lap"]), GameState.LAP_NORMAL)
+	assert_eq(data["found_secrets"], {"1-1": ["secreto_a", "secreto_b"]})
+	assert_eq(data["hub_tutorial_done"], true)
+	assert_eq(data["saved_at"], stamp)
+	GameState.reset_progress()
+	assert_eq(GameState.lap, GameState.LAP_EASY)
+	assert_true(GameState.load_game())
+	assert_eq(GameState.lap, GameState.LAP_NORMAL)
+	assert_true(GameState.is_secret_found(&"1-1", &"secreto_a"))
+	assert_true(GameState.is_secret_found(&"1-1", &"secreto_b"))
+	assert_true(GameState.hub_tutorial_done)
+	assert_almost_eq(GameState.play_time_s, 123.5, 0.001)
+	assert_eq(GameState.saved_at, stamp)
+
+
+func test_v1_save_is_migrated() -> void:
+	SaveFile.write(PATH, {
+		"version": 1,
+		"attention_points": 7,
+		"captured_points": {"1-1": ["Point_8_9"]},
+		"completed_levels": ["1-1"],
+		"unlocked_levels": ["1-2"],
+	})
+	assert_true(GameState.load_game(), "Una v1 se carga")
+	assert_eq(GameState.attention_points, 7)
+	assert_eq(GameState.lap, GameState.LAP_EASY, "Vuelta 1 por defecto")
+	assert_true(GameState.found_secrets.is_empty())
+	assert_true(GameState.hub_tutorial_done, "Con el 1-1 completado no repite el tutorial")
+	assert_eq(GameState.saved_at, "")
+	assert_almost_eq(GameState.play_time_s, 0.0, 0.001)
+	assert_false(GameState.has_unsaved_changes())
+	assert_true(GameState.save_game())
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la v2")
+	assert_eq(int(data["attention_points"]), 7)
+	# Una v1 sin el 1-1 completado si hace el tutorial.
+	SaveFile.write(PATH, {"version": 1, "attention_points": 1})
+	assert_true(GameState.load_game())
+	assert_false(GameState.hub_tutorial_done)
+
+
+func test_v2_odd_fields_are_tolerated() -> void:
+	SaveFile.write(PATH, {"version": 2, "lap": 9, "found_secrets": {"1-1": "x", "1-2": ["s", 3]},
+		"hub_tutorial_done": "si", "saved_at": 5, "play_time_s": -3})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.lap, GameState.LAP_HARD, "Vuelta acotada")
+	assert_false(GameState.found_secrets.has(&"1-1"))
+	assert_true(GameState.is_secret_found(&"1-2", &"s"))
+	assert_false(GameState.hub_tutorial_done, "Tipo raro: como v1 sin el 1-1")
+	assert_eq(GameState.saved_at, "")
+	assert_almost_eq(GameState.play_time_s, 0.0, 0.001)
+
+
+func test_unknown_future_version_is_set_aside() -> void:
+	SaveFile.write(PATH, {"version": 3, "attention_points": 99})
+	assert_false(GameState.load_game(), "Version 3 desconocida: no carga")
+	assert_eq(GameState.attention_points, 0, "Empieza de cero")
+	assert_false(FileAccess.file_exists(PATH), "Se aparta")
+	assert_true(FileAccess.file_exists(PATH + SaveFile.CORRUPT_SUFFIX), "Se conserva como .corrupt")
+	assert_false(GameState.has_unsaved_changes())
+
+
+func test_save_keeps_previous_copy_as_bak() -> void:
+	var bak: String = PATH + SaveFile.BACKUP_SUFFIX
+	GameState.attention_points = 5
+	assert_true(GameState.save_game())
+	assert_false(FileAccess.file_exists(bak), "Primera copia: no habia anterior")
+	GameState.attention_points = 8
+	assert_true(GameState.save_game())
+	assert_true(FileAccess.file_exists(bak), "La copia anterior pasa a .bak")
+	assert_eq(int(SaveFile.read_backup(PATH)["attention_points"]), 5)
+	assert_eq(int(SaveFile.read(PATH)["attention_points"]), 8)
+	GameState.attention_points = 11
+	assert_true(GameState.save_game())
+	assert_eq(int(SaveFile.read_backup(PATH)["attention_points"]), 8, "El .bak es siempre la anterior")
+	SaveFile.delete(PATH)
+	assert_false(FileAccess.file_exists(bak), "Borrar el guardado borra tambien el .bak")
+
+
+func test_corrupt_save_falls_back_to_bak() -> void:
+	GameState.attention_points = 5
+	assert_true(GameState.save_game())
+	GameState.attention_points = 8
+	assert_true(GameState.save_game())
+	var file := FileAccess.open(PATH, FileAccess.WRITE)
+	file.store_string("{roto")
+	file.close()
+	assert_true(GameState.load_game(), "Corrupto: se carga la copia anterior")
+	assert_eq(GameState.attention_points, 5)
+	assert_true(FileAccess.file_exists(PATH + SaveFile.CORRUPT_SUFFIX), "El roto se aparta")
+	assert_false(GameState.has_unsaved_changes())

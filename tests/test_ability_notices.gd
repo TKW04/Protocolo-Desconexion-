@@ -10,7 +10,6 @@ const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const ABILITIES: Array[StringName] = [&"pulse", &"laser", &"debug"]
 
 var _saved_path: String
-var _saved_autosave: bool
 var _saved_unlocked: Dictionary = {}
 var _saved_level: StringName
 var _notices: AbilityNotices
@@ -22,9 +21,7 @@ var _data: Dictionary = AbilityNotices.load_data()
 
 func before_each() -> void:
 	_saved_path = GameState.save_path
-	_saved_autosave = GameState.autosave_enabled
 	_saved_level = GameState.current_level
-	GameState.autosave_enabled = false
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
 	for ability: StringName in ABILITIES:
@@ -51,7 +48,6 @@ func after_each() -> void:
 	GameState.current_level = _saved_level
 	SaveFile.delete(PATH)
 	GameState.save_path = _saved_path
-	GameState.autosave_enabled = _saved_autosave
 
 
 func _on_line(text: String, _duration_s: float, important: bool) -> void:

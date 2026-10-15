@@ -14,6 +14,11 @@
 #   data/power_bank.json), habilidades obtenidas con un ability_pickup (p. ej.
 #   el laser, 2026-10-15) y niveles completados/desbloqueados. Se guarda en
 #   save_path (user://save.json; en las pruebas otra ruta) con SaveFile.
+# - Guardado MANUAL (decision 2026-10-15, docs/propuesta-hub-y-guardado.md):
+#   los cambios de progreso solo marcan "sin guardar" (request_save,
+#   has_unsaved_changes, EventBus.unsaved_changes_changed); solo save_game()
+#   escribe (en el hub; la copia anterior queda en <ruta>.bak). Esquema v2:
+#   vuelta (lap), secretos encontrados, tutorial del hub, fecha y tiempo de juego.
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
 # Reglas de juego que viven aquí: recarga de energía por punto de atención
 # (A10), desbordamiento de energía a power bank, compra de mejoras y valores
@@ -36,8 +41,17 @@ const WORLD_TIME_SCALE_NORMAL: float = 1.0
 ## base: la mejora "Recarga mejorada" lo cambia (get_energy_per_attention_point).
 const ENERGY_PER_ATTENTION_POINT: float = 10.0
 
-## Guardado (SaveFile). Version del esquema de save.json.
-const SAVE_VERSION: int = 1
+## Guardado (SaveFile). Version del esquema de save.json (v2 desde 2026-10-15:
+## lap, found_secrets, hub_tutorial_done, saved_at, play_time_s). Se cargan las
+## versiones 1 a SAVE_VERSION; otra se aparta como .corrupt.
+const SAVE_VERSION: int = 2
+## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard.
+const LAP_EASY: int = 1
+const LAP_NORMAL: int = 2
+const LAP_HARD: int = 3
+## Nivel cuyo final lleva al primer hub: un guardado v1 con este nivel completado
+## ya no repite el tutorial del hub (propuesta-hub-y-guardado.md §4.5).
+const HUB_TUTORIAL_LEVEL: StringName = &"1-1"
 const SAVE_PATH_DEFAULT: String = "user://save.json"
 ## Ruta de guardado de las pruebas GUT (nunca el save real del usuario).
 const SAVE_PATH_TESTS: String = "user://test_save.json"
@@ -135,13 +149,26 @@ var obtained_abilities: Dictionary[StringName, bool] = {}
 ## clave, y siempre, las habilidades obtenidas cuentan como avisadas.
 var seen_notices: Dictionary[StringName, bool] = {}
 
+## Vuelta actual (LAP_EASY a LAP_HARD). Solo la cambiara el rollback.
+var lap: int = LAP_EASY:
+	set(value):
+		lap = clampi(value, LAP_EASY, LAP_HARD)
+## Secretos encontrados por nivel (id de nivel -> {id: true}). Registro para
+## Linterna y Notas: el rollback no lo vacia (decision 2026-10-15).
+var found_secrets: Dictionary[StringName, Dictionary] = {}
+## Primer hub guiado ya hecho (se marca al guardar por primera vez en el hub).
+var hub_tutorial_done: bool = false
+## Segundos de juego (con el arbol sin pausar). Se guarda con la copia.
+var play_time_s: float = 0.0
+## Fecha (UTC, "AAAA-MM-DDTHH:MM:SSZ") de la ultima copia guardada o cargada;
+## vacia si no hay ninguna.
+var saved_at: String = ""
+
 ## Ruta del guardado. Por defecto user://save.json; con la variable de entorno
 ## ISAK_SAVE_PATH, esa ruta; dentro de GUT, SAVE_PATH_TESTS, y con otro script
 ## (-s), SAVE_PATH_TOOLS (estas dos se borran al arrancar). Ver
 ## resolve_save_path(). Cambiala con use_save_path().
 var save_path: String = SAVE_PATH_DEFAULT
-## Si es false, request_save() no escribe nada.
-var autosave_enabled: bool = true
 
 var fragments_recovered: int = FRAGMENTS_MIN:
 	set(value):
@@ -154,7 +181,8 @@ var current_level: StringName = NO_LEVEL
 ## Checkpoint y lo borra el flujo de nivel (LevelRunner) al empezar de cero.
 var last_checkpoint: Dictionary[StringName, StringName] = {}
 ## Niveles completados y niveles desbloqueados (por `unlocks` del JSON del
-## nivel). Los guarda LevelRunner al terminar un nivel; aun no van a disco.
+## nivel). Los apunta LevelRunner al terminar un nivel; van a disco con la
+## siguiente copia manual (save_game).
 var completed_levels: Dictionary[StringName, bool] = {}
 var unlocked_levels: Dictionary[StringName, bool] = {}
 
@@ -197,7 +225,8 @@ var _is_sync_low: bool = false
 var abilities_unlocked: Dictionary[StringName, bool] = _build_locked_abilities()
 
 var _power_bank_data: Dictionary = _load_power_bank_data()
-var _save_pending: bool = false
+## Hay progreso en memoria que no esta en disco (guardado manual).
+var _unsaved: bool = false
 ## Valores base de isak_abilities.json (para el detalle de las mejoras).
 var _base_abilities: PlayerAbilities
 
@@ -206,6 +235,10 @@ func _ready() -> void:
 	EventBus.state_refresh_requested.connect(emit_state)
 	var path: String = resolve_save_path(OS.get_cmdline_args(), OS.get_environment(SAVE_PATH_ENV))
 	use_save_path(path, path == SAVE_PATH_TESTS or path == SAVE_PATH_TOOLS)
+
+
+func _process(delta: float) -> void:
+	play_time_s += delta
 
 
 ## Sync Rate bajo: por debajo del umbral (estrictamente menor, docs: "menor al 20%").
@@ -453,7 +486,7 @@ func check_purchase(id: StringName) -> int:
 	return PurchaseResult.OK
 
 
-## Compra `id`: gasta puntos y power banks, la apunta y guarda. Si no se puede
+## Compra `id`: gasta puntos y power banks, la apunta y marca "sin guardar". Si no se puede
 ## no cambia nada y devuelve el motivo.
 func purchase_upgrade(id: StringName) -> int:
 	var result: int = check_purchase(id)
@@ -471,8 +504,8 @@ func purchase_upgrade(id: StringName) -> int:
 
 # --- Guardado (user://save.json) ---
 
-## Cambia la ruta de guardado. `fresh`: borra lo que hubiera y empieza de cero;
-## si no, carga lo guardado en esa ruta.
+## Cambia la ruta de guardado. `fresh`: borra lo que hubiera (y su .bak) y
+## empieza de cero; si no, carga lo guardado en esa ruta. Sin cambios pendientes.
 func use_save_path(path: String, fresh: bool) -> void:
 	save_path = path
 	if fresh:
@@ -508,9 +541,15 @@ static func resolve_save_path(args: PackedStringArray, env_path: String) -> Stri
 	return SAVE_PATH_DEFAULT
 
 
-## Borra el progreso persistente en memoria (no toca el disco).
+## Borra el progreso persistente en memoria (no toca el disco) y la marca de
+## cambios sin guardar (no queda nada que merezca guardarse).
 func reset_progress() -> void:
 	attention_points = ATTENTION_POINTS_MIN
+	lap = LAP_EASY
+	found_secrets.clear()
+	hub_tutorial_done = false
+	play_time_s = 0.0
+	saved_at = ""
 	captured_points.clear()
 	collected_pickups.clear()
 	purchased_upgrades.clear()
@@ -524,26 +563,51 @@ func reset_progress() -> void:
 	completed_levels.clear()
 	unlocked_levels.clear()
 	_refresh_maxima()
+	_set_unsaved(false)
 
 
-## Pide guardar al final del cuadro (agrupa varios cambios en una escritura).
+## Apunta que el progreso cambio y no esta en disco (guardado manual,
+## 2026-10-15): NO escribe. Lo llaman capturar puntos, recoger objetos, comprar,
+## obtener habilidades y completar o desbloquear niveles. Solo save_game() escribe.
 func request_save() -> void:
-	if not autosave_enabled or _save_pending:
-		return
-	_save_pending = true
-	_flush_save.call_deferred()
+	_set_unsaved(true)
 
 
-## Guarda ya en save_path. Verdadero si se escribio.
+## Verdadero si hay progreso en memoria sin guardar en disco.
+func has_unsaved_changes() -> bool:
+	return _unsaved
+
+
+## Guarda ya en save_path (copia manual): fija saved_at, escribe de forma
+## atomica, deja la copia anterior en <ruta>.bak y limpia la marca de cambios
+## sin guardar. Verdadero si se escribio (si falla, la marca sigue).
 func save_game() -> bool:
-	_save_pending = false
-	return SaveFile.write(save_path, to_save_data())
+	var previous_saved_at: String = saved_at
+	saved_at = now_utc()
+	if not SaveFile.write(save_path, to_save_data(), true):
+		saved_at = previous_saved_at
+		return false
+	_set_unsaved(false)
+	EventBus.game_saved.emit(save_path)
+	return true
 
 
-## Carga save_path. Si falta o esta corrupto empieza de cero (falso).
+## Carga save_path. Si falta empieza de cero (falso). Si esta corrupto lo
+## aparta como .corrupt y, si hay copia anterior (.bak) valida, carga esa;
+## si no, empieza de cero. Una version desconocida se aparta y empieza de cero.
+## Tras cargar no hay cambios sin guardar.
 func load_game() -> bool:
 	var data: Dictionary = SaveFile.read(save_path)
 	reset_progress()
+	if data.is_empty() and SaveFile.last_status == SaveFile.Status.CORRUPT:
+		data = SaveFile.read_backup(save_path)
+		if not data.is_empty():
+			push_warning("GameState: se carga la copia anterior '%s%s'." % [save_path, SaveFile.BACKUP_SUFFIX])
+			if apply_save_data(data):
+				_set_unsaved(false)
+				return true
+			reset_progress()
+		return false
 	if data.is_empty():
 		return false
 	if not apply_save_data(data):
@@ -551,7 +615,13 @@ func load_game() -> bool:
 		SaveFile.quarantine(save_path)
 		reset_progress()
 		return false
+	_set_unsaved(false)
 	return true
+
+
+## Fecha y hora actuales en UTC ("AAAA-MM-DDTHH:MM:SSZ").
+static func now_utc() -> String:
+	return Time.get_datetime_string_from_system(true) + "Z"
 
 
 ## Progreso persistente como diccionario JSON (esquema SAVE_VERSION).
@@ -565,6 +635,9 @@ func to_save_data() -> Dictionary:
 	var pickups: Dictionary = {}
 	for level: StringName in collected_pickups:
 		pickups[String(level)] = _keys_sorted(collected_pickups[level])
+	var secrets: Dictionary = {}
+	for level: StringName in found_secrets:
+		secrets[String(level)] = _keys_sorted(found_secrets[level])
 	return {
 		"version": SAVE_VERSION,
 		"attention_points": attention_points,
@@ -576,11 +649,18 @@ func to_save_data() -> Dictionary:
 		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
 		"completed_levels": _keys_sorted(completed_levels),
 		"unlocked_levels": _keys_sorted(unlocked_levels),
+		"lap": lap,
+		"found_secrets": secrets,
+		"hub_tutorial_done": hub_tutorial_done,
+		"saved_at": saved_at,
+		"play_time_s": play_time_s,
 	}
 
 
 ## Aplica un guardado (tolerante a campos que falten o con tipo raro). Falso si
-## la version no se reconoce (no aplica nada).
+## la version no se reconoce (no aplica nada). Migracion v1 -> v2: lap 1, sin
+## secretos, sin fecha ni tiempo, y hub_tutorial_done verdadero si el 1-1 ya
+## estaba completado (un veterano no repite el tutorial).
 func apply_save_data(data: Dictionary) -> bool:
 	var version: Variant = data.get("version", null)
 	if not (version is float or version is int) or int(version) < 1 or int(version) > SAVE_VERSION:
@@ -632,6 +712,21 @@ func apply_save_data(data: Dictionary) -> bool:
 		completed_levels[id] = true
 	for id: StringName in _string_names(data.get("unlocked_levels", [])):
 		unlocked_levels[id] = true
+	var raw_lap: Variant = data.get("lap", LAP_EASY)
+	lap = int(raw_lap) if (raw_lap is float or raw_lap is int) else LAP_EASY
+	var secrets: Variant = data.get("found_secrets", {})
+	if secrets is Dictionary:
+		for level: Variant in secrets:
+			var found: Dictionary = {}
+			for id: StringName in _string_names(secrets[level]):
+				found[id] = true
+			if not found.is_empty():
+				found_secrets[StringName(String(level))] = found
+	var tutorial: Variant = data.get("hub_tutorial_done", null)
+	hub_tutorial_done = bool(tutorial) if tutorial is bool else completed_levels.has(HUB_TUTORIAL_LEVEL)
+	var raw_saved_at: Variant = data.get("saved_at", "")
+	saved_at = raw_saved_at if raw_saved_at is String else ""
+	play_time_s = _as_float(data.get("play_time_s", 0.0))
 	_refresh_maxima()
 	return true
 
@@ -646,6 +741,7 @@ func emit_state() -> void:
 	EventBus.attention_points_changed.emit(attention_points)
 	EventBus.low_sync_changed.emit(_is_sync_low)
 	_emit_power_banks()
+	EventBus.unsaved_changes_changed.emit(_unsaved)
 
 
 ## Fija el ultimo punto de sincronizacion de `level` (sustituye al anterior).
@@ -681,6 +777,22 @@ func unlock_level(level: StringName) -> void:
 
 func is_level_unlocked(level: StringName) -> bool:
 	return unlocked_levels.get(level, false)
+
+
+## Apunta el secreto `secret_id` de `level` como encontrado (registro para
+## Linterna y Notas). Falso si ya lo estaba o no hay nivel. Marca "sin guardar".
+func mark_secret_found(level: StringName, secret_id: StringName) -> bool:
+	if level == NO_LEVEL or is_secret_found(level, secret_id):
+		return false
+	if not found_secrets.has(level):
+		found_secrets[level] = {}
+	found_secrets[level][secret_id] = true
+	request_save()
+	return true
+
+
+func is_secret_found(level: StringName, secret_id: StringName) -> bool:
+	return found_secrets.has(level) and found_secrets[level].has(secret_id)
 
 
 func is_ability_unlocked(ability: StringName) -> bool:
@@ -721,10 +833,10 @@ func is_notice_seen(id: StringName) -> bool:
 	return seen_notices.has(id)
 
 
-## Apunta el aviso de control `id` como visto. Falso si ya lo era. No pide
-## guardar: se guarda con el siguiente cambio que guarde (punto de atencion,
-## habilidad obtenida, nivel completado...), asi arrancar el juego unos segundos
-## sin jugar no escribe el guardado. Si se sale antes, el aviso vuelve a salir.
+## Apunta el aviso de control `id` como visto. Falso si ya lo era. No marca
+## "sin guardar": va a disco con la siguiente copia manual, asi abrir el juego
+## unos segundos no pide confirmacion al salir. Si se sale sin guardar, el aviso
+## vuelve a salir.
 func mark_notice_seen(id: StringName) -> bool:
 	if seen_notices.has(id):
 		return false
@@ -757,9 +869,11 @@ func _refresh_maxima() -> void:
 	debug_energy = debug_energy
 
 
-func _flush_save() -> void:
-	if _save_pending:
-		save_game()
+func _set_unsaved(value: bool) -> void:
+	if _unsaved == value:
+		return
+	_unsaved = value
+	EventBus.unsaved_changes_changed.emit(value)
 
 
 static func _load_power_bank_data() -> Dictionary:

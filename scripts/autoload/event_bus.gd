@@ -134,3 +134,14 @@ signal laser_denied
 ## Un cargador (charger) repone `amount` de energia de Debug.
 @warning_ignore("unused_signal")
 signal charger_used(charger_id: StringName, amount: float)
+
+## Cambia si hay progreso sin guardar (guardado manual, 2026-10-15): true al
+## primer cambio tras guardar o cargar (GameState.request_save), false al
+## guardar (GameState.save_game) o cargar. Lo usan el indicador «sin guardar»
+## y el aviso al salir.
+@warning_ignore("unused_signal")
+signal unsaved_changes_changed(has_changes: bool)
+
+## Se ha escrito el guardado en disco (GameState.save_game) en `path`.
+@warning_ignore("unused_signal")
+signal game_saved(path: String)
