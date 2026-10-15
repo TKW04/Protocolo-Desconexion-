@@ -12,11 +12,20 @@
 ## cargara con EventBus.level_completed. Con la accion restart_action (jump),
 ## pasado input_delay_s (tiempo real), emite restart_requested(level_id) y, si
 ## restart_scene_path existe, cambia a esa escena.
+##
+## MEJORAS (decision 2026-10-14; provisional hasta que exista el hub real con
+## Calc): bajo el resultado lista las mejoras de data/upgrades.json con su
+## coste y estado, los power banks y el detalle de la elegida. move_up /
+## move_down eligen y pulse compra (GameState.purchase_upgrade); todo por el
+## Input Map (teclado o mando).
 class_name HubPlaceholder
 extends CanvasLayer
 
 const DATA_PATH: String = "res://data/hub_placeholder.json"
 const LINE_KEYS: Array[StringName] = [&"title", &"completed", &"points", &"help"]
+## Lineas fijas en orden de pantalla (las filas de mejoras van tras upgrades_title).
+const HEADER_KEYS: Array[StringName] = [&"title", &"completed", &"points", &"power_banks", &"upgrades_title"]
+const FOOTER_KEYS: Array[StringName] = [&"detail", &"message", &"help_upgrades", &"help"]
 
 ## El jugador pide volver a jugar el nivel.
 signal restart_requested(level_id: String)
@@ -34,6 +43,11 @@ var _frame: Control
 var _background: ColorRect
 var _panel: NinePatchRect
 var _labels: Dictionary[StringName, Label] = {}
+var _row_labels: Array[Label] = []
+var _upgrade_ids: Array[StringName] = []
+var _selected: int = 0
+var _shader: Shader
+var _key_color: Color
 
 
 func _ready() -> void:
@@ -52,6 +66,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(StringName(_data.get("restart_action", "jump"))):
 		if request_restart():
 			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(StringName(_data.get("select_up_action", "move_up"))):
+		if _accepts_input():
+			move_selection(-1)
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(StringName(_data.get("select_down_action", "move_down"))):
+		if _accepts_input():
+			move_selection(1)
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(StringName(_data.get("purchase_action", "pulse"))):
+		if _accepts_input():
+			purchase_selected()
+			get_viewport().set_input_as_handled()
 
 
 # --- API ---
@@ -66,13 +92,120 @@ func show_result(level_id: String, attention_points: int) -> void:
 	_labels[&"completed"].text = String(texts.get("completed", "%s")) % level_name(level_id)
 	_labels[&"points"].text = String(texts.get("points", "%d")) % attention_points
 	_labels[&"help"].text = String(texts.get("help", ""))
+	_labels[&"upgrades_title"].text = String(texts.get("upgrades_title", ""))
+	_labels[&"help_upgrades"].text = String(texts.get("help_upgrades", ""))
+	_labels[&"message"].text = String(texts.get("message_idle", ""))
+	refresh_upgrades()
 	visible = true
+
+
+## Vuelve a escribir puntos, power banks, filas de mejoras y detalle con el
+## estado actual de GameState.
+func refresh_upgrades() -> void:
+	var texts: Dictionary = _data.get("texts", {})
+	_labels[&"points"].text = String(texts.get("points", "%d")) % _attention_points
+	_labels[&"power_banks"].text = String(texts.get("power_banks", "%d %d %d")) % [
+		GameState.power_banks, floori(GameState.power_bank_charge), roundi(GameState.get_power_bank_capacity())]
+	var colors: Dictionary = _data.get("colors", {})
+	for i: int in _upgrade_ids.size():
+		var id: StringName = _upgrade_ids[i]
+		var label: Label = _row_labels[i]
+		label.text = get_upgrade_row_text(i)
+		var color_key: String = "upgrade"
+		if i == _selected:
+			color_key = "upgrade_selected"
+		elif GameState.is_upgrade_purchased(id):
+			color_key = "upgrade_owned"
+		_set_color(label, String(colors.get(color_key, "#f2f4f8")))
+	_labels[&"detail"].text = get_detail_text()
 	_layout()
+
+
+## Texto de la fila `index`: prefijo, nombre, coste y estado.
+func get_upgrade_row_text(index: int) -> String:
+	var texts: Dictionary = _data.get("texts", {})
+	var entry: UpgradeCatalog.Entry = UpgradeCatalog.shared().get_entry(_upgrade_ids[index])
+	var prefix: String = String(texts.get("selected_prefix" if index == _selected else "unselected_prefix", ""))
+	var cost: String
+	if entry.cost_power_banks > 0:
+		cost = String(texts.get("cost_points_and_banks", "%d %d")) % [entry.cost_points, entry.cost_power_banks]
+	else:
+		cost = String(texts.get("cost_points", "%d")) % entry.cost_points
+	return String(texts.get("upgrade_row", "%s%s %s %s")) % [prefix, entry.name, cost, _state_text(entry.id)]
+
+
+## Detalle de la mejora elegida: etiqueta, valor base y valor nuevo.
+func get_detail_text() -> String:
+	if _upgrade_ids.is_empty():
+		return ""
+	var entry: UpgradeCatalog.Entry = UpgradeCatalog.shared().get_entry(_upgrade_ids[_selected])
+	var texts: Dictionary = _data.get("texts", {})
+	return String(texts.get("detail", "%s %s%s %s%s")) % [
+		entry.label, format_number(GameState.base_value(entry.target)), entry.unit,
+		format_number(entry.value), entry.unit]
+
+
+## Numero para pantalla: sin decimales si es entero; coma decimal.
+static func format_number(value: float) -> String:
+	if is_nan(value):
+		return "?"
+	if is_equal_approx(value, roundf(value)):
+		return str(roundi(value))
+	return String.num(value, 2).replace(".", ",")
+
+
+func get_upgrade_ids() -> Array[StringName]:
+	return _upgrade_ids
+
+
+func get_selected_index() -> int:
+	return _selected
+
+
+func get_selected_upgrade() -> StringName:
+	return _upgrade_ids[_selected] if not _upgrade_ids.is_empty() else &""
+
+
+## Elige la fila `index` (acotada).
+func select(index: int) -> void:
+	if _upgrade_ids.is_empty():
+		return
+	_selected = clampi(index, 0, _upgrade_ids.size() - 1)
+	refresh_upgrades()
+
+
+## Mueve la seleccion `step` filas (da la vuelta).
+func move_selection(step: int) -> void:
+	if _upgrade_ids.is_empty():
+		return
+	_selected = posmod(_selected + step, _upgrade_ids.size())
+	refresh_upgrades()
+
+
+## Compra la mejora elegida y muestra el resultado.
+## Devuelve el GameState.PurchaseResult.
+func purchase_selected() -> int:
+	var id: StringName = get_selected_upgrade()
+	var result: int = GameState.purchase_upgrade(id)
+	var texts: Dictionary = _data.get("texts", {})
+	var message: String = ""
+	if result == GameState.PurchaseResult.OK:
+		message = String(texts.get("message_bought", "%s")) % UpgradeCatalog.shared().get_entry(id).name
+	elif result == GameState.PurchaseResult.ALREADY_OWNED:
+		message = String(texts.get("message_owned", ""))
+	elif result == GameState.PurchaseResult.NOT_ENOUGH_POINTS:
+		message = String(texts.get("message_not_enough_points", ""))
+	elif result == GameState.PurchaseResult.NOT_ENOUGH_POWER_BANKS:
+		message = String(texts.get("message_not_enough_power_banks", ""))
+	_labels[&"message"].text = message
+	_attention_points = GameState.attention_points
+	refresh_upgrades()
+	return result
 
 
 ## Pide reiniciar el nivel. Falso si aun no ha pasado input_delay_s.
 func request_restart() -> bool:
-	if _shown_time < float(_data.get("input_delay_s", 0.5)):
+	if not _accepts_input():
 		return false
 	_restart_count += 1
 	restart_requested.emit(_level_id)
@@ -96,10 +229,11 @@ func get_line_text(key: StringName) -> String:
 	return _labels[key].text
 
 
+## Todas las lineas visibles (fijas y filas de mejoras).
 func get_lines() -> PackedStringArray:
 	var out: PackedStringArray = []
-	for key: StringName in LINE_KEYS:
-		out.append(_labels[key].text)
+	for label: Label in _ordered_labels():
+		out.append(label.text)
 	return out
 
 
@@ -122,9 +256,56 @@ func skip_input_delay() -> void:
 
 # --- Interno ---
 
+func _accepts_input() -> bool:
+	return _shown_time >= float(_data.get("input_delay_s", 0.5))
+
+
+func _state_text(id: StringName) -> String:
+	var texts: Dictionary = _data.get("texts", {})
+	var result: int = GameState.check_purchase(id)
+	if result == GameState.PurchaseResult.ALREADY_OWNED:
+		return String(texts.get("state_owned", ""))
+	if result == GameState.PurchaseResult.NOT_ENOUGH_POINTS:
+		return String(texts.get("state_not_enough_points", ""))
+	if result == GameState.PurchaseResult.NOT_ENOUGH_POWER_BANKS:
+		return String(texts.get("state_not_enough_power_banks", ""))
+	return String(texts.get("state_available", ""))
+
+
+func _ordered_labels() -> Array[Label]:
+	var out: Array[Label] = []
+	for key: StringName in HEADER_KEYS:
+		out.append(_labels[key])
+	out.append_array(_row_labels)
+	for key: StringName in FOOTER_KEYS:
+		out.append(_labels[key])
+	return out
+
+
+func _new_label(node_name: String, color: String) -> Label:
+	var label := Label.new()
+	label.name = node_name
+	label.add_theme_font_override(&"font", _font)
+	label.add_theme_font_size_override(&"font_size", int(_data.get("font_size", 12)))
+	label.add_theme_color_override(&"font_color", Color.WHITE)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = _shader
+	material.set_shader_parameter(&"key_color", _key_color)
+	material.set_shader_parameter(&"target_color", Color.html(color))
+	label.material = material
+	_panel.add_child(label)
+	return label
+
+
+func _set_color(label: Label, color: String) -> void:
+	(label.material as ShaderMaterial).set_shader_parameter(&"target_color", Color.html(color))
+
+
 func _build() -> void:
 	var scale_factor: int = maxi(1, int(_data.get("pixel_scale", 2)))
-	var font_size: int = int(_data.get("font_size", 12))
 	var colors: Dictionary = _data.get("colors", {})
 	_font = load(String(_data["font"])) as Font
 	_frame = Control.new()
@@ -145,24 +326,15 @@ func _build() -> void:
 		_panel.set_patch_margin(side, margin)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.add_child(_panel)
-	var shader := load(String(_data["key_swap_shader"])) as Shader
-	var key := Color.html(String(colors.get("key", "#f2f4f8")))
-	for name: StringName in LINE_KEYS:
-		var label := Label.new()
-		label.name = String(name).capitalize()
-		label.add_theme_font_override(&"font", _font)
-		label.add_theme_font_size_override(&"font_size", font_size)
-		label.add_theme_color_override(&"font_color", Color.WHITE)
-		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var material := ShaderMaterial.new()
-		material.shader = shader
-		material.set_shader_parameter(&"key_color", key)
-		material.set_shader_parameter(&"target_color", Color.html(String(colors.get(String(name), "#f2f4f8"))))
-		label.material = material
-		_panel.add_child(label)
-		_labels[name] = label
+	_shader = load(String(_data["key_swap_shader"])) as Shader
+	_key_color = Color.html(String(colors.get("key", "#f2f4f8")))
+	for name: StringName in HEADER_KEYS + FOOTER_KEYS:
+		_labels[name] = _new_label(String(name).capitalize(), String(colors.get(String(name), "#f2f4f8")))
+	for entry: UpgradeCatalog.Entry in UpgradeCatalog.shared().entries():
+		_upgrade_ids.append(entry.id)
+		var row: Label = _new_label("Upgrade_%s" % entry.id, String(colors.get("upgrade", "#f2f4f8")))
+		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_row_labels.append(row)
 
 
 func _layout() -> void:
@@ -177,16 +349,29 @@ func _layout() -> void:
 	var pad: float = float(_data.get("padding_px", 12))
 	var gap: float = float(_data.get("line_gap_px", 8))
 	var width: float = float(_data.get("panel_width_px", 280))
-	for label: Label in _labels.values():
+	for label: Label in _ordered_labels():
 		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + pad * 2.0)
-	var height: float = pad * 2.0 + line_h * LINE_KEYS.size() + gap * (LINE_KEYS.size() - 1) + gap
-	_panel.size = Vector2(width, height)
-	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf((screen.y - height) * 0.5))
+	var labels: Array[Label] = _ordered_labels()
+	var row_gap: float = float(_data.get("row_gap_px", gap))
 	var y: float = pad
-	for i: int in LINE_KEYS.size():
-		var label: Label = _labels[LINE_KEYS[i]]
+	for i: int in labels.size():
+		var label: Label = labels[i]
 		label.position = Vector2(pad, y)
 		label.size = Vector2(width - pad * 2.0, line_h)
-		y += line_h + gap
-		if i == 0:
-			y += gap  # aire extra bajo el titulo
+		var is_row: bool = _row_labels.has(label)
+		var next_is_row: bool = i + 1 < labels.size() and _row_labels.has(labels[i + 1])
+		y += line_h + (row_gap if is_row and next_is_row else gap)
+		if label == _labels[&"title"] or label == _labels[&"power_banks"] or (is_row and not next_is_row):
+			y += gap  # aire extra bajo el titulo, antes y despues de la lista
+	var height: float = y - gap + pad
+	_panel.size = Vector2(width, height)
+	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(maxf(screen.y - height, 0.0) * 0.5))
+
+
+## Alto del panel en pixeles de arte (pruebas: debe caber en pantalla).
+func get_panel_size() -> Vector2:
+	return _panel.size
+
+
+func get_screen_size() -> Vector2:
+	return _frame.size
