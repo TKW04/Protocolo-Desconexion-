@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Ejecuta la suite de GUT en modo headless y devuelve el codigo de salida de GUT
-# (o 4 si fallan las pruebas Python del esquema de niveles).
+# (o 4 si fallan las pruebas Python: esquema y alcanzabilidad de niveles, escena
+# generada al dia, fuente de textos).
 # Antes importa el proyecto (registra class_name nuevos e importa recursos);
 # su salida solo se muestra si falla.
 # Uso: tools/run_tests.sh [opciones extra de GUT]
@@ -25,13 +26,18 @@ if ! "$GODOT" --headless --path "$PROJECT_DIR" --import >"$IMPORT_LOG" 2>&1 \
 fi
 rm -f "$IMPORT_LOG"
 
-# Validador de esquema de niveles y fuente de textos (Python, unittest). Si falla, el script sale con 4
-# aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
+# Validadores de niveles (esquema y alcanzabilidad), escena generada al dia y fuente de textos
+# (Python, unittest). Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el
+# codigo de GUT.
 PY_STATUS=0
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
-		&& python3 tools/validate_level_schema.py data/levels/*.json); then
-		echo "run_tests.sh: fallaron las pruebas Python (esquema de niveles o fuente de textos)." >&2
+		tests/test_validate_level.py tests/test_build_level.py \
+		&& python3 tools/validate_level_schema.py data/levels/*.json \
+		&& python3 tools/validate_level.py data/levels/*.json >/dev/null \
+		&& python3 tools/build_level.py --check data/levels/*.json); then
+		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
+		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
 		PY_STATUS=4
 	fi
 else
