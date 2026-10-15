@@ -94,7 +94,12 @@ class LevelSchemaTest(unittest.TestCase):
         rows = len(grid)
 
         def surface(x):
-            return next((y for y in range(rows) if grid[y][x] == "#"), rows)
+            # Suelo pisable: cima del bloque solido que sube desde la ultima fila
+            # (un techo colgado, como el del Tramo 3, no es suelo).
+            y = rows
+            while y > 0 and grid[y - 1][x] == "#":
+                y -= 1
+            return y
 
         bridge = obj(self.level, "bridge_inactive")
         bridge_cols = set(range(bridge["x"], bridge["x"] + bridge["params"]["length_tiles"]))
@@ -124,6 +129,58 @@ class LevelSchemaTest(unittest.TestCase):
         after = bridge["x"] + bridge["params"]["length_tiles"]
         self.assertGreater(len(bridge_cols), 0.85 * phys["run_speed"] * t_air / tile)
         self.assertGreater(surface(after - 1) - surface(after), real_height_tiles)
+
+    def test_level_1_1_tramo3_low_ceiling(self):
+        """Tramo 3 (decision 2026-10-14): techo bajo de 2 tiles sobre toda la patrulla de la
+        Burbuja (y algo mas), con escalones de 3 tiles a los lados y la cara de arriba fuera
+        del alcance del salto. La prueba de simulacion es tests/test_tramo3_ceiling.gd."""
+        with open(os.path.join(ROOT, "data", "isak_physics.json"), encoding="utf-8") as handle:
+            phys = json.load(handle)
+        with open(os.path.join(ROOT, "data", "enemies", "alert_bubble.json"), encoding="utf-8") as handle:
+            bubble_data = json.load(handle)
+        tile = phys["tile_size"]
+        grid = self.level["grid"]
+        rows = len(grid)
+        bubble = self.level["enemies"][0]
+        floor_y = bubble["y"] + 1
+
+        def ceiling(x):
+            """(fila de abajo, fila de arriba) del techo colgado sobre el suelo, o None."""
+            y = floor_y - 1
+            while y >= 0 and grid[y][x] != "#":
+                y -= 1
+            if y < 0:
+                return None
+            top = y
+            while top > 0 and grid[top - 1][x] == "#":
+                top -= 1
+            return y, top
+
+        half_range = bubble["params"]["patrol_range_px"] / 2.0 + bubble_data["body_size"][0] / 2.0
+        center = (bubble["x"] + 0.5) * tile
+        first = int((center - half_range) // tile) - 1
+        last = int((center + half_range) // tile) + 1
+        for x in range(first, last + 1):
+            c = ceiling(x)
+            self.assertIsNotNone(c, "techo sobre la columna %d" % x)
+            self.assertEqual(floor_y - 1 - c[0], 2, "hueco de 2 tiles en la columna %d" % x)
+            self.assertGreater((floor_y - c[1]) * tile, phys["jump_height_px"],
+                               "la cara de arriba del techo no se alcanza saltando (columna %d)" % x)
+        # Escalones a los dos lados del tramo de 2 tiles: hueco de 3 tiles.
+        def clearance(x):
+            c = ceiling(x)
+            return None if c is None else floor_y - 1 - c[0]
+        while clearance(first - 1) == 2:
+            first -= 1
+        while clearance(last + 1) == 2:
+            last += 1
+        for x in (first - 1, last + 1):
+            c = ceiling(x)
+            self.assertIsNotNone(c, "escalon en la columna %d" % x)
+            self.assertEqual(floor_y - 1 - c[0], 3, "escalon de 3 tiles en la columna %d" % x)
+        # Bajo el techo Isak no levanta los pies por encima de la Burbuja.
+        isak_height = 80.0
+        self.assertLess(2 * tile - isak_height, bubble_data["body_size"][1])
 
     # --- Variantes rotas ---
 

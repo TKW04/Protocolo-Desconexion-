@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Imagen de revision de un nivel (data/levels/<m>-<n>.json): el grid con la paleta del
 mundo, simbolos para objetos, enemigos, checkpoints, secretos y puntos de atencion,
+techos colgados (cara de abajo resaltada y alto del hueco hasta el suelo),
 bandas de los tramos (`sections`) con su ancho en tiles y una regla cada 10 tiles.
 
 Cada tile de 64 px se dibuja a 16 px (escala 1/4) para que el nivel entero quepa en una
@@ -92,6 +93,38 @@ def render(level, palette):
 
     def label(x_px, y_px, text, color, fnt=small, anchor="mm"):
         d.text((x_px, y_px), text, fill=color, font=fnt, anchor=anchor)
+
+    # Techos colgados (p. ej. el techo bajo del Tramo 3): cara de abajo en borde_luz, el
+    # hueco libre hasta el suelo con una linea discontinua y el alto del hueco en tiles.
+    def clearance(x, y):
+        """Celdas libres bajo la celda solida (x, y) hasta el siguiente solido, o None."""
+        if not solid(x, y) or solid(x, y + 1):
+            return None
+        free = 0
+        while y + 1 + free < rows and not solid(x, y + 1 + free):
+            free += 1
+        return free if y + 1 + free < rows else None
+
+    for y in range(rows):
+        x = 0
+        while x < cols:
+            gap = clearance(x, y)
+            if gap is None or gap > 4 or all(solid(x, yy) for yy in range(0, y + 1)):
+                x += 1
+                continue
+            end = x
+            while end + 1 < cols and clearance(end + 1, y) == gap:
+                end += 1
+            x0, y0, _, y1 = box(x, y)
+            x1 = box(end, y)[2]
+            d.rectangle((x0, y1 - 2, x1, y1), fill=palette["borde_luz"])
+            for xx in (x0 + 3, x1 - 3):
+                for yy in range(y1 + 3, y1 + gap * CELL - 1, 5):
+                    d.line((xx, yy, xx, yy + 2), fill=palette["borde_luz"])
+            if end - x >= 3:
+                label((x0 + x1) // 2, (y0 + y1) // 2, "techo: hueco %d tiles" % gap,
+                      palette["banner_blanco"])
+            x = end + 1
 
     # Objetos.
     for obj in level.get("objects", []):
@@ -210,7 +243,8 @@ def render(level, palette):
              ("C", "punto de sincronizacion", palette["debug_cian"]), ("R", "receptor", palette["banner_gris"]),
              ("~", "puente retraido", palette["borde_luz"]), ("W", "pared con glitch (secreto)", palette["carmin_brillo"]),
              ("X", "pop-up (rojo = boton)", palette["banner_blanco"]), ("D", "puerta / meta G", palette["banner_blanco"]),
-             ("e", "zona de Eco", palette["resplandor"])]
+             ("e", "zona de Eco", palette["resplandor"]),
+             ("T", "techo colgado (cara de abajo)", palette["borde_luz"])]
     lx = SIDE
     for _, text, color in items:
         d.rectangle((lx, ly - 5, lx + 10, ly + 5), fill=color)
