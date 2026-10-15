@@ -26,16 +26,29 @@ movimiento por celdas:
   5. Sin pinchos en P (ni donde cae Isak al aparecer) ni en el primer tile de
      una C (la propia celda, la de debajo y las de los lados).
   6. Objetos que hacen de puerta: el puente no existe hasta que el pulso
-     alcanza su receptor; el pop-up es solido hasta que el pulso alcanza su
-     boton; la Burbuja bloquea el paso hasta aturdirla (si el techo deja
+     alcanza su receptor (extendido es una tabla solida de
+     bridge.collision_height_px en lo alto de su celda: se pasa por debajo); el
+     pop-up es solido hasta que el pulso alcanza su boton; la Burbuja bloquea el
+     paso hasta aturdirla con el pulso o matarla con el laser (si el techo deja
      saltarla, solo avisa de que el pulso no es obligatorio, salvo si el enemigo
-     lleva "open": true, en abierto a proposito; entonces avisa si bloquea o si
-     no tiene repisa cerca desde la que, saltando, caiga sobre ella aturdida por
-     encima del umbral de pop con un 10 % de margen). El pulso sale del
-     celular de Isak de pie (pulse_effect_origin) con radio pulse_radius_px,
-     desde una celda ya alcanzable. Avisa si una puerta no es obligatoria,
-     salvo las de un secreto (campo `gates` de la entrada en `secrets`), que
-     son opcionales a proposito y no entran en el camino principal.
+     lleva "open": true, en abierto a proposito; entonces solo avisa si en
+     realidad bloquea: desde el 2026-10-15 pisarla no la mata y ya no se busca
+     una repisa para reventarla; matarla con el laser es opcional). El pulso
+     sale del celular de Isak de pie (pulse_effect_origin) con radio
+     pulse_radius_px, desde una celda ya alcanzable. Avisa si una puerta no es
+     obligatoria, salvo las de un secreto (campo `gates` de la entrada en
+     `secrets`), que son opcionales a proposito y no entran en el camino
+     principal.
+  6b. Habilidades (objeto ability_pickup, p. ej. el laser): se recogen al
+     tocar su celda y desde entonces la habilidad esta disponible (estado del
+     grafo, como una puerta). El laser (laser_range_px de
+     data/isak_abilities.json) sale horizontal del celular hacia donde mira
+     Isak, choca con el terreno y mata Burbujas (abre su puerta). Comprueba que
+     el objeto se alcanza, si es obligatorio (sin pisar su celda no se llega a
+     la meta; si no lo es avisa, salvo si es de un secreto) y que la meta se
+     alcanza SIN usar el laser. Informa de desde donde alcanza el laser a cada
+     Burbuja y avisa si una Burbuja en abierto posterior al laser no se puede
+     alcanzar con el.
   7. Sin soft-locks: desde cualquier sitio alcanzable (en cada estado de las
      puertas, abriendolas tambien desde dentro de un foso) se puede llegar a la
      meta (p. ej. caer al foso del puente). Grafo producto (nodo, puertas
@@ -89,10 +102,6 @@ EPS = 1e-6
 # Paso del muestreo de posiciones de pie dentro de una celda al comprobar el pulso.
 PULSE_SAMPLE_PX = 4.0
 INF = float("inf")
-# Burbujas en abierto ("open"): la repisa para reventarla esta como mucho a estos tiles del borde de su
-# cuerpo y el impacto saltando desde ella supera el umbral de pop con este margen.
-POP_LEDGE_TILES = 3
-POP_MARGIN = 0.10
 
 
 # --- Datos ---
@@ -151,6 +160,8 @@ class Rules:
         self.hitbox_w, self.hitbox_h = _export_vector2(isak_source, "hitbox_size")
         self.phone_x, self.phone_y = _export_vector2(isak_source, "pulse_effect_origin")
         self.base_pulse_radius = float(abilities["pulse_radius_px"])
+        self.laser_range = float(abilities.get("laser_range_px", 0.0))
+        self.laser_thickness = float(abilities.get("laser_thickness_px", 4.0))
         self.physics_path = physics_path
         self.upgrades = tuple(upgrades)
         catalog = load_upgrades(root)
@@ -221,7 +232,7 @@ class Report:
 class Gate:
     def __init__(self, gid, kind, obj_id, cells=None, rect=None, openers=None, col=0, row=0, tile=64.0):
         self.gid = gid
-        self.kind = kind  # bridge, popup, bubble
+        self.kind = kind  # bridge, popup, bubble, pickup
         self.obj_id = obj_id
         self.cells = cells or []  # celdas solidas/apoyo (puente al abrir, pop-up al cerrar)
         self.rect = rect  # zona de dano (Burbuja)
@@ -235,7 +246,7 @@ class Gate:
         self.col_span = (min(cols), max(cols)) if cols else (col, col)
 
     def label(self):
-        names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja"}
+        names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad"}
         return "%s %s" % (names[self.kind], self.obj_id)
 
 
@@ -255,6 +266,8 @@ class LevelModel:
         self.catalog = load_json(os.path.join(rules.root, "data", "world%d_objects.json" % world))
         self.hazard_data = load_json(os.path.join(rules.root, "data", "hazards.json"))
         self.pulse = bool(level.get("abilities_available", {}).get("pulse", False))
+        self.laser_base = bool(level.get("abilities_available", {}).get("laser", False))
+        self.bridge_thickness = float(self.catalog.get("bridge", {}).get("collision_height_px", self.T))
         self.glitch = set()
         self.gates = []
         self._build_objects()
@@ -264,6 +277,9 @@ class LevelModel:
         self._edges = {}
         reach_cols = max(s for _, s in rules.speeds()) * 1.2 / self.T
         self.K = int(math.ceil(reach_cols)) + 1
+        # Hay laser en el nivel (habilidad disponible o un ability_pickup que lo da).
+        self.laser_possible = self.laser_base or any(
+            g.kind == "pickup" and g.ability == "laser" for g in self.gates)
 
     # Objetos.
     def _params(self, obj):
@@ -309,6 +325,13 @@ class LevelModel:
                 pid = str(p.get("id", "popup_%d_%d" % (obj["x"], obj["y"])))
                 self.gates.append(Gate("popup:" + pid, "popup", pid, cells=cells, openers=openers,
                                        col=obj["x"], row=obj["y"], tile=T))
+            elif obj["type"] == "ability_pickup":
+                # Habilidad para siempre al tocar su celda: no cambia el mundo, solo el estado.
+                aid = str(p.get("id", "ability_%d_%d" % (obj["x"], obj["y"])))
+                gate = Gate("pickup:" + aid, "pickup", aid, cells=[(obj["x"], obj["y"])], col=obj["x"],
+                            row=obj["y"], tile=T)
+                gate.ability = str(p.get("ability", ""))
+                self.gates.append(gate)
         for enemy in self.level.get("enemies", []):
             path = os.path.join(self.rules.root, "data", "enemies", "%s.json" % enemy["type"])
             if enemy["type"] != "alert_bubble" or not os.path.exists(path):
@@ -329,13 +352,11 @@ class LevelModel:
             gate.floor = floor
             gate.damage_width = dw
             gate.damage_top = -(dcy - dh * 0.5)  # altura de la parte de arriba sobre el suelo
-            # Burbuja en abierto a proposito (campo "open" del enemigo): se puede saltar y se busca
-            # su repisa para reventarla (aturdida, cayendo encima a >= pop_speed_threshold_px_s).
+            # Burbuja en abierto a proposito (campo "open" del enemigo): se puede saltar. Desde el
+            # 2026-10-15 pisarla no la mata (solo el laser, segun su vida `health`).
             gate.open = bool(enemy.get("open", False))
-            gate.platform_top = float(params["platform_top_px"])
-            gate.pop_threshold = float(params["pop_speed_threshold_px_s"])
-            gate.body_span = (body[0], body[2])
-            gate.pop_ledge = None
+            gate.health = float(params.get("health", 1.0))
+            gate.laser_from = None
             self.gates.append(gate)
 
     def _spike_rects(self):
@@ -382,8 +403,19 @@ class LevelModel:
             self._edges[key] = self.world(state, debug).compute_edges(node)
         return self._edges[key]
 
-    def can_open(self, gate, node, state, debug=False):
-        """Verdadero si el pulso desde `node` (de pie) toca algun rectangulo de la puerta."""
+    def has_laser(self, state):
+        """El laser esta disponible: lo da el nivel o ya se recogio su ability_pickup."""
+        return self.laser_base or any(g.kind == "pickup" and g.ability == "laser" and g.gid in state
+                                      for g in self.gates)
+
+    def can_open(self, gate, node, state, debug=False, use_laser=True):
+        """Verdadero si desde `node` (de pie) se abre la puerta: el pulso toca algun rectangulo de
+        la puerta, el laser alcanza a la Burbuja (si se puede usar) o, si es un ability_pickup,
+        Isak toca su celda."""
+        if gate.kind == "pickup":
+            return bool(body_cells(node) & set(gate.cells))
+        if gate.kind == "bubble" and use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug):
+            return True
         if not self.pulse or not gate.openers:
             return False
         w = self.world(state, debug)
@@ -402,6 +434,38 @@ class LevelModel:
             x += PULSE_SAMPLE_PX
         return False
 
+    def laser_hits(self, gate, node, state, debug=False):
+        """Verdadero si un disparo del laser desde `node` (de pie, mirando a un lado) alcanza la
+        patrulla de la Burbuja `gate`: el haz sale horizontal del celular, llega a laser_range_px y
+        choca con el terreno (solidos, puentes extendidos y pop-ups cerrados)."""
+        rules = self.rules
+        if rules.laser_range <= 0.0 or not gate.openers:
+            return False
+        w = self.world(state, debug)
+        c, r = node
+        T = self.T
+        feet = (r + 1) * T
+        py = feet + rules.phone_y
+        half = rules.laser_thickness * 0.5
+        bx0, by0, bx1, by1 = gate.openers[0][:4]
+        if py + half < by0 or py - half > by1:
+            return False
+        x = c * T
+        while x <= (c + 1) * T + EPS:
+            if not w.collides(x, feet):
+                for facing in (1.0, -1.0):
+                    px = x + rules.phone_x * facing
+                    if bx0 <= px <= bx1:
+                        return True
+                    near = bx0 if facing > 0 else bx1
+                    dist = (near - px) * facing
+                    if dist < 0.0 or dist > rules.laser_range + EPS:
+                        continue
+                    if not w.ray_blocked(px, near, py, half):
+                        return True
+            x += PULSE_SAMPLE_PX
+        return False
+
 
 class World:
     """Celdas solidas, apoyos y peligros de un estado concreto de las puertas."""
@@ -413,6 +477,8 @@ class World:
         rows, cols = model.rows, model.cols
         self.solid = [[False] * cols for _ in range(rows)]
         self.support = [[False] * cols for _ in range(rows)]
+        # Celdas con una tabla solida fina arriba (puente extendido): (col, fila) -> grosor en px.
+        self.thin = {}
         for r, row in enumerate(model.grid):
             for c, ch in enumerate(row):
                 if ch == "#" or (c, r) in model.glitch or (ch == "h" and debug):
@@ -426,8 +492,11 @@ class World:
             if g.kind == "bridge" and opened:
                 for c, r in g.cells:
                     if 0 <= r < rows and 0 <= c < cols:
-                        self.solid[r][c] = True
                         self.support[r][c] = True
+                        if model.bridge_thickness < model.T - EPS:
+                            self.thin[(c, r)] = model.bridge_thickness
+                        else:
+                            self.solid[r][c] = True
             elif g.kind == "popup" and not opened:
                 for c, r in g.cells:
                     if 0 <= r < rows and 0 <= c < cols:
@@ -448,13 +517,56 @@ class World:
             return False
         return self.support[r][c]
 
+    def _obstacles(self, x, feet):
+        """Fondo (y de abajo) de cada solido que toca la caja de Isak con los pies en `feet`."""
+        T = self.m.T
+        c0, c1 = int(math.floor((x - self.m.hw) / T)), int(math.floor((x + self.m.hw - EPS) / T))
+        r0, r1 = int(math.floor((feet - self.m.hh) / T)), int(math.floor((feet - EPS) / T))
+        top = feet - self.m.hh
+        for r in range(r0, r1 + 1):
+            for c in range(c0, c1 + 1):
+                if self.is_solid(c, r):
+                    yield (r + 1) * T
+                elif (c, r) in self.thin:
+                    board = r * T + self.thin[(c, r)]
+                    if top < board - EPS and feet > r * T + EPS:
+                        yield board
+
     def collides(self, x, feet):
         T = self.m.T
         c0, c1 = int(math.floor((x - self.m.hw) / T)), int(math.floor((x + self.m.hw - EPS) / T))
         r0, r1 = int(math.floor((feet - self.m.hh) / T)), int(math.floor((feet - EPS) / T))
+        cols = self.m.cols
+        rows = self.m.rows
+        thin = self.thin
         for r in range(r0, r1 + 1):
+            row = self.solid[r] if 0 <= r < rows else None
             for c in range(c0, c1 + 1):
+                if c < 0 or c >= cols:
+                    return True
+                if row is not None and row[c]:
+                    return True
+                if thin and (c, r) in thin:
+                    board = r * T + thin[(c, r)]
+                    if feet - self.m.hh < board - EPS and feet > r * T + EPS:
+                        return True
+        return False
+
+    def ceiling_feet(self, x, feet):
+        """Pies de Isak pegado bajo el techo mas bajo que le toca la cabeza en `feet`."""
+        return max(self._obstacles(x, feet)) + self.m.hh
+
+    def ray_blocked(self, x0, x1, y, half):
+        """Verdadero si el haz horizontal de x0 a x1 (alto 2*half en y) choca con un solido o con la
+        tabla de un puente extendido."""
+        T = self.m.T
+        lo, hi = min(x0, x1), max(x0, x1)
+        r0, r1 = int(math.floor((y - half) / T)), int(math.floor((y + half - EPS) / T))
+        for c in range(int(math.floor(lo / T)), int(math.floor((hi - EPS) / T)) + 1):
+            for r in range(r0, r1 + 1):
                 if self.is_solid(c, r):
+                    return True
+                if (c, r) in self.thin and y - half < r * T + self.thin[(c, r)] and y + half > r * T:
                     return True
         return False
 
@@ -511,8 +623,7 @@ class World:
             nvy = vy + acc * dt
             if ny < y:
                 if self.collides(x, ny):
-                    head_row = math.floor((ny - m.hh) / T)
-                    y = (head_row + 1) * T + m.hh
+                    y = min(y, self.ceiling_feet(x, ny))
                     vy = 0.0
                 else:
                     y, vy = ny, nvy
@@ -642,10 +753,11 @@ class World:
 STEP_COST = 0.01
 
 
-def search(model, source, state, limit, debug=False):
+def search(model, source, state, limit, debug=False, avoid=None):
     """Dijkstra de cuello de botella: minimiza la mayor exigencia del camino y, a igualdad,
     la suma de exigencias (+ STEP_COST por movimiento). Devuelve (cost, parent); cost[n] es
-    la mayor exigencia del mejor camino hasta n."""
+    la mayor exigencia del mejor camino hasta n. `avoid`: celdas que Isak no puede tocar de pie
+    (p. ej. la de un ability_pickup, para saber si recogerlo es obligatorio)."""
     best = {source: (0.0, 0.0)}
     parent = {source: None}
     heap = [(0.0, 0.0, source)]
@@ -659,6 +771,8 @@ def search(model, source, state, limit, debug=False):
                 continue
             key = (round(max(c_max, dval), 9), round(c_sum + e["h"] + e["v"] + STEP_COST, 9))
             to = e["to"]
+            if avoid and body_cells(to) & avoid:
+                continue
             if to not in best or key < best[to]:
                 best[to] = key
                 parent[to] = (node, e)
@@ -712,15 +826,18 @@ class Validator:
         node, why = w.simulate(x, feet, 0.0, 0.0, x)
         return node, why
 
-    def progression(self, source, gates0, limit, forbid=frozenset(), targets=None, debug=False):
+    def progression(self, source, gates0, limit, forbid=frozenset(), targets=None, debug=False, avoid=None,
+                    use_laser=True):
         """Avanza abriendo puertas hasta tocar `targets` (celdas). Devuelve dict con
-        ok, stages [(src, state, cost, parent, opened_gate, opener_node, end_node)], reached."""
+        ok, stages [(src, state, cost, parent, opened_gate, opener_node, end_node)], reached.
+        `avoid`: celdas que no se pisan; `use_laser`: si el laser (una vez disponible) abre puertas."""
         state = frozenset(gates0)
         src = source
         stages = []
         reached_all = set()
+        avoid = set(avoid) if avoid else None
         for _ in range(len(self.model.gates) + 1):
-            cost, parent = search(self.model, src, state, limit, debug)
+            cost, parent = search(self.model, src, state, limit, debug, avoid)
             reached_all |= set(cost)
             goal_nodes = [n for n in cost if self.touches(n, targets)]
             if goal_nodes:
@@ -733,7 +850,7 @@ class Validator:
                 if g.gid in state or g.gid in forbid or g.bypassable:
                     continue
                 for n in sorted(cost, key=lambda n: (cost[n], n[0], n[1])):
-                    if self._gate_near(g, n) and self.model.can_open(g, n, state, debug):
+                    if self._gate_near(g, n) and self.model.can_open(g, n, state, debug, use_laser):
                         options.append((cost[n], n[0], g, n))
                         break
             if not options:
@@ -785,7 +902,9 @@ class Validator:
         # Regla 6: puertas obligatorias.
         if main["ok"]:
             self._check_mandatory(start, goal_cells)
-            # Regla 7: soft-locks.
+            # Regla 6b: habilidades (ability_pickup) y meta sin laser.
+            self._check_pickups(start, goal_cells)
+            # Regla 7: soft-locks (y desde donde alcanza el laser a cada Burbuja).
             self._check_softlocks(main, goal_cells)
         return self.finish()
 
@@ -827,46 +946,10 @@ class Validator:
                         "eleva los pies %.0f px y recorre %.0f px por encima de su zona de dano (necesita %.0f)"
                         % ("inf" if headroom == INF else "%.0f" % headroom, apex, dist, need),
                         g.row, g.col, "Burbuja %s" % g.obj_id)
-            if g.open:
-                if not g.bypassable:
-                    self.report.warning("la Burbuja %s esta marcada en abierto (open) pero bloquea el paso "
-                                        "(%s px libres sobre su patrulla)"
-                                        % (g.obj_id, "%.0f" % headroom), g.row, g.col, "Burbuja %s" % g.obj_id)
-                g.pop_ledge = self._pop_ledge(g)
-                if g.pop_ledge is None:
-                    self.report.warning("la Burbuja %s esta en abierto pero no tiene repisa cerca para reventarla "
-                                        "(saltando desde ella no se cae encima a %.0f px/s)"
-                                        % (g.obj_id, g.pop_threshold), g.row, g.col, "Burbuja %s" % g.obj_id)
-
-    def _pop_ledge(self, g):
-        """Repisa para reventar una Burbuja en abierto: el apoyo ('#' o '-', con sitio para Isak de
-        pie encima) mas cercano a su patrulla (a POP_LEDGE_TILES como mucho del borde de su cuerpo) desde
-        el que, SALTANDO, Isak cae sobre la Burbuja aturdida a >= pop_speed_threshold_px_s con un margen
-        de POP_MARGIN, y bajando andando no (la pisa). Devuelve un dict o None."""
-        m = self.model
-        r = self.rules
-        row_floor = int(round(g.floor / m.T))
-        lo = int(g.body_span[0] // m.T) - POP_LEDGE_TILES
-        hi = int((g.body_span[1] - EPS) // m.T) + POP_LEDGE_TILES
-        best = None
-        for c in range(max(lo, 0), min(hi, m.cols - 1) + 1):
-            for rr in range(1, row_floor):
-                if m.grid[rr][c] not in "#-" or any(m.grid[k][c] == "#" for k in (rr - 1, rr - 2) if k >= 0):
-                    continue
-                height = (row_floor - rr) * m.T
-                g_fall = r.gravity * r.fall_mult
-                jump_v = math.sqrt(max(0.0, 2 * g_fall * (height + r.jump_height - g.platform_top)))
-                walk_v = math.sqrt(max(0.0, 2 * g_fall * (height - g.platform_top)))
-                if jump_v < g.pop_threshold * (1 + POP_MARGIN):
-                    continue
-                gap = max(0.0, g.body_span[0] - (c + 1) * m.T, c * m.T - g.body_span[1])
-                cand = {"col": c, "row": rr - 1, "height_px": height, "gap_px": gap,
-                        "jump_impact_px_s": round(jump_v), "walk_off_impact_px_s": round(walk_v),
-                        "walk_off_pops": walk_v >= g.pop_threshold,
-                        "step_reach": height <= g.platform_top + r.jump_height * r.limit + EPS}
-                if best is None or (gap, height) < (best["gap_px"], best["height_px"]):
-                    best = cand
-        return best
+            if g.open and not g.bypassable:
+                self.report.warning("la Burbuja %s esta marcada en abierto (open) pero bloquea el paso "
+                                    "(%s px libres sobre su patrulla)"
+                                    % (g.obj_id, "%.0f" % headroom), g.row, g.col, "Burbuja %s" % g.obj_id)
 
     def _check_spawn_spikes(self, cell, node, what):
         """Pinchos en la celda de aparicion, en la caida hasta el suelo o en el suelo."""
@@ -903,7 +986,7 @@ class Validator:
         reached = last["cost"]
         far = max(reached, key=lambda n: (n[0], -n[1]))
         state = last["state"]
-        pending = [g for g in self.model.gates if g.gid not in state and not g.bypassable]
+        pending = [g for g in self.model.gates if g.gid not in state and not g.bypassable and g.kind != "pickup"]
         for g in pending:
             if not g.openers:
                 what = {"bridge": "no tiene receptor", "popup": "no tiene boton de cerrar",
@@ -941,8 +1024,15 @@ class Validator:
             if stage["gate"] is not None:
                 n = stage["end"]
                 g = stage["gate"]
-                actions.append({"action": "pulse", "from": [n[1], n[0]], "object": g.label(),
-                                "text": "pulso desde (fila %d, columna %d) -> %s" % (n[1], n[0], g.label())})
+                if g.kind == "pickup":
+                    actions.append({"action": "pickup", "from": [n[1], n[0]], "object": g.label(),
+                                    "text": "recoge %s (%s) en (fila %d, columna %d)"
+                                            % (g.label(), g.ability, n[1], n[0])})
+                    continue
+                laser = g.kind == "bubble" and not self.model.can_open(g, n, stage["state"], use_laser=False)
+                actions.append({"action": "laser" if laser else "pulse", "from": [n[1], n[0]], "object": g.label(),
+                                "text": "%s desde (fila %d, columna %d) -> %s"
+                                        % ("laser" if laser else "pulso", n[1], n[0], g.label())})
         end = run["stages"][-1]["end"]
         actions.append({"action": "goal", "at": [end[1], end[0]],
                         "text": "meta G alcanzada en (fila %d, columna %d)" % (end[1], end[0])})
@@ -1113,7 +1203,7 @@ class Validator:
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
         for g in self.model.gates:
-            if g.bypassable:
+            if g.bypassable or g.kind == "pickup":
                 continue
             run = self.progression(start, frozenset(), INF, forbid=frozenset({g.gid}), targets=goal_cells)
             if g.gid in secret:
@@ -1127,11 +1217,68 @@ class Validator:
                 self.report.warning("%s no es obligatorio: se llega a la meta sin %s" % (g.label(), what),
                                     g.row, g.col, g.label())
 
+    def _check_pickups(self, start, goal_cells):
+        """Regla 6b: cada ability_pickup se alcanza; si no es de un secreto debe ser obligatorio (sin
+        tocar su celda no se llega a la meta). La meta se alcanza sin usar el laser."""
+        info = []
+        secret_ids = set()
+        for s in self.level.get("secrets", []):
+            secret_ids.update(str(i) for i in s.get("gates", []))
+        forbid = self.secret_gates()
+        for g in self.model.gates:
+            if g.kind != "pickup":
+                continue
+            cells = set(g.cells)
+            reach = self.progression(start, frozenset(), self.rules.limit, forbid=forbid, targets=cells)
+            without = self.progression(start, frozenset(), INF, forbid=frozenset({g.gid}), targets=goal_cells,
+                                       avoid=cells)
+            item = {"id": g.obj_id, "ability": g.ability, "row": g.row, "col": g.col, "reachable": reach["ok"],
+                    "mandatory": not without["ok"], "secret": g.obj_id in secret_ids}
+            info.append(item)
+            if not reach["ok"]:
+                self.report.error("%s (%s) no se alcanza" % (g.label(), g.ability), g.row, g.col, g.label())
+            elif without["ok"] and not item["secret"]:
+                self.report.warning("%s (%s) no es obligatorio: se llega a la meta sin recogerlo"
+                                    % (g.label(), g.ability), g.row, g.col, g.label())
+        no_laser = self.progression(start, frozenset(), self.rules.limit, forbid=forbid, targets=goal_cells,
+                                    use_laser=False)
+        self.result["abilities"] = {"pickups": info, "goal_without_laser": no_laser["ok"]}
+        if self.model.laser_possible and not no_laser["ok"]:
+            self.report.warning("la meta solo se alcanza usando el laser")
+
+    def _laser_info(self, seen):
+        """Desde donde alcanza el laser a cada Burbuja (primera celda, de izquierda a derecha, con el
+        laser ya disponible). Avisa si una Burbuja en abierto posterior al laser no se alcanza."""
+        m = self.model
+        if not m.laser_possible:
+            return
+        by_node = {}
+        for node, state in seen:
+            if m.has_laser(state) and node not in by_node:
+                by_node[node] = state
+        pickups = [g.col for g in m.gates if g.kind == "pickup" and g.ability == "laser"]
+        first = min(pickups) if pickups else -1
+        for g in m.gates:
+            if g.kind != "bubble":
+                continue
+            for node in sorted((n for n in by_node if abs(n[1] - g.row) <= 1), key=lambda n: (n[0], n[1])):
+                if m.laser_hits(g, node, by_node[node]):
+                    g.laser_from = node
+                    break
+            if g.open and g.col > first and g.laser_from is None:
+                self.report.warning("la Burbuja %s va tras el laser pero el laser no la alcanza desde ningun sitio"
+                                    % g.obj_id, g.row, g.col, "Burbuja %s" % g.obj_id)
+
     def _gate_near(self, gate, node):
         """Verdadero si `node` esta cerca de algun rectangulo que abre la puerta (filtro barato
-        antes de can_open: el pulso no llega mas lejos de su radio + medio tile)."""
+        antes de can_open: el pulso no llega mas lejos de su radio + medio tile; el laser, de su
+        alcance; un ability_pickup se toca desde su columna o las de al lado)."""
         T = self.model.T
+        if gate.kind == "pickup":
+            return abs(node[0] - gate.col) <= 1
         reach = self.rules.pulse_radius + T
+        if gate.kind == "bubble" and self.model.laser_possible:
+            reach = max(reach, self.rules.laser_range + T)
         x = (node[0] + 0.5) * T
         return any(o[0] - reach <= x <= o[2] + reach for o in gate.openers)
 
@@ -1146,7 +1293,7 @@ class Validator:
         reverse = {}
         queue = [start]
         goals = []
-        gates = [g for g in m.gates if not g.bypassable and g.openers]
+        gates = [g for g in m.gates if not g.bypassable and (g.openers or g.kind == "pickup")]
         while queue:
             pair = queue.pop()
             node, state = pair
@@ -1183,6 +1330,7 @@ class Validator:
             self.report.error("soft-lock: si Isak llega a la fila %d, %s no puede volver al camino de la meta (%s)"
                               % (first[1], cols, opened), first[1], first[0])
         self.result["softlocks_checked_states"] = len({state for _, state in seen})
+        self._laser_info(seen)
 
     def finish(self):
         self.result["ok"] = not self.report.errors
@@ -1198,6 +1346,7 @@ class Validator:
             "allow_run": self.rules.allow_run,
             "coyote_time_used": False,
             "pulse_radius_px": self.rules.pulse_radius,
+            "laser_range_px": self.rules.laser_range,
             "base_pulse_radius_px": self.rules.base_pulse_radius,
             "upgrades": list(self.rules.upgrades),
         }
@@ -1208,8 +1357,10 @@ class Validator:
                 entry["headroom_px"] = None if g.headroom_px == INF else g.headroom_px
                 entry["jump_over_px"] = round(g.jump_over_px, 1)
                 entry["open"] = g.open
-                if g.pop_ledge is not None:
-                    entry["pop_ledge"] = g.pop_ledge
+                entry["health"] = g.health
+                entry["laser_from"] = None if g.laser_from is None else [g.laser_from[1], g.laser_from[0]]
+            elif g.kind == "pickup":
+                entry["ability"] = g.ability
             gates.append(entry)
         self.result["gates"] = gates
         return self.result
@@ -1273,14 +1424,17 @@ def format_text(path, result):
             out.append("  Burbuja %s: %s px libres sobre la patrulla, por encima de su zona de dano recorre %.0f px "
                        "-> %s" % (g["id"], "inf" if g["headroom_px"] is None else "%.0f" % g["headroom_px"],
                                   g["jump_over_px"], "se puede saltar" if g["bypassable"] else "bloquea hasta el pulso"))
-            ledge = g.get("pop_ledge")
-            if ledge:
-                out.append("    repisa para reventarla: (fila %d, columna %d), %.0f px sobre su suelo, a %.0f px de su "
-                           "patrulla; saltando cae a %d px/s (revienta), bajando andando a %d px/s (%s)%s"
-                           % (ledge["row"], ledge["col"], ledge["height_px"], ledge["gap_px"],
-                              ledge["jump_impact_px_s"], ledge["walk_off_impact_px_s"],
-                              "revienta" if ledge["walk_off_pops"] else "la pisa",
-                              "; se sube desde la Burbuja aturdida" if ledge["step_reach"] else ""))
+            if g.get("laser_from"):
+                out.append("    vida %.0f; el laser la alcanza desde (fila %d, columna %d)"
+                           % (g["health"], g["laser_from"][0], g["laser_from"][1]))
+    abilities = result.get("abilities")
+    if abilities:
+        for item in abilities["pickups"]:
+            out.append("  %s %s (fila %d, columna %d): %s; %s" % (
+                item["ability"], item["id"], item["row"], item["col"],
+                "se alcanza" if item["reachable"] else "NO se alcanza",
+                "obligatorio (en el camino de la meta)" if item["mandatory"] else "opcional"))
+        out.append("  meta sin usar el laser: %s" % ("si" if abilities["goal_without_laser"] else "no"))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
     for w in result["warnings"]:
