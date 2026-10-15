@@ -1,0 +1,39 @@
+GIMP Palette
+Name: Hub - Modo Avion, gris azulado apagado (PROPUESTA)
+Columns: 4
+# Paleta del HUB (propuesta 2026-10-15; hex elegidos por el agente, a revisar por el usuario).
+# 16 colores; el acento cian es el debug_cian del Mundo 1 y cuenta dentro de los 16.
+# Sin rojo: #dc0000 y #ff3838 (del usuario) quedan reservados fuera del hub.
+# Generado por tools/palette_hub_preview.py
+# fondo_profundo: Contorno de todo, fondo del HUD (dato del usuario)
+  5  14  60	fondo_profundo
+# sombra: Sombras, interior del dock, hueco de la foto rota (dato del usuario)
+  0  36  85	sombra
+# panel: Fondo de paneles de menu (copia local, Calc, carpetas)
+ 26  42  70	panel
+# dock: Dock/suelo y repisas: superficie (mas oscuro que el fondo)
+ 38  53  79	dock
+# base: Fondo ambiente del hub (gris azulado apagado)
+ 58  72  98	base
+# gris_apagado: Piezas apagadas de la foto, carpeta bloqueada, Calc dormida
+ 86  99 122	gris_apagado
+# gris_foto: Luz de las piezas apagadas de la foto, bisel del dock
+119 132 154	gris_foto
+# traza: Trazas de circuito de 1 px (= resplandor del Mundo 1)
+ 79 113 196	traza
+# borde: Borde superior del dock y repisas, bisel claro (= borde_luz del Mundo 1)
+155 176 232	borde
+# texto_tenue: Texto secundario, icono de carpeta bloqueada, candado
+170 180 198	texto_tenue
+# texto_claro: Texto de paneles y HUD, iconos claros, check de completada
+238 241 247	texto_claro
+# cian_tenue: Pieza 1 encendida: sombra; halo de lo interactivo (= pulse_dim)
+ 18 133 127	cian_tenue
+# acento_cian: Interactivos, carpeta disponible, copia local activa, pieza 1 (= debug_cian del Mundo 1)
+ 61 255 245	acento_cian
+# cian_brillo: Pieza 1 encendida: brillo; pantalla de la copia local (= pulse_core)
+194 255 252	cian_brillo
+# ambar: Puntos de atencion e indicador «sin guardar» (= ambar del Mundo 1)
+255 160   0	ambar
+# ambar_sombra: Sombra de los puntos de atencion
+168  95   0	ambar_sombra

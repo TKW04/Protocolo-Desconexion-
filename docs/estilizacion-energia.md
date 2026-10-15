@@ -67,6 +67,8 @@ Desde la raíz del repo:
 - `python3 tools/gen_energy_objects.py` rehace los 32 PNG (`--dry-run` no escribe; `--preview <png> [--scale N]` guarda una hoja ampliada para revisarlos). La salida es determinista: sin cambios en el script, los PNG salen idénticos.
 - `python3 tools/validate_energy_objects.py` los valida (sale con 1 si hay errores).
 
+- En el hub, los objetos de este estilo se regeneran con `assets/palettes/hub.gpl` (propuesta; `fondo_profundo`, `borde`, `dock` y `traza` en lugar de `noche_profunda`, `borde_luz`, `tile_base` y `resplandor`; ver `07-estilo-visual.md` §15.3.1).
+
 Ambos usan Pillow. Si está instalado en el site de usuario (`pip3 install --user Pillow`), los scripts lo añaden a `sys.path` a mano, así que funcionan también con `python3 -I`.
 
 ## Vórtice de llegada y salida (2026-10-15)

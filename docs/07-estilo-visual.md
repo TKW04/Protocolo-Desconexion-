@@ -40,6 +40,73 @@ El tamaño del sprite es la decisión con más consecuencias. Un sprite de 64 p�
 | **5. La Tienda** | Negro con neones | Amarillo chillón | Blanco |
 | **6. La Nube** | Plata, blanco y gris frío | Azul pálido, con filtraciones de colores anteriores | Cambia por zona |
 
+### 15.3.1 Paleta del hub (PROPUESTA 2026-10-15)
+
+Estado: **propuesta**, pendiente de aprobación del usuario. El usuario aportó cuatro hex (`#050E3C` y `#002455`, azules muy oscuros; `#DC0000` y `#FF3838`, rojos) y delegó el resto. Archivo: `assets/palettes/hub.gpl` (16 colores). Vista previa con muestras y maqueta (fondo con la foto rota, dock, carpetas completada/disponible/bloqueada, copia local activa, Calc dormida e indicador «sin guardar»): `assets/palettes/hub_paleta.png`. Generador y validador: `tools/palette_hub_preview.py` (ver «Regenerar y validar»).
+
+A diferencia del Mundo 1 (16 + `debug_cian` aparte), el cian va **dentro** de los 16: en el hub el cian no es un tinte de Debug, sino el acento de lo interactivo y de la pieza encendida (§13.4). Cuando el hub muestre piezas de otros mundos, su acento se añadirá como color aparte, igual que el Debug de cada mundo.
+
+| Rol | Hex | Uso |
+|---|---|---|
+| `fondo_profundo` | `#050e3c` | Contorno de todo y fondo del HUD (dato del usuario; sustituye a `noche_profunda` en el hub). |
+| `sombra` | `#002455` | Sombras, interior del dock, marco y huecos de la foto rota (dato del usuario). |
+| `panel` | `#1a2a46` | Fondo de los paneles de menú (copia local, Calc, carpetas). |
+| `dock` | `#26354f` | Dock (suelo) y repisas. Más oscuro que el fondo, como los tiles del Mundo 1. |
+| `base` | `#3a4862` | Fondo ambiente: el «gris azulado apagado». |
+| `gris_apagado` | `#56637a` | Piezas apagadas de la foto, carpeta bloqueada, Calc dormida, huecos del dock. |
+| `gris_foto` | `#77849a` | Luz de las piezas apagadas y bisel del dock. |
+| `traza` | `#4f71c4` | Trazas de circuito de 1 px (mismo hex que `resplandor` del Mundo 1). |
+| `borde` | `#9bb0e8` | Borde superior del dock y de las repisas, bisel claro (mismo hex que `borde_luz`). |
+| `texto_tenue` | `#aab4c6` | Texto secundario, candado de la carpeta bloqueada. |
+| `texto_claro` | `#eef1f7` | Texto de paneles y HUD, iconos claros (Modo Avión). |
+| `cian_tenue` | `#12857f` | Pieza 1 encendida (sombra), halo de lo interactivo (mismo hex que `pulse_dim`). |
+| `acento_cian` | `#3dfff5` | Interactivos: carpeta disponible, copia local activa, tecla del pulso, opción elegida, pieza 1 (mismo hex que `debug_cian`). |
+| `cian_brillo` | `#c2fffc` | Pieza 1 encendida (brillo), pantalla de la copia local (mismo hex que `pulse_core`). |
+| `ambar` | `#ffa000` | Puntos de atención e indicador «sin guardar» (mismo hex que `ambar` del Mundo 1). |
+| `ambar_sombra` | `#a85f00` | Sombra de los puntos de atención. |
+
+Estados de los elementos (color y además forma, por daltonismo):
+
+- **Foto rota:** piezas apagadas en `gris_apagado`/`gris_foto` con contorno `fondo_profundo` sobre `sombra`. La pieza 1 encendida usa la rampa `cian_tenue` → `acento_cian` → `cian_brillo` (5,49:1 de `cian_brillo` frente a una pieza apagada). En el hub del 1-1, la pieza 1 solo lleva el contorno `acento_cian` parpadeante.
+- **Carpetas:** bloqueada = relleno `gris_apagado` con candado `texto_tenue`; disponible = relleno `panel` con contorno y rótulo `acento_cian`; completada = relleno `acento_cian` con check `fondo_profundo`.
+- **Copia local:** monitor con pantalla `cian_brillo` y marco `acento_cian` cuando se puede usar; tecla del pulso sobre `panel` con contorno `acento_cian`.
+- **Calc:** dormida en `gris_apagado` con la «z» en `texto_tenue`; despierta, con los acentos en `acento_cian`.
+- **Indicador «sin guardar»:** punto y texto en `ambar` sobre el HUD (`fondo_profundo`). Se elige el ámbar de los puntos en vez de un rojo, porque en el hub nada hace daño, y en vez de `banner_blanco` (como decía la propuesta del hub, §4.3), porque el blanco no destaca como aviso entre los demás textos del HUD.
+
+**Sin rojo en el hub.** `#dc0000` y `#ff3838`, aportados por el usuario, quedan **reservados** para alertas, jefes y puntos débiles de otros mundos (o la paleta del mundo que corresponda): el rojo significa daño (§15.2). No se pierden; `tools/palette_hub_preview.py` los guarda en `RESERVED` y `--check` falla si alguno entra en `hub.gpl`.
+
+Contrastes WCAG (medidos con `tools/palette_hub_preview.py`). Mínimo 4,5:1 para texto y 3:1 para iconos y bordes (WCAG 1.4.11):
+
+| Frente | Fondo | Ratio | Mínimo | Uso | Cumple |
+|---|---|---|---|---|---|
+| `texto_claro` | `panel` | 12,68:1 | 4,5 | Texto de panel | Sí |
+| `texto_claro` | `fondo_profundo` | 16,36:1 | 4,5 | Texto del HUD | Sí |
+| `texto_claro` | `base` | 8,13:1 | 4,5 | Texto sobre el fondo | Sí |
+| `texto_claro` | `dock` | 10,89:1 | 4,5 | Rótulo sobre el dock | Sí |
+| `texto_tenue` | `panel` | 6,87:1 | 4,5 | Texto secundario de panel | Sí |
+| `texto_tenue` | `fondo_profundo` | 8,86:1 | 4,5 | Texto secundario del HUD | Sí |
+| `acento_cian` | `panel` | 11,49:1 | 4,5 | Opción elegida en un panel | Sí |
+| `ambar` | `fondo_profundo` | 9,06:1 | 4,5 | Puntos y «sin guardar» en el HUD | Sí |
+| `ambar` | `panel` | 7,02:1 | 4,5 | Precio en puntos (Calc) | Sí |
+| `fondo_profundo` | `acento_cian` | 14,83:1 | 4,5 | Texto oscuro sobre botón cian | Sí |
+| `acento_cian` | `base` | 7,37:1 | 3 | Contorno de carpeta disponible y pieza 1 | Sí |
+| `acento_cian` | `dock` | 9,87:1 | 3 | Copia local activa | Sí |
+| `ambar` | `base` | 4,50:1 | 3 | Punto de atención sobre el fondo | Sí |
+| `borde` | `dock` | 5,73:1 | 3 | Borde superior del dock | Sí |
+| `borde` | `base` | 4,28:1 | 3 | Borde de repisa sobre el fondo | Sí |
+| `texto_tenue` | `base` | 4,40:1 | 3 | Candado de carpeta bloqueada | Sí |
+| `fondo_profundo` | `gris_apagado` | 3,05:1 | 3 | Contorno de carpeta bloqueada | Sí |
+| `fondo_profundo` | `acento_cian` | 14,83:1 | 3 | Check de carpeta completada | Sí |
+| `cian_brillo` | `gris_apagado` | 5,49:1 | 3 | Pieza 1 encendida frente a las apagadas | Sí |
+| `fondo_profundo` | `base` | 2,01:1 | 3 | Contorno sobre el fondo | **No (aceptado):** el objeto se separa del fondo por su bisel `borde` (4,28:1) y su relleno, no por el contorno. |
+| `gris_apagado` | `base` | 1,52:1 | 3 | Pieza apagada frente al fondo | **No (aceptado):** decorativo; la foto apagada debe fundirse con el fondo. |
+
+Regenerar y validar (desde la raíz del repo; funciona con `python3 -I`):
+
+- `python3 -I tools/palette_hub_preview.py` rehace `hub.gpl` y `hub_paleta.png` e imprime la tabla de contrastes (`--png <ruta>` copia además la vista previa).
+- `python3 -I tools/palette_hub_preview.py --check` valida `hub.gpl`: 16 colores, hex y nombres únicos, igual al generador, sin los rojos reservados y con los contrastes mínimos (sale con 1 si falla).
+- Los sprites del hub (fondo, carpetas, dock, iconos) se validan contra `hub.gpl` con el `load_gpl`/`check_asset` de `tools/validate_world1_assets.py`, cambiando la ruta de la paleta, como hace `tools/validate_energy_objects.py`.
+
 ## 15.4 Isak y su copia
 
 > **Cambio aprobado 2026-10-14:** el diseño de Isak de la hoja de referencia `../Ejemplo/Idle.png` (fuera del repo; arte generado con IA, no pixel art verdadero) **reemplaza** el diseño de la tabla siguiente y se usa como guía. Lo que se ve en la referencia:
