@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-15):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11. Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard; engaño en Normal, final real en Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final; hay una sugerencia de dificultad pendiente de aprobar). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
+**Estado (2026-10-15):** resueltos C1, C4 (Mundo 1: hub tras cada nivel), C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11, y el hub y el guardado manual («Hub y guardado: propuesta aprobada (2026-10-15)», al final). Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard; engaño en Normal, final real en Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final; hay una sugerencia de dificultad pendiente de aprobar). Siguen abiertos: C2, C3, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -36,11 +36,12 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Propuesta:** leer §10.2 como "por primera vez se gastan **dentro de un nivel**". Recoger un punto suma al contador y recarga energía a la vez, sin descontar nada.
 - **Por qué:** es la lectura que reconcilia las tres secciones sin cambiar ninguna mecánica.
 
-### C4 [BLOQUEA SLICE (fin del 1-1)] Qué pasa al terminar un nivel: ¿hub o siguiente nivel?
+### C4 [RESUELTO (Mundo 1)] Qué pasa al terminar un nivel: ¿hub o siguiente nivel?
 - **Sección:** §13.5 ("Al terminar un nivel, Isak vuelve al hub") frente a §13.1 (el hub no existe hasta vencer a Alerta Mayor), §6.3 (Cierre: la puerta "da paso al siguiente nivel") y §7.4 (2-1: "entra en el siguiente nivel sin poder pararse").
 - **Problema:** las reglas de transición se contradicen. En el Mundo 1 no puede haber vuelta al hub, y el 2-1 encadena con el siguiente nivel de forma explícita.
 - **Propuesta:** los niveles de un mundo se encadenan y se vuelve al hub tras el jefe (y al salir de un mundo ya completado). En el slice, la puerta "Marcar como leído" lleva a una pantalla de "Fin del slice" que permite reiniciar el nivel.
 - **Por qué:** es la única regla compatible con §6.3, §7.4 y §13.1. Para el slice basta con un final limpio.
+- **Decisión (2026-10-15):** el hub aparece desde el final del 1-1 y se vuelve a él tras cada nivel del Mundo 1 (hub mínimo con Calc dormida; `05-hub.md` §13.1 y `propuesta-hub-y-guardado.md`, pregunta 1). El encadenado explícito del 2-1 (§7.4) se revisará al diseñar el Mundo 2.
 
 ### C5 [Fuera del slice] El dash "convierte" el pulso frente al uso de pulso y dash por separado
 - **Sección:** §3.5 (Deslizar: "El pulso se convierte en un dash de datos") frente a §6.5 (1-3, Tramo 3: "Combinación de dash y pulso") y §6.6 (Fase 2: "cerrarlos con el pulso y esquivar con dash").
@@ -601,7 +602,7 @@ Decisión de diseño del usuario. Sustituye el estado «pendiente de aprobar» d
 - **Puntos de atención:** no se restauran al rejugar un nivel; solo vuelven con un rollback, es decir, al pasar de Easy a Normal y de Normal a Hard (coherente con «Decisión 4, puntos de atención» del 2026-10-14). Da igual que lo haga el jefe (Easy) o Isak engañado (Normal).
 - **Mejoras:** se compran en el hub (ya decidido el 2026-10-14, decisión 1).
 - **Guardado: manual y solo en el hub.** El jugador guarda en el hub; si cierra el juego sin haber guardado en el hub, el progreso no se salva. Queda decidido y sustituye la duda de si se mantenía el guardado automático. El **1-1 debe enseñar a guardar** (tutorial en el primer nivel); como el hub llega después del Mundo 1, el tutorial necesita el hub o un punto de guardado en el nivel (dependencia abierta, ver `08-pendientes.md`).
-- **Guardado actual, provisional:** hoy `user://save.json` se escribe **automáticamente** al capturar un punto, obtener una habilidad, comprar una mejora o completar un nivel (ver «Decisión 5, guardado»). Es provisional: hay que migrarlo al guardado manual cuando exista el hub. Sin cambios en el código todavía.
+- **Guardado actual, provisional:** hoy `user://save.json` se escribe **automáticamente** al capturar un punto, obtener una habilidad, comprar una mejora o completar un nivel (ver «Decisión 5, guardado»). Es provisional: hay que migrarlo al guardado manual cuando exista el hub. Sin cambios en el código todavía. **Actualización (2026-10-15):** migrado al guardado manual; ver «Hub y guardado: propuesta aprobada (2026-10-15)».
 - **Hub:** se diseña cuando termine el 1-1, para dejarlo cuadrado.
 - **Dificultad:** el usuario no recuerda por qué se decidió que «la dificultad ya no se elige» y pide una sugerencia. Queda abajo como **propuesta del equipo, pendiente de aprobar**. El rollback se verá más adelante.
 
@@ -629,7 +630,7 @@ Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de No
 3. **Rollback por mapa:** qué cambia en concreto en cada mapa (geometría, rutas, enemigos, peligros, puntos débiles, aspecto) y cómo se ve el paso de una vuelta a otra.
 4. **Narrativa de cada vuelta:** qué cambia para Eco, los aliados, los amigos y los recuerdos; cómo se cuenta el escape (Easy) y el engaño (Normal).
 5. **Avisos de puntos débiles nuevos:** si los puntos débiles de cada vuelta siguen la regla de color (rojo/carmín) y el telegrafiado de 6 a 12 cuadros, y cómo se avisa al jugador del cambio.
-6. **Guardado (detalle):** cómo es la acción de guardar en el hub (objeto o menú), cómo se enseña en el 1-1 sin hub (punto de guardado en el nivel u otra forma) y qué guarda además (vuelta actual, puntos capturados por vuelta, power banks de mapa, secretos). **Propuesta (2026-10-15, pendiente de revisión):** `docs/propuesta-hub-y-guardado.md` (hub del Mundo 1, guardado manual con esquema v2 y tutorial en el 1-1, con 10 preguntas al final).
+6. ~~**Guardado (detalle):** cómo es la acción de guardar en el hub (objeto o menú), cómo se enseña en el 1-1 sin hub (punto de guardado en el nivel u otra forma) y qué guarda además (vuelta actual, puntos capturados por vuelta, power banks de mapa, secretos).~~ **[RESUELTO el 2026-10-15]** con `docs/propuesta-hub-y-guardado.md`, aprobada: estación «copia local» en el hub, tutorial B + C sin guardado en los niveles y esquema v2 (`lap`, `found_secrets`, `hub_tutorial_done`, `saved_at`, `play_time_s`). Ver «Hub y guardado: propuesta aprobada (2026-10-15)».
 
 ## Llegada por vórtice, pausa de inicio y terminal de salida (2026-10-15)
 
@@ -643,3 +644,28 @@ Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de No
 - Con el láser desbloqueado, el HUD muestra la batería vacía (sin segmentos, rayo apagado) si la energía es menor que el coste de un disparo (`laser_energy_cost`, 10). Antes, un resto de 0,01 a 9,99 dejaba 1 segmento encendido sin poder disparar. Solo cambia el dibujo: la energía real se conserva. Sin el láser se sigue viendo el resto (vacía solo con 0).
 - **[RESUELTO] Duda:** el Debug se activa con cualquier energía > 0 (`DebugMode`, sin cambios). Cuando el jugador tenga láser y Debug a la vez (en el 1-1 el Debug está bloqueado), con un resto menor que 10 la batería se verá vacía pero el Debug aún se podrá activar unos instantes. ¿Se acepta así, se exige un mínimo de energía para activar el Debug, o la batería debe verse vacía solo cuando no se pueda usar ninguna de las dos?
   - **Decisión del usuario (2026-10-15):** se acepta así. El Debug **conserva su regla** (se activa con energía > 0) aunque la batería se vea vacía por debajo del coste del láser. No se cambia `DebugMode` ni el HUD.
+
+## Hub y guardado: propuesta aprobada (2026-10-15)
+
+Decisión del usuario: se aprueba `propuesta-hub-y-guardado.md` con la recomendación de sus 10 preguntas (§7). Resuelve la duda 6 de las tres vueltas («Guardado (detalle)») y C4 en el Mundo 1. Cambios aplicados en `05-hub.md` (§13.1, §13.2, §13.3 y §13.6).
+
+1. El hub aparece desde el final del 1-1 (hub mínimo tras cada nivel del Mundo 1). La llegada narrativa sigue tras Alerta Mayor.
+2. Tutorial de guardado B + C: línea importante de Eco junto a la terminal de salida del 1-1 y primer hub guiado. **No hay guardado dentro de los niveles.**
+3. Hub = sala 2D caminable con paneles; una sola pantalla en el Mundo 1.
+4. Calc dormida en el hub del Mundo 1: vende sin hablar.
+5. Aviso al cerrar con cambios sin guardar, también dentro de un nivel (allí sin opción de guardar).
+6. Ajustes en `user://settings.cfg`, guardados al instante y aparte del guardado manual.
+7. No se rejuegan subniveles de vueltas anteriores: solo los de la vuelta actual.
+8. Rollback: se restauran los objetos del mapa (power banks de mapa y cargadores de un solo uso) además de los puntos; los secretos encontrados se conservan como registro.
+9. Ajustes en el menú de pausa (acción `pause`) y accesibles desde un icono en el hub.
+10. Se guarda `save.json.bak` con la copia anterior.
+
+Además, el Debug conserva su regla (se activa con energía > 0; ver «Batería vacía por debajo del coste del láser»).
+
+**Implementado (2026-10-15), pasos 1 a 3 de la propuesta (§6.2):**
+
+- **Guardado manual:** `GameState.request_save()` ya no escribe: marca «sin guardar» (`has_unsaved_changes()`, señal `EventBus.unsaved_changes_changed`). Solo `GameState.save_game()` escribe, y limpia la marca. Capturar puntos, recoger objetos, comprar mejoras, obtener habilidades y completar o desbloquear niveles quedan en memoria hasta guardar. Marcar un aviso de control como visto no marca «sin guardar» (se guarda con la siguiente copia).
+- **Esquema v2:** añade `lap` (1 Easy, 2 Normal, 3 Hard), `found_secrets` (nivel → ids), `hub_tutorial_done`, `saved_at` (fecha UTC) y `play_time_s`. Un guardado v1 se carga igual (`lap` 1, sin secretos, `hub_tutorial_done` verdadero si el 1-1 está completado) y la siguiente copia escribe la v2. Una versión desconocida se aparta como `.corrupt` y se empieza de cero. Al guardar, la copia anterior pasa a `save.json.bak`; si el guardado está corrupto y hay `.bak`, se carga el `.bak`.
+- **Aviso al salir:** con cambios sin guardar, cerrar la ventana muestra un aviso (provisional, con el panel y la fuente de textos): en un sitio donde se puede guardar, «Guardar y salir / Salir sin guardar / Volver»; en un nivel, «Salir / Volver». Sin cambios, sale sin preguntar. Textos en `data/quit_prompt.json`. Las herramientas (`-s`) no lo usan.
+- **Guardar mientras no exista el hub real (provisional):** la pantalla provisional del hub guarda con la acción nueva `save_game` (C / R3 del mando) y muestra «Guardar: …» y el indicador «sin guardar». Se sustituirá por la estación «copia local».
+- **Dudas para el usuario:** (1) ¿vale C / R3 como control provisional de guardar? (2) `play_time_s` cuenta el tiempo con el juego sin pausar, también en la pantalla del hub; ¿vale así? (3) Aún no hay nada que marque secretos encontrados (`GameState.mark_secret_found` existe, sin uso): se conectará con Linterna o con los secretos del 1-1.

@@ -1,6 +1,6 @@
 # Propuesta: hub del Mundo 1 y tutorial de guardado del 1-1
 
-Estado: **PROPUESTA para revisar** (2026-10-15). No hay nada implementado. Las decisiones ya tomadas por el usuario (`05-hub.md` §13.6 y `preguntas.md`, «Decisiones del 2026-10-15: tres vueltas, hub y guardado») se respetan. Donde esta propuesta cambia algo de `05-hub.md`, lo marca como **[cambia 05-hub §x]**. Las preguntas para el usuario están al final (§7).
+Estado: **APROBADO 2026-10-15.** El usuario aprobó las 10 preguntas de §7 con la recomendación del documento (respuestas en §7). Los cambios marcados como **[cambia 05-hub §x]** ya están aplicados en `05-hub.md`. Implementado: pasos 1 a 3 de §6.2 (guardado manual, esquema v2 con migración y `.bak`, aviso al salir) y, mientras no exista el hub real, una acción de guardar provisional en la pantalla provisional del hub (`save_game`, ver `CLAUDE.md`, «Cómo ejecutar»). El resto (pasos 4 a 12) sigue pendiente. Sigue abierta, como decisión del usuario, la paleta del hub (hex exactos del «gris azulado apagado», §6.1). Las decisiones ya tomadas por el usuario (`05-hub.md` §13.6 y `preguntas.md`, «Decisiones del 2026-10-15: tres vueltas, hub y guardado») se respetan. Donde esta propuesta cambia algo de `05-hub.md`, lo marca como **[cambia 05-hub §x]**. Las preguntas para el usuario están al final (§7), ya resueltas.
 
 Decisiones que se respetan:
 
@@ -66,7 +66,7 @@ fila0 [HUD: ✈ Modo Avión ··········· batería  ◆ pts  ● sin gu
 | **Carpetas M1, M2 y M3** | (4–5), (10–11) y (16–17), filas 3–4 | Repisas a 3 tiles del dock: se llega de un salto, así que no hay que enseñar nada. M2 y M3 se ven bloqueadas. |
 | **Calc** | (7, 9), de pie sobre el dock | Abre el panel de mejoras. En el Mundo 1 está **dormida** (ver §3.2). |
 | **Huecos del dock** | (10, 9), (13, 9) y (16, 9) | Siluetas apagadas para Notas, Linterna y Papelera. Anuncian aliados futuros. |
-| **Ajustes** | Esquina (18–19, 7) **o** solo en el menú de pausa | Ver la pregunta 9. |
+| **Ajustes** | Icono en la esquina (18–19, 7) que abre el menú de pausa | Pregunta 9: los ajustes viven en el menú de pausa. |
 | **Paredes** | Bordes de la sala | Mientras haya una sola página, el borde no desliza la pantalla. |
 
 **[cambia 05-hub §13.2]:** el dock pasa a ser el **suelo** del hub (los aliados están de pie en él). §13.2 lo describe como una «barra inferior» sin decir si se camina sobre ella.
@@ -133,14 +133,14 @@ Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
 |---|---|---|---|
 | `attention_points` | Sí | Sí | |
 | `captured_points` (nivel → ids) | Sí | Sí | El rollback lo vacía. No hace falta guardarlo por vuelta. |
-| `collected_pickups` (power banks de mapa, cargadores de un solo uso) | Sí | Sí | ¿Los vacía el rollback? (pregunta 8) |
+| `collected_pickups` (power banks de mapa, cargadores de un solo uso) | Sí | Sí | El rollback los vacía: los objetos del mapa vuelven (pregunta 8). |
 | `upgrades_purchased` | Sí | Sí | |
 | `abilities_obtained` | Sí | Sí | El rollback **no** los toca: Isak mantiene sus habilidades. |
 | `power_banks` (`full`, `empty`, `charge`) | Sí | Sí | |
 | `completed_levels` / `unlocked_levels` | Sí | Sí | El rollback los reinicia para la nueva vuelta (por definir con el rollback). |
 | `seen_notices` | Sí | Sí | |
 | **`lap`** (1 Easy, 2 Normal, 3 Hard) | No | **Nuevo** | Vale 1 por defecto. |
-| **`found_secrets`** (nivel → ids) | No | **Nuevo** | Hace falta para Linterna y Notas. Conviene empezar a guardarlo ya. |
+| **`found_secrets`** (nivel → ids) | No | **Nuevo** | Hace falta para Linterna y Notas. El rollback no lo toca: es un registro (pregunta 8). |
 | **`hub_tutorial_done`** | No | **Nuevo** | Primer hub guiado (§5). |
 | **`saved_at`** (fecha) y **`play_time_s`** | No | **Nuevo** | Se muestran en la copia local. |
 | Ajustes | No | **Aparte** | `user://settings.cfg`, guardado al cambiarlos. No es progreso (pregunta 6). |
@@ -174,7 +174,7 @@ No se guardan: Sync Rate, energía y checkpoints (el hub los repone), ni el enfr
 ### 4.5 Migración del autoguardado actual
 
 1. `request_save()` deja de escribir: pasa a marcar los cambios como pendientes (dirty) y emite `EventBus.unsaved_changes_changed(bool)`. Las llamadas que ya existen (capturar un punto, `obtain_ability`, `purchase_upgrade`, `mark_level_completed`…) no cambian.
-2. `save_game()` solo lo llaman la copia local (y las pruebas). `autosave_enabled` ya existe: se usa como interruptor del modo, en `false` para el juego normal. Las pruebas que lo necesiten pueden activarlo.
+2. `save_game()` solo lo llaman la copia local (y las pruebas). `autosave_enabled` ya existe: se usa como interruptor del modo, en `false` para el juego normal. Las pruebas que lo necesiten pueden activarlo. **Implementado (2026-10-15):** se quitó `autosave_enabled` (no queda modo automático); mientras no exista la copia local, `save_game()` lo llama la pantalla provisional del hub con la acción `save_game` (C / R3).
 3. Un `save.json` v1 se carga igual que ahora (`apply_save_data` ya tolera campos que falten). `lap` vale 1, `found_secrets` empieza vacío y `hub_tutorial_done` vale `true` si el 1-1 ya está completado (un jugador veterano no repite el tutorial). La primera copia manual escribe la v2. Una v2 con un juego antiguo se aparta como `.corrupt`, como hoy.
 4. Rutas y aislamiento sin cambios: `ISAK_SAVE_PATH`, `test_save.json`, `bot_save.json` y `tool_save.json`. `tools/run_tests.sh` sigue fallando si la suite toca el guardado real.
 
@@ -244,7 +244,25 @@ Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí.
 
 S = menos de medio día; M = entre medio día y un día.
 
-## 7. Preguntas abiertas (por prioridad)
+## 7. Preguntas (RESUELTAS el 2026-10-15)
+
+**Decisión del usuario (2026-10-15):** las 10 preguntas se aprueban con la recomendación del documento. Además, el Debug conserva su regla (se activa con energía > 0; `preguntas.md`, «Batería vacía por debajo del coste del láser»).
+
+| # | Respuesta |
+|---|---|
+| 1 | **Sí.** El hub aparece desde el final del 1-1: un hub mínimo tras cada nivel del Mundo 1, con Calc dormida. La llegada narrativa (Calc despierta y la pieza cian) sigue siendo tras Alerta Mayor. |
+| 2 | **Sí, tutorial B + C:** aviso de Eco en la terminal de salida del 1-1 y primer hub guiado. No hay guardado dentro de los niveles. |
+| 3 | **A:** sala 2D caminable con paneles, de una sola pantalla en el Mundo 1. |
+| 4 | **Sí:** Calc dormida en el hub del Mundo 1; vende sin hablar. |
+| 5 | **Sí:** aviso al cerrar con cambios sin guardar, también dentro de un nivel (allí sin opción de guardar). |
+| 6 | **Sí:** los ajustes se guardan al instante en `user://settings.cfg`, aparte del guardado manual. |
+| 7 | **No:** no se rejuegan subniveles de vueltas anteriores; solo los de la vuelta actual. |
+| 8 | **Rollback:** se restauran los objetos del mapa (power banks de mapa y cargadores de un solo uso) además de los puntos; los secretos encontrados se conservan como registro. |
+| 9 | **Menú de pausa** (acción `pause`), accesible también en los niveles; en el hub, un icono en la esquina lo abre. |
+| 10 | **Sí:** se guarda `save.json.bak` con la copia anterior. |
+
+Texto original de las preguntas (por prioridad):
+
 
 1. **¿El hub aparece desde el final del 1-1?** Esto cambiaría §13.1 («primera llegada tras Alerta Mayor»), §13.6 («antes del hub no hay selección») y C4. *Recomendación: sí.* Un hub mínimo tras cada nivel del Mundo 1, con Calc dormida. La llegada narrativa (Calc despierta y la pieza cian) sigue siendo tras Alerta Mayor.
 2. **¿Se aprueba el tutorial B + C** (Eco lo anuncia en la terminal de salida y el primer hub es guiado), sin guardado dentro de los niveles? *Recomendación: sí.*
