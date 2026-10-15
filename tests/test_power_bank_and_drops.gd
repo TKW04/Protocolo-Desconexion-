@@ -161,15 +161,9 @@ func test_popping_bubble_drops_recharges_that_isak_collects() -> void:
 	bubble.set_physics_process(false)
 	await wait_physics_frames(1)
 	sim.settle()
-	bubble.stun()
-	# Caida fuerte sobre la Burbuja aturdida: revienta (C7).
-	isak.global_position = Vector2(400.0, bubble.get_platform_top_y() - 300.0)
-	isak.velocity = Vector2.ZERO
-	for i: int in 90:
-		sim.step()
-		bubble.step(DT)
-		if bubble.get_state() == AlertBubble.STATE_POPPED:
-			break
+	# Muere al quedarse sin vida (laser, 2026-10-15; la caida ya no la revienta).
+	for i: int in roundi(bubble.get_max_health()):
+		bubble.on_laser_hit(1.0, isak)
 	assert_eq(bubble.get_state(), AlertBubble.STATE_POPPED)
 	var pickups: Array[Node] = get_tree().get_nodes_in_group(RechargePickup.GROUP)
 	assert_eq(pickups.size(), 2, "Suelta energia y Sync Rate")

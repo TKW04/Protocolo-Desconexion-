@@ -5,5 +5,25 @@
 	"hurt_duration_s": 0.3,
 	"hurt_knockback_x": 240.0,
 	"hurt_knockback_y": -360.0,
-	"hurt_invulnerability_s": 1.0
+	"hurt_invulnerability_s": 1.0,
+	"_laser_notes": "LASER (decision del usuario 2026-10-15; valores PROPUESTA, ajustar jugando). Accion laser (F / gatillo izquierdo). Habilidad desbloqueable (GameState ABILITY_LASER, se obtiene con un ability_pickup y se guarda). Dispara un proyectil horizontal hacia donde mira Isak desde el celular (pulse_effect_origin). Gasta laser_energy_cost de la MISMA energia que el Debug (GameState.debug_energy; 10 = una decima de la barra, 10 disparos con la barra llena; se cobra al salir el disparo). Sin energia suficiente no dispara: chispa gris en el celular (feedback sutil) y aviso EventBus.laser_denied. laser_damage: dano por disparo (la Burbuja tiene health 2 = dos disparos). laser_cooldown_s: tiempo minimo entre disparos (tambien tras un intento sin energia). laser_windup_s: anticipacion minima (3 cuadros a 60 fps) con un destello en el celular antes de que salga el proyectil. laser_speed_px_s: 1200 px/s (casi 19 tiles/s). laser_range_px: 768 px (12 tiles, 0,64 s de vuelo); al llegar se apaga. Choca con el terreno (capa world) y con los cuerpos de la capa enemy; a quien alcanza le llama on_laser_hit(damage, source) si lo tiene. laser_length_px / laser_thickness_px: tamano del dibujo y de la zona de golpe. Se puede disparar en el suelo y en el aire (no cambia la fisica de Isak), no durante el golpe (Hurt) ni muerto. laser_visual: aspecto PROVISIONAL dibujado por codigo con la paleta del Mundo 1 (core banner_blanco, glow debug_cian, fizzle banner_gris; glow_px: halo a cada lado del haz con opacidad glow_alpha), impact_s / impact_size_px: destello del impacto; fizzle_s: chispa sin energia; charge_radius_px: destello de la anticipacion en el celular. Unidades: energia, s, px, px/s.",
+	"laser_energy_cost": 10.0,
+	"laser_damage": 1.0,
+	"laser_cooldown_s": 0.4,
+	"laser_windup_s": 0.05,
+	"laser_speed_px_s": 1200.0,
+	"laser_range_px": 768.0,
+	"laser_length_px": 32.0,
+	"laser_thickness_px": 4.0,
+	"laser_visual": {
+		"core": "#f2f4f8",
+		"glow": "#3dfff5",
+		"fizzle": "#aeb8d2",
+		"impact_s": 0.12,
+		"impact_size_px": 12.0,
+		"glow_px": 2.0,
+		"glow_alpha": 0.5,
+		"fizzle_s": 0.25,
+		"charge_radius_px": 6.0
+	}
 }

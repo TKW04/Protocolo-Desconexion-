@@ -116,3 +116,20 @@ signal upgrade_purchased(id: StringName)
 ## "sync_rate" y `amount` lo que valia.
 @warning_ignore("unused_signal")
 signal recharge_collected(kind: StringName, amount: float)
+
+## Isak obtiene para siempre la habilidad `ability` (ability_pickup; lo emite
+## GameState.obtain_ability). P. ej. &"laser".
+@warning_ignore("unused_signal")
+signal ability_obtained(ability: StringName)
+
+## Isak dispara el laser: `projectile` es el LaserProjectile recien creado.
+@warning_ignore("unused_signal")
+signal laser_fired(projectile: Node2D)
+
+## Isak intenta disparar el laser sin energia suficiente (no sale el disparo).
+@warning_ignore("unused_signal")
+signal laser_denied
+
+## Un cargador (charger) repone `amount` de energia de Debug.
+@warning_ignore("unused_signal")
+signal charger_used(charger_id: StringName, amount: float)

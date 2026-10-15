@@ -11,7 +11,8 @@
 # - Progreso persistente (decisiones del 2026-10-14): puntos acumulados, ids de
 #   puntos de atención ya capturados por nivel, mejoras compradas
 #   (data/upgrades.json), power banks (completos, vacios y carga parcial,
-#   data/power_bank.json) y niveles completados/desbloqueados. Se guarda en
+#   data/power_bank.json), habilidades obtenidas con un ability_pickup (p. ej.
+#   el laser, 2026-10-15) y niveles completados/desbloqueados. Se guarda en
 #   save_path (user://save.json; en las pruebas otra ruta) con SaveFile.
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
 # Reglas de juego que viven aquí: recarga de energía por punto de atención
@@ -62,6 +63,9 @@ const ABILITY_DASH: StringName = &"dash"
 const ABILITY_GROUND_POUND: StringName = &"ground_pound"
 const ABILITY_COMPRESS: StringName = &"compress"
 const ABILITY_SHOCKWAVE: StringName = &"shockwave"
+## Laser (decision del usuario 2026-10-15): desbloqueable con un ability_pickup;
+## gasta energia de Debug (data/isak_abilities.json, laser_*).
+const ABILITY_LASER: StringName = &"laser"
 const ABILITIES: Array[StringName] = [
 	ABILITY_PULSE,
 	ABILITY_DEBUG,
@@ -69,6 +73,7 @@ const ABILITIES: Array[StringName] = [
 	ABILITY_GROUND_POUND,
 	ABILITY_COMPRESS,
 	ABILITY_SHOCKWAVE,
+	ABILITY_LASER,
 ]
 
 ## Sync Rate actual; tope get_sync_rate_max() (100, o mas con "Sync reforzado").
@@ -122,6 +127,9 @@ var captured_points: Dictionary[StringName, Dictionary] = {}
 var collected_pickups: Dictionary[StringName, Dictionary] = {}
 ## Mejoras compradas (id de data/upgrades.json -> true).
 var purchased_upgrades: Dictionary[StringName, bool] = {}
+## Habilidades obtenidas para siempre con un ability_pickup (id -> true; p. ej.
+## laser). Se guardan y, al cargar, quedan desbloqueadas en abilities_unlocked.
+var obtained_abilities: Dictionary[StringName, bool] = {}
 
 ## Ruta del guardado. Por defecto user://save.json; con la variable de entorno
 ## ISAK_SAVE_PATH, esa ruta; dentro de GUT, SAVE_PATH_TESTS, y con otro script
@@ -255,13 +263,24 @@ func get_captured_points(level: StringName) -> Array[StringName]:
 ## bank VACIO (decision 2026-10-14; se carga con el sobrante de los drops) y lo apunta como recogido (persistente). Falso si ya estaba
 ## recogido. Sin nivel (escenas de prueba) no se apunta nada y siempre cuenta.
 func collect_power_bank_pickup(level: StringName, pickup_id: StringName) -> bool:
-	if level != NO_LEVEL:
-		if is_pickup_collected(level, pickup_id):
-			return false
-		if not collected_pickups.has(level):
-			collected_pickups[level] = {}
-		collected_pickups[level][pickup_id] = true
+	if not mark_pickup_collected(level, pickup_id):
+		return false
 	add_empty_power_bank()
+	return true
+
+
+## Apunta el objeto de un solo uso `pickup_id` del nivel `level` como gastado
+## (persistente: power banks de mapa, cargadores de un solo uso). Falso si ya lo
+## estaba. Sin nivel (escenas de prueba) no apunta nada y devuelve verdadero.
+func mark_pickup_collected(level: StringName, pickup_id: StringName) -> bool:
+	if level == NO_LEVEL:
+		return true
+	if is_pickup_collected(level, pickup_id):
+		return false
+	if not collected_pickups.has(level):
+		collected_pickups[level] = {}
+	collected_pickups[level][pickup_id] = true
+	request_save()
 	return true
 
 
@@ -319,6 +338,21 @@ func add_power_bank_charge(amount: float) -> float:
 		power_banks += completed
 	request_save()
 	return wasted
+
+
+## Llena la barra de energia de Debug (hub provisional, decision 2026-10-15).
+## No desborda a los power banks.
+func refill_debug_energy() -> void:
+	debug_energy = get_debug_energy_max()
+
+
+## Recarga de un cargador (charger, 2026-10-15): suma hasta `amount` a la barra
+## sin desbordar a los power banks (el desborde es solo de los drops). Devuelve
+## la energia que entro de verdad (0 si la barra estaba llena).
+func recharge_debug_energy(amount: float) -> float:
+	var before: float = debug_energy
+	add_debug_energy(amount, false)
+	return debug_energy - before
 
 
 ## Recarga de Sync Rate (drops de enemigos y jefes), acotada al maximo efectivo.
@@ -467,6 +501,9 @@ func reset_progress() -> void:
 	captured_points.clear()
 	collected_pickups.clear()
 	purchased_upgrades.clear()
+	for ability: StringName in obtained_abilities:
+		set_ability_unlocked(ability, false)
+	obtained_abilities.clear()
 	power_banks = 0
 	empty_power_banks = 0
 	power_bank_charge = 0.0
@@ -520,6 +557,7 @@ func to_save_data() -> Dictionary:
 		"captured_points": captured,
 		"collected_pickups": pickups,
 		"upgrades_purchased": _keys_sorted(purchased_upgrades),
+		"abilities_obtained": _keys_sorted(obtained_abilities),
 		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
 		"completed_levels": _keys_sorted(completed_levels),
 		"unlocked_levels": _keys_sorted(unlocked_levels),
@@ -556,6 +594,10 @@ func apply_save_data(data: Dictionary) -> bool:
 	for id: StringName in _string_names(data.get("upgrades_purchased", [])):
 		if UpgradeCatalog.shared().has(id):
 			purchased_upgrades[id] = true
+	for id: StringName in _string_names(data.get("abilities_obtained", [])):
+		if abilities_unlocked.has(id):
+			obtained_abilities[id] = true
+			set_ability_unlocked(id, true)
 	var banks: Variant = data.get("power_banks", {})
 	if banks is Dictionary:
 		power_banks = _as_int(banks.get("full", 0))
@@ -632,6 +674,26 @@ func set_ability_unlocked(ability: StringName, unlocked: bool) -> void:
 		return
 	abilities_unlocked[ability] = unlocked
 	EventBus.ability_unlock_changed.emit(ability, unlocked)
+
+
+## Obtiene para siempre la habilidad `ability` (ability_pickup): la desbloquea,
+## la apunta como obtenida (se guarda) y lo avisa con EventBus.ability_obtained.
+## Falso si no existe o ya estaba obtenida.
+func obtain_ability(ability: StringName) -> bool:
+	if not abilities_unlocked.has(ability):
+		push_error("GameState: unknown ability '%s'" % ability)
+		return false
+	if obtained_abilities.has(ability):
+		return false
+	obtained_abilities[ability] = true
+	set_ability_unlocked(ability, true)
+	EventBus.ability_obtained.emit(ability)
+	request_save()
+	return true
+
+
+func is_ability_obtained(ability: StringName) -> bool:
+	return obtained_abilities.has(ability)
 
 
 func _update_low_sync() -> void:

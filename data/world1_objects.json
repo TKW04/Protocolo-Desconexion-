@@ -107,7 +107,61 @@
 			},
 			"defaults": {},
 			"example": {"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}}
+		},
+		"ability_pickup": {
+			"scene": "res://scenes/levels/ability_pickup.tscn",
+			"description": "Objeto que da una habilidad para siempre (decision del usuario 2026-10-15; la primera es el laser). Al tocarlo Isak: GameState.obtain_ability(ability) la desbloquea, la guarda en user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el cuadro de Eco muestra un aviso simple (message o messages[ability] de la seccion ability_pickup). Si ya estaba obtenida no aparece. No es solido. ability: una de las habilidades implementadas (allowed: pulse, debug, laser; las demas de GameState.ABILITIES se anadiran cuando existan). allowed: valores admitidos de cada param (lo comprueba tools/validate_level_schema.py). Aspecto PROVISIONAL dibujado por codigo. Aun no hay ninguno en el 1-1 (lo decide el rediseno del nivel).",
+			"required": ["id", "ability"],
+			"fields": {
+				"id": "object_id",
+				"ability": "ability",
+				"message": "message"
+			},
+			"defaults": {},
+			"allowed": {
+				"ability": ["pulse", "debug", "laser"]
+			},
+			"example": {"type": "ability_pickup", "x": 40, "y": 8, "params": {"id": "laser_1", "ability": "laser"}}
+		},
+		"charger": {
+			"scene": "res://scenes/levels/charger.tscn",
+			"description": "Cargador de energia de Debug (decision del usuario 2026-10-15: la energia la comparten el Debug y el laser; en los mapas hay cargadores en ciertos puntos). Se activa AL TOCARLO (como el punto de sincronizacion y la puerta: sin accion nueva) y repone amount de energia sin desbordar a los power banks; con la barra llena no se gasta. reusable true: se enfria cooldown_s (tiempo del mundo) y vuelve a estar listo (el enfriamiento no se guarda); reusable false: un solo uso, queda gastado y se guarda por nivel en user://save.json (collected_pickups). PROPUESTA por defecto: amount 50 (media barra = 5 disparos de laser), reutilizable, cooldown_s 20 (duda abierta: reutilizable o de un solo uso, docs/preguntas.md). Ocupa la celda (x, y), apoyado en su borde inferior; no es solido. Aspecto PROVISIONAL dibujado por codigo (seccion charger). Aun no hay ninguno en el 1-1.",
+			"required": ["id"],
+			"fields": {
+				"id": "object_id",
+				"amount": "amount",
+				"reusable": "reusable",
+				"cooldown_s": "cooldown_s"
+			},
+			"defaults": {
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 20.0
+			},
+			"example": {"type": "charger", "x": 60, "y": 9, "params": {"id": "cargador_1", "amount": 50.0, "reusable": true, "cooldown_s": 20.0}}
 		}
+	},
+	"ability_pickup": {
+		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: rombo escalonado de size_px centrado en la celda, contorno outline (noche_profunda), cuerpo body (banner_blanco) y nucleo core (debug_cian, admitido por ser interactivo). Flota bob_px a bob_hz (tiempo del mundo). messages: aviso en el cuadro de Eco por habilidad (texto de interfaz PROVISIONAL, no es una linea de guion de Eco), durante message_s.",
+		"size_px": [28, 28],
+		"bob_px": 4.0,
+		"bob_hz": 1.5,
+		"outline": "#0b0e1a",
+		"body": "#f2f4f8",
+		"core": "#3dfff5",
+		"message_s": 4.0,
+		"messages": {
+			"laser": "Láser obtenido. F o gatillo izquierdo: dispara. Gasta energía."
+		}
+	},
+	"charger": {
+		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: poste de size_px con contorno outline (noche_profunda), cuerpo body (tile_luz) y pantalla: ready (debug_cian, con un rayo) lista; enfriandose, screen_off (tile_base) con una barra cooling (borde_luz) que sube; gastado, screen_off. La zona de contacto es el rectangulo del poste.",
+		"size_px": [32, 64],
+		"outline": "#0b0e1a",
+		"body": "#343f66",
+		"screen_off": "#1a2138",
+		"ready": "#3dfff5",
+		"cooling": "#9bb0e8"
 	},
 	"power_bank_pickup": {
 		"_notes": "PROPUESTA (2026-10-14). Dibujo provisional sin sprite: pila de size_px (centrada en la celda, borne de 8x4 arriba) con contorno outline (noche_profunda), cuerpo body (banner_blanco) y franja fill (debug_cian, el color del Debug del Mundo 1: admitido por ser interactivo). Flota bob_px a bob_hz (tiempo del mundo). La zona de recogida es el rectangulo de la pila.",

@@ -11,9 +11,15 @@
 ## - anticipate: los ultimos anticipation_frames cuadros (a anim_fps) del
 ##   aturdimiento: avisa de que vuelve a ser peligrosa (A8). Sigue inofensiva y
 ##   pisable. Al terminar vuelve a patrol y el dano es posible otra vez.
-## - popped: Isak cayo sobre ella aturdida con velocidad vertical >=
-##   pop_speed_threshold_px_s: revienta, Isak rebota y el nodo se libera al
-##   acabar la animacion. Por debajo del umbral Isak solo la pisa (C7).
+## - popped: muerta (revienta): su vida (health, EnemyHealth) llego a 0 por el
+##   laser. Suelta sus drops y el nodo se libera al acabar la animacion.
+##
+## Vida (decision 2026-10-15): health del JSON (2) o params.health del nivel;
+## cada disparo del laser (on_laser_hit) resta su dano y la hace parpadear
+## (damage_flash_*). El pulso solo aturde. Pisarla aturdida es solo plataforma:
+## el pop por caida de C7 (caer encima a >= pop_speed_threshold_px_s la
+## reventaba) queda DESACTIVADO con stomp_pop_enabled = false en el JSON (el
+## codigo se conserva por si se recupera).
 ##
 ## Tiempo: todo avanza con WorldTime.scaled_delta (el Debug la ralentiza x0,5).
 ## Capas (project.godot): cuerpo en enemy (no choca con Isak) y mascara world;
@@ -28,7 +34,10 @@ signal state_changed(previous: StringName, current: StringName)
 ## Ha danado a Isak (amount = Sync Rate restado).
 signal hit_player(amount: float)
 signal stunned
+## Muere (revienta): vida a 0 o pop() directo.
 signal popped
+## Ha recibido `amount` de dano (laser) y le queda `health_left`.
+signal damaged(amount: float, health_left: float)
 
 const STATE_PATROL: StringName = &"patrol"
 const STATE_STUNNED: StringName = &"stunned"
@@ -63,9 +72,16 @@ const EDGE_PROBE_INSET_PX: float = 2.0
 @export var start_direction: float = 1.0
 ## Liberar el nodo al acabar la animacion de pop (las pruebas pueden quitarlo).
 @export var free_on_pop: bool = true
-## Recargas que suelta al reventar ({"debug_energy": 25, "sync_rate": 10});
+## Recargas que suelta al morir ({"debug_energy": 25, "sync_rate": 10});
 ## vacio = seccion drops de data_path. Ver RechargePickup.
 @export var drops: Dictionary = {}
+## Vida maxima (y al empezar). Negativo = `health` de data_path. Los params del
+## nivel (params.health) la cambian tras _ready: vuelve a llenarla.
+@export var max_health: float = -1.0:
+	set(value):
+		max_health = value
+		if _health != null and value > 0.0:
+			_health.reset(value)
 
 var speed_px_s: float
 var gravity: float
@@ -82,6 +98,11 @@ var stun_duration_s: float
 var anim_fps: float
 var anticipation_frames: int
 var pop_speed_threshold_px_s: float
+## Si es false (decision 2026-10-15), caer sobre ella aturdida nunca la revienta.
+var stomp_pop_enabled: bool = false
+var damage_flash_s: float = 0.3
+var damage_flash_period_s: float = 0.08
+var damage_flash_alpha: float = 0.35
 var pop_bounce_velocity: float
 var stomp_tolerance_px: float
 
@@ -103,6 +124,8 @@ var _has_prev: bool = false
 var _prev_target_vy: float = 0.0
 var _prev_target_feet_y: float = 0.0
 var _ready_ok: bool = false
+var _health: EnemyHealth
+var _flash_left: float = 0.0
 var _query: PhysicsShapeQueryParameters2D
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -140,6 +163,7 @@ func step(delta: float) -> void:
 		return
 	var dt: float = WorldTime.scaled_delta(delta)
 	_sprite.speed_scale = WorldTime.scale()
+	_update_flash(dt)
 	match _state:
 		STATE_PATROL:
 			_move(dt, _direction * speed_px_s)
@@ -212,7 +236,38 @@ func get_animation() -> StringName:
 	return _sprite.animation
 
 
+## Vida actual (0 = muerta).
+func get_health() -> float:
+	return _health.health if _health != null else 0.0
+
+
+func get_max_health() -> float:
+	return _health.max_health if _health != null else 0.0
+
+
+## Verdadero mientras parpadea por un golpe recibido.
+func is_flashing() -> bool:
+	return _flash_left > 0.0
+
+
 # --- Acciones ---
+
+## Interfaz del laser (LaserProjectile): recibe `damage` de `source`.
+func on_laser_hit(damage: float, _source: Node) -> void:
+	take_damage(damage)
+
+
+## Resta vida (parpadeo); al llegar a 0 muere (pop) y suelta sus drops.
+## Verdadero si el golpe cuenta (no estaba muerta).
+func take_damage(amount: float) -> bool:
+	if not _ready_ok or _state == STATE_POPPED or amount <= 0.0:
+		return false
+	var dies: bool = _health.take_damage(amount)
+	_flash_left = damage_flash_s
+	damaged.emit(amount, _health.health)
+	if dies:
+		pop()
+	return true
 
 ## Aturde (o reinicia el aturdimiento). Sin efecto si ya ha reventado.
 func stun() -> void:
@@ -244,10 +299,12 @@ func reset_patrol() -> void:
 	_change_state(STATE_PATROL)
 
 
-## Revienta y hace rebotar a `bouncer` (si lo hay).
+## Muere (revienta), suelta sus drops y hace rebotar a `bouncer` (si lo hay).
 func pop(bouncer: Isak = null) -> void:
 	if _state == STATE_POPPED:
 		return
+	_flash_left = 0.0
+	_sprite.self_modulate.a = 1.0
 	_change_state(STATE_POPPED)
 	if bouncer != null:
 		bouncer.velocity.y = pop_bounce_velocity
@@ -370,11 +427,14 @@ func _hit(isak: Isak) -> void:
 	hit_player.emit(contact_damage)
 
 
-## C7: caer encima con velocidad vertical >= umbral la revienta. Cubre los dos
+## C7 (DESACTIVADO desde 2026-10-15, stomp_pop_enabled false: pisarla nunca la
+## revienta). Caer encima con velocidad vertical >= umbral la reventaba. Cubre los dos
 ## ordenes de paso: Isak a punto de aterrizar en este paso (prediccion con su
 ## velocidad) o ya apoyado (velocidad del paso anterior, antes de que el
 ## aterrizaje la pusiera a 0). Solo si venia de arriba (una via).
 func _check_stomp(isak: Isak, hurt: Rect2, real_delta: float) -> void:
+	if not stomp_pop_enabled:
+		return
 	var half: float = platform_width_px * 0.5
 	if hurt.end.x <= global_position.x - half or hurt.position.x >= global_position.x + half:
 		return
@@ -389,6 +449,15 @@ func _check_stomp(isak: Isak, hurt: Rect2, real_delta: float) -> void:
 		impact = maxf(impact, _prev_target_vy)
 	if impact >= pop_speed_threshold_px_s:
 		pop(isak)
+
+
+## Parpadeo tras recibir dano (tiempo del mundo).
+func _update_flash(dt: float) -> void:
+	if _flash_left <= 0.0:
+		return
+	_flash_left = maxf(_flash_left - dt, 0.0)
+	var dim: bool = _flash_left > 0.0 and fmod(_flash_left, damage_flash_period_s) < damage_flash_period_s * 0.5
+	_sprite.self_modulate.a = damage_flash_alpha if dim else 1.0
 
 
 func _on_pulse_fired(area: Area2D) -> void:
@@ -441,12 +510,15 @@ func _load_data() -> bool:
 	pop_speed_threshold_px_s = float(d["pop_speed_threshold_px_s"])
 	pop_bounce_velocity = float(d["pop_bounce_velocity"])
 	stomp_tolerance_px = float(d["stomp_tolerance_px"])
+	stomp_pop_enabled = bool(d.get("stomp_pop_enabled", false))
+	damage_flash_s = float(d.get("damage_flash_s", damage_flash_s))
+	damage_flash_alpha = float(d.get("damage_flash_alpha", damage_flash_alpha))
+	damage_flash_period_s = maxf(float(d.get("damage_flash_period_s", damage_flash_period_s)), 0.001)
+	if max_health <= 0.0:
+		max_health = float(d["health"])
+	_health = EnemyHealth.new(max_health)
 	if drops.is_empty():
-		var raw_drops: Variant = d.get("drops", {})
-		if raw_drops is Dictionary:
-			for key: Variant in raw_drops:
-				if not String(key).begins_with("_"):
-					drops[String(key)] = float(raw_drops[key])
+		drops = EnemyHealth.parse_drops(d.get("drops", {}))
 	var frames: SpriteFrames = load(String(d["sprites"]["frames_resource"])) as SpriteFrames
 	if frames != null:
 		_sprite.sprite_frames = frames

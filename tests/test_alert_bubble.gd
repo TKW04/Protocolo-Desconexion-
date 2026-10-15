@@ -1,9 +1,9 @@
 # Pruebas de la Burbuja de alerta (scripts/enemies/alert_bubble.gd): patrulla,
 # dano por contacto (C7: de lado y desde arriba, 10 % con la invulnerabilidad de
 # 1 s de Isak), aturdimiento por el pulso solo dentro del radio, plataforma de
-# una via aturdida, pop con rebote por encima del umbral y pisada suave por
-# debajo (los casos de salto y caida reales estan en
-# test_alert_bubble_threshold.gd), anticipacion de 6-12 cuadros a 12 fps antes de volver a danar (A8) y
+# una via aturdida, pisada suave y caida fuerte que ya NO la revienta (pop por
+# caida desactivado el 2026-10-15: solo muere por vida, ver test_laser.gd; los
+# casos de salto y caida reales estan en test_alert_bubble_threshold.gd), anticipacion de 6-12 cuadros a 12 fps antes de volver a danar (A8) y
 # ralentizacion x0,5 del Debug sin afectar a Isak.
 # Isak y la Burbuja avanzan paso a paso con delta fijo (sin frames reales).
 extends GutTest
@@ -297,39 +297,34 @@ func test_soft_landing_uses_it_as_platform() -> void:
 	assert_almost_eq(GameState.sync_rate, 100.0, EPS)
 
 
-func test_hard_fall_pops_and_bounces() -> void:
+## Decision 2026-10-15: la caida ya no la revienta (stomp_pop_enabled false).
+## Una caida fuerte (antes reventaba) la deja aturdida, sin dano, con Isak encima.
+func test_hard_fall_does_not_pop() -> void:
 	var b: AlertBubble = _bubble(Vector2(BUBBLE_X, 0.0), 0.0)
+	assert_false(b.stomp_pop_enabled, "Pop por caida desactivado en data/enemies/alert_bubble.json")
 	_step([b], 2)
 	b.stun()
 	var popped: Array[bool] = []
-	var defeated: Array[Node2D] = []
 	b.popped.connect(func() -> void: popped.append(true))
-	var on_defeat := func(enemy: Node2D) -> void: defeated.append(enemy)
-	EventBus.enemy_defeated.connect(on_defeat)
 	var top: float = b.get_platform_top_y()
 	# Caida de ~4,7 tiles sobre el canto (como saltar desde una repisa de 6 tiles).
 	_place_isak(Vector2(BUBBLE_X, top - 300.0))
-	var vy_before: float = 0.0
+	var vy_max: float = 0.0
 	for i: int in 90:
-		vy_before = _isak.velocity.y
+		vy_max = maxf(vy_max, _isak.velocity.y)
 		_step([b])
-		if b.get_state() == AlertBubble.STATE_POPPED:
-			break
-	EventBus.enemy_defeated.disconnect(on_defeat)
-	assert_eq(b.get_state(), AlertBubble.STATE_POPPED, "Caer con velocidad la revienta (C7)")
-	assert_gte(vy_before, b.pop_speed_threshold_px_s, "Caia por encima del umbral")
-	assert_eq(popped.size(), 1)
-	assert_eq(defeated, [b] as Array[Node2D], "Avisa por EventBus.enemy_defeated")
-	_step([b], 3)
-	assert_lt(_isak.velocity.y, 0.0, "Isak rebota hacia arriba")
-	assert_lt(_isak.global_position.y, top - 10.0, "Sube por encima del canto")
-	assert_almost_eq(GameState.sync_rate, 100.0, EPS, "Sin dano al reventarla")
-	assert_eq(b.get_animation(), AlertBubble.ANIM_POP)
+	assert_gte(vy_max, b.pop_speed_threshold_px_s, "Caia por encima del antiguo umbral")
+	assert_true(b.is_stunned(), "Pisarla aturdida no la revienta")
+	assert_eq(popped.size(), 0)
+	assert_almost_eq(b.get_health(), b.get_max_health(), EPS, "La caida no le quita vida")
+	assert_true(_isak.is_on_floor(), "Isak queda de pie encima")
+	assert_almost_eq(_isak.global_position.y, top, 1.0)
+	assert_almost_eq(GameState.sync_rate, 100.0, EPS, "Sin dano")
 
 
-func test_threshold_separates_step_and_pop() -> void:
-	# Isak justo encima del canto con velocidad bajo y sobre el umbral (1150):
-	# la de un salto normal (780) la pisa y la de una caida muy alta la revienta.
+func test_no_landing_speed_pops() -> void:
+	# Isak justo encima del canto con la velocidad de un salto normal (780) y la de
+	# una caida muy alta (1400, antes reventaba): las dos la pisan.
 	for vy: float in [780.0, 1400.0]:
 		var b: AlertBubble = _bubble(Vector2(BUBBLE_X, 0.0), 0.0)
 		_step([b], 2)
@@ -337,9 +332,7 @@ func test_threshold_separates_step_and_pop() -> void:
 		_place_isak(Vector2(BUBBLE_X, b.get_platform_top_y() - 2.0), vy)
 		b.step(DT)
 		_step([b], 4)
-		var expect_pop: bool = vy >= b.pop_speed_threshold_px_s
-		assert_eq(expect_pop, vy > 1000.0, "El umbral queda entre los dos casos")
-		assert_eq(b.get_state() == AlertBubble.STATE_POPPED, expect_pop, "vy %.0f" % vy)
+		assert_true(b.is_stunned(), "vy %.0f: la pisa, no revienta" % vy)
 		b.free()
 		_place_isak(FAR)
 		_sim.settle()

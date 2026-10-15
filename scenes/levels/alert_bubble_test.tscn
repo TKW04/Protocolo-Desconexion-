@@ -21,7 +21,7 @@ offset_top = 96.0
 theme_override_colors/font_color = Color(0.95, 0.96, 0.97, 0.85)
 theme_override_font_sizes/font_size = 18
 text = "BURBUJA DE ALERTA (prueba)
-J pulso: la aturde. Aturdida se pisa; caer encima la revienta.
+G pulso: la aturde (aturdida se pisa). F láser: dos disparos la eliminan.
 A/D mover, Espacio saltar, Shift correr. Mantén K 1 s: Debug"
 
 [node name="AlertBubble" parent="." instance=ExtResource("4_bubble")]

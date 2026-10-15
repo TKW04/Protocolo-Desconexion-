@@ -428,8 +428,10 @@ func test_open_bubbles_have_no_low_ceiling() -> void:
 
 
 ## Aturdida desde el suelo, Isak la usa de escalon para subir a la repisa (3 tiles sobre
-## su suelo) y salta desde la repisa sobre ella: revienta sin dano y dentro del aturdimiento.
-func test_open_bubbles_step_to_ledge_and_pop() -> void:
+## su suelo) y salta desde la repisa sobre ella. Desde el 2026-10-15 la caida ya no la revienta
+## (solo muere por vida, con el laser): aterriza encima, sin dano y dentro del aturdimiento.
+## El rediseno del 1-1 para el laser es la fase siguiente.
+func test_open_bubbles_step_to_ledge_and_land() -> void:
 	await _load(true)
 	for id: String in OPEN_BUBBLE_LEDGES:
 		var bubble := _level.get_node(NodePath("Enemies/" + id)) as AlertBubble
@@ -459,7 +461,7 @@ func test_open_bubbles_step_to_ledge_and_pop() -> void:
 			_step_with(bubble)
 			steps += 1
 		steps += _jump_towards(bubble, bx)
-		assert_eq(bubble.get_state(), AlertBubble.STATE_POPPED, "%s: saltando desde la repisa revienta" % id)
-		gut.p("%s: escalon, repisa y pop en %.2f s (aturdimiento %.2f s)" % [id, steps * DT, bubble.stun_duration_s])
+		assert_true(bubble.is_stunned(), "%s: saltando desde la repisa ya no revienta (2026-10-15)" % id)
+		gut.p("%s: escalon, repisa y vuelta encima en %.2f s (aturdimiento %.2f s)" % [id, steps * DT, bubble.stun_duration_s])
 		assert_lt(steps * DT, bubble.stun_duration_s, "%s: cabe en el aturdimiento" % id)
 		assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, "%s: sin dano" % id)

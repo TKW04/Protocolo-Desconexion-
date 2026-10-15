@@ -1,8 +1,9 @@
-# Pruebas del umbral de pop de la Burbuja de alerta aturdida (C7): con la fisica
+# Pruebas de saltos y caidas sobre la Burbuja de alerta aturdida: con la fisica
 # real de Isak (sin tocarla) se simulan los saltos y caidas tipicos sobre una
-# Burbuja aturdida en el suelo y se comprueba que los saltos normales la pisan
-# (plataforma) y las caidas desde una repisa muy alta la revientan, con margen
-# de al menos el 10 % entre la velocidad de aterrizaje y el umbral.
+# Burbuja aturdida en el suelo. Desde el 2026-10-15 el pop por caida esta
+# desactivado (stomp_pop_enabled false): ninguna caida la revienta, todas la
+# pisan. Se conserva la medida de las velocidades de aterrizaje frente al antiguo
+# umbral (pop_speed_threshold_px_s, solo referencia) por si se recupera.
 # Isak y la Burbuja avanzan paso a paso con delta fijo (sin frames reales).
 extends GutTest
 
@@ -181,13 +182,12 @@ func test_landing_speeds_keep_ten_percent_margin() -> void:
 		_reset_world()
 
 
-## Con el umbral real: los saltos la pisan (se queda de pie encima) y las caidas
-## desde repisas muy altas la revientan; nunca hay dano.
-func test_jumps_step_and_high_drops_pop() -> void:
+## Con los datos reales (pop por caida desactivado): todos los saltos y caidas
+## la pisan, tambien desde repisas muy altas (antes la reventaban); nunca hay dano.
+func test_jumps_and_high_drops_only_step() -> void:
 	for c: Dictionary in _cases():
 		var r: Dictionary = _simulate(c.kind, c.h)
-		assert_eq(r.popped, c.pop, "%s: %s" % [c.name, "revienta" if c.pop else "la pisa"])
-		if not c.pop:
-			assert_true(r.landed, "%s: de pie sobre la Burbuja" % c.name)
+		assert_false(r.popped, "%s: la pisa, no revienta" % c.name)
+		assert_true(r.landed, "%s: de pie sobre la Burbuja" % c.name)
 		assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, 0.001, "%s: sin dano" % c.name)
 		_reset_world()

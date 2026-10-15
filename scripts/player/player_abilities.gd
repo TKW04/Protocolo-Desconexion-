@@ -12,6 +12,14 @@ const REQUIRED_KEYS: PackedStringArray = [
 	"hurt_knockback_x",
 	"hurt_knockback_y",
 	"hurt_invulnerability_s",
+	"laser_energy_cost",
+	"laser_damage",
+	"laser_cooldown_s",
+	"laser_windup_s",
+	"laser_speed_px_s",
+	"laser_range_px",
+	"laser_length_px",
+	"laser_thickness_px",
 ]
 
 var pulse_duration_s: float
@@ -22,6 +30,18 @@ var hurt_knockback_x: float
 ## Velocidad vertical del retroceso (negativa = hacia arriba).
 var hurt_knockback_y: float
 var hurt_invulnerability_s: float
+## Laser (2026-10-15): energia de Debug por disparo, dano, enfriamiento,
+## anticipacion, velocidad y alcance del proyectil y su tamano.
+var laser_energy_cost: float
+var laser_damage: float
+var laser_cooldown_s: float
+var laser_windup_s: float
+var laser_speed_px_s: float
+var laser_range_px: float
+var laser_length_px: float
+var laser_thickness_px: float
+## Aspecto provisional del laser (seccion laser_visual; colores y tiempos).
+var laser_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -48,6 +68,9 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
 			return _fail("PlayerAbilities: la clave '%s' en '%s' debe ser numerica." % [key, source])
 		abilities.set(key, float(value))
+	var visual: Variant = data.get("laser_visual", {})
+	if visual is Dictionary:
+		abilities.laser_visual = visual
 	return abilities
 
 

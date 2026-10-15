@@ -15,6 +15,10 @@ signal idle_terminal_started
 signal hurt
 ## Isak ha muerto.
 signal died
+## Sale un disparo del laser (tras la anticipacion).
+signal laser_fired(projectile: LaserProjectile)
+## Intento de laser sin energia suficiente: no sale el disparo.
+signal laser_denied
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -44,6 +48,9 @@ const BLINK_ALPHA: float = 0.35
 const MAX_TRANSITIONS_PER_STEP: int = 4
 
 const PULSE_EFFECT_SCENE: PackedScene = preload("res://scenes/player/pulse_effect.tscn")
+const LASER_PROJECTILE_SCENE: PackedScene = preload("res://scenes/player/laser_projectile.tscn")
+## Tolerancia al comparar la energia con el coste del laser.
+const LASER_ENERGY_EPS: float = 0.0001
 
 @export_file("*.json") var physics_path: String = PlayerPhysics.DEFAULT_PATH
 @export_file("*.json") var abilities_path: String = PlayerAbilities.DEFAULT_PATH
@@ -79,6 +86,11 @@ var _knockback_direction: float = 0.0
 var _landed: bool = false
 var _ready_ok: bool = false
 var _pulse_effect: PulseEffect
+## Laser: enfriamiento restante y anticipacion pendiente (< 0 = sin disparo en
+## camino). Tiempo real, como el resto de Isak.
+var _laser_cooldown_left: float = 0.0
+var _laser_windup_left: float = -1.0
+var _laser_muzzle: LaserMuzzle
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -101,6 +113,10 @@ func _ready() -> void:
 		input = ActionPlayerInput.new()
 	_setup_shapes()
 	_setup_camera()
+	_laser_muzzle = LaserMuzzle.new()
+	_laser_muzzle.name = "LaserMuzzle"
+	_laser_muzzle.configure(abilities.laser_visual)
+	add_child(_laser_muzzle)
 	_states = {
 		PlayerState.IDLE: IdleState.new(self),
 		PlayerState.RUN: RunState.new(self),
@@ -134,6 +150,7 @@ func step(delta: float) -> void:
 	_state.physics_update(delta)
 	move_and_slide()
 	_update_coyote(delta)
+	_update_laser(delta)
 	_update_blink()
 
 
@@ -171,6 +188,26 @@ func can_jump() -> bool:
 
 func can_pulse() -> bool:
 	return is_on_floor() and GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
+
+
+## El laser se puede usar: desbloqueado (GameState.ABILITY_LASER), vivo y sin
+## estar recibiendo un golpe. Vale en el suelo y en el aire.
+func can_laser() -> bool:
+	return _ready_ok and GameState.is_ability_unlocked(GameState.ABILITY_LASER) \
+			and not is_dead() and _state_name != PlayerState.HURT
+
+
+func get_laser_cooldown_left() -> float:
+	return _laser_cooldown_left
+
+
+## Verdadero mientras la anticipacion del laser esta en curso.
+func is_laser_charging() -> bool:
+	return _laser_windup_left >= 0.0
+
+
+func get_laser_muzzle() -> LaserMuzzle:
+	return _laser_muzzle
 
 
 func is_dead() -> bool:
@@ -254,6 +291,8 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	modulate.a = 1.0
 	stop_pulse_effect()
 	set_pulse_area_active(false)
+	_cancel_laser()
+	_laser_cooldown_left = 0.0
 	reset_idle_time()
 	change_state(PlayerState.IDLE)
 	play_animation(ANIM_IDLE)
@@ -343,6 +382,72 @@ func stop_pulse_effect() -> void:
 ## Onda activa o null.
 func get_pulse_effect() -> PulseEffect:
 	return _pulse_effect
+
+
+# --- Laser (2026-10-15, data/isak_abilities.json laser_*) ---
+
+## Pulsar laser: si hay energia suficiente empieza la anticipacion
+## (laser_windup_s) y despues sale el disparo; si no, chispa y laser_denied.
+## Cualquiera de los dos inicia el enfriamiento (laser_cooldown_s).
+func _update_laser(delta: float) -> void:
+	_laser_cooldown_left = maxf(_laser_cooldown_left - delta, 0.0)
+	if _laser_muzzle != null:
+		_laser_muzzle.position = get_pulse_origin()
+		_laser_muzzle.advance(delta)
+	if is_laser_charging():
+		if not can_laser():
+			_cancel_laser()
+			return
+		_laser_windup_left -= delta
+		if _laser_windup_left <= 0.0:
+			_laser_windup_left = -1.0
+			_fire_laser()
+		return
+	if not input.laser_pressed or _laser_cooldown_left > 0.0 or not can_laser():
+		return
+	_laser_cooldown_left = abilities.laser_cooldown_s
+	if not _has_laser_energy():
+		_deny_laser()
+		return
+	if abilities.laser_windup_s <= 0.0:
+		_fire_laser()
+		return
+	_laser_windup_left = abilities.laser_windup_s
+	_laser_muzzle.show_charge(abilities.laser_windup_s, facing)
+
+
+func _has_laser_energy() -> bool:
+	return GameState.debug_energy + LASER_ENERGY_EPS >= abilities.laser_energy_cost
+
+
+## Cobra la energia y crea el proyectil en el celular, hacia donde mira Isak,
+## como hermano de Isak (no se mueve con el). Null si ya no hay energia.
+func _fire_laser() -> LaserProjectile:
+	_laser_muzzle.clear()
+	if not _has_laser_energy():
+		_deny_laser()
+		return null
+	GameState.debug_energy -= abilities.laser_energy_cost
+	var projectile := LASER_PROJECTILE_SCENE.instantiate() as LaserProjectile
+	projectile.setup(abilities, facing, self)
+	var holder: Node = get_parent() if get_parent() != null else self
+	holder.add_child(projectile)
+	projectile.global_position = global_position + get_pulse_origin()
+	laser_fired.emit(projectile)
+	EventBus.laser_fired.emit(projectile)
+	return projectile
+
+
+func _deny_laser() -> void:
+	_laser_muzzle.show_fizzle(facing)
+	laser_denied.emit()
+	EventBus.laser_denied.emit()
+
+
+func _cancel_laser() -> void:
+	_laser_windup_left = -1.0
+	if _laser_muzzle != null:
+		_laser_muzzle.clear()
 
 
 # --- Presentacion ---

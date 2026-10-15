@@ -18,6 +18,10 @@
 ## coste y estado, los power banks y el detalle de la elegida. move_up /
 ## move_down eligen y pulse compra (GameState.purchase_upgrade); todo por el
 ## Input Map (teclado o mando).
+##
+## ENERGIA (decision 2026-10-15): en el hub se recarga la energia de Debug (la
+## misma que gasta el laser). Mientras no exista el hub real, show_result()
+## llena la barra si refill_debug_energy es true (data/hub_placeholder.json).
 class_name HubPlaceholder
 extends CanvasLayer
 
@@ -87,6 +91,8 @@ func show_result(level_id: String, attention_points: int) -> void:
 	_level_id = level_id
 	_attention_points = attention_points
 	_shown_time = 0.0
+	if bool(_data.get("refill_debug_energy", true)):
+		GameState.refill_debug_energy()
 	var texts: Dictionary = _data.get("texts", {})
 	_labels[&"title"].text = String(texts.get("title", ""))
 	_labels[&"completed"].text = String(texts.get("completed", "%s")) % level_name(level_id)

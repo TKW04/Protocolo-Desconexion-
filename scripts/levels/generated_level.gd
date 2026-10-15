@@ -3,7 +3,9 @@
 ##
 ## Al entrar en el arbol fija el nivel y el mundo actuales en GameState y aplica
 ## `abilities_available` del JSON (en el 1-1: pulso si, Debug no); al salir
-## restaura el estado de las habilidades que habia antes. Tras el _ready de los
+## restaura el estado de las habilidades que habia antes. Las habilidades
+## obtenidas para siempre (GameState.obtained_abilities, p. ej. el laser) no se
+## bloquean ni al entrar ni al salir. Tras el _ready de los
 ## hijos aplica los `params` de cada enemigo (metadata "params" del nodo) a sus
 ## propiedades. Muerte, reaparicion, checkpoints activos y final del nivel no
 ## estan aqui (paso 16); las senales de los objetos siguen yendo al EventBus.
@@ -12,7 +14,8 @@ extends Node2D
 
 const GROUP: StringName = &"level"
 ## Param del JSON -> propiedad del nodo, cuando el nombre no coincide.
-const ENEMY_PARAM_ALIASES: Dictionary = {"patrol_speed_px_s": "speed_px_s"}
+## `health` (2026-10-15): vida del enemigo en ese nivel (sobrescribe la de su JSON).
+const ENEMY_PARAM_ALIASES: Dictionary = {"patrol_speed_px_s": "speed_px_s", "health": "max_health"}
 const ENEMY_PARAMS_META: StringName = &"params"
 
 @export var level_id: String = ""
@@ -37,6 +40,8 @@ func _enter_tree() -> void:
 	_previous_abilities.clear()
 	for key: Variant in abilities_available:
 		var ability := StringName(String(key))
+		if GameState.is_ability_obtained(ability):
+			continue
 		_previous_abilities[ability] = GameState.is_ability_unlocked(ability)
 		GameState.set_ability_unlocked(ability, bool(abilities_available[key]))
 	if not is_ability_available(GameState.ABILITY_DEBUG):
@@ -51,6 +56,8 @@ func _exit_tree() -> void:
 	if not is_ability_available(GameState.ABILITY_DEBUG):
 		DebugMode.reset()
 	for ability: StringName in _previous_abilities:
+		if GameState.is_ability_obtained(ability):
+			continue
 		GameState.set_ability_unlocked(ability, bool(_previous_abilities[ability]))
 	_previous_abilities.clear()
 

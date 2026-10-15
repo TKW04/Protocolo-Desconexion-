@@ -1,9 +1,10 @@
 ## Escena de prueba de la Burbuja de alerta (no es un nivel del juego; el 1-1
 ## llega en el paso 14). Suelo del Mundo 1, una repisa de 2 tiles para caer
 ## sobre la Burbuja aturdida, una Burbuja patrullando, Isak, HUD y el fondo del
-## mundo. Como la sandbox del Debug: desbloquea el pulso (J) y el Debug (mantener
-## K) con energia 100 para ver la ralentizacion x0,5 de la Burbuja, y los
-## restaura al salir. Si la Burbuja revienta, aparece otra al rato.
+## mundo. Como la sandbox del Debug: desbloquea el pulso (G), el laser (F) y el
+## Debug (mantener K) con energia 100 para ver la ralentizacion x0,5 de la
+## Burbuja, y los restaura al salir. Si la Burbuja muere (dos disparos de laser;
+## pisarla ya no la revienta), aparece otra al rato.
 extends Node2D
 
 const World1Test = preload("res://scripts/levels/world1_objects_test.gd")
@@ -35,6 +36,7 @@ var _spawn_position: Vector2
 var _bubble_position: Vector2
 var _bubble_range: float
 var _pulse_was_unlocked: bool = false
+var _laser_was_unlocked: bool = false
 var _debug_was_unlocked: bool = false
 
 @onready var _isak: Isak = $Isak
@@ -48,7 +50,9 @@ func _ready() -> void:
 	_bubble_range = bubble.patrol_range_px
 	_pulse_was_unlocked = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	_debug_was_unlocked = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
+	_laser_was_unlocked = GameState.is_ability_unlocked(GameState.ABILITY_LASER)
 	GameState.current_world = world
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, true)
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
 	GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
@@ -66,6 +70,7 @@ func _exit_tree() -> void:
 	DebugMode.reset()
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _pulse_was_unlocked)
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _debug_was_unlocked)
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, _laser_was_unlocked)
 
 
 func _physics_process(_delta: float) -> void:
