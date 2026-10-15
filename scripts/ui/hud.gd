@@ -16,6 +16,12 @@
 ## sin propuesta concreta en docs). Gancho: EventBus.low_sync_changed y
 ## GameState.reduce_low_sync_effects.
 ## ClockSlot: hueco oculto reservado para la hora del Mundo 2 (C8, PROPUESTA).
+## PowerBank (PROVISIONAL, 2026-10-14): contador minimo de power banks bajo la
+## barra, a la derecha (icono dibujado con la carga parcial + "x<n>"); oculto
+## sin power banks ni carga. Se crea por codigo para no tocar hud.tscn ni
+## data/hud.json; sus ajustes estan en data/power_bank.json (hud).
+## El porcentaje de Sync Rate muestra el valor real (puede pasar de 100 % con
+## la mejora "Sync reforzado"); las barras siguen la fraccion del maximo.
 class_name Hud
 extends CanvasLayer
 
@@ -35,6 +41,8 @@ const BLINK_ON_FRACTION: float = 0.5
 ## color clave (la fuente esta dibujada en el color "text").
 const NEUTRAL_MODULATE: Color = Color.WHITE
 const PANEL_ASSET: StringName = &"panel"
+## Contador de power banks (glifos de la fuente del HUD: "x" y cifras).
+const POWER_BANK_FORMAT: String = "x%d"
 
 var _config: HudConfig = HudConfig.shared()
 var _sync_ratio: float = FULL
@@ -60,6 +68,11 @@ var _all_tweens: Array[Tween] = []
 @onready var _attention_icon: HudMeter = $Frame/Row/AttentionIcon
 @onready var _attention_label: Label = $Frame/Row/AttentionLabel
 
+var _power_bank_box: HBoxContainer
+var _power_bank_icon: HudPowerBankIcon
+var _power_bank_label: Label
+var _power_banks: int = 0
+
 
 func _ready() -> void:
 	_apply_config()
@@ -71,6 +84,7 @@ func _ready() -> void:
 	EventBus.low_sync_changed.connect(_on_low_sync_changed)
 	EventBus.reduce_low_sync_effects_changed.connect(_on_reduce_effects_changed)
 	EventBus.debug_activation_progress_changed.connect(_on_debug_activation_progress_changed)
+	EventBus.power_banks_changed.connect(_on_power_banks_changed)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -124,6 +138,19 @@ func get_attention_text() -> String:
 	return _attention_label.text
 
 
+## Contador de power banks: texto ("x2"), visible y carga parcial (0-1).
+func get_power_bank_text() -> String:
+	return _power_bank_label.text
+
+
+func is_power_bank_shown() -> bool:
+	return _power_bank_box.visible
+
+
+func get_power_bank_charge_ratio() -> float:
+	return _power_bank_icon.charge_ratio
+
+
 func is_low_sync_shown() -> bool:
 	return _is_low_sync
 
@@ -172,8 +199,9 @@ func _finish_animations() -> void:
 	_kill_tweens()
 	_signal.trail = _signal.value
 	_battery.trail = _battery.value
-	for node: Control in [_signal, _battery, _attention_icon, _attention_label]:
-		node.scale = Vector2.ONE
+	for node: Control in [_signal, _battery, _attention_icon, _attention_label, _power_bank_label]:
+		if node != null:
+			node.scale = Vector2.ONE
 
 
 func finish_animations() -> void:
@@ -229,6 +257,7 @@ func _apply_config() -> void:
 	_reserve_width(_attention_label, WIDEST_ATTENTION, HORIZONTAL_ALIGNMENT_LEFT)
 	_sync_label.text = PERCENT_FORMAT % roundi(GameState.SYNC_RATE_MAX)
 	_attention_label.text = str(_attention_points)
+	_build_power_bank(c, font)
 
 
 ## Frame ocupa la pantalla en pixeles de arte (su escala la lleva a 1280x720).
@@ -255,7 +284,7 @@ func _reserve_width(label: Label, widest: String, align: HorizontalAlignment) ->
 
 func _on_sync_rate_changed(new_value: float, max_value: float) -> void:
 	var ratio: float = _ratio(new_value, max_value)
-	_sync_label.text = PERCENT_FORMAT % roundi(ratio * GameState.SYNC_RATE_MAX)
+	_sync_label.text = PERCENT_FORMAT % roundi(clampf(new_value, 0.0, max_value))
 	_set_meter(_signal, ratio, _sync_ratio)
 	_sync_ratio = ratio
 
@@ -279,6 +308,55 @@ func _on_world_changed(world: int) -> void:
 	_world = world
 	_battery.fill_color = _config.debug_color_for_world(world)
 	_charge.fill_color = _config.debug_color_for_world(world)
+	if _power_bank_icon != null:
+		_power_bank_icon.fill_color = _config.debug_color_for_world(world)
+		_power_bank_icon.queue_redraw()
+
+
+func _on_power_banks_changed(full: int, charge: float, capacity: float) -> void:
+	var ratio: float = clampf(charge / capacity, 0.0, FULL) if capacity > 0.0 else 0.0
+	_power_bank_label.text = POWER_BANK_FORMAT % maxi(full, 0)
+	_power_bank_icon.charge_ratio = ratio
+	_power_bank_icon.queue_redraw()
+	var show_empty: bool = bool(GameState.get_power_bank_hud_data().get("show_when_empty", false))
+	_power_bank_box.visible = show_empty or full > 0 or ratio > 0.0
+	if full > _power_banks:
+		_pulse(_power_bank_label)
+	_power_banks = full
+
+
+func _build_power_bank(c: HudConfig, font: Font) -> void:
+	var d: Dictionary = GameState.get_power_bank_hud_data()
+	_power_bank_box = HBoxContainer.new()
+	_power_bank_box.name = "PowerBank"
+	_power_bank_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_power_bank_box.add_theme_constant_override("separation", int(d.get("spacing_px", 2)))
+	_power_bank_box.alignment = BoxContainer.ALIGNMENT_END
+	_power_bank_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_power_bank_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_power_bank_box.offset_right = -c.margin_px
+	_power_bank_box.offset_top = c.bar_height_px + int(d.get("offset_y_px", 2))
+	_power_bank_box.offset_bottom = _power_bank_box.offset_top + c.bar_height_px
+	_frame.add_child(_power_bank_box)
+	_power_bank_icon = HudPowerBankIcon.new()
+	_power_bank_icon.name = "Icon"
+	var icon_size: Array = d.get("icon_size_px", [6, 10])
+	_power_bank_icon.custom_minimum_size = Vector2(float(icon_size[0]), float(icon_size[1]))
+	_power_bank_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_power_bank_icon.outline_color = c.color(&"text")
+	_power_bank_icon.fill_color = c.debug_color_for_world(_world)
+	_power_bank_box.add_child(_power_bank_icon)
+	_power_bank_label = Label.new()
+	_power_bank_label.name = "Count"
+	_power_bank_label.add_theme_font_override("font", font)
+	_power_bank_label.add_theme_font_size_override("font_size", c.font_size)
+	_power_bank_label.add_theme_color_override("font_color", NEUTRAL_MODULATE)
+	_power_bank_label.material = c.new_key_swap_material(c.color(&"text"), c.color(&"text"))
+	_power_bank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_power_bank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_power_bank_label.text = POWER_BANK_FORMAT % 0
+	_power_bank_box.add_child(_power_bank_label)
+	_power_bank_box.visible = bool(d.get("show_when_empty", false))
 
 
 func _on_debug_activation_progress_changed(progress: float) -> void:
