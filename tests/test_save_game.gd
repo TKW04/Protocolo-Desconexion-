@@ -30,6 +30,7 @@ func _fill_progress() -> void:
 	GameState.capture_attention_point(&"1-1", &"Point_8_9", 1)
 	GameState.capture_attention_point(&"1-1", &"Point_14_8", 1)
 	GameState.power_banks = 2
+	GameState.empty_power_banks = 1
 	GameState.power_bank_charge = 35.0
 	GameState.purchase_upgrade(&"wide_pulse")
 	GameState.mark_level_completed(&"1-1")
@@ -53,6 +54,7 @@ func test_round_trip_keeps_all_progress() -> void:
 	assert_eq(GameState.attention_points, 29)
 	assert_eq(GameState.get_captured_points(&"1-1"), [&"Point_14_8", &"Point_8_9"] as Array[StringName])
 	assert_eq(GameState.power_banks, 2)
+	assert_eq(GameState.empty_power_banks, 1)
 	assert_almost_eq(GameState.power_bank_charge, 35.0, 0.001)
 	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"))
 	assert_true(GameState.is_level_completed(&"1-1"))
@@ -118,6 +120,20 @@ func test_odd_field_types_are_tolerated() -> void:
 	assert_eq(GameState.power_banks, 0)
 	assert_almost_eq(GameState.power_bank_charge, GameState.get_power_bank_capacity(), 0.001, "Carga acotada")
 	assert_false(GameState.is_level_completed(&"1-1"))
+
+
+func test_power_bank_charge_needs_an_empty_power_bank() -> void:
+	# Guardado de antes de los power banks vacios: la carga se conserva en uno.
+	SaveFile.write(PATH, {"version": 1, "power_banks": {"full": 1, "charge": 40.0}})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.power_banks, 1)
+	assert_eq(GameState.empty_power_banks, 1)
+	assert_almost_eq(GameState.power_bank_charge, 40.0, 0.001)
+	# Con "empty" 0 la carga no tiene donde estar: se descarta.
+	SaveFile.write(PATH, {"version": 1, "power_banks": {"full": 0, "empty": 0, "charge": 40.0}})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.empty_power_banks, 0)
+	assert_almost_eq(GameState.power_bank_charge, 0.0, 0.001)
 
 
 func test_orphan_tmp_is_recovered() -> void:

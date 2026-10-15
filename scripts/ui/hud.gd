@@ -319,7 +319,8 @@ func _on_power_banks_changed(full: int, charge: float, capacity: float) -> void:
 	_power_bank_icon.charge_ratio = ratio
 	_power_bank_icon.queue_redraw()
 	var show_empty: bool = bool(GameState.get_power_bank_hud_data().get("show_when_empty", false))
-	_power_bank_box.visible = show_empty or full > 0 or ratio > 0.0
+	# Tambien se ve con power banks vacios (llegan sin carga, decision 2026-10-14).
+	_power_bank_box.visible = show_empty or full > 0 or ratio > 0.0 or GameState.empty_power_banks > 0
 	if full > _power_banks:
 		_pulse(_power_bank_label)
 	_power_banks = full

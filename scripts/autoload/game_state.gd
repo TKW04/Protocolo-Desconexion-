@@ -10,7 +10,7 @@
 #   los objetos del mundo con WorldTime.scaled_delta() (Isak y el HUD no).
 # - Progreso persistente (decisiones del 2026-10-14): puntos acumulados, ids de
 #   puntos de atención ya capturados por nivel, mejoras compradas
-#   (data/upgrades.json), power banks (completos y carga parcial,
+#   (data/upgrades.json), power banks (completos, vacios y carga parcial,
 #   data/power_bank.json) y niveles completados/desbloqueados. Se guarda en
 #   save_path (user://save.json; en las pruebas otra ruta) con SaveFile.
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
@@ -96,7 +96,16 @@ var power_banks: int = 0:
 		power_banks = maxi(value, 0)
 		_emit_power_banks()
 
-## Carga parcial del siguiente power bank (0 a get_power_bank_capacity()).
+## Power banks que Isak tiene pero aun no estan llenos (decision 2026-10-14: un
+## power bank comprado u obtenido llega VACIO y se carga con el sobrante de
+## energia de los drops). Sin ninguno, el sobrante se pierde.
+var empty_power_banks: int = 0:
+	set(value):
+		empty_power_banks = maxi(value, 0)
+		_emit_power_banks()
+
+## Carga del power bank vacio que se esta llenando (0 a get_power_bank_capacity();
+## siempre 0 si no hay power banks vacios).
 var power_bank_charge: float = 0.0:
 	set(value):
 		power_bank_charge = maxf(value, 0.0)
@@ -194,14 +203,15 @@ func apply_sync_damage(amount: float) -> void:
 
 
 ## Suma puntos de atencion; cada uno repone energia de Debug (A10; la mejora
-## "Recarga mejorada" sube cuanto). Si la barra ya esta llena, el sobrante va
-## al power bank cuando attention_point_energy_overflows es true.
+## "Recarga mejorada" sube cuanto). Si la barra ya esta llena, el sobrante solo
+## va al power bank cuando attention_point_energy_overflows es true (decision
+## 2026-10-14: false, solo desbordan los drops de enemigos).
 func add_attention_points(amount: int) -> void:
 	if amount <= 0:
 		return
 	attention_points += amount
 	add_debug_energy(amount * get_energy_per_attention_point(),
-			bool(_power_bank_data.get("attention_point_energy_overflows", true)))
+			bool(_power_bank_data.get("attention_point_energy_overflows", false)))
 
 
 ## Captura el punto de atencion `point_id` del nivel `level`: suma `value`
@@ -238,7 +248,8 @@ func get_captured_points(level: StringName) -> Array[StringName]:
 
 
 ## Recarga de energia de Debug (drops de enemigos y jefes, puntos de atencion).
-## Lo que no cabe en la barra carga el power bank (si `overflow_to_power_bank`).
+## Lo que no cabe en la barra carga los power banks vacios (si
+## `overflow_to_power_bank`; ver add_power_bank_charge).
 ## Devuelve el sobrante que no entro en la barra.
 func add_debug_energy(amount: float, overflow_to_power_bank: bool = true) -> float:
 	if amount <= 0.0:
@@ -253,20 +264,39 @@ func add_debug_energy(amount: float, overflow_to_power_bank: bool = true) -> flo
 	return overflow
 
 
-## Suma carga al power bank; cada get_power_bank_capacity() completa uno.
-func add_power_bank_charge(amount: float) -> void:
-	var capacity: float = get_power_bank_capacity()
-	if amount <= 0.0 or capacity <= 0.0:
+## Suma un power bank VACIO (comprado u obtenido; decision 2026-10-14). Se
+## llena con el sobrante de energia de los drops (add_power_bank_charge).
+func add_empty_power_bank(count: int = 1) -> void:
+	if count <= 0:
 		return
+	empty_power_banks += count
+	request_save()
+
+
+## Carga los power banks vacios con `amount` de energia: cada
+## get_power_bank_capacity() llena uno, que pasa a completo. Lo que no cabe
+## (sin power banks vacios) se pierde. Devuelve la energia que no se uso.
+func add_power_bank_charge(amount: float) -> float:
+	var capacity: float = get_power_bank_capacity()
+	if amount <= 0.0 or capacity <= 0.0 or empty_power_banks <= 0:
+		return maxf(amount, 0.0)
 	var charge: float = power_bank_charge + amount
+	var empties: int = empty_power_banks
 	var completed: int = 0
-	while charge >= capacity - 0.0001:
+	while empties > 0 and charge >= capacity - 0.0001:
 		charge -= capacity
+		empties -= 1
 		completed += 1
+	var wasted: float = 0.0
+	if empties == 0:
+		wasted = maxf(charge, 0.0)
+		charge = 0.0
+	empty_power_banks = empties
 	power_bank_charge = maxf(charge, 0.0)
 	if completed > 0:
 		power_banks += completed
 	request_save()
+	return wasted
 
 
 ## Recarga de Sync Rate (drops de enemigos y jefes), acotada al maximo efectivo.
@@ -397,6 +427,7 @@ func reset_progress() -> void:
 	captured_points.clear()
 	purchased_upgrades.clear()
 	power_banks = 0
+	empty_power_banks = 0
 	power_bank_charge = 0.0
 	completed_levels.clear()
 	unlocked_levels.clear()
@@ -444,7 +475,7 @@ func to_save_data() -> Dictionary:
 		"attention_points": attention_points,
 		"captured_points": captured,
 		"upgrades_purchased": _keys_sorted(purchased_upgrades),
-		"power_banks": {"full": power_banks, "charge": power_bank_charge},
+		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
 		"completed_levels": _keys_sorted(completed_levels),
 		"unlocked_levels": _keys_sorted(unlocked_levels),
 	}
@@ -475,7 +506,12 @@ func apply_save_data(data: Dictionary) -> bool:
 	var banks: Variant = data.get("power_banks", {})
 	if banks is Dictionary:
 		power_banks = _as_int(banks.get("full", 0))
-		power_bank_charge = clampf(_as_float(banks.get("charge", 0.0)), 0.0, get_power_bank_capacity())
+		var charge: float = clampf(_as_float(banks.get("charge", 0.0)), 0.0, get_power_bank_capacity())
+		# Guardados de antes de los power banks vacios (sin "empty"): la carga
+		# parcial que tenian se conserva en un power bank vacio.
+		var empty: int = _as_int(banks.get("empty", 1 if charge > 0.0 else 0))
+		empty_power_banks = empty
+		power_bank_charge = charge if empty > 0 else 0.0
 	for id: StringName in _string_names(data.get("completed_levels", [])):
 		completed_levels[id] = true
 	for id: StringName in _string_names(data.get("unlocked_levels", [])):

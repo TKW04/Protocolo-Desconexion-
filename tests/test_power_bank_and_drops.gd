@@ -1,6 +1,7 @@
-# Power banks y recargas (decisiones del 2026-10-14): el sobrante de energia
-# de Debug con la barra llena carga el power bank (capacidad en
-# data/power_bank.json); la Burbuja reventada suelta recargas de energia y de
+# Power banks y recargas (decisiones del 2026-10-14): un power bank comprado u
+# obtenido llega vacio; el sobrante de energia de Debug de los drops con la
+# barra llena lo carga (capacidad en data/power_bank.json; los puntos de
+# atencion no desbordan); la Burbuja reventada suelta recargas de energia y de
 # Sync Rate (data/enemies/alert_bubble.json, drops) que Isak recoge al tocarlas;
 # el HUD muestra el contador; los puntos de atencion no se capturan dos veces
 # ni reaparecen al rejugar el nivel.
@@ -46,11 +47,28 @@ func test_capacity_comes_from_data() -> void:
 
 
 func test_overflow_fills_bar_first_then_power_bank() -> void:
+	GameState.add_empty_power_bank()
 	GameState.debug_energy = 90.0
 	var overflow: float = GameState.add_debug_energy(25.0)
 	assert_almost_eq(GameState.debug_energy, 100.0, EPS, "Primero llena la barra")
 	assert_almost_eq(overflow, 15.0, EPS)
 	assert_almost_eq(GameState.power_bank_charge, 15.0, EPS, "El sobrante va al power bank")
+	assert_eq(GameState.power_banks, 0)
+	assert_eq(GameState.empty_power_banks, 1, "Sigue vacio hasta llenarse")
+
+
+func test_obtained_power_bank_arrives_empty() -> void:
+	GameState.add_empty_power_bank()
+	assert_eq(GameState.empty_power_banks, 1)
+	assert_eq(GameState.power_banks, 0, "No cuenta como completo: no paga mejoras")
+	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "Carga 0")
+
+
+func test_overflow_is_lost_without_empty_power_banks() -> void:
+	var unused: float = GameState.add_power_bank_charge(50.0)
+	assert_almost_eq(unused, 50.0, EPS)
+	GameState.add_debug_energy(25.0)
+	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "Sin power bank vacio no se carga nada")
 	assert_eq(GameState.power_banks, 0)
 
 
@@ -58,6 +76,7 @@ func test_power_bank_completes_and_keeps_remainder() -> void:
 	var banks: Array = []
 	var on_changed := func(full: int, charge: float, _cap: float) -> void: banks.append([full, charge])
 	EventBus.power_banks_changed.connect(on_changed)
+	GameState.add_empty_power_bank(4)
 	GameState.add_debug_energy(_capacity - 5.0)
 	assert_eq(GameState.power_banks, 0)
 	GameState.add_debug_energy(30.0)
@@ -68,6 +87,12 @@ func test_power_bank_completes_and_keeps_remainder() -> void:
 	GameState.add_debug_energy(_capacity * 2.0)
 	assert_eq(GameState.power_banks, 3, "Varios de golpe")
 	assert_almost_eq(GameState.power_bank_charge, 25.0, EPS)
+	assert_eq(GameState.empty_power_banks, 1, "Cada uno lleno deja de estar vacio")
+	var unused: float = GameState.add_power_bank_charge(_capacity)
+	assert_eq(GameState.power_banks, 4)
+	assert_eq(GameState.empty_power_banks, 0)
+	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS)
+	assert_almost_eq(unused, 25.0, EPS, "Lo que sobra sin vacios se pierde")
 
 
 func test_no_overflow_when_bar_has_room() -> void:
@@ -77,10 +102,17 @@ func test_no_overflow_when_bar_has_room() -> void:
 	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS)
 
 
-func test_attention_point_energy_overflows_too() -> void:
+func test_attention_point_energy_does_not_overflow() -> void:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/power_bank.json"))
+	assert_false(bool(data["attention_point_energy_overflows"]), "Decision 2026-10-14: solo desbordan los drops")
+	GameState.add_empty_power_bank()
 	GameState.add_attention_points(3)
 	assert_eq(GameState.attention_points, 3)
-	assert_almost_eq(GameState.power_bank_charge, 3.0 * GameState.ENERGY_PER_ATTENTION_POINT, EPS)
+	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS)
+	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "Los puntos no cargan el power bank")
+	GameState.debug_energy = 0.0
+	GameState.add_attention_points(1)
+	assert_almost_eq(GameState.debug_energy, GameState.ENERGY_PER_ATTENTION_POINT, EPS, "Pero si llenan la barra")
 
 
 func test_sync_heal_is_capped_at_effective_max() -> void:
@@ -139,7 +171,9 @@ func test_popping_bubble_drops_recharges_that_isak_collects() -> void:
 		assert_eq(p.get_parent(), world, "Junto al enemigo, no dentro (se libera)")
 	assert_almost_eq(float(kinds[RechargePickup.KIND_ENERGY]), bubble.drops["debug_energy"], EPS)
 	assert_almost_eq(float(kinds[RechargePickup.KIND_SYNC]), bubble.drops["sync_rate"], EPS)
-	# Isak con la barra llena y algo de dano se planta sobre las recargas.
+	# Isak con un power bank vacio, la barra llena y algo de dano se planta
+	# sobre las recargas.
+	GameState.add_empty_power_bank()
 	GameState.debug_energy = GameState.get_debug_energy_max()
 	GameState.sync_rate = 80.0
 	var collected: Array = []
@@ -178,6 +212,10 @@ func test_hud_shows_power_banks_only_when_there_are_some() -> void:
 	var hud := HUD_SCENE.instantiate() as Hud
 	add_child_autofree(hud)
 	assert_false(hud.is_power_bank_shown(), "Sin power banks ni carga: oculto")
+	GameState.add_empty_power_bank(2)
+	assert_true(hud.is_power_bank_shown(), "Un power bank vacio ya se ve")
+	assert_eq(hud.get_power_bank_text(), "x0")
+	assert_almost_eq(hud.get_power_bank_charge_ratio(), 0.0, EPS)
 	GameState.add_power_bank_charge(_capacity * 0.5)
 	assert_true(hud.is_power_bank_shown())
 	assert_eq(hud.get_power_bank_text(), "x0")
