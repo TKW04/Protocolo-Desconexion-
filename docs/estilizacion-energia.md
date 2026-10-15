@@ -47,6 +47,8 @@ Diferencias con los drops: el contorno `noche_profunda` lo pone el propio panel 
 
 Batería vacía: con 0 de energía (por ejemplo tras el último disparo del láser) no queda ningún segmento encendido, ni rastro de consumo pendiente, y el rayo se apaga (`HudMeter.get_shell_row()`). `tools/validate_ui_assets.py` comprueba que la fila vacía del marco y de los segmentos no tiene el color del Debug.
 
+Batería vacía por coste del láser (2026-10-15): con el láser desbloqueado, una energía menor que su coste (`laser_energy_cost` de `data/isak_abilities.json`, 10, con mejoras; `GameState.get_laser_energy_cost()`) se ve igual que con 0: sin segmentos, rayo apagado y sin rastro, porque ya no se puede disparar. Con el coste justo (10) se enciende 1 segmento, según los tramos. Es solo visual (`Hud.is_energy_shown_empty`): `GameState.debug_energy` conserva el resto, que suma con la siguiente recarga. Sin el láser se mantiene la regla anterior (vacía solo con 0). El Debug no entra en la regla aunque se active con cualquier energía > 0 (duda abierta en `docs/preguntas.md`).
+
 Regenerar: `python3 tools/gen_hud_assets.py` (rehace todo el arte del HUD y su vista `_hud_assets_preview_x8.png`); validar: `python3 tools/validate_ui_assets.py`; capturas a 1280x720: `$GODOT --path . -s tools/render_hud_states.gd` (necesita ventana).
 
 ## Notas para integrar en cada escena

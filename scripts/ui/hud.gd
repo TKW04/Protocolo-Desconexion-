@@ -22,6 +22,12 @@
 ## data/hud.json; sus ajustes estan en data/power_bank.json (hud).
 ## El porcentaje de Sync Rate muestra el valor real (puede pasar de 100 % con
 ## la mejora "Sync reforzado"); las barras siguen la fraccion del maximo.
+## Bateria vacia por coste del laser (2026-10-15): con el laser desbloqueado,
+## una energia menor que su coste (GameState.get_laser_energy_cost(), con
+## mejoras) se ve como 0 (ningun segmento, rayo apagado, sin rastro), aunque
+## quede un resto: ya no se puede disparar. Solo es visual: GameState.debug_energy
+## no cambia. Sin laser sigue la regla de antes (vacia solo con 0). El Debug no
+## cuenta: con ese resto aun se activa (duda en docs/preguntas.md).
 class_name Hud
 extends CanvasLayer
 
@@ -51,6 +57,10 @@ const POWER_BANK_FORMAT: String = "x%d"
 var _config: HudConfig = HudConfig.shared()
 var _sync_ratio: float = FULL
 var _energy_ratio: float = FULL
+## Ultima energia recibida (real, sin la regla del laser) y su maximo: se
+## vuelve a pintar si cambia el desbloqueo del laser o se compra una mejora.
+var _energy_value: float = GameState.DEBUG_ENERGY_MAX
+var _energy_max: float = GameState.DEBUG_ENERGY_MAX
 var _attention_points: int = 0
 var _world: int = GameState.FIRST_WORLD
 var _is_low_sync: bool = false
@@ -89,6 +99,8 @@ func _ready() -> void:
 	EventBus.reduce_low_sync_effects_changed.connect(_on_reduce_effects_changed)
 	EventBus.debug_activation_progress_changed.connect(_on_debug_activation_progress_changed)
 	EventBus.power_banks_changed.connect(_on_power_banks_changed)
+	EventBus.ability_unlock_changed.connect(_on_ability_unlock_changed)
+	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -296,10 +308,13 @@ func _on_sync_rate_changed(new_value: float, max_value: float) -> void:
 ## Con la bateria a 0 (p. ej. tras el ultimo disparo del laser) se vacia del
 ## todo y al instante: sin segmentos encendidos ni rastro de consumo pendiente
 ## (con disparos seguidos el rastro se quedaba atras y, durante una pausa, se
-## congelaba).
+## congelaba). Con el laser desbloqueado, tambien con un resto menor que su
+## coste (is_energy_shown_empty).
 func _on_energy_changed(new_value: float, max_value: float) -> void:
+	_energy_value = new_value
+	_energy_max = max_value
 	var ratio: float = _ratio(new_value, max_value)
-	if ratio < EMPTY_BATTERY_RATIO:
+	if ratio < EMPTY_BATTERY_RATIO or is_energy_shown_empty(new_value):
 		ratio = 0.0
 		_stop_drain(_battery)
 		_battery.value = ratio
@@ -307,6 +322,27 @@ func _on_energy_changed(new_value: float, max_value: float) -> void:
 	else:
 		_set_meter(_battery, ratio, _energy_ratio)
 	_energy_ratio = ratio
+
+
+## Si la bateria se ve vacia con `energy` aunque sea > 0: el laser esta
+## desbloqueado y `energy` no alcanza para un disparo (misma tolerancia que
+## Isak._has_laser_energy). Sin laser (o con coste 0) siempre falso.
+static func is_energy_shown_empty(energy: float) -> bool:
+	if not GameState.is_ability_unlocked(GameState.ABILITY_LASER):
+		return false
+	var cost: float = GameState.get_laser_energy_cost()
+	return cost > 0.0 and energy + Isak.LASER_ENERGY_EPS < cost
+
+
+## Al desbloquear o bloquear el laser (o comprar una mejora que cambie su
+## coste) la regla de bateria vacia cambia: se vuelve a pintar la energia.
+func _on_ability_unlock_changed(ability: StringName, _unlocked: bool) -> void:
+	if ability == GameState.ABILITY_LASER:
+		_on_energy_changed(_energy_value, _energy_max)
+
+
+func _on_upgrade_purchased(_id: StringName) -> void:
+	_on_energy_changed(_energy_value, _energy_max)
 
 
 func _on_attention_points_changed(new_value: int) -> void:

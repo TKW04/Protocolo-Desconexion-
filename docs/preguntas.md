@@ -637,3 +637,8 @@ Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de No
 - P del 1-1 pasa de (4, 3) a (4, 9), en el suelo: Isak ya no cae del cielo.
 - Durante el vórtice (llegada y salida) Isak no recibe golpes (no puede moverse). Tras reaparecer siguen los 1 s de invulnerabilidad de siempre, que corren a la vez.
 - La puerta de salida del 1-1 es ahora una terminal que se activa con el pulso (`exit_terminal`); `exit_door` sigue en el catálogo para las escenas de prueba. PROPUESTA para revisar jugando: zona de cercanía de 1,5 tiles a cada lado y el vórtice de salida centrado en Isak, no en la pantalla.
+
+## Batería vacía por debajo del coste del láser (2026-10-15)
+
+- Con el láser desbloqueado, el HUD muestra la batería vacía (sin segmentos, rayo apagado) si la energía es menor que el coste de un disparo (`laser_energy_cost`, 10). Antes, un resto de 0,01 a 9,99 dejaba 1 segmento encendido sin poder disparar. Solo cambia el dibujo: la energía real se conserva. Sin el láser se sigue viendo el resto (vacía solo con 0).
+- **Duda:** el Debug se activa con cualquier energía > 0 (`DebugMode`, sin cambios). Cuando el jugador tenga láser y Debug a la vez (en el 1-1 el Debug está bloqueado), con un resto menor que 10 la batería se verá vacía pero el Debug aún se podrá activar unos instantes. ¿Se acepta así, se exige un mínimo de energía para activar el Debug, o la batería debe verse vacía solo cuando no se pueda usar ninguna de las dos?

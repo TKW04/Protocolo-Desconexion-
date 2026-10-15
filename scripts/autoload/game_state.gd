@@ -385,6 +385,15 @@ func get_debug_energy_max() -> float:
 	return effective_value(&"game_state.debug_energy_max", DEBUG_ENERGY_MAX)
 
 
+## Coste efectivo de un disparo del laser: laser_energy_cost de
+## data/isak_abilities.json con las mejoras compradas (la misma regla que
+## Isak.apply_upgrades). Lo usa el HUD para ver la bateria vacia cuando ya no
+## alcanza para disparar.
+func get_laser_energy_cost() -> float:
+	var target := &"isak_abilities.laser_energy_cost"
+	return effective_value(target, base_value(target))
+
+
 func get_energy_per_attention_point() -> float:
 	return effective_value(&"game_state.energy_per_attention_point", ENERGY_PER_ATTENTION_POINT)
 

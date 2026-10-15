@@ -25,7 +25,9 @@ func before_each() -> void:
 		"current_world": GameState.current_world,
 		"reduce": GameState.reduce_low_sync_effects,
 		"pulse": GameState.is_ability_unlocked(GameState.ABILITY_PULSE),
+		"laser": GameState.is_ability_unlocked(GameState.ABILITY_LASER),
 	}
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, false)
 	GameState.current_world = GameState.FIRST_WORLD
 	GameState.reduce_low_sync_effects = false
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
@@ -40,6 +42,7 @@ func after_each() -> void:
 	GameState.current_world = _saved.current_world
 	GameState.reduce_low_sync_effects = _saved.reduce
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _saved.pulse)
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, _saved.laser)
 
 
 func _make_hud() -> Hud:
@@ -244,6 +247,59 @@ func test_battery_fully_empty_at_zero_energy() -> void:
 	await wait_seconds(_config.drain_delay_s + _config.drain_duration_s + DRAIN_MARGIN_S)
 	assert_eq(hud.get_battery_segments(), 0)
 	assert_almost_eq(hud.get_energy_trail(), 0.0, EPS)
+
+
+## Bateria vacia por coste del laser (2026-10-15): con el laser desbloqueado,
+## un resto menor que su coste se ve vacio (ya no se puede disparar); con el
+## coste justo, los segmentos de siempre. La energia real no cambia.
+func test_battery_empty_below_laser_cost() -> void:
+	var cost: float = GameState.get_laser_energy_cost()
+	assert_almost_eq(cost, PlayerAbilities.load_from_file().laser_energy_cost, EPS,
+		"Coste leido de data/isak_abilities.json (sin mejoras que lo cambien)")
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, true)
+	var hud: Hud = _make_hud()
+	var battery := hud.get_node("Frame/Row/Battery") as HudMeter
+	GameState.debug_energy = 30.0
+	hud.finish_animations()
+	var rest: float = cost - 0.5
+	GameState.debug_energy = rest
+	assert_almost_eq(GameState.debug_energy, rest, EPS, "La energia real no se descarta")
+	assert_eq(hud.get_battery_segments(), 0, "Resto < coste del laser: ningun segmento")
+	assert_almost_eq(hud.get_energy_ratio(), 0.0, EPS)
+	assert_almost_eq(hud.get_energy_trail(), 0.0, EPS, "Sin rastro de consumo")
+	assert_eq(battery.get_trail_count(), 0)
+	assert_eq(battery.get_shell_row(), HudMeter.ShellRow.EMPTY, "Rayo apagado")
+	GameState.debug_energy = cost
+	var expected: int = HudConfig.lit_count(cost / GameState.get_debug_energy_max(), _config.battery_thresholds)
+	assert_gt(expected, 0, "Con el coste justo hay al menos un segmento segun los tramos")
+	assert_eq(hud.get_battery_segments(), expected, "Coste justo: se puede disparar")
+	assert_eq(battery.get_shell_row(), HudMeter.ShellRow.CHARGED, "Rayo encendido")
+	assert_almost_eq(GameState.debug_energy, cost, EPS)
+
+
+## Sin el laser el umbral del coste no tiene sentido: regla de antes (solo 0 vacia).
+func test_battery_without_laser_keeps_previous_rule() -> void:
+	var hud: Hud = _make_hud()
+	var rest: float = GameState.get_laser_energy_cost() - 0.5
+	GameState.debug_energy = rest
+	assert_eq(hud.get_battery_segments(),
+		HudConfig.lit_count(rest / GameState.get_debug_energy_max(), _config.battery_thresholds),
+		"Sin laser, el resto enciende sus segmentos")
+	assert_gt(hud.get_battery_segments(), 0)
+	assert_almost_eq(GameState.debug_energy, rest, EPS)
+
+
+## Al desbloquear el laser con un resto la bateria se repinta vacia, y al
+## bloquearlo vuelve a mostrar el resto.
+func test_battery_repaints_when_laser_unlock_changes() -> void:
+	var hud: Hud = _make_hud()
+	GameState.debug_energy = GameState.get_laser_energy_cost() - 0.5
+	hud.finish_animations()
+	assert_gt(hud.get_battery_segments(), 0)
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, true)
+	assert_eq(hud.get_battery_segments(), 0, "Con laser: vacia")
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, false)
+	assert_gt(hud.get_battery_segments(), 0, "Sin laser: el resto se ve")
 
 
 func test_attention_counter_updates() -> void:
