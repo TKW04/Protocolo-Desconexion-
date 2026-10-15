@@ -18,6 +18,11 @@
 	"pop_speed_threshold_px_s": 1150.0,
 	"pop_bounce_velocity": -720.0,
 	"stomp_tolerance_px": 8.0,
+	"drops": {
+		"_notes": "Recargas que suelta al reventar (pop) (decision del usuario 2026-10-14: los enemigos y jefes sueltan energia de Debug y Sync Rate; comportamiento en data/recharge_pickup.json). PROPUESTA, ajustar jugando: debug_energy 25 (= 1,25 s de Debug a 20/s; con la barra llena va entero al power bank), sync_rate 10 (= un golpe de contacto, contact_damage). Solo al reventarla: aturdirla con el pulso no suelta nada. Los enemigos reaparecen al rejugar el nivel, asi que sus drops tambien (duda abierta: farmeo de power banks).",
+		"debug_energy": 25.0,
+		"sync_rate": 10.0
+	},
 	"sprites": {
 		"_notes": "Generados por tools/gen_alert_bubble.py (solo colores de mundo1.gpl sin debug_cian, alfa 0/255) y validados por tools/validate_enemy_sprites.py. tools/build_enemy_frames.gd crea frames_resource. anticipate dura exactamente anticipation_frames a anim_fps.",
 		"dir": "res://assets/sprites/enemies/",

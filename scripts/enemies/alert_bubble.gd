@@ -63,6 +63,9 @@ const EDGE_PROBE_INSET_PX: float = 2.0
 @export var start_direction: float = 1.0
 ## Liberar el nodo al acabar la animacion de pop (las pruebas pueden quitarlo).
 @export var free_on_pop: bool = true
+## Recargas que suelta al reventar ({"debug_energy": 25, "sync_rate": 10});
+## vacio = seccion drops de data_path. Ver RechargePickup.
+@export var drops: Dictionary = {}
 
 var speed_px_s: float
 var gravity: float
@@ -250,6 +253,7 @@ func pop(bouncer: Isak = null) -> void:
 		bouncer.velocity.y = pop_bounce_velocity
 	popped.emit()
 	EventBus.enemy_defeated.emit(self)
+	RechargePickup.spawn_drops(get_parent(), global_position, drops)
 
 
 # --- Interno ---
@@ -437,6 +441,12 @@ func _load_data() -> bool:
 	pop_speed_threshold_px_s = float(d["pop_speed_threshold_px_s"])
 	pop_bounce_velocity = float(d["pop_bounce_velocity"])
 	stomp_tolerance_px = float(d["stomp_tolerance_px"])
+	if drops.is_empty():
+		var raw_drops: Variant = d.get("drops", {})
+		if raw_drops is Dictionary:
+			for key: Variant in raw_drops:
+				if not String(key).begins_with("_"):
+					drops[String(key)] = float(raw_drops[key])
 	var frames: SpriteFrames = load(String(d["sprites"]["frames_resource"])) as SpriteFrames
 	if frames != null:
 		_sprite.sprite_frames = frames
