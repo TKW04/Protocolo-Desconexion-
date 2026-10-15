@@ -2,7 +2,8 @@
 # valido, comprar sin puntos o sin power bank no cambia nada, comprar gasta y
 # cambia el VALOR EFECTIVO (los JSON base no cambian), y la compra desde la
 # pantalla provisional del hub (move_up/move_down + pulse) cambia el valor
-# efectivo que usa el Isak siguiente.
+# efectivo que usa el Isak siguiente. Guardado manual provisional en esa
+# pantalla (save_game, 2026-10-15): comprar solo marca "sin guardar".
 extends GutTest
 
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub_placeholder.tscn")
@@ -137,3 +138,61 @@ func test_hub_input_waits_for_delay_and_fits_on_screen() -> void:
 	assert_false(GameState.is_upgrade_purchased(&"wide_pulse"), "Retardo de entrada tambien para comprar")
 	assert_lte(hub.get_panel_size().y, hub.get_screen_size().y, "El panel cabe en pantalla")
 	assert_lte(hub.get_panel_size().x, hub.get_screen_size().x)
+
+
+# --- Guardado manual provisional en la pantalla del hub (2026-10-15) ---
+
+func test_hub_purchase_only_marks_unsaved_and_save_action_writes() -> void:
+	GameState.attention_points = 30
+	var hub := HUB_SCENE.instantiate() as HubPlaceholder
+	add_child_autofree(hub)
+	hub.show_result("1-1", GameState.attention_points)
+	assert_eq(hub.get_line_text(&"save_status"), "Todo guardado")
+	assert_eq(hub.get_line_text(&"help_save"), "Guardar: C / R3 (mando)", "Control leido del Input Map")
+	hub.skip_input_delay()
+	hub._unhandled_input(_action(&"pulse"))
+	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"))
+	assert_false(FileAccess.file_exists(PATH), "Comprar no guarda")
+	assert_true(GameState.has_unsaved_changes())
+	assert_eq(hub.get_line_text(&"save_status"), "Sin guardar", "Indicador al comprar")
+	hub._unhandled_input(_action(&"save_game"))
+	assert_true(FileAccess.file_exists(PATH), "La accion save_game guarda")
+	assert_false(GameState.has_unsaved_changes())
+	assert_eq(hub.get_line_text(&"save_status"), "Todo guardado")
+	assert_eq(hub.get_line_text(&"message"), "Copia guardada")
+	assert_eq(hub.get_save_count(), 1)
+	assert_eq(SaveFile.read(PATH).get("upgrades_purchased"), ["wide_pulse"])
+	hub._unhandled_input(_action(&"save_game"))
+	assert_eq(hub.get_line_text(&"message"), "Todo está guardado", "Sin cambios no vuelve a escribir")
+	assert_eq(hub.get_save_count(), 1)
+	assert_eq(hub.get_restart_count(), 0, "Guardar no reinicia")
+	assert_lte(hub.get_panel_size().y, hub.get_screen_size().y, "Con las lineas de guardado sigue cabiendo")
+
+
+func test_hub_save_waits_for_delay_and_is_a_save_station() -> void:
+	var hub := HUB_SCENE.instantiate() as HubPlaceholder
+	add_child_autofree(hub)
+	assert_false(hub.can_save_now(), "Sin mostrarse no es sitio de guardado")
+	GameState.mark_level_completed(&"1-1")
+	hub.show_result("1-1", 0)
+	assert_true(hub.can_save_now())
+	assert_true(QuitGuard.can_save_here(get_tree()), "El aviso al salir ofrece guardar aqui")
+	hub._unhandled_input(_action(&"save_game"))
+	assert_false(FileAccess.file_exists(PATH), "Retardo de entrada tambien para guardar")
+	assert_eq(QuitGuard.decide(GameState.has_unsaved_changes(), QuitGuard.can_save_here(get_tree())),
+		QuitGuard.Decision.ASK_WITH_SAVE)
+
+
+func test_save_action_is_c_and_r3_without_clashes() -> void:
+	assert_true(InputMap.has_action(&"save_game"))
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_C
+	var r3 := InputEventJoypadButton.new()
+	r3.button_index = JOY_BUTTON_RIGHT_STICK
+	assert_true(InputMap.event_is_action(key, &"save_game"), "C guarda")
+	assert_true(InputMap.event_is_action(r3, &"save_game"), "R3 guarda")
+	for action: StringName in InputMap.get_actions():
+		if action == &"save_game" or String(action).begins_with("ui_"):
+			continue
+		assert_false(InputMap.event_is_action(key, action), "C solo guarda (%s)" % action)
+		assert_false(InputMap.event_is_action(r3, action), "R3 solo guarda (%s)" % action)

@@ -16,7 +16,8 @@
 ##   absorbido por el vortice de salida; comprueba que no llega al hub sin
 ##   haberse puesto de espaldas antes del vortice),
 ##   comprueba la pantalla provisional del hub (nivel completado, 1-2 desbloqueado,
-##   puntos) y pulsa salto (accion jump) para reiniciar: Sync Rate y objetos
+##   puntos), comprueba que nada se ha escrito (guardado manual, 2026-10-15),
+##   guarda con la accion save_game y pulsa salto (accion jump) para reiniciar: Sync Rate y objetos
 ##   desde cero, pero los puntos de atencion se conservan y los ya capturados no
 ##   reaparecen (decision 2026-10-14).
 ## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH
@@ -389,6 +390,23 @@ func _force_death(checkpoint: Checkpoint) -> bool:
 	return true
 
 
+## Guardado manual (2026-10-15): al llegar al hub hay cambios sin guardar y
+## nada escrito; la accion save_game (C / R3) escribe el guardado del bot.
+func _save_in_hub(hub: HubPlaceholder) -> bool:
+	if not GameState.has_unsaved_changes() or FileAccess.file_exists(GameState.save_path):
+		return _fail("guardado manual: al llegar al hub deberia haber cambios sin guardar y nada escrito")
+	for pressed: bool in [true, false]:
+		var event := InputEventAction.new()
+		event.action = &"save_game"
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		await _tick()
+	if GameState.has_unsaved_changes() or not FileAccess.file_exists(GameState.save_path):
+		return _fail("la accion save_game no guardo en el hub")
+	_note("guardado manual en el hub: '%s' (%s)" % [hub.get_line_text(&"message"), GameState.save_path])
+	return true
+
+
 func _hub_and_restart() -> bool:
 	var hub: HubPlaceholder = _runner.get_hub()
 	var points: int = GameState.attention_points
@@ -399,6 +417,8 @@ func _hub_and_restart() -> bool:
 		return _fail("no se registro el nivel completado o el desbloqueo")
 	for i: int in 60:
 		await _tick()
+	if not await _save_in_hub(hub):
+		return false
 	var press := InputEventAction.new()
 	press.action = &"jump"
 	press.pressed = true

@@ -22,14 +22,21 @@
 ## ENERGIA (decision 2026-10-15): en el hub se recarga la energia de Debug (la
 ## misma que gasta el laser). Mientras no exista el hub real, show_result()
 ## llena la barra si refill_debug_energy es true (data/hub_placeholder.json).
+##
+## GUARDADO MANUAL (decision 2026-10-15; PROVISIONAL hasta la estacion "copia
+## local" del hub real, docs/propuesta-hub-y-guardado.md): la accion
+## save_action (save_game) guarda con GameState.save_game(). Muestra el control
+## ("Guardar: C / R3 (mando)", leido del Input Map) y el indicador "Sin
+## guardar" / "Todo guardado". Mientras se muestra esta en el grupo
+## QuitGuard.SAVE_STATION_GROUP: el aviso al salir ofrece guardar.
 class_name HubPlaceholder
 extends CanvasLayer
 
 const DATA_PATH: String = "res://data/hub_placeholder.json"
 const LINE_KEYS: Array[StringName] = [&"title", &"completed", &"points", &"help"]
 ## Lineas fijas en orden de pantalla (las filas de mejoras van tras upgrades_title).
-const HEADER_KEYS: Array[StringName] = [&"title", &"completed", &"points", &"power_banks", &"upgrades_title"]
-const FOOTER_KEYS: Array[StringName] = [&"detail", &"message", &"help_upgrades", &"help"]
+const HEADER_KEYS: Array[StringName] = [&"title", &"completed", &"points", &"save_status", &"power_banks", &"upgrades_title"]
+const FOOTER_KEYS: Array[StringName] = [&"detail", &"message", &"help_upgrades", &"help_save", &"help"]
 
 ## El jugador pide volver a jugar el nivel.
 signal restart_requested(level_id: String)
@@ -52,6 +59,8 @@ var _upgrade_ids: Array[StringName] = []
 var _selected: int = 0
 var _shader: Shader
 var _key_color: Color
+var _shown: bool = false
+var _save_count: int = 0
 
 
 func _ready() -> void:
@@ -59,6 +68,8 @@ func _ready() -> void:
 	layer = int(_data.get("layer", 20))
 	_build()
 	get_viewport().size_changed.connect(_layout)
+	EventBus.unsaved_changes_changed.connect(_on_unsaved_changes_changed)
+	add_to_group(QuitGuard.SAVE_STATION_GROUP)
 	_layout()
 
 
@@ -69,6 +80,10 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(StringName(_data.get("restart_action", "jump"))):
 		if request_restart():
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(StringName(_data.get("save_action", "save_game"))):
+		if _accepts_input():
+			save_now()
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(StringName(_data.get("select_up_action", "move_up"))):
 		if _accepts_input():
@@ -101,6 +116,8 @@ func show_result(level_id: String, attention_points: int) -> void:
 	_labels[&"upgrades_title"].text = String(texts.get("upgrades_title", ""))
 	_labels[&"help_upgrades"].text = String(texts.get("help_upgrades", ""))
 	_labels[&"message"].text = String(texts.get("message_idle", ""))
+	_labels[&"help_save"].text = String(texts.get("help_save", "%s")) % save_control_text()
+	_shown = true
 	refresh_upgrades()
 	visible = true
 
@@ -124,6 +141,7 @@ func refresh_upgrades() -> void:
 			color_key = "upgrade_owned"
 		_set_color(label, String(colors.get(color_key, "#f2f4f8")))
 	_labels[&"detail"].text = get_detail_text()
+	_refresh_save_status()
 	_layout()
 
 
@@ -209,6 +227,37 @@ func purchase_selected() -> int:
 	return result
 
 
+## Guarda la partida (GameState.save_game) y muestra el resultado. Sin cambios
+## pendientes no escribe: dice que todo esta guardado. Verdadero si todo quedo
+## guardado.
+func save_now() -> bool:
+	var texts: Dictionary = _data.get("texts", {})
+	var ok: bool = true
+	if not GameState.has_unsaved_changes():
+		_labels[&"message"].text = String(texts.get("message_nothing_to_save", ""))
+	else:
+		ok = GameState.save_game()
+		if ok:
+			_save_count += 1
+		_labels[&"message"].text = String(texts.get("message_saved" if ok else "message_save_failed", ""))
+	refresh_upgrades()
+	return ok
+
+
+## Se puede guardar aqui (QuitGuard): la pantalla se esta mostrando.
+func can_save_now() -> bool:
+	return _shown and visible and is_inside_tree()
+
+
+## Control de save_action leido del Input Map ("C / R3 (mando)").
+func save_control_text() -> String:
+	return AbilityNotices.control_text(StringName(_data.get("save_action", "save_game")), AbilityNotices.load_data())
+
+
+func get_save_count() -> int:
+	return _save_count
+
+
 ## Pide reiniciar el nivel. Falso si aun no ha pasado input_delay_s.
 func request_restart() -> bool:
 	if not _accepts_input():
@@ -278,6 +327,19 @@ func _state_text(id: StringName) -> String:
 	return String(texts.get("state_available", ""))
 
 
+func _refresh_save_status() -> void:
+	var unsaved: bool = GameState.has_unsaved_changes()
+	var key: String = "save_status_unsaved" if unsaved else "save_status_saved"
+	_labels[&"save_status"].text = String(_data.get("texts", {}).get(key, ""))
+	_set_color(_labels[&"save_status"], String(_data.get("colors", {}).get(key, "#f2f4f8")))
+
+
+func _on_unsaved_changes_changed(_has_changes: bool) -> void:
+	if _shown and is_inside_tree():
+		_refresh_save_status()
+		_layout()
+
+
 func _ordered_labels() -> Array[Label]:
 	var out: Array[Label] = []
 	for key: StringName in HEADER_KEYS:
@@ -344,7 +406,7 @@ func _build() -> void:
 
 
 func _layout() -> void:
-	if _frame == null:
+	if _frame == null or not is_inside_tree():
 		return
 	var scale_factor: float = _frame.scale.x
 	var screen: Vector2 = get_viewport().get_visible_rect().size / scale_factor
