@@ -2,6 +2,8 @@
 ## (tools/gen_hud_assets.py), en pixeles de arte (el HUD entero se escala).
 ## - SIGNAL: barras de senal (Sync Rate), encendidas por tramos.
 ## - BATTERY: bateria de segmentos (energia de Debug), encendidos por tramos.
+##   El marco tiene dos filas: con energia (rayo encendido) y vacia (rayo
+##   apagado, sin ningun pixel del color del Debug).
 ## - ATTENTION_ICON: icono del contador de puntos de atencion.
 ## - CHARGE_RING: anillo de carga de la pulsacion larga del Debug en pasos
 ##   discretos (0 = no se dibuja, pero conserva su hueco para que la fila no
@@ -18,6 +20,8 @@ enum Kind { SIGNAL, BATTERY, ATTENTION_ICON, CHARGE_RING }
 enum SignalRow { OFF, ON, LOW, TRAIL }
 ## Filas de hud_battery_segments.png (orden de SEG_STATES).
 enum SegmentRow { EMPTY, FULL, TRAIL }
+## Filas de hud_battery_shell.png (orden de SHELL_STATES).
+enum ShellRow { CHARGED, EMPTY }
 
 const SIGNAL_ASSET: StringName = &"signal"
 const SHELL_ASSET: StringName = &"battery_shell"
@@ -105,6 +109,11 @@ func get_trail_count() -> int:
 	return maxi(HudConfig.lit_count(trail, _thresholds()) - get_lit_count(), 0)
 
 
+## Fila del marco de la bateria: vacia (rayo apagado) sin segmentos encendidos.
+func get_shell_row() -> int:
+	return ShellRow.CHARGED if get_lit_count() > 0 else ShellRow.EMPTY
+
+
 ## Cuadro del anillo de carga (0 a steps-1) o -1 si no se dibuja.
 func get_ring_frame() -> int:
 	if value <= 0.0:
@@ -126,7 +135,9 @@ func _draw() -> void:
 		Kind.SIGNAL:
 			_draw_parts(top, _signal_row)
 		Kind.BATTERY:
-			draw_texture(_shell, Vector2(0.0, top))
+			var shell := Vector2(_config.asset_frame_size(SHELL_ASSET))
+			draw_texture_rect_region(_shell, Rect2(Vector2(0.0, top), shell),
+					Rect2(Vector2(0.0, get_shell_row() * shell.y), shell))
 			_draw_parts(top, _segment_row)
 		Kind.ATTENTION_ICON:
 			draw_texture(_texture, Vector2(0.0, top))

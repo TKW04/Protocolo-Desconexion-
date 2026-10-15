@@ -10,6 +10,8 @@ tools/gen_eco_text_box.py. Lee la seccion "assets" de cada archivo de datos de l
   - alfa 0 o 255 (sin semitransparencias)
   - ningun cuadro vacio (salvo los huecos del atlas de la fuente)
 Ademas:
+  - bateria del HUD (data/hud.json): la fila 1 del marco (vacia) y la fila 0 de los segmentos
+    (vacios) no tienen el color clave del Debug (colors.debug_key); la fila 0 del marco si (rayo)
   - todo PNG de assets/sprites/ui/ esta en alguna lista o es una vista (empieza por '_')
   - cada fuente (clave "font" de un archivo con font_glyphs, BMFont de texto) apunta al atlas
     de su lista, tiene todos los glifos de font_glyphs, sus glifos caben en el atlas y su
@@ -22,9 +24,12 @@ import argparse
 import json
 import os
 import re
+import site
 import sys
 
-from PIL import Image
+# Con -I no se carga el site de usuario (donde puede estar Pillow): se anade a mano.
+sys.path.append(site.getusersitepackages())
+from PIL import Image  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GPL = os.path.join(ROOT, "assets", "palettes", "mundo1.gpl")
@@ -95,6 +100,37 @@ def check_asset(key, entry, palette):
     return errors
 
 
+def check_battery(data):
+    """La bateria vacia no tiene ningun pixel del color del Debug (se ve vacia del todo)."""
+    errors = []
+    assets = data.get("assets", {})
+    key = data.get("colors", {}).get("debug_key")
+    if key is None or "battery_shell" not in assets or "battery_segments" not in assets:
+        return errors
+    key = tuple(int(key.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+
+    def has_key(entry, row):
+        path = res_to_path(entry["path"])
+        if not os.path.exists(path):
+            return False
+        img = Image.open(path).convert("RGBA")
+        fh = entry["frame_size"][1]
+        px = img.load()
+        return any(px[x, y][3] == 255 and px[x, y][:3] == key
+                   for y in range(row * fh, min((row + 1) * fh, img.height)) for x in range(img.width))
+
+    shell, segs = assets["battery_shell"], assets["battery_segments"]
+    if shell["rows"] != 2:
+        return ["battery_shell: debe tener 2 filas (0 con energia, 1 vacia)"]
+    if not has_key(shell, 0):
+        errors.append("battery_shell: la fila 0 (con energia) no tiene el rayo en el color del Debug")
+    if has_key(shell, 1):
+        errors.append("battery_shell: la fila 1 (vacia) tiene el color del Debug")
+    if has_key(segs, 0):
+        errors.append("battery_segments: la fila 0 (vacio) tiene el color del Debug")
+    return errors
+
+
 def parse_fnt(path):
     info, chars, page = {}, {}, None
     with open(path, encoding="utf-8") as fh:
@@ -150,6 +186,7 @@ def main():
         listed |= {os.path.basename(res_to_path(e["path"])) for e in assets.values()}
         if "font_glyphs" in data:
             errors += check_font(data, assets)
+        errors += check_battery(data)
     for name in sorted(os.listdir(UI_DIR)):
         if name.endswith(".png") and not name.startswith("_") and name not in listed:
             errors.append(f"{name}: PNG de la interfaz que no esta en ningun data/*.json (o es una vista sin '_')")

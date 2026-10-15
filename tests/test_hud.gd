@@ -106,6 +106,39 @@ func test_battery_segments_by_energy() -> void:
 	assert_eq(_config.battery_thresholds.size(), 5, "Bateria de 5 segmentos")
 
 
+## Estilo circuito (docs/estilizacion-energia.md): la bateria vacia no tiene
+## ningun pixel del color del Debug (ni segmentos ni el rayo del marco).
+func test_empty_battery_art_has_no_debug_color() -> void:
+	var key: Color = _config.color(&"debug_key")
+	var shell: Image = _config.asset_texture(&"battery_shell").get_image()
+	var segments: Image = _config.asset_texture(&"battery_segments").get_image()
+	var frame: Vector2i = _config.asset_frame_size(&"battery_shell")
+	assert_true(_has_color(shell, Rect2i(Vector2i(0, HudMeter.ShellRow.CHARGED * frame.y), frame), key),
+		"Con energia, el rayo esta en el color del Debug")
+	assert_false(_has_color(shell, Rect2i(Vector2i(0, HudMeter.ShellRow.EMPTY * frame.y), frame), key),
+		"Vacia: rayo apagado")
+	var empty_row := Rect2i(0, HudMeter.SegmentRow.EMPTY * frame.y, segments.get_width(), frame.y)
+	assert_false(_has_color(segments, empty_row, key), "Segmentos vacios sin color del Debug")
+	var battery := HudMeter.new()
+	battery.kind = HudMeter.Kind.BATTERY
+	battery.setup(_config)
+	battery.value = 0.0
+	assert_eq(battery.get_shell_row(), HudMeter.ShellRow.EMPTY)
+	battery.value = 0.05
+	assert_eq(battery.get_shell_row(), HudMeter.ShellRow.CHARGED)
+	battery.free()
+
+
+func _has_color(image: Image, rect: Rect2i, color: Color) -> bool:
+	image.decompress()
+	for y: int in range(rect.position.y, rect.end.y):
+		for x: int in range(rect.position.x, rect.end.x):
+			var c: Color = image.get_pixel(x, y)
+			if c.a > 0.5 and c.to_html(false) == color.to_html(false):
+				return true
+	return false
+
+
 func test_charge_ring_steps_are_discrete() -> void:
 	var ring := HudMeter.new()
 	ring.kind = HudMeter.Kind.CHARGE_RING
@@ -205,6 +238,7 @@ func test_battery_fully_empty_at_zero_energy() -> void:
 	assert_almost_eq(hud.get_energy_trail(), 0.0, EPS, "Sin rastro de consumo pendiente")
 	var battery := hud.get_node("Frame/Row/Battery") as HudMeter
 	assert_eq(battery.get_trail_count(), 0, "Ningun segmento en rastro")
+	assert_eq(battery.get_shell_row(), HudMeter.ShellRow.EMPTY, "Rayo de la carcasa apagado")
 	GameState.debug_energy = 0.00001
 	assert_eq(hud.get_battery_segments(), 0, "Restos de coma flotante: vacia")
 	await wait_seconds(_config.drain_delay_s + _config.drain_duration_s + DRAIN_MARGIN_S)

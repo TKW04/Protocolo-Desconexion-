@@ -11,10 +11,18 @@ Salidas (assets/sprites/ui/):
   hud_panel.png             16x16, fondo de la barra de estado (NinePatch): noche_profunda con
                             linea de borde_luz abajo y un pixel oscuro debajo para separar del juego
   hud_signal.png            4x4 cuadros de 16x16: columna = barra (0-3, de menor a mayor),
-                            fila = estado (0 apagada, 1 encendida, 2 Sync Rate bajo, 3 rastro de dano)
-  hud_battery_shell.png     32x16, marco de la bateria con polo
+                            fila = estado (0 apagada, 1 encendida, 2 Sync Rate bajo, 3 rastro de dano).
+                            Estilo "circuito limpio" del drop de Sync Rate (docs/estilizacion-energia.md):
+                            nodo octogonal (contorno noche_profunda, anillo banner_blanco/banner_gris,
+                            fondo tile_base) con las barras dentro. El nodo va en los cuadros de la
+                            columna 0, que siempre se dibuja.
+  hud_battery_shell.png     2 cuadros de 32x16 (filas): 0 con energia, 1 vacia. Estilo del drop de
+                            energia: carcasa con contorno de esquinas recortadas, bisel, celda cian con
+                            rayo (apagada en tonos de tile si esta vacia), divisor, ventana oscura y borne
+                            metalico
   hud_battery_segments.png  5x3 cuadros de 32x16 (alineados con el marco): columna = segmento,
-                            fila = estado (0 vacio, 1 lleno en debug_cian, 2 rastro de dano/consumo)
+                            fila = estado (0 vacio en tile_base, 1 lleno en debug_cian con brillo
+                            banner_blanco, 2 rastro de dano/consumo)
   hud_attention.png         16x16, icono de punto de atencion (rombo ambar con ambar_sombra)
   hud_charge_ring.png       16 cuadros de 16x16, anillo de carga del Debug: el cuadro k muestra
                             (k+1)/16 lleno en sentido horario desde arriba, sobre la pista tile_luz
@@ -27,9 +35,12 @@ Uso: python3 tools/gen_hud_assets.py
 import json
 import math
 import os
+import site
 import sys
 
-from PIL import Image, ImageDraw
+# Con -I no se carga el site de usuario (donde puede estar Pillow): se anade a mano.
+sys.path.append(site.getusersitepackages())
+from PIL import Image, ImageDraw  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GPL = os.path.join(ROOT, "assets", "palettes", "mundo1.gpl")
@@ -97,10 +108,18 @@ def draw_panel(spec):
 
 
 # ------------------------------------------------------------------ senal (Sync Rate)
-SIGNAL_BAR_W = 3
+# Nodo octogonal (como el drop de Sync Rate) de NODE_W x NODE_H con esquinas cortadas en diagonal
+# NODE_CUT px; dentro, 4 barras de SIGNAL_BAR_W px separadas SIGNAL_BAR_GAP, con base en la fila
+# SIGNAL_BASE_Y. Filas 1-13, como la carcasa de la bateria (la linea del panel son las filas 14-15). El contorno noche_profunda
+# del drop lo pone aqui el propio panel (noche_profunda): el borde del nodo es ya el anillo
+# banner_blanco/banner_gris, y asi las barras tienen el mismo sitio que antes.
+NODE_X0, NODE_Y0, NODE_W, NODE_H = 0, 1, 16, 13
+NODE_CUT = 2
+SIGNAL_BAR_W = 2
 SIGNAL_BAR_GAP = 1
-SIGNAL_BASE_Y = 13          # fila inferior de las barras (misma base que la bateria)
-SIGNAL_HEIGHTS = (4, 7, 10, 13)
+SIGNAL_BAR_X0 = 2
+SIGNAL_BASE_Y = 11
+SIGNAL_HEIGHTS = (3, 5, 7, 9)
 # estado -> (color principal, color de la columna derecha/sombra, color del pixel superior)
 SIGNAL_STATES = (
     ("tile_luz", "tile_luz", "tile_luz"),            # 0 apagada
@@ -110,13 +129,42 @@ SIGNAL_STATES = (
 )
 
 
+def node_layers():
+    """Pixeles del nodo octogonal: (anillo, nucleo) como conjuntos de (x, y)."""
+    shape = set()
+    for y in range(NODE_H):
+        k = min(y, NODE_H - 1 - y)
+        cut = max(NODE_CUT - k, 0)
+        for x in range(cut, NODE_W - cut):
+            shape.add((NODE_X0 + x, NODE_Y0 + y))
+
+    def inner(cells):
+        return {(x, y) for (x, y) in cells
+                if all((x + dx, y + dy) in cells for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
+
+    core = inner(shape)
+    return shape - core, core
+
+
 def draw_signal(spec):
     s = Sheet(spec)
     assert s.cols == len(SIGNAL_HEIGHTS) and s.rows == len(SIGNAL_STATES)
+    ring, core = node_layers()
+    cx, cy = NODE_X0 + (NODE_W - 1) / 2, NODE_Y0 + (NODE_H - 1) / 2
+    right, bottom = max(x for x, _ in ring), max(y for _, y in ring)
+    for row in range(s.rows):
+        for (x, y) in ring:
+            # luz arriba/izquierda, sombra abajo/derecha (bisel del estilo circuito)
+            shade = x == right or y == bottom or (x > cx and y > cy)
+            s.px(0, row, x, y, "banner_gris" if shade else "banner_blanco")
+        for (x, y) in core:
+            s.px(0, row, x, y, "tile_base")
     for bar, h in enumerate(SIGNAL_HEIGHTS):
-        x0 = 1 + bar * (SIGNAL_BAR_W + SIGNAL_BAR_GAP)
+        x0 = SIGNAL_BAR_X0 + bar * (SIGNAL_BAR_W + SIGNAL_BAR_GAP)
         x1 = x0 + SIGNAL_BAR_W - 1
         y0 = SIGNAL_BASE_Y - h + 1
+        for (x, y) in ((x0, y0), (x1, SIGNAL_BASE_Y)):
+            assert (x, y) in core, "la barra %d se sale del nodo" % bar
         for row, (main, shade, top) in enumerate(SIGNAL_STATES):
             s.rect(bar, row, x0, y0, x1 - 1, SIGNAL_BASE_Y, main)
             s.rect(bar, row, x1, y0, x1, SIGNAL_BASE_Y, shade)
@@ -125,24 +173,67 @@ def draw_signal(spec):
 
 
 # ------------------------------------------------------------------ bateria (energia de Debug)
-BAT_X0, BAT_X1 = 1, 28      # cuerpo (inclusivo)
-BAT_Y0, BAT_Y1 = 2, 13
-TIP_X0, TIP_X1 = 29, 30
-TIP_Y0, TIP_Y1 = 5, 10
-SEG_X0, SEG_Y0, SEG_Y1 = 3, 4, 11
-SEG_W, SEG_GAP = 4, 1
-SEG_STATES = ("tile_luz", "debug_cian", "alerta_sombra")  # vacio, lleno, rastro
+# Carcasa 30x13 (x 0-29, filas 1-13) con contorno noche_profunda de esquinas recortadas y bisel
+# (borde_luz arriba/izquierda, tile_luz abajo/derecha: sobre el panel noche_profunda el tile_base no
+# se veria); a la izquierda la celda de energia con el
+# rayo; un divisor; la ventana oscura (tile_sombra) con los 5 segmentos; y el borne a la derecha.
+BAT_X0, BAT_X1 = 0, 29
+BAT_Y0, BAT_Y1 = 1, 13
+CELL_X0, CELL_X1 = 2, 6
+DIVIDER_X = 7
+WIN_X0, WIN_X1 = 8, 27
+IN_Y0, IN_Y1 = 3, 11
+TIP_X0, TIP_X1 = 30, 31
+TIP_Y0, TIP_Y1 = 4, 10
+SEG_X0, SEG_Y0, SEG_Y1 = 8, 4, 10
+SEG_W, SEG_GAP = 3, 1
+# Rayo de la celda (5x9, filas IN_Y0-IN_Y1); '#' = rayo.
+CELL_BOLT = (
+    "....#",
+    "...##",
+    "..##.",
+    ".##..",
+    "#####",
+    "..##.",
+    ".##..",
+    "##...",
+    "#....",
+)
+# Fila del marco -> (fondo de la celda, rayo): 0 con energia (rayo en el color clave, que el
+# shader cambia por el del Debug del mundo), 1 vacia (tonos de tile: apagada).
+SHELL_STATES = (("tile_sombra", "debug_cian"), ("tile_sombra", "tile_luz"))
+# Segmentos: estado -> (relleno, brillo del pixel superior izquierdo).
+SEG_STATES = (("tile_base", "tile_base"), ("debug_cian", "banner_blanco"), ("alerta_sombra", "alerta_sombra"))
 
 
 def draw_battery_shell(spec):
     s = Sheet(spec)
-    c = "banner_blanco"
-    s.rect(0, 0, BAT_X0 + 1, BAT_Y0, BAT_X1 - 1, BAT_Y0, c)       # arriba (esquinas recortadas)
-    s.rect(0, 0, BAT_X0 + 1, BAT_Y1, BAT_X1 - 1, BAT_Y1, "banner_gris")  # abajo, en sombra
-    s.rect(0, 0, BAT_X0, BAT_Y0 + 1, BAT_X0, BAT_Y1 - 1, c)       # izquierda
-    s.rect(0, 0, BAT_X1, BAT_Y0 + 1, BAT_X1, BAT_Y1 - 1, "banner_gris")  # derecha, en sombra
-    s.rect(0, 0, TIP_X0, TIP_Y0, TIP_X1 - 1, TIP_Y1, "banner_gris")
-    s.rect(0, 0, TIP_X1, TIP_Y0 + 1, TIP_X1, TIP_Y1 - 1, "banner_gris")  # polo redondeado
+    assert s.rows == len(SHELL_STATES)
+    for row, (cell_bg, bolt) in enumerate(SHELL_STATES):
+        s.rect(0, row, BAT_X0, BAT_Y0, BAT_X1, BAT_Y1, "noche_profunda")
+        for x, y in ((BAT_X0, BAT_Y0), (BAT_X1, BAT_Y0), (BAT_X0, BAT_Y1), (BAT_X1, BAT_Y1)):
+            s.px(0, row, x, y, None)
+        s.rect(0, row, BAT_X0 + 1, BAT_Y0 + 1, BAT_X1 - 1, BAT_Y1 - 1, "tile_luz")
+        s.rect(0, row, BAT_X0 + 1, BAT_Y0 + 1, BAT_X1 - 1, BAT_Y0 + 1, "borde_luz")
+        s.rect(0, row, BAT_X0 + 1, BAT_Y0 + 1, BAT_X0 + 1, BAT_Y1 - 1, "borde_luz")
+        s.rect(0, row, BAT_X0 + 2, BAT_Y1 - 1, BAT_X1 - 1, BAT_Y1 - 1, "tile_luz")
+        s.rect(0, row, BAT_X1 - 1, BAT_Y0 + 2, BAT_X1 - 1, BAT_Y1 - 1, "tile_luz")
+        # celda de energia con el rayo
+        s.rect(0, row, CELL_X0, IN_Y0, CELL_X1, IN_Y1, cell_bg)
+        assert len(CELL_BOLT) == IN_Y1 - IN_Y0 + 1 and len(CELL_BOLT[0]) == CELL_X1 - CELL_X0 + 1
+        for j, line in enumerate(CELL_BOLT):
+            for i, ch in enumerate(line):
+                if ch == "#":
+                    s.px(0, row, CELL_X0 + i, IN_Y0 + j, bolt)
+        # divisor y ventana de los segmentos
+        s.rect(0, row, DIVIDER_X, IN_Y0, DIVIDER_X, IN_Y1, "noche_profunda")
+        s.rect(0, row, WIN_X0, IN_Y0, WIN_X1, IN_Y1, "tile_sombra")
+        # borne metalico (como el del drop): contorno, banner_gris y brillo banner_blanco
+        s.rect(0, row, TIP_X0, TIP_Y0, TIP_X1, TIP_Y1, "noche_profunda")
+        s.px(0, row, TIP_X1, TIP_Y0, None)
+        s.px(0, row, TIP_X1, TIP_Y1, None)
+        s.rect(0, row, TIP_X0, TIP_Y0 + 1, TIP_X0, TIP_Y1 - 1, "banner_gris")
+        s.px(0, row, TIP_X0, TIP_Y0 + 1, "banner_blanco")
     return s.save()
 
 
@@ -151,9 +242,10 @@ def draw_battery_segments(spec):
     assert s.rows == len(SEG_STATES)
     for seg in range(s.cols):
         x0 = SEG_X0 + seg * (SEG_W + SEG_GAP)
-        assert x0 + SEG_W - 1 < BAT_X1 - 1, "los segmentos no caben en el marco"
-        for row, color in enumerate(SEG_STATES):
-            s.rect(seg, row, x0, SEG_Y0, x0 + SEG_W - 1, SEG_Y1, color)
+        assert WIN_X0 <= x0 and x0 + SEG_W - 1 <= WIN_X1, "los segmentos no caben en la ventana"
+        for row, (fill, glint) in enumerate(SEG_STATES):
+            s.rect(seg, row, x0, SEG_Y0, x0 + SEG_W - 1, SEG_Y1, fill)
+            s.px(seg, row, x0, SEG_Y0, glint)
     return s.save()
 
 

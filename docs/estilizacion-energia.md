@@ -1,6 +1,6 @@
 # Estilización de los objetos de energía y progreso (1-1)
 
-Estado: **integrado** (2026-10-15), pendiente de revisión del usuario. Sustituye en lo visual a los dibujos provisionales `_draw` de `recharge_pickup`, `power_bank_pickup`, `charger` y `ability_pickup`. Cada objeto crea en `_ready` un `EnergySprite` (`scripts/levels/energy_sprite.gd`, un `AnimatedSprite2D`) con las animaciones de `assets/sprites/energy_objects_frames.tres` (una por estado, con sus fps); el objeto la avanza con tiempo del mundo, así que se ralentiza con el Debug y se detiene con la pausa. Las colisiones no cambian. Los colores de los `_draw` que quedan en `data/world1_objects.json` y `data/recharge_pickup.json` ya no se usan.
+Estado: **integrado** (2026-10-15), pendiente de revisión del usuario. Desde la misma fecha también lo siguen los indicadores de Sync Rate y energía del HUD (ver «Indicadores del HUD»). Sustituye en lo visual a los dibujos provisionales `_draw` de `recharge_pickup`, `power_bank_pickup`, `charger` y `ability_pickup`. Cada objeto crea en `_ready` un `EnergySprite` (`scripts/levels/energy_sprite.gd`, un `AnimatedSprite2D`) con las animaciones de `assets/sprites/energy_objects_frames.tres` (una por estado, con sus fps); el objeto la avanza con tiempo del mundo, así que se ralentiza con el Debug y se detiene con la pausa. Las colisiones no cambian. Los colores de los `_draw` que quedan en `data/world1_objects.json` y `data/recharge_pickup.json` ya no se usan.
 
 ## Lenguaje visual común: «circuito limpio»
 
@@ -32,6 +32,22 @@ Paleta: solo `assets/palettes/mundo1.gpl` (sin `ambar`, `alerta` ni `carmin`) y 
 | | `pickups/ability_pickup_collected_00.png` | 40x40 | recogido | 1 (chip apagado) |
 
 Validación: tamaño, colores solo de las dos paletas, alfa 0 o 255 y fondo transparente en cada cuadro (`check_asset` de `tools/validate_world1_assets.py`). Generador: `tools/gen_energy_objects.py`; validador: `tools/validate_energy_objects.py` (ver «Regenerar»).
+
+## Indicadores del HUD (Sync Rate y energía)
+
+Desde el 2026-10-15 la señal (Sync Rate) y la batería (energía de Debug) del HUD usan el mismo lenguaje que los drops. Tamaños, tramos y lógica no cambian: 4 barras de señal y 5 segmentos de batería (`data/hud.json`), en píxeles de arte x2.
+
+| Indicador | Archivo (`assets/sprites/ui/`) | Cuadros | Aspecto |
+|---|---|---|---|
+| Señal (Sync Rate) | `hud_signal.png` | 4x4 de 16x16 (columna = barra, fila = apagada / encendida / Sync Rate bajo / rastro de daño) | Nodo octogonal como el drop de Sync: anillo `banner_blanco` con sombra `banner_gris` abajo/derecha y fondo `tile_base`; dentro, barras de 2 px (3, 5, 7 y 9 de alto) en blanco y gris, `tile_luz` apagadas, `alerta` con Sync Rate bajo. El nodo está dibujado en la columna 0, que siempre se dibuja. |
+| Batería (energía) | `hud_battery_shell.png` | 2 filas de 32x16: 0 con energía, 1 vacía | Carcasa de esquinas recortadas con bisel (`borde_luz` arriba/izquierda, `tile_luz` abajo/derecha), celda de la pila con el rayo en cian (`debug_cian`, el color clave que el shader cambia por el Debug del mundo), divisor `noche_profunda`, ventana `tile_sombra` y borne metálico (`banner_gris` con brillo `banner_blanco`). Vacía: el rayo pasa a `tile_luz`. |
+| | `hud_battery_segments.png` | 5x3 de 32x16 (columna = segmento, fila = vacío / lleno / rastro) | Segmentos de 3x7: vacío `tile_base`, lleno `debug_cian` con un píxel de brillo `banner_blanco`, rastro `alerta_sombra`. |
+
+Diferencias con los drops: el contorno `noche_profunda` lo pone el propio panel del HUD (es `noche_profunda`), así que en la señal el borde del nodo es ya el anillo; la parte baja y derecha del bisel usa `tile_luz` en vez de `tile_base`, que no se vería sobre el panel; no hay `pulse_core` ni `pulse_dim` (el HUD solo usa `mundo1.gpl`, y el cambio de color por mundo solo sustituye el `debug_cian`). Sin trazas de circuito: a 16 px de alto no caben sin restar legibilidad.
+
+Batería vacía: con 0 de energía (por ejemplo tras el último disparo del láser) no queda ningún segmento encendido, ni rastro de consumo pendiente, y el rayo se apaga (`HudMeter.get_shell_row()`). `tools/validate_ui_assets.py` comprueba que la fila vacía del marco y de los segmentos no tiene el color del Debug.
+
+Regenerar: `python3 tools/gen_hud_assets.py` (rehace todo el arte del HUD y su vista `_hud_assets_preview_x8.png`); validar: `python3 tools/validate_ui_assets.py`; capturas a 1280x720: `$GODOT --path . -s tools/render_hud_states.gd` (necesita ventana).
 
 ## Notas para integrar en cada escena
 
