@@ -1,6 +1,14 @@
 ## Cuadro de texto de Eco (PROPUESTA V6, docs/preguntas.md): una notificacion
 ## arriba, debajo de la barra de estado del HUD, con la esfera de Eco, su
-## nombre y el texto. No pausa el juego ni lee entradas: Isak sigue jugando.
+## nombre y el texto. Las lineas normales no pausan el juego ni leen entradas:
+## Isak sigue jugando.
+## Lineas IMPORTANTES (habilidad adquirida, historia; decision 2026-10-15):
+## pausan el arbol (get_tree().paused; el cuadro procesa siempre) y, escritas,
+## esperan a que el jugador confirme (CONFIRM_ACTIONS o confirm()); la primera
+## pulsacion durante la escritura la completa. Pasan delante de las normales
+## en cola (y desplazan la normal en pantalla, que vuelve a la cola) sin
+## perder ninguna. El arbol se reanuda al cerrarse la ultima importante y
+## siempre al salir el cuadro del arbol (cambio de escena, nivel quitado).
 ## - Maquina de escribir discreta (chars_per_second de data/eco_text_box.json).
 ## - El texto se parte por palabras al ancho util del panel (fuente bitmap de
 ##   textos, con tildes y ene) y el panel crece con las lineas.
@@ -8,7 +16,7 @@
 ## - Tiempo REAL: el Debug ralentiza el mundo (GameState.world_time_scale), no
 ##   este cuadro, y no se usa Engine.time_scale.
 ## Entrada: EventBus.eco_line_requested (o show_line()). Si llega otra linea
-## con una en pantalla, se pone en cola. Salida: EventBus.eco_line_started y
+## con una en pantalla, se pone en cola (las importantes, delante). Salida: EventBus.eco_line_started y
 ## EventBus.eco_line_finished.
 ## Pixel base como el HUD: Frame se maqueta en pixeles de arte y se escala
 ## x pixel_scale (entero).
@@ -25,11 +33,18 @@ const OPAQUE: float = 1.0
 const TRANSPARENT: float = 0.0
 ## Modulacion neutra: el color sale de la fuente (banner_blanco) o del shader.
 const NEUTRAL_MODULATE: Color = Color.WHITE
+## Acciones que cierran una linea importante (Espacio / A del mando e Intro).
+const CONFIRM_ACTIONS: Array[StringName] = [&"jump", &"ui_accept"]
+
+## Si es false, las lineas importantes no pausan ni esperan confirmacion (se
+## cierran solas como las normales; conservan la prioridad en la cola). Solo
+## para pruebas y herramientas que juegan el nivel sin jugador.
+static var pause_important: bool = true
 
 var _config: EcoTextBoxConfig = EcoTextBoxConfig.shared()
 var _font: Font
 var _phase: Phase = Phase.IDLE
-## Lineas pendientes: {text, duration_s}.
+## Lineas pendientes: {text, duration_s, important}; las importantes, delante.
 var _queue: Array[Dictionary] = []
 var _text: String = ""
 ## Texto ya partido en lineas, unido con saltos de linea (misma longitud que
@@ -41,6 +56,10 @@ var _type_time: float = 0.0
 var _hold_s: float = 0.0
 var _hold_left: float = 0.0
 var _close_time: float = 0.0
+var _important: bool = false
+var _current_duration: float = -1.0
+## El cuadro puso get_tree().paused (solo entonces lo quita).
+var _owns_pause: bool = false
 
 @onready var _frame: Control = $Frame
 @onready var _panel: NinePatchRect = $Frame/Panel
@@ -51,6 +70,8 @@ var _close_time: float = 0.0
 
 func _ready() -> void:
 	layer = _config.layer
+	# Sigue escribiendo y leyendo la confirmacion con el arbol en pausa.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_apply_config()
 	get_viewport().size_changed.connect(_fit_frame)
 	EventBus.eco_line_requested.connect(_on_eco_line_requested)
@@ -62,13 +83,51 @@ func _process(delta: float) -> void:
 	advance(delta)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not _important or event.is_echo():
+		return
+	for action: StringName in CONFIRM_ACTIONS:
+		if InputMap.has_action(action) and event.is_action_pressed(action):
+			if confirm():
+				get_viewport().set_input_as_handled()
+			return
+
+
+func _exit_tree() -> void:
+	_release_pause()
+
+
 # --- API ---
 
 ## Muestra `text` (o lo pone en cola). `duration_s` <= 0: tiempo por defecto.
-func show_line(text: String, duration_s: float = -1.0) -> void:
-	_queue.append({"text": text, "duration_s": duration_s})
+## `important`: pausa el juego y espera confirmacion; pasa delante de las
+## normales (la normal en pantalla vuelve a la cola, a la cabeza de las normales).
+func show_line(text: String, duration_s: float = -1.0, important: bool = false) -> void:
+	var item: Dictionary = {"text": text, "duration_s": duration_s, "important": important}
+	if not important:
+		_queue.append(item)
+	else:
+		_queue.insert(_first_normal_index(), item)
+		if _phase != Phase.IDLE and not _important:
+			_preempt_current()
 	if _phase == Phase.IDLE:
 		_start_next()
+
+
+## Cierra la linea importante en pantalla (accion del jugador). Si aun se esta
+## escribiendo, la completa. Verdadero si hizo algo.
+func confirm() -> bool:
+	if not _important:
+		return false
+	match _phase:
+		Phase.TYPING:
+			finish_typing()
+			return true
+		Phase.HOLD:
+			_phase = Phase.CLOSING
+			_close_time = 0.0
+			return true
+	return false
 
 
 ## Avanza `delta` segundos de tiempo real (lo llama _process; util en pruebas).
@@ -84,6 +143,8 @@ func advance(delta: float) -> void:
 		Phase.HOLD:
 			_type_time += delta
 			_set_alpha(_fade_in_alpha())
+			if _important:
+				return
 			_hold_left -= delta
 			if _hold_left <= 0.0:
 				_phase = Phase.CLOSING
@@ -137,6 +198,24 @@ func get_hold_time() -> float:
 
 func get_queue_size() -> int:
 	return _queue.size()
+
+
+## La linea en pantalla es importante (pausa y espera confirmacion).
+func is_important() -> bool:
+	return _important
+
+
+## Textos en cola, en el orden en que saldran.
+func get_queued_texts() -> PackedStringArray:
+	var texts: PackedStringArray = []
+	for item: Dictionary in _queue:
+		texts.append(String(item["text"]))
+	return texts
+
+
+## El cuadro tiene el arbol en pausa.
+func is_pausing_game() -> bool:
+	return _owns_pause
 
 
 ## Ancho util para el texto, en pixeles de arte.
@@ -198,10 +277,16 @@ func _start_next() -> void:
 	if _queue.is_empty():
 		return
 	var item: Dictionary = _queue.pop_front()
+	_important = bool(item.get("important", false)) and pause_important
+	if _important:
+		_hold_pause()
+	else:
+		_release_pause()
 	_text = item["text"]
 	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
 	_wrapped = LINE_BREAK.join(_lines)
-	_hold_s = _config.hold_time(_text.length(), float(item["duration_s"]))
+	_current_duration = float(item["duration_s"])
+	_hold_s = _config.hold_time(_text.length(), _current_duration)
 	_type_time = 0.0
 	_phase = Phase.TYPING
 	_set_typed(0)
@@ -214,15 +299,55 @@ func _start_next() -> void:
 
 
 func _finish_line() -> void:
+	_clear_line()
+	if _queue.is_empty() or not bool(_queue[0].get("important", false)):
+		_release_pause()
+	EventBus.eco_line_finished.emit()
+	_start_next()
+
+
+func _clear_line() -> void:
 	_phase = Phase.IDLE
+	_important = false
 	_set_alpha(TRANSPARENT)
 	_panel.visible = false
 	_text = ""
 	_wrapped = ""
 	_lines = []
 	_set_typed(0)
+
+
+## Quita la linea normal en pantalla para dejar paso a una importante: vuelve
+## a la cola (tras las importantes) salvo si ya se estaba cerrando.
+func _preempt_current() -> void:
+	if _phase != Phase.CLOSING:
+		_queue.insert(_first_normal_index(), {"text": _text, "duration_s": _current_duration, "important": false})
+	_clear_line()
 	EventBus.eco_line_finished.emit()
-	_start_next()
+
+
+func _first_normal_index() -> int:
+	for i: int in _queue.size():
+		if not bool(_queue[i].get("important", false)):
+			return i
+	return _queue.size()
+
+
+func _hold_pause() -> void:
+	if _owns_pause or not is_inside_tree():
+		return
+	if get_tree().paused:
+		return  # Ya lo pauso otro: no es nuestro.
+	get_tree().paused = true
+	_owns_pause = true
+
+
+func _release_pause() -> void:
+	if not _owns_pause:
+		return
+	_owns_pause = false
+	if is_inside_tree():
+		get_tree().paused = false
 
 
 func _set_typed(count: int) -> void:
@@ -312,5 +437,5 @@ func panel_width_for(lines: PackedStringArray) -> int:
 	return clampi(_text_left() + ceili(widest) + c.padding_px, c.min_width_px, c.width_px)
 
 
-func _on_eco_line_requested(text: String, duration_s: float) -> void:
-	show_line(text, duration_s)
+func _on_eco_line_requested(text: String, duration_s: float, important: bool) -> void:
+	show_line(text, duration_s, important)

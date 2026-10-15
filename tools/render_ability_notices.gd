@@ -19,6 +19,7 @@ const WAIT_FRAMES: int = 60 * 30
 const TYPE_WAIT_S: float = 1.2
 
 var _started: Array[String] = []
+var _main: Node
 
 
 func _init() -> void:
@@ -36,6 +37,7 @@ func _run() -> void:
 	var main: Node = (load(SCENE) as PackedScene).instantiate()
 	main.set(&"start_level_id", "1-1")
 	root.add_child(main)
+	_main = main
 	var ok_pulse: bool = await _wait_for(notices.call(&"notice_text", &"pulse", data))
 	await _save(out_dir, "01_aviso_pulso.png")
 	var isak: Node2D = main.call(&"get_isak")
@@ -50,13 +52,23 @@ func _run() -> void:
 
 
 ## Espera a que el cuadro de Eco empiece `text` y a que se termine de escribir.
+## Cierra (como el jugador) las otras lineas importantes, que pausan el juego.
 func _wait_for(text: String) -> bool:
 	for i: int in WAIT_FRAMES:
 		if _started.has(text):
 			await create_timer(TYPE_WAIT_S).timeout
 			return true
+		_confirm_other_lines(text)
 		await process_frame
 	return false
+
+
+func _confirm_other_lines(text: String) -> void:
+	var level: Node = _main.call(&"get_level")
+	var box: Node = level.get_node_or_null(^"EcoTextBox") if is_instance_valid(level) else null
+	while box != null and box.call(&"is_important") and box.call(&"get_text") != text \
+			and box.call(&"confirm"):
+		pass
 
 
 func _save(out_dir: String, file_name: String) -> void:

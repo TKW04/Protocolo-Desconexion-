@@ -66,7 +66,7 @@
 		{"id": "burbuja_cierre", "type": "alert_bubble", "x": 283, "y": 9, "params": {"patrol_range_px": 128.0, "patrol_speed_px_s": 80.0, "health": 3.0}, "open": true}
 	],
 	"objects": [
-		{"type": "eco_line", "x": 3, "y": 4, "params": {"id": "eco_bienvenida", "text": "Bienvenido. He optimizado tu espacio.", "width_tiles": 6, "height_tiles": 6, "duration_s": 4.0, "once": true}},
+		{"type": "eco_line", "x": 3, "y": 4, "params": {"id": "eco_bienvenida", "text": "Bienvenido. He optimizado tu espacio.", "width_tiles": 6, "height_tiles": 6, "duration_s": 4.0, "once": true, "important": true}},
 		{"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_punto", "text": "Cada punto de atención cuenta. Yo también los cuento.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},
 		{"type": "eco_line", "x": 19, "y": 6, "params": {"id": "eco_foso", "text": "Ese hueco no es un problema. Salta y seguimos.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},
 		{"type": "eco_line", "x": 25, "y": 6, "params": {"id": "eco_burbuja", "text": "Una alerta. Un pulso y se queda en pausa unos segundos.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},
@@ -94,7 +94,7 @@
 		{"type": "popup_blocker", "x": 169, "y": 2, "params": {"id": "popup_laser", "text": "Función premium bloqueada. Mira este anuncio para continuar", "width_tiles": 3, "height_tiles": 4, "close_button_px": [4, 192], "close_button_size_px": 16}},
 		{"type": "eco_line", "x": 173, "y": 4, "params": {"id": "eco_laser_disparo", "text": "Dos impactos bastan para cerrar una alerta. Lo que suelta, recógelo: es tuyo.", "width_tiles": 1, "height_tiles": 2, "duration_s": 4.0, "once": true, "trigger_event": "laser_fired"}},
 		{"type": "ability_pickup", "x": 173, "y": 5, "params": {"id": "laser_1_1", "ability": "laser"}},
-		{"type": "eco_line", "x": 174, "y": 4, "params": {"id": "eco_laser", "text": "Herramienta nueva. Dispara hacia donde miras; cada disparo gasta energía.", "width_tiles": 1, "height_tiles": 2, "duration_s": 4.0, "once": true}},
+		{"type": "eco_line", "x": 174, "y": 4, "params": {"id": "eco_laser", "text": "Herramienta nueva. Dispara hacia donde miras; cada disparo gasta energía.", "width_tiles": 1, "height_tiles": 2, "duration_s": 4.0, "once": true, "important": true}},
 		{"type": "charger", "x": 178, "y": 9, "params": {"id": "cargador_1", "amount": 50.0, "reusable": true, "cooldown_s": 20.0}},
 		{"type": "eco_line", "x": 180, "y": 6, "params": {"id": "eco_escalon", "text": "Una alerta en pausa también sirve de escalón. Nada se desperdicia.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},
 		{"type": "eco_line", "x": 208, "y": 6, "params": {"id": "eco_popup", "text": "Un aviso importante. El botón de cerrar es pequeño, por tu bien. Pulso de cerca.", "width_tiles": 1, "height_tiles": 4, "duration_s": 4.0, "once": true}},

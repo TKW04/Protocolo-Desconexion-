@@ -2,7 +2,10 @@
 # disparador eco_line (scenes/levels/eco_line.tscn): maquina de escribir por
 # tiempo, ajuste de linea con acentos, cierre automatico, cola, posicion y
 # capa, no bloquea a Isak, el Debug no lo ralentiza, el disparador se dispara
-# una sola vez con el texto correcto y el texto exacto del 1-1 aparece.
+# una sola vez con el texto correcto y el texto exacto del 1-1 aparece. Lineas
+# importantes: pausan el arbol (el mundo, las Burbujas y el Debug no procesan),
+# esperan la confirmacion del jugador, pasan delante en la cola y el arbol se
+# reanuda siempre (tambien si el cuadro sale del arbol).
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -33,6 +36,8 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	# Ninguna prueba debe dejar el arbol en pausa (GUT se pararia).
+	get_tree().paused = false
 	DebugMode.reset()
 	DebugMode.input_enabled = true
 	GameState.debug_energy = _saved.energy
@@ -217,9 +222,144 @@ func test_second_line_waits_in_queue() -> void:
 
 func test_event_bus_request_shows_line() -> void:
 	var box: EcoTextBox = _box()
-	EventBus.eco_line_requested.emit(WELCOME, 4.0)
+	EventBus.eco_line_requested.emit(WELCOME, 4.0, false)
 	assert_eq(box.get_text(), WELCOME)
 	assert_almost_eq(box.get_hold_time(), 4.0, EPS)
+
+
+# --- Lineas importantes: pausa y confirmacion ---
+
+func test_normal_line_does_not_pause() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME)
+	assert_false(box.is_important())
+	assert_false(get_tree().paused, "Las lineas normales no pausan")
+
+
+func test_important_line_pauses_until_confirmed() -> void:
+	var box: EcoTextBox = _box()
+	var world := Node2D.new()
+	add_child_autofree(world)
+	box.show_line(WELCOME, 4.0, true)
+	assert_true(box.is_important())
+	assert_true(get_tree().paused, "Pausa el juego")
+	assert_true(box.is_pausing_game())
+	assert_true(box.can_process(), "El cuadro sigue funcionando en pausa")
+	assert_false(world.can_process(), "El mundo no avanza")
+	assert_false(DebugMode.can_process(), "El Debug no avanza")
+	_advance(box, _type_time(box) + box.get_hold_time() + 5.0)
+	assert_true(box.is_showing(), "No se cierra solo")
+	assert_eq(box.get_phase(), EcoTextBox.Phase.HOLD)
+	assert_eq(box.get_visible_text(), WELCOME)
+	assert_true(box.confirm(), "La accion del jugador lo cierra")
+	assert_true(get_tree().paused, "Sigue en pausa mientras se desvanece")
+	_advance(box, _config.fade_out_s + 0.05)
+	assert_false(box.is_showing())
+	assert_false(get_tree().paused, "Se reanuda al cerrarse")
+	assert_true(world.can_process())
+
+
+func test_confirm_while_typing_completes_the_text_first() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME, 4.0, true)
+	box.advance(0.1)
+	assert_true(box.confirm())
+	assert_eq(box.get_visible_text(), WELCOME, "Primera pulsacion: texto completo")
+	assert_eq(box.get_phase(), EcoTextBox.Phase.HOLD)
+	assert_true(get_tree().paused)
+	assert_true(box.confirm())
+	assert_eq(box.get_phase(), EcoTextBox.Phase.CLOSING)
+	get_tree().paused = false
+
+
+func test_confirm_action_input_closes_it() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME, 4.0, true)
+	box.finish_typing()
+	var press := InputEventAction.new()
+	press.action = &"jump"
+	press.pressed = true
+	box._unhandled_input(press)
+	assert_eq(box.get_phase(), EcoTextBox.Phase.CLOSING, "Espacio / A lo cierra")
+	get_tree().paused = false
+
+
+func test_confirm_does_nothing_on_normal_lines() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME)
+	box.finish_typing()
+	assert_false(box.confirm())
+	assert_eq(box.get_phase(), EcoTextBox.Phase.HOLD)
+
+
+func test_important_line_jumps_the_queue_without_losing_others() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line("Uno.")
+	box.show_line("Dos.")
+	box.show_line("Tres.")
+	box.show_line("Importante A.", -1.0, true)
+	box.show_line("Importante B.", -1.0, true)
+	assert_eq(box.get_text(), "Importante A.", "La importante sale ya")
+	assert_true(get_tree().paused)
+	assert_eq(box.get_queued_texts(), PackedStringArray(["Importante B.", "Uno.", "Dos.", "Tres."]),
+			"La normal desplazada vuelve a la cola, delante de las demas")
+	box.confirm()
+	box.confirm()
+	_advance(box, _config.fade_out_s + 0.05)
+	assert_eq(box.get_text(), "Importante B.")
+	assert_true(get_tree().paused, "Sigue en pausa entre dos importantes")
+	box.confirm()
+	box.confirm()
+	_advance(box, _config.fade_out_s + 0.05)
+	assert_eq(box.get_text(), "Uno.")
+	assert_false(get_tree().paused, "Las normales ya no pausan")
+	var shown: Array[String] = []
+	while box.is_showing():
+		if shown.is_empty() or shown[-1] != box.get_text():
+			shown.append(box.get_text())
+		box.advance(DT)
+	assert_eq(shown, ["Uno.", "Dos.", "Tres."] as Array[String], "Ninguna se pierde")
+
+
+func test_unpauses_when_box_leaves_the_tree() -> void:
+	var box := BOX_SCENE.instantiate() as EcoTextBox
+	add_child(box)
+	box.set_process(false)
+	box.show_line(WELCOME, 4.0, true)
+	assert_true(get_tree().paused)
+	remove_child(box)
+	assert_false(get_tree().paused, "Cambio de escena o nivel quitado: se reanuda")
+	box.free()
+
+
+func test_does_not_unpause_a_pause_it_did_not_set() -> void:
+	var box: EcoTextBox = _box()
+	get_tree().paused = true
+	box.show_line(WELCOME, 4.0, true)
+	assert_false(box.is_pausing_game())
+	box.confirm()
+	box.confirm()
+	_advance(box, _config.fade_out_s + 0.05)
+	assert_true(get_tree().paused, "La pausa ajena se respeta")
+	get_tree().paused = false
+
+
+func test_event_bus_important_flag_reaches_the_box() -> void:
+	var box: EcoTextBox = _box()
+	EventBus.eco_line_requested.emit(WELCOME, 4.0, true)
+	assert_true(box.is_important())
+	assert_true(get_tree().paused)
+	get_tree().paused = false
+
+
+func test_level_1_1_important_lines() -> void:
+	var level: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_PATH))
+	var important: Array[String] = []
+	for obj: Dictionary in level["objects"]:
+		if obj["type"] == "eco_line" and bool(obj["params"].get("important", false)):
+			important.append(String(obj["params"]["id"]))
+	assert_eq(important, ["eco_bienvenida", "eco_laser"] as Array[String],
+			"Historia (bienvenida) y habilidad adquirida (laser)")
 
 
 # --- Aspecto y posicion ---

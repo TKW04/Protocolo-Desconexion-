@@ -24,9 +24,16 @@ var _pulse_was: bool
 var _debug_was: bool
 
 
+## Las lineas importantes de Eco (bienvenida, laser) pausarian el nivel
+## esperando al jugador; aqui nadie confirma (se prueba en test_eco_text_box.gd).
 func before_all() -> void:
+	EcoTextBox.pause_important = false
 	_data = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_PATH))
 	_tile = float(_data["tile_size"])
+
+
+func after_all() -> void:
+	EcoTextBox.pause_important = true
 
 
 func before_each() -> void:
@@ -498,7 +505,7 @@ func test_first_laser_shot_eco_line_once() -> void:
 	EventBus.laser_fired.emit(null)
 	assert_eq(line.get_fired_count(), 1)
 	assert_signal_emit_count(EventBus, "eco_line_requested", 1)
-	assert_signal_emitted_with_parameters(EventBus, "eco_line_requested", [line.text, line.duration_s])
+	assert_signal_emitted_with_parameters(EventBus, "eco_line_requested", [line.text, line.duration_s, line.important])
 
 
 ## Isak en el puente en alto (puente_laser_2) cierra el pop-up de la sala con el pulso y,

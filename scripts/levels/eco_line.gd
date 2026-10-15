@@ -3,7 +3,9 @@
 ## la esquina superior izquierda de la celda (x, y). Cuando Isak entra, pide al
 ## cuadro de texto de Eco (EcoTextBox, por EventBus.eco_line_requested) que
 ## muestre `text` durante al menos `duration_s`. Con `once` (por defecto) solo
-## se dispara la primera vez. No es solida, no pausa el juego y no toca a Isak.
+## se dispara la primera vez. No es solida y no toca a Isak. Con `important`
+## (historia, cosas relevantes) el cuadro pausa el juego hasta que el jugador
+## la cierra; si no, no pausa.
 ## Detecta la capa de fisica `player` (2).
 ## Con `trigger_event` (rediseno del 1-1 para el laser, 2026-10-15) no hay zona:
 ## la linea salta al emitirse esa senal de EventBus (p. ej. &"laser_fired": la
@@ -26,6 +28,8 @@ signal triggered(text: String)
 @export var once: bool = true
 ## Senal de EventBus que dispara la linea en vez de la zona (vacio = zona).
 @export var trigger_event: StringName = &""
+## Linea importante: pausa el juego y espera confirmacion del jugador.
+@export var important: bool = false
 
 var _fired_count: int = 0
 var _shape: CollisionShape2D
@@ -46,7 +50,7 @@ func fire() -> bool:
 		return false
 	_fired_count += 1
 	triggered.emit(text)
-	EventBus.eco_line_requested.emit(text, duration_s)
+	EventBus.eco_line_requested.emit(text, duration_s, important)
 	return true
 
 

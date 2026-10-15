@@ -85,7 +85,7 @@ func collect_by(body: Node) -> bool:
 	if obtained:
 		var text: String = get_message()
 		if not text.is_empty():
-			EventBus.eco_line_requested.emit(text, _message_s)
+			EventBus.eco_line_requested.emit(text, _message_s, true)
 		collected.emit(ability)
 	queue_free()
 	return obtained

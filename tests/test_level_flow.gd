@@ -20,6 +20,16 @@ var _saved_pulse: bool
 var _saved_debug: bool
 
 
+## Las lineas importantes de Eco pausarian el nivel esperando al jugador; aqui
+## nadie confirma (la pausa se prueba en test_eco_text_box.gd).
+func before_all() -> void:
+	EcoTextBox.pause_important = false
+
+
+func after_all() -> void:
+	EcoTextBox.pause_important = true
+
+
 func before_each() -> void:
 	_saved_level = GameState.current_level
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)

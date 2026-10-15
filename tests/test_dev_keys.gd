@@ -18,6 +18,16 @@ var _saved_autosave: bool
 var _saved_level: StringName
 
 
+## Las lineas importantes de Eco pausarian el nivel esperando al jugador; aqui
+## nadie confirma (la pausa se prueba en test_eco_text_box.gd).
+func before_all() -> void:
+	EcoTextBox.pause_important = false
+
+
+func after_all() -> void:
+	EcoTextBox.pause_important = true
+
+
 func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_autosave = GameState.autosave_enabled

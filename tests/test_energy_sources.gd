@@ -75,7 +75,7 @@ func test_pickup_unlocks_laser_persists_and_announces() -> void:
 	var obtained: Array[StringName] = []
 	var lines: Array[String] = []
 	var on_obtained := func(ability: StringName) -> void: obtained.append(ability)
-	var on_line := func(text: String, _d: float) -> void: lines.append(text)
+	var on_line := func(text: String, _d: float, _i: bool) -> void: lines.append(text)
 	EventBus.ability_obtained.connect(on_obtained)
 	EventBus.eco_line_requested.connect(on_line)
 	var p: AbilityPickup = _pickup(_world)

@@ -111,10 +111,12 @@ func _attach() -> void:
 	_isak.hurt.connect(func() -> void: _hits += 1)
 
 
-## Un cuadro de fisica; toma las capturas pendientes que tocan.
+## Un cuadro de fisica; toma las capturas pendientes que tocan. Cierra las
+## lineas importantes de Eco (pausan el juego hasta que el jugador confirma).
 func _tick() -> void:
 	await get_tree().physics_frame
 	_frame += 1
+	_confirm_eco_lines()
 	for name: String in _pending_shots.keys():
 		if _frame >= int(_pending_shots[name]):
 			_pending_shots.erase(name)
@@ -122,6 +124,13 @@ func _tick() -> void:
 			var path: String = _shots_dir.path_join(name + ".png")
 			get_viewport().get_texture().get_image().save_png(path)
 			_note("captura " + path)
+
+
+func _confirm_eco_lines() -> void:
+	var level: Node = _runner.get_level() if _runner != null else null
+	var box := level.get_node_or_null(^"EcoTextBox") as EcoTextBox if is_instance_valid(level) else null
+	while box != null and box.is_important() and box.confirm():
+		pass
 
 
 func _shot_in(name: String, frames: int) -> void:

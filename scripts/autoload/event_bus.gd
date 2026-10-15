@@ -73,9 +73,10 @@ signal enemy_defeated(enemy: Node2D)
 ## Alguien (p. ej. un disparador eco_line del nivel) pide mostrar una linea de
 ## Eco en el cuadro de texto (EcoTextBox). `duration_s` <= 0: tiempo por
 ## defecto de data/eco_text_box.json. Si ya hay una linea en pantalla, se pone
-## en cola.
+## en cola. `important` (habilidad adquirida, historia): pausa el juego hasta
+## que el jugador la cierra y pasa delante de las normales en cola.
 @warning_ignore("unused_signal")
-signal eco_line_requested(text: String, duration_s: float)
+signal eco_line_requested(text: String, duration_s: float, important: bool)
 
 ## El cuadro de Eco empieza a mostrar `text` (comienza la maquina de escribir).
 @warning_ignore("unused_signal")

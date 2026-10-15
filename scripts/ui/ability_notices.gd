@@ -7,8 +7,8 @@
 ## partida guardada (GameState.seen_notices).
 ## El control se LEE DEL INPUT MAP al mostrar el aviso (primera tecla y primer
 ## boton o eje de mando de la accion): si se remapea, el texto cambia.
-## Se muestra en el cuadro de Eco (EventBus.eco_line_requested): unos segundos,
-## sin pausar ni leer entradas. Lo crea LevelRunner (flujo de juego); se arma
+## Se muestra en el cuadro de Eco (EventBus.eco_line_requested) como linea
+## IMPORTANTE (decision 2026-10-15): pausa el juego hasta que el jugador la cierra. Lo crea LevelRunner (flujo de juego); se arma
 ## con begin_level() y se desarma con stop().
 class_name AbilityNotices
 extends Node
@@ -100,7 +100,7 @@ func try_show(ability: StringName) -> bool:
 	if text.is_empty():
 		return false
 	GameState.mark_notice_seen(ability)
-	EventBus.eco_line_requested.emit(text, float(_data.get("duration_s", -1.0)))
+	EventBus.eco_line_requested.emit(text, float(_data.get("duration_s", -1.0)), true)
 	notice_shown.emit(ability, text)
 	return true
 

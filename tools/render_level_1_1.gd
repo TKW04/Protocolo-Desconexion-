@@ -46,6 +46,9 @@ func _run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var out_dir: String = args[0] if args.size() > 0 else ProjectSettings.globalize_path(DEFAULT_OUT)
 	DirAccess.make_dir_recursive_absolute(out_dir)
+	# Las lineas importantes de Eco pausarian el nivel esperando al jugador:
+	# aqui se muestran y se cierran solas, como las normales.
+	(load("res://scripts/ui/eco_text_box.gd") as GDScript).set(&"pause_important", false)
 	var level: Node = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(level)
 	var isak: Node2D = level.get_node(^"Isak")

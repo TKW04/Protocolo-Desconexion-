@@ -16,6 +16,7 @@ var _saved_level: StringName
 var _notices: AbilityNotices
 var _main: LevelRunner
 var _lines: Array[String] = []
+var _important: Array[bool] = []
 var _data: Dictionary = AbilityNotices.load_data()
 
 
@@ -30,6 +31,7 @@ func before_each() -> void:
 		_saved_unlocked[ability] = GameState.is_ability_unlocked(ability)
 		GameState.set_ability_unlocked(ability, false)
 	_lines.clear()
+	_important.clear()
 	EventBus.eco_line_requested.connect(_on_line)
 	_notices = AbilityNotices.new()
 	_notices.auto_advance = false
@@ -52,8 +54,9 @@ func after_each() -> void:
 	GameState.autosave_enabled = _saved_autosave
 
 
-func _on_line(text: String, _duration_s: float) -> void:
+func _on_line(text: String, _duration_s: float, important: bool) -> void:
 	_lines.append(text)
+	_important.append(important)
 
 
 func _arm() -> void:
@@ -104,6 +107,7 @@ func test_unlocked_ability_shows_once_after_the_start_delay() -> void:
 	assert_eq(_lines.size(), 0, "Espera start_delay_s (la bienvenida de Eco va antes)")
 	_notices.advance(float(_data["start_delay_s"]))
 	assert_eq(_lines, ["Pulso: G / X (mando)"] as Array[String])
+	assert_eq(_important, [true] as Array[bool], "Habilidad adquirida: linea importante (pausa)")
 	assert_true(GameState.is_notice_seen(&"pulse"))
 	_notices.begin_level()
 	_notices.advance(10.0)
