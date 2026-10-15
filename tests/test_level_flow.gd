@@ -186,7 +186,7 @@ func test_death_respawns_at_checkpoint_with_full_sync_and_no_debug() -> void:
 	await _start()
 	var checkpoint: Checkpoint = _checkpoint()
 	checkpoint.activate()
-	_teleport(70.0)
+	_teleport(154.0)
 	await wait_physics_frames(5)
 	# Debug encendido (desbloqueado a mano) y escala del motor tocada.
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
@@ -203,7 +203,7 @@ func test_death_respawns_at_checkpoint_with_full_sync_and_no_debug() -> void:
 	assert_almost_eq(_main.get_death_wait_s(), 19.0 / 12.0 + 0.5, 0.001, "Animacion death + pausa")
 	_main.advance(_main.get_death_wait_s() - 0.05)
 	assert_eq(_main.get_phase(), LevelRunner.Phase.DYING, "Espera a que acabe la animacion")
-	assert_almost_eq(_isak.global_position.x, 70.5 * TILE, 2.0, "Aun no se ha movido")
+	assert_almost_eq(_isak.global_position.x, 154.5 * TILE, 2.0, "Aun no se ha movido")
 	_main.advance(0.1)
 	assert_eq(_main.get_phase(), LevelRunner.Phase.FADE_OUT)
 	_main.advance(LONG_STEP_S)
@@ -236,11 +236,11 @@ func test_death_without_checkpoint_respawns_at_start() -> void:
 
 func test_level_objects_keep_state_after_respawn() -> void:
 	await _start()
-	var receiver: PulseReceiver = _level().get_node(^"Objects/receiver_47_9") as PulseReceiver
+	var receiver: PulseReceiver = _level().get_node(^"Objects/receiver_56_9") as PulseReceiver
 	var bridge: PulseBridge = _level().get_node(^"Objects/puente_1") as PulseBridge
 	var popup: PopupBlocker = _level().get_node(^"Objects/popup_1") as PopupBlocker
 	var bubble: AlertBubble = _bubble()
-	var spawn := Vector2(84.5 * TILE, 10.0 * TILE)  # celda E (84, 9) del grid
+	var spawn := Vector2(132.5 * TILE, 10.0 * TILE)  # celda E (132, 9) del grid
 	receiver.activate()
 	bridge.advance(LONG_STEP_S)
 	popup.close()
@@ -301,8 +301,8 @@ func test_safety_net_respawns_without_sync_penalty() -> void:
 func test_pits_have_floor_and_do_not_kill() -> void:
 	await _start()
 	# Foso del Tramo 1 (columnas 22-23, fondo en la fila 12) y foso del puente
-	# retraido (columnas 49-53, fondo en la fila 13).
-	for spot: Vector2i in [Vector2i(22, 12), Vector2i(51, 13)]:
+	# retraido (columnas 60-64, fondo en la fila 13).
+	for spot: Vector2i in [Vector2i(22, 12), Vector2i(61, 13)]:
 		_isak.global_position = Vector2((spot.x + 0.5) * TILE, (spot.y - 2) * TILE)
 		_isak.velocity = Vector2.ZERO
 		await wait_physics_frames(60)
@@ -316,7 +316,7 @@ func test_pits_have_floor_and_do_not_kill() -> void:
 
 func test_level_completed_goes_to_hub_and_restart_resets_everything() -> void:
 	await _start()
-	_level().get_node(^"Objects/receiver_47_9").call(&"activate")
+	_level().get_node(^"Objects/receiver_56_9").call(&"activate")
 	(_level().get_node(^"Objects/puente_1") as PulseBridge).advance(LONG_STEP_S)
 	var popup: PopupBlocker = _level().get_node(^"Objects/popup_1") as PopupBlocker
 	popup.close()

@@ -1,6 +1,6 @@
 # Techo bajo del Tramo 3 del 1-1 (decision del usuario 2026-10-14: obligar a usar
-# el pulso). Se construye la geometria REAL de data/levels/1-1.json (columnas
-# 66-102) con la Burbuja de la lista `enemies` (rango y velocidad del nivel) y se
+# el pulso). Se construye la geometria REAL de data/levels/1-1.json (18 columnas
+# a cada lado de la primera Burbuja, la del Tramo 3a) con la Burbuja de la lista `enemies` (rango y velocidad del nivel) y se
 # simula con la fisica real de Isak, paso a paso con delta fijo:
 # - sin aturdirla, ningun salto (corriendo, desde cualquier punto) pasa por
 #   encima: el techo corta el salto y la Burbuja le hace dano;
@@ -13,10 +13,13 @@ const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
 const BUBBLE_SCENE: PackedScene = preload("res://scenes/enemies/alert_bubble.tscn")
 const LEVEL_PATH: String = "res://data/levels/1-1.json"
 const DT: float = 1.0 / 60.0
-const COL_FROM: int = 66
-const COL_TO: int = 102
-## Isak empieza aqui (columna 74, antes de los escalones del techo).
-const START_COL: float = 74.0
+## Columnas del grid que se construyen y donde empieza Isak (antes de los escalones
+## del techo), relativas a la columna de la Burbuja: se leen del JSON en before_all.
+const COLS_AROUND: int = 18
+const START_OFFSET: float = -10.0
+var COL_FROM: int
+var COL_TO: int
+var START_COL: float
 ## Isak "ha pasado" la Burbuja cuando su hitbox queda entera a su derecha.
 const PASS_MARGIN: float = 32.0 + 16.0
 const MAX_ATTEMPT_S: float = 6.0
@@ -34,6 +37,10 @@ var _pulse_was_unlocked: bool = false
 func before_all() -> void:
 	_level = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_PATH))
 	_tile = float(_level["tile_size"])
+	var bubble_col: int = int(_level["enemies"][0]["x"])
+	COL_FROM = bubble_col - COLS_AROUND
+	COL_TO = bubble_col + COLS_AROUND
+	START_COL = bubble_col + START_OFFSET
 
 
 func before_each() -> void:

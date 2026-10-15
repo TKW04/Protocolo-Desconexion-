@@ -67,11 +67,19 @@ class RealLevelTest(unittest.TestCase):
         actions = [a["action"] for a in result["path"]]
         self.assertEqual(actions[-1], "goal")
         pulses = [a["object"] for a in result["path"] if a["action"] == "pulse"]
-        # Las tres puertas se abren con el pulso y en el orden del nivel.
-        self.assertEqual(pulses, ["puente puente_1", "Burbuja burbuja_1", "pop-up popup_1"])
+        # Las puertas obligatorias se abren con el pulso y en el orden del nivel (1-1 ampliado); las
+        # de los secretos (puente_servicio, popup_alto) no entran en el camino principal.
+        self.assertEqual(pulses, ["puente puente_1", "puente puente_2", "puente puente_3", "Burbuja burbuja_1",
+                                  "Burbuja burbuja_2", "Burbuja burbuja_3", "Burbuja burbuja_4", "pop-up popup_1",
+                                  "Burbuja burbuja_5", "pop-up popup_2", "puente puente_4", "pop-up popup_3"])
         self.assertEqual(result["checkpoints"][0]["reachable_from"], "P")
-        bubble = next(g for g in result["gates"] if g["kind"] == "bubble")
-        self.assertFalse(bubble["bypassable"])
+        for bubble in (g for g in result["gates"] if g["kind"] == "bubble"):
+            self.assertFalse(bubble["bypassable"], bubble["id"])
+        # Los secretos con objeto recogible se alcanzan (y sus puertas son opcionales: sin avisos).
+        items = {i["id"]: i for i in result["secrets"]["items"]}
+        for sid in ("secreto_puente_servicio", "secreto_techo", "secreto_popup_alto"):
+            self.assertTrue(items[sid]["reachable"], sid)
+        self.assertIn("bridge:puente_servicio", items["secreto_puente_servicio"]["secret_gates_opened"])
 
     def test_uses_game_physics_file(self):
         rules = vl.Rules()
@@ -109,8 +117,8 @@ class BrokenVariantsTest(unittest.TestCase):
 
     def test_step_of_four_tiles(self):
         level = base_level()
-        fill(level, (56, 57), range(6, 10), "#")
-        self.assert_fails(level, "no hay camino de P a G", "columna 55")
+        fill(level, (51, 52), range(6, 10), "#")
+        self.assert_fails(level, "no hay camino de P a G", "columna 50")
 
     def test_jump_over_limit_is_reported(self):
         level = base_level()
@@ -131,11 +139,11 @@ class BrokenVariantsTest(unittest.TestCase):
     def test_popup_button_out_of_pulse_reach(self):
         level = base_level()
         obj(level, "popup_blocker")["params"]["close_button_px"] = [4, 8]
-        self.assert_fails(level, "el pulso no alcanza boton de cerrar", "columna 112")
+        self.assert_fails(level, "el pulso no alcanza boton de cerrar", "columna 215")
 
     def test_raised_ceiling_only_warns_that_pulse_is_optional(self):
         level = base_level()
-        fill(level, range(78, 92), (6, 7), ".")
+        fill(level, range(126, 140), (6, 7), ".")  # techo de 3a (Burbuja en la columna 132)
         result = vl.validate(level)
         self.assertTrue(result["ok"], messages(result))
         self.assertTrue(any("pulso no es obligatorio para la Burbuja" in w for w in messages(result, "warnings")))
@@ -147,7 +155,7 @@ class BrokenVariantsTest(unittest.TestCase):
 
     def test_spikes_at_checkpoint(self):
         level = base_level()
-        set_cell(level, 65, 9, "^")
+        set_cell(level, 151, 9, "^")
         self.assert_fails(level, "pinchos en el primer tile del punto de sincronizacion sync_1", schema=False)
 
     def test_unreachable_checkpoint(self):
@@ -158,16 +166,16 @@ class BrokenVariantsTest(unittest.TestCase):
 
     def test_pit_without_step_is_soft_lock(self):
         level = base_level()
-        set_cell(level, 48, 12, ".")  # sin el escalon el foso del puente no tiene salida
-        self.assert_fails(level, "soft-lock", "fila 12, columnas 48-53")
+        set_cell(level, 59, 12, ".")  # sin el escalon el foso del puente no tiene salida
+        self.assert_fails(level, "soft-lock", "fila 12, columnas 59-64")
 
     def test_bridge_not_needed_warns(self):
         level = base_level()
-        fill(level, range(48, 54), (10,), "#")
+        fill(level, range(59, 65), (10, 11, 12), "#")
         obj(level, "bridge_inactive")["y"] = 9
         obj(level, "bridge_inactive")["params"]["length_tiles"] = 1
-        obj(level, "bridge_inactive")["x"] = 54
-        fill(level, (54,), (9,), ".")
+        obj(level, "bridge_inactive")["x"] = 65
+        fill(level, (65,), (9,), ".")
         result = vl.validate(level, check_schema=False)
         self.assertTrue(any("puente puente_1 no es obligatorio" in w for w in messages(result, "warnings")),
                         messages(result, "warnings"))
@@ -175,18 +183,18 @@ class BrokenVariantsTest(unittest.TestCase):
     def test_hidden_platform_secret(self):
         level = base_level()
         # Secreto en lo alto, solo accesible por dos plataformas ocultas.
-        set_cell(level, 60, 8, "h")
-        set_cell(level, 62, 6, "h")
-        set_cell(level, 62, 5, "S")
-        level["secrets"].append({"id": "secreto_h", "x": 62, "y": 5})
+        set_cell(level, 66, 8, "h")
+        set_cell(level, 68, 6, "h")
+        set_cell(level, 68, 5, "S")
+        level["secrets"].append({"id": "secreto_h", "x": 68, "y": 5})
         result = vl.validate(level, check_schema=False)
         self.assertTrue(result["ok"], messages(result))
         item = next(i for i in result["secrets"]["items"] if i["id"] == "secreto_h")
         self.assertFalse(item["without_debug"])
         self.assertTrue(item["with_debug"])
         # Si se llega sin Debug, falla.
-        set_cell(level, 63, 8, "S")
-        level["secrets"].append({"id": "secreto_facil", "x": 63, "y": 8})
+        set_cell(level, 69, 8, "S")
+        level["secrets"].append({"id": "secreto_facil", "x": 69, "y": 8})
         self.assert_fails(level, "secreto_facil se alcanza sin pasar por plataformas ocultas", schema=False)
 
 

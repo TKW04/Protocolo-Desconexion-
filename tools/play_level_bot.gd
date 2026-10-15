@@ -1,6 +1,6 @@
 ## Lanzador del bot de recorrido del 1-1 (logica en tools/level_bot.gd).
 ## Uso (rapido, sin ventana; termina con codigo 0 si completa el nivel, 1 si no):
-##   Godot --headless --fixed-fps 60 --path . -s tools/play_level_bot.gd [-- --no-die]
+##   Godot --headless --fixed-fps 60 --path . -s tools/play_level_bot.gd [-- --no-die] [--run]
 ## Con ventana (para verlo jugar): quita --headless y --fixed-fps.
 extends SceneTree
 

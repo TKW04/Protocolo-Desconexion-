@@ -15,7 +15,8 @@ movimiento por celdas:
      margen minimo.
   4. Si hay plataformas ocultas 'h': cada S solo se alcanza pasando por ellas
      (con Debug) y la meta se alcanza sin Debug. Los secretos que son un objeto
-     (glitch_wall) quedan fuera (V7).
+     (glitch_wall) quedan fuera (V7). Los secretos que son otro objeto (p. ej.
+     power_bank_pickup) tienen que alcanzarse sin Debug.
   5. Sin pinchos en P (ni donde cae Isak al aparecer) ni en el primer tile de
      una C (la propia celda, la de debajo y las de los lados).
   6. Objetos que hacen de puerta: el puente no existe hasta que el pulso
@@ -23,9 +24,13 @@ movimiento por celdas:
      boton; la Burbuja bloquea el paso hasta aturdirla (si el techo deja
      saltarla, solo avisa de que el pulso no es obligatorio). El pulso sale del
      celular de Isak de pie (pulse_effect_origin) con radio pulse_radius_px,
-     desde una celda ya alcanzable. Avisa si una puerta no es obligatoria.
+     desde una celda ya alcanzable. Avisa si una puerta no es obligatoria,
+     salvo las de un secreto (campo `gates` de la entrada en `secrets`), que
+     son opcionales a proposito y no entran en el camino principal.
   7. Sin soft-locks: desde cualquier sitio alcanzable (en cada estado de las
-     puertas) se puede llegar a la meta (p. ej. caer al foso del puente).
+     puertas, abriendolas tambien desde dentro de un foso) se puede llegar a la
+     meta (p. ej. caer al foso del puente). Grafo producto (nodo, puertas
+     abiertas) restringido a los pares que se alcanzan desde P.
 
 Modelo de movimiento:
   - Isak es una caja de hitbox_size (32x80) con los pies en el origen. Esta de
@@ -678,7 +683,7 @@ class Validator:
                 if g.gid in state or g.gid in forbid or g.bypassable:
                     continue
                 for n in sorted(cost, key=lambda n: (cost[n], n[0], n[1])):
-                    if self.model.can_open(g, n, state, debug):
+                    if self._gate_near(g, n) and self.model.can_open(g, n, state, debug):
                         options.append((cost[n], n[0], g, n))
                         break
             if not options:
@@ -714,7 +719,8 @@ class Validator:
             return self.finish()
         self.result["start"] = start
         # Regla 1 y 3: camino estricto (exigencia <= limite).
-        main = self.progression(start, frozenset(), self.rules.limit, targets=goal_cells)
+        main = self.progression(start, frozenset(), self.rules.limit, forbid=self.secret_gates(),
+                                targets=goal_cells)
         self.main = main
         if not main["ok"]:
             self._explain_failure(start, goal_cells)
@@ -723,8 +729,9 @@ class Validator:
             self._describe_path(main)
         # Regla 2.
         self._check_checkpoints(start, main)
-        # Regla 4.
+        # Regla 4 y secretos que son un objeto recogible.
         self._check_secrets(start, goal_cells)
+        self._check_object_secrets(start)
         # Regla 6: puertas obligatorias.
         if main["ok"]:
             self._check_mandatory(start, goal_cells)
@@ -957,69 +964,94 @@ class Validator:
                                   s["y"], s["x"], s["id"])
         self.result["secrets"] = {"rule_4": "comprobada", "items": info}
 
+    def secret_gates(self):
+        """gid de las puertas que pertenecen a un secreto (campo `gates` de la entrada del secreto,
+        con los params.id de los objetos): son opcionales a proposito."""
+        ids = set()
+        for s in self.level.get("secrets", []):
+            ids.update(str(i) for i in s.get("gates", []))
+        return frozenset(g.gid for g in self.model.gates if g.obj_id in ids)
+
+    def _check_object_secrets(self, start):
+        """Los secretos que son un objeto recogible (no la pared con glitch) se alcanzan sin Debug,
+        abriendo las puertas que hagan falta (las suyas incluidas)."""
+        info = self.result.setdefault("secrets", {}).setdefault("items", [])
+        for s in self.level.get("secrets", []):
+            if not s.get("object") or s["object"] == "glitch_wall":
+                continue
+            run = self.progression(start, frozenset(), self.rules.limit, targets={(s["x"], s["y"])})
+            opened = sorted(g for g in run["state"] if g in self.secret_gates())
+            item = next((i for i in info if i.get("id") == s["id"]), None)
+            if item is None:
+                item = {"id": s["id"], "object": s["object"]}
+                info.append(item)
+            item.update({"reachable": run["ok"], "secret_gates_opened": opened})
+            if not run["ok"]:
+                self.report.error("el secreto %s (%s) no se alcanza" % (s["id"], s["object"]), s["y"], s["x"], s["id"])
+
     def _check_mandatory(self, start, goal_cells):
+        secret = self.secret_gates()
         for g in self.model.gates:
             if g.bypassable:
                 continue
             run = self.progression(start, frozenset(), INF, forbid=frozenset({g.gid}), targets=goal_cells)
+            if g.gid in secret:
+                if not run["ok"]:
+                    self.report.warning("%s es de un secreto pero hace falta para llegar a la meta" % g.label(),
+                                        g.row, g.col, g.label())
+                continue
             if run["ok"]:
                 what = {"bridge": "activar el receptor", "popup": "cerrar el pop-up",
                         "bubble": "aturdir la Burbuja"}[g.kind]
                 self.report.warning("%s no es obligatorio: se llega a la meta sin %s" % (g.label(), what),
                                     g.row, g.col, g.label())
 
-    def _good_nodes(self, state, goal_cells, memo):
-        """Nodos desde los que se puede llegar a la meta (abriendo puertas si hace falta)."""
-        if state in memo:
-            return memo[state]
-        memo[state] = set()
-        w = self.model.world(state)
-        nodes = w.nodes()
-        reverse = {}
-        for n in nodes:
-            for e in self.model.edges(n, state):
-                reverse.setdefault(e["to"], []).append(n)
-        targets = [n for n in nodes if self.touches(n, goal_cells)]
-        for g in self.model.gates:
-            if g.gid in state or g.bypassable:
-                continue
-            nxt = state | {g.gid}
-            good_next = None
-            for n in nodes:
-                if self.model.can_open(g, n, state):
-                    if good_next is None:
-                        good_next = self._good_nodes(nxt, goal_cells, memo)
-                    if n in good_next:
-                        targets.append(n)
-        good = set(targets)
-        queue = list(targets)
-        while queue:
-            n = queue.pop()
-            for p in reverse.get(n, []):
-                if p not in good:
-                    good.add(p)
-                    queue.append(p)
-        memo[state] = good
-        return good
+    def _gate_near(self, gate, node):
+        """Verdadero si `node` esta cerca de algun rectangulo que abre la puerta (filtro barato
+        antes de can_open: el pulso no llega mas lejos de su radio + medio tile)."""
+        T = self.model.T
+        reach = self.rules.pulse_radius + T
+        x = (node[0] + 0.5) * T
+        return any(o[0] - reach <= x <= o[2] + reach for o in gate.openers)
 
     def _check_softlocks(self, main, goal_cells):
-        memo = {}
-        found = []
-        for stage in main["stages"]:
-            state = stage["state"]
-            good = self._good_nodes(state, goal_cells, memo)
-            # Todo lo alcanzable en este estado (aunque el camino no pase por ahi).
-            reach, _ = search(self.model, stage["src"], state, INF)
-            for n in sorted(reach):
-                if n not in good:
-                    found.append((n, state))
+        """Grafo producto (nodo, puertas abiertas) restringido a lo que se alcanza desde P:
+        hacia delante se anda, salta, cae o se abre una puerta desde donde el pulso la toca;
+        hacia atras desde la meta se marcan los pares buenos. Soft-lock = par alcanzable desde
+        el que ya no se llega a la meta."""
+        m = self.model
+        start = (main["stages"][0]["src"], frozenset())
+        seen = {start}
+        reverse = {}
+        queue = [start]
+        goals = []
+        gates = [g for g in m.gates if not g.bypassable and g.openers]
+        while queue:
+            pair = queue.pop()
+            node, state = pair
+            if self.touches(node, goal_cells):
+                goals.append(pair)
+            nexts = [(e["to"], state) for e in m.edges(node, state)]
+            for g in gates:
+                if g.gid not in state and self._gate_near(g, node) and m.can_open(g, node, state):
+                    nexts.append((node, state | {g.gid}))
+            for nxt in nexts:
+                reverse.setdefault(nxt, []).append(pair)
+                if nxt not in seen:
+                    seen.add(nxt)
+                    queue.append(nxt)
+        good = set(goals)
+        queue = list(goals)
+        while queue:
+            pair = queue.pop()
+            for prev in reverse.get(pair, []):
+                if prev not in good:
+                    good.add(prev)
+                    queue.append(prev)
+        found = sorted((p for p in seen if p not in good), key=lambda p: (sorted(p[1]), p[0][1], p[0][0]))
         # Un error por tramo horizontal de celdas seguidas (misma fila y estado).
-        seen = set()
         groups = []
         for n, state in found:
-            if n in seen:
-                continue
-            seen.add(n)
             if groups and groups[-1][2] == state and groups[-1][0][1] == n[1] and groups[-1][1][0] + 1 == n[0]:
                 groups[-1][1] = n
             else:
@@ -1029,7 +1061,7 @@ class Validator:
             cols = "columna %d" % first[0] if first == last else "columnas %d-%d" % (first[0], last[0])
             self.report.error("soft-lock: si Isak llega a la fila %d, %s no puede volver al camino de la meta (%s)"
                               % (first[1], cols, opened), first[1], first[0])
-        self.result["softlocks_checked_states"] = len(memo)
+        self.result["softlocks_checked_states"] = len({state for _, state in seen})
 
     def finish(self):
         self.result["ok"] = not self.report.errors

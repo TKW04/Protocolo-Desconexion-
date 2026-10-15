@@ -59,15 +59,15 @@ class BuildLevelTest(unittest.TestCase):
         self.assertEqual(set(cells), expected)
         tilemap = bl.load_json(os.path.join(ROOT, "data", "tileset_mundo1.json"))
         # Una via: extremos y centro.
-        self.assertEqual(list(cells[(26, 8)][1:3]), tilemap["one_way"]["left"])
-        self.assertEqual(list(cells[(27, 8)][1:3]), tilemap["one_way"]["center"])
-        self.assertEqual(list(cells[(29, 8)][1:3]), tilemap["one_way"]["right"])
+        self.assertEqual(list(cells[(27, 8)][1:3]), tilemap["one_way"]["left"])
+        self.assertEqual(list(cells[(28, 8)][1:3]), tilemap["one_way"]["center"])
+        self.assertEqual(list(cells[(30, 8)][1:3]), tilemap["one_way"]["right"])
         # Suelo con el cielo encima: mascara E|S|W = 14.
         self.assertEqual(list(cells[(5, 10)][1:3]), tilemap["solid"]["by_mask"]["14"])
-        # La pared con glitch cuenta como solida para el tile de su derecha (columna 139, fila 8).
+        # La pared con glitch cuenta como solida para el tile de su derecha (columna 299, fila 8).
         solid = bl.solid_grid(level, bl.load_json(os.path.join(ROOT, "data", "world1_objects.json")))
-        self.assertEqual(solid[8][138], "#")
-        self.assertEqual(list(cells[(139, 8)][1:3]), bl.select_tile(solid, 8, 139, tilemap))
+        self.assertEqual(solid[8][298], "#")
+        self.assertEqual(list(cells[(299, 8)][1:3]), bl.select_tile(solid, 8, 299, tilemap))
 
     def test_objects_params_and_positions(self):
         text = bl.build_scene(load_level())
@@ -77,12 +77,13 @@ class BuildLevelTest(unittest.TestCase):
         self.assertIn('object_id = &"puente_1"', text)
         self.assertIn('level_id = "1-1"', text)
         self.assertIn("solid_neighbors = 7", text)
-        self.assertIn("camera_limits = Rect2i(0, 0, 8960, 896)", text)
+        self.assertIn("camera_limits = Rect2i(0, 0, 19200, 896)", text)
         self.assertIn('abilities_available = {"debug": false, "pulse": true}', text)
         self.assertIn('metadata/params = {"patrol_range_px": 320.0, "patrol_speed_px_s": 80.0}', text)
         # P en (4, 3): pies abajo-centro de la celda.
         self.assertRegex(text, r'\[node name="Isak" parent="\." instance=ExtResource\("[^"]+"\)\]\nposition = Vector2\(288, 256\)')
-        self.assertEqual(text.count('parent="AttentionPoints"'), 17)
+        self.assertEqual(text.count('parent="AttentionPoints"'), "".join(load_level()["grid"]).count("o"))
+        self.assertIn('[node name="power_bank_a" parent="Objects"', text)
 
     def test_spikes_get_hazard_area(self):
         level = copy.deepcopy(load_level())

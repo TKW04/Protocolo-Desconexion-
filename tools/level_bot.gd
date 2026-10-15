@@ -1,4 +1,4 @@
-## Bot de recorrido del 1-1 (paso 16): carga la escena principal (scenes/main.tscn,
+## Bot de recorrido del 1-1 (paso 16; generico desde el 1-1 ampliado): carga la escena principal (scenes/main.tscn,
 ## LevelRunner) y juega el nivel con una entrada falsa (PlayerInput), con la fisica
 ## y los objetos reales:
 ##   camina a la derecha; salta si choca con una pared o si delante no hay suelo
@@ -17,17 +17,25 @@
 ## Lo lanza tools/play_level_bot.gd (los scripts -s no pueden nombrar autoloads
 ## ni clases que los usen al compilar, asi que la logica va aqui).
 ## Uso (rapido, sin ventana):
-##   Godot --headless --fixed-fps 60 --path . -s tools/play_level_bot.gd [-- --no-die]
-## Con ventana (para verlo): quita --headless.
+##   Godot --headless --fixed-fps 60 --path . -s tools/play_level_bot.gd [-- --no-die] [--run]
+## --run recorre el nivel corriendo. Al entrar por la puerta anota la duracion del
+## recorrido (sin la muerte forzada). Con ventana (para verlo): quita --headless.
 extends Node
 
 const MAIN_SCENE: String = "res://scenes/main.tscn"
 const TILE: float = 64.0
-const MAX_FRAMES: int = 60 * 180
+const MAX_FRAMES: int = 60 * 420
 const STUCK_FRAMES: int = 60 * 8
 const JUMP_HOLD_FRAMES: int = 22
-const RECEIVER_STOP_X: float = 45.5 * TILE
-const POPUP_STOP_X: float = 7110.0
+## Se para a esta distancia (tiles) antes de la celda del receptor para lanzar el pulso.
+const RECEIVER_STOP_TILES: float = 1.5
+## Se para a esta distancia (px) antes del borde izquierdo del pop-up (boton a mano).
+const POPUP_STOP_GAP: float = 58.0
+## Diferencia maxima (px) entre los pies de Isak y la base de un receptor o pop-up
+## para considerarlo de la ruta.
+const ROUTE_TOLERANCE: float = 40.0
+## Alcance (px) del rayo que busca suelo delante.
+const GROUND_PROBE_PX: float = 100.0
 ## Distancia (px) entre el celular de Isak y el costado de la Burbuja para lanzar el pulso.
 const BUBBLE_PULSE_GAP: float = 70.0
 const LAYER_WORLD: int = 1
@@ -40,6 +48,10 @@ var _frame: int = 0
 var _jump_left: int = 0
 var _hits: int = 0
 var _die: bool = true
+## --run: recorre el nivel corriendo (accion run) en vez de caminando.
+var _running: bool = false
+## Cuadros gastados en la muerte forzada (no cuentan en la duracion del recorrido).
+var _death_frames: int = 0
 var _died_done: bool = false
 var _log: PackedStringArray = []
 ## Puntos de atencion del mapa al empezar (guardado limpio).
@@ -59,6 +71,7 @@ func _ready() -> void:
 	GameState.use_save_path(BOT_SAVE_PATH if env_path.is_empty() else env_path, true)
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_die = not args.has("--no-die")
+	_running = args.has("--run")
 	var at: int = args.find("--shots")
 	if at >= 0 and at + 1 < args.size():
 		_shots_dir = args[at + 1]
@@ -116,13 +129,26 @@ func _fail(text: String) -> bool:
 
 
 ## Juega hasta que se muestra el hub. Falso si se atasca o se agota el tiempo.
+## Generico (1-1 ampliado): recorre todos los receptores, puentes, pop-ups y
+## Burbujas del nivel. Solo atiende a los de la ruta (a la altura de los pies de
+## Isak): el receptor y el pop-up de los secretos quedan en lo alto y se ignoran.
 func _play() -> bool:
 	var level: GeneratedLevel = _runner.get_level()
-	var receiver: PulseReceiver = level.get_node(^"Objects/receiver_47_9")
-	var bridge: PulseBridge = level.get_node(^"Objects/puente_1")
-	var popup: PopupBlocker = level.get_node(^"Objects/popup_1")
-	var checkpoint: Checkpoint = level.get_node(^"Checkpoints/sync_1")
-	var bubble: AlertBubble = level.get_node(^"Enemies/burbuja_1")
+	var receivers: Array[PulseReceiver] = []
+	var bridges: Dictionary = {}
+	var popups: Array[PopupBlocker] = []
+	for node: Node in level.get_node(^"Objects").get_children():
+		if node is PulseReceiver:
+			receivers.append(node)
+		elif node is PulseBridge:
+			bridges[(node as PulseBridge).object_id] = node
+		elif node is PopupBlocker:
+			popups.append(node)
+	var bubbles: Array[AlertBubble] = []
+	for node: Node in level.get_node(^"Enemies").get_children():
+		if node is AlertBubble:
+			bubbles.append(node)
+	var checkpoint: Checkpoint = level.get_node(^"Checkpoints").get_child(0) as Checkpoint
 	var door: ExitDoor = level.get_node(^"Objects/puerta_salida")
 	_points_total = level.get_node(^"AttentionPoints").get_child_count()
 	var best_x: float = 0.0
@@ -134,33 +160,22 @@ func _play() -> bool:
 			_shot_in("8_hub", 40)
 			return true
 		var x: float = _isak.global_position.x
+		var feet: float = _isak.global_position.y
 		if x > best_x + 4.0:
 			best_x = x
 			best_frame = _frame
 		var waiting: bool = false
 		_input.move_axis = 1.0
-		_input.run_held = false
+		_input.run_held = _running
+		var gate: Dictionary = _gate_ahead(x, feet, receivers, bridges, popups, bubbles)
 		if _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead():
 			_input.move_axis = 0.0
 			waiting = true
-		elif not receiver.is_active() and x >= RECEIVER_STOP_X:
+		elif not gate.is_empty():
 			_input.move_axis = 0.0
 			waiting = true
-			_try_pulse("receptor", announced)
-		elif receiver.is_active() and not bridge.is_extended() and x >= RECEIVER_STOP_X:
-			_input.move_axis = 0.0
-			waiting = true
-		elif is_instance_valid(bubble) and bubble.is_dangerous() and _bubble_close(bubble):
-			_input.move_axis = 0.0
-			waiting = true
-			_try_pulse("burbuja", announced)
-		elif popup.is_open() and x >= POPUP_STOP_X:
-			_input.move_axis = 0.0
-			waiting = true
-			_try_pulse("pop-up", announced)
-		elif not popup.is_closed() and not popup.is_open() and x >= POPUP_STOP_X:
-			_input.move_axis = 0.0
-			waiting = true
+			if gate["pulse"]:
+				_try_pulse(gate["what"], announced)
 		elif _isak.is_on_floor() and _jump_left == 0 and (_isak.is_on_wall() or not _ground_ahead()):
 			_jump_left = JUMP_HOLD_FRAMES
 			_input.jump_pressed = true
@@ -168,7 +183,8 @@ func _play() -> bool:
 		_jump_left = maxi(_jump_left - 1, 0)
 		if door.get_state() == ExitDoor.State.OPENING and not announced.has("door"):
 			announced["door"] = true
-			_note("entra por la puerta")
+			_note("entra por la puerta (recorrido: %.1f s de juego sin contar la muerte forzada)" % (
+					(_frame - _death_frames) / 60.0))
 			_shot_in("7_puerta", 6)
 		if checkpoint.is_taken() and not announced.has("checkpoint"):
 			announced["checkpoint"] = true
@@ -176,17 +192,45 @@ func _play() -> bool:
 			_note("punto de sincronizacion tocado (x=%.0f)" % x)
 		if _die and checkpoint.is_taken() and not _died_done and x > checkpoint.global_position.x + 3.0 * TILE:
 			_died_done = true
+			var before: int = _frame
 			if not await _force_death(checkpoint):
 				return false
+			_death_frames += _frame - before
 			best_frame = _frame
 			continue
 		if waiting:
 			best_frame = _frame
 		elif _frame - best_frame > STUCK_FRAMES:
-			return _fail("atascado en x=%.0f (columna %d), y=%.0f" % [x, int(x / TILE), _isak.global_position.y])
+			return _fail("atascado en x=%.0f (columna %d), y=%.0f (suelo %s, pared %s, estado %s)" % [x, int(x / TILE),
+					_isak.global_position.y, _isak.is_on_floor(), _isak.is_on_wall(), _isak.get_state_name()])
 		await _tick()
 		_input.clear_just_pressed()
 	return _fail("tiempo agotado en x=%.0f" % _isak.global_position.x)
+
+
+## Puerta de la ruta que obliga a pararse delante: {what, pulse} o vacio.
+func _gate_ahead(x: float, feet: float, receivers: Array[PulseReceiver], bridges: Dictionary,
+		popups: Array[PopupBlocker], bubbles: Array[AlertBubble]) -> Dictionary:
+	if not _isak.is_on_floor():
+		return {}
+	for receiver: PulseReceiver in receivers:
+		var bridge: PulseBridge = bridges.get(receiver.target_id)
+		var rx: float = receiver.global_position.x
+		if bridge == null or bridge.is_extended() or absf(receiver.global_position.y + TILE - feet) > ROUTE_TOLERANCE:
+			continue
+		if x >= rx - RECEIVER_STOP_TILES * TILE and x < rx + TILE:
+			return {"what": "receptor", "pulse": not receiver.is_active()}
+	for bubble: AlertBubble in bubbles:
+		if is_instance_valid(bubble) and bubble.is_dangerous() and _bubble_close(bubble):
+			return {"what": "burbuja", "pulse": true}
+	for popup: PopupBlocker in popups:
+		var px: float = popup.global_position.x
+		var bottom: float = popup.global_position.y + popup.height_tiles * TILE
+		if popup.is_closed() or absf(bottom - feet) > ROUTE_TOLERANCE:
+			continue
+		if x >= px - POPUP_STOP_GAP and x < px:
+			return {"what": "pop-up", "pulse": popup.is_open()}
+	return {}
 
 
 func _try_pulse(what: String, announced: Dictionary) -> void:
@@ -208,11 +252,13 @@ func _bubble_close(bubble: AlertBubble) -> bool:
 	return body.position.x - phone_x < BUBBLE_PULSE_GAP and body.end.x > _isak.global_position.x
 
 
-## Suelo delante de los pies (rayo hacia abajo a 40 px por delante).
+## Suelo delante de los pies (rayo hacia abajo a 40 px por delante). Llega a
+## GROUND_PROBE_PX: un escalon de bajada de 1 tile cuenta como suelo (baja andando
+## y no salta por encima de un receptor), un foso de 2 tiles no (lo salta).
 func _ground_ahead() -> bool:
 	var feet: Vector2 = _isak.global_position
 	var from := Vector2(feet.x + 40.0, feet.y - 8.0)
-	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, 40.0), LAYER_WORLD)
+	var query := PhysicsRayQueryParameters2D.create(from, from + Vector2(0.0, GROUND_PROBE_PX), LAYER_WORLD)
 	return not _isak.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 

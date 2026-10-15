@@ -63,8 +63,17 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertNotIn("debug", json.dumps(lvl["unlocks"]))
         self.assertGreaterEqual(len(lvl["grid"]), 12)
         self.assertEqual("".join(lvl["grid"]).count("^"), 0, "1-1 sin pinchos")
+        # 1-1 ampliado (decision 2026-10-14): los puntos no se recapturan, asi que el total del mapa
+        # debe alcanzar para las tres mejoras iniciales sin farmear.
         points = "".join(lvl["grid"]).count("o")
-        self.assertTrue(10 <= points <= 20, "V8: entre 10 y 20 puntos, hay %d" % points)
+        with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
+            upgrades = {u["id"]: u for u in json.load(handle)["upgrades"]}
+        needed = sum(upgrades[u]["cost"]["attention_points"]
+                     for u in ("wide_pulse", "reinforced_sync", "efficient_debug"))
+        self.assertGreaterEqual(points, needed, "puntos del mapa (%d) < coste de las mejoras iniciales" % points)
+        self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (300, 14))
+        banks = [o for o in lvl["objects"] if o["type"] == "power_bank_pickup"]
+        self.assertGreaterEqual(len(banks), 2, "power banks de mapa en los secretos")
         kinds = [o["type"] for o in lvl["objects"]]
         for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_door", "glitch_wall"):
             self.assertIn(kind, kinds)
@@ -74,9 +83,11 @@ class LevelSchemaTest(unittest.TestCase):
         xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], lvl["enemies"][0]["x"],
               obj(lvl, "popup_blocker")["x"], obj(lvl, "exit_door")["x"]]
         self.assertEqual(xs, sorted(xs))
-        # Checkpoint entre el puente y la Burbuja (A12).
+        # Un solo punto de sincronizacion, a mitad del mapa (decision 2026-10-14).
+        self.assertEqual(len(lvl["checkpoints"]), 1)
         cx = lvl["checkpoints"][0]["x"]
-        self.assertTrue(xs[1] < cx < xs[2])
+        width = len(lvl["grid"][0])
+        self.assertLessEqual(abs(cx - width / 2), width * 0.05)
 
     def test_level_1_1_jumps_within_margin(self):
         """Saltos del 1-1 dentro del 85 % del alcance (mismas formulas que PlayerPhysics).
@@ -101,8 +112,12 @@ class LevelSchemaTest(unittest.TestCase):
                 y -= 1
             return y
 
-        bridge = obj(self.level, "bridge_inactive")
-        bridge_cols = set(range(bridge["x"], bridge["x"] + bridge["params"]["length_tiles"]))
+        # Puentes de la ruta (hacia la derecha; el de servicio del secreto A va por el aire).
+        bridges = [o for o in self.level["objects"]
+                   if o["type"] == "bridge_inactive" and o["params"].get("direction", "right") == "right"]
+        bridge_cols = set()
+        for bridge in bridges:
+            bridge_cols |= set(range(bridge["x"], bridge["x"] + bridge["params"]["length_tiles"]))
         width = len(grid[0])
         for x in range(1, width - 2):
             if x in bridge_cols or x + 1 in bridge_cols or surface(x + 1) == 0:
@@ -125,10 +140,12 @@ class LevelSchemaTest(unittest.TestCase):
             if seg[2] - left[2] >= 2 and seg[2] - right[2] >= 2:
                 gap = seg[1] - seg[0] + 1
                 self.assertLessEqual(gap, walk_gap_tiles, "foso de %d tiles en la columna %d" % (gap, seg[0]))
-        # El foso del puente no se puede saltar ni trepar: el puente es necesario.
-        after = bridge["x"] + bridge["params"]["length_tiles"]
-        self.assertGreater(len(bridge_cols), 0.85 * phys["run_speed"] * t_air / tile)
-        self.assertGreater(surface(after - 1) - surface(after), real_height_tiles)
+        # Los fosos de los puentes no se pueden saltar ni trepar: el puente es necesario.
+        for bridge in bridges:
+            length = bridge["params"]["length_tiles"]
+            after = bridge["x"] + length
+            self.assertGreater(length, 0.85 * phys["run_speed"] * t_air / tile, bridge["params"]["id"])
+            self.assertGreater(surface(after - 1) - surface(after), real_height_tiles, bridge["params"]["id"])
 
     def test_level_1_1_tramo3_low_ceiling(self):
         """Tramo 3 (decision 2026-10-14): techo bajo de 2 tiles sobre toda la patrulla de la
@@ -138,10 +155,13 @@ class LevelSchemaTest(unittest.TestCase):
             phys = json.load(handle)
         with open(os.path.join(ROOT, "data", "enemies", "alert_bubble.json"), encoding="utf-8") as handle:
             bubble_data = json.load(handle)
+        for bubble in self.level["enemies"]:
+            with self.subTest(bubble=bubble["id"]):
+                self._check_low_ceiling(bubble, phys, bubble_data)
+
+    def _check_low_ceiling(self, bubble, phys, bubble_data):
         tile = phys["tile_size"]
         grid = self.level["grid"]
-        rows = len(grid)
-        bubble = self.level["enemies"][0]
         floor_y = bubble["y"] + 1
 
         def ceiling(x):
@@ -274,7 +294,8 @@ class LevelSchemaTest(unittest.TestCase):
         self.assert_fails(self.level, "id duplicado 'burbuja_1'")
 
     def test_secret_without_object(self):
-        self.level["secrets"][0]["x"] -= 1
+        glitch = next(e for e in self.level["secrets"] if e.get("object") == "glitch_wall")
+        glitch["x"] -= 1
         self.assert_fails(self.level, "no hay ningun objeto 'glitch_wall' en esa celda")
 
     def test_unknown_ability(self):
