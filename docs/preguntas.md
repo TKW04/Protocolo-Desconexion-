@@ -561,3 +561,20 @@ Implementa las decisiones del usuario del 2026-10-15 (láser obligatorio a mitad
   5. El segundo cargador no está «cerca del checkpoint» porque antes del láser la barra siempre está llena. Está al empezar el Cierre, antes de la Burbuja con vida 3. ¿Vale esa posición?
   6. Con 9 Burbujas (antes 5), ¿el 1-1 sigue siendo de dificultad 1/5? El bot no recibe golpes, pero un jugador nuevo puede recibir alguno en el Tramo 1.
   7. La línea del primer disparo sale la primera vez que se dispara en cada carga del nivel (`once` por nodo, como las demás líneas), no una vez por partida guardada.
+
+## Avisos de control de las habilidades (2026-10-15)
+
+Generaliza el aviso que salía al recoger el láser («Láser obtenido. F o gatillo izquierdo: dispara. Gasta energía.», escrito a mano en `data/world1_objects.json`) a todas las habilidades.
+
+- **Datos:** `data/ability_notices.json`, una entrada por habilidad (`pulse`, `laser`, `debug`) con nombre, texto (`{name}: {control}`), acción del Input Map y `hold` para el Debug. Para una habilidad nueva basta con añadir su entrada.
+- **Control leído del Input Map:** primera tecla y primer botón o eje de mando de la acción. Si se remapea, el aviso cambia. Textos finales: «Pulso: G / X (mando)», «Láser: F / gatillo izquierdo» y «Debug: mantén K / Y (mando)». Los nombres de los botones siguen la distribución tipo Xbox de la documentación.
+- **Cuándo sale:**
+  - Pulso: al empezar el 1-1 en una partida nueva, 1 s después de entrar, así que sale justo tras la bienvenida de Eco. Solo dice el control: el uso lo explican las líneas de Eco de la Burbuja y del receptor.
+  - Láser: al recogerlo, antes de la línea de Eco «Herramienta nueva…».
+  - Debug: al desbloquearse durante un nivel o al empezar un nivel con él desbloqueado. Aún no ocurre en el 1-1; lo cubren las pruebas.
+- **Una sola vez por partida guardada:** `seen_notices` en el guardado. En los guardados antiguos, las habilidades ya obtenidas cuentan como avisadas, así que el aviso del láser no se repite. Marcar un aviso no fuerza una escritura: se guarda con el siguiente cambio que guarde, como capturar un punto, obtener una habilidad o completar el nivel. Así, abrir el juego unos segundos no escribe el guardado.
+- **Aspecto:** el mismo cuadro de Eco y la fuente `text_font` que el aviso anterior. Se cierra solo a los 4 s (o el tiempo de `duration_s`), no pausa ni espera una tecla, como el aviso que había. El HUD no cambia. Solo lo muestra el flujo de juego (`scenes/main.tscn`), no las escenas de prueba ni el bot.
+- **Dudas abiertas:**
+  1. El cuadro muestra el nombre «Eco» encima del aviso, igual que el aviso del láser de antes, aunque es texto de interfaz y no una línea de Eco. ¿Se quita el nombre en los avisos? Sería un cambio pequeño en el cuadro de Eco.
+  2. Si un jugador ya tenía un guardado, verá una vez el aviso del pulso al volver a jugar el 1-1. ¿Vale así?
+

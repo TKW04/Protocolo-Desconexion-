@@ -13,7 +13,8 @@
 ##   09_sala_laser.png        la sala del laser (3b) desde el escalon: receptor, puentes sin activar, pop-up
 ##   09b_sala_puentes.png     con los dos puentes extendidos, Isak en la repisa flotante junto al receptor 2
 ##   09c_tunel_laser.png      pop-up cerrado: Isak entrando al tunel con el objeto del laser
-##   09d_laser_recogido.png   Isak recoge el laser (aviso y linea de Eco)
+##   09d_laser_recogido.png   Isak recoge el laser (linea de Eco; el aviso del control solo sale con
+##                            el flujo de juego: tools/render_ability_notices.gd)
 ##   10_cargador.png          el cargador 1 tras la sala del laser
 ##   10a_disparo_laser.png    Isak dispara el laser a la primera Burbuja del 3c
 ##   10_dos_burbujas.png      las dos Burbujas en abierto y la repisa entre ellas (3c)
