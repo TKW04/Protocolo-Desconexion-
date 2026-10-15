@@ -114,7 +114,7 @@
 		},
 		"ability_pickup": {
 			"scene": "res://scenes/levels/ability_pickup.tscn",
-			"description": "Objeto que da una habilidad para siempre (decision del usuario 2026-10-15; la primera es el laser). Al tocarlo Isak: GameState.obtain_ability(ability) la desbloquea, la guarda en user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el cuadro de Eco muestra un aviso simple (message o messages[ability] de la seccion ability_pickup). Si ya estaba obtenida no aparece. No es solido. ability: una de las habilidades implementadas (allowed: pulse, debug, laser; las demas de GameState.ABILITIES se anadiran cuando existan). allowed: valores admitidos de cada param (lo comprueba tools/validate_level_schema.py). Aspecto PROVISIONAL dibujado por codigo. En el 1-1 hay uno, laser_1_1, en la sala del laser (Tramo 3b; rediseno 2026-10-15).",
+			"description": "Objeto que da una habilidad para siempre (decision del usuario 2026-10-15; la primera es el laser). Al tocarlo Isak: GameState.obtain_ability(ability) la desbloquea, la guarda en user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el aviso del control lo da AbilityNotices (data/ability_notices.json, una vez por partida guardada) y, si el nivel da message, el cuadro de Eco muestra ademas ese texto. Si ya estaba obtenida no aparece. No es solido. ability: una de las habilidades implementadas (allowed: pulse, debug, laser; las demas de GameState.ABILITIES se anadiran cuando existan). allowed: valores admitidos de cada param (lo comprueba tools/validate_level_schema.py). Aspecto PROVISIONAL dibujado por codigo. En el 1-1 hay uno, laser_1_1, en la sala del laser (Tramo 3b; rediseno 2026-10-15).",
 			"required": ["id", "ability"],
 			"fields": {
 				"id": "object_id",
@@ -146,17 +146,14 @@
 		}
 	},
 	"ability_pickup": {
-		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: rombo escalonado de size_px centrado en la celda, contorno outline (noche_profunda), cuerpo body (banner_blanco) y nucleo core (debug_cian, admitido por ser interactivo). Flota bob_px a bob_hz (tiempo del mundo). messages: aviso en el cuadro de Eco por habilidad (texto de interfaz PROVISIONAL, no es una linea de guion de Eco), durante message_s.",
+		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: rombo escalonado de size_px centrado en la celda, contorno outline (noche_profunda), cuerpo body (banner_blanco) y nucleo core (debug_cian, admitido por ser interactivo). Flota bob_px a bob_hz (tiempo del mundo). message_s: segundos del texto extra `message` (param del nivel) en el cuadro de Eco. El aviso del control de cada habilidad esta en data/ability_notices.json.",
 		"size_px": [28, 28],
 		"bob_px": 4.0,
 		"bob_hz": 1.5,
 		"outline": "#0b0e1a",
 		"body": "#f2f4f8",
 		"core": "#3dfff5",
-		"message_s": 4.0,
-		"messages": {
-			"laser": "Láser obtenido. F o gatillo izquierdo: dispara. Gasta energía."
-		}
+		"message_s": 4.0
 	},
 	"charger": {
 		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: poste de size_px con contorno outline (noche_profunda), cuerpo body (tile_luz) y pantalla: ready (debug_cian, con un rayo) lista; enfriandose, screen_off (tile_base) con una barra cooling (borde_luz) que sube; gastado, screen_off. La zona de contacto es el rectangulo del poste.",

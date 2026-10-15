@@ -11,6 +11,7 @@ Uso: python3 -m unittest tests/test_text_font.py
 """
 import glob
 import json
+import re
 import os
 import subprocess
 import sys
@@ -62,6 +63,20 @@ def collect_texts(node, out, keys=TEXT_KEYS):
     return out
 
 
+def ability_notice_strings():
+    """Piezas de los avisos de control (data/ability_notices.json) sin las marcas {..}."""
+    data = load_json(os.path.join(ROOT, "data", "ability_notices.json"))
+    out = [data["hold_prefix"]]
+    for key in ("control_format", "pad_button_format"):
+        out.append(re.sub(r"\{[a-z]+\}", "", data[key]))
+    for key in ("key_names", "pad_buttons", "pad_axes"):
+        out.extend(v for k, v in data[key].items() if not k.startswith("_"))
+    for entry in data["abilities"].values():
+        out.append(entry["name"])
+        out.append(re.sub(r"\{[a-z]+\}", "", entry["text"]))
+    return out
+
+
 def game_strings():
     texts = []
     for path in sorted(glob.glob(os.path.join(ROOT, "data", "levels", "*.json"))):
@@ -72,6 +87,7 @@ def game_strings():
     eco_path = os.path.join(ROOT, "data", "eco_text_box.json")
     if os.path.exists(eco_path):
         collect_texts(load_json(eco_path), texts)
+    texts.extend(ability_notice_strings())
     hud = load_json(os.path.join(ROOT, "data", "hud.json"))
     texts.append(hud["font_glyphs"])
     texts.append("100 % 0 % 999")

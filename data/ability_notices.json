@@ -1,0 +1,47 @@
+{
+	"_notes": "Avisos de control de las habilidades (AbilityNotices, scripts/ui/ability_notices.gd; decision 2026-10-15, docs/preguntas.md «Avisos de control de las habilidades»). Texto de interfaz, NO es una linea de guion de Eco: dice solo el control; el uso lo ensenan las lineas de Eco de primera vez del nivel. Sale UNA vez por habilidad y partida guardada (GameState.seen_notices, clave seen_notices de user://save.json; las habilidades ya obtenidas en un guardado antiguo cuentan como vistas): la primera vez que la habilidad esta desbloqueada al empezar un nivel (tras start_delay_s de tiempo real, para que la bienvenida de Eco vaya antes) o al desbloquearse durante el nivel (ability_pickup o EventBus.ability_unlock_changed). Se muestra en el cuadro de Eco (EventBus.eco_line_requested, mismo cuadro y fuente text_font que el aviso anterior del laser), duration_s segundos: no pausa ni lee entradas, se va solo. Solo lo crea el flujo de juego (LevelRunner, scenes/main.tscn); las escenas de prueba y el bot no lo tienen. EL CONTROL SE LEE DEL INPUT MAP (project.godot) al mostrar el aviso: primera tecla y primer boton o eje de mando de la accion `action`; si se remapea, el aviso cambia. control_format une las partes ({key} y {pad}; si falta una, solo la otra). key_names: nombre en espanol de teclas cuyo nombre de Godot (OS.get_keycode_string) esta en ingles; el resto se muestra tal cual (letras). pad_buttons: indice JoyButton -> nombre (distribucion tipo Xbox, la que usa el resto de documentacion: A saltar, X pulso, Y Debug); pad_button_format lo envuelve. pad_axes: '<eje><signo>' -> nombre (4+ = gatillo izquierdo, 5+ = gatillo derecho). hold: la accion se mantiene; se antepone hold_prefix al control. abilities: id de GameState.ABILITIES -> {name, action, text, hold}; text usa {name} y {control}. Para una habilidad nueva basta con anadir su entrada.",
+	"duration_s": 4.0,
+	"start_delay_s": 1.0,
+	"control_format": "{key} / {pad}",
+	"hold_prefix": "mantén ",
+	"pad_button_format": "{name} (mando)",
+	"key_names": {
+		"Space": "Espacio",
+		"Shift": "Mayús",
+		"Ctrl": "Control",
+		"Alt": "Alt",
+		"Enter": "Intro",
+		"Escape": "Esc",
+		"Tab": "Tabulador",
+		"Backspace": "Retroceso",
+		"Left": "flecha izquierda",
+		"Right": "flecha derecha",
+		"Up": "flecha arriba",
+		"Down": "flecha abajo"
+	},
+	"pad_buttons": {
+		"0": "A",
+		"1": "B",
+		"2": "X",
+		"3": "Y",
+		"4": "Select",
+		"6": "Start",
+		"7": "L3",
+		"8": "R3",
+		"9": "LB",
+		"10": "RB",
+		"11": "cruceta arriba",
+		"12": "cruceta abajo",
+		"13": "cruceta izquierda",
+		"14": "cruceta derecha"
+	},
+	"pad_axes": {
+		"4+": "gatillo izquierdo",
+		"5+": "gatillo derecho"
+	},
+	"abilities": {
+		"pulse": {"name": "Pulso", "action": "pulse", "text": "{name}: {control}"},
+		"laser": {"name": "Láser", "action": "laser", "text": "{name}: {control}"},
+		"debug": {"name": "Debug", "action": "debug", "hold": true, "text": "{name}: {control}"}
+	}
+}

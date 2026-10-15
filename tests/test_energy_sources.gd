@@ -85,8 +85,8 @@ func test_pickup_unlocks_laser_persists_and_announces() -> void:
 	EventBus.eco_line_requested.disconnect(on_line)
 	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_LASER), "Desbloquea el laser")
 	assert_eq(obtained, [GameState.ABILITY_LASER] as Array[StringName], "EventBus.ability_obtained")
-	assert_eq(lines.size(), 1, "Aviso en el cuadro de Eco")
-	assert_string_contains(lines[0], "Láser")
+	# El aviso del control lo da AbilityNotices (test_ability_notices.gd), no el objeto.
+	assert_eq(lines.size(), 0, "Sin message, el objeto no pide lineas de Eco")
 	assert_true(p.is_taken())
 	# Se guarda y se recupera.
 	assert_true(GameState.save_game())

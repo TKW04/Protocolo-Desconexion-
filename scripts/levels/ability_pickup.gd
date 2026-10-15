@@ -1,10 +1,10 @@
 ## Objeto que da una habilidad (tipo `ability_pickup` del catalogo del Mundo 1;
 ## decision del usuario 2026-10-15, la primera es el laser). Al tocarlo Isak:
 ## GameState.obtain_ability(ability) la desbloquea para siempre, la guarda en
-## user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el
-## cuadro de Eco muestra un aviso simple (messages de la seccion ability_pickup
-## de data/world1_objects.json, o `message` si el nivel lo da). Si la habilidad
-## ya estaba obtenida no aparece. No es solido. Aspecto PROVISIONAL dibujado por
+## user://save.json (abilities_obtained) y emite EventBus.ability_obtained. El
+## aviso del control lo da AbilityNotices (data/ability_notices.json, una vez
+## por partida guardada); solo si el nivel da `message`, el cuadro de Eco
+## muestra ademas ese texto. Si la habilidad ya estaba obtenida no aparece. No es solido. Aspecto PROVISIONAL dibujado por
 ## codigo: un chip con contorno noche_profunda y nucleo en el color del Debug
 ## del Mundo 1 que flota (tiempo del mundo).
 class_name AbilityPickup
@@ -18,7 +18,8 @@ const CONFIG_PATH: String = "res://data/world1_objects.json"
 @export var object_id: StringName = &""
 ## Habilidad que da (GameState.ABILITIES; p. ej. &"laser").
 @export var ability: StringName = &""
-## Aviso al recogerlo; vacio = messages[ability] de la configuracion.
+## Texto extra en el cuadro de Eco al recogerlo (vacio = ninguno; el aviso del
+## control lo da AbilityNotices).
 @export var message: String = ""
 
 var _taken: bool = false
@@ -30,7 +31,6 @@ var _outline := Color("#0b0e1a")
 var _body := Color("#f2f4f8")
 var _core := Color("#3dfff5")
 var _message_s: float = 4.0
-var _messages: Dictionary = {}
 
 
 func _ready() -> void:
@@ -71,11 +71,9 @@ func is_taken() -> bool:
 	return _taken
 
 
-## Texto del aviso al recogerlo.
+## Texto extra al recogerlo (`message`).
 func get_message() -> String:
-	if not message.is_empty():
-		return message
-	return String(_messages.get(String(ability), ""))
+	return message
 
 
 ## Lo recoge `body` si es Isak. Verdadero si da la habilidad.
@@ -112,9 +110,6 @@ func _load_config() -> void:
 	_body = Color(String(cfg.get("body", _body.to_html(false))))
 	_core = Color(String(cfg.get("core", _core.to_html(false))))
 	_message_s = float(cfg.get("message_s", _message_s))
-	var messages: Variant = cfg.get("messages", {})
-	if messages is Dictionary:
-		_messages = messages
 
 
 func _on_body_entered(body: Node2D) -> void:

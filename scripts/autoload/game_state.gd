@@ -130,6 +130,10 @@ var purchased_upgrades: Dictionary[StringName, bool] = {}
 ## Habilidades obtenidas para siempre con un ability_pickup (id -> true; p. ej.
 ## laser). Se guardan y, al cargar, quedan desbloqueadas en abilities_unlocked.
 var obtained_abilities: Dictionary[StringName, bool] = {}
+## Avisos de control ya mostrados (id de data/ability_notices.json -> true;
+## AbilityNotices). Se guardan (seen_notices); en guardados antiguos sin esa
+## clave, y siempre, las habilidades obtenidas cuentan como avisadas.
+var seen_notices: Dictionary[StringName, bool] = {}
 
 ## Ruta del guardado. Por defecto user://save.json; con la variable de entorno
 ## ISAK_SAVE_PATH, esa ruta; dentro de GUT, SAVE_PATH_TESTS, y con otro script
@@ -504,6 +508,7 @@ func reset_progress() -> void:
 	for ability: StringName in obtained_abilities:
 		set_ability_unlocked(ability, false)
 	obtained_abilities.clear()
+	seen_notices.clear()
 	power_banks = 0
 	empty_power_banks = 0
 	power_bank_charge = 0.0
@@ -558,6 +563,7 @@ func to_save_data() -> Dictionary:
 		"collected_pickups": pickups,
 		"upgrades_purchased": _keys_sorted(purchased_upgrades),
 		"abilities_obtained": _keys_sorted(obtained_abilities),
+		"seen_notices": _keys_sorted(seen_notices),
 		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
 		"completed_levels": _keys_sorted(completed_levels),
 		"unlocked_levels": _keys_sorted(unlocked_levels),
@@ -598,6 +604,12 @@ func apply_save_data(data: Dictionary) -> bool:
 		if abilities_unlocked.has(id):
 			obtained_abilities[id] = true
 			set_ability_unlocked(id, true)
+	for id: StringName in _string_names(data.get("seen_notices", [])):
+		seen_notices[id] = true
+	# Guardados de antes de los avisos de control (sin "seen_notices"): el
+	# ability_pickup ya mostraba el aviso al obtener la habilidad.
+	for id: StringName in obtained_abilities:
+		seen_notices[id] = true
 	var banks: Variant = data.get("power_banks", {})
 	if banks is Dictionary:
 		power_banks = _as_int(banks.get("full", 0))
@@ -694,6 +706,21 @@ func obtain_ability(ability: StringName) -> bool:
 
 func is_ability_obtained(ability: StringName) -> bool:
 	return obtained_abilities.has(ability)
+
+
+func is_notice_seen(id: StringName) -> bool:
+	return seen_notices.has(id)
+
+
+## Apunta el aviso de control `id` como visto. Falso si ya lo era. No pide
+## guardar: se guarda con el siguiente cambio que guarde (punto de atencion,
+## habilidad obtenida, nivel completado...), asi arrancar el juego unos segundos
+## sin jugar no escribe el guardado. Si se sale antes, el aviso vuelve a salir.
+func mark_notice_seen(id: StringName) -> bool:
+	if seen_notices.has(id):
+		return false
+	seen_notices[id] = true
+	return true
 
 
 func _update_low_sync() -> void:

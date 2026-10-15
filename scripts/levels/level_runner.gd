@@ -27,6 +27,9 @@
 ##   sustituye); se ignora durante un fundido. Mantener debug_wipe_save (F9)
 ##   wipe_hold_s borra el guardado (GameState.save_path) y reinicia el mapa;
 ##   solo en builds de depuracion, con un aviso en pantalla mientras se mantiene.
+## - Avisos de control de las habilidades (AbilityNotices, hijo
+##   AbilityNotices; data/ability_notices.json): se arman al empezar cada nivel
+##   y se desarman en el hub.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -80,12 +83,16 @@ var _wipe_latched: bool = false
 var _prompt_layer: CanvasLayer
 var _prompt_label: Label
 var _prompt_bar: ColorRect
+var _notices: AbilityNotices
 
 
 func _ready() -> void:
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DATA_PATH))
 	_build_transition()
 	_build_wipe_prompt()
+	_notices = AbilityNotices.new()
+	_notices.name = "AbilityNotices"
+	add_child(_notices)
 	EventBus.level_completed.connect(_on_level_completed)
 	var id: String = start_level_id
 	if id.is_empty():
@@ -126,6 +133,10 @@ func get_level() -> GeneratedLevel:
 
 func get_level_id() -> String:
 	return _level_id
+
+
+func get_ability_notices() -> AbilityNotices:
+	return _notices
 
 
 func get_isak() -> Isak:
@@ -210,6 +221,7 @@ func start_level(level_id: String) -> bool:
 	if not ResourceLoader.exists(path):
 		push_error("LevelRunner: no existe la escena del nivel '%s' (%s)" % [level_id, path])
 		return false
+	_notices.begin_level()
 	_clear_hub()
 	_clear_level()
 	_reset_player_state(level_id)
@@ -338,6 +350,7 @@ func _respawn(after_death: bool) -> void:
 
 
 func _show_hub(level_id: String, attention_points: int) -> void:
+	_notices.stop()
 	_clear_level()
 	_hub = (load(String(_data["hub_scene"])) as PackedScene).instantiate() as HubPlaceholder
 	_holder.add_child(_hub)
