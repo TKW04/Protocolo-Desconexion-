@@ -37,7 +37,7 @@ var _pulse_was_unlocked: bool = false
 func before_all() -> void:
 	_level = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_PATH))
 	_tile = float(_level["tile_size"])
-	var bubble_col: int = int(_level["enemies"][0]["x"])
+	var bubble_col: int = int(_low_bubble()["x"])
 	COL_FROM = bubble_col - COLS_AROUND
 	COL_TO = bubble_col + COLS_AROUND
 	START_COL = bubble_col + START_OFFSET
@@ -47,7 +47,7 @@ func before_each() -> void:
 	_pulse_was_unlocked = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
-	var enemy: Dictionary = _level["enemies"][0]
+	var enemy: Dictionary = _low_bubble()
 	_floor_y = (float(enemy["y"]) + 1.0) * _tile
 	_world = Node2D.new()
 	_world.add_child(_build_tiles())
@@ -95,7 +95,7 @@ func _build_tiles() -> StaticBody2D:
 
 ## La Burbuja del nivel (posicion de su celda, pies abajo-centro, params del JSON).
 func _spawn_bubble() -> AlertBubble:
-	var enemy: Dictionary = _level["enemies"][0]
+	var enemy: Dictionary = _low_bubble()
 	var b := BUBBLE_SCENE.instantiate() as AlertBubble
 	b.position = Vector2((float(enemy["x"]) + 0.5) * _tile, _floor_y)
 	b.patrol_range_px = float(enemy["params"]["patrol_range_px"])
@@ -227,3 +227,12 @@ func test_stunned_bubble_can_be_crossed_sideways() -> void:
 	assert_gt(_isak.global_position.x, span.y + _tile, "Sale del techo por la derecha")
 	assert_lt(max_rise, 2.0, "La cruza de lado, por el suelo (sin subirse encima)")
 	assert_gt(_isak.global_position.x, _bubble.global_position.x + PASS_MARGIN, "Queda detras de la Burbuja")
+
+
+## Burbuja bajo techo bajo del Tramo 3a: la unica sin "open" (rediseno 2026-10-15: ya no es la
+## primera de la lista de enemigos).
+func _low_bubble() -> Dictionary:
+	for enemy: Dictionary in _level["enemies"]:
+		if not bool(enemy.get("open", false)):
+			return enemy
+	return {}

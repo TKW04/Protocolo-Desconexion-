@@ -4,7 +4,11 @@
 ##   camina a la derecha; salta si choca con una pared o si delante no hay suelo
 ##   (rayo hacia abajo: cuenta el puente y la Burbuja aturdida); se para y lanza
 ##   el pulso en el receptor (espera al puente), ante la Burbuja (espera a que este
-##   aturdida y la cruza) y ante el pop-up (espera a que se cierre); toca el punto
+##   aturdida y la cruza) y ante el pop-up (espera a que se cierre); con el laser
+##   ya recogido (sala del laser del 1-1, rediseno 2026-10-15: dos receptores y un
+##   pop-up en alto, que la politica generica resuelve sola) se para y dispara a las
+##   Burbujas que tiene delante a su altura hasta matarlas (si le queda energia; si
+##   no, vuelve al pulso); toca el punto
 ##   de sincronizacion y, con --die (por defecto), fuerza una muerte (Sync Rate 0)
 ##   tras tocarlo y comprueba que reaparece alli con el 100 %; entra por la puerta,
 ##   comprueba la pantalla provisional del hub (nivel completado, 1-2 desbloqueado,
@@ -38,6 +42,9 @@ const ROUTE_TOLERANCE: float = 40.0
 const GROUND_PROBE_PX: float = 100.0
 ## Distancia (px) entre el celular de Isak y el costado de la Burbuja para lanzar el pulso.
 const BUBBLE_PULSE_GAP: float = 70.0
+## Distancia maxima (px) entre el celular de Isak y el costado de la Burbuja para dispararle
+## el laser (alcance del laser: 768 px).
+const BUBBLE_LASER_GAP: float = 6.0 * TILE
 const LAYER_WORLD: int = 1
 const BOT_SAVE_PATH: String = "user://bot_save.json"
 
@@ -56,6 +63,9 @@ var _died_done: bool = false
 var _log: PackedStringArray = []
 ## Puntos de atencion del mapa al empezar (guardado limpio).
 var _points_total: int = 0
+## Disparos del laser y Burbujas que mata.
+var _shots: int = 0
+var _kills: PackedStringArray = []
 
 
 ## Fin del recorrido: 0 si todo ha ido bien, 1 si algo ha fallado.
@@ -63,7 +73,7 @@ signal finished(code: int)
 
 ## Capturas (--shots <carpeta>, necesita ventana): nombre -> cuadro en que se toma.
 var _shots_dir: String = ""
-var _shots: Dictionary = {}
+var _pending_shots: Dictionary = {}
 
 
 func _ready() -> void:
@@ -105,9 +115,9 @@ func _attach() -> void:
 func _tick() -> void:
 	await get_tree().physics_frame
 	_frame += 1
-	for name: String in _shots.keys():
-		if _frame >= int(_shots[name]):
-			_shots.erase(name)
+	for name: String in _pending_shots.keys():
+		if _frame >= int(_pending_shots[name]):
+			_pending_shots.erase(name)
 			await RenderingServer.frame_post_draw
 			var path: String = _shots_dir.path_join(name + ".png")
 			get_viewport().get_texture().get_image().save_png(path)
@@ -116,7 +126,7 @@ func _tick() -> void:
 
 func _shot_in(name: String, frames: int) -> void:
 	if not _shots_dir.is_empty():
-		_shots[name] = _frame + frames
+		_pending_shots[name] = _frame + frames
 
 
 func _note(text: String) -> void:
@@ -132,10 +142,11 @@ func _fail(text: String) -> bool:
 ## Generico (1-1 ampliado): recorre todos los receptores, puentes, pop-ups y
 ## Burbujas del nivel. Solo atiende a los de la ruta (a la altura de los pies de
 ## Isak): el receptor y los pop-ups de los secretos (popup_alto y popup_lejano, el
-## del Pulso amplio) quedan en lo alto y se ignoran. Las Burbujas en abierto (3b, 3c
-## y 4b, 2026-10-15) se aturden igual al tenerlas delante y se cruzan andando; no
-## usa sus repisas. Solo recoge los puntos que encuentra andando por la ruta (el de
-## la repisa del 3b y los de los secretos no).
+## del Pulso amplio) quedan en lo alto y se ignoran; los de la sala del laser (3b)
+## quedan a la altura de los pies al subir por sus puentes. Las Burbujas en abierto
+## se aturden al tenerlas delante y se cruzan andando; con el laser se matan a
+## distancia (2026-10-15). No usa sus repisas. Solo recoge los puntos que encuentra
+## andando por la ruta (el de la repisa del 3c y los de los secretos no).
 func _play() -> bool:
 	var level: GeneratedLevel = _runner.get_level()
 	var receivers: Array[PulseReceiver] = []
@@ -152,6 +163,12 @@ func _play() -> bool:
 	for node: Node in level.get_node(^"Enemies").get_children():
 		if node is AlertBubble:
 			bubbles.append(node)
+			var bubble_id: String = node.name
+			(node as AlertBubble).popped.connect(func() -> void:
+				_kills.append(bubble_id)
+				_note("laser: %s eliminada" % bubble_id))
+	_isak.laser_fired.connect(func(_p: LaserProjectile) -> void: _shots += 1)
+	var had_laser: bool = GameState.is_ability_unlocked(GameState.ABILITY_LASER)
 	var checkpoint: Checkpoint = level.get_node(^"Checkpoints").get_child(0) as Checkpoint
 	var door: ExitDoor = level.get_node(^"Objects/puerta_salida")
 	_points_total = level.get_node(^"AttentionPoints").get_child_count()
@@ -172,6 +189,11 @@ func _play() -> bool:
 		_input.move_axis = 1.0
 		_input.run_held = _running
 		var gate: Dictionary = _gate_ahead(x, feet, receivers, bridges, popups, bubbles)
+		var target: AlertBubble = _laser_target(x, feet, bubbles) if gate.is_empty() else null
+		if not had_laser and GameState.is_ability_unlocked(GameState.ABILITY_LASER):
+			had_laser = true
+			_note("recoge el laser (x=%.0f, columna %d; energia %.0f)" % [x, int(x / TILE), GameState.debug_energy])
+			_shot_in("6_laser", 30)
 		if _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead():
 			_input.move_axis = 0.0
 			waiting = true
@@ -180,6 +202,10 @@ func _play() -> bool:
 			waiting = true
 			if gate["pulse"]:
 				_try_pulse(gate["what"], announced)
+		elif target != null:
+			_input.move_axis = 0.0
+			waiting = true
+			_try_laser(target, announced)
 		elif _isak.is_on_floor() and _jump_left == 0 and (_isak.is_on_wall() or not _ground_ahead()):
 			_jump_left = JUMP_HOLD_FRAMES
 			_input.jump_pressed = true
@@ -189,6 +215,8 @@ func _play() -> bool:
 			announced["door"] = true
 			_note("entra por la puerta (recorrido: %.1f s de juego sin contar la muerte forzada)" % (
 					(_frame - _death_frames) / 60.0))
+			_note("laser: %d disparos, %d Burbujas eliminadas (%s); energia al final %.0f" % [_shots, _kills.size(),
+					", ".join(_kills), GameState.debug_energy])
 			_shot_in("7_puerta", 6)
 		if checkpoint.is_taken() and not announced.has("checkpoint"):
 			announced["checkpoint"] = true
@@ -248,6 +276,36 @@ func _try_pulse(what: String, announced: Dictionary) -> void:
 	if int(announced[key]) == 1:
 		_note("pulso: %s (x=%.0f)" % [what, _isak.global_position.x])
 		_shot_in("pulso_" + what.replace("-", ""), 12)
+
+
+## Burbuja viva delante, a la altura de los pies y al alcance del laser, si Isak lo
+## tiene, esta de pie y le queda energia para un disparo; si no, null.
+func _laser_target(x: float, feet: float, bubbles: Array[AlertBubble]) -> AlertBubble:
+	if not _isak.is_on_floor() or not _isak.can_laser():
+		return null
+	if GameState.debug_energy < _isak.abilities.laser_energy_cost:
+		return null
+	var phone_x: float = x + _isak.get_pulse_origin().x
+	for bubble: AlertBubble in bubbles:
+		if not is_instance_valid(bubble) or bubble.get_state() == AlertBubble.STATE_POPPED:
+			continue
+		if absf(bubble.global_position.y - feet) > ROUTE_TOLERANCE:
+			continue
+		var body: Rect2 = bubble.get_body_rect()
+		if body.end.x > x and body.position.x - phone_x < BUBBLE_LASER_GAP:
+			return bubble
+	return null
+
+
+## Dispara el laser (hacia la derecha, donde mira el bot) si no se esta enfriando.
+func _try_laser(bubble: AlertBubble, announced: Dictionary) -> void:
+	if _isak.get_laser_cooldown_left() > 0.0 or _isak.is_laser_charging():
+		return
+	_input.laser_pressed = true
+	if not announced.has("laser"):
+		announced["laser"] = true
+		_note("primer disparo del laser a %s (x=%.0f)" % [bubble.name, _isak.global_position.x])
+		_shot_in("laser_disparo", 4)
 
 
 func _bubble_close(bubble: AlertBubble) -> bool:

@@ -86,8 +86,16 @@ class BuildLevelTest(unittest.TestCase):
         self.assertIn('[node name="popup_lejano" parent="Objects"', text)
         self.assertIn("close_button_position = Vector2(52, 192)", text)
         # El 1-1 tiene un solo power bank, el del secreto del Pulso amplio (2026-10-15).
-        self.assertEqual(text.count("instance=ExtResource(\"10_power_bank_pickup\")"), 1)
+        self.assertEqual(len(re.findall(r'instance=ExtResource\("\d+_power_bank_pickup"\)', text)), 1)
         self.assertIn('[node name="power_bank_pulso_amplio" parent="Objects"', text)
+        # Rediseno para el laser (2026-10-15): su objeto, dos cargadores, la linea de Eco del primer
+        # disparo (por senal, sin zona) y una Burbuja con vida 3.
+        self.assertIn('[node name="laser_1_1" parent="Objects"', text)
+        self.assertIn('ability = &"laser"', text)
+        self.assertIn('[node name="cargador_1" parent="Objects"', text)
+        self.assertIn('[node name="cargador_2" parent="Objects"', text)
+        self.assertIn('trigger_event = &"laser_fired"', text)
+        self.assertIn('"health": 3.0', text)
         level = copy.deepcopy(load_level())
         level["objects"].append({"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}})
         text = bl.build_scene(level)

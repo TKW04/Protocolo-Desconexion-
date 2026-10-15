@@ -91,14 +91,37 @@ class LevelSchemaTest(unittest.TestCase):
         # Burbujas: solo la del Tramo 3a bajo techo bajo; las demas en abierto ("open").
         self.assertEqual([e["id"] for e in lvl["enemies"] if not e.get("open")], ["burbuja_1"])
         self.assertGreaterEqual(sum(1 for e in lvl["enemies"] if e.get("open")), 3)
+        # Rediseno para el laser (2026-10-15): un ability_pickup del laser a mitad del mapa (tras el
+        # punto de sincronizacion), Burbujas antes (se esquivan o aturden) y despues (se matan), una
+        # con vida 3 al final, y dos cargadores con los valores por defecto del catalogo.
+        lasers = [o for o in lvl["objects"] if o["type"] == "ability_pickup"]
+        self.assertEqual([(o["params"]["id"], o["params"]["ability"]) for o in lasers], [("laser_1_1", "laser")])
+        laser_x = lasers[0]["x"]
+        width = len(lvl["grid"][0])
+        self.assertLess(abs(laser_x - width / 2), width * 0.1, "el laser se obtiene a mitad del nivel")
+        self.assertGreater(laser_x, lvl["checkpoints"][0]["x"])
+        before = [e for e in lvl["enemies"] if e["x"] < lvl["enemies"][[e["id"] for e in lvl["enemies"]].index(
+            "burbuja_1")]["x"] and e.get("open")]
+        after = [e for e in lvl["enemies"] if e["x"] > laser_x]
+        self.assertGreaterEqual(len(before), 2, "Burbujas al principio (tutorial)")
+        self.assertGreaterEqual(len(after), 4, "Burbujas tras el laser")
+        self.assertTrue(all(e.get("open") for e in after))
+        self.assertEqual([e["id"] for e in lvl["enemies"] if e["params"].get("health") == 3.0], ["burbuja_cierre"])
+        chargers = [o for o in lvl["objects"] if o["type"] == "charger"]
+        self.assertEqual(len(chargers), 2)
+        self.assertTrue(any(laser_x < c["x"] < min(e["x"] for e in after) for c in chargers),
+                        "un cargador entre el laser y la primera Burbuja que cuesta energia")
+        first_shot = [o for o in lvl["objects"] if o["params"].get("trigger_event") == "laser_fired"]
+        self.assertEqual(len(first_shot), 1, "linea de Eco del primer disparo")
         kinds = [o["type"] for o in lvl["objects"]]
         for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_door", "glitch_wall"):
             self.assertIn(kind, kinds)
         self.assertEqual(obj(lvl, "eco_line")["params"]["text"], "Bienvenido. He optimizado tu espacio.")
         self.assertEqual(obj(lvl, "exit_door")["params"]["text"], "Marcar como leído")
-        # Orden de los tramos: aterrizaje -> puente -> Burbuja -> pop-up -> puerta.
+        # Orden de los tramos: aterrizaje -> puente -> Burbuja bajo techo -> laser -> pop-up -> puerta.
         popup_1 = next(o for o in lvl["objects"] if o["params"].get("id") == "popup_1")
-        xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], lvl["enemies"][0]["x"],
+        low = next(e for e in lvl["enemies"] if e["id"] == "burbuja_1")
+        xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], low["x"], laser_x,
               popup_1["x"], obj(lvl, "exit_door")["x"]]
         self.assertEqual(xs, sorted(xs))
         # Un solo punto de sincronizacion, a mitad del mapa (decision 2026-10-14).
@@ -130,16 +153,23 @@ class LevelSchemaTest(unittest.TestCase):
                 y -= 1
             return y
 
-        # Puentes de la ruta (hacia la derecha; el de servicio del secreto A va por el aire).
+        # Puentes sobre foso de la ruta (hacia la derecha y a la altura del suelo de su izquierda; el
+        # de servicio del secreto A y los de la sala del laser van por el aire).
         bridges = [o for o in self.level["objects"]
-                   if o["type"] == "bridge_inactive" and o["params"].get("direction", "right") == "right"]
+                   if o["type"] == "bridge_inactive" and o["params"].get("direction", "right") == "right"
+                   and o["y"] == surface(o["x"] - 1)]
         bridge_cols = set()
         for bridge in bridges:
             bridge_cols |= set(range(bridge["x"], bridge["x"] + bridge["params"]["length_tiles"]))
+        # Sala del laser (2026-10-15): su base de 4 tiles se sube por puentes en alto (los que no
+        # cruzan un foso); la pared justo tras su ultimo tile no es una subida a pie.
+        raised_ends = {o["x"] + o["params"]["length_tiles"] for o in self.level["objects"]
+                       if o["type"] == "bridge_inactive" and o["params"].get("direction", "right") == "right"
+                       and o["y"] != surface(o["x"] - 1)}
         width = len(grid[0])
         for x in range(1, width - 2):
-            if x in bridge_cols or x + 1 in bridge_cols or surface(x + 1) == 0:
-                continue  # puente o pared de limite hasta arriba
+            if x in bridge_cols or x + 1 in bridge_cols or surface(x + 1) == 0 or x + 1 in raised_ends:
+                continue  # puente, pared de limite hasta arriba o base de la sala del laser
             rise = surface(x) - surface(x + 1)
             if rise > 0:
                 self.assertLessEqual(rise, step_tiles,
@@ -153,8 +183,8 @@ class LevelSchemaTest(unittest.TestCase):
             else:
                 segments.append([x, x, surface(x)])
         for left, seg, right in zip(segments, segments[1:], segments[2:]):
-            if seg[0] in bridge_cols or seg[1] in bridge_cols:
-                continue
+            if seg[0] in bridge_cols or seg[1] in bridge_cols or seg[1] + 1 in raised_ends:
+                continue  # foso de un puente o suelo bajo los puentes en alto de la sala del laser
             if seg[2] - left[2] >= 2 and seg[2] - right[2] >= 2:
                 gap = seg[1] - seg[0] + 1
                 self.assertLessEqual(gap, walk_gap_tiles, "foso de %d tiles en la columna %d" % (gap, seg[0]))
@@ -181,9 +211,10 @@ class LevelSchemaTest(unittest.TestCase):
                 self._check_low_ceiling(bubble, phys, bubble_data)
 
     def test_level_1_1_open_bubbles(self):
-        """Burbujas en abierto (2026-10-15): sin techo sobre su patrulla y con una repisa de una via a
-        3 tiles sobre su suelo junto a la patrulla (aturdida sirve de escalon para subir; saltando desde
-        la repisa se cae encima por encima del umbral de pop). Simulacion: tests/test_level_1_1.gd."""
+        """Burbujas en abierto (2026-10-15): sin techo sobre su patrulla (se pueden saltar). Desde el
+        rediseno para el laser ya no necesitan repisa (pisarlas no las mata); la repisa de una via a
+        3 tiles del 3c sigue para usar la Burbuja aturdida de escalon hasta el punto de la ruta.
+        Simulacion: tests/test_level_1_1.gd."""
         with open(os.path.join(ROOT, "data", "enemies", "alert_bubble.json"), encoding="utf-8") as handle:
             bubble_data = json.load(handle)
         grid = self.level["grid"]
@@ -198,9 +229,18 @@ class LevelSchemaTest(unittest.TestCase):
                 for c in range(c0, c1 + 1):
                     self.assertFalse(any(grid[r][c] == "#" for r in range(bubble["y"] + 1)),
                                      "techo sobre la patrulla en la columna %d" % c)
-                ledge_row = bubble["y"] + 1 - 3
-                near = [c for c in range(c0 - 1, c1 + 2) if grid[ledge_row][c] == "-"]
-                self.assertTrue(near, "repisa de una via a 3 tiles junto a la patrulla")
+                if bubble["id"] in ("burbuja_3", "burbuja_4"):
+                    ledge_row = bubble["y"] + 1 - 3
+                    near = [c for c in range(c0 - 1, c1 + 2) if grid[ledge_row][c] == "-"]
+                    self.assertTrue(near, "repisa de una via a 3 tiles junto a la patrulla")
+                    run = set(near)
+                    for c in near:
+                        for step in (1, -1):
+                            k = c + step
+                            while grid[ledge_row][k] == "-":
+                                run.add(k)
+                                k += step
+                    self.assertTrue(any(grid[ledge_row - 1][c] == "o" for c in run), "punto en la repisa")
 
     def _check_low_ceiling(self, bubble, phys, bubble_data):
         tile = phys["tile_size"]
@@ -333,14 +373,20 @@ class LevelSchemaTest(unittest.TestCase):
         return entry
 
     def test_charger_and_ability_pickup_are_valid(self):
-        self._add("charger", {"id": "cargador_1", "amount": 50.0, "reusable": False, "cooldown_s": 20.0})
-        self._add("ability_pickup", {"id": "laser_1", "ability": "laser"})
+        self._add("charger", {"id": "cargador_test", "amount": 50.0, "reusable": False, "cooldown_s": 20.0})
+        self._add("ability_pickup", {"id": "laser_test", "ability": "laser"})
         self.level["abilities_available"]["laser"] = False
         self.assertEqual(vls.validate_level(self.level), [])
 
     def test_ability_pickup_unknown_ability(self):
         self._add("ability_pickup", {"id": "laser_1", "ability": "teletransporte"})
         self.assert_fails(self.level, "ability 'teletransporte' no admitido")
+
+    def test_eco_line_trigger_event_allowed_values(self):
+        self._add("eco_line", {"id": "eco_test", "text": "Hola.", "trigger_event": "laser_fired"})
+        self.assertEqual(vls.validate_level(self.level), [])
+        self._add("eco_line", {"id": "eco_test_2", "text": "Hola.", "trigger_event": "teletransporte"})
+        self.assert_fails(self.level, "trigger_event 'teletransporte' no admitido")
 
     def test_ability_pickup_requires_ability(self):
         self._add("ability_pickup", {"id": "laser_1"})

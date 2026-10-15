@@ -4,8 +4,9 @@
 # Isak sobre la escena real (patron de tests/support/isak_sim.gd): salto del
 # foso del Tramo 1, escalon de 2 tiles, plataforma de una via, puente con y sin
 # pulso, el pop-up que bloquea hasta el pulso, el nicho del Pulso amplio (con su
-# unico power bank) y las Burbujas en abierto: escalon aturdidas y pop saltando
-# desde su repisa.
+# unico power bank), las Burbujas en abierto (escalon aturdidas; la caida ya no
+# las mata) y la sala del laser (rediseno 2026-10-15: dos receptores en escalera,
+# pop-up en alto y el objeto del laser en un tunel bajo que no se puede saltar).
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -192,7 +193,8 @@ func test_runs_300_frames_isak_lands_and_bubble_stays_under_ceiling() -> void:
 	assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, "Sin dano")
 	var bubble := _level.get_node(^"Enemies/burbuja_1") as AlertBubble
 	assert_almost_eq(bubble.global_position.y, _floor_y(9), 1.0, "La Burbuja va por el suelo bajo el techo")
-	var center: float = (float(_data["enemies"][0]["x"]) + 0.5) * _tile
+	var low: Dictionary = (_data["enemies"] as Array).filter(func(e: Dictionary) -> bool: return e["id"] == "burbuja_1")[0]
+	var center: float = (float(low["x"]) + 0.5) * _tile
 	assert_between(bubble.global_position.x, center - bubble.patrol_range_px * 0.5 - 1.0,
 			center + bubble.patrol_range_px * 0.5 + 1.0, "Dentro de su patrulla")
 	assert_eq(bubble.get_state(), AlertBubble.STATE_PATROL)
@@ -374,13 +376,12 @@ func test_far_popup_closes_with_wide_pulse() -> void:
 
 # --- Burbujas en abierto con su repisa (2026-10-15) ---
 
-## Burbujas en abierto ("open" en el JSON) -> [columna del borde de su repisa de una via
-## que da a la Burbuja, fila donde Isak se queda de pie en la repisa].
+## Burbujas en abierto con repisa ("open" en el JSON; 3c, rediseno 2026-10-15: la repisa
+## guarda un punto de la ruta y se sube con la Burbuja aturdida de escalon) -> [columna del
+## borde de su repisa de una via que da a la Burbuja, fila donde Isak se queda de pie en ella].
 const OPEN_BUBBLE_LEDGES: Dictionary = {
-	"burbuja_2": [166, 5],
 	"burbuja_3": [184, 6],
 	"burbuja_4": [188, 6],
-	"burbuja_5": [232, 6],
 }
 
 
@@ -423,8 +424,9 @@ func test_open_bubbles_have_no_low_ceiling() -> void:
 				assert_ne((_data["grid"][row] as String)[col], "#", "%s sin techo encima" % enemy["id"])
 		else:
 			assert_eq(enemy["id"], "burbuja_1", "Solo la Burbuja de 3a va bajo techo bajo")
-	opened.sort()
-	assert_eq(opened, OPEN_BUBBLE_LEDGES.keys(), "Cuatro Burbujas en abierto")
+	assert_eq(opened.size(), (_data["enemies"] as Array).size() - 1, "Todas en abierto salvo burbuja_1")
+	for id: String in OPEN_BUBBLE_LEDGES:
+		assert_has(opened, id, "%s en abierto" % id)
 
 
 ## Aturdida desde el suelo, Isak la usa de escalon para subir a la repisa (3 tiles sobre
@@ -465,3 +467,99 @@ func test_open_bubbles_step_to_ledge_and_land() -> void:
 		gut.p("%s: escalon, repisa y vuelta encima en %.2f s (aturdimiento %.2f s)" % [id, steps * DT, bubble.stun_duration_s])
 		assert_lt(steps * DT, bubble.stun_duration_s, "%s: cabe en el aturdimiento" % id)
 		assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, "%s: sin dano" % id)
+
+
+# --- Sala del laser (rediseno 2026-10-15) ---
+
+func test_laser_room_objects() -> void:
+	await _load(false)
+	var pickup := _object("laser_1_1") as AbilityPickup
+	assert_not_null(pickup)
+	assert_eq(pickup.ability, GameState.ABILITY_LASER)
+	for id: String in ["cargador_1", "cargador_2"]:
+		var charger := _object(id) as Charger
+		assert_not_null(charger, id)
+		assert_almost_eq(charger.amount, 50.0, 0.001)
+		assert_true(charger.reusable, id)
+		assert_almost_eq(charger.cooldown_s, 20.0, 0.001)
+	var bubble := _level.get_node(^"Enemies/burbuja_cierre") as AlertBubble
+	assert_almost_eq(bubble.get_max_health(), 3.0, 0.001, "Burbuja del Cierre con vida 3")
+	assert_almost_eq((_level.get_node(^"Enemies/burbuja_3") as AlertBubble).get_max_health(), 2.0, 0.001)
+
+
+## La linea de Eco del primer disparo salta con la senal laser_fired, una sola vez.
+func test_first_laser_shot_eco_line_once() -> void:
+	await _load(false)
+	var line := _object("eco_laser_disparo") as EcoLine
+	assert_eq(line.trigger_event, &"laser_fired")
+	assert_false(line.monitoring, "Sin zona: salta por la senal")
+	watch_signals(EventBus)
+	EventBus.laser_fired.emit(null)
+	EventBus.laser_fired.emit(null)
+	assert_eq(line.get_fired_count(), 1)
+	assert_signal_emit_count(EventBus, "eco_line_requested", 1)
+	assert_signal_emitted_with_parameters(EventBus, "eco_line_requested", [line.text, line.duration_s])
+
+
+## Isak en el puente en alto (puente_laser_2) cierra el pop-up de la sala con el pulso y,
+## andando por el tunel, recoge el laser. En el tunel (2 tiles) un salto no pasa por encima.
+func test_laser_room_popup_and_pickup() -> void:
+	var saved_path: String = GameState.save_path
+	GameState.use_save_path("user://test_level_1_1_save.json", true)
+	await _load(true)
+	var receiver := _object("receiver_164_5") as PulseReceiver
+	var bridge := _object("puente_laser_2") as PulseBridge
+	var popup := _object("popup_laser") as PopupBlocker
+	receiver.activate()
+	for i: int in _sim.steps_for(2.0):
+		bridge.advance(DT)
+		if bridge.is_extended():
+			break
+	assert_true(bridge.is_extended())
+	await wait_physics_frames(2)
+	_place(166, 5)
+	_sim.input.move_axis = 1.0
+	_sim.step(_sim.steps_for(1.0))
+	assert_almost_eq(_isak.global_position.y, _floor_y(5), 1.0, "De pie en el puente en alto")
+	assert_almost_eq(_isak.global_position.x, popup.global_position.x - _isak.hitbox_size.x * 0.5, 1.0,
+			"El pop-up cerrado es solido")
+	_sim.input.move_axis = 0.0
+	_sim.settle()
+	_pulse()
+	assert_ne(popup.get_state(), PopupBlocker.State.OPEN, "El pulso desde el puente alcanza el boton")
+	for i: int in _sim.steps_for(3.0):
+		popup.advance(DT)
+		if popup.is_closed():
+			break
+	await wait_physics_frames(2)
+	# Corre y salta por el tunel: la cabeza choca con el techo y toca el objeto igual.
+	var pickup := _object("laser_1_1") as AbilityPickup
+	# El tunel empieza tras el pop-up (3 tiles de ancho).
+	var tunnel_x: float = popup.global_position.x + popup.get_size_px().x + _isak.hitbox_size.x * 0.5
+	var max_rise: float = 0.0
+	_sim.input.move_axis = 1.0
+	_sim.input.run_held = true
+	for i: int in _sim.steps_for(3.0):
+		var in_tunnel: bool = _isak.global_position.x > tunnel_x
+		if _isak.is_on_floor() and in_tunnel:
+			_sim.input.jump_pressed = true
+			_sim.input.jump_held = true
+		_sim.step()
+		_sim.input.clear_just_pressed()
+		if in_tunnel:
+			max_rise = maxf(max_rise, _floor_y(5) - _isak.global_position.y)
+		if _isak.global_position.x >= pickup.global_position.x + _tile * 0.5:
+			break
+	_sim.input.run_held = false
+	_sim.input.jump_held = false
+	_sim.input.move_axis = 0.0
+	_sim.settle()
+	assert_almost_eq(_isak.global_position.x, pickup.global_position.x + _tile * 0.5, _tile * 0.5,
+			"Sobre la celda del laser")
+	await wait_physics_frames(3)
+	assert_lt(max_rise, 64.0, "El techo bajo del tunel corta el salto")
+	assert_true(GameState.is_ability_obtained(GameState.ABILITY_LASER), "Recoge el laser")
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_LASER))
+	GameState.reset_progress()
+	SaveFile.delete("user://test_level_1_1_save.json")
+	GameState.save_path = saved_path

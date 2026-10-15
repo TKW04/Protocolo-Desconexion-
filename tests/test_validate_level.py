@@ -78,18 +78,30 @@ class RealLevelTest(unittest.TestCase):
         # Las puertas obligatorias se abren con el pulso y en el orden del nivel (1-1 ampliado); las
         # de los secretos (puente_servicio, popup_alto) no entran en el camino principal, y las
         # Burbujas en abierto (2026-10-15) se pueden saltar: solo burbuja_1 (3a) obliga al pulso.
+        # Sala del laser (3b, rediseno 2026-10-15): dos receptores en escalera y un pop-up en alto.
         self.assertEqual(pulses, ["puente puente_1", "puente puente_2", "puente puente_3", "Burbuja burbuja_1",
+                                  "puente puente_laser_1", "puente puente_laser_2", "pop-up popup_laser",
                                   "pop-up popup_1", "pop-up popup_2", "puente puente_4", "pop-up popup_3"])
+        self.assertNotIn("laser", actions, "la meta no necesita disparar el laser")
+        pickups = [a for a in result["path"] if a["action"] == "pickup"]
+        self.assertEqual([a["object"] for a in pickups], ["objeto de habilidad laser_1_1"])
+        self.assertLess(actions.index("pickup"), [a.get("object") for a in result["path"]].index("pop-up popup_1"))
         self.assertEqual(result["checkpoints"][0]["reachable_from"], "P")
+        # El laser: se alcanza, es obligatorio (en el camino de la meta) y la meta se alcanza sin usarlo.
+        abilities = result["abilities"]
+        self.assertEqual(abilities["pickups"], [{"id": "laser_1_1", "ability": "laser", "row": 5, "col": 173,
+                                                 "reachable": True, "mandatory": True, "secret": False}])
+        self.assertTrue(abilities["goal_without_laser"])
         for bubble in (g for g in result["gates"] if g["kind"] == "bubble"):
             self.assertEqual(bubble["bypassable"], bubble["open"], bubble["id"])
-            if bubble["open"]:
-                # Repisa de 3 tiles junto a la patrulla: escalon desde la Burbuja aturdida y pop saltando.
-                ledge = bubble["pop_ledge"]
-                self.assertEqual((ledge["height_px"], ledge["gap_px"]), (192, 0.0), bubble["id"])
-                self.assertTrue(ledge["step_reach"], bubble["id"])
-                self.assertFalse(ledge["walk_off_pops"], bubble["id"])
-                self.assertGreaterEqual(ledge["jump_impact_px_s"], 1150 * 1.1, bubble["id"])
+            self.assertNotIn("pop_ledge", bubble, "ya no se busca repisa para reventarla")
+            if bubble["col"] > 173:
+                # Tras el laser, todas se pueden matar disparando desde su propio suelo.
+                self.assertIsNotNone(bubble["laser_from"], bubble["id"])
+                self.assertEqual(bubble["laser_from"][0], bubble["row"], bubble["id"])
+        health = {g["id"]: g["health"] for g in result["gates"] if g["kind"] == "bubble"}
+        self.assertEqual(health["burbuja_cierre"], 3.0)
+        self.assertEqual(health["burbuja_3"], 2.0)
         # Los secretos de puntos (celdas S, sin 'h') se alcanzan (y sus puertas son opcionales: sin avisos).
         items = {i["id"]: i for i in result["secrets"]["items"]}
         for sid in ("secreto_puente_servicio", "secreto_techo", "secreto_popup_alto"):
@@ -184,7 +196,7 @@ class BrokenVariantsTest(unittest.TestCase):
     def test_jump_over_limit_is_reported(self):
         level = base_level()
         fill(level, (22, 23), (10, 11, 12), ".")  # foso sin fondo alcanzable
-        fill(level, range(24, 32), (9,), "#")  # la otra orilla un tile mas alta
+        fill(level, range(24, 30), (9,), "#")  # la otra orilla un tile mas alta (hasta la Burbuja de la 30)
         self.assert_fails(level, "exige 89 % del alcance horizontal", "limite 85 %")
 
     def test_without_receiver(self):
@@ -217,12 +229,66 @@ class BrokenVariantsTest(unittest.TestCase):
         self.assertTrue(any("burbuja_1 esta marcada en abierto (open) pero bloquea" in w
                             for w in messages(result, "warnings")))
 
-    def test_open_bubble_without_ledge_warns(self):
+    def test_open_bubble_needs_no_ledge(self):
+        """Desde el 2026-10-15 pisarla no la mata: una Burbuja en abierto sin repisa no avisa."""
         level = base_level()
-        fill(level, range(166, 169), (6,), ".")  # repisa de 3b (burbuja_2)
+        fill(level, range(184, 189), (7,), ".")  # repisa del 3c (burbuja_3 y burbuja_4)
+        set_cell(level, 186, 6, ".")  # y su punto
         result = vl.validate(level)
-        self.assertTrue(any("burbuja_2 esta en abierto pero no tiene repisa" in w
-                            for w in messages(result, "warnings")), messages(result, "warnings"))
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+
+    # --- Laser (rediseno 2026-10-15) ---
+
+    def test_laser_pickup_skippable_warns(self):
+        """Sin el techo bajo del tunel, la celda del laser se salta: deja de ser obligatorio."""
+        level = base_level()
+        fill(level, range(172, 176), (1, 2, 3), ".")
+        result = vl.validate(level)
+        self.assertTrue(any("laser_1_1 (laser) no es obligatorio" in w for w in messages(result, "warnings")),
+                        messages(result, "warnings"))
+        self.assertFalse(result["abilities"]["pickups"][0]["mandatory"])
+
+    def test_laser_pickup_unreachable(self):
+        level = base_level()
+        pickup = obj(level, "ability_pickup")
+        pickup["y"] = 0  # encima de la sala, fuera del alcance
+        self.assert_fails(level, "objeto de habilidad laser_1_1 (laser) no se alcanza", schema=False)
+
+    def test_laser_reaches_bubble_from_afar_and_stops_at_walls(self):
+        level = base_level()
+        rules = vl.Rules()
+        model = vl.LevelModel(level, rules)
+        gate = model.gate("bubble:burbuja_3")  # (182, 9), patrulla de 128 px
+        with_laser = frozenset({"pickup:laser_1_1"})
+        self.assertTrue(model.laser_possible)
+        self.assertFalse(model.has_laser(frozenset()))
+        self.assertTrue(model.has_laser(with_laser))
+        far = (176, 9)  # a 4 tiles, en su suelo
+        self.assertTrue(model.laser_hits(gate, far, with_laser))
+        self.assertTrue(model.can_open(gate, far, with_laser))
+        self.assertFalse(model.can_open(gate, far, frozenset()), "sin el laser el pulso no llega tan lejos")
+        self.assertFalse(model.can_open(gate, far, with_laser, use_laser=False))
+        self.assertFalse(model.laser_hits(gate, (186, 6), with_laser), "desde la repisa el haz pasa por encima")
+        # Una pared entre Isak y la Burbuja corta el haz.
+        fill(level, (179,), (8, 9), "#")
+        walled = vl.LevelModel(level, rules)
+        self.assertFalse(walled.laser_hits(walled.gate("bubble:burbuja_3"), far, with_laser))
+        # Alcance maximo: 768 px.
+        self.assertFalse(model.laser_hits(model.gate("bubble:burbuja_cierre"), (176, 9), with_laser))
+
+    def test_extended_bridge_is_a_thin_board(self):
+        """Un puente extendido es una tabla fina en lo alto de su celda: se puede estar de pie debajo,
+        pero no atravesarla saltando."""
+        level = base_level()
+        model = vl.LevelModel(level, vl.Rules())
+        opened = frozenset({"bridge:puente_laser_1"})  # (159-162, 8), 2 tiles sobre el suelo
+        world = model.world(opened)
+        self.assertTrue(world.is_node(160, 9), "de pie bajo el puente")
+        self.assertTrue(world.is_node(160, 7), "de pie encima")
+        self.assertTrue(world.collides((160.5) * 64, 9 * 64 - 40), "la cabeza choca con la tabla")
+        edges = {e["to"] for e in world.compute_edges((160, 9))}
+        self.assertNotIn((160, 7), edges, "no se sube atravesando la tabla")
 
     def test_spikes_at_spawn(self):
         level = base_level()
