@@ -224,6 +224,8 @@ class LevelValidator:
                     os.path.join(self.root, "data", "enemies", "%s.json" % kind)):
                 self.error("enemigo '%s': tipo '%s' sin data/enemies/%s.json"
                            % (entry.get("id"), kind, kind))
+            if "open" in entry and not isinstance(entry["open"], bool):
+                self.error("enemigo '%s': open debe ser booleano" % entry.get("id"))
             params = entry.get("params", {})
             if not isinstance(params, dict):
                 self.error("enemigo '%s': 'params' debe ser un objeto" % entry.get("id"))

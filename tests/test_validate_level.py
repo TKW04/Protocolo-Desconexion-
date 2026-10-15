@@ -76,20 +76,29 @@ class RealLevelTest(unittest.TestCase):
         self.assertEqual(actions[-1], "goal")
         pulses = [a["object"] for a in result["path"] if a["action"] == "pulse"]
         # Las puertas obligatorias se abren con el pulso y en el orden del nivel (1-1 ampliado); las
-        # de los secretos (puente_servicio, popup_alto) no entran en el camino principal.
+        # de los secretos (puente_servicio, popup_alto) no entran en el camino principal, y las
+        # Burbujas en abierto (2026-10-15) se pueden saltar: solo burbuja_1 (3a) obliga al pulso.
         self.assertEqual(pulses, ["puente puente_1", "puente puente_2", "puente puente_3", "Burbuja burbuja_1",
-                                  "Burbuja burbuja_2", "Burbuja burbuja_3", "Burbuja burbuja_4", "pop-up popup_1",
-                                  "Burbuja burbuja_5", "pop-up popup_2", "puente puente_4", "pop-up popup_3"])
+                                  "pop-up popup_1", "pop-up popup_2", "puente puente_4", "pop-up popup_3"])
         self.assertEqual(result["checkpoints"][0]["reachable_from"], "P")
         for bubble in (g for g in result["gates"] if g["kind"] == "bubble"):
-            self.assertFalse(bubble["bypassable"], bubble["id"])
+            self.assertEqual(bubble["bypassable"], bubble["open"], bubble["id"])
+            if bubble["open"]:
+                # Repisa de 3 tiles junto a la patrulla: escalon desde la Burbuja aturdida y pop saltando.
+                ledge = bubble["pop_ledge"]
+                self.assertEqual((ledge["height_px"], ledge["gap_px"]), (192, 0.0), bubble["id"])
+                self.assertTrue(ledge["step_reach"], bubble["id"])
+                self.assertFalse(ledge["walk_off_pops"], bubble["id"])
+                self.assertGreaterEqual(ledge["jump_impact_px_s"], 1150 * 1.1, bubble["id"])
         # Los secretos de puntos (celdas S, sin 'h') se alcanzan (y sus puertas son opcionales: sin avisos).
         items = {i["id"]: i for i in result["secrets"]["items"]}
         for sid in ("secreto_puente_servicio", "secreto_techo", "secreto_popup_alto"):
             self.assertTrue(items[sid]["reachable"], sid)
         self.assertIn("bridge:puente_servicio", items["secreto_puente_servicio"]["secret_gates_opened"])
-        # Secreto del Pulso amplio (2026-10-15): sin la mejora no se llega, con ella si.
+        # Secreto del Pulso amplio (2026-10-15): el unico power bank del 1-1; sin la mejora no se
+        # llega, con ella si.
         wide = items["secreto_pulso_amplio"]
+        self.assertEqual(wide["object"], "power_bank_pickup")
         self.assertEqual(wide["requires_upgrade"], "wide_pulse")
         self.assertFalse(wide["reachable_without_upgrade"])
         self.assertTrue(wide["reachable_with_upgrade"])
@@ -200,6 +209,21 @@ class BrokenVariantsTest(unittest.TestCase):
         self.assertTrue(result["ok"], messages(result))
         self.assertTrue(any("pulso no es obligatorio para la Burbuja" in w for w in messages(result, "warnings")))
 
+    def test_open_bubble_under_ceiling_warns(self):
+        level = base_level()
+        next(e for e in level["enemies"] if e["id"] == "burbuja_1")["open"] = True
+        result = vl.validate(level)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertTrue(any("burbuja_1 esta marcada en abierto (open) pero bloquea" in w
+                            for w in messages(result, "warnings")))
+
+    def test_open_bubble_without_ledge_warns(self):
+        level = base_level()
+        fill(level, range(166, 169), (6,), ".")  # repisa de 3b (burbuja_2)
+        result = vl.validate(level)
+        self.assertTrue(any("burbuja_2 esta en abierto pero no tiene repisa" in w
+                            for w in messages(result, "warnings")), messages(result, "warnings"))
+
     def test_spikes_at_spawn(self):
         level = base_level()
         set_cell(level, 4, 9, "^")  # donde cae Isak desde P
@@ -235,17 +259,17 @@ class BrokenVariantsTest(unittest.TestCase):
     def test_upgrade_secret_reachable_without_upgrade_fails(self):
         level = base_level()
         obj_id(level, "popup_lejano")["params"]["close_button_px"] = [60, 192]  # 96 px: llega el pulso base
-        self.assert_fails(level, "secreto_pulso_amplio se alcanza sin la mejora wide_pulse")
+        self.assert_fails(level, "secreto_pulso_amplio (power_bank_pickup) se alcanza sin la mejora wide_pulse")
 
     def test_upgrade_secret_unreachable_even_with_upgrade_fails(self):
         level = base_level()
         obj_id(level, "popup_lejano")["params"]["close_button_px"] = [36, 192]  # 120 px: ni con 112
-        self.assert_fails(level, "secreto_pulso_amplio no se alcanza ni con la mejora wide_pulse")
+        self.assert_fails(level, "secreto_pulso_amplio (power_bank_pickup) no se alcanza ni con la mejora wide_pulse")
 
     def test_points_secret_must_be_reachable(self):
         level = base_level()
         del secret(level, "secreto_pulso_amplio")["requires_upgrade"]
-        self.assert_fails(level, "el secreto secreto_pulso_amplio no se alcanza")
+        self.assert_fails(level, "el secreto secreto_pulso_amplio (power_bank_pickup) no se alcanza")
         # Con la mejora comprada se alcanza y no hay error.
         result = vl.validate(level, upgrades=["wide_pulse"])
         self.assertTrue(result["ok"], messages(result))

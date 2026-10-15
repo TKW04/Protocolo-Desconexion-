@@ -28,7 +28,10 @@ movimiento por celdas:
   6. Objetos que hacen de puerta: el puente no existe hasta que el pulso
      alcanza su receptor; el pop-up es solido hasta que el pulso alcanza su
      boton; la Burbuja bloquea el paso hasta aturdirla (si el techo deja
-     saltarla, solo avisa de que el pulso no es obligatorio). El pulso sale del
+     saltarla, solo avisa de que el pulso no es obligatorio, salvo si el enemigo
+     lleva "open": true, en abierto a proposito; entonces avisa si bloquea o si
+     no tiene repisa cerca desde la que, saltando, caiga sobre ella aturdida por
+     encima del umbral de pop con un 10 % de margen). El pulso sale del
      celular de Isak de pie (pulse_effect_origin) con radio pulse_radius_px,
      desde una celda ya alcanzable. Avisa si una puerta no es obligatoria,
      salvo las de un secreto (campo `gates` de la entrada en `secrets`), que
@@ -86,6 +89,10 @@ EPS = 1e-6
 # Paso del muestreo de posiciones de pie dentro de una celda al comprobar el pulso.
 PULSE_SAMPLE_PX = 4.0
 INF = float("inf")
+# Burbujas en abierto ("open"): la repisa para reventarla esta como mucho a estos tiles del borde de su
+# cuerpo y el impacto saltando desde ella supera el umbral de pop con este margen.
+POP_LEDGE_TILES = 3
+POP_MARGIN = 0.10
 
 
 # --- Datos ---
@@ -322,6 +329,13 @@ class LevelModel:
             gate.floor = floor
             gate.damage_width = dw
             gate.damage_top = -(dcy - dh * 0.5)  # altura de la parte de arriba sobre el suelo
+            # Burbuja en abierto a proposito (campo "open" del enemigo): se puede saltar y se busca
+            # su repisa para reventarla (aturdida, cayendo encima a >= pop_speed_threshold_px_s).
+            gate.open = bool(enemy.get("open", False))
+            gate.platform_top = float(params["platform_top_px"])
+            gate.pop_threshold = float(params["pop_speed_threshold_px_s"])
+            gate.body_span = (body[0], body[2])
+            gate.pop_ledge = None
             self.gates.append(gate)
 
     def _spike_rects(self):
@@ -807,11 +821,52 @@ class Validator:
             g.apex_px = apex
             if dist >= need:
                 g.bypassable = True
-                self.report.warning(
-                    "el pulso no es obligatorio para la Burbuja: con %s px libres sobre su patrulla Isak "
-                    "eleva los pies %.0f px y recorre %.0f px por encima de su zona de dano (necesita %.0f)"
-                    % ("inf" if headroom == INF else "%.0f" % headroom, apex, dist, need),
-                    g.row, g.col, "Burbuja %s" % g.obj_id)
+                if not g.open:
+                    self.report.warning(
+                        "el pulso no es obligatorio para la Burbuja: con %s px libres sobre su patrulla Isak "
+                        "eleva los pies %.0f px y recorre %.0f px por encima de su zona de dano (necesita %.0f)"
+                        % ("inf" if headroom == INF else "%.0f" % headroom, apex, dist, need),
+                        g.row, g.col, "Burbuja %s" % g.obj_id)
+            if g.open:
+                if not g.bypassable:
+                    self.report.warning("la Burbuja %s esta marcada en abierto (open) pero bloquea el paso "
+                                        "(%s px libres sobre su patrulla)"
+                                        % (g.obj_id, "%.0f" % headroom), g.row, g.col, "Burbuja %s" % g.obj_id)
+                g.pop_ledge = self._pop_ledge(g)
+                if g.pop_ledge is None:
+                    self.report.warning("la Burbuja %s esta en abierto pero no tiene repisa cerca para reventarla "
+                                        "(saltando desde ella no se cae encima a %.0f px/s)"
+                                        % (g.obj_id, g.pop_threshold), g.row, g.col, "Burbuja %s" % g.obj_id)
+
+    def _pop_ledge(self, g):
+        """Repisa para reventar una Burbuja en abierto: el apoyo ('#' o '-', con sitio para Isak de
+        pie encima) mas cercano a su patrulla (a POP_LEDGE_TILES como mucho del borde de su cuerpo) desde
+        el que, SALTANDO, Isak cae sobre la Burbuja aturdida a >= pop_speed_threshold_px_s con un margen
+        de POP_MARGIN, y bajando andando no (la pisa). Devuelve un dict o None."""
+        m = self.model
+        r = self.rules
+        row_floor = int(round(g.floor / m.T))
+        lo = int(g.body_span[0] // m.T) - POP_LEDGE_TILES
+        hi = int((g.body_span[1] - EPS) // m.T) + POP_LEDGE_TILES
+        best = None
+        for c in range(max(lo, 0), min(hi, m.cols - 1) + 1):
+            for rr in range(1, row_floor):
+                if m.grid[rr][c] not in "#-" or any(m.grid[k][c] == "#" for k in (rr - 1, rr - 2) if k >= 0):
+                    continue
+                height = (row_floor - rr) * m.T
+                g_fall = r.gravity * r.fall_mult
+                jump_v = math.sqrt(max(0.0, 2 * g_fall * (height + r.jump_height - g.platform_top)))
+                walk_v = math.sqrt(max(0.0, 2 * g_fall * (height - g.platform_top)))
+                if jump_v < g.pop_threshold * (1 + POP_MARGIN):
+                    continue
+                gap = max(0.0, g.body_span[0] - (c + 1) * m.T, c * m.T - g.body_span[1])
+                cand = {"col": c, "row": rr - 1, "height_px": height, "gap_px": gap,
+                        "jump_impact_px_s": round(jump_v), "walk_off_impact_px_s": round(walk_v),
+                        "walk_off_pops": walk_v >= g.pop_threshold,
+                        "step_reach": height <= g.platform_top + r.jump_height * r.limit + EPS}
+                if best is None or (gap, height) < (best["gap_px"], best["height_px"]):
+                    best = cand
+        return best
 
     def _check_spawn_spikes(self, cell, node, what):
         """Pinchos en la celda de aparicion, en la caida hasta el suelo o en el suelo."""
@@ -1152,6 +1207,9 @@ class Validator:
             if g.kind == "bubble":
                 entry["headroom_px"] = None if g.headroom_px == INF else g.headroom_px
                 entry["jump_over_px"] = round(g.jump_over_px, 1)
+                entry["open"] = g.open
+                if g.pop_ledge is not None:
+                    entry["pop_ledge"] = g.pop_ledge
             gates.append(entry)
         self.result["gates"] = gates
         return self.result
@@ -1215,6 +1273,14 @@ def format_text(path, result):
             out.append("  Burbuja %s: %s px libres sobre la patrulla, por encima de su zona de dano recorre %.0f px "
                        "-> %s" % (g["id"], "inf" if g["headroom_px"] is None else "%.0f" % g["headroom_px"],
                                   g["jump_over_px"], "se puede saltar" if g["bypassable"] else "bloquea hasta el pulso"))
+            ledge = g.get("pop_ledge")
+            if ledge:
+                out.append("    repisa para reventarla: (fila %d, columna %d), %.0f px sobre su suelo, a %.0f px de su "
+                           "patrulla; saltando cae a %d px/s (revienta), bajando andando a %d px/s (%s)%s"
+                           % (ledge["row"], ledge["col"], ledge["height_px"], ledge["gap_px"],
+                              ledge["jump_impact_px_s"], ledge["walk_off_impact_px_s"],
+                              "revienta" if ledge["walk_off_pops"] else "la pisa",
+                              "; se sube desde la Burbuja aturdida" if ledge["step_reach"] else ""))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
     for w in result["warnings"]:
