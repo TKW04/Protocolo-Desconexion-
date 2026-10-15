@@ -12,7 +12,9 @@
 ##   de sincronizacion y, con --die (por defecto), fuerza una muerte (Sync Rate 0)
 ##   tras tocarlo y comprueba que reaparece alli con el 100 %; se para en la
 ##   terminal de salida (2026-10-15: tocarla no basta) y la activa con el pulso
-##   (Isak es absorbido por el vortice de salida),
+##   (Isak gira de espaldas, mirando al monitor, con un destello cian y es
+##   absorbido por el vortice de salida; comprueba que no llega al hub sin
+##   haberse puesto de espaldas antes del vortice),
 ##   comprueba la pantalla provisional del hub (nivel completado, 1-2 desbloqueado,
 ##   puntos) y pulsa salto (accion jump) para reiniciar: Sync Rate y objetos
 ##   desde cero, pero los puntos de atencion se conservan y los ya capturados no
@@ -191,6 +193,8 @@ func _play() -> bool:
 	var announced: Dictionary = {}
 	while _frame < MAX_FRAMES:
 		if _runner.is_in_hub():
+			if not announced.has("espaldas"):
+				return _fail("Isak no se puso de espaldas ante la terminal antes del vortice de salida")
 			_note("hub provisional mostrado")
 			_shot_in("8_hub", 40)
 			return true
@@ -244,6 +248,12 @@ func _play() -> bool:
 			_note("laser: %d disparos, %d Burbujas eliminadas (%s); energia al final %.0f" % [_shots, _kills.size(),
 					", ".join(_kills), GameState.debug_energy])
 			_shot_in("7_terminal", 30)
+		if _isak.is_facing_back() and not announced.has("espaldas"):
+			announced["espaldas"] = true
+			if terminal.get_vortex() != null:
+				return _fail("el vortice de salida se abrio antes de que Isak se pusiera de espaldas")
+			_note("Isak de espaldas ante la terminal (x=%.0f; terminal en x=%.0f)" % [x, terminal.global_position.x])
+			_shot_in("7b_espaldas", 1)
 		if checkpoint.is_taken() and not announced.has("checkpoint"):
 			announced["checkpoint"] = true
 			_shot_in("2_checkpoint", 20)

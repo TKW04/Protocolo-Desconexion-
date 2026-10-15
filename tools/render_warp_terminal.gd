@@ -5,7 +5,9 @@
 ##   02_vortice_a_medias.png       el vortice cerrandose con Isak materializandose
 ##   03_terminal_apagada.png       terminal apagada (Isak lejos)
 ##   04_terminal_prompt_g.png      Isak cerca: prompt y tecla del pulso
-##   05_terminal_activa_salida.png pantalla encendida y vortice de salida absorbiendo a Isak
+##   05_terminal_destello_giro.png destello cian del giro: pantalla llena de cian, Isak ya de espaldas
+##   06_isak_espaldas_terminal.png Isak de espaldas frente a la terminal activa (antes del vortice)
+##   07_vortice_salida_espaldas.png vortice de salida absorbiendo a Isak de espaldas
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_warp_terminal.gd [-- carpeta_salida]
 extends SceneTree
@@ -55,12 +57,14 @@ func _run() -> void:
 	_teleport(285.5)
 	await _frames(40)
 	await _save(out_dir, "03_terminal_apagada.png")
-	# 4. Isak junto a la terminal: prompt y tecla.
-	_teleport(289.6)
+	# 4. Isak frente a la terminal: prompt y tecla.
+	_teleport(290.45)
 	await _frames(30)
 	_check(terminal.call(&"is_key_hint_visible"), "no sale la tecla del pulso")
 	await _save(out_dir, "04_terminal_prompt_g.png")
-	# 5. Pulso: la terminal se enciende y el vortice absorbe a Isak.
+	# 5-7. Pulso: la terminal se enciende, Isak gira de espaldas con el destello
+	# y el vortice lo absorbe. Cada captura congela el arbol (pausa) para que la
+	# fase no avance mientras se guarda.
 	var fake: RefCounted = (load("res://scripts/player/player_input.gd") as GDScript).new()
 	_isak().set(&"input", fake)
 	fake.set(&"pulse_pressed", true)
@@ -68,10 +72,16 @@ func _run() -> void:
 	await physics_frame
 	fake.set(&"pulse_pressed", false)
 	_check(await _wait(func() -> bool:
+		return terminal.call(&"is_turn_flashing") and _isak().call(&"is_facing_back")), "no hay destello con Isak de espaldas")
+	await _save_frozen(out_dir, "05_terminal_destello_giro.png")
+	_check(await _wait(func() -> bool:
+		return int(terminal.call(&"get_turn_tick")) >= 0 and not terminal.call(&"is_turn_flashing")), "no se ve a Isak de espaldas sin destello")
+	await _save_frozen(out_dir, "06_isak_espaldas_terminal.png")
+	_check(await _wait(func() -> bool:
 		var v: Node = terminal.call(&"get_vortex")
-		return v != null and int(v.call(&"get_phase")) >= 3), "no se abre el vortice de salida")
-	await _frames(3)
-	await _save(out_dir, "05_terminal_activa_salida.png")
+		return v != null and int(v.call(&"get_phase")) >= 2), "no se abre el vortice de salida")
+	await _frames(2)
+	await _save_frozen(out_dir, "07_vortice_salida_espaldas.png")
 	print("render_warp_terminal: %s" % ("OK" if _ok else "FALLO"))
 	_main.queue_free()
 	await process_frame
@@ -113,6 +123,13 @@ func _check(ok: bool, why: String) -> void:
 	if not ok:
 		_ok = false
 		push_error("render_warp_terminal: " + why)
+
+
+## Captura con el arbol en pausa (la fase actual no avanza mientras se guarda).
+func _save_frozen(out_dir: String, file_name: String) -> void:
+	paused = true
+	await _save(out_dir, file_name)
+	paused = false
 
 
 func _save(out_dir: String, file_name: String) -> void:

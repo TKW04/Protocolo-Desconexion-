@@ -6,7 +6,8 @@
 ##   (el fundido de entrada); al empezar a cerrarse Isak se muestra
 ##   (Isak.reveal_warp) y se materializa en pasos discretos; al terminar
 ##   recupera el control (Isak.end_warp).
-## - DEPART (ExitTerminal): Isak sin control (begin_warp(false)); al cerrarse se
+## - DEPART (ExitTerminal): Isak sin control (begin_warp(false)) y ya de
+##   espaldas (Isak.face_back: centro back_center_offset_px); al cerrarse se
 ##   desmaterializa (absorbido) y queda oculto y sin control.
 ## Avanza con tiempo del mundo (advance; se para con la pausa). Al terminar emite
 ## finished y se libera. El origen del nodo es el centro del vortice.
@@ -132,6 +133,9 @@ func _setup(mode: Mode, isak: Isak, parent: Node) -> void:
 	_isak = isak
 	name = "ArrivalVortex" if mode == Mode.ARRIVE else "DepartVortex"
 	var offset: Array = _data.get("center_offset_px", [0, -48])
+	# De espaldas (salida por la terminal): centrado en esa pose.
+	if isak.is_facing_back():
+		offset = _data.get("back_center_offset_px", offset)
 	z_index = int(_data.get("z_index", 0))
 	_spins_left = maxi(0, int(_data.get("spin_loops", 1)))
 	_sprite = AnimatedSprite2D.new()

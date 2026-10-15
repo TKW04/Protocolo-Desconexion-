@@ -80,7 +80,7 @@
 		},
 		"exit_terminal": {
 			"scene": "res://scenes/levels/exit_terminal.tscn",
-			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, se abre un vortice de salida (WarpVortex) alrededor de Isak, que queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador.",
+			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador.",
 			"required": [],
 			"fields": {
 				"id": "object_id",
@@ -250,7 +250,7 @@
 		"label_border_color": "#9bb0e8"
 	},
 	"exit_terminal": {
-		"_notes": "PROPUESTA (2026-10-15). Terminal de 64x128 (frames: SpriteFrames de tools/gen_warp_objects.py; animaciones terminal_off, terminal_prompt, terminal_boot y terminal_on con sus fps), dibujada desde la esquina superior izquierda de su primera celda y apoyada en el suelo. prompt_zone_px: zona [x, y, ancho, alto] relativa a ese origen en la que Isak 'esta cerca' (prompt e icono de la tecla). hit_rect_px: zona que el pulso debe tocar (monitor, cuello y pedestal). Icono de la tecla: la primera tecla de pulse_action en el Input Map (G), con la fuente de textos a font_scale sobre una placa key_plate_color con borde key_border_color, centrado sobre el monitor a key_gap_px por encima de su borde (monitor_top_px), con un bote de key_bob_px cada key_bob_s. Etiqueta (text, opcional): como la de la puerta, a label_gap_px por encima del monitor. El vortice de salida empieza al acabar terminal_boot. Tiempo del mundo (Debug x0,5).",
+		"_notes": "PROPUESTA (2026-10-15). Terminal de 64x128 (frames: SpriteFrames de tools/gen_warp_objects.py; animaciones terminal_off, terminal_prompt, terminal_boot y terminal_on con sus fps), dibujada desde la esquina superior izquierda de su primera celda y apoyada en el suelo. prompt_zone_px: zona [x, y, ancho, alto] relativa a ese origen en la que Isak 'esta cerca' (prompt e icono de la tecla). hit_rect_px: zona que el pulso debe tocar (monitor, cuello y pedestal). Icono de la tecla: la primera tecla de pulse_action en el Input Map (G), con la fuente de textos a font_scale sobre una placa key_plate_color con borde key_border_color, centrado sobre el monitor a key_gap_px por encima de su borde (monitor_top_px), con un bote de key_bob_px cada key_bob_s. Etiqueta (text, opcional): como la de la puerta, a label_gap_px por encima del monitor. Giro (2026-10-15): al acabar terminal_boot, turn_ticks pasos de turn_tick_s (3 x 1/12 s = 0,25 s): durante los turn_flash_ticks primeros la pantalla se queda en el ultimo cuadro del encendido (llena de cian) e Isak se tine con turn_flash_modulate (destello cian; modulate RGB, sin arte nuevo); en el paso turn_back_tick Isak se pone de espaldas (Isak.face_back, mirando al monitor). Al acabar el giro se abre el vortice de salida (WarpVortex.depart, centrado en la pose de espaldas). Tiempo del mundo (Debug x0,5).",
 		"frames": "res://assets/sprites/warp_objects_frames.tres",
 		"frame_size": [64, 128],
 		"monitor_top_px": 30,
@@ -269,7 +269,12 @@
 		"label_gap_px": 44,
 		"label_padding_px": 3,
 		"label_plate_color": "#0b0e1a",
-		"label_border_color": "#9bb0e8"
+		"label_border_color": "#9bb0e8",
+		"turn_tick_s": 0.0833,
+		"turn_ticks": 3,
+		"turn_back_tick": 1,
+		"turn_flash_ticks": 2,
+		"turn_flash_modulate": [0.8, 1.45, 1.55]
 	},
 	"checkpoint": {
 		"_notes": "PROPUESTA (paso 16). Punto de sincronizacion (celda C del grid; no va en objects): poste-baliza de 64x128 (2 tiles, como la puerta) con bandera; izada queda por encima de la cabeza de Isak, dibujado abajo-centro en el origen del Checkpoint (los pies de Isak al reaparecer). Cuadros: off 0 (bandera gris a media asta), on_a 1 y on_b 2 (bandera cian izada, alterna cada wave_s de tiempo del mundo). Admite el cian del Debug por ser interactivo (palette_allow del asset). trigger_size_px: zona (ancho, alto) que lo activa al tocarla Isak, centrada en x y apoyada en el suelo. Generado por tools/gen_checkpoint.py.",

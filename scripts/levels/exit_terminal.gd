@@ -11,16 +11,21 @@
 ##    hit_rect_px, como en PulseReceiver) se activa una sola vez: emite
 ##    activated(level_id), Isak queda sin control (Isak.begin_warp(false)) y la
 ##    pantalla se enciende en cian (terminal_boot, luego terminal_on).
-## 3. Al acabar el encendido se abre un vortice de salida (WarpVortex.depart)
-##    alrededor de Isak, que es absorbido; al cerrarse emite completed(level_id)
-##    y EventBus.level_completed(level_id) (LevelRunner lleva al hub).
+## 3. Al acabar el encendido, giro (TURN, turn_ticks pasos de turn_tick_s): la
+##    pantalla se queda llena de cian e Isak se tine de cian (destello,
+##    turn_flash_ticks pasos) y en el paso turn_back_tick se pone de espaldas,
+##    mirando al monitor (Isak.face_back). Sin arte nuevo.
+## 4. Al acabar el giro se abre un vortice de salida (WarpVortex.depart)
+##    alrededor de Isak de espaldas, que es absorbido; al cerrarse emite
+##    completed(level_id) y EventBus.level_completed(level_id) (LevelRunner
+##    lleva al hub).
 ## No es solida (Area2D, mascara player: solo detecta la cercania de Isak).
 ## Tiempo del mundo (Debug x0,5; se para con la pausa). El origen del nodo es la
 ## esquina superior izquierda de su primera celda.
 class_name ExitTerminal
 extends Area2D
 
-enum State { OFF, PROMPT, BOOT, WARP, DONE }
+enum State { OFF, PROMPT, BOOT, TURN, WARP, DONE }
 
 const GROUP: StringName = &"exit_terminal"
 const ANIM_OFF: StringName = &"terminal_off"
@@ -152,24 +157,86 @@ func advance(delta: float) -> void:
 			_update_near_state()
 			_loop(ANIM_PROMPT if _state == State.PROMPT else ANIM_OFF)
 			_bob_key()
-		State.BOOT:
-			var frames: SpriteFrames = _sprite.sprite_frames
-			var count: int = frames.get_frame_count(ANIM_BOOT)
-			var fps: float = maxf(frames.get_animation_speed(ANIM_BOOT), 0.001)
-			var index: int = floori(_time * fps)
-			if index < count:
-				_sprite.frame = index
-			else:
-				_start_warp()
+			return
 		State.WARP, State.DONE:
 			_loop(ANIM_ON)
+			return
+	# Encendido y giro: un paso largo puede cruzar los dos (el tiempo sobrante
+	# pasa al giro).
+	if _state == State.BOOT:
+		var frames: SpriteFrames = _sprite.sprite_frames
+		var count: int = frames.get_frame_count(ANIM_BOOT)
+		var fps: float = maxf(frames.get_animation_speed(ANIM_BOOT), 0.001)
+		var index: int = floori(_time * fps)
+		if index < count:
+			_sprite.frame = index
+			return
+		_time -= count / fps
+		_start_turn()
+	if _state == State.TURN:
+		_update_turn()
+
+
+## Paso actual del giro (0 .. turn_ticks - 1); -1 fuera del giro.
+func get_turn_tick() -> int:
+	if _state != State.TURN:
+		return -1
+	return floori(_time / _turn_tick_s())
+
+
+## Destello cian del giro en curso (pantalla llena de cian e Isak tenido).
+func is_turn_flashing() -> bool:
+	return _state == State.TURN and get_turn_tick() < int(_config.get("turn_flash_ticks", 2))
 
 
 # --- Interno ---
 
+func _turn_tick_s() -> float:
+	return maxf(float(_config.get("turn_tick_s", 1.0 / 12.0)), 0.001)
+
+
+func _start_turn() -> void:
+	_state = State.TURN
+	_apply_visuals()
+
+
+## Destello (pantalla llena: ultimo cuadro del encendido; Isak tenido de cian),
+## giro de Isak en turn_back_tick y, al acabar los turn_ticks, el vortice.
+func _update_turn() -> void:
+	var tick: int = get_turn_tick()
+	if tick >= maxi(int(_config.get("turn_ticks", 3)), 0):
+		_start_warp()
+		return
+	var flashing: bool = is_turn_flashing()
+	if flashing:
+		_show(ANIM_BOOT)
+		_sprite.frame = _sprite.sprite_frames.get_frame_count(ANIM_BOOT) - 1
+	else:
+		if _sprite.animation != ANIM_ON:
+			_sprite.animation = ANIM_ON
+		_loop(ANIM_ON)
+	_tint_player(flashing)
+	if tick >= int(_config.get("turn_back_tick", 1)) and _valid(_player) and not _player.is_facing_back():
+		_player.face_back()
+
+
+## Tine a Isak con turn_flash_modulate (solo RGB; la opacidad es del vortice).
+func _tint_player(on: bool) -> void:
+	if not _valid(_player):
+		return
+	var color := Color.WHITE
+	if on:
+		var c: Array = _config.get("turn_flash_modulate", [1, 1, 1])
+		color = Color(float(c[0]), float(c[1]), float(c[2]))
+	_player.modulate = Color(color.r, color.g, color.b, _player.modulate.a)
+
+
 func _start_warp() -> void:
 	_state = State.WARP
 	_time = 0.0
+	_tint_player(false)
+	if _valid(_player) and not _player.is_facing_back():
+		_player.face_back()
 	_apply_visuals()
 	if not _valid(_player):
 		_finish()
@@ -203,7 +270,7 @@ func _apply_visuals() -> void:
 			_show(ANIM_OFF)
 		State.PROMPT:
 			_show(ANIM_PROMPT)
-		State.BOOT:
+		State.BOOT, State.TURN:
 			_show(ANIM_BOOT)
 		_:
 			_show(ANIM_ON)

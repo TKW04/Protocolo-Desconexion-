@@ -1,7 +1,8 @@
 # Terminal de salida (ExitTerminal, scenes/levels/exit_terminal.tscn; 2026-10-15):
 # tocarla no termina el nivel; con Isak cerca muestra el prompt y la tecla del
 # pulso (Input Map); el pulso de Isak la activa: pantalla encendida, vortice de
-# salida, Isak absorbido y EventBus.level_completed una sola vez.
+# salida, Isak absorbido y EventBus.level_completed una sola vez. Antes del
+# vortice, Isak gira de espaldas (face_back) con un destello cian.
 extends GutTest
 
 const TERMINAL_SCENE: PackedScene = preload("res://scenes/levels/exit_terminal.tscn")
@@ -117,3 +118,47 @@ func test_pulse_activates_boots_and_absorbs_isak_once() -> void:
 	_terminal.advance(LONG_STEP_S)
 	assert_eq(_completed.size(), 1, "Una sola vez")
 	assert_eq(_terminal.get_completed_count(), 1)
+
+
+func test_isak_turns_his_back_with_a_cyan_flash_before_the_vortex() -> void:
+	_place_isak(20.4)
+	await wait_physics_frames(6)
+	_isak.set_pulse_area_active(true)
+	assert_eq(_terminal.get_state(), ExitTerminal.State.BOOT)
+	assert_false(_isak.is_facing_back(), "Durante el encendido sigue de perfil")
+	var frames: SpriteFrames = (_terminal.get_node(^"Terminal") as AnimatedSprite2D).sprite_frames
+	var boot_s: float = frames.get_frame_count(ExitTerminal.ANIM_BOOT) / frames.get_animation_speed(ExitTerminal.ANIM_BOOT)
+	var config: Dictionary = World1ObjectsConfig.section("exit_terminal")
+	var tick_s: float = float(config["turn_tick_s"])
+	var ticks: int = int(config["turn_ticks"])
+	var back_tick: int = int(config["turn_back_tick"])
+	assert_lte(ticks * tick_s, 0.5, "El giro alarga la salida como mucho 0,5 s")
+	_terminal.advance(boot_s + tick_s * 0.5)
+	assert_eq(_terminal.get_state(), ExitTerminal.State.TURN, "Tras el encendido, el giro")
+	assert_eq(_terminal.get_turn_tick(), 0)
+	assert_true(_terminal.is_turn_flashing(), "Destello cian")
+	assert_eq(_terminal.get_animation(), ExitTerminal.ANIM_BOOT, "Pantalla llena de cian (ultimo cuadro del encendido)")
+	assert_ne(_isak.modulate.r, 1.0, "Isak tenido por el destello")
+	assert_null(_terminal.get_vortex(), "El vortice aun no se abre")
+	_terminal.advance(tick_s * back_tick)
+	assert_true(_isak.is_facing_back(), "Isak de espaldas, mirando al monitor")
+	assert_eq(_isak.get_animation(), Isak.ANIM_BACK_IDLE)
+	_terminal.advance(tick_s * (ticks - back_tick - 1))
+	assert_false(_terminal.is_turn_flashing(), "El destello termina")
+	assert_eq(_terminal.get_animation(), ExitTerminal.ANIM_ON)
+	assert_eq(_isak.modulate, Color.WHITE, "Sin tinte al acabar el destello")
+	assert_null(_terminal.get_vortex())
+	_terminal.advance(tick_s)
+	assert_eq(_terminal.get_state(), ExitTerminal.State.WARP)
+	var vortex: WarpVortex = _terminal.get_vortex()
+	assert_not_null(vortex, "Al acabar el giro se abre el vortice")
+	if vortex == null:
+		return
+	var offset: Array = WarpVortex.load_data()["back_center_offset_px"]
+	assert_eq(vortex.global_position, _isak.global_position + Vector2(float(offset[0]), float(offset[1])),
+		"Centrado en la pose de espaldas")
+	assert_false(_isak.take_hit(1.0), "No recibe golpes")
+	vortex.advance(LONG_STEP_S)
+	assert_true(_isak.is_facing_back(), "Absorbido de espaldas")
+	assert_eq(_isak.modulate.a, 0.0)
+	assert_eq(_completed, ["test"] as Array[String])
