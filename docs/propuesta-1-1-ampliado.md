@@ -1,6 +1,6 @@
 # Propuesta: 1-1 ampliado y mejoras permanentes
 
-**Estado:** PROPUESTA (2026-10-14), pendiente de aprobación. No cambia código, datos ni escenas. Lo marcado **[propuesta nueva]** no está en `docs/` y necesita aprobación expresa.
+**Estado:** APROBADA con cambios e IMPLEMENTADA (2026-10-14): ver «Notas del 1-1 ampliado» en `docs/preguntas.md`. Lo de abajo es el texto original de la propuesta. No cambia código, datos ni escenas. Lo marcado **[propuesta nueva]** no está en `docs/` y necesita aprobación expresa.
 
 **Punto de partida.** El 1-1 actual (`data/levels/1-1.json`) mide 140x14 tiles, con 5 tramos, 1 Burbuja, 1 punto de sincronización y 17 puntos de atención, y dura unos 25 s corriendo y 38 s caminando. La ficha (`mundo-1-notificaciones.md` §6.3) pide unos 3 min, dificultad 1/5 y "prácticamente sin riesgo de muerte", y `target_duration_s` ya vale 180. Física de referencia (`isak_physics.json`): 220 px/s caminando (3,4 tiles/s), 360 px/s corriendo (5,6 tiles/s), salto efectivo de 177 px (192 × 0,92), límite de exigencia del validador del 85 %.
 

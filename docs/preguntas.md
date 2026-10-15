@@ -463,7 +463,22 @@ Valores de movimiento: sin cambios.
   1. **Interpretación de Claude, pendiente de confirmar:** sin ningún power bank vacío, el sobrante de los drops **se pierde** (antes creaba power banks de la nada). ¿Es así?
   2. Al pagar una mejora, el power bank completo se gasta y desaparece (no vuelve como vacío). ¿Es así, o se recarga y se reutiliza?
   3. Hoy no hay forma de **comprar** un power bank: el catálogo `data/upgrades.json` no tiene esa entrada. ¿Dónde se compra y cuánto cuesta?
-  4. El texto de `data/world1_objects.json` (`power_bank_pickup`) y de `scripts/levels/power_bank_pickup.gd` aún dice "power bank completo"; hay que actualizarlo a "vacío" cuando se cierre el trabajo del 1-1 ampliado.
+  4. **Resuelta:** los textos de `power_bank_pickup` (`data/world1_objects.json` y `scripts/levels/power_bank_pickup.gd`) ya dicen "vacío".
+
+## Notas del 1-1 ampliado (2026-10-14)
+
+Implementa `docs/propuesta-1-1-ampliado.md` con las decisiones del usuario del 2026-10-14. Física, sprites y sistemas sin cambios.
+
+- **Mapa:** 300x14 tiles (`data/levels/1-1.json`, generado por un script de trabajo; las notas del JSON resumen la geometría). Once secciones: Tramo 1 (1-52: foso de 2 tiles, escalón de 2, una vía y un segundo foso), 2a (puente a ras de suelo), 2b (receptor sobre una meseta de 1 tile y dos puentes de 5 tiles seguidos), 2c (secreto A), 3a (la Burbuja del 1-1 original bajo su techo bajo), 3b (Burbuja a 100 px/s sobre una meseta), 3c (dos Burbujas bajo el mismo techo), 4a (pop-up a ras de suelo), 4b (Burbuja bajo techo y pop-up sobre un escalón), 4c (receptor, puente y pop-up que se cierra de pie en el puente) y Cierre (puerta en la columna 290 y pared con glitch en la 298). Sin pinchos. Un solo punto de sincronización, en la columna 150 (mitad del mapa).
+- **Cambios frente a la propuesta:** (1) 3b no usa la Burbuja aturdida como escalón ni 3c pinchos: el validador solo modela la Burbuja como puerta bajo un techo bajo, así que todas las Burbujas van bajo techo (la frase de Eco "también sirve de escalón" y la de los pinchos no se usan). (2) Los puentes de 2b miden 5 y 5 (con 4 tiles un salto corriendo con coyote time podría cruzar). (3) Los receptores quedan 2 tiles antes del foso: desde dentro del foso el pulso no los alcanza (si no, el puente se cerraba encima de Isak: soft-lock real, también en el 1-1 anterior). (4) Secreto B: se sube al techo de 3a por plataformas de una vía tras el techo, no desde 3b. (5) Secreto C: una vía hasta una repisa alta con un pop-up opcional, sin la Burbuja como escalón.
+- **Puntos de atención:** 79 en la ruta y 24 en los secretos A, B y C (8 cada uno) = **103**, suficiente para Pulso amplio (15), Sync reforzado (30) y Debug eficiente (50) = 95 sin farmear (no se recapturan).
+- **Power banks:** uno **vacío** en cada secreto A, B y C (`power_bank_pickup`, nuevo en el catálogo). Solo los carga el sobrante de los drops, y las Burbujas bajo techo bajo no se pueden reventar, así que el 1-1 no da carga: **no se puede pagar el power bank de Sync reforzado ni de Debug eficiente solo con el 1-1** (duda abierta abajo).
+- **Secretos:** A (repisa alta sobre el Tramo 2; receptor escondido al final del tramo con un puente de 8 tiles hacia la izquierda), B (encima del techo de 3a), C (nicho tras un pop-up en lo alto del Tramo 4) y D (pared con glitch; **pendiente**, se abre con el Debug, V12). Los secretos declaran sus puertas opcionales con el campo `gates` (sin avisos del validador).
+- **Eco:** líneas de primera vez de la propuesta §3 con `eco_line` (`once`): punto, foso, receptor, puente, Burbuja, sincronización, pop-up, power bank, puerta y pared con glitch. `[pulso]` se cambió por "lanza el pulso" (el cuadro de Eco no sustituye teclas).
+- **Validador:** el soft-lock usa ahora un grafo (nodo, puertas abiertas) restringido a lo alcanzable (antes probaba todas las combinaciones de puertas: con 14 puertas no terminaba). Los secretos con objeto recogible deben alcanzarse. Margen mínimo 12,5 puntos (igual que antes; peor salto 72,5 % en vertical).
+- **Duración medida (bot):** 89,7 s caminando y 57,0 s corriendo por la ruta, sin secretos, 0 golpes. Con lectura de Eco, dudas y los tres secretos se estima unos 2-2,5 min. `target_duration_s` 150.
+- **Dudas:** (1) Con los power banks vacíos y sin drops en el 1-1, ¿de dónde sale la carga para las mejoras que cuestan power bank? ¿Se deja una Burbuja al aire libre que se pueda reventar (su pulso no sería obligatorio) o se cargan en el 1-2? (2) ¿La duración (unos 90 s caminando la ruta) basta o se alarga el mapa?
+
 
 ### Propuesta en discusión: tres vueltas a los 18 mapas y "rollback" (sin implementar)
 
