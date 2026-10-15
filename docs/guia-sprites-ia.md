@@ -917,6 +917,7 @@ Hojas del usuario en `hojas/` (5x5 cuadros de 256 px salvo la terminal). Escala 
 
 | Animación | Celdas de origen | Cuadros | fps | Notas |
 |---|---|---|---|---|
+| walk | 11, 2, 4, 22, 23, 16, 17, 9 | 8 | 14 | 2 pasos de 4 cuadros, todos con el celular: 3,5 pasos/s, vuelta 0,57 s. Antes 25 celdas a 24 fps (cadencia de correr, celdas repetidas, celular ausente en 0, 1 y 10, torso saltando hasta 3 px). Comando: `python3 tools/import_sheet.py hojas/walk_right/spritesheet.png --anim walk --cols 5 --rows 5 --scale 0.539326 --align ground --cells 11,2,4,22,23,16,17,9`. El pie patina (~100 px/s frente a 220). |
 | run | 21, 16, 17, 18, 19, 20 (`--anchor-x 141`) | 6 | 14 | 2 pasos de 3 cuadros (contacto, paso por debajo, despegue): 4,7 pasos/s, vuelta 0,43 s, el pie apoyado va a ~309 px/s (patina -14 %). Ver la nota «Correr» abajo. |
 | jump_rise / jump_apex / jump_fall | 3-5 / 6-8 / 9-11 | 3 / 3 / 3 | — | El cuadro lo elige `velocity.y` (apogeo con \|vy\| < 240 px/s). La anticipación (0-2) se descarta: el salto sigue siendo instantáneo. |
 | jump_land | 13, 15, 17, 18, 19 | 5 | 24 | Solo al aterrizar en Idle; no bloquea el control. |

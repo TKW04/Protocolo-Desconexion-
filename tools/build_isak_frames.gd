@@ -23,9 +23,18 @@ const FRAME_SIZE: Vector2i = Vector2i(128, 128)
 ##   cabeza suben 1 px). A 12 fps cada respiracion duraba ~1 s y el salto de 1 px
 ##   parecia un temblor; a 8 fps dura ~1,5 s. Los cuadros se importan con
 ##   --stabilize (ruido temporal del arte de IA quitado).
-## walk (25 cuadros): ~6 pasos por vuelta de ~36 px a escala del juego = ~216 px.
-##   A walk_speed (220 px/s) la vuelta debe durar ~0,98 s -> ~25,5 fps; con 24 fps
-##   los pies avanzan ~207 px/s: patina ~6 %.
+## walk (8 cuadros = celdas 11,2,4,22 + 23,16,17,9 de la hoja: 2 pasos de 4
+##   cuadros, todos con el celular; --align ground, pies en la fila base).
+##   Antes: las 25 celdas a 24 fps = ~5,7 pasos/s (mas cadencia que correr) y en
+##   desorden: celdas repetidas (0=1=10, 4=12, 6=15...), saltos de pose, el
+##   celular ausente en 0, 1 y 10 y el torso saltando hasta 3 px entre cuadros
+##   (la IA dibuja el suelo 4-5 px mas abajo en un paso que en el otro). De cada
+##   pose se eligio la variante con menos salto del torso: 0-1 px por cuadro
+##   salvo 2 px al volver al cuadro 0. WALK_FPS 14: 3,5 pasos/s, vuelta 0,57 s
+##   (correr: 4,7 pasos/s). El pie apoyado retrocede ~7 px por cuadro (~29 px
+##   por paso) = ~100 px/s frente a walk_speed 220: patina (zancada corta del
+##   arte; sin patinar harian falta ~30 fps, que parece correr, o walk_speed ~100).
+const WALK_FPS: float = 14.0
 ## run (6 cuadros = celdas 21,16,17 + 18,19,20 de la hoja: 2 pasos de 3 cuadros,
 ##   contacto -> paso por debajo -> despegue). Medido en los cuadros de 128 px:
 ##   el pie apoyado retrocede 13+26 y 20+29 px por cuadro (media 22 px). A
@@ -51,7 +60,7 @@ const RUN_FPS: float = 14.0
 ##   2 px a 6 Hz. Mismo ritmo que antes, sin temblor.
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
-	"walk": [24.0, true, false],
+	"walk": [WALK_FPS, true, false],
 	"run": [RUN_FPS, true, false],
 	"jump_rise": [12.0, false, false],
 	"jump_apex": [12.0, false, false],
