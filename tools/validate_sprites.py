@@ -35,7 +35,7 @@ NAME_RE = re.compile(r"^[a-z0-9]+_[a-z0-9]+(_[a-z0-9]+)*_\d{2}\.png$")
 TARGET_HEIGHT = 96
 HEIGHT_TOL = 4
 ## Animaciones en las que Isak esta de pie en todos los cuadros.
-STANDING_ANIMS = ("idle", "terminal_intro", "terminal_loop", "terminal_outro")
+STANDING_ANIMS = ("idle", "back_idle", "terminal_intro", "terminal_loop", "terminal_outro")
 
 
 def load_gpl(path):

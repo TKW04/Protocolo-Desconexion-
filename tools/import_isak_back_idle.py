@@ -11,6 +11,12 @@ Uso (python3 -I, con Pillow en el site de usuario):
     python3 -I tools/import_isak_back_idle.py POSE.png [--dry-run]
         [--preview VISTA.png] [--compare COMPARA.png]
 --compare guarda una vista x8 del cuadro de espaldas junto a isak_idle_00.
+
+Tras importar se aplica una limpieza fija (CLEANUP): el borde de la IA deja
+unos pixeles grises claros sueltos (arriba a la derecha del pelo y junto a la
+mano derecha). Los aislados se quitan; los que hacen de contorno del pelo pasan
+al contorno oscuro. Es idempotente; para aplicarla sola al PNG ya importado:
+    python3 -I tools/import_isak_back_idle.py --clean-only
 """
 
 import os
@@ -26,6 +32,37 @@ import import_sheet  # noqa: E402
 from PIL import Image  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "assets", "sprites", "isak")
+BACK_PATH = os.path.join(OUT_DIR, "isak_back_idle_00.png")
+## Contorno oscuro del pelo (muestreado en el propio cuadro, p. ej. (80, 43)).
+OUTLINE = (16, 9, 8, 255)
+## Limpieza del borde: (x, y) -> color nuevo (None = transparente).
+CLEANUP = {
+    # Borde superior derecho del pelo: tira gris claro -> contorno oscuro.
+    **{(x, 35): OUTLINE for x in range(69, 78)},
+    (77, 40): OUTLINE,
+    (80, 46): OUTLINE,
+    # Pixel gris suelto fuera del pelo.
+    (81, 43): None,
+    # Columna gris suelta junto a la mano derecha y pixel bajo la mano.
+    (83, 86): None,
+    (83, 87): None,
+    (83, 88): None,
+    (84, 96): None,
+}
+
+
+def clean(path=BACK_PATH):
+    im = Image.open(path).convert("RGBA")
+    px = im.load()
+    changed = 0
+    for (x, y), color in CLEANUP.items():
+        new = color if color is not None else (0, 0, 0, 0)
+        if px[x, y] != new:
+            px[x, y] = new
+            changed += 1
+    if changed:
+        im.save(path)
+    print("limpieza: %d pixeles cambiados en %s" % (changed, path))
 
 
 def compare(path, zoom=8):
@@ -44,6 +81,9 @@ def main(argv):
     if not argv:
         print(__doc__)
         return 2
+    if argv == ["--clean-only"]:
+        clean()
+        return 0
     cmp_path = None
     if "--compare" in argv:
         i = argv.index("--compare")
@@ -51,8 +91,10 @@ def main(argv):
         argv = argv[:i] + argv[i + 2:]
     rc = import_sheet.main([argv[0], "--anim", "back_idle", "--cols", "1",
                             "--rows", "1", "--out", OUT_DIR] + argv[1:])
-    if rc in (0, None) and cmp_path and "--dry-run" not in argv:
-        compare(cmp_path)
+    if rc in (0, None) and "--dry-run" not in argv:
+        clean()
+        if cmp_path:
+            compare(cmp_path)
     return rc or 0
 
 
