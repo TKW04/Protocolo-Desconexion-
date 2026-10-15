@@ -15,6 +15,8 @@ var jump_held: bool = false
 var run_held: bool = false
 ## Pulso pulsado en este cuadro (flanco).
 var pulse_pressed: bool = false
+## Laser pulsado en este cuadro (flanco).
+var laser_pressed: bool = false
 
 
 ## Actualiza las intenciones. Se llama una vez por paso de fisica.
@@ -26,8 +28,9 @@ func poll() -> void:
 func clear_just_pressed() -> void:
 	jump_pressed = false
 	pulse_pressed = false
+	laser_pressed = false
 
 
 ## Verdadero si hay cualquier intencion activa (corta la animacion de terminal).
 func has_any_intent() -> bool:
-	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed
+	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed

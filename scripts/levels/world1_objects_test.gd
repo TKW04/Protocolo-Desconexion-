@@ -1,7 +1,7 @@
 ## Escena de prueba de los objetos del Mundo 1 (no es un nivel del juego):
 ## fondo de relojes con parallax, un receptor en el borde de un hueco de 5
 ## tiles (no se puede saltar), el puente retraido que se extiende al activar el
-## receptor con el pulso (J) y la pared con glitch en la cara de un muro.
+## receptor con el pulso (G) y la pared con glitch en la cara de un muro.
 ## Los tiles se colocan desde GRID con las reglas de data/tileset_mundo1.json
 ## (misma logica que select_tile de tools/gen_tileset_mundo1.py). Si Isak cae
 ## al hueco vuelve al inicio. Desbloquea el pulso y el Debug mientras esta

@@ -1,6 +1,6 @@
 ## Capturas a 1:1 (1280x720) del paso 14b:
 ##   1_popup_abierto.png      Isak de pie junto al pop-up (boton a la altura del celular)
-##   2_popup_cerrandose.png   justo despues del pulso (J): animacion de cierre
+##   2_popup_cerrandose.png   justo despues del pulso (G): animacion de cierre
 ##   3_popup_cerrado.png      el paso libre
 ##   4_puerta.png             la puerta "Marcar como leído" con su etiqueta y brillo
 ##   5_puerta_entrando.png    Isak entrando (puerta abriendose, Isak desvaneciendose)

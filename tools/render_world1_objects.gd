@@ -1,6 +1,6 @@
 ## Capturas a 1:1 (1280x720) de scenes/levels/world1_objects_test.tscn:
 ##   1_puente_antes.png     Isak junto al receptor apagado, puente retraido
-##   2_puente_extendiendo.png  justo despues del pulso (J): receptor activado,
+##   2_puente_extendiendo.png  justo despues del pulso (G): receptor activado,
 ##                             tiles apareciendo de izquierda a derecha
 ##   3_puente_despues.png   Isak cruzando sobre el puente extendido
 ##   4_pared_glitch.png     Isak junto a la pared con glitch, durante una rafaga

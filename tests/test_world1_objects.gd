@@ -306,7 +306,7 @@ func test_full_flow_in_test_scene() -> void:
 	assert_false(receiver.is_active())
 	sim.input.pulse_pressed = true
 	sim.step()
-	assert_true(receiver.is_active(), "El pulso (J) activa el receptor")
+	assert_true(receiver.is_active(), "El pulso (G) activa el receptor")
 	assert_ne(bridge.get_state(), PulseBridge.State.RETRACTED, "y el receptor el puente")
 	await wait_seconds(_step_s() * (bridge.length_tiles + 2))
 	assert_true(bridge.is_extended())

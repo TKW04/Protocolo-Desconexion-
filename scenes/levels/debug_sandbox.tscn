@@ -127,7 +127,7 @@ offset_left = 96.0
 offset_top = 64.0
 theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.85)
 theme_override_font_sizes/font_size = 18
-text = "DEBUG SANDBOX (prueba)\nMantén K 1 s: activar; K de nuevo: desactivar; mando Y igual\nA/D mover, Espacio saltar, Shift correr, J pulso"
+text = "DEBUG SANDBOX (prueba)\nMantén K 1 s: activar; K de nuevo: desactivar; mando Y igual\nA/D mover, Espacio saltar, Shift correr, G pulso"
 
 [node name="Path" type="Label" parent="Signs"]
 offset_left = 320.0

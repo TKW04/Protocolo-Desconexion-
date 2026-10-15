@@ -7,6 +7,7 @@ const ACTION_MOVE_RIGHT: StringName = &"move_right"
 const ACTION_JUMP: StringName = &"jump"
 const ACTION_RUN: StringName = &"run"
 const ACTION_PULSE: StringName = &"pulse"
+const ACTION_LASER: StringName = &"laser"
 
 
 func poll() -> void:
@@ -15,3 +16,4 @@ func poll() -> void:
 	jump_held = Input.is_action_pressed(ACTION_JUMP)
 	run_held = Input.is_action_pressed(ACTION_RUN)
 	pulse_pressed = Input.is_action_just_pressed(ACTION_PULSE)
+	laser_pressed = Input.is_action_just_pressed(ACTION_LASER)

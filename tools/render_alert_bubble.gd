@@ -1,6 +1,6 @@
 ## Capturas a 1:1 (1280x720) de scenes/levels/alert_bubble_test.tscn:
 ##   1_patrulla.png        Isak se acerca a la Burbuja que patrulla
-##   2_pulso_aturde.png    justo despues del pulso (J): onda y Burbuja aturdida
+##   2_pulso_aturde.png    justo despues del pulso (G): onda y Burbuja aturdida
 ##   3_isak_encima.png     Isak de pie sobre la Burbuja aturdida (plataforma)
 ##   4_anticipacion.png    el aviso de fin de aturdimiento (cuadro con brillo)
 ##   5_pop.png             Isak cae sobre la Burbuja aturdida: revienta y rebota
