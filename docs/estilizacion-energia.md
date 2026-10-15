@@ -112,7 +112,7 @@ Para el hub (aún sin hacer): llamar a `face_back()` cuando Isak se acerque a un
 
 ## Arte del hub (2026-10-15)
 
-Paso 11 de `propuesta-hub-y-guardado.md` §6.1, **generado y sin integrar** (ninguna escena lo usa todavía). Mismo lenguaje «circuito limpio» con la paleta del hub (`assets/palettes/hub.gpl`, propuesta; roles en `07-estilo-visual.md` §15.3.1): contorno `fondo_profundo`, bisel `borde`/`gris_foto`, trazas `traza` con nodos `borde`, cian para lo interactivo y ámbar solo en «sin guardar». Sin rojo. Fondo, tiles y carpetas se dibujan en rejilla lógica de 2x2 px (como el tileset del Mundo 1); copia local, Calc, huecos e iconos a 1 px (como la terminal de salida). Todo en `assets/sprites/hub/`.
+Paso 11 de `propuesta-hub-y-guardado.md` §6.1, **integrado en el hub real (2026-10-15)**: `HubRoom`, la copia local, las carpetas y el HUD del hub lo usan (SpriteFrames `assets/sprites/hub/*_frames.tres`, escritos por el generador). Mismo lenguaje «circuito limpio» con la paleta del hub (`assets/palettes/hub.gpl`, propuesta; roles en `07-estilo-visual.md` §15.3.1): contorno `fondo_profundo`, bisel `borde`/`gris_foto`, trazas `traza` con nodos `borde`, cian para lo interactivo y ámbar solo en «sin guardar». Sin rojo. Fondo, tiles y carpetas se dibujan en rejilla lógica de 2x2 px (como el tileset del Mundo 1); copia local, Calc, huecos e iconos a 1 px (como la terminal de salida). Todo en `assets/sprites/hub/`.
 
 | Objeto | Archivos (`assets/sprites/hub/…`) | Tamaño | Estados | Cuadros |
 |---|---|---|---|---|
@@ -134,10 +134,6 @@ Paso 11 de `propuesta-hub-y-guardado.md` §6.1, **generado y sin integrar** (nin
 | | `icons/icon_unsaved_00.png` | 16x16 | «sin guardar»: disquete con punto, en `ambar` | 1 |
 | Indicador de página | `icons/page_dot_current_00.png`, `page_dot_other_00.png` | 8x8 | actual (lleno) / otra (anillo) | 1 |
 
-Notas para integrar: los objetos se apoyan en el borde inferior de su lienzo (la copia local y la Calc sobre el dock, las carpetas sobre su repisa). El contenido de la foto es un paisaje neutro provisional: el diseño no dice qué muestra la foto de Isak. Faltan los `.import` (se crean al abrir el proyecto) y el `SpriteFrames`.
+Notas para integrar: los objetos se apoyan en el borde inferior de su lienzo (la copia local y la Calc sobre el dock, las carpetas sobre su repisa). El contenido de la foto es un paisaje neutro provisional: el diseño no dice qué muestra la foto de Isak. Las repisas quedan a 160 px del dock (2,5 tiles, alcanzables de un salto) y las carpetas se bajan 8 px (`folder_sink_px`) para apoyarse en ellas; `--scene` usa esas posiciones de `data/hub.json`.
 
-Regenerar (desde la raíz): `python3 -I tools/gen_hub_objects.py` (`--dry-run`; `--preview <png> [--scale N]` hoja de contacto; `--scene <png>` composición 1280x720 con el mapa de §2.2, y `<png>_on` con la pieza encendida). Validar: `python3 -I tools/validate_hub_objects.py` (tamaño por carpeta, solo colores de `hub.gpl`, sin rojos reservados, alfa 0/255, transparencia, tiles sin costura y PNG al día con el generador; lo ejecuta `tools/run_tests.sh`).
-
-## Pendiente
-
-- Los `.import` de Godot se crean la primera vez que se abre el editor (o con `tools/run_tests.sh`, que importa el proyecto); se commitean como los del resto de `assets/sprites/`.
+Regenerar (desde la raíz): `python3 -I tools/gen_hub_objects.py` (`--dry-run`; `--preview <png> [--scale N]` hoja de contacto; `--scene <png>` composición 1280x720 con el mapa de §2.2, y `<png>_on` con la pieza encendida). Validar: `python3 -I tools/validate_hub_objects.py` (tamaño por carpeta, solo colores de `hub.gpl`, sin rojos reservados, alfa 0/255, transparencia, tiles sin costura PNG y SpriteFrames al día con el generador; lo ejecuta `tools/run_tests.sh`).
