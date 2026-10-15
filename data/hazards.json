@@ -1,0 +1,9 @@
+{
+	"_notes": "Peligros del grid (tipo '^' del level-builder). PROPUESTA (paso 15, ajustar jugando): los pinchos quitan damage puntos de Sync Rate (10 = 10 %, como el contacto de la Burbuja, A6) y usan el golpe de Isak (Isak.take_hit: retroceso e invulnerabilidad de hurt_invulnerability_s = 1 s, data/isak_abilities.json). Mientras Isak sigue dentro, vuelve a danar al acabar la invulnerabilidad. hitbox_height_px: alto del Area de dano dentro de la celda, pegada al suelo (pinchos de suelo) o al techo (pinchos de techo); el tile no tiene colision solida. collision_layer / collision_mask: bits de capa de project.godot (1 world, 2 player). Lo leen tools/build_level.py (forma del Area) y scripts/levels/spike_hazard.gd (dano). Unidades: px, puntos de Sync Rate.",
+	"spikes": {
+		"damage": 10.0,
+		"hitbox_height_px": 32,
+		"collision_layer": 1,
+		"collision_mask": 2
+	}
+}
