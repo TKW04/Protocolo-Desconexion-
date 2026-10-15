@@ -74,6 +74,18 @@ const ANIMATIONS: Dictionary[String, Array] = {
 	"terminal_outro": [6.0, false, false],
 }
 
+## Animaciones hechas con cuadros de otra (sin PNG propios):
+## nombre -> [animacion de origen, indices de sus cuadros en orden, fps, bucle].
+## laser (2026-10-15): pose del laser. Son los cuadros del pulso en que Isak
+##   sube el celular (la vuelta del pulso, 6 -> 5, al reves) hasta el brazo
+##   extendido (0); no incluye la vuelta a la pose de reposo. La onda del pulso
+##   no esta en estos cuadros (la dibuja PulseEffect). No se reproduce en el
+##   tiempo: Isak elige el cuadro segun la anticipacion del laser y mantiene el
+##   ultimo mientras dura la pose (Isak.laser_pose_hold_s).
+const DERIVED: Dictionary[String, Array] = {
+	"laser": ["pulse", [6, 5, 0], 24.0, false],
+}
+
 
 func _init() -> void:
 	var frames := SpriteFrames.new()
@@ -94,6 +106,18 @@ func _init() -> void:
 		frames.set_animation_loop(anim, spec[1])
 		for texture: Texture2D in textures:
 			frames.add_frame(anim, texture)
+	for anim: String in DERIVED:
+		var spec: Array = DERIVED[anim]
+		var source: Array[Texture2D] = _load_sequence(spec[0])
+		frames.add_animation(anim)
+		frames.set_animation_speed(anim, spec[2])
+		frames.set_animation_loop(anim, spec[3])
+		for index: int in spec[1]:
+			if index >= source.size():
+				push_error("build_isak_frames: '%s' no tiene el cuadro %d (para '%s')." % [spec[0], index, anim])
+				ok = false
+				break
+			frames.add_frame(anim, source[index])
 	if not ok:
 		quit(1)
 		return
@@ -102,7 +126,7 @@ func _init() -> void:
 		push_error("build_isak_frames: no se pudo guardar '%s' (%s)." % [OUTPUT_PATH, error_string(err)])
 		quit(1)
 		return
-	print("build_isak_frames: guardado %s (%d animaciones)" % [OUTPUT_PATH, ANIMATIONS.size()])
+	print("build_isak_frames: guardado %s (%d animaciones)" % [OUTPUT_PATH, ANIMATIONS.size() + DERIVED.size()])
 	quit(0)
 
 

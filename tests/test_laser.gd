@@ -236,6 +236,79 @@ func test_laser_target_lookup_walks_parents() -> void:
 	assert_null(LaserProjectile.find_laser_target(_world))
 
 
+# --- Pose del laser (Isak sube el celular; 2026-10-15) ---
+
+## Hay un pixel opaco del cuadro `frame` de ANIM_LASER a 3 px o menos de `offset`.
+func _phone_near(frame: int, offset: Vector2) -> bool:
+	var sprite := _isak.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	var image: Image = sprite.sprite_frames.get_frame_texture(Isak.ANIM_LASER, frame).get_image()
+	var at := Vector2i(image.get_width() / 2, image.get_height()) + Vector2i(offset)
+	for y: int in range(at.y - 3, at.y + 4):
+		for x: int in range(at.x - 3, at.x + 4):
+			if image.get_pixel(x, y).a > 0.5:
+				return true
+	return false
+
+
+func test_laser_pose_offsets_are_on_the_phone() -> void:
+	var sprite := _isak.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	var count: int = sprite.sprite_frames.get_frame_count(Isak.ANIM_LASER)
+	assert_eq(_isak.laser_pose_phone_offsets.size(), count, "Un celular por cuadro de la pose")
+	for i: int in count:
+		assert_true(_phone_near(i, _isak.laser_pose_phone_offsets[i]), "Celular del cuadro %d" % i)
+	assert_eq(_isak.laser_pose_phone_offsets[count - 1], _isak.pulse_effect_origin,
+		"Con el brazo extendido, el mismo punto que la onda del pulso")
+
+
+func test_laser_pose_raises_phone_and_beam_starts_on_it() -> void:
+	_sim.input.laser_pressed = true
+	_sim.step()
+	assert_true(_isak.is_laser_posing(), "La anticipacion ya muestra la pose")
+	assert_eq(_isak.get_animation(), Isak.ANIM_LASER)
+	assert_eq(_isak.get_animation_frame(), 0, "Empieza con el celular abajo")
+	assert_almost_eq(_isak.get_laser_muzzle().position, _isak.get_laser_origin(), Vector2.ONE * EPS,
+		"El destello sigue al celular")
+	var fired: Array[LaserProjectile] = []
+	var on_fired := func(q: LaserProjectile) -> void: fired.append(q)
+	_isak.laser_fired.connect(on_fired)
+	_sim.step_until(func() -> bool: return not fired.is_empty(), 10)
+	_isak.laser_fired.disconnect(on_fired)
+	assert_eq(fired.size(), 1)
+	var p: LaserProjectile = fired[0]
+	var last: int = _isak.laser_pose_phone_offsets.size() - 1
+	assert_eq(_isak.get_animation_frame(), last, "Dispara con el brazo extendido")
+	assert_almost_eq(p.global_position, _isak.global_position + _isak.get_laser_origin(), Vector2.ONE * EPS,
+		"El haz nace en el celular del cuadro")
+	_sim.step(roundi(_isak.laser_pose_hold_s / DT) - 2)
+	assert_true(_isak.is_laser_posing(), "Mantiene la pose un momento")
+	_sim.step(4)
+	assert_false(_isak.is_laser_posing(), "Luego la quita")
+	assert_eq(_isak.get_animation(), Isak.ANIM_IDLE, "Y vuelve a la animacion del estado")
+
+
+func test_hurt_cuts_laser_pose() -> void:
+	assert_not_null(_fire())
+	assert_true(_isak.is_laser_posing())
+	_isak.take_hit(1.0)
+	assert_false(_isak.is_laser_posing())
+	assert_eq(_isak.get_animation(), Isak.ANIM_HURT)
+
+
+func test_laser_pose_does_not_change_movement() -> void:
+	_sim.input.move_axis = 1.0
+	_sim.step(60)
+	var speed: float = _isak.velocity.x
+	assert_almost_eq(speed, _isak.physics.walk_speed, EPS, "Ya camina a velocidad maxima")
+	_sim.input.laser_pressed = true
+	_sim.step(6)
+	assert_true(_isak.is_laser_posing())
+	assert_eq(_isak.get_state_name(), PlayerState.RUN, "Sigue en su estado")
+	assert_almost_eq(_isak.velocity.x, speed, EPS, "Sin cambios en la velocidad")
+	_sim.input.move_axis = 0.0
+	_sim.step(roundi(_isak.laser_pose_hold_s / DT) + 2)
+	assert_false(_isak.is_laser_posing())
+
+
 # --- Vida de la Burbuja ---
 
 func test_bubble_health_from_data() -> void:

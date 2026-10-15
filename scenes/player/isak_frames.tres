@@ -65,13 +65,13 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_jump_rise_00.png" id="63_wgd43"]
 [ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_jump_rise_01.png" id="64_06ry4"]
 [ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_jump_rise_02.png" id="65_843sy"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_00.png" id="66_2r5kh"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_01.png" id="67_qjk11"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_02.png" id="68_1trbp"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_03.png" id="69_ytooh"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_04.png" id="70_ak1xa"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_05.png" id="71_me7tn"]
-[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_06.png" id="72_orekc"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_06.png" id="66_2r5kh"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_05.png" id="67_qjk11"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_00.png" id="68_1trbp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_01.png" id="69_ytooh"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_02.png" id="70_ak1xa"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_03.png" id="71_me7tn"]
+[ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_04.png" id="72_orekc"]
 [ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_pulse_07.png" id="73_hvnn6"]
 [ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_run_00.png" id="74_o6eyd"]
 [ext_resource type="Texture2D" path="res://assets/sprites/isak/isak_run_01.png" id="75_nonag"]
@@ -349,6 +349,14 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("68_1trbp")
+}],
+"loop": 0,
+"name": &"laser",
+"speed": 24.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("68_1trbp")
 }, {
 "duration": 1.0,
 "texture": ExtResource("69_ytooh")
@@ -361,6 +369,12 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("72_orekc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("67_qjk11")
+}, {
+"duration": 1.0,
+"texture": ExtResource("66_2r5kh")
 }, {
 "duration": 1.0,
 "texture": ExtResource("73_hvnn6")

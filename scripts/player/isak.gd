@@ -35,6 +35,13 @@ const ANIM_JUMP_LAND: StringName = &"jump_land"
 const ANIM_PULSE: StringName = &"pulse"
 const ANIM_HURT: StringName = &"hurt"
 const ANIM_DEATH: StringName = &"death"
+## Pose del laser: cuadros del pulso en que sube el celular (6, 5 y 0, ver
+## DERIVED en tools/build_isak_frames.gd). Isak elige el cuadro.
+const ANIM_LASER: StringName = &"laser"
+## Estados en los que la pose del laser se corta (tienen animacion propia).
+const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
+## Margen al pasar del tiempo de anticipacion al cuadro de la pose.
+const LASER_POSE_EPS: float = 0.0001
 ## Cuadro de la animacion de pulso en el que nace la onda (celular al frente).
 const PULSE_WAVE_FRAME: int = 0
 ## Velocidad vertical (px/s, valor absoluto) por debajo de la cual se muestra el
@@ -63,6 +70,15 @@ const LASER_ENERGY_EPS: float = 0.0001
 ## los pies). La onda visual y PulseArea nacen aqui (ver get_pulse_origin()).
 ## Medido en isak_pulse_00.png (brazo extendido): celular en (36, -56).
 @export var pulse_effect_origin: Vector2 = Vector2(36.0, -56.0)
+## Celular en cada cuadro de la pose del laser (ANIM_LASER), mirando a la
+## derecha, en px desde los pies. Medido en isak_pulse_06/05/00.png (frente
+## del celular). El ultimo es pulse_effect_origin: el disparo sale con el brazo
+## extendido, en el mismo punto que la onda del pulso. El destello de la
+## anticipacion y el proyectil nacen aqui (ver get_laser_origin()).
+@export var laser_pose_phone_offsets: Array[Vector2] = [Vector2(22.0, -61.0), Vector2(25.0, -60.0), Vector2(36.0, -56.0)]
+## Segundos que Isak mantiene el brazo extendido tras disparar (solo visual;
+## menor que laser_cooldown_s para que al caminar no patine mucho).
+@export var laser_pose_hold_s: float = 0.25
 ## Limites de la camara en px. Sin area = sin limites.
 @export var camera_limits: Rect2i = Rect2i()
 
@@ -91,6 +107,10 @@ var _pulse_effect: PulseEffect
 var _laser_cooldown_left: float = 0.0
 var _laser_windup_left: float = -1.0
 var _laser_muzzle: LaserMuzzle
+## Pose del laser: tiempo restante con el brazo extendido tras el disparo
+## (< 0 = sin pose) y cuadro mostrado de ANIM_LASER (-1 = sin pose).
+var _laser_pose_hold_left: float = -1.0
+var _laser_pose_frame: int = -1
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -159,6 +179,8 @@ func change_state(state_name: StringName) -> void:
 		push_error("Isak: estado desconocido '%s'." % state_name)
 		return
 	var previous: StringName = _state_name
+	if state_name in LASER_POSE_BREAKING_STATES:
+		_end_laser_pose(false)
 	if _state != null:
 		_state.exit()
 	_state = _states[state_name]
@@ -208,6 +230,22 @@ func is_laser_charging() -> bool:
 
 func get_laser_muzzle() -> LaserMuzzle:
 	return _laser_muzzle
+
+
+## Verdadero mientras Isak muestra la pose del laser (sube el celular o lo
+## mantiene extendido tras el disparo). Solo visual.
+func is_laser_posing() -> bool:
+	return _laser_pose_frame >= 0
+
+
+## Celular de la pose del laser (cuadro actual) relativo a los pies, segun
+## hacia donde mira Isak. Sin pose: el del brazo extendido (ultimo cuadro).
+func get_laser_origin() -> Vector2:
+	var offsets: Array[Vector2] = laser_pose_phone_offsets
+	if offsets.is_empty():
+		return get_pulse_origin()
+	var index: int = clampi(_laser_pose_frame, 0, offsets.size() - 1) if is_laser_posing() else offsets.size() - 1
+	return Vector2(offsets[index].x * facing, offsets[index].y)
 
 
 func is_dead() -> bool:
@@ -292,6 +330,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	stop_pulse_effect()
 	set_pulse_area_active(false)
 	_cancel_laser()
+	_end_laser_pose(false)
 	_laser_cooldown_left = 0.0
 	reset_idle_time()
 	change_state(PlayerState.IDLE)
@@ -391,29 +430,90 @@ func get_pulse_effect() -> PulseEffect:
 ## Cualquiera de los dos inicia el enfriamiento (laser_cooldown_s).
 func _update_laser(delta: float) -> void:
 	_laser_cooldown_left = maxf(_laser_cooldown_left - delta, 0.0)
-	if _laser_muzzle != null:
-		_laser_muzzle.position = get_pulse_origin()
-		_laser_muzzle.advance(delta)
+	_update_laser_pose_hold(delta)
 	if is_laser_charging():
 		if not can_laser():
 			_cancel_laser()
-			return
-		_laser_windup_left -= delta
-		if _laser_windup_left <= 0.0:
-			_laser_windup_left = -1.0
+			_end_laser_pose(true)
+		else:
+			_laser_windup_left -= delta
+			if _laser_windup_left <= 0.0:
+				_laser_windup_left = -1.0
+				_fire_laser()
+			else:
+				_show_laser_pose_frame(_windup_pose_frame())
+	elif input.laser_pressed and _laser_cooldown_left <= 0.0 and can_laser():
+		_laser_cooldown_left = abilities.laser_cooldown_s
+		if not _has_laser_energy():
+			_deny_laser()
+		elif abilities.laser_windup_s <= 0.0:
 			_fire_laser()
+		else:
+			_laser_windup_left = abilities.laser_windup_s
+			# Si el brazo ya estaba extendido (disparos seguidos) no vuelve a subir.
+			_show_laser_pose_frame(_windup_pose_frame())
+			_laser_muzzle.show_charge(abilities.laser_windup_s, facing)
+	if _laser_muzzle != null:
+		_laser_muzzle.position = get_laser_origin()
+		_laser_muzzle.advance(delta)
+
+
+## Cuadro de la pose durante la anticipacion: sube el celular a lo largo de
+## laser_windup_s y llega al ultimo cuadro (brazo extendido) al disparar.
+func _windup_pose_frame() -> int:
+	var count: int = laser_pose_phone_offsets.size()
+	if is_laser_posing() and _laser_pose_frame >= count - 1:
+		return count - 1
+	var done: float = 1.0 - clampf(_laser_windup_left / maxf(abilities.laser_windup_s, LASER_POSE_EPS), 0.0, 1.0)
+	return clampi(floori(done * count + LASER_POSE_EPS), 0, count - 1)
+
+
+## Muestra el cuadro `index` de ANIM_LASER (sin reproducir: Isak lo elige).
+func _show_laser_pose_frame(index: int) -> void:
+	_laser_pose_frame = index
+	_laser_pose_hold_left = -1.0
+	var frames: SpriteFrames = _sprite.sprite_frames
+	if frames == null or not frames.has_animation(ANIM_LASER):
 		return
-	if not input.laser_pressed or _laser_cooldown_left > 0.0 or not can_laser():
+	if _sprite.animation != ANIM_LASER:
+		_sprite.animation = ANIM_LASER
+	_sprite.pause()
+	_sprite.frame = clampi(index, 0, frames.get_frame_count(ANIM_LASER) - 1)
+
+
+## Tras el disparo: brazo extendido durante laser_pose_hold_s.
+func _hold_laser_pose() -> void:
+	_show_laser_pose_frame(laser_pose_phone_offsets.size() - 1)
+	_laser_pose_hold_left = laser_pose_hold_s
+
+
+func _update_laser_pose_hold(delta: float) -> void:
+	if _laser_pose_hold_left < 0.0:
 		return
-	_laser_cooldown_left = abilities.laser_cooldown_s
-	if not _has_laser_energy():
-		_deny_laser()
+	_laser_pose_hold_left -= delta
+	if _laser_pose_hold_left <= 0.0:
+		_end_laser_pose(true)
+
+
+## Quita la pose. Con `restore`, vuelve a la animacion del estado actual
+## (los estados que tienen la suya propia la ponen ellos al entrar).
+func _end_laser_pose(restore: bool) -> void:
+	if not is_laser_posing():
 		return
-	if abilities.laser_windup_s <= 0.0:
-		_fire_laser()
-		return
-	_laser_windup_left = abilities.laser_windup_s
-	_laser_muzzle.show_charge(abilities.laser_windup_s, facing)
+	_laser_pose_frame = -1
+	_laser_pose_hold_left = -1.0
+	if restore:
+		_restore_state_animation()
+
+
+func _restore_state_animation() -> void:
+	match _state_name:
+		PlayerState.IDLE:
+			play_animation(ANIM_TERMINAL_INTRO if _terminal_playing else ANIM_IDLE)
+		PlayerState.RUN:
+			play_animation(ANIM_RUN if input.run_held else ANIM_WALK)
+		PlayerState.JUMP, PlayerState.FALL:
+			update_air_animation()
 
 
 func _has_laser_energy() -> bool:
@@ -426,13 +526,16 @@ func _fire_laser() -> LaserProjectile:
 	_laser_muzzle.clear()
 	if not _has_laser_energy():
 		_deny_laser()
+		_end_laser_pose(true)
 		return null
 	GameState.debug_energy -= abilities.laser_energy_cost
+	# Brazo extendido: el proyectil sale del celular de ese cuadro.
+	_hold_laser_pose()
 	var projectile := LASER_PROJECTILE_SCENE.instantiate() as LaserProjectile
 	projectile.setup(abilities, facing, self)
 	var holder: Node = get_parent() if get_parent() != null else self
 	holder.add_child(projectile)
-	projectile.global_position = global_position + get_pulse_origin()
+	projectile.global_position = global_position + get_laser_origin()
 	laser_fired.emit(projectile)
 	EventBus.laser_fired.emit(projectile)
 	return projectile
@@ -452,9 +555,11 @@ func _cancel_laser() -> void:
 
 # --- Presentacion ---
 
+## Mientras dura la pose del laser los estados no cambian la animacion (al
+## acabar, _end_laser_pose pone la del estado).
 func play_animation(anim: StringName) -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
-	if frames == null or not frames.has_animation(anim):
+	if frames == null or not frames.has_animation(anim) or is_laser_posing():
 		return
 	if _sprite.animation != anim or not _sprite.is_playing():
 		_sprite.play(anim)
@@ -499,7 +604,7 @@ func get_animation_frame() -> int:
 ## cada fase segun la velocidad (no por tiempo). Lo llaman JumpState y FallState.
 func update_air_animation() -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
-	if frames == null:
+	if frames == null or is_laser_posing():
 		return
 	var vy: float = velocity.y
 	var anim: StringName = ANIM_JUMP_APEX
