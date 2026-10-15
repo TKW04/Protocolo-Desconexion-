@@ -1,0 +1,39 @@
+{
+	"_notes": "Aviso al cerrar la ventana con cambios sin guardar (QuitGuard + QuitPrompt, scripts/ui/; decision del usuario 2026-10-15, docs/propuesta-hub-y-guardado.md §4.4, pregunta 5). PROVISIONAL de estilo: mismo panel (eco_text_panel.png), fuente de textos (text_font) y shader de color clave que la pantalla provisional del hub; colores de assets/palettes/mundo1.gpl. Sin cambios pendientes se sale sin preguntar. Donde se puede guardar (un nodo del grupo save_station con can_save_now() verdadero: hoy la pantalla provisional del hub) se ofrecen options_with_save; en un nivel, options_without_save (sin opcion de guardar: fuera del hub no se guarda). Mientras el aviso esta abierto el arbol se pausa. Controles (Input Map): up_actions / down_actions eligen, confirm_actions acepta, cancel_actions equivale a Volver. pixel_scale: se maqueta en pixeles de arte y se escala (como el HUD). layer: por encima de todo (hub provisional 20). backdrop_alpha: opacidad del velo sobre el juego. Unidades: px de arte.",
+	"layer": 50,
+	"pixel_scale": 2,
+	"font": "res://assets/sprites/ui/text_font.fnt",
+	"font_size": 12,
+	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
+	"panel": "res://assets/sprites/ui/eco_text_panel.png",
+	"panel_margin_px": 3,
+	"panel_width_px": 240,
+	"padding_px": 12,
+	"line_gap_px": 6,
+	"backdrop_alpha": 0.75,
+	"up_actions": ["move_up", "ui_up", "move_left", "ui_left"],
+	"down_actions": ["move_down", "ui_down", "move_right", "ui_right"],
+	"confirm_actions": ["ui_accept", "pulse"],
+	"cancel_actions": ["ui_cancel", "pause"],
+	"texts": {
+		"title_with_save": "Tienes cambios sin guardar.",
+		"title_without_save": "Perderás lo hecho desde tu última copia en el hub.",
+		"save_and_quit": "Guardar y salir",
+		"quit_without_saving": "Salir sin guardar",
+		"quit": "Salir",
+		"back": "Volver",
+		"selected_prefix": "– ",
+		"unselected_prefix": "  ",
+		"help": "Arriba/abajo: elegir. Intro: aceptar. Esc: volver",
+		"save_failed": "No se pudo guardar"
+	},
+	"colors": {
+		"backdrop": "#0b0e1a",
+		"key": "#f2f4f8",
+		"title": "#f2f4f8",
+		"option": "#aeb8d2",
+		"option_selected": "#ffa000",
+		"help": "#9bb0e8",
+		"message": "#f2f4f8"
+	}
+}

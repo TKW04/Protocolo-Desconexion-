@@ -235,6 +235,8 @@ func _ready() -> void:
 	EventBus.state_refresh_requested.connect(emit_state)
 	var path: String = resolve_save_path(OS.get_cmdline_args(), OS.get_environment(SAVE_PATH_ENV))
 	use_save_path(path, path == SAVE_PATH_TESTS or path == SAVE_PATH_TOOLS)
+	if not is_running_tests() and not is_running_script():
+		install_quit_guard()
 
 
 func _process(delta: float) -> void:
@@ -571,6 +573,25 @@ func reset_progress() -> void:
 ## obtener habilidades y completar o desbloquear niveles. Solo save_game() escribe.
 func request_save() -> void:
 	_set_unsaved(true)
+
+
+## Crea el aviso al salir con cambios sin guardar (QuitGuard) y desactiva el
+## cierre automatico de la ventana. Solo en el juego normal (no en GUT ni con
+## scripts -s). Devuelve el QuitGuard (el que ya hubiera, si existe).
+func install_quit_guard() -> QuitGuard:
+	var existing: QuitGuard = get_quit_guard()
+	if existing != null:
+		return existing
+	var guard := QuitGuard.new()
+	guard.name = "QuitGuard"
+	guard.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(guard)
+	get_tree().set_auto_accept_quit(false)
+	return guard
+
+
+func get_quit_guard() -> QuitGuard:
+	return get_node_or_null(^"QuitGuard") as QuitGuard
 
 
 ## Verdadero si hay progreso en memoria sin guardar en disco.
