@@ -53,7 +53,7 @@ POINT_SCENE = "res://scenes/levels/attention_point.tscn"
 HIDDEN_SCENE = "res://scenes/levels/hidden_platform.tscn"
 HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
-STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability"}
+STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 

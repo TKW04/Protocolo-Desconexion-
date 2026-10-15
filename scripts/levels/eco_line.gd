@@ -5,6 +5,10 @@
 ## muestre `text` durante al menos `duration_s`. Con `once` (por defecto) solo
 ## se dispara la primera vez. No es solida, no pausa el juego y no toca a Isak.
 ## Detecta la capa de fisica `player` (2).
+## Con `trigger_event` (rediseno del 1-1 para el laser, 2026-10-15) no hay zona:
+## la linea salta al emitirse esa senal de EventBus (p. ej. &"laser_fired": la
+## primera vez que Isak dispara el laser en el nivel), con las mismas reglas de
+## `once`. Valores admitidos: `allowed` de eco_line en data/world1_objects.json.
 class_name EcoLine
 extends Area2D
 
@@ -20,6 +24,8 @@ signal triggered(text: String)
 ## Tiempo minimo en pantalla del texto completo (s); el cuadro alarga los textos largos.
 @export var duration_s: float = 4.0
 @export var once: bool = true
+## Senal de EventBus que dispara la linea en vez de la zona (vacio = zona).
+@export var trigger_event: StringName = &""
 
 var _fired_count: int = 0
 var _shape: CollisionShape2D
@@ -27,8 +33,32 @@ var _shape: CollisionShape2D
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	if trigger_event != &"":
+		_connect_event()
+		return
 	_build()
 	body_entered.connect(_on_body_entered)
+
+
+## Dispara la linea (zona o senal), respetando `once`. Verdadero si se mostro.
+func fire() -> bool:
+	if once and _fired_count > 0:
+		return false
+	_fired_count += 1
+	triggered.emit(text)
+	EventBus.eco_line_requested.emit(text, duration_s)
+	return true
+
+
+func _connect_event() -> void:
+	monitoring = false
+	monitorable = false
+	for info: Dictionary in EventBus.get_signal_list():
+		if StringName(info["name"]) == trigger_event:
+			var args: int = (info["args"] as Array).size()
+			EventBus.connect(trigger_event, fire.unbind(args) if args > 0 else fire)
+			return
+	push_warning("EcoLine %s: EventBus no tiene la senal '%s'" % [object_id, trigger_event])
 
 
 func get_fired_count() -> int:
@@ -58,10 +88,5 @@ func _build() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if not body is Isak:
 		return
-	if once and _fired_count > 0:
-		return
-	_fired_count += 1
-	triggered.emit(text)
-	EventBus.eco_line_requested.emit(text, duration_s)
-	if once:
+	if fire() and once:
 		set_deferred(&"monitoring", false)

@@ -80,7 +80,7 @@
 		},
 		"eco_line": {
 			"scene": "res://scenes/levels/eco_line.tscn",
-			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Al entrar Isak emite EventBus.eco_line_requested(text, duration_s) y la muestra el cuadro de texto de Eco (scenes/ui/eco_text_box.tscn, data/eco_text_box.json), que el nivel debe incluir; duration_s es el tiempo minimo con el texto completo (el cuadro alarga los textos largos). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida.",
+			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Al entrar Isak emite EventBus.eco_line_requested(text, duration_s) y la muestra el cuadro de texto de Eco (scenes/ui/eco_text_box.tscn, data/eco_text_box.json), que el nivel debe incluir; duration_s es el tiempo minimo con el texto completo (el cuadro alarga los textos largos). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida. trigger_event (rediseno del 1-1, 2026-10-15): en vez de la zona, la linea salta al emitirse esa senal de EventBus (laser_fired: primera vez que Isak dispara el laser en el nivel).",
 			"required": ["text"],
 			"fields": {
 				"id": "object_id",
@@ -88,13 +88,17 @@
 				"width_tiles": "width_tiles",
 				"height_tiles": "height_tiles",
 				"duration_s": "duration_s",
-				"once": "once"
+				"once": "once",
+				"trigger_event": "trigger_event"
 			},
 			"defaults": {
 				"width_tiles": 1,
 				"height_tiles": 4,
 				"duration_s": 4.0,
 				"once": true
+			},
+			"allowed": {
+				"trigger_event": ["laser_fired"]
 			},
 			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}
 		},
@@ -110,7 +114,7 @@
 		},
 		"ability_pickup": {
 			"scene": "res://scenes/levels/ability_pickup.tscn",
-			"description": "Objeto que da una habilidad para siempre (decision del usuario 2026-10-15; la primera es el laser). Al tocarlo Isak: GameState.obtain_ability(ability) la desbloquea, la guarda en user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el cuadro de Eco muestra un aviso simple (message o messages[ability] de la seccion ability_pickup). Si ya estaba obtenida no aparece. No es solido. ability: una de las habilidades implementadas (allowed: pulse, debug, laser; las demas de GameState.ABILITIES se anadiran cuando existan). allowed: valores admitidos de cada param (lo comprueba tools/validate_level_schema.py). Aspecto PROVISIONAL dibujado por codigo. Aun no hay ninguno en el 1-1 (lo decide el rediseno del nivel).",
+			"description": "Objeto que da una habilidad para siempre (decision del usuario 2026-10-15; la primera es el laser). Al tocarlo Isak: GameState.obtain_ability(ability) la desbloquea, la guarda en user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el cuadro de Eco muestra un aviso simple (message o messages[ability] de la seccion ability_pickup). Si ya estaba obtenida no aparece. No es solido. ability: una de las habilidades implementadas (allowed: pulse, debug, laser; las demas de GameState.ABILITIES se anadiran cuando existan). allowed: valores admitidos de cada param (lo comprueba tools/validate_level_schema.py). Aspecto PROVISIONAL dibujado por codigo. En el 1-1 hay uno, laser_1_1, en la sala del laser (Tramo 3b; rediseno 2026-10-15).",
 			"required": ["id", "ability"],
 			"fields": {
 				"id": "object_id",
@@ -125,7 +129,7 @@
 		},
 		"charger": {
 			"scene": "res://scenes/levels/charger.tscn",
-			"description": "Cargador de energia de Debug (decision del usuario 2026-10-15: la energia la comparten el Debug y el laser; en los mapas hay cargadores en ciertos puntos). Se activa AL TOCARLO (como el punto de sincronizacion y la puerta: sin accion nueva) y repone amount de energia sin desbordar a los power banks; con la barra llena no se gasta. reusable true: se enfria cooldown_s (tiempo del mundo) y vuelve a estar listo (el enfriamiento no se guarda); reusable false: un solo uso, queda gastado y se guarda por nivel en user://save.json (collected_pickups). PROPUESTA por defecto: amount 50 (media barra = 5 disparos de laser), reutilizable, cooldown_s 20 (duda abierta: reutilizable o de un solo uso, docs/preguntas.md). Ocupa la celda (x, y), apoyado en su borde inferior; no es solido. Aspecto PROVISIONAL dibujado por codigo (seccion charger). Aun no hay ninguno en el 1-1.",
+			"description": "Cargador de energia de Debug (decision del usuario 2026-10-15: la energia la comparten el Debug y el laser; en los mapas hay cargadores en ciertos puntos). Se activa AL TOCARLO (como el punto de sincronizacion y la puerta: sin accion nueva) y repone amount de energia sin desbordar a los power banks; con la barra llena no se gasta. reusable true: se enfria cooldown_s (tiempo del mundo) y vuelve a estar listo (el enfriamiento no se guarda); reusable false: un solo uso, queda gastado y se guarda por nivel en user://save.json (collected_pickups). PROPUESTA por defecto: amount 50 (media barra = 5 disparos de laser), reutilizable, cooldown_s 20 (duda abierta: reutilizable o de un solo uso, docs/preguntas.md). Ocupa la celda (x, y), apoyado en su borde inferior; no es solido. Aspecto PROVISIONAL dibujado por codigo (seccion charger). En el 1-1 hay dos (cargador_1 tras la sala del laser y cargador_2 al empezar el Cierre; rediseno 2026-10-15).",
 			"required": ["id"],
 			"fields": {
 				"id": "object_id",
