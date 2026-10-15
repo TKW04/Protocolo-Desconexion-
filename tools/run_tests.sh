@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Ejecuta la suite de GUT en modo headless y devuelve el codigo de salida de GUT
 # (o 4 si fallan las pruebas Python: esquema y alcanzabilidad de niveles, escena
-# generada al dia, fuente de textos).
+# generada al dia, fuente de textos) o 5 si la suite creo o cambio el guardado
+# real del jugador (user://save.json; se compara su huella, nunca se borra).
 # Antes importa el proyecto (registra class_name nuevos e importa recursos);
 # su salida solo se muestra si falla.
 # Uso: tools/run_tests.sh [opciones extra de GUT]
@@ -15,6 +16,23 @@ if [[ ! -x "$GODOT" ]]; then
 	echo "run_tests.sh: no se encuentra Godot en '$GODOT' (define GODOT)." >&2
 	exit 2
 fi
+
+# Guardado real del jugador (user://save.json); ISAK_REAL_SAVE cambia la ruta.
+APP_NAME="$(sed -n 's/^config\/name="\(.*\)"$/\1/p' "$PROJECT_DIR/project.godot")"
+if [[ "$(uname)" == "Darwin" ]]; then
+	REAL_SAVE_DEFAULT="$HOME/Library/Application Support/Godot/app_userdata/$APP_NAME/save.json"
+else
+	REAL_SAVE_DEFAULT="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/$APP_NAME/save.json"
+fi
+REAL_SAVE="${ISAK_REAL_SAVE:-$REAL_SAVE_DEFAULT}"
+_real_save_fingerprint() {
+	if [[ -e "$REAL_SAVE" ]]; then
+		cksum < "$REAL_SAVE"
+	else
+		echo "ausente"
+	fi
+}
+REAL_SAVE_BEFORE="$(_real_save_fingerprint)"
 
 IMPORT_LOG="$(mktemp -t isak_import.XXXXXX)"
 if ! "$GODOT" --headless --path "$PROJECT_DIR" --import >"$IMPORT_LOG" 2>&1 \
@@ -48,5 +66,13 @@ fi
 GUT_STATUS=$?
 if [[ $GUT_STATUS -ne 0 ]]; then
 	exit $GUT_STATUS
+fi
+
+# La suite (GUT, bot, herramientas) nunca debe crear ni cambiar el guardado real
+# del jugador. No se borra nada: solo se compara su huella antes y despues.
+if [[ "$(_real_save_fingerprint)" != "$REAL_SAVE_BEFORE" ]]; then
+	echo "run_tests.sh: la suite creo o modifico el guardado real ($REAL_SAVE)" >&2
+	echo "run_tests.sh: (o se jugo al juego mientras corria la suite)." >&2
+	exit 5
 fi
 exit $PY_STATUS

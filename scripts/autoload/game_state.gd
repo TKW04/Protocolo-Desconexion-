@@ -40,6 +40,9 @@ const SAVE_VERSION: int = 1
 const SAVE_PATH_DEFAULT: String = "user://save.json"
 ## Ruta de guardado de las pruebas GUT (nunca el save real del usuario).
 const SAVE_PATH_TESTS: String = "user://test_save.json"
+## Ruta de guardado de los scripts de herramientas (-s tools/render_*.gd, bots):
+## mueven a Isak y capturan puntos, asi que nunca usan el save real.
+const SAVE_PATH_TOOLS: String = "user://tool_save.json"
 ## Variable de entorno que fuerza otra ruta de guardado (bots, pruebas).
 const SAVE_PATH_ENV: String = "ISAK_SAVE_PATH"
 const POWER_BANK_DATA_PATH: String = "res://data/power_bank.json"
@@ -121,8 +124,9 @@ var collected_pickups: Dictionary[StringName, Dictionary] = {}
 var purchased_upgrades: Dictionary[StringName, bool] = {}
 
 ## Ruta del guardado. Por defecto user://save.json; con la variable de entorno
-## ISAK_SAVE_PATH, esa ruta; dentro de GUT, SAVE_PATH_TESTS (se borra al
-## arrancar). Cambiala con use_save_path().
+## ISAK_SAVE_PATH, esa ruta; dentro de GUT, SAVE_PATH_TESTS, y con otro script
+## (-s), SAVE_PATH_TOOLS (estas dos se borran al arrancar). Ver
+## resolve_save_path(). Cambiala con use_save_path().
 var save_path: String = SAVE_PATH_DEFAULT
 ## Si es false, request_save() no escribe nada.
 var autosave_enabled: bool = true
@@ -188,11 +192,8 @@ var _base_abilities: PlayerAbilities
 
 func _ready() -> void:
 	EventBus.state_refresh_requested.connect(emit_state)
-	if is_running_tests() and OS.get_environment(SAVE_PATH_ENV).is_empty():
-		use_save_path(SAVE_PATH_TESTS, true)
-	else:
-		var env_path: String = OS.get_environment(SAVE_PATH_ENV)
-		use_save_path(SAVE_PATH_DEFAULT if env_path.is_empty() else env_path, false)
+	var path: String = resolve_save_path(OS.get_cmdline_args(), OS.get_environment(SAVE_PATH_ENV))
+	use_save_path(path, path == SAVE_PATH_TESTS or path == SAVE_PATH_TOOLS)
 
 
 ## Sync Rate bajo: por debajo del umbral (estrictamente menor, docs: "menor al 20%").
@@ -435,11 +436,29 @@ func use_save_path(path: String, fresh: bool) -> void:
 
 
 ## Verdadero si el juego corre dentro de GUT (no se toca el save real).
-static func is_running_tests() -> bool:
-	for arg: String in OS.get_cmdline_args():
+static func is_running_tests(args: PackedStringArray = OS.get_cmdline_args()) -> bool:
+	for arg: String in args:
 		if arg.contains("addons/gut/"):
 			return true
 	return false
+
+
+## Verdadero si Godot ejecuta un script como bucle principal (-s / --script):
+## GUT, bots y herramientas de capturas. El juego normal nunca lo hace.
+static func is_running_script(args: PackedStringArray = OS.get_cmdline_args()) -> bool:
+	return args.has("-s") or args.has("--script")
+
+
+## Ruta de guardado segun los argumentos de Godot y ISAK_SAVE_PATH. Solo el
+## arranque normal del juego (sin script) usa SAVE_PATH_DEFAULT.
+static func resolve_save_path(args: PackedStringArray, env_path: String) -> String:
+	if not env_path.is_empty():
+		return env_path
+	if is_running_tests(args):
+		return SAVE_PATH_TESTS
+	if is_running_script(args):
+		return SAVE_PATH_TOOLS
+	return SAVE_PATH_DEFAULT
 
 
 ## Borra el progreso persistente en memoria (no toca el disco).

@@ -42,6 +42,29 @@ func test_tests_never_use_the_real_save() -> void:
 	assert_true(GameState.is_running_tests())
 
 
+# Resolucion de la ruta con argumentos simulados (no escribe ningun archivo).
+func test_normal_game_start_uses_the_real_save() -> void:
+	var editor_run := PackedStringArray(["--path", "/p", "--remote-debug", "tcp://127.0.0.1:6007"])
+	assert_eq(GameState.resolve_save_path(PackedStringArray(), ""), GameState.SAVE_PATH_DEFAULT)
+	assert_eq(GameState.resolve_save_path(editor_run, ""), GameState.SAVE_PATH_DEFAULT)
+	assert_eq(GameState.resolve_save_path(PackedStringArray(["res://scenes/main.tscn"]), ""),
+		GameState.SAVE_PATH_DEFAULT)
+
+
+func test_scripts_and_tools_never_resolve_to_the_real_save() -> void:
+	var gut := PackedStringArray(["--headless", "-s", "addons/gut/gut_cmdln.gd", "-gexit"])
+	var gut_panel := PackedStringArray(["res://addons/gut/gui/GutRunner.tscn"])
+	assert_eq(GameState.resolve_save_path(gut, ""), GameState.SAVE_PATH_TESTS)
+	assert_eq(GameState.resolve_save_path(gut_panel, ""), GameState.SAVE_PATH_TESTS)
+	for tool: String in ["res://tools/play_level_bot.gd", "res://tools/render_level_1_1.gd",
+			"res://tools/render_tramo4.gd"]:
+		for flag: String in ["-s", "--script"]:
+			var args := PackedStringArray(["--path", "/p", flag, tool])
+			assert_eq(GameState.resolve_save_path(args, ""), GameState.SAVE_PATH_TOOLS, tool)
+	assert_eq(GameState.resolve_save_path(gut, "user://env.json"), "user://env.json", "ISAK_SAVE_PATH manda")
+	assert_eq(GameState.resolve_save_path(PackedStringArray(), "user://env.json"), "user://env.json")
+
+
 func test_round_trip_keeps_all_progress() -> void:
 	_fill_progress()
 	assert_eq(GameState.attention_points, 42 + 2 - 15)
