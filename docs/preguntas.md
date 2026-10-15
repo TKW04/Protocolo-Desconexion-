@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-15):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11. Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
+**Estado (2026-10-15):** resueltos C1, C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11. Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard; engaño en Normal, final real en Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final; hay una sugerencia de dificultad pendiente de aprobar). Siguen abiertos: C2, C3, C4, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -76,7 +76,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Por qué:** §14 es la sección más reciente y detallada, y una sola escala sirve de guía para la duración y la densidad de peligros.
 - **Decisión (2026-10-14):** se dejan sin cambios; se mejorarán durante el desarrollo.
 - **Decisión (2026-10-14, actualización):** la dificultad **ya no se elige**. C9 queda sustituida por una dificultad que evoluciona con el juego (confirmado por el usuario).
-- **Decisión (2026-10-15):** la dificultad evoluciona por **tres vueltas** (Easy, Normal y Hard); no hay selector de dificultad. Aprobada a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado»). Sigue abierto cómo encaja con la escala «X de 5» de cada nivel.
+- **Decisión (2026-10-15):** la dificultad evoluciona por **tres vueltas** (Easy, Normal y Hard); no hay selector de dificultad. Aprobada a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado»). Cómo encaja con la escala «X de 5» de cada nivel tiene una sugerencia del equipo pendiente de aprobar (dos ejes: curva por nivel y perfil por vuelta).
 
 ---
 
@@ -487,17 +487,17 @@ Implementa `docs/propuesta-1-1-ampliado.md` con las decisiones del usuario del 2
 
 ### Propuesta de tres vueltas a los 18 mapas y "rollback" (histórico; aprobada el 2026-10-15)
 
-**Estado: aprobada como decisión de diseño el 2026-10-15, a falta de detalle** (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», que manda sobre esta sección). Donde difieran, vale la decisión del 2026-10-15 (p. ej. en Easy el jefe final **escapa** y lanza el rollback; en Hard engaña a Isak para que lo lance él). Sin implementar. No se añade a `06-finales.md` ni a `03-historia.md` porque choca con texto aprobado: §14.1 dice que al terminar la fase 3 del combate final Isak Optimizado queda de rodillas y llega el momento de decisión (Final A o B); aquí, en las dos primeras vueltas, el jefe lanza un rollback antes de eso.
+**Estado: aprobada como decisión de diseño el 2026-10-15, a falta de detalle** (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», que manda sobre esta sección). Donde difieran, vale la decisión del 2026-10-15: en Easy el jefe final **escapa** y lanza el rollback; en **Normal** engaña a Isak para que lo lance él; en **Hard** vencerlo termina el juego (final real, con el momento de decisión de §14.1). Sin implementar. `06-finales.md` §14.1 lleva una nota de encaje; `03-historia.md` no se ha tocado.
 
 - **Idea del usuario:** el juego se recorre **tres vueltas** de los 18 mapas (6 mundos × 3 niveles): Fácil, Normal y Difícil máxima.
-- **Rollback:** al estar a punto de morir, el jefe final lanza un "rollback" que reinicia los mapas con enemigos más difíciles y puntos débiles distintos. En la **tercera vuelta**, el jefe engaña al jugador para que sea él quien lance el rollback.
+- **Rollback:** al estar a punto de morir, el jefe final lanza un "rollback" que reinicia los mapas con enemigos más difíciles y puntos débiles distintos. ~~En la **tercera vuelta**, el jefe engaña al jugador para que sea él quien lance el rollback.~~ Superado: el engaño es en la **segunda vuelta** (Normal); ver la decisión del 2026-10-15.
 - **Único final real:** terminar el juego en la dificultad máxima.
 - **Qué se conserva:** el rollback "falla", así que Isak conserva sus habilidades. Los puntos de atención reaparecen para comprar las habilidades nuevas, pero solo en un ciclo de dificultad superior.
 - **Mapas:** en cada rollback los mapas pueden fallar, cambiar o destruirse (por pensar).
 - **Prioridad de producción:** primero los 18 mapas de la primera vuelta en modo fácil, sin que se puedan conseguir todas las mejoras en esa vuelta.
-- **Preguntas abiertas** (las 2, 3, 5 y 7 siguen en las dudas de «Decisiones del 2026-10-15: tres vueltas, hub y guardado»):
+- **Preguntas abiertas** (histórico; la 2 queda resuelta por la decisión del 2026-10-15 y las demás siguen en sus dudas abiertas):
   1. ¿Qué cambia narrativamente en cada vuelta (Eco, aliados, amigos, recuerdos)? Lo piensan juntos el usuario y Claude.
-  2. ¿Cómo encaja con §14.1? ¿El momento de decisión y los finales A y B solo llegan al vencer al jefe en la tercera vuelta? Si en la tercera el jugador lanza el rollback engañado, ¿cuándo y cómo se llega al final real?
+  2. ~~¿Cómo encaja con §14.1?~~ Resuelta el 2026-10-15: el momento de decisión y los finales A y B llegan al vencer al jefe en Hard (tercera vuelta); el rollback engañado es en Normal.
   3. ¿Qué significa en el juego "fallar, cambiar o destruirse" para un mapa? ¿Cambia la geometría o solo los enemigos, los peligros y los puntos débiles?
   4. Puntos débiles distintos en cada vuelta: ¿siguen la regla de color (rojo/carmín) y el telegrafiado de 6 a 12 cuadros?
   5. Guardado: los puntos de atención capturados se apuntan por nivel; para que reaparezcan en una vuelta superior habría que guardar también la vuelta. ¿Pasa lo mismo con los power banks de mapa y los secretos?
@@ -586,23 +586,50 @@ Generaliza el aviso que salía al recoger el láser («Láser obtenido. F o gati
 
 Decisión de diseño del usuario. Sustituye el estado «pendiente de aprobar» de la «Propuesta de tres vueltas…» (arriba): queda **aprobada a falta de detalle**. Resuelve V12. Por ahora importa tener la idea; no se implementa nada.
 
-- **Tres vueltas:** el juego se recorre tres veces: **Easy**, **Normal** y **Hard**. No hay selector de dificultad: la dificultad es la progresión por vueltas (concreta C9).
-- **Rollback:** en la primera vuelta (Easy) el jefe final **escapa** y hace un **rollback**: el mundo vuelve atrás. En Hard es igual, pero el jefe final **engaña** a Isak para que sea él quien haga el rollback.
+**Corrección (2026-10-15):** el primer registro de esta decisión (commit 1e4c51c) invertía Normal y Hard: decía que el jefe final engañaba a Isak en Hard. Lo correcto es lo de abajo: el engaño es en **Normal** y **Hard** es el final real.
+
+- **Tres vueltas:** el juego se recorre tres veces: **Easy** (1.ª), **Normal** (2.ª) y **Hard** (3.ª). No hay selector de dificultad: la vuelta se desbloquea por progresión (concreta C9).
+- **Final de cada vuelta:**
+  - **Easy:** el jefe final **escapa** y hace un **rollback**: el mundo vuelve atrás.
+  - **Normal:** el jefe final **engaña** al jugador para que sea **él** quien haga el rollback.
+  - **Hard:** al vencer al jefe final **termina el juego**. Es el **final real**: aquí llega el momento de decisión de `06-finales.md` §14.1 (Final A o B).
+- **El rollback falla:** en cada rollback hay un fallo e Isak **mantiene sus habilidades**. En cada vuelta se añaden mejoras (duración, daño, capacidad, etc.). Qué mejoras da cada vuelta se define **vuelta por vuelta** más adelante (método aprobado por el usuario).
+- **Puntos débiles:** los de los enemigos **cambian en cada vuelta**.
 - **Qué cambia entre vueltas:** sube la dificultad, cambia el diseño visual de los mapas y se añaden rutas nuevas. Los enemigos y los subniveles (1-1, 1-2, 1-3, 2-1…) tienen contenido nuevo en cada vuelta. Ejemplo: el 1-1 Easy es el actual; en Normal, en vez de la misma ruta, el camino se bloquea y los activadores de puente fallan.
 - **Plan de producción:** primero los 6 mundos con sus 3 subniveles en **Easy** (18 niveles); después se da forma a Normal y Hard.
 - **Selección de nivel:** cuando exista el hub, desde él se elige la zona (1 a 6) y el subnivel (ver `05-hub.md` §13.6).
-- **Puntos de atención:** no se restauran al rejugar un nivel; solo vuelven si el jefe final hace el rollback (coherente con «Decisión 4, puntos de atención» del 2026-10-14).
+- **Puntos de atención:** no se restauran al rejugar un nivel; solo vuelven con un rollback, es decir, al pasar de Easy a Normal y de Normal a Hard (coherente con «Decisión 4, puntos de atención» del 2026-10-14). Da igual que lo haga el jefe (Easy) o Isak engañado (Normal).
 - **Mejoras:** se compran en el hub (ya decidido el 2026-10-14, decisión 1).
-- **Guardado en el hub:** el progreso se guarda en el hub. Si se cierra el juego sin haber guardado en el hub, el progreso no guardado se pierde. **Diferencia con lo implementado:** hoy `user://save.json` se escribe **automáticamente** al capturar un punto, obtener una habilidad, comprar una mejora o completar un nivel (ver «Decisión 5, guardado»); no hay que pasar por el hub. Sin cambios en el código todavía.
-- **Dudas abiertas:**
-  1. **Encaje con §14.1** (`06-finales.md`): tras la fase 3 del combate final llega el momento de decisión (Final A o B). Con las vueltas, ¿solo llega al final de Hard? Si en Hard es Isak quien hace el rollback engañado, ¿cuándo y cómo se llega al final real? `06-finales.md` y `03-historia.md` no se tocan hasta decidirlo.
-  2. **Final de la vuelta Normal:** no se ha dicho qué hace el jefe; ¿escapa y hace el rollback, como en Easy?
-  3. **Dificultad dentro de una vuelta:** ¿cómo evoluciona del 1-1 al 6-3 en cada vuelta?
-  4. **«X de 5» frente a Easy/Normal/Hard:** ¿la dificultad por nivel de los `mundo-N` es la base de Easy? ¿Cómo se escala en Normal y Hard?
-  5. **Rollback por mapa:** qué cambia en concreto en cada mapa (geometría, rutas, enemigos, peligros, puntos débiles, aspecto) y cómo se ve el paso de una vuelta a otra.
-  6. **Guardar en el hub:** ¿es una acción explícita (un objeto o un menú) o se guarda al entrar en el hub? ¿Qué se guarda antes de que exista el hub (1-1 a 1-3 y el jefe del Mundo 1)? ¿Se mantiene el guardado automático actual o se sustituye? Hace falta guardar también la vuelta actual y los puntos capturados por vuelta.
-  7. **Puntos tras el rollback de Hard:** si lo lanza Isak, ¿también restaura los puntos?
-  8. Siguen abiertas las preguntas 1, 4 y 6 de la propuesta anterior (narrativa por vuelta, color y telegrafiado de los puntos débiles nuevos, qué mejoras se consiguen en cada vuelta).
+- **Guardado: manual y solo en el hub.** El jugador guarda en el hub; si cierra el juego sin haber guardado en el hub, el progreso no se salva. Queda decidido y sustituye la duda de si se mantenía el guardado automático. El **1-1 debe enseñar a guardar** (tutorial en el primer nivel); como el hub llega después del Mundo 1, el tutorial necesita el hub o un punto de guardado en el nivel (dependencia abierta, ver `08-pendientes.md`).
+- **Guardado actual, provisional:** hoy `user://save.json` se escribe **automáticamente** al capturar un punto, obtener una habilidad, comprar una mejora o completar un nivel (ver «Decisión 5, guardado»). Es provisional: hay que migrarlo al guardado manual cuando exista el hub. Sin cambios en el código todavía.
+- **Hub:** se diseña cuando termine el 1-1, para dejarlo cuadrado.
+- **Dificultad:** el usuario no recuerda por qué se decidió que «la dificultad ya no se elige» y pide una sugerencia. Queda abajo como **propuesta del equipo, pendiente de aprobar**. El rollback se verá más adelante.
+
+### Sugerencia de dificultad (propuesta del equipo, pendiente de aprobar; no es decisión)
+
+Dos ejes separados:
+
+- **(a) Curva del nivel («X de 5»):** dificultad intrínseca de cada nivel dentro de la vuelta. Sube de forma autoral a lo largo de los mundos (del 1-1 al 6-3). No es adaptativa.
+- **(b) La vuelta (Easy, Normal, Hard):** un conjunto de modificadores fijos sobre tres palancas:
+  1. Vida y daño de los enemigos.
+  2. Rutas y trampas nuevas (mapas alterados).
+  3. Puntos débiles que cambian.
+
+  Las ayudas del jugador (energía, drops) **no se ocultan** en ninguna vuelta.
+- **Sin selector de dificultad:** la vuelta se desbloquea por progresión.
+- **Sin dificultad dinámica oculta** dentro de una vuelta.
+- **Ventajas:** es sencillo de probar (cada vuelta es un «perfil» de modificadores sobre la curva fija) y es coherente con las mejoras por vuelta.
+
+### Dudas abiertas
+
+Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de Normal (engaña a Isak para que haga el rollback), si el rollback lanzado por Isak restaura los puntos (sí, como todo rollback), cómo se llega al final real (venciendo al jefe en Hard) y qué es guardar en el hub (guardado manual, solo allí).
+
+1. **Mejoras por vuelta:** qué mejoras (duración, daño, capacidad…) se consiguen en Easy, Normal y Hard. Se define vuelta por vuelta.
+2. **Dificultad:** aprobar, cambiar o rechazar la sugerencia de arriba (curva «X de 5» + perfil por vuelta).
+3. **Rollback por mapa:** qué cambia en concreto en cada mapa (geometría, rutas, enemigos, peligros, puntos débiles, aspecto) y cómo se ve el paso de una vuelta a otra.
+4. **Narrativa de cada vuelta:** qué cambia para Eco, los aliados, los amigos y los recuerdos; cómo se cuenta el escape (Easy) y el engaño (Normal).
+5. **Avisos de puntos débiles nuevos:** si los puntos débiles de cada vuelta siguen la regla de color (rojo/carmín) y el telegrafiado de 6 a 12 cuadros, y cómo se avisa al jugador del cambio.
+6. **Guardado (detalle):** cómo es la acción de guardar en el hub (objeto o menú), cómo se enseña en el 1-1 sin hub (punto de guardado en el nivel u otra forma) y qué guarda además (vuelta actual, puntos capturados por vuelta, power banks de mapa, secretos).
 
 ## Llegada por vórtice, pausa de inicio y terminal de salida (2026-10-15)
 

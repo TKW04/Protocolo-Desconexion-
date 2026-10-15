@@ -58,6 +58,7 @@ El fondo de pantalla del hub es una foto rota en cinco piezas, una por cada frag
 No viene del documento original. Decisión del usuario; detalle y dudas abiertas en `preguntas.md` («Decisiones del 2026-10-15: tres vueltas, hub y guardado»).
 
 - **Selección de nivel:** desde el hub se elige la zona (1 a 6) y el subnivel (p. ej. 1-1, 1-2, 1-3). Antes de que exista el hub (Mundo 1, hasta vencer a Alerta Mayor) no hay selección.
-- **Puntos de atención:** al rejugar un nivel no se restauran los ya capturados. Solo vuelven cuando el jefe final hace el rollback (tres vueltas: Easy, Normal y Hard).
+- **Puntos de atención:** al rejugar un nivel no se restauran los ya capturados. Solo vuelven con un rollback: al final de Easy lo hace el jefe final al escapar y al final de Normal lo hace Isak, engañado por el jefe. Hard termina el juego (final real).
 - **Mejoras:** se compran en el hub, con Calc (13.3).
-- **Guardado:** se guarda en el hub. Si se cierra el juego sin haber guardado en el hub, el progreso no guardado se pierde. Pendiente de detalle: hoy el juego guarda automáticamente en `user://save.json`.
+- **Guardado:** manual y solo en el hub. Si se cierra el juego sin haber guardado en el hub, el progreso no se salva. El 1-1 enseña a guardar (tutorial en el primer nivel); como el hub llega tras el Mundo 1, depende del hub o de un punto de guardado en el nivel (pendiente). El guardado automático actual en `user://save.json` es provisional: se migra al manual cuando exista el hub.
+- **Diseño del hub:** se hace cuando termine el 1-1.

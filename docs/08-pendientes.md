@@ -8,6 +8,8 @@ Origen: sección 16 del documento original (`docs/original/diseno.md`).
 - Revisar las paletas por mundo.
 - V15 (responder o no en el 4-3): aplazado hasta el Mundo 4
 - Frases "finales por desarrollar" en §4 y §11.7: se mantienen; se revisan durante el desarrollo
-- Tres vueltas (Easy, Normal, Hard; decisión del 2026-10-15, ver `preguntas.md`): primero diseñar y producir los 18 niveles (6 mundos × 3 subniveles) en Easy; después, Normal y Hard (contenido nuevo por vuelta: rutas, enemigos, aspecto de los mapas)
-- Tres vueltas: encaje con §14.1 (finales), final de la vuelta Normal, dificultad dentro de una vuelta, relación con «X de 5» y diseño del rollback por mapa
-- Guardado en el hub (decisión del 2026-10-15): definir cómo se guarda y qué pasa antes de que exista el hub; hoy el guardado es automático
+- Tres vueltas (Easy, Normal, Hard; decisión del 2026-10-15, ver `preguntas.md`; Easy: el jefe escapa y hace el rollback; Normal: engaña a Isak para que lo haga él; Hard: final real): primero diseñar y producir los 18 niveles (6 mundos × 3 subniveles) en Easy; después, Normal y Hard (contenido nuevo por vuelta: rutas, enemigos, aspecto de los mapas)
+- Tres vueltas, dudas abiertas: mejoras por vuelta (se definen vuelta por vuelta), dificultad (sugerencia del equipo pendiente de aprobar: curva «X de 5» + perfil por vuelta), diseño del rollback por mapa, narrativa de cada vuelta y avisos de los puntos débiles nuevos
+- Guardado manual en el hub (decisión del 2026-10-15): definir la acción de guardar y migrar el guardado automático actual (`user://save.json`, provisional) cuando exista el hub
+- Tutorial de guardado en el 1-1: el primer nivel enseña a guardar. Dependencia: necesita el hub o un punto de guardado dentro del nivel (el hub llega tras el Mundo 1)
+- Diseñar el hub tras cerrar el 1-1

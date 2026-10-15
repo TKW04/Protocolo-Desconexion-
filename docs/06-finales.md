@@ -11,6 +11,7 @@ Al terminar la fase 3 del combate final, Isak Optimizado queda de rodillas, pixe
 - **Sin temporizador ni indicación:** el jugador puede tomarse el tiempo que quiera.
 - **Dos acciones posibles:** lanzar el pulso para dar el golpe final, o acercarse caminando y extender la mano con el botón de interacción.
 - **Sin pistas:** el juego no marca una opción como buena. Esperar en silencio es una elección también, y el idle de Isak lleva a la escena de la mano extendida.
+- **Solo en Hard (decisión del 2026-10-15, no viene del documento original):** el juego se recorre en tres vueltas. Este momento solo llega al vencer al jefe final en **Hard** (3.ª vuelta), que es el final real. En **Easy** el jefe escapa y hace un rollback; en **Normal** engaña a Isak para que sea él quien haga el rollback. Ver `preguntas.md` («Decisiones del 2026-10-15: tres vueltas, hub y guardado»).
 
 ## 14.2 Final A: Desconexión
 
