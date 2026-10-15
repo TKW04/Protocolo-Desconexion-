@@ -28,6 +28,8 @@
 ## quede un resto: ya no se puede disparar. Solo es visual: GameState.debug_energy
 ## no cambia. Sin laser sigue la regla de antes (vacia solo con 0). El Debug no
 ## cuenta: con ese resto aun se activa (duda en docs/preguntas.md).
+## Modo hub (2026-10-15, enable_hub_mode): Modo Avion en lugar de la senal e
+## indicador «sin guardar» en ambar (seccion hud de data/hub.json).
 class_name Hud
 extends CanvasLayer
 
@@ -86,6 +88,14 @@ var _power_bank_box: HBoxContainer
 var _power_bank_icon: HudPowerBankIcon
 var _power_bank_label: Label
 var _power_banks: int = 0
+
+## Modo hub (enable_hub_mode): Modo Avion en lugar de la senal e indicador
+## «sin guardar». Se crea por codigo (no toca hud.tscn ni data/hud.json).
+var _hub_mode: bool = false
+var _airplane: HudHubIcon
+var _unsaved_box: HBoxContainer
+var _unsaved_dot: HudHubIcon
+var _unsaved_label: Label
 
 
 func _ready() -> void:
@@ -408,6 +418,84 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 	_power_bank_label.text = POWER_BANK_FORMAT % 0
 	_power_bank_box.add_child(_power_bank_label)
 	_power_bank_box.visible = bool(d.get("show_when_empty", false))
+
+
+# --- Modo hub (docs/propuesta-hub-y-guardado.md §1 y §4.3) ---
+
+## Pasa el HUD al modo hub: la senal (Sync Rate) se sustituye por el icono de
+## Modo Avion (en el hub no hay dano) y, junto al contador de puntos, sale el
+## indicador «sin guardar» (punto y texto en el rol unsaved_color, ambar) cuando
+## GameState.has_unsaved_changes(). `config`: seccion hud de data/hub.json.
+## Iconos PROVISIONALES (HudHubIcon) hasta integrar assets/sprites/hub/icons/.
+func enable_hub_mode(config: Dictionary) -> void:
+	if _hub_mode:
+		return
+	_hub_mode = true
+	_signal.visible = false
+	_sync_label.visible = false
+	var icon_size: Array = config.get("icon_size_px", [10, 10])
+	_airplane = HudHubIcon.new()
+	_airplane.name = "AirplaneMode"
+	_airplane.kind = &"airplane"
+	_airplane.color = HubData.color(String(config.get("airplane_color", "texto_claro")))
+	_airplane.custom_minimum_size = Vector2(float(icon_size[0]), float(icon_size[1]))
+	_airplane.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_airplane.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_row.add_child(_airplane)
+	_row.move_child(_airplane, 0)
+	var unsaved_color: Color = HubData.color(String(config.get("unsaved_color", "ambar")))
+	_unsaved_box = HBoxContainer.new()
+	_unsaved_box.name = "Unsaved"
+	_unsaved_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_unsaved_box.add_theme_constant_override("separation", int(config.get("unsaved_spacing_px", 3)))
+	_row.add_child(_unsaved_box)
+	_unsaved_dot = HudHubIcon.new()
+	_unsaved_dot.name = "Dot"
+	_unsaved_dot.kind = &"dot"
+	_unsaved_dot.color = unsaved_color
+	var dot_size: float = float(config.get("unsaved_dot_px", 4))
+	_unsaved_dot.custom_minimum_size = Vector2(dot_size, dot_size)
+	_unsaved_dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_unsaved_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_unsaved_box.add_child(_unsaved_dot)
+	_unsaved_label = Label.new()
+	_unsaved_label.name = "Text"
+	_unsaved_label.add_theme_font_override("font", load(String(config.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font)
+	_unsaved_label.add_theme_font_size_override("font_size", int(config.get("font_size", 12)))
+	_unsaved_label.add_theme_color_override("font_color", NEUTRAL_MODULATE)
+	_unsaved_label.material = _config.new_key_swap_material(Color.html(String(config.get("font_key_color", "#f2f4f8"))), unsaved_color)
+	_unsaved_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_unsaved_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_unsaved_label.text = String(config.get("unsaved_text", "Sin guardar"))
+	_unsaved_box.add_child(_unsaved_label)
+	EventBus.unsaved_changes_changed.connect(_on_unsaved_changes_changed)
+	_on_unsaved_changes_changed(GameState.has_unsaved_changes())
+
+
+func is_hub_mode() -> bool:
+	return _hub_mode
+
+
+## Modo Avion visible (y la senal oculta).
+func is_airplane_mode_shown() -> bool:
+	return _hub_mode and _airplane.visible and not _signal.visible
+
+
+func is_unsaved_indicator_shown() -> bool:
+	return _hub_mode and _unsaved_box.visible
+
+
+func get_unsaved_text() -> String:
+	return _unsaved_label.text if _hub_mode else ""
+
+
+func get_unsaved_color() -> Color:
+	return _label_color(_unsaved_label) if _hub_mode else Color.TRANSPARENT
+
+
+func _on_unsaved_changes_changed(has_changes: bool) -> void:
+	if _unsaved_box != null:
+		_unsaved_box.visible = has_changes
 
 
 func _on_debug_activation_progress_changed(progress: float) -> void:

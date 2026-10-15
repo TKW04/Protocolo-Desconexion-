@@ -19,6 +19,38 @@
 		"ambar": "#ffa000",
 		"ambar_sombra": "#a85f00"
 	},
+	"room": {
+		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. photo_cells: [col, fila, ancho, alto] de la foto rota (fondo). page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo). dormant: huecos apagados del dock sin logica, de pie sobre el suelo en su columna (col) con su tamano (size_px) y arte provisional (kind) o final (frames: SpriteFrames con 'off'). Las carpetas y sus repisas llegan con el paso 7 (la altura de las repisas esta por decidir: el mapa de §2.2 las pone en la fila 4, a 5 tiles del dock, y el texto dice 3 tiles).",
+		"world": 1,
+		"size_tiles": [20, 11],
+		"camera_rect_px": [0, 0, 1280, 720],
+		"floor_row": 9,
+		"spawn_cell": [5, 8],
+		"spawn_facing": -1.0,
+		"photo_cells": [5, 1, 10, 5],
+		"page_dot_row": 10,
+		"refill_on_enter": true,
+		"abilities_available": {"pulse": true, "debug": false},
+		"stations": [],
+		"dormant": [
+			{"id": "calc", "node": "Calc", "kind": "calc_dormant", "col": 7, "size_px": [64, 96]},
+			{"id": "notas", "node": "SlotNotas", "kind": "slot", "col": 10, "size_px": [64, 96]},
+			{"id": "linterna", "node": "SlotLinterna", "kind": "slot", "col": 13, "size_px": [64, 96]},
+			{"id": "papelera", "node": "SlotPapelera", "kind": "slot", "col": 16, "size_px": [64, 96]}
+		]
+	},
+	"hud": {
+		"_notes": "Modo hub del HUD (Hud.enable_hub_mode; propuesta §1 y §4.3): la senal (Sync Rate) se sustituye por el icono de Modo Avion (airplane_color) y junto al contador de puntos sale el indicador «sin guardar» (punto de unsaved_dot_px y unsaved_text con la fuente de textos) en unsaved_color (ambar de hub.gpl, #ffa000) mientras GameState.has_unsaved_changes(). Medidas en px de arte del HUD (x2). Iconos PROVISIONALES dibujados (HudHubIcon) hasta integrar assets/sprites/hub/icons/.",
+		"airplane_color": "texto_claro",
+		"icon_size_px": [10, 10],
+		"unsaved_color": "ambar",
+		"unsaved_text": "Sin guardar",
+		"unsaved_dot_px": 4,
+		"unsaved_spacing_px": 3,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_key_color": "#f2f4f8"
+	},
 	"station": {
 		"_notes": "HubStation (patron de ExitTerminal, data/world1_objects.json exit_terminal). Medidas para una estacion de 64x128 (1x2 tiles; se escalan con su tamano). prompt_zone_px: zona [x, y, ancho, alto] desde la esquina superior izquierda en la que Isak 'esta cerca' (1,5 tiles a cada lado): prompt y tecla del pulso. hit_rect_px: zona que el circulo del pulso debe tocar. Tecla: primera tecla de pulse_action en el Input Map (G) sobre una placa key_plate_color con borde key_border_color (roles de colors), a key_gap_px sobre top_px, con un bote de key_bob_px cada key_bob_s. Al abrir: destello (modulate flash_modulate, open_flash_s) e Isak de espaldas (face_back). Al cerrar, Isak sigue de espaldas return_physics_frames pasos de fisica (el salto que cierra el panel no le hace saltar) y luego face_side().",
 		"prompt_zone_px": [-96, 0, 256, 128],
