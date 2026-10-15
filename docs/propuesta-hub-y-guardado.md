@@ -1,6 +1,6 @@
 # Propuesta: hub del Mundo 1 y tutorial de guardado del 1-1
 
-Estado: **APROBADO 2026-10-15.** El usuario aprobó las 10 preguntas de §7 con la recomendación del documento (respuestas en §7). Los cambios marcados como **[cambia 05-hub §x]** ya están aplicados en `05-hub.md`. Implementado: pasos 1 a 3 de §6.2 (guardado manual, esquema v2 con migración y `.bak`, aviso al salir) y, mientras no exista el hub real, una acción de guardar provisional en la pantalla provisional del hub (`save_game`, ver `CLAUDE.md`, «Cómo ejecutar»). El resto (pasos 4 a 12) sigue pendiente. Sigue abierta, como decisión del usuario, la paleta del hub (hex exactos del «gris azulado apagado», §6.1). Las decisiones ya tomadas por el usuario (`05-hub.md` §13.6 y `preguntas.md`, «Decisiones del 2026-10-15: tres vueltas, hub y guardado») se respetan. Donde esta propuesta cambia algo de `05-hub.md`, lo marca como **[cambia 05-hub §x]**. Las preguntas para el usuario están al final (§7), ya resueltas.
+Estado: **APROBADO 2026-10-15.** El usuario aprobó las 10 preguntas de §7 con la recomendación del documento (respuestas en §7). Los cambios marcados como **[cambia 05-hub §x]** ya están aplicados en `05-hub.md`. Implementado: pasos 1 a 3 de §6.2 (guardado manual, esquema v2 con migración y `.bak`, aviso al salir) y, mientras el flujo del juego no lleve al hub real (paso 9), una acción de guardar provisional en la pantalla provisional del hub (`save_game`, ver `CLAUDE.md`, «Cómo ejecutar»). **Pasos 4 a 6 implementados (2026-10-15)** con arte provisional: `HubStation`, la escena del hub real (`scenes/hub/hub.tscn`, datos en `data/hub.json`) y la estación «copia local»; el hub real aún no está en el flujo del juego y se prueba abriendo su escena (ver §6.2). El resto (pasos 7 a 12) sigue pendiente. Sigue abierta, como decisión del usuario, la paleta del hub (hex exactos del «gris azulado apagado», §6.1). Las decisiones ya tomadas por el usuario (`05-hub.md` §13.6 y `preguntas.md`, «Decisiones del 2026-10-15: tres vueltas, hub y guardado») se respetan. Donde esta propuesta cambia algo de `05-hub.md`, lo marca como **[cambia 05-hub §x]**. Las preguntas para el usuario están al final (§7), ya resueltas.
 
 Decisiones que se respetan:
 
@@ -22,7 +22,7 @@ El hub es la **pantalla de inicio del celular en Modo Avión**: el único sitio 
   - Carpetas como iconos grandes de app (puertas a los mundos).
   - Un **dock** abajo, que es también el suelo por el que camina Isak.
   - Un icono de Modo Avión, siempre encendido.
-  - Todo con contorno `noche_profunda`, bisel `borde_luz`/`tile_base`, trazas de 1 px en `resplandor` y acentos en el color del Debug del mundo. Sin rojo: en el hub nada hace daño.
+  - Todo con contorno `fondo_profundo`, bisel `borde`/`dock`, trazas de 1 px en `traza` y acentos en el color del Debug del mundo (`acento_cian` en el Mundo 1). Nombres de rol de `assets/palettes/hub.gpl` (corregido el 2026-10-15; antes se usaban los del Mundo 1: `noche_profunda`, `borde_luz`, `tile_base` y `resplandor`). Sin rojo: en el hub nada hace daño.
 - **HUD en el hub:** la señal (Sync Rate) se sustituye por el icono de Modo Avión, porque en el hub no hay daño. La batería y el contador de puntos se mantienen. Se añade el indicador «sin guardar» (§4.3).
 - **Tono:** silencio y calma. La música está pendiente (es una decisión abierta del usuario).
 
@@ -160,7 +160,7 @@ No se guardan: Sync Rate, energía y checkpoints (el hub los repone), ni el enfr
 
 ### 4.3 Indicador «sin guardar»
 
-- En el HUD del hub: un punto o icono junto al contador de puntos («● sin guardar»), en `banner_blanco`, cuando `GameState.has_unsaved_changes()`.
+- En el HUD del hub: un punto o icono junto al contador de puntos («● sin guardar»), en `ambar` (`#ffa000` de `hub.gpl`), cuando `GameState.has_unsaved_changes()`. **Corregido (2026-10-15):** antes decía `banner_blanco`; la paleta del hub reserva el ámbar para los puntos de atención y el indicador «sin guardar». Implementado en `Hud.enable_hub_mode` (sección `hud` de `data/hub.json`): el indicador conserva su sitio y se apaga al guardar.
 - En los niveles no se muestra, para no ensuciar el HUD. El aviso al salir (§4.4) cubre ese caso.
 
 ### 4.4 Cerrar sin guardar
@@ -232,9 +232,9 @@ Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí.
 | 1 | `GameState`: modo manual (dirty, `has_unsaved_changes()`, señal); `request_save()` solo marca. | S | Cambiar `test_request_save_writes_once_at_end_of_frame`; prueba nueva para dirty y para limpiar al guardar. |
 | 2 | Esquema v2: `lap`, `found_secrets`, `hub_tutorial_done`, `saved_at`, `play_time_s`; migración desde v1; `.bak`. | S | Ida y vuelta con v2, carga de v1, versión 3 desconocida apartada y `.bak`. |
 | 3 | Aviso al salir con cambios pendientes (en el hub o en un nivel). | S | Prueba de la lógica de decisión (sin ventana). |
-| 4 | `HubStation` (prompt, pulso, `face_back`/`face_side`, abrir y cerrar el panel), extraído del patrón de `ExitTerminal`. | M | Proximidad, activación, pose y devolución del control. |
-| 5 | Escena del hub (`scenes/hub/hub.tscn`): sala de 20x11, P, vórtice de llegada, HUD con Modo Avión, energía llena y paredes. Datos en `data/hub.json`. | M | Prueba de humo: llegada, control y energía llena. |
-| 6 | Estación de copia local y su panel (resumen, confirmación, «sin guardar»). | S | Guardar escribe en la ruta de pruebas y el indicador se apaga. |
+| 4 | **Hecho (2026-10-15).** `HubStation` (prompt, pulso, `face_back`/`face_side`, abrir y cerrar el panel), extraído del patrón de `ExitTerminal`. | M | Proximidad, activación, pose y devolución del control (`tests/test_hub_station.gd`). |
+| 5 | **Hecho (2026-10-15).** Escena del hub (`scenes/hub/hub.tscn`): sala de 20x11, P, vórtice de llegada, HUD con Modo Avión, energía llena y paredes. Datos en `data/hub.json`. | M | Prueba de humo: llegada, control y energía llena (`tests/test_hub_room.gd`). |
+| 6 | **Hecho (2026-10-15).** Estación de copia local y su panel (resumen, confirmación, «sin guardar»). | S | Guardar escribe en la ruta de pruebas y el indicador se apaga (`tests/test_copy_local_station.gd`). |
 | 7 | Carpetas y panel de subniveles (registro de mundos y subniveles en `data/hub.json`, estados y vuelta). | M | Estados según `completed_levels` y `unlocked_levels`; entrar carga el nivel. |
 | 8 | Calc (dormida): se lleva la lógica de compra de `hub_placeholder` a su panel. | S | Se adaptan `test_upgrades.gd` y `test_energy_sources.gd`. |
 | 9 | Flujo: `level_completed` lleva al hub real; la carpeta lleva al nivel. `hub_placeholder` se retira o se deja solo para escenas de prueba. | M | `test_popup_door_hub.gd`, `test_level_flow.gd` y `test_dev_keys.gd` (R en el hub); revisar `tools/level_bot.gd`. |
@@ -243,6 +243,14 @@ Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí.
 | 12 | Documentación: actualizar `05-hub.md` con lo aprobado, `CLAUDE.md` (cómo ejecutar y guardado) y `08-pendientes.md`. | S | |
 
 S = menos de medio día; M = entre medio día y un día.
+
+**Estado de los pasos 4 a 6 (2026-10-15):**
+
+- **4. `HubStation`** (`scripts/hub/hub_station.gd`, `scenes/hub/hub_station.tscn`). Lo común con la terminal de salida (tecla del pulso leída del Input Map, placa y bote) está en `PulsePrompt`; `ExitTerminal` lo usa sin cambiar su aspecto. Con Isak a 1,5 tiles sale la tecla; el pulso abre el panel (`HubPanel`: NinePatch de Eco y fuente de textos) con Isak de espaldas. Al cerrar, Isak sigue de espaldas dos pasos de física (así el salto que cierra el panel no le hace saltar) y luego `face_side()` le devuelve el control.
+- **5. Escena del hub** (`scenes/hub/hub.tscn`, `HubRoom`). Sala de 20x11 con cámara fija, dock como suelo, paredes y techo. Isak llega por el vórtice en P (5, 8) mirando a la copia local. La energía y el Sync Rate se llenan al entrar. El pulso queda desbloqueado y el Debug no. Hay huecos apagados para Calc dormida (sin lógica), Notas, Linterna y Papelera. En el HUD, Modo Avión sustituye a la señal y aparece el indicador «Sin guardar» en ámbar. **Las carpetas y sus repisas quedan para el paso 7.** Falta decidir la altura de las repisas: el mapa de §2.2 las pone en la fila 4, a 5 tiles del dock, y el texto dice «a 3 tiles, se llega de un salto».
+- **6. Copia local** (`CopyLocalStation`, `CopyLocalPanel`, en las celdas (1, 7-8)). Resumen: último nivel, puntos, vuelta, última copia y «Sin guardar» / «Todo guardado». Guardar pide confirmación y llama a `GameState.save_game()`; sin cambios responde «Todo está guardado». Mientras el hub está abierto, el aviso al salir ofrece guardar. Todavía no muestra el resumen de cambios («+9 puntos, 1-1 completado») de §4.2, porque eso exige comparar con la copia en disco.
+- **Arte:** es provisional, dibujado con la paleta `hub.gpl` (`HubProvisionalArt`, `HudHubIcon`). Cada estación y cada hueco tiene un nodo `Visual`. Para integrar el arte final de `assets/sprites/hub/` (`tools/gen_hub_objects.py`) en la siguiente tanda basta con dar `frames` (SpriteFrames con las animaciones `off`, `prompt` y `active`) a la estación o al hueco en `data/hub.json`, y sustituir el fondo, el dock y los iconos del HUD. La lógica no cambia.
+- **Flujo:** el juego sigue llevando a `hub_placeholder` hasta el paso 9. El hub real se abre directamente (ver `CLAUDE.md`, «Cómo ejecutar») y tiene capturas con `tools/render_hub.gd`.
 
 ## 7. Preguntas (RESUELTAS el 2026-10-15)
 
