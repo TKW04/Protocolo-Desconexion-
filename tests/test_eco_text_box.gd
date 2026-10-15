@@ -292,6 +292,45 @@ func test_confirm_does_nothing_on_normal_lines() -> void:
 	assert_eq(box.get_phase(), EcoTextBox.Phase.HOLD)
 
 
+## Indicacion de la tecla de cierre (2026-10-15): solo en las importantes, cuando
+## el texto ya se ha escrito; parpadea y va en la esquina inferior derecha.
+func test_confirm_hint_only_on_typed_important_lines() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME, 4.0, true)
+	box.advance(0.1)
+	assert_eq(box.get_phase(), EcoTextBox.Phase.TYPING)
+	assert_false(box.is_confirm_hint_visible(), "Mientras se escribe no sale")
+	var rect_typing: Rect2 = box.get_panel_rect()
+	assert_true(box.confirm(), "La primera pulsacion completa el texto")
+	assert_true(box.is_confirm_hint_visible(), "Escrito: sale la indicacion")
+	assert_true(box.is_confirm_hint_lit(), "Empieza encendida")
+	assert_eq(box.get_confirm_hint_text(), _config.confirm_hint_text)
+	for ch: String in box.get_confirm_hint_text():
+		assert_true(box.get_font().has_char(ch.unicode_at(0)), "Glifo '%s' en la fuente" % ch)
+	assert_eq(box.get_panel_rect(), rect_typing, "El cuadro no cambia de tamano al salir")
+	var panel: Rect2 = box.get_panel_rect()
+	var hint: Rect2 = box.get_confirm_hint_rect()
+	var pad: float = _config.padding_px * _config.pixel_scale
+	assert_almost_eq(hint.end.x, panel.end.x - pad, EPS, "Pegada a la derecha")
+	assert_almost_eq(hint.end.y, panel.end.y - pad, EPS, "Abajo")
+	var body_bottom: float = panel.position.y + pad + box.get_lines().size() * hint.size.y + hint.size.y
+	assert_true(hint.position.y >= body_bottom - EPS, "No tapa el texto")
+	box.advance(0.5 / _config.confirm_hint_blink_hz + 0.01)
+	assert_false(box.is_confirm_hint_lit(), "Parpadea")
+	box.advance(0.5 / _config.confirm_hint_blink_hz)
+	assert_true(box.is_confirm_hint_lit())
+	assert_true(box.confirm())
+	assert_false(box.is_confirm_hint_visible(), "Al cerrar se quita")
+	get_tree().paused = false
+
+
+func test_no_confirm_hint_on_normal_lines() -> void:
+	var box: EcoTextBox = _box()
+	box.show_line(WELCOME)
+	box.finish_typing()
+	assert_false(box.is_confirm_hint_visible())
+
+
 func test_important_line_jumps_the_queue_without_losing_others() -> void:
 	var box: EcoTextBox = _box()
 	box.show_line("Uno.")

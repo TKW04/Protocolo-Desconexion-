@@ -7,7 +7,8 @@ const DEFAULT_PATH: String = "res://data/eco_text_box.json"
 ## Color si falta en el JSON (magenta: se nota).
 const MISSING_COLOR: Color = Color.MAGENTA
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
-const SPECIAL_KEYS: Array[String] = ["colors", "assets", "speaker_name", "font", "key_swap_shader"]
+const SPECIAL_KEYS: Array[String] = ["colors", "assets", "speaker_name", "font", "key_swap_shader",
+	"confirm_hint_text"]
 
 var layer: int = 11
 ## Pixeles de pantalla por pixel de arte (entero).
@@ -27,6 +28,11 @@ var hold_per_char_s: float = 0.06
 var fade_in_s: float = 0.12
 var fade_out_s: float = 0.2
 var speaker_name: String = "Eco"
+## Indicacion de la tecla que cierra una linea importante (esquina inferior
+## derecha del cuadro, parpadea a confirm_hint_blink_hz cuando el texto ya se
+## ha escrito). El proyecto aun no distingue teclado y mando: texto generico.
+var confirm_hint_text: String = "▼ [Espacio]"
+var confirm_hint_blink_hz: float = 2.0
 var font_path: String = ""
 var key_swap_shader_path: String = ""
 var colors: Dictionary[StringName, Color] = {}
@@ -61,6 +67,7 @@ static func load_from_file(path: String = DEFAULT_PATH) -> EcoTextBoxConfig:
 		var current: Variant = config.get(key)
 		config.set(key, int(dict[key]) if current is int else float(dict[key]))
 	config.speaker_name = dict.get("speaker_name", config.speaker_name)
+	config.confirm_hint_text = dict.get("confirm_hint_text", config.confirm_hint_text)
 	config.font_path = dict.get("font", "")
 	config.key_swap_shader_path = dict.get("key_swap_shader", "")
 	var raw_colors: Dictionary = dict.get("colors", {})

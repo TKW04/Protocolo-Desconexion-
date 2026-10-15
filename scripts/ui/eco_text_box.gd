@@ -13,6 +13,9 @@
 ## - El texto se parte por palabras al ancho util del panel (fuente bitmap de
 ##   textos, con tildes y ene) y el panel crece con las lineas.
 ## - Al terminar de escribirse queda hold_time() segundos y se cierra solo.
+## - Lineas importantes ya escritas: indicacion parpadeante de la tecla que las
+##   cierra ("▼ [Espacio]", confirm_hint_text) en la esquina inferior derecha;
+##   el cuadro reserva esa fila desde que empieza la linea (no salta al acabar).
 ## - Tiempo REAL: el Debug ralentiza el mundo (GameState.world_time_scale), no
 ##   este cuadro, y no se usa Engine.time_scale.
 ## Entrada: EventBus.eco_line_requested (o show_line()). Si llega otra linea
@@ -35,6 +38,8 @@ const TRANSPARENT: float = 0.0
 const NEUTRAL_MODULATE: Color = Color.WHITE
 ## Acciones que cierran una linea importante (Espacio / A del mando e Intro).
 const CONFIRM_ACTIONS: Array[StringName] = [&"jump", &"ui_accept"]
+## Parpadeo de la indicacion de cierre: fraccion del ciclo en que se ve.
+const HINT_ON_FRACTION: float = 0.5
 
 ## Si es false, las lineas importantes no pausan ni esperan confirmacion (se
 ## cierran solas como las normales; conservan la prioridad en la cola). Solo
@@ -60,6 +65,9 @@ var _important: bool = false
 var _current_duration: float = -1.0
 ## El cuadro puso get_tree().paused (solo entonces lo quita).
 var _owns_pause: bool = false
+## Tiempo (real) desde que se ve la indicacion de cierre (para el parpadeo).
+var _hint_time: float = 0.0
+var _hint: Label
 
 @onready var _frame: Control = $Frame
 @onready var _panel: NinePatchRect = $Frame/Panel
@@ -126,6 +134,7 @@ func confirm() -> bool:
 		Phase.HOLD:
 			_phase = Phase.CLOSING
 			_close_time = 0.0
+			_update_hint()
 			return true
 	return false
 
@@ -140,10 +149,14 @@ func advance(delta: float) -> void:
 			if _typed >= _wrapped.length():
 				_phase = Phase.HOLD
 				_hold_left = _hold_s
+				_hint_time = 0.0
+				_update_hint()
 		Phase.HOLD:
 			_type_time += delta
 			_set_alpha(_fade_in_alpha())
 			if _important:
+				_hint_time += delta
+				_update_hint()
 				return
 			_hold_left -= delta
 			if _hold_left <= 0.0:
@@ -243,6 +256,26 @@ func get_alpha() -> float:
 	return _frame.modulate.a
 
 
+## La indicacion de cierre esta puesta (linea importante ya escrita). Puede
+## estar en la mitad apagada del parpadeo: ver is_confirm_hint_lit().
+func is_confirm_hint_visible() -> bool:
+	return _hint.visible
+
+
+## La indicacion se ve ahora (mitad encendida del parpadeo).
+func is_confirm_hint_lit() -> bool:
+	return _hint.visible and _hint.modulate.a > TRANSPARENT
+
+
+func get_confirm_hint_text() -> String:
+	return _hint.text
+
+
+## Rectangulo de la indicacion en pixeles de pantalla.
+func get_confirm_hint_rect() -> Rect2:
+	return Rect2((_panel.position + _hint.position) * _frame.scale, _hint.size * _frame.scale)
+
+
 ## Parte `text` en lineas que caben en `max_width` (por palabras; una palabra
 ## mas ancha que la linea se corta por caracteres). Los espacios entre palabras
 ## se sustituyen por saltos de linea, asi que unir las lineas con "\n" da un
@@ -290,6 +323,7 @@ func _start_next() -> void:
 	_type_time = 0.0
 	_phase = Phase.TYPING
 	_set_typed(0)
+	_update_hint()
 	_layout()
 	_panel.visible = true
 	_set_alpha(_fade_in_alpha())
@@ -309,6 +343,7 @@ func _finish_line() -> void:
 func _clear_line() -> void:
 	_phase = Phase.IDLE
 	_important = false
+	_update_hint()
 	_set_alpha(TRANSPARENT)
 	_panel.visible = false
 	_text = ""
@@ -398,6 +433,19 @@ func _apply_config() -> void:
 		label.clip_text = false
 	_speaker.text = c.speaker_name
 	_speaker.material = c.new_key_swap_material(c.color(&"body"), c.color(&"speaker"))
+	_hint = Label.new()
+	_hint.name = "ConfirmHint"
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.add_theme_font_override("font", _font)
+	_hint.add_theme_font_size_override("font_size", c.font_size)
+	_hint.add_theme_color_override("font_color", NEUTRAL_MODULATE)
+	_hint.add_theme_constant_override("line_spacing", 0)
+	_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hint.text = c.confirm_hint_text
+	_hint.material = c.new_key_swap_material(c.color(&"body"), c.color(&"confirm_hint"))
+	_hint.visible = false
+	_panel.add_child(_hint)
 	_fit_frame()
 	_layout()
 
@@ -415,8 +463,13 @@ func _layout() -> void:
 	var line_h: int = _line_height()
 	var lines: int = maxi(1, _lines.size())
 	var icon_h: int = c.asset_frame_size(ICON_ASSET).y
-	var height: int = maxi(c.padding_px * 2 + line_h * (1 + lines), c.padding_px * 2 + icon_h)
+	# Las importantes reservan una fila para la indicacion de cierre.
+	var hint_rows: int = 1 if _important else 0
+	var height: int = maxi(c.padding_px * 2 + line_h * (1 + lines + hint_rows), c.padding_px * 2 + icon_h)
 	var width: int = panel_width_for(_lines)
+	var hint_w: int = ceili(_width(_font, _hint.text, c.font_size))
+	if _important:
+		width = clampi(maxi(width, _text_left() + hint_w + c.padding_px), c.min_width_px, c.width_px)
 	_panel.size = Vector2(width, height)
 	_panel.position = Vector2(floorf((_frame.size.x - width) * 0.5), c.top_px)
 	var left: int = _text_left()
@@ -425,6 +478,20 @@ func _layout() -> void:
 	_speaker.size = Vector2(inner, line_h)
 	_body.position = Vector2(left, c.padding_px + line_h)
 	_body.size = Vector2(inner, line_h * lines)
+	_hint.size = Vector2(hint_w, line_h)
+	_hint.position = Vector2(width - c.padding_px - hint_w, height - c.padding_px - line_h)
+
+
+## Indicacion de cierre: solo en lineas importantes ya escritas; parpadea
+## (onda cuadrada, mitad del ciclo visible) en tiempo real.
+func _update_hint() -> void:
+	if _hint == null:
+		return
+	_hint.visible = _important and _phase == Phase.HOLD
+	if not _hint.visible:
+		return
+	var phase: float = fmod(_hint_time * _config.confirm_hint_blink_hz, OPAQUE)
+	_hint.modulate.a = OPAQUE if phase < HINT_ON_FRACTION else TRANSPARENT
 
 
 ## Ancho del panel (px de arte) para estas lineas: se ajusta a la linea mas
