@@ -310,3 +310,55 @@ func test_terminal_cut_by_movement_goes_to_run() -> void:
 	_sim.step()
 	assert_eq(_sim.state(), PlayerState.RUN, "Moverse corta la terminal al instante")
 	assert_eq(_isak.get_animation(), Isak.ANIM_WALK)
+
+
+# --- Pose de espaldas (face_back / face_side; terminal de salida y hub) ---
+
+func test_back_idle_is_one_standing_frame_with_feet_like_idle() -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	assert_eq(frames.get_frame_count(Isak.ANIM_BACK_IDLE), 1, "Pose estatica de un cuadro")
+	var back: Rect2i = frames.get_frame_texture(Isak.ANIM_BACK_IDLE, 0).get_image().get_used_rect()
+	var side: Rect2i = frames.get_frame_texture(Isak.ANIM_IDLE, 0).get_image().get_used_rect()
+	assert_eq(back.end.y, side.end.y, "Pies en la misma fila que idle")
+	assert_almost_eq(back.size.y, side.size.y, 4, "Misma altura visible que idle")
+	assert_almost_eq(back.get_center().x, side.get_center().x, 3.0, "Centrada como idle")
+
+
+func test_face_back_freezes_isak_and_ignores_hits_until_face_side() -> void:
+	_isak.facing = -1.0
+	_sprite.flip_h = true
+	var start: Vector2 = _isak.global_position
+	assert_true(_isak.face_back())
+	assert_true(_isak.is_facing_back())
+	assert_false(_isak.face_back(), "Ya estaba de espaldas")
+	assert_eq(_isak.get_animation(), Isak.ANIM_BACK_IDLE)
+	assert_false(_sprite.flip_h, "De espaldas no se voltea")
+	_input.move_axis = 1.0
+	_input.run_held = true
+	_sim.press_jump()
+	_sim.step(_sim.steps_for(0.5))
+	assert_eq(_isak.global_position, start, "No se mueve ni salta de espaldas")
+	assert_eq(_isak.get_animation(), Isak.ANIM_BACK_IDLE, "Los estados no cambian la pose")
+	assert_false(_isak.take_hit(1.0), "No recibe golpes de espaldas")
+	assert_eq(_sim.state(), PlayerState.IDLE)
+	_sim.step(_sim.steps_for(_isak.terminal_idle_threshold_s + 0.5))
+	assert_false(_isak.is_terminal_playing(), "Sin terminal holografica de espaldas")
+	assert_eq(_isak.get_animation(), Isak.ANIM_BACK_IDLE)
+	assert_true(_isak.face_side())
+	assert_false(_isak.is_facing_back())
+	assert_true(_sprite.flip_h, "Vuelve de perfil hacia donde miraba")
+	assert_eq(_isak.get_animation(), Isak.ANIM_IDLE)
+	assert_false(_isak.face_side(), "Ya estaba de perfil")
+	_sim.step(_sim.steps_for(0.3))
+	assert_gt(_isak.global_position.x, start.x, "Recupera el control")
+
+
+func test_respawn_and_death_clear_the_back_pose() -> void:
+	_isak.face_back()
+	_isak.respawn(_isak.global_position)
+	assert_false(_isak.is_facing_back(), "Reaparecer la quita")
+	assert_eq(_isak.get_animation(), Isak.ANIM_IDLE)
+	_isak.face_back()
+	_isak.die()
+	assert_false(_isak.is_facing_back(), "Morir la quita")
+	assert_eq(_isak.get_animation(), Isak.ANIM_DEATH)

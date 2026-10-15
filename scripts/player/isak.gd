@@ -41,6 +41,10 @@ const ANIM_DEATH: StringName = &"death"
 ## Pose del laser: cuadros del pulso en que sube el celular (6, 5 y 0, ver
 ## DERIVED en tools/build_isak_frames.gd). Isak elige el cuadro.
 const ANIM_LASER: StringName = &"laser"
+## Pose estatica de espaldas (un cuadro, isak_back_idle_00.png): Isak mira al
+## fondo (p. ej. al monitor de la terminal de salida). La ponen face_back() y
+## face_side().
+const ANIM_BACK_IDLE: StringName = &"back_idle"
 ## Estados en los que la pose del laser se corta (tienen animacion propia).
 const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
 ## Margen al pasar del tiempo de anticipacion al cuadro de la pose.
@@ -120,6 +124,9 @@ var _warping: bool = false
 var _warp_hidden: bool = false
 ## Entrada quieta que ven los estados mientras dura la llegada o la salida.
 var _warp_input := PlayerInput.new()
+## De espaldas (face_back/face_side): pose ANIM_BACK_IDLE, control bloqueado
+## (entrada quieta, como en el vortice) y sin recibir golpes.
+var _facing_back: bool = false
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -173,7 +180,7 @@ func step(delta: float) -> void:
 	# Durante la llegada o la salida los estados ven una entrada quieta; la del
 	# jugador (o la falsa de las pruebas) se sigue leyendo y se repone al final.
 	var source: PlayerInput = input
-	if _warping:
+	if _warping or _facing_back:
 		input = _warp_input
 	_update_timers(delta)
 	for i: int in MAX_TRANSITIONS_PER_STEP:
@@ -315,7 +322,7 @@ func apply_knockback() -> void:
 ## Recibe un golpe. `direction` es hacia donde sale despedido (-1/1); 0 = hacia atras.
 ## Devuelve false si se ignora (muerto o invulnerable).
 func take_hit(direction: float = 0.0) -> bool:
-	if is_dead() or is_invulnerable() or _warping or not _ready_ok:
+	if is_dead() or is_invulnerable() or _warping or _facing_back or not _ready_ok:
 		return false
 	_knockback_direction = signf(direction) if not is_zero_approx(direction) else -facing
 	_invulnerable_left = abilities.hurt_invulnerability_s
@@ -327,6 +334,7 @@ func take_hit(direction: float = 0.0) -> bool:
 func die() -> void:
 	if is_dead() or not _ready_ok:
 		return
+	_clear_back_pose()
 	change_state(PlayerState.DEAD)
 
 
@@ -348,6 +356,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_cancel_laser()
 	_end_laser_pose(false)
 	_laser_cooldown_left = 0.0
+	_clear_back_pose()
 	reset_idle_time()
 	change_state(PlayerState.IDLE)
 	play_animation(ANIM_IDLE)
@@ -391,6 +400,51 @@ func is_warp_hidden() -> bool:
 	return _warp_hidden
 
 
+# --- Pose de espaldas (terminal de salida; pensada tambien para el hub) ---
+
+## Pone a Isak de espaldas (ANIM_BACK_IDLE, sin voltear): queda quieto (los
+## estados ven una entrada quieta; la gravedad sigue) y no recibe golpes hasta
+## face_side(). Corta el laser y la terminal holografica. Falso si no se puede
+## (muerto, sin datos o ya de espaldas).
+func face_back() -> bool:
+	if not _ready_ok or is_dead() or _facing_back:
+		return false
+	_cancel_laser()
+	_end_laser_pose(false)
+	reset_idle_time()
+	_facing_back = true
+	velocity.x = 0.0
+	_sprite.flip_h = false
+	var frames: SpriteFrames = _sprite.sprite_frames
+	if frames != null and frames.has_animation(ANIM_BACK_IDLE):
+		_sprite.play(ANIM_BACK_IDLE)
+		_sprite.set_frame_and_progress(0, 0.0)
+	return true
+
+
+## Vuelve de perfil (hacia `facing`) con la animacion del estado actual y
+## devuelve el control (salvo que siga una llegada o salida). Falso si no
+## estaba de espaldas.
+func face_side() -> bool:
+	if not _facing_back:
+		return false
+	_clear_back_pose()
+	reset_idle_time()
+	_restore_state_animation()
+	return true
+
+
+## Isak esta de espaldas (face_back).
+func is_facing_back() -> bool:
+	return _facing_back
+
+
+func _clear_back_pose() -> void:
+	_facing_back = false
+	if _sprite != null:
+		_sprite.flip_h = facing < 0.0
+
+
 ## Lo llama DeadState al entrar.
 func notify_died() -> void:
 	died.emit()
@@ -405,6 +459,9 @@ func get_idle_time() -> float:
 
 
 func add_idle_time(delta: float) -> void:
+	# De espaldas no cuenta: la terminal holografica no se ve en esa pose.
+	if _facing_back:
+		return
 	_idle_time += delta
 	if not _terminal_playing and _idle_time >= terminal_idle_threshold_s:
 		_terminal_playing = true
@@ -607,11 +664,11 @@ func _cancel_laser() -> void:
 
 # --- Presentacion ---
 
-## Mientras dura la pose del laser los estados no cambian la animacion (al
-## acabar, _end_laser_pose pone la del estado).
+## Mientras dura la pose del laser o la de espaldas los estados no cambian la
+## animacion (al acabar, _end_laser_pose o face_side ponen la del estado).
 func play_animation(anim: StringName) -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
-	if frames == null or not frames.has_animation(anim) or is_laser_posing():
+	if frames == null or not frames.has_animation(anim) or is_laser_posing() or _facing_back:
 		return
 	if _sprite.animation != anim or not _sprite.is_playing():
 		_sprite.play(anim)
@@ -656,7 +713,7 @@ func get_animation_frame() -> int:
 ## cada fase segun la velocidad (no por tiempo). Lo llaman JumpState y FallState.
 func update_air_animation() -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
-	if frames == null or is_laser_posing():
+	if frames == null or is_laser_posing() or _facing_back:
 		return
 	var vy: float = velocity.y
 	var anim: StringName = ANIM_JUMP_APEX

@@ -58,6 +58,10 @@ const RUN_FPS: float = 14.0
 ##   cada 4 de la hoja: los 4 de cada bloque de 256 px estan a distinta fase
 ##   de sub-pixel y al alternarlos (antes, 1 de cada 2 a 12 fps) Isak temblaba
 ##   2 px a 6 Hz. Mismo ritmo que antes, sin temblor.
+## back_idle (2026-10-15): pose estatica de espaldas, un solo cuadro
+##   (isak_back_idle_00.png, de AutoSprite via tools/import_isak_back_idle.py).
+##   Isak.face_back()/face_side() entran y salen de ella (terminal de salida;
+##   pensada tambien para el hub).
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
 	"walk": [WALK_FPS, true, false],
@@ -72,6 +76,7 @@ const ANIMATIONS: Dictionary[String, Array] = {
 	"terminal_intro": [6.0, false, false],
 	"terminal_loop": [6.0, true, true],
 	"terminal_outro": [6.0, false, false],
+	"back_idle": [1.0, true, false],
 }
 
 ## Animaciones hechas con cuadros de otra (sin PNG propios):
