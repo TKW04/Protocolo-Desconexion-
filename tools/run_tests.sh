@@ -56,7 +56,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_level.py data/levels/*.json >/dev/null \
 		&& python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null \
 		&& python3 tools/build_level.py --check data/levels/*.json \
-		&& python3 -I tools/validate_warp_objects.py >/dev/null); then
+		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
 		PY_STATUS=4
