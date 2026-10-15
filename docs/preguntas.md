@@ -90,14 +90,14 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Problema:** no se define qué ocurre al morir (dónde reaparece, con cuánto Sync Rate, si pierde puntos de atención) ni qué hace un punto de sincronización además de servir de checkpoint.
 - **Propuesta:** con Sync Rate = 0, animación de muerte y reaparición en el último punto de sincronización (o en `P`) con 100% de Sync Rate y la energía que tenía. Tocar un punto de sincronización lo activa y repone el Sync Rate al 100%. En el slice no se pierden puntos de atención; esa regla queda pendiente para cuando exista Papelera.
 - **Por qué:** es lo mínimo para cerrar el ciclo de juego. "Sincronización" sugiere restaurar el Sync, y la pérdida de puntos depende de sistemas posteriores.
-- **Decisión (2026-10-14):** aprobada la propuesta.
+- **Decisión (2026-10-14):** aprobada la propuesta. La energía de Debug no se repone al reaparecer; se queda como está.
 
 ### V3 [RESUELTO] El foso del Tramo 1 de un nivel "sin riesgo de muerte"
 - **Sección:** §6.3 (Tramo 1: "un foso pequeño"; Dificultad: "Prácticamente sin riesgo de muerte").
 - **Problema:** no se define qué ocurre al caer en un foso (muerte, daño o simple caída a un nivel inferior).
 - **Propuesta:** el foso del Tramo 1 tiene fondo: se puede salir caminando o saltando. En general, caer fuera del nivel quita un 20% de Sync Rate y devuelve a Isak al último suelo seguro.
 - **Por qué:** practicar el salto sin castigo encaja con la dificultad 1/5, y la regla general sirve para el resto de niveles.
-- **Decisión (2026-10-14):** aprobada la propuesta.
+- **Decisión (2026-10-14):** la penalización del 20 % de Sync Rate se aplica desde el nivel 1-2. En el 1-1 la red de seguridad no quita nada (se queda así).
 
 ### V4 [BLOQUEA SLICE] El puente desactivado (Tramo 2 del 1-1)
 - **Sección:** §3.2 y §6.3 (Tramo 2).
@@ -250,7 +250,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Problema:** no se dice cuánta energía repone cada punto ni si se recarga sola con el tiempo.
 - **Propuesta:** cada punto suma 1 al contador y repone 10 de energía (sobre 100). No hay regeneración pasiva. Al empezar, la energía está llena.
 - **Por qué:** el diseño solo menciona los puntos como fuente de energía, y 10 por punto hace que la recolección importe.
-- **Decisión (2026-10-14):** aprobadas las propuestas.
+- **Decisión (2026-10-14):** aprobadas las propuestas. Los puntos de atención se guardan entre partidas (hoy vuelven a 0; el guardado en disco sigue pendiente, fuera del vertical slice).
 
 ### A11 [RESUELTO] Representación del HUD
 - **Sección:** §15.7.
