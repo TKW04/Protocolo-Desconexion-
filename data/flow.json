@@ -15,5 +15,18 @@
 	"transition_layer": 50,
 	"respawn_invulnerability_s": 1.0,
 	"fall_limit_margin_px": 64.0,
-	"fall_sync_penalty": 0.0
+	"fall_sync_penalty": 0.0,
+	"dev_keys": {
+		"_notes": "Teclas para probar el nivel (LevelRunner). restart_action (R / Select): reinicia el mapa actual desde el inicio con el estado inicial (nivel, enemigos, objetos, start_state, sin checkpoint); el guardado (puntos capturados, mejoras, power banks) se conserva. Se acepta jugando, en la pantalla del hub y durante la animacion de muerte (sustituye a la reaparicion); se ignora durante un fundido. wipe_action (F9): mantenerla wipe_hold_s segundos borra el archivo de guardado actual (GameState.save_path) y reinicia el mapa; solo en builds de depuracion (OS.is_debug_build()). wipe_prompt se muestra mientras se mantiene, con una barra de progreso.",
+		"restart_action": "restart_level",
+		"wipe_action": "debug_wipe_save",
+		"wipe_hold_s": 2.0,
+		"wipe_prompt": "Mantén F9: borrar guardado",
+		"prompt_layer": 51,
+		"prompt_font": "res://assets/sprites/ui/text_font.fnt",
+		"prompt_font_size": 12,
+		"prompt_scale": 2,
+		"prompt_color": "#ffffff",
+		"prompt_top_px": 24
+	}
 }

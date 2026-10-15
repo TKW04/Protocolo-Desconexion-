@@ -21,6 +21,12 @@
 ##   desbloquea sus `unlocks` (GameState), funde y muestra la pantalla
 ##   provisional del hub con los puntos recogidos; su restart_requested
 ##   reinicia el nivel desde cero.
+## - Teclas de prueba (dev_keys de data/flow.json): restart_level (R / Select)
+##   reinicia el mapa actual desde el inicio como start_level (el guardado se
+##   conserva). Vale jugando, en el hub y durante la animacion de muerte (la
+##   sustituye); se ignora durante un fundido. Mantener debug_wipe_save (F9)
+##   wipe_hold_s borra el guardado (GameState.save_path) y reinicia el mapa;
+##   solo en builds de depuracion, con un aviso en pantalla mientras se mantiene.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -39,11 +45,18 @@ signal level_started(level_id: String)
 signal respawned(position: Vector2, after_death: bool)
 ## Se muestra la pantalla provisional del hub.
 signal hub_shown(level_id: String, attention_points: int)
+## Se ha reiniciado el mapa con la tecla restart_level o tras borrar el guardado.
+signal level_restarted(level_id: String)
+## Se ha borrado el guardado con debug_wipe_save.
+signal save_wiped(path: String)
 
 ## Si es false, _process no avanza el flujo (las pruebas llaman a advance()).
 @export var auto_advance: bool = true
 ## Nivel a cargar al entrar; vacio = GameState.current_level o default_level.
 @export var start_level_id: String = ""
+## Si es false, mantener debug_wipe_save no hace nada (fuera de builds de
+## depuracion siempre es false).
+@export var wipe_enabled: bool = OS.is_debug_build()
 
 var _data: Dictionary = {}
 var _phase: Phase = Phase.PLAYING
@@ -60,11 +73,19 @@ var _transition: CanvasLayer
 var _fade: ColorRect
 var _deaths: int = 0
 var _falls: int = 0
+var _restarts: int = 0
+var _wipe_held_s: float = 0.0
+## Tras borrar, hay que soltar la tecla antes de poder borrar otra vez.
+var _wipe_latched: bool = false
+var _prompt_layer: CanvasLayer
+var _prompt_label: Label
+var _prompt_bar: ColorRect
 
 
 func _ready() -> void:
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DATA_PATH))
 	_build_transition()
+	_build_wipe_prompt()
 	EventBus.level_completed.connect(_on_level_completed)
 	var id: String = start_level_id
 	if id.is_empty():
@@ -79,6 +100,14 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if auto_advance:
 		advance(delta)
+	if wipe_enabled:
+		update_wipe_hold(delta, Input.is_action_pressed(_dev_action("wipe_action", "debug_wipe_save")))
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(_dev_action("restart_action", "restart_level"), false):
+		if request_restart():
+			get_viewport().set_input_as_handled()
 
 
 func _physics_process(_delta: float) -> void:
@@ -133,6 +162,26 @@ func get_fall_count() -> int:
 	return _falls
 
 
+## Reinicios hechos con restart_level o tras borrar el guardado.
+func get_restart_count() -> int:
+	return _restarts
+
+
+## Segundos que lleva mantenida debug_wipe_save (0 si no).
+func get_wipe_hold_s() -> float:
+	return _wipe_held_s
+
+
+## Segundos que hay que mantener debug_wipe_save para borrar el guardado.
+func get_wipe_hold_required_s() -> float:
+	return float(_dev_keys().get("wipe_hold_s", 2.0))
+
+
+## Aviso "Mantén F9: borrar guardado" (null si wipe_enabled era false al entrar).
+func get_wipe_prompt() -> Label:
+	return _prompt_label
+
+
 ## Donde reapareceria Isak ahora: el ultimo punto de sincronizacion o P.
 func get_respawn_position() -> Vector2:
 	var checkpoint: Checkpoint = _find_checkpoint(GameState.get_last_checkpoint(StringName(_level_id)))
@@ -174,6 +223,54 @@ func start_level(level_id: String) -> bool:
 	_falls = 0
 	level_started.emit(level_id)
 	return true
+
+
+## Reinicia el mapa actual desde el inicio (funde a negro y llama a
+## start_level). El guardado se conserva. Falso si no se acepta ahora: sin
+## nivel o durante un fundido. Durante la animacion de muerte sustituye a la
+## reaparicion.
+func request_restart() -> bool:
+	if _level_id.is_empty() or _phase == Phase.FADE_OUT or _phase == Phase.FADE_IN:
+		return false
+	_fade_out_then(_restart_now)
+	return true
+
+
+## Borra el guardado actual (GameState.save_path y sus restos) y el progreso en
+## memoria, y reinicia el mapa desde el inicio. Funciona en cualquier fase: si
+## habia un fundido en curso, al acabar se reinicia en vez de lo pendiente.
+## Solo con wipe_enabled (builds de depuracion). Verdadero si borro.
+func wipe_save_and_restart() -> bool:
+	if not wipe_enabled:
+		return false
+	var path: String = GameState.save_path
+	SaveFile.delete(path)
+	GameState.reset_progress()
+	GameState.last_checkpoint.clear()
+	save_wiped.emit(path)
+	if not _level_id.is_empty():
+		_fade_out_then(_restart_now)
+	return true
+
+
+## Lleva la cuenta de debug_wipe_save mantenida (`held`) y borra al llegar a
+## wipe_hold_s. Hay que soltarla para volver a empezar. Verdadero si borro.
+func update_wipe_hold(delta: float, held: bool) -> bool:
+	if not wipe_enabled or not held:
+		_wipe_held_s = 0.0
+		_wipe_latched = false
+		_update_wipe_prompt()
+		return false
+	if _wipe_latched:
+		return false
+	_wipe_held_s += maxf(delta, 0.0)
+	var wiped: bool = false
+	if _wipe_held_s >= get_wipe_hold_required_s():
+		_wipe_held_s = 0.0
+		_wipe_latched = true
+		wiped = wipe_save_and_restart()
+	_update_wipe_prompt()
+	return wiped
 
 
 ## Avanza el flujo `delta` segundos reales.
@@ -260,6 +357,68 @@ func _record_completion(level_id: String) -> void:
 	for unlock: Variant in level.get("unlocks", []):
 		if unlock is Dictionary and String(unlock.get("type", "")) == "level":
 			GameState.unlock_level(StringName(String(unlock.get("id", ""))))
+
+
+func _restart_now() -> void:
+	if start_level(_level_id):
+		_restarts += 1
+		level_restarted.emit(_level_id)
+
+
+func _dev_keys() -> Dictionary:
+	return _data.get("dev_keys", {})
+
+
+func _dev_action(key: String, fallback: String) -> StringName:
+	return StringName(String(_dev_keys().get(key, fallback)))
+
+
+func _build_wipe_prompt() -> void:
+	if not wipe_enabled:
+		return
+	var cfg: Dictionary = _dev_keys()
+	var scale: float = float(cfg.get("prompt_scale", 2))
+	var color: Color = Color.html(String(cfg.get("prompt_color", "#ffffff")))
+	_prompt_layer = CanvasLayer.new()
+	_prompt_layer.name = "DevPrompt"
+	_prompt_layer.layer = int(cfg.get("prompt_layer", int(_data.get("transition_layer", 50)) + 1))
+	add_child(_prompt_layer)
+	var box := VBoxContainer.new()
+	box.name = "Box"
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	box.position.y = float(cfg.get("prompt_top_px", 24))
+	box.scale = Vector2(scale, scale)
+	_prompt_layer.add_child(box)
+	_prompt_label = Label.new()
+	_prompt_label.name = "WipePrompt"
+	_prompt_label.text = String(cfg.get("wipe_prompt", "Mantén F9: borrar guardado"))
+	var font_path: String = String(cfg.get("prompt_font", ""))
+	if not font_path.is_empty() and ResourceLoader.exists(font_path):
+		_prompt_label.add_theme_font_override(&"font", load(font_path) as Font)
+	_prompt_label.add_theme_font_size_override(&"font_size", int(cfg.get("prompt_font_size", 12)))
+	_prompt_label.add_theme_color_override(&"font_color", color)
+	box.add_child(_prompt_label)
+	_prompt_bar = ColorRect.new()
+	_prompt_bar.name = "WipeBar"
+	_prompt_bar.color = color
+	_prompt_bar.custom_minimum_size = Vector2(0.0, 2.0)
+	_prompt_bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	box.add_child(_prompt_bar)
+	# Centrado horizontal: el ancho escalado del texto.
+	var width: float = _prompt_label.get_minimum_size().x
+	box.position.x = -floorf(width * scale * 0.5)
+	_prompt_layer.visible = false
+
+
+func _update_wipe_prompt() -> void:
+	if _prompt_layer == null:
+		return
+	var showing: bool = _wipe_held_s > 0.0
+	_prompt_layer.visible = showing
+	if showing:
+		var ratio: float = clampf(_wipe_held_s / maxf(get_wipe_hold_required_s(), 0.001), 0.0, 1.0)
+		_prompt_bar.custom_minimum_size.x = floorf(_prompt_label.get_minimum_size().x * ratio)
 
 
 func _fade_out_then(action: Callable) -> void:
