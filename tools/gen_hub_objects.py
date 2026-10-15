@@ -33,6 +33,7 @@ defecto); --scene guarda una composicion 1280x720 del hub con el mapa de §2.2.
 Validador: tools/validate_hub_objects.py. Pillow puede estar en el site de
 usuario: se anade a sys.path a mano para que funcione tambien con python3 -I.
 """
+import json
 import math
 import os
 import site
@@ -843,12 +844,20 @@ def scene(imgs, path, state="off"):
         key = "dock_top_left" if c == 0 else "dock_top_right" if c == 19 else "dock_top_center"
         put(f"tiles/{key}_00.png", c, 9)
         put("tiles/dock_fill_alt_00.png" if c % 5 == 2 else "tiles/dock_fill_00.png", c, 10)
-    for c0, st in ((4, "completed"), (10, "available"), (16, "locked")):
-        for c in range(c0 - 1, c0 + 3):
-            key = "one_way_left" if c == c0 - 1 else "one_way_right" if c == c0 + 2 else "one_way_center"
-            put(f"tiles/{key}_00.png", c, 5)
-        put(f"folders/folder_{st}_00.png", c0, 3)
-    put("local_copy/local_copy_active_00.png", 1, 7, dx=32)
+    # Repisas y carpetas donde las pone el juego (data/hub.json: worlds y folders;
+    # repisa shelf_height_px sobre el dock, alcanzable de un salto).
+    with open(os.path.join(REPO, "data", "hub.json"), encoding="utf-8") as fh:
+        hub = json.load(fh)
+    floor_y = int(hub["room"]["floor_row"]) * T
+    shelf_y = floor_y - int(hub["folders"]["shelf_height_px"])
+    extra = int(hub["folders"]["shelf_extra_tiles"])
+    for world, st in zip(hub["worlds"], ("available", "locked", "locked")):
+        c0 = int(world["col"])
+        for c in range(c0 - extra, c0 + 2 + extra):
+            key = "one_way_left" if c == c0 - extra else "one_way_right" if c == c0 + 1 + extra else "one_way_center"
+            bg.alpha_composite(imgs[f"tiles/{key}_00.png"], (c * T, shelf_y))
+        bg.alpha_composite(imgs[f"folders/folder_{st}_00.png"], (c0 * T, shelf_y - 128 + int(hub["folders"].get("folder_sink_px", 0))))
+    put("local_copy/local_copy_active_00.png", 1, 7)
     put("calc/calc_sleep_02.png", 7, 8, bottom=True, dy=-64 + 64 - 0)
     for c, k in ((10, "notes"), (13, "flashlight"), (16, "trash")):
         put(f"dock_slots/dock_slot_{k}_00.png", c, 8, bottom=True)

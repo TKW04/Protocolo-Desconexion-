@@ -1,5 +1,5 @@
 {
-	"_notes": "Hub REAL del Mundo 1 (docs/propuesta-hub-y-guardado.md, aprobada 2026-10-15; pasos 4-6 de §6.2). colors: roles de assets/palettes/hub.gpl (PROPUESTA de paleta, hex a revisar por el usuario; la prueba test_hub_station comprueba que coinciden con el .gpl). Sin rojo: en el hub nada hace daño. Unidades: px de pantalla salvo *_px de panel (px de arte, x pixel_scale), s y pasos de fisica.",
+	"_notes": "Hub REAL del Mundo 1 (docs/propuesta-hub-y-guardado.md, aprobada 2026-10-15; pasos 4-7 de §6.2). colors: roles de assets/palettes/hub.gpl (PROPUESTA de paleta, hex a revisar por el usuario; la prueba test_hub_station comprueba que coinciden con el .gpl). Sin rojo: en el hub nada hace daño. Unidades: px de pantalla salvo *_px de panel (px de arte, x pixel_scale), s y pasos de fisica.",
 	"tile_size": 64,
 	"colors": {
 		"fondo_profundo": "#050e3c",
@@ -20,7 +20,7 @@
 		"ambar_sombra": "#a85f00"
 	},
 	"room": {
-		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo). dormant: huecos apagados del dock sin logica, de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: paso 7.",
+		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo). dormant: huecos apagados del dock sin logica, de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
 		"world": 1,
 		"size_tiles": [20, 11],
 		"camera_rect_px": [0, 0, 1280, 720],
@@ -64,6 +64,51 @@
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 12,
 		"font_key_color": "#f2f4f8"
+	},
+	"folders": {
+		"_notes": "Carpetas de los mundos (FolderStation + FolderPanel; paso 7 de §6.2, propuesta §3.3). Cada mundo de worlds es una carpeta de size_tiles (2x2) en su columna col, apoyada en una repisa de una via (tiles shelf; shelf_extra_tiles a cada lado de la carpeta) cuyo borde superior esta shelf_height_px por encima del dock. ALTURA: 160 px (2,5 tiles), alcanzable de un salto: el salto de Isak llega a 192 px en teoria y a ~184 px a 60 Hz (data/isak_physics.json; la prueba test_hub_folders lo mide). El mapa de §2.2 ponia las repisas a 5 tiles (fila 4) y el texto a 3 tiles (192 px, justo el limite): se baja a 2,5. shelf_collision_px: grosor de la colision de una via. Estados de la carpeta (HubWorlds): locked (mundo sin desbloquear: no abre el panel; con Isak cerca sale locked_text), available y completed (todos los subniveles de la vuelta actual completados); animaciones de frames con esos nombres. El numero del mundo va en el hueco central (number_rect_px [x, y, ancho, alto] en px de pantalla, fuente de textos x number_scale, color number_colors por estado). prompt_top_px: borde superior del arte (la tecla del pulso sale encima). folder_sink_px: el arte de la carpeta deja 8 px transparentes abajo; se baja eso para que se apoye en la repisa. Panel: subniveles del mundo en la vuelta actual (GameState.lap) con su estado: completed (en completed_levels), available (primer subnivel de un mundo desbloqueado o en unlocked_levels) y locked; un subnivel no jugable (playable false, o sin escena) o sin la vuelta actual en laps sale como «Proximamente». Elegir uno disponible o completado cierra el panel, Isak (de espaldas) se va por el vortice de salida y se carga level_runner_scene con ese nivel (LevelRunner.start_level_id). Puntos: capturados (GameState) / total ('o' de la rejilla de data/levels/<id>.json). Solo glifos de la fuente de textos.",
+		"scene": "res://scenes/hub/folder_station.tscn",
+		"frames": "res://assets/sprites/hub/folder_frames.tres",
+		"size_tiles": [2, 2],
+		"prompt_top_px": 16,
+		"folder_sink_px": 8,
+		"shelf_height_px": 160,
+		"shelf_extra_tiles": 1,
+		"shelf_collision_px": 12,
+		"shelf": {
+			"left": "res://assets/sprites/hub/tiles/one_way_left_00.png",
+			"center": "res://assets/sprites/hub/tiles/one_way_center_00.png",
+			"right": "res://assets/sprites/hub/tiles/one_way_right_00.png"
+		},
+		"number_rect_px": [24, 44, 78, 38],
+		"number_scale": 2,
+		"number_colors": {"locked": "texto_tenue", "available": "acento_cian", "completed": "fondo_profundo"},
+		"level_runner_scene": "res://scenes/main.tscn",
+		"level_scene_pattern": "res://scenes/levels/%s.tscn",
+		"level_data_pattern": "res://data/levels/%s.json",
+		"texts": {
+			"locked_text": "Sin descargar",
+			"title": "Mundo %d - %s",
+			"lap": "Vuelta %d (%s)",
+			"lap_names": {"1": "Easy", "2": "Normal", "3": "Hard"},
+			"level": "%s %s",
+			"level_points": "%s %s - %s %d/%d",
+			"state_completed": "Completado",
+			"state_available": "Nuevo",
+			"state_locked": "Bloqueado",
+			"state_coming_soon": "Próximamente",
+			"message_locked": "Bloqueado: completa el anterior",
+			"message_coming_soon": "Próximamente",
+			"option_back": "Volver",
+			"help": "Arriba/abajo: elegir. Pulso: entrar. Salto: volver"
+		},
+		"colors": {
+			"summary": "texto_tenue",
+			"completed": "texto_tenue",
+			"available": "texto_claro",
+			"locked": "gris_foto",
+			"message": "texto_claro"
+		}
 	},
 	"worlds_notes": "Registro de mundos y subniveles (HubWorlds): world, name, col (columna de su carpeta), unlocked (desbloqueado desde el inicio) y levels (id, name, laps: vueltas en las que existe, playable: tiene nivel jugable). La pieza 1 del fondo se enciende cuando todos los subniveles del Mundo 1 de la vuelta actual estan completados.",
 	"worlds": [

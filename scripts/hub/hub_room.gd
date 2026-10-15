@@ -21,8 +21,14 @@
 ## o `texture`) se crean desde los datos en un nodo "Visual". La copia local
 ## (CopyLocalStation) guarda; mientras el hub esta abierto, el aviso al salir
 ## con cambios ofrece guardar (grupo QuitGuard.SAVE_STATION_GROUP).
+## Carpetas (paso 7; seccion folders y worlds): una FolderStation por mundo
+## sobre su repisa (shelf_height_px sobre el dock, alcanzable de un salto). Al
+## elegir un subnivel, Isak (de espaldas) se va por el vortice de salida
+## (WarpVortex.depart) y se carga level_runner_scene (scenes/main.tscn) con ese
+## nivel (LevelRunner.start_level_id), sustituyendo a la escena actual
+## (scene_switcher lo cambia en pruebas).
 ## AUN NO esta en el flujo del juego (paso 9): LevelRunner sigue llevando a
-## hub_placeholder. Se prueba abriendo scenes/hub/hub.tscn
+## hub_placeholder al terminar un nivel. Se prueba abriendo scenes/hub/hub.tscn
 ## o con tools/render_hub.gd.
 class_name HubRoom
 extends Node2D
@@ -32,6 +38,12 @@ const SAVE_STATION_ID: StringName = &"copia_local"
 
 ## Isak termino de llegar (tiene el control).
 signal arrived
+## Se va a cargar el subnivel `level_id` (Isak ya se fue por el vortice).
+signal level_requested(level_id: StringName)
+
+## Si es valido, recibe la raiz preparada (LevelRunner de level_runner_scene con
+## start_level_id) en lugar de sustituir la escena actual (pruebas).
+var scene_switcher: Callable = Callable()
 
 var _room: Dictionary = HubData.section("room")
 var _isak: Isak
@@ -40,7 +52,10 @@ var _arrival: WarpVortex
 var _arrived: bool = false
 var _stations: Dictionary[StringName, HubStation] = {}
 var _dormant: Dictionary[StringName, Node2D] = {}
+var _folders: Dictionary[StringName, FolderStation] = {}
 var _background: AnimatedSprite2D
+var _departure: WarpVortex
+var _entering_level: StringName = &""
 var _previous_abilities: Dictionary = {}
 
 
@@ -72,6 +87,7 @@ func _ready() -> void:
 	_build_room()
 	_build_dormant()
 	_build_stations()
+	_build_folders()
 	add_to_group(QuitGuard.SAVE_STATION_GROUP)
 	if bool(_room.get("refill_on_enter", true)):
 		GameState.refill_debug_energy()
@@ -123,9 +139,32 @@ func get_dormant_ids() -> Array[StringName]:
 	return _dormant.keys()
 
 
+## Carpeta del mundo `id` (m1, m2, m3).
+func get_folder(id: StringName) -> FolderStation:
+	return _folders.get(id, null)
+
+
+func get_folder_ids() -> Array[StringName]:
+	return _folders.keys()
+
+
+## Borde superior de las repisas (y de su colision) en px.
+func get_shelf_top_y() -> float:
+	return get_floor_y() - float(HubData.section("folders").get("shelf_height_px", 160))
+
+
 ## Animacion del fondo: off (pieza 1 con contorno) u on (encendida).
 func get_background_state() -> StringName:
 	return _background.animation if _background != null else &""
+
+
+## Subnivel al que se esta entrando (vacio si ninguno).
+func get_entering_level() -> StringName:
+	return _entering_level
+
+
+func get_departure_vortex() -> WarpVortex:
+	return _departure if _departure != null and is_instance_valid(_departure) else null
 
 
 ## Tamano de la sala en tiles y en px.
@@ -344,3 +383,100 @@ func _visual_for(entry: Dictionary, size: Vector2) -> Node2D:
 	art.kind = StringName(String(entry.get("kind", "slot")))
 	art.size = size
 	return art
+
+
+## Repisas de una via y carpetas de los mundos (secciones folders y worlds).
+func _build_folders() -> void:
+	var cfg: Dictionary = HubData.section("folders")
+	var t: float = HubData.tile_size()
+	var shelves := Node2D.new()
+	shelves.name = "Shelves"
+	add_child(shelves)
+	move_child(shelves, 1)
+	var holder := Node2D.new()
+	holder.name = "Folders"
+	add_child(holder)
+	move_child(holder, 2)
+	var body := StaticBody2D.new()
+	body.name = "Collision"
+	body.collision_layer = 1
+	body.collision_mask = 0
+	shelves.add_child(body)
+	var size_tiles: Array = cfg.get("size_tiles", [2, 2])
+	var width: int = int(size_tiles[0])
+	var extra: int = int(cfg.get("shelf_extra_tiles", 1))
+	var shelf_y: float = get_shelf_top_y()
+	var tiles: Dictionary = cfg.get("shelf", {})
+	var scene := load(String(cfg.get("scene", "res://scenes/hub/folder_station.tscn"))) as PackedScene
+	for entry: Dictionary in HubWorlds.worlds():
+		var id := StringName(String(entry.get("id", "")))
+		var col: int = int(entry.get("col", 0))
+		var first: int = col - extra
+		var last: int = col + width - 1 + extra
+		for c: int in range(first, last + 1):
+			var key: String = "left" if c == first else ("right" if c == last else "center")
+			_add_tile(shelves, String(tiles.get(key, "")), Vector2(c * t, shelf_y)).name = "Shelf_%s_%d" % [id, c]
+		var shape := CollisionShape2D.new()
+		shape.name = "Shelf_%s" % id
+		var box := RectangleShape2D.new()
+		box.size = Vector2((last - first + 1) * t, float(cfg.get("shelf_collision_px", 12)))
+		shape.shape = box
+		shape.one_way_collision = true
+		shape.position = Vector2(first * t + box.size.x * 0.5, shelf_y + box.size.y * 0.5)
+		body.add_child(shape)
+		var folder := scene.instantiate() as FolderStation
+		folder.name = "Folder_%s" % id
+		folder.station_id = id
+		folder.world_entry = entry
+		folder.position = Vector2(col * t, shelf_y - folder.height_tiles * t + float(cfg.get("folder_sink_px", 0)))
+		holder.add_child(folder)
+		folder.level_chosen.connect(_on_folder_level_chosen)
+		_folders[id] = folder
+
+
+# --- Entrar a un subnivel ---
+
+## Entra al subnivel `level_id` (si HubWorlds.can_enter): Isak se va por el
+## vortice de salida y despues se carga el nivel. Falso si no se puede o si ya
+## se esta entrando a otro.
+func enter_level(level_id: StringName) -> bool:
+	if not _entering_level.is_empty() or not HubWorlds.can_enter(level_id):
+		return false
+	_entering_level = level_id
+	if _isak == null or not is_instance_valid(_isak):
+		_load_level()
+		return true
+	if not _isak.is_facing_back():
+		_isak.face_back()
+	_departure = WarpVortex.depart(_isak, self)
+	_departure.finished.connect(_load_level)
+	return true
+
+
+func _on_folder_level_chosen(_station: FolderStation, level_id: StringName) -> void:
+	enter_level(level_id)
+
+
+## Carga level_runner_scene con el subnivel elegido y sustituye al hub. El hub
+## sale del arbol ANTES de que entre el nivel: asi restaura sus habilidades
+## (_exit_tree) sin pisar las que aplica el nivel.
+func _load_level() -> void:
+	_swap_to_level.call_deferred()
+
+
+func _swap_to_level() -> void:
+	var id: StringName = _entering_level
+	level_requested.emit(id)
+	var path: String = String(HubData.section("folders").get("level_runner_scene", "res://scenes/main.tscn"))
+	var runner := (load(path) as PackedScene).instantiate()
+	if runner is LevelRunner:
+		(runner as LevelRunner).start_level_id = String(id)
+	var tree: SceneTree = get_tree()
+	if get_parent() != null:
+		get_parent().remove_child(self)
+	if scene_switcher.is_valid():
+		scene_switcher.call(runner)
+		return
+	tree.root.add_child(runner)
+	tree.current_scene = runner
+	queue_free()

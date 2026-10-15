@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/hub/folder_station.gd" id="1_station"]
+
+[node name="FolderStation" type="Area2D" groups=["hub_station"]]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("1_station")
+width_tiles = 2
+height_tiles = 2
+frames = "res://assets/sprites/hub/folder_frames.tres"
+prompt_top_px = 16.0

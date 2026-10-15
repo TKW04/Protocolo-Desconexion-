@@ -41,6 +41,9 @@ signal closed(station: HubStation)
 @export var visual_icon: StringName = &""
 ## Arte final opcional: SpriteFrames con animaciones off / prompt / active.
 @export_file("*.tres") var frames: String = ""
+## Borde superior del arte en px (la tecla del pulso y la etiqueta salen
+## encima); negativo = top_px de la seccion station, escalado con el tamano.
+@export var prompt_top_px: float = -1.0
 
 var _config: Dictionary = HubData.section("station")
 var _state: State = State.OFF
@@ -316,7 +319,7 @@ func _build() -> void:
 	var font: Font = load(String(_config.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font
 	var font_size: int = int(_config.get("font_size", 12))
 	var font_scale: int = int(_config.get("font_scale", 2))
-	var top: float = float(_config.get("top_px", 30)) * _size_scale().y
+	var top: float = prompt_top_px if prompt_top_px >= 0.0 else float(_config.get("top_px", 30)) * _size_scale().y
 	_key_root = PulsePrompt.make_plate(self, "KeyHint",
 		PulsePrompt.key_text(StringName(String(_config.get("pulse_action", "pulse")))), font, font_size, font_scale,
 		_hex("key_plate_color", "fondo_profundo"), _hex("key_border_color", "acento_cian"),
