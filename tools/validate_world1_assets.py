@@ -4,7 +4,8 @@
 Lee la lista "assets" de data/world1_objects.json y comprueba en cada PNG:
   - tamano = frame_size x (columns, rows)
   - solo colores de la paleta (assets/palettes/mundo1.gpl, sin los nombres de
-    palette_exclude: el debug_cian es del Debug, no de los objetos del mundo)
+    palette_exclude: el debug_cian es del Debug, no de los objetos del mundo; una
+    entrada puede admitir alguno con "palette_allow")
   - alfa 0 o 255 (sin semitransparencias)
   - needs_transparency: cada cuadro tiene pixeles transparentes y opacos;
     si es falso, cada cuadro es opaco salvo como mucho 16 px (esquinas redondeadas)
@@ -42,8 +43,9 @@ def load_gpl(path, exclude):
     return colors
 
 
-def check_asset(entry, palette):
+def check_asset(entry, palette, extra=frozenset()):
     errors = []
+    palette = palette | extra
     path = res_to_path(entry["path"])
     name = os.path.basename(path)
     if not os.path.exists(path):
@@ -91,10 +93,16 @@ def main():
     args = ap.parse_args()
     with open(args.data, encoding="utf-8") as fh:
         data = json.load(fh)
-    palette = load_gpl(res_to_path(data["palette"]), set(data.get("palette_exclude", [])))
+    gpl = res_to_path(data["palette"])
+    exclude = set(data.get("palette_exclude", []))
+    palette = load_gpl(gpl, exclude)
     errors = []
     for entry in data["assets"]:
-        errors += check_asset(entry, palette)
+        # palette_allow: colores excluidos que este asset si puede usar (p. ej. el
+        # debug_cian en lo interactivo: la bandera activa del checkpoint).
+        allow = set(entry.get("palette_allow", [])) & exclude
+        extra = load_gpl(gpl, exclude - allow) - palette if allow else set()
+        errors += check_asset(entry, palette, frozenset(extra))
     if errors:
         print("validate_world1_assets: FALLOS")
         for e in errors:

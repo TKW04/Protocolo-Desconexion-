@@ -157,6 +157,14 @@
 		"label_plate_color": "#0b0e1a",
 		"label_border_color": "#9bb0e8"
 	},
+	"checkpoint": {
+		"_notes": "PROPUESTA (paso 16). Punto de sincronizacion (celda C del grid; no va en objects): poste-baliza de 64x128 (2 tiles, como la puerta) con bandera; izada queda por encima de la cabeza de Isak, dibujado abajo-centro en el origen del Checkpoint (los pies de Isak al reaparecer). Cuadros: off 0 (bandera gris a media asta), on_a 1 y on_b 2 (bandera cian izada, alterna cada wave_s de tiempo del mundo). Admite el cian del Debug por ser interactivo (palette_allow del asset). trigger_size_px: zona (ancho, alto) que lo activa al tocarla Isak, centrada en x y apoyada en el suelo. Generado por tools/gen_checkpoint.py.",
+		"texture": "res://assets/sprites/tiles/mundo1_checkpoint.png",
+		"frame_size": [64, 128],
+		"frames": {"off": 0, "on_a": 1, "on_b": 2},
+		"wave_s": 0.4,
+		"trigger_size_px": [64, 128]
+	},
 	"assets": [
 		{"path": "res://assets/sprites/tiles/mundo1_bridge.png", "frame_size": [64, 64], "columns": 3, "rows": 1, "seamless_x": true, "needs_transparency": true},
 		{"path": "res://assets/sprites/tiles/mundo1_receiver.png", "frame_size": [64, 64], "columns": 3, "rows": 1, "seamless_x": false, "needs_transparency": true},
@@ -166,7 +174,8 @@
 		{"path": "res://assets/sprites/tiles/mundo1_exit_door.png", "frame_size": [64, 128], "columns": 5, "rows": 1, "seamless_x": false, "needs_transparency": false},
 		{"path": "res://assets/sprites/backgrounds/mundo1_bg_cielo.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": false},
 		{"path": "res://assets/sprites/backgrounds/mundo1_bg_fondo_medio.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true},
-		{"path": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true}
+		{"path": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "frame_size": [1280, 720], "columns": 1, "rows": 1, "seamless_x": true, "needs_transparency": true},
+		{"path": "res://assets/sprites/tiles/mundo1_checkpoint.png", "frame_size": [64, 128], "columns": 3, "rows": 1, "seamless_x": false, "needs_transparency": true, "palette_allow": ["debug_cian"]}
 	],
 	"palette": "res://assets/palettes/mundo1.gpl",
 	"palette_exclude": ["debug_cian"]

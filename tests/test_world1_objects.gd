@@ -411,6 +411,10 @@ func test_new_assets_only_use_palette_and_binary_alpha() -> void:
 	var palette: Array[Color] = _load_gpl(String(data["palette"]), data["palette_exclude"])
 	assert_eq(palette.size(), 16, "Los 16 colores del mundo (sin debug_cian)")
 	for entry: Dictionary in data["assets"]:
+		# palette_allow: colores excluidos que este asset si puede usar (checkpoint: debug_cian).
+		var allowed: Array = (data["palette_exclude"] as Array).filter(
+			func(name: Variant) -> bool: return not entry.get("palette_allow", []).has(name))
+		var entry_palette: Array[Color] = _load_gpl(String(data["palette"]), allowed)
 		var image := Image.load_from_file(ProjectSettings.globalize_path(String(entry["path"])))
 		assert_not_null(image, entry["path"])
 		image.convert(Image.FORMAT_RGBA8)
@@ -423,7 +427,7 @@ func test_new_assets_only_use_palette_and_binary_alpha() -> void:
 				var c: Color = image.get_pixel(x, y)
 				if c.a8 == 0:
 					continue
-				if c.a8 != 255 or not palette.has(Color8(c.r8, c.g8, c.b8)):
+				if c.a8 != 255 or not entry_palette.has(Color8(c.r8, c.g8, c.b8)):
 					bad += 1
 		assert_eq(bad, 0, "Solo colores de mundo1.gpl y alfa 0/255: %s" % entry["path"])
 
