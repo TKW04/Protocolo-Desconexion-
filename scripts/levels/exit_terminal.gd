@@ -293,9 +293,8 @@ func _loop(anim: StringName) -> void:
 func _bob_key() -> void:
 	if not _key_root.visible:
 		return
-	var period: float = maxf(float(_config.get("key_bob_s", 0.35)), 0.01)
-	var up: bool = int(floorf(_time / period)) % 2 == 1
-	_key_root.position.y = _key_base_y - (float(_config.get("key_bob_px", 2)) if up else 0.0)
+	_key_root.position.y = PulsePrompt.bob_y(_key_base_y, _time, float(_config.get("key_bob_s", 0.35)),
+		float(_config.get("key_bob_px", 2)))
 
 
 func _valid(isak: Isak) -> bool:
@@ -315,15 +314,7 @@ func _on_body_exited(body: Node2D) -> void:
 
 ## Primera tecla de la accion del pulso en el Input Map (p. ej. "G").
 func _pulse_key_text() -> String:
-	var action := StringName(String(_config.get("pulse_action", "pulse")))
-	if InputMap.has_action(action):
-		var data: Dictionary = AbilityNotices.load_data()
-		for event: InputEvent in InputMap.action_get_events(action):
-			if event is InputEventKey:
-				var key: String = AbilityNotices.key_name(event as InputEventKey, data)
-				if not key.is_empty():
-					return key
-	return "G"
+	return PulsePrompt.key_text(StringName(String(_config.get("pulse_action", "pulse"))))
 
 
 func _build() -> void:
@@ -358,40 +349,8 @@ func _build() -> void:
 
 
 ## Placa con borde y texto (fuente de textos a font_scale), centrada en
-## horizontal y con su borde inferior en `bottom` (px locales).
+## horizontal y con su borde inferior en `bottom` (px locales). PulsePrompt.
 func _plate(node_name: String, label_text: String, font: Font, plate_color: String, border_color: String,
 		pad: float, width: float, bottom: float) -> Node2D:
-	var scale_factor: int = maxi(1, int(_config.get("font_scale", 2)))
-	var font_size: int = int(_config.get("font_size", 12))
-	var text_size: Vector2 = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-	text_size.y = font.get_height(font_size)
-	var plate_size := Vector2(ceilf(text_size.x) + pad * 2.0, ceilf(text_size.y) + pad * 2.0)
-	var root := Node2D.new()
-	root.name = node_name
-	root.scale = Vector2.ONE * scale_factor
-	root.position = Vector2(roundf((width - plate_size.x * scale_factor) * 0.5),
-		roundf(bottom - plate_size.y * scale_factor))
-	add_child(root)
-	var border := ColorRect.new()
-	border.color = Color.html(border_color)
-	border.position = Vector2(-1.0, -1.0)
-	border.size = plate_size + Vector2(2.0, 2.0)
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(border)
-	var plate := ColorRect.new()
-	plate.color = Color.html(plate_color)
-	plate.size = plate_size
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(plate)
-	var label := Label.new()
-	label.name = "Text"
-	label.add_theme_font_override(&"font", font)
-	label.add_theme_font_size_override(&"font_size", font_size)
-	label.add_theme_color_override(&"font_color", Color.WHITE)
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.text = label_text
-	label.position = Vector2(pad, pad)
-	label.size = Vector2(ceilf(text_size.x), ceilf(text_size.y))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(label)
-	return root
+	return PulsePrompt.make_plate(self, node_name, label_text, font, int(_config.get("font_size", 12)),
+		int(_config.get("font_scale", 2)), plate_color, border_color, pad, width, bottom)
