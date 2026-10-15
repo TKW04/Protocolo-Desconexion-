@@ -19,6 +19,9 @@ signal died
 signal laser_fired(projectile: LaserProjectile)
 ## Intento de laser sin energia suficiente: no sale el disparo.
 signal laser_denied
+## Isak ya se ve tras empezar una llegada oculta (begin_warp(true)): las lineas
+## de Eco que esperaban a que apareciera ya pueden salir.
+signal warp_revealed
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -111,6 +114,12 @@ var _laser_muzzle: LaserMuzzle
 ## (< 0 = sin pose) y cuadro mostrado de ANIM_LASER (-1 = sin pose).
 var _laser_pose_hold_left: float = -1.0
 var _laser_pose_frame: int = -1
+## Llegada o salida en curso (begin_warp/end_warp): control bloqueado (entrada
+## neutra) y sin recibir golpes. _warp_hidden: aun no se ha mostrado.
+var _warping: bool = false
+var _warp_hidden: bool = false
+## Entrada quieta que ven los estados mientras dura la llegada o la salida.
+var _warp_input := PlayerInput.new()
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -161,6 +170,11 @@ func step(delta: float) -> void:
 	if not _ready_ok:
 		return
 	input.poll()
+	# Durante la llegada o la salida los estados ven una entrada quieta; la del
+	# jugador (o la falsa de las pruebas) se sigue leyendo y se repone al final.
+	var source: PlayerInput = input
+	if _warping:
+		input = _warp_input
 	_update_timers(delta)
 	for i: int in MAX_TRANSITIONS_PER_STEP:
 		var next: StringName = _state.get_transition()
@@ -172,6 +186,8 @@ func step(delta: float) -> void:
 	_update_coyote(delta)
 	_update_laser(delta)
 	_update_blink()
+	if input == _warp_input:
+		input = source
 
 
 func change_state(state_name: StringName) -> void:
@@ -299,7 +315,7 @@ func apply_knockback() -> void:
 ## Recibe un golpe. `direction` es hacia donde sale despedido (-1/1); 0 = hacia atras.
 ## Devuelve false si se ignora (muerto o invulnerable).
 func take_hit(direction: float = 0.0) -> bool:
-	if is_dead() or is_invulnerable() or not _ready_ok:
+	if is_dead() or is_invulnerable() or _warping or not _ready_ok:
 		return false
 	_knockback_direction = signf(direction) if not is_zero_approx(direction) else -facing
 	_invulnerable_left = abilities.hurt_invulnerability_s
@@ -337,6 +353,42 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	play_animation(ANIM_IDLE)
 	_camera.reset_smoothing()
 	_update_blink()
+
+
+# --- Llegada y salida (fundido de LevelRunner, vortice WarpVortex) ---
+
+## Empieza una llegada o salida: el control queda bloqueado (los estados ven una
+## entrada quieta; la fisica sigue) y los golpes no le hacen nada. `hidden`:
+## Isak aun no se ha mostrado al jugador (llegada); las lineas de Eco de zona
+## esperan a warp_revealed.
+func begin_warp(hidden: bool = true) -> void:
+	_warping = true
+	_warp_hidden = hidden
+
+
+## Isak ya se ve: emite warp_revealed (una vez por llegada). El control sigue
+## bloqueado hasta end_warp().
+func reveal_warp() -> void:
+	if not _warp_hidden:
+		return
+	_warp_hidden = false
+	warp_revealed.emit()
+
+
+## Termina la llegada o salida: devuelve el control (y revela si faltaba).
+func end_warp() -> void:
+	_warping = false
+	reveal_warp()
+
+
+## Llegada o salida en curso (control bloqueado).
+func is_warping() -> bool:
+	return _warping
+
+
+## Llegada en curso en la que Isak aun no se ha mostrado.
+func is_warp_hidden() -> bool:
+	return _warp_hidden
 
 
 ## Lo llama DeadState al entrar.

@@ -30,6 +30,12 @@
 ## - Avisos de control de las habilidades (AbilityNotices, hijo
 ##   AbilityNotices; data/ability_notices.json): se arman al empezar cada nivel
 ##   y se desarman en el hub.
+## - Pausa de inicio (2026-10-15): al empezar el nivel y al reaparecer, Isak
+##   llega "oculto" (Isak.begin_warp(true): control bloqueado) hasta que el
+##   fundido de entrada deja ver el nivel; solo entonces se muestra
+##   (present_isak) y salen las lineas de Eco de zona que esperaban
+##   (EcoLine), p. ej. la bienvenida importante del 1-1, que pausa el juego ya
+##   con el nivel en pantalla.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -231,6 +237,7 @@ func start_level(level_id: String) -> bool:
 	_isak = _level.get_isak()
 	_spawn_position = _isak.global_position
 	_isak.died.connect(_on_isak_died)
+	_isak.begin_warp(true)
 	_deaths = 0
 	_falls = 0
 	level_started.emit(level_id)
@@ -304,6 +311,16 @@ func advance(delta: float) -> void:
 			_set_alpha(_alpha - _rate("fade_in_s", delta))
 			if _alpha <= 0.0:
 				_set_phase(Phase.PLAYING)
+				present_isak()
+
+
+## El nivel ya se ve: termina la llegada de Isak (devuelve el control y suelta
+## las lineas de Eco que esperaban). Falso si no habia llegada pendiente.
+func present_isak() -> bool:
+	if _isak == null or not is_instance_valid(_isak) or not _isak.is_warping():
+		return false
+	_isak.end_warp()
+	return true
 
 
 ## Red de seguridad: Isak por debajo del nivel -> reaparece. Verdadero si salta.
@@ -342,6 +359,7 @@ func _respawn(after_death: bool) -> void:
 	else:
 		GameState.apply_sync_damage(float(_data.get("fall_sync_penalty", 0.0)))
 	_isak.respawn(at, float(_data.get("respawn_invulnerability_s", 1.0)))
+	_isak.begin_warp(true)
 	for enemy: Node in get_tree().get_nodes_in_group(AlertBubble.GROUP):
 		if _level.is_ancestor_of(enemy) and enemy.has_method(&"reset_patrol"):
 			enemy.call(&"reset_patrol")

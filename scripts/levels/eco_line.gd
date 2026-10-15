@@ -11,6 +11,11 @@
 ## la linea salta al emitirse esa senal de EventBus (p. ej. &"laser_fired": la
 ## primera vez que Isak dispara el laser en el nivel), con las mismas reglas de
 ## `once`. Valores admitidos: `allowed` de eco_line en data/world1_objects.json.
+## Pausa de inicio (2026-10-15): si Isak entra en la zona mientras su llegada aun
+## no se ve (Isak.is_warp_hidden(): fundido de entrada o vortice de llegada), la
+## linea espera a Isak.warp_revealed y sale entonces si Isak sigue en la zona.
+## Asi una linea importante (la bienvenida del 1-1) no pausa el juego con la
+## pantalla todavia en negro: el nivel ya se ve cuando aparece el mensaje.
 class_name EcoLine
 extends Area2D
 
@@ -33,6 +38,8 @@ signal triggered(text: String)
 
 var _fired_count: int = 0
 var _shape: CollisionShape2D
+## Isak entro en la zona durante una llegada oculta: se espera a que se vea.
+var _waiting_isak: Isak
 
 
 func _ready() -> void:
@@ -73,6 +80,11 @@ func has_fired() -> bool:
 	return _fired_count > 0
 
 
+## La linea espera a que se vea la llegada de Isak para salir.
+func is_waiting_for_reveal() -> bool:
+	return _waiting_isak != null and is_instance_valid(_waiting_isak)
+
+
 ## Zona de disparo en coordenadas locales (px).
 func get_zone_rect() -> Rect2:
 	var t: float = World1ObjectsConfig.tile_size()
@@ -90,7 +102,29 @@ func _build() -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
-	if not body is Isak:
+	var isak := body as Isak
+	if isak == null:
 		return
+	if isak.is_warp_hidden():
+		_wait_for_reveal(isak)
+		return
+	_fire_from_zone()
+
+
+func _fire_from_zone() -> void:
 	if fire() and once:
 		set_deferred(&"monitoring", false)
+
+
+func _wait_for_reveal(isak: Isak) -> void:
+	if _waiting_isak == isak:
+		return
+	_waiting_isak = isak
+	isak.warp_revealed.connect(_on_isak_revealed, CONNECT_ONE_SHOT)
+
+
+func _on_isak_revealed() -> void:
+	var isak: Isak = _waiting_isak
+	_waiting_isak = null
+	if is_instance_valid(isak) and monitoring and overlaps_body(isak):
+		_fire_from_zone()
