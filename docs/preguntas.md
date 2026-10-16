@@ -748,3 +748,15 @@ Decisiones del usuario. Detalle, plan de implementación, arte y preguntas en `d
 5. Tono de Eco por vuelta.
 6. Qué pasa con el pulso y el registro en un game over sin copia (recomendación: no se pierden).
 7. Eco en el hub frente a la «zona sin señal» (recomendación: Eco entra sin cobertura).
+
+## Encuentro con Eco y mensajes de Eco del 1-1 (2026-10-16)
+
+Implementados los pasos 6 y 7 de `docs/propuesta-asistentes-y-vidas.md` §10 (detalle en su «Estado»).
+
+- **El 1-1 empieza sin pulso.** Isak llega por el vórtice, recoge el punto de la columna 8 y en las columnas 10-12 se topa con Eco (objeto `eco_encounter`, zona de toda la altura; Eco flota en la celda 12, 7). Nada antes exige el pulso: lo comprueba `tools/validate_level.py` (el pulso es un estado del grafo que da el encuentro).
+- **Presentación (historia, con pausa):** bienvenida, Eco se presenta y pregunta cómo llamarte, entrada del apodo (por defecto «Isak»), Eco te llama por el apodo y te regala el pulso, aviso de control «Pulso: G / X (mando)» y una última línea («Si algo no lo conoces, acércate y pregúntame. Te ahorro el esfuerzo.»). Textos ajustables en `data/eco_encounter.json`, en la voz de Eco (servicial, algo engreída, con ganas de decidir por Isak).
+- Al terminar, Eco es conocido (ayuda con Q y compañero) y la esfera vuela hasta Isak. Al rejugar, o con un guardado migrado con el 1-1 completado, no se repite.
+- **Decisión técnica:** al cargar un guardado, Eco conocido implica el pulso obtenido. Así los guardados de antes del encuentro (el 1-1 daba el pulso al empezar) no se quedan sin pulso.
+- **Mensajes de Eco del 1-1 (§4.1):** solo queda la historia del láser (`eco_laser`, con «Lo que sueltan las alertas, recógelo: es tuyo.»). Las líneas «Q» se quitaron del nivel (sus textos ya estaban en `data/help.json`) y las «eliminar» se borraron. El aviso del pulso al empezar desaparece de `data/ability_notices.json`: lo da el encuentro.
+- **Texto de la ayuda del punto de sincronización:** «Punto de sincronización. Si caes, vuelves aquí.». No dice que guarde. La frase de la propuesta «Las vidas no se recargan, eso sí.» se añadirá con las vidas (paso 11), porque las ayudas no mienten.
+- **Pruebas:** `tools/run_tests.sh` falla ahora (código 6) si GUT no puede cargar un script de prueba (un error de sintaxis hacía que GUT lo ignorara y saliera en verde) o si algún `tests/test_*.gd` no aparece entre los ejecutados (`tools/check_gut_log.sh`, con pruebas en `tests/test_run_tests_guard.py`).

@@ -41,6 +41,7 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 > - En el Tramo 1, Isak se topa con Eco (columna 11): Eco se presenta con la «primera voz» de arriba, pide un apodo y da el pulso. Antes del encuentro nada exige pulso.
 > - Las demás líneas de Eco pasan a ayuda con Q por tipo.
 > - El secreto de la pared con glitch guarda la vida extra del 1-1 y exige el Debug.
+> - **Implementado el 2026-10-16** (pasos 6 y 7 de la propuesta): el 1-1 empieza sin pulso; el encuentro ocupa las columnas 10-12 (`eco_encounter`, textos en `data/eco_encounter.json`) y la «primera voz» abre la presentación. La única línea automática que queda en el nivel es la historia del láser.
 
 ## 6.4 Nivel 1-2: Centro de notificaciones
 
