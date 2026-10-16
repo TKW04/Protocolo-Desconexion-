@@ -44,6 +44,11 @@
 ##   cerrarse el vortice.
 ## - Eco companero (EcoCompanion, data/eco_companion.json): en cada nivel, si Eco
 ##   es conocido, sigue a Isak y entra y sale con el por los vortices.
+## - Vidas (intentos; docs/propuesta-asistentes-y-vidas.md §5.1, 2026-10-16):
+##   start_level las repone a GameState.lives_max (empezar un intento: desde el
+##   hub, al arrancar o con la tecla R); los puntos de sincronizacion no. Cada
+##   muerte resta una (GameState.lose_life; antes de la primera llegada al hub
+##   no cuentan) y reaparece como siempre.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -242,6 +247,7 @@ func start_level(level_id: String) -> bool:
 	_clear_hub()
 	_clear_level()
 	_reset_player_state(level_id)
+	GameState.refill_lives()
 	_level = (load(path) as PackedScene).instantiate() as GeneratedLevel
 	_level_id = level_id
 	_holder.add_child(_level)
@@ -561,6 +567,7 @@ func _build_transition() -> void:
 
 func _on_isak_died() -> void:
 	_deaths += 1
+	GameState.lose_life()
 	_after_fade = Callable()
 	_timer = get_death_wait_s()
 	_set_phase(Phase.DYING)

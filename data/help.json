@@ -74,7 +74,7 @@
 		"sync_point": {
 			"category": "object",
 			"title": "Punto de sincronización",
-			"text": "Punto de sincronización. Si caes, vuelves aquí.",
+			"text": "Punto de sincronización. Si caes, vuelves aquí. Las vidas no se recargan, eso sí.",
 			"first_level": "1-1",
 			"order": 7,
 			"center_px": [0, -64],

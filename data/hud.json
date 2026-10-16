@@ -18,6 +18,17 @@
 	"low_sync_blink_min_alpha": 0.25,
 	"font": "res://assets/sprites/ui/hud_font.fnt",
 	"font_glyphs": "0123456789% x:",
+	"lives": {
+		"_notes": "HUD de vidas (intentos; docs/propuesta-asistentes-y-vidas.md §5.1 y §9, 2026-10-16). Un mini telefono por vida hasta GameState.lives_max (cuadro 0 de hud_lives.png lleno, 1 vacio), a la izquierda de la senal (Sync Rate, la salud). icon_rect_px: parte del cuadro de 16x16 que se dibuja (el telefono ocupa 12 px de ancho). Con mas de max_icons vidas maximas sale un solo icono y format (\"x3\": glifos de la fuente del HUD). Oculto hasta que las vidas cuentan (primera llegada al hub, GameState.are_lives_active) y en el hub. Al perder una vida, el icono que se apaga parpadea lost_blinks veces en lost_blink_s y da un bote (lost_pop_scale). Sin rojo: el rojo es dano.",
+		"max_icons": 8,
+		"icon_rect_px": [2, 0, 12, 16],
+		"spacing_px": 1,
+		"gap_to_signal_px": 3,
+		"format": "x%d",
+		"lost_blink_s": 0.6,
+		"lost_blinks": 3,
+		"lost_pop_scale": 1.35
+	},
 	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
 	"colors": {
 		"text": "#f2f4f8",
@@ -42,6 +53,7 @@
 		"battery_segments": {"path": "res://assets/sprites/ui/hud_battery_segments.png", "frame_size": [32, 16], "columns": 5, "rows": 3},
 		"attention_icon": {"path": "res://assets/sprites/ui/hud_attention.png", "frame_size": [16, 16], "columns": 1, "rows": 1},
 		"charge_ring": {"path": "res://assets/sprites/ui/hud_charge_ring.png", "frame_size": [16, 16], "columns": 16, "rows": 1},
+		"lives": {"path": "res://assets/sprites/ui/hud_lives.png", "frame_size": [16, 16], "columns": 2, "rows": 1},
 		"font": {"path": "res://assets/sprites/ui/hud_font.png", "frame_size": [8, 8], "columns": 8, "rows": 2}
 	}
 }

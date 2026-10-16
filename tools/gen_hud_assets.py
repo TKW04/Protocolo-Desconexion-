@@ -26,6 +26,12 @@ Salidas (assets/sprites/ui/):
   hud_attention.png         16x16, icono de punto de atencion (rombo ambar con ambar_sombra)
   hud_charge_ring.png       16 cuadros de 16x16, anillo de carga del Debug: el cuadro k muestra
                             (k+1)/16 lleno en sentido horario desde arriba, sobre la pista tile_luz
+  hud_lives.png             2 cuadros de 16x16 (columnas): 0 vida (intento) llena, 1 vacia. Mini
+                            telefono de 10x13 px (x 3-12, filas 1-13) en estilo circuito
+                            (docs/propuesta-asistentes-y-vidas.md §9): lleno = bisel banner_blanco /
+                            banner_gris y pantalla encendida en resplandor con una traza de 1 px y su
+                            nodo en banner_blanco; vacio = apagado en tile_luz, pantalla tile_sombra con
+                            una grieta diagonal (distinta forma ademas de color, por daltonismo). Sin rojo.
   _hud_assets_preview_x8.png  vista ampliada x8 sobre noche_profunda (no la usa el juego)
 
 La fuente bitmap la genera tools/gen_hud_font.py. El validador es tools/validate_ui_assets.py.
@@ -307,6 +313,50 @@ def draw_charge_ring(spec):
     return s.save()
 
 
+# ------------------------------------------------------------------ vidas (intentos)
+# Mini telefono (docs/propuesta-asistentes-y-vidas.md §9, HUD de vidas): cuerpo de LIFE_X0-LIFE_X1 x
+# LIFE_Y0-LIFE_Y1 con esquinas cortadas, pantalla LIFE_SCREEN y boton abajo. El borde oscuro lo pone
+# el panel (noche_profunda), como en la senal.
+LIFE_X0, LIFE_X1, LIFE_Y0, LIFE_Y1 = 3, 12, 1, 13
+LIFE_SCREEN = (5, 3, 10, 10)
+# Traza de circuito de la pantalla encendida (polilinea) y su nodo final (2x1).
+LIFE_TRACE = ((6, 9), (6, 6), (9, 6), (9, 4))
+# Grieta de la pantalla apagada (diagonal).
+LIFE_CRACK = ((9, 4), (8, 5), (8, 6), (7, 7), (6, 8), (6, 9))
+# estado -> (bisel luz, bisel sombra, pantalla, traza, boton)
+LIFE_STATES = (
+    ("banner_blanco", "banner_gris", "resplandor", "banner_blanco", "banner_gris"),  # 0 llena
+    ("tile_luz", "tile_luz", "tile_sombra", "tile_luz", "tile_base"),            # 1 vacia
+)
+
+
+def draw_lives(spec):
+    s = Sheet(spec)
+    assert s.cols == len(LIFE_STATES) and s.rows == 1
+    for col, (light, shade, screen, trace, button) in enumerate(LIFE_STATES):
+        s.rect(col, 0, LIFE_X0, LIFE_Y0, LIFE_X1, LIFE_Y1, shade)
+        s.rect(col, 0, LIFE_X0, LIFE_Y0, LIFE_X1 - 1, LIFE_Y0, light)
+        s.rect(col, 0, LIFE_X0, LIFE_Y0, LIFE_X0, LIFE_Y1 - 1, light)
+        for x, y in ((LIFE_X0, LIFE_Y0), (LIFE_X1, LIFE_Y0), (LIFE_X0, LIFE_Y1), (LIFE_X1, LIFE_Y1)):
+            s.px(col, 0, x, y, None)
+        # interior del cuerpo (tile_base) y pantalla
+        s.rect(col, 0, LIFE_X0 + 1, LIFE_Y0 + 1, LIFE_X1 - 1, LIFE_Y1 - 1, "tile_base")
+        x0, y0, x1, y1 = LIFE_SCREEN
+        s.rect(col, 0, x0, y0, x1, y1, screen)
+        # altavoz arriba y boton abajo
+        s.rect(col, 0, 7, LIFE_Y0 + 1, 8, LIFE_Y0 + 1, "noche_profunda")
+        s.rect(col, 0, 7, LIFE_Y1 - 1, 8, LIFE_Y1 - 1, button)
+        if col == 0:
+            for (ax, ay), (bx, by) in zip(LIFE_TRACE, LIFE_TRACE[1:]):
+                s.rect(col, 0, min(ax, bx), min(ay, by), max(ax, bx), max(ay, by), trace)
+            s.rect(col, 0, 9, 3, 10, 3, trace)  # nodo de la traza
+            s.px(col, 0, 6, 9, "banner_gris")
+        else:
+            for x, y in LIFE_CRACK:
+                s.px(col, 0, x, y, trace)
+    return s.save()
+
+
 # ------------------------------------------------------------------ vista ampliada
 def preview(images):
     pad = 4
@@ -330,9 +380,10 @@ def main():
         draw_battery_segments(spec["battery_segments"]),
         draw_attention(spec["attention_icon"]),
         draw_charge_ring(spec["charge_ring"]),
+        draw_lives(spec["lives"]),
     ]
     preview(images)
-    for key in ("panel", "signal", "battery_shell", "battery_segments", "attention_icon", "charge_ring"):
+    for key in ("panel", "signal", "battery_shell", "battery_segments", "attention_icon", "charge_ring", "lives"):
         print("gen_hud_assets:", spec[key]["path"])
     print("gen_hud_assets: vista", os.path.relpath(PREVIEW, ROOT))
     return 0

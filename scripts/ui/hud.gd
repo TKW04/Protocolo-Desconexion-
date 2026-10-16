@@ -30,6 +30,12 @@
 ## cuenta: con ese resto aun se activa (duda en docs/preguntas.md).
 ## Modo hub (2026-10-15, enable_hub_mode): Modo Avion en lugar de la senal e
 ## indicador «sin guardar» en ambar (seccion hud de data/hub.json).
+## Vidas (intentos; 2026-10-16, docs/propuesta-asistentes-y-vidas.md §5.1 y §9):
+## a la izquierda de la senal, un mini telefono por vida hasta lives_max (lleno
+## o vacio; hud_lives.png) o, con mas de max_icons, un icono y «x<n>» (seccion
+## lives de data/hud.json). EventBus.lives_changed. Oculto hasta que las vidas
+## cuentan (primera llegada al hub) y en el hub. Al perder una, el icono que se
+## apaga parpadea y da un bote. Se crea por codigo (no toca hud.tscn).
 class_name Hud
 extends CanvasLayer
 
@@ -97,6 +103,18 @@ var _unsaved_box: HBoxContainer
 var _unsaved_icon: TextureRect
 var _unsaved_label: Label
 
+## Vidas (intentos): caja a la izquierda de la senal.
+var _lives_box: HBoxContainer
+var _lives_icons: Array[TextureRect] = []
+var _lives_label: Label
+var _lives_full: Texture2D
+var _lives_empty: Texture2D
+var _lives: int = GameState.LIVES_MAX_DEFAULT
+var _lives_max: int = GameState.LIVES_MAX_DEFAULT
+var _lives_active: bool = false
+## Icono que parpadea tras perder una vida (null si ninguno).
+var _lost_icon: Control
+
 
 func _ready() -> void:
 	_apply_config()
@@ -111,6 +129,7 @@ func _ready() -> void:
 	EventBus.power_banks_changed.connect(_on_power_banks_changed)
 	EventBus.ability_unlock_changed.connect(_on_ability_unlock_changed)
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
+	EventBus.lives_changed.connect(_on_lives_changed)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -228,6 +247,10 @@ func _finish_animations() -> void:
 	for node: Control in [_signal, _battery, _attention_icon, _attention_label, _power_bank_label]:
 		if node != null:
 			node.scale = Vector2.ONE
+	for icon: TextureRect in _lives_icons:
+		icon.scale = Vector2.ONE
+		icon.modulate.a = 1.0
+	_lost_icon = null
 
 
 func finish_animations() -> void:
@@ -284,6 +307,7 @@ func _apply_config() -> void:
 	_sync_label.text = PERCENT_FORMAT % roundi(GameState.SYNC_RATE_MAX)
 	_attention_label.text = str(_attention_points)
 	_build_power_bank(c, font)
+	_build_lives(c, font)
 
 
 ## Frame ocupa la pantalla en pixeles de arte (su escala la lleva a 1280x720).
@@ -420,6 +444,141 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 	_power_bank_box.visible = bool(d.get("show_when_empty", false))
 
 
+# --- Vidas (intentos) ---
+
+func _build_lives(c: HudConfig, font: Font) -> void:
+	var d: Dictionary = c.lives
+	_lives_box = HBoxContainer.new()
+	_lives_box.name = "Lives"
+	_lives_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_lives_box.add_theme_constant_override("separation", int(d.get("spacing_px", 1)))
+	_row.add_child(_lives_box)
+	_row.move_child(_lives_box, 0)
+	var spacer := Control.new()
+	spacer.name = "Gap"
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spacer.custom_minimum_size.x = maxf(0.0, float(d.get("gap_to_signal_px", 3)) - float(c.spacing_px))
+	var sheet: Texture2D = c.asset_texture(&"lives")
+	var frame: Vector2i = c.asset_frame_size(&"lives")
+	var rect: Array = d.get("icon_rect_px", [0, 0, frame.x, frame.y])
+	_lives_full = _lives_frame(sheet, frame, 0, rect)
+	_lives_empty = _lives_frame(sheet, frame, 1, rect)
+	_lives_label = Label.new()
+	_lives_label.name = "Count"
+	_lives_label.add_theme_font_override("font", font)
+	_lives_label.add_theme_font_size_override("font_size", c.font_size)
+	_lives_label.add_theme_color_override("font_color", NEUTRAL_MODULATE)
+	_lives_label.material = c.new_key_swap_material(c.color(&"text"), c.color(&"text"))
+	_lives_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_lives_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_lives_label.visible = false
+	_lives_box.add_child(_lives_label)
+	_lives_box.add_child(spacer)
+	_lives_box.visible = false
+
+
+static func _lives_frame(sheet: Texture2D, frame: Vector2i, column: int, rect: Array) -> Texture2D:
+	if sheet == null:
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = Rect2(column * frame.x + float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+	return atlas
+
+
+func _on_lives_changed(lives: int, lives_max: int, active: bool) -> void:
+	var lost: bool = active and _lives_active and lives < _lives and lives_max == _lives_max
+	_lives = maxi(lives, 0)
+	_lives_max = maxi(lives_max, 1)
+	_lives_active = active
+	_refresh_lives()
+	if lost:
+		_animate_life_lost()
+
+
+## Repinta los iconos (o el contador «x<n>») y la visibilidad.
+func _refresh_lives() -> void:
+	if _lives_box == null:
+		return
+	_lives_box.visible = _lives_active and not _hub_mode
+	var max_icons: int = int(_config.lives.get("max_icons", 8))
+	var compact: bool = _lives_max > max_icons
+	var count: int = 1 if compact else _lives_max
+	while _lives_icons.size() < count:
+		var icon := TextureRect.new()
+		icon.name = "Life%d" % _lives_icons.size()
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		if _lives_full != null:
+			icon.custom_minimum_size = _lives_full.get_size()
+		_lives_box.add_child(icon)
+		_lives_box.move_child(icon, _lives_icons.size())
+		_lives_icons.append(icon)
+	while _lives_icons.size() > count:
+		var extra: TextureRect = _lives_icons.pop_back()
+		extra.queue_free()
+		_lives_box.remove_child(extra)
+	for i: int in _lives_icons.size():
+		var full: bool = (_lives > 0) if compact else i < _lives
+		_lives_icons[i].texture = _lives_full if full else _lives_empty
+	_lives_label.visible = compact
+	_lives_label.text = String(_config.lives.get("format", "x%d")) % _lives
+
+
+## Parpadeo y bote del icono que se acaba de apagar (o del unico en modo «x<n>»).
+func _animate_life_lost() -> void:
+	if _lives_icons.is_empty():
+		return
+	var index: int = 0 if _lives_icons.size() == 1 else clampi(_lives, 0, _lives_icons.size() - 1)
+	var icon: TextureRect = _lives_icons[index]
+	_lost_icon = icon
+	var d: Dictionary = _config.lives
+	var blinks: int = maxi(1, int(d.get("lost_blinks", 3)))
+	var step: float = float(d.get("lost_blink_s", 0.6)) / float(blinks * 2)
+	icon.pivot_offset = icon.custom_minimum_size * 0.5
+	var pop := _new_tween()
+	pop.tween_property(icon, ^"scale", Vector2.ONE * float(d.get("lost_pop_scale", 1.35)), step)
+	pop.tween_property(icon, ^"scale", Vector2.ONE, step)
+	var blink := _new_tween()
+	for i: int in blinks:
+		blink.tween_property(icon, ^"modulate:a", 0.15, step)
+		blink.tween_property(icon, ^"modulate:a", 1.0, step)
+	blink.tween_callback(func() -> void: _lost_icon = null)
+
+
+## Vidas mostradas: iconos llenos (o la cifra en modo «x<n>») y visibilidad.
+func is_lives_shown() -> bool:
+	return _lives_box != null and _lives_box.visible
+
+
+func get_life_icon_count() -> int:
+	return _lives_icons.size()
+
+
+## Iconos llenos que se ven ahora.
+func get_lives_lit() -> int:
+	var lit: int = 0
+	for icon: TextureRect in _lives_icons:
+		if icon.texture == _lives_full:
+			lit += 1
+	return lit
+
+
+## Texto «x<n>» (solo visible con mas de max_icons vidas maximas).
+func get_lives_text() -> String:
+	return _lives_label.text if _lives_label != null and _lives_label.visible else ""
+
+
+## Se esta animando la perdida de una vida.
+func is_life_loss_animating() -> bool:
+	return _lost_icon != null
+
+
+func get_life_icons() -> Array[TextureRect]:
+	return _lives_icons.duplicate()
+
+
 # --- Modo hub (docs/propuesta-hub-y-guardado.md §1 y §4.3) ---
 
 ## Pasa el HUD al modo hub: la senal (Sync Rate) se sustituye por el icono de
@@ -431,6 +590,7 @@ func enable_hub_mode(config: Dictionary) -> void:
 	if _hub_mode:
 		return
 	_hub_mode = true
+	_refresh_lives()
 	_signal.visible = false
 	_sync_label.visible = false
 	var icon_size: Array = config.get("icon_size_px", [16, 16])

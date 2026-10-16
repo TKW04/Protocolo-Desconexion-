@@ -167,3 +167,13 @@ signal nickname_changed(nickname: String)
 ## Sale una Q de ayuda sobre `target` (HelpSystem; Eco reacciona).
 @warning_ignore("unused_signal")
 signal help_prompt_shown(target: Node2D)
+
+## Cambian las vidas (intentos) del intento en curso o su maximo; `active`:
+## ya cuentan (desde la primera llegada al hub). Lo emite GameState; lo usa el
+## HUD de vidas.
+@warning_ignore("unused_signal")
+signal lives_changed(lives: int, lives_max: int, active: bool)
+
+## Se ha perdido una vida al morir; quedan `lives_left` (0 = game over).
+@warning_ignore("unused_signal")
+signal life_lost(lives_left: int)

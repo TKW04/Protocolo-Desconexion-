@@ -19,6 +19,8 @@
 #   has_unsaved_changes, EventBus.unsaved_changes_changed); solo save_game()
 #   escribe (en el hub; la copia anterior queda en <ruta>.bak). Esquema v2:
 #   vuelta (lap), secretos encontrados, tutorial del hub, fecha y tiempo de juego.
+# - Vidas (intentos; 2026-10-16): lives (no se guarda) hasta lives_max; ver
+#   are_lives_active, refill_lives y lose_life (docs/propuesta-asistentes-y-vidas.md §5.1).
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
 # Reglas de juego que viven aquí: recarga de energía por punto de atención
 # (A10), desbordamiento de energía a power bank, compra de mejoras y valores
@@ -190,6 +192,11 @@ var allies_met: Dictionary[StringName, bool] = {}
 var learned_help: Dictionary[StringName, bool] = {}
 ## Vidas (intentos) maximas (v3). Las vidas actuales no se guardan.
 var lives_max: int = LIVES_MAX_DEFAULT
+## Vidas (intentos) del intento en curso (no se guardan): refill_lives las
+## repone a lives_max al empezar cada intento de nivel; lose_life resta una.
+## Solo cuentan con are_lives_active() (desde la primera llegada al hub).
+var lives: int = LIVES_MAX_DEFAULT
+
 ## Segundos de juego (con el arbol sin pausar). Se guarda con la copia.
 var play_time_s: float = 0.0
 ## Fecha (UTC, "AAAA-MM-DDTHH:MM:SSZ") de la ultima copia guardada o cargada;
@@ -615,6 +622,7 @@ func reset_progress() -> void:
 	unlocked_levels.clear()
 	_refresh_maxima()
 	_set_unsaved(false)
+	lives = lives_max
 
 
 ## Apunta que el progreso cambio y no esta en disco (guardado manual,
@@ -828,6 +836,7 @@ func apply_save_data(data: Dictionary) -> bool:
 	saved_at = raw_saved_at if raw_saved_at is String else ""
 	play_time_s = _as_float(data.get("play_time_s", 0.0))
 	_refresh_maxima()
+	lives = lives_max
 	return true
 
 
@@ -857,6 +866,7 @@ func emit_state() -> void:
 	EventBus.low_sync_changed.emit(_is_sync_low)
 	_emit_power_banks()
 	EventBus.unsaved_changes_changed.emit(_unsaved)
+	_emit_lives()
 
 
 ## Fija el ultimo punto de sincronizacion de `level` (sustituye al anterior).
@@ -1059,6 +1069,48 @@ func mark_notice_seen(id: StringName) -> bool:
 		return false
 	seen_notices[id] = true
 	return true
+
+
+# --- Vidas (intentos; docs/propuesta-asistentes-y-vidas.md §5.1) ---
+
+## Las vidas cuentan desde la primera llegada al hub (pregunta 1 de la
+## propuesta, aprobada): con Notas conocida (su presentacion es lo primero del
+## primer hub). Antes, en el primer recorrido del 1-1, las muertes son ilimitadas.
+func are_lives_active() -> bool:
+	return has_met_ally(ALLY_NOTAS)
+
+
+## Repone las vidas a lives_max. Lo llama LevelRunner al empezar cada intento
+## de nivel (desde el hub, al arrancar o con la tecla R); los puntos de
+## sincronizacion NO las reponen.
+func refill_lives() -> void:
+	lives = lives_max
+	_emit_lives()
+
+
+## Resta una vida al morir (Sync Rate 0). Sin vidas activas no cambia nada.
+## Verdadero si era la ultima: game over (apply_rollback).
+func lose_life() -> bool:
+	if not are_lives_active():
+		return false
+	lives = maxi(lives - 1, 0)
+	EventBus.life_lost.emit(lives)
+	_emit_lives()
+	return lives == 0
+
+
+## Hueco para la vida extra (paso 14 de §10, secreto D del 1-1; SIN
+## implementar el objeto): sube el maximo para siempre y suma una vida al
+## intento en curso. Marca «sin guardar».
+func add_max_life() -> void:
+	lives_max += 1
+	lives += 1
+	request_save()
+	_emit_lives()
+
+
+func _emit_lives() -> void:
+	EventBus.lives_changed.emit(lives, lives_max, are_lives_active())
 
 
 func _update_low_sync() -> void:
