@@ -275,7 +275,8 @@ func test_arrows_move_through_tabs_and_grid() -> void:
 	for i: int in rows + 1:
 		_album.move(0, 1)
 	assert_eq(_album.get_focus(), NotasAlbum.Focus.GRID, "Bajo la rejilla no hay nada mas")
-	assert_eq(_album.get_selected_index(), _album.get_entries().size() - 1)
+	# Ultima fila: misma columna si existe; si no (fila incompleta), la ultima ficha.
+	assert_eq(_album.get_selected_index(), mini(1 + (rows - 1) * columns, _album.get_entries().size() - 1))
 	for i: int in rows + 1:
 		_album.move(0, -1)
 	assert_eq(_album.get_focus(), NotasAlbum.Focus.TABS, "Arriba de la rejilla: pestanas")
