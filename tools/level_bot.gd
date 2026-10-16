@@ -277,6 +277,11 @@ func _fail(text: String) -> bool:
 ## andando por la ruta (el de la repisa del 3c y los de los secretos no).
 func _play() -> bool:
 	var level: GeneratedLevel = _runner.get_level()
+	# Solo niveles horizontales (politica «avanzar y saltar»): una torre (camara de
+	# torre, p. ej. scenes/levels/tower_test.tscn) necesita el bot vertical (paso 15
+	# de docs/propuesta-1-2.md §10).
+	if _isak.camera_mode == Isak.CAMERA_TOWER:
+		return _fail("el bot no recorre niveles verticales (%s); el bot vertical es el paso 15" % level.level_id)
 	var receivers: Array[PulseReceiver] = []
 	var bridges: Dictionary = {}
 	var popups: Array[PopupBlocker] = []

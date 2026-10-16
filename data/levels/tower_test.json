@@ -1,0 +1,102 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 1-2 de docs/propuesta-1-2.md §10, 2026-10-16): torre minima de 28x40 tiles para probar el esquema vertical (tramos con y_from/y_to), el constructor, los validadores, el render del mapa, la camara de torre (camera.vertical tower, data/camera_tower.json) y el fondo vertical. Bandas de abajo arriba: vestibulo (filas 34-39, suelo 39; P en la columna 3), piso 1 (24-33, suelo 33, se sube hacia la izquierda), piso 2 (14-23, suelo 23, hacia la derecha), piso 3 (4-13, suelo 13, hacia la izquierda) y azotea (0-3, suelo 3) con la terminal de salida (columna 22). El vestibulo sube por dos repisas bajo el hueco de la derecha. Cada forjado (ultima fila de la banda) tiene un hueco de plataformas de una via ('-') alternando de lado; dentro de cada piso, cuatro repisas de una via en zigzag cada 2 filas (subidas de 2 tiles) que se solapan una columna con la siguiente; la ultima de cada piso queda bajo el hueco (se salta en vertical: junto al hueco el forjado es solido y cortaria el salto). Sin enemigos, puntos ni objetos salvo la terminal. El bot (tools/level_bot.gd) no lo recorre: el bot vertical es el paso 15. Escena: scenes/levels/tower_test.tscn (python3 tools/build_level.py data/levels/tower_test.json).",
+	"id": "tower_test",
+	"name": "Torre de prueba",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"debug": false
+	},
+	"camera": {
+		"vertical": "tower",
+		"limits": "grid"
+	},
+	"sections": [
+		{
+			"name": "Vestíbulo",
+			"y_from": 34,
+			"y_to": 39
+		},
+		{
+			"name": "Piso 1",
+			"y_from": 24,
+			"y_to": 33
+		},
+		{
+			"name": "Piso 2",
+			"y_from": 14,
+			"y_to": 23
+		},
+		{
+			"name": "Piso 3",
+			"y_from": 4,
+			"y_to": 13
+		},
+		{
+			"name": "Azotea",
+			"y_from": 0,
+			"y_to": 3
+		}
+	],
+	"grid": [
+		"############################",
+		"#..........................#",
+		"#.....................G....#",
+		"#----#######################",
+		"#..........................#",
+		"#----......................#",
+		"#..........................#",
+		"#...------.................#",
+		"#..........................#",
+		"#........------............#",
+		"#..........................#",
+		"#.............-----........#",
+		"#..........................#",
+		"#######################----#",
+		"#..........................#",
+		"#......................----#",
+		"#..........................#",
+		"#.................------...#",
+		"#..........................#",
+		"#............------........#",
+		"#..........................#",
+		"#........-----.............#",
+		"#..........................#",
+		"#----#######################",
+		"#..........................#",
+		"#----......................#",
+		"#..........................#",
+		"#...------.................#",
+		"#..........................#",
+		"#........------............#",
+		"#..........................#",
+		"#.............-----........#",
+		"#..........................#",
+		"#######################----#",
+		"#..........................#",
+		"#......................----#",
+		"#..........................#",
+		"#...................----...#",
+		"#..P.......................#",
+		"############################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "exit_terminal",
+			"x": 22,
+			"y": 1,
+			"params": {
+				"id": "terminal_torre",
+				"text": "Marcar como leído",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": []
+}
