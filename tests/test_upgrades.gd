@@ -169,16 +169,17 @@ func test_hub_purchase_only_marks_unsaved_and_copy_local_writes() -> void:
 	assert_eq(SaveFile.read(PATH).get("upgrades_purchased"), ["wide_pulse"])
 
 
-func test_save_action_is_c_and_r3_without_clashes() -> void:
-	assert_true(InputMap.has_action(&"save_game"))
+# La accion save_game (C / R3) se retiro (2026-10-15): se guarda en la copia
+# local del hub. C y R3 quedan libres.
+func test_save_action_removed_and_keys_free() -> void:
+	assert_false(InputMap.has_action(&"save_game"), "Ya no hay accion save_game")
 	var key := InputEventKey.new()
 	key.physical_keycode = KEY_C
 	var r3 := InputEventJoypadButton.new()
 	r3.button_index = JOY_BUTTON_RIGHT_STICK
-	assert_true(InputMap.event_is_action(key, &"save_game"), "C guarda")
-	assert_true(InputMap.event_is_action(r3, &"save_game"), "R3 guarda")
 	for action: StringName in InputMap.get_actions():
-		if action == &"save_game" or String(action).begins_with("ui_"):
+		if String(action).begins_with("ui_"):
 			continue
-		assert_false(InputMap.event_is_action(key, action), "C solo guarda (%s)" % action)
-		assert_false(InputMap.event_is_action(r3, action), "R3 solo guarda (%s)" % action)
+		assert_false(InputMap.event_is_action(key, action), "C libre (%s)" % action)
+		assert_false(InputMap.event_is_action(r3, action), "R3 libre (%s)" % action)
+

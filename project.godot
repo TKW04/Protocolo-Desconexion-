@@ -115,13 +115,6 @@ restart_level={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":82,"key_label":0,"unicode":114,"location":0,"echo":false,"script":null)
 , Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":4,"pressure":0.0,"pressed":false,"script":null)]
 }
-; save_game: PROVISIONAL (2026-10-15). Guarda en la pantalla provisional del hub (HubPlaceholder) hasta que exista
-; la estacion "copia local" del hub real. C / R3 (clic del stick derecho, boton 8; A, B, X, Y, Select, Start, LB, RB y la cruceta ya estan usados).
-save_game={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":67,"key_label":0,"unicode":99,"location":0,"echo":false,"script":null)
-, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":8,"pressure":0.0,"pressed":false,"script":null)]
-}
 ; debug_wipe_save: mantener 2 s borra el guardado y reinicia el mapa (LevelRunner; solo builds de depuracion). F9.
 debug_wipe_save={
 "deadzone": 0.2,
