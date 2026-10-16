@@ -240,7 +240,10 @@ func test_pulse_on_the_shelf_opens_the_sublevel_panel() -> void:
 	assert_true(_isak.is_facing_back(), "Isak de espaldas")
 	var panel: FolderPanel = folder.get_folder_panel()
 	assert_eq(panel.get_title(), "Mundo 1 - Notificaciones")
-	assert_eq(panel.get_lines(), PackedStringArray(["Vuelta 1 (Easy)"]))
+	assert_eq(panel.get_lines(), PackedStringArray(["Acceso: Caché"]), "Nivel de acceso, no la vuelta")
+	for line: String in panel.get_lines():
+		for word: String in ["Vuelta", "vuelta", "Easy", "Normal", "Hard"]:
+			assert_false(line.contains(word), "«%s» no dice «%s»" % [line, word])
 	assert_eq(panel.get_option_ids(), [&"1-1", &"1-2", &"1-3", FolderPanel.OPTION_BACK] as Array[StringName])
 	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[0]), "1-1 Bandeja de entrada - Completado 2/9")
 	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[1]), "1-2 Centro de notificaciones - Próximamente")
@@ -353,3 +356,41 @@ func test_hub_sprite_frames_and_tiles_exist_and_load() -> void:
 			assert_not_null(tex, file)
 			if tex != null and dirs[dir] != Vector2.ZERO:
 				assert_eq(tex.get_size(), dirs[dir], file)
+
+
+# --- Nombres de cara al jugador de las vueltas (2026-10-15) ---
+
+func test_access_names_per_lap() -> void:
+	assert_eq(HubWorlds.access_name(1), "Caché")
+	assert_eq(HubWorlds.access_name(2), "Kernel")
+	assert_eq(HubWorlds.access_name(3), "Raíz")
+	assert_eq(HubWorlds.access_name(4), "Raíz", "Vuelta mayor que las definidas: el ultimo nombre")
+	assert_eq(HubWorlds.access_name(0), "Caché", "Acotado por abajo")
+	assert_eq(HubWorlds.access_label(1), "Acceso: Caché")
+	assert_eq(HubWorlds.access_label(2), "Acceso: Kernel")
+	assert_eq(HubWorlds.access_label(3), "Acceso: Raíz")
+
+
+func test_access_label_follows_current_lap() -> void:
+	var saved: int = GameState.lap
+	GameState.lap = GameState.LAP_HARD
+	assert_eq(HubWorlds.access_label(), "Acceso: Raíz")
+	GameState.lap = saved
+
+
+func test_hub_texts_never_name_laps() -> void:
+	var text: String = JSON.stringify(_strip_notes(HubData.load_data()))
+	for word: String in ["Vuelta", "Easy", "\"Normal\"", "Hard"]:
+		assert_false(text.contains(word), "data/hub.json (sin _notes) no dice «%s»" % word)
+
+
+func _strip_notes(value: Variant) -> Variant:
+	if value is Dictionary:
+		var out: Dictionary = {}
+		for key: Variant in value:
+			if not String(key).ends_with("_notes") and String(key) != "_notes":
+				out[key] = _strip_notes(value[key])
+		return out
+	if value is Array:
+		return (value as Array).map(_strip_notes)
+	return value

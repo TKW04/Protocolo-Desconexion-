@@ -19,6 +19,25 @@ const STATE_AVAILABLE: StringName = &"available"
 const STATE_COMPLETED: StringName = &"completed"
 
 
+## Nombre de cara al jugador de la vuelta `lap` (access_levels.names de
+## data/hub.json: 1 Caché, 2 Kernel, 3 Raíz; decision del 2026-10-15). La UI
+## nunca dice vuelta, Easy, Normal ni Hard. Fuera de rango se acota (una vuelta
+## mayor usa el ultimo nombre).
+static func access_name(lap: int) -> String:
+	var names: Variant = HubData.load_data().get("access_levels", {}).get("names", [])
+	if not (names is Array) or (names as Array).is_empty():
+		return ""
+	var list: Array = names
+	return String(list[clampi(lap, 1, list.size()) - 1])
+
+
+## Linea «Acceso: <nombre>» de la vuelta `lap` (por defecto, la actual).
+static func access_label(lap: int = -1) -> String:
+	var current: int = GameState.lap if lap < 0 else lap
+	var label: String = String(HubData.load_data().get("access_levels", {}).get("label", "%s"))
+	return label % access_name(current)
+
+
 ## Mundos registrados (worlds de data/hub.json), en orden.
 static func worlds() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []

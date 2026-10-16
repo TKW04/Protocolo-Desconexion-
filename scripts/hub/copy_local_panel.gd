@@ -1,6 +1,7 @@
 ## Panel de la estacion «copia local» (docs/propuesta-hub-y-guardado.md §4.2;
 ## paso 6 de §6.2). Textos y colores en la seccion copy_local de data/hub.json.
-## - Resumen de progreso: ultimo nivel, puntos de atencion, vuelta, ultima copia
+## - Resumen de progreso: ultimo nivel, puntos de atencion, nivel de acceso
+##   («Acceso: Caché», HubWorlds.access_label()), ultima copia
 ##   y el estado «Sin guardar» (ambar) / «Todo guardado».
 ## - Opciones Guardar y Volver. Guardar sin cambios pendientes dice «Todo esta
 ##   guardado» (no escribe); con cambios pide confirmacion («¿Guardar copia
@@ -52,8 +53,7 @@ func refresh() -> void:
 	var lines: Array = [
 		{"text": String(texts.get("last_level", "%s")) % last_level_text(), "color": colors.get("summary", "texto_tenue")},
 		{"text": String(texts.get("points", "%d")) % GameState.attention_points, "color": colors.get("points", "ambar")},
-		{"text": String(texts.get("lap", "%d %s")) % [GameState.lap, lap_name(GameState.lap)],
-			"color": colors.get("summary", "texto_tenue")},
+		{"text": HubWorlds.access_label(), "color": colors.get("summary", "texto_tenue")},
 		{"text": String(texts.get("saved_at", "%s")) % saved_at_text(), "color": colors.get("summary", "texto_tenue")},
 		{"text": status_text(), "color": colors.get("unsaved" if GameState.has_unsaved_changes() else "saved", "texto_tenue")},
 	]
@@ -96,11 +96,6 @@ func level_name(level_id: String) -> String:
 		return level_id
 	var level: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	return String(level.get("name", level_id)) if level is Dictionary else level_id
-
-
-## Nombre de la vuelta (1 Easy, 2 Normal, 3 Hard).
-func lap_name(lap: int) -> String:
-	return String(_copy.get("texts", {}).get("lap_names", {}).get(str(lap), str(lap)))
 
 
 ## Fecha de la ultima copia en hora local («2026-10-15 18:04») o «nunca».

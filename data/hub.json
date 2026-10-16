@@ -90,8 +90,6 @@
 		"texts": {
 			"locked_text": "Sin descargar",
 			"title": "Mundo %d - %s",
-			"lap": "Vuelta %d (%s)",
-			"lap_names": {"1": "Easy", "2": "Normal", "3": "Hard"},
 			"level": "%s %s",
 			"level_points": "%s %s - %s %d/%d",
 			"state_completed": "Completado",
@@ -110,6 +108,11 @@
 			"locked": "gris_foto",
 			"message": "texto_claro"
 		}
+	},
+	"access_levels_notes": "Nombres de cara al jugador de las vueltas internas (decision del 2026-10-15, docs/preguntas.md): el jugador no sabe que hay varias vueltas, asi que la UI NUNCA dice vuelta, Easy, Normal ni Hard. Cada vuelta interna (GameState.lap, 1-3) es un nivel de acceso al sistema: names[lap - 1] (1 Cache, 2 Kernel, 3 Raiz); con una vuelta mayor que las definidas se usa el ultimo nombre (HubWorlds.access_name). label: linea del panel de la copia local y del de subniveles. El numero interno de vuelta y el guardado no cambian. Solo glifos de la fuente de textos.",
+	"access_levels": {
+		"label": "Acceso: %s",
+		"names": ["Caché", "Kernel", "Raíz"]
 	},
 	"worlds_notes": "Registro de mundos y subniveles (HubWorlds): world, name, col (columna de su carpeta), unlocked (desbloqueado desde el inicio) y levels (id, name, laps: vueltas en las que existe, playable: tiene nivel jugable). La pieza 1 del fondo se enciende cuando todos los subniveles del Mundo 1 de la vuelta actual estan completados.",
 	"worlds": [
@@ -158,7 +161,7 @@
 		}
 	},
 	"copy_local": {
-		"_notes": "Estacion copia local (CopyLocalStation + CopyLocalPanel; propuesta §4.2 y §4.3). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), vuelta (lap_names), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo glifos de la fuente de textos.",
+		"_notes": "Estacion copia local (CopyLocalStation + CopyLocalPanel; propuesta §4.2 y §4.3). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), nivel de acceso (access_levels: nombre de la vuelta de cara al jugador), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo glifos de la fuente de textos.",
 		"level_data_pattern": "res://data/levels/%s.json",
 		"save_flash_s": 0.3,
 		"texts": {
@@ -168,8 +171,6 @@
 			"level_with_id": "%s (%s)",
 			"no_level": "ninguno",
 			"points": "Puntos de atención: %d",
-			"lap": "Vuelta %d (%s)",
-			"lap_names": {"1": "Easy", "2": "Normal", "3": "Hard"},
 			"saved_at": "Última copia: %s",
 			"never_saved": "nunca",
 			"status_unsaved": "Sin guardar",

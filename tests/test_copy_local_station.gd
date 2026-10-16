@@ -77,9 +77,10 @@ func test_pulse_opens_the_summary_with_isak_facing_back() -> void:
 	assert_eq(_panel.get_lines(), PackedStringArray([
 		"Último nivel: Bandeja de entrada (1-1)",
 		"Puntos de atención: 9",
-		"Vuelta 1 (Easy)",
+		"Acceso: Caché",
 		"Última copia: nunca",
 		"Sin guardar"]))
+	_assert_no_internal_lap_words(_panel.get_lines())
 	assert_eq(_panel.get_line_color(4), Color.html("#ffa000"), "Sin guardar en ambar")
 	assert_eq(_panel.get_option_ids(), [CopyLocalPanel.OPTION_SAVE, CopyLocalPanel.OPTION_BACK] as Array[StringName])
 
@@ -147,3 +148,10 @@ func test_back_closes_and_returns_control() -> void:
 	assert_false(_isak.is_facing_back(), "Isak vuelve de perfil")
 	_panel.cancel()
 	assert_false(_station.is_panel_open(), "Cerrado sigue cerrado")
+
+
+## La UI nunca dice vuelta ni Easy/Normal/Hard (decision del 2026-10-15).
+func _assert_no_internal_lap_words(lines: PackedStringArray) -> void:
+	for line: String in lines:
+		for word: String in ["Vuelta", "vuelta", "Easy", "Normal", "Hard"]:
+			assert_false(line.contains(word), "«%s» no dice «%s»" % [line, word])

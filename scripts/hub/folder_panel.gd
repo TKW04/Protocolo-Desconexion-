@@ -1,8 +1,9 @@
 ## Panel de subniveles de una carpeta del hub (docs/propuesta-hub-y-guardado.md
 ## §3.3; paso 7 de §6.2). Textos y colores en la seccion folders de
 ## data/hub.json; estados de HubWorlds.
-## - Titulo: «Mundo N - Nombre»; linea con la vuelta actual («Vuelta 1 (Easy)»;
-##   no se elige: solo cambia con el rollback).
+## - Titulo: «Mundo N - Nombre»; linea con el nivel de acceso de la vuelta actual
+##   («Acceso: Caché», HubWorlds.access_label(); no se elige: solo cambia con el
+##   rollback; la UI nunca dice vuelta ni Easy/Normal/Hard).
 ## - Una opcion por subnivel de la vuelta actual con su estado: Completado (y
 ##   puntos capturados/total), Nuevo, Bloqueado o Proximamente; y Volver.
 ## - Pulso sobre un subnivel disponible o completado: emite level_chosen (la
@@ -30,7 +31,7 @@ func refresh() -> void:
 	var texts: Dictionary = _folders.get("texts", {})
 	var colors: Dictionary = _folders.get("colors", {})
 	set_title(String(texts.get("title", "%d %s")) % [int(world_entry.get("world", 0)), String(world_entry.get("name", ""))])
-	set_lines([{"text": String(texts.get("lap", "%d %s")) % [GameState.lap, lap_name(GameState.lap)],
+	set_lines([{"text": HubWorlds.access_label(),
 		"color": String(colors.get("summary", "texto_tenue"))}])
 	var options: Array = []
 	for level: Dictionary in HubWorlds.levels_for_lap(world_entry):
@@ -71,11 +72,6 @@ func state_text(level: Dictionary) -> String:
 	if HubWorlds.is_coming_soon(level):
 		return String(texts.get("state_coming_soon", ""))
 	return String(texts.get("state_locked", ""))
-
-
-## Nombre de la vuelta (1 Easy, 2 Normal, 3 Hard).
-func lap_name(lap: int) -> String:
-	return String(_folders.get("texts", {}).get("lap_names", {}).get(str(lap), str(lap)))
 
 
 # --- HubPanel ---

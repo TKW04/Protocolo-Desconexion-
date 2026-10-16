@@ -45,7 +45,9 @@ const ENERGY_PER_ATTENTION_POINT: float = 10.0
 ## lap, found_secrets, hub_tutorial_done, saved_at, play_time_s). Se cargan las
 ## versiones 1 a SAVE_VERSION; otra se aparta como .corrupt.
 const SAVE_VERSION: int = 2
-## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard.
+## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard (nombres
+## internos; de cara al jugador son niveles de acceso Caché, Kernel y Raíz, ver
+## HubWorlds.access_name: la UI nunca dice vuelta ni Easy/Normal/Hard).
 const LAP_EASY: int = 1
 const LAP_NORMAL: int = 2
 const LAP_HARD: int = 3

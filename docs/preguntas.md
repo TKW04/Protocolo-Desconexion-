@@ -606,6 +606,15 @@ Decisión de diseño del usuario. Sustituye el estado «pendiente de aprobar» d
 - **Hub:** se diseña cuando termine el 1-1, para dejarlo cuadrado.
 - **Dificultad:** el usuario no recuerda por qué se decidió que «la dificultad ya no se elige» y pide una sugerencia. Queda abajo como **propuesta del equipo, pendiente de aprobar**. El rollback se verá más adelante.
 
+### Nombres de las vueltas de cara al jugador (decisión del 2026-10-15)
+
+El jugador no sabe que el juego tiene varias vueltas, así que la interfaz no puede decir «Vuelta 1 (Easy)».
+
+- **Nombres externos (los que ve el jugador):** cada vuelta es un **nivel de acceso al sistema**: 1 **Caché**, 2 **Kernel** y 3 **Raíz**. En el hub (panel de la copia local y panel de subniveles de las carpetas) sale como «Acceso: Caché».
+- **Nombres internos (código, datos y documentación):** siguen siendo vuelta 1, 2 y 3 (Easy, Normal y Hard; `GameState.lap`, `LAP_EASY`…). El número de vuelta y el esquema de guardado no cambian.
+- **Regla:** la UI **nunca** dice «vuelta», «Easy», «Normal» ni «Hard».
+- **Implementación:** `access_levels` de `data/hub.json` (`label` «Acceso: %s» y `names`, lista indexada por la vuelta 1-3) y `HubWorlds.access_name(lap)` / `access_label()`; una vuelta mayor que las definidas usa el último nombre.
+
 ### Sugerencia de dificultad (propuesta del equipo, pendiente de aprobar; no es decisión)
 
 Dos ejes separados:
