@@ -4,13 +4,20 @@
 ## - Se abre con la accion pause (Esc / Start) en los niveles y en el hub; en el
 ##   hub tambien con el icono de ajustes del HUD (Hud, junto al Modo Avion).
 ##   Se cierra con pause o «Reanudar».
-## - Paginas: principal (Reanudar, Ajustes, Cerrar el juego) y Ajustes («Ayudas
-##   de Eco: Mostrar / Ocultar», Volver). El ajuste se guarda al instante
-##   (GameSettings, settings.cfg), aparte del guardado de la partida.
+## - Paginas: principal (Reanudar, Ajustes, [Salir al hub], Cerrar el juego) y
+##   Ajustes («Ayudas de Eco: Mostrar / Ocultar», Volver). El ajuste se guarda
+##   al instante (GameSettings, settings.cfg), aparte del guardado de la partida.
+## - NAVEGACION (2026-10-16): pause (Esc / Start) y back_actions (B) vuelven UNA
+##   pagina atras (de una subpagina a la anterior; en la principal, reanudan).
 ## - «Cerrar el juego» pasa por QuitGuard: con cambios sin guardar sale el mismo
 ##   aviso que al cerrar la ventana (en el hub, «Guardar y salir»...; en un
 ##   nivel, «Salir / Volver»); «Volver» deja el menu abierto.
-## - Sin «Salir al hub»: el documento no lo define (duda en docs/preguntas.md).
+## - «Salir al hub» (2026-10-16, decision del usuario): solo en un nivel ya
+##   completado en la partida actual (lo decide hub_exit, el LevelRunner:
+##   can_exit_to_hub / request_exit_to_hub). Pide confirmacion («¿Salir al hub?
+##   Perderas este intento.», Salir / Volver); Salir cierra el menu (quita su
+##   pausa) y el LevelRunner funde y carga el hub con la llegada normal. No
+##   aparece en el hub ni en niveles no completados.
 ## PAUSAS ANIDADAS (convencion del proyecto; la siguen EcoTextBox,
 ## NicknameEntry, EcoEncounter, NotasIntro, GameOverIntro y este menu): quien
 ## quiere pausar solo pone get_tree().paused si el arbol NO estaba en pausa, y
@@ -36,8 +43,8 @@ const GROUP: StringName = &"pause_menu"
 ## Grupo de los nodos que pueden impedir abrirlo (blocks_pause_menu()).
 const BLOCKER_GROUP: StringName = &"pause_menu_blocker"
 
-enum Page { MAIN, SETTINGS }
-enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK }
+enum Page { MAIN, SETTINGS, CONFIRM_HUB }
+enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT }
 
 signal opened
 signal closed
@@ -48,6 +55,9 @@ signal closed
 var quit_guard: QuitGuard = null
 ## Funcion que cierra el juego sin QuitGuard (pruebas).
 var quit_handler: Callable = Callable()
+## Quien ofrece «Salir al hub» (el LevelRunner; null = nunca): debe tener
+## can_exit_to_hub() -> bool y request_exit_to_hub() -> bool.
+var hub_exit: Object = null
 
 var _data: Dictionary = {}
 var _open: bool = false
@@ -95,7 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if _matches_action(event, StringName(String(_data.get("pause_action", "pause")))):
-		close()
+		go_back()
 	elif _matches(event, "up_actions"):
 		move_selection(-1)
 	elif _matches(event, "down_actions"):
@@ -218,15 +228,41 @@ func activate(option: Option) -> void:
 			_refresh()
 		Option.BACK:
 			go_back()
+		Option.EXIT_TO_HUB:
+			if can_exit_to_hub():
+				_show_page(Page.CONFIRM_HUB)
+		Option.CONFIRM_EXIT:
+			confirm_exit_to_hub()
 
 
-## Atras: de Ajustes a la pagina principal; en la principal, reanuda.
+## Atras: una pagina (de Ajustes o de la confirmacion a la principal); en la
+## principal, reanuda.
 func go_back() -> void:
-	if _page == Page.SETTINGS:
+	match _page:
+		Page.SETTINGS:
+			_show_page(Page.MAIN)
+			select(Option.SETTINGS)
+		Page.CONFIRM_HUB:
+			_show_page(Page.MAIN)
+			select(Option.EXIT_TO_HUB)
+		_:
+			close()
+
+
+## Se ofrece «Salir al hub» ahora (nivel completado en la partida actual).
+func can_exit_to_hub() -> bool:
+	return hub_exit != null and is_instance_valid(hub_exit) and hub_exit.has_method(&"can_exit_to_hub") \
+		and bool(hub_exit.call(&"can_exit_to_hub"))
+
+
+## «Salir» en la confirmacion: cierra el menu (quita su pausa) y pide al
+## LevelRunner que vuelva al hub. Falso si ya no se puede.
+func confirm_exit_to_hub() -> bool:
+	if not can_exit_to_hub():
 		_show_page(Page.MAIN)
-		select(Option.SETTINGS)
-	else:
-		close()
+		return false
+	close()
+	return bool(hub_exit.call(&"request_exit_to_hub"))
 
 
 ## «Cerrar el juego»: con QuitGuard, su decision (aviso si hay cambios sin
@@ -260,6 +296,10 @@ func option_text(option: Option) -> String:
 			return _text("settings")
 		Option.QUIT:
 			return _text("quit")
+		Option.EXIT_TO_HUB:
+			return _text("exit_to_hub")
+		Option.CONFIRM_EXIT:
+			return _text("exit_to_hub_confirm")
 		Option.ECO_HELP:
 			var value: String = _text("eco_help_shown" if GameSettings.is_eco_help_shown() else "eco_help_hidden")
 			return _text("eco_help").replace("{value}", value)
@@ -302,11 +342,19 @@ func _quit_prompt_open() -> bool:
 
 func _show_page(page: Page) -> void:
 	_page = page
-	if page == Page.MAIN:
-		_options = [Option.RESUME, Option.SETTINGS, Option.QUIT]
-	else:
-		_options = [Option.ECO_HELP, Option.BACK]
 	_selected = 0
+	match page:
+		Page.MAIN:
+			_options = [Option.RESUME, Option.SETTINGS]
+			if can_exit_to_hub():
+				_options.append(Option.EXIT_TO_HUB)
+			_options.append(Option.QUIT)
+		Page.CONFIRM_HUB:
+			_options = [Option.CONFIRM_EXIT, Option.BACK]
+			# Por seguridad empieza en «Volver».
+			_selected = 1
+		_:
+			_options = [Option.ECO_HELP, Option.BACK]
 	_refresh()
 
 
@@ -332,7 +380,7 @@ func _color(key: String) -> Color:
 func _refresh() -> void:
 	if _title == null:
 		return
-	_title.text = _text("title_main" if _page == Page.MAIN else "title_settings")
+	_title.text = _text(_page_title_key())
 	while _option_labels.size() < _options.size():
 		_option_labels.append(_new_label("Option_%d" % _option_labels.size(), _color("option")))
 	for i: int in _option_labels.size():
@@ -343,12 +391,33 @@ func _refresh() -> void:
 		var prefix: String = _text("selected_prefix" if i == _selected else "unselected_prefix")
 		label.text = prefix + option_text(_options[i])
 		_set_color(label, _color("option_selected" if i == _selected else "option"))
-	if _page == Page.SETTINGS:
-		_detail.text = _text("eco_help_detail_shown" if GameSettings.is_eco_help_shown() else "eco_help_detail_hidden")
-	else:
-		_detail.text = ""
-	_help.text = _text("help_main" if _page == Page.MAIN else "help_settings")
+	match _page:
+		Page.SETTINGS:
+			_detail.text = _text("eco_help_detail_shown" if GameSettings.is_eco_help_shown() else "eco_help_detail_hidden")
+		Page.CONFIRM_HUB:
+			_detail.text = _text("exit_to_hub_detail")
+		_:
+			_detail.text = ""
+	_help.text = _text(_page_help_key())
 	_layout()
+
+
+func _page_title_key() -> String:
+	match _page:
+		Page.SETTINGS:
+			return "title_settings"
+		Page.CONFIRM_HUB:
+			return "title_exit_to_hub"
+	return "title_main"
+
+
+func _page_help_key() -> String:
+	match _page:
+		Page.SETTINGS:
+			return "help_settings"
+		Page.CONFIRM_HUB:
+			return "help_confirm"
+	return "help_main"
 
 
 func _new_label(node_name: String, color: Color) -> Label:

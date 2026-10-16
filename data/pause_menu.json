@@ -1,5 +1,5 @@
 {
-	"_notes": "Menu de pausa (PauseMenu, scripts/ui/pause_menu.gd; docs/propuesta-hub-y-guardado.md preguntas 6 y 9 y docs/propuesta-asistentes-y-vidas.md §3.4 y paso 13 de §10, 2026-10-16). Se abre con la accion pause (Esc / Start) en los niveles y en el hub (alli tambien con el icono de ajustes del HUD, junto al Modo Avion) y se cierra con pause o «Reanudar». Mismo estilo que el aviso al salir (QuitPrompt): panel eco_text_panel.png, fuente de textos, shader de color clave y colores de assets/palettes/mundo1.gpl. Pausa el arbol (get_tree().paused) solo si nadie lo habia pausado y solo quita la pausa que puso (convencion de pausas anidadas: ver la cabecera de pause_menu.gd); no se abre con el arbol en pausa (lineas importantes de Eco, ayudas, entrada del apodo, aviso al salir) ni mientras un nodo del grupo pause_menu_blocker lo impide (fundidos, vortices, muerte, cuadro de Eco con texto, paneles del hub). Paginas: main (Reanudar, Ajustes, Cerrar el juego) y settings (Ayudas de Eco: Mostrar/Ocultar, Volver). Los ajustes se guardan al instante en settings.cfg (GameSettings), aparte del guardado de la partida. Sin «Salir al hub»: el documento no lo define (duda en docs/preguntas.md). Cerrar el juego pasa por QuitGuard (mismo aviso que al cerrar la ventana con cambios sin guardar). Controles (Input Map): up_actions / down_actions eligen, left_actions / right_actions cambian el ajuste elegido, confirm_actions acepta, back_actions vuelve a la pagina anterior (en la principal reanuda) y pause_action reanuda desde cualquier pagina. pixel_scale: se maqueta en pixeles de arte y se escala (como el HUD). layer: por encima del HUD (10), del cuadro de Eco (11) y de los paneles del hub (20-21) y de la entrada del apodo (30) y por debajo del aviso al salir (50). Unidades: px de arte.",
+	"_notes": "Menu de pausa (PauseMenu, scripts/ui/pause_menu.gd; docs/propuesta-hub-y-guardado.md preguntas 6 y 9 y docs/propuesta-asistentes-y-vidas.md §3.4 y paso 13 de §10, 2026-10-16). Se abre con la accion pause (Esc / Start) en los niveles y en el hub (alli tambien con el icono de ajustes del HUD, junto al Modo Avion) y se cierra con pause o «Reanudar». Mismo estilo que el aviso al salir (QuitPrompt): panel eco_text_panel.png, fuente de textos, shader de color clave y colores de assets/palettes/mundo1.gpl. Pausa el arbol (get_tree().paused) solo si nadie lo habia pausado y solo quita la pausa que puso (convencion de pausas anidadas: ver la cabecera de pause_menu.gd); no se abre con el arbol en pausa (lineas importantes de Eco, ayudas, entrada del apodo, aviso al salir) ni mientras un nodo del grupo pause_menu_blocker lo impide (fundidos, vortices, muerte, cuadro de Eco con texto, paneles del hub). Paginas: main (Reanudar, Ajustes, Salir al hub, Cerrar el juego), settings (Ayudas de Eco: Mostrar/Ocultar, Volver) y la confirmacion de Salir al hub (Salir / Volver). Los ajustes se guardan al instante en settings.cfg (GameSettings), aparte del guardado de la partida. «Salir al hub» (2026-10-16, decision del usuario): solo en un nivel ya completado en la partida actual (LevelRunner.can_exit_to_hub), con confirmacion; pierde el intento como la tecla R (sin gastar vidas ni game over, sin escribir el guardado ni marcar «sin guardar») y vuelve al hub con la llegada normal. No aparece en el hub ni en niveles no completados. Cerrar el juego pasa por QuitGuard (mismo aviso que al cerrar la ventana con cambios sin guardar). Controles (Input Map): up_actions / down_actions eligen, left_actions / right_actions cambian el ajuste elegido, confirm_actions acepta, back_actions y pause_action vuelven UNA pagina atras (2026-10-16; en la principal reanudan). pixel_scale: se maqueta en pixeles de arte y se escala (como el HUD). layer: por encima del HUD (10), del cuadro de Eco (11) y de los paneles del hub (20-21) y de la entrada del apodo (30) y por debajo del aviso al salir (50). Unidades: px de arte.",
 	"layer": 40,
 	"pixel_scale": 2,
 	"font": "res://assets/sprites/ui/text_font.fnt",
@@ -24,6 +24,10 @@
 		"resume": "Reanudar",
 		"settings": "Ajustes",
 		"quit": "Cerrar el juego",
+		"exit_to_hub": "Salir al hub",
+		"title_exit_to_hub": "¿Salir al hub?",
+		"exit_to_hub_detail": "Perderás este intento.",
+		"exit_to_hub_confirm": "Salir",
 		"eco_help": "Ayudas de Eco: {value}",
 		"eco_help_shown": "Mostrar",
 		"eco_help_hidden": "Ocultar",
@@ -33,7 +37,8 @@
 		"selected_prefix": "– ",
 		"unselected_prefix": "  ",
 		"help_main": "Arriba/abajo: elegir. Intro: aceptar. Esc: reanudar",
-		"help_settings": "Intro o izquierda/derecha: cambiar. Esc: reanudar"
+		"help_settings": "Intro o izquierda/derecha: cambiar. Esc: volver",
+		"help_confirm": "Arriba/abajo: elegir. Intro: aceptar. Esc: volver"
 	},
 	"colors": {
 		"backdrop": "#0b0e1a",

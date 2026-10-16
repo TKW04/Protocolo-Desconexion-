@@ -10,6 +10,9 @@
 ##   04_receptor_con_q.png lo mismo con «Mostrar»: vuelve la Q
 ##   05_hub_icono.png     el hub con el icono de ajustes junto al Modo Avion
 ##   06_hub_pausa.png     el menu abierto con el icono (clic)
+##   07_salir_al_hub.png  en el 1-1 ya completado: «Salir al hub» en la principal
+##   08_confirmar_salir.png su confirmacion («¿Salir al hub? Perderas este
+##                         intento.», Salir / Volver)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_pause_menu.gd [-- carpeta_salida]
 extends SceneTree
@@ -70,6 +73,10 @@ func _run() -> void:
 	var settings: Script = load(SETTINGS_SCRIPT)
 	_check(not settings.call(&"is_eco_help_shown"), "Ajustes: Ocultar")
 	await _save(out_dir, "02_ajustes.png")
+	# Esc en Ajustes vuelve a la principal; la segunda pulsacion reanuda.
+	_press(&"pause")
+	await create_timer(0.2).timeout
+	_check(paused and int(menu.call(&"get_page")) == 0, "pause en Ajustes vuelve una pagina")
 	_press(&"pause")
 	await create_timer(0.5).timeout
 	_check(not paused, "pause reanuda")
@@ -79,6 +86,24 @@ func _run() -> void:
 	await create_timer(0.5).timeout
 	_check(help.call(&"get_target") == receiver, "ayudas visibles: Q sobre el receptor")
 	await _save(out_dir, "04_receptor_con_q.png")
+	# Salir al hub: solo con el nivel completado en la partida actual.
+	var completed: Dictionary = game_state.get(&"completed_levels")
+	completed[&"1-1"] = true
+	_press(&"pause")
+	await create_timer(0.3).timeout
+	menu.call(&"select", 5)  # PauseMenu.Option.EXIT_TO_HUB
+	await create_timer(0.1).timeout
+	_check(menu.call(&"get_options").has(5), "Salir al hub en un nivel completado")
+	await _save(out_dir, "07_salir_al_hub.png")
+	_press(&"ui_accept")
+	await create_timer(0.3).timeout
+	_check(int(menu.call(&"get_page")) == 2, "confirmacion de Salir al hub")
+	await _save(out_dir, "08_confirmar_salir.png")
+	_press(&"pause")
+	_press(&"pause")
+	await create_timer(0.3).timeout
+	_check(not paused, "Esc vuelve de la confirmacion y despues reanuda")
+	completed.erase(&"1-1")
 	main.queue_free()
 	await process_frame
 	await process_frame

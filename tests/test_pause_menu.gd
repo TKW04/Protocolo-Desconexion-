@@ -7,7 +7,10 @@
 # se libera al salir del arbol; play_time_s no avanza con el menu abierto;
 # «Cerrar el juego» pasa por QuitGuard; en el hub, el icono de ajustes lo abre y
 # los paneles lo bloquean; en un nivel, los fundidos y el vortice lo bloquean;
-# textos sin vuelta ni Easy/Normal/Hard.
+# textos sin vuelta ni Easy/Normal/Hard. Navegacion (2026-10-16): pause y B
+# vuelven una pagina atras. «Salir al hub» solo en un nivel completado, con
+# confirmacion; no gasta vidas, no marca «sin guardar», no escribe y vuelve al
+# hub con la llegada normal; ausente en el hub y en niveles no completados.
 extends GutTest
 
 const EcoProgress = preload("res://tests/support/eco_progress.gd")
@@ -289,7 +292,8 @@ func test_texts_never_name_laps_or_difficulty() -> void:
 	for text: String in texts:
 		for word: String in FORBIDDEN:
 			assert_false(text.to_lower().contains(word), "«%s» no dice %s" % [text, word])
-	assert_false(texts.has("Salir al hub"), "Sin «Salir al hub» (no definido en el documento)")
+	assert_true(texts.has("Salir al hub"), "«Salir al hub» (decision del 2026-10-16)")
+	assert_true(texts.has("¿Salir al hub?") and texts.has("Perderás este intento."), "Con su confirmacion")
 
 
 # --- Hub ---
@@ -378,4 +382,180 @@ func test_level_flow_hosts_menu_and_blocks_during_fade_and_arrival() -> void:
 	_press(&"restart_level")
 	assert_eq(_main.get_restart_count(), 0, "En pausa la R no reinicia")
 	_press(&"pause")
+	assert_false(get_tree().paused)
+
+
+# --- Navegacion: pause / B vuelven una pagina ---
+
+func test_pause_on_settings_goes_back_one_page_then_resumes() -> void:
+	_spawn_menu()
+	_press(&"pause")
+	_menu.activate(PauseMenu.Option.SETTINGS)
+	assert_eq(_menu.get_page(), PauseMenu.Page.SETTINGS)
+	_press(&"pause")
+	assert_true(_menu.is_open(), "Esc en Ajustes no reanuda")
+	assert_eq(_menu.get_page(), PauseMenu.Page.MAIN, "Vuelve a la principal")
+	assert_eq(_menu.get_selected_option(), PauseMenu.Option.SETTINGS, "Con Ajustes elegido")
+	assert_true(get_tree().paused)
+	_press(&"pause")
+	assert_false(_menu.is_open(), "La segunda pulsacion reanuda")
+	assert_false(get_tree().paused)
+
+
+func test_start_on_settings_goes_back_one_page() -> void:
+	_spawn_menu()
+	_joy(JOY_BUTTON_START)
+	_menu.activate(PauseMenu.Option.SETTINGS)
+	_joy(JOY_BUTTON_START)
+	assert_eq(_menu.get_page(), PauseMenu.Page.MAIN, "Start tambien vuelve una pagina")
+	_joy(JOY_BUTTON_START)
+	assert_false(_menu.is_open())
+
+
+# --- Salir al hub ---
+
+class HubExitStub:
+	extends RefCounted
+	var available: bool = true
+	var requests: int = 0
+
+	func can_exit_to_hub() -> bool:
+		return available
+
+	func request_exit_to_hub() -> bool:
+		requests += 1
+		return available
+
+
+func test_exit_to_hub_absent_without_provider_or_when_unavailable() -> void:
+	_spawn_menu()
+	_menu.request_open()
+	assert_false(_menu.get_options().has(PauseMenu.Option.EXIT_TO_HUB), "Sin LevelRunner, no")
+	_menu.close()
+	var stub := HubExitStub.new()
+	stub.available = false
+	_menu.hub_exit = stub
+	_menu.request_open()
+	assert_false(_menu.get_options().has(PauseMenu.Option.EXIT_TO_HUB), "No disponible, no")
+	_menu.activate(PauseMenu.Option.EXIT_TO_HUB)
+	assert_eq(_menu.get_page(), PauseMenu.Page.MAIN, "Ni se puede forzar")
+	_menu.close()
+
+
+func test_exit_to_hub_asks_for_confirmation() -> void:
+	var stub := HubExitStub.new()
+	_spawn_menu()
+	_menu.hub_exit = stub
+	_menu.request_open()
+	assert_eq(_menu.get_options(), [PauseMenu.Option.RESUME, PauseMenu.Option.SETTINGS,
+		PauseMenu.Option.EXIT_TO_HUB, PauseMenu.Option.QUIT] as Array[PauseMenu.Option])
+	assert_eq(_menu.option_text(PauseMenu.Option.EXIT_TO_HUB), "Salir al hub")
+	_menu.select(PauseMenu.Option.EXIT_TO_HUB)
+	_press(&"ui_accept")
+	assert_eq(_menu.get_page(), PauseMenu.Page.CONFIRM_HUB, "Pide confirmacion")
+	var lines: PackedStringArray = _menu.get_lines()
+	assert_eq(lines[0], "¿Salir al hub?")
+	assert_true(lines[1].ends_with("Salir") and lines[2].ends_with("Volver"), "Salir / Volver: %s" % lines)
+	assert_true(lines.has("Perderás este intento."))
+	assert_eq(_menu.get_selected_option(), PauseMenu.Option.BACK, "Empieza en Volver")
+	assert_eq(stub.requests, 0)
+	_press(&"ui_accept")
+	assert_eq(_menu.get_page(), PauseMenu.Page.MAIN, "Volver")
+	assert_eq(_menu.get_selected_option(), PauseMenu.Option.EXIT_TO_HUB)
+	_menu.activate(PauseMenu.Option.EXIT_TO_HUB)
+	_press(&"pause")
+	assert_eq(_menu.get_page(), PauseMenu.Page.MAIN, "Esc en la confirmacion vuelve a la principal")
+	assert_true(_menu.is_open())
+	assert_eq(stub.requests, 0, "Sin confirmar no sale")
+	_menu.activate(PauseMenu.Option.EXIT_TO_HUB)
+	_menu.activate(PauseMenu.Option.CONFIRM_EXIT)
+	assert_eq(stub.requests, 1, "Salir lo pide")
+	assert_false(_menu.is_open(), "Y cierra el menu")
+	assert_false(get_tree().paused, "Quitando su pausa")
+
+
+func _start_flow_playing() -> PauseMenu:
+	_main = MAIN_SCENE.instantiate() as LevelRunner
+	_main.auto_advance = false
+	_main.start_level_id = "1-1"
+	add_child(_main)
+	_main.get_ability_notices().auto_advance = false
+	_main.advance(LONG_STEP_S)
+	var vortex: WarpVortex = _main.get_arrival_vortex()
+	var guard: int = 600
+	while vortex != null and not vortex.is_done() and guard > 0:
+		vortex.advance(1.0 / 60.0)
+		guard -= 1
+	return _main.get_pause_menu()
+
+
+func test_level_not_completed_has_no_exit_to_hub() -> void:
+	var menu: PauseMenu = _start_flow_playing()
+	assert_false(_main.can_exit_to_hub(), "1-1 sin completar")
+	assert_true(menu.request_open())
+	assert_false(menu.get_options().has(PauseMenu.Option.EXIT_TO_HUB))
+	menu.close()
+
+
+func test_exit_to_hub_from_a_completed_level() -> void:
+	EcoProgress.meet_eco_with_pulse()
+	EcoProgress.meet_notas()
+	# Completado en la partida actual sin marcar «sin guardar» (como tras cargar).
+	GameState.completed_levels[&"1-1"] = true
+	var menu: PauseMenu = _start_flow_playing()
+	assert_false(GameState.has_unsaved_changes())
+	var lives: int = GameState.lives
+	assert_true(GameState.lose_life() == false, "Gasta una vida en el intento")
+	lives = GameState.lives
+	var points: int = GameState.attention_points
+	assert_true(_main.can_exit_to_hub(), "Nivel completado: se ofrece")
+	_press(&"pause")
+	assert_true(menu.get_options().has(PauseMenu.Option.EXIT_TO_HUB))
+	menu.activate(PauseMenu.Option.EXIT_TO_HUB)
+	assert_true(get_tree().paused, "La confirmacion sigue en pausa")
+	assert_true(menu.owns_pause())
+	menu.activate(PauseMenu.Option.CONFIRM_EXIT)
+	assert_false(menu.is_open())
+	assert_false(get_tree().paused, "El menu quita su pausa")
+	assert_true(_main.blocks_pause_menu(), "Durante el fundido no se reabre")
+	assert_false(menu.request_open())
+	_main.advance(LONG_STEP_S)
+	assert_true(_main.is_in_hub(), "Vuelve al hub")
+	assert_eq(_main.get_hub_exit_count(), 1)
+	assert_eq(_main.get_game_over_count(), 0, "Sin game over")
+	assert_eq(GameState.lives, lives, "No gasta vidas")
+	assert_eq(GameState.attention_points, points)
+	assert_false(GameState.has_unsaved_changes(), "No marca «sin guardar»")
+	assert_false(FileAccess.file_exists(SAVE_PATH), "Ni escribe el guardado")
+	assert_true(GameState.is_level_completed(&"1-1"), "El nivel sigue completado")
+	assert_not_null(_main.get_hub().get_arrival_vortex(), "Llegada normal por el vortice")
+	_main.advance(LONG_STEP_S)
+	_main.get_hub().get_arrival_vortex().advance(LONG_STEP_S)
+	assert_true(_main.get_hub().has_arrived())
+	assert_eq(GameState.sync_rate, GameState.get_sync_rate_max(), "Sync Rate lleno")
+	assert_eq(GameState.debug_energy, GameState.get_debug_energy_max(), "Energia llena")
+	assert_false(_main.can_exit_to_hub(), "En el hub no se ofrece")
+	assert_true(menu.request_open(), "El menu del flujo sirve en el hub")
+	assert_false(menu.get_options().has(PauseMenu.Option.EXIT_TO_HUB), "Sin «Salir al hub» en el hub")
+	menu.close()
+	assert_false(get_tree().paused)
+
+
+func test_exit_confirmation_does_not_break_nested_pauses() -> void:
+	GameState.completed_levels[&"1-1"] = true
+	var menu: PauseMenu = _start_flow_playing()
+	menu.request_open()
+	menu.activate(PauseMenu.Option.EXIT_TO_HUB)
+	var box := ECO_SCENE.instantiate() as EcoTextBox
+	add_child_autofree(box)
+	box.show_line("Linea importante.", -1.0, true)
+	assert_false(box.is_pausing_game(), "El cuadro no se apropia de la pausa del menu")
+	menu.go_back()
+	assert_eq(menu.get_page(), PauseMenu.Page.MAIN)
+	assert_true(get_tree().paused, "Volver de la confirmacion no quita la pausa")
+	menu.close()
+	assert_false(get_tree().paused)
+	box.finish_typing()
+	box.confirm()
+	box.advance(1.0)
 	assert_false(get_tree().paused)

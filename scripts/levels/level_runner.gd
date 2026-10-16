@@ -56,6 +56,15 @@
 ##   (Esc / Start) en los niveles y en el hub cargado como hija. No se abre
 ##   (blocks_pause_menu) durante un fundido, la muerte, el game over ni con Isak
 ##   en un vortice (llegada, salida).
+## - «Salir al hub» (2026-10-16, decision del usuario): el menu de pausa lo
+##   ofrece (hub_exit = este nodo) solo en un nivel ya completado en la partida
+##   actual (GameState.completed_levels). Tras confirmar, funde y carga el hub
+##   con la llegada normal (vortice; energia y Sync Rate llenos al entrar). Se
+##   pierde el intento igual que con la tecla R: posicion, checkpoint, enemigos
+##   y objetos del mapa; lo recogido en el intento (puntos de atencion, objetos,
+##   habilidades) se queda en memoria como al reiniciar con R, pendiente de la
+##   proxima copia en Notas. No gasta vidas ni provoca game over, no escribe el
+##   guardado ni marca «sin guardar» por si mismo.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -76,6 +85,8 @@ signal respawned(position: Vector2, after_death: bool)
 signal hub_shown(level_id: String, attention_points: int)
 ## Se ha reiniciado el mapa con la tecla restart_level o tras borrar el guardado.
 signal level_restarted(level_id: String)
+## Se ha salido al hub desde el menu de pausa (perdiendo el intento).
+signal hub_exited(level_id: String)
 ## Se ha borrado el guardado con debug_wipe_save.
 signal save_wiped(path: String)
 ## Game over: se aplico el rollback (`report` de GameState.apply_rollback) y se
@@ -109,6 +120,7 @@ var _game_overs: int = 0
 ## La muerte en curso fue la ultima vida: al fundir, game over en lugar de reaparecer.
 var _game_over_pending: bool = false
 var _restarts: int = 0
+var _hub_exits: int = 0
 var _wipe_held_s: float = 0.0
 ## Tras borrar, hay que soltar la tecla antes de poder borrar otra vez.
 var _wipe_latched: bool = false
@@ -125,6 +137,7 @@ func _ready() -> void:
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DATA_PATH))
 	add_to_group(PauseMenu.BLOCKER_GROUP)
 	_pause_menu = PauseMenu.new()
+	_pause_menu.hub_exit = self
 	add_child(_pause_menu)
 	_build_transition()
 	_build_wipe_prompt()
@@ -195,6 +208,28 @@ func blocks_pause_menu() -> bool:
 	if _hub != null:
 		return false
 	return _isak == null or not is_instance_valid(_isak) or _isak.is_dead() or _isak.is_warping()
+
+
+## «Salir al hub» disponible: en un nivel (no en el hub) ya completado en la
+## partida actual, jugando (sin fundido, muerte ni game over pendiente).
+func can_exit_to_hub() -> bool:
+	if _hub != null or _level == null or _level_id.is_empty() or _phase != Phase.PLAYING or _game_over_pending:
+		return false
+	return GameState.is_level_completed(StringName(_level_id))
+
+
+## Sale del nivel al hub (tras confirmar en el menu de pausa): funde y carga el
+## hub con la llegada normal. Falso si no esta disponible (can_exit_to_hub).
+func request_exit_to_hub() -> bool:
+	if not can_exit_to_hub():
+		return false
+	_fade_out_then(_exit_to_hub_now)
+	return true
+
+
+## Veces que se salio al hub desde el menu de pausa (pruebas).
+func get_hub_exit_count() -> int:
+	return _hub_exits
 
 
 ## Hub real cargado (null si se esta en un nivel).
@@ -503,6 +538,20 @@ func _game_over_now() -> void:
 	_game_overs += 1
 	_show_hub(level_id, GameState.attention_points, report)
 	game_over.emit(report)
+
+
+## Sale al hub perdiendo el intento (como la tecla R, sin vidas ni rollback).
+func _exit_to_hub_now() -> void:
+	var level_id: String = _level_id
+	_notices.stop()
+	_clear_level()
+	DebugMode.reset()
+	Engine.time_scale = 1.0
+	GameState.world_time_scale = GameState.WORLD_TIME_SCALE_NORMAL
+	GameState.clear_last_checkpoint(StringName(level_id))
+	_hub_exits += 1
+	_show_hub(level_id, GameState.attention_points)
+	hub_exited.emit(level_id)
 
 
 func _restart_now() -> void:
