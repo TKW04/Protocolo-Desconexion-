@@ -1,0 +1,191 @@
+[gd_resource type="SpriteFrames" load_steps=35 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_00.png" id="1_eco_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_01.png" id="2_eco_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_02.png" id="3_eco_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_03.png" id="4_eco_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_talk_00.png" id="5_eco_talk_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_talk_01.png" id="6_eco_talk_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_talk_02.png" id="7_eco_talk_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_notice_00.png" id="8_eco_notice_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_notice_01.png" id="9_eco_notice_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_00.png" id="10_eco_appear_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_01.png" id="11_eco_appear_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_02.png" id="12_eco_appear_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_03.png" id="13_eco_appear_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_03.png" id="14_eco_appear_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_02.png" id="15_eco_appear_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_01.png" id="16_eco_appear_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_00.png" id="17_eco_appear_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_dim_00.png" id="18_eco_idle_dim_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_dim_01.png" id="19_eco_idle_dim_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_dim_02.png" id="20_eco_idle_dim_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_idle_dim_03.png" id="21_eco_idle_dim_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_talk_dim_00.png" id="22_eco_talk_dim_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_talk_dim_01.png" id="23_eco_talk_dim_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_talk_dim_02.png" id="24_eco_talk_dim_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_notice_dim_00.png" id="25_eco_notice_dim_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_notice_dim_01.png" id="26_eco_notice_dim_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_00.png" id="27_eco_appear_dim_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_01.png" id="28_eco_appear_dim_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_02.png" id="29_eco_appear_dim_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_03.png" id="30_eco_appear_dim_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_03.png" id="31_eco_appear_dim_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_02.png" id="32_eco_appear_dim_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_01.png" id="33_eco_appear_dim_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/eco/companion/eco_appear_dim_00.png" id="34_eco_appear_dim_00"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_eco_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_eco_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_eco_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_eco_idle_03")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_eco_talk_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_eco_talk_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_eco_talk_02")
+}],
+"loop": true,
+"name": &"talk",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_eco_notice_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_eco_notice_01")
+}],
+"loop": false,
+"name": &"notice",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("17_eco_appear_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_eco_appear_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_eco_appear_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_eco_appear_03")
+}],
+"loop": false,
+"name": &"appear",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("14_eco_appear_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_eco_appear_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_eco_appear_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_eco_appear_00")
+}],
+"loop": false,
+"name": &"disappear",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("18_eco_idle_dim_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_eco_idle_dim_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_eco_idle_dim_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_eco_idle_dim_03")
+}],
+"loop": true,
+"name": &"idle_dim",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("22_eco_talk_dim_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_eco_talk_dim_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_eco_talk_dim_02")
+}],
+"loop": true,
+"name": &"talk_dim",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("25_eco_notice_dim_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_eco_notice_dim_01")
+}],
+"loop": false,
+"name": &"notice_dim",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("34_eco_appear_dim_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_eco_appear_dim_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_eco_appear_dim_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_eco_appear_dim_03")
+}],
+"loop": false,
+"name": &"appear_dim",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("31_eco_appear_dim_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_eco_appear_dim_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_eco_appear_dim_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("34_eco_appear_dim_00")
+}],
+"loop": false,
+"name": &"disappear_dim",
+"speed": 12.0
+}]
