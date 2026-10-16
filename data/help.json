@@ -74,7 +74,7 @@
 		"sync_point": {
 			"category": "object",
 			"title": "Punto de sincronización",
-			"text": "Punto de sincronización. Tócalo y, si caes, vuelves aquí. Para eso estoy.",
+			"text": "Punto de sincronización. Si caes, vuelves aquí.",
 			"first_level": "1-1",
 			"order": 7,
 			"center_px": [0, -64],

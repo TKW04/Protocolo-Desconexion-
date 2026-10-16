@@ -397,8 +397,8 @@ func test_level_1_1_important_lines() -> void:
 	for obj: Dictionary in level["objects"]:
 		if obj["type"] == "eco_line" and bool(obj["params"].get("important", false)):
 			important.append(String(obj["params"]["id"]))
-	assert_eq(important, ["eco_bienvenida", "eco_laser"] as Array[String],
-			"Historia (bienvenida) y habilidad adquirida (laser)")
+	assert_eq(important, ["eco_laser"] as Array[String],
+			"Solo la historia del laser: la bienvenida va en el encuentro con Eco (eco_encounter)")
 
 
 # --- Aspecto y posicion ---
@@ -536,19 +536,18 @@ func test_trigger_zone_size_from_tiles() -> void:
 
 # --- Texto exacto del diseno ---
 
-func test_level_1_1_eco_line_has_design_text() -> void:
+func test_level_1_1_welcome_opens_the_eco_encounter() -> void:
+	# La bienvenida (docs 6.3 y 12.1) abre la presentacion de Eco en el encuentro (2026-10-16).
+	assert_eq(String(EcoEncounter.load_data()["intro"][0]), WELCOME)
 	var obj: Dictionary = _eco_line_from_level()
-	assert_false(obj.is_empty(), "El 1-1 tiene un eco_line")
-	assert_eq(obj["params"]["text"], WELCOME, "docs 6.3 y 12.1")
+	assert_false(obj.is_empty(), "El 1-1 conserva un eco_line: la historia del laser")
 	var line: EcoLine = _line_from_object(obj)
 	add_child_autofree(line)
-	assert_eq(line.text, WELCOME)
-	assert_eq(line.object_id, &"eco_bienvenida")
-	assert_eq(line.width_tiles, 6)
-	assert_eq(line.height_tiles, 6)
-	assert_almost_eq(line.duration_s, 4.0, EPS)
+	assert_eq(line.object_id, &"eco_laser")
+	assert_true(line.important)
 	assert_true(line.once)
-	assert_eq(line.position, Vector2(3.0 * T, 4.0 * T))
+	assert_true(line.text.ends_with("Lo que sueltan las alertas, recógelo: es tuyo."), line.text)
+	assert_eq(line.position, Vector2(174.0 * T, 4.0 * T))
 
 
 func test_design_text_appears_in_test_scene() -> void:
@@ -557,7 +556,7 @@ func test_design_text_appears_in_test_scene() -> void:
 	sim.attach(scene.get_node("Isak") as Isak)
 	var box := scene.get_node("EcoTextBox") as EcoTextBox
 	var welcome := scene.get_node("EcoBienvenida") as EcoLine
-	assert_eq(welcome.text, _eco_line_from_level()["params"]["text"], "Mismo texto que el 1-1")
+	assert_eq(welcome.text, String(EcoEncounter.load_data()["intro"][0]), "Mismo texto que el encuentro del 1-1")
 	add_child_autofree(scene)
 	# Isak cae al mundo dentro de la zona (fisica real).
 	for i: int in 120:
