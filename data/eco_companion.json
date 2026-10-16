@@ -1,0 +1,16 @@
+{
+	"_notes": "Eco como companero visible (EcoCompanion, scripts/levels/eco_companion.gd y scenes/levels/eco_companion.tscn; docs/propuesta-asistentes-y-vidas.md §2.1, paso 4 de §10). Esfera flotante que sigue a Isak siempre que Eco es conocido (GameState.allies_met), en los niveles (la instancia LevelRunner) y en el hub (HubRoom, variante atenuada: sin cobertura). Entra y sale con Isak: tras el vortice de llegada aparece appear_delay_s despues de que Isak se vea (animacion appear) y en el de salida se va justo despues que el (cuando Isak ya fue absorbido, animacion disappear). Si Eco pasa a conocido a mitad de nivel, aparece entonces. Sin colision; no da ni recibe golpes; se dibuja detras de Isak, de los enemigos y de los proyectiles (se coloca en el arbol antes del primer nodo de draw_behind_nodes que exista, o justo antes de Isak) y en el lienzo del mundo, por debajo de la Q (CanvasLayer 6) y del HUD. Usa tiempo REAL (sigue con el Debug y anima mientras Eco habla con el juego en pausa). Seguimiento: offset_px = (detras, arriba) respecto a los pies de Isak, por el lado contrario al que mira; amortiguacion critica con smooth_time_s; al girarse Isak cruza por encima (cross_lift_px). Oscilacion bob_amplitude_px a bob_hz. Si se aleja mas de teleport_distance_px (caidas, reaparicion) se recoloca con un destello (appear). Reacciona (notice, notice_s) al empezar a hablar (EventBus.eco_line_started) y al salir una Q (EventBus.help_prompt_shown); mientras habla, animacion talk. Hub: animaciones _dim y opacidad hub_alpha; no ofrece guardar ni comprar. Arte: tools/gen_eco_companion.py. sprite_scale: escala entera del arte (32x32 de arte; x2 = esfera de unos 44 px junto a los 96 de Isak). Ajustable jugando.",
+	"frames": "res://assets/sprites/eco_companion_frames.tres",
+	"sprite_scale": 2,
+	"offset_px": [48, 112],
+	"smooth_time_s": 0.25,
+	"cross_lift_px": 20,
+	"bob_amplitude_px": 4,
+	"bob_hz": 0.8,
+	"teleport_distance_px": 256,
+	"appear_delay_s": 0.3,
+	"notice_s": 0.3,
+	"depart_center_offset_px": [0, -48],
+	"hub_alpha": 0.8,
+	"draw_behind_nodes": ["Enemies"]
+}

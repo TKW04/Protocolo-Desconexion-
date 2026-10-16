@@ -42,6 +42,8 @@
 ##   esperaban (EcoLine), p. ej. la bienvenida importante del 1-1, que pausa el
 ##   juego con el nivel y el vortice ya en pantalla. El control vuelve al
 ##   cerrarse el vortice.
+## - Eco companero (EcoCompanion, data/eco_companion.json): en cada nivel, si Eco
+##   es conocido, sigue a Isak y entra y sale con el por los vortices.
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -97,6 +99,7 @@ var _prompt_label: Label
 var _prompt_bar: ColorRect
 var _notices: AbilityNotices
 var _arrival: WarpVortex
+var _companion: EcoCompanion
 
 
 func _ready() -> void:
@@ -245,6 +248,7 @@ func start_level(level_id: String) -> bool:
 	_isak = _level.get_isak()
 	_spawn_position = _isak.global_position
 	_isak.died.connect(_on_isak_died)
+	_companion = EcoCompanion.attach(_isak, _level)
 	_start_arrival()
 	_deaths = 0
 	_falls = 0
@@ -330,6 +334,11 @@ func present_isak() -> bool:
 	if _arrival == null or not is_instance_valid(_arrival):
 		return false
 	return _arrival.release()
+
+
+## Eco companero del nivel (null en el hub: lo crea HubRoom).
+func get_eco_companion() -> EcoCompanion:
+	return _companion if _level != null and _companion != null and is_instance_valid(_companion) else null
 
 
 ## Vortice de llegada en curso o esperando al fundido (null si no hay).

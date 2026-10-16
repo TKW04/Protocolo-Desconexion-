@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/eco_companion.gd" id="1_eco"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/eco_companion_frames.tres" id="2_frames"]
+
+[node name="EcoCompanion" type="Node2D"]
+script = ExtResource("1_eco")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"

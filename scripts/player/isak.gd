@@ -22,6 +22,9 @@ signal laser_denied
 ## Isak ya se ve tras empezar una llegada oculta (begin_warp(true)): las lineas
 ## de Eco que esperaban a que apareciera ya pueden salir.
 signal warp_revealed
+## Empieza una llegada (`hidden`: Isak aun no se ve) o una salida (WarpVortex;
+## EcoCompanion entra y sale con el).
+signal warp_began(hidden: bool)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -393,6 +396,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 func begin_warp(hidden: bool = true) -> void:
 	_warping = true
 	_warp_hidden = hidden
+	warp_began.emit(hidden)
 
 
 ## Isak ya se ve: emite warp_revealed (una vez por llegada). El control sigue

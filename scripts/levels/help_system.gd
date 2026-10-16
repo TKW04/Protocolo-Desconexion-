@@ -77,7 +77,10 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Recalcula el objeto con Q y coloca el icono. Lo llama _process.
 func refresh() -> void:
 	# Con el juego en pausa (linea importante, ayuda abierta) no hay Q.
+	var previous: Node2D = _target
 	_target = null if get_tree().paused else find_target()
+	if _target != null and _target != previous:
+		EventBus.help_prompt_shown.emit(_target)
 	_prompt.visible = _target != null
 	if _target != null:
 		_prompt.global_position = (_target.global_position

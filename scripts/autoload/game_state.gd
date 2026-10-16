@@ -919,6 +919,7 @@ func meet_ally(ally: StringName) -> bool:
 	if allies_met.has(ally):
 		return false
 	allies_met[ally] = true
+	EventBus.ally_met.emit(ally)
 	return true
 
 

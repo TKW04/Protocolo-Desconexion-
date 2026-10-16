@@ -34,6 +34,8 @@
 ## release_arrival) y level_handler (al elegir un subnivel, el propio
 ## LevelRunner funde y carga el nivel en lugar de sustituir la escena). Abierta
 ## sola (scenes/hub/hub.tscn) sigue cargando scenes/main.tscn con el nivel.
+## Eco companero (EcoCompanion, variante atenuada: sin cobertura) entra y sale
+## con Isak si Eco es conocido; no es una estacion.
 class_name HubRoom
 extends Node2D
 
@@ -68,6 +70,7 @@ var _background: AnimatedSprite2D
 var _departure: WarpVortex
 var _entering_level: StringName = &""
 var _previous_abilities: Dictionary = {}
+var _companion: EcoCompanion
 
 
 func _enter_tree() -> void:
@@ -106,6 +109,8 @@ func _ready() -> void:
 	if _hud != null:
 		_hud.enable_hub_mode(HubData.section("hud"))
 	_place_isak()
+	# Eco entra con Isak, atenuado (sin cobertura; no guarda ni compra).
+	_companion = EcoCompanion.attach(_isak, self, true)
 	_start_arrival()
 
 
@@ -119,6 +124,11 @@ func can_save_now() -> bool:
 
 func get_isak() -> Isak:
 	return _isak
+
+
+## Eco companero (atenuado en el hub).
+func get_eco_companion() -> EcoCompanion:
+	return _companion if _companion != null and is_instance_valid(_companion) else null
 
 
 func get_hud() -> Hud:

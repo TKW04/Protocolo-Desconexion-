@@ -150,3 +150,12 @@ signal game_saved(path: String)
 ## vuelve a mostrar la Q.
 @warning_ignore("unused_signal")
 signal help_learned(help_id: StringName)
+
+## Se ha conocido al asistente `ally` (GameState.meet_ally; propuesta de
+## asistentes §2). EcoCompanion aparece cuando es "eco".
+@warning_ignore("unused_signal")
+signal ally_met(ally: StringName)
+
+## Sale una Q de ayuda sobre `target` (HelpSystem; Eco reacciona).
+@warning_ignore("unused_signal")
+signal help_prompt_shown(target: Node2D)
