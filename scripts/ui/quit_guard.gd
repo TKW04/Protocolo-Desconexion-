@@ -9,6 +9,9 @@
 ## - con cambios en un nivel: «Salir / Volver» (fuera del hub no se guarda).
 ## El aviso (QuitPrompt) pausa el arbol mientras esta abierto y lo deja como
 ## estaba al volver. La regla no cambia: lo no guardado se pierde al salir.
+## Papelera llena tras un game over (2026-10-16, propuesta de asistentes §5.2):
+## sale ya, sin aviso y sin escribir: el disco conserva la ultima copia, que ya
+## tiene todo lo que esta en la papelera, asi que no se pierde nada.
 class_name QuitGuard
 extends Node
 
@@ -34,8 +37,8 @@ var _paused_before: bool = false
 
 
 ## Decision pura (sin ventana): ver la cabecera.
-static func decide(has_unsaved_changes: bool, can_save_here: bool) -> Decision:
-	if not has_unsaved_changes:
+static func decide(has_unsaved_changes: bool, can_save_here: bool, trash_pending: bool = false) -> Decision:
+	if not has_unsaved_changes or trash_pending:
 		return Decision.QUIT
 	return Decision.ASK_WITH_SAVE if can_save_here else Decision.ASK_WITHOUT_SAVE
 
@@ -70,7 +73,8 @@ func _notification(what: int) -> void:
 func handle_close_request() -> Decision:
 	if is_prompt_open():
 		return _prompt.get_decision()
-	var decision: Decision = decide(GameState.has_unsaved_changes(), can_save_here(get_tree()))
+	var decision: Decision = decide(GameState.has_unsaved_changes(), can_save_here(get_tree()),
+		GameState.has_trash_pending())
 	if decision == Decision.QUIT:
 		_quit()
 	else:

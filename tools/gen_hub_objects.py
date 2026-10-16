@@ -19,6 +19,10 @@ Salidas (assets/sprites/hub/):
   calc/        calc_off_00 (apagada hasta conocerla),
                calc_sleep_00..02, calc_awake_00..03            64x96
   dock_slots/  dock_slot_flashlight_00, dock_slot_trash_00     64x96
+  papelera/    papelera_active_00..03 (con contenido: parpadea en
+               acento_cian y se tambalea), papelera_emptying_00..03
+               (se vacia al recuperar), papelera_empty_00 (activada y
+               vacia); la dormida es dock_slot_trash_00             64x96
   album/       album_cell_00, album_cell_selected_00 (marco de
                ficha del album de Notas)                       40x40
   icons/       icon_airplane_mode_00, icon_unsaved_00          16x16
@@ -662,6 +666,85 @@ def dock_slot(kind):
     return cv.img
 
 
+# ------------------------------------------------------------- papelera (64x96)
+# Papelera del hub (docs/propuesta-asistentes-y-vidas.md §2.5 y §9, paso 12 de
+# §10): el mismo cubo que el hueco apagado (dock_slot_trash) pero encendido, con
+# las flechas de reciclaje como traza de circuito. Estados: active (con
+# contenido: borde que parpadea acento_cian / cian_tenue, archivos asomando bajo
+# la tapa y tambaleo de 1 px con la tapa que salta), emptying (la tapa se abre y
+# los archivos salen volando, 4 cuadros) y empty (activada y vacia, quieta).
+# Sin rojo.
+BIN_WOBBLE = (0, 1, 0, -1)
+BIN_LID_LIFT = (0, 2, 0, 1)
+
+
+def bin_body(cv, dx, fill, edge, mark):
+    for y in range(45, 86):
+        inset = (y - 45) // 7
+        cv.hline(15 + inset + dx, 48 - inset + dx, y, fill)
+        cv.p(15 + inset + dx, y, edge)
+        cv.p(48 - inset + dx, y, edge)
+    cv.hline(20 + dx, 43 + dx, 85, edge)
+    # Flechas de reciclaje (triangulo de tres trazos con punta) en el frente.
+    cx = 31 + dx
+    trace(cv, [(cx - 6, 74), (cx, 62), (cx + 6, 74), (cx - 6, 74)], mark, mark)
+    cv.p(cx - 1, 63, mark)
+    cv.p(cx + 1, 63, mark)
+    cv.rect(cx - 1, 68, cx + 1, 70, fill)
+
+
+def bin_lid(cv, dx, lift, tilt, fill, edge):
+    y0 = 36 - lift
+    for x in range(12, 52):
+        # Tapa inclinada: sube `tilt` px hacia la derecha.
+        dy = (x - 12) * tilt // 40
+        cv.vline(x + dx, y0 - dy, y0 + 8 - dy, fill)
+        cv.p(x + dx, y0 - dy, edge)
+        cv.p(x + dx, y0 + 8 - dy, edge)
+    cv.vline(12 + dx, y0, y0 + 8, edge)
+    cv.vline(51 + dx, y0 - tilt, y0 + 8 - tilt, edge)
+    cv.box(25 + dx, y0 - 6 - tilt // 2, 38 + dx, y0 - tilt // 2, fill, edge)
+
+
+def file_icon(cv, x, y, paper=TC, line=TR, corner=BO):
+    """Archivo de 7x9 (hoja con esquina doblada y dos renglones)."""
+    cv.rect(x, y, x + 6, y + 8, paper)
+    cv.rect(x + 5, y, x + 6, y + 1, corner)
+    cv.hline(x + 1, x + 4, y + 3, line)
+    cv.hline(x + 1, x + 5, y + 5, line)
+    cv.hline(x, x + 6, y + 8, line)
+
+
+def papelera(state, f):
+    cv = Canvas(64, 96)
+    slot_base(cv)
+    if state == "active":
+        dx = BIN_WOBBLE[f]
+        edge = CA if f % 2 == 0 else CT
+        file_icon(cv, 18 + dx, 29 - BIN_LID_LIFT[f] * 2)
+        file_icon(cv, 37 + dx, 30 - BIN_LID_LIFT[f], TC, TR, AM)
+        bin_body(cv, dx, BA, edge, edge)
+        bin_lid(cv, dx, BIN_LID_LIFT[f], 2 if f == 1 else 0, GA, edge)
+        # Aviso: punto que parpadea sobre el asa (forma ademas de color).
+        if f % 2 == 0:
+            cv.rect(30 + dx, 22, 33 + dx, 25, CA)
+            cv.rect(31 + dx, 21, 32 + dx, 26, CA)
+    elif state == "emptying":
+        bin_body(cv, 0, BA, CA, CA)
+        bin_lid(cv, 0, 4 + f * 2, 6 + f * 2, GA, CA)
+        for k, (x0, y0) in enumerate(((18, 30), (37, 28))):
+            y = y0 - f * 7 - k * 3
+            if f < 3:
+                file_icon(cv, x0 + (k * 2 - 1) * f * 2, y, TC, TR, AM if k else BO)
+        if f == 3:
+            for x, y in ((20, 8), (42, 6), (31, 2)):
+                cv.rect(x, y, x + 1, y + 1, CB)
+    else:  # empty
+        bin_body(cv, 0, PA, CT, CT)
+        bin_lid(cv, 0, 0, 0, BA, CT)
+    return cv.img
+
+
 # ------------------------------------------------------------------ iconos
 AIRPLANE = [
     ".......##.......",
@@ -820,6 +903,11 @@ def outputs():
         out[f"calc/calc_awake_{f:02d}.png"] = calc("awake", f)
     for k in ("flashlight", "trash"):
         out[f"dock_slots/dock_slot_{k}_00.png"] = dock_slot(k)
+    for f in range(4):
+        out[f"papelera/papelera_active_{f:02d}.png"] = papelera("active", f)
+    for f in range(4):
+        out[f"papelera/papelera_emptying_{f:02d}.png"] = papelera("emptying", f)
+    out["papelera/papelera_empty_00.png"] = papelera("empty", 0)
     out["icons/icon_airplane_mode_00.png"] = icon_airplane()
     out["icons/icon_unsaved_00.png"] = icon_unsaved()
     out["icons/world_icon_m1_00.png"] = world_icon_bell()
@@ -849,6 +937,10 @@ FRAMES = {
     "calc_frames.tres": [("powered_off", "calc/calc_off", 1, 1.0, True),
                          ("sleep", "calc/calc_sleep", 3, 2.0, True),
                          ("awake", "calc/calc_awake", 4, 3.0, True)],
+    "papelera_frames.tres": [("dormant", "dock_slots/dock_slot_trash", 1, 1.0, True),
+                             ("active", "papelera/papelera_active", 4, 6.0, True),
+                             ("emptying", "papelera/papelera_emptying", 4, 8.0, False),
+                             ("empty", "papelera/papelera_empty", 1, 1.0, True)],
 }
 
 
@@ -958,8 +1050,8 @@ def scene(imgs, path, state="off"):
             bg.alpha_composite(imgs[f"icons/{mini}"].resize((mw, mh), Image.NEAREST), (c0 * T + mx, fy + my))
     put("notas/notas_active_00.png", 1, 7)
     put("calc/calc_off_00.png", 7, 8, bottom=True, dy=-64 + 64 - 0)
-    for c, k in ((13, "flashlight"), (16, "trash")):
-        put(f"dock_slots/dock_slot_{k}_00.png", c, 8, bottom=True)
+    put("dock_slots/dock_slot_flashlight_00.png", 13, 8, bottom=True)
+    put("dock_slots/dock_slot_trash_00.png", 10, 8, bottom=True)  # papelera dormida
     # HUD (franja de prueba): Modo Avion, «sin guardar» e indicador de pagina.
     hud = Image.new("RGBA", (1280, 40), FP)
     bg.alpha_composite(hud, (0, 0))

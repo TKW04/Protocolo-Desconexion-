@@ -144,6 +144,10 @@ static func level_state(world_entry: Dictionary, level: Dictionary) -> StringNam
 
 ## Se puede entrar al subnivel `level_id` ahora (disponible o completado).
 static func can_enter(level_id: StringName) -> bool:
+	# Papelera llena tras un game over: no se entra a ningun nivel hasta
+	# recuperarla (propuesta de asistentes §2.5).
+	if GameState.has_trash_pending():
+		return false
 	var entry: Dictionary = world_of_level(level_id)
 	if entry.is_empty():
 		return false

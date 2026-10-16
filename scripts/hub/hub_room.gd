@@ -43,9 +43,13 @@
 ## sola (scenes/hub/hub.tscn) sigue cargando scenes/main.tscn con el nivel.
 ## Eco companero (EcoCompanion, variante atenuada: sin cobertura) entra y sale
 ## con Isak si Eco es conocido; no es una estacion.
-## GAME OVER (2026-10-16, docs/propuesta-asistentes-y-vidas.md §5.2, paso 12
-## de §10): si LevelRunner trae el informe del rollback (rollback_report), al
-## terminar la llegada Eco lo cuenta (GameOverIntro, data/game_over.json).
+## GAME OVER Y PAPELERA (2026-10-16, docs/propuesta-asistentes-y-vidas.md §5.2,
+## paso 12 de §10): la Papelera (seccion papelera; columna 10 del dock) duerme
+## hasta el primer game over; con contenido parpadea y se recupera al acercarse.
+## Si LevelRunner trae el informe del rollback (rollback_report), al terminar la
+## llegada Eco lo cuenta (GameOverIntro, data/game_over.json). Mientras la
+## papelera tenga contenido las carpetas no se abren (HubWorlds.can_enter), Notas
+## no guarda y el aviso al salir no ofrece guardar (can_save_now).
 class_name HubRoom
 extends Node2D
 
@@ -87,6 +91,7 @@ var _previous_abilities: Dictionary = {}
 var _companion: EcoCompanion
 var _text_box: EcoTextBox
 var _notas_intro: NotasIntro
+var _papelera: Papelera
 var _game_over_intro: GameOverIntro
 
 
@@ -120,6 +125,7 @@ func _ready() -> void:
 	add_child(_text_box)
 	_build_room()
 	_build_dormant()
+	_build_papelera()
 	_build_stations()
 	_build_folders()
 	EventBus.ally_met.connect(_on_ally_met)
@@ -142,6 +148,7 @@ func _ready() -> void:
 	if _hud != null:
 		_hud.enable_hub_mode(HubData.section("hud"))
 	_place_isak()
+	_papelera.isak = _isak
 	# Eco entra con Isak, atenuado (sin cobertura; no guarda ni compra).
 	_companion = EcoCompanion.attach(_isak, self, true)
 	_start_arrival()
@@ -153,7 +160,12 @@ func _ready() -> void:
 ## salir»): el hub tiene Notas y esta encendida.
 func can_save_now() -> bool:
 	var station: HubStation = get_station(SAVE_STATION_ID)
-	return is_inside_tree() and station != null and station.is_powered()
+	return is_inside_tree() and station != null and station.is_powered() and not GameState.has_trash_pending()
+
+
+## Papelera del dock.
+func get_papelera() -> Papelera:
+	return _papelera
 
 
 ## Lineas de Eco tras el game over (null si se llego sin rollback).
@@ -439,6 +451,18 @@ func _build_dormant() -> void:
 		visual.name = "Visual"
 		node.add_child(visual)
 		_dormant[id] = node
+
+
+## Papelera (seccion papelera), de pie sobre el dock en su columna.
+func _build_papelera() -> void:
+	var cfg: Dictionary = HubData.section("papelera")
+	var t: float = HubData.tile_size()
+	_papelera = Papelera.new()
+	_papelera.name = String(cfg.get("node", "Papelera"))
+	var size: Vector2 = _papelera.get_size()
+	_papelera.position = Vector2(float(cfg.get("col", 10)) * t + (t - size.x) * 0.5, get_floor_y() - size.y)
+	add_child(_papelera)
+	move_child(_papelera, 2)
 
 
 func _build_stations() -> void:

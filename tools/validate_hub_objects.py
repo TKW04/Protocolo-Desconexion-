@@ -38,6 +38,7 @@ SIZES = {
     ("notas", "notas_"): (64, 128, True),
     ("calc", "calc_"): (64, 96, True),
     ("dock_slots", "dock_slot_"): (64, 96, True),
+    ("papelera", "papelera_"): (64, 96, True),
     ("icons", "icon_"): (16, 16, True),
     ("album", "album_cell"): (40, 40, True),
     ("icons", "world_icon_"): (16, 16, True),

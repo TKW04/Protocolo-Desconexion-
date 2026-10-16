@@ -464,3 +464,12 @@ func test_bot_plays_the_level_to_the_end() -> void:
 	assert_string_contains(text, "pulso: burbuja")
 	assert_string_contains(text, "pulso: pop-up")
 	assert_string_contains(text, "reaparece en el checkpoint")
+	# Game over (2026-10-16): recorrido corto de comprobacion tras el principal.
+	assert_string_contains(text, "game over: vidas 3/3 en el HUD")
+	assert_string_contains(text, "muerte 1: vidas restantes 2")
+	assert_string_contains(text, "muerte 2: vidas restantes 1")
+	assert_string_contains(text, "game over: rollback a la copia (habia copia true)")
+	assert_string_contains(text, "game over, Eco: «Lo siento")
+	assert_string_contains(text, "carpetas bloqueadas (Recupera tus archivos de la papelera); Notas no guarda")
+	assert_string_contains(text, "papelera recuperada")
+	assert_string_contains(text, "game over comprobado: de vuelta en el 1-1 con 3 vidas")

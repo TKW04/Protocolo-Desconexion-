@@ -10,6 +10,10 @@
 ##   cian en el monitor (senal saved). Álbum y Apodo los abre la estacion
 ##   (senales album_requested y nickname_requested).
 ## - Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra.
+## - Papelera llena tras un game over (2026-10-16, propuesta de asistentes
+##   §5.2): Guardar no guarda y avisa «Primero recupera tus archivos de la
+##   papelera»; el estado dice que los archivos estan en la papelera. Guardar el
+##   estado sin lo desechado sobrescribiria la copia buena.
 class_name NotasPanel
 extends HubPanel
 
@@ -37,6 +41,7 @@ var _save_count: int = 0
 func _ready() -> void:
 	super._ready()
 	EventBus.unsaved_changes_changed.connect(_on_unsaved_changes_changed)
+	EventBus.trash_changed.connect(_on_unsaved_changes_changed)
 
 
 func open() -> void:
@@ -63,7 +68,7 @@ func refresh() -> void:
 		{"text": String(texts.get("points", "%d")) % GameState.attention_points, "color": colors.get("points", "ambar")},
 		{"text": HubWorlds.access_label(), "color": colors.get("summary", "texto_tenue")},
 		{"text": String(texts.get("saved_at", "%s")) % saved_at_text(), "color": colors.get("summary", "texto_tenue")},
-		{"text": status_text(), "color": colors.get("unsaved" if GameState.has_unsaved_changes() else "saved", "texto_tenue")},
+		{"text": status_text(), "color": colors.get("unsaved" if GameState.has_unsaved_changes() or GameState.has_trash_pending() else "saved", "texto_tenue")},
 	]
 	set_lines(lines)
 	if _mode == Mode.CONFIRM:
@@ -83,6 +88,8 @@ func refresh() -> void:
 ## Texto del estado: «Sin guardar» o «Todo guardado».
 func status_text() -> String:
 	var key: String = "status_unsaved" if GameState.has_unsaved_changes() else "status_saved"
+	if GameState.has_trash_pending():
+		key = "status_trash"
 	return String(_notas.get("texts", {}).get(key, ""))
 
 
@@ -124,6 +131,11 @@ func save_now() -> bool:
 	var texts: Dictionary = _notas.get("texts", {})
 	var colors: Dictionary = _notas.get("colors", {})
 	_mode = Mode.SUMMARY
+	if GameState.has_trash_pending():
+		refresh()
+		set_message(String(texts.get("message_trash_pending", "")), String(colors.get("message", "texto_claro")))
+		saved.emit(false)
+		return false
 	if not GameState.has_unsaved_changes():
 		refresh()
 		set_message(String(texts.get("message_nothing_to_save", "")), String(colors.get("message", "texto_claro")))
@@ -143,7 +155,7 @@ func save_now() -> bool:
 func _on_confirm(id: StringName) -> void:
 	match id:
 		OPTION_SAVE:
-			if not GameState.has_unsaved_changes():
+			if GameState.has_trash_pending() or not GameState.has_unsaved_changes():
 				save_now()
 				return
 			_mode = Mode.CONFIRM

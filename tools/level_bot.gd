@@ -31,6 +31,15 @@
 ## Ayuda de Eco con Q (2026-10-15 (3)): el bot nunca pulsa help; la Q sale sobre
 ## los tipos no aprendidos sin bloquear nada. Anota cuantos cuadros se vio y
 ## falla si el juego se pausa sin una linea importante de Eco en pantalla.
+## Game over (2026-10-16, pasos 11 y 12 de docs/propuesta-asistentes-y-vidas.md):
+## en el primer recorrido del 1-1 las vidas no cuentan (la muerte forzada no
+## resta nada). Tras el recorrido principal, de vuelta en el 1-1 (las vidas ya
+## cuentan), un recorrido corto de comprobacion (_game_over_check): vidas llenas
+## en el HUD, tres muertes seguidas (las dos primeras restan una y reaparece; la
+## tercera es game over), hub con las lineas de Eco, papelera parpadeando,
+## carpetas bloqueadas y Notas sin guardar; camina a la papelera, lo recupera
+## todo (el estado de la copia, sin cambios pendientes) y vuelve a entrar al 1-1
+## por la carpeta con las vidas llenas. No cuenta en la duracion del recorrido.
 ## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH
 ## si esta definida): nunca toca el user://save.json del jugador.
 ## Termina con codigo 0 si todo sale bien y 1 si algo falla (con el motivo).
@@ -132,6 +141,8 @@ func _run() -> void:
 		ok = _fail("el 1-1 no paso por el encuentro con Eco")
 	if ok:
 		ok = await _hub_and_back()
+	if ok:
+		ok = await _game_over_check()
 	_note("Q de ayuda visible %d cuadros; tipos aprendidos: %d (el bot no pide ayuda)" % [
 		_help_frames, GameState.learned_help.size()])
 	if not GameState.learned_help.is_empty():
@@ -541,6 +552,132 @@ func _hub_and_back() -> bool:
 		for i: int in 45:
 			await _tick()
 	return true
+
+
+## Comprobacion del game over (2026-10-16, pasos 11 y 12 de
+## docs/propuesta-asistentes-y-vidas.md §10), tras el recorrido principal: de
+## vuelta en el 1-1 desde la carpeta (las vidas ya cuentan: Notas conocida),
+## vidas llenas en el HUD; tres muertes seguidas (la primera y la segunda restan
+## una y reaparece; la tercera es game over); el hub con las lineas de Eco (el
+## bot las cierra), lo guardado en la papelera, carpetas bloqueadas y Notas sin
+## guardar; camina hasta la papelera y lo recupera todo (el estado vuelve a ser
+## el de la copia, sin cambios pendientes); vuelve a entrar al 1-1 por la
+## carpeta con las vidas llenas.
+func _game_over_check() -> bool:
+	_isak = _runner.get_isak()
+	_isak.input = _input
+	var saved_points: int = GameState.attention_points
+	var had_laser: bool = GameState.is_ability_obtained(GameState.ABILITY_LASER)
+	if not GameState.are_lives_active() or GameState.lives != GameState.lives_max:
+		return _fail("de vuelta en el 1-1 las vidas deberian contar y estar llenas (%d/%d)" % [
+			GameState.lives, GameState.lives_max])
+	if GameState.has_unsaved_changes():
+		return _fail("tras guardar en Notas no deberia haber cambios pendientes")
+	var hud := _runner.get_level().get_node_or_null(^"Hud") as Hud
+	if hud == null or not hud.is_lives_shown() or hud.get_lives_lit() != GameState.lives_max:
+		return _fail("el HUD no muestra las vidas llenas")
+	_note("game over: vidas %d/%d en el HUD; %d puntos guardados" % [GameState.lives, GameState.lives_max, saved_points])
+	_shot_in("10_hud_vidas", 1)
+	await _wait_frames(30)
+	var deaths: int = GameState.lives_max
+	for i: int in deaths:
+		var limit: int = _frame + 60 * 8
+		while _frame < limit and (_runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead() or _isak.is_warping()):
+			await _tick()
+		_input.move_axis = 0.0
+		GameState.sync_rate = GameState.SYNC_RATE_MIN
+		if not _isak.is_dead():
+			return _fail("Isak no muere con Sync Rate 0")
+		if i == 0:
+			_shot_in("10b_vida_perdida", 8)
+		if i < deaths - 1:
+			await _wait_frames(4)
+			if GameState.lives != deaths - 1 - i or _runner.is_game_over_pending():
+				return _fail("la muerte %d deberia restar una vida (quedan %d)" % [i + 1, GameState.lives])
+			if hud.get_lives_lit() != GameState.lives:
+				return _fail("el HUD no apaga la vida perdida")
+			_note("muerte %d: vidas restantes %d" % [i + 1, GameState.lives])
+	if not _runner.is_game_over_pending():
+		return _fail("la ultima vida no lleva al game over")
+	var limit2: int = _frame + 60 * 8
+	while _frame < limit2 and not _runner.is_in_hub():
+		await _tick()
+	if not _runner.is_in_hub():
+		return _fail("el game over no lleva al hub")
+	var hub: HubRoom = _runner.get_hub()
+	if not GameState.has_trash_pending() or GameState.attention_points != 0:
+		return _fail("tras el rollback lo guardado deberia estar en la papelera")
+	_note("game over: rollback a la copia (habia copia %s); en la papelera %d puntos%s" % [
+		hub.rollback_report.get("had_copy", false), int(GameState.get_trash().get(GameState.TRASH_POINTS, 0)),
+		", el laser" if GameState.get_trash().get(GameState.TRASH_ABILITIES, []).has("laser") else ""])
+	var intro: GameOverIntro = hub.get_game_over_intro()
+	if intro == null:
+		return _fail("el hub no cuenta el game over")
+	var limit3: int = _frame + 60 * 6
+	while _frame < limit3 and not hub.has_arrived():
+		await _tick()
+	_isak = hub.get_isak()
+	_isak.input = _input
+	var lines: int = await _close_hub_lines(hub, func() -> bool: return intro.is_done(), "game over", "11_game_over_eco")
+	if lines != intro.get_lines().size() or get_tree().paused:
+		return _fail("Eco no cuenta el game over (%d lineas)" % lines)
+	var papelera: Papelera = hub.get_papelera()
+	var folder: FolderStation = hub.get_folder(&"m1")
+	if papelera.get_state() != Papelera.State.ACTIVE or not folder.is_blocked_by_trash() or HubWorlds.can_enter(&"1-1"):
+		return _fail("la papelera deberia parpadear y las carpetas estar bloqueadas")
+	if GameState.save_game():
+		return _fail("con la papelera llena no se deberia poder guardar")
+	_note("papelera parpadeando; carpetas bloqueadas (%s); Notas no guarda" % folder.get_trash_hint_text())
+	_shot_in("12_papelera", 2)
+	await _wait_frames(4)
+	if not await _walk_to_x(papelera.get_center().x - TILE):
+		return _fail("no llega a la papelera (x=%.0f, objetivo %.0f, estado %s, pausa %s, control %s)" % [
+			_isak.global_position.x, papelera.get_center().x - TILE, _isak.get_state_name(), get_tree().paused,
+			_isak.input == _input])
+	if GameState.has_trash_pending():
+		return _fail("acercarse a la papelera no la recupera")
+	if GameState.attention_points != saved_points or GameState.is_ability_obtained(GameState.ABILITY_LASER) != had_laser \
+			or GameState.has_unsaved_changes():
+		return _fail("la papelera no devuelve la copia entera (puntos %d de %d)" % [GameState.attention_points, saved_points])
+	_note("papelera recuperada: %d puntos de vuelta, sin cambios pendientes; carpetas abiertas" % saved_points)
+	_shot_in("13_recuperada", 10)
+	await _wait_frames(12)
+	if not await _enter_from_folder(hub):
+		return false
+	_isak = _runner.get_isak()
+	_isak.input = _input
+	if GameState.lives != GameState.lives_max:
+		return _fail("al volver a entrar las vidas no se reponen")
+	_note("game over comprobado: de vuelta en el 1-1 con %d vidas" % GameState.lives)
+	return true
+
+
+## Cierra las lineas importantes del cuadro de texto del hub como el jugador
+## (unos cuadros despues de que salgan) hasta que `done` sea verdadero. Devuelve
+## cuantas lineas vio.
+func _close_hub_lines(hub: HubRoom, done: Callable, label: String, shot: String) -> int:
+	var box: EcoTextBox = hub.get_text_box()
+	var limit: int = _frame + 60 * 30
+	var shown: int = -1
+	var lines: int = 0
+	var current: String = ""
+	while _frame < limit and not done.call():
+		await _tick()
+		if not box.is_showing() or not box.is_important():
+			shown = -1
+			current = ""
+			continue
+		if box.get_speaker_text() + box.get_text() != current:
+			current = box.get_speaker_text() + box.get_text()
+			shown = _frame
+			lines += 1
+			_note("%s, %s: «%s»" % [label, box.get_speaker_text(), box.get_text()])
+			if lines == 1:
+				_shot_in(shot, 4)
+		elif _frame - shown >= 10:
+			box.finish_typing()
+			box.confirm()
+	return lines
 
 
 ## Primera llegada al hub: Notas apagada; Eco (atenuado) la presenta y Notas

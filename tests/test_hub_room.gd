@@ -112,9 +112,13 @@ func test_walls_keep_isak_inside_the_screen() -> void:
 
 func test_dormant_slots_stand_on_the_dock_with_final_art() -> void:
 	_spawn()
-	assert_eq(_hub.get_dormant_ids(), [&"linterna", &"papelera"] as Array[StringName],
-		"Calc y Notas no son huecos: son estaciones (test_calc_station.gd, test_notas_station.gd)")
-	for id: StringName in [&"linterna", &"papelera"]:
+	assert_eq(_hub.get_dormant_ids(), [&"linterna"] as Array[StringName],
+		"Calc y Notas son estaciones y la papelera tiene logica propia (test_game_over.gd)")
+	var papelera: Papelera = _hub.get_papelera()
+	assert_eq(papelera.get_animation(), &"dormant", "Papelera dormida: el hueco apagado hasta el primer game over")
+	assert_almost_eq(papelera.position.y + papelera.get_size().y, _hub.get_floor_y(), 0.5, "Papelera de pie sobre el dock")
+	assert_eq(papelera.position.x, 10.0 * T, "Papelera en la columna 10 (el hueco que era de Notas)")
+	for id: StringName in [&"linterna"]:
 		var node: Node2D = _hub.get_dormant(id)
 		assert_not_null(node, String(id))
 		if node == null:

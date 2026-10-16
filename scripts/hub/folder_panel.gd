@@ -14,7 +14,9 @@
 ##   SIEMPRE que se elige un subnivel disponible o completado con
 ##   GameState.has_unsaved_changes(), antes de entrar se pide confirmacion
 ##   («¿Seguro? Aún no has guardado.»: Entrar sin guardar / Volver). Volver (o
-##   salto) deja en la lista del panel; con todo guardado entra directo.
+##   salto) deja en la lista del panel; con todo guardado entra directo. Desde
+##   el 2026-10-16 el aviso anade el riesgo del game over (confirm_unsaved_risk:
+##   «Si caes sin guardar, Eco te devolverá a tu última copia.»).
 class_name FolderPanel
 extends HubPanel
 
@@ -63,7 +65,11 @@ func refresh() -> void:
 	var colors: Dictionary = _folders.get("colors", {})
 	if _mode == Mode.CONFIRM_UNSAVED:
 		set_title(String(texts.get("confirm_unsaved_title", "")))
-		set_lines([{"text": level_text(_level(_pending_level)), "color": String(colors.get("summary", "texto_tenue"))}])
+		var lines: Array = [{"text": level_text(_level(_pending_level)), "color": String(colors.get("summary", "texto_tenue"))}]
+		var risk: String = String(texts.get("confirm_unsaved_risk", ""))
+		if not risk.is_empty():
+			lines.append({"text": risk, "color": String(colors.get("message", "texto_claro"))})
+		set_lines(lines)
 		set_options([{"id": OPTION_ENTER_UNSAVED, "text": String(texts.get("option_enter_unsaved", ""))},
 			{"id": OPTION_STAY, "text": String(texts.get("option_stay", "Volver"))}])
 		set_help(String(texts.get("confirm_help", texts.get("help", ""))))

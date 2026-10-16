@@ -12,6 +12,9 @@
 ##   tecla del pulso; el pulso abre el FolderPanel con Isak de espaldas.
 ## - Bloqueada: no abre el panel; con Isak cerca sale «Sin descargar» en lugar
 ##   de la tecla.
+## - Papelera llena tras un game over (2026-10-16, propuesta de asistentes
+##   §2.5): ninguna carpeta se abre; con Isak cerca sale «Recupera tus archivos
+##   de la papelera» (folders.texts.trash_blocked_text) en lugar de la tecla.
 ## - Al elegir un subnivel: cierra el panel, Isak sigue de espaldas (la estacion
 ##   queda OPEN) y emite level_chosen; HubRoom hace el resto (vortice de salida
 ##   y carga del nivel).
@@ -27,6 +30,7 @@ var world_entry: Dictionary = {}
 
 var _folders: Dictionary = HubData.section("folders")
 var _locked_root: Node2D
+var _trash_root: Node2D
 var _number: Label
 var _miniature: Sprite2D
 var _shown_state: StringName = &""
@@ -36,6 +40,7 @@ var _entering: StringName = &""
 func _ready() -> void:
 	super._ready()
 	_build_folder()
+	EventBus.trash_changed.connect(_on_trash_changed)
 	refresh_state()
 
 
@@ -61,6 +66,20 @@ func is_locked_hint_visible() -> bool:
 
 func get_locked_hint_text() -> String:
 	return (_locked_root.get_node(^"Text") as Label).text if _locked_root != null else ""
+
+
+## Bloqueada por la papelera llena (game over pendiente de recuperar).
+func is_blocked_by_trash() -> bool:
+	return GameState.has_trash_pending()
+
+
+## Aviso «Recupera tus archivos de la papelera» visible (con Isak cerca).
+func is_trash_hint_visible() -> bool:
+	return _trash_root != null and _trash_root.visible
+
+
+func get_trash_hint_text() -> String:
+	return (_trash_root.get_node(^"Text") as Label).text if _trash_root != null else ""
 
 
 ## Texto del numero del mundo en el hueco de la carpeta.
@@ -98,13 +117,13 @@ func refresh_state() -> void:
 ## Bloqueada: el pulso no la abre. Ademas, solo con Isak cerca (de pie en la
 ## repisa), para que un pulso desde el dock no la abra.
 func receive_pulse(area: Area2D) -> bool:
-	if is_locked() or not is_player_near():
+	if is_locked() or is_blocked_by_trash() or not is_player_near():
 		return false
 	return super.receive_pulse(area)
 
 
 func open(isak: Isak) -> bool:
-	if is_locked():
+	if is_locked() or is_blocked_by_trash():
 		return false
 	_entering = &""
 	return super.open(isak)
@@ -124,9 +143,12 @@ func _apply_visuals() -> void:
 	if _locked_root == null:
 		return
 	var locked: bool = is_locked()
-	if locked:
+	var blocked: bool = not locked and is_blocked_by_trash()
+	if locked or blocked:
 		_key_root.visible = false
 	_locked_root.visible = locked and get_state() == State.PROMPT
+	if _trash_root != null:
+		_trash_root.visible = blocked and get_state() == State.PROMPT
 	var mini: bool = _miniature != null and not locked
 	if _miniature != null:
 		_miniature.visible = mini
@@ -149,6 +171,10 @@ func _show_visual_state(_value: StringName) -> void:
 
 
 # --- Interno ---
+
+func _on_trash_changed(_pending: bool) -> void:
+	refresh_state()
+
 
 func _on_level_chosen(level_id: StringName) -> void:
 	if get_state() != State.OPEN or not _entering.is_empty():
@@ -212,4 +238,11 @@ func _build_folder() -> void:
 		"#" + HubData.color(String(station_cfg.get("label_border_color", "borde"))).to_html(false),
 		float(station_cfg.get("label_padding_px", 3)), get_size().x, top - float(station_cfg.get("key_gap_px", 8)))
 	_locked_root.visible = false
+	_trash_root = PulsePrompt.make_plate(self, "TrashHint",
+		String(_folders.get("texts", {}).get("trash_blocked_text", "")), font, font_size,
+		int(station_cfg.get("font_scale", 2)),
+		"#" + HubData.color(String(station_cfg.get("label_plate_color", "fondo_profundo"))).to_html(false),
+		"#" + HubData.color(String(station_cfg.get("label_border_color", "borde"))).to_html(false),
+		float(station_cfg.get("label_padding_px", 3)), get_size().x, top - float(station_cfg.get("key_gap_px", 8)))
+	_trash_root.visible = false
 	_shown_state = &""
