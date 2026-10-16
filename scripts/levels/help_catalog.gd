@@ -12,7 +12,7 @@ const TARGET_GROUP: StringName = &"help_target"
 const META_HELP_ID: StringName = &"help_id"
 const CATEGORY_ENEMY: String = "enemy"
 const CATEGORY_OBJECT: String = "object"
-const NICKNAME_TAG: String = "{apodo}"
+const NICKNAME_TAG: String = "{apodo}"  # = GameState.NICKNAME_TAG
 
 var _data: Dictionary = {}
 var _types: Dictionary = {}
@@ -81,9 +81,7 @@ func title(help_id: StringName) -> String:
 ## Texto de Eco para el tipo, con {apodo} sustituido por `nickname` (vacio: el
 ## apodo de la partida, GameState.nickname).
 func text(help_id: StringName, nickname: String = "") -> String:
-	if nickname.is_empty():
-		nickname = GameState.nickname
-	return String(entry(help_id).get("text", "")).replace(NICKNAME_TAG, nickname)
+	return GameState.apply_nickname(String(entry(help_id).get("text", "")), nickname)
 
 
 func category(help_id: StringName) -> String:

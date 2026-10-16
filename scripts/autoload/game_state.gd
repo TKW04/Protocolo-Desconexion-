@@ -65,6 +65,11 @@ const ALLY_PAPELERA: StringName = &"papelera"
 const ALLIES: Array[StringName] = [ALLY_ECO, ALLY_NOTAS, ALLY_CALC, ALLY_LINTERNA, ALLY_PAPELERA]
 ## Apodo con el que Eco llama al jugador si no elige otro (propuesta §2.1).
 const NICKNAME_DEFAULT: String = "Isak"
+## Largo maximo del apodo (propuesta §6; entrada del apodo, NicknameEntry).
+const NICKNAME_MAX_LENGTH: int = 12
+## Marcador de las lineas de Eco que se sustituye por el apodo (apply_nickname;
+## EcoTextBox y HelpCatalog lo resuelven al mostrar el texto).
+const NICKNAME_TAG: String = "{apodo}"
 ## Vidas (intentos) maximas de partida (propuesta §5.1; sube con cada vida extra).
 const LIVES_MAX_DEFAULT: int = 3
 const SAVE_PATH_DEFAULT: String = "user://save.json"
@@ -921,6 +926,62 @@ func meet_ally(ally: StringName) -> bool:
 	allies_met[ally] = true
 	EventBus.ally_met.emit(ally)
 	return true
+
+
+## Apodo con el que Eco llama al jugador (NICKNAME_DEFAULT si no hay otro).
+func get_nickname() -> String:
+	return nickname if not nickname.strip_edges().is_empty() else NICKNAME_DEFAULT
+
+
+## Cambia el apodo (limpio con sanitize_nickname). Si cambia, marca «sin
+## guardar» (es progreso: va a disco con la siguiente copia) y emite
+## EventBus.nickname_changed. Un apodo vacio tras limpiarlo no cambia nada.
+## Verdadero si cambio.
+func set_nickname(value: String) -> bool:
+	var clean: String = sanitize_nickname(value)
+	if clean.is_empty() or clean == nickname:
+		return false
+	nickname = clean
+	request_save()
+	EventBus.nickname_changed.emit(nickname)
+	return true
+
+
+## Apodo limpio: sin caracteres de control ni simbolos (solo letras, numeros y
+## espacios), espacios repetidos reducidos a uno, recortado por los extremos y
+## como mucho NICKNAME_MAX_LENGTH caracteres. Puede quedar vacio.
+static func sanitize_nickname(value: String) -> String:
+	var out: String = ""
+	var last_space: bool = true
+	for i: int in value.length():
+		var ch: String = value[i]
+		if ch == " " or ch == "\t":
+			if not last_space:
+				out += " "
+			last_space = true
+		elif is_nickname_char(ch):
+			out += ch
+			last_space = false
+	out = out.strip_edges()
+	if out.length() > NICKNAME_MAX_LENGTH:
+		out = out.substr(0, NICKNAME_MAX_LENGTH).strip_edges()
+	return out
+
+
+## Caracter valido en un apodo: letra o numero (Unicode; la entrada del apodo
+## ademas exige que la fuente de textos lo tenga). El espacio se trata aparte.
+static func is_nickname_char(ch: String) -> bool:
+	if ch.length() != 1:
+		return false
+	var code: int = ch.unicode_at(0)
+	if code < 32 or (code >= 127 and code < 160):
+		return false
+	return ch.to_upper() != ch.to_lower() or (ch >= "0" and ch <= "9")
+
+
+## Sustituye NICKNAME_TAG por el apodo (`nick`, o el actual si va vacio).
+func apply_nickname(text: String, nick: String = "") -> String:
+	return text.replace(NICKNAME_TAG, nick if not nick.is_empty() else get_nickname())
 
 
 ## Verdadero si la ayuda con Q del tipo `help_id` ya se aprendio.

@@ -156,6 +156,10 @@ signal help_learned(help_id: StringName)
 @warning_ignore("unused_signal")
 signal ally_met(ally: StringName)
 
+## El apodo cambio (GameState.set_nickname).
+@warning_ignore("unused_signal")
+signal nickname_changed(nickname: String)
+
 ## Sale una Q de ayuda sobre `target` (HelpSystem; Eco reacciona).
 @warning_ignore("unused_signal")
 signal help_prompt_shown(target: Node2D)

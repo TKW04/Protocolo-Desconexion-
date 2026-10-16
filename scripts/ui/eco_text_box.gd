@@ -110,7 +110,9 @@ func _exit_tree() -> void:
 ## Muestra `text` (o lo pone en cola). `duration_s` <= 0: tiempo por defecto.
 ## `important`: pausa el juego y espera confirmacion; pasa delante de las
 ## normales (la normal en pantalla vuelve a la cola, a la cabeza de las normales).
+## El marcador {apodo} (GameState.NICKNAME_TAG) se sustituye por el apodo.
 func show_line(text: String, duration_s: float = -1.0, important: bool = false) -> void:
+	text = GameState.apply_nickname(text)
 	var item: Dictionary = {"text": text, "duration_s": duration_s, "important": important}
 	if not important:
 		_queue.append(item)

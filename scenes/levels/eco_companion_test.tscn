@@ -1,0 +1,21 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/eco_companion_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="3_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="5_box"]
+
+[node name="EcoCompanionTest" type="Node2D"]
+script = ExtResource("1_test")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+
+[node name="Isak" parent="." instance=ExtResource("3_isak")]
+position = Vector2(384, 576)
+
+[node name="Hud" parent="." instance=ExtResource("4_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("5_box")]
