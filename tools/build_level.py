@@ -29,6 +29,10 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
   - Goal: Marker2D (grupo "goal") en la G (la puerta de salida la contiene).
   - Isak (P, pies abajo-centro de la celda) con camera_limits = tamano del grid,
     Hud y EcoTextBox.
+  - Niveles verticales (camera.vertical "tower", 2026-10-16, paso 2 de
+    docs/propuesta-1-2.md §10): Isak con camera_mode = &"tower" y camera_bands
+    (bandas de los tramos con y_from/y_to, en px: arriba, abajo) y el fondo con
+    vertical = true. Con camera.vertical "simple" (1-1) la escena no cambia.
   - Help: HelpSystem (scripts/levels/help_system.gd), la ayuda de Eco con Q
     (2026-10-15 (3)). Los objetos, puntos de atencion, checkpoints y enemigos con
     tipo de ayuda van en el grupo "help_target" con metadata/help_id: el help_id
@@ -340,8 +344,10 @@ def build_scene(level, root=ROOT, warnings=None):
         ("source_path", fmt_string("res://data/levels/%s.json" % level["id"])),
     ])
 
+    tower = level.get("camera", {}).get("vertical") == "tower"
     background = "res://scenes/levels/world%d_background.tscn" % world
-    scene.node("Background", parent=".", instance=scene.ext_resource("PackedScene", background))
+    scene.node("Background", parent=".", instance=scene.ext_resource("PackedScene", background),
+               props=[("vertical", "true")] if tower else None)
 
     scene.node("Tiles", "TileMapLayer", parent=".", props=[
         ("tile_map_data", tile_map_data(level, catalog, tilemap)),
@@ -445,14 +451,27 @@ def build_scene(level, root=ROOT, warnings=None):
     scene.node("Goal", "Marker2D", parent=".", groups=["goal"], props=[("position", feet(*goal))])
 
     start = find_cells(grid, "P")[0]
-    scene.node("Isak", parent=".", instance=scene.ext_resource("PackedScene", ISAK_SCENE), props=[
+    isak_props = [
         ("position", feet(*start)),
         ("camera_limits", "Rect2i(0, 0, %d, %d)" % (cols * t, rows * t)),
-    ])
+    ]
+    if tower:
+        isak_props.append(("camera_mode", '&"tower"'))
+        isak_props.append(("camera_bands", camera_bands(level, t)))
+    scene.node("Isak", parent=".", instance=scene.ext_resource("PackedScene", ISAK_SCENE), props=isak_props)
     scene.node("Hud", parent=".", instance=scene.ext_resource("PackedScene", HUD_SCENE))
     scene.node("EcoTextBox", parent=".", instance=scene.ext_resource("PackedScene", ECO_SCENE))
     scene.node("Help", "Node", parent=".", props=[("script", scene.ext_resource("Script", HELP_SCRIPT))])
     return scene.text()
+
+
+def camera_bands(level, t):
+    """PackedVector2Array de las bandas (pisos) de la camara de torre: por cada tramo con
+    y_from/y_to, (borde de arriba, borde de abajo) en px, de arriba abajo."""
+    rows = len(level["grid"])
+    bands = sorted({(int(s.get("y_from", 0)) * t, (int(s.get("y_to", rows - 1)) + 1) * t)
+                    for s in level.get("sections", []) if "y_from" in s or "y_to" in s})
+    return "PackedVector2Array(%s)" % ", ".join("%d, %d" % band for band in bands)
 
 
 def output_path(level, root=ROOT):

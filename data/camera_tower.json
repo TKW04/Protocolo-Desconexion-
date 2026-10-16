@@ -1,0 +1,10 @@
+{
+	"_notes": "Camara de torre (2026-10-16, paso 2 de docs/propuesta-1-2.md §10; PROPUESTA, ajustar jugando). La usan los niveles con camera.vertical \"tower\" (build_level.py pone camera_mode = tower y camera_bands en Isak; scripts/player/tower_camera.gd). El 1-1 (camera.vertical \"simple\") no la usa: sigue con la Camera2D hija de Isak y su suavizado (position_smoothing_speed 8). Eje vertical tipo plataforma-torre: la camara se ANCLA AL SUELO en el que Isak se apoyo por ultima vez (no sigue cada salto: en el aire el ancla no cambia) y solo se mueve, suavizada, al aterrizar en otra altura. El centro deseado es el suelo + anchor_offset_px (negativo = la camara mira mas arriba de Isak: anticipacion al subir); dentro de un tramo (sections con y_from/y_to = piso) se encaja en su banda (si el piso cabe en pantalla queda centrado y la camara no se mueve dentro de el), sin dejar a Isak de pie fuera de standing_zone_px (px desde el borde de arriba de la vista hasta el centro del cuerpo de Isak, body_center_px sobre los pies). En el aire solo empuja la zona muerta air_zone_px (borde duro: Isak nunca sale de ella, p. ej. al caer o al subir por un hueco). standing_zone_px.x - air_zone_px.x >= salto real (unos 177 px): saltar desde el suelo nunca mueve la camara. Suavizado exponencial (1 - exp(-speed * dt)) con tope de velocidad vertical; el eje horizontal sigue a Isak como en el 1-1 (horizontal_speed 8). Limites = tamano del grid.",
+	"anchor_offset_px": -96.0,
+	"body_center_px": 40.0,
+	"standing_zone_px": [272.0, 620.0],
+	"air_zone_px": [64.0, 680.0],
+	"vertical_speed": 5.0,
+	"max_vertical_speed_px_s": 1400.0,
+	"horizontal_speed": 8.0
+}

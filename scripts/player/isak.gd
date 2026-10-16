@@ -68,6 +68,8 @@ const PULSE_EFFECT_SCENE: PackedScene = preload("res://scenes/player/pulse_effec
 const LASER_PROJECTILE_SCENE: PackedScene = preload("res://scenes/player/laser_projectile.tscn")
 ## Tolerancia al comparar la energia con el coste del laser.
 const LASER_ENERGY_EPS: float = 0.0001
+const CAMERA_SIMPLE: StringName = &"simple"
+const CAMERA_TOWER: StringName = &"tower"
 
 @export_file("*.json") var physics_path: String = PlayerPhysics.DEFAULT_PATH
 @export_file("*.json") var abilities_path: String = PlayerAbilities.DEFAULT_PATH
@@ -92,6 +94,14 @@ const LASER_ENERGY_EPS: float = 0.0001
 @export var laser_pose_hold_s: float = 0.25
 ## Limites de la camara en px. Sin area = sin limites.
 @export var camera_limits: Rect2i = Rect2i()
+## Modo de camara del nivel (camera.vertical del JSON, 2026-10-16): &"simple" =
+## la Camera2D hija con su suavizado (1-1); &"tower" = camara de torre
+## (TowerCamera, data/camera_tower.json): la Camera2D pasa a top_level y Isak la
+## coloca en cada step().
+@export var camera_mode: StringName = CAMERA_SIMPLE
+## Camara de torre: bandas de los pisos en px (x = borde de arriba, y = de abajo),
+## de los tramos con y_from/y_to del nivel (las pone tools/build_level.py).
+@export var camera_bands: PackedVector2Array = PackedVector2Array()
 
 var physics: PlayerPhysics
 var abilities: PlayerAbilities
@@ -131,6 +141,8 @@ var _warp_input := PlayerInput.new()
 ## De espaldas (face_back/face_side): pose ANIM_BACK_IDLE, control bloqueado
 ## (entrada quieta, como en el vortice) y sin recibir golpes.
 var _facing_back: bool = false
+## Camara de torre (camera_mode tower); null en el resto.
+var _tower_camera: TowerCamera
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -197,6 +209,8 @@ func step(delta: float) -> void:
 	_update_coyote(delta)
 	_update_laser(delta)
 	_update_blink()
+	if _tower_camera != null:
+		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
 	if input == _warp_input:
 		input = source
 
@@ -384,6 +398,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	change_state(PlayerState.IDLE)
 	play_animation(ANIM_IDLE)
 	_camera.reset_smoothing()
+	snap_camera()
 	_update_blink()
 
 
@@ -772,12 +787,39 @@ func _setup_shapes() -> void:
 
 
 func _setup_camera() -> void:
-	if not camera_limits.has_area():
+	if camera_limits.has_area():
+		_camera.limit_left = camera_limits.position.x
+		_camera.limit_top = camera_limits.position.y
+		_camera.limit_right = camera_limits.end.x
+		_camera.limit_bottom = camera_limits.end.y
+	if camera_mode != CAMERA_TOWER:
 		return
-	_camera.limit_left = camera_limits.position.x
-	_camera.limit_top = camera_limits.position.y
-	_camera.limit_right = camera_limits.end.x
-	_camera.limit_bottom = camera_limits.end.y
+	_tower_camera = TowerCamera.load_from_file()
+	var view := Vector2(float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)),
+			float(ProjectSettings.get_setting("display/window/size/viewport_height", 720)))
+	_tower_camera.configure(view / _camera.zoom, Rect2(camera_limits), camera_bands)
+	_camera.top_level = true
+	_camera.position_smoothing_enabled = false
+	snap_camera()
+
+
+## Camara de Isak (Camera2D hija).
+func get_camera() -> Camera2D:
+	return _camera
+
+
+## Camara de torre (null si el nivel usa la camara simple).
+func get_tower_camera() -> TowerCamera:
+	return _tower_camera
+
+
+## Con la camara de torre, la coloca sin suavizado sobre Isak (al aparecer o
+## tras moverlo a mano). Con la simple no hace nada (reset_smoothing basta).
+func snap_camera() -> void:
+	if _tower_camera == null:
+		return
+	_camera.global_position = _tower_camera.snap(global_position)
+	_camera.reset_smoothing()
 
 
 func _update_timers(delta: float) -> void:
