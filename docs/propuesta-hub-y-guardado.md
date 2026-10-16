@@ -68,6 +68,8 @@ fila0 [HUD: ✈ Modo Avión ··········· batería  ◆ pts  ● sin gu
  10   |  ○ indicador de página (1 punto)                           |
 ```
 
+**Actualización 2026-10-16:** el dock queda así: Notas (1), Calc (7), Papelera (10), hueco de Linterna (13) y **cargador de energía (16)**, que ocupa el antiguo hueco de la columna 16.
+
 | Elemento | Posición (col, fila) | Notas |
 |---|---|---|
 | **P** (llegada por vórtice) | (5, 8) | Junto a la copia local, así lo primero que se ve es dónde se guarda. |
@@ -75,6 +77,7 @@ fila0 [HUD: ✈ Modo Avión ··········· batería  ◆ pts  ● sin gu
 | **Carpetas M1, M2 y M3** | (4–5), (10–11) y (16–17), sobre repisas a 2,5 tiles (160 px) del dock | Se llega de un salto, así que no hay que enseñar nada. M2 y M3 se ven bloqueadas. **Implementado (2026-10-15):** el mapa ponía las repisas en la fila 4 (5 tiles, inalcanzable) y el texto a 3 tiles (192 px, justo la altura de diseño del salto; a 60 Hz Isak llega a ~184 px), así que se bajaron a 160 px. |
 | **Calc** | (7, 9), de pie sobre el dock | Abre el panel de mejoras. En el Mundo 1 está **dormida** (ver §3.2). |
 | **Huecos del dock** | (10, 9), (13, 9) y (16, 9) | Siluetas apagadas para Notas, Linterna y Papelera. Anuncian aliados futuros. |
+| **Cargador de energía** (2026-10-16) | (16, 8), de pie sobre el dock | El mismo objeto `charger` de los niveles, con sus reglas: 50 de energía (sin desbordar a los power banks), reutilizable, 20 s de enfriamiento; se activa al tocarlo. No se guarda ni marca «sin guardar» y se reinicia en cada visita. Funciona también con la Papelera llena (es energía, no algo guardado). La energía se sigue llenando al entrar al hub; el cargador sirve tras gastarla con el láser. Columna elegida: fuera de las zonas de Notas (x −32 a 224), Calc (352 a 608) y la Papelera (576 a 768), del hueco de Linterna (13), de la llegada P (5) y de las carpetas (la repisa de M3 queda 160 px por encima). El hub no tiene ayuda Q: no cuenta como tipo aprendido. Arte: variante con `hub.gpl` de `tools/gen_hub_objects.py`. Datos: sección `charger` de `data/hub.json`. |
 | **Ajustes** | Icono en la esquina (18–19, 7) que abre el menú de pausa | Pregunta 9: los ajustes viven en el menú de pausa. **Implementado (2026-10-16):** el icono (engranaje) va en la esquina del HUD del hub, delante del Modo Avión, no como objeto de la sala; un clic o la acción `pause` abren el menú (`PauseMenu`). |
 | **Paredes** | Bordes de la sala | Mientras haya una sola página, el borde no desliza la pantalla. |
 

@@ -25,7 +25,7 @@ El hub se organiza en páginas, como una pantalla de inicio de celular. Isak cam
 
 Selección de zona y subnivel, compra de mejoras y guardado: ver 13.6.
 
-**Hub del Mundo 1 (aprobado el 2026-10-15):** una sola página, como sala 2D caminable de 20x11 tiles con paneles de menú en cada estación (copia local, carpetas, Calc y ajustes). **[2026-10-15 (3)]:** la copia local pasa a ser **Notas**, Calc está apagada hasta el final del 1-2 y la Papelera ocupa el hueco de la columna 10 del dock (`propuesta-asistentes-y-vidas.md` §8). Mapa y detalle en `propuesta-hub-y-guardado.md` §2 y §3. Las páginas 2 y 3 llegan con los mundos 4 a 6.
+**Hub del Mundo 1 (aprobado el 2026-10-15):** una sola página, como sala 2D caminable de 20x11 tiles con paneles de menú en cada estación (copia local, carpetas, Calc y ajustes). **[2026-10-15 (3)]:** la copia local pasa a ser **Notas**, Calc está apagada hasta el final del 1-2 y la Papelera ocupa el hueco de la columna 10 del dock (`propuesta-asistentes-y-vidas.md` §8). **[2026-10-16]:** en la columna 16 del dock hay un **cargador de energía**, el mismo objeto `charger` de los niveles (50 de energía, reutilizable, 20 s de enfriamiento; se activa al tocarlo); no se guarda y se reinicia en cada visita. Mapa y detalle en `propuesta-hub-y-guardado.md` §2 y §3. Las páginas 2 y 3 llegan con los mundos 4 a 6.
 
 ## 13.3 Los aliados en el hub
 
