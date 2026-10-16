@@ -225,9 +225,11 @@ func _update_state() -> void:
 
 
 func _enter(state: StringName) -> void:
+	# La ranura y la estela miran hacia donde va el banner; el banner no se
+	# voltea (su texto se leeria al reves).
 	var flip: bool = direction < 0
-	for s: AnimatedSprite2D in [_slot, _banner, _trail]:
-		s.flip_h = flip
+	_slot.flip_h = flip
+	_trail.flip_h = flip
 	match state:
 		STATE_REST:
 			_play(_slot, &"idle")
