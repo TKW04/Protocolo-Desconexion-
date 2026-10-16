@@ -72,7 +72,8 @@ func test_every_help_type_has_a_world() -> void:
 func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	var enemies: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_ENEMY)
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
-	assert_eq(enemies, [&"alert_bubble"] as Array[StringName])
+	assert_eq(enemies, [&"alert_bubble", &"notification_badge", &"spam_banner"] as Array[StringName],
+		"Burbuja (1-1), punto rojo y banner (1-2), en orden")
 	assert_eq(enemies.size() + objects.size(), HelpCatalog.shared().ids().size(), "Todos los tipos del 1-1")
 	assert_eq(objects[0], &"attention_point", "Orden de help.json")
 	for i: int in range(1, objects.size()):
@@ -205,9 +206,12 @@ func test_open_folder_shows_cards_and_silhouettes() -> void:
 	assert_eq(_album.get_world(), 1)
 	assert_eq(_album.get_title_text(), "Mundo 1 - Notificaciones")
 	assert_eq(_album.get_tab(), "enemy", "Primera seccion: Enemigos")
-	assert_eq(_album.get_counter_text(), "Fichas: 1/1")
-	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta"]))
+	assert_eq(_album.get_counter_text(), "Fichas: 1/3")
+	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta", "???", "???"]),
+		"Punto rojo y banner sin aprender: «???»")
 	assert_false(_album.is_cell_silhouette(0))
+	assert_true(_album.is_cell_silhouette(1))
+	assert_true(_album.is_cell_silhouette(2))
 	assert_true(_album.set_tab("object"))
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
 	assert_eq(_album.get_counter_text(), "Fichas: 1/%d" % objects.size())
@@ -231,6 +235,30 @@ func test_every_type_has_card_and_silhouette_art() -> void:
 		assert_true(ResourceLoader.exists("res://assets/sprites/ui/album/album_card_%s.png" % id), "Ficha de %s" % id)
 		assert_true(ResourceLoader.exists("res://assets/sprites/ui/album/album_card_%s_silhouette.png" % id),
 			"Silueta de %s" % id)
+
+
+func test_red_dot_and_banner_cards_in_the_enemies_tab() -> void:
+	GameState.learn_help(&"notification_badge")
+	GameState.learn_help(&"spam_banner")
+	_album.open()
+	_album.confirm()
+	assert_eq(_album.get_tab(), "enemy")
+	assert_eq(_album.get_counter_text(), "Fichas: 2/3")
+	assert_eq(_album.get_cell_texts(), PackedStringArray(["???", "Punto rojo", "Banner"]))
+	assert_true(_album.is_cell_silhouette(0), "La Burbuja sin aprender: silueta")
+	assert_eq(_album.get_cell_texture(1).resource_path, "res://assets/sprites/ui/album/album_card_notification_badge.png")
+	assert_eq(_album.get_cell_texture(2).resource_path, "res://assets/sprites/ui/album/album_card_spam_banner.png")
+	_album.select_cell(1)
+	_album.confirm()
+	assert_eq(_album.get_mode(), NotasAlbum.Mode.CARD)
+	assert_eq(_album.get_card_title(), "Punto rojo")
+	assert_true(_album.get_card_text().replace("\n", " ").begins_with("Un aviso sin leer."), "Texto de su ayuda")
+	_album.cancel()
+	_album.select_cell(2)
+	_album.confirm()
+	assert_eq(_album.get_card_title(), "Banner")
+	assert_true(_album.get_card_text().replace("\n", " ").begins_with("Publicidad que cruza"))
+	_assert_no_leak()
 
 
 func test_pulse_opens_a_card_and_jump_goes_back_step_by_step() -> void:

@@ -55,6 +55,9 @@ SOURCES = {
     "relay_receiver": ("assets/sprites/props/relay_receiver_powered_00.png", None, 1),
     "ad_cover": ("assets/sprites/props/ad_cover_intact_00.png", None, 1),
     "debug_chip": ("assets/sprites/pickups/debug_chip_idle_00.png", None, 1),
+    # Enemigos del 1-2 (tools/gen_world1_enemies.py): punto rojo despierto y el banner barriendo.
+    "notification_badge": ("assets/sprites/enemies/badge_chase_00.png", None, 1),
+    "spam_banner": ("assets/sprites/enemies/banner_sweep_00.png", None, 1),
 }
 
 

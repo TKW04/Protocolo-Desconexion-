@@ -10,6 +10,8 @@ extends GutTest
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
 const BOX_SCENE: PackedScene = preload("res://scenes/ui/eco_text_box.tscn")
 const BUBBLE_SCENE: PackedScene = preload("res://scenes/enemies/alert_bubble.tscn")
+const BADGE_SCENE: PackedScene = preload("res://scenes/enemies/notification_badge.tscn")
+const BANNER_SCENE: PackedScene = preload("res://scenes/enemies/spam_banner.tscn")
 const TILE: float = 64.0
 const FEET: Vector2 = Vector2(640.0, 400.0)
 const STEP: float = 1.0 / 60.0
@@ -319,9 +321,51 @@ func test_collected_debug_chip_gives_no_help() -> void:
 	await _assert_inert_drops_help(pickup, func() -> void: pickup.collect_by(_isak), "chip del Debug recogido")
 
 
+## Punto rojo (1-2): ayuda disponible mientras exista y no este derrotado
+## (dormido, persiguiendo o aturdido sigue siendo un punto rojo); derrotado, no.
+func test_defeated_red_dot_gives_no_help() -> void:
+	var badge := BADGE_SCENE.instantiate() as NotificationBadge
+	_place(badge, &"notification_badge")
+	badge.set_physics_process(false)
+	await wait_process_frames(1)
+	badge.drops = {}  # Sus drops serian candidatos nuevos (con su propia ayuda).
+	badge.free_on_pop = false
+	await _assert_inert_drops_help(badge, func() -> void: badge.pop(), "punto rojo derrotado")
+	_assert_no_reread(badge, &"notification_badge", "punto rojo derrotado")
+
+
+func test_stunned_red_dot_still_helps() -> void:
+	var badge := BADGE_SCENE.instantiate() as NotificationBadge
+	_place(badge, &"notification_badge")
+	badge.set_physics_process(false)
+	await wait_process_frames(1)
+	badge.stun()
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(badge), "Aturdido sigue ahi (escalon, y el laser lo remata): su ayuda no miente")
+	assert_eq(_help.get_target(), badge)
+
+
+## Banner (1-2): nunca se destruye; en reposo, avisando o barriendo ayuda igual.
+func test_banner_helps_in_every_phase() -> void:
+	var banner := BANNER_SCENE.instantiate() as SpamBanner
+	_place(banner, &"spam_banner")
+	banner.set_physics_process(false)
+	await wait_process_frames(1)
+	for state: StringName in [SpamBanner.STATE_REST, SpamBanner.STATE_WARN, SpamBanner.STATE_SWEEP]:
+		for i: int in 400:
+			if banner.get_state() == state:
+				break
+			banner.step(STEP)
+		assert_eq(banner.get_state(), state)
+		_run(STEP * 2.0)
+		assert_true(HelpCatalog.is_help_live(banner), "Banner en %s: ayuda" % state)
+		assert_eq(_help.get_target(), banner, "Banner en %s: candidato" % state)
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
-		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip"]
+		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
+		&"notification_badge", &"spam_banner"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)

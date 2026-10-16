@@ -211,6 +211,26 @@
 			"order": 18,
 			"center_px": [32, 32],
 			"prompt_px": [32, -6]
+		},
+		"notification_badge": {
+			"category": "enemy",
+			"title": "Punto rojo",
+			"text": "Un aviso sin leer. Te sigue, despacio, y antes de lanzarse se infla: muévete. Un pulso lo deja en pausa; en pausa sirve de escalón y el láser lo cierra. Despierto, el láser ni lo nota.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 19,
+			"center_px": [0, -32],
+			"prompt_px": [0, -66]
+		},
+		"spam_banner": {
+			"category": "enemy",
+			"title": "Banner",
+			"text": "Publicidad que cruza el pasillo cada pocos segundos. Cuando su ranura parpadee en rojo, salta o apártate. No se cierra: ni el láser ni el pulso le hacen nada.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 20,
+			"center_px": [0, -32],
+			"prompt_px": [0, -70]
 		}
 	}
 }
