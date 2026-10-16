@@ -14,6 +14,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import build_level as bl  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "tests", "support"))
+import tower_level  # noqa: E402
 
 LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-1.json")
 SCENE_PATH = os.path.join(ROOT, "scenes", "levels", "1-1.tscn")
@@ -125,6 +127,30 @@ class BuildLevelTest(unittest.TestCase):
         _, cells = tile_cells(text)
         tilemap = bl.load_json(os.path.join(ROOT, "data", "tileset_mundo1.json"))
         self.assertEqual(list(cells[(41, 9)][1:3]), tilemap["spikes"]["floor"])
+
+
+class VerticalBuildTest(unittest.TestCase):
+    """Niveles verticales (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): el constructor genera
+    la escena con el alto del grid (torre de 28 x 62 del 1-2) y sus limites de camara."""
+
+    def test_tower_scene_has_the_grid_height(self):
+        level = tower_level.make_tower()
+        text = bl.build_scene(level)
+        self.assertEqual(text, bl.build_scene(tower_level.make_tower()), "idempotente")
+        self.assertIn("size_tiles = Vector2i(28, 62)", text)
+        self.assertIn("camera_limits = Rect2i(0, 0, 1792, 3968)", text)
+        self.assertIn('[node name="Level_tower_test" type="Node2D"]', text)
+        _, cells = tile_cells(text)
+        grid = level["grid"]
+        expected = {(c, r) for r, row in enumerate(grid) for c, ch in enumerate(row) if ch in "#-^"}
+        self.assertEqual(set(cells), expected)
+        self.assertEqual(max(r for _, r in cells), 61, "tiles hasta la ultima fila")
+        # Isak en P (pies abajo-centro de la celda 3, 60) y la meta arriba, en la azotea.
+        self.assertIn("position = Vector2(224, 3904)", text)
+        self.assertTrue('groups=["goal"]]\nposition = Vector2(352, 448)' in text, "meta en (5, 6), en la azotea")
+
+    def test_output_path_of_a_test_level(self):
+        self.assertTrue(bl.output_path({"id": "tower_test"}).endswith(os.path.join("scenes", "levels", "tower_test.tscn")))
 
 
 if __name__ == "__main__":

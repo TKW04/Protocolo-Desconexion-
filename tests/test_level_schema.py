@@ -13,6 +13,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level_schema as vls  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "tests", "support"))
+import tower_level  # noqa: E402
 
 LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-1.json")
 SCRIPT = os.path.join(ROOT, "tools", "validate_level_schema.py")
@@ -510,6 +512,101 @@ class LevelSchemaTest(unittest.TestCase):
         result = self._run(broken)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("fila 3, columna 10", result.stdout)
+
+
+class VerticalSchemaTest(unittest.TestCase):
+    """Niveles verticales (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): alto > 14 (la torre
+    del 1-2 tiene 62 filas), tramos con y_from/y_to, camara de torre e id de nivel de prueba."""
+
+    def setUp(self):
+        self.level = tower_level.make_tower()
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_tower_28x62_is_valid(self):
+        self.assertEqual((len(self.level["grid"]), len(self.level["grid"][0])), (62, 28))
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_horizontal_sections_of_1_1_still_need_order(self):
+        level = load_level()
+        self.assertTrue(all("y_from" not in s for s in level["sections"]))
+        self.assertEqual(vls.validate_level(level), [])
+
+    def test_vertical_sections_default_to_full_width(self):
+        self.assertTrue(all("x_from" not in s for s in self.level["sections"]))
+        self.level["sections"][0].update({"x_from": 0, "x_to": 27})
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_side_by_side_sections_in_the_same_floor_are_valid(self):
+        floor = next(s for s in self.level["sections"] if s["name"] == "Piso 1")
+        index = self.level["sections"].index(floor)
+        self.level["sections"][index:index + 1] = [
+            {"name": "Piso 1a", "x_from": 14, "x_to": 27, "y_from": floor["y_from"], "y_to": floor["y_to"]},
+            {"name": "Piso 1b", "x_from": 0, "x_to": 13, "y_from": floor["y_from"], "y_to": floor["y_to"]}]
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_overlapping_floors_fail(self):
+        self.level["sections"][1]["y_to"] += 1  # el piso 4 invade el suelo de la azotea... y al reves
+        self.level["sections"][0]["y_to"] = self.level["sections"][1]["y_from"]
+        self.assert_fails(self.level, "se solapa con sections[")
+
+    def test_overlapping_side_by_side_sections_fail(self):
+        self.level["sections"].append({"name": "Extra", "x_from": 20, "x_to": 27, "y_from": 60, "y_to": 61})
+        self.assert_fails(self.level, "'Extra' se solapa con sections[")
+
+    def test_rows_out_of_range_fail(self):
+        self.level["sections"][-1]["y_to"] = 62
+        self.assert_fails(self.level, "y_from/y_to no validos")
+
+    def test_rows_reversed_fail(self):
+        self.level["sections"][-1].update({"y_from": 61, "y_to": 56})
+        self.assert_fails(self.level, "y_from/y_to no validos")
+
+    def test_y_from_without_y_to_fails(self):
+        del self.level["sections"][-1]["y_to"]
+        self.assert_fails(self.level, "y_from/y_to no validos")
+
+    def test_non_integer_rows_fail(self):
+        self.level["sections"][-1]["y_from"] = 56.0
+        self.assert_fails(self.level, "y_from/y_to no validos")
+
+    def test_patterns_must_be_texts(self):
+        self.level["sections"][1]["patterns"] = ["aturdir_y_rematar", ""]
+        self.assert_fails(self.level, "patterns debe ser una lista de textos")
+
+    def test_camera_modes(self):
+        self.level["camera"]["vertical"] = "simple"
+        self.assertEqual(vls.validate_level(self.level), [])
+        self.level["camera"]["vertical"] = "espiral"
+        self.assert_fails(self.level, "camera.vertical 'espiral' no admitido")
+        self.level["camera"] = {"vertical": "tower", "limits": "libre"}
+        self.assert_fails(self.level, "camera.limits 'libre' no admitido")
+        self.level["camera"] = {"vertical": "tower", "zoom": 2}
+        self.assert_fails(self.level, "camera: campo desconocido 'zoom'")
+
+    def test_test_level_ids(self):
+        self.assertEqual(self.level["id"], "tower_test")
+        self.level["id"] = "torre"
+        self.assert_fails(self.level, "<nombre>_test (nivel de prueba)")
+        self.level["id"] = "1-2"
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_short_grid_still_fails(self):
+        self.level["grid"] = self.level["grid"][-11:]
+        self.assert_fails(self.level, "hacen falta al menos 12")
+
+    def test_committed_tower_test_level_is_valid(self):
+        path = os.path.join(ROOT, "data", "levels", "tower_test.json")
+        if not os.path.exists(path):
+            self.skipTest("sin data/levels/tower_test.json")
+        with open(path, encoding="utf-8") as handle:
+            level = json.load(handle)
+        self.assertEqual(vls.validate_level(level), [])
+        self.assertGreater(len(level["grid"]), 14)
+        self.assertEqual(level["camera"]["vertical"], "tower")
+        self.assertTrue(all("y_from" in s and "y_to" in s for s in level["sections"]))
 
 
 if __name__ == "__main__":

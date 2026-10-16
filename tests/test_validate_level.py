@@ -13,6 +13,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level as vl  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "tests", "support"))
+import tower_level  # noqa: E402
 
 LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-1.json")
 SCRIPT = os.path.join(ROOT, "tools", "validate_level.py")
@@ -447,6 +449,73 @@ class BrokenVariantsTest(unittest.TestCase):
         item = result["extra_lives"][0]
         self.assertFalse(item["behind_glitch_wall"])
         self.assertTrue(item["reachable_without_debug"])
+
+
+class VerticalLevelTest(unittest.TestCase):
+    """Niveles verticales (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): el validador acepta
+    una torre de 28 x 62 (y la de prueba de 28 x 40) sin reglas nuevas (las del laser, el Debug y
+    los temporizadores son el paso 10)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.level = tower_level.make_tower()
+        cls.result = vl.validate(copy.deepcopy(cls.level))
+
+    def test_tower_passes_and_climbs_from_the_lobby_to_the_roof(self):
+        result = self.result
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(result["start"], [3, 60] if isinstance(result["start"], list) else (3, 60))
+        goal = result["path"][-1]
+        self.assertEqual(goal["action"], "goal")
+        self.assertEqual(goal["at"], [6, 5])
+        jumps = [a for a in result["path"] if a["action"] == "jump"]
+        self.assertGreaterEqual(len(jumps), 4 * 5 + 3, "unas 5 subidas por piso y 3 en el vestibulo")
+        self.assertTrue(all(a["rise_px"] <= 128.0 for a in jumps), "subidas de 2 tiles como mucho")
+        self.assertLessEqual(result["margins"]["max_vertical"], vl.DEFAULT_LIMIT)
+
+    def test_path_names_the_floor_of_each_step(self):
+        texts = [a["text"] for a in self.result["path"] if a["action"] != "goal"]
+        for name in ("Vestíbulo", "Piso 1", "Piso 2", "Piso 3", "Piso 4", "Azotea"):
+            self.assertTrue(any("[%s]" % name in t for t in texts), name)
+
+    def test_section_name_uses_rows(self):
+        model = vl.LevelModel(self.level, vl.Rules())
+        self.assertTrue(model.is_vertical())
+        self.assertEqual(model.section_name(5, 60), "Vestíbulo")
+        self.assertEqual(model.section_name(5, 50), "Piso 1")
+        self.assertEqual(model.section_name(5, 2), "Azotea")
+        self.assertEqual(model.section_name(5), "Azotea", "sin fila: el primer tramo de esa columna")
+
+    def test_missing_step_says_where_isak_stops_climbing(self):
+        level = copy.deepcopy(self.level)
+        row = 51  # repisa (13-17) del piso 1: sin ella no se sube de la fila 52
+        level["grid"][row] = level["grid"][row].replace("-", ".")
+        result = vl.validate(level, check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Isak no sube de la fila 52" in m and "Piso 1" in m for m in messages(result)),
+                        messages(result))
+
+    def test_one_way_holes_never_drop_isak_more_than_a_floor(self):
+        """Sin soft-locks: desde cualquier repisa se vuelve a subir (las caidas acaban en el
+        suelo del piso o en una repisa)."""
+        self.assertFalse(any("soft-lock" in m for m in messages(self.result) + messages(self.result, "warnings")))
+
+    def test_committed_tower_test_level_passes(self):
+        path = os.path.join(ROOT, "data", "levels", "tower_test.json")
+        if not os.path.exists(path):
+            self.skipTest("sin data/levels/tower_test.json")
+        result = vl.validate(vl.load_json(path))
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(result["exit_terminals"][0]["id"], "terminal_torre")
+        self.assertIsNotNone(result["exit_terminals"][0]["pulse_from"])
+
+    def test_horizontal_1_1_failure_message_is_unchanged(self):
+        level = base_level()
+        fill(level, [64], range(0, 10), "#")
+        result = vl.validate(level, check_schema=False)
+        self.assertTrue(any("Isak no pasa de la fila" in m for m in messages(result)), messages(result))
 
 
 if __name__ == "__main__":

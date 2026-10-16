@@ -3,6 +3,9 @@
 mundo, simbolos para objetos, enemigos, checkpoints, secretos y puntos de atencion,
 techos colgados (cara de abajo resaltada y alto del hueco hasta el suelo),
 bandas de los tramos (`sections`) con su ancho en tiles y una regla cada 10 tiles.
+En un nivel vertical (tramos con y_from/y_to, p. ej. la torre del 1-2; 2026-10-16) los
+tramos se dibujan como bandas a la derecha con sus filas, hay una regla vertical cada 10
+filas a la izquierda y la leyenda se parte en varias lineas.
 
 Cada tile de 64 px se dibuja a 16 px (escala 1/4) para que el nivel entero quepa en una
 imagen. Es una herramienta de revision, no un asset del juego.
@@ -22,6 +25,10 @@ CELL = 16
 TOP = 64
 BOTTOM = 112
 SIDE = 16
+# Nivel vertical: margen izquierdo (regla de filas) y derecho (bandas de los tramos).
+VERTICAL_LEFT = 40
+VERTICAL_RIGHT = 260
+MIN_WIDTH = 900
 
 
 def load_palette(path):
@@ -51,24 +58,33 @@ def font(size):
         return ImageFont.load_default()
 
 
+def is_vertical(level):
+    return any("y_from" in sec or "y_to" in sec for sec in level.get("sections", []))
+
+
 def render(level, palette):
     grid = level["grid"]
     rows, cols = len(grid), len(grid[0])
-    width = cols * CELL + 2 * SIDE
-    height = TOP + rows * CELL + BOTTOM
+    vertical = is_vertical(level)
+    left = VERTICAL_LEFT if vertical else SIDE
+    right = VERTICAL_RIGHT if vertical else SIDE
+    width = cols * CELL + left + right
+    if vertical:
+        width = max(width, MIN_WIDTH)
+    height = TOP + rows * CELL + BOTTOM + (48 if vertical else 0)
     img = Image.new("RGB", (width, height), palette["noche_profunda"])
     d = ImageDraw.Draw(img)
     small, normal = font(10), font(12)
 
     def box(x, y, w=1, h=1):
-        x0, y0 = SIDE + x * CELL, TOP + y * CELL
+        x0, y0 = left + x * CELL, TOP + y * CELL
         return (x0, y0, x0 + w * CELL - 1, y0 + h * CELL - 1)
 
     def solid(x, y):
         return not (0 <= x < cols and 0 <= y < rows) or grid[y][x] == "#"
 
     # Fondo de la zona de juego.
-    d.rectangle((SIDE, TOP, SIDE + cols * CELL - 1, TOP + rows * CELL - 1), fill=palette["cielo"])
+    d.rectangle((left, TOP, left + cols * CELL - 1, TOP + rows * CELL - 1), fill=palette["cielo"])
 
     # Tiles de la leyenda base.
     for y, row in enumerate(grid):
@@ -214,34 +230,60 @@ def render(level, palette):
         x0, y0, x1, y1 = box(secret["x"], secret["y"])
         label(x0 - 2, y0 - 8, "secreto", palette["carmin_brillo"], anchor="rm")
 
-    # Bandas de tramos (arriba) con su ancho en tiles.
+    # Bandas de tramos: arriba con su ancho en tiles (horizontales) o a la derecha con sus
+    # filas (verticales, tramos con y_from/y_to).
     band_colors = [palette["fondo_medio"], palette["tile_luz"]]
     for i, sec in enumerate(level.get("sections", [])):
-        x0 = SIDE + sec["x_from"] * CELL
-        x1 = SIDE + (sec["x_to"] + 1) * CELL - 1
+        sx0, sx1 = sec.get("x_from", 0), sec.get("x_to", cols - 1)
+        if vertical:
+            sy0, sy1 = sec.get("y_from", 0), sec.get("y_to", rows - 1)
+            bx0 = left + cols * CELL + 8
+            by0, by1 = TOP + sy0 * CELL, TOP + (sy1 + 1) * CELL - 1
+            d.rectangle((bx0, by0, bx0 + 10, by1), fill=band_colors[i % 2])
+            label(bx0 + 18, (by0 + by1) // 2 - 8, sec["name"], palette["banner_blanco"], normal, anchor="lm")
+            extra = "" if (sx0, sx1) == (0, cols - 1) else ", x %d-%d" % (sx0, sx1)
+            label(bx0 + 18, (by0 + by1) // 2 + 8, "%d tiles de alto (filas %d-%d%s)" % (sy1 - sy0 + 1, sy0, sy1, extra),
+                  palette["borde_luz"], anchor="lm")
+            for yy in (by0, by1):
+                for xx in range(left + sx0 * CELL, left + (sx1 + 1) * CELL, 6):
+                    d.line((xx, yy, xx + 2, yy), fill=palette["banner_gris"])
+            continue
+        x0 = left + sx0 * CELL
+        x1 = left + (sx1 + 1) * CELL - 1
         d.rectangle((x0, 8, x1, TOP - 14), fill=band_colors[i % 2])
-        n = sec["x_to"] - sec["x_from"] + 1
+        n = sx1 - sx0 + 1
         label((x0 + x1) // 2, 18, sec["name"], palette["banner_blanco"], normal)
-        label((x0 + x1) // 2, 34, "%d tiles  (x %d-%d)" % (n, sec["x_from"], sec["x_to"]), palette["borde_luz"])
+        label((x0 + x1) // 2, 34, "%d tiles  (x %d-%d)" % (n, sx0, sx1), palette["borde_luz"])
         for xx in (x0, x1):
             for yy in range(TOP - 14, TOP + rows * CELL, 6):
                 d.line((xx, yy, xx, yy + 2), fill=palette["banner_gris"])
 
-    # Regla cada 10 tiles y distancias.
+    # Regla cada 10 tiles y distancias (y en vertical, otra cada 10 filas a la izquierda).
     ry = TOP + rows * CELL + 6
     for x in range(0, cols + 1):
-        px = SIDE + x * CELL
+        px = left + x * CELL
         if x % 10 == 0:
             d.line((px, ry, px, ry + 8), fill=palette["banner_gris"])
             label(px, ry + 16, str(x), palette["banner_gris"])
         elif x % 5 == 0:
             d.line((px, ry, px, ry + 4), fill=palette["tile_luz"])
+    if vertical:
+        for y in range(0, rows + 1):
+            py = TOP + y * CELL
+            if y % 10 == 0:
+                d.line((left - 10, py, left - 2, py), fill=palette["banner_gris"])
+                label(left - 14, py, str(y), palette["banner_gris"], anchor="rm")
+            elif y % 5 == 0:
+                d.line((left - 6, py, left - 2, py), fill=palette["tile_luz"])
     walk = 220.0
     px_total = cols * tile
     summary = ("%s %s  |  %dx%d tiles (%d x %d px)  |  1 tile = 64 px dibujado a %d px  |  "
                "recorrido sin paradas: %.0f s caminando a %.0f px/s"
                % (level["id"], level["name"], cols, rows, px_total, rows * tile, CELL,
                   px_total / walk, walk))
+    if vertical:
+        summary = ("%s %s  |  %dx%d tiles (%d x %d px)  |  1 tile = 64 px dibujado a %d px  |  nivel vertical"
+                   % (level["id"], level["name"], cols, rows, px_total, rows * tile, CELL))
     label(SIDE, ry + 36, summary, palette["banner_blanco"], normal, anchor="lm")
 
     # Leyenda.
@@ -255,6 +297,8 @@ def render(level, palette):
              ("T", "techo colgado (cara de abajo)", palette["borde_luz"])]
     lx = SIDE
     for _, text, color in items:
+        if lx + 24 + d.textlength(text, font=small) > width - SIDE:
+            lx, ly = SIDE, ly + 20
         d.rectangle((lx, ly - 5, lx + 10, ly + 5), fill=color)
         d.text((lx + 16, ly), text, fill=palette["banner_gris"], font=small, anchor="lm")
         lx += 24 + int(d.textlength(text, font=small)) + 14

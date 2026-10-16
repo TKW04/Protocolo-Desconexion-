@@ -409,11 +409,20 @@ class LevelModel:
     def gate(self, gid):
         return next(g for g in self.gates if g.gid == gid)
 
-    def section_name(self, col):
+    def section_name(self, col, row=None):
+        """Tramo que contiene la celda: x_from/x_to e y_from/y_to (niveles verticales,
+        2026-10-16) con todo el ancho / todo el alto por defecto; sin fila, solo la columna."""
         for s in self.sections:
-            if s.get("x_from", 0) <= col <= s.get("x_to", -1):
+            if not s.get("x_from", 0) <= col <= s.get("x_to", self.cols - 1):
+                continue
+            if row is None or s.get("y_from", 0) <= row <= s.get("y_to", self.rows - 1):
                 return s.get("name", "")
         return ""
+
+    def is_vertical(self):
+        """Nivel vertical (torre): camara de torre o tramos con y_from/y_to."""
+        return self.level.get("camera", {}).get("vertical") == "tower" or any(
+            "y_from" in s or "y_to" in s for s in self.sections)
 
     # Mundo en un estado (puertas abiertas + Debug).
     def world(self, state, debug=False):
@@ -1085,7 +1094,11 @@ class Validator:
             return
         last = lenient["stages"][-1]
         reached = last["cost"]
-        far = max(reached, key=lambda n: (n[0], -n[1]))
+        # Lo mas lejos que llega Isak: a la derecha en un nivel horizontal; arriba en una torre.
+        if self.model.is_vertical():
+            far = min(reached, key=lambda n: (n[1], -n[0]))
+        else:
+            far = max(reached, key=lambda n: (n[0], -n[1]))
         state = last["state"]
         pending = [g for g in self.model.gates if g.gid not in state and not g.bypassable and g.kind != "pickup"]
         for g in pending:
@@ -1103,10 +1116,14 @@ class Validator:
             elif g.col_span[0] <= far[0] + self.model.K + 4:
                 rep.error("%s: el pulso no alcanza %s desde ninguna celda alcanzable antes de el"
                           % (g.label(), " ni ".join(o[4] for o in g.openers)), g.row, g.col, g.label())
-        nxt = far[0] + 1
-        rep.error("no hay camino de P a G: Isak no pasa de la fila %d, columna %d (%s); lo siguiente es la "
-                  "columna %d" % (far[1], far[0], self.model.section_name(far[0]) or "sin tramo", nxt),
-                  far[1], far[0])
+        where = self.model.section_name(far[0], far[1]) or "sin tramo"
+        if self.model.is_vertical():
+            rep.error("no hay camino de P a G: Isak no sube de la fila %d (columna %d, %s); lo siguiente es la "
+                      "fila %d" % (far[1], far[0], where, far[1] - 1), far[1], far[0])
+        else:
+            nxt = far[0] + 1
+            rep.error("no hay camino de P a G: Isak no pasa de la fila %d, columna %d (%s); lo siguiente es la "
+                      "columna %d" % (far[1], far[0], where, nxt), far[1], far[0])
 
     def _describe_path(self, run):
         actions = []
@@ -1168,7 +1185,7 @@ class Validator:
     def _walk_action(self, a, b):
         return {"action": "walk", "from": [a[1], a[0]], "to": [b[1], b[0]],
                 "text": "andar de (fila %d, columna %d) a (fila %d, columna %d)%s"
-                        % (a[1], a[0], b[1], b[0], self._section_suffix(b[0]))}
+                        % (a[1], a[0], b[1], b[0], self._section_suffix(b[0], b[1]))}
 
     def _move_action(self, prev, e):
         to = e["to"]
@@ -1178,13 +1195,13 @@ class Validator:
                "-> %.0f %% horizontal, %.0f %% vertical%s" % (
                    names[e["kind"]], prev[1], prev[0], to[1], to[0], e["travel"],
                    "sube" if rise >= 0 else "baja", abs(rise), e["h"] * 100, e["v"] * 100,
-                   self._section_suffix(to[0]))
+                   self._section_suffix(to[0], to[1]))
         return {"action": e["kind"], "from": [prev[1], prev[0]], "to": [to[1], to[0]],
                 "travel_px": round(e["travel"], 1), "rise_px": round(rise, 1),
                 "h": round(e["h"], 4), "v": round(e["v"], 4), "text": text}
 
-    def _section_suffix(self, col):
-        name = self.model.section_name(col)
+    def _section_suffix(self, col, row=None):
+        name = self.model.section_name(col, row)
         return " [%s]" % name if name else ""
 
     def _stage_of(self, run, node):

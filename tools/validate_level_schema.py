@@ -24,6 +24,16 @@ Reglas:
     receptores apuntando a un puente existente; la puerta de salida contiene la G;
   - ids unicos (checkpoints, enemigos, secretos y params.id de los objetos);
   - sin pinchos en P ni en C ni en las 8 celdas vecinas de una C;
+  - tramos (sections, opcional): {name, x_from, x_to, y_from, y_to, patterns}; x e y
+    son opcionales (por defecto todo el ancho / todo el alto; y_from e y_to van juntos)
+    y dentro del grid; los rectangulos no se solapan; sin y (niveles horizontales, como
+    el 1-1) van ademas de izquierda a derecha; patterns es una lista de textos
+    (lenguaje de combinaciones de docs/propuesta-1-2.md §0). Niveles verticales
+    (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): el grid admite cualquier alto
+    (minimo ceil(720 / tile_size) filas; la torre del 1-2 tiene 62);
+  - camara (camera, opcional): {vertical: "simple" | "tower", limits: "grid"};
+  - id: <mundo>-<nivel> o, para un nivel de prueba que no es del juego, <nombre>_test
+    (p. ej. tower_test; su escena es scenes/levels/<nombre>_test.tscn);
   - ayuda de Eco con Q: todo help_id (del tipo en el catalogo, del enemigo en
     data/enemies/<type>.json o propio de un objeto, enemigo o checkpoint del
     nivel; "" = sin Q) existe en data/help.json.
@@ -55,6 +65,12 @@ REQUIRED_FIELDS = {
     "unlocks": list,
 }
 KNOWN_ABILITIES = {"pulse", "debug", "laser"}
+# Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);
+# tower = camara de torre (scripts/player/tower_camera.gd, data/camera_tower.json).
+CAMERA_VERTICAL_MODES = ("simple", "tower")
+CAMERA_LIMITS = ("grid",)
+# Nivel de prueba (no es del juego, no se enlaza desde el hub): <nombre>_test.
+TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
@@ -122,6 +138,7 @@ class LevelValidator:
         self._check_spikes()
         self._check_unlocks()
         self._check_sections()
+        self._check_camera()
         self._check_help()
         return self.errors
 
@@ -166,8 +183,10 @@ class LevelValidator:
                 self.error("'%s' debe ser de tipo %s" % (key, kind.__name__))
         if self.errors:
             return
-        if not re.fullmatch(r"\d+-\d+", self.level["id"]):
-            self.error("'id' debe tener la forma <mundo>-<nivel> (p. ej. 1-1)")
+        if TEST_LEVEL_ID.fullmatch(self.level["id"]):
+            pass  # nivel de prueba: el mundo sale de 'world'
+        elif not re.fullmatch(r"\d+-\d+", self.level["id"]):
+            self.error("'id' debe tener la forma <mundo>-<nivel> (p. ej. 1-1) o <nombre>_test (nivel de prueba)")
         elif int(self.level["id"].split("-")[0]) != self.level["world"]:
             self.error("'id' (%s) no coincide con 'world' (%d)" % (self.level["id"], self.level["world"]))
         physics = self._load_json("data/isak_physics.json")
@@ -469,23 +488,73 @@ class LevelValidator:
 
 
     def _check_sections(self):
-        """'sections' (opcional): tramos del documento en orden, [x_from, x_to] sin solaparse."""
+        """'sections' (opcional): tramos del documento en orden. Cada tramo es un rectangulo
+        de celdas: x_from/x_to (por defecto todo el ancho) e y_from/y_to (por defecto todo el
+        alto; van juntos). No se solapan. Sin y en ningun tramo (nivel horizontal, 1-1) van
+        ademas de izquierda a derecha. `patterns` (opcional): lista de nombres de patrones."""
         sections = self.level.get("sections", [])
         if not isinstance(sections, list):
             self.error("'sections' debe ser una lista")
             return
+        horizontal = all(isinstance(e, dict) and "y_from" not in e and "y_to" not in e for e in sections)
         previous_end = -1
+        rects = []
         for i, entry in enumerate(sections):
             if not isinstance(entry, dict) or not isinstance(entry.get("name"), str):
-                self.error("sections[%d] debe ser {name, x_from, x_to}" % i)
+                self.error("sections[%d] debe ser {name, x_from, x_to[, y_from, y_to]}" % i)
                 continue
-            x0, x1 = entry.get("x_from"), entry.get("x_to")
-            if not (_is_int(x0) and _is_int(x1)) or not (0 <= x0 <= x1 < self.width):
-                self.error("sections[%d] '%s': x_from/x_to no validos" % (i, entry["name"]))
+            name = entry["name"]
+            rect = self._section_rect(i, entry)
+            if rect is None:
                 continue
-            if x0 <= previous_end:
-                self.error("sections[%d] '%s' se solapa o va antes que la anterior" % (i, entry["name"]))
-            previous_end = x1
+            x0, x1, y0, y1 = rect
+            patterns = entry.get("patterns", [])
+            if not isinstance(patterns, list) or not all(isinstance(p, str) and p.strip() for p in patterns):
+                self.error("sections[%d] '%s': patterns debe ser una lista de textos no vacios" % (i, name))
+            if horizontal:
+                if x0 <= previous_end:
+                    self.error("sections[%d] '%s' se solapa o va antes que la anterior" % (i, name))
+                previous_end = x1
+                continue
+            for j, (other, ox0, ox1, oy0, oy1) in enumerate(rects):
+                if x0 <= ox1 and ox0 <= x1 and y0 <= oy1 and oy0 <= y1:
+                    self.error("sections[%d] '%s' se solapa con sections[%d] '%s' (columnas %d-%d, filas %d-%d)"
+                               % (i, name, j, other, max(x0, ox0), min(x1, ox1), max(y0, oy0), min(y1, oy1)))
+            rects.append((name, x0, x1, y0, y1))
+
+    def _section_rect(self, i, entry):
+        """(x_from, x_to, y_from, y_to) del tramo con los valores por defecto, o None si no es valido."""
+        name = entry["name"]
+        has_x = "x_from" in entry or "x_to" in entry
+        has_y = "y_from" in entry or "y_to" in entry
+        x0, x1 = entry.get("x_from", 0 if not has_x else None), entry.get("x_to", self.width - 1 if not has_x else None)
+        y0, y1 = entry.get("y_from", 0 if not has_y else None), entry.get("y_to", self.height - 1 if not has_y else None)
+        if not (_is_int(x0) and _is_int(x1)) or not (0 <= x0 <= x1 < self.width):
+            self.error("sections[%d] '%s': x_from/x_to no validos (columnas 0-%d, x_from <= x_to)"
+                       % (i, name, self.width - 1))
+            return None
+        if not (_is_int(y0) and _is_int(y1)) or not (0 <= y0 <= y1 < self.height):
+            self.error("sections[%d] '%s': y_from/y_to no validos (filas 0-%d, y_from <= y_to, los dos juntos)"
+                       % (i, name, self.height - 1))
+            return None
+        return (x0, x1, y0, y1)
+
+    def _check_camera(self):
+        """'camera' (opcional): {vertical: simple | tower, limits: grid}."""
+        if "camera" not in self.level:
+            return
+        camera = self.level["camera"]
+        if not isinstance(camera, dict):
+            self.error("'camera' debe ser un objeto {vertical, limits}")
+            return
+        for key in camera:
+            if key not in ("vertical", "limits"):
+                self.error("camera: campo desconocido '%s'" % key)
+        if camera.get("vertical", "simple") not in CAMERA_VERTICAL_MODES:
+            self.error("camera.vertical '%s' no admitido (validos: %s)"
+                       % (camera.get("vertical"), ", ".join(CAMERA_VERTICAL_MODES)))
+        if camera.get("limits", "grid") not in CAMERA_LIMITS:
+            self.error("camera.limits '%s' no admitido (validos: %s)" % (camera.get("limits"), ", ".join(CAMERA_LIMITS)))
 
 
 def validate_level(level, root=ROOT):
