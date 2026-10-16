@@ -859,7 +859,7 @@ Reglas nuevas (decisiones del usuario al informar de los fallos):
 
 ## Propuesta del 1-2 «Centro de notificaciones» (2026-10-16)
 
-Diseño completo en `docs/propuesta-1-2.md` (pendiente de revisión; solo documentación).
+Diseño completo en `docs/propuesta-1-2.md`. **APROBADA el 2026-10-16** con todas sus recomendaciones (ver «Aprobación del 1-2», abajo); pasos 1 y 2 de su §10 (esquema vertical, constructor, cámara de torre y fondo vertical) implementados el 2026-10-16.
 
 **Decisiones del usuario (2026-10-16):**
 
@@ -869,9 +869,9 @@ Diseño completo en `docs/propuesta-1-2.md` (pendiente de revisión; solo docume
 - Los **recordatorios** tienen un botón **«Posponer»**: el láser lo golpea a distancia para alargar el temporizador mientras el pulso resuelve otra cosa cerca.
 - Elementos nuevos de §6.2 en el 1-2: punto rojo, banner, recordatorio y pop-up translúcido; cada uno con ayuda Q, ficha del álbum, arte por script (sin AutoSprite salvo permiso), datos JSON y validación.
 
-**Desvíos y precisiones de la propuesta (necesitan aprobación):** el punto rojo despierto no recibe daño del láser; objetos nuevos del láser (lector, receptor enlazado con ventana, anuncio sobre un pop-up); el chip del Debug llena la energía; mapa de 28 × 62 tiles; puntos de sincronización al entrar a los pisos 2 y 4; dos cargadores (el del acertijo con 10 s de enfriamiento); 9 puntos de atención (6 + 3) y un power bank vacío en el secreto C; **sin vida extra en el 1-2** (N = 3: la siguiente iría en el 2-1, ajustable); el secreto D del 1-1 ya se puede abrir con el Debug, sin línea automática de Eco. El validador debe aceptar niveles donde el láser y el Debug son obligatorios (hoy exige la meta sin láser y un camino sin Debug).
+**Desvíos y precisiones de la propuesta (aprobados el 2026-10-16):** el punto rojo despierto no recibe daño del láser; objetos nuevos del láser (lector, receptor enlazado con ventana, anuncio sobre un pop-up); el chip del Debug llena la energía; mapa de 28 × 62 tiles; puntos de sincronización al entrar a los pisos 2 y 4; dos cargadores (el del acertijo con 10 s de enfriamiento); 9 puntos de atención (6 + 3) y un power bank vacío en el secreto C; **sin vida extra en el 1-2** (N = 3: la siguiente iría en el 2-1, ajustable); el secreto D del 1-1 ya se puede abrir con el Debug, sin línea automática de Eco. El validador debe aceptar niveles donde el láser y el Debug son obligatorios (hoy exige la meta sin láser y un camino sin Debug).
 
-**Dudas abiertas** (detalle y recomendación en `propuesta-1-2.md` §11):
+**Dudas** (detalle en `propuesta-1-2.md` §11; **resueltas el 2026-10-16**: todas con su recomendación, ver «Aprobación del 1-2»):
 
 1. ¿Temporizadores en tiempo del mundo (el Debug los ralentiza)? *Recomendación:* sí.
 2. ¿Punto rojo despierto inmune al láser? *Recomendación:* sí.
@@ -883,6 +883,17 @@ Diseño completo en `docs/propuesta-1-2.md` (pendiente de revisión; solo docume
 8. ¿Puntos de sincronización al entrar a los pisos 2 y 4? *Recomendación:* sí.
 9. ¿Espera del piso 4 de 20 s con tres oleadas? *Recomendación:* sí, 15 s si aburre.
 10. ¿Recordar el secreto D del 1-1? *Recomendación:* sin línea automática; basta la Q y la ficha.
+
+**Aprobación del 1-2 (2026-10-16, decisiones del usuario):**
+
+- **Calc: opción A.** Apagada en la azotea junto a la terminal (arte `powered_off`, Q `calc_off`); el pulso la enciende y se va con Isak. Textos de Calc: por decidir.
+- **Recuerdos:** pestaña «Recuerdos» en el álbum de Notas (`memories` en el guardado), sin efecto en el juego. **Contenido: correos y mensajes de texto recibidos de familiares y amigos** (el Mundo 1 es el de las notificaciones). El texto de cada recuerdo es historia: **por decidir**.
+- **El punto rojo despierto es inmune al láser**: hay que aturdirlo con el pulso antes de rematarlo.
+- **Temporizadores en tiempo del mundo**: el Debug los ralentiza.
+- **El chip del Debug llena la energía** al recogerlo.
+- Se confirman el acertijo «Correo certificado» del piso 2 (pulso + láser), la dificultad 2 de 5 «un poco más», **sin vida extra en el 1-2** y las recomendaciones de las preguntas 6-10 (power bank vacío en el secreto C, 28 tiles de ancho, puntos de sincronización en los pisos 2 y 4, espera de 20 s, sin línea automática para el secreto D).
+- **Hecho (pasos 1 y 2 de §10):** esquema y constructor verticales (tramos con `y_from`/`y_to`, `camera.vertical: "tower"`, `patterns`), cámara de torre (`data/camera_tower.json`: ancla al suelo, zona muerta, encaje en el piso, sin seguir cada salto), fondo con desplazamiento en Y (mismas capas, sin arte nuevo; se ve la costura al repetirse en vertical) y nivel de prueba `tower_test` (28 × 40). El 1-1 y su cámara no cambian.
+- **Pendiente:** pasos 3-15 (objetos del láser, punto rojo, banner, recordatorios, pop-up translúcido, barra de actualización, obtención del Debug, validador del láser / Debug / temporizadores, arte, ayudas, datos del 1-2, recuerdos y Calc, bot vertical).
 
 ## Propuesta del sistema de mejoras de Calc (2026-10-16)
 

@@ -1,8 +1,18 @@
 # Propuesta: nivel 1-2 «Centro de notificaciones» y lenguaje de combinaciones
 
-**Estado:** PROPUESTA (2026-10-16), pendiente de revisión del usuario. Solo documentación: no cambia código, datos, escenas, arte ni pruebas. Sustituye lo que contradiga de `mundo-1-notificaciones.md` §6.4 (las marcas están allí). Los valores son orientativos y se ajustan jugando y con el validador. Los textos de Eco son **propuestas**. Lo no decidido va como pregunta (§11).
+**Estado:** **APROBADA 2026-10-16** por el usuario con todas las recomendaciones de §11 (detalle en «Decisiones aprobadas», abajo). En implementación: pasos 1 y 2 del plan (§10) hechos el 2026-10-16; el resto, pendiente. Sustituye lo que contradiga de `mundo-1-notificaciones.md` §6.4 (las marcas están allí). Los valores son orientativos y se ajustan jugando y con el validador. Los textos de Eco y de Calc son **propuestas** hasta que el usuario los decida.
 
 **Decisiones del usuario (2026-10-16) que respeta:** torre vertical de 4 pisos (Mensajes, Correo, Recordatorios, Actualizaciones); dificultad 2 de 5 «subida un poco» (más combinación y gestión de energía, no más castigo); unos 5 min; pulso y láser se combinan para avanzar; el **Debug se obtiene en el piso 2** resolviendo un acertijo de pulso + láser y es obligatorio para seguir en ese piso; **Calc al final del 1-2**, tras el Debug; recordatorios con botón **«Posponer»**; elementos nuevos de §6.2 (punto rojo, banner, recordatorio, pop-up translúcido).
+
+**Decisiones aprobadas (2026-10-16), con sus respuestas:**
+
+1. **Encuentro con Calc: opción A** (§8): Calc está apagada en la azotea, junto a la terminal, con el arte `powered_off` del hub; su Q usa `calc_off`; **el pulso la enciende** (líneas importantes de Calc, `meet_ally("calc")`) y se va con Isak por el vórtice. Los textos de Calc los decide el usuario.
+2. **Recuerdo coleccionable** (secreto A): pestaña **«Recuerdos»** en el álbum de Notas (carpeta del Mundo 1), guardada en `memories`, **sin efecto en el juego** (V16). **Contenido: correos y mensajes de texto recibidos de familiares y amigos** (el Mundo 1 es el de las notificaciones). Qué dice cada uno es historia y queda **por decidir** con el usuario.
+3. **El punto rojo despierto es inmune al láser** (chispa gris): hay que aturdirlo con el pulso antes de rematarlo (patrón 1).
+4. **Los temporizadores van en tiempo del mundo** (recordatorios, ventana del cable, espera del 99 %): el Debug los ralentiza a la mitad.
+5. **Recoger el chip del Debug llena la energía** (`refill_energy`, solo ese chip y la primera vez).
+
+Se confirman además: acertijo **«Correo certificado»** del piso 2 combinando pulso y láser (§4); dificultad **2 de 5 «un poco más»** (§9); **sin vida extra en el 1-2** (§5); y las recomendaciones de las preguntas 6-10 de §11 (power bank vacío en el secreto C, ancho de 28 tiles, puntos de sincronización al entrar a los pisos 2 y 4, espera de 20 s con tres oleadas, sin línea automática para el secreto D del 1-1).
 
 **Física de referencia** (`isak_physics.json`, `isak_abilities.json`, `debug_mode.json`): 220 px/s caminando (3,4 tiles/s), 360 corriendo; salto efectivo 177 px (2,8 tiles; con el 85 % del validador, subidas de **2 tiles**); salto horizontal corriendo unos 3,2 tiles. Pulso: radio 96 px desde el celular, sin coste, solo en el suelo, pose 0,33 s sin moverse. Láser: 10 de energía (máx. 100), daño 1, enfriamiento 0,4 s, 768 px (12 tiles), **solo horizontal** a la altura del celular (56 px sobre los pies), solo en el suelo, pose 0,30 s sin moverse. Debug: activar = mantener 1,0 s, gasta 20/s en tiempo real (5 s con la barra llena), exige energía > 0, el mundo va a ×0,5 y las plataformas `h` solo son visibles **y sólidas** con el Debug activo.
 
@@ -94,6 +104,8 @@ Ideas para añadir el Debug a las combinaciones a partir del 1-3 y los mundos si
 ### 2.2 Cámara con scroll vertical
 
 Hoy la `Camera2D` de Isak sigue en los dos ejes con suavizado (`position_smoothing_speed` 8) y límites = tamaño del grid (`build_level.py` → `camera_limits`). Funciona en una torre, pero **cada salto mueve la cámara**, que en un nivel vertical marea. Propuesta: `camera.vertical: "tower"` en el JSON del nivel con márgenes de arrastre vertical (`drag_vertical_enabled`, zona muerta del 25 % arriba y 15 % abajo), anticipación hacia arriba al subir por un hueco y ajuste al aterrizar en un suelo nuevo (lo que A13 proponía para el eje horizontal). El fondo de parallax (`world1_background.json`) está fijo en Y (`scroll_scale` 0): sirve, pero conviene una capa de «fachada de la torre» que se repita en vertical para notar que se sube (§10, paso 2).
+
+**Implementado (2026-10-16, pasos 1 y 2):** `camera.vertical: "tower"` en el JSON del nivel; `tools/build_level.py` pone en Isak `camera_mode = &"tower"` y `camera_bands` (las bandas de los tramos con `y_from`/`y_to`, en px) y en el fondo `vertical = true`. La cámara (`TowerCamera`, `scripts/player/tower_camera.gd`; parámetros en `data/camera_tower.json`) es tipo plataforma-torre: se **ancla al último suelo** que pisó Isak (en el aire el ancla no cambia, así que **saltar no mueve la cámara**) y solo se desliza, suavizada y con tope de velocidad, al aterrizar a otra altura; mira 96 px por encima de Isak (anticipación al subir); dentro de un piso se **encaja en su banda** (si el piso cabe en pantalla queda centrado e inmóvil); Isak de pie nunca queda fuera de una zona de reposo y, en el aire, una **zona muerta** (borde duro) lo mantiene en pantalla al caer o al subir por un hueco. Límites desde el grid; el eje horizontal sigue a Isak como en el 1-1. El 1-1 (`camera.vertical: "simple"`) **no cambia** (Camera2D hija con suavizado 8; prueba de regresión). El fondo en modo vertical usa las mismas capas con desplazamiento y repetición en Y (bloque `tower` de `data/world1_background.json`); la repetición deja ver la costura de las imágenes (pensadas fijas en Y): la fachada de la torre sin costura llega con el arte (paso 11). Nivel de prueba: `data/levels/tower_test.json` (28 × 40, tres pisos en zigzag; escena `scenes/levels/tower_test.tscn`, no enlazada desde el hub). El vórtice de llegada (abajo) y la terminal de salida (arriba) funcionan con coordenadas de torre.
 
 ### 2.3 Puntos de sincronización (uno cada dos pisos)
 
@@ -298,8 +310,8 @@ Recomendación: **A**. Los textos de Calc los decide el usuario (solo se propone
 
 | Paso | Qué | Tamaño | Depende de |
 |---|---|---|---|
-| 1 | Esquema y constructor: `sections` con `y_from`/`y_to` (pisos), `camera.vertical: "tower"`, campos `patterns`; probar `build_level.py` con 28 × 62. | S | |
-| 2 | Cámara de torre (zona muerta vertical, anticipación al subir, ajuste al aterrizar) y capa de fondo de la torre con repetición vertical; revisar que Eco compañero, la Q («en pantalla») y la red de caída funcionan en vertical. | M | 1 |
+| 1 | **Hecho (2026-10-16).** Esquema y constructor: `sections` con `y_from`/`y_to` (pisos), `camera.vertical: "tower"`, campos `patterns`; probar `build_level.py` con 28 × 62. | S | |
+| 2 | **Hecho (2026-10-16).** Cámara de torre (zona muerta vertical, anticipación al subir, ajuste al aterrizar) y capa de fondo de la torre con repetición vertical (por ahora las capas existentes, sin arte nuevo); revisar que Eco compañero, la Q («en pantalla») y la red de caída funcionan en vertical (red de caída y vórtices probados en la torre de prueba; Eco y la Q usan la pantalla de la cámara y no suponen altura). | M | 1 |
 | 3 | Objetos del láser: `laser_receiver`, `relay_receiver` (ventana y cable), `ad_cover` sobre `popup_blocker` (grupo `laser_activatable`, ya preparado). | M | |
 | 4 | Enemigo punto rojo (`notification_badge`: persecución con correa por piso, aturdido como plataforma, inmune despierto, vida y drops con `EnemyHealth`). | M | |
 | 5 | Banner (`spam_banner`: barrido periódico con aviso de 9 cuadros). | S | |
@@ -316,6 +328,8 @@ Recomendación: **A**. Los textos de Calc los decide el usuario (solo se propone
 
 Orden: 1 → 2; 3, 4, 5, 7 y 9 en paralelo; 6 y 8 después; 10 cuando existan 3, 6 y 9; 11-12; 13; 14 y 15.
 
+**Hecho en los pasos 1 y 2 (2026-10-16):** `tools/validate_level_schema.py`: grid de cualquier alto (mínimo 12 filas), tramos con `x_from`/`x_to` e `y_from`/`y_to` opcionales (por defecto todo el ancho / todo el alto; `y_from` e `y_to` van juntos) que no se solapan (los horizontales, como los del 1-1, siguen yendo de izquierda a derecha), `patterns` (lista de textos), `camera` (`vertical`: `simple` | `tower`; `limits`: `grid`) e ids `<nombre>_test` para niveles de prueba. `tools/validate_level.py` acepta torres (tramos por fila en los mensajes; en un fallo dice de qué fila no sube Isak) sin reglas nuevas: las del láser, el Debug y los temporizadores son el paso 10. `tools/render_level_map.py` dibuja mapas altos (bandas de los pisos a la derecha y regla de filas). `tools/build_level.py` genera la escena con el alto del grid y, en modo torre, la cámara y el fondo verticales. El bot del 1-1 no cambia y se niega a recorrer un nivel con cámara de torre (paso 15). Pruebas: `tests/test_level_schema.py`, `test_validate_level.py` y `test_build_level.py` (torre sintética de 28 × 62, `tests/support/tower_level.py`), `tests/test_tower_camera.gd` (límites, zona muerta, salto en el sitio, subida por el zigzag sin sacudidas, fondo en Y y regresión del 1-1) y `tests/test_tower_test_level.gd` (vórtice abajo, terminal arriba, red de caída). Capturas: `tools/render_tower_test.gd`.
+
 **Riesgos:**
 
 1. **Validador:** el estado crece (pulso, láser, Debug, puentes, ventanas, grupos con tiempo). Los tiempos no se pueden modelar del todo en un grafo de celdas: se aproximan con estimaciones y avisos, y se confirman con pruebas GUT y el bot. Riesgo de falsos «inalcanzable» con el láser horizontal en un nivel vertical (alturas exactas del celular).
@@ -325,7 +339,9 @@ Orden: 1 → 2; 3, 4, 5, 7 y 9 en paralelo; 6 y 8 después; 10 cuando existan 3,
 5. **Debug a medio cruzar:** se apaga a 0 y la plataforma deja de ser sólida: la caída debe acabar siempre en el suelo del acertijo (validador: regla de caída ≤ 4 tiles).
 6. **Duración:** si el piso 2 se alarga, recortar 2a o el secreto A antes que el acertijo.
 
-## 11. Preguntas abiertas (con recomendación)
+## 11. Preguntas (resueltas el 2026-10-16)
+
+Todas aprobadas con su recomendación (ver «Decisiones aprobadas» al principio). Respuestas del usuario que precisan la recomendación: 4 (Calc, opción A) y 5 (los recuerdos son **correos y mensajes de texto recibidos de familiares y amigos**; su contenido, por decidir).
 
 1. **¿Los temporizadores (recordatorios, ventana del cable, espera del 99 %) van en tiempo del mundo, de modo que el Debug los ralentiza?** *Recomendación:* sí, es coherente con «el tiempo se ralentiza» y abre el patrón futuro «Ralentizar la ventana».
 2. **¿El punto rojo despierto es inmune al láser?** *Recomendación:* sí (chispa gris): obliga al patrón 1. Alternativa: el láser le hace daño pero lo «agita» (se acelera 2 s).
