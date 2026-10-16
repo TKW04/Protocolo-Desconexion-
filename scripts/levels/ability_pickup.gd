@@ -4,7 +4,9 @@
 ## user://save.json (abilities_obtained) y emite EventBus.ability_obtained. El
 ## aviso del control lo da AbilityNotices (data/ability_notices.json, una vez
 ## por partida guardada); solo si el nivel da `message`, el cuadro de Eco
-## muestra ademas ese texto. Si la habilidad ya estaba obtenida no aparece. No es
+## muestra ademas ese texto. Si la habilidad ya estaba obtenida (o desbloqueada)
+## al empezar el nivel no aparece (ni Q, ni aviso, ni la linea de Eco ligada a
+## ella: EcoLine.unless_ability). No es
 ## solido. Aspecto (EnergySprite, docs/estilizacion-energia.md): chip
 ## ability_pickup_idle que flota (tiempo del mundo); al recogerlo pasa a
 ## ability_pickup_collected justo antes de liberarse.
@@ -34,8 +36,16 @@ var _sprite: EnergySprite
 
 func _ready() -> void:
 	_load_config()
-	if GameState.is_ability_obtained(ability):
+	# Objeto de un solo uso (2026-10-16, fallo encontrado jugando el 1-1): con
+	# la habilidad ya obtenida (o desbloqueada) al empezar el nivel no aparece:
+	# sin dibujo, sin colision, sin Q ni aviso; Isak pasa de largo. Tras un
+	# game over sin guardarla (rollback) vuelve a aparecer.
+	if is_already_owned():
 		_taken = true
+		visible = false
+		monitoring = false
+		monitorable = false
+		HelpCatalog.tag(self, &"")
 		queue_free()
 		return
 	var shape := CollisionShape2D.new()
@@ -59,6 +69,11 @@ func _process(delta: float) -> void:
 ## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; recogido (o ya obtenido al empezar el nivel), no.
 func is_help_available() -> bool:
 	return not _taken
+
+
+## La habilidad ya es de Isak (obtenida o desbloqueada): el objeto sobra.
+func is_already_owned() -> bool:
+	return ability != &"" and (GameState.is_ability_obtained(ability) or GameState.is_ability_unlocked(ability))
 
 
 func is_taken() -> bool:

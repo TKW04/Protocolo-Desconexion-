@@ -585,3 +585,63 @@ func test_laser_room_popup_and_pickup() -> void:
 	GameState.reset_progress()
 	SaveFile.delete("user://test_level_1_1_save.json")
 	GameState.save_path = saved_path
+
+
+# --- Objetos de historia de un solo uso (2026-10-16, fallo encontrado jugando) ---
+
+## Con el laser ya obtenido (guardado y de vuelta al 1-1 desde el hub), al pasar
+## por la sala del laser no hay chip, ni Q, ni aviso, ni la linea eco_laser:
+## Isak pasa de largo.
+func test_laser_already_obtained_skips_pickup_and_its_story() -> void:
+	GameState.obtain_ability(GameState.ABILITY_LASER)
+	GameState.mark_notice_seen(GameState.ABILITY_LASER)
+	await _load(true)
+	watch_signals(EventBus)
+	var pickup: Node = _level.get_node_or_null(^"Objects/laser_1_1")
+	assert_true(pickup == null or pickup.is_queued_for_deletion(), "El chip no aparece")
+	await wait_physics_frames(1)
+	assert_null(_level.get_node_or_null(^"Objects/laser_1_1"), "Liberado")
+	var line := _object("eco_laser") as EcoLine
+	assert_true(line.is_skipped(), "La linea de historia del laser no sale")
+	for col: float in [172.0, 173.0, 174.0, 175.0]:
+		_place(col, 5)
+		await wait_physics_frames(3)
+	assert_eq(line.get_fired_count(), 0)
+	assert_signal_emit_count(EventBus, "eco_line_requested", 0, "Sin linea de Eco ni aviso")
+	assert_signal_emit_count(EventBus, "ability_obtained", 0)
+	for node: Node in get_tree().get_nodes_in_group(HelpCatalog.TARGET_GROUP):
+		if _level.is_ancestor_of(node) and HelpCatalog.help_id_of(node) == &"ability_pickup":
+			assert_false(HelpCatalog.is_help_live(node), "Sin Q del chip")
+
+
+## Sin el laser (partida nueva) el chip esta y la linea sale una vez.
+func test_without_laser_the_pickup_and_its_story_are_there() -> void:
+	await _load(true)
+	var pickup := _object("laser_1_1") as AbilityPickup
+	assert_not_null(pickup)
+	assert_true(pickup.visible and HelpCatalog.is_help_live(pickup))
+	var line := _object("eco_laser") as EcoLine
+	assert_false(line.is_skipped())
+	_place(174, 5)
+	await wait_physics_frames(3)
+	assert_eq(line.get_fired_count(), 1, "La historia del laser sale")
+
+
+## Tras un game over sin el laser en la copia (rollback), vuelve a aparecer.
+func test_laser_pickup_returns_after_a_rollback_without_it() -> void:
+	var saved_path: String = GameState.save_path
+	GameState.use_save_path("user://test_level_1_1_rollback.json", true)
+	EcoProgress.meet_eco_with_pulse()
+	assert_true(GameState.save_game(), "Copia sin el laser")
+	GameState.obtain_ability(GameState.ABILITY_LASER)
+	GameState.apply_rollback()
+	assert_false(GameState.is_ability_obtained(GameState.ABILITY_LASER), "El rollback se lo quita")
+	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_LASER))
+	await _load(true)
+	var pickup := _object("laser_1_1") as AbilityPickup
+	assert_not_null(pickup, "Vuelve el chip")
+	assert_true(HelpCatalog.is_help_live(pickup))
+	assert_false((_object("eco_laser") as EcoLine).is_skipped(), "Y su historia")
+	GameState.reset_progress()
+	SaveFile.delete("user://test_level_1_1_rollback.json")
+	GameState.save_path = saved_path

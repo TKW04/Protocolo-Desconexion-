@@ -223,6 +223,7 @@ object_id = &"eco_laser"
 important = true
 once = true
 text = "Herramienta nueva. Dispara hacia donde miras; cada disparo gasta energía. Lo que sueltan las alertas, recógelo: es tuyo."
+unless_ability = &"laser"
 width_tiles = 1
 
 [node name="cargador_1" parent="Objects" instance=ExtResource("13_charger") groups=["help_target"]]

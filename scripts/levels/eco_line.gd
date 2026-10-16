@@ -35,8 +35,14 @@ signal triggered(text: String)
 @export var trigger_event: StringName = &""
 ## Linea importante: pausa el juego y espera confirmacion del jugador.
 @export var important: bool = false
+## Linea de historia ligada a una habilidad (2026-10-16; p. ej. eco_laser con
+## &"laser"): si al empezar el nivel Isak ya la tiene (obtenida o desbloqueada),
+## la linea no sale (como el objeto que la da, que tampoco aparece). Vacio:
+## sale siempre (segun `once`).
+@export var unless_ability: StringName = &""
 
 var _fired_count: int = 0
+var _skipped: bool = false
 var _shape: CollisionShape2D
 ## Isak entro en la zona durante una llegada oculta: se espera a que se vea.
 var _waiting_isak: Isak
@@ -44,6 +50,12 @@ var _waiting_isak: Isak
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	if _owns_linked_ability():
+		# Isak ya tenia la habilidad al empezar: inerte (sin zona ni senal).
+		_skipped = true
+		monitoring = false
+		monitorable = false
+		return
 	if trigger_event != &"":
 		_connect_event()
 		return
@@ -53,7 +65,7 @@ func _ready() -> void:
 
 ## Dispara la linea (zona o senal), respetando `once`. Verdadero si se mostro.
 func fire() -> bool:
-	if once and _fired_count > 0:
+	if _skipped or (once and _fired_count > 0):
 		return false
 	_fired_count += 1
 	triggered.emit(text)
@@ -70,6 +82,16 @@ func _connect_event() -> void:
 			EventBus.connect(trigger_event, fire.unbind(args) if args > 0 else fire)
 			return
 	push_warning("EcoLine %s: EventBus no tiene la senal '%s'" % [object_id, trigger_event])
+
+
+## La linea no sale en este nivel: Isak ya tenia `unless_ability` al empezar.
+func is_skipped() -> bool:
+	return _skipped
+
+
+func _owns_linked_ability() -> bool:
+	return unless_ability != &"" and (GameState.is_ability_obtained(unless_ability)
+		or GameState.is_ability_unlocked(unless_ability))
 
 
 func get_fired_count() -> int:

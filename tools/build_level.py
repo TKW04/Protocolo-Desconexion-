@@ -61,7 +61,7 @@ HELP_SCRIPT = "res://scripts/levels/help_system.gd"
 HELP_GROUP = "help_target"
 HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
-STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id"}
+STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id", "unless_ability"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 
