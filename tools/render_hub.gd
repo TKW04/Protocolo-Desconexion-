@@ -25,6 +25,10 @@
 ##   08_calc_tienda.png          tienda de Calc: saldo, power banks, mejoras con coste y estado, detalle
 ##   09_calc_compra.png          «Comprada: Pulso amplio» (25 puntos menos; «Sin guardar» de nuevo)
 ##   10_calc_faltan_puntos.png   Sync reforzado elegido: «No tienes puntos suficientes»
+##   10a_cargador_listo.png      cargador del dock (columna 16) listo; Isak acercandose con la
+##                               energia a 20 (simula haber disparado el laser)
+##   10b_cargador_recarga.png    Isak tocandolo: +50 de energia (70) y empieza el enfriamiento
+##   10c_cargador_enfriando.png  Isak se aparta: el cargador a mitad de los 20 s de enfriamiento
 ##   11_carpeta_prompt.png       Isak en la repisa de M1: tecla del pulso
 ##   12_panel_subniveles.png     panel de subniveles de M1 (1-1 completado, 1-2 y 1-3 Proximamente)
 ##   13_carpeta_bloqueada.png    Isak en la repisa de M2: «Sin descargar»
@@ -184,6 +188,27 @@ func _run() -> void:
 	await _save(out_dir, "10_calc_faltan_puntos.png")
 	shop.call(&"cancel")
 	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra la tienda")
+	# 10a-10c. Cargador del dock (el mismo objeto charger de los niveles).
+	var charger: Node2D = _hub.call(&"get_charger")
+	_check(charger != null, "no hay cargador en el hub")
+	state.set(&"debug_energy", 20.0)
+	isak.global_position = Vector2(charger.position.x - 1.6 * TILE, isak.global_position.y)
+	await _nudge(fake, 1.0)
+	await _frames(20)
+	_check(charger.call(&"is_ready"), "el cargador no esta listo")
+	await _save(out_dir, "10a_cargador_listo.png")
+	fake.set(&"move_axis", 1.0)
+	_check(await _wait(func() -> bool: return not charger.call(&"is_ready")), "Isak no recarga en el cargador")
+	fake.set(&"move_axis", 0.0)
+	_check(is_equal_approx(float(state.get(&"debug_energy")), 70.0), "el cargador no repone 50")
+	await _frames(12)
+	await _save(out_dir, "10b_cargador_recarga.png")
+	isak.global_position = Vector2(charger.position.x - 1.8 * TILE, isak.global_position.y)
+	await _nudge(fake, 1.0)
+	charger.call(&"advance", float(charger.get(&"cooldown_s")) * 0.5)
+	await _frames(12)
+	_check(not charger.call(&"is_ready"), "el cargador deberia seguir enfriandose")
+	await _save(out_dir, "10c_cargador_enfriando.png")
 	# 11. Carpeta M1: Isak de pie en su repisa.
 	var folder: Node2D = _hub.call(&"get_folder", &"m1")
 	isak.global_position = Vector2(folder.position.x + 96.0, float(_hub.call(&"get_shelf_top_y")))

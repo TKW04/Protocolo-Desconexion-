@@ -50,6 +50,9 @@
 ## llegada Eco lo cuenta (GameOverIntro, data/game_over.json). Mientras la
 ## papelera tenga contenido las carpetas no se abren (HubWorlds.can_enter), Notas
 ## no guarda y el aviso al salir no ofrece guardar (can_save_now).
+## CARGADOR (2026-10-16; seccion charger): el objeto charger de los niveles en la
+## columna 16 del dock (50 de energia, reutilizable, 20 s; se activa al tocarlo).
+## No se guarda ni marca «sin guardar»; se crea de nuevo en cada visita.
 ## MENU DE PAUSA (2026-10-16): la accion pause y el icono de ajustes del HUD
 ## (junto al Modo Avion) abren el PauseMenu del flujo (el de LevelRunner) o, con
 ## el hub abierto solo, uno propio (hijo "PauseMenu"). No se abre
@@ -97,6 +100,7 @@ var _companion: EcoCompanion
 var _text_box: EcoTextBox
 var _notas_intro: NotasIntro
 var _papelera: Papelera
+var _charger: Charger
 var _game_over_intro: GameOverIntro
 
 
@@ -134,6 +138,7 @@ func _ready() -> void:
 	_build_room()
 	_build_dormant()
 	_build_papelera()
+	_build_charger()
 	_build_stations()
 	_build_folders()
 	EventBus.ally_met.connect(_on_ally_met)
@@ -191,6 +196,11 @@ func blocks_pause_menu() -> bool:
 ## Papelera del dock.
 func get_papelera() -> Papelera:
 	return _papelera
+
+
+## Cargador de energia del dock (seccion charger; null si no hay).
+func get_charger() -> Charger:
+	return _charger
 
 
 ## Lineas de Eco tras el game over (null si se llego sin rollback).
@@ -488,6 +498,35 @@ func _build_papelera() -> void:
 	_papelera.position = Vector2(float(cfg.get("col", 10)) * t + (t - size.x) * 0.5, get_floor_y() - size.y)
 	add_child(_papelera)
 	move_child(_papelera, 2)
+
+
+## Cargador de energia (seccion charger de data/hub.json): el mismo objeto
+## `charger` de los niveles (scenes/levels/charger.tscn) con los valores por
+## defecto del catalogo (types.charger.defaults de data/world1_objects.json:
+## 50 de energia, reutilizable, 20 s de enfriamiento), en su columna del dock
+## (celda de la fila sobre el suelo, como en un nivel). Se activa al tocarlo.
+## Reutilizable: no se guarda ni marca «sin guardar» y su enfriamiento empieza
+## de cero en cada visita (se crea con el hub).
+func _build_charger() -> void:
+	var cfg: Dictionary = HubData.section("charger")
+	if cfg.is_empty():
+		return
+	var scene := load(String(cfg.get("scene", "res://scenes/levels/charger.tscn"))) as PackedScene
+	_charger = scene.instantiate() as Charger
+	_charger.name = String(cfg.get("node", "Charger"))
+	_charger.object_id = StringName(String(cfg.get("id", "cargador_hub")))
+	var catalog: Variant = JSON.parse_string(FileAccess.get_file_as_string(Charger.CONFIG_PATH))
+	if catalog is Dictionary:
+		var type_cfg: Variant = ((catalog as Dictionary).get("types", {}) as Dictionary).get("charger", {})
+		var defaults: Dictionary = (type_cfg as Dictionary).get("defaults", {}) if type_cfg is Dictionary else {}
+		_charger.amount = float(defaults.get("amount", _charger.amount))
+		_charger.reusable = bool(defaults.get("reusable", _charger.reusable))
+		_charger.cooldown_s = float(defaults.get("cooldown_s", _charger.cooldown_s))
+	_charger.frames_path = String(cfg.get("frames", ""))
+	var t: float = HubData.tile_size()
+	_charger.position = Vector2(float(cfg.get("col", 16)) * t, get_floor_y() - t)
+	add_child(_charger)
+	move_child(_charger, 2)
 
 
 func _build_stations() -> void:

@@ -15,11 +15,13 @@ var _time: float = 0.0
 
 ## Crea el sprite con la animacion `anim`, centrado en `pos`, y lo anade a `parent`.
 ## `random_start` empieza el bucle en un punto al azar (dos objetos juntos no
-## parpadean a la vez).
-static func attach(parent: Node, anim: StringName, pos: Vector2, random_start: bool = false) -> EnergySprite:
+## parpadean a la vez). `frames_path` (vacio = FRAMES_PATH) usa otro
+## SpriteFrames con las mismas animaciones (p. ej. el cargador del hub).
+static func attach(parent: Node, anim: StringName, pos: Vector2, random_start: bool = false,
+		frames_path: String = "") -> EnergySprite:
 	var sprite := EnergySprite.new()
 	sprite.name = "Sprite"
-	sprite.sprite_frames = load(FRAMES_PATH) as SpriteFrames
+	sprite.sprite_frames = load(frames_path if not frames_path.is_empty() else FRAMES_PATH) as SpriteFrames
 	sprite.centered = true
 	sprite.position = pos
 	sprite.show_state(anim)

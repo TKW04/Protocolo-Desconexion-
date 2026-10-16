@@ -60,6 +60,14 @@
 		"frames": "res://assets/sprites/hub/papelera_frames.tres",
 		"recover_radius_tiles": 1.5
 	},
+	"charger": {
+		"_notes": "Cargador de energia del hub (2026-10-16): el MISMO objeto charger de los niveles (scene, Charger; data/world1_objects.json types.charger), con sus valores por defecto del catalogo (50 de energia sin desbordar a los power banks, reutilizable, cooldown_s 20 de tiempo del mundo) y la misma interaccion: se activa al tocarlo (sin boton ni pulso); con la barra llena no se gasta. Columna col (16, el antiguo hueco de la Papelera del mapa de la propuesta §2.2) del dock, en la celda de la fila sobre el suelo (apoyado en el dock, como en un nivel). Libre de las zonas de cercania de Notas (col 1: x -32..224), Calc (col 7: 352..608), la Papelera (col 10: 576..768), el hueco de Linterna (col 13, sin zona) y la llegada P (col 5); las carpetas y repisas estan 160 px por encima (la de M3 encima, cols 15-18) y su zona solo se alcanza de pie en la repisa. Reutilizable: no se guarda ni marca «sin guardar»; su enfriamiento se reinicia en cada visita (se crea con el hub). No es una estacion ni una «cosa» guardada: funciona tambien con la papelera llena. El hub no tiene ayuda Q: no cuenta como tipo aprendido. frames: variante con la paleta del hub (tools/gen_hub_objects.py; las mismas animaciones charger_ready / charger_cooling / charger_spent).",
+		"node": "Charger",
+		"id": "cargador_hub",
+		"scene": "res://scenes/levels/charger.tscn",
+		"col": 16,
+		"frames": "res://assets/sprites/hub/charger_frames.tres"
+	},
 	"hud": {
 		"_notes": "Modo hub del HUD (Hud.enable_hub_mode; propuesta §1 y §4.3): en la esquina, el icono de ajustes (settings_icon, engranaje; un clic abre el menu de pausa, como la accion pause; 2026-10-16); la senal (Sync Rate) se sustituye por el icono de Modo Avion (airplane_icon) y junto al contador de puntos sale el indicador «sin guardar» (unsaved_icon, disquete ambar, y unsaved_text con la fuente de textos en unsaved_color, ambar de hub.gpl, #ffa000) mientras GameState.has_unsaved_changes(). Iconos finales de assets/sprites/hub/icons/ (16x16 px de arte); medidas en px de arte del HUD (x2).",
 		"airplane_icon": "res://assets/sprites/hub/icons/icon_airplane_mode_00.png",

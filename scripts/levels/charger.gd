@@ -29,6 +29,10 @@ const CONFIG_PATH: String = "res://data/world1_objects.json"
 @export var reusable: bool = true
 ## Enfriamiento entre usos (s de tiempo del mundo) si es reutilizable.
 @export var cooldown_s: float = 20.0
+## SpriteFrames con las animaciones charger_ready / charger_cooling /
+## charger_spent; vacio = el de los niveles (EnergySprite.FRAMES_PATH). El hub
+## usa la variante con la paleta del hub (data/hub.json, seccion charger).
+@export var frames_path: String = ""
 
 var _spent: bool = false
 var _cooldown_left: float = 0.0
@@ -47,7 +51,7 @@ func _ready() -> void:
 	shape.position = _center()
 	add_child(shape)
 	body_entered.connect(_on_body_entered)
-	_sprite = EnergySprite.attach(self, &"charger_ready", Vector2.ZERO)
+	_sprite = EnergySprite.attach(self, &"charger_ready", Vector2.ZERO, false, frames_path)
 	# Apoyado en el borde inferior de la celda (x, y).
 	var canvas_h: float = _sprite.sprite_frames.get_frame_texture(&"charger_ready", 0).get_height()
 	_sprite.position = Vector2(32.0, 64.0 - canvas_h * 0.5)
