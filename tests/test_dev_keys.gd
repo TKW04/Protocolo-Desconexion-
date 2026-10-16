@@ -1,7 +1,7 @@
 # Teclas de prueba del flujo de nivel (LevelRunner, dev_keys de data/flow.json):
 # restart_level (R / Select) reinicia el mapa desde el inicio conservando el
 # guardado (puntos capturados, mejoras, power banks); se acepta jugando, en el
-# hub y durante la muerte, y se ignora durante un fundido. Mantener
+# hub real (vuelve a empezar el ultimo nivel; paso 9) y durante la muerte, y se ignora durante un fundido. Mantener
 # debug_wipe_save (F9) wipe_hold_s borra el guardado y reinicia, con aviso en
 # pantalla. Sin fugas tras 5 reinicios. Usa su propia ruta de guardado: nunca
 # el user://save.json del jugador. No depende de la geometria del 1-1.
@@ -215,11 +215,16 @@ func test_restart_from_hub() -> void:
 	_main.advance(LONG_STEP_S)
 	_main.advance(LONG_STEP_S)
 	assert_true(_main.is_in_hub())
+	assert_true(_main.get_hub() is HubRoom, "Hub real")
+	assert_eq(_count_in_tree("HubRoom"), 1)
 	assert_true(_main.request_restart(), "En el hub se acepta")
 	_finish_fades()
 	assert_false(_main.is_in_hub())
-	assert_eq(_main.get_level_id(), "1-1")
-	assert_eq(_count_in_tree("HubPlaceholder"), 0)
+	assert_eq(_main.get_level_id(), "1-1", "Vuelve a empezar el ultimo nivel")
+	assert_not_null(_main.get_level())
+	assert_eq(_count_in_tree("HubRoom"), 0)
+	assert_eq(_count_in_tree("Isak"), 1, "Un solo Isak")
+	assert_eq(_count_in_tree("Hud"), 1, "Un solo HUD")
 
 
 # --- Borrar el guardado ---
@@ -300,7 +305,7 @@ func test_no_leaks_after_five_restarts() -> void:
 	assert_eq(_count_in_tree("GeneratedLevel"), 1, "Un solo nivel")
 	assert_eq(_count_in_tree("Isak"), 1, "Un solo Isak")
 	assert_eq(_count_in_tree("Hud"), 1, "Un solo HUD")
-	assert_eq(_count_in_tree("HubPlaceholder"), 0, "Sin hub")
+	assert_eq(_count_in_tree("HubRoom"), 0, "Sin hub")
 	assert_eq(_main.get_transition_layer().get_child_count(), 1, "Un solo fundido")
 	assert_eq(_count_named("DevPrompt"), 1, "Un solo aviso")
 	assert_eq(Engine.time_scale, 1.0)

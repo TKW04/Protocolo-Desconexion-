@@ -1,8 +1,10 @@
 # Flujo de juego del 1-1 (paso 16) con la escena principal real (scenes/main.tscn,
 # LevelRunner): estado inicial, punto de sincronizacion, muerte y reaparicion,
 # estado de los objetos al reaparecer, red de seguridad, fosos con fondo, final
-# del nivel -> hub provisional -> reinicio desde cero, sin fugas de senales ni
-# instancias tras varios ciclos, y el bot de recorrido (tools/play_level_bot.gd).
+# del nivel -> hub real (paso 9: llegada por el vortice tras el fundido, energia
+# y Sync Rate llenos, aviso al salir con Guardar) -> carpeta del Mundo 1 -> el
+# 1-1 desde cero, sin fugas de senales ni instancias tras varios ciclos, y el
+# bot de recorrido (tools/play_level_bot.gd).
 # El flujo se avanza a mano (auto_advance = false); Isak usa su fisica real con
 # una entrada falsa quieta.
 extends GutTest
@@ -109,12 +111,29 @@ func _complete_level() -> void:
 	_main.advance(LONG_STEP_S)
 
 
-func _restart_from_hub() -> void:
-	var hub: HubPlaceholder = _main.get_hub()
-	hub.skip_input_delay()
-	assert_true(hub.request_restart(), "El hub acepta salto")
+## Desde el hub real: Isak termina de llegar, abre la carpeta del Mundo 1,
+## elige el 1-1, se va por el vortice de salida y el LevelRunner carga el nivel.
+func _enter_level_from_hub() -> void:
+	var hub: HubRoom = _main.get_hub()
+	assert_not_null(hub, "En el hub real")
+	var arrival: WarpVortex = hub.get_arrival_vortex()
+	if arrival != null:
+		arrival.advance(LONG_STEP_S)
+	assert_true(hub.has_arrived(), "Isak llega al hub")
+	var folder: FolderStation = hub.get_folder(&"m1")
+	assert_true(folder.open(hub.get_isak()), "La carpeta del Mundo 1 se abre")
+	var panel: FolderPanel = folder.get_folder_panel()
+	panel.skip_input_delay()
+	assert_true(panel.select_option(&"1-1"))
+	panel.confirm()
+	var departure: WarpVortex = hub.get_departure_vortex()
+	assert_not_null(departure, "Vortice de salida")
+	departure.advance(LONG_STEP_S)
+	await wait_process_frames(2)
+	assert_eq(_main.get_phase(), LevelRunner.Phase.FADE_OUT, "Funde para entrar al nivel")
 	_main.advance(LONG_STEP_S)
 	_main.advance(LONG_STEP_S)
+	assert_false(_main.is_in_hub(), "Sale del hub")
 	_hook_isak()
 
 
@@ -325,7 +344,7 @@ func test_pits_have_floor_and_do_not_kill() -> void:
 		assert_eq(_main.get_phase(), LevelRunner.Phase.PLAYING)
 
 
-func test_level_completed_goes_to_hub_and_restart_resets_everything() -> void:
+func test_level_completed_goes_to_real_hub_and_folder_starts_level_from_scratch() -> void:
 	await _start()
 	_level().get_node(^"Objects/receiver_56_9").call(&"activate")
 	(_level().get_node(^"Objects/puente_1") as PulseBridge).advance(LONG_STEP_S)
@@ -338,20 +357,36 @@ func test_level_completed_goes_to_hub_and_restart_resets_everything() -> void:
 	GameState.add_attention_points(7)
 	var shown: Array = []
 	_main.hub_shown.connect(func(id: String, points: int) -> void: shown.append([id, points]))
-	_complete_level()
-	assert_true(_main.is_in_hub(), "Pantalla provisional del hub")
+	GameState.debug_energy = 3.0
+	GameState.sync_rate = 40.0
+	var terminal: ExitTerminal = _level().get_node(^"Objects/terminal_salida") as ExitTerminal
+	assert_true(terminal.activate(_isak), "La terminal se activa")
+	terminal.advance(LONG_STEP_S)
+	terminal.get_vortex().advance(LONG_STEP_S)
+	_main.advance(LONG_STEP_S)
+	assert_true(_main.is_in_hub(), "Hub real")
+	var hub: HubRoom = _main.get_hub()
+	assert_eq(hub.get_scene_file_path(), "res://scenes/hub/hub.tscn")
 	assert_null(_main.get_level(), "El nivel se descarga")
 	assert_eq(shown, [["1-1", 7]])
-	var hub: HubPlaceholder = _main.get_hub()
-	assert_eq(hub.get_line_text(&"points"), "Puntos de atención: 7")
-	assert_eq(hub.get_line_text(&"completed"), "Nivel completado: Bandeja de entrada")
+	assert_not_null(hub.get_arrival_vortex(), "Llega por el vortice")
+	assert_eq(hub.get_arrival_vortex().get_phase(), WarpVortex.Phase.HELD, "El vortice espera al fundido")
+	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), 0.001, "Energia llena en el hub")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max(), 0.001, "Sync Rate lleno en el hub")
+	_main.advance(LONG_STEP_S)
+	assert_eq(_main.get_phase(), LevelRunner.Phase.PLAYING)
+	assert_ne(hub.get_arrival_vortex().get_phase(), WarpVortex.Phase.HELD, "Al acabar el fundido Isak llega")
 	assert_true(GameState.is_level_completed(&"1-1"), "1-1 completado")
 	assert_true(GameState.is_level_unlocked(&"1-2"), "1-2 desbloqueado (unlocks del JSON)")
 	assert_false(ResourceLoader.exists("res://scenes/levels/1-2.tscn"), "El 1-2 no existe ni se carga")
-	assert_eq(_main.get_phase(), LevelRunner.Phase.PLAYING)
-	_restart_from_hub()
-	assert_false(_main.is_in_hub())
+	assert_eq(hub.get_folder(&"m1").get_folder_panel().get_level_state(&"1-1"), HubWorlds.STATE_COMPLETED)
+	assert_true(GameState.has_unsaved_changes(), "Completar el nivel deja cambios sin guardar")
+	assert_eq(QuitGuard.decide(true, QuitGuard.can_save_here(get_tree())), QuitGuard.Decision.ASK_WITH_SAVE,
+		"En el hub el aviso al salir ofrece Guardar y salir")
+	await _enter_level_from_hub()
 	assert_eq(_main.get_level_id(), "1-1")
+	assert_eq(QuitGuard.decide(true, QuitGuard.can_save_here(get_tree())), QuitGuard.Decision.ASK_WITHOUT_SAVE,
+		"En el nivel, sin opcion de guardar")
 	await wait_physics_frames(5)
 	assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX)
 	assert_eq(GameState.attention_points, 7, "Los puntos acumulados se conservan (2026-10-14)")
@@ -379,13 +414,14 @@ func test_no_leaks_after_three_death_and_three_restart_cycles() -> void:
 	for i: int in 3:
 		_complete_level()
 		await wait_process_frames(2)
-		_restart_from_hub()
+		await _enter_level_from_hub()
 		await wait_process_frames(2)
 	assert_eq(_eventbus_connections(), base_connections, "Sin conexiones colgadas tras 3 reinicios")
 	assert_eq(_count_in_tree("Hud"), 1, "Un solo HUD")
 	assert_eq(_count_in_tree("EcoTextBox"), 1, "Un solo cuadro de Eco")
 	assert_eq(_count_in_tree("GeneratedLevel"), 1, "Un solo nivel")
-	assert_eq(_count_in_tree("HubPlaceholder"), 0, "Sin hub")
+	assert_eq(_count_in_tree("HubRoom"), 0, "Sin hub")
+	assert_eq(_count_in_tree("Isak"), 1, "Un solo Isak")
 	assert_eq(Engine.time_scale, 1.0)
 	assert_eq(GameState.world_time_scale, 1.0)
 	assert_eq(_main.get_transition_layer().get_child_count(), 1, "Un solo fundido")

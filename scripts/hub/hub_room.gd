@@ -28,9 +28,12 @@
 ## (WarpVortex.depart) y se carga level_runner_scene (scenes/main.tscn) con ese
 ## nivel (LevelRunner.start_level_id), sustituyendo a la escena actual
 ## (scene_switcher lo cambia en pruebas).
-## AUN NO esta en el flujo del juego (paso 9): LevelRunner sigue llevando a
-## hub_placeholder al terminar un nivel. Se prueba abriendo scenes/hub/hub.tscn
-## o con tools/render_hub.gd.
+## FLUJO DEL JUEGO (paso 9): LevelRunner (scenes/main.tscn) carga esta escena
+## como hija al completar un nivel (hub_scene de data/flow.json), con
+## hold_arrival (el vortice de llegada espera a que el fundido deje ver el hub:
+## release_arrival) y level_handler (al elegir un subnivel, el propio
+## LevelRunner funde y carga el nivel en lugar de sustituir la escena). Abierta
+## sola (scenes/hub/hub.tscn) sigue cargando scenes/main.tscn con el nivel.
 class_name HubRoom
 extends Node2D
 
@@ -45,6 +48,13 @@ signal level_requested(level_id: StringName)
 ## Si es valido, recibe la raiz preparada (LevelRunner de level_runner_scene con
 ## start_level_id) en lugar de sustituir la escena actual (pruebas).
 var scene_switcher: Callable = Callable()
+## Si es valido, se llama con el id del subnivel elegido (tras el vortice de
+## salida) en lugar de cargar level_runner_scene: lo usa LevelRunner, que tiene
+## el hub como hija. El hub no se quita del arbol: lo quita quien lo llama.
+var level_handler: Callable = Callable()
+## Si es verdadero (antes de entrar al arbol), el vortice de llegada espera a
+## release_arrival() (LevelRunner: al terminar el fundido de entrada).
+var hold_arrival: bool = false
 
 var _room: Dictionary = HubData.section("room")
 var _isak: Isak
@@ -113,6 +123,12 @@ func get_isak() -> Isak:
 
 func get_hud() -> Hud:
 	return _hud
+
+
+## Suelta el vortice de llegada retenido (hold_arrival). Falso si no habia.
+func release_arrival() -> bool:
+	var vortex: WarpVortex = get_arrival_vortex()
+	return vortex != null and vortex.release()
 
 
 ## Calc dormida (tienda de mejoras).
@@ -221,7 +237,7 @@ func _place_isak() -> void:
 
 
 func _start_arrival() -> void:
-	_arrival = WarpVortex.arrive(_isak, self)
+	_arrival = WarpVortex.arrive(_isak, self, hold_arrival)
 	_arrival.finished.connect(_on_arrival_finished)
 
 
@@ -473,6 +489,9 @@ func _load_level() -> void:
 func _swap_to_level() -> void:
 	var id: StringName = _entering_level
 	level_requested.emit(id)
+	if level_handler.is_valid():
+		level_handler.call(id)
+		return
 	var path: String = String(HubData.section("folders").get("level_runner_scene", "res://scenes/main.tscn"))
 	var runner := (load(path) as PackedScene).instantiate()
 	if runner is LevelRunner:

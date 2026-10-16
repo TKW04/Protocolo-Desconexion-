@@ -15,11 +15,12 @@
 ##   (Isak gira de espaldas, mirando al monitor, con un destello cian y es
 ##   absorbido por el vortice de salida; comprueba que no llega al hub sin
 ##   haberse puesto de espaldas antes del vortice),
-##   comprueba la pantalla provisional del hub (nivel completado, 1-2 desbloqueado,
-##   puntos), comprueba que nada se ha escrito (guardado manual, 2026-10-15),
-##   guarda con la accion save_game y pulsa salto (accion jump) para reiniciar: Sync Rate y objetos
-##   desde cero, pero los puntos de atencion se conservan y los ya capturados no
-##   reaparecen (decision 2026-10-14).
+##   llega al hub real (paso 9: vortice de llegada; nivel completado, 1-2
+##   desbloqueado, energia llena, «Sin guardar» y nada escrito: guardado
+##   manual, 2026-10-15), camina a la copia local y guarda con el pulso, sube a
+##   la repisa de la carpeta del Mundo 1, la abre y elige el 1-1: el nivel vuelve
+##   a empezar con Sync Rate y objetos desde cero, pero los puntos de atencion
+##   se conservan y los ya capturados no reaparecen (decision 2026-10-14).
 ## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH
 ## si esta definida): nunca toca el user://save.json del jugador.
 ## Termina con codigo 0 si todo sale bien y 1 si algo falla (con el motivo).
@@ -55,6 +56,9 @@ const LAYER_WORLD: int = 1
 ## su celda G) para lanzarle el pulso.
 const TERMINAL_STOP_PX: float = 24.0
 const BOT_SAVE_PATH: String = "user://bot_save.json"
+## En el hub, se para a esta distancia (px) a la derecha del borde izquierdo de la
+## copia local para lanzarle el pulso (como test_copy_local_station: 2,6 tiles).
+const COPY_LOCAL_STAND_PX: float = 2.6 * TILE - 64.0
 
 var _input := PlayerInput.new()
 var _runner: LevelRunner
@@ -106,7 +110,7 @@ func _run() -> void:
 	_attach()
 	var ok: bool = await _play()
 	if ok:
-		ok = await _hub_and_restart()
+		ok = await _hub_and_back()
 	print("play_level_bot: %s" % ("OK" if ok else "FALLO"))
 	for line: String in _log:
 		print("  " + line)
@@ -196,8 +200,7 @@ func _play() -> bool:
 		if _runner.is_in_hub():
 			if not announced.has("espaldas"):
 				return _fail("Isak no se puso de espaldas ante la terminal antes del vortice de salida")
-			_note("hub provisional mostrado")
-			_shot_in("8_hub", 40)
+			_note("hub real cargado tras completar el nivel")
 			return true
 		var x: float = _isak.global_position.x
 		var feet: float = _isak.global_position.y
@@ -390,55 +393,46 @@ func _force_death(checkpoint: Checkpoint) -> bool:
 	return true
 
 
-## Guardado manual (2026-10-15): al llegar al hub hay cambios sin guardar y
-## nada escrito; la accion save_game (C / R3) escribe el guardado del bot.
-func _save_in_hub(hub: HubPlaceholder) -> bool:
-	if not GameState.has_unsaved_changes() or FileAccess.file_exists(GameState.save_path):
-		return _fail("guardado manual: al llegar al hub deberia haber cambios sin guardar y nada escrito")
-	for pressed: bool in [true, false]:
-		var event := InputEventAction.new()
-		event.action = &"save_game"
-		event.pressed = pressed
-		Input.parse_input_event(event)
+## Hub real (paso 9 de docs/propuesta-hub-y-guardado.md): espera a que Isak
+## llegue por el vortice; comprueba nivel completado, 1-2 desbloqueado, energia
+## llena y que nada se ha escrito (guardado manual); camina a la copia local y
+## guarda con el pulso (Guardar y «Si, guardar»); sube de un salto a la repisa
+## de la carpeta del Mundo 1, la abre con el pulso y elige el 1-1: Isak se va
+## por el vortice de salida y el LevelRunner carga el 1-1 desde cero.
+func _hub_and_back() -> bool:
+	var hub: HubRoom = _runner.get_hub()
+	var limit: int = _frame + 60 * 6
+	while _frame < limit and not hub.has_arrived():
 		await _tick()
-	if GameState.has_unsaved_changes() or not FileAccess.file_exists(GameState.save_path):
-		return _fail("la accion save_game no guardo en el hub")
-	_note("guardado manual en el hub: '%s' (%s)" % [hub.get_line_text(&"message"), GameState.save_path])
-	return true
-
-
-func _hub_and_restart() -> bool:
-	var hub: HubPlaceholder = _runner.get_hub()
+	if not hub.has_arrived():
+		return _fail("Isak no llega al hub por el vortice")
+	_isak = hub.get_isak()
+	_isak.input = _input
 	var points: int = GameState.attention_points
-	_note("hub: '%s' / '%s'; puntos %d; 1-1 completado %s; 1-2 desbloqueado %s; golpes %d" % [
-		hub.get_line_text(&"completed"), hub.get_line_text(&"points"), points,
-		GameState.is_level_completed(&"1-1"), GameState.is_level_unlocked(&"1-2"), _hits])
+	_note("hub real: Isak llega en x=%.0f; puntos %d; 1-1 completado %s; 1-2 desbloqueado %s; energia %.0f/%.0f; golpes %d" % [
+		_isak.global_position.x, points, GameState.is_level_completed(&"1-1"), GameState.is_level_unlocked(&"1-2"),
+		GameState.debug_energy, GameState.get_debug_energy_max(), _hits])
+	_shot_in("8_hub", 10)
 	if not GameState.is_level_completed(&"1-1") or not GameState.is_level_unlocked(&"1-2"):
 		return _fail("no se registro el nivel completado o el desbloqueo")
-	for i: int in 60:
-		await _tick()
-	if not await _save_in_hub(hub):
+	if not is_equal_approx(GameState.debug_energy, GameState.get_debug_energy_max()):
+		return _fail("la energia no se lleno al llegar al hub")
+	if not GameState.has_unsaved_changes() or FileAccess.file_exists(GameState.save_path):
+		return _fail("guardado manual: al llegar al hub deberia haber cambios sin guardar y nada escrito")
+	if not hub.get_hud().is_unsaved_indicator_shown():
+		return _fail("el HUD del hub no muestra «Sin guardar»")
+	if not await _save_at_copy_local(hub):
 		return false
-	var press := InputEventAction.new()
-	press.action = &"jump"
-	press.pressed = true
-	Input.parse_input_event(press)
-	var limit: int = 60 * 3
-	while limit > 0 and _runner.is_in_hub():
-		await get_tree().process_frame
-		limit -= 1
-	var release := InputEventAction.new()
-	release.action = &"jump"
-	release.pressed = false
-	Input.parse_input_event(release)
-	if _runner.is_in_hub() or _runner.get_level() == null:
-		return _fail("pulsar salto en el hub no reinicia el nivel")
+	if not await _enter_from_folder(hub):
+		return false
+	_isak = _runner.get_isak()
+	_isak.input = _input
 	await get_tree().physics_frame
 	var bridge: PulseBridge = _runner.get_level().get_node(^"Objects/puente_1")
 	var popup: PopupBlocker = _runner.get_level().get_node(^"Objects/popup_1")
 	if GameState.attention_points != points or GameState.sync_rate != GameState.SYNC_RATE_MAX \
 			or bridge.is_extended() or not popup.is_open():
-		return _fail("el reinicio no empieza desde cero (o pierde los puntos)")
+		return _fail("el 1-1 no empieza desde cero (o pierde los puntos)")
 	var left: int = 0
 	for node: Node in _runner.get_level().get_node(^"AttentionPoints").get_children():
 		if node is AttentionPoint and not node.is_queued_for_deletion():
@@ -446,9 +440,123 @@ func _hub_and_restart() -> bool:
 	var captured: int = GameState.get_captured_points(&"1-1").size()
 	if captured != points or left + captured != _points_total:
 		return _fail("puntos capturados: %d guardados, %d quedan en el mapa" % [captured, left])
-	_note("reinicio: Sync 100 %%, %d puntos conservados, %d capturados no reaparecen, puente retraido, pop-up abierto" % [points, captured])
+	_note("1-1 de nuevo desde la carpeta: Sync 100 %%, %d puntos conservados, %d capturados no reaparecen, puente retraido, pop-up abierto" % [points, captured])
 	if not _shots_dir.is_empty():
 		_shot_in("9_reinicio", 40)
 		for i: int in 45:
 			await _tick()
 	return true
+
+
+## Camina hasta la copia local, la abre con el pulso y guarda (Guardar y
+## confirmacion); cierra el panel con salto.
+func _save_at_copy_local(hub: HubRoom) -> bool:
+	var station := hub.get_station(&"copia_local") as CopyLocalStation
+	if not await _walk_to_x(station.position.x + COPY_LOCAL_STAND_PX):
+		return _fail("no llega a la copia local")
+	_isak.facing = -1.0
+	if not await _pulse_until(func() -> bool: return station.is_panel_open()):
+		return _fail("el pulso no abre la copia local")
+	_note("copia local abierta (x=%.0f): '%s'" % [_isak.global_position.x, " / ".join(station.get_panel().get_lines())])
+	_shot_in("8b_copia_local", 1)
+	await _wait_frames(15)
+	await _press_action(&"pulse")  # Guardar
+	if (station.get_panel() as CopyLocalPanel).get_mode() != CopyLocalPanel.Mode.CONFIRM:
+		return _fail("Guardar no pide confirmacion")
+	await _press_action(&"pulse")  # Si, guardar
+	if GameState.has_unsaved_changes() or not FileAccess.file_exists(GameState.save_path):
+		return _fail("la copia local no guardo")
+	_note("guardado manual en la copia local: '%s' (%s); HUD «Sin guardar» %s" % [
+		station.get_panel().get_message(), GameState.save_path,
+		"visible" if hub.get_hud().is_unsaved_indicator_shown() else "apagado"])
+	_shot_in("8c_guardado", 1)
+	await _wait_frames(5)
+	await _press_action(&"jump")
+	await _wait_frames(6)
+	if station.is_panel_open() or _isak.is_facing_back():
+		return _fail("salto no cierra la copia local")
+	return true
+
+
+## Sube de un salto a la repisa de la carpeta del Mundo 1, la abre con el pulso
+## y elige el 1-1 (primera opcion); espera a que el LevelRunner cargue el nivel.
+func _enter_from_folder(hub: HubRoom) -> bool:
+	var folder: FolderStation = hub.get_folder(&"m1")
+	var under: float = folder.position.x + folder.get_size().x * 0.5
+	if not await _walk_to_x(under):
+		return _fail("no llega bajo la carpeta del Mundo 1")
+	await _wait_frames(4)
+	_input.jump_pressed = true
+	_input.jump_held = true
+	for i: int in 50:
+		await _tick()
+		_input.clear_just_pressed()
+		_input.jump_held = i < JUMP_HOLD_FRAMES
+	_input.jump_held = false
+	if not _isak.is_on_floor() or absf(_isak.global_position.y - hub.get_shelf_top_y()) > 2.0:
+		return _fail("no sube a la repisa de la carpeta (y=%.0f, repisa %.0f)" % [_isak.global_position.y, hub.get_shelf_top_y()])
+	_note("de pie en la repisa de M1 (y=%.0f); tecla del pulso %s" % [_isak.global_position.y,
+		"visible" if folder.is_key_hint_visible() else "NO visible"])
+	if not await _pulse_until(func() -> bool: return folder.is_panel_open()):
+		return _fail("el pulso no abre la carpeta del Mundo 1")
+	var panel: FolderPanel = folder.get_folder_panel()
+	_note("carpeta abierta: %s / %s" % [panel.get_title(), " / ".join(panel.get_lines())])
+	_shot_in("8d_carpeta", 1)
+	await _wait_frames(15)
+	if panel.get_selected_option() != &"1-1":
+		return _fail("la primera opcion de la carpeta no es el 1-1")
+	await _press_action(&"pulse")
+	if hub.get_entering_level() != &"1-1":
+		return _fail("elegir el 1-1 no lleva al vortice de salida")
+	_note("elige el 1-1: vortice de salida")
+	var limit: int = _frame + 60 * 8
+	while _frame < limit and (_runner.is_in_hub() or _runner.get_level() == null \
+			or _runner.get_phase() != LevelRunner.Phase.PLAYING):
+		await _tick()
+	if _runner.is_in_hub() or _runner.get_level() == null or _runner.get_level_id() != "1-1":
+		return _fail("la carpeta no carga el 1-1")
+	return true
+
+
+## Camina (entrada falsa) hasta que el centro de Isak queda a menos de 6 px de
+## `x`. Falso si no llega en 6 s.
+func _walk_to_x(x: float) -> bool:
+	var limit: int = _frame + 60 * 6
+	while _frame < limit:
+		var dx: float = x - _isak.global_position.x
+		if absf(dx) < 6.0:
+			break
+		_input.move_axis = signf(dx) * (1.0 if absf(dx) > 24.0 else 0.4)
+		await _tick()
+		_input.clear_just_pressed()
+	_input.move_axis = 0.0
+	for i: int in 10:
+		await _tick()
+	return absf(x - _isak.global_position.x) < 12.0
+
+
+## Lanza el pulso (entrada falsa) hasta que `done` sea verdadero (2 s como mucho).
+func _pulse_until(done: Callable) -> bool:
+	for attempt: int in 4:
+		_input.pulse_pressed = true
+		for i: int in 30:
+			await _tick()
+			_input.clear_just_pressed()
+			if done.call():
+				return true
+	return false
+
+
+## Pulsa y suelta la accion `action` del Input Map (paneles del hub).
+func _press_action(action: StringName) -> void:
+	for pressed: bool in [true, false]:
+		var event := InputEventAction.new()
+		event.action = action
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		await _tick()
+
+
+func _wait_frames(count: int) -> void:
+	for i: int in count:
+		await _tick()

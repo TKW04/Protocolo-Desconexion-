@@ -1,14 +1,15 @@
 # Pruebas de las fuentes de energia y de habilidades (decisiones del usuario
 # 2026-10-15): ability_pickup desbloquea el laser, lo guarda y avisa; charger
 # repone energia (reutilizable con enfriamiento o de un solo uso guardado); la
-# pantalla provisional del hub llena la barra; catalogo de objetos.
+# hub real llena la barra al llegar (antes la pantalla provisional del hub);
+# catalogo de objetos.
 # Usa su propio guardado de prueba (nunca user://save.json).
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const PICKUP_SCENE: PackedScene = preload("res://scenes/levels/ability_pickup.tscn")
 const CHARGER_SCENE: PackedScene = preload("res://scenes/levels/charger.tscn")
-const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub_placeholder.tscn")
+const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const PATH: String = "user://test_energy_sources_save.json"
 const LEVEL_ID: String = "test_energia"
 const EPS: float = 0.001
@@ -191,10 +192,12 @@ func test_isak_touching_charger_uses_it() -> void:
 
 func test_hub_refills_energy() -> void:
 	GameState.debug_energy = 5.0
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	hub.show_result("1-1", 0)
+	var pulse_was: bool = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
+	var hub := HUB_SCENE.instantiate() as HubRoom
+	add_child(hub)
 	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS, "En el hub se recarga")
+	hub.free()
+	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, pulse_was)
 
 
 # --- Catalogo ---

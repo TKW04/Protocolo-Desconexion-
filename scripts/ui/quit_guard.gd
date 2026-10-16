@@ -4,7 +4,7 @@
 ## (NOTIFICATION_WM_CLOSE_REQUEST) decide con decide():
 ## - sin cambios sin guardar: sale ya;
 ## - con cambios, donde se puede guardar (un nodo del grupo SAVE_STATION_GROUP
-##   con can_save_now() verdadero; hoy la pantalla provisional del hub):
+##   con can_save_now() verdadero; hoy el hub real, HubRoom):
 ##   «Guardar y salir / Salir sin guardar / Volver»;
 ## - con cambios en un nivel: «Salir / Volver» (fuera del hub no se guarda).
 ## El aviso (QuitPrompt) pausa el arbol mientras esta abierto y lo deja como

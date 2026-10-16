@@ -1,16 +1,15 @@
 # Pruebas del paso 14b: pop-up bloqueante (scenes/levels/popup_blocker.tscn),
-# puerta de salida (scenes/levels/exit_door.tscn), pantalla provisional de
-# regreso al hub (scenes/hub/hub_placeholder.tscn) y escena de prueba del
-# Tramo 4. El pop-up es solido hasta que un pulso toca su BOTON (no basta con
-# tocar la ventana) y no se reabre; la puerta emite level_completed una sola
-# vez; los textos usan solo glifos de la fuente; show_result muestra los textos
-# y los puntos; el catalogo apunta a las escenas reales.
+# puerta de salida (scenes/levels/exit_door.tscn) y escena de prueba del
+# Tramo 4, que al cruzar la puerta va al hub real (paso 9; la pantalla
+# provisional del hub se retiro). El pop-up es solido hasta que un pulso toca su
+# BOTON (no basta con tocar la ventana) y no se reabre; la puerta emite
+# level_completed una sola vez; los textos usan solo glifos de la fuente; el
+# catalogo apunta a las escenas reales.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const POPUP_SCENE: PackedScene = preload("res://scenes/levels/popup_blocker.tscn")
 const DOOR_SCENE: PackedScene = preload("res://scenes/levels/exit_door.tscn")
-const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub_placeholder.tscn")
 const TEST_SCENE: String = "res://scenes/levels/tramo4_test.tscn"
 const LEVEL_PATH: String = "res://data/levels/1-1.json"
 const DT: float = 1.0 / 60.0
@@ -289,56 +288,22 @@ func test_door_glows_while_closed() -> void:
 	assert_eq(frames.keys().size(), 2, "Alterna cerrada y brillo")
 
 
-# --- Pantalla provisional del hub ---
-
-func test_hub_show_result_texts_and_points() -> void:
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	hub.show_result("1-1", 7)
-	assert_eq(hub.get_line_text(&"title"), "Regreso al hub (provisional)")
-	assert_eq(hub.get_line_text(&"completed"), "Nivel completado: Bandeja de entrada")
-	assert_eq(hub.get_line_text(&"points"), "Puntos de atención: 7")
-	assert_eq(hub.get_line_text(&"help"), "Pulsa salto para volver a jugar")
-	for line: String in hub.get_lines():
-		assert_eq(_uses_only_font_glyphs(hub.get_font(), line), [] as Array[String], line)
-	hub.show_result("9-9", 0)
-	assert_eq(hub.get_line_text(&"completed"), "Nivel completado: 9-9", "Sin datos: el id")
-
-
-func test_hub_restart_with_jump_after_delay() -> void:
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	hub.show_result("1-1", 3)
-	watch_signals(hub)
-	var jump := InputEventAction.new()
-	jump.action = &"jump"
-	jump.pressed = true
-	hub._unhandled_input(jump)
-	assert_signal_not_emitted(hub, "restart_requested", "Retardo: el salto de la puerta no reinicia")
-	hub.skip_input_delay()
-	hub._unhandled_input(jump)
-	assert_signal_emitted_with_parameters(hub, "restart_requested", ["1-1"])
-	var other := InputEventAction.new()
-	other.action = &"pulse"
-	other.pressed = true
-	hub._unhandled_input(other)
-	assert_eq(hub.get_restart_count(), 1, "Solo salto reinicia")
-
-
 # --- Escena de prueba y catalogo ---
 
-func test_tramo4_scene_flow_shows_hub() -> void:
+func test_tramo4_scene_flow_goes_to_real_hub() -> void:
 	var scene := (load(TEST_SCENE) as PackedScene).instantiate()
 	add_child_autofree(scene)
 	await wait_physics_frames(2)
 	var door: ExitDoor = scene.get_node(^"ExitDoor")
 	assert_not_null(scene.get_node(^"Hud"))
 	assert_not_null(scene.get_node(^"PopupBlocker") as PopupBlocker)
+	var switched: Array[String] = []
+	scene.set(&"scene_switcher", func(path: String) -> void: switched.append(path))
 	door.enter(scene.get_node(^"Isak") as Isak)
 	door.advance(2.0)
-	var hub: HubPlaceholder = scene.call(&"get_hub")
-	assert_not_null(hub, "level_completed muestra la pantalla provisional")
-	assert_eq(hub.get_level_id(), "1-1")
+	assert_eq(scene.call(&"get_completed_level"), "1-1")
+	assert_eq(switched, ["res://scenes/hub/hub.tscn"] as Array[String], "level_completed lleva al hub real")
+	assert_true(ResourceLoader.exists(switched[0]))
 	door.release_player()
 
 

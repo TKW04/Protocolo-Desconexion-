@@ -18,13 +18,17 @@
 ## - Red de seguridad: si Isak cae por debajo del nivel (fall_limit_margin_px)
 ##   reaparece igual, quitando fall_sync_penalty (PROPUESTA 0).
 ## - Final: EventBus.level_completed -> registra el nivel como completado y
-##   desbloquea sus `unlocks` (GameState), funde y muestra la pantalla
-##   provisional del hub con los puntos recogidos; su restart_requested
-##   reinicia el nivel desde cero.
+##   desbloquea sus `unlocks` (GameState), funde y carga el hub real
+##   (hub_scene de data/flow.json, HubRoom; paso 9 de
+##   docs/propuesta-hub-y-guardado.md) como hija: Isak llega por el vortice al
+##   terminar el fundido de entrada, con energia y Sync Rate llenos. Desde la
+##   carpeta del mundo se elige un subnivel: Isak se va por el vortice de salida
+##   y el LevelRunner funde y carga ese nivel (enter_level).
 ## - Teclas de prueba (dev_keys de data/flow.json): restart_level (R / Select)
 ##   reinicia el mapa actual desde el inicio como start_level (el guardado se
-##   conserva). Vale jugando, en el hub y durante la animacion de muerte (la
-##   sustituye); se ignora durante un fundido. Mantener debug_wipe_save (F9)
+##   conserva). Vale jugando, en el hub (vuelve a empezar el ultimo nivel
+##   jugado) y durante la animacion de muerte (la sustituye); se ignora durante
+##   un fundido. Mantener debug_wipe_save (F9)
 ##   wipe_hold_s borra el guardado (GameState.save_path) y reinicia el mapa;
 ##   solo en builds de depuracion, con un aviso en pantalla mientras se mantiene.
 ## - Avisos de control de las habilidades (AbilityNotices, hijo
@@ -54,7 +58,7 @@ signal phase_changed(phase: Phase)
 signal level_started(level_id: String)
 ## Isak ha reaparecido (`after_death`: por muerte; si no, por caida).
 signal respawned(position: Vector2, after_death: bool)
-## Se muestra la pantalla provisional del hub.
+## Se muestra el hub (tras completar `level_id`).
 signal hub_shown(level_id: String, attention_points: int)
 ## Se ha reiniciado el mapa con la tecla restart_level o tras borrar el guardado.
 signal level_restarted(level_id: String)
@@ -78,7 +82,7 @@ var _level: GeneratedLevel
 var _level_id: String = ""
 var _isak: Isak
 var _spawn_position: Vector2 = Vector2.ZERO
-var _hub: HubPlaceholder
+var _hub: HubRoom
 var _holder: Node
 var _transition: CanvasLayer
 var _fade: ColorRect
@@ -152,7 +156,8 @@ func get_isak() -> Isak:
 	return _isak
 
 
-func get_hub() -> HubPlaceholder:
+## Hub real cargado (null si se esta en un nivel).
+func get_hub() -> HubRoom:
 	return _hub
 
 
@@ -317,9 +322,11 @@ func advance(delta: float) -> void:
 				present_isak()
 
 
-## El nivel ya se ve: suelta el vortice de llegada de Isak, que lo materializa
-## y le devuelve el control. Falso si no habia llegada pendiente.
+## El nivel (o el hub) ya se ve: suelta el vortice de llegada de Isak, que lo
+## materializa y le devuelve el control. Falso si no habia llegada pendiente.
 func present_isak() -> bool:
+	if _hub != null and is_instance_valid(_hub):
+		return _hub.release_arrival()
 	if _arrival == null or not is_instance_valid(_arrival):
 		return false
 	return _arrival.release()
@@ -381,13 +388,25 @@ func _start_arrival() -> void:
 	_arrival = WarpVortex.arrive(_isak, _level, true)
 
 
+## Entra al subnivel `level_id` desde el hub: funde y lo carga desde cero.
+## Falso si no se esta en el hub, si hay un fundido en curso o si no existe.
+func enter_level(level_id: String) -> bool:
+	if _hub == null or _phase != Phase.PLAYING:
+		return false
+	var path: String = String(_data.get("level_scene_pattern", "res://scenes/levels/%s.tscn")) % level_id
+	if not ResourceLoader.exists(path):
+		return false
+	_fade_out_then(start_level.bind(level_id))
+	return true
+
+
 func _show_hub(level_id: String, attention_points: int) -> void:
 	_notices.stop()
 	_clear_level()
-	_hub = (load(String(_data["hub_scene"])) as PackedScene).instantiate() as HubPlaceholder
+	_hub = (load(String(_data.get("hub_scene", "res://scenes/hub/hub.tscn"))) as PackedScene).instantiate() as HubRoom
+	_hub.hold_arrival = true
+	_hub.level_handler = _on_hub_level_requested
 	_holder.add_child(_hub)
-	_hub.show_result(level_id, attention_points)
-	_hub.restart_requested.connect(_on_restart_requested)
 	hub_shown.emit(level_id, attention_points)
 
 
@@ -545,7 +564,5 @@ func _on_level_completed(level_id: String) -> void:
 	_fade_out_then(_show_hub.bind(level_id, GameState.attention_points))
 
 
-func _on_restart_requested(level_id: String) -> void:
-	if _phase != Phase.PLAYING:
-		return
-	_fade_out_then(start_level.bind(level_id))
+func _on_hub_level_requested(level_id: StringName) -> void:
+	enter_level(String(level_id))

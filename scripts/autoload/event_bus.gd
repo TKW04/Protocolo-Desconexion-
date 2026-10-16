@@ -86,10 +86,9 @@ signal eco_line_started(text: String)
 @warning_ignore("unused_signal")
 signal eco_line_finished
 
-## Isak ha cruzado la puerta de salida del nivel `level_id` (ExitDoor, al
-## terminar su animacion de apertura). El flujo de nivel (paso 16) lo usara
-## para volver al hub (C4); de momento hay una pantalla provisional
-## (scenes/hub/hub_placeholder.tscn).
+## Isak ha completado el nivel `level_id` (ExitTerminal o ExitDoor, al terminar
+## su salida). LevelRunner lo usa para volver al hub real (C4; paso 9 de
+## docs/propuesta-hub-y-guardado.md, scenes/hub/hub.tscn).
 @warning_ignore("unused_signal")
 signal level_completed(level_id: String)
 

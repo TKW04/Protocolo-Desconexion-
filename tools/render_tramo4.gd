@@ -4,7 +4,7 @@
 ##   3_popup_cerrado.png      el paso libre
 ##   4_puerta.png             la puerta "Marcar como leído" con su etiqueta y brillo
 ##   5_puerta_entrando.png    Isak entrando (puerta abriendose, Isak desvaneciendose)
-##   6_hub_provisional.png    la pantalla provisional de regreso al hub
+##   6_puerta_completada.png  la puerta ya cruzada (el paso al hub real no se ejecuta aqui)
 ##   7_techo_burbuja.png      Tramo 3 del 1-1 (geometria real del JSON): techo bajo y Burbuja
 ##   8_techo_aturdida.png     la Burbuja aturdida con el pulso, Isak cruzandola
 ## Escenas: scenes/levels/tramo4_test.tscn y, para el techo, un montaje con las
@@ -34,6 +34,7 @@ func _run() -> void:
 	var out_dir: String = args[0] if args.size() > 0 else ProjectSettings.globalize_path(DEFAULT_OUT)
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var level: Node = (load(SCENE) as PackedScene).instantiate()
+	level.set(&"scene_switcher", func(_path: String) -> void: pass)
 	root.add_child(level)
 	var isak: Node2D = level.get_node(^"Isak")
 	var popup: Node2D = level.get_node(^"PopupBlocker")
@@ -68,7 +69,7 @@ func _run() -> void:
 	for i: int in 60:
 		await physics_frame
 	print("render_tramo4: puerta completada %d vez/veces" % door.call(&"get_completed_count"))
-	await _save(out_dir, "6_hub_provisional.png")
+	await _save(out_dir, "6_puerta_completada.png")
 	level.queue_free()
 	await process_frame
 	await _ceiling_shots(out_dir)
