@@ -17,8 +17,9 @@
 ##   haberse puesto de espaldas antes del vortice),
 ##   llega al hub real (paso 9: vortice de llegada; nivel completado, 1-2
 ##   desbloqueado, energia llena, «Sin guardar» y nada escrito: guardado
-##   manual, 2026-10-15), camina a la copia local y guarda con el pulso, sube a
-##   la repisa de la carpeta del Mundo 1, la abre y elige el 1-1: el nivel vuelve
+##   manual, 2026-10-15), camina a la copia local y guarda con el pulso, sube a la repisa de
+##   la carpeta del Mundo 1, la abre y elige el 1-1 (si pidiera confirmar por
+##   cambios sin guardar, elige «Entrar sin guardar»): el nivel vuelve
 ##   a empezar con Sync Rate y objetos desde cero, pero los puntos de atencion
 ##   se conservan y los ya capturados no reaparecen (decision 2026-10-14).
 ## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH
@@ -506,6 +507,11 @@ func _enter_from_folder(hub: HubRoom) -> bool:
 	if panel.get_selected_option() != &"1-1":
 		return _fail("la primera opcion de la carpeta no es el 1-1")
 	await _press_action(&"pulse")
+	# Con cambios sin guardar la carpeta pide confirmacion: entrar sin guardar.
+	if panel.is_confirming_unsaved():
+		_note("carpeta: «%s» -> Entrar sin guardar" % panel.get_title())
+		await _wait_frames(15)
+		await _press_action(&"pulse")
 	if hub.get_entering_level() != &"1-1":
 		return _fail("elegir el 1-1 no lleva al vortice de salida")
 	_note("elige el 1-1: vortice de salida")

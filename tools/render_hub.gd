@@ -17,7 +17,9 @@
 ##   11_carpeta_prompt.png       Isak en la repisa de M1: tecla del pulso
 ##   12_panel_subniveles.png     panel de subniveles de M1 (1-1 completado, 1-2 y 1-3 Proximamente)
 ##   13_carpeta_bloqueada.png    Isak en la repisa de M2: «Sin descargar»
-##   14_entrar_vortice.png       tras elegir el 1-1: Isak de espaldas absorbido por el vortice
+##   14_confirmar_sin_guardar.png elegir el 1-1 con cambios sin guardar (la compra):
+##                               «¿Seguro? Aún no has guardado.» (Entrar sin guardar / Volver)
+##   15_entrar_vortice.png       tras «Entrar sin guardar»: Isak de espaldas absorbido por el vortice
 ##                               (el nivel no se carga: scene_switcher lo descarta)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_hub.gd [-- carpeta_salida]
@@ -150,18 +152,24 @@ func _run() -> void:
 	await _frames(30)
 	_check(locked.call(&"is_locked_hint_visible"), "no sale «Sin descargar»")
 	await _save(out_dir, "13_carpeta_bloqueada.png")
-	# 14. Elegir el 1-1: vortice de salida (sin cargar el nivel).
+	# 14. Elegir el 1-1 con cambios sin guardar: confirmacion.
 	_hub.set(&"scene_switcher", func(runner: Node) -> void: runner.free())
 	isak.global_position = Vector2(folder.position.x + 96.0, float(_hub.call(&"get_shelf_top_y")))
 	await _frames(30)
 	folder.call(&"open", isak)
 	folder_panel.call(&"select_option", &"1-1")
 	folder_panel.call(&"confirm")
+	_check(folder_panel.call(&"is_confirming_unsaved"), "no pide confirmar con cambios sin guardar")
+	await _frames(4)
+	await _save(out_dir, "14_confirmar_sin_guardar.png")
+	# 15. Entrar sin guardar: vortice de salida (sin cargar el nivel).
+	folder_panel.call(&"select_option", &"enter_unsaved")
+	folder_panel.call(&"confirm")
 	var departure: Node = _hub.call(&"get_departure_vortex")
 	_check(departure != null, "no hay vortice de salida")
 	_check(await _wait(func() -> bool:
 		return is_instance_valid(departure) and int(departure.call(&"get_phase")) == 3), "el vortice de salida no se cierra")
-	await _save_frozen(out_dir, "14_entrar_vortice.png")
+	await _save_frozen(out_dir, "15_entrar_vortice.png")
 	_check(await _wait(func() -> bool: return not _hub.is_inside_tree()), "no se pasa al nivel")
 	print("render_hub: %s" % ("OK" if _ok else "FALLO"))
 	if is_instance_valid(_hub):

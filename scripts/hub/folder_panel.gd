@@ -10,10 +10,19 @@
 ##   carpeta cierra el panel e Isak se va por el vortice). Sobre uno bloqueado:
 ##   mensaje (Bloqueado / Proximamente) y no pasa nada mas. Salto o Volver:
 ##   close_requested.
+## - Cambios sin guardar (paso 10, primer hub guiado; decision 2026-10-15):
+##   SIEMPRE que se elige un subnivel disponible o completado con
+##   GameState.has_unsaved_changes(), antes de entrar se pide confirmacion
+##   («¿Seguro? Aún no has guardado.»: Entrar sin guardar / Volver). Volver (o
+##   salto) deja en la lista del panel; con todo guardado entra directo.
 class_name FolderPanel
 extends HubPanel
 
+enum Mode { LIST, CONFIRM_UNSAVED }
+
 const OPTION_BACK: StringName = &"back"
+const OPTION_ENTER_UNSAVED: StringName = &"enter_unsaved"
+const OPTION_STAY: StringName = &"stay"
 
 ## Se eligio entrar al subnivel `level_id`.
 signal level_chosen(level_id: StringName)
@@ -22,6 +31,28 @@ signal level_chosen(level_id: StringName)
 var world_entry: Dictionary = {}
 
 var _folders: Dictionary = HubData.section("folders")
+var _mode: Mode = Mode.LIST
+## Subnivel pendiente de confirmar (modo CONFIRM_UNSAVED).
+var _pending_level: StringName = &""
+
+
+func open() -> void:
+	_mode = Mode.LIST
+	_pending_level = &""
+	super.open()
+
+
+func get_mode() -> Mode:
+	return _mode
+
+
+## Verdadero mientras se pide confirmar la entrada sin guardar.
+func is_confirming_unsaved() -> bool:
+	return _mode == Mode.CONFIRM_UNSAVED
+
+
+func get_pending_level() -> StringName:
+	return _pending_level
 
 
 ## Rellena el panel con el estado actual de GameState.
@@ -30,6 +61,14 @@ func refresh() -> void:
 		return
 	var texts: Dictionary = _folders.get("texts", {})
 	var colors: Dictionary = _folders.get("colors", {})
+	if _mode == Mode.CONFIRM_UNSAVED:
+		set_title(String(texts.get("confirm_unsaved_title", "")))
+		set_lines([{"text": level_text(_level(_pending_level)), "color": String(colors.get("summary", "texto_tenue"))}])
+		set_options([{"id": OPTION_ENTER_UNSAVED, "text": String(texts.get("option_enter_unsaved", ""))},
+			{"id": OPTION_STAY, "text": String(texts.get("option_stay", "Volver"))}])
+		set_help(String(texts.get("confirm_help", texts.get("help", ""))))
+		super.refresh()
+		return
 	set_title(String(texts.get("title", "%d %s")) % [int(world_entry.get("world", 0)), String(world_entry.get("name", ""))])
 	set_lines([{"text": HubWorlds.access_label(),
 		"color": String(colors.get("summary", "texto_tenue"))}])
@@ -77,9 +116,19 @@ func state_text(level: Dictionary) -> String:
 # --- HubPanel ---
 
 func _on_confirm(id: StringName) -> void:
-	if id == OPTION_BACK:
-		close_requested.emit()
-		return
+	match id:
+		OPTION_BACK:
+			close_requested.emit()
+			return
+		OPTION_ENTER_UNSAVED:
+			var pending: StringName = _pending_level
+			_back_to_list()
+			if not pending.is_empty():
+				level_chosen.emit(pending)
+			return
+		OPTION_STAY:
+			_back_to_list()
+			return
 	var level: Dictionary = _level(id)
 	if level.is_empty():
 		return
@@ -89,7 +138,32 @@ func _on_confirm(id: StringName) -> void:
 		var key: String = "message_coming_soon" if HubWorlds.is_coming_soon(level) else "message_locked"
 		set_message(String(texts.get(key, "")), String(colors.get("message", "texto_claro")))
 		return
+	if GameState.has_unsaved_changes():
+		_mode = Mode.CONFIRM_UNSAVED
+		_pending_level = id
+		_selected = 0
+		set_message("")
+		refresh()
+		return
 	level_chosen.emit(id)
+
+
+func _on_cancel() -> void:
+	if _mode == Mode.CONFIRM_UNSAVED:
+		_back_to_list()
+	else:
+		close_requested.emit()
+
+
+## Vuelve a la lista de subniveles con el subnivel pendiente elegido.
+func _back_to_list() -> void:
+	var pending: StringName = _pending_level
+	_mode = Mode.LIST
+	_pending_level = &""
+	set_message("")
+	refresh()
+	if not pending.is_empty():
+		select_option(pending)
 
 
 func _refresh_options() -> void:

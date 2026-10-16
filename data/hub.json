@@ -99,7 +99,11 @@
 			"message_locked": "Bloqueado: completa el anterior",
 			"message_coming_soon": "Próximamente",
 			"option_back": "Volver",
-			"help": "Arriba/abajo: elegir. Pulso: entrar. Salto: volver"
+			"help": "Arriba/abajo: elegir. Pulso: entrar. Salto: volver",
+			"confirm_unsaved_title": "¿Seguro? Aún no has guardado.",
+			"option_enter_unsaved": "Entrar sin guardar",
+			"option_stay": "Volver",
+			"confirm_help": "Arriba/abajo: elegir. Pulso: aceptar. Salto: volver"
 		},
 		"colors": {
 			"summary": "texto_tenue",

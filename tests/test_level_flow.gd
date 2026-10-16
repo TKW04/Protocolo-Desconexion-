@@ -112,7 +112,8 @@ func _complete_level() -> void:
 
 
 ## Desde el hub real: Isak termina de llegar, abre la carpeta del Mundo 1,
-## elige el 1-1, se va por el vortice de salida y el LevelRunner carga el nivel.
+## elige el 1-1 (con cambios sin guardar confirma «Entrar sin guardar»), se va
+## por el vortice de salida y el LevelRunner carga el nivel.
 func _enter_level_from_hub() -> void:
 	var hub: HubRoom = _main.get_hub()
 	assert_not_null(hub, "En el hub real")
@@ -126,6 +127,10 @@ func _enter_level_from_hub() -> void:
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"1-1"))
 	panel.confirm()
+	# Con cambios sin guardar (paso 10) se pide confirmacion: entrar sin guardar.
+	if panel.is_confirming_unsaved():
+		assert_true(panel.select_option(FolderPanel.OPTION_ENTER_UNSAVED))
+		panel.confirm()
 	var departure: WarpVortex = hub.get_departure_vortex()
 	assert_not_null(departure, "Vortice de salida")
 	departure.advance(LONG_STEP_S)
