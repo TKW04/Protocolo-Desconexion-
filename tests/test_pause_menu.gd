@@ -177,7 +177,7 @@ func test_settings_page_toggles_eco_help_and_back() -> void:
 	_menu.request_open()
 	_menu.activate(PauseMenu.Option.SETTINGS)
 	assert_eq(_menu.get_options(), [PauseMenu.Option.ECO_HELP, PauseMenu.Option.LOW_SYNC,
-		PauseMenu.Option.DEBUG_OUTLINE, PauseMenu.Option.DISPLAY, PauseMenu.Option.BACK] as Array[PauseMenu.Option])
+		PauseMenu.Option.DEBUG_OUTLINE, PauseMenu.Option.DISPLAY, PauseMenu.Option.CONTROLS, PauseMenu.Option.BACK] as Array[PauseMenu.Option])
 	assert_eq(_menu.option_text(PauseMenu.Option.ECO_HELP), "Ayudas de Eco: Mostrar")
 	_press(&"ui_accept")
 	assert_false(GameSettings.is_eco_help_shown(), "Aceptar cambia el ajuste")

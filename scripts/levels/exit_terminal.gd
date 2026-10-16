@@ -62,6 +62,8 @@ var _vortex: WarpVortex
 func _ready() -> void:
 	add_to_group(GROUP)
 	_build()
+	# La tecla se vuelve a leer del Input Map al reasignar los controles.
+	EventBus.controls_changed.connect(refresh_key)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	EventBus.pulse_fired.connect(receive_pulse)
@@ -354,3 +356,16 @@ func _plate(node_name: String, label_text: String, font: Font, plate_color: Stri
 		pad: float, width: float, bottom: float) -> Node2D:
 	return PulsePrompt.make_plate(self, node_name, label_text, font, int(_config.get("font_size", 12)),
 		int(_config.get("font_scale", 2)), plate_color, border_color, pad, width, bottom)
+
+
+## Vuelve a leer la tecla del pulso del Input Map (tras reasignar los controles).
+func refresh_key() -> void:
+	if _key_root == null:
+		return
+	PulsePrompt.set_plate_text(_key_root, _pulse_key_text(), load(String(_config["font"])) as Font, int(_config.get("font_size", 12)),
+		float(_config.get("key_padding_px", 3)))
+
+
+## Texto de la tecla que muestra el prompt (pruebas).
+func get_key_text() -> String:
+	return (_key_root.get_node(^"Text") as Label).text if _key_root != null else ""

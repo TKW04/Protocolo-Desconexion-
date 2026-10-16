@@ -13,6 +13,13 @@
 ##   07_salir_al_hub.png  en el 1-1 ya completado: «Salir al hub» en la principal
 ##   08_confirmar_salir.png su confirmacion («¿Salir al hub? Perderas este
 ##                         intento.», Salir / Volver)
+##   09_ajustes.png       Ajustes completo (Ayudas de Eco, Sync bajo, contorno del
+##                         Debug, Pantalla, Controles), en el hub
+##   10_pantalla.png      Ajustes > Pantalla (modo, tamano, escala entera)
+##   11_controles.png     Ajustes > Controles (tecla / boton de cada accion)
+##   12_captura.png       «Pulsa una tecla o boton…» para Saltar
+##   13_conflicto.png     G ya es de Pulso: Intercambiar / Cancelar
+##   14_intercambio.png   tras intercambiar: Saltar con G, Pulso con Espacio
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_pause_menu.gd [-- carpeta_salida]
 extends SceneTree
@@ -125,6 +132,29 @@ func _run() -> void:
 	var hub_menu: Node = get_first_node_in_group(&"pause_menu")
 	_check(hub_menu != null and hub_menu.call(&"is_open"), "el icono del hub abre el menu")
 	await _save(out_dir, "06_hub_pausa.png")
+	# Ajustes con todos sus apartados, Pantalla y Controles (con un conflicto).
+	hub_menu.call(&"activate", 1)  # SETTINGS
+	hub_menu.call(&"select", 7)  # LOW_SYNC
+	await _save(out_dir, "09_ajustes.png")
+	hub_menu.call(&"activate", 9)  # DISPLAY
+	await _save(out_dir, "10_pantalla.png")
+	_press(&"pause")
+	hub_menu.call(&"activate", 12)  # CONTROLS
+	hub_menu.call(&"select_action", &"jump")
+	await _save(out_dir, "11_controles.png")
+	_press(&"ui_accept")
+	await create_timer(0.4).timeout
+	_check(int(hub_menu.call(&"get_page")) == 5, "captura abierta")
+	await _save(out_dir, "12_captura.png")
+	_key(KEY_G)
+	await create_timer(0.1).timeout
+	_check(int(hub_menu.call(&"get_page")) == 6, "conflicto con el pulso")
+	await _save(out_dir, "13_conflicto.png")
+	hub_menu.call(&"activate", 16)  # SWAP
+	await create_timer(0.1).timeout
+	_check(InputMap.event_is_action(_key_event(KEY_G), &"jump", true), "Saltar con G tras intercambiar")
+	await _save(out_dir, "14_intercambio.png")
+	load("res://scripts/autoload/control_bindings.gd").call(&"restore_defaults")
 	hub_menu.call(&"close")
 	hub.queue_free()
 	await process_frame
@@ -136,6 +166,19 @@ func _press(action: StringName) -> void:
 	for pressed: bool in [true, false]:
 		var event := InputEventAction.new()
 		event.action = action
+		event.pressed = pressed
+		root.push_input(event)
+
+
+func _key_event(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	return event
+
+
+func _key(code: Key) -> void:
+	for pressed: bool in [true, false]:
+		var event := _key_event(code)
 		event.pressed = pressed
 		root.push_input(event)
 

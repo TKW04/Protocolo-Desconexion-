@@ -2,5 +2,31 @@
 	"_notes": "Ajustes del jugador (GameSettings, scripts/autoload/game_settings.gd; settings.cfg, guardado al instante y aparte de la partida). display (2026-10-16, decision del usuario): modo de ventana (Ventana / Pantalla completa) y tamano de la ventana. window_presets: tamanos que se ofrecen en Ajustes > Pantalla, en px; solo se listan los que caben en el monitor actual (nunca uno mayor; 1280x720, la resolucion base, siempre). El juego se dibuja SIEMPRE a 1280x720 (stretch viewport) y se escala por un factor ENTERO (scale_mode integer) para que el pixel art no se deforme: si el tamano de la ventana o de la pantalla no es multiplo exacto de 1280x720, el juego queda centrado con bordes negros (letterbox; p. ej. 1600x900 y 1920x1080 se ven a x1 con bordes y 2560x1440 a x2 sin bordes). Por defecto: ventana de 1280x720 (el comportamiento anterior). Las pruebas (GUT) y los scripts -s (bots, capturas) nunca cambian la ventana real.",
 	"display": {
 		"window_presets": [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]]
+	},
+	"controls": {
+		"_notes": "Reasignar controles (ControlBindings, scripts/autoload/control_bindings.gd; 2026-10-16, decision del usuario). actions: acciones del Input Map que se pueden reasignar en Ajustes > Controles, en este orden, con su nombre en la UI (las teclas de depuracion y de pruebas, la R de reiniciar y las ui_* no se reasignan). Cada fila tiene una entrada principal de teclado (la primera tecla de la accion) y otra de mando (el primer boton o eje); reasignar sustituye esa entrada y conserva las demas (p. ej. las flechas o la cruceta de mover). Si la nueva entrada ya es de otra accion (conflicto) se ofrece intercambiar (la otra recibe la entrada anterior) o cancelar: nunca queda una accion sin entrada de su dispositivo. reserved: entradas fijas de la pausa (Esc y Start): siempre abren el menu de pausa aunque se reasigne su fila, no se pueden dar a otra accion y cancelan la captura. reserved_actions: sus entradas no se pueden asignar (R / Select de reiniciar, F9 y F1-F4 de depuracion). ignored_buttons: botones que no se capturan (5 = Guia). axis_threshold: inclinacion minima de un eje para capturarlo (se guarda como +1 o -1). capture_arm_s: segundos reales tras abrir la captura en que se ignora la entrada (la pulsacion que la abrio o un stick aun inclinado). Se guardan en la seccion controls de settings.cfg como eventos serializados (tecla fisica, boton o eje) solo para las acciones que cambian; se aplican al arrancar sobre el Input Map. Nombres de teclas y botones: tablas de data/ability_notices.json (key_names, pad_buttons, pad_axes); si un nombre usa un glifo que no esta en la fuente de textos se muestra «Tecla <codigo>».",
+		"actions": [
+			{"action": "move_left", "name": "Mover a la izquierda"},
+			{"action": "move_right", "name": "Mover a la derecha"},
+			{"action": "jump", "name": "Saltar"},
+			{"action": "run", "name": "Correr"},
+			{"action": "pulse", "name": "Pulso"},
+			{"action": "laser", "name": "Láser"},
+			{"action": "debug", "name": "Debug"},
+			{"action": "help", "name": "Ayuda de Eco"},
+			{"action": "pause", "name": "Pausa"}
+		],
+		"reserved": {
+			"action": "pause",
+			"events": [{"type": "key", "physical_keycode": 4194305}, {"type": "joy_button", "button": 6}]
+		},
+		"reserved_actions": ["restart_level", "debug_wipe_save", "hud_debug_sync_down", "hud_debug_sync_up", "hud_debug_energy_down", "hud_debug_attention_add"],
+		"ignored_buttons": [5],
+		"axis_threshold": 0.6,
+		"capture_arm_s": 0.15,
+		"unknown_key": "Tecla {code}",
+		"unknown_button": "Botón {code}",
+		"unknown_axis": "Eje {code}",
+		"none": "Sin asignar"
 	}
 }

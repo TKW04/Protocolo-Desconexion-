@@ -30,6 +30,10 @@
 ##   defecto no se toca la ventana al arrancar). Se aplica al cambiarlo y al
 ##   arrancar (apply_display); NUNCA en GUT, con scripts -s (bots, capturas) ni
 ##   sin ventana (headless): can_change_window().
+## - Controles (2026-10-16, seccion controls): las acciones reasignadas en
+##   Ajustes > Controles (ControlBindings) se guardan como eventos serializados
+##   (tecla fisica, boton o eje) solo si difieren de project.godot y se aplican
+##   al cargar sobre el Input Map. Sin la seccion: los de project.godot.
 ## Clase estatica (sin autoload): la carga la primera consulta o GameState al
 ## arrancar (use_path). Cambios: EventBus.settings_changed(key, value).
 class_name GameSettings
@@ -46,6 +50,7 @@ const PATH_ENV: String = "ISAK_SETTINGS_PATH"
 const SECTION_HELP: String = "help"
 const SECTION_ACCESSIBILITY: String = "accessibility"
 const SECTION_DISPLAY: String = "display"
+const SECTION_CONTROLS: String = "controls"
 const DATA_PATH: String = "res://data/settings.json"
 const KEY_WINDOW_MODE: StringName = &"window_mode"
 const KEY_WINDOW_SIZE: StringName = &"window_size"
@@ -124,6 +129,11 @@ static func load_from_disk() -> void:
 		var stored: Variant = config.get_value(SECTION_DISPLAY, String(KEY_WINDOW_SIZE), base_size())
 		if stored is Vector2i and window_presets().has(stored as Vector2i):
 			_window_size = stored as Vector2i
+	var controls: Dictionary = {}
+	if loaded and config.has_section(SECTION_CONTROLS):
+		for key: String in config.get_section_keys(SECTION_CONTROLS):
+			controls[key] = config.get_value(SECTION_CONTROLS, key)
+	ControlBindings.apply_overrides(controls)
 	if not is_display_default():
 		apply_display()
 
@@ -136,6 +146,8 @@ static func reset_defaults() -> void:
 	_apply_game_state()
 	_window_mode = WINDOW_MODE_WINDOWED
 	_window_size = base_size()
+	ControlBindings.restore_defaults(false)
+	EventBus.controls_changed.emit()
 
 
 ## Escribe todos los ajustes en su archivo. Falso si no se pudo.
@@ -146,6 +158,9 @@ static func save() -> bool:
 		config.set_value(String(BOOLS[key][0]), String(key), _bools.get(key, BOOLS[key][1]))
 	config.set_value(SECTION_DISPLAY, String(KEY_WINDOW_MODE), _window_mode)
 	config.set_value(SECTION_DISPLAY, String(KEY_WINDOW_SIZE), _window_size)
+	var controls: Dictionary = ControlBindings.overrides()
+	for action: Variant in controls:
+		config.set_value(SECTION_CONTROLS, String(action), controls[action])
 	var error: Error = config.save(_path)
 	if error != OK:
 		push_warning("GameSettings: no se pudieron guardar los ajustes en '%s' (%s)." % [_path, error_string(error)])
