@@ -10,6 +10,17 @@
 ## solido. Aspecto (EnergySprite, docs/estilizacion-energia.md): chip
 ## ability_pickup_idle que flota (tiempo del mundo); al recogerlo pasa a
 ## ability_pickup_collected justo antes de liberarse.
+## Por habilidad (seccion ability_pickup.by_ability de data/world1_objects.json;
+## 2026-10-16, paso 9 de docs/propuesta-1-2.md §10): el chip del Debug usa su
+## arte (debug_chip_idle de assets/sprites/puzzle_objects_frames.tres) y su
+## propia ayuda con Q (help_id debug_chip, si el nivel no pone otra); al
+## recogerlo la PRIMERA vez Eco dice su linea de historia (story_text, linea
+## importante, ANTES del aviso de control que da AbilityNotices al obtenerla:
+## las importantes salen en orden) y se ve la instalacion (anillo
+## debug_chip_collect y un destello del tinte del Debug a pantalla completa,
+## en tiempo real para que se vea con la pausa de la linea). refill_energy
+## (param del nivel): llena la energia al recogerlo (decision aprobada: solo
+## ese chip y la primera vez; con la habilidad ya obtenida el chip no aparece).
 class_name AbilityPickup
 extends Area2D
 
@@ -24,6 +35,8 @@ const CONFIG_PATH: String = "res://data/world1_objects.json"
 ## Texto extra en el cuadro de Eco al recogerlo (vacio = ninguno; el aviso del
 ## control lo da AbilityNotices).
 @export var message: String = ""
+## Llena la energia de Debug al recogerlo (el chip del Debug del 1-2).
+@export var refill_energy: bool = false
 
 var _taken: bool = false
 var _time: float = 0.0
@@ -32,6 +45,8 @@ var _bob_px: float = 4.0
 var _bob_hz: float = 1.5
 var _message_s: float = 4.0
 var _sprite: EnergySprite
+## Ajustes de la habilidad (by_ability.<ability>; vacio si no tiene).
+var _ability_cfg: Dictionary = {}
 
 
 func _ready() -> void:
@@ -55,7 +70,12 @@ func _ready() -> void:
 	shape.position = _center()
 	add_child(shape)
 	body_entered.connect(_on_body_entered)
-	_sprite = EnergySprite.attach(self, &"ability_pickup_idle", _center())
+	var own_help: StringName = StringName(String(_ability_cfg.get("help_id", "")))
+	if own_help != &"" and HelpCatalog.help_id_of(self) == StringName(String(
+			World1ObjectsConfig.type_entry("ability_pickup").get("help_id", ""))):
+		HelpCatalog.tag(self, own_help)
+	_sprite = EnergySprite.attach(self, StringName(String(_ability_cfg.get("idle", "ability_pickup_idle"))),
+		_center(), false, String(_ability_cfg.get("frames", "")))
 
 
 func _process(delta: float) -> void:
@@ -90,9 +110,17 @@ func collect_by(body: Node) -> bool:
 	if _taken or not body is Isak:
 		return false
 	_taken = true
-	if _sprite != null:
+	if _sprite != null and _ability_cfg.is_empty():
 		_sprite.show_state(&"ability_pickup_collected")
+	var first: bool = not GameState.is_ability_obtained(ability)
+	if first:
+		var story: String = get_story_text()
+		if not story.is_empty():
+			EventBus.eco_line_requested.emit(story, float(_ability_cfg.get("story_duration_s", _message_s)), true)
+		_play_install()
 	var obtained: bool = GameState.obtain_ability(ability)
+	if obtained and refill_energy:
+		GameState.refill_debug_energy()
 	if obtained:
 		var text: String = get_message()
 		if not text.is_empty():
@@ -100,6 +128,25 @@ func collect_by(body: Node) -> bool:
 		collected.emit(ability)
 	queue_free()
 	return obtained
+
+
+## Linea de historia de Eco al recogerlo por primera vez (by_ability.<ability>.story_text; "" = ninguna).
+func get_story_text() -> String:
+	return String(_ability_cfg.get("story_text", ""))
+
+
+## Instalacion: anillo y destello del tinte (tiempo real, siguen con la pausa
+## de la linea de historia). Se cuelgan del padre: el chip se libera ya.
+func _play_install() -> void:
+	var anim: StringName = StringName(String(_ability_cfg.get("collect", "")))
+	var parent: Node = get_parent()
+	if anim == &"" or parent == null:
+		return
+	var effect := InstallEffect.new()
+	effect.name = "%sInstall" % name
+	effect.setup(String(_ability_cfg.get("frames", "")), anim, position + _center(),
+		_ability_cfg.get("flash", {}))
+	parent.add_child(effect)
 
 
 ## Centro del sprite y de la zona de recogida: centro de la celda (x, y).
@@ -118,6 +165,9 @@ func _load_config() -> void:
 	_bob_px = float(cfg.get("bob_px", _bob_px))
 	_bob_hz = float(cfg.get("bob_hz", _bob_hz))
 	_message_s = float(cfg.get("message_s", _message_s))
+	var by_ability: Variant = cfg.get("by_ability", {})
+	if by_ability is Dictionary and (by_ability as Dictionary).get(String(ability)) is Dictionary:
+		_ability_cfg = by_ability[String(ability)]
 
 
 func _on_body_entered(body: Node2D) -> void:
