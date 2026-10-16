@@ -169,6 +169,7 @@ No se guardan: Sync Rate, energía y checkpoints (el hub los repone), ni el enfr
 - Si no hay cambios, el panel dice «Todo está guardado» (no hace falta confirmar).
 - No se guarda al capturar puntos, comprar mejoras ni completar niveles. Todo eso queda **en memoria** y marca «sin guardar».
 - La escritura sigue siendo atómica (`.tmp` y renombrado). Se propone además guardar la copia anterior como `save.json.bak` (pregunta 10).
+- **Arranque (2026-10-16):** como solo se guarda en el hub, abrir el juego con una partida guardada (o con su `.bak` si el principal está corrupto) lleva directamente al hub, con la llegada normal por el vórtice; sin partida, se empieza en el 1-1. Ver `CLAUDE.md`, «Arranque del juego».
 
 ### 4.3 Indicador «sin guardar»
 
