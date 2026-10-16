@@ -1,0 +1,72 @@
+[gd_resource type="SpriteFrames" load_steps=14 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_ready_00.png" id="1_charger_ready_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_ready_01.png" id="2_charger_ready_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_ready_02.png" id="3_charger_ready_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_ready_03.png" id="4_charger_ready_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_00.png" id="5_charger_cooling_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_01.png" id="6_charger_cooling_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_02.png" id="7_charger_cooling_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_03.png" id="8_charger_cooling_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_04.png" id="9_charger_cooling_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_05.png" id="10_charger_cooling_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_06.png" id="11_charger_cooling_06"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_cooling_07.png" id="12_charger_cooling_07"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/charger/charger_spent_00.png" id="13_charger_spent_00"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_charger_ready_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_charger_ready_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_charger_ready_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_charger_ready_03")
+}],
+"loop": true,
+"name": &"charger_ready",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_charger_cooling_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_charger_cooling_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_charger_cooling_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_charger_cooling_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_charger_cooling_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_charger_cooling_05")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_charger_cooling_06")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_charger_cooling_07")
+}],
+"loop": false,
+"name": &"charger_cooling",
+"speed": 0.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_charger_spent_00")
+}],
+"loop": false,
+"name": &"charger_spent",
+"speed": 0.0
+}]

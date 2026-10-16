@@ -23,6 +23,10 @@ Salidas (assets/sprites/hub/):
                acento_cian y se tambalea), papelera_emptying_00..03
                (se vacia al recuperar), papelera_empty_00 (activada y
                vacia); la dormida es dock_slot_trash_00             64x96
+  charger/     charger_ready_00..03, charger_cooling_00..07,
+               charger_spent_00 (cargador de energia del dock: el
+               dibujo de tools/gen_energy_objects.py con los colores
+               del Mundo 1 cambiados por los del hub, CHARGER_REMAP) 32x64
   album/       album_cell_00, album_cell_selected_00 (marco de
                ficha del album de Notas)                       40x40
                album_folder_closed_00, album_folder_open_00,
@@ -938,6 +942,39 @@ def album_folder(state):
     return cv.img
 
 
+# ------------------------------------------------------------- cargador
+# Cargador de energia del hub (2026-10-16): el MISMO dibujo que el de los niveles
+# (tools/gen_energy_objects.py, charger; estados ready/cooling/spent con los
+# mismos cuadros) con los colores del Mundo 1 que no estan en hub.gpl cambiados
+# por su rol equivalente del hub (contorno, pantalla, sombra y cuerpo). Los demas
+# (borde_luz, resplandor y los cian) ya son colores del hub con el mismo hex.
+def _energy_module():
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gen_energy_objects
+    return gen_energy_objects
+
+
+def charger_remap():
+    ge = _energy_module()
+    return {ge.N: FP,    # noche_profunda -> fondo_profundo (contorno)
+            ge.TS: SO,   # tile_sombra -> sombra (pantalla)
+            ge.TB: PA,   # tile_base -> panel (sombra del cuerpo, trazas apagadas)
+            ge.TL: DK}   # tile_luz -> dock (cuerpo)
+
+
+def charger(state, f=0, progress=0.0):
+    ge = _energy_module()
+    remap = charger_remap()
+    im = ge.charger(state, f, progress).copy()
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            c = px[x, y]
+            if c[3] and c in remap:
+                px[x, y] = remap[c]
+    return im
+
+
 def page_dot(current):
     cv = Canvas(8, 8)
     cv.stamp(0, 0, DOT_FULL if current else DOT_RING, {"#": TC if current else TT})
@@ -991,6 +1028,12 @@ def outputs():
         out[f"album/album_folder_{st}_00.png"] = album_folder(st)
     out["icons/page_dot_current_00.png"] = page_dot(True)
     out["icons/page_dot_other_00.png"] = page_dot(False)
+    # Mismos cuadros y progresos que tools/gen_energy_objects.py (outputs).
+    for f in range(4):
+        out[f"charger/charger_ready_{f:02d}.png"] = charger("ready", f)
+    for i in range(8):
+        out[f"charger/charger_cooling_{i:02d}.png"] = charger("cooling", progress=i / 7 * 0.875 + 0.0)
+    out["charger/charger_spent_00.png"] = charger("spent")
     return out
 
 
@@ -1016,6 +1059,11 @@ FRAMES = {
                              ("active", "papelera/papelera_active", 4, 6.0, True),
                              ("emptying", "papelera/papelera_emptying", 4, 8.0, False),
                              ("empty", "papelera/papelera_empty", 1, 1.0, True)],
+    # Mismas animaciones (nombre, cuadros, fps y bucle) que las charger_* de
+    # assets/sprites/energy_objects_frames.tres: las usa Charger (EnergySprite).
+    "charger_frames.tres": [("charger_ready", "charger/charger_ready", 4, 8.0, True),
+                            ("charger_cooling", "charger/charger_cooling", 8, 0.0, False),
+                            ("charger_spent", "charger/charger_spent", 1, 0.0, False)],
 }
 
 
@@ -1129,6 +1177,8 @@ def scene(imgs, path, state="off"):
     put("calc/calc_off_00.png", 7, 8, bottom=True, dy=-64 + 64 - 0)
     put("dock_slots/dock_slot_flashlight_00.png", 13, 8, bottom=True)
     put("dock_slots/dock_slot_trash_00.png", 10, 8, bottom=True)  # papelera dormida
+    if "charger" in hub:  # cargador del dock (celda sobre el suelo, centrado en x)
+        put("charger/charger_ready_00.png", int(hub["charger"]["col"]), 8, dx=16, bottom=True)
     # HUD (franja de prueba): Modo Avion, «sin guardar» e indicador de pagina.
     hud = Image.new("RGBA", (1280, 40), FP)
     bg.alpha_composite(hud, (0, 0))

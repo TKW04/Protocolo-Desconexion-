@@ -44,6 +44,7 @@ SIZES = {
     ("album", "album_folder_"): (32, 32, True),
     ("icons", "world_icon_"): (16, 16, True),
     ("icons", "page_dot_"): (8, 8, True),
+    ("charger", "charger_"): (32, 64, True),
 }
 SEAMLESS = ("dock_top_center", "dock_fill_00", "dock_fill_alt", "one_way_center")
 
