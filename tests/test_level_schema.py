@@ -672,5 +672,65 @@ class CorreoPuzzleSchemaTest(unittest.TestCase):
         self.assert_fails(self.level, "refill_energy debe ser true o false")
 
 
+class RedDotAndBannerSchemaTest(unittest.TestCase):
+    """Punto rojo (notification_badge) y banner (spam_banner) del 1-2 (pasos 4 y 5,
+    2026-10-16): params por tipo con su rango (level_params del JSON del enemigo), pasillo
+    del banner dentro del grid y sin celdas solidas y ciclo con reposo. Sala mensajes_test."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "levels", "mensajes_test.json"), encoding="utf-8") as fh:
+            self.level = json.load(fh)
+
+    def enemy(self, eid):
+        return next(e for e in self.level["enemies"] if e["id"] == eid)
+
+    def assert_fails(self, fragment):
+        errors = vls.validate_level(self.level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_test_room_is_valid(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+        types = sorted({e["type"] for e in self.level["enemies"]})
+        self.assertEqual(types, ["notification_badge", "spam_banner"])
+
+    def test_badge_params_by_type_and_range(self):
+        self.enemy("badge_1")["params"]["patrol_range_px"] = 256
+        self.assert_fails("params.patrol_range_px no existe para notification_badge")
+        self.enemy("badge_1")["params"] = {"chase_speed_px_s": 900}
+        self.assert_fails("params.chase_speed_px_s = 900 fuera de [20.0, 200.0]")
+        self.enemy("badge_1")["params"] = {"health": "dos"}
+        self.assert_fails("params.health debe ser un numero")
+        self.enemy("badge_1")["params"] = {"health": 1, "stun_duration_s": 2.5, "wake_radius_px": 256}
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_banner_direction_and_int_corridor(self):
+        self.enemy("banner_1")["params"]["direction"] = 0
+        self.assert_fails("params.direction debe ser uno de [-1, 1]")
+        self.enemy("banner_1")["params"] = {"corridor_tiles": 12.5}
+        self.assert_fails("params.corridor_tiles debe ser un entero")
+        self.enemy("banner_1")["params"] = {"phase_s": -1}
+        self.assert_fails("params.phase_s = -1 fuera de")
+
+    def test_banner_corridor_inside_grid_and_free(self):
+        self.enemy("banner_1")["params"]["corridor_tiles"] = 20
+        self.assert_fails("banner 'banner_1': celda solida dentro de su pasillo")
+        self.enemy("banner_1")["params"] = {"corridor_tiles": 21, "direction": -1}  # hasta la pared de la columna 0
+        self.assert_fails("banner 'banner_1': celda solida dentro de su pasillo")
+        self.enemy("banner_2")["params"]["corridor_tiles"] = 40
+        self.assert_fails("banner 'banner_2':")
+
+    def test_banner_cycle_needs_rest(self):
+        self.enemy("banner_1")["params"]["interval_s"] = 1.6
+        self.assert_fails("interval_s 1.60 menor que aviso + barrido + reposo minimo")
+        self.enemy("banner_1")["params"]["interval_s"] = 2.5
+        self.enemy("banner_1")["params"]["sweep_speed_px_s"] = 1280
+        errors = [e for e in vls.validate_level(self.level) if "banner_1" in e]
+        self.assertEqual(errors, [])
+
+    def test_banner_corridor_wider_than_banner(self):
+        self.enemy("banner_1")["params"]["corridor_tiles"] = 2
+        self.assert_fails("params.corridor_tiles = 2 fuera de [3, 40]")
+
+
 if __name__ == "__main__":
     unittest.main()

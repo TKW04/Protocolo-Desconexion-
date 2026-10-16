@@ -11,7 +11,9 @@ Reglas:
   - checkpoints <-> celdas C del grid (uno a uno), enemigos <-> celdas E (uno a uno),
     secretos <-> celdas S, o {object: <tipo>} con un objeto de ese tipo en su x, y;
     requires_upgrade (si esta) es un id de data/upgrades.json y needs_debug un booleano;
-  - enemigos con tipo existente (data/enemies/<type>.json);
+  - enemigos con tipo existente (data/enemies/<type>.json); sus params, numeros > 0 o, si el
+    JSON del tipo trae level_params (punto rojo y banner, 2026-10-16), solo los listados y en su
+    rango; el banner, con su pasillo dentro del grid y sin celdas solidas y un ciclo con reposo;
   - objects {type, x, y, params} con tipo del catalogo (data/world<N>_objects.json),
     params obligatorios presentes y sin params desconocidos, dentro del grid, y sin
     pisar terreno; params con valores de `allowed` del catalogo (ability_pickup.ability);
@@ -291,9 +293,70 @@ class LevelValidator:
             if not isinstance(params, dict):
                 self.error("enemigo '%s': 'params' debe ser un objeto" % entry.get("id"))
                 continue
-            for key, value in params.items():
-                if not _is_number(value) or value <= 0:
-                    self.error("enemigo '%s': params.%s debe ser un numero > 0" % (entry.get("id"), key))
+            data = None
+            if isinstance(kind, str) and os.path.isfile(os.path.join(self.root, "data", "enemies", "%s.json" % kind)):
+                data = self._load_json("data/enemies/%s.json" % kind)
+            spec = data.get("level_params") if isinstance(data, dict) else None
+            if isinstance(spec, dict):
+                self._check_enemy_params(entry, params, spec)
+            else:
+                for key, value in params.items():
+                    if not _is_number(value) or value <= 0:
+                        self.error("enemigo '%s': params.%s debe ser un numero > 0" % (entry.get("id"), key))
+            if kind == "spam_banner" and isinstance(data, dict):
+                self._check_banner(entry, params, data)
+
+    def _check_enemy_params(self, entry, params, spec):
+        """Params por instancia segun level_params del JSON del enemigo (2026-10-16: punto rojo y
+        banner): solo los listados, numericos, en [min, max], enteros si int, o en values."""
+        eid = entry.get("id")
+        for key, value in params.items():
+            rule = spec.get(key)
+            if key.startswith("_") or not isinstance(rule, dict):
+                self.error("enemigo '%s': params.%s no existe para %s (admite: %s)"
+                           % (eid, key, entry.get("type"), ", ".join(k for k in sorted(spec) if not k.startswith("_"))))
+                continue
+            if not _is_number(value):
+                self.error("enemigo '%s': params.%s debe ser un numero" % (eid, key))
+                continue
+            if rule.get("int") and not _is_int(value):
+                self.error("enemigo '%s': params.%s debe ser un entero" % (eid, key))
+            if "values" in rule and value not in rule["values"]:
+                self.error("enemigo '%s': params.%s debe ser uno de %s" % (eid, key, rule["values"]))
+            if "min" in rule and value < rule["min"] or "max" in rule and value > rule["max"]:
+                self.error("enemigo '%s': params.%s = %s fuera de [%s, %s]"
+                           % (eid, key, value, rule.get("min"), rule.get("max")))
+
+    def _check_banner(self, entry, params, data):
+        """Banner: el pasillo (corridor_tiles celdas desde la E hacia direction) cabe en el grid sin
+        celdas solidas, y el ciclo deja reposo: interval_s >= aviso + barrido + min_rest_s."""
+        eid = entry.get("id")
+        x, y = entry.get("x"), entry.get("y")
+        if not (_is_int(x) and _is_int(y)):
+            return
+        get = lambda k: params.get(k, data.get(k))  # noqa: E731
+        tiles, direction = get("corridor_tiles"), get("direction")
+        if not (_is_int(tiles) and direction in (-1, 1)):
+            return
+        for i in range(int(tiles)):
+            cx = x + direction * i
+            if not self.in_bounds(cx, y):
+                self.error("banner '%s': el pasillo (%d celdas) sale del grid" % (eid, tiles), y, cx)
+                break
+            if self.cell(cx, y) == "#":
+                self.error("banner '%s': celda solida dentro de su pasillo" % eid, y, cx)
+                break
+        try:
+            tile = float(self.level.get("tile_size", 64))
+            warn = float(data["anticipation_frames"]) / float(data["anim_fps"])
+            sweep = (tiles * tile - float(data["banner_size"][0])) / float(get("sweep_speed_px_s"))
+            if sweep <= 0:
+                self.error("banner '%s': el pasillo debe ser mas ancho que el banner" % eid)
+            elif float(get("interval_s")) < warn + sweep + float(data.get("min_rest_s", 0.0)):
+                self.error("banner '%s': interval_s %.2f menor que aviso + barrido + reposo minimo (%.2f s)"
+                           % (eid, float(get("interval_s")), warn + sweep + float(data.get("min_rest_s", 0.0))))
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            self.error("banner '%s': datos del banner incompletos" % eid)
 
     def _footprint(self, kind, x, y, params, defaults):
         def get(name, fallback):

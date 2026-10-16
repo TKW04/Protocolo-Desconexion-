@@ -1,0 +1,111 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; pasos 4 y 5 de docs/propuesta-1-2.md §10, 2026-10-16): sala de 36x12 tiles para probar los dos enemigos nuevos del 1-2. Isak llega por la izquierda (P, de pie en la fila 10) con pulso y laser (abilities_available). Izquierda (columnas 1-18, sala alta): dos PUNTOS ROJOS (notification_badge) para el patron 'Aturdir y rematar' (§0.2): badge_1 dormido a un tile del suelo (9, 9) y badge_2 mas alto (13, 7); despiertan a 6 tiles, persiguen despacio, se inflan antes de lanzarse; el pulso los aturde 3 s (escalon) y aturdidos dos disparos del laser los rematan (sueltan energia y Sync); despiertos el laser rebota (chispa gris). Correa recortada (leash_width_px) para que se queden en su sala. Repisa de una via (columnas 4-6, fila 7) y cargador_m (4, 10) junto a la entrada para la energia del laser. Derecha (columnas 19-34, techo en la fila 5): pasillo de 14 tiles con dos BANNERS (spam_banner) desfasados (patron 'Carrera contra amenaza', §0.6, variante 'dos amenazas desfasadas'): banner_1 entra por la columna 20 hacia la derecha y banner_2 por la 33 hacia la izquierda con phase_s 1,5 (cada uno cada 3 s; aviso de 9 cuadros en su ranura y en el suelo). Se saltan (1 tile de alto) o se espera en el nicho de una via (columnas 26-27, fila 8). La terminal de salida (34, 9) se activa con el pulso. El validador de alcanzabilidad no modela aun enemigos ni temporizadores (paso 10) y el bot no la recorre. Escena: scenes/levels/mensajes_test.tscn (python3 tools/build_level.py data/levels/mensajes_test.json).",
+	"id": "mensajes_test",
+	"name": "Puntos rojos y banners (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": false
+	},
+	"sections": [
+		{
+			"name": "Puntos rojos",
+			"x_from": 0,
+			"x_to": 18,
+			"patterns": [
+				"aturdir_y_rematar"
+			]
+		},
+		{
+			"name": "Banners",
+			"x_from": 19,
+			"x_to": 35,
+			"patterns": [
+				"carrera_contra_amenaza"
+			]
+		}
+	],
+	"grid": [
+		"####################################",
+		"#..................#################",
+		"#..................#################",
+		"#..................#################",
+		"#..................#################",
+		"#..................#################",
+		"#..................................#",
+		"#...---......E.....................#",
+		"#.........................--.......#",
+		"#........E.........................#",
+		"#.P.................E............EG#",
+		"####################################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "badge_1",
+			"type": "notification_badge",
+			"x": 9,
+			"y": 9,
+			"params": {
+				"leash_width_px": 1088.0
+			}
+		},
+		{
+			"id": "badge_2",
+			"type": "notification_badge",
+			"x": 13,
+			"y": 7,
+			"params": {
+				"leash_width_px": 832.0
+			}
+		},
+		{
+			"id": "banner_1",
+			"type": "spam_banner",
+			"x": 20,
+			"y": 10,
+			"params": {
+				"corridor_tiles": 14,
+				"direction": 1
+			}
+		},
+		{
+			"id": "banner_2",
+			"type": "spam_banner",
+			"x": 33,
+			"y": 10,
+			"params": {
+				"corridor_tiles": 14,
+				"direction": -1,
+				"phase_s": 1.5
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 10,
+			"params": {
+				"id": "cargador_m",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 34,
+			"y": 9,
+			"params": {
+				"id": "terminal_mensajes",
+				"text": "Marcar como leído"
+			}
+		}
+	],
+	"unlocks": []
+}
