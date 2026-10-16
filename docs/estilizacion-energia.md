@@ -138,3 +138,17 @@ Paso 11 de `propuesta-hub-y-guardado.md` §6.1, **integrado en el hub real (2026
 Notas para integrar: los objetos se apoyan en el borde inferior de su lienzo (la copia local y la Calc sobre el dock, las carpetas sobre su repisa). El contenido de la foto es un paisaje neutro provisional: el diseño no dice qué muestra la foto de Isak. Las repisas quedan a 160 px del dock (2,5 tiles, alcanzables de un salto) y las carpetas se bajan 8 px (`folder_sink_px`) para apoyarse en ellas; `--scene` usa esas posiciones de `data/hub.json`.
 
 Regenerar (desde la raíz): `python3 -I tools/gen_hub_objects.py` (`--dry-run`; `--preview <png> [--scale N]` hoja de contacto; `--scene <png>` composición 1280x720 con el mapa de §2.2, y `<png>_on` con la pieza encendida). Validar: `python3 -I tools/validate_hub_objects.py` (tamaño por carpeta, solo colores de `hub.gpl`, sin rojos reservados, alfa 0/255, transparencia, tiles sin costura PNG y SpriteFrames al día con el generador; lo ejecuta `tools/run_tests.sh`).
+
+## Eco compañero (2026-10-16)
+
+Paso 4 de `propuesta-asistentes-y-vidas.md` §10. Esfera de luz blanca y azul con un arco de píxeles que hace de sonrisa (`04-personajes.md` §12.1), coherente con `assets/sprites/ui/eco_icon.png`: contorno `noche_profunda`, borde `resplandor`, núcleo `banner_blanco` con sombra `borde_luz` abajo a la derecha, sonrisa `cielo` (mira a la derecha; el código voltea con Isak) y una órbita de tres arcos partidos con nodos de 2x2 (como el vórtice) que gira. Lienzo 32x32 (esfera de unos 21 px), dibujado a x2 en el juego (`sprite_scale` de `data/eco_companion.json`).
+
+| Animación | Archivos (`assets/sprites/eco/companion/`) | Cuadros |
+|---|---|---|
+| Reposo | `eco_idle_00..03.png` | 4 a 6 fps, bucle: la órbita gira 30° por cuadro (un tercio de vuelta: bucle limpio); en el 3 la sonrisa «parpadea» (arco corto) |
+| Habla | `eco_talk_00..02.png` | 3 a 10 fps, bucle: la boca se abre y se cierra y salen ondas de eco por el lado de la cara |
+| Reacción | `eco_notice_00..01.png` | 2 a 8 fps: halo de 1 px, destello en cruz y boca abierta (al hablar o al salir una Q) |
+| Aparecer | `eco_appear_00..03.png` | 4 a 12 fps: chispa, esfera pequeña, mediana con halo y completa con halo; desaparecer es la misma secuencia al revés (solo en el SpriteFrames) |
+| Hub (atenuada) | `eco_<anim>_dim_NN.png` | Las mismas animaciones con grises de `hub.gpl` (`fondo_profundo`, `panel`, `gris_apagado`, `gris_foto`, `texto_tenue`, `texto_claro`) y la órbita rota (dos arcos de tres): sin cobertura |
+
+Regenerar: `python3 -I tools/gen_eco_companion.py` (`--preview <png> [--scale N]` hoja de contacto sobre el fondo del mundo y del hub; escribe también `assets/sprites/eco_companion_frames.tres`). Validar: `python3 -I tools/validate_eco_companion.py` (tamaño, alfa 0/255, transparencia, paleta por variante sin rojos, ámbar ni cian del Debug, PNG y SpriteFrames al día; lo ejecuta `tools/run_tests.sh`). Comportamiento en `scripts/levels/eco_companion.gd`.
