@@ -1,0 +1,97 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_00.png" id="1_wyjfr"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_01.png" id="2_io7ip"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_02.png" id="3_ehjrr"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_03.png" id="4_v6o3t"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_04.png" id="5_diitt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_05.png" id="6_sfq3n"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_06.png" id="7_besvc"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_07.png" id="8_b7ky7"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_anticipate_08.png" id="9_7exsf"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_idle_00.png" id="10_wj28s"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_idle_01.png" id="11_2yuua"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_sweep_00.png" id="12_hp5bt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_sweep_01.png" id="13_xvuq5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_sweep_02.png" id="14_i355q"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_sweep_03.png" id="15_8rm25"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_trail_00.png" id="16_t772s"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_trail_01.png" id="17_j5bj8"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/banner_trail_02.png" id="18_oxyyp"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_wyjfr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_io7ip")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ehjrr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_v6o3t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_diitt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_sfq3n")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_besvc")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_b7ky7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_7exsf")
+}],
+"loop": 0,
+"name": &"anticipate",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_wj28s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_2yuua")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("12_hp5bt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_xvuq5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_i355q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_8rm25")
+}],
+"loop": 1,
+"name": &"sweep",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("16_t772s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_j5bj8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_oxyyp")
+}],
+"loop": 1,
+"name": &"trail",
+"speed": 12.0
+}]

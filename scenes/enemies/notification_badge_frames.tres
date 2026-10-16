@@ -1,0 +1,217 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_00.png" id="1_h30df"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_01.png" id="2_es4xw"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_02.png" id="3_f50g0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_03.png" id="4_ansda"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_04.png" id="5_rmnpi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_05.png" id="6_718cv"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_06.png" id="7_oniai"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_07.png" id="8_jsu0b"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_anticipate_08.png" id="9_pbq36"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_chase_00.png" id="10_ukpi4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_chase_01.png" id="11_nxvtr"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_chase_02.png" id="12_md6xu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_chase_03.png" id="13_ururx"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_deflect_00.png" id="14_8hu6b"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_deflect_01.png" id="15_200sd"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_deflect_02.png" id="16_1dpud"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_deflect_03.png" id="17_tr3w0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_idle_00.png" id="18_jrwjy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_idle_01.png" id="19_ysae4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_idle_02.png" id="20_bb05y"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_idle_03.png" id="21_jhndv"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_idle_04.png" id="22_uvfwn"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_idle_05.png" id="23_jhl1t"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_lunge_00.png" id="24_bl5jh"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_lunge_01.png" id="25_bquo0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_pop_00.png" id="26_6ibpb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_pop_01.png" id="27_752ny"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_pop_02.png" id="28_djrop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_pop_03.png" id="29_tlao7"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_pop_04.png" id="30_xsoh6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_stunned_00.png" id="31_jh2by"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_stunned_01.png" id="32_n7gnu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_stunned_02.png" id="33_mlktv"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_stunned_03.png" id="34_ivf2c"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_00.png" id="35_p8bcg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_01.png" id="36_a2o6q"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_02.png" id="37_okr8s"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_03.png" id="38_n6gu2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_04.png" id="39_f42ky"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_05.png" id="40_7732e"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_06.png" id="41_yonjt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_07.png" id="42_6vuxa"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/badge_wake_08.png" id="43_ek21d"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_h30df")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_es4xw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_f50g0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ansda")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_rmnpi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_718cv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_oniai")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_jsu0b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_pbq36")
+}],
+"loop": 0,
+"name": &"anticipate",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_ukpi4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_nxvtr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_md6xu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_ururx")
+}],
+"loop": 1,
+"name": &"chase",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("14_8hu6b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_200sd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_1dpud")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_tr3w0")
+}],
+"loop": 0,
+"name": &"deflect",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("18_jrwjy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_ysae4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_bb05y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_jhndv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_uvfwn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_jhl1t")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("24_bl5jh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_bquo0")
+}],
+"loop": 1,
+"name": &"lunge",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("26_6ibpb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_752ny")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_djrop")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_tlao7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_xsoh6")
+}],
+"loop": 0,
+"name": &"pop",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("31_jh2by")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_n7gnu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_mlktv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("34_ivf2c")
+}],
+"loop": 1,
+"name": &"stunned",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("35_p8bcg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("36_a2o6q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("37_okr8s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("38_n6gu2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("39_f42ky")
+}, {
+"duration": 1.0,
+"texture": ExtResource("40_7732e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("41_yonjt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("42_6vuxa")
+}, {
+"duration": 1.0,
+"texture": ExtResource("43_ek21d")
+}],
+"loop": 0,
+"name": &"wake",
+"speed": 12.0
+}]
