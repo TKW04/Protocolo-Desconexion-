@@ -805,3 +805,20 @@ Dudas para el usuario:
 - **¿«Salir al hub» en el menú de pausa de los niveles?** Los documentos no lo definen. Si se añade, la propuesta sería: confirmación, se pierde el intento actual (como morir sin checkpoint) y no consume ningún guardado. No está implementado.
 - **¿Qué más ajustes van al menú?** Ya existen sin menú y sin guardar en disco: reducir el ruido con Sync Rate bajo (`reduce_low_sync_effects`) y el contorno de alto contraste del Debug (`debug_high_contrast_outline`).
 - **¿Esc en la página Ajustes** debe volver a la página principal en lugar de reanudar? Hoy Esc / Start reanudan desde cualquier página y B vuelve atrás.
+
+## Eco lleva la Q y álbum por carpetas (2026-10-16)
+
+Decisiones del usuario tras probar el juego (detalle en `docs/propuesta-asistentes-y-vidas.md` §3.1 y §3.5):
+
+- **Eco lleva la Q:** con un objeto con ayuda en rango, Eco vuela junto a él (encima, por el lado contrario a Isak, sin taparlo ni a Isak), brilla en dorado (el ámbar de `mundo1.gpl`) y la Q se dibuja sobre Eco y lo sigue. Al pedir la ayuda conserva el brillo durante la pausa; al cerrarla, o si el jugador se aleja, vuelve a Isak con su color. Con «Ocultar» ni se acerca ni brilla. `HelpSystem` sigue eligiendo el objeto.
+- **Álbum por carpetas de mundo:** Mundo 1 a Mundo 6; cada tipo de `data/help.json` lleva su `world`. Las carpetas de mundos no alcanzados salen cerradas, con candado y «???».
+- **Sin «Olvidar ayudas»:** se retira del álbum (y `GameState.forget_help`).
+
+Decisiones del equipo al implementarlo (ajustables jugando):
+
+- **Regla de mundo visitado** (carpeta abierta): el mundo está en `worlds` de `data/hub.json` y `HubWorlds` lo da por desbloqueado (`unlocked`, o algún subnivel en `unlocked_levels` / `completed_levels`), o hay algún tipo de ese mundo aprendido. Hoy el Mundo 1 siempre lo está (`unlocked: true`); los Mundos 4-6 aún no están en `worlds`, así que salen cerrados.
+- **Contador global** de la vista de carpetas: solo cuenta los tipos de los mundos visitados (no adelanta cuántos tienen los demás).
+- **Durante el menú de pausa** Eco suelta el objeto y vuelve a Isak (en pausa no hay Q); al reanudar vuelve a señalarlo.
+- **Las carpetas cerradas** muestran «Mundo n» (el número, no el nombre).
+
+Pendiente de aclarar por el usuario: «ver la información de un objeto ya aprendido al acercarte de nuevo» (no implementado).
