@@ -1,0 +1,31 @@
+{
+	"_notes": "Game over: lineas de Eco al llegar al hub tras el rollback (GameOverIntro; docs/propuesta-asistentes-y-vidas.md §5.2 y §5.3, paso 12 de §10, 2026-10-16). Momento de historia: al terminar la llegada por el vortice, pausa el juego de principio a fin con lineas IMPORTANTES de Eco en el cuadro de texto del hub (Espacio / A / Intro las cierran; Eco esta atenuado en el hub pero habla para esto). Variante segun el informe de GameState.apply_rollback: with_copy (habia copia y lo guardado esta en la papelera), empty_copy (habia copia pero no guardaba nada que desechar: papelera vacia) y no_copy (no habia ninguna copia: papelera activada y vacia; momento que ensena a guardar). first: el primer game over (la papelera aun no se habia activado), mas largo; again: los siguientes, breve. Voz de Eco: servicial y algo engreida (04-personajes.md §12.1). Admiten {apodo}. Nunca dicen vuelta, Easy, Normal ni Hard. Solo glifos de la fuente de textos.",
+	"duration_s": 4.0,
+	"first": {
+		"with_copy": [
+			"Lo siento, {apodo}: he tenido que restaurar tu última copia. Demasiados errores seguidos; de esto me encargo yo.",
+			"Lo que hiciste después de guardar ya no está. Así todo queda ordenado.",
+			"Lo que guardaste lo he dejado en la papelera. Acércate y es tuyo otra vez. Hasta entonces, las carpetas esperan."
+		],
+		"empty_copy": [
+			"Lo siento, {apodo}: he tenido que restaurar tu última copia. Demasiados errores seguidos; de esto me encargo yo.",
+			"Lo que hiciste después de guardar ya no está. Y en tu copia no había nada que tirar: la papelera está vacía."
+		],
+		"no_copy": [
+			"Lo siento, {apodo}: quería restaurar tu última copia, pero no había nada guardado.",
+			"No tengo nada que devolverte. El pulso te lo dejo: fue mi regalo.",
+			"La próxima vez, guarda con Notas. Yo lo haría."
+		]
+	},
+	"again": {
+		"with_copy": [
+			"Otra vez, {apodo}. Te devuelvo a tu última copia; lo guardado está en la papelera."
+		],
+		"empty_copy": [
+			"Otra vez, {apodo}. Te devuelvo a tu última copia."
+		],
+		"no_copy": [
+			"Otra vez, {apodo}. No había nada guardado. Guarda con Notas."
+		]
+	}
+}

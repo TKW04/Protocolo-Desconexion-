@@ -2,8 +2,8 @@
 # GameState (cuentan desde la primera llegada al hub, se reponen al empezar cada
 # intento y no en el punto de sincronizacion, la ultima lleva al game over, hueco
 # de la vida extra), el flujo real del 1-1 (LevelRunner: morir resta una y
-# reaparece en el checkpoint, ilimitadas antes de conocer a Notas) y el
-# HUD de vidas (mini telefonos junto a la senal, oculto antes de que
+# reaparece en el checkpoint, ilimitadas antes de conocer a Notas, 0 -> game over
+# y hub) y el HUD de vidas (mini telefonos junto a la senal, oculto antes de que
 # cuenten y en el hub, animacion al perder una, «x<n>» con muchas).
 # Usa su propia ruta de guardado (nunca user://save.json).
 extends GutTest
@@ -178,6 +178,37 @@ func test_unlimited_deaths_in_the_first_run_of_1_1() -> void:
 		await wait_physics_frames(3)
 		_die()
 		assert_false(_main.is_in_hub(), "Sin game over antes de la primera llegada al hub")
+	assert_eq(_main.get_game_over_count(), 0)
+
+
+func test_the_last_life_leads_to_game_over_and_the_hub() -> void:
+	EcoProgress.meet_eco_with_pulse()
+	EcoProgress.meet_notas()
+	await _start()
+	var reports: Array = []
+	_main.game_over.connect(func(report: Dictionary) -> void: reports.append(report))
+	for i: int in 2:
+		_teleport(20.0 + i)
+		await wait_physics_frames(3)
+		_die()
+		assert_false(_main.is_in_hub())
+	_teleport(25.0)
+	await wait_physics_frames(3)
+	GameState.sync_rate = GameState.SYNC_RATE_MIN
+	assert_true(_main.is_game_over_pending(), "La ultima vida: game over pendiente")
+	_main.advance(_main.get_death_wait_s() + 0.01)
+	_main.advance(LONG_STEP_S)
+	assert_true(_main.is_in_hub(), "Game over: Eco lleva a Isak al hub")
+	assert_eq(reports.size(), 1)
+	assert_eq(_main.get_game_over_count(), 1)
+	assert_eq(_main.get_hub().rollback_report, reports[0], "El hub recibe el informe del rollback")
+	assert_eq(GameState.lives, 3, "Tras el rollback las vidas se reponen")
+	_main.advance(LONG_STEP_S)
+	assert_eq(_main.get_phase(), LevelRunner.Phase.PLAYING)
+	var hub_isak: Isak = _main.get_hub().get_isak()
+	await wait_physics_frames(3)
+	assert_false(hub_isak.is_dead(), "Isak llega al hub entero (Sync Rate lleno)")
+	assert_eq(GameState.sync_rate, GameState.get_sync_rate_max())
 
 
 # --- HUD de vidas ---

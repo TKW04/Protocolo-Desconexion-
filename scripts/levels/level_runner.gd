@@ -48,7 +48,10 @@
 ##   start_level las repone a GameState.lives_max (empezar un intento: desde el
 ##   hub, al arrancar o con la tecla R); los puntos de sincronizacion no. Cada
 ##   muerte resta una (GameState.lose_life; antes de la primera llegada al hub
-##   no cuentan) y reaparece como siempre.
+##   no cuentan) y reaparece como siempre. Con la ultima: GAME OVER: tras la
+##   animacion de muerte funde, aplica el rollback a la ultima copia
+##   (GameState.apply_rollback) y carga el hub con el informe
+##   (HubRoom.rollback_report: Eco lo cuenta y la papelera parpadea).
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -71,6 +74,9 @@ signal hub_shown(level_id: String, attention_points: int)
 signal level_restarted(level_id: String)
 ## Se ha borrado el guardado con debug_wipe_save.
 signal save_wiped(path: String)
+## Game over: se aplico el rollback (`report` de GameState.apply_rollback) y se
+## carga el hub.
+signal game_over(report: Dictionary)
 
 ## Si es false, _process no avanza el flujo (las pruebas llaman a advance()).
 @export var auto_advance: bool = true
@@ -95,6 +101,9 @@ var _transition: CanvasLayer
 var _fade: ColorRect
 var _deaths: int = 0
 var _falls: int = 0
+var _game_overs: int = 0
+## La muerte en curso fue la ultima vida: al fundir, game over en lugar de reaparecer.
+var _game_over_pending: bool = false
 var _restarts: int = 0
 var _wipe_held_s: float = 0.0
 ## Tras borrar, hay que soltar la tecla antes de poder borrar otra vez.
@@ -195,6 +204,16 @@ func get_fall_count() -> int:
 	return _falls
 
 
+## Game over desde que se cargo el LevelRunner.
+func get_game_over_count() -> int:
+	return _game_overs
+
+
+## La muerte en curso lleva al game over (era la ultima vida).
+func is_game_over_pending() -> bool:
+	return _game_over_pending
+
+
 ## Reinicios hechos con restart_level o tras borrar el guardado.
 func get_restart_count() -> int:
 	return _restarts
@@ -247,6 +266,7 @@ func start_level(level_id: String) -> bool:
 	_clear_hub()
 	_clear_level()
 	_reset_player_state(level_id)
+	_game_over_pending = false
 	GameState.refill_lives()
 	_level = (load(path) as PackedScene).instantiate() as GeneratedLevel
 	_level_id = level_id
@@ -268,6 +288,9 @@ func start_level(level_id: String) -> bool:
 ## reaparicion.
 func request_restart() -> bool:
 	if _level_id.is_empty() or _phase == Phase.FADE_OUT or _phase == Phase.FADE_IN:
+		return false
+	# Con la papelera llena no se vuelve a ningun nivel (como las carpetas).
+	if is_in_hub() and GameState.has_trash_pending():
 		return false
 	_fade_out_then(_restart_now)
 	return true
@@ -316,7 +339,7 @@ func advance(delta: float) -> void:
 		Phase.DYING:
 			_timer -= delta
 			if _timer <= 0.0:
-				_fade_out_then(_respawn.bind(true))
+				_fade_out_then(_game_over_now if _game_over_pending else _respawn.bind(true))
 		Phase.FADE_OUT:
 			_set_alpha(_alpha + _rate("fade_out_s", delta))
 			if _alpha >= 1.0:
@@ -415,11 +438,12 @@ func enter_level(level_id: String) -> bool:
 	return true
 
 
-func _show_hub(level_id: String, attention_points: int) -> void:
+func _show_hub(level_id: String, attention_points: int, rollback_report: Dictionary = {}) -> void:
 	_notices.stop()
 	_clear_level()
 	_hub = (load(String(_data.get("hub_scene", "res://scenes/hub/hub.tscn"))) as PackedScene).instantiate() as HubRoom
 	_hub.hold_arrival = true
+	_hub.rollback_report = rollback_report
 	_hub.level_handler = _on_hub_level_requested
 	_holder.add_child(_hub)
 	hub_shown.emit(level_id, attention_points)
@@ -436,6 +460,25 @@ func _record_completion(level_id: String) -> void:
 	for unlock: Variant in level.get("unlocks", []):
 		if unlock is Dictionary and String(unlock.get("type", "")) == "level":
 			GameState.unlock_level(StringName(String(unlock.get("id", ""))))
+
+
+## Game over (0 vidas; propuesta §5.2): el nivel sale del arbol (restaura sus
+## habilidades), Eco aplica el rollback a la ultima copia y se carga el hub con
+## el informe: Isak llega por el vortice, Eco lo cuenta y la papelera parpadea.
+func _game_over_now() -> void:
+	_game_over_pending = false
+	var level_id: String = _level_id
+	_notices.stop()
+	_clear_level()
+	var report: Dictionary = GameState.apply_rollback(GameState.ROLLBACK_GAME_OVER)
+	# Isak llega al hub entero (el Isak del hub moriria con el Sync Rate a 0).
+	DebugMode.reset()
+	Engine.time_scale = 1.0
+	GameState.sync_rate = GameState.get_sync_rate_max()
+	GameState.refill_debug_energy()
+	_game_overs += 1
+	_show_hub(level_id, GameState.attention_points, report)
+	game_over.emit(report)
 
 
 func _restart_now() -> void:
@@ -567,7 +610,7 @@ func _build_transition() -> void:
 
 func _on_isak_died() -> void:
 	_deaths += 1
-	GameState.lose_life()
+	_game_over_pending = GameState.lose_life()
 	_after_fade = Callable()
 	_timer = get_death_wait_s()
 	_set_phase(Phase.DYING)

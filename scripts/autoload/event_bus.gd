@@ -177,3 +177,16 @@ signal lives_changed(lives: int, lives_max: int, active: bool)
 ## Se ha perdido una vida al morir; quedan `lives_left` (0 = game over).
 @warning_ignore("unused_signal")
 signal life_lost(lives_left: int)
+
+## Eco aplico un rollback (GameState.apply_rollback): `report` con reason,
+## had_copy, first, trash_has_content y trash.
+@warning_ignore("unused_signal")
+signal rollback_applied(report: Dictionary)
+
+## Cambia si hay contenido en la papelera pendiente de recuperar.
+@warning_ignore("unused_signal")
+signal trash_changed(pending: bool)
+
+## Se recupero todo lo de la papelera (`trash`: lo que tenia).
+@warning_ignore("unused_signal")
+signal trash_recovered(trash: Dictionary)

@@ -20,7 +20,10 @@
 #   escribe (en el hub; la copia anterior queda en <ruta>.bak). Esquema v2:
 #   vuelta (lap), secretos encontrados, tutorial del hub, fecha y tiempo de juego.
 # - Vidas (intentos; 2026-10-16): lives (no se guarda) hasta lives_max; ver
-#   are_lives_active, refill_lives y lose_life (docs/propuesta-asistentes-y-vidas.md §5.1).
+#   are_lives_active, refill_lives y lose_life. Game over y papelera:
+#   apply_rollback (regla unica, tambien para el futuro rollback del jefe
+#   final), discard_to_trash, recover_trash y has_trash_pending
+#   (docs/propuesta-asistentes-y-vidas.md §5).
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
 # Reglas de juego que viven aquí: recarga de energía por punto de atención
 # (A10), desbordamiento de energía a power bank, compra de mejoras y valores
@@ -74,6 +77,17 @@ const NICKNAME_MAX_LENGTH: int = 12
 const NICKNAME_TAG: String = "{apodo}"
 ## Vidas (intentos) maximas de partida (propuesta §5.1; sube con cada vida extra).
 const LIVES_MAX_DEFAULT: int = 3
+## Motivos de rollback (apply_rollback; docs/propuesta-asistentes-y-vidas.md
+## §5.3: una sola regla para el game over y el rollback del jefe final). Hoy
+## solo existe el game over; el del jefe final (paso 16) anadira el suyo.
+const ROLLBACK_GAME_OVER: StringName = &"game_over"
+## Claves del contenido de la papelera (get_trash) y del informe de apply_rollback.
+const TRASH_POINTS: String = "attention_points"
+const TRASH_POWER_BANKS: String = "power_banks"
+const TRASH_EMPTY_POWER_BANKS: String = "empty_power_banks"
+const TRASH_POWER_BANK_CHARGE: String = "power_bank_charge"
+const TRASH_UPGRADES: String = "upgrades"
+const TRASH_ABILITIES: String = "abilities"
 ## Argumento de usuario de las builds de depuracion que da por conocido un
 ## asistente al arrancar (p. ej. `-- --meet-ally=calc`): hasta que exista el
 ## encuentro con Calc al final del 1-2, es la forma de probar la tienda del hub.
@@ -196,7 +210,13 @@ var lives_max: int = LIVES_MAX_DEFAULT
 ## repone a lives_max al empezar cada intento de nivel; lose_life resta una.
 ## Solo cuentan con are_lives_active() (desde la primera llegada al hub).
 var lives: int = LIVES_MAX_DEFAULT
-
+## Papelera (propuesta §2.5 y §5.2): lo que Eco desecho en el ultimo rollback y
+## aun no se ha recuperado (claves TRASH_*). Vive en memoria: el disco conserva
+## la copia, asi que cerrar el juego con la papelera llena no pierde nada.
+var _trash: Dictionary = {}
+## Al recuperar la papelera quedan cambios sin guardar (el apodo, que nunca se
+## pierde, era distinto del de la copia).
+var _unsaved_after_trash: bool = false
 ## Segundos de juego (con el arbol sin pausar). Se guarda con la copia.
 var play_time_s: float = 0.0
 ## Fecha (UTC, "AAAA-MM-DDTHH:MM:SSZ") de la ultima copia guardada o cargada;
@@ -623,6 +643,10 @@ func reset_progress() -> void:
 	_refresh_maxima()
 	_set_unsaved(false)
 	lives = lives_max
+	_unsaved_after_trash = false
+	if not _trash.is_empty():
+		_trash.clear()
+		EventBus.trash_changed.emit(false)
 
 
 ## Apunta que el progreso cambio y no esta en disco (guardado manual,
@@ -660,6 +684,10 @@ func has_unsaved_changes() -> bool:
 ## atomica, deja la copia anterior en <ruta>.bak y limpia la marca de cambios
 ## sin guardar. Verdadero si se escribio (si falla, la marca sigue).
 func save_game() -> bool:
+	# Con la papelera llena no se guarda: el estado sin lo desechado
+	# sobrescribiria la copia buena (propuesta §5.2).
+	if has_trash_pending():
+		return false
 	var previous_saved_at: String = saved_at
 	saved_at = now_utc()
 	if not SaveFile.write(save_path, to_save_data(), true):
@@ -1111,6 +1139,144 @@ func add_max_life() -> void:
 
 func _emit_lives() -> void:
 	EventBus.lives_changed.emit(lives, lives_max, are_lives_active())
+
+
+# --- Rollback y papelera (propuesta §5.2-§5.4) ---
+
+## Rollback: UNA sola regla para el game over y el rollback del jefe final
+## (propuesta §5.3). `reason`:
+## - ROLLBACK_GAME_OVER (0 vidas): el estado vuelve a la ultima copia guardada
+##   en disco (load_game): lo obtenido despues de guardar se pierde (no va a la
+##   papelera) y los niveles completados despues hay que rejugarlos. Sin copia,
+##   se empieza de cero.
+## - (Futuro, paso 16) rollback del jefe final: partira del estado en memoria
+##   con lap + 1 y los mapas restaurados; anade aqui su rama y reutiliza el resto.
+## Despues, en todos los casos:
+## - Nunca se pierde (registro y regalo de Eco; decision del usuario): Eco,
+##   Notas, Calc y demas asistentes conocidos, el apodo, las ayudas aprendidas
+##   (album) y el pulso.
+## - Eco «desecha» lo guardado (habilidades salvo el pulso, power banks, puntos
+##   de atencion y mejoras): pasa a la papelera (discard_to_trash) y se recupera
+##   todo de golpe en el hub (recover_trash).
+## - La papelera queda activada (allies_met "papelera") y las vidas, repuestas.
+## Devuelve el informe {reason, had_copy, first, trash_has_content, trash} y lo
+## emite con EventBus.rollback_applied. Vacio si `reason` no se conoce.
+func apply_rollback(reason: StringName = ROLLBACK_GAME_OVER) -> Dictionary:
+	if reason != ROLLBACK_GAME_OVER:
+		push_error("GameState: rollback desconocido '%s'" % reason)
+		return {}
+	var keep_allies: Dictionary = allies_met.duplicate()
+	var keep_nickname: String = nickname
+	var keep_help: Dictionary = learned_help.duplicate()
+	var keep_pulse: bool = obtained_abilities.has(ABILITY_PULSE)
+	var had_copy: bool = load_game()
+	var copy_nickname: String = nickname
+	for ally: StringName in keep_allies:
+		allies_met[ally] = true
+	nickname = keep_nickname
+	learned_help.clear()
+	for id: StringName in keep_help:
+		learned_help[id] = true
+	if keep_pulse and not obtained_abilities.has(ABILITY_PULSE):
+		obtained_abilities[ABILITY_PULSE] = true
+		set_ability_unlocked(ABILITY_PULSE, true)
+		seen_notices[ABILITY_PULSE] = true
+	var first: bool = not allies_met.has(ALLY_PAPELERA)
+	allies_met[ALLY_PAPELERA] = true
+	if first:
+		EventBus.ally_met.emit(ALLY_PAPELERA)
+	var trash: Dictionary = discard_to_trash()
+	_unsaved_after_trash = nickname != copy_nickname
+	if trash.is_empty():
+		_set_unsaved(_unsaved_after_trash)
+		_unsaved_after_trash = false
+	refill_lives()
+	var report: Dictionary = {
+		"reason": reason,
+		"had_copy": had_copy,
+		"first": first,
+		"trash_has_content": not trash.is_empty(),
+		"trash": trash.duplicate(true),
+	}
+	EventBus.rollback_applied.emit(report)
+	return report
+
+
+## Eco desecha lo guardado: habilidades obtenidas (salvo el pulso), power banks,
+## puntos de atencion y mejoras salen del estado y quedan en la papelera. No hay
+## cambios sin guardar (el disco tiene la copia). Devuelve lo desechado (vacio
+## si no habia nada que desechar: la papelera queda vacia).
+func discard_to_trash() -> Dictionary:
+	var abilities: Array[String] = []
+	for ability: StringName in obtained_abilities:
+		if ability != ABILITY_PULSE:
+			abilities.append(String(ability))
+	abilities.sort()
+	var trash: Dictionary = {
+		TRASH_POINTS: attention_points,
+		TRASH_POWER_BANKS: power_banks,
+		TRASH_EMPTY_POWER_BANKS: empty_power_banks,
+		TRASH_POWER_BANK_CHARGE: power_bank_charge,
+		TRASH_UPGRADES: _keys_sorted(purchased_upgrades),
+		TRASH_ABILITIES: abilities,
+	}
+	if attention_points <= 0 and power_banks <= 0 and empty_power_banks <= 0 and power_bank_charge <= 0.0 \
+			and purchased_upgrades.is_empty() and abilities.is_empty():
+		trash = {}
+	attention_points = ATTENTION_POINTS_MIN
+	power_banks = 0
+	empty_power_banks = 0
+	power_bank_charge = 0.0
+	purchased_upgrades.clear()
+	for id: String in abilities:
+		obtained_abilities.erase(StringName(id))
+		set_ability_unlocked(StringName(id), false)
+	_refresh_maxima()
+	_trash = trash
+	_set_unsaved(false)
+	EventBus.trash_changed.emit(has_trash_pending())
+	return trash.duplicate(true)
+
+
+## Hay contenido en la papelera pendiente de recuperar: las carpetas no se
+## abren, no se puede guardar en Notas y el aviso al salir no avisa.
+func has_trash_pending() -> bool:
+	return not _trash.is_empty()
+
+
+## Copia del contenido de la papelera (claves TRASH_*; vacio si no hay nada).
+func get_trash() -> Dictionary:
+	return _trash.duplicate(true)
+
+
+## Recupera de golpe todo lo de la papelera (al acercarse a ella en el hub). El
+## estado vuelve a ser el de la copia guardada: sin cambios sin guardar (salvo
+## un apodo nuevo, que no se pierde). Falso si no habia nada.
+func recover_trash() -> bool:
+	if _trash.is_empty():
+		return false
+	var trash: Dictionary = _trash
+	_trash = {}
+	attention_points += int(trash.get(TRASH_POINTS, 0))
+	power_banks += int(trash.get(TRASH_POWER_BANKS, 0))
+	empty_power_banks += int(trash.get(TRASH_EMPTY_POWER_BANKS, 0))
+	power_bank_charge += float(trash.get(TRASH_POWER_BANK_CHARGE, 0.0))
+	for id: Variant in trash.get(TRASH_UPGRADES, []):
+		if UpgradeCatalog.shared().has(StringName(String(id))):
+			purchased_upgrades[StringName(String(id))] = true
+	for id: Variant in trash.get(TRASH_ABILITIES, []):
+		var ability := StringName(String(id))
+		if abilities_unlocked.has(ability):
+			obtained_abilities[ability] = true
+			set_ability_unlocked(ability, true)
+	_refresh_maxima()
+	# Cambios hechos con la papelera llena (p. ej. el apodo en Notas) siguen
+	# pendientes.
+	_set_unsaved(_unsaved or _unsaved_after_trash)
+	_unsaved_after_trash = false
+	EventBus.trash_changed.emit(false)
+	EventBus.trash_recovered.emit(trash.duplicate(true))
+	return true
 
 
 func _update_low_sync() -> void:

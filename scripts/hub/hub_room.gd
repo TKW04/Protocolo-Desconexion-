@@ -43,6 +43,9 @@
 ## sola (scenes/hub/hub.tscn) sigue cargando scenes/main.tscn con el nivel.
 ## Eco companero (EcoCompanion, variante atenuada: sin cobertura) entra y sale
 ## con Isak si Eco es conocido; no es una estacion.
+## GAME OVER (2026-10-16, docs/propuesta-asistentes-y-vidas.md §5.2, paso 12
+## de §10): si LevelRunner trae el informe del rollback (rollback_report), al
+## terminar la llegada Eco lo cuenta (GameOverIntro, data/game_over.json).
 class_name HubRoom
 extends Node2D
 
@@ -65,6 +68,9 @@ var level_handler: Callable = Callable()
 ## Si es verdadero (antes de entrar al arbol), el vortice de llegada espera a
 ## release_arrival() (LevelRunner: al terminar el fundido de entrada).
 var hold_arrival: bool = false
+## Informe del rollback del game over (GameState.apply_rollback) con el que se
+## llega (lo da LevelRunner antes de entrar al arbol); vacio = llegada normal.
+var rollback_report: Dictionary = {}
 
 var _room: Dictionary = HubData.section("room")
 var _isak: Isak
@@ -81,6 +87,7 @@ var _previous_abilities: Dictionary = {}
 var _companion: EcoCompanion
 var _text_box: EcoTextBox
 var _notas_intro: NotasIntro
+var _game_over_intro: GameOverIntro
 
 
 func _enter_tree() -> void:
@@ -116,7 +123,13 @@ func _ready() -> void:
 	_build_stations()
 	_build_folders()
 	EventBus.ally_met.connect(_on_ally_met)
-	if not GameState.has_met_ally(GameState.ALLY_NOTAS):
+	if not rollback_report.is_empty():
+		_game_over_intro = GameOverIntro.new()
+		_game_over_intro.name = "GameOverIntro"
+		_game_over_intro.report = rollback_report
+		_game_over_intro.text_box = _text_box
+		add_child(_game_over_intro)
+	elif not GameState.has_met_ally(GameState.ALLY_NOTAS):
 		_notas_intro = NotasIntro.new()
 		_notas_intro.name = "NotasIntro"
 		_notas_intro.station = get_notas()
@@ -141,6 +154,11 @@ func _ready() -> void:
 func can_save_now() -> bool:
 	var station: HubStation = get_station(SAVE_STATION_ID)
 	return is_inside_tree() and station != null and station.is_powered()
+
+
+## Lineas de Eco tras el game over (null si se llego sin rollback).
+func get_game_over_intro() -> GameOverIntro:
+	return _game_over_intro if _game_over_intro != null and is_instance_valid(_game_over_intro) else null
 
 
 ## Notas (guardar y album).
@@ -290,6 +308,10 @@ func _start_arrival() -> void:
 func _on_arrival_finished() -> void:
 	_arrived = true
 	arrived.emit()
+	var game_over: GameOverIntro = get_game_over_intro()
+	if game_over != null:
+		game_over.start()
+		return
 	var intro: NotasIntro = get_notas_intro()
 	if intro != null:
 		intro.start()
