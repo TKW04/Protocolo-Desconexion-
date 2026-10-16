@@ -133,6 +133,15 @@
 			"order": 13,
 			"center_px": [32, 64],
 			"prompt_px": [32, -6]
+		},
+		"extra_life": {
+			"category": "object",
+			"title": "Vida extra",
+			"text": "Una vida extra: sube tu máximo de vidas. Guárdala: si caes sin guardar, la pierdes.",
+			"first_level": "1-1",
+			"order": 14,
+			"center_px": [32, 32],
+			"prompt_px": [32, -6]
 		}
 	}
 }

@@ -121,12 +121,15 @@ func test_arrows_move_through_tabs_grid_and_forget() -> void:
 	_album.move(1, 0)
 	assert_eq(_album.get_selected_index(), 1)
 	_album.move(0, 1)
-	assert_eq(_album.get_selected_index(), 1 + int(HubData.section("album").get("columns", 6)), "Abajo: fila siguiente")
-	_album.move(0, 1)
+	var columns: int = int(HubData.section("album").get("columns", 6))
+	assert_eq(_album.get_selected_index(), 1 + columns, "Abajo: fila siguiente")
+	# Filas de la rejilla (con la vida extra, paso 14, los objetos ocupan 3).
+	var rows: int = ceili(float(_album.get_entries().size()) / float(columns))
+	for i: int in rows - 1:
+		_album.move(0, 1)
 	assert_eq(_album.get_focus(), NotasAlbum.Focus.FORGET, "Bajo la rejilla: Olvidar ayudas")
-	_album.move(0, -1)
-	_album.move(0, -1)
-	_album.move(0, -1)
+	for i: int in rows + 1:
+		_album.move(0, -1)
 	assert_eq(_album.get_focus(), NotasAlbum.Focus.TABS, "Arriba de la rejilla: pestanas")
 	_album.move(-1, 0)
 	assert_eq(_album.get_tab(), "enemy", "Izquierda/derecha cambian de pestana")

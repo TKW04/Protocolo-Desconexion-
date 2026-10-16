@@ -49,6 +49,7 @@ SOURCES = {
     "sync_drop": ("assets/sprites/pickups/sync_drop_idle_00.png", None, 2),
     "exit_terminal": ("assets/sprites/props/exit_terminal/terminal_prompt_00.png", None, 1),
     "glitch_wall": ("assets/sprites/tiles/mundo1_glitch_wall.png", (0, 0, 64, 64), 1),
+    "extra_life": ("assets/sprites/pickups/extra_life_idle_00.png", None, 2),
 }
 
 
