@@ -60,6 +60,13 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 
 > **Cambio aprobado 2026-10-15 (3):** tras obtener el Debug, al final del 1-2, Isak encuentra a **Calc**; desde entonces hay tienda en el hub. La historia del encuentro está por decidir (`propuesta-asistentes-y-vidas.md` §2.3).
 
+> **Decisiones del usuario 2026-10-16 y propuesta de diseño (pendiente de revisión):** [propuesta-1-2.md](propuesta-1-2.md), con el «lenguaje de combinaciones» de pulso y láser (§0) para todos los niveles. Lo que cambia de la tabla de arriba si se aprueba:
+> - **Piso 2:** [Reemplazado] el Debug no aparece sin más: se **obtiene en el piso 2 resolviendo un acertijo de pulso + láser** (decisión del usuario); después, la plataforma oculta lo hace obligatorio (orden: acertijo → Debug → plataforma visible → continuar). Calc sigue al final del 1-2, en la azotea.
+> - **Piso 3:** se añade el **botón «Posponer»** (objetivo del láser que alarga el temporizador de los recordatorios; decisión del usuario).
+> - **Pop-ups translúcidos:** uno por piso (1, 3 y 4); el del piso 3 es opcional.
+> - **Secretos:** la carpeta de Spam (piso 2, exige el Debug) y dos más (B en el piso 1, C en el piso 3), con 9 puntos de atención en total.
+> - **Puntos de sincronización:** al entrar a los pisos 2 y 4.
+
 ## 6.5 Nivel 1-3: No molestar
 
 | Aspecto | Detalle |

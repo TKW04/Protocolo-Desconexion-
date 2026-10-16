@@ -24,3 +24,4 @@ Origen: sección 16 del documento original (`docs/original/diseno.md`).
   - Pulso y registro en un game over sin copia.
   - Eco en el hub frente a la «zona sin señal».
 - Historia del encuentro con Calc al final del 1-2 (2026-10-15 (3)): por decidir.
+- Nivel 1-2 «Centro de notificaciones» (2026-10-16): propuesta de diseño en `propuesta-1-2.md`, pendiente de revisión (10 preguntas en su §11 y en `preguntas.md`, «Propuesta del 1-2»). Incluye la historia del encuentro con Calc (opciones A-C) y qué es el recuerdo coleccionable de la carpeta de Spam.

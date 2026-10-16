@@ -856,3 +856,30 @@ Reglas nuevas (decisiones del usuario al informar de los fallos):
 - **Nombres de los mundos.** Las carpetas del álbum usan los nombres del diseño (`docs/INDEX.md`, `docs/mundo-N-*.md`): 1 Notificaciones, 2 El Feed, 3 La Vitrina, 4 El Chat, 5 La Tienda, 6 La Nube, todos en `worlds` de `data/hub.json` (los 4-6 sin carpeta en el hub). El título de la carpeta abierta usa el mismo formato que el panel de subniveles, «Mundo 1 - Notificaciones» (`folders.texts.title`, `HubWorlds.world_title`; una sola fuente). En la tarjeta de la carpeta, por ancho, van en dos líneas («Mundo 1» y «Notificaciones»). Los mundos no alcanzados siguen cerrados con candado y «???» sin filtrar el nombre; al alcanzarse muestran el suyo.
 - **Relectura (Q apagada) fiable.** A veces no salía y costaba que reapareciera. Causas: el tiempo quieto se medía con la `velocity` pedida (vector, umbral 4 px/s) y volvía a 0 en cualquier cuadro por encima; contra un escalón del 1-1 (p. ej. la columna 71) la `velocity` se queda en 30 px/s aunque Isak no avanza, y el tiempo se reiniciaba cada cuadro; además, objetos sin aprender ya inertes (un pop-up cerrado, un receptor activado) contaban como candidatos y la tapaban. Regla nueva (`reread` de `data/help.json`): quieto = en el suelo y |velocidad horizontal real| < `still_speed_px_s` (**8**, antes 4 sobre el vector pedido); el tiempo solo vuelve a 0 al moverse de verdad (|velocidad real| > `move_speed_px_s`, **40**); entre los dos umbrales ni cuenta ni se reinicia (histéresis: frenar, aterrizar, pequeñas oscilaciones). Espera `still_s` **0,5 s** (antes 0,8). Tras leerla se rearma sola con otro rato quieto, sin salir del rango; el candidato es el tipo aprendido más cercano en rango y un tipo sin aprender fuera de rango no la bloquea.
 
+
+## Propuesta del 1-2 «Centro de notificaciones» (2026-10-16)
+
+Diseño completo en `docs/propuesta-1-2.md` (pendiente de revisión; solo documentación).
+
+**Decisiones del usuario (2026-10-16):**
+
+- El 1-2 es una **torre vertical**: Isak sube 4 pisos = pestañas (Mensajes, Correo, Recordatorios, Actualizaciones). Dificultad 2 de 5 «subida un poco» (más combinación y gestión de energía, no más castigo); unos 5 min.
+- El jugador **combina pulso y láser** para avanzar, en este nivel y en los siguientes; el diseño deja preparado añadir el **Debug** a esas combinaciones (`propuesta-1-2.md` §0, «lenguaje de combinaciones»: aturdir y rematar, desbloquear a distancia y activar de cerca, Posponer, quitar la protección y cerrar, carrera contra amenaza; cuatro ideas con Debug marcadas como futuras).
+- El **Debug se obtiene en el piso 2 (Correo)** resolviendo un acertijo de pulso + láser y es obligatorio para seguir en ese piso (falta una plataforma que solo se ve con él). **Cambia V9** (proponía desbloquearlo al empezar el 1-2) y precisa las menciones a «el Debug llega al final del 1-2» de otros documentos: lo que llega al final del 1-2 es **Calc**, tras obtener el Debug.
+- Los **recordatorios** tienen un botón **«Posponer»**: el láser lo golpea a distancia para alargar el temporizador mientras el pulso resuelve otra cosa cerca.
+- Elementos nuevos de §6.2 en el 1-2: punto rojo, banner, recordatorio y pop-up translúcido; cada uno con ayuda Q, ficha del álbum, arte por script (sin AutoSprite salvo permiso), datos JSON y validación.
+
+**Desvíos y precisiones de la propuesta (necesitan aprobación):** el punto rojo despierto no recibe daño del láser; objetos nuevos del láser (lector, receptor enlazado con ventana, anuncio sobre un pop-up); el chip del Debug llena la energía; mapa de 28 × 62 tiles; puntos de sincronización al entrar a los pisos 2 y 4; dos cargadores (el del acertijo con 10 s de enfriamiento); 9 puntos de atención (6 + 3) y un power bank vacío en el secreto C; **sin vida extra en el 1-2** (N = 3: la siguiente iría en el 2-1, ajustable); el secreto D del 1-1 ya se puede abrir con el Debug, sin línea automática de Eco. El validador debe aceptar niveles donde el láser y el Debug son obligatorios (hoy exige la meta sin láser y un camino sin Debug).
+
+**Dudas abiertas** (detalle y recomendación en `propuesta-1-2.md` §11):
+
+1. ¿Temporizadores en tiempo del mundo (el Debug los ralentiza)? *Recomendación:* sí.
+2. ¿Punto rojo despierto inmune al láser? *Recomendación:* sí.
+3. ¿El chip del Debug llena la energía? *Recomendación:* sí.
+4. Encuentro con Calc: opción A (Calc colgada en la azotea, se enciende con el pulso), B (tras una pared con glitch) o C (en el hub). *Recomendación:* A; los textos los decide el usuario.
+5. Recuerdo coleccionable de la carpeta de Spam: qué es, qué recuerdo de Isak y dónde se ve. *Recomendación:* pestaña «Recuerdos» del álbum de Notas (lista `memories` en el guardado), sin efecto en el juego (V16); el contenido lo decide el usuario.
+6. ¿Power bank vacío en el secreto C? *Recomendación:* sí.
+7. ¿Ancho de 28 tiles o de 20? *Recomendación:* 28.
+8. ¿Puntos de sincronización al entrar a los pisos 2 y 4? *Recomendación:* sí.
+9. ¿Espera del piso 4 de 20 s con tres oleadas? *Recomendación:* sí, 15 s si aburre.
+10. ¿Recordar el secreto D del 1-1? *Recomendación:* sin línea automática; basta la Q y la ficha.
