@@ -802,9 +802,9 @@ Implementado el paso 13 de `docs/propuesta-asistentes-y-vidas.md` §10 (detalle 
 
 Dudas para el usuario:
 
-- **¿«Salir al hub» en el menú de pausa de los niveles?** Los documentos no lo definen. Si se añade, la propuesta sería: confirmación, se pierde el intento actual (como morir sin checkpoint) y no consume ningún guardado. No está implementado.
-- **¿Qué más ajustes van al menú?** Ya existen sin menú y sin guardar en disco: reducir el ruido con Sync Rate bajo (`reduce_low_sync_effects`) y el contorno de alto contraste del Debug (`debug_high_contrast_outline`).
-- **¿Esc en la página Ajustes** debe volver a la página principal en lugar de reanudar? Hoy Esc / Start reanudan desde cualquier página y B vuelve atrás.
+- ~~**¿«Salir al hub» en el menú de pausa de los niveles?**~~ **Resuelta (2026-10-16, usuario):** sí, solo en un nivel ya completado en la partida actual, con confirmación. Ver «Menú de pausa: Salir al hub, ajustes, pantalla y controles», abajo.
+- ~~**¿Qué más ajustes van al menú?**~~ **Resuelta (2026-10-16, usuario):** los dos ajustes de accesibilidad, más Pantalla (resolución) y Controles. Ver abajo.
+- ~~**¿Esc en la página Ajustes** debe volver a la página principal?~~ **Resuelta (2026-10-16, usuario):** sí, Esc / Start vuelven una página atrás; en la principal reanudan.
 
 ## Eco lleva la Q y álbum por carpetas (2026-10-16)
 
@@ -821,4 +821,28 @@ Decisiones del equipo al implementarlo (ajustables jugando):
 - **Durante el menú de pausa** Eco suelta el objeto y vuelve a Isak (en pausa no hay Q); al reanudar vuelve a señalarlo.
 - **Las carpetas cerradas** muestran «Mundo n» (el número, no el nombre).
 
-Pendiente de aclarar por el usuario: «ver la información de un objeto ya aprendido al acercarte de nuevo» (no implementado).
+~~Pendiente de aclarar por el usuario: «ver la información de un objeto ya aprendido al acercarte de nuevo»~~ **Resuelta (2026-10-16, usuario):** relectura con una Q apagada; ver la sección siguiente.
+
+## Menú de pausa: Salir al hub, ajustes, pantalla, controles y relectura (2026-10-16)
+
+Decisiones del usuario tras probar el 1-1 (implementadas):
+
+- **Relectura de ayudas:** además del álbum, cerca de un objeto de un tipo **ya aprendido** sale una **Q pequeña y apagada sobre el objeto** (no sobre Eco: Eco no vuela ni brilla, eso es solo del primer encuentro), solo si Isak está **quieto 0,8 s** (`reread.still_s` de `data/help.json`) dentro del radio del tipo; desaparece al moverse. Pulsarla abre la misma explicación (misma pausa, mismo cuadro de Eco) sin volver a aprender nada. Una sola (la del más cercano) y solo si no hay ningún candidato sin aprender en rango (la Q normal va primero). Respeta «Ayudas de Eco: Ocultar» y no sale en un vórtice, muerto, de espaldas ni en pausa. Se dibuja en la capa de la Q.
+- **«Salir al hub»:** en el menú de pausa de un nivel **solo si ese nivel ya está completado** en la partida actual. Confirmación «¿Salir al hub? Perderás este intento.» (Salir / Volver). Vuelve al hub con la llegada normal (vórtice, energía y Sync Rate llenos). No aparece en el hub ni en niveles no completados.
+- **Esc / Start / B en Ajustes y subpáginas** vuelven una página atrás; en la principal, reanudan.
+- **Ajustes de accesibilidad** al menú, guardados en `settings.cfg` y aplicados al momento.
+- **Pantalla:** modo Ventana / Pantalla completa y tamaño de ventana.
+- **Controles:** reasignar teclado y mando, con conflictos (intercambiar o cancelar) y «Restablecer valores».
+
+Decisiones del equipo al implementarlo (ajustables):
+
+- **Qué se pierde al salir al hub:** lo mismo que al reiniciar con R: la posición, el punto de sincronización, el estado de enemigos y objetos del mapa. Lo **recogido en el intento** (puntos de atención, objetos, habilidades) **se queda en memoria**, igual que con R (R no lo devuelve), y se guarda con la siguiente copia en Notas; si se cierra sin guardar, se pierde como siempre. Salir no gasta vidas, no provoca game over, no escribe el guardado ni marca «sin guardar» por sí mismo. La confirmación empieza en «Volver».
+- **Textos de accesibilidad** (sin la palabra «Normal», que es el nombre de una dificultad): «Reducir efectos de Sync bajo: Sí / No» (hoy solo hace que la señal y el porcentaje del HUD se queden en rojo sin parpadear; el ruido de pantalla aún no existe) y «Contorno del Debug de alto contraste: Sí / No» (plataformas ocultas con un contorno más claro y grueso). Por defecto, No.
+- **Pantalla:** presets 1280x720, 1600x900, 1920x1080, 2560x1440 y 3840x2160 (`data/settings.json`); solo se ofrecen los que caben en el monitor (1280x720 siempre). El juego se dibuja a 1280x720 con **escala entera**: con 1600x900 y 1920x1080 se ve a x1 con **bordes negros**; con 2560x1440 a x2 sin bordes; en pantalla completa, el mayor factor entero que cabe y bordes si sobra (p. ej. 1920x1080: x1 con bordes; 2560x1600: x2 con bordes arriba y abajo). El detalle del menú lo dice («Píxeles a x1, con bordes negros.»). Por defecto, ventana de 1280x720 (no se toca la ventana al arrancar). Nunca se aplica en GUT, scripts `-s` ni `--headless`.
+- **Controles:** acciones reasignables: mover izquierda / derecha, saltar, correr, pulso, láser, Debug, ayuda de Eco y pausa (no `restart_level`, las teclas de depuración ni las `ui_*`). Cada fila muestra la tecla principal y el botón o eje de mando principal; reasignar sustituye esa entrada y **conserva las demás** (flechas, cruceta). Una sola captura para los dos dispositivos: la primera tecla, botón o eje que se pulse. **Esc y Start** cancelan la captura y están **reservados**: siempre abren la pausa aunque se reasigne su fila y no se pueden dar a otra acción; R / Select, F9 y F1-F4 tampoco. Conflicto con otra acción reasignable: «Intercambiar» (la otra recibe la entrada anterior) o «Cancelar» (empieza en Cancelar); nunca queda una acción sin entrada de su dispositivo. Los menús siguen navegándose con las `ui_*` (Intro, Esc, flechas, A, B, cruceta), que no se reasignan. Nombres en español con glifos de la fuente (si faltara uno, «Tecla <código>»). Guardado como eventos serializados (tecla física, botón o eje) solo para las acciones que cambian; un `settings.cfg` con entradas inválidas o repetidas vuelve a los valores de `project.godot`.
+- **Q apagada:** escala x1 (la normal es x2), sin bote, placa `noche_profunda`, borde `tile_luz` y glifo `resplandor` de `mundo1.gpl` (validador `tools/validate_help_prompt.py`).
+
+Dudas para el usuario:
+
+- **¿La Q apagada a x1 se lee bien?** Es la mitad que la normal (glifo de 12 px de arte a x1, junto al arte a x2). Si se prefiere, puede ir a x2 con los mismos colores apagados.
+- **¿Pantalla completa sin bordes** aunque deforme o recorte un poco (escala no entera)? Hoy, con escala entera, en un monitor de 1920x1080 el juego se ve a 1280x720 con bordes negros.
