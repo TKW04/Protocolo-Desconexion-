@@ -1,6 +1,13 @@
-## Calc dormida en el dock del hub (docs/propuesta-hub-y-guardado.md §3.2; paso
-## 8 de §6.2; docs/05-hub.md §13.3): antes de vencer a Alerta Mayor esta
-## dormida, no habla ni tiene voz, pero su teclado vende las mejoras. Es un
+## Calc en el dock del hub (docs/propuesta-hub-y-guardado.md §3.2; paso 8 de
+## §6.2; docs/05-hub.md §13.3). APAGADA hasta conocerla (2026-10-16,
+## docs/propuesta-asistentes-y-vidas.md §2.3, paso 10 de §10): mientras
+## GameState no tenga "calc" en allies_met (requires_ally de data/hub.json;
+## HubRoom la apaga con set_powered) muestra powered_off (Calc con la pantalla
+## negra, sin animacion), sin prompt ni tienda. Conocida, esta dormida
+## (animacion sleep), no habla ni tiene voz, pero su teclado vende las mejoras.
+## El encuentro con Calc (final del 1-2) aun no existe: GameState.meet_ally
+## ("calc"), el argumento de depuracion --meet-ally=calc o el helper de pruebas
+## la encienden. Es un
 ## HubStation (pulso para abrir, Isak de espaldas) con el panel de tienda
 ## CalcPanel. Valores en la seccion calc de data/hub.json.
 ## Arte: SpriteFrames `frames` (calc_frames.tres) con la animacion `animation`
@@ -43,11 +50,13 @@ func _build_visual(size: Vector2) -> Node2D:
 	return sprite
 
 
-## Calc no cambia de animacion con el prompt: sigue dormida.
-func _show_visual_state(_value: StringName) -> void:
+## Calc no cambia de animacion con el prompt: sigue dormida (o apagada).
+func _show_visual_state(value: StringName) -> void:
 	var sprite := get_visual() as AnimatedSprite2D
 	if sprite == null or sprite.sprite_frames == null:
 		return
 	var anim := StringName(String(_calc.get("animation", "sleep")))
+	if value == VISUAL_POWERED_OFF and sprite.sprite_frames.has_animation(VISUAL_POWERED_OFF):
+		anim = VISUAL_POWERED_OFF
 	if sprite.sprite_frames.has_animation(anim) and (sprite.animation != anim or not sprite.is_playing()):
 		sprite.play(anim)

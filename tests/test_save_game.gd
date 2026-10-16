@@ -447,6 +447,7 @@ func test_v2_save_with_1_1_completed_is_migrated_to_v3() -> void:
 	assert_eq(GameState.lives_max, 3)
 	assert_true(GameState.has_met_ally(GameState.ALLY_ECO), "1-1 completado: Eco conocido")
 	assert_true(GameState.has_met_ally(GameState.ALLY_NOTAS), "y Notas (propuesta §6)")
+	assert_true(GameState.has_met_ally(GameState.ALLY_CALC), "y Calc: antes de v3 su tienda abria tras el 1-1")
 	var of_1_1: Array[StringName] = HelpCatalog.shared().types_of_level(&"1-1")
 	assert_gt(of_1_1.size(), 0)
 	for id: StringName in of_1_1:
@@ -456,7 +457,7 @@ func test_v2_save_with_1_1_completed_is_migrated_to_v3() -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	assert_eq(int(data["version"]), 3, "La copia siguiente escribe la v3")
 	assert_false(data.has("hub_tutorial_done"))
-	assert_eq(data["allies_met"], ["eco", "notas"])
+	assert_eq(data["allies_met"], ["calc", "eco", "notas"])
 	assert_eq((data["learned_help"] as Array).size(), of_1_1.size())
 	assert_eq(int(SaveFile.read_backup(PATH)["version"]), 2, "La v2 queda en el .bak")
 
@@ -479,6 +480,39 @@ func test_v2_hub_tutorial_done_means_notas_known() -> void:
 	assert_true(GameState.has_met_ally(GameState.ALLY_NOTAS), "hub_tutorial_done -> Notas")
 	assert_true(GameState.has_met_ally(GameState.ALLY_ECO), "y Eco (propuesta §6)")
 	assert_true(GameState.learned_help.is_empty(), "Sin el 1-1 completado no aprende ayudas")
+	assert_false(GameState.has_met_ally(GameState.ALLY_CALC), "Sin el 1-1 ni compras: Calc apagada")
+
+
+func test_save_with_purchases_keeps_calc_known() -> void:
+	SaveFile.write(PATH, {"version": 3, "allies_met": ["eco", "notas"], "upgrades_purchased": ["wide_pulse"]})
+	assert_true(GameState.load_game())
+	assert_true(GameState.has_met_ally(GameState.ALLY_CALC), "Con mejoras compradas Calc cuenta como conocida")
+	assert_false(GameState.has_unsaved_changes())
+	SaveFile.write(PATH, {"version": 3, "allies_met": ["eco", "notas"], "completed_levels": ["1-1"]})
+	assert_true(GameState.load_game())
+	assert_false(GameState.has_met_ally(GameState.ALLY_CALC), "Una v3 sin compras ni calc: Calc apagada")
+
+
+func test_new_game_starts_without_notas_nor_calc() -> void:
+	GameState.reset_progress()
+	assert_false(GameState.has_met_ally(GameState.ALLY_NOTAS))
+	assert_false(GameState.has_met_ally(GameState.ALLY_CALC))
+
+
+func test_debug_meet_ally_argument() -> void:
+	var met: Array[StringName] = GameState.apply_debug_meet_args(
+		PackedStringArray(["--otro", "--meet-ally=calc", "--meet-ally=nadie"]))
+	assert_eq(met, [&"calc"] as Array[StringName], "Solo asistentes validos")
+	assert_true(GameState.has_met_ally(GameState.ALLY_CALC))
+	assert_false(GameState.has_unsaved_changes(), "No marca «sin guardar»")
+
+
+func test_forget_help_clears_and_marks_unsaved() -> void:
+	assert_false(GameState.forget_help(), "Sin ayudas no hace nada")
+	GameState.learn_help(&"receiver")
+	assert_true(GameState.forget_help())
+	assert_true(GameState.learned_help.is_empty())
+	assert_true(GameState.has_unsaved_changes())
 
 
 func test_v3_odd_fields_are_tolerated() -> void:

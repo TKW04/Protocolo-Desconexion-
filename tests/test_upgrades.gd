@@ -7,6 +7,8 @@
 # guarda en la copia local. Mas pruebas de la tienda en test_calc_station.gd.
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
 const PATH: String = "user://test_upgrades_save.json"
@@ -21,6 +23,8 @@ func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
+	EcoProgress.meet_calc()
 
 
 func after_each() -> void:
@@ -161,7 +165,7 @@ func test_hub_purchase_only_marks_unsaved_and_copy_local_writes() -> void:
 	assert_true(GameState.has_unsaved_changes())
 	assert_eq(panel.get_lines()[2], "Sin guardar", "Indicador al comprar")
 	assert_true(QuitGuard.can_save_here(get_tree()), "El aviso al salir ofrece guardar en el hub")
-	var copy := (_hub.get_station(&"copia_local") as CopyLocalStation).get_copy_panel()
+	var copy := (_hub.get_station(&"notas") as NotasStation).get_notas_panel()
 	assert_true(copy.save_now(), "La copia local guarda")
 	assert_true(FileAccess.file_exists(PATH))
 	assert_false(GameState.has_unsaved_changes())

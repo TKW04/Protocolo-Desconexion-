@@ -8,6 +8,8 @@
 # Usa su propia ruta de guardado (nunca user://save.json).
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const PATH: String = "user://test_calc_station.json"
 const T: float = 64.0
@@ -27,6 +29,8 @@ func before_each() -> void:
 	_saved_level = GameState.current_level
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
+	EcoProgress.meet_calc()
 	_hub = HUB_SCENE.instantiate() as HubRoom
 	add_child(_hub)
 	var vortex: WarpVortex = _hub.get_arrival_vortex()
@@ -75,7 +79,38 @@ func test_calc_is_a_sleeping_station_on_the_dock() -> void:
 	var height: float = sprite.sprite_frames.get_frame_texture(&"sleep", 0).get_size().y
 	assert_almost_eq(_calc.position.y + sprite.position.y + height, _hub.get_floor_y(), 0.5, "Pies en el dock")
 	assert_eq(sprite.scale, Vector2.ONE, "Sin escalar")
-	assert_null(_hub.get_node_or_null(^"EcoTextBox"), "En el hub no hay cuadro de Eco: Calc no habla")
+	assert_true(_calc.is_powered(), "Encendida: Calc conocida")
+	assert_false(_hub.get_text_box().is_showing(), "Calc no habla")
+
+
+func test_calc_is_powered_off_until_met() -> void:
+	_hub.free()
+	GameState.allies_met.erase(GameState.ALLY_CALC)
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	_hub.get_arrival_vortex().advance(5.0)
+	_isak = _hub.get_isak()
+	_isak.input = PlayerInput.new()
+	_calc = _hub.get_calc()
+	assert_false(_calc.is_powered(), "Apagada sin conocer a Calc")
+	assert_eq(_calc.get_calc_animation(), &"powered_off", "Pantalla negra, sin animacion")
+	_isak.global_position = Vector2(6.6 * T, _hub.get_floor_y())
+	_isak.facing = 1.0
+	await wait_physics_frames(6)
+	_calc.advance(0.1)
+	assert_false(_calc.is_key_hint_visible(), "Sin tecla del pulso")
+	_isak.set_pulse_area_active(true)
+	await wait_physics_frames(2)
+	assert_false(_calc.is_panel_open(), "El pulso no abre la tienda")
+	assert_false(_calc.open(_isak), "No hay tienda")
+	_isak.set_pulse_area_active(false)
+	assert_true(GameState.meet_ally(GameState.ALLY_CALC), "Encuentro (helper)")
+	assert_true(_calc.is_powered(), "Se enciende al momento")
+	assert_eq(_calc.get_calc_animation(), &"sleep")
+	_calc.advance(0.1)
+	assert_true(_calc.is_key_hint_visible(), "Ya sale la tecla")
+	assert_true(_calc.open(_isak), "Ya vende")
+	_calc.close(true)
 
 
 func test_pulse_near_calc_opens_the_shop_with_isak_facing_back() -> void:
@@ -89,7 +124,7 @@ func test_pulse_near_calc_opens_the_shop_with_isak_facing_back() -> void:
 	await wait_physics_frames(2)
 	assert_true(_calc.is_panel_open(), "El pulso abre la tienda")
 	assert_true(_isak.is_facing_back(), "Isak de espaldas")
-	assert_false(_hub.get_station(&"copia_local").is_panel_open(), "Solo la de Calc")
+	assert_false(_hub.get_station(&"notas").is_panel_open(), "Solo la de Calc")
 	_panel.skip_input_delay()
 	_panel._unhandled_input(_action(&"jump"))
 	await wait_physics_frames(4)
