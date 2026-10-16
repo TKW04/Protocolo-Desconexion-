@@ -1,6 +1,6 @@
 # Propuesta: asistentes, ayuda con Q, vidas y papelera
 
-Estado: **propuesta con las decisiones del usuario aprobadas** («decisiones del usuario 2026-10-15 (3)»), **a falta de las preguntas abiertas de §12.** El usuario aprobó también todas las propuestas que no contestó de forma explícita. Lo que sigue marcado como **propuesta** es solo lo que §12 deja abierto. Los valores marcados **ajustable jugando** son de partida y se afinan jugando. Solo documentación: no cambia código, escenas, datos ni assets. Donde contradice a otro documento, manda este; el otro lleva una marca de «reemplazado» (lista en §13).
+Estado: **propuesta con las decisiones del usuario aprobadas** («decisiones del usuario 2026-10-15 (3)»), **a falta de las preguntas abiertas de §12.** El usuario aprobó también todas las propuestas que no contestó de forma explícita. Lo que sigue marcado como **propuesta** es solo lo que §12 deja abierto. Los valores marcados **ajustable jugando** son de partida y se afinan jugando. Al aprobarse era solo documentación; la implementación avanza según §10 (estado al final de la tabla). Donde contradice a otro documento, manda este; el otro lleva una marca de «reemplazado» (lista en §13).
 
 Reemplaza:
 
@@ -396,9 +396,9 @@ S = menos de medio día; M = medio día a un día; L = más de un día. Cada pas
 
 | # | Paso | Tamaño | Depende de | Pruebas |
 |---|---|---|---|---|
-| 1 | Acción `help` (Q / R3) en el Input Map. | S | | Acción con Q y el botón 8. |
-| 2 | Guardado v3 (`nickname`, `allies_met`, `learned_help`, `lives_max`) y migración desde v2. | S | | Ida y vuelta v3, carga de v2, versión desconocida apartada. |
-| 3 | Sistema de ayuda: `data/help.json`, `HelpPrompt` (a partir de `PulsePrompt`), objeto no aprendido más cercano, pausa con el cuadro de Eco y aprender por tipo. | M | 1, 2 | Q solo con Eco conocido; un tipo aprendido no muestra Q en otra instancia; la pausa se cierra con la acción; no marca «sin guardar». |
+| 1 | **Hecho (2026-10-16).** Acción `help` (Q / R3) en el Input Map. | S | | Acción con Q y el botón 8. |
+| 2 | **Hecho (2026-10-16).** Guardado v3 (`nickname`, `allies_met`, `learned_help`, `lives_max`) y migración desde v2. | S | | Ida y vuelta v3, carga de v2, versión desconocida apartada. |
+| 3 | **Hecho (2026-10-16).** Sistema de ayuda: `data/help.json`, `HelpPrompt` (a partir de `PulsePrompt`), objeto no aprendido más cercano, pausa con el cuadro de Eco y aprender por tipo. | M | 1, 2 | Q solo con Eco conocido; un tipo aprendido no muestra Q en otra instancia; la pausa se cierra con la acción; no marca «sin guardar». |
 | 4 | Eco compañero: arte (script y validador) y `EcoCompanion` (seguimiento, oscilación, vórtice, hub). | M | | Sigue sin colisión; entra y sale con el vórtice; paleta validada. |
 | 5 | Entrada del apodo. | M | 2 | Escribir, borrar, dejar «Isak», límite y caracteres. |
 | 6 | Encuentro con Eco en el 1-1 (`eco_encounter`): presentación, apodo, pulso y aviso; `pulse: false`; validador; bot. | L | 3, 4, 5 | Validadores; nada exige pulso antes de la columna 11; el bot completa el 1-1; al rejugar no se repite. |
@@ -413,6 +413,12 @@ S = menos de medio día; M = medio día a un día; L = más de un día. Cada pas
 | 15 | Calc: encuentro al final del 1-2. | M | 1-2 jugable, 10 | |
 | 16 | Rollback del jefe final con la misma papelera. | M | Mundo 6, 12 | |
 | 17 | Linterna en el X-1 del mundo oscuro. | M | Mundo elegido | |
+
+**Estado (2026-10-16):** pasos 1-3 implementados (tanda 1). Detalles de la implementación:
+
+- Paso 1: acción `help` con Q (teclado) y R3 (botón 8); `tests/test_help_action.gd` comprueba que ninguna otra acción las usa.
+- Paso 2: `SAVE_VERSION` 3; `hub_tutorial_done` desaparece del guardado (la migración lo traduce a `allies_met`). Conocer un asistente (`GameState.meet_ally`) y aprender una ayuda (`learn_help`) no marcan «sin guardar». La migración da por aprendidos los tipos cuyo `first_level` es un nivel completado (hoy, los del 1-1).
+- Paso 3: `HelpSystem` (`scripts/levels/help_system.gd`, nodo `Help` que `tools/build_level.py` añade a cada nivel), `HelpPrompt` (la Q, en un `CanvasLayer` que sigue a la cámara, capa 6, como el punto débil) y `HelpCatalog` (`data/help.json`). Cada objeto referencia su tipo con `help_id` en sus datos (§3.3 decía que se deduce del tipo de objeto: es lo mismo, pero explícito en `data/world1_objects.json`, `data/enemies/<tipo>.json` y `data/recharge_pickup.json`; un objeto del nivel puede sustituirlo y `""` lo deja sin Q, en lugar de `"help": false`). Tipos del 1-1 (13): `alert_bubble`, `attention_point`, `receiver`, `bridge`, `popup_blocker`, `power_bank_pickup`, `sync_point`, `ability_pickup`, `charger`, `energy_drop`, `sync_drop`, `exit_terminal` y `glitch_wall` (`extra_life` llegará con el paso 14). Se aprende al pulsar Q (no al cerrar la ayuda). Mientras el juego está en pausa no hay Q. Provisional hasta el paso 6: Eco cuenta como conocido en cuanto habla por primera vez (la bienvenida del 1-1). El texto de `sync_point` omite de momento «Las vidas no se recargan» porque las vidas aún no existen (las ayudas no mienten); se añadirá con el paso 11. Sin implementar aún: los campos de álbum (sprite de la ficha), el contorno cian del objeto y la Q «R3» según el último dispositivo.
 
 Orden: los pasos 1 y 2 a la vez; después 3, 4 y 5 en paralelo; después 6 → 7; después 8, 10 y 11 en paralelo; después 9 y 12. Los pasos 14 a 17 esperan contenido (1-2 y mundos posteriores).
 
