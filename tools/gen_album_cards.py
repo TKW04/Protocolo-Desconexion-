@@ -50,6 +50,11 @@ SOURCES = {
     "exit_terminal": ("assets/sprites/props/exit_terminal/terminal_prompt_00.png", None, 1),
     "glitch_wall": ("assets/sprites/tiles/mundo1_glitch_wall.png", (0, 0, 64, 64), 1),
     "extra_life": ("assets/sprites/pickups/extra_life_idle_00.png", None, 2),
+    # Acertijo «Correo certificado» y chip del Debug del 1-2 (tools/gen_world1_puzzle.py).
+    "laser_receiver": ("assets/sprites/props/laser_receiver_powered_00.png", None, 1),
+    "relay_receiver": ("assets/sprites/props/relay_receiver_powered_00.png", None, 1),
+    "ad_cover": ("assets/sprites/props/ad_cover_intact_00.png", None, 1),
+    "debug_chip": ("assets/sprites/pickups/debug_chip_idle_00.png", None, 1),
 }
 
 

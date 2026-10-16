@@ -3,7 +3,8 @@
 # ni la Q, ni la relectura (Q apagada), ni Eco van a un objeto destruido,
 # reventado, recogido, oculto, liberado o ya inerte; si deja de serlo mientras
 # es el candidato, la Q desaparece y Eco vuelve a Isak. Una prueba por tipo con
-# ayuda (los 14 de data/help.json, con su escena real).
+# ayuda (los de data/help.json, con su escena real; desde el 2026-10-16 tambien
+# el lector laser, el receptor enlazado, el anuncio y el chip del Debug del 1-2).
 extends GutTest
 
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
@@ -283,9 +284,44 @@ func test_q_moves_to_the_next_live_candidate() -> void:
 	assert_eq(_help.get_target(), receiver, "Cerrado el pop-up, la Q pasa al receptor")
 
 
+func test_completed_laser_receiver_gives_no_help() -> void:
+	var reader := _scene("laser_receiver") as LaserReceiver
+	_place(reader, &"laser_receiver")
+	await wait_process_frames(1)
+	reader.on_laser_hit(1.0, null)
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(reader), "Con corriente sigue siendo un lector")
+	await _assert_inert_drops_help(reader, func() -> void: reader.complete(), "lector hecho")
+	_assert_no_reread(reader, &"laser_receiver", "lector hecho")
+
+
+func test_activated_relay_receiver_gives_no_help() -> void:
+	var relay := _scene("relay_receiver") as RelayReceiver
+	_place(relay, &"relay_receiver")
+	await _assert_inert_drops_help(relay, func() -> void: relay.activate(), "receptor enlazado activado")
+	_assert_no_reread(relay, &"relay_receiver", "receptor enlazado activado")
+
+
+func test_broken_ad_cover_gives_no_help() -> void:
+	var ad := _scene("ad_cover") as AdCover
+	ad.text = "Saltar anuncio en 5…"
+	_place(ad, &"ad_cover")
+	await _assert_inert_drops_help(ad, func() -> void: ad.on_laser_hit(1.0, null), "anuncio roto")
+	_assert_no_reread(ad, &"ad_cover", "anuncio roto")
+
+
+func test_collected_debug_chip_gives_no_help() -> void:
+	var pickup := _scene("ability_pickup") as AbilityPickup
+	pickup.ability = &"debug"
+	_place(pickup, &"ability_pickup")
+	await wait_process_frames(1)
+	assert_eq(HelpCatalog.help_id_of(pickup), &"debug_chip", "Su propia ayuda")
+	await _assert_inert_drops_help(pickup, func() -> void: pickup.collect_by(_isak), "chip del Debug recogido")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
-		&"extra_life", &"charger", &"sync_point"]
+		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)

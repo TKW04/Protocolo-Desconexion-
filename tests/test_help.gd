@@ -292,6 +292,12 @@ func _data_help_ids() -> Dictionary:
 			used[id] = "world1_objects.types.%s" % type
 	for section: String in ["attention_point", "checkpoint"]:
 		used[String(world[section]["help_id"])] = "world1_objects.%s" % section
+	# Chip de una habilidad con ayuda propia (2026-10-16: debug_chip).
+	var by_ability: Dictionary = (world["ability_pickup"] as Dictionary).get("by_ability", {})
+	for ability: String in by_ability:
+		var own_id: Variant = (by_ability[ability] as Dictionary).get("help_id")
+		if own_id is String and not (own_id as String).is_empty():
+			used[own_id] = "world1_objects.ability_pickup.by_ability.%s" % ability
 	for file: String in DirAccess.get_files_at("res://data/enemies"):
 		if file.ends_with(".json"):
 			var enemy: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/enemies/" + file))

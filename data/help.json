@@ -171,6 +171,46 @@
 			"order": 14,
 			"center_px": [32, 32],
 			"prompt_px": [32, -6]
+		},
+		"laser_receiver": {
+			"category": "object",
+			"title": "Lector láser",
+			"text": "Un lector a distancia. Responde al láser, no al pulso: dispárale y su cable da corriente unos segundos. Mira a dónde va el cable.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 15,
+			"center_px": [48, 8],
+			"prompt_px": [48, -22]
+		},
+		"relay_receiver": {
+			"category": "object",
+			"title": "Receptor enlazado",
+			"text": "Este receptor necesita corriente. Cuando su cable brille, tienes unos segundos para el pulso. Sin corriente, ni caso.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 16,
+			"center_px": [32, 32],
+			"prompt_px": [32, -6]
+		},
+		"ad_cover": {
+			"category": "object",
+			"title": "Anuncio",
+			"text": "Un anuncio encima del botón de cerrar. El pulso rebota; el láser lo quita.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 17,
+			"center_px": [48, 24],
+			"prompt_px": [48, -6]
+		},
+		"debug_chip": {
+			"category": "object",
+			"title": "Chip del Debug",
+			"text": "Una herramienta de diagnóstico, preparada por mí. Tócala y es tuya para siempre.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 18,
+			"center_px": [32, 32],
+			"prompt_px": [32, -6]
 		}
 	}
 }
