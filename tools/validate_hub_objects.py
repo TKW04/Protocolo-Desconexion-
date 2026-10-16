@@ -41,6 +41,7 @@ SIZES = {
     ("papelera", "papelera_"): (64, 96, True),
     ("icons", "icon_"): (16, 16, True),
     ("album", "album_cell"): (40, 40, True),
+    ("album", "album_folder_"): (32, 32, True),
     ("icons", "world_icon_"): (16, 16, True),
     ("icons", "page_dot_"): (8, 8, True),
 }

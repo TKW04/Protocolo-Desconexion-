@@ -22,11 +22,21 @@ scripts/levels/eco_companion.gd), no los cuadros.
 - Variante atenuada del hub (sin cobertura, propuesta §12 pregunta 7): las
   mismas animaciones con sufijo _dim, con la paleta del hub (assets/palettes/
   hub.gpl) en grises apagados y una orbita rota (dos arcos de tres).
+- Variante ambar (2026-10-16, Eco lleva la Q): Eco «brilla» en dorado mientras
+  ofrece una ayuda (vuela junto al objeto con la Q encima) y mientras la
+  explica. idle, talk y notice con sufijo _amber: esfera dorada (ambar con
+  sombra y borde en ambar_sombra, brillo blanco), orbita ambar y un halo que
+  late (pulso suave de brillo: sin halo -> ambar_sombra -> ambar ->
+  ambar_sombra en los 4 cuadros del idle). glow_in (3 cuadros, sin bucle):
+  normal con chispas ambar -> mezcla en damero (normal/ambar) -> ambar con halo
+  fuerte; glow_out es la misma secuencia al reves (mismos PNG, solo en el
+  SpriteFrames).
 
 Colores: normal solo de assets/palettes/mundo1.gpl (noche_profunda, cielo,
-resplandor, borde_luz, banner_blanco; sin rojos, carmin ni ambar) y _dim solo de
-hub.gpl (fondo_profundo, panel, gris_apagado, gris_foto, texto_tenue,
-texto_claro). Fondo transparente, alfa 0 o 255. Salida determinista. Tambien
+resplandor, borde_luz, banner_blanco; sin rojos, carmin ni ambar), _amber y
+glow_in de mundo1.gpl con ambar y ambar_sombra (los dorados de los puntos de
+atencion; sin rojos ni carmin) y _dim solo de hub.gpl (fondo_profundo, panel,
+gris_apagado, gris_foto, texto_tenue, texto_claro). Fondo transparente, alfa 0 o 255. Salida determinista. Tambien
 escribe assets/sprites/eco_companion_frames.tres (un SpriteFrames con una
 animacion por estado y sus fps).
 
@@ -91,6 +101,23 @@ ROLES = {
         "halo": HUB["gris_foto"],
         "halo_soft": HUB["gris_apagado"],
     },
+    # Dorado (ofrece o explica una ayuda): mismos papeles con el ambar del Mundo 1.
+    "amber": {
+        "outline": M1["noche_profunda"],
+        "rim": M1["ambar_sombra"],
+        "shade": M1["ambar_sombra"],
+        "core": M1["ambar"],
+        "smile": M1["cielo"],
+        "orbit": M1["ambar"],
+        "node": M1["banner_blanco"],
+        "spark_core": M1["banner_blanco"],
+        "spark_arm": M1["ambar"],
+        "wave_near": M1["ambar"],
+        "wave_far": M1["ambar_sombra"],
+        "halo": M1["ambar"],
+        "halo_soft": M1["ambar_sombra"],
+        "gleam": M1["banner_blanco"],
+    },
 }
 
 # Orbita: radio, arcos, apertura de cada arco (grados) y giro por cuadro. Con
@@ -130,15 +157,20 @@ SMILES = {
     ],
 }
 
-# (nombre, cuadros, fps, bucle). disappear reutiliza appear al reves.
+# (nombre, cuadros, fps, bucle, variantes). disappear reutiliza appear al
+# reves y glow_out, glow_in al reves (REVERSED).
 ANIMS = [
-    ("idle", 4, 6.0, True),
-    ("talk", 3, 10.0, True),
-    ("notice", 2, 8.0, False),
-    ("appear", 4, 12.0, False),
+    ("idle", 4, 6.0, True, ("normal", "dim", "amber")),
+    ("talk", 3, 10.0, True, ("normal", "dim", "amber")),
+    ("notice", 2, 8.0, False, ("normal", "dim", "amber")),
+    ("appear", 4, 12.0, False, ("normal", "dim")),
+    ("glow_in", 3, 12.0, False, ("normal",)),
 ]
-DISAPPEAR = ("disappear", "appear", 12.0, False)
-VARIANTS = ["normal", "dim"]
+REVERSED = [("disappear", "appear", 12.0, False), ("glow_out", "glow_in", 12.0, False)]
+VARIANTS = ["normal", "dim", "amber"]
+SUFFIX = {"normal": "", "dim": "_dim", "amber": "_amber"}
+# Halo del idle ambar por cuadro (pulso suave de brillo): None = sin halo.
+AMBER_PULSE = [None, "halo_soft", "halo", "halo_soft"]
 
 
 def _d(x, y):
@@ -168,8 +200,13 @@ def sphere(cv, col, radius=RADIUS, face=None):
             for i, ch in enumerate(row):
                 if ch == "#":
                     cv.p(ox + i, oy + j, col["smile"])
-        # Brillo de la esfera: arriba a la izquierda (2 px, nucleo).
-        cv.p(int(CX) - 5, int(CY) - 6, col["core"])
+        # Brillo de la esfera: arriba a la izquierda (2 px, nucleo; en la
+        # variante ambar, un destello blanco de 2x2 con cola).
+        if "gleam" in col:
+            cv.rect(int(CX) - 6, int(CY) - 6, int(CX) - 5, int(CY) - 5, col["gleam"])
+            cv.p(int(CX) - 4, int(CY) - 7, col["gleam"])
+        else:
+            cv.p(int(CX) - 5, int(CY) - 6, col["core"])
 
 
 def halo(cv, color, radius):
@@ -228,15 +265,51 @@ def waves(cv, col, frame):
                         cv.p(x, y, color)
 
 
+def blend(a, b, keep_b):
+    """Mezcla en damero: los pixeles opacos de `b` donde keep_b(x, y), los de `a`
+    en el resto (mismo lienzo; transparente donde ninguno es opaco)."""
+    cv = Canvas(SIZE, SIZE)
+    pa, pb = a.load(), b.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            first, second = (pb, pa) if keep_b(x, y) else (pa, pb)
+            c = first[x, y] if first[x, y][3] == 255 else second[x, y]
+            if c[3] == 255:
+                cv.p(x, y, c)
+    return cv.img
+
+
 def frame(anim, f, variant):
     col = ROLES[variant]
     cv = Canvas(SIZE, SIZE)
+    if anim == "glow_in":
+        normal = frame("idle", 0, "normal")
+        amber = frame("idle", 2, "amber")
+        if f == 0:
+            # Normal con cuatro chispas ambar en diagonal (empieza a brillar).
+            cv = Canvas(SIZE, SIZE)
+            cv.img.alpha_composite(normal)
+            cv.px = cv.img.load()
+            for x, y in ((5, 5), (26, 5), (5, 26), (26, 26)):
+                spark(cv, ROLES["amber"], x, y, 1)
+            return cv.img
+        if f == 1:
+            return blend(normal, amber, lambda x, y: (x + y) % 2 == 0)
+        cv = Canvas(SIZE, SIZE)
+        cv.img.alpha_composite(amber)
+        cv.px = cv.img.load()
+        halo(cv, ROLES["amber"]["halo"], RADIUS + 1.0)
+        return cv.img
     if anim == "idle":
         sphere(cv, col, face="blink" if f == 3 else "smile")
-        arcs = ORBIT_ARCS if variant == "normal" else ORBIT_ARCS - 1
+        arcs = ORBIT_ARCS - 1 if variant == "dim" else ORBIT_ARCS
+        if variant == "amber" and AMBER_PULSE[f] is not None:
+            halo(cv, col[AMBER_PULSE[f]], RADIUS)
         orbit(cv, col, ORBIT_START + f * ORBIT_STEP, arcs)
     elif anim == "talk":
         sphere(cv, col, face=["open", "open_small", "smile"][f])
+        if variant == "amber":
+            halo(cv, col["halo_soft"], RADIUS)
         waves(cv, col, f)
     elif anim == "notice":
         sphere(cv, col, face="open")
@@ -261,14 +334,16 @@ def frame(anim, f, variant):
 
 
 def anim_name(anim, variant):
-    return anim if variant == "normal" else anim + "_dim"
+    return anim + SUFFIX[variant]
 
 
 def outputs():
     """{ruta relativa a assets/sprites: imagen}."""
     out = {}
     for variant in VARIANTS:
-        for anim, count, _fps, _loop in ANIMS:
+        for anim, count, _fps, _loop, variants in ANIMS:
+            if variant not in variants:
+                continue
             for f in range(count):
                 out["%s/eco_%s_%02d.png" % (OUT_DIR, anim_name(anim, variant), f)] = frame(anim, f, variant)
     return out
@@ -278,15 +353,19 @@ def animations():
     """[(nombre, [rutas res://], fps, bucle)] para el SpriteFrames."""
     anims = []
     for variant in VARIANTS:
-        for anim, count, fps, loop in ANIMS:
+        for anim, count, fps, loop, variants in ANIMS:
+            if variant not in variants:
+                continue
             name = anim_name(anim, variant)
             paths = ["res://assets/sprites/%s/eco_%s_%02d.png" % (OUT_DIR, name, i) for i in range(count)]
             anims.append((name, paths, fps, loop))
-        target, source, fps, loop = DISAPPEAR
-        src = anim_name(source, variant)
-        count = [c for a, c, _f, _l in ANIMS if a == source][0]
-        paths = ["res://assets/sprites/%s/eco_%s_%02d.png" % (OUT_DIR, src, i) for i in reversed(range(count))]
-        anims.append((anim_name(target, variant), paths, fps, loop))
+        for target, source, fps, loop in REVERSED:
+            entry = [a for a in ANIMS if a[0] == source][0]
+            if variant not in entry[4]:
+                continue
+            src = anim_name(source, variant)
+            paths = ["res://assets/sprites/%s/eco_%s_%02d.png" % (OUT_DIR, src, i) for i in reversed(range(entry[1]))]
+            anims.append((anim_name(target, variant), paths, fps, loop))
     return anims
 
 

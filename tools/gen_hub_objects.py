@@ -25,6 +25,9 @@ Salidas (assets/sprites/hub/):
                vacia); la dormida es dock_slot_trash_00             64x96
   album/       album_cell_00, album_cell_selected_00 (marco de
                ficha del album de Notas)                       40x40
+               album_folder_closed_00, album_folder_open_00,
+               album_folder_locked_00 (carpeta de un mundo en el
+               album: visitado, elegida/abierta, sin alcanzar)  32x32
   icons/       icon_airplane_mode_00, icon_unsaved_00          16x16
                icon_settings_00 (ajustes: abre el menu de pausa)
                icon_notas_00 (quien habla en el cuadro de texto: Notas)
@@ -885,6 +888,56 @@ def album_cell(selected):
     return cv.img
 
 
+# Carpetas por mundo del album (2026-10-16): mismo dibujo que las carpetas del
+# hub (pestana y cuerpo con contorno y esquinas cortadas) a 32x32. closed:
+# mundo visitado (panel con borde acento_cian y traza); open: la elegida o la
+# abierta (tapa abatida y una ficha asomando, forma ademas de color); locked:
+# mundo sin alcanzar (gris apagado con candado; el album escribe «???»).
+def album_folder(state):
+    cv = Canvas(32, 32)
+    if state == "locked":
+        fill, outline, light, shade = GA, FP, GF, BA
+    else:
+        fill, outline, light, shade = PA, CA, TR, FP
+    # Pestana y cuerpo trasero.
+    cv.box(3, 5, 14, 11, fill, outline)
+    cv.box(1, 8, 30, 28, fill, outline)
+    cv.rect(4, 8, 13, 9, fill)
+    cv.hline(4, 13, 6, light)
+    cv.hline(2, 29, 9, light)
+    if state == "open":
+        # Ficha asomando y tapa abatida hacia delante (trapecio mas claro).
+        cv.box(6, 4, 25, 18, TC, BO)
+        cv.hline(9, 22, 8, TR)
+        cv.hline(9, 19, 11, TR)
+        cv.rect(20, 11, 21, 12, CA)
+        for y in range(15, 30):
+            k = (y - 15) // 5
+            x0, x1 = 0 + k, 31 - k
+            cv.hline(x0, x1, y, outline if y in (15, 29) else BO if y == 16 else PA)
+            cv.p(x0, y, outline)
+            cv.p(x1, y, outline)
+        cv.p(0, 15, CLEAR)
+        cv.p(31, 15, CLEAR)
+        cv.hline(5, 18, 24, TR)
+        cv.rect(18, 23, 19, 24, CA)
+        return cv.img
+    cv.vline(2, 10, 26, light)
+    cv.hline(2, 29, 27, shade)
+    cv.vline(29, 10, 27, shade)
+    if state == "locked":
+        cv.box(19, 16, 28, 26, FP, FP)
+        cv.stamp(20, 17, LOCK, {"#": TT})
+        cv.hline(4, 15, 24, BA)
+    else:
+        cv.hline(4, 20, 24, TR)
+        cv.hline(4, 9, 24, CA)
+        cv.rect(20, 23, 21, 24, BO)
+        cv.vline(25, 13, 22, TR)
+        cv.rect(25, 12, 26, 13, BO)
+    return cv.img
+
+
 def page_dot(current):
     cv = Canvas(8, 8)
     cv.stamp(0, 0, DOT_FULL if current else DOT_RING, {"#": TC if current else TT})
@@ -934,6 +987,8 @@ def outputs():
     out["icons/icon_notas_00.png"] = icon_notas()
     out["album/album_cell_00.png"] = album_cell(False)
     out["album/album_cell_selected_00.png"] = album_cell(True)
+    for st in ("closed", "open", "locked"):
+        out[f"album/album_folder_{st}_00.png"] = album_folder(st)
     out["icons/page_dot_current_00.png"] = page_dot(True)
     out["icons/page_dot_other_00.png"] = page_dot(False)
     return out
