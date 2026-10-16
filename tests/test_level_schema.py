@@ -609,5 +609,68 @@ class VerticalSchemaTest(unittest.TestCase):
         self.assertTrue(all("y_from" in s and "y_to" in s for s in level["sections"]))
 
 
+class CorreoPuzzleSchemaTest(unittest.TestCase):
+    """Objetos del acertijo del laser (2026-10-16, paso 3 de docs/propuesta-1-2.md §10): enlaces
+    laser_receiver -> relay_receiver -> bridge_inactive y ad_cover -> popup_blocker, cable y
+    refill_energy del chip del Debug."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "levels", "correo_test.json"), encoding="utf-8") as handle:
+            self.level = json.load(handle)
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def obj(self, kind):
+        return next(o for o in self.level["objects"] if o["type"] == kind)
+
+    def test_committed_correo_test_level_is_valid(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+        kinds = {o["type"] for o in self.level["objects"]}
+        self.assertTrue({"laser_receiver", "relay_receiver", "ad_cover", "bridge_inactive", "popup_blocker",
+                         "ability_pickup", "charger"} <= kinds)
+
+    def test_reader_target_must_be_a_relay(self):
+        self.obj("laser_receiver")["params"]["target"] = "puente_correo"
+        self.assert_fails(self.level, "no es el id de ningun relay_receiver")
+
+    def test_relay_target_must_be_a_bridge(self):
+        self.obj("relay_receiver")["params"]["target"] = "nada"
+        self.assert_fails(self.level, "no es el id de ningun bridge_inactive")
+
+    def test_ad_target_must_be_a_popup(self):
+        self.obj("ad_cover")["params"]["target"] = "receptor_enlazado_1"
+        self.assert_fails(self.level, "no es el id de ningun popup_blocker")
+
+    def test_ad_must_be_on_the_close_button_cell(self):
+        self.obj("ad_cover")["x"] = 16
+        self.assert_fails(self.level, "celda del boton de cerrar")
+
+    def test_required_params(self):
+        del self.obj("ad_cover")["params"]["text"]
+        self.assert_fails(self.level, "falta el param obligatorio 'text'")
+        del self.obj("relay_receiver")["params"]["target"]
+        self.assert_fails(self.level, "falta el param obligatorio 'target'")
+
+    def test_cable_and_window(self):
+        reader = self.obj("laser_receiver")["params"]
+        reader["cable"] = [[14, 8], [99, 8]]
+        self.assert_fails(self.level, "fuera del grid")
+        reader["cable"] = [[14, "8"]]
+        self.assert_fails(self.level, "debe ser [columna, fila]")
+        reader["cable"] = []
+        reader["window_s"] = 0
+        self.assert_fails(self.level, "window_s debe ser un numero > 0")
+
+    def test_reader_inside_terrain_fails(self):
+        self.obj("laser_receiver")["x"] = 15
+        self.assert_fails(self.level, "dentro de terreno")
+
+    def test_refill_energy_must_be_bool(self):
+        self.obj("ability_pickup")["params"]["refill_energy"] = "si"
+        self.assert_fails(self.level, "refill_energy debe ser true o false")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,124 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/laser_receiver.tscn" id="4_laser_receiver"]
+[ext_resource type="PackedScene" path="res://scenes/levels/relay_receiver.tscn" id="5_relay_receiver"]
+[ext_resource type="PackedScene" path="res://scenes/levels/bridge.tscn" id="6_bridge"]
+[ext_resource type="PackedScene" path="res://scenes/levels/popup_blocker.tscn" id="7_popup_blocker"]
+[ext_resource type="PackedScene" path="res://scenes/levels/ad_cover.tscn" id="8_ad_cover"]
+[ext_resource type="PackedScene" path="res://scenes/levels/ability_pickup.tscn" id="9_ability_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="10_charger"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="11_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="12_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="13_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="14_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="15_help_system"]
+
+[node name="Level_correo_test" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "correo_test"
+level_name = "Correo certificado (prueba)"
+world = 1
+tile_size = 64
+size_tiles = Vector2i(24, 12)
+debug_color = "cyan"
+abilities_available = {"debug": false, "laser": true, "pulse": true}
+source_path = "res://data/levels/correo_test.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 23, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 15, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 16, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 17, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 18, 0, 2, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 2, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 2, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 2, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 2, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 18, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 19, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 22, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 18, 0, 4, 0, 0, 0, 3, 0, 0, 0, 0, 0, 19, 0, 4, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 4, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 4, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 4, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 4, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 23, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 23, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 4, 0, 7, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 7, 0, 0, 0, 1, 0, 4, 0, 0, 0, 6, 0, 7, 0, 0, 0, 1, 0, 4, 0, 0, 0, 7, 0, 7, 0, 0, 0, 1, 0, 4, 0, 0, 0, 8, 0, 7, 0, 0, 0, 2, 0, 4, 0, 0, 0, 15, 0, 7, 0, 0, 0, 6, 0, 0, 0, 0, 0, 16, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 7, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 7, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 15, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 16, 0, 8, 0, 0, 0, 7, 0, 1, 0, 0, 0, 17, 0, 8, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 8, 0, 0, 0, 0, 0, 2, 0, 0, 0, 19, 0, 8, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 8, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 8, 0, 0, 0, 7, 0, 1, 0, 0, 0, 22, 0, 8, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 8, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 9, 0, 0, 0, 0, 0, 4, 0, 0, 0, 3, 0, 9, 0, 0, 0, 1, 0, 4, 0, 0, 0, 4, 0, 9, 0, 0, 0, 2, 0, 4, 0, 0, 0, 15, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 16, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 17, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 9, 0, 0, 0, 0, 0, 2, 0, 0, 0, 20, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 22, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 9, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 10, 0, 0, 0, 5, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 7, 0, 0, 0, 0, 0, 16, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 10, 0, 0, 0, 0, 0, 2, 0, 0, 0, 21, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 22, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 10, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 11, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 11, 0, 0, 0, 0, 0, 3, 0, 0, 0, 16, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 17, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 22, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="lector_1" parent="Objects" instance=ExtResource("4_laser_receiver") groups=["help_target"]]
+position = Vector2(896, 640)
+cable_cells = [Vector2(14, 8), Vector2(9, 8), Vector2(9, 6)]
+object_id = &"lector_1"
+target_id = &"receptor_enlazado_1"
+window_s = 6.0
+metadata/help_id = "laser_receiver"
+
+[node name="receptor_enlazado_1" parent="Objects" instance=ExtResource("5_relay_receiver") groups=["help_target"]]
+position = Vector2(512, 384)
+object_id = &"receptor_enlazado_1"
+target_id = &"puente_correo"
+metadata/help_id = "relay_receiver"
+
+[node name="puente_correo" parent="Objects" instance=ExtResource("6_bridge") groups=["help_target"]]
+position = Vector2(576, 448)
+direction = "right"
+object_id = &"puente_correo"
+length_tiles = 6
+metadata/help_id = "bridge"
+
+[node name="popup_buzon" parent="Objects" instance=ExtResource("7_popup_blocker") groups=["help_target"]]
+position = Vector2(960, 192)
+close_button_position = Vector2(4, 192)
+close_button_size = 16
+height_tiles = 4
+object_id = &"popup_buzon"
+text = "Tu buzón está lleno. Compra más espacio"
+width_tiles = 3
+metadata/help_id = "popup_blocker"
+
+[node name="anuncio_buzon" parent="Objects" instance=ExtResource("8_ad_cover") groups=["help_target"]]
+position = Vector2(960, 384)
+object_id = &"anuncio_buzon"
+target_id = &"popup_buzon"
+text = "Saltar anuncio en 5…"
+metadata/help_id = "ad_cover"
+
+[node name="debug_1_2" parent="Objects" instance=ExtResource("9_ability_pickup") groups=["help_target"]]
+position = Vector2(1216, 384)
+ability = &"debug"
+object_id = &"debug_1_2"
+refill_energy = true
+metadata/help_id = "ability_pickup"
+
+[node name="cargador_1" parent="Objects" instance=ExtResource("10_charger") groups=["help_target"]]
+position = Vector2(384, 640)
+amount = 50.0
+cooldown_s = 10.0
+object_id = &"cargador_1"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="terminal_correo" parent="Objects" instance=ExtResource("11_exit_terminal") groups=["help_target"]]
+position = Vector2(1344, 320)
+height_tiles = 2
+object_id = &"terminal_correo"
+text = "Marcar como leído"
+width_tiles = 1
+level_id = "correo_test"
+metadata/help_id = "exit_terminal"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Goal" type="Marker2D" parent="." groups=["goal"]]
+position = Vector2(1376, 448)
+
+[node name="Isak" parent="." instance=ExtResource("12_isak")]
+position = Vector2(96, 704)
+camera_limits = Rect2i(0, 0, 1536, 768)
+
+[node name="Hud" parent="." instance=ExtResource("13_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("14_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("15_help_system")

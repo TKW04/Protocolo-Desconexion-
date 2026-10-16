@@ -153,5 +153,25 @@ class VerticalBuildTest(unittest.TestCase):
         self.assertTrue(bl.output_path({"id": "tower_test"}).endswith(os.path.join("scenes", "levels", "tower_test.tscn")))
 
 
+class CorreoTestSceneTest(unittest.TestCase):
+    """Sala de prueba del acertijo del laser (2026-10-16): la escena generada esta al dia y lleva los
+    enlaces por id, el recorrido del cable y refill_energy del chip del Debug."""
+
+    def test_correo_scene_up_to_date_with_links(self):
+        path = os.path.join(ROOT, "data", "levels", "correo_test.json")
+        with open(path, encoding="utf-8") as handle:
+            level = json.load(handle)
+        text = bl.build_scene(level)
+        with open(bl.output_path(level), encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), text)
+        self.assertIn('cable_cells = [Vector2(14, 8), Vector2(9, 8), Vector2(9, 6)]', text)
+        self.assertIn('target_id = &"receptor_enlazado_1"', text)
+        self.assertIn('target_id = &"puente_correo"', text)
+        self.assertIn('target_id = &"popup_buzon"', text)
+        self.assertIn('refill_energy = true', text)
+        for help_id in ("laser_receiver", "relay_receiver", "ad_cover"):
+            self.assertIn('metadata/help_id = "%s"' % help_id, text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,49 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; pasos 3 y 9 de docs/propuesta-1-2.md §10, 2026-10-16): una sala de 24x12 tiles que reproduce el acertijo «Correo certificado» del piso 2 del 1-2 (§4) para probarlo de principio a fin. Isak llega por la izquierda (P, suelo de la sala: de pie en la fila 10) con pulso y laser (abilities_available). Pasos: (1) disparar el laser a lector_1 (14, 10: cara izquierda del bloque de la caja fuerte, a la altura del celular desde el suelo de la sala; desde la repisa alta el haz pasa 4 tiles por encima) -> el cable sube por la pared, corre bajo el puente y llega a receptor_enlazado_1 iluminado en cian y vaciandose durante 6 s (tiempo del mundo); (2) subir las dos repisas de una via (fila 9, columnas 2-4, y fila 7, columnas 4-8: subidas de 2 tiles; la alta queda 4 tiles sobre el suelo) y lanzar el pulso al receptor enlazado (8, 6) con el cable encendido -> puente_correo se extiende (columnas 9-14, fila 7) hasta la caja fuerte (permanente); fuera de tiempo el pulso da una chispa gris y no hace nada, y al vencer el cable se apaga y se repite sin dano; (3) cruzar el puente y disparar a anuncio_buzon, que tapa el boton de cerrar de popup_buzon (columnas 15-17, filas 3-6) -> se rompe; (4) pulso al boton de cerrar desde el final del puente -> el pop-up se cierra (con el anuncio entero el pulso rebota); (5) recoger debug_1_2 (19, 6) en la caja fuerte (tunel de 2 tiles, columnas 18-22: no se salta, recogerlo es obligatorio): desbloquea el Debug (se guarda como el laser), llena la energia (refill_energy), Eco dice su linea de historia y sale el aviso de control del Debug; (6) la terminal de salida (21, 5) cierra la sala (pulso). Entre la repisa alta y la caja fuerte hay 6 tiles de aire (no se salta; caer son 4 tiles, sin dano). Recorrido tras el disparo: unos 2 s frente a 6 s de ventana. cargador_1 (6, 10) junto al punto de disparo (+50, reutilizable cada 10 s). Sin enemigos, pinchos ni caidas de mas de 4 tiles. El validador de alcanzabilidad modela por ahora el receptor enlazado como un receptor del pulso y no sabe del laser, del anuncio ni de la ventana (paso 10). El bot no lo recorre. Escena: scenes/levels/correo_test.tscn (python3 tools/build_level.py data/levels/correo_test.json).",
+	"id": "correo_test",
+	"name": "Correo certificado (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": false
+	},
+	"sections": [
+		{
+			"name": "Correo certificado",
+			"x_from": 0,
+			"x_to": 23,
+			"patterns": ["desbloquear_a_distancia_y_activar_de_cerca", "quitar_la_proteccion_y_cerrar"]
+		}
+	],
+	"grid": [
+		"########################",
+		"#......................#",
+		"#..............#########",
+		"#.................######",
+		"#.................######",
+		"#......................#",
+		"#....................G.#",
+		"#...-----......#########",
+		"#..............#########",
+		"#.---..........#########",
+		"#P.............#########",
+		"########################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{"type": "laser_receiver", "x": 14, "y": 10, "params": {"id": "lector_1", "target": "receptor_enlazado_1", "window_s": 6.0, "cable": [[14, 8], [9, 8], [9, 6]]}},
+		{"type": "relay_receiver", "x": 8, "y": 6, "params": {"id": "receptor_enlazado_1", "target": "puente_correo"}},
+		{"type": "bridge_inactive", "x": 9, "y": 7, "params": {"id": "puente_correo", "length_tiles": 6, "direction": "right"}},
+		{"type": "popup_blocker", "x": 15, "y": 3, "params": {"id": "popup_buzon", "text": "Tu buzón está lleno. Compra más espacio", "width_tiles": 3, "height_tiles": 4, "close_button_px": [4, 192], "close_button_size_px": 16}},
+		{"type": "ad_cover", "x": 15, "y": 6, "params": {"id": "anuncio_buzon", "target": "popup_buzon", "text": "Saltar anuncio en 5…"}},
+		{"type": "ability_pickup", "x": 19, "y": 6, "params": {"id": "debug_1_2", "ability": "debug", "refill_energy": true}},
+		{"type": "charger", "x": 6, "y": 10, "params": {"id": "cargador_1", "amount": 50.0, "reusable": true, "cooldown_s": 10.0}},
+		{"type": "exit_terminal", "x": 21, "y": 5, "params": {"id": "terminal_correo", "text": "Marcar como leído"}}
+	],
+	"unlocks": []
+}
