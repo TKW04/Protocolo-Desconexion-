@@ -95,6 +95,7 @@ func _ready() -> void:
 	_apply_config()
 	get_viewport().size_changed.connect(_fit_frame)
 	EventBus.eco_line_requested.connect(_on_eco_line_requested)
+	add_to_group(PauseMenu.BLOCKER_GROUP)
 	_set_alpha(TRANSPARENT)
 	_panel.visible = false
 
@@ -190,6 +191,12 @@ func finish_typing() -> void:
 	if _phase == Phase.TYPING:
 		_type_time = maxf(_type_time, _wrapped.length() / _config.chars_per_second)
 		advance(0.0)
+
+
+## El menu de pausa no se abre con una linea en pantalla o en cola
+## (PauseMenu.BLOCKER_GROUP): las normales corren en tiempo real.
+func blocks_pause_menu() -> bool:
+	return is_showing() or not _queue.is_empty()
 
 
 func is_showing() -> bool:

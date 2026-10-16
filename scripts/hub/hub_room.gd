@@ -50,6 +50,11 @@
 ## llegada Eco lo cuenta (GameOverIntro, data/game_over.json). Mientras la
 ## papelera tenga contenido las carpetas no se abren (HubWorlds.can_enter), Notas
 ## no guarda y el aviso al salir no ofrece guardar (can_save_now).
+## MENU DE PAUSA (2026-10-16): la accion pause y el icono de ajustes del HUD
+## (junto al Modo Avion) abren el PauseMenu del flujo (el de LevelRunner) o, con
+## el hub abierto solo, uno propio (hijo "PauseMenu"). No se abre
+## (blocks_pause_menu) hasta terminar la llegada, durante la salida por el
+## vortice ni con el panel de una estacion o carpeta abierto.
 class_name HubRoom
 extends Node2D
 
@@ -123,6 +128,9 @@ func _ready() -> void:
 	_text_box = (load(TEXT_BOX_SCENE) as PackedScene).instantiate() as EcoTextBox
 	_text_box.name = "EcoTextBox"
 	add_child(_text_box)
+	add_to_group(PauseMenu.BLOCKER_GROUP)
+	if PauseMenu.find_in(get_tree()) == null:
+		add_child(PauseMenu.new())
 	_build_room()
 	_build_dormant()
 	_build_papelera()
@@ -161,6 +169,23 @@ func _ready() -> void:
 func can_save_now() -> bool:
 	var station: HubStation = get_station(SAVE_STATION_ID)
 	return is_inside_tree() and station != null and station.is_powered() and not GameState.has_trash_pending()
+
+
+## El menu de pausa no se abre ahora (PauseMenu.BLOCKER_GROUP): llegada sin
+## terminar, salida por el vortice, Isak sin control o de espaldas, o un panel
+## de estacion o carpeta abierto.
+func blocks_pause_menu() -> bool:
+	if not _arrived or not _entering_level.is_empty():
+		return true
+	if _isak == null or not is_instance_valid(_isak) or _isak.is_warping() or _isak.is_facing_back():
+		return true
+	for station: HubStation in _stations.values():
+		if station.is_panel_open():
+			return true
+	for folder: FolderStation in _folders.values():
+		if folder.is_panel_open():
+			return true
+	return false
 
 
 ## Papelera del dock.

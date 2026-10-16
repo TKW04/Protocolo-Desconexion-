@@ -106,6 +106,8 @@ signal finished(code: int)
 
 ## Cuadros con la Q de ayuda visible (el bot no la pulsa).
 var _help_frames: int = 0
+## Veces que se abrio el menu de pausa (el bot nunca lo abre: no pulsa pause).
+var _pause_menu_opens: int = 0
 ## Encuentro con Eco: cuadro en que se abrio la entrada del apodo (-1: cerrada)
 ## y avisos ya anotados.
 var _nickname_frame: int = -1
@@ -131,6 +133,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	EventBus.pause_menu_opened.connect(func() -> void: _pause_menu_opens += 1)
 	var main: Node = (load(MAIN_SCENE) as PackedScene).instantiate()
 	get_tree().root.add_child(main)
 	_runner = main as LevelRunner
@@ -152,6 +155,11 @@ func _run() -> void:
 		"recogida" if GameState.is_secret_found(&"1-1", &"D") else "sin recoger (sin Debug)", GameState.lives_max])
 	if GameState.is_secret_found(&"1-1", &"D") or GameState.lives_max != GameState.LIVES_MAX_DEFAULT:
 		ok = _fail("El bot no tiene Debug y no deberia coger la vida extra")
+	# Menu de pausa (paso 13): existe en el flujo, el bot no lo abre y nunca
+	# queda abierto ni deja el arbol en pausa.
+	var menu: PauseMenu = PauseMenu.find_in(get_tree())
+	if menu == null or menu.is_open() or _pause_menu_opens > 0:
+		ok = _fail("menu de pausa: deberia existir y no abrirse en el recorrido (abierto %d veces)" % _pause_menu_opens)
 	print("play_level_bot: %s" % ("OK" if ok else "FALLO"))
 	for line: String in _log:
 		print("  " + line)

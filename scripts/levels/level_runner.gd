@@ -52,6 +52,10 @@
 ##   animacion de muerte funde, aplica el rollback a la ultima copia
 ##   (GameState.apply_rollback) y carga el hub con el informe
 ##   (HubRoom.rollback_report: Eco lo cuenta y la papelera parpadea).
+## - Menu de pausa (PauseMenu, hijo "PauseMenu"; 2026-10-16): accion pause
+##   (Esc / Start) en los niveles y en el hub cargado como hija. No se abre
+##   (blocks_pause_menu) durante un fundido, la muerte, el game over ni con Isak
+##   en un vortice (llegada, salida).
 ## El fundido es un CanvasLayer propio (transition_layer) sobre el HUD.
 ## Todo avanza con advance(delta) (tiempo real); las pruebas pueden desactivar
 ## auto_advance y llamarlo a mano.
@@ -114,10 +118,14 @@ var _prompt_bar: ColorRect
 var _notices: AbilityNotices
 var _arrival: WarpVortex
 var _companion: EcoCompanion
+var _pause_menu: PauseMenu
 
 
 func _ready() -> void:
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DATA_PATH))
+	add_to_group(PauseMenu.BLOCKER_GROUP)
+	_pause_menu = PauseMenu.new()
+	add_child(_pause_menu)
 	_build_transition()
 	_build_wipe_prompt()
 	_notices = AbilityNotices.new()
@@ -171,6 +179,22 @@ func get_ability_notices() -> AbilityNotices:
 
 func get_isak() -> Isak:
 	return _isak
+
+
+## Menu de pausa del flujo (niveles y hub).
+func get_pause_menu() -> PauseMenu:
+	return _pause_menu
+
+
+## El menu de pausa no se abre ahora (PauseMenu.BLOCKER_GROUP): fundido, muerte
+## o game over en curso, o Isak sin control en un nivel (vortice, muerto). En el
+## hub decide HubRoom (tambien es un bloqueador).
+func blocks_pause_menu() -> bool:
+	if _phase != Phase.PLAYING or _game_over_pending:
+		return true
+	if _hub != null:
+		return false
+	return _isak == null or not is_instance_valid(_isak) or _isak.is_dead() or _isak.is_warping()
 
 
 ## Hub real cargado (null si se esta en un nivel).
