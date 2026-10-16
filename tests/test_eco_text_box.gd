@@ -458,10 +458,38 @@ func test_debug_does_not_slow_the_box_in_real_frames() -> void:
 	var box := BOX_SCENE.instantiate() as EcoTextBox
 	add_child_autofree(box)
 	_activate_debug()
+	assert_true(DebugMode.is_active())
+	# Estable con la maquina ocupada (2026-10-16): antes se esperaba 0,5 s con
+	# wait_seconds y se exigia un numero fijo de letras (20 +- 3), pero el cuadro
+	# en que empieza la linea recibe el delta entero de ese cuadro (con la
+	# maquina ocupada, hasta 0,1 s de antes de empezar) y salian 24. Ahora se
+	# mide en la misma ejecucion el tiempo real (reloj del sistema), el delta del
+	# cuadro de arranque y el cuadro mas largo, y lo escrito se compara con lo que
+	# corresponde a ese tiempo real, con un margen de esos cuadros: con el Debug
+	# ralentizando el cuadro saldria la MITAD (la prueba comprueba que el margen
+	# lo distingue).
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var cps: float = _config.chars_per_second
+	# process_frame sale antes de los _process: el cuadro recibira este delta.
+	var start_frame_s: float = get_process_delta_time()
+	var start_us: int = Time.get_ticks_usec()
 	box.show_line(WELCOME)
-	await wait_seconds(0.5)
-	# Un cuadro de margen por el redondeo de los cuadros reales.
-	assert_almost_eq(float(box.get_typed_count()), 0.5 * _config.chars_per_second, 3.0)
+	var last_us: int = start_us
+	var longest_s: float = 0.0
+	while Time.get_ticks_usec() - start_us < 500000:
+		await get_tree().process_frame
+		var now_us: int = Time.get_ticks_usec()
+		longest_s = maxf(longest_s, float(now_us - last_us) / 1000000.0)
+		last_us = now_us
+	var elapsed_s: float = float(Time.get_ticks_usec() - start_us) / 1000000.0
+	var typed: float = float(box.get_typed_count())
+	var expected: float = minf(elapsed_s * cps, float(WELCOME.length()))
+	var margin: float = (start_frame_s + longest_s) * cps + 1.0
+	assert_lt(margin, expected * 0.5,
+		"La medida distingue tiempo real de x0,5 (arranque %.3f s, cuadro mas largo %.3f s)" % [start_frame_s, longest_s])
+	assert_almost_eq(typed, expected, margin,
+		"Escribe a tiempo real con el Debug: %.0f letras en %.3f s (x0,5 serian %.0f)" % [typed, elapsed_s, expected * 0.5])
 
 
 # --- Disparador eco_line ---
