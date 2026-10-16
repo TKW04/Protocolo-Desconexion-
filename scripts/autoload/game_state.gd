@@ -217,7 +217,8 @@ var _trash: Dictionary = {}
 ## Al recuperar la papelera quedan cambios sin guardar (el apodo, que nunca se
 ## pierde, era distinto del de la copia).
 var _unsaved_after_trash: bool = false
-## Segundos de juego (con el arbol sin pausar). Se guarda con la copia.
+## Segundos de juego (con el arbol sin pausar: no cuentan el menu de pausa, las
+## lineas importantes ni las ayudas). Se guarda con la copia.
 var play_time_s: float = 0.0
 ## Fecha (UTC, "AAAA-MM-DDTHH:MM:SSZ") de la ultima copia guardada o cargada;
 ## vacia si no hay ninguna.
@@ -294,6 +295,10 @@ func _ready() -> void:
 	EventBus.state_refresh_requested.connect(emit_state)
 	var path: String = resolve_save_path(OS.get_cmdline_args(), OS.get_environment(SAVE_PATH_ENV))
 	use_save_path(path, path == SAVE_PATH_TESTS or path == SAVE_PATH_TOOLS)
+	# Ajustes (settings.cfg, aparte del guardado): las rutas de pruebas y
+	# herramientas empiezan de cero, como sus guardados.
+	var settings: String = GameSettings.resolve_path(OS.get_cmdline_args(), OS.get_environment(GameSettings.PATH_ENV))
+	GameSettings.use_path(settings, settings == GameSettings.PATH_TESTS or settings == GameSettings.PATH_TOOLS)
 	if not is_running_tests() and not is_running_script():
 		install_quit_guard()
 	if OS.is_debug_build():

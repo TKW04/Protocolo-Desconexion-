@@ -193,3 +193,14 @@ signal trash_changed(pending: bool)
 ## Se recupero todo lo de la papelera (`trash`: lo que tenia).
 @warning_ignore("unused_signal")
 signal trash_recovered(trash: Dictionary)
+
+## Cambio un ajuste del jugador (GameSettings: guardado al instante en
+## settings.cfg, aparte del guardado de la partida). Hoy: show_eco_help.
+@warning_ignore("unused_signal")
+signal settings_changed(key: StringName, value: Variant)
+
+## Se abre / se cierra el menu de pausa (PauseMenu).
+@warning_ignore("unused_signal")
+signal pause_menu_opened
+@warning_ignore("unused_signal")
+signal pause_menu_closed

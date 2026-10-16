@@ -17,6 +17,9 @@
 ## - Eco se conoce en el encuentro del 1-1 (EcoEncounter, paso 6): hasta
 ##   entonces no hay Q. (La regla provisional que lo daba por conocido en cuanto
 ##   hablaba por primera vez se retiro con el encuentro.)
+## - Ajuste «Ayudas de Eco: Ocultar» (GameSettings, menu de pausa; paso 13):
+##   no sale ninguna Q y help no hace nada, asi que ningun tipo se aprende sin
+##   pedirlo; lo aprendido sigue en el album y la historia de Eco no cambia.
 ## La Q se dibuja en un CanvasLayer propio que sigue a la camara
 ## (follow_viewport, como el punto debil): por encima del mundo y del tinte del
 ## Debug y por debajo del HUD y del cuadro de Eco (layer de la seccion prompt).
@@ -115,7 +118,7 @@ func get_prompt() -> HelpPrompt:
 
 ## El objeto no aprendido mas cercano a Isak dentro de su radio y en pantalla.
 func find_target() -> Node2D:
-	if not GameState.has_met_ally(GameState.ALLY_ECO):
+	if not GameState.has_met_ally(GameState.ALLY_ECO) or not GameSettings.is_eco_help_shown():
 		return null
 	var isak := get_node_or_null(isak_path) as Isak
 	if isak == null or not isak.is_inside_tree() or not isak.visible or isak.is_dead() \

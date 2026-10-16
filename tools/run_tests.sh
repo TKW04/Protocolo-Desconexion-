@@ -2,7 +2,8 @@
 # Ejecuta la suite de GUT en modo headless y devuelve el codigo de salida de GUT
 # (o 4 si fallan las pruebas Python: esquema y alcanzabilidad de niveles, escena
 # generada al dia, fuente de textos), 5 si la suite creo o cambio el guardado
-# real del jugador (user://save.json; se compara su huella, nunca se borra) o 6
+# real del jugador (user://save.json) o sus ajustes reales (user://settings.cfg;
+# se compara su huella, nunca se borran) o 6
 # si GUT no pudo cargar algun script (error de sintaxis: GUT lo ignora y saldria
 # en verde) o no ejecuto algun tests/test_*.gd (tools/check_gut_log.sh; con
 # opciones extra de GUT, p. ej. -gselect, solo se comprueban los errores de carga).
@@ -28,14 +29,20 @@ else
 	REAL_SAVE_DEFAULT="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/$APP_NAME/save.json"
 fi
 REAL_SAVE="${ISAK_REAL_SAVE:-$REAL_SAVE_DEFAULT}"
-_real_save_fingerprint() {
-	if [[ -e "$REAL_SAVE" ]]; then
-		cksum < "$REAL_SAVE"
+# Ajustes reales (user://settings.cfg, GameSettings); ISAK_REAL_SETTINGS cambia la ruta.
+REAL_SETTINGS="${ISAK_REAL_SETTINGS:-$(dirname "$REAL_SAVE_DEFAULT")/settings.cfg}"
+_fingerprint() {
+	if [[ -e "$1" ]]; then
+		cksum < "$1"
 	else
 		echo "ausente"
 	fi
 }
+_real_save_fingerprint() {
+	_fingerprint "$REAL_SAVE"
+}
 REAL_SAVE_BEFORE="$(_real_save_fingerprint)"
+REAL_SETTINGS_BEFORE="$(_fingerprint "$REAL_SETTINGS")"
 
 IMPORT_LOG="$(mktemp -t isak_import.XXXXXX)"
 if ! "$GODOT" --headless --path "$PROJECT_DIR" --import >"$IMPORT_LOG" 2>&1 \
@@ -93,6 +100,11 @@ rm -f "$GUT_LOG"
 if [[ "$(_real_save_fingerprint)" != "$REAL_SAVE_BEFORE" ]]; then
 	echo "run_tests.sh: la suite creo o modifico el guardado real ($REAL_SAVE)" >&2
 	echo "run_tests.sh: (o se jugo al juego mientras corria la suite)." >&2
+	exit 5
+fi
+if [[ "$(_fingerprint "$REAL_SETTINGS")" != "$REAL_SETTINGS_BEFORE" ]]; then
+	echo "run_tests.sh: la suite creo o modifico los ajustes reales ($REAL_SETTINGS)" >&2
+	echo "run_tests.sh: (las pruebas usan user://test_settings.cfg y los scripts user://tool_settings.cfg)." >&2
 	exit 5
 fi
 exit $PY_STATUS
