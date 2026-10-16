@@ -3,9 +3,11 @@
 # terminar; se recupera un .tmp huerfano), archivo ausente, corrupto (se aparta
 # como .corrupt y se empieza de cero), version no soportada y campos con tipos
 # raros. Guardado manual (2026-10-15): request_save solo marca "sin guardar";
-# esquema v2 (lap, found_secrets, hub_tutorial_done, saved_at, play_time_s),
-# migracion desde v1 y copia anterior (.bak). Usa una ruta propia: nunca el
-# user://save.json del jugador.
+# esquema v2 (lap, found_secrets, saved_at, play_time_s), migracion desde v1 y
+# copia anterior (.bak). Esquema v3 (2026-10-15 (3), paso 2 de
+# docs/propuesta-asistentes-y-vidas.md §10: nickname, allies_met, learned_help y
+# lives_max, que sustituyen a hub_tutorial_done) y migracion desde v2. Usa una
+# ruta propia: nunca el user://save.json del jugador.
 extends GutTest
 
 const PATH: String = "user://test_save_game.json"
@@ -271,16 +273,15 @@ func test_v2_round_trip_keeps_new_fields() -> void:
 	assert_true(GameState.mark_secret_found(&"1-1", &"secreto_b"))
 	assert_true(GameState.mark_secret_found(&"1-1", &"secreto_a"))
 	assert_false(GameState.mark_secret_found(&"1-1", &"secreto_a"), "Una vez")
-	GameState.hub_tutorial_done = true
 	GameState.play_time_s = 123.5
 	assert_true(GameState.save_game())
 	var stamp: String = GameState.saved_at
 	assert_true(stamp.ends_with("Z") and stamp.length() == 20, "Fecha UTC: %s" % stamp)
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	assert_eq(int(data["version"]), 2)
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION)
 	assert_eq(int(data["lap"]), GameState.LAP_NORMAL)
 	assert_eq(data["found_secrets"], {"1-1": ["secreto_a", "secreto_b"]})
-	assert_eq(data["hub_tutorial_done"], true)
+	assert_false(data.has("hub_tutorial_done"), "v3: lo sustituye allies_met")
 	assert_eq(data["saved_at"], stamp)
 	GameState.reset_progress()
 	assert_eq(GameState.lap, GameState.LAP_EASY)
@@ -288,7 +289,6 @@ func test_v2_round_trip_keeps_new_fields() -> void:
 	assert_eq(GameState.lap, GameState.LAP_NORMAL)
 	assert_true(GameState.is_secret_found(&"1-1", &"secreto_a"))
 	assert_true(GameState.is_secret_found(&"1-1", &"secreto_b"))
-	assert_true(GameState.hub_tutorial_done)
 	assert_almost_eq(GameState.play_time_s, 123.5, 0.001)
 	assert_eq(GameState.saved_at, stamp)
 
@@ -305,18 +305,19 @@ func test_v1_save_is_migrated() -> void:
 	assert_eq(GameState.attention_points, 7)
 	assert_eq(GameState.lap, GameState.LAP_EASY, "Vuelta 1 por defecto")
 	assert_true(GameState.found_secrets.is_empty())
-	assert_true(GameState.hub_tutorial_done, "Con el 1-1 completado no repite el tutorial")
+	assert_true(GameState.has_met_ally(GameState.ALLY_ECO), "Con el 1-1 completado, Eco conocido")
+	assert_true(GameState.has_met_ally(GameState.ALLY_NOTAS), "y Notas")
 	assert_eq(GameState.saved_at, "")
 	assert_almost_eq(GameState.play_time_s, 0.0, 0.001)
 	assert_false(GameState.has_unsaved_changes())
 	assert_true(GameState.save_game())
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la v2")
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la v3")
 	assert_eq(int(data["attention_points"]), 7)
-	# Una v1 sin el 1-1 completado si hace el tutorial.
+	# Una v1 sin el 1-1 completado no conoce a nadie.
 	SaveFile.write(PATH, {"version": 1, "attention_points": 1})
 	assert_true(GameState.load_game())
-	assert_false(GameState.hub_tutorial_done)
+	assert_true(GameState.allies_met.is_empty())
 
 
 func test_v2_odd_fields_are_tolerated() -> void:
@@ -326,14 +327,14 @@ func test_v2_odd_fields_are_tolerated() -> void:
 	assert_eq(GameState.lap, GameState.LAP_HARD, "Vuelta acotada")
 	assert_false(GameState.found_secrets.has(&"1-1"))
 	assert_true(GameState.is_secret_found(&"1-2", &"s"))
-	assert_false(GameState.hub_tutorial_done, "Tipo raro: como v1 sin el 1-1")
+	assert_true(GameState.allies_met.is_empty(), "Tipo raro: como sin el 1-1")
 	assert_eq(GameState.saved_at, "")
 	assert_almost_eq(GameState.play_time_s, 0.0, 0.001)
 
 
 func test_unknown_future_version_is_set_aside() -> void:
-	SaveFile.write(PATH, {"version": 3, "attention_points": 99})
-	assert_false(GameState.load_game(), "Version 3 desconocida: no carga")
+	SaveFile.write(PATH, {"version": GameState.SAVE_VERSION + 1, "attention_points": 99})
+	assert_false(GameState.load_game(), "Version futura desconocida: no carga")
 	assert_eq(GameState.attention_points, 0, "Empieza de cero")
 	assert_false(FileAccess.file_exists(PATH), "Se aparta")
 	assert_true(FileAccess.file_exists(PATH + SaveFile.CORRUPT_SUFFIX), "Se conserva como .corrupt")
@@ -369,3 +370,139 @@ func test_corrupt_save_falls_back_to_bak() -> void:
 	assert_eq(GameState.attention_points, 5)
 	assert_true(FileAccess.file_exists(PATH + SaveFile.CORRUPT_SUFFIX), "El roto se aparta")
 	assert_false(GameState.has_unsaved_changes())
+
+
+# --- Esquema v3 (asistentes, ayuda Q y vidas) ---
+
+func test_v3_defaults() -> void:
+	assert_eq(GameState.SAVE_VERSION, 3)
+	assert_eq(GameState.nickname, "Isak", "Apodo por defecto")
+	assert_true(GameState.allies_met.is_empty())
+	assert_true(GameState.learned_help.is_empty())
+	assert_eq(GameState.lives_max, 3, "Vidas maximas por defecto")
+
+
+func test_v3_round_trip_keeps_new_fields() -> void:
+	GameState.nickname = "Kai"
+	assert_true(GameState.meet_ally(GameState.ALLY_ECO))
+	assert_false(GameState.meet_ally(GameState.ALLY_ECO), "Una vez")
+	assert_true(GameState.learn_help(&"receiver"))
+	assert_true(GameState.learn_help(&"alert_bubble"))
+	assert_false(GameState.learn_help(&"receiver"), "Una vez")
+	GameState.lives_max = 4
+	assert_true(GameState.save_game())
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	assert_eq(int(data["version"]), 3)
+	assert_eq(data["nickname"], "Kai")
+	assert_eq(data["allies_met"], ["eco"])
+	assert_eq(data["learned_help"], ["alert_bubble", "receiver"], "Ordenado")
+	assert_eq(int(data["lives_max"]), 4)
+	GameState.reset_progress()
+	assert_eq(GameState.nickname, "Isak")
+	assert_false(GameState.has_met_ally(GameState.ALLY_ECO))
+	assert_true(GameState.load_game())
+	assert_eq(GameState.nickname, "Kai")
+	assert_true(GameState.has_met_ally(GameState.ALLY_ECO))
+	assert_false(GameState.has_met_ally(GameState.ALLY_NOTAS))
+	assert_true(GameState.is_help_learned(&"receiver"))
+	assert_true(GameState.is_help_learned(&"alert_bubble"))
+	assert_false(GameState.is_help_learned(&"charger"))
+	assert_eq(GameState.lives_max, 4)
+
+
+func test_meeting_allies_and_learning_help_do_not_mark_unsaved() -> void:
+	assert_true(GameState.meet_ally(GameState.ALLY_ECO))
+	assert_true(GameState.learn_help(&"receiver"))
+	assert_false(GameState.has_unsaved_changes(), "Registro: va con la siguiente copia")
+
+
+func test_unknown_ally_is_rejected() -> void:
+	assert_false(GameState.meet_ally(&"cortana"))
+	assert_push_error("unknown ally")
+	assert_false(GameState.has_met_ally(&"cortana"))
+
+
+func test_v2_save_with_1_1_completed_is_migrated_to_v3() -> void:
+	SaveFile.write(PATH, {
+		"version": 2,
+		"attention_points": 7,
+		"completed_levels": ["1-1"],
+		"unlocked_levels": ["1-2"],
+		"lap": 1,
+		"found_secrets": {"1-1": ["secreto_techo"]},
+		"hub_tutorial_done": false,
+		"seen_notices": ["pulse"],
+		"saved_at": "2026-10-15T10:00:00Z",
+		"play_time_s": 300.0,
+	})
+	assert_true(GameState.load_game(), "Una v2 se carga")
+	assert_eq(GameState.attention_points, 7, "Nada se pierde")
+	assert_true(GameState.is_level_completed(&"1-1"))
+	assert_true(GameState.is_level_unlocked(&"1-2"))
+	assert_true(GameState.is_secret_found(&"1-1", &"secreto_techo"))
+	assert_true(GameState.is_notice_seen(&"pulse"))
+	assert_eq(GameState.saved_at, "2026-10-15T10:00:00Z")
+	assert_almost_eq(GameState.play_time_s, 300.0, 0.001)
+	assert_eq(GameState.nickname, "Isak")
+	assert_eq(GameState.lives_max, 3)
+	assert_true(GameState.has_met_ally(GameState.ALLY_ECO), "1-1 completado: Eco conocido")
+	assert_true(GameState.has_met_ally(GameState.ALLY_NOTAS), "y Notas (propuesta §6)")
+	var of_1_1: Array[StringName] = HelpCatalog.shared().types_of_level(&"1-1")
+	assert_gt(of_1_1.size(), 0)
+	for id: StringName in of_1_1:
+		assert_true(GameState.is_help_learned(id), "Un veterano no repite la Q de %s" % id)
+	assert_false(GameState.has_unsaved_changes(), "Migrar no marca sin guardar")
+	assert_true(GameState.save_game())
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	assert_eq(int(data["version"]), 3, "La copia siguiente escribe la v3")
+	assert_false(data.has("hub_tutorial_done"))
+	assert_eq(data["allies_met"], ["eco", "notas"])
+	assert_eq((data["learned_help"] as Array).size(), of_1_1.size())
+	assert_eq(int(SaveFile.read_backup(PATH)["version"]), 2, "La v2 queda en el .bak")
+
+
+func test_v2_save_without_1_1_is_migrated_to_v3() -> void:
+	SaveFile.write(PATH, {"version": 2, "attention_points": 2, "captured_points": {"1-1": ["Point_8_9"]},
+		"hub_tutorial_done": false})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.attention_points, 2)
+	assert_eq(GameState.get_captured_points(&"1-1"), [&"Point_8_9"] as Array[StringName])
+	assert_true(GameState.allies_met.is_empty(), "Sin el 1-1: nadie conocido")
+	assert_true(GameState.learned_help.is_empty(), "Sin el 1-1: sin ayudas aprendidas")
+	assert_eq(GameState.nickname, "Isak")
+	assert_eq(GameState.lives_max, 3)
+
+
+func test_v2_hub_tutorial_done_means_notas_known() -> void:
+	SaveFile.write(PATH, {"version": 2, "hub_tutorial_done": true})
+	assert_true(GameState.load_game())
+	assert_true(GameState.has_met_ally(GameState.ALLY_NOTAS), "hub_tutorial_done -> Notas")
+	assert_true(GameState.has_met_ally(GameState.ALLY_ECO), "y Eco (propuesta §6)")
+	assert_true(GameState.learned_help.is_empty(), "Sin el 1-1 completado no aprende ayudas")
+
+
+func test_v3_odd_fields_are_tolerated() -> void:
+	SaveFile.write(PATH, {"version": 3, "nickname": 7, "allies_met": ["eco", "nadie", 3],
+		"learned_help": "receiver", "lives_max": "muchas"})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.nickname, "Isak", "Apodo de tipo raro: el de por defecto")
+	assert_eq(GameState.allies_met.keys(), [&"eco"], "Asistentes desconocidos se ignoran")
+	assert_true(GameState.learned_help.is_empty())
+	assert_eq(GameState.lives_max, 3)
+	SaveFile.write(PATH, {"version": 3, "nickname": "   ", "lives_max": 1})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.nickname, "Isak", "Apodo vacio: el de por defecto")
+	assert_eq(GameState.lives_max, 3, "Nunca por debajo de la base")
+
+
+func test_v3_bak_keeps_previous_copy() -> void:
+	GameState.nickname = "Ana"
+	GameState.learn_help(&"receiver")
+	assert_true(GameState.save_game())
+	GameState.nickname = "Bea"
+	GameState.learn_help(&"charger")
+	assert_true(GameState.save_game())
+	var bak: Dictionary = SaveFile.read_backup(PATH)
+	assert_eq(bak["nickname"], "Ana", "El .bak es la copia anterior")
+	assert_eq(bak["learned_help"], ["receiver"])
+	assert_eq(SaveFile.read(PATH)["learned_help"], ["charger", "receiver"])

@@ -42,18 +42,31 @@ const WORLD_TIME_SCALE_NORMAL: float = 1.0
 const ENERGY_PER_ATTENTION_POINT: float = 10.0
 
 ## Guardado (SaveFile). Version del esquema de save.json (v2 desde 2026-10-15:
-## lap, found_secrets, hub_tutorial_done, saved_at, play_time_s). Se cargan las
-## versiones 1 a SAVE_VERSION; otra se aparta como .corrupt.
-const SAVE_VERSION: int = 2
+## lap, found_secrets, saved_at, play_time_s; v3 desde 2026-10-15 (3), paso 2 de
+## docs/propuesta-asistentes-y-vidas.md §10: nickname, allies_met, learned_help
+## y lives_max, que sustituyen a hub_tutorial_done). Se cargan las versiones 1 a
+## SAVE_VERSION (las anteriores se migran); otra se aparta como .corrupt.
+const SAVE_VERSION: int = 3
 ## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard (nombres
 ## internos; de cara al jugador son niveles de acceso Caché, Kernel y Raíz, ver
 ## HubWorlds.access_name: la UI nunca dice vuelta ni Easy/Normal/Hard).
 const LAP_EASY: int = 1
 const LAP_NORMAL: int = 2
 const LAP_HARD: int = 3
-## Nivel cuyo final lleva al primer hub: un guardado v1 con este nivel completado
-## ya no repite el tutorial del hub (propuesta-hub-y-guardado.md §4.5).
+## Nivel cuyo final lleva al primer hub: al migrar un guardado v1/v2 con este
+## nivel completado, Eco y Notas cuentan como conocidos (propuesta §6).
 const HUB_TUTORIAL_LEVEL: StringName = &"1-1"
+## Asistentes conocidos (allies_met; docs/propuesta-asistentes-y-vidas.md §2).
+const ALLY_ECO: StringName = &"eco"
+const ALLY_NOTAS: StringName = &"notas"
+const ALLY_CALC: StringName = &"calc"
+const ALLY_LINTERNA: StringName = &"linterna"
+const ALLY_PAPELERA: StringName = &"papelera"
+const ALLIES: Array[StringName] = [ALLY_ECO, ALLY_NOTAS, ALLY_CALC, ALLY_LINTERNA, ALLY_PAPELERA]
+## Apodo con el que Eco llama al jugador si no elige otro (propuesta §2.1).
+const NICKNAME_DEFAULT: String = "Isak"
+## Vidas (intentos) maximas de partida (propuesta §5.1; sube con cada vida extra).
+const LIVES_MAX_DEFAULT: int = 3
 const SAVE_PATH_DEFAULT: String = "user://save.json"
 ## Ruta de guardado de las pruebas GUT (nunca el save real del usuario).
 const SAVE_PATH_TESTS: String = "user://test_save.json"
@@ -158,8 +171,16 @@ var lap: int = LAP_EASY:
 ## Secretos encontrados por nivel (id de nivel -> {id: true}). Registro para
 ## Linterna y Notas: el rollback no lo vacia (decision 2026-10-15).
 var found_secrets: Dictionary[StringName, Dictionary] = {}
-## Primer hub guiado ya hecho (se marca al guardar por primera vez en el hub).
-var hub_tutorial_done: bool = false
+## Apodo con el que Eco llama al jugador (v3; por defecto NICKNAME_DEFAULT).
+var nickname: String = NICKNAME_DEFAULT
+## Asistentes ya conocidos (id de ALLIES -> true; v3). Sustituye a eco_met y a
+## hub_tutorial_done (= "notas"). Registro: no marca "sin guardar" por si solo.
+var allies_met: Dictionary[StringName, bool] = {}
+## Tipos de ayuda con Q ya aprendidos (id de data/help.json -> true; v3). No
+## marca "sin guardar": va a disco con la siguiente copia (como seen_notices).
+var learned_help: Dictionary[StringName, bool] = {}
+## Vidas (intentos) maximas (v3). Las vidas actuales no se guardan.
+var lives_max: int = LIVES_MAX_DEFAULT
 ## Segundos de juego (con el arbol sin pausar). Se guarda con la copia.
 var play_time_s: float = 0.0
 ## Fecha (UTC, "AAAA-MM-DDTHH:MM:SSZ") de la ultima copia guardada o cargada;
@@ -551,7 +572,10 @@ func reset_progress() -> void:
 	attention_points = ATTENTION_POINTS_MIN
 	lap = LAP_EASY
 	found_secrets.clear()
-	hub_tutorial_done = false
+	nickname = NICKNAME_DEFAULT
+	allies_met.clear()
+	learned_help.clear()
+	lives_max = LIVES_MAX_DEFAULT
 	play_time_s = 0.0
 	saved_at = ""
 	captured_points.clear()
@@ -674,7 +698,10 @@ func to_save_data() -> Dictionary:
 		"unlocked_levels": _keys_sorted(unlocked_levels),
 		"lap": lap,
 		"found_secrets": secrets,
-		"hub_tutorial_done": hub_tutorial_done,
+		"nickname": nickname,
+		"allies_met": _keys_sorted(allies_met),
+		"learned_help": _keys_sorted(learned_help),
+		"lives_max": lives_max,
 		"saved_at": saved_at,
 		"play_time_s": play_time_s,
 	}
@@ -682,8 +709,10 @@ func to_save_data() -> Dictionary:
 
 ## Aplica un guardado (tolerante a campos que falten o con tipo raro). Falso si
 ## la version no se reconoce (no aplica nada). Migracion v1 -> v2: lap 1, sin
-## secretos, sin fecha ni tiempo, y hub_tutorial_done verdadero si el 1-1 ya
-## estaba completado (un veterano no repite el tutorial).
+## secretos, sin fecha ni tiempo. Migracion v1/v2 -> v3 (propuesta §6): apodo
+## "Isak", lives_max 3 y, si el 1-1 estaba completado o hub_tutorial_done era
+## verdadero, Eco y Notas conocidos; con el 1-1 completado, ademas, las ayudas
+## de los tipos de ese nivel aprendidas (un veterano no repite las Q).
 func apply_save_data(data: Dictionary) -> bool:
 	var version: Variant = data.get("version", null)
 	if not (version is float or version is int) or int(version) < 1 or int(version) > SAVE_VERSION:
@@ -745,13 +774,37 @@ func apply_save_data(data: Dictionary) -> bool:
 				found[id] = true
 			if not found.is_empty():
 				found_secrets[StringName(String(level))] = found
-	var tutorial: Variant = data.get("hub_tutorial_done", null)
-	hub_tutorial_done = bool(tutorial) if tutorial is bool else completed_levels.has(HUB_TUTORIAL_LEVEL)
+	if int(version) < 3:
+		_migrate_to_v3(data)
+	else:
+		var raw_nickname: Variant = data.get("nickname", NICKNAME_DEFAULT)
+		nickname = raw_nickname if raw_nickname is String and not (raw_nickname as String).strip_edges().is_empty() \
+				else NICKNAME_DEFAULT
+		for id: StringName in _string_names(data.get("allies_met", [])):
+			if ALLIES.has(id):
+				allies_met[id] = true
+		for id: StringName in _string_names(data.get("learned_help", [])):
+			learned_help[id] = true
+		var raw_lives: Variant = data.get("lives_max", LIVES_MAX_DEFAULT)
+		lives_max = maxi(LIVES_MAX_DEFAULT, int(raw_lives)) if (raw_lives is float or raw_lives is int) \
+				else LIVES_MAX_DEFAULT
 	var raw_saved_at: Variant = data.get("saved_at", "")
 	saved_at = raw_saved_at if raw_saved_at is String else ""
 	play_time_s = _as_float(data.get("play_time_s", 0.0))
 	_refresh_maxima()
 	return true
+
+
+## Campos v3 de un guardado v1/v2 (ver apply_save_data).
+func _migrate_to_v3(data: Dictionary) -> void:
+	var veteran: bool = completed_levels.has(HUB_TUTORIAL_LEVEL)
+	var tutorial: Variant = data.get("hub_tutorial_done", false)
+	if veteran or (tutorial is bool and tutorial):
+		allies_met[ALLY_ECO] = true
+		allies_met[ALLY_NOTAS] = true
+	if veteran:
+		for id: StringName in HelpCatalog.shared().types_of_level(HUB_TUTORIAL_LEVEL):
+			learned_help[id] = true
 
 
 ## Reemite todo el estado que muestra el HUD (al aparecer un HUD nuevo).
@@ -850,6 +903,39 @@ func obtain_ability(ability: StringName) -> bool:
 
 func is_ability_obtained(ability: StringName) -> bool:
 	return obtained_abilities.has(ability)
+
+
+## Verdadero si el jugador ya conoce al asistente `ally` (ALLIES).
+func has_met_ally(ally: StringName) -> bool:
+	return allies_met.has(ally)
+
+
+## Apunta al asistente `ally` como conocido. Falso si ya lo era o no existe. No
+## marca "sin guardar" (registro, como seen_notices).
+func meet_ally(ally: StringName) -> bool:
+	if not ALLIES.has(ally):
+		push_error("GameState: unknown ally '%s'" % ally)
+		return false
+	if allies_met.has(ally):
+		return false
+	allies_met[ally] = true
+	return true
+
+
+## Verdadero si la ayuda con Q del tipo `help_id` ya se aprendio.
+func is_help_learned(help_id: StringName) -> bool:
+	return learned_help.has(help_id)
+
+
+## Apunta la ayuda del tipo `help_id` como aprendida (ninguna instancia de ese
+## tipo vuelve a mostrar la Q). Falso si ya lo estaba. No marca "sin guardar"
+## (propuesta §3.2): se guarda con la siguiente copia.
+func learn_help(help_id: StringName) -> bool:
+	if help_id == &"" or learned_help.has(help_id):
+		return false
+	learned_help[help_id] = true
+	EventBus.help_learned.emit(help_id)
+	return true
 
 
 func is_notice_seen(id: StringName) -> bool:

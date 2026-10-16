@@ -144,3 +144,9 @@ signal unsaved_changes_changed(has_changes: bool)
 ## Se ha escrito el guardado en disco (GameState.save_game) en `path`.
 @warning_ignore("unused_signal")
 signal game_saved(path: String)
+
+## Se ha aprendido la ayuda con Q del tipo `help_id` (GameState.learn_help;
+## docs/propuesta-asistentes-y-vidas.md §3): ninguna instancia de ese tipo
+## vuelve a mostrar la Q.
+@warning_ignore("unused_signal")
+signal help_learned(help_id: StringName)
