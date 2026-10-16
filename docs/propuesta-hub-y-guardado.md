@@ -126,7 +126,7 @@ Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
 - **Estados de cada subnivel:** completado (✓), disponible (nuevo) y bloqueado ((bloq.)). Salen de `completed_levels` y `unlocked_levels`, que ya están en el guardado. Cada subnivel muestra sus puntos capturados frente al total (`captured_points`). Los secretos solo se muestran cuando llegue Linterna; antes, «?».
 - **Vuelta:** **[Reemplazado 2026-10-15: la UI nunca dice «vuelta», Easy, Normal ni Hard; se muestra «Acceso: Caché / Kernel / Raíz» y las carpetas no llevan insignia; la maqueta de arriba ya está corregida]** ~~se ve la vuelta actual (Easy, Normal o Hard) arriba a la derecha del panel y como insignia en las carpetas.~~ No se elige: la vuelta solo cambia con el rollback. En el panel solo aparecen los subniveles de la vuelta actual (pregunta 7).
 - **Entrar:** al elegir un subnivel, el panel se cierra e Isak, de espaldas frente a la carpeta, es absorbido por el vórtice de salida (la misma secuencia que en la terminal del 1-1). Al terminar un nivel vuelve al hub con el vórtice de llegada en P (§13.5, «animación de píxeles»).
-- **Antes de la primera copia:** si hay cambios sin guardar, entrar a una carpeta no se bloquea. ~~Solo el primer hub muestra el recordatorio del tutorial (§5).~~ **[Reemplazado]:** la confirmación sale siempre que hay cambios sin guardar (2026-10-15); además, con la Papelera llena las carpetas no se abren (2026-10-15 (3)).
+- **Antes de la primera copia:** si hay cambios sin guardar, entrar a una carpeta no se bloquea. ~~Solo el primer hub muestra el recordatorio del tutorial (§5).~~ **[Reemplazado]:** la confirmación sale siempre que hay cambios sin guardar (2026-10-15); además, con la Papelera llena las carpetas no se abren (2026-10-15 (3)). **Implementado el 2026-10-16:** la confirmación añade «Si caes sin guardar, Eco te devolverá a tu última copia.» (`confirm_unsaved_risk`) y, con la Papelera llena, las carpetas avisan «Recupera tus archivos de la papelera» y no se abren.
 
 ### 3.4 Otras acciones del hub
 
@@ -179,6 +179,7 @@ No se guardan: Sync Rate, energía y checkpoints (el hub los repone), ni el enfr
   - En el hub: «Tienes cambios sin guardar. [Guardar y salir] [Salir sin guardar] [Volver]».
   - En un nivel: «Perderás lo hecho desde tu última copia en el hub. [Salir] [Volver]». No hay opción de guardar, porque fuera del hub no se guarda.
 - Sin cambios pendientes, sale sin preguntar. El aviso no cambia la regla: solo evita perder progreso sin querer.
+- **Papelera llena tras un game over (2026-10-16, `propuesta-asistentes-y-vidas.md` §5.2):** sale sin preguntar y sin escribir: el disco conserva la última copia, que ya tiene todo lo que está en la papelera. Mientras tanto Notas no guarda (sobrescribiría la copia buena) y las carpetas no se abren.
 
 ### 4.5 Migración del autoguardado actual
 

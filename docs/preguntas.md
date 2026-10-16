@@ -741,12 +741,12 @@ Decisiones del usuario. Detalle, plan de implementación, arte y preguntas en `d
 
 **Dudas abiertas** (con recomendación en la propuesta, §12):
 
-1. Desde cuándo cuentan las vidas (recomendación: desde la primera llegada al hub).
+1. Desde cuándo cuentan las vidas (recomendación: desde la primera llegada al hub). **Resuelta (2026-10-16): desde la primera llegada al hub**, implementada como «Notas conocida».
 2. Mundo oscuro de Linterna (recomendación: el Mundo 4, en el 4-1).
 3. Encaje de la Papelera con su aparición en el 4-2.
 4. Si el rollback de Normal (lo lanza Isak, engañado) usa la Papelera (recomendación: sí).
 5. Tono de Eco por vuelta.
-6. Qué pasa con el pulso y el registro en un game over sin copia (recomendación: no se pierden).
+6. Qué pasa con el pulso y el registro en un game over sin copia (recomendación: no se pierden). **Resuelta (2026-10-16): no se pierden nunca en un game over**, haya copia o no: Eco, Notas, Calc, el apodo, las ayudas aprendidas (álbum) y el pulso.
 7. Eco en el hub frente a la «zona sin señal» (recomendación: Eco entra sin cobertura).
 
 ## Encuentro con Eco y mensajes de Eco del 1-1 (2026-10-16)
@@ -758,5 +758,20 @@ Implementados los pasos 6 y 7 de `docs/propuesta-asistentes-y-vidas.md` §10 (de
 - Al terminar, Eco es conocido (ayuda con Q y compañero) y la esfera vuela hasta Isak. Al rejugar, o con un guardado migrado con el 1-1 completado, no se repite.
 - **Decisión técnica:** al cargar un guardado, Eco conocido implica el pulso obtenido. Así los guardados de antes del encuentro (el 1-1 daba el pulso al empezar) no se quedan sin pulso.
 - **Mensajes de Eco del 1-1 (§4.1):** solo queda la historia del láser (`eco_laser`, con «Lo que sueltan las alertas, recógelo: es tuyo.»). Las líneas «Q» se quitaron del nivel (sus textos ya estaban en `data/help.json`) y las «eliminar» se borraron. El aviso del pulso al empezar desaparece de `data/ability_notices.json`: lo da el encuentro.
-- **Texto de la ayuda del punto de sincronización:** «Punto de sincronización. Si caes, vuelves aquí.». No dice que guarde. La frase de la propuesta «Las vidas no se recargan, eso sí.» se añadirá con las vidas (paso 11), porque las ayudas no mienten.
+- **Texto de la ayuda del punto de sincronización:** «Punto de sincronización. Si caes, vuelves aquí.». No dice que guarde. La frase de la propuesta «Las vidas no se recargan, eso sí.» se añadirá con las vidas (paso 11), porque las ayudas no mienten. **Añadida el 2026-10-16** con las vidas.
 - **Pruebas:** `tools/run_tests.sh` falla ahora (código 6) si GUT no puede cargar un script de prueba (un error de sintaxis hacía que GUT lo ignorara y saliera en verde) o si algún `tests/test_*.gd` no aparece entre los ejecutados (`tools/check_gut_log.sh`, con pruebas en `tests/test_run_tests_guard.py`).
+
+## Vidas, game over, rollback y papelera (2026-10-16)
+
+Implementados los pasos 11 y 12 de `docs/propuesta-asistentes-y-vidas.md` §10 (detalle en su «Estado»). Reglas aprobadas por el usuario:
+
+- **Vidas (intentos), no Sync Rate (salud):** base 3 (`lives_max`). Se reponen a `lives_max` al empezar cada intento de nivel (entrar desde la carpeta, al arrancar y con la tecla R); los puntos de sincronización no las reponen. Morir con vidas restantes resta una y reaparece en el último punto de sincronización. Con 0, game over.
+- **Desde cuándo cuentan:** desde la primera llegada al hub (Notas conocida, `GameState.are_lives_active()`). En el primer recorrido del 1-1 las muertes son ilimitadas y el HUD no muestra vidas.
+- **HUD:** un mini teléfono de estilo circuito por vida (12x16 px de arte, `hud_lives.png` de `tools/gen_hud_assets.py`, colores de `mundo1.gpl`, sin rojo; lleno con la pantalla encendida y una traza, vacío apagado con una grieta), a la izquierda de la señal; con más de 8 vidas máximas, un icono y «x<n>». Al perder una, el icono que se apaga parpadea y da un bote. En el hub no se muestran.
+- **Game over = rollback a la última copia:** `GameState.apply_rollback(reason)` es la **regla única** (también para el rollback del jefe final, paso 16, que añadirá su rama). Carga la última copia del disco: lo posterior se pierde (no va a la papelera) y los niveles completados después hay que rejugarlos. Lo guardado (habilidades salvo el pulso, power banks, puntos de atención y mejoras) Eco lo «desecha» a la **Papelera** (en memoria; el disco conserva la copia).
+- **Nunca se pierde en un game over:** Eco, Notas, Calc y los demás asistentes conocidos, el apodo, las ayudas aprendidas (álbum) y el pulso. Sin ninguna copia previa, Eco dice que no había nada guardado y la papelera se activa vacía.
+- **Hub tras el game over:** Isak llega por el vórtice con Sync Rate y energía llenos; Eco (atenuado) habla con líneas importantes (`data/game_over.json`: la primera vez, tres líneas; las siguientes, una; variantes con copia, copia sin nada que desechar y sin copia). La papelera (columna 10 del dock: dormida hasta que hace falta, parpadea y se tambalea con contenido, se vacía al recuperar y queda vacía) se recupera **acercándose** (1,5 tiles, sin botón ni pulso).
+- **Mientras la papelera tiene contenido:** las carpetas no se abren y avisan «Recupera tus archivos de la papelera»; **Notas no guarda** («Primero recupera tus archivos de la papelera»; guardar sobrescribiría la copia buena); `QuitGuard` sale sin aviso y sin escribir; la tecla R no vuelve a un nivel. Tras recuperar, el estado es el de la copia: sin cambios pendientes (salvo un apodo cambiado después de guardar, que nunca se pierde).
+- **Confirmación al entrar a una carpeta:** se mantiene el título «¿Seguro? Aún no has guardado.» y se añade «Si caes sin guardar, Eco te devolverá a tu última copia.».
+- **Guardado:** sigue en v3; no hizo falta subir la versión. «Primera vez» se apunta con `"papelera"` en `allies_met`. La vida extra (secreto D, paso 14) no está: queda el hueco `GameState.add_max_life()`.
+- **Desviaciones:** Eco habla en el hub al llegar (no antes de la transición, como decía §5.2): así sale siempre, la primera vez más larga; la transición es el fundido de siempre (sin shader de glitch todavía). El HUD de vidas usa 12x16 px dentro de un cuadro de 16x16 (el validador exige múltiplos de 8).
