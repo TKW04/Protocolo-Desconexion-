@@ -21,7 +21,7 @@ sys.path.insert(0, TOOLS)
 from validate_world1_assets import check_asset, load_gpl  # noqa: E402
 
 SIZES = {"energy_drop": (32, 32), "sync_drop": (32, 32), "ability_pickup": (40, 40),
-         "power_bank": (32, 48), "charger": (32, 64)}
+         "power_bank": (32, 48), "charger": (32, 64), "extra_life": (32, 32)}
 
 
 def main():

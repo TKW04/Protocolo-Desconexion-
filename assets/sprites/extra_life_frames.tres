@@ -1,0 +1,76 @@
+[gd_resource type="SpriteFrames" load_steps=15 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_idle_00.png" id="1_extra_life_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_idle_01.png" id="2_extra_life_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_idle_02.png" id="3_extra_life_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_idle_03.png" id="4_extra_life_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_collect_00.png" id="5_extra_life_collect_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_collect_01.png" id="6_extra_life_collect_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_collect_02.png" id="7_extra_life_collect_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/extra_life_collect_03.png" id="8_extra_life_collect_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/glitch_dissolve_00.png" id="9_glitch_dissolve_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/glitch_dissolve_01.png" id="10_glitch_dissolve_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/glitch_dissolve_02.png" id="11_glitch_dissolve_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/glitch_dissolve_03.png" id="12_glitch_dissolve_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/glitch_dissolve_04.png" id="13_glitch_dissolve_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/glitch_dissolve_05.png" id="14_glitch_dissolve_05"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_extra_life_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_extra_life_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_extra_life_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_extra_life_idle_03")
+}],
+"loop": true,
+"name": &"extra_life_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_extra_life_collect_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_extra_life_collect_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_extra_life_collect_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_extra_life_collect_03")
+}],
+"loop": false,
+"name": &"extra_life_collect",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_glitch_dissolve_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_glitch_dissolve_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_glitch_dissolve_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_glitch_dissolve_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_glitch_dissolve_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_glitch_dissolve_05")
+}],
+"loop": false,
+"name": &"glitch_dissolve",
+"speed": 12.0
+}]
