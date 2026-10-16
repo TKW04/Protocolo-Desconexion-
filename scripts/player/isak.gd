@@ -228,8 +228,10 @@ func wants_jump() -> bool:
 	return _jump_buffer_left > 0.0
 
 
+## Durante la pose del laser (si bloquea el movimiento) no se salta, igual que
+## durante el pulso (2026-10-15; antes se podia saltar durante la pose).
 func can_jump() -> bool:
-	return is_on_floor() or _coyote_left > 0.0
+	return (is_on_floor() or _coyote_left > 0.0) and not is_laser_locking_movement()
 
 
 func can_pulse() -> bool:
@@ -237,10 +239,18 @@ func can_pulse() -> bool:
 
 
 ## El laser se puede usar: desbloqueado (GameState.ABILITY_LASER), vivo y sin
-## estar recibiendo un golpe. Vale en el suelo y en el aire.
+## estar recibiendo un golpe. Para empezar un disparo ademas hay que estar en el
+## suelo (can_start_laser()).
 func can_laser() -> bool:
 	return _ready_ok and GameState.is_ability_unlocked(GameState.ABILITY_LASER) \
 			and not is_dead() and _state_name != PlayerState.HURT
+
+
+## Se puede empezar un disparo: como el pulso, solo en el suelo (2026-10-15;
+## antes tambien en el aire). En el aire la accion se ignora sin aviso, igual
+## que el pulso (ni chispa ni enfriamiento).
+func can_start_laser() -> bool:
+	return is_on_floor() and can_laser()
 
 
 func get_laser_cooldown_left() -> float:
@@ -561,7 +571,7 @@ func _update_laser(delta: float) -> void:
 				_fire_laser()
 			else:
 				_show_laser_pose_frame(_windup_pose_frame())
-	elif input.laser_pressed and _laser_cooldown_left <= 0.0 and can_laser():
+	elif input.laser_pressed and _laser_cooldown_left <= 0.0 and can_start_laser():
 		_laser_cooldown_left = abilities.laser_cooldown_s
 		if not _has_laser_energy():
 			_deny_laser()

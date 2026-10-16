@@ -10,7 +10,7 @@ func enter() -> void:
 
 func get_transition() -> StringName:
 	if isak.is_on_floor():
-		if isak.wants_jump():
+		if isak.wants_jump() and isak.can_jump():
 			return JUMP
 		return resting_state()
 	if isak.wants_jump() and isak.can_jump():

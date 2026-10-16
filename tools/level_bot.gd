@@ -329,7 +329,7 @@ func _try_pulse(what: String, announced: Dictionary) -> void:
 ## Burbuja viva delante, a la altura de los pies y al alcance del laser, si Isak lo
 ## tiene, esta de pie y le queda energia para un disparo; si no, null.
 func _laser_target(x: float, feet: float, bubbles: Array[AlertBubble]) -> AlertBubble:
-	if not _isak.is_on_floor() or not _isak.can_laser():
+	if not _isak.can_start_laser():
 		return null
 	if GameState.debug_energy < _isak.abilities.laser_energy_cost:
 		return null

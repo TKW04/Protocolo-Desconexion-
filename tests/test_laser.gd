@@ -349,22 +349,47 @@ func test_opposite_direction_does_not_turn_during_pose() -> void:
 	assert_almost_eq(_isak.velocity.x, 0.0, EPS, "Ni se mueve")
 
 
-func test_air_behaves_like_pulse() -> void:
+# Cambio 2026-10-15: el laser funciona como el pulso. Antes se podia disparar en
+# el aire; ahora la accion se ignora (sin chispa, sin enfriamiento ni gasto).
+func test_air_does_not_fire_like_pulse() -> void:
 	_sim.input.move_axis = 1.0
 	_sim.step(60)
 	_sim.press_jump()
 	_sim.step(3)
 	assert_false(_isak.is_on_floor(), "En el aire")
+	assert_false(_isak.can_start_laser(), "En el aire no se empieza un disparo")
+	assert_false(_isak.can_pulse(), "Igual que el pulso")
+	var fired: Array[LaserProjectile] = []
+	var on_fired := func(p: LaserProjectile) -> void: fired.append(p)
+	_isak.laser_fired.connect(on_fired)
+	var denied: Array[bool] = []
+	var on_denied := func() -> void: denied.append(true)
+	_isak.laser_denied.connect(on_denied)
+	var vx: float = _isak.velocity.x
 	_sim.input.laser_pressed = true
 	_sim.step()
-	assert_true(_isak.is_laser_locking_movement())
-	var v0: Vector2 = _isak.velocity
+	assert_false(_isak.is_laser_charging(), "No hay anticipacion")
+	assert_false(_isak.is_laser_posing(), "Ni pose")
+	assert_false(_isak.is_laser_locking_movement(), "Ni bloqueo")
+	assert_eq(_isak.get_laser_muzzle().get_mode(), LaserMuzzle.Mode.NONE, "Ni chispa (el pulso tampoco avisa)")
+	assert_almost_eq(_isak.get_laser_cooldown_left(), 0.0, EPS, "No consume el enfriamiento")
+	assert_almost_eq(_isak.velocity.x, vx, 1.0, "Sigue moviendose en el aire")
+	_sim.step(4)
+	_isak.laser_fired.disconnect(on_fired)
+	_isak.laser_denied.disconnect(on_denied)
+	assert_true(fired.is_empty(), "No sale el disparo")
+	assert_true(denied.is_empty(), "Ni el aviso de sin energia")
+	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS, "No gasta energia")
+
+
+func test_fires_again_after_landing() -> void:
+	_sim.press_jump()
+	_sim.step(3)
+	_sim.input.laser_pressed = true
 	_sim.step()
-	assert_false(_isak.is_on_floor())
-	assert_almost_eq(_isak.velocity.x, move_toward(v0.x, 0.0, _isak.physics.air_acceleration * DT), EPS,
-		"En el aire frena con air_acceleration (apply_horizontal(0), como el pulso)")
-	var g: float = _isak.physics.gravity * (_isak.physics.fall_gravity_multiplier if v0.y >= 0.0 else 1.0)
-	assert_almost_eq(_isak.velocity.y, v0.y + g * DT, EPS, "La gravedad no cambia")
+	_sim.step_until(func() -> bool: return _isak.is_on_floor(), 120)
+	assert_true(_isak.is_on_floor(), "Aterriza")
+	assert_not_null(_fire(), "En el suelo vuelve a disparar")
 
 
 func test_control_returns_after_pose() -> void:
@@ -422,17 +447,32 @@ func test_hurt_ends_lock_with_knockback() -> void:
 	assert_lt(_isak.velocity.x, 0.0, "El retroceso no se bloquea")
 
 
-func test_jump_during_pose_keeps_lock_until_pose_ends() -> void:
+# Cambio 2026-10-15: antes se podia saltar durante la pose (subia en vertical);
+# ahora el salto queda bloqueado, como durante el pulso.
+func test_jump_blocked_during_pose_like_pulse() -> void:
 	_sim.input.laser_pressed = true
 	_sim.step()
-	_sim.input.move_axis = 1.0
+	assert_true(_isak.is_laser_posing())
+	assert_false(_isak.can_jump(), "Durante la pose no se puede saltar")
 	_sim.press_jump()
-	assert_eq(_isak.get_state_name(), PlayerState.JUMP, "Puede saltar durante la pose (como antes)")
-	assert_true(_isak.is_laser_posing(), "El salto no corta la pose (como antes)")
-	assert_almost_eq(_isak.velocity.x, 0.0, EPS, "Sube en vertical mientras dura")
+	assert_ne(_isak.get_state_name(), PlayerState.JUMP, "No salta durante la anticipacion")
+	assert_true(_isak.is_on_floor())
+	_sim.step(4)
+	_sim.press_jump()
+	assert_true(_isak.is_laser_posing(), "Sigue la pose")
+	assert_ne(_isak.get_state_name(), PlayerState.JUMP, "Ni con el brazo extendido")
+	assert_true(_isak.is_on_floor(), "Sigue en el suelo")
+	assert_almost_eq(_isak.velocity.y, 0.0, EPS, "Sin impulso vertical")
+
+
+func test_jump_works_after_pose() -> void:
+	_sim.input.laser_pressed = true
+	_sim.step()
 	_wait_pose_end()
 	_sim.step(10)
-	assert_gt(_isak.velocity.x, 0.0, "Luego recupera el control en el aire")
+	assert_true(_isak.can_jump(), "Sin pose se vuelve a saltar")
+	_sim.press_jump()
+	assert_eq(_isak.get_state_name(), PlayerState.JUMP, "Salta")
 
 
 # --- Vida de la Burbuja ---
