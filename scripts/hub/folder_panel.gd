@@ -75,7 +75,7 @@ func refresh() -> void:
 		set_help(String(texts.get("confirm_help", texts.get("help", ""))))
 		super.refresh()
 		return
-	set_title(String(texts.get("title", "%d %s")) % [int(world_entry.get("world", 0)), String(world_entry.get("name", ""))])
+	set_title(HubWorlds.world_title(world_entry))
 	set_lines([{"text": HubWorlds.access_label(),
 		"color": String(colors.get("summary", "texto_tenue"))}])
 	var options: Array = []

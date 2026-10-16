@@ -1112,7 +1112,9 @@ def scene(imgs, path, state="off"):
     floor_y = int(hub["room"]["floor_row"]) * T
     shelf_y = floor_y - int(hub["folders"]["shelf_height_px"])
     extra = int(hub["folders"]["shelf_extra_tiles"])
-    for world, st in zip(hub["worlds"], ("available", "locked", "locked")):
+    # Solo los mundos con carpeta en el hub (con col; los 4-6 solo tienen nombre).
+    folder_worlds = [w for w in hub["worlds"] if "col" in w]
+    for world, st in zip(folder_worlds, ("available", "locked", "locked")):
         c0 = int(world["col"])
         for c in range(c0 - extra, c0 + 2 + extra):
             key = "one_way_left" if c == c0 - extra else "one_way_right" if c == c0 + 1 + extra else "one_way_center"

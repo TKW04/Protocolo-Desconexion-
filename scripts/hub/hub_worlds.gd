@@ -49,6 +49,27 @@ static func worlds() -> Array[Dictionary]:
 	return out
 
 
+## Mundos con carpeta en el hub (los que tienen `col`). Los demas (4-6, aun sin
+## contenido) solo guardan su nombre para el album de Notas.
+static func folder_worlds() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for entry: Dictionary in worlds():
+		if entry.has("col"):
+			out.append(entry)
+	return out
+
+
+## Nombre del mundo con su numero, «Mundo 1 - Notificaciones»: el MISMO formato
+## (folders.texts.title de data/hub.json) en el panel de subniveles y en el
+## album de Notas (2026-10-16, decision del usuario). Quien lo muestre decide si
+## el mundo ya se alcanzo (nunca se muestra el de uno sin alcanzar).
+static func world_title(world_entry: Dictionary) -> String:
+	var texts: Variant = HubData.section("folders").get("texts", {})
+	var pattern: String = String((texts as Dictionary).get("title", "Mundo %d - %s")) if texts is Dictionary \
+			else "Mundo %d - %s"
+	return pattern % [int(world_entry.get("world", 0)), String(world_entry.get("name", ""))]
+
+
 ## Mundo con id `id` (vacio si no existe).
 static func world(id: StringName) -> Dictionary:
 	for entry: Dictionary in worlds():

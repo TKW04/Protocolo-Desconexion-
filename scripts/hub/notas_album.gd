@@ -430,7 +430,8 @@ func refresh() -> void:
 		var total: Vector2i = global_progress()
 		_labels[&"counter"].text = String(texts.get("counter", "%d/%d")) % [total.x, total.y]
 	else:
-		_labels[&"title"].text = String(texts.get("folder_title", "%d %s")) % [_world, world_name(_world)]
+		# Mismo formato que el panel de subniveles (HubWorlds.world_title).
+		_labels[&"title"].text = HubWorlds.world_title(world_entry(_world))
 		var learned: int = 0
 		for e: Dictionary in _entries:
 			if bool(e["learned"]):

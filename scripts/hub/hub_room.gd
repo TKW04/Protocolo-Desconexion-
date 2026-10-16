@@ -562,7 +562,7 @@ func _build_folders() -> void:
 	var shelf_y: float = get_shelf_top_y()
 	var tiles: Dictionary = cfg.get("shelf", {})
 	var scene := load(String(cfg.get("scene", "res://scenes/hub/folder_station.tscn"))) as PackedScene
-	for entry: Dictionary in HubWorlds.worlds():
+	for entry: Dictionary in HubWorlds.folder_worlds():
 		var id := StringName(String(entry.get("id", "")))
 		var col: int = int(entry.get("col", 0))
 		var first: int = col - extra

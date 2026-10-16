@@ -91,9 +91,16 @@ func _stand_on_shelf(id: StringName) -> FolderStation:
 
 func test_worlds_registry_has_world_1_with_three_sublevels_and_locked_2_and_3() -> void:
 	var ids: Array[StringName] = []
-	for entry: Dictionary in HubWorlds.worlds():
+	for entry: Dictionary in HubWorlds.folder_worlds():
 		ids.append(StringName(String(entry["id"])))
-	assert_eq(ids, [&"m1", &"m2", &"m3"] as Array[StringName])
+	assert_eq(ids, [&"m1", &"m2", &"m3"] as Array[StringName], "Carpetas del hub: M1-M3")
+	var all: Array[StringName] = []
+	for entry: Dictionary in HubWorlds.worlds():
+		all.append(StringName(String(entry["id"])))
+	assert_eq(all, [&"m1", &"m2", &"m3", &"m4", &"m5", &"m6"] as Array[StringName],
+		"Los 6 mundos con su nombre (los 4-6, sin carpeta en el hub)")
+	for id: StringName in [&"m4", &"m5", &"m6"]:
+		assert_false(HubWorlds.is_world_unlocked(_world(id)), "%s bloqueado" % id)
 	var levels: Array[String] = []
 	for level: Dictionary in HubWorlds.levels(_world(&"m1")):
 		levels.append(String(level["id"]))

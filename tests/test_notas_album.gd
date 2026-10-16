@@ -93,6 +93,47 @@ func test_visited_rule() -> void:
 
 # --- Vista de carpetas ---
 
+## Nombres de los mundos del diseno (docs/INDEX.md y docs/mundo-N-*.md).
+const DESIGN_WORLD_NAMES: Array[String] = ["Notificaciones", "El Feed", "La Vitrina", "El Chat", "La Tienda",
+	"La Nube"]
+
+
+func test_world_names_come_from_the_design_and_hub_json() -> void:
+	for i: int in DESIGN_WORLD_NAMES.size():
+		assert_eq(NotasAlbum.world_name(i + 1), DESIGN_WORLD_NAMES[i], "Mundo %d en worlds de data/hub.json" % (i + 1))
+	assert_eq(HubWorlds.world_title(NotasAlbum.world_entry(1)), "Mundo 1 - Notificaciones",
+		"Mismo formato que el panel de subniveles")
+	var album_texts: Dictionary = HubData.section("album").get("texts", {})
+	assert_false(album_texts.has("folder_title"), "Una sola fuente del formato: folders.texts.title")
+
+
+func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
+	# Se simula que el Mundo 4 ya se alcanzo (hoy no tiene subniveles).
+	var m4: Dictionary = NotasAlbum.world_entry(4)
+	m4["unlocked"] = true
+	_album.open()
+	var texts: PackedStringArray = _album.get_folder_texts(3)
+	m4["unlocked"] = false
+	assert_eq(texts, PackedStringArray(["Mundo 4", "El Chat", "0/0"]), "Alcanzado: su nombre")
+	_album.close()
+	_album.open()
+	assert_eq(_album.get_folder_texts(3), PackedStringArray(["Mundo 4", "???", ""]), "Sin alcanzar: «???»")
+	for i: int in range(1, 6):
+		assert_true(_album.is_folder_locked(i))
+		for name: String in DESIGN_WORLD_NAMES:
+			for text: String in _album.get_folder_texts(i):
+				assert_false(text.contains(name), "Mundo %d bloqueado no filtra «%s»" % [i + 1, name])
+	_assert_no_leak()
+
+
+func test_open_folder_title_uses_the_panel_format() -> void:
+	_album.open()
+	_album.confirm()
+	assert_eq(_album.get_title_text(), HubWorlds.world_title(NotasAlbum.world_entry(1)))
+	assert_eq(_album.get_title_text(), "Mundo 1 - Notificaciones")
+
+
+
 func test_opens_on_the_folders_view_with_counters() -> void:
 	GameState.learn_help(&"alert_bubble")
 	GameState.learn_help(&"receiver")
