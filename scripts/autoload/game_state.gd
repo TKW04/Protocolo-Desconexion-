@@ -229,6 +229,12 @@ var saved_at: String = ""
 ## (-s), SAVE_PATH_TOOLS (estas dos se borran al arrancar). Ver
 ## resolve_save_path(). Cambiala con use_save_path().
 var save_path: String = SAVE_PATH_DEFAULT
+## Al arrancar (use_save_path sin `fresh`) se cargo una partida guardada valida
+## (save_path, o su .bak si el principal estaba corrupto). Con ella el juego
+## (LevelRunner, scenes/main.tscn) arranca en el hub; sin ella, partida nueva en
+## el 1-1 (2026-10-16). reset_progress lo apaga (borrar el guardado con F9, un
+## rollback o las rutas de pruebas y herramientas, que empiezan de cero).
+var started_from_save: bool = false
 
 var fragments_recovered: int = FRAGMENTS_MIN:
 	set(value):
@@ -588,13 +594,14 @@ func purchase_upgrade(id: StringName) -> int:
 
 ## Cambia la ruta de guardado. `fresh`: borra lo que hubiera (y su .bak) y
 ## empieza de cero; si no, carga lo guardado en esa ruta. Sin cambios pendientes.
+## Apunta en started_from_save si se cargo una partida (arranque en el hub).
 func use_save_path(path: String, fresh: bool) -> void:
 	save_path = path
 	if fresh:
 		SaveFile.delete(path)
 		reset_progress()
 	else:
-		load_game()
+		started_from_save = load_game()
 
 
 ## Verdadero si el juego corre dentro de GUT (no se toca el save real).
@@ -649,6 +656,7 @@ func reset_progress() -> void:
 	unlocked_levels.clear()
 	_refresh_maxima()
 	_set_unsaved(false)
+	started_from_save = false
 	lives = lives_max
 	_unsaved_after_trash = false
 	if not _trash.is_empty():

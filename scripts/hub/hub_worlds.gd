@@ -163,6 +163,19 @@ static func level_state(world_entry: Dictionary, level: Dictionary) -> StringNam
 	return STATE_LOCKED
 
 
+## Subnivel mas avanzado al que se puede entrar en la vuelta actual (disponible
+## o completado; el ultimo en el orden de worlds y levels de data/hub.json), sin
+## mirar la papelera. Vacio si ninguno. LevelRunner lo usa como «ultimo nivel
+## jugado» al arrancar en el hub (tecla R) si aun no se jugo ninguno.
+static func most_advanced_level() -> StringName:
+	var best: StringName = &""
+	for entry: Dictionary in worlds():
+		for level: Dictionary in levels_for_lap(entry):
+			if level_state(entry, level) != STATE_LOCKED:
+				best = StringName(String(level.get("id", "")))
+	return best
+
+
 ## Se puede entrar al subnivel `level_id` ahora (disponible o completado).
 static func can_enter(level_id: StringName) -> bool:
 	# Papelera llena tras un game over: no se entra a ningun nivel hasta

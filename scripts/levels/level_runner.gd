@@ -1,6 +1,13 @@
 ## Flujo de juego del vertical slice (paso 16). Raiz de scenes/main.tscn (la
 ## escena principal del proyecto). Valores en data/flow.json.
 ##
+## - ARRANQUE (2026-10-16): con start_level_id (o, en builds de depuracion,
+##   `-- --start-level=<id|hub>`) se fuerza el nivel o el hub (START_HUB). Si no,
+##   con una partida guardada cargada al arrancar (GameState.started_from_save:
+##   save.json o su .bak) se arranca en el HUB (start_in_hub: fundido, llegada
+##   por el vortice, energia y Sync Rate llenos, como tras completar un nivel);
+##   sin ella, partida nueva en el nivel actual (GameState.current_level) o
+##   default_level (el 1-1, con el encuentro con Eco).
 ## - Carga el nivel actual (GameState.current_level o default_level) como hijo
 ##   instanciando scenes/levels/<id>.tscn (escena generada: no se toca) y deja
 ##   el estado de Isak como al empezar: Sync Rate y energia segun start_state
@@ -27,9 +34,11 @@
 ## - Teclas de prueba (dev_keys de data/flow.json): restart_level (R / Select)
 ##   reinicia el mapa actual desde el inicio como start_level (el guardado se
 ##   conserva). Vale jugando, en el hub (vuelve a empezar el ultimo nivel
-##   jugado) y durante la animacion de muerte (la sustituye); se ignora durante
-##   un fundido. Mantener debug_wipe_save (F9)
-##   wipe_hold_s borra el guardado (GameState.save_path) y reinicia el mapa;
+##   jugado; al arrancar en el hub sin haber jugado ninguno, resume_level_id:
+##   el subnivel mas avanzado al que se puede entrar o default_level) y durante
+##   la animacion de muerte (la sustituye); se ignora durante un fundido.
+##   Mantener debug_wipe_save (F9) wipe_hold_s borra el guardado
+##   (GameState.save_path) y empieza una partida nueva en default_level (el 1-1);
 ##   solo en builds de depuracion, con un aviso en pantalla mientras se mantiene.
 ## - Avisos de control de las habilidades (AbilityNotices, hijo
 ##   AbilityNotices; data/ability_notices.json): se arman al empezar cada nivel
@@ -74,6 +83,11 @@ extends Node
 enum Phase { PLAYING, DYING, FADE_OUT, FADE_IN }
 
 const DATA_PATH: String = "res://data/flow.json"
+## start_level_id / --start-level= que arranca en el hub en vez de un nivel.
+const START_HUB: String = "hub"
+## Argumento de usuario (`-- --start-level=<id|hub>`, solo builds de depuracion)
+## que fuerza el arranque si start_level_id esta vacio.
+const DEBUG_START_ARG: String = "--start-level="
 
 ## Cambia de fase (para pruebas y depuracion).
 signal phase_changed(phase: Phase)
@@ -81,7 +95,8 @@ signal phase_changed(phase: Phase)
 signal level_started(level_id: String)
 ## Isak ha reaparecido (`after_death`: por muerte; si no, por caida).
 signal respawned(position: Vector2, after_death: bool)
-## Se muestra el hub (tras completar `level_id`).
+## Se muestra el hub (tras completar o dejar `level_id`; vacio al arrancar en el
+## hub con una partida guardada).
 signal hub_shown(level_id: String, attention_points: int)
 ## Se ha reiniciado el mapa con la tecla restart_level o tras borrar el guardado.
 signal level_restarted(level_id: String)
@@ -95,7 +110,9 @@ signal game_over(report: Dictionary)
 
 ## Si es false, _process no avanza el flujo (las pruebas llaman a advance()).
 @export var auto_advance: bool = true
-## Nivel a cargar al entrar; vacio = GameState.current_level o default_level.
+## Nivel a cargar al entrar (START_HUB = el hub); vacio = arranque normal: el
+## hub si se cargo una partida al arrancar (GameState.started_from_save), si no
+## GameState.current_level o default_level (ver start_target).
 @export var start_level_id: String = ""
 ## Si es false, mantener debug_wipe_save no hace nada (fuera de builds de
 ## depuracion siempre es false).
@@ -145,12 +162,14 @@ func _ready() -> void:
 	_notices.name = "AbilityNotices"
 	add_child(_notices)
 	EventBus.level_completed.connect(_on_level_completed)
-	var id: String = start_level_id
-	if id.is_empty():
-		id = String(GameState.current_level)
-	if id.is_empty():
-		id = String(_data.get("default_level", "1-1"))
-	start_level(id)
+	var forced: String = start_level_id
+	if forced.is_empty() and OS.is_debug_build():
+		forced = debug_start_arg(OS.get_cmdline_user_args())
+	var id: String = start_target(forced, GameState.started_from_save)
+	if id == START_HUB:
+		start_in_hub()
+	else:
+		start_level(id)
 	_set_alpha(1.0)
 	_set_phase(Phase.FADE_IN)
 
@@ -173,6 +192,43 @@ func _physics_process(_delta: float) -> void:
 
 
 # --- Consultas ---
+
+## Donde arranca el flujo: `forced` si no esta vacio (un id de nivel o
+## START_HUB); si no, el hub con una partida cargada (`from_save`) y, sin ella,
+## GameState.current_level o default_level.
+func start_target(forced: String, from_save: bool) -> String:
+	if not forced.is_empty():
+		return forced
+	if from_save:
+		return START_HUB
+	if not String(GameState.current_level).is_empty():
+		return String(GameState.current_level)
+	return get_default_level()
+
+
+## Valor de `--start-level=<id|hub>` en `args` (vacio si no esta).
+static func debug_start_arg(args: PackedStringArray) -> String:
+	for arg: String in args:
+		if arg.begins_with(DEBUG_START_ARG):
+			return arg.trim_prefix(DEBUG_START_ARG).strip_edges()
+	return ""
+
+
+## Nivel de una partida nueva (default_level de data/flow.json, el 1-1).
+func get_default_level() -> String:
+	return String(_data.get("default_level", "1-1"))
+
+
+## «Ultimo nivel jugado» si aun no se jugo ninguno en esta sesion (arranque en
+## el hub): GameState.current_level si tiene escena; si no, el subnivel mas
+## avanzado al que se puede entrar (HubWorlds.most_advanced_level); si no,
+## default_level.
+func resume_level_id() -> String:
+	for candidate: String in [String(GameState.current_level), String(HubWorlds.most_advanced_level())]:
+		if not candidate.is_empty() and _level_scene_exists(candidate):
+			return candidate
+	return get_default_level()
+
 
 func get_phase() -> Phase:
 	return _phase
@@ -341,6 +397,27 @@ func start_level(level_id: String) -> bool:
 	return true
 
 
+## Arranca en el hub (partida guardada al abrir el juego): como tras completar
+## un nivel, sin pasar por ninguno; el hub llena energia y Sync Rate, Isak llega
+## por el vortice al terminar el fundido de entrada (present_isak) y, si Notas
+## aun no es conocida (guardado v1/v2 migrado), sale su presentacion. Vidas al
+## maximo y el «ultimo nivel jugado» (tecla R) es resume_level_id(). No funde
+## ni marca «sin guardar». hub_shown se emite con level_id vacio.
+func start_in_hub() -> bool:
+	_clear_hub()
+	_clear_level()
+	_level_id = resume_level_id()
+	_game_over_pending = false
+	DebugMode.reset()
+	Engine.time_scale = 1.0
+	GameState.world_time_scale = GameState.WORLD_TIME_SCALE_NORMAL
+	GameState.refill_lives()
+	_deaths = 0
+	_falls = 0
+	_show_hub("", GameState.attention_points)
+	return true
+
+
 ## Reinicia el mapa actual desde el inicio (funde a negro y llama a
 ## start_level). El guardado se conserva. Falso si no se acepta ahora: sin
 ## nivel o durante un fundido. Durante la animacion de muerte sustituye a la
@@ -356,7 +433,8 @@ func request_restart() -> bool:
 
 
 ## Borra el guardado actual (GameState.save_path y sus restos) y el progreso en
-## memoria, y reinicia el mapa desde el inicio. Funciona en cualquier fase: si
+## memoria, y empieza una partida nueva en default_level (el 1-1, con el
+## encuentro con Eco), tambien desde el hub. Funciona en cualquier fase: si
 ## habia un fundido en curso, al acabar se reinicia en vez de lo pendiente.
 ## Solo con wipe_enabled (builds de depuracion). Verdadero si borro.
 func wipe_save_and_restart() -> bool:
@@ -367,8 +445,8 @@ func wipe_save_and_restart() -> bool:
 	GameState.reset_progress()
 	GameState.last_checkpoint.clear()
 	save_wiped.emit(path)
-	if not _level_id.is_empty():
-		_fade_out_then(_restart_now)
+	_level_id = get_default_level()
+	_fade_out_then(_restart_now)
 	return true
 
 
@@ -490,8 +568,7 @@ func _start_arrival() -> void:
 func enter_level(level_id: String) -> bool:
 	if _hub == null or _phase != Phase.PLAYING:
 		return false
-	var path: String = String(_data.get("level_scene_pattern", "res://scenes/levels/%s.tscn")) % level_id
-	if not ResourceLoader.exists(path):
+	if not _level_scene_exists(level_id):
 		return false
 	_fade_out_then(start_level.bind(level_id))
 	return true
@@ -558,6 +635,10 @@ func _restart_now() -> void:
 	if start_level(_level_id):
 		_restarts += 1
 		level_restarted.emit(_level_id)
+
+
+func _level_scene_exists(level_id: String) -> bool:
+	return ResourceLoader.exists(String(_data.get("level_scene_pattern", "res://scenes/levels/%s.tscn")) % level_id)
 
 
 func _dev_keys() -> Dictionary:
