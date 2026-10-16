@@ -28,7 +28,8 @@
 ## quede un resto: ya no se puede disparar. Solo es visual: GameState.debug_energy
 ## no cambia. Sin laser sigue la regla de antes (vacia solo con 0). El Debug no
 ## cuenta: con ese resto aun se activa (duda en docs/preguntas.md).
-## Modo hub (2026-10-15, enable_hub_mode): Modo Avion en lugar de la senal e
+## Modo hub (2026-10-15, enable_hub_mode): icono de ajustes (abre el menu de
+## pausa; 2026-10-16) y Modo Avion en lugar de la senal e
 ## indicador «sin guardar» en ambar (seccion hud de data/hub.json).
 ## Vidas (intentos; 2026-10-16, docs/propuesta-asistentes-y-vidas.md §5.1 y §9):
 ## a la izquierda de la senal, un mini telefono por vida hasta lives_max (lleno
@@ -99,6 +100,8 @@ var _power_banks: int = 0
 ## «sin guardar». Se crea por codigo (no toca hud.tscn ni data/hud.json).
 var _hub_mode: bool = false
 var _airplane: TextureRect
+## Icono de ajustes del modo hub (abre el menu de pausa).
+var _settings: TextureRect
 var _unsaved_box: HBoxContainer
 var _unsaved_icon: TextureRect
 var _unsaved_label: Label
@@ -619,6 +622,14 @@ func enable_hub_mode(config: Dictionary) -> void:
 	_airplane = _hub_icon("AirplaneMode", String(config.get("airplane_icon", "")), icon_size)
 	_row.add_child(_airplane)
 	_row.move_child(_airplane, 0)
+	# Ajustes (2026-10-16): en la esquina, antes del Modo Avion; un clic abre el
+	# menu de pausa (como la accion pause).
+	_settings = _hub_icon("Settings", String(config.get("settings_icon", "")), icon_size)
+	_settings.mouse_filter = Control.MOUSE_FILTER_STOP
+	_settings.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_settings.gui_input.connect(_on_settings_gui_input)
+	_row.add_child(_settings)
+	_row.move_child(_settings, 0)
 	var unsaved_color: Color = HubData.color(String(config.get("unsaved_color", "ambar")))
 	_unsaved_box = HBoxContainer.new()
 	_unsaved_box.name = "Unsaved"
@@ -654,13 +665,32 @@ func _hub_icon(node_name: String, path: String, size_px: Array) -> TextureRect:
 	return icon
 
 
-## Iconos del modo hub (Modo Avion y «sin guardar»), para pruebas.
+## Iconos del modo hub (ajustes, Modo Avion y «sin guardar»), para pruebas.
 func get_hub_icons() -> Array[TextureRect]:
 	var out: Array[TextureRect] = []
 	if _hub_mode:
+		out.append(_settings)
 		out.append(_airplane)
 		out.append(_unsaved_icon)
 	return out
+
+
+## Icono de ajustes del modo hub (null fuera del hub).
+func get_settings_icon() -> TextureRect:
+	return _settings if _hub_mode else null
+
+
+## Abre el menu de pausa del arbol (icono de ajustes). Verdadero si se abrio.
+func open_pause_menu() -> bool:
+	var menu: PauseMenu = PauseMenu.find_in(get_tree()) if is_inside_tree() else null
+	return menu != null and menu.request_open()
+
+
+func _on_settings_gui_input(event: InputEvent) -> void:
+	var click := event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		if open_pause_menu():
+			_settings.accept_event()
 
 
 func is_hub_mode() -> bool:

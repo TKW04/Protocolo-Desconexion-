@@ -301,6 +301,29 @@ func _spawn_hub() -> void:
 	_hub.get_arrival_vortex().advance(LONG_STEP_S)
 
 
+func test_hub_has_its_own_menu_and_icon_opens_it() -> void:
+	_spawn_hub()
+	var menu: PauseMenu = PauseMenu.find_in(get_tree())
+	assert_not_null(menu, "Abierto solo, el hub crea su menu")
+	assert_eq(menu.get_parent(), _hub)
+	assert_true(_hub.has_arrived())
+	var icon: TextureRect = _hub.get_hud().get_settings_icon()
+	assert_not_null(icon, "Icono de ajustes en el HUD del hub")
+	assert_eq(icon.texture.resource_path, "res://assets/sprites/hub/icons/icon_settings_00.png")
+	assert_eq(icon.mouse_filter, Control.MOUSE_FILTER_STOP, "Se puede pulsar")
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	icon.gui_input.emit(click)
+	assert_true(menu.is_open(), "El icono abre el menu de pausa")
+	assert_true(get_tree().paused)
+	menu.close()
+	_press(&"pause")
+	assert_true(menu.is_open(), "En el hub tambien con la accion pause")
+	menu.close()
+	assert_false(get_tree().paused)
+
+
 func test_hub_blocks_during_arrival_and_with_a_panel_open() -> void:
 	EcoProgress.meet_notas()
 	_hub = HUB_SCENE.instantiate() as HubRoom

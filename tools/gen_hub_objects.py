@@ -26,6 +26,7 @@ Salidas (assets/sprites/hub/):
   album/       album_cell_00, album_cell_selected_00 (marco de
                ficha del album de Notas)                       40x40
   icons/       icon_airplane_mode_00, icon_unsaved_00          16x16
+               icon_settings_00 (ajustes: abre el menu de pausa)
                icon_notas_00 (quien habla en el cuadro de texto: Notas)
                world_icon_m1_00 (miniatura del Mundo 1:
                campana de notificaciones, en la carpeta)       16x16
@@ -794,6 +795,24 @@ def icon_airplane():
     return cv.img
 
 
+def icon_settings():
+    """Ajustes (menu de pausa) en el HUD del hub, junto al Modo Avion: engranaje
+    de 8 dientes en texto_claro con sombra texto_tenue abajo a la derecha y el
+    eje como un nodo de circuito en acento_cian (forma ademas de color)."""
+    cv = Canvas(16, 16)
+    cx = cy = 7.5
+    for y in range(16):
+        for x in range(16):
+            dx, dy = x - cx, y - cy
+            r = math.hypot(dx, dy)
+            a = (math.degrees(math.atan2(dy, dx)) + 360.0) % 45.0
+            tooth = 11.0 <= a <= 34.0
+            if 2.4 <= r <= 5.2 or (tooth and 5.2 < r <= 7.6):
+                cv.p(x, y, TT if dx + dy > 4.0 else TC)
+    cv.rect(7, 7, 8, 8, CA)
+    return cv.img
+
+
 def icon_unsaved():
     cv = Canvas(16, 16)
     cv.stamp(0, 2, UNSAVED[:12], {"#": AS, "s": AM, "l": AS, "d": AM})
@@ -910,6 +929,7 @@ def outputs():
     out["papelera/papelera_empty_00.png"] = papelera("empty", 0)
     out["icons/icon_airplane_mode_00.png"] = icon_airplane()
     out["icons/icon_unsaved_00.png"] = icon_unsaved()
+    out["icons/icon_settings_00.png"] = icon_settings()
     out["icons/world_icon_m1_00.png"] = world_icon_bell()
     out["icons/icon_notas_00.png"] = icon_notas()
     out["album/album_cell_00.png"] = album_cell(False)

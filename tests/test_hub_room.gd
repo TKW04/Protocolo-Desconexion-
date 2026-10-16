@@ -189,9 +189,10 @@ func test_hud_shows_airplane_mode_and_amber_unsaved_indicator() -> void:
 	assert_eq(hud.get_unsaved_text(), "Sin guardar")
 	assert_eq(hud.get_unsaved_color(), Color.html("#ffa000"), "Ambar de hub.gpl")
 	var icons: Array[TextureRect] = hud.get_hub_icons()
-	assert_eq(icons.size(), 2, "Modo Avion y «sin guardar»")
-	assert_eq(icons[0].texture.resource_path, "res://assets/sprites/hub/icons/icon_airplane_mode_00.png")
-	assert_eq(icons[1].texture.resource_path, "res://assets/sprites/hub/icons/icon_unsaved_00.png")
+	assert_eq(icons.size(), 3, "Ajustes, Modo Avion y «sin guardar»")
+	assert_eq(icons[0].texture.resource_path, "res://assets/sprites/hub/icons/icon_settings_00.png")
+	assert_eq(icons[1].texture.resource_path, "res://assets/sprites/hub/icons/icon_airplane_mode_00.png")
+	assert_eq(icons[2].texture.resource_path, "res://assets/sprites/hub/icons/icon_unsaved_00.png")
 	assert_true(GameState.save_game())
 	assert_false(hud.is_unsaved_indicator_shown(), "Tras guardar se apaga")
 

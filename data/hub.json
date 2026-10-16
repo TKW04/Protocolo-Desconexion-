@@ -61,8 +61,9 @@
 		"recover_radius_tiles": 1.5
 	},
 	"hud": {
-		"_notes": "Modo hub del HUD (Hud.enable_hub_mode; propuesta §1 y §4.3): la senal (Sync Rate) se sustituye por el icono de Modo Avion (airplane_icon) y junto al contador de puntos sale el indicador «sin guardar» (unsaved_icon, disquete ambar, y unsaved_text con la fuente de textos en unsaved_color, ambar de hub.gpl, #ffa000) mientras GameState.has_unsaved_changes(). Iconos finales de assets/sprites/hub/icons/ (16x16 px de arte); medidas en px de arte del HUD (x2).",
+		"_notes": "Modo hub del HUD (Hud.enable_hub_mode; propuesta §1 y §4.3): en la esquina, el icono de ajustes (settings_icon, engranaje; un clic abre el menu de pausa, como la accion pause; 2026-10-16); la senal (Sync Rate) se sustituye por el icono de Modo Avion (airplane_icon) y junto al contador de puntos sale el indicador «sin guardar» (unsaved_icon, disquete ambar, y unsaved_text con la fuente de textos en unsaved_color, ambar de hub.gpl, #ffa000) mientras GameState.has_unsaved_changes(). Iconos finales de assets/sprites/hub/icons/ (16x16 px de arte); medidas en px de arte del HUD (x2).",
 		"airplane_icon": "res://assets/sprites/hub/icons/icon_airplane_mode_00.png",
+		"settings_icon": "res://assets/sprites/hub/icons/icon_settings_00.png",
 		"unsaved_icon": "res://assets/sprites/hub/icons/icon_unsaved_00.png",
 		"icon_size_px": [16, 16],
 		"unsaved_color": "ambar",
