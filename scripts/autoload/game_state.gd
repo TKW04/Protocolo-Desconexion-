@@ -1077,18 +1077,6 @@ func learn_help(help_id: StringName) -> bool:
 	return true
 
 
-## «Olvidar ayudas» del album de Notas (propuesta §3.5): vacia learned_help
-## (vuelven las Q y las siluetas) y marca «sin guardar». Falso si no habia
-## ninguna.
-func forget_help() -> bool:
-	if learned_help.is_empty():
-		return false
-	learned_help.clear()
-	request_save()
-	EventBus.help_forgotten.emit()
-	return true
-
-
 func is_notice_seen(id: StringName) -> bool:
 	return seen_notices.has(id)
 

@@ -507,14 +507,6 @@ func test_debug_meet_ally_argument() -> void:
 	assert_false(GameState.has_unsaved_changes(), "No marca «sin guardar»")
 
 
-func test_forget_help_clears_and_marks_unsaved() -> void:
-	assert_false(GameState.forget_help(), "Sin ayudas no hace nada")
-	GameState.learn_help(&"receiver")
-	assert_true(GameState.forget_help())
-	assert_true(GameState.learned_help.is_empty())
-	assert_true(GameState.has_unsaved_changes())
-
-
 func test_v3_odd_fields_are_tolerated() -> void:
 	SaveFile.write(PATH, {"version": 3, "nickname": 7, "allies_met": ["eco", "nadie", 3],
 		"learned_help": "receiver", "lives_max": "muchas"})

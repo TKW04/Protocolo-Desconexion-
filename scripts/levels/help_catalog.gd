@@ -88,6 +88,11 @@ func category(help_id: StringName) -> String:
 	return String(entry(help_id).get("category", CATEGORY_OBJECT))
 
 
+## Mundo (1-6) del tipo: carpeta del album de Notas. 0 si no lo tiene.
+func world(help_id: StringName) -> int:
+	return int(entry(help_id).get("world", 0))
+
+
 func action() -> StringName:
 	return StringName(String(_data.get("action", "help")))
 

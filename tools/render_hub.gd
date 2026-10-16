@@ -13,7 +13,10 @@
 ##   04_notas_panel.png          panel de Notas (resumen; Guardar / Álbum / Apodo / Volver)
 ##   05_notas_confirmar.png      confirmacion «¿Guardar en Notas?»
 ##   06_copia_guardada.png       «Apuntado. Copia guardada», destello y el indicador apagado
-##   06b_album_objetos.png       album, pestana Objetos: fichas aprendidas y siluetas «???»
+##   06a_album_carpetas.png      album: vista de carpetas por mundo (Mundo 1 con nombre y
+##                               contador; los demas cerrados con candado y «???»)
+##   06b_album_objetos.png       carpeta del Mundo 1 abierta, pestana Objetos: fichas
+##                               aprendidas y siluetas «???»
 ##   06c_album_ficha.png         ficha abierta (dibujo x2, nombre y texto de Eco)
 ##   06d_album_enemigos.png      pestana Enemigos
 ##   07a_calc_apagada.png        Isak junto a Calc apagada: sin tecla ni tienda
@@ -123,6 +126,10 @@ func _run() -> void:
 	panel.call(&"confirm")
 	var album: Node = station.call(&"get_album")
 	_check(album.call(&"is_open"), "no se abre el album")
+	await _frames(4)
+	_check(album.call(&"get_mode") == 0, "el album no abre en la vista de carpetas")
+	await _save(out_dir, "06a_album_carpetas.png")
+	_check(album.call(&"open_folder", 1), "no se abre la carpeta del Mundo 1")
 	album.call(&"set_tab", "object")
 	album.call(&"select_cell", 2)
 	await _frames(4)
@@ -134,6 +141,7 @@ func _run() -> void:
 	album.call(&"set_tab", "enemy")
 	await _frames(4)
 	await _save(out_dir, "06d_album_enemigos.png")
+	album.call(&"cancel")
 	album.call(&"cancel")
 	await _frames(2)
 	panel.call(&"cancel")
