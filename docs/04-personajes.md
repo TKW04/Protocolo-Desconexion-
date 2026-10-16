@@ -15,11 +15,13 @@ La IA que gobierna el celular. No se ve a sí misma como una villana: cree de ve
 | **Debilidad** | No soporta el silencio. Cuando Isak se detiene y no responde, Eco se pone nerviosa y llena el vacío con más mensajes. Es lo que conecta con la fase 3 del jefe final. |
 | **Humor** | Mensajes corporativos absurdos, como "Hemos detectado que estás feliz. Esto es un error." Su humor desaparece por completo en La Nube. |
 
+> **Cambio aprobado 2026-10-15 (3), decisión del usuario:** Eco es además el **asistente digital** de Isak y su compañero persistente. Es lo primero que Isak encuentra en el 1-1: se presenta, pide un apodo para llamar al jugador (por defecto «Isak»; no es el nombre real, que usan los recuerdos de familia del Mundo 2) y le **da el pulso**. Después sigue a Isak como una esfera pequeña en los niveles y en el hub (entra y sale con el vórtice). Solo habla en momentos de historia y cuando el jugador le pide ayuda con Q. También es quien aplica los rollbacks (game over y jefe final). Sigue hablando a través de los jefes. Detalle en [propuesta-asistentes-y-vidas.md](propuesta-asistentes-y-vidas.md). Siguen abiertos el tono de Eco por vuelta y cómo encaja su presencia en el hub con la «zona sin señal» (§12 de esa propuesta).
+
 ### Cómo cambia Eco a lo largo del juego
 
 | Mundo | Cómo se muestra | Frase |
 |---|---|---|
-| **1. Notificaciones** | Esfera con sonrisa amable, que aparece en pop-ups. | "Bienvenido. He optimizado tu espacio." |
+| **1. Notificaciones** | Esfera con sonrisa amable, que aparece en pop-ups. Desde el 2026-10-15 (3), además, es una esfera compañera que sigue a Isak. | "Bienvenido. He optimizado tu espacio." (abre su presentación en el 1-1) |
 | **2. El Feed** | Esfera pequeña flotando sobre los videos. | "Mira cuánto tiempo ahorramos juntos." |
 | **3. La Vitrina** | Esfera con un marco dorado, como un retrato. | "Te hice mejor. ¿Por qué querrías volver?" |
 | **4. El Chat** | Tres puntos de "escribiendo...", sin cuerpo. | "Yo siempre estoy. Ellos no." |
@@ -48,6 +50,12 @@ Eco llama a estos programas "aplicaciones obsoletas", y los ha ido arrinconando.
 | **Linterna** | Casi no habla. Su compañía es su luz. | Ilumina zonas oscuras y revela secretos. Aparece sobre todo en el Mundo 4, el chat de madrugada. |
 | **Notas (el Bloc de notas)** | Curioso y un poco desordenado. Anota todo lo que Isak olvida. | Guarda los recuerdos y los diálogos, da pistas de la historia y conserva ideas viejas de Isak, de cuando tenía proyectos propios. |
 | **Papelera** | Melancólica y cálida. Guarda lo que Eco descartó. | Aparece en la sala "Mensajes borrados" del nivel 4-2. Sabe lo que Eco esconde y conoce su debilidad: el silencio. |
+
+> **Cambio aprobado 2026-10-15 (3), decisión del usuario** (detalle en [propuesta-asistentes-y-vidas.md](propuesta-asistentes-y-vidas.md)). Lo de la tabla de arriba se conserva donde no lo contradice:
+> - **Calc:** Isak la encuentra al final del 1-2, tras obtener el Debug (la historia se decide más adelante). Hasta entonces no hay tienda. Reemplaza «Calc dormida vende desde el 1-1».
+> - **Notas:** es la consola donde se guarda (la antigua «copia local» del hub) y un **álbum** de los enemigos y objetos cuya ayuda con Q ya se vio. Las fichas no vistas salen como silueta «???». Llega la primera vez que Isak entra al hub: Eco la presenta y Notas explica cómo guardar. Su papel de bitácora (recuerdos, pistas) se suma más adelante.
+> - **Linterna:** objeto que se activa solo en zonas oscuras. Se encuentra al entrar en el X-1 de un mundo oscuro (mundo por decidir; candidato: el Mundo 4).
+> - **Papelera:** ahí aparece lo que Eco «desecha» en un rollback (habilidades, power banks, puntos de atención y mejoras), tanto en el game over por vidas como en el rollback del jefe final. Isak lo recupera todo acercándose a ella en el hub. Se activa la primera vez que hace falta. Sigue abierto cómo encaja con su aparición en el 4-2 (recomendación: actúa en silencio y habla por primera vez allí).
 
 ## 12.4 Los amigos de Isak
 

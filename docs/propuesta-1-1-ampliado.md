@@ -50,6 +50,8 @@ Funcionamiento propuesto: un secreto **desbloquea** la mejora y queda guardada c
 
 ## 3. Frases de Eco para las primeras veces
 
+> **[Reemplazado 2026-10-15 (3)]**: Eco ya no lanza estas líneas solo. Salvo la presentación y el láser (momentos de historia), pasan a ayuda con Q por tipo o se eliminan. La tabla de destino de cada línea está en `propuesta-asistentes-y-vidas.md` §4.
+
 Las dice Eco con su voz: amable, servicial y corporativa, sin amenazar (§12.1). No añaden historia. Se muestran con el cuadro de Eco que ya existe (`eco_line`), una vez por partida guardada. `[pulso]` se cambia por la tecla asignada en el Input Map.
 
 | Primera vez | Frase |

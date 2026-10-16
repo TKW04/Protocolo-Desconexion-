@@ -11,7 +11,16 @@ Origen: sección 16 del documento original (`docs/original/diseno.md`).
 - Tres vueltas (Easy, Normal, Hard; decisión del 2026-10-15, ver `preguntas.md`; Easy: el jefe escapa y hace el rollback; Normal: engaña a Isak para que lo haga él; Hard: final real): primero diseñar y producir los 18 niveles (6 mundos × 3 subniveles) en Easy; después, Normal y Hard (contenido nuevo por vuelta: rutas, enemigos, aspecto de los mapas)
 - Tres vueltas, dudas abiertas: mejoras por vuelta (se definen vuelta por vuelta), dificultad (sugerencia del equipo pendiente de aprobar: curva «X de 5» + perfil por vuelta), diseño del rollback por mapa, narrativa de cada vuelta y avisos de los puntos débiles nuevos
 - ~~Guardado manual en el hub (decisión del 2026-10-15): definir la acción de guardar y migrar el guardado automático actual (`user://save.json`, provisional) cuando exista el hub~~ Resuelto el 2026-10-15: guardado manual, esquema v2 con `.bak` y aviso al salir implementados (`propuesta-hub-y-guardado.md`, pasos 1 a 3). Se guarda en la copia local del hub real (la acción provisional `save_game` se retiró el 2026-10-15)
-- Tutorial de guardado en el 1-1 (decidido el 2026-10-15: B + C, sin guardado dentro de los niveles): línea de Eco junto a la terminal de salida y primer hub guiado. Pendiente de rediseño por el usuario (2026-10-15: Eco se presentará en el hub y presentará a Notas; paso 10 de `propuesta-hub-y-guardado.md`). Ya implementada la confirmación al entrar a una carpeta con cambios sin guardar
-- ~~Diseñar el hub tras cerrar el 1-1~~ Diseño aprobado el 2026-10-15 (`propuesta-hub-y-guardado.md`). Pendiente de implementar: pasos 4 a 12 de §6.2 (estaciones, escena del hub, copia local, carpetas, Calc dormida, flujo, tutorial y arte)
+- ~~Tutorial de guardado en el 1-1 (B + C: línea de Eco junto a la terminal de salida y primer hub guiado)~~ **[Reemplazado 2026-10-15 (3)]**: Eco presenta a Notas en el primer hub y Notas explica cómo guardar (`propuesta-asistentes-y-vidas.md`). Ya implementada la confirmación al entrar a una carpeta con cambios sin guardar
+- ~~Diseñar el hub tras cerrar el 1-1~~ Diseño aprobado el 2026-10-15 (`propuesta-hub-y-guardado.md`). Pendiente de implementar: pasos 4 a 12 de §6.2 (estaciones, escena del hub, copia local, carpetas, Calc dormida, flujo, tutorial y arte; hechos salvo el 10, sustituido, y el 12; Calc dormida se cambiará por Calc apagada hasta el 1-2, 2026-10-15 (3))
 - Paleta del hub (hex del «gris azulado apagado»): decisión abierta del usuario
 - Menú de pausa con ajustes (`pause`; ajustes en `user://settings.cfg`, al instante) y rollback (restaura puntos y objetos del mapa; conserva los secretos encontrados): decididos el 2026-10-15, sin implementar
+- Asistentes, ayuda con Q, vidas y Papelera (decisiones del 2026-10-15 (3), sin implementar): plan de 17 pasos en `propuesta-asistentes-y-vidas.md` §10. Preguntas abiertas en su §12:
+  - Desde cuándo cuentan las vidas.
+  - Mundo oscuro de Linterna.
+  - Papelera y el 4-2.
+  - Papelera en el rollback de Normal.
+  - Tono de Eco por vuelta.
+  - Pulso y registro en un game over sin copia.
+  - Eco en el hub frente a la «zona sin señal».
+- Historia del encuentro con Calc al final del 1-2 (2026-10-15 (3)): por decidir.

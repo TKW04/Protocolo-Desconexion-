@@ -37,6 +37,11 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 | **Secreto** | Una pared con un leve glitch, sin forma de acceder todavía. Se retoma cuando Isak tenga el Debug. |
 | **Punto de sincronización** | Uno a mitad de nivel. |
 
+> **Cambio aprobado 2026-10-15 (3)** (`propuesta-asistentes-y-vidas.md` §7):
+> - En el Tramo 1, Isak se topa con Eco (columna 11): Eco se presenta con la «primera voz» de arriba, pide un apodo y da el pulso. Antes del encuentro nada exige pulso.
+> - Las demás líneas de Eco pasan a ayuda con Q por tipo.
+> - El secreto de la pared con glitch guarda la vida extra del 1-1 y exige el Debug.
+
 ## 6.4 Nivel 1-2: Centro de notificaciones
 
 | Aspecto | Detalle |
@@ -51,6 +56,8 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 | **Mecánica de overlay** | Pop-ups translúcidos cubren zonas de la vista. Se cierran con el pulso o se atraviesan viendo con el Debug. |
 | **Secreto** | La carpeta de Spam, detrás de una plataforma oculta. Contiene puntos de atención extra y el primer recuerdo coleccionable. |
 | **Puntos de sincronización** | Uno cada dos pisos. |
+
+> **Cambio aprobado 2026-10-15 (3):** tras obtener el Debug, al final del 1-2, Isak encuentra a **Calc**; desde entonces hay tienda en el hub. La historia del encuentro está por decidir (`propuesta-asistentes-y-vidas.md` §2.3).
 
 ## 6.5 Nivel 1-3: No molestar
 

@@ -2,6 +2,15 @@
 
 Estado: **APROBADO 2026-10-15.** El usuario aprobó las 10 preguntas de §7 con la recomendación del documento (respuestas en §7). Los cambios marcados como **[cambia 05-hub §x]** ya están aplicados en `05-hub.md`. Implementado: pasos 1 a 3 de §6.2 (guardado manual, esquema v2 con migración y `.bak`, aviso al salir). **Pasos 4 a 9 y 11 implementados (2026-10-15):** `HubStation`, la escena del hub real (`scenes/hub/hub.tscn`, datos en `data/hub.json`), la estación «copia local», las carpetas de los mundos con su panel de subniveles, Calc dormida con la tienda de mejoras, el flujo del juego por el hub real (al completar un nivel se llega al hub; la carpeta lleva al nivel) y el arte final integrado; la pantalla provisional del hub (`hub_placeholder`) y su acción de guardar provisional se retiraron (ver §6.2). Siguen pendientes los pasos 10 y 12. Sigue abierta, como decisión del usuario, la paleta del hub (hex exactos del «gris azulado apagado», §6.1). Las decisiones ya tomadas por el usuario (`05-hub.md` §13.6 y `preguntas.md`, «Decisiones del 2026-10-15: tres vueltas, hub y guardado») se respetan. Donde esta propuesta cambia algo de `05-hub.md`, lo marca como **[cambia 05-hub §x]**. Las preguntas para el usuario están al final (§7), ya resueltas.
 
+**Actualización 2026-10-15 (3):** `propuesta-asistentes-y-vidas.md` reemplaza:
+
+- El tutorial B + C (§5) y lo pendiente del paso 10.
+- «Eco no entra en el hub».
+- Calc dormida que vende (§3.2): ahora no hay tienda hasta conocer a Calc al final del 1-2.
+- Los papeles de Notas, Linterna y Papelera (§3.1).
+
+La copia local pasa a ser **Notas** (consola de guardado y álbum). Las marcas **[Reemplazado 2026-10-15 (3)]** señalan cada punto.
+
 Decisiones que se respetan:
 
 - Guardado **manual y solo en el hub**. Si se cierra el juego sin guardar en el hub, el progreso no se salva.
@@ -86,15 +95,15 @@ Mientras el panel está abierto, Isak no se mueve, así que usar `jump` para cer
 
 | Estación | Quién la da | Qué hace | Hub del Mundo 1 | Después |
 |---|---|---|---|---|
-| **Copia local** | Nadie: es un objeto del hub. Eco no llega y el aliado que la explique llega después. | Guarda (§4). Pide confirmación, muestra cuándo se guardó por última vez y qué ha cambiado («+9 puntos, 1-1 completado»). | **Sí** | Igual |
+| **Copia local** | Nadie: es un objeto del hub. Eco no llega y el aliado que la explique llega después. **[Reemplazado 2026-10-15 (3)]:** es **Notas**, que Eco presenta en la primera llegada. | Guarda (§4). Pide confirmación, muestra cuándo se guardó por última vez y qué ha cambiado («+9 puntos, 1-1 completado»). | **Sí** | Igual |
 | **Carpetas** | Objeto (icono de app) | Eligen la zona y el subnivel, y entran por el vórtice (§3.3). | M1 activa; M2 y M3 bloqueadas | Página 2 (M4, M5) y página 3 (La Nube, con candado) |
-| **Calc** | Calc | Mejoras de `data/upgrades.json`: nombre, coste, estado y detalle (`<label>: <base> a <value>`). Es lo que hace hoy `hub_placeholder`. | **Dormida** (§3.2) | Despierta tras Alerta Mayor y habla. Es la tienda de atajos del Mundo 5 (§12.3). |
-| **Notas** | Notas | Bitácora: recuerdos, diálogos, pistas y coleccionables (§13.3). | No (hueco apagado) | Tras el Mundo 2 |
-| **Linterna** | Linterna | Muestra los secretos por nivel («2/4») y da pistas (§13.3). Hace falta guardar ya los secretos encontrados (§4.1). | No | Tras el Mundo 4 |
-| **Papelera** | Papelera | Guarda parte de los puntos perdidos al morir para recuperarlos (§13.3). **Hoy no se pierden puntos al morir** (V2), así que primero hay que decidir esa regla. Propuesta: Papelera guarda los puntos que se perdieron en la **última** muerte de cada nivel, y se recogen hablando con ella. | No | Tras el Mundo 4 |
+| **Calc** | Calc | Mejoras de `data/upgrades.json`: nombre, coste, estado y detalle (`<label>: <base> a <value>`). Es lo que hace hoy `hub_placeholder`. | **Dormida** (§3.2). **[Reemplazado 2026-10-15 (3)]:** apagada, sin tienda | Se encuentra al final del 1-2 (antes: «despierta tras Alerta Mayor») y habla. Es la tienda de atajos del Mundo 5 (§12.3). |
+| **Notas** | Notas | Bitácora: recuerdos, diálogos, pistas y coleccionables (§13.3). **[Reemplazado 2026-10-15 (3)]:** consola de guardado (la copia local) y álbum de enemigos y objetos. | **Sí** (como copia local) | Desde la primera llegada al hub |
+| **Linterna** | Linterna | ~~Muestra los secretos por nivel («2/4») y da pistas (§13.3).~~ **[Reemplazado 2026-10-15 (3)]:** objeto que se activa en zonas oscuras; en el hub solo enciende su hueco. | No | Al entrar en el X-1 del mundo oscuro (por decidir) |
+| **Papelera** | Papelera | ~~Guarda parte de los puntos perdidos al morir para recuperarlos (§13.3). Propuesta: los puntos de la última muerte de cada nivel.~~ **[Reemplazado 2026-10-15 (3)]:** en un rollback (game over por vidas o jefe final) aparece en ella lo guardado (habilidades, power banks, puntos de atención y mejoras), que se recupera acercándose. Las muertes normales siguen sin quitar puntos (V2). | No (hueco apagado; columna 10) | En el primer game over o rollback |
 | **Ajustes** | Menú | Accesibilidad (§13.2), por ejemplo reducir el ruido con Sync Rate bajo. Se guardan **al instante** (pregunta 6). | Sí (mínimo) | Igual |
 
-### 3.2 Calc antes de vencer a Alerta Mayor **[cambia 05-hub §13.3]**
+### 3.2 Calc antes de vencer a Alerta Mayor **[cambia 05-hub §13.3]** **[REEMPLAZADO 2026-10-15 (3)]: no hay tienda hasta encontrar a Calc al final del 1-2; antes su hueco está apagado e inactivo (`propuesta-asistentes-y-vidas.md` §2.3)**
 
 §13.3 dice que Calc llega «después del Mundo 1», pero las mejoras ya se compran tras el 1-1 (hoy en `hub_placeholder`). Propuesta: en el hub del Mundo 1, Calc aparece como **icono gris y dormido** en el dock (es una «aplicación obsoleta», §12.3). Su teclado funciona y vende las mejoras a precio fijo, pero ella no habla: solo hay texto de interfaz. Tras vencer a Alerta Mayor despierta, se presenta (la «primera llegada» de §13.1) y a partir de entonces explica las mecánicas con su humor seco. Así se mantiene el momento narrativo y las compras siguen disponibles desde el 1-1.
 
@@ -103,7 +112,7 @@ Mientras el panel está abierto, Isak no se mueve, así que usar `jump` para cer
 Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
 
 ```
- Mundo 1 · Notificaciones          Vuelta 1 · Easy
+ Mundo 1 · Notificaciones          Acceso: Caché
  ▸ 1-1 Bandeja de entrada     ✓  ◆ 9/9   (secretos ?)
    1-2 Centro de notif.       ·  nuevo
    1-3 ···                    (bloq.)
@@ -115,9 +124,9 @@ Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
   - Disponible: en el color del Debug del mundo.
   - Completada: con una marca y la pieza de la foto encendida.
 - **Estados de cada subnivel:** completado (✓), disponible (nuevo) y bloqueado ((bloq.)). Salen de `completed_levels` y `unlocked_levels`, que ya están en el guardado. Cada subnivel muestra sus puntos capturados frente al total (`captured_points`). Los secretos solo se muestran cuando llegue Linterna; antes, «?».
-- **Vuelta:** se ve la vuelta **actual** (Easy, Normal o Hard) arriba a la derecha del panel y como insignia en las carpetas. No se elige: la vuelta solo cambia con el rollback. En el panel solo aparecen los subniveles de la vuelta actual (pregunta 7).
+- **Vuelta:** **[Reemplazado 2026-10-15: la UI nunca dice «vuelta», Easy, Normal ni Hard; se muestra «Acceso: Caché / Kernel / Raíz» y las carpetas no llevan insignia; la maqueta de arriba ya está corregida]** ~~se ve la vuelta actual (Easy, Normal o Hard) arriba a la derecha del panel y como insignia en las carpetas.~~ No se elige: la vuelta solo cambia con el rollback. En el panel solo aparecen los subniveles de la vuelta actual (pregunta 7).
 - **Entrar:** al elegir un subnivel, el panel se cierra e Isak, de espaldas frente a la carpeta, es absorbido por el vórtice de salida (la misma secuencia que en la terminal del 1-1). Al terminar un nivel vuelve al hub con el vórtice de llegada en P (§13.5, «animación de píxeles»).
-- **Antes de la primera copia:** si hay cambios sin guardar, entrar a una carpeta no se bloquea. Solo el primer hub muestra el recordatorio del tutorial (§5).
+- **Antes de la primera copia:** si hay cambios sin guardar, entrar a una carpeta no se bloquea. ~~Solo el primer hub muestra el recordatorio del tutorial (§5).~~ **[Reemplazado]:** la confirmación sale siempre que hay cambios sin guardar (2026-10-15); además, con la Papelera llena las carpetas no se abren (2026-10-15 (3)).
 
 ### 3.4 Otras acciones del hub
 
@@ -141,7 +150,7 @@ Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
 | `seen_notices` | Sí | Sí | |
 | **`lap`** (1 Easy, 2 Normal, 3 Hard) | No | **Nuevo** | Vale 1 por defecto. |
 | **`found_secrets`** (nivel → ids) | No | **Nuevo** | Hace falta para Linterna y Notas. El rollback no lo toca: es un registro (pregunta 8). |
-| **`hub_tutorial_done`** | No | **Nuevo** | Primer hub guiado (§5). |
+| **`hub_tutorial_done`** | No | **Nuevo** | Primer hub guiado (§5). **[Reemplazado 2026-10-15 (3)]:** en el esquema v3 pasa a `allies_met` («notas») (`propuesta-asistentes-y-vidas.md` §6). |
 | **`saved_at`** (fecha) y **`play_time_s`** | No | **Nuevo** | Se muestran en la copia local. |
 | Ajustes | No | **Aparte** | `user://settings.cfg`, guardado al cambiarlos. No es progreso (pregunta 6). |
 
@@ -188,9 +197,11 @@ No se guardan: Sync Rate, energía y checkpoints (el hub los repone), ni el enfr
 | El bot espera que el guardado persista | El bot no recarga el guardado entre partidas; solo hay que revisar si comprueba el disco. |
 | Comprar una mejora, no guardar y repetir | No es un exploit: sin guardar, la compra también se pierde. |
 
-## 5. Tutorial de guardado en el 1-1
+## 5. Tutorial de guardado en el 1-1 **[REEMPLAZADO 2026-10-15 (3)]**
 
-Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí. Además, **Eco no entra en el hub**, así que no puede explicar nada dentro de él.
+> Sustituido por `propuesta-asistentes-y-vidas.md` §2.2: en la primera llegada al hub, Eco presenta a Notas (la consola de guardado) y Notas explica cómo guardar. No hay línea de Eco «sin cobertura» ni primer hub guiado. Se mantiene la confirmación «¿Seguro? Aún no has guardado.» al entrar a una carpeta. El texto siguiente es histórico.
+
+Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí. Además, ~~**Eco no entra en el hub**~~ (reemplazado el 2026-10-15 (3): Eco entra y sale con Isak), así que no puede explicar nada dentro de él.
 
 | Opción | Cómo funciona | Pros | Contras |
 |---|---|---|---|
@@ -238,15 +249,15 @@ Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí.
 | 7 | **Hecho (2026-10-15).** Carpetas y panel de subniveles (registro de mundos y subniveles en `data/hub.json`, estados y vuelta). | M | Estados según `completed_levels` y `unlocked_levels`; entrar carga el nivel (`tests/test_hub_folders.gd`). |
 | 8 | **Hecho (2026-10-15).** Calc (dormida): se lleva la lógica de compra de `hub_placeholder` a su panel. | S | Se adaptan `test_upgrades.gd` y `test_energy_sources.gd`; `tests/test_calc_station.gd`. |
 | 9 | **Hecho (2026-10-15).** Flujo: `level_completed` lleva al hub real; la carpeta lleva al nivel. `hub_placeholder` se retira. | M | `test_popup_door_hub.gd`, `test_level_flow.gd` y `test_dev_keys.gd` (R en el hub); `tools/level_bot.gd`. |
-| 10 | **Pendiente de rediseño (2026-10-15).** Tutorial: línea B en `data/levels/1-1.json` (y regenerar la escena con `build_level.py`) y primer hub guiado (C). El usuario lo está rediseñando (Eco se presentará en el hub y presentará a Notas); no se implementan la línea «sin cobertura» ni el texto guiado de la copia local. **Hecho** de este paso: la confirmación al entrar a una carpeta con cambios sin guardar (ver abajo). | S | La línea sale una vez; el tutorial se marca al guardar. Pasar los validadores del 1-1. Confirmación: `tests/test_hub_unsaved_confirm.gd`. |
+| 10 | **[SUSTITUIDO 2026-10-15 (3)] por `propuesta-asistentes-y-vidas.md` (paso 8 de su plan: Notas y su presentación).** Antes: **Pendiente de rediseño (2026-10-15).** Tutorial: línea B en `data/levels/1-1.json` (y regenerar la escena con `build_level.py`) y primer hub guiado (C). El usuario lo está rediseñando (Eco se presentará en el hub y presentará a Notas); no se implementan la línea «sin cobertura» ni el texto guiado de la copia local. **Hecho** de este paso: la confirmación al entrar a una carpeta con cambios sin guardar (ver abajo). | S | La línea sale una vez; el tutorial se marca al guardar. Pasar los validadores del 1-1. Confirmación: `tests/test_hub_unsaved_confirm.gd`. |
 | 11 | **Hecho (2026-10-15).** Arte con scripts (generador y validador del hub) y su integración. | M | El validador entra en `tools/run_tests.sh`. |
-| 12 | Documentación: actualizar `05-hub.md` con lo aprobado, `CLAUDE.md` (cómo ejecutar y guardado) y `08-pendientes.md`. | S | |
+| 12 | Documentación: actualizar `05-hub.md` con lo aprobado, `CLAUDE.md` (cómo ejecutar y guardado) y `08-pendientes.md`. **Hecho en parte el 2026-10-15 (3)** con `propuesta-asistentes-y-vidas.md`. | S | |
 
 S = menos de medio día; M = entre medio día y un día.
 
 **Estado de los pasos 4 a 9 y 11 (2026-10-15)** (y lo hecho del 10):
 
-- **10 (parcial). Confirmación al entrar a una carpeta sin guardar** (`FolderPanel`; textos `confirm_unsaved_title`, `option_enter_unsaved` y `option_stay` de `folders.texts` en `data/hub.json`). Decisión del usuario: **siempre** que se elige un subnivel disponible o completado con cambios sin guardar (`GameState.has_unsaved_changes()`), no solo una vez, sale «¿Seguro? Aún no has guardado.» con «Entrar sin guardar» / «Volver» (Volver o salto dejan en la lista del panel); con todo guardado se entra directo. El bot y `test_level_flow.gd` eligen «Entrar sin guardar» si sale; `tools/render_hub.gd` la captura (14). El resto del paso 10 (línea de Eco y primer hub guiado) queda **pendiente de rediseño**.
+- **10 (parcial; el resto, sustituido el 2026-10-15 (3)). Confirmación al entrar a una carpeta sin guardar** (`FolderPanel`; textos `confirm_unsaved_title`, `option_enter_unsaved` y `option_stay` de `folders.texts` en `data/hub.json`). Decisión del usuario: **siempre** que se elige un subnivel disponible o completado con cambios sin guardar (`GameState.has_unsaved_changes()`), no solo una vez, sale «¿Seguro? Aún no has guardado.» con «Entrar sin guardar» / «Volver» (Volver o salto dejan en la lista del panel); con todo guardado se entra directo. El bot y `test_level_flow.gd` eligen «Entrar sin guardar» si sale; `tools/render_hub.gd` la captura (14). El resto del paso 10 (línea de Eco y primer hub guiado) ~~queda pendiente de rediseño~~ **se sustituye** por la presentación de Notas (`propuesta-asistentes-y-vidas.md`).
 - **Miniatura del mundo en las carpetas** (2026-10-15, decisión del usuario): icono de 16x16 (paleta del hub, sin rojos) junto al número, dibujado x2; el Mundo 1 lleva una campana (`icons/world_icon_m1_00.png`, campo `miniature` de `worlds` y `miniature_rect_px` / `number_rect_with_miniature_px` de `folders`). Las carpetas bloqueadas (Mundos 2 y 3) siguen con candado y sin miniatura. Las carpetas no llevan insignia de vuelta ni de dificultad.
 - **Acción `save_game` retirada** (2026-10-15): se guarda solo en la copia local; C y R3 quedan libres.
 
@@ -264,10 +275,10 @@ S = menos de medio día; M = entre medio día y un día.
 
 | # | Respuesta |
 |---|---|
-| 1 | **Sí.** El hub aparece desde el final del 1-1: un hub mínimo tras cada nivel del Mundo 1, con Calc dormida. La llegada narrativa (Calc despierta y la pieza cian) sigue siendo tras Alerta Mayor. |
-| 2 | **Sí, tutorial B + C:** aviso de Eco en la terminal de salida del 1-1 y primer hub guiado. No hay guardado dentro de los niveles. |
+| 1 | **Sí.** El hub aparece desde el final del 1-1: un hub mínimo tras cada nivel del Mundo 1, con Calc dormida. La llegada narrativa (Calc despierta y la pieza cian) sigue siendo tras Alerta Mayor. **[Reemplazado 2026-10-15 (3)]:** Calc se encuentra al final del 1-2; en el primer hub, Eco presenta a Notas. |
+| 2 | **Sí, tutorial B + C:** aviso de Eco en la terminal de salida del 1-1 y primer hub guiado. No hay guardado dentro de los niveles. **[Reemplazado 2026-10-15 (3)]** por la presentación de Notas. |
 | 3 | **A:** sala 2D caminable con paneles, de una sola pantalla en el Mundo 1. |
-| 4 | **Sí:** Calc dormida en el hub del Mundo 1; vende sin hablar. |
+| 4 | **Sí:** Calc dormida en el hub del Mundo 1; vende sin hablar. **[Reemplazado 2026-10-15 (3)]:** sin tienda hasta el final del 1-2. |
 | 5 | **Sí:** aviso al cerrar con cambios sin guardar, también dentro de un nivel (allí sin opción de guardar). |
 | 6 | **Sí:** los ajustes se guardan al instante en `user://settings.cfg`, aparte del guardado manual. |
 | 7 | **No:** no se rejuegan subniveles de vueltas anteriores; solo los de la vuelta actual. |
@@ -275,7 +286,7 @@ S = menos de medio día; M = entre medio día y un día.
 | 9 | **Menú de pausa** (acción `pause`), accesible también en los niveles; en el hub, un icono en la esquina lo abre. |
 | 10 | **Sí:** se guarda `save.json.bak` con la copia anterior. |
 
-Texto original de las preguntas (por prioridad):
+Texto original de las preguntas (por prioridad; histórico, ver las marcas de reemplazo de arriba):
 
 
 1. **¿El hub aparece desde el final del 1-1?** Esto cambiaría §13.1 («primera llegada tras Alerta Mayor»), §13.6 («antes del hub no hay selección») y C4. *Recomendación: sí.* Un hub mínimo tras cada nivel del Mundo 1, con Calc dormida. La llegada narrativa (Calc despierta y la pieza cian) sigue siendo tras Alerta Mayor.

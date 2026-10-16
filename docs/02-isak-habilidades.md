@@ -24,6 +24,8 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 - **Pulso de datos (acción rápida):** no es un arma de fuego. Es un pulso a corta distancia. Si golpea a un enemigo (un programa de seguridad) lo aturde unos segundos. Si golpea un objeto del entorno (un puente desactivado) lo activa. El aturdimiento debe abrir algo: el enemigo aturdido se puede eliminar o usar como plataforma.
 > **Cambio aprobado 2026-10-15 (decisión del usuario):** nueva habilidad **Láser**, desbloqueable (se obtiene con un objeto del nivel): dispara un proyectil horizontal hacia donde mira Isak que hace daño. Gasta la misma energía que el Debug Mode. Los enemigos tienen vida y el láser es lo que los elimina; el enemigo aturdido sigue sirviendo de plataforma, pero caer sobre él ya no lo elimina. El texto original de esta sección se conserva; valores y detalle en `docs/preguntas.md` («Láser, vida de enemigos y energía (2026-10-15)»).
 
+> **Cambio aprobado 2026-10-15 (3), decisión del usuario:** el pulso ya no se tiene desde el inicio del 1-1: es un **regalo de Eco** en su presentación, en el primer tramo del 1-1 (columna 11). El tramo anterior no exige pulso. Detalle en [propuesta-asistentes-y-vidas.md](propuesta-asistentes-y-vidas.md) §7.1.
+
 - **Debug Mode (modo especial):** el tiempo se ralentiza. Isak ve plataformas ocultas que son errores del sistema y el punto débil de los jefes, marcado en rojo. Consume la barra de energía. El color de la pantalla cambia según el mundo, para evitar el cliché del verde tipo matriz.
 
 ### 3.3 Barras
@@ -33,6 +35,8 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 | **Sync Rate** | Es la vida. Representa cuánto está sincronizado Isak con su cuerpo. Por debajo del 20% la música se distorsiona y aparece ruido visual, con una opción de accesibilidad para reducirlo. |
 | **Energía de Debug** | Barra secundaria. Se gasta con el Debug Mode y se recupera con puntos de atención. |
 
+> **Cambio aprobado 2026-10-15 (3), vidas:** además de las barras hay **vidas (intentos)**, distintas del **Sync Rate (salud)**. Una vida se pierde cuando el Sync Rate llega a 0. Hay 3 de base (`lives_max`), que se reponen al empezar cada intento de nivel desde el hub; los puntos de sincronización no las reponen. Cada vida extra (una cada 3 mapas, que se coge una sola vez) sube el máximo de forma permanente y cuenta como secreto. Ver §3.4 y `propuesta-asistentes-y-vidas.md` §5.
+
 > **Cambio aprobado 2026-10-15:** la energía también la gasta el láser y se recupera, además de con puntos de atención, con los drops de los enemigos, en el hub y con cargadores en los mapas.
 
 ### 3.4 Daño y muerte
@@ -41,6 +45,8 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 - **Muerte:** Isak cae y queda en el suelo mientras su cuerpo se pixela por completo y se desintegra en líneas de código que suben hacia el cielo del mundo virtual.
 
 > **Cambio aprobado 2026-10-14:** la hoja de muerte entregada muestra a Isak tumbado.
+
+> **Cambio aprobado 2026-10-15 (3):** cada muerte resta una vida (intento). Con vidas restantes, Isak reaparece en el último punto de sincronización, como hasta ahora. Con 0 vidas hay game over: Eco aplica un rollback a la última copia guardada en el hub, lo obtenido después se pierde y lo guardado (habilidades, power banks, puntos de atención y mejoras) aparece en la Papelera del hub, donde Isak lo recupera.
 
 ### 3.5 Gestos del celular (mejoras por mundo)
 

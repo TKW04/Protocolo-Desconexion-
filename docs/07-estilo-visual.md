@@ -53,7 +53,7 @@ A diferencia del Mundo 1 (16 + `debug_cian` aparte), el cian va **dentro** de lo
 | `panel` | `#1a2a46` | Fondo de los paneles de menú (copia local, Calc, carpetas). |
 | `dock` | `#26354f` | Dock (suelo) y repisas. Más oscuro que el fondo, como los tiles del Mundo 1. |
 | `base` | `#3a4862` | Fondo ambiente: el «gris azulado apagado». |
-| `gris_apagado` | `#56637a` | Piezas apagadas de la foto, carpeta bloqueada, Calc dormida, huecos del dock. |
+| `gris_apagado` | `#56637a` | Piezas apagadas de la foto, carpeta bloqueada, Calc dormida (desde el 2026-10-15 (3), Calc apagada hasta el final del 1-2), huecos del dock y Papelera dormida. |
 | `gris_foto` | `#77849a` | Luz de las piezas apagadas y bisel del dock. |
 | `traza` | `#4f71c4` | Trazas de circuito de 1 px (mismo hex que `resplandor` del Mundo 1). |
 | `borde` | `#9bb0e8` | Borde superior del dock y de las repisas, bisel claro (mismo hex que `borde_luz`). |

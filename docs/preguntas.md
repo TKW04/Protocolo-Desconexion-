@@ -1,6 +1,6 @@
 # Preguntas abiertas sobre el documento de diseño
 
-**Estado (2026-10-15):** resueltos C1, C4 (Mundo 1: hub tras cada nivel), C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11, y el hub y el guardado manual («Hub y guardado: propuesta aprobada (2026-10-15)», al final). Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard; engaño en Normal, final real en Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final; hay una sugerencia de dificultad pendiente de aprobar). Siguen abiertos: C2, C3, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
+**Estado (2026-10-15):** resueltos C1, C4 (Mundo 1: hub tras cada nivel), C6, C7, C9, V2, V3, V7, V10 (paleta), V11, V12, A4, A8, A10, A11, y el hub y el guardado manual («Hub y guardado: propuesta aprobada (2026-10-15)», al final). Decididos el 2026-10-15 (3), sin implementar: asistentes, ayuda con Q, vidas y Papelera («Decisiones del 2026-10-15 (3)», al final; `propuesta-asistentes-y-vidas.md`). Aplazado: V15. En C9 la dificultad ya no se elige: es una progresión por **tres vueltas** (Easy, Normal y Hard; engaño en Normal, final real en Hard), aprobada el 2026-10-15 a falta de detalle (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado», al final; hay una sugerencia de dificultad pendiente de aprobar). Siguen abiertos: C2, C3, C5, C8, V1, V4, V5, V6, V8, V9, V10 (tileset), V13, V14, V16, A1, A2, A3, A5, A6, A7, A9, A12, A13, A14, A15, A16, y las dudas de las tres vueltas.
 
 **Nota (2026-10-14):** con C6 se aprobó también un cambio de diseño de Isak: el personaje de la hoja de referencia `../Ejemplo/Idle.png` (arte IA) reemplaza al del documento (sin lentes ni chaqueta verde oliva; chaqueta gris oscura táctica con detalles cian; celular en la mano). Ver `07-estilo-visual.md` §15.4. El texto creativo de `04-personajes.md` (Isak Optimizado), `06-finales.md` y `mundo-6-nube.md` todavía menciona los lentes de Isak; no se ha tocado y queda pendiente de decidir. Los valores en px de A5, A6, A7 y otras propuestas abiertas están escritos para 640x360; al aprobarlos hay que revisarlos para la nueva escala.
 
@@ -41,7 +41,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Problema:** las reglas de transición se contradicen. En el Mundo 1 no puede haber vuelta al hub, y el 2-1 encadena con el siguiente nivel de forma explícita.
 - **Propuesta:** los niveles de un mundo se encadenan y se vuelve al hub tras el jefe (y al salir de un mundo ya completado). En el slice, la puerta "Marcar como leído" lleva a una pantalla de "Fin del slice" que permite reiniciar el nivel.
 - **Por qué:** es la única regla compatible con §6.3, §7.4 y §13.1. Para el slice basta con un final limpio.
-- **Decisión (2026-10-15):** el hub aparece desde el final del 1-1 y se vuelve a él tras cada nivel del Mundo 1 (hub mínimo con Calc dormida; `05-hub.md` §13.1 y `propuesta-hub-y-guardado.md`, pregunta 1). El encadenado explícito del 2-1 (§7.4) se revisará al diseñar el Mundo 2.
+- **Decisión (2026-10-15):** el hub aparece desde el final del 1-1 y se vuelve a él tras cada nivel del Mundo 1 (hub mínimo con Calc dormida, **[Reemplazado 2026-10-15 (3)]**: Calc apagada hasta el final del 1-2; `05-hub.md` §13.1 y `propuesta-hub-y-guardado.md`, pregunta 1). El encadenado explícito del 2-1 (§7.4) se revisará al diseñar el Mundo 2.
 
 ### C5 [Fuera del slice] El dash "convierte" el pulso frente al uso de pulso y dash por separado
 - **Sección:** §3.5 (Deslizar: "El pulso se convierte en un dash de datos") frente a §6.5 (1-3, Tramo 3: "Combinación de dash y pulso") y §6.6 (Fase 2: "cerrarlos con el pulso y esquivar con dash").
@@ -92,7 +92,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 ### V2 [RESUELTO] Muerte, reaparición y puntos de sincronización
 - **Sección:** §3.4 (solo el efecto visual), §6.3 ("Punto de sincronización: uno a mitad de nivel") y §13.3 (Papelera "guarda parte de los puntos que Isak pierde al morir").
 - **Problema:** no se define qué ocurre al morir (dónde reaparece, con cuánto Sync Rate, si pierde puntos de atención) ni qué hace un punto de sincronización además de servir de checkpoint.
-- **Propuesta:** con Sync Rate = 0, animación de muerte y reaparición en el último punto de sincronización (o en `P`) con 100% de Sync Rate y la energía que tenía. Tocar un punto de sincronización lo activa y repone el Sync Rate al 100%. En el slice no se pierden puntos de atención; esa regla queda pendiente para cuando exista Papelera.
+- **Propuesta:** con Sync Rate = 0, animación de muerte y reaparición en el último punto de sincronización (o en `P`) con 100% de Sync Rate y la energía que tenía. Tocar un punto de sincronización lo activa y repone el Sync Rate al 100%. En el slice no se pierden puntos de atención; esa regla queda pendiente para cuando exista Papelera. **[Reemplazado 2026-10-15 (3)]**: morir con vidas restantes no quita nada; con 0 vidas hay game over y rollback a la última copia (lo no guardado se pierde y lo guardado vuelve desde la Papelera). Ver «Decisiones del 2026-10-15 (3)».
 - **Por qué:** es lo mínimo para cerrar el ciclo de juego. "Sincronización" sugiere restaurar el Sync, y la pérdida de puntos depende de sistemas posteriores.
 - **Decisión (2026-10-14):** aprobada la propuesta. La energía de Debug no se repone al reaparecer; se queda como está.
 
@@ -120,7 +120,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Problema:** no hay sistema de diálogo: no se sabe si es texto, si detiene el juego, cuánto dura ni si tiene voz. La música y el sonido son decisiones abiertas.
 - **Propuesta:** una notificación con la esfera de Eco en la parte superior de la pantalla, solo texto, que no pausa el juego, se dispara al entrar en una zona y desaparece a los 4 s. Sin audio por ahora.
 - **Por qué:** encaja con "aparece en pop-ups" y con el tema del Mundo 1 sin cortar el ritmo del tutorial.
-- **Decisión del usuario (2026-10-15):** los mensajes **importantes** (habilidad adquirida, historia, cosas relevantes) pausan el juego y se cierran con una acción del jugador; los menores (ayuda contextual) siguen sin pausar, en tiempo real y en cola. Motivo: si el jugador avanza rápido, un aviso pisaba a otro y no sabía a qué acción correspondía cada uno. Detalle en las notas del paso 14b.
+- **Decisión del usuario (2026-10-15):** los mensajes **importantes** (habilidad adquirida, historia, cosas relevantes) pausan el juego y se cierran con una acción del jugador; los menores (ayuda contextual) siguen sin pausar, en tiempo real y en cola. **[Reemplazado 2026-10-15 (3)]**: ya no hay mensajes menores automáticos; la ayuda contextual se pide con Q (pausa) y se aprende por tipo. Motivo: si el jugador avanza rápido, un aviso pisaba a otro y no sabía a qué acción correspondía cada uno. Detalle en las notas del paso 14b.
 
 ### V7 [RESUELTO] Formato de nivel: elementos del 1-1 que el grid no soporta
 - **Sección:** skill `level-builder` (leyenda) frente a §6.3 (puente desactivado, pop-up, puerta "Marcar como leído", pared con glitch, disparador de Eco).
@@ -167,7 +167,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Decisión (2026-10-15):** sí. Cuando exista el hub, desde él se elige la zona (1 a 6) y el subnivel. Antes del hub (Mundo 1 hasta vencer a Alerta Mayor) no hay selección. Ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado» y `05-hub.md` §13.6.
 
 ### V13 [Fuera del slice] Valores de los sistemas de mundos posteriores
-- **Sección:** §8.2 (umbrales de likes), §10.2/§10.3/§13.3 (precios de tienda, atajos, Calc y drenaje de suscripción), §13.3 (cuánto guarda Papelera) y §12.3 (cuánto sube Calc la energía máxima).
+- **Sección:** §8.2 (umbrales de likes), §10.2/§10.3/§13.3 (precios de tienda, atajos, Calc y drenaje de suscripción), §13.3 (cuánto guarda Papelera; **[Reemplazado 2026-10-15 (3)]**: la Papelera devuelve todo lo guardado tras un rollback, sin valor que fijar) y §12.3 (cuánto sube Calc la energía máxima).
 - **Problema:** no hay ninguna cifra.
 - **Propuesta:** definirlos en `data/economy.json` cuando se aborde cada mundo, a partir de la cantidad de puntos por nivel que se fije en V8 y en los siguientes.
 - **Por qué:** dependen de la economía real que salga del Mundo 1.
@@ -188,7 +188,7 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 ### V16 [Fuera del slice] Recuerdos coleccionables frente a fragmentos
 - **Sección:** §6.4, §7.4, §8.5 y otras ("recuerdo coleccionable"), frente a los fragmentos de los jefes y a Notas (§13.3).
 - **Problema:** no se dice para qué sirven los recuerdos de los secretos ni si cuentan para algo (por ejemplo, para el candado de La Nube, que pide "los cinco recuerdos").
-- **Propuesta:** los recuerdos de los secretos son coleccionables que se ven en Notas y no desbloquean nada. El candado de La Nube usa los cinco fragmentos de los jefes.
+- **Propuesta:** los recuerdos de los secretos son coleccionables que se ven en Notas y no desbloquean nada. (2026-10-15 (3): Notas llega en el primer hub y ya tiene un álbum de enemigos y objetos; los recuerdos se sumarían a él.) El candado de La Nube usa los cinco fragmentos de los jefes.
 - **Por qué:** §5 y §13.2 hablan de "cinco", que coincide con los fragmentos, no con los recuerdos.
 
 ---
@@ -406,7 +406,7 @@ Implementa la propuesta V6 (sigue abierta hasta que se apruebe jugando) y la par
 - **Color de Eco (propuesta):** el nombre va en `borde_luz` (#9bb0e8, azul claro). Los docs no fijan un color para Eco; se eligió por «esfera de luz blanca y azul» (§12.1).
 - **Velocidad del texto (propuesta):** máquina de escribir a 40 caracteres por segundo, con una entrada en 0,12 s y una salida en 0,2 s.
 - **Tiempos (propuesta):** el texto completo queda en pantalla al menos `duration_s` del disparador (4 s en el 1-1, V6) y más en textos largos: `max(duration_s, 1,5 + 0,06 × caracteres)`. Las líneas normales se cierran solas, no pausan el juego ni bloquean a Isak, y usan tiempo real (el Debug no las ralentiza). Si llega otra línea, se pone en cola.
-- **Líneas importantes (decisión del usuario, 2026-10-15):** campo `important` (por defecto `false`) en el `eco_line` del nivel y en `EventBus.eco_line_requested`. Una línea importante pausa el árbol (`get_tree().paused`; el cuadro procesa siempre), no se cierra sola y espera a que el jugador pulse saltar o `ui_accept` (Espacio / A del mando / Intro): la primera pulsación durante la escritura completa el texto y la siguiente lo cierra. El juego se reanuda al terminar de desvanecerse (o sigue en pausa si la siguiente en cola también es importante) y siempre que el cuadro sale del árbol (cambio de escena, nivel quitado); si la pausa la puso otro, no la quita. Pasa delante de las normales en cola, y si hay una normal en pantalla la desplaza: esa vuelve a la cola, delante de las demás normales, así que no se pierde ninguna. En pausa no avanzan el mundo, las Burbujas, el Debug, los temporizadores de los nodos ni el retraso de los avisos de control. Marcadas como importantes: los avisos de control de habilidades (`AbilityNotices`), el texto de `ability_pickup` y, en el 1-1, `eco_bienvenida` (primera voz de Eco) y `eco_laser` («Herramienta nueva…»). El bot de recorrido las confirma solo.
+- **Líneas importantes (decisión del usuario, 2026-10-15):** campo `important` (por defecto `false`) en el `eco_line` del nivel y en `EventBus.eco_line_requested`. Una línea importante pausa el árbol (`get_tree().paused`; el cuadro procesa siempre), no se cierra sola y espera a que el jugador pulse saltar o `ui_accept` (Espacio / A del mando / Intro): la primera pulsación durante la escritura completa el texto y la siguiente lo cierra. El juego se reanuda al terminar de desvanecerse (o sigue en pausa si la siguiente en cola también es importante) y siempre que el cuadro sale del árbol (cambio de escena, nivel quitado); si la pausa la puso otro, no la quita. Pasa delante de las normales en cola, y si hay una normal en pantalla la desplaza: esa vuelve a la cola, delante de las demás normales, así que no se pierde ninguna. En pausa no avanzan el mundo, las Burbujas, el Debug, los temporizadores de los nodos ni el retraso de los avisos de control. Marcadas como importantes: los avisos de control de habilidades (`AbilityNotices`), el texto de `ability_pickup` y, en el 1-1, `eco_bienvenida` (primera voz de Eco) y `eco_laser` («Herramienta nueva…»). **[Reemplazado 2026-10-15 (3)]**: `eco_bienvenida` pasa a ser la presentación de Eco en el encuentro; las demás líneas del 1-1 pasan a ayuda con Q o se eliminan (tabla en `propuesta-asistentes-y-vidas.md` §4). El bot de recorrido las confirma solo.
 - **Dudas:** (1) Resuelta (2026-10-15): las líneas importantes se cierran con una acción; las normales, no. (2) ¿La esfera de Eco debe animarse (parpadeo, sonrisa) al hablar?
 
 ## Notas del paso 14b: techo del Tramo 3, pop-up, puerta y pantalla provisional del hub (2026-10-14)
@@ -574,7 +574,7 @@ Generaliza el aviso que salía al recoger el láser («Láser obtenido. F o gati
 - **Datos:** `data/ability_notices.json`, una entrada por habilidad (`pulse`, `laser`, `debug`) con nombre, texto (`{name}: {control}`), acción del Input Map y `hold` para el Debug. Para una habilidad nueva basta con añadir su entrada.
 - **Control leído del Input Map:** primera tecla y primer botón o eje de mando de la acción. Si se remapea, el aviso cambia. Textos finales: «Pulso: G / X (mando)», «Láser: F / gatillo izquierdo» y «Debug: mantén K / Y (mando)». Los nombres de los botones siguen la distribución tipo Xbox de la documentación.
 - **Cuándo sale:**
-  - Pulso: al empezar el 1-1 en una partida nueva, 1 s después de entrar, así que sale justo tras la bienvenida de Eco. Solo dice el control: el uso lo explican las líneas de Eco de la Burbuja y del receptor.
+  - Pulso: **[Reemplazado 2026-10-15 (3)]**: sale en la presentación de Eco, cuando Eco da el pulso (columna 11 del 1-1). Antes: al empezar el 1-1 en una partida nueva, 1 s después de entrar, así que salía justo tras la bienvenida de Eco. Solo dice el control: el uso lo explican las líneas de Eco de la Burbuja y del receptor.
   - Láser: al recogerlo, antes de la línea de Eco «Herramienta nueva…».
   - Debug: al desbloquearse durante un nivel o al empezar un nivel con él desbloqueado. Aún no ocurre en el 1-1; lo cubren las pruebas.
 - **Una sola vez por partida guardada:** `seen_notices` en el guardado. En los guardados antiguos, las habilidades ya obtenidas cuentan como avisadas, así que el aviso del láser no se repite. Marcar un aviso no fuerza una escritura: se guarda con el siguiente cambio que guarde, como capturar un punto, obtener una habilidad o completar el nivel. Así, abrir el juego unos segundos no escribe el guardado.
@@ -659,9 +659,9 @@ Resueltas por la corrección (ya no son dudas): qué hace el jefe al final de No
 Decisión del usuario: se aprueba `propuesta-hub-y-guardado.md` con la recomendación de sus 10 preguntas (§7). Resuelve la duda 6 de las tres vueltas («Guardado (detalle)») y C4 en el Mundo 1. Cambios aplicados en `05-hub.md` (§13.1, §13.2, §13.3 y §13.6).
 
 1. El hub aparece desde el final del 1-1 (hub mínimo tras cada nivel del Mundo 1). La llegada narrativa sigue tras Alerta Mayor.
-2. Tutorial de guardado B + C: línea importante de Eco junto a la terminal de salida del 1-1 y primer hub guiado. **No hay guardado dentro de los niveles.**
+2. Tutorial de guardado B + C: línea importante de Eco junto a la terminal de salida del 1-1 y primer hub guiado. **No hay guardado dentro de los niveles.** **[Reemplazado 2026-10-15 (3)]**: Eco presenta a Notas en el primer hub y Notas explica cómo guardar.
 3. Hub = sala 2D caminable con paneles; una sola pantalla en el Mundo 1.
-4. Calc dormida en el hub del Mundo 1: vende sin hablar.
+4. Calc dormida en el hub del Mundo 1: vende sin hablar. **[Reemplazado 2026-10-15 (3)]**: no hay tienda hasta conocer a Calc al final del 1-2.
 5. Aviso al cerrar con cambios sin guardar, también dentro de un nivel (allí sin opción de guardar).
 6. Ajustes en `user://settings.cfg`, guardados al instante y aparte del guardado manual.
 7. No se rejuegan subniveles de vueltas anteriores: solo los de la vuelta actual.
@@ -677,11 +677,74 @@ Además, el Debug conserva su regla (se activa con energía > 0; ver «Batería 
 - **Esquema v2:** añade `lap` (1 Easy, 2 Normal, 3 Hard), `found_secrets` (nivel → ids), `hub_tutorial_done`, `saved_at` (fecha UTC) y `play_time_s`. Un guardado v1 se carga igual (`lap` 1, sin secretos, `hub_tutorial_done` verdadero si el 1-1 está completado) y la siguiente copia escribe la v2. Una versión desconocida se aparta como `.corrupt` y se empieza de cero. Al guardar, la copia anterior pasa a `save.json.bak`; si el guardado está corrupto y hay `.bak`, se carga el `.bak`.
 - **Aviso al salir:** con cambios sin guardar, cerrar la ventana muestra un aviso (provisional, con el panel y la fuente de textos): en un sitio donde se puede guardar, «Guardar y salir / Salir sin guardar / Volver»; en un nivel, «Salir / Volver». Sin cambios, sale sin preguntar. Textos en `data/quit_prompt.json`. Las herramientas (`-s`) no lo usan.
 - **Guardar mientras no exista el hub real (provisional):** la pantalla provisional del hub guarda con la acción nueva `save_game` (C / R3 del mando) y muestra «Guardar: …» y el indicador «sin guardar». Se sustituyó por la estación «copia local»; la acción `save_game` se retiró del Input Map el 2026-10-15 (C y R3 quedan libres).
-- **Dudas para el usuario:** (1) ¿vale C / R3 como control provisional de guardar? (2) `play_time_s` cuenta el tiempo con el juego sin pausar, también en la pantalla del hub; ¿vale así? (3) Aún no hay nada que marque secretos encontrados (`GameState.mark_secret_found` existe, sin uso): se conectará con Linterna o con los secretos del 1-1.
+- **Dudas para el usuario:** (1) ¿vale C / R3 como control provisional de guardar? (2) `play_time_s` cuenta el tiempo con el juego sin pausar, también en la pantalla del hub; ¿vale así? (3) Aún no hay nada que marque secretos encontrados (`GameState.mark_secret_found` existe, sin uso): se conectará con Linterna o con los secretos del 1-1. (2026-10-15 (3): la vida extra se registra como secreto encontrado; Linterna ya no cuenta secretos.)
 
 ## Láser como el pulso, confirmación al entrar sin guardar y miniatura de carpeta (2026-10-15)
 
 - **Láser como el pulso (decisión del usuario):** el láser sigue la regla del pulso. Disparo en el aire: antes permitido, ahora bloqueado (en el aire la acción se ignora sin aviso, como el pulso: sin chispa, sin enfriamiento ni gasto). Salto durante la pose del láser: antes permitido (subía en vertical), ahora bloqueado como durante el pulso (el salto en buffer sale al acabar la pose). `laser_locks_movement`, coste, daño, enfriamiento y alcance sin cambios. El 1-1 no exige disparar en el aire (validadores y bot pasan).
-- **Tutorial de guardado B + C:** pendiente de rediseño por el usuario (Eco se presentará en el hub y presentará a Notas). No se implementan la línea de Eco «sin cobertura» ni el primer hub guiado. **Sí** queda decidido e implementado: **siempre** que se entra a una carpeta (subnivel disponible o completado) con cambios sin guardar sale «¿Seguro? Aún no has guardado.» (Entrar sin guardar / Volver); con todo guardado se entra directo.
+- **Tutorial de guardado B + C:** **[Reemplazado 2026-10-15 (3)]** por «Decisiones del 2026-10-15 (3)» (Eco presenta a Notas en el primer hub). Antes: pendiente de rediseño por el usuario (Eco se presentará en el hub y presentará a Notas). No se implementan la línea de Eco «sin cobertura» ni el primer hub guiado. **Sí** queda decidido e implementado: **siempre** que se entra a una carpeta (subnivel disponible o completado) con cambios sin guardar sale «¿Seguro? Aún no has guardado.» (Entrar sin guardar / Volver); con todo guardado se entra directo.
 - **Acción `save_game` retirada:** se guarda solo en la copia local del hub.
 - **Miniatura del mundo en las carpetas (decisión del usuario):** icono pixel art de 16x16 por mundo junto al número; Mundo 1, una campana. Mundos bloqueados sin miniatura (no se adelanta nada). Sin insignia de vuelta ni dificultad (el jugador no sabe que hay vueltas).
+
+## Decisiones del 2026-10-15 (3): asistentes, ayuda Q, vidas y papelera
+
+Decisiones del usuario. Detalle, plan de implementación, arte y preguntas en `docs/propuesta-asistentes-y-vidas.md`. Sin implementar. El usuario aprobó también las propuestas del equipo que no contestó de forma explícita. Los valores numéricos son ajustables jugando.
+
+**Vocabulario:** **vidas (intentos)** frente a **Sync Rate (salud)**. «Puntos» sin más son los puntos de atención (la moneda), no los puntos de sincronización.
+
+**Eco**
+
+1. Eco es un asistente digital que **no lanza mensajes a lo loco**.
+2. En el 1-1 es lo primero que se obtiene: Isak llega por el vórtice, camina y se topa con Eco (columna 11). Eco se presenta y pide un **apodo**: el nombre con el que Eco llama al jugador, por defecto «Isak», distinto del nombre real que usan los recuerdos del Mundo 2. Después **da el pulso**: el pulso deja de tenerse desde el inicio y el tramo anterior no lo exige.
+3. Eco **entra y sale con Isak** en los niveles y en el hub: una esfera que lo sigue con suavidad y oscilación, sin tapar la acción, y que entra con el vórtice.
+
+**Ayuda con Q**
+
+4. Acción `help` (Q / R3). Cerca de algo que no se conoce aparece una Q, como la G en la terminal. Al pulsarla el juego se detiene y Eco lo explica; se cierra con la acción del jugador. Cada ayuda pausa.
+5. Se aprende **por tipo**: tras preguntar por una Burbuja, ninguna Burbuja vuelve a mostrar la Q.
+6. Los objetos funcionan siempre, con Q o sin ella.
+
+**Notas**
+
+7. Notas es la **consola donde se guarda** (la «copia local» pasa a ser Notas). Llega en la primera visita al hub: Eco la presenta y Notas explica cómo guardar.
+8. Notas es también un **álbum (códice)** de enemigos y objetos. Cada ficha se desbloquea al pedir ayuda con Q y las no vistas salen como silueta «???». Se lee en el hub, desde Notas.
+
+**Calc y Linterna**
+
+9. **Calc** se encuentra al final del 1-2, tras obtener el Debug (la historia, más adelante). Hasta entonces **no hay tienda** y su estación está apagada. Impacto: el secreto del Pulso amplio del 1-1 se abre tras el 1-2.
+10. **Linterna** se encuentra al entrar en el X-1 de un mundo oscuro (mundo por decidir). Es un objeto que se activa solo en zonas oscuras.
+
+**Vidas y rollback**
+
+11. **Vidas:** 3 de base. Se reponen al empezar cada intento de nivel desde el hub; los puntos de sincronización no las reponen. Morir con vidas restantes hace reaparecer en el último punto de sincronización, como hoy.
+12. **Vida extra:** se coge una sola vez por mapa y hay una cada 3 mapas (ajustable). Cada una sube **de forma permanente** el máximo base y se registra como secreto encontrado. La del 1-1 está en el **secreto D** (pared con glitch) y exige el Debug.
+13. **Game over (0 vidas):** Isak vuelve al hub y Eco aplica un rollback a la **última copia guardada**.
+    - Lo obtenido después de esa copia **se pierde**. Ejemplo: si pasas el 1-2, no guardas y mueres en el 1-3, repites el 1-2.
+    - Lo guardado (habilidades, power banks, puntos de atención y mejoras) Eco lo «desecha» sin borrarlo: aparece en la **Papelera**, que parpadea y se mueve. Al acercarse se recupera todo.
+    - Mientras la Papelera tenga contenido, las carpetas avisan «Recupera tus archivos de la papelera».
+    - Si no había ninguna copia, la Papelera se activa igualmente y Eco dice que no había nada guardado.
+14. **El rollback del jefe final es la misma mecánica:** Eco desecha todo y se recupera en la Papelera. Eso explica por qué Isak mantiene sus habilidades. La Papelera se activa la primera vez que hace falta.
+
+**Mensajes de Eco**
+
+15. Son **momentos de historia** (automáticos, con pausa) la presentación de Eco, el láser, el Debug, el primer game over o rollback, la presentación de Notas y las líneas de jefe. Las demás líneas del 1-1 pasan a ayuda con Q o se eliminan (tabla en la propuesta, §4).
+
+**Notas anteriores que quedan reemplazadas** (marcadas en su sitio):
+
+- Avisos automáticos de Eco en el 1-1 (V6, notas del paso 14b).
+- El aviso del pulso al empezar el 1-1 («Avisos de control»).
+- «Eco no entra en el hub» y el tutorial B + C (`propuesta-hub-y-guardado.md` §5).
+- Calc dormida que vende desde el 1-1.
+- Papelera que guarda puntos perdidos al morir (V2, §13.3).
+- Notas tras el Mundo 2.
+- Linterna que indica secretos tras el Mundo 4.
+
+**Dudas abiertas** (con recomendación en la propuesta, §12):
+
+1. Desde cuándo cuentan las vidas (recomendación: desde la primera llegada al hub).
+2. Mundo oscuro de Linterna (recomendación: el Mundo 4, en el 4-1).
+3. Encaje de la Papelera con su aparición en el 4-2.
+4. Si el rollback de Normal (lo lanza Isak, engañado) usa la Papelera (recomendación: sí).
+5. Tono de Eco por vuelta.
+6. Qué pasa con el pulso y el registro en un game over sin copia (recomendación: no se pierden).
+7. Eco en el hub frente a la «zona sin señal» (recomendación: Eco entra sin cobertura).

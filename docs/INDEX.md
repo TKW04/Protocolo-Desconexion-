@@ -15,6 +15,7 @@
 | [mundo-6-nube.md](mundo-6-nube.md) | Mundo 6: ambientación, zonas remix, copias optimizadas, nodos, niveles 6-1 a 6-3 y jefe final Isak Optimizado. | Para implementar contenido del Mundo 6 o el combate final. |
 | [04-personajes.md](04-personajes.md) | Eco (rol, apariencia, voz, evolución por mundo y frases), Isak Optimizado, aliados (Calc, Linterna, Notas, Papelera) y los amigos (Lía, Marco, Tomi). | Para diálogos, jefes (Eco habla a través de ellos), el jefe final o los aliados. |
 | [05-hub.md](05-hub.md) | Hub "Pantalla de Inicio": concepto, distribución por páginas, aliados y sus funciones, cambios durante el juego, ambientación, selección de zona y subnivel, mejoras y guardado (13.6). Propuesta de diseño aprobada el 2026-10-15: [propuesta-hub-y-guardado.md](propuesta-hub-y-guardado.md) (hub del Mundo 1, guardado manual y tutorial de guardado del 1-1). | Para implementar el hub, el menú de mundos, las mejoras permanentes o el progreso. |
+| [propuesta-asistentes-y-vidas.md](propuesta-asistentes-y-vidas.md) | Asistentes (Eco compañero, Notas como consola de guardado y álbum, Calc desde el final del 1-2, Linterna, Papelera), ayuda con Q por tipo, vidas (intentos) frente a Sync Rate (salud), game over con rollback a la última copia y Papelera, cambios del 1-1 y del hub, arte y plan de implementación (decisiones del usuario del 2026-10-15 (3), sin implementar). | Antes de tocar Eco, la ayuda, el HUD de vidas, la muerte o game over, la copia local / Notas, Calc o la Papelera. |
 | [06-finales.md](06-finales.md) | Momento de decisión (solo al final de Hard, 3.ª vuelta), Final A (Desconexión), Final B (Aceptación), epílogo de amistades y comparación. | Para implementar el cierre del juego o las condiciones del epílogo. |
 | [07-estilo-visual.md](07-estilo-visual.md) | Resolución, tamaños de sprites y tiles, cámara, reglas de arte, paletas por mundo, diseño y animaciones de Isak y su copia, enemigos, efectos, HUD, referencias y producción del arte. | Antes de crear cualquier sprite, tileset, efecto o elemento de interfaz. |
 | [guia-sprites-ia.md](guia-sprites-ia.md) | Guía para generar las hojas de sprites de Isak con una herramienta de IA de imágenes (ficha fija de Isak, prompt completo por estado, alternativa cuadro por cuadro, comprobaciones) e importarlas con `tools/import_sheet.py`. | Antes de generar o importar una hoja de sprites de Isak. |
@@ -27,5 +28,5 @@
 - **Un enemigo:** tabla "Enemigos y elementos del mundo" del `mundo-N` → 07 (15.5 y regla de telegrafiar ataques).
 - **Un jefe:** sección "Jefe" del `mundo-N` → 04 (Eco y su frase en ese mundo) → 07 (15.5).
 - **Arte:** 07 → `guia-sprites-ia.md` (sprites de Isak) → paleta en la "Ambientación" del `mundo-N` → 08.
-- **Hub o progreso:** 05 → 04 (aliados).
+- **Hub o progreso:** 05 → 04 (aliados) → `propuesta-asistentes-y-vidas.md`.
 - **Historia y diálogos:** 03 → 04 → 06.
