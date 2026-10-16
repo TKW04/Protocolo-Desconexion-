@@ -15,6 +15,9 @@ Reglas:
   - objects {type, x, y, params} con tipo del catalogo (data/world<N>_objects.json),
     params obligatorios presentes y sin params desconocidos, dentro del grid, y sin
     pisar terreno; params con valores de `allowed` del catalogo (ability_pickup.ability);
+    encuentro con Eco (eco_encounter, 2026-10-16): como mucho uno por nivel, en un
+    nivel con abilities_available.pulse false (el pulso lo da el encuentro) y con
+    Eco (eco_offset_tiles, dos enteros) dentro de la zona y en una celda libre;
     cargador (charger) con amount > 0, cooldown_s >= 0 y reusable booleano;
     receptores apuntando a un puente existente; la puerta de salida contiene la G;
   - ids unicos (checkpoints, enemigos, secretos y params.id de los objetos);
@@ -295,6 +298,7 @@ class LevelValidator:
         bridges = set()
         receivers = []
         doors = []
+        encounters = []
         self.object_anchors = set()
         for i, obj in enumerate(self.level["objects"]):
             what = "objects[%d]" % i
@@ -360,6 +364,16 @@ class LevelValidator:
                 receivers.append((what, x, y, params.get("target")))
             elif kind in ("exit_door", "exit_terminal"):
                 doors.append((what, x, y, set(cells)))
+            elif kind == "eco_encounter":
+                encounters.append((what, x, y))
+                self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
+        if len(encounters) > 1:
+            for (what, x, y) in encounters[1:]:
+                self.error("%s: solo puede haber un encuentro con Eco por nivel" % what, y, x)
+        if encounters and self.level.get("abilities_available", {}).get("pulse", False):
+            what, x, y = encounters[0]
+            self.error("%s: el encuentro con Eco da el pulso; el nivel debe empezar sin el "
+                       "(abilities_available.pulse false)" % what, y, x)
         for (what, x, y, target) in receivers:
             if target not in bridges:
                 self.error("%s: target '%s' no es el id de ningun bridge_inactive" % (what, target), y, x)
@@ -368,6 +382,21 @@ class LevelValidator:
             if len(goals) == 1 and goals[0] not in cells:
                 self.error("%s no contiene la meta G (fila %d, columna %d)"
                            % (what, goals[0][1], goals[0][0]), y, x)
+
+    def _check_eco_encounter(self, what, x, y, params, defaults):
+        """Eco flotando (eco_offset_tiles) dentro de la zona del encuentro y en una celda libre."""
+        offset = params.get("eco_offset_tiles", defaults.get("eco_offset_tiles"))
+        if not (isinstance(offset, list) and len(offset) == 2 and all(_is_int(v) for v in offset)):
+            self.error("%s: eco_offset_tiles debe ser [columna, fila] (enteros)" % what, y, x)
+            return
+        w = params.get("width_tiles", defaults.get("width_tiles", 1))
+        h = params.get("height_tiles", defaults.get("height_tiles", 1))
+        if not (0 <= offset[0] < w and 0 <= offset[1] < h):
+            self.error("%s: Eco (eco_offset_tiles %s) queda fuera de la zona del encuentro" % (what, offset), y, x)
+            return
+        ex, ey = x + offset[0], y + offset[1]
+        if self.in_bounds(ex, ey) and self.cell(ex, ey) in "#^":
+            self.error("%s: Eco flota dentro de terreno o pinchos ('%s')" % (what, self.cell(ex, ey)), ey, ex)
 
     def _check_charger(self, what, x, y, params):
         """Cargador (2026-10-15): amount > 0, cooldown_s >= 0 y reusable booleano."""

@@ -793,6 +793,14 @@ func apply_save_data(data: Dictionary) -> bool:
 		var raw_lives: Variant = data.get("lives_max", LIVES_MAX_DEFAULT)
 		lives_max = maxi(LIVES_MAX_DEFAULT, int(raw_lives)) if (raw_lives is float or raw_lives is int) \
 				else LIVES_MAX_DEFAULT
+	# El pulso es el regalo de Eco (encuentro del 1-1, 2026-10-16): con Eco
+	# conocido se tiene siempre. Cubre los guardados migrados con el 1-1
+	# completado y los v3 de antes del encuentro (el 1-1 daba el pulso al
+	# empezar): el encuentro no se repite y su aviso ya se vio.
+	if allies_met.has(ALLY_ECO) and not obtained_abilities.has(ABILITY_PULSE):
+		obtained_abilities[ABILITY_PULSE] = true
+		set_ability_unlocked(ABILITY_PULSE, true)
+		seen_notices[ABILITY_PULSE] = true
 	var raw_saved_at: Variant = data.get("saved_at", "")
 	saved_at = raw_saved_at if raw_saved_at is String else ""
 	play_time_s = _as_float(data.get("play_time_s", 0.0))

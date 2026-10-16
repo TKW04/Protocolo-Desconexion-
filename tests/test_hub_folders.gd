@@ -7,6 +7,7 @@
 extends GutTest
 
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
 const PATH: String = "user://test_hub_folders.json"
 const T: float = 64.0
 const LONG_STEP_S: float = 5.0
@@ -314,6 +315,8 @@ func test_locked_folder_does_not_open_and_says_not_downloaded() -> void:
 
 
 func test_choosing_1_1_departs_through_the_vortex_and_loads_the_level() -> void:
+	# Al hub se llega tras el 1-1: Eco ya dio el pulso en el encuentro.
+	EcoProgress.meet_eco_with_pulse()
 	_spawn()
 	var requested: Array[StringName] = []
 	_hub.level_requested.connect(func(id: StringName) -> void: requested.append(id))
@@ -342,7 +345,10 @@ func test_choosing_1_1_departs_through_the_vortex_and_loads_the_level() -> void:
 	assert_eq(runner.get_level_id(), "1-1")
 	assert_not_null(runner.get_level(), "Nivel 1-1 cargado")
 	assert_false(_hub.is_inside_tree(), "El hub sale del arbol")
-	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "El nivel conserva su pulso")
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "El nivel conserva el pulso obtenido")
+	var encounter := runner.get_level().get_node(^"Objects/eco_encuentro") as EcoEncounter
+	assert_true(encounter.is_done(), "Con Eco conocido el encuentro no se repite")
+	assert_false(encounter.is_eco_visible())
 
 
 func test_locked_sublevel_cannot_be_entered() -> void:

@@ -7,9 +7,13 @@
 # unico power bank), las Burbujas en abierto (escalon aturdidas; la caida ya no
 # las mata) y la sala del laser (rediseno 2026-10-15: dos receptores en escalera,
 # pop-up en alto y el objeto del laser en un tunel bajo que no se puede saltar).
+# Desde el encuentro con Eco (2026-10-16) el 1-1 empieza sin pulso: las pruebas
+# empiezan como una partida que ya paso por el encuentro (EcoProgress), salvo la
+# del pulso al empezar.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
 const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/1-1.tscn")
 const LEVEL_PATH: String = "res://data/levels/1-1.json"
 const DT: float = 1.0 / 60.0
@@ -24,7 +28,7 @@ var _pulse_was: bool
 var _debug_was: bool
 
 
-## Las lineas importantes de Eco (bienvenida, laser) pausarian el nivel
+## Las lineas importantes de Eco (laser) pausarian el nivel
 ## esperando al jugador; aqui nadie confirma (se prueba en test_eco_text_box.gd).
 func before_all() -> void:
 	EcoTextBox.pause_important = false
@@ -40,12 +44,15 @@ func before_each() -> void:
 	_pulse_was = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	_debug_was = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
+	GameState.reset_progress()
+	EcoProgress.meet_eco_with_pulse()
 
 
 func after_each() -> void:
 	if is_instance_valid(_level):
 		_level.free()
 	_level = null
+	GameState.reset_progress()
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _pulse_was)
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _debug_was)
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
@@ -177,17 +184,27 @@ func test_camera_limits_equal_level_size() -> void:
 
 
 func test_debug_blocked_inside_and_restored_after() -> void:
+	# Partida nueva: el 1-1 empieza sin pulso (lo da Eco en el encuentro).
+	GameState.reset_progress()
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
-	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, false)
+	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
 	await _load(false)
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_DEBUG), "Debug bloqueado en el 1-1")
-	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Pulso disponible en el 1-1")
+	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Sin pulso al empezar el 1-1")
 	assert_false(DebugMode.is_active())
 	assert_eq(GameState.current_level, &"1-1")
 	_level.free()
 	_level = null
 	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_DEBUG), "Se restaura al salir")
-	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Se restaura al salir")
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Se restaura al salir")
+	# Con el pulso ya obtenido (tras el encuentro) se tiene dentro y fuera.
+	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, false)
+	EcoProgress.meet_eco_with_pulse()
+	await _load(false)
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Pulso obtenido: disponible en el 1-1")
+	_level.free()
+	_level = null
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Y sigue al salir")
 
 
 func test_runs_300_frames_isak_lands_and_bubble_stays_under_ceiling() -> void:
@@ -359,6 +376,7 @@ func test_far_popup_out_of_base_pulse_reach() -> void:
 func test_far_popup_closes_with_wide_pulse() -> void:
 	var saved_path: String = GameState.save_path
 	GameState.use_save_path("user://test_level_1_1_save.json", true)
+	EcoProgress.meet_eco_with_pulse()
 	GameState.attention_points = 25
 	assert_eq(GameState.purchase_upgrade(&"wide_pulse"), GameState.PurchaseResult.OK)
 	var popup: PopupBlocker = await _pulse_at_far_popup()
@@ -494,18 +512,14 @@ func test_laser_room_objects() -> void:
 	assert_almost_eq((_level.get_node(^"Enemies/burbuja_3") as AlertBubble).get_max_health(), 2.0, 0.001)
 
 
-## La linea de Eco del primer disparo salta con la senal laser_fired, una sola vez.
-func test_first_laser_shot_eco_line_once() -> void:
+## La linea del primer disparo (eco_laser_disparo) se elimino (2026-10-16, §4.1): se funde con
+## la historia del laser y con la ayuda Q de la Burbuja. Disparar no hace hablar a Eco.
+func test_first_laser_shot_has_no_eco_line() -> void:
 	await _load(false)
-	var line := _object("eco_laser_disparo") as EcoLine
-	assert_eq(line.trigger_event, &"laser_fired")
-	assert_false(line.monitoring, "Sin zona: salta por la senal")
+	assert_null(_level.get_node_or_null(^"Objects/eco_laser_disparo"))
 	watch_signals(EventBus)
 	EventBus.laser_fired.emit(null)
-	EventBus.laser_fired.emit(null)
-	assert_eq(line.get_fired_count(), 1)
-	assert_signal_emit_count(EventBus, "eco_line_requested", 1)
-	assert_signal_emitted_with_parameters(EventBus, "eco_line_requested", [line.text, line.duration_s, line.important])
+	assert_signal_emit_count(EventBus, "eco_line_requested", 0)
 
 
 ## Isak en el puente en alto (puente_laser_2) cierra el pop-up de la sala con el pulso y,
@@ -513,6 +527,7 @@ func test_first_laser_shot_eco_line_once() -> void:
 func test_laser_room_popup_and_pickup() -> void:
 	var saved_path: String = GameState.save_path
 	GameState.use_save_path("user://test_level_1_1_save.json", true)
+	EcoProgress.meet_eco_with_pulse()
 	await _load(true)
 	var receiver := _object("receiver_164_5") as PulseReceiver
 	var bridge := _object("puente_laser_2") as PulseBridge

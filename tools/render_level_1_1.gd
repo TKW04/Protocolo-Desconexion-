@@ -49,6 +49,13 @@ func _run() -> void:
 	# Las lineas importantes de Eco pausarian el nivel esperando al jugador:
 	# aqui se muestran y se cierran solas, como las normales.
 	(load("res://scripts/ui/eco_text_box.gd") as GDScript).set(&"pause_important", false)
+	# Partida que ya paso por el encuentro con Eco (2026-10-16): Eco conocido y
+	# el pulso obtenido (el 1-1 empieza sin pulso; el encuentro se captura con
+	# tools/render_eco_encounter.gd).
+	var game_state: Node = root.get_node(^"GameState")
+	game_state.call(&"meet_ally", &"eco")
+	game_state.call(&"mark_notice_seen", &"pulse")
+	game_state.call(&"obtain_ability", &"pulse")
 	var level: Node = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(level)
 	var isak: Node2D = level.get_node(^"Isak")

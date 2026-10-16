@@ -88,6 +88,12 @@ def game_strings():
     if os.path.exists(eco_path):
         collect_texts(load_json(eco_path), texts)
     texts.extend(ability_notice_strings())
+    # Encuentro con Eco (data/eco_encounter.json): lineas y aviso del pulso.
+    encounter = load_json(os.path.join(ROOT, "data", "eco_encounter.json"))
+    for key in ("intro", "gift", "outro"):
+        texts.extend(t.replace("{apodo}", "") for t in encounter[key])
+    texts.append(encounter["notice"]["name"])
+    texts.append(re.sub(r"\{[a-z]+\}", "", encounter["notice"]["text"]))
     # Ayuda de Eco con Q (data/help.json): titulos y textos de cada tipo.
     for entry in load_json(os.path.join(ROOT, "data", "help.json"))["types"].values():
         texts.append(entry["title"])

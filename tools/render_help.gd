@@ -30,16 +30,23 @@ func _run() -> void:
 	var out_dir: String = args[0] if args.size() > 0 else ProjectSettings.globalize_path(DEFAULT_OUT)
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var main: Node = (load(SCENE) as PackedScene).instantiate()
+	# Partida que ya paso por el encuentro con Eco (2026-10-16): Eco conocido y
+	# el pulso obtenido (el 1-1 empieza sin pulso; el encuentro se captura con
+	# tools/render_eco_encounter.gd).
+	var game_state: Node = root.get_node(^"GameState")
+	game_state.call(&"meet_ally", &"eco")
+	game_state.call(&"mark_notice_seen", &"pulse")
+	game_state.call(&"obtain_ability", &"pulse")
 	main.set(&"start_level_id", "1-1")
 	root.add_child(main)
 	_main = main
-	# Llegada, bienvenida de Eco (Eco queda conocido) y aviso del pulso.
-	var game_state: Node = root.get_node(^"GameState")
+	# Llegada por el vortice (Eco entra con Isak).
 	var isak: Node2D = main.call(&"get_isak")
-	for i: int in 60 * 30:
+	var deadline: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < deadline:
 		_confirm_lines()
 		await process_frame
-		if game_state.call(&"is_notice_seen", &"pulse") and not paused and not isak.call(&"is_warping"):
+		if not paused and not isak.call(&"is_warping"):
 			break
 	for i: int in 30:
 		_confirm_lines()

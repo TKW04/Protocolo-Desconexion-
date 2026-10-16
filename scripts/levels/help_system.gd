@@ -14,9 +14,9 @@
 ##   texto) y la pausa se libera siempre al salir el cuadro del arbol (cambio de
 ##   escena, nivel quitado). Sin Q visible, help no hace nada.
 ## - No toca la logica de los objetos: funcionan igual con Q o sin ella.
-## - Provisional hasta el encuentro con Eco (paso 6): Eco cuenta como conocido
-##   en cuanto habla por primera vez (EventBus.eco_line_started; en el 1-1, su
-##   bienvenida), si meet_eco_on_first_line.
+## - Eco se conoce en el encuentro del 1-1 (EcoEncounter, paso 6): hasta
+##   entonces no hay Q. (La regla provisional que lo daba por conocido en cuanto
+##   hablaba por primera vez se retiro con el encuentro.)
 ## La Q se dibuja en un CanvasLayer propio que sigue a la camara
 ## (follow_viewport, como el punto debil): por encima del mundo y del tinte del
 ## Debug y por debajo del HUD y del cuadro de Eco (layer de la seccion prompt).
@@ -32,8 +32,6 @@ signal help_shown(help_id: StringName, text: String)
 const DEFAULT_LAYER: int = 6
 
 @export var isak_path: NodePath = ^"../Isak"
-## Provisional (ver arriba): conocer a Eco cuando habla por primera vez.
-@export var meet_eco_on_first_line: bool = true
 
 var _catalog: HelpCatalog = HelpCatalog.shared()
 var _layer: CanvasLayer
@@ -50,13 +48,10 @@ func _ready() -> void:
 	_prompt = HelpPrompt.new()
 	_prompt.visible = false
 	_layer.add_child(_prompt)
-	EventBus.eco_line_started.connect(_on_eco_line_started)
 	EventBus.help_learned.connect(_on_help_learned)
 
 
 func _exit_tree() -> void:
-	if EventBus.eco_line_started.is_connected(_on_eco_line_started):
-		EventBus.eco_line_started.disconnect(_on_eco_line_started)
 	if EventBus.help_learned.is_connected(_on_help_learned):
 		EventBus.help_learned.disconnect(_on_help_learned)
 
@@ -151,11 +146,6 @@ func _visible_world_rect() -> Rect2:
 	var viewport: Viewport = get_viewport()
 	var view := Rect2(Vector2.ZERO, viewport.get_visible_rect().size)
 	return viewport.get_canvas_transform().affine_inverse() * view
-
-
-func _on_eco_line_started(_text: String) -> void:
-	if meet_eco_on_first_line:
-		GameState.meet_ally(GameState.ALLY_ECO)
 
 
 func _on_help_learned(_help_id: StringName) -> void:

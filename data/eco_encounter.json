@@ -1,0 +1,18 @@
+{
+	"_notes": "Encuentro con Eco en el 1-1 (EcoEncounter, scripts/levels/eco_encounter.gd y scenes/levels/eco_encounter.tscn; objeto eco_encounter de data/world1_objects.json; docs/propuesta-asistentes-y-vidas.md §7.1, paso 6 de §10). Momento de historia: todo en lineas IMPORTANTES del cuadro de Eco (pausan el juego hasta que el jugador las cierra con Espacio / A / Intro) y el encuentro mantiene la pausa de principio a fin (tambien entre lineas y con la entrada del apodo abierta). Orden: intro (Eco se presenta y pregunta como llamarte) -> entrada del apodo (scenes/ui/nickname_entry.tscn: escribir uno o dejar el actual, «Isak» por defecto) -> gift (Eco te llama por el apodo, marcador {apodo}, y te regala el pulso) -> se obtiene la habilidad `ability` (GameState.obtain_ability: obtenida para siempre, se guarda) y sale su aviso de control `notice` (mismo formato que data/ability_notices.json: {name}, {control} leido del Input Map de la accion `action`; sustituye al aviso del pulso que salia al empezar el 1-1) -> outro. Al cerrarse la ultima linea Eco queda conocido (GameState.meet_ally eco: ayuda con Q y companero) y la esfera flotante pasa a ser el EcoCompanion, que vuela hasta Isak. Voz de Eco (Cache): servicial y corporativa, un poco engreida, con ganas de decidir por Isak. Esfera flotante antes del encuentro: el arte de Eco companero (data/eco_companion.json) con bob_px/bob_hz. Textos ajustables.",
+	"ability": "pulse",
+	"duration_s": 4.0,
+	"intro": [
+		"Bienvenido. He optimizado tu espacio.",
+		"Soy Eco, tu asistente. Yo me ocupo de todo; tú solo dime cómo quieres que te llame."
+	],
+	"gift": [
+		"Perfecto, {apodo}. Te regalo algo: un pulso. Sabía que lo ibas a necesitar."
+	],
+	"notice": {"name": "Pulso", "action": "pulse", "text": "{name}: {control}"},
+	"outro": [
+		"Si algo no lo conoces, acércate y pregúntame. Te ahorro el esfuerzo."
+	],
+	"bob_px": 4,
+	"bob_hz": 0.8
+}

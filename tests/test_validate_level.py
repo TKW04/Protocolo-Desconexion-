@@ -84,15 +84,23 @@ class RealLevelTest(unittest.TestCase):
                                   "pop-up popup_1", "pop-up popup_2", "puente puente_4", "pop-up popup_3"])
         self.assertNotIn("laser", actions, "la meta no necesita disparar el laser")
         pickups = [a for a in result["path"] if a["action"] == "pickup"]
-        self.assertEqual([a["object"] for a in pickups], ["objeto de habilidad laser_1_1"])
+        # Encuentro con Eco (2026-10-16): el pulso no existe al empezar; lo da el encuentro.
+        self.assertEqual([a["object"] for a in pickups], ["encuentro con Eco eco_encuentro",
+                                                          "objeto de habilidad laser_1_1"])
+        self.assertEqual(result["pulse"], {"from_start": False, "given_by": ["eco_encuentro"],
+                                           "encounter": ["eco_encuentro"], "available_from_col": 10})
+        self.assertLess(actions.index("pickup"), actions.index("pulse"), "el encuentro va antes de todo pulso")
         self.assertLess(actions.index("pickup"), [a.get("object") for a in result["path"]].index("pop-up popup_1"))
         self.assertEqual(result["checkpoints"][0]["reachable_from"], "P")
         # Terminal de salida (2026-10-15): se activa con el pulso desde la propia celda G.
         self.assertEqual(result["exit_terminals"], [{"id": "terminal_salida", "pulse_from": [9, 290]}])
         # El laser: se alcanza, es obligatorio (en el camino de la meta) y la meta se alcanza sin usarlo.
         abilities = result["abilities"]
-        self.assertEqual(abilities["pickups"], [{"id": "laser_1_1", "ability": "laser", "row": 5, "col": 173,
-                                                 "reachable": True, "mandatory": True, "secret": False}])
+        self.assertEqual(abilities["pickups"], [
+            {"id": "eco_encuentro", "ability": "pulse", "row": 0, "col": 10, "reachable": True, "mandatory": True,
+             "secret": False, "encounter": True},
+            {"id": "laser_1_1", "ability": "laser", "row": 5, "col": 173, "reachable": True, "mandatory": True,
+             "secret": False}])
         self.assertTrue(abilities["goal_without_laser"])
         for bubble in (g for g in result["gates"] if g["kind"] == "bubble"):
             self.assertEqual(bubble["bypassable"], bubble["open"], bubble["id"])
@@ -145,9 +153,12 @@ class RealLevelTest(unittest.TestCase):
         catalog = vl.load_upgrades()
         self.assertGreater(dist, rules.pulse_radius)
         self.assertLessEqual(dist, float(catalog["wide_pulse"]["value"]))
-        self.assertFalse(model.can_open(gate, (129, 4), frozenset()))
+        met = frozenset({"encounter:eco_encuentro"})  # tras el encuentro con Eco (pulso)
+        self.assertFalse(model.can_open(gate, (129, 4), met))
         upgraded = vl.LevelModel(level, rules.with_upgrades(["wide_pulse"]))
-        self.assertTrue(upgraded.can_open(upgraded.gate("popup:popup_lejano"), (129, 4), frozenset()))
+        self.assertTrue(upgraded.can_open(upgraded.gate("popup:popup_lejano"), (129, 4), met))
+        self.assertFalse(upgraded.can_open(upgraded.gate("popup:popup_lejano"), (129, 4), frozenset()),
+                         "sin pasar por el encuentro no hay pulso")
 
     def test_uses_game_physics_file(self):
         rules = vl.Rules()
@@ -188,7 +199,40 @@ class BrokenVariantsTest(unittest.TestCase):
     def test_exit_terminal_needs_the_pulse(self):
         level = base_level()
         level["abilities_available"]["pulse"] = False
+        level["objects"] = [o for o in level["objects"] if o["type"] != "eco_encounter"]
         self.assert_fails(level, "terminal de salida terminal_salida necesita el pulso", schema=False)
+
+    def test_pulse_does_not_exist_before_the_encounter(self):
+        """Encuentro con Eco (2026-10-16): un receptor antes del encuentro exige un pulso que aun no
+        existe (aunque el nivel tenga un camino si el pulso estuviera)."""
+        level = base_level()
+        enc = obj(level, "eco_encounter")
+        enc["x"] = 60  # el encuentro pasa detras del puente_1 (receptor en la columna 56)
+        result = self.assert_fails(level, "puente puente_1 exige el pulso y esta antes de encuentro con Eco",
+                                   schema=False)
+        self.assertIn("aun no se tiene", "\n".join(messages(result)))
+
+    def test_bubble_under_ceiling_before_the_encounter_fails(self):
+        level = base_level()
+        obj(level, "eco_encounter")["x"] = 140  # tras burbuja_1 (techo bajo del 3a)
+        self.assert_fails(level, "Burbuja burbuja_1 exige el pulso y esta antes de encuentro con Eco", schema=False)
+
+    def test_skippable_encounter_fails(self):
+        """El encuentro tiene que ser obligatorio: si se puede pasar sin tocarlo, falla."""
+        level = base_level()
+        enc = obj(level, "eco_encounter")
+        enc["params"]["height_tiles"] = 2  # zona en lo alto (filas 0-1): se pasa por debajo
+        result = vl.validate(level, check_schema=False)
+        self.assertIn("pulso", " ".join(messages(result)))
+        self.assertFalse(result["ok"])
+
+    def test_level_with_pulse_from_start_needs_no_encounter(self):
+        level = base_level()
+        level["abilities_available"]["pulse"] = True
+        level["objects"] = [o for o in level["objects"] if o["type"] != "eco_encounter"]
+        result = vl.validate(level)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["pulse"], {"from_start": True, "given_by": [], "encounter": []})
 
     def test_exit_terminal_out_of_pulse_reach(self):
         level = base_level()
@@ -265,7 +309,8 @@ class BrokenVariantsTest(unittest.TestCase):
         result = vl.validate(level)
         self.assertTrue(any("laser_1_1 (laser) no es obligatorio" in w for w in messages(result, "warnings")),
                         messages(result, "warnings"))
-        self.assertFalse(result["abilities"]["pickups"][0]["mandatory"])
+        laser = next(p for p in result["abilities"]["pickups"] if p["id"] == "laser_1_1")
+        self.assertFalse(laser["mandatory"])
 
     def test_laser_pickup_unreachable(self):
         level = base_level()

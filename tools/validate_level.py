@@ -51,9 +51,17 @@ movimiento por celdas:
      alcanzar con el.
   6c. Terminal de salida (exit_terminal, 2026-10-15): tocar G no basta, hay que
      activarla con el pulso. El nivel debe tener el pulso
-     (abilities_available.pulse) y el pulso (radio base, sin mejoras ni laser)
-     debe alcanzar su hit_rect_px desde alguna celda de pie alcanzable en el
-     camino principal hacia G.
+     (abilities_available.pulse, o un encuentro con Eco que lo da) y el pulso
+     (radio base, sin mejoras ni laser) debe alcanzar su hit_rect_px desde
+     alguna celda de pie alcanzable en el camino principal hacia G.
+  6d. Encuentro con Eco (eco_encounter, 2026-10-16, paso 6 de
+     docs/propuesta-asistentes-y-vidas.md): con abilities_available.pulse
+     false el pulso NO existe al empezar; lo da el encuentro (una zona de toda
+     la altura: se activa al tocar cualquiera de sus celdas), que es un estado
+     del grafo como el laser de un ability_pickup. El encuentro tiene que ser
+     obligatorio y ninguna puerta que exija el pulso (puente con receptor,
+     pop-up, Burbuja que no se puede saltar, terminal de salida) puede estar
+     antes de el.
   7. Sin soft-locks: desde cualquier sitio alcanzable (en cada estado de las
      puertas, abriendolas tambien desde dentro de un foso) se puede llegar a la
      meta (p. ej. caer al foso del puente). Grafo producto (nodo, puertas
@@ -253,6 +261,8 @@ class Gate:
     def label(self):
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
                  "terminal": "terminal de salida"}
+        if getattr(self, "encounter", False):
+            return "encuentro con Eco %s" % self.obj_id
         return "%s %s" % (names[self.kind], self.obj_id)
 
 
@@ -286,6 +296,8 @@ class LevelModel:
         # Hay laser en el nivel (habilidad disponible o un ability_pickup que lo da).
         self.laser_possible = self.laser_base or any(
             g.kind == "pickup" and g.ability == "laser" for g in self.gates)
+        # Hay pulso en el nivel (desde el inicio, o lo da un encuentro con Eco o un ability_pickup).
+        self.pulse_possible = self.pulse or any(g.kind == "pickup" and g.ability == "pulse" for g in self.gates)
 
     # Objetos.
     def _params(self, obj):
@@ -337,6 +349,15 @@ class LevelModel:
                 gate = Gate("pickup:" + aid, "pickup", aid, cells=[(obj["x"], obj["y"])], col=obj["x"],
                             row=obj["y"], tile=T)
                 gate.ability = str(p.get("ability", ""))
+                self.gates.append(gate)
+            elif obj["type"] == "eco_encounter":
+                # Encuentro con Eco: da el pulso al tocar cualquier celda de su zona (toda la altura).
+                eid = str(p.get("id", "eco_encounter_%d_%d" % (obj["x"], obj["y"])))
+                w, h = int(p.get("width_tiles", 1)), int(p.get("height_tiles", 1))
+                cells = [(obj["x"] + dx, obj["y"] + dy) for dy in range(h) for dx in range(w)]
+                gate = Gate("encounter:" + eid, "pickup", eid, cells=cells, col=obj["x"], row=obj["y"], tile=T)
+                gate.ability = "pulse"
+                gate.encounter = True
                 self.gates.append(gate)
         for enemy in self.level.get("enemies", []):
             path = os.path.join(self.rules.root, "data", "enemies", "%s.json" % enemy["type"])
@@ -409,6 +430,12 @@ class LevelModel:
             self._edges[key] = self.world(state, debug).compute_edges(node)
         return self._edges[key]
 
+    def has_pulse(self, state):
+        """El pulso esta disponible: lo da el nivel desde el inicio o ya se paso por el encuentro con Eco
+        (o se recogio un ability_pickup de pulso)."""
+        return self.pulse or any(g.kind == "pickup" and g.ability == "pulse" and g.gid in state
+                                 for g in self.gates)
+
     def has_laser(self, state):
         """El laser esta disponible: lo da el nivel o ya se recogio su ability_pickup."""
         return self.laser_base or any(g.kind == "pickup" and g.ability == "laser" and g.gid in state
@@ -422,7 +449,7 @@ class LevelModel:
             return bool(body_cells(node) & set(gate.cells))
         if gate.kind == "bubble" and use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug):
             return True
-        if not self.pulse or not gate.openers:
+        if not self.has_pulse(state) or not gate.openers:
             return False
         w = self.world(state, debug)
         c, r = node
@@ -907,6 +934,8 @@ class Validator:
         self._check_reachable_secrets(start)
         # Regla 6c: terminal de salida activable con el pulso.
         self._check_exit_terminals(main)
+        # Regla 6d: el pulso no existe antes del encuentro con Eco.
+        self._check_pulse_source()
         # Regla 6: puertas obligatorias.
         if main["ok"]:
             self._check_mandatory(start, goal_cells)
@@ -930,9 +959,9 @@ class Validator:
             x0, y0 = obj["x"] * T + hit[0], obj["y"] * T + hit[1]
             gate = Gate("terminal:" + tid, "terminal", tid, openers=[(x0, y0, x0 + hit[2], y0 + hit[3], "terminal")],
                         col=obj["x"], row=obj["y"], tile=T)
-            if not m.pulse:
-                self.report.error("%s necesita el pulso y el nivel no lo tiene (abilities_available.pulse)"
-                                  % gate.label(), obj["y"], obj["x"], gate.label())
+            if not m.pulse_possible:
+                self.report.error("%s necesita el pulso y el nivel no lo tiene (abilities_available.pulse ni "
+                                  "encuentro con Eco)" % gate.label(), obj["y"], obj["x"], gate.label())
                 continue
             if not main["ok"]:
                 continue
@@ -948,6 +977,32 @@ class Validator:
                                   % gate.label(), obj["y"], obj["x"], gate.label())
             terminals.append({"id": tid, "pulse_from": None if source is None else [source[1], source[0]]})
         self.result["exit_terminals"] = terminals
+
+    def _check_pulse_source(self):
+        """Regla 6d: de donde sale el pulso. Sin pulso al empezar, lo da el encuentro con Eco (o un
+        ability_pickup de pulso): ninguna puerta que lo exija puede quedar antes de el."""
+        m = self.model
+        sources = [g for g in m.gates if g.kind == "pickup" and g.ability == "pulse"]
+        info = {"from_start": m.pulse, "given_by": [g.obj_id for g in sources],
+                "encounter": [g.obj_id for g in sources if getattr(g, "encounter", False)]}
+        self.result["pulse"] = info
+        if m.pulse or not sources:
+            return
+        first = min(g.col_span[0] for g in sources)
+        info["available_from_col"] = first
+        names = ", ".join(g.label() for g in sources)
+        for g in m.gates:
+            if g.kind == "pickup" or g.col_span[0] >= first:
+                continue
+            if g.kind == "bubble" and g.bypassable:
+                continue
+            if g.kind in ("bridge", "popup") or g.kind == "bubble":
+                self.report.error("%s exige el pulso y esta antes de %s (columna %d): el pulso aun no existe"
+                                  % (g.label(), names, first), g.row, g.col, g.label())
+        for obj in self.level.get("objects", []):
+            if obj["type"] == "exit_terminal" and obj["x"] < first:
+                self.report.error("la terminal de salida exige el pulso y esta antes de %s (columna %d)"
+                                  % (names, first), obj["y"], obj["x"])
 
     def _check_bubbles(self):
         """La Burbuja bloquea si bajo su patrulla Isak no puede pasarle por encima."""
@@ -1033,9 +1088,13 @@ class Validator:
                 what = {"bridge": "no tiene receptor", "popup": "no tiene boton de cerrar",
                         "bubble": "no se puede alcanzar"}[g.kind]
                 rep.error("%s %s: el pulso no lo puede abrir" % (g.label(), what), g.row, g.col, g.label())
-            elif not self.model.pulse:
-                rep.error("%s necesita el pulso y el nivel no lo tiene (abilities_available.pulse)" % g.label(),
-                          g.row, g.col, g.label())
+            elif not self.model.pulse_possible:
+                rep.error("%s necesita el pulso y el nivel no lo tiene (abilities_available.pulse ni encuentro "
+                          "con Eco)" % g.label(), g.row, g.col, g.label())
+            elif not self.model.has_pulse(state):
+                rep.error("%s necesita el pulso y aun no se tiene (lo da %s)" % (
+                    g.label(), ", ".join(p.label() for p in self.model.gates
+                                         if p.kind == "pickup" and p.ability == "pulse")), g.row, g.col, g.label())
             elif g.col_span[0] <= far[0] + self.model.K + 4:
                 rep.error("%s: el pulso no alcanza %s desde ninguna celda alcanzable antes de el"
                           % (g.label(), " ni ".join(o[4] for o in g.openers)), g.row, g.col, g.label())
@@ -1066,9 +1125,10 @@ class Validator:
                 n = stage["end"]
                 g = stage["gate"]
                 if g.kind == "pickup":
+                    verb = "pasa por" if getattr(g, "encounter", False) else "recoge"
                     actions.append({"action": "pickup", "from": [n[1], n[0]], "object": g.label(),
-                                    "text": "recoge %s (%s) en (fila %d, columna %d)"
-                                            % (g.label(), g.ability, n[1], n[0])})
+                                    "text": "%s %s (%s) en (fila %d, columna %d)"
+                                            % (verb, g.label(), g.ability, n[1], n[0])})
                     continue
                 laser = g.kind == "bubble" and not self.model.can_open(g, n, stage["state"], use_laser=False)
                 actions.append({"action": "laser" if laser else "pulse", "from": [n[1], n[0]], "object": g.label(),
@@ -1275,9 +1335,14 @@ class Validator:
                                        avoid=cells)
             item = {"id": g.obj_id, "ability": g.ability, "row": g.row, "col": g.col, "reachable": reach["ok"],
                     "mandatory": not without["ok"], "secret": g.obj_id in secret_ids}
+            if getattr(g, "encounter", False):
+                item["encounter"] = True
             info.append(item)
             if not reach["ok"]:
                 self.report.error("%s (%s) no se alcanza" % (g.label(), g.ability), g.row, g.col, g.label())
+            elif without["ok"] and getattr(g, "encounter", False):
+                self.report.error("%s no es obligatorio: se llega a la meta sin pasar por el" % g.label(),
+                                  g.row, g.col, g.label())
             elif without["ok"] and not item["secret"]:
                 self.report.warning("%s (%s) no es obligatorio: se llega a la meta sin recogerlo"
                                     % (g.label(), g.ability), g.row, g.col, g.label())
@@ -1316,7 +1381,7 @@ class Validator:
         alcance; un ability_pickup se toca desde su columna o las de al lado)."""
         T = self.model.T
         if gate.kind == "pickup":
-            return abs(node[0] - gate.col) <= 1
+            return gate.col_span[0] - 1 <= node[0] <= gate.col_span[1] + 1
         reach = self.rules.pulse_radius + T
         if gate.kind == "bubble" and self.model.laser_possible:
             reach = max(reach, self.rules.laser_range + T)
@@ -1440,6 +1505,10 @@ def format_text(path, result):
                 "se alcanza" if item["reachable_without_upgrade"] else "no se alcanza",
                 "se alcanza" if item.get("reachable_with_upgrade") else "no se alcanza",
                 item.get("pulse_radius_with_upgrade_px", 0.0)))
+    pulse = result.get("pulse")
+    if pulse and not pulse["from_start"] and pulse["given_by"]:
+        out.append("  pulso: no existe al empezar; lo da %s (desde la columna %d)" % (
+            ", ".join(pulse["given_by"]), pulse.get("available_from_col", -1)))
     margins = result.get("margins")
     if margins:
         out.append("  exigencia maxima: horizontal %.1f %%, vertical %.1f %% -> margen minimo %.1f puntos "

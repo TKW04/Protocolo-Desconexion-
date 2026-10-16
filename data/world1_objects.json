@@ -1,5 +1,5 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Assets del pop-up y la puerta generados por tools/gen_popup.py. Todos los tipos tienen escena (paso 14b). help_id (2026-10-15 (3), docs/propuesta-asistentes-y-vidas.md §3): tipo de la ayuda de Eco con Q (data/help.json) de los objetos de ese tipo; tools/build_level.py lo escribe en cada instancia (grupo help_target, metadata/help_id) y un objeto del nivel puede sustituirlo con su propio help_id (\"\" = sin Q). Sin help_id (eco_line, exit_door), sin Q. attention_point y checkpoint: el help_id de las celdas o y C del grid.",
+	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Assets del pop-up y la puerta generados por tools/gen_popup.py. Todos los tipos tienen escena (paso 14b). help_id (2026-10-15 (3), docs/propuesta-asistentes-y-vidas.md §3): tipo de la ayuda de Eco con Q (data/help.json) de los objetos de ese tipo; tools/build_level.py lo escribe en cada instancia (grupo help_target, metadata/help_id) y un objeto del nivel puede sustituirlo con su propio help_id (\"\" = sin Q). Sin help_id (eco_line, eco_encounter, exit_door), sin Q. attention_point y checkpoint: el help_id de las celdas o y C del grid.",
 	"tile_size": 64,
 	"types": {
 		"bridge_inactive": {
@@ -124,6 +124,23 @@
 				"trigger_event": ["laser_fired"]
 			},
 			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}
+		},
+		"eco_encounter": {
+			"scene": "res://scenes/levels/eco_encounter.tscn",
+			"description": "Encuentro con Eco (2026-10-16, docs/propuesta-asistentes-y-vidas.md §7.1, paso 6 de §10; textos en data/eco_encounter.json). Zona invisible de width_tiles x height_tiles desde (x, y) (de toda la altura del nivel: no se puede saltar) con Eco flotando en la celda (x, y) + eco_offset_tiles. Si Eco aun no es conocido (GameState.allies_met), al entrar Isak empieza la presentacion (momento de historia, con pausa): lineas importantes de Eco, la entrada del apodo (scenes/ui/nickname_entry.tscn), la linea del regalo, el pulso (GameState.obtain_ability: queda obtenido y se guarda) con su aviso de control y la ultima linea; al terminar Eco queda conocido y pasa a ser el companero (EcoCompanion). Si Eco ya es conocido (rejugar, guardado migrado) no hay Eco flotando ni presentacion. No es solida. Va en un nivel con abilities_available.pulse false (lo comprueba tools/validate_level_schema.py) y tools/validate_level.py la modela como el objeto que da el pulso: obligatorio, y nada antes de ella puede exigir el pulso. Sin ayuda con Q.",
+			"required": ["id"],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"eco_offset_tiles": "eco_offset_tiles"
+			},
+			"defaults": {
+				"width_tiles": 3,
+				"height_tiles": 10,
+				"eco_offset_tiles": [2, 7]
+			},
+			"example": {"type": "eco_encounter", "x": 10, "y": 0, "params": {"id": "eco_encuentro", "width_tiles": 3, "height_tiles": 10, "eco_offset_tiles": [2, 7]}}
 		},
 		"power_bank_pickup": {
 			"scene": "res://scenes/levels/power_bank_pickup.tscn",

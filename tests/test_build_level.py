@@ -78,7 +78,10 @@ class BuildLevelTest(unittest.TestCase):
         self.assertIn('level_id = "1-1"', text)
         self.assertIn("solid_neighbors = 7", text)
         self.assertIn("camera_limits = Rect2i(0, 0, 19200, 896)", text)
-        self.assertIn('abilities_available = {"debug": false, "pulse": true}', text)
+        self.assertIn('abilities_available = {"debug": false, "pulse": false}', text)
+        # Encuentro con Eco (2026-10-16): zona de las columnas 10-12 con Eco en la celda (12, 7).
+        self.assertIn('[node name="eco_encuentro" parent="Objects"', text)
+        self.assertIn("eco_offset_tiles = Vector2(2, 7)", text)
         self.assertIn('metadata/params = {"patrol_range_px": 320.0, "patrol_speed_px_s": 80.0}', text)
         # P en (4, 9) (en el suelo, 2026-10-15): pies abajo-centro de la celda.
         self.assertRegex(text, r'\[node name="Isak" parent="\." instance=ExtResource\("[^"]+"\)\]\nposition = Vector2\(288, 640\)')
@@ -88,13 +91,12 @@ class BuildLevelTest(unittest.TestCase):
         # El 1-1 tiene un solo power bank, el del secreto del Pulso amplio (2026-10-15).
         self.assertEqual(len(re.findall(r'instance=ExtResource\("\d+_power_bank_pickup"\)', text)), 1)
         self.assertIn('[node name="power_bank_pulso_amplio" parent="Objects"', text)
-        # Rediseno para el laser (2026-10-15): su objeto, dos cargadores, la linea de Eco del primer
-        # disparo (por senal, sin zona) y una Burbuja con vida 3.
+        # Rediseno para el laser (2026-10-15): su objeto, dos cargadores y una Burbuja con vida 3.
         self.assertIn('[node name="laser_1_1" parent="Objects"', text)
         self.assertIn('ability = &"laser"', text)
         self.assertIn('[node name="cargador_1" parent="Objects"', text)
         self.assertIn('[node name="cargador_2" parent="Objects"', text)
-        self.assertIn('trigger_event = &"laser_fired"', text)
+        self.assertNotIn('trigger_event = &"laser_fired"', text, "linea del primer disparo eliminada")
         self.assertIn('"health": 3.0', text)
         level = copy.deepcopy(load_level())
         level["objects"].append({"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}})

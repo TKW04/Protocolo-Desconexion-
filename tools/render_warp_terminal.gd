@@ -1,14 +1,16 @@
 ## Capturas a 1:1 (1280x720) de la llegada por el vortice y de la terminal de
 ## salida del 1-1 con el flujo de juego real (scenes/main.tscn; guardado de
 ## herramientas user://tool_save.json, nunca el del jugador):
-##   01_inicio_eco_pausa.png       bienvenida de Eco pausando el juego con el nivel y el vortice ya visibles
+##   01_inicio_vortice.png         la llegada: el nivel ya visible y el vortice de llegada (sin pausa: desde el
+##                                 encuentro con Eco, 2026-10-16, el 1-1 no tiene linea al empezar)
 ##   02_vortice_a_medias.png       el vortice cerrandose con Isak materializandose
 ##   03_terminal_apagada.png       terminal apagada (Isak lejos)
 ##   04_terminal_prompt_g.png      Isak cerca: prompt y tecla del pulso
 ##   05_terminal_destello_giro.png destello cian del giro: pantalla llena de cian, Isak ya de espaldas
 ##   06_isak_espaldas_terminal.png Isak de espaldas frente a la terminal activa (antes del vortice)
 ##   07_vortice_salida_espaldas.png vortice de salida absorbiendo a Isak de espaldas
-## Necesita ventana (no funciona con --headless).
+## Partida que ya paso por el encuentro con Eco (Eco conocido y pulso obtenido):
+## la terminal necesita el pulso. Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_warp_terminal.gd [-- carpeta_salida]
 extends SceneTree
 
@@ -16,8 +18,6 @@ const SCENE: String = "res://scenes/main.tscn"
 const DEFAULT_OUT: String = "user://warp_terminal"
 const TILE: float = 64.0
 const WAIT_FRAMES: int = 60 * 20
-## Tiempo real tras la pausa para que la maquina de escribir termine.
-const TYPE_WAIT_S: float = 1.4
 
 var _main: Node
 var _ok: bool = true
@@ -31,13 +31,19 @@ func _run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var out_dir: String = args[0] if args.size() > 0 else ProjectSettings.globalize_path(DEFAULT_OUT)
 	DirAccess.make_dir_recursive_absolute(out_dir)
+	var game_state: Node = root.get_node(^"GameState")
+	game_state.call(&"meet_ally", &"eco")
+	game_state.call(&"mark_notice_seen", &"pulse")
+	game_state.call(&"obtain_ability", &"pulse")
 	_main = (load(SCENE) as PackedScene).instantiate()
 	_main.set(&"start_level_id", "1-1")
 	root.add_child(_main)
-	# 1. Bienvenida: espera a la pausa de la linea importante.
-	_check(await _wait(func() -> bool: return paused), "la bienvenida no pausa")
-	await create_timer(TYPE_WAIT_S).timeout
-	await _save(out_dir, "01_inicio_eco_pausa.png")
+	# 1. Llegada: el vortice ya se ve (sin pausa).
+	var arriving: Node = _main.call(&"get_arrival_vortex")
+	_check(await _wait(func() -> bool:
+		return is_instance_valid(arriving) and float(_main.call(&"get_fade_alpha")) <= 0.0), "el nivel no se ve")
+	_check(not paused, "la llegada pausa el juego")
+	await _save(out_dir, "01_inicio_vortice.png")
 	# 2. Cierra las lineas importantes y captura el vortice a medio cerrar.
 	var vortex: Node = _main.call(&"get_arrival_vortex")
 	_check(vortex != null, "no hay vortice de llegada")
@@ -107,7 +113,9 @@ func _confirm_lines() -> void:
 
 
 func _wait(cond: Callable) -> bool:
-	for i: int in WAIT_FRAMES:
+	# Limite en tiempo real (WAIT_FRAMES a 60 fps): sin vsync los cuadros van mas rapido.
+	var deadline: int = Time.get_ticks_msec() + int(WAIT_FRAMES * 1000.0 / 60.0)
+	while Time.get_ticks_msec() < deadline:
 		if cond.call():
 			return true
 		await process_frame
@@ -115,8 +123,9 @@ func _wait(cond: Callable) -> bool:
 
 
 func _frames(n: int) -> void:
-	for i: int in n:
-		await process_frame
+	# n cuadros a 60 fps en tiempo real (sin vsync los cuadros van mas rapido).
+	await create_timer(n / 60.0).timeout
+	await process_frame
 
 
 func _check(ok: bool, why: String) -> void:

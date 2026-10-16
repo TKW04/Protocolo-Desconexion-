@@ -180,7 +180,8 @@ func test_main_scene_is_project_main_and_loads_1_1_with_initial_state() -> void:
 	assert_eq(GameState.debug_energy, 100.0)
 	assert_eq(GameState.attention_points, 5, "Los puntos acumulados se conservan (2026-10-14)")
 	assert_eq(GameState.get_last_checkpoint(&"1-1"), &"")
-	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Pulso en el 1-1")
+	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_PULSE),
+			"Partida nueva: el 1-1 empieza sin pulso (lo da Eco en el encuentro, 2026-10-16)")
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_DEBUG), "Sin Debug en el 1-1")
 	assert_eq(Engine.time_scale, 1.0)
 	assert_eq(GameState.world_time_scale, 1.0)
@@ -440,6 +441,12 @@ func test_bot_plays_the_level_to_the_end() -> void:
 	var text: String = "\n".join(PackedStringArray(output))
 	assert_eq(code, 0, "El bot termina el nivel:\n" + text)
 	assert_string_contains(text, "play_level_bot: OK")
+	# Encuentro con Eco (2026-10-16): sin pulso antes, apodo por defecto, pulso y companero despues.
+	assert_string_contains(text, "encuentro con Eco (x=")
+	assert_string_contains(text, "pulso antes false, Eco conocido false")
+	assert_string_contains(text, "apodo aceptado: Isak")
+	assert_string_contains(text, "encuentro terminado: pulso true, Eco conocido true, companero visible")
+	assert_string_contains(text, "el encuentro con Eco no se repite")
 	assert_string_contains(text, "pulso: receptor")
 	assert_string_contains(text, "pulso: burbuja")
 	assert_string_contains(text, "pulso: pop-up")

@@ -2,7 +2,7 @@
 ## (AbilityNotices, data/ability_notices.json) con el flujo de juego real
 ## (scenes/main.tscn) y un guardado vacio (user://tool_save.json, se borra al
 ## arrancar; nunca el guardado del jugador):
-##   01_aviso_pulso.png   el aviso del pulso al empezar el 1-1 (tras la bienvenida de Eco)
+##   01_aviso_pulso.png   el aviso del pulso en el encuentro con Eco (columnas 10-12; Isak camina hasta alli)
 ##   02_aviso_laser.png   el aviso del laser al recogerlo en la sala del 3b
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_ability_notices.gd [-- carpeta_salida]
@@ -38,8 +38,17 @@ func _run() -> void:
 	main.set(&"start_level_id", "1-1")
 	root.add_child(main)
 	_main = main
-	var ok_pulse: bool = await _wait_for(notices.call(&"notice_text", &"pulse", data))
+	# Encuentro con Eco (2026-10-16): el aviso del pulso sale cuando Eco lo regala.
+	var encounter: Node = main.call(&"get_level").get_node(^"Objects/eco_encuentro")
+	Input.action_press(&"move_right")
+	var ok_pulse: bool = await _wait_for(encounter.call(&"get_notice_text"))
+	Input.action_release(&"move_right")
 	await _save(out_dir, "01_aviso_pulso.png")
+	# Cierra el aviso y la ultima linea del encuentro (2 s de tiempo real).
+	var until: int = Time.get_ticks_msec() + 2000
+	while Time.get_ticks_msec() < until:
+		_confirm_other_lines("")
+		await process_frame
 	var isak: Node2D = main.call(&"get_isak")
 	isak.global_position = Vector2(173.5 * TILE, 6.0 * TILE - 1.0)
 	isak.set(&"velocity", Vector2.ZERO)
@@ -54,7 +63,8 @@ func _run() -> void:
 ## Espera a que el cuadro de Eco empiece `text` y a que se termine de escribir.
 ## Cierra (como el jugador) las otras lineas importantes, que pausan el juego.
 func _wait_for(text: String) -> bool:
-	for i: int in WAIT_FRAMES:
+	var deadline: int = Time.get_ticks_msec() + int(WAIT_FRAMES * 1000.0 / 60.0)
+	while Time.get_ticks_msec() < deadline:
 		if _started.has(text):
 			await create_timer(TYPE_WAIT_S).timeout
 			return true
@@ -65,6 +75,10 @@ func _wait_for(text: String) -> bool:
 
 func _confirm_other_lines(text: String) -> void:
 	var level: Node = _main.call(&"get_level")
+	var encounter: Node = level.get_node_or_null(^"Objects/eco_encuentro") if is_instance_valid(level) else null
+	var entry: Node = encounter.call(&"get_nickname_entry") if encounter != null else null
+	if entry != null and entry.call(&"is_open"):
+		entry.call(&"activate_selected")
 	var box: Node = level.get_node_or_null(^"EcoTextBox") if is_instance_valid(level) else null
 	while box != null and box.call(&"is_important") and box.call(&"get_text") != text \
 			and box.call(&"confirm"):

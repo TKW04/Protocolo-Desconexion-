@@ -59,7 +59,7 @@ class LevelSchemaTest(unittest.TestCase):
         lvl = self.level
         self.assertEqual((lvl["id"], lvl["name"], lvl["world"], lvl["tile_size"], lvl["debug_color"]),
                          ("1-1", "Bandeja de entrada", 1, 64, "cyan"))
-        self.assertEqual(lvl["abilities_available"], {"pulse": True, "debug": False})
+        self.assertEqual(lvl["abilities_available"], {"pulse": False, "debug": False})  # pulso: encuentro con Eco
         self.assertNotIn("debug", json.dumps(lvl["unlocks"]))
         self.assertGreaterEqual(len(lvl["grid"]), 12)
         self.assertEqual("".join(lvl["grid"]).count("^"), 0, "1-1 sin pinchos")
@@ -111,18 +111,24 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertEqual(len(chargers), 2)
         self.assertTrue(any(laser_x < c["x"] < min(e["x"] for e in after) for c in chargers),
                         "un cargador entre el laser y la primera Burbuja que cuesta energia")
+        # La linea del primer disparo se elimino (2026-10-16, propuesta de asistentes §4.1).
         first_shot = [o for o in lvl["objects"] if o["params"].get("trigger_event") == "laser_fired"]
-        self.assertEqual(len(first_shot), 1, "linea de Eco del primer disparo")
+        self.assertEqual(len(first_shot), 0, "sin linea de Eco del primer disparo")
         kinds = [o["type"] for o in lvl["objects"]]
-        for kind in ("eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_terminal", "glitch_wall"):
+        for kind in ("eco_encounter", "eco_line", "receiver", "bridge_inactive", "popup_blocker", "exit_terminal",
+                     "glitch_wall"):
             self.assertIn(kind, kinds)
-        self.assertEqual(obj(lvl, "eco_line")["params"]["text"], "Bienvenido. He optimizado tu espacio.")
+        # Encuentro con Eco (2026-10-16): el 1-1 empieza sin pulso y Eco lo da en las columnas 10-12.
+        self.assertFalse(lvl["abilities_available"]["pulse"])
+        self.assertEqual((obj(lvl, "eco_encounter")["x"], obj(lvl, "eco_encounter")["y"]), (10, 0))
+        self.assertEqual([o["params"]["id"] for o in lvl["objects"] if o["type"] == "eco_line"], ["eco_laser"],
+                         "solo queda la historia del laser")
         self.assertEqual(obj(lvl, "exit_terminal")["params"]["text"], "Marcar como leído")
         self.assertNotIn("exit_door", kinds, "la puerta se sustituyo por la terminal (2026-10-15)")
         # Orden de los tramos: aterrizaje -> puente -> Burbuja bajo techo -> laser -> pop-up -> terminal.
         popup_1 = next(o for o in lvl["objects"] if o["params"].get("id") == "popup_1")
         low = next(e for e in lvl["enemies"] if e["id"] == "burbuja_1")
-        xs = [obj(lvl, "eco_line")["x"], obj(lvl, "bridge_inactive")["x"], low["x"], laser_x,
+        xs = [obj(lvl, "eco_encounter")["x"], obj(lvl, "bridge_inactive")["x"], low["x"], laser_x,
               popup_1["x"], obj(lvl, "exit_terminal")["x"]]
         self.assertEqual(xs, sorted(xs))
         # Un solo punto de sincronizacion, a mitad del mapa (decision 2026-10-14).
@@ -398,6 +404,26 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertEqual(vls.validate_level(self.level), [])
         self._add("eco_line", {"id": "eco_test_2", "text": "Hola.", "trigger_event": "teletransporte"})
         self.assert_fails(self.level, "trigger_event 'teletransporte' no admitido")
+
+    def test_eco_encounter_needs_level_without_pulse(self):
+        self.level["abilities_available"]["pulse"] = True
+        self.assert_fails(self.level, "el nivel debe empezar sin el (abilities_available.pulse false)")
+
+    def test_only_one_eco_encounter(self):
+        self._add("eco_encounter", {"id": "eco_otro"})
+        self.assert_fails(self.level, "solo puede haber un encuentro con Eco por nivel")
+
+    def test_eco_encounter_eco_inside_zone_and_free_cell(self):
+        level = load_level()
+        obj(level, "eco_encounter")["params"]["eco_offset_tiles"] = [5, 7]
+        self.assert_fails(level, "queda fuera de la zona del encuentro")
+        level = load_level()
+        obj(level, "eco_encounter")["params"]["eco_offset_tiles"] = [2, 9]
+        set_cell(level, 12, 9, "#")
+        self.assert_fails(level, "Eco flota dentro de terreno")
+        level = load_level()
+        obj(level, "eco_encounter")["params"]["eco_offset_tiles"] = [2.5, 7]
+        self.assert_fails(level, "eco_offset_tiles debe ser [columna, fila]")
 
     def test_ability_pickup_requires_ability(self):
         self._add("ability_pickup", {"id": "laser_1"})

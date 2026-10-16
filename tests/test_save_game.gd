@@ -93,7 +93,7 @@ func test_main_scene_under_gut_never_touches_the_real_save() -> void:
 	assert_true(GameState.save_game())
 	var written: Dictionary = SaveFile.read(PATH)
 	assert_eq(written.get("captured_points", {}).get("1-1"), ["Point_8_9"], "Guardado en la ruta de prueba")
-	assert_true(GameState.is_notice_seen(&"pulse"))
+	assert_false(GameState.is_notice_seen(&"pulse"), "El aviso del pulso lo da el encuentro con Eco, no el inicio")
 	main.free()
 	DebugMode.reset()
 	GameState.set_ability_unlocked(&"pulse", saved_pulse)

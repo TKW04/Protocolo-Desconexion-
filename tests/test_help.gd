@@ -41,7 +41,6 @@ func before_each() -> void:
 	_root.add_child(_box)
 	_help = HelpSystem.new()
 	_help.name = "Help"
-	_help.meet_eco_on_first_line = false
 	_root.add_child(_help)
 	_help.help_shown.connect(func(id: StringName, _text: String) -> void: _shown.append(id))
 	add_child(_root)
@@ -262,12 +261,15 @@ func test_help_is_ignored_while_paused() -> void:
 	assert_eq(_shown.size(), 1)
 
 
-func test_eco_is_met_on_first_eco_line_until_the_encounter_exists() -> void:
-	_help.meet_eco_on_first_line = true
+func test_an_eco_line_alone_does_not_meet_eco() -> void:
+	# Se retiro la regla provisional (paso 6): Eco solo se conoce en el encuentro del 1-1.
 	assert_false(GameState.has_met_ally(GameState.ALLY_ECO))
 	EventBus.eco_line_requested.emit("Bienvenido. He optimizado tu espacio.", 1.0, false)
 	await wait_process_frames(1)
-	assert_true(GameState.has_met_ally(GameState.ALLY_ECO), "Provisional (paso 6): Eco conocido al hablar")
+	assert_false(GameState.has_met_ally(GameState.ALLY_ECO), "Hablar no basta: hace falta el encuentro")
+	_target(&"receiver", Vector2(TILE, 0.0))
+	_help.refresh()
+	assert_null(_help.get_target(), "Sin Eco conocido no hay Q")
 
 
 func test_drops_are_tagged_with_their_help_type() -> void:
@@ -386,13 +388,14 @@ func test_generated_1_1_tags_objects_and_has_help_system() -> void:
 		if node != null:
 			assert_eq(HelpCatalog.help_id_of(node), expect[path], String(path))
 			assert_true(node.is_in_group(HelpCatalog.TARGET_GROUP), String(path))
-	assert_eq(HelpCatalog.help_id_of(level.get_node(^"Objects/eco_bienvenida")), &"", "Las lineas de Eco no")
+	assert_eq(HelpCatalog.help_id_of(level.get_node(^"Objects/eco_laser")), &"", "Las lineas de Eco no")
+	assert_eq(HelpCatalog.help_id_of(level.get_node(^"Objects/eco_encuentro")), &"", "El encuentro con Eco no")
 	level.free()
 
 
 func test_generated_1_1_shows_q_near_a_receiver() -> void:
 	_root.free()
-	# La bienvenida de Eco (importante) pausaria el arbol: aqui no interesa.
+	# Las lineas importantes de Eco pausarian el arbol: aqui no interesan.
 	EcoTextBox.pause_important = false
 	var level: Node2D = LEVEL_SCENE.instantiate() as Node2D
 	add_child(level)

@@ -3,9 +3,9 @@
 ## data/nickname_entry.json); docs/propuesta-asistentes-y-vidas.md, pasos 4 y 5
 ## de §10. Flujo real (scenes/main.tscn) con un guardado vacio de herramientas
 ## (user://tool_save.json; nunca el guardado del jugador):
-##   01_eco_hablando.png       la bienvenida del 1-1 (pausa): Eco acaba de aparecer y habla
+##   01_eco_hablando.png       Eco habla junto a Isak (tras el encuentro del 1-1; una linea de prueba)
 ##   01_eco_hablando_zoom.png  recorte x3 alrededor de Isak y Eco
-##   02_eco_junto_a_isak.png   Eco siguiendo a Isak en el Tramo 1 (tras caminar)
+##   02_eco_junto_a_isak.png   Eco siguiendo a Isak en el Tramo 1 (tras el encuentro y caminar)
 ##   02_eco_junto_a_isak_zoom.png
 ##   03_hub_atenuada.png       Eco en el hub, atenuada (sin cobertura)
 ##   03_hub_atenuada_zoom.png
@@ -42,27 +42,33 @@ func _run() -> void:
 	var eco: Node2D = _main.call(&"get_eco_companion")
 	var level: Node = _main.call(&"get_level")
 	var box: Node = level.get_node(^"EcoTextBox")
-	# Bienvenida: Eco queda conocido, aparece y habla con el juego en pausa.
-	var ok_talk: bool = false
-	for i: int in 60 * 20:
+	# Encuentro con Eco (2026-10-16): Isak camina hasta Eco; se cierran las
+	# lineas y se deja el apodo como el jugador; Eco pasa a ser el companero.
+	var encounter: Node = level.get_node(^"Objects/eco_encuentro")
+	Input.action_press(&"move_right")
+	var deadline: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < deadline and not encounter.call(&"is_running"):
 		await process_frame
-		if paused and box.call(&"is_important") and eco.call(&"is_shown"):
-			break
-	await create_timer(1.6).timeout
-	ok_talk = eco.call(&"get_animation") == &"talk"
-	await _save("01_eco_hablando.png", isak.get_global_transform_with_canvas().origin)
-	# Cierra las lineas importantes y camina un poco a la derecha.
-	for i: int in 60 * 20:
+	Input.action_release(&"move_right")
+	deadline = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < deadline and encounter.call(&"is_running"):
+		var entry_open: Node = encounter.call(&"get_nickname_entry")
+		if entry_open != null and entry_open.call(&"is_open"):
+			entry_open.call(&"activate_selected")
 		_confirm_lines(box)
 		await process_frame
-		if game_state.call(&"is_notice_seen", &"pulse") and not paused and not isak.call(&"is_warping"):
-			break
+	# Camina un poco a la derecha con Eco detras.
 	Input.action_press(&"move_right")
 	await create_timer(0.8).timeout
 	Input.action_release(&"move_right")
 	await create_timer(0.9).timeout
 	var ok_follow: bool = eco.call(&"is_shown") and eco.global_position.distance_to(isak.global_position) < 200.0
 	await _save("02_eco_junto_a_isak.png", isak.get_global_transform_with_canvas().origin)
+	# Eco habla (una linea normal, sin pausa) junto a Isak.
+	root.get_node(^"EventBus").emit_signal(&"eco_line_requested", "Sigue recto. Yo me ocupo del resto.", 4.0, false)
+	await create_timer(1.6).timeout
+	var ok_talk: bool = eco.call(&"get_animation") == &"talk"
+	await _save("01_eco_hablando.png", isak.get_global_transform_with_canvas().origin)
 	_main.queue_free()
 	await process_frame
 	# Hub: Eco ya conocido, entra atenuada con Isak.

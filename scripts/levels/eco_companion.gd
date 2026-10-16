@@ -170,6 +170,20 @@ func get_target_position() -> Vector2:
 
 # --- Acciones ---
 
+## Aparece ya en `from` (global) y vuela desde alli hasta su sitio junto a
+## Isak (sin destello): el encuentro con Eco del 1-1 (EcoEncounter) le pasa la
+## esfera que flotaba. Falso si Eco no es conocido o Isak no se ve.
+func appear_at(from: Vector2) -> bool:
+	if not _can_appear():
+		return false
+	_anchor = from
+	_velocity = Vector2.ZERO
+	_delay_left = 0.0
+	_set_state(State.FOLLOW)
+	_update_visual(0.0)
+	return true
+
+
 ## Avanza `delta` segundos de tiempo real.
 func advance(delta: float) -> void:
 	delta = maxf(delta, 0.0)

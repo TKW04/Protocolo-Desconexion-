@@ -1,9 +1,10 @@
-# Pausa de inicio del 1-1 (2026-10-15): la bienvenida de Eco (eco_bienvenida,
-# linea importante que pausa el juego) no sale mientras el fundido de entrada
-# tapa el nivel; sale cuando la llegada de Isak ya se ve (LevelRunner.present_isak
-# o, con el vortice, al empezar a materializarse) y entonces pausa. Al cerrarla
-# el juego se reanuda. Con EcoTextBox.pause_important = false (interruptor de
-# las pruebas) la linea sale igual pero no pausa.
+# Pausa de inicio del 1-1. Hasta el 2026-10-15 la bienvenida de Eco salia al
+# verse la llegada y pausaba. Desde el encuentro con Eco (2026-10-16, paso 6 de
+# docs/propuesta-asistentes-y-vidas.md) el 1-1 ya no tiene linea al empezar: la
+# llegada por el vortice no pausa, Isak recupera el control sin pulso y sin Eco,
+# y la bienvenida abre la presentacion en el encuentro (columnas 10-12), que
+# pausa el juego hasta cerrarla. Con EcoTextBox.pause_important = false
+# (interruptor de las pruebas) la presentacion sale igual pero no pausa.
 extends GutTest
 
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
@@ -50,12 +51,12 @@ func _box() -> EcoTextBox:
 	return _main.get_level().get_node(^"EcoTextBox") as EcoTextBox
 
 
-func _welcome() -> EcoLine:
-	return _main.get_level().get_node(^"Objects/eco_bienvenida") as EcoLine
+func _encounter() -> EcoEncounter:
+	return _main.get_level().get_node(^"Objects/eco_encuentro") as EcoEncounter
 
 
-## Termina el fundido y avanza el vortice de llegada a mano hasta que Isak se
-## muestra (y la bienvenida pausa) o hasta que termina.
+## Termina el fundido y avanza el vortice de llegada a mano hasta que termina
+## (o hasta que algo pause el juego).
 func _finish_arrival() -> void:
 	_main.advance(LONG_STEP_S)
 	var vortex: WarpVortex = _main.get_arrival_vortex()
@@ -65,40 +66,56 @@ func _finish_arrival() -> void:
 		guard -= 1
 
 
-func test_welcome_waits_while_the_fade_hides_the_level() -> void:
-	_start()
-	await wait_physics_frames(20)
-	assert_true(_main.get_isak().is_warp_hidden(), "Isak aun no se ha mostrado")
-	assert_true(_welcome().is_waiting_for_reveal(), "Isak ya esta en la zona: la linea espera")
-	assert_false(_lines.has(WELCOME), "No sale con el nivel tapado por el fundido")
-	assert_false(get_tree().paused, "No pausa antes de que se vea el nivel")
-	assert_gt(_main.get_fade_alpha(), 0.9, "El fundido sigue en negro")
+## Lleva a Isak (con control) a la zona del encuentro.
+func _walk_into_encounter() -> void:
+	var isak: Isak = _main.get_isak()
+	isak.global_position = Vector2(11.5 * 64.0, 10.0 * 64.0)
+	await wait_physics_frames(3)
 
 
-func test_welcome_pauses_once_the_level_is_visible_and_resumes() -> void:
+func test_arrival_has_no_welcome_and_does_not_pause() -> void:
 	_start()
 	await wait_physics_frames(20)
 	_finish_arrival()
 	assert_eq(_main.get_phase(), LevelRunner.Phase.PLAYING)
 	assert_eq(_main.get_fade_alpha(), 0.0, "El nivel ya se ve")
-	assert_true(_lines.has(WELCOME), "La bienvenida sale al verse a Isak")
-	assert_true(get_tree().paused, "Y pausa el juego")
+	assert_eq(_lines.size(), 0, "Ninguna linea de Eco al empezar el 1-1")
+	assert_false(get_tree().paused, "La llegada no pausa")
 	var vortex: WarpVortex = _main.get_arrival_vortex()
-	assert_not_null(vortex, "El vortice sigue en pantalla durante la pausa")
-	assert_eq(vortex.get_phase(), WarpVortex.Phase.CLOSE, "Pausa al empezar a cerrarse (Isak ya se ve)")
-	assert_true(vortex.get_sprite().visible)
-	assert_gt(_main.get_isak().modulate.a, 0.0, "Isak empieza a materializarse")
-	assert_true(_main.get_isak().is_warping(), "Aun sin control")
+	assert_true(vortex == null or vortex.is_done(), "El vortice se cierra")
+	assert_false(_main.get_isak().is_warping(), "Isak recupera el control")
+	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_PULSE), "Sin pulso hasta el encuentro")
+	assert_false(GameState.has_met_ally(GameState.ALLY_ECO), "Sin Eco hasta el encuentro")
+	assert_false(_encounter().is_running())
+	assert_true(_encounter().is_eco_visible(), "Eco flota delante, en el encuentro")
+
+
+func test_encounter_pauses_with_the_welcome_and_resumes() -> void:
+	_start()
+	await wait_physics_frames(20)
+	_finish_arrival()
+	await _walk_into_encounter()
+	assert_true(_encounter().is_running(), "Isak entra en la zona del encuentro")
+	assert_true(_lines.has(WELCOME), "La bienvenida abre la presentacion")
+	assert_true(get_tree().paused, "Y pausa el juego")
 	var box: EcoTextBox = _box()
 	assert_true(box.is_important())
-	box.finish_typing()
-	assert_true(box.confirm(), "El jugador la cierra")
-	box.advance(LONG_STEP_S)
-	assert_false(get_tree().paused, "Se reanuda al cerrarla")
-	vortex.advance(LONG_STEP_S)
-	assert_true(vortex.is_done(), "El vortice se cierra")
-	assert_false(_main.get_isak().is_warping(), "Isak recupera el control")
-	assert_eq(_main.get_isak().modulate.a, 1.0, "Isak materializado")
+	# El jugador cierra las lineas y deja el apodo: la pausa se mantiene hasta el final.
+	var guard: int = 40
+	while _encounter().is_running() and guard > 0:
+		guard -= 1
+		var entry: NicknameEntry = _encounter().get_nickname_entry()
+		if entry != null:
+			assert_true(get_tree().paused, "La entrada del apodo tambien pausa")
+			entry.activate_selected()
+		elif box.is_important():
+			box.finish_typing()
+			box.confirm()
+			box.advance(LONG_STEP_S)
+		await wait_process_frames(1)
+	assert_true(_encounter().is_done())
+	assert_false(get_tree().paused, "Se reanuda al cerrar la ultima linea")
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_PULSE))
 
 
 func test_test_switch_shows_the_welcome_without_pausing() -> void:
@@ -106,5 +123,6 @@ func test_test_switch_shows_the_welcome_without_pausing() -> void:
 	_start()
 	await wait_physics_frames(20)
 	_finish_arrival()
+	await _walk_into_encounter()
 	assert_true(_lines.has(WELCOME))
 	assert_false(get_tree().paused, "Con el interruptor de pruebas no pausa")

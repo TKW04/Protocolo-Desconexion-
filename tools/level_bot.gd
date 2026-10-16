@@ -22,6 +22,12 @@
 ##   cambios sin guardar, elige «Entrar sin guardar»): el nivel vuelve
 ##   a empezar con Sync Rate y objetos desde cero, pero los puntos de atencion
 ##   se conservan y los ya capturados no reaparecen (decision 2026-10-14).
+## Encuentro con Eco (2026-10-16, paso 6 de docs/propuesta-asistentes-y-vidas.md):
+## el 1-1 empieza sin pulso; en las columnas 10-12 Eco se presenta. El bot lo
+## recorre como un jugador: cierra las lineas importantes (confirmar), acepta el
+## apodo por defecto (confirmar, «Isak») tras NICKNAME_WAIT_FRAMES y sigue.
+## Comprueba que antes no hay pulso ni Eco y despues si (pulso, Eco conocido y
+## companero visible), y que al volver al 1-1 desde la carpeta no se repite.
 ## Ayuda de Eco con Q (2026-10-15 (3)): el bot nunca pulsa help; la Q sale sobre
 ## los tipos no aprendidos sin bloquear nada. Anota cuantos cuadros se vio y
 ## falla si el juego se pausa sin una linea importante de Eco en pantalla.
@@ -60,6 +66,8 @@ const LAYER_WORLD: int = 1
 ## su celda G) para lanzarle el pulso.
 const TERMINAL_STOP_PX: float = 24.0
 const BOT_SAVE_PATH: String = "user://bot_save.json"
+## Cuadros que la entrada del apodo esta abierta antes de que el bot la acepte.
+const NICKNAME_WAIT_FRAMES: int = 10
 ## En el hub, se para a esta distancia (px) a la derecha del borde izquierdo de la
 ## copia local para lanzarle el pulso (como test_copy_local_station: 2,6 tiles).
 const COPY_LOCAL_STAND_PX: float = 2.6 * TILE - 64.0
@@ -89,6 +97,11 @@ signal finished(code: int)
 
 ## Cuadros con la Q de ayuda visible (el bot no la pulsa).
 var _help_frames: int = 0
+## Encuentro con Eco: cuadro en que se abrio la entrada del apodo (-1: cerrada)
+## y avisos ya anotados.
+var _nickname_frame: int = -1
+var _encounter_notes: Dictionary = {}
+var _encounter_error: String = ""
 ## Capturas (--shots <carpeta>, necesita ventana): nombre -> cuadro en que se toma.
 var _shots_dir: String = ""
 var _pending_shots: Dictionary = {}
@@ -115,6 +128,8 @@ func _run() -> void:
 	await get_tree().physics_frame
 	_attach()
 	var ok: bool = await _play()
+	if ok and not _encounter_notes.has("done"):
+		ok = _fail("el 1-1 no paso por el encuentro con Eco")
 	if ok:
 		ok = await _hub_and_back()
 	_note("Q de ayuda visible %d cuadros; tipos aprendidos: %d (el bot no pide ayuda)" % [
@@ -140,6 +155,7 @@ func _tick() -> void:
 	_frame += 1
 	_watch_help()
 	_confirm_eco_lines()
+	_watch_encounter()
 	for name: String in _pending_shots.keys():
 		if _frame >= int(_pending_shots[name]):
 			_pending_shots.erase(name)
@@ -160,6 +176,46 @@ func _watch_help() -> void:
 		var target: Node = help.get_target()
 		_note("Q de ayuda visible sobre %s (no se pulsa; no bloquea)" % (target.name if target != null else "?"))
 	_help_frames += 1
+
+
+## Encuentro con Eco: anota sus pasos, acepta el apodo por defecto como un
+## jugador (confirmar) y comprueba el pulso antes y despues.
+func _watch_encounter() -> void:
+	var level: Node = _runner.get_level() if _runner != null else null
+	if not is_instance_valid(level):
+		return
+	var encounter: EcoEncounter = null
+	for node: Node in get_tree().get_nodes_in_group(EcoEncounter.GROUP):
+		if level.is_ancestor_of(node):
+			encounter = node as EcoEncounter
+	if encounter == null:
+		return
+	var step: EcoEncounter.Step = encounter.get_step()
+	if step == EcoEncounter.Step.INTRO and not _encounter_notes.has("intro"):
+		_encounter_notes["intro"] = true
+		_note("encuentro con Eco (x=%.0f, columna %d): pulso antes %s, Eco conocido %s" % [
+			_isak.global_position.x, int(_isak.global_position.x / TILE),
+			GameState.is_ability_unlocked(GameState.ABILITY_PULSE), GameState.has_met_ally(GameState.ALLY_ECO)])
+		if GameState.is_ability_unlocked(GameState.ABILITY_PULSE) or GameState.has_met_ally(GameState.ALLY_ECO):
+			_encounter_error = "el pulso o Eco ya estaban antes del encuentro"
+	var entry: NicknameEntry = encounter.get_nickname_entry()
+	if entry != null and entry.is_open():
+		if _nickname_frame < 0:
+			_nickname_frame = _frame
+			_note("entrada del apodo abierta ('%s'); el bot acepta el apodo por defecto" % entry.get_text())
+		elif _frame - _nickname_frame >= NICKNAME_WAIT_FRAMES:
+			entry.activate_selected()
+			_nickname_frame = -1
+			_note("apodo aceptado: %s" % GameState.get_nickname())
+	if step == EcoEncounter.Step.DONE and _encounter_notes.has("intro") and not _encounter_notes.has("done"):
+		_encounter_notes["done"] = true
+		var companion: EcoCompanion = _runner.get_eco_companion()
+		_note("encuentro terminado: pulso %s, Eco conocido %s, companero %s" % [
+			GameState.is_ability_unlocked(GameState.ABILITY_PULSE), GameState.has_met_ally(GameState.ALLY_ECO),
+			"visible" if companion != null and companion.is_shown() else "NO visible"])
+		if not GameState.is_ability_unlocked(GameState.ABILITY_PULSE) or not GameState.has_met_ally(GameState.ALLY_ECO) \
+				or companion == null or not companion.is_shown():
+			_encounter_error = "tras el encuentro falta el pulso, Eco o el companero"
 
 
 func _confirm_eco_lines() -> void:
@@ -240,7 +296,11 @@ func _play() -> bool:
 			had_laser = true
 			_note("recoge el laser (x=%.0f, columna %d; energia %.0f)" % [x, int(x / TILE), GameState.debug_energy])
 			_shot_in("6_laser", 30)
-		if _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead() or _isak.is_warping():
+		if not _encounter_error.is_empty():
+			return _fail(_encounter_error)
+		if get_tree().paused:
+			waiting = true
+		elif _runner.get_phase() != LevelRunner.Phase.PLAYING or _isak.is_dead() or _isak.is_warping():
 			_input.move_axis = 0.0
 			waiting = true
 		elif _terminal_waiting(terminal):
@@ -465,6 +525,11 @@ func _hub_and_back() -> bool:
 	if captured != points or left + captured != _points_total:
 		return _fail("puntos capturados: %d guardados, %d quedan en el mapa" % [captured, left])
 	_note("1-1 de nuevo desde la carpeta: Sync 100 %%, %d puntos conservados, %d capturados no reaparecen, puente retraido, pop-up abierto" % [points, captured])
+	var encounter := _runner.get_level().get_node(^"Objects/eco_encuentro") as EcoEncounter
+	if encounter == null or not encounter.is_done() or encounter.is_eco_visible() \
+			or not GameState.is_ability_unlocked(GameState.ABILITY_PULSE):
+		return _fail("al volver al 1-1 el encuentro con Eco se repite o falta el pulso")
+	_note("el encuentro con Eco no se repite (Eco conocido, pulso obtenido)")
 	if not _shots_dir.is_empty():
 		_shot_in("9_reinicio", 40)
 		for i: int in 45:

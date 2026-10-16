@@ -1,5 +1,7 @@
 ## Avisos de control de las habilidades (data/ability_notices.json; decision
-## 2026-10-15). Dice el control de una habilidad (p. ej. «Pulso: G / X (mando)»)
+## 2026-10-15). Dice el control de una habilidad (p. ej. «Láser: F / gatillo
+## izquierdo»; el del pulso lo da el encuentro con Eco, EcoEncounter, con
+## notice_text y estas mismas tablas)
 ## la primera vez que el jugador la tiene: al empezar un nivel con ella ya
 ## desbloqueada (tras start_delay_s de tiempo real) o al desbloquearse durante
 ## el nivel (EventBus.ability_unlock_changed, que tambien emite el
