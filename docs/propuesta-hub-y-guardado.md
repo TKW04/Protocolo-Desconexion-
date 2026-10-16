@@ -9,7 +9,7 @@ Estado: **APROBADO 2026-10-15.** El usuario aprobó las 10 preguntas de §7 con 
 - Calc dormida que vende (§3.2): ahora no hay tienda hasta conocer a Calc al final del 1-2.
 - Los papeles de Notas, Linterna y Papelera (§3.1).
 
-La copia local pasa a ser **Notas** (consola de guardado y álbum). Las marcas **[Reemplazado 2026-10-15 (3)]** señalan cada punto.
+La copia local pasa a ser **Notas** (consola de guardado y álbum). Las marcas **[Reemplazado 2026-10-15 (3)]** señalan cada punto. **Implementado (2026-10-16):** la estación es `NotasStation` (id `notas`; menú Guardar / Álbum / Apodo / Volver), apagada hasta su presentación en el primer hub (`NotasIntro`); Calc está apagada hasta conocerla (`requires_ally` en `data/hub.json`); el hueco de Notas de la columna 10 se retiró. Ver `propuesta-asistentes-y-vidas.md` §10, pasos 8-10.
 
 Decisiones que se respetan:
 
@@ -245,7 +245,7 @@ Restricción: el hub aparece al terminar el 1-1 y el guardado solo existe allí.
 | 3 | Aviso al salir con cambios pendientes (en el hub o en un nivel). | S | Prueba de la lógica de decisión (sin ventana). |
 | 4 | **Hecho (2026-10-15).** `HubStation` (prompt, pulso, `face_back`/`face_side`, abrir y cerrar el panel), extraído del patrón de `ExitTerminal`. | M | Proximidad, activación, pose y devolución del control (`tests/test_hub_station.gd`). |
 | 5 | **Hecho (2026-10-15).** Escena del hub (`scenes/hub/hub.tscn`): sala de 20x11, P, vórtice de llegada, HUD con Modo Avión, energía llena y paredes. Datos en `data/hub.json`. | M | Prueba de humo: llegada, control y energía llena (`tests/test_hub_room.gd`). |
-| 6 | **Hecho (2026-10-15).** Estación de copia local y su panel (resumen, confirmación, «sin guardar»). | S | Guardar escribe en la ruta de pruebas y el indicador se apaga (`tests/test_copy_local_station.gd`). |
+| 6 | **Hecho (2026-10-15).** Estación de copia local y su panel (resumen, confirmación, «sin guardar»). Desde el 2026-10-16 es Notas (`NotasStation`). | S | Guardar escribe en la ruta de pruebas y el indicador se apaga (`tests/test_notas_station.gd`). |
 | 7 | **Hecho (2026-10-15).** Carpetas y panel de subniveles (registro de mundos y subniveles en `data/hub.json`, estados y vuelta). | M | Estados según `completed_levels` y `unlocked_levels`; entrar carga el nivel (`tests/test_hub_folders.gd`). |
 | 8 | **Hecho (2026-10-15).** Calc (dormida): se lleva la lógica de compra de `hub_placeholder` a su panel. | S | Se adaptan `test_upgrades.gd` y `test_energy_sources.gd`; `tests/test_calc_station.gd`. |
 | 9 | **Hecho (2026-10-15).** Flujo: `level_completed` lleva al hub real; la carpeta lleva al nivel. `hub_placeholder` se retira. | M | `test_popup_door_hub.gd`, `test_level_flow.gd` y `test_dev_keys.gd` (R en el hub); `tools/level_bot.gd`. |
