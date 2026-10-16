@@ -1,24 +1,33 @@
-[gd_resource type="SpriteFrames" load_steps=8 format=3]
+[gd_resource type="SpriteFrames" load_steps=9 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_sleep_00.png" id="1_calc_sleep_00"]
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_sleep_01.png" id="2_calc_sleep_01"]
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_sleep_02.png" id="3_calc_sleep_02"]
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_00.png" id="4_calc_awake_00"]
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_01.png" id="5_calc_awake_01"]
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_02.png" id="6_calc_awake_02"]
-[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_03.png" id="7_calc_awake_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_off_00.png" id="1_calc_off_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_sleep_00.png" id="2_calc_sleep_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_sleep_01.png" id="3_calc_sleep_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_sleep_02.png" id="4_calc_sleep_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_00.png" id="5_calc_awake_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_01.png" id="6_calc_awake_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_02.png" id="7_calc_awake_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/calc/calc_awake_03.png" id="8_calc_awake_03"]
 
 [resource]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_calc_sleep_00")
+"texture": ExtResource("1_calc_off_00")
+}],
+"loop": true,
+"name": &"powered_off",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_calc_sleep_00")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_calc_sleep_01")
+"texture": ExtResource("3_calc_sleep_01")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3_calc_sleep_02")
+"texture": ExtResource("4_calc_sleep_02")
 }],
 "loop": true,
 "name": &"sleep",
@@ -26,16 +35,16 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4_calc_awake_00")
+"texture": ExtResource("5_calc_awake_00")
 }, {
 "duration": 1.0,
-"texture": ExtResource("5_calc_awake_01")
+"texture": ExtResource("6_calc_awake_01")
 }, {
 "duration": 1.0,
-"texture": ExtResource("6_calc_awake_02")
+"texture": ExtResource("7_calc_awake_02")
 }, {
 "duration": 1.0,
-"texture": ExtResource("7_calc_awake_03")
+"texture": ExtResource("8_calc_awake_03")
 }],
 "loop": true,
 "name": &"awake",

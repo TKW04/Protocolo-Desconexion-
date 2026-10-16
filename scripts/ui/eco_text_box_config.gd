@@ -7,7 +7,7 @@ const DEFAULT_PATH: String = "res://data/eco_text_box.json"
 ## Color si falta en el JSON (magenta: se nota).
 const MISSING_COLOR: Color = Color.MAGENTA
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
-const SPECIAL_KEYS: Array[String] = ["colors", "assets", "speaker_name", "font", "key_swap_shader",
+const SPECIAL_KEYS: Array[String] = ["colors", "assets", "speakers", "speaker_name", "font", "key_swap_shader",
 	"confirm_hint_text"]
 
 var layer: int = 11
@@ -36,6 +36,10 @@ var confirm_hint_blink_hz: float = 2.0
 var font_path: String = ""
 var key_swap_shader_path: String = ""
 var colors: Dictionary[StringName, Color] = {}
+## Otros que hablan en el cuadro (2026-10-16: Notas en el hub): id ->
+## {name, icon (ruta de un PNG de 16x16), color (hex del nombre)}. Sin id (o
+## id vacio) habla Eco con speaker_name, el icono `icon` y colors.speaker.
+var speakers: Dictionary[StringName, Dictionary] = {}
 ## Nombre -> {path, frame_size, columns, rows}.
 var assets: Dictionary[StringName, Dictionary] = {}
 
@@ -73,6 +77,10 @@ static func load_from_file(path: String = DEFAULT_PATH) -> EcoTextBoxConfig:
 	var raw_colors: Dictionary = dict.get("colors", {})
 	for name: String in raw_colors:
 		config.colors[StringName(name)] = Color.html(raw_colors[name])
+	var raw_speakers: Dictionary = dict.get("speakers", {})
+	for id: String in raw_speakers:
+		if raw_speakers[id] is Dictionary:
+			config.speakers[StringName(id)] = raw_speakers[id]
 	var raw_assets: Dictionary = dict.get("assets", {})
 	for name: String in raw_assets:
 		config.assets[StringName(name)] = raw_assets[name]

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://k5aubvmxs1k"
-path="res://.godot/imported/local_copy_off_01.png-e0d7a0d34341057792f30b1a4f0a122c.ctex"
+uid="uid://vnvcduir33gx"
+path="res://.godot/imported/calc_off_00.png-68c02b2ea81e2bbe80aa7296fae0b4a1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/hub/local_copy/local_copy_off_01.png"
-dest_files=["res://.godot/imported/local_copy_off_01.png-e0d7a0d34341057792f30b1a4f0a122c.ctex"]
+source_file="res://assets/sprites/hub/calc/calc_off_00.png"
+dest_files=["res://.godot/imported/calc_off_00.png-68c02b2ea81e2bbe80aa7296fae0b4a1.ctex"]
 
 [params]
 

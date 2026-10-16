@@ -72,6 +72,10 @@ const NICKNAME_MAX_LENGTH: int = 12
 const NICKNAME_TAG: String = "{apodo}"
 ## Vidas (intentos) maximas de partida (propuesta §5.1; sube con cada vida extra).
 const LIVES_MAX_DEFAULT: int = 3
+## Argumento de usuario de las builds de depuracion que da por conocido un
+## asistente al arrancar (p. ej. `-- --meet-ally=calc`): hasta que exista el
+## encuentro con Calc al final del 1-2, es la forma de probar la tienda del hub.
+const DEBUG_MEET_ALLY_ARG: String = "--meet-ally="
 const SAVE_PATH_DEFAULT: String = "user://save.json"
 ## Ruta de guardado de las pruebas GUT (nunca el save real del usuario).
 const SAVE_PATH_TESTS: String = "user://test_save.json"
@@ -265,6 +269,20 @@ func _ready() -> void:
 	use_save_path(path, path == SAVE_PATH_TESTS or path == SAVE_PATH_TOOLS)
 	if not is_running_tests() and not is_running_script():
 		install_quit_guard()
+	if OS.is_debug_build():
+		apply_debug_meet_args(OS.get_cmdline_user_args())
+
+
+## Builds de depuracion: cada `--meet-ally=<id>` de `args` da por conocido ese
+## asistente (meet_ally; no marca «sin guardar»). Devuelve los que se conocieron.
+func apply_debug_meet_args(args: PackedStringArray) -> Array[StringName]:
+	var met: Array[StringName] = []
+	for arg: String in args:
+		if arg.begins_with(DEBUG_MEET_ALLY_ARG):
+			var ally := StringName(arg.trim_prefix(DEBUG_MEET_ALLY_ARG))
+			if ALLIES.has(ally) and meet_ally(ally):
+				met.append(ally)
+	return met
 
 
 func _process(delta: float) -> void:
@@ -801,6 +819,11 @@ func apply_save_data(data: Dictionary) -> bool:
 		obtained_abilities[ABILITY_PULSE] = true
 		set_ability_unlocked(ABILITY_PULSE, true)
 		seen_notices[ABILITY_PULSE] = true
+	# Calc apagada hasta conocerla (2026-10-16, propuesta §2.3): un guardado con
+	# mejoras ya compradas (de cuando Calc dormida vendia desde el 1-1) la da por
+	# conocida, para no dejar a nadie sin la tienda que ya uso.
+	if not purchased_upgrades.is_empty():
+		allies_met[ALLY_CALC] = true
 	var raw_saved_at: Variant = data.get("saved_at", "")
 	saved_at = raw_saved_at if raw_saved_at is String else ""
 	play_time_s = _as_float(data.get("play_time_s", 0.0))
@@ -816,6 +839,9 @@ func _migrate_to_v3(data: Dictionary) -> void:
 		allies_met[ALLY_ECO] = true
 		allies_met[ALLY_NOTAS] = true
 	if veteran:
+		# Antes de v3 la tienda (Calc dormida) abria al terminar el 1-1: un
+		# veterano conserva Calc conocida. Las partidas nuevas empiezan sin ella.
+		allies_met[ALLY_CALC] = true
 		for id: StringName in HelpCatalog.shared().types_of_level(HUB_TUTORIAL_LEVEL):
 			learned_help[id] = true
 
@@ -1005,6 +1031,18 @@ func learn_help(help_id: StringName) -> bool:
 		return false
 	learned_help[help_id] = true
 	EventBus.help_learned.emit(help_id)
+	return true
+
+
+## «Olvidar ayudas» del album de Notas (propuesta §3.5): vacia learned_help
+## (vuelven las Q y las siluetas) y marca «sin guardar». Falso si no habia
+## ninguna.
+func forget_help() -> bool:
+	if learned_help.is_empty():
+		return false
+	learned_help.clear()
+	request_save()
+	EventBus.help_forgotten.emit()
 	return true
 
 

@@ -14,3 +14,16 @@ static func meet_eco_with_pulse() -> void:
 	GameState.obtained_abilities[GameState.ABILITY_PULSE] = true
 	GameState.seen_notices[GameState.ABILITY_PULSE] = true
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
+
+
+## Notas conocida (como tras su presentacion en el primer hub, 2026-10-16): el
+## hub abre con Notas encendida y sin presentacion. Llamar ANTES de instanciar
+## el hub.
+static func meet_notas() -> void:
+	GameState.meet_ally(GameState.ALLY_NOTAS)
+
+
+## Calc conocida: su estacion del hub esta encendida y vende (hasta que exista
+## el encuentro del final del 1-2, es la forma de activarla en las pruebas).
+static func meet_calc() -> void:
+	GameState.meet_ally(GameState.ALLY_CALC)

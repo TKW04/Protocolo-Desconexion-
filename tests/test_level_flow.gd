@@ -387,8 +387,21 @@ func test_level_completed_goes_to_real_hub_and_folder_starts_level_from_scratch(
 	assert_false(ResourceLoader.exists("res://scenes/levels/1-2.tscn"), "El 1-2 no existe ni se carga")
 	assert_eq(hub.get_folder(&"m1").get_folder_panel().get_level_state(&"1-1"), HubWorlds.STATE_COMPLETED)
 	assert_true(GameState.has_unsaved_changes(), "Completar el nivel deja cambios sin guardar")
+	# Primera llegada: Notas apagada hasta que Eco la presenta (2026-10-16).
+	assert_not_null(hub.get_notas_intro(), "La primera vez se presenta a Notas")
+	assert_eq(QuitGuard.decide(true, QuitGuard.can_save_here(get_tree())), QuitGuard.Decision.ASK_WITHOUT_SAVE,
+		"Con Notas apagada el aviso al salir no ofrece guardar")
+	hub.get_arrival_vortex().advance(LONG_STEP_S)
+	var box: EcoTextBox = hub.get_text_box()
+	for i: int in 3:
+		box.finish_typing()
+		box.advance(60.0)
+		box.advance(1.0)
+		await get_tree().process_frame
+	assert_true(hub.get_notas_intro().is_done(), "Presentacion de Notas terminada")
+	assert_true(GameState.has_met_ally(GameState.ALLY_NOTAS))
 	assert_eq(QuitGuard.decide(true, QuitGuard.can_save_here(get_tree())), QuitGuard.Decision.ASK_WITH_SAVE,
-		"En el hub el aviso al salir ofrece Guardar y salir")
+		"En el hub, con Notas encendida, el aviso al salir ofrece Guardar y salir")
 	await _enter_level_from_hub()
 	assert_eq(_main.get_level_id(), "1-1")
 	assert_eq(QuitGuard.decide(true, QuitGuard.can_save_here(get_tree())), QuitGuard.Decision.ASK_WITHOUT_SAVE,

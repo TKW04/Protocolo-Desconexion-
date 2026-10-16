@@ -13,19 +13,23 @@ Salidas (assets/sprites/hub/):
                one_way_{left,center,right,single}             64x64
   folders/     folder_locked_00, folder_available_00..01,
                folder_completed_00                             128x128
-  local_copy/  local_copy_off_00..01, local_copy_prompt_00..01,
-               local_copy_active_00..01                        64x128
-  calc/        calc_sleep_00..02, calc_awake_00..03            64x96
-  dock_slots/  dock_slot_notes_00, dock_slot_flashlight_00,
-               dock_slot_trash_00                              64x96
+  notas/       notas_powered_off_00 (apagada, antes de la presentacion),
+               notas_off_00..01, notas_prompt_00..01,
+               notas_active_00..01 (reskin de la copia local)  64x128
+  calc/        calc_off_00 (apagada hasta conocerla),
+               calc_sleep_00..02, calc_awake_00..03            64x96
+  dock_slots/  dock_slot_flashlight_00, dock_slot_trash_00     64x96
+  album/       album_cell_00, album_cell_selected_00 (marco de
+               ficha del album de Notas)                       40x40
   icons/       icon_airplane_mode_00, icon_unsaved_00          16x16
+               icon_notas_00 (quien habla en el cuadro de texto: Notas)
                world_icon_m1_00 (miniatura del Mundo 1:
                campana de notificaciones, en la carpeta)       16x16
                page_dot_current_00, page_dot_other_00          8x8
 
 El fondo, los tiles y las carpetas se dibujan en una rejilla logica de 2x2 px
-(como el tileset del Mundo 1); copia local, Calc, huecos e iconos a 1 px (como
-la terminal de salida, cuya silueta reutiliza la copia local).
+(como el tileset del Mundo 1); Notas, Calc, huecos e iconos a 1 px (como
+la terminal de salida, cuya silueta reutiliza Notas).
 
 Uso (desde la raiz del repo):
   python3 -I tools/gen_hub_objects.py [--dry-run] [--preview <png> [--scale N]]
@@ -407,33 +411,15 @@ def folder(state, frame):
     return cv.x2()
 
 
-# ------------------------------------------------------------- copia local (64x128)
+# ------------------------------------------------------------- Notas (64x128)
+# Reskin de la antigua «copia local» (docs/propuesta-asistentes-y-vidas.md §2.2 y
+# §9): el mismo monitor (silueta de exit_terminal) con un bloc de notas con
+# carita en la pantalla. Estados: powered_off (apagada: pantalla negra, sin LED,
+# antes de que Eco la presente), off (encendida en reposo), prompt (Isak cerca) y
+# active (panel abierto: escribe).
 MON = (4, 30, 59, 75)
 SCREEN = (8, 34, 55, 69)
-# Disquete de 18x18 (icono de «copia local»).
-DISK = [
-    "################..",
-    "#ssss######ssss##.",
-    "#ssss#....#ssss###",
-    "#ssss#....#ssss###",
-    "#ssss######ssss###",
-    "#sssssssssssssss##",
-    "#ssssssssssssssss#",
-    "#sllllllllllllls##",
-    "#sllllllllllllls##",
-    "#slddddddddddlls##",
-    "#sllllllllllllls##",
-    "#slddddddddlllls##",
-    "#sllllllllllllls##",
-    "#sllllllllllllls##",
-    "#sllllllllllllls##",
-    "#ssssssssssssssss#",
-    "#################.",
-]
-
-
-def disk(cv, x, y, body, label, line, edge):
-    cv.stamp(x, y, DISK, {"#": edge, "s": body, "l": label, "d": line, ".": body})
+PAD = (18, 38, 43, 67)  # hoja del bloc (inclusivo)
 
 
 def terminal_body(cv, led):
@@ -459,40 +445,82 @@ def terminal_body(cv, led):
     cv.hline(x0 + 2, x1 - 1, y1 - 1, SO)
     sx0, sy0, sx1, sy1 = SCREEN
     cv.rect(sx0 - 1, sy0 - 1, sx1 + 1, sy1 + 1, FP)
-    cv.rect(x1 - 6, y1 - 4, x1 - 5, y1 - 3, led)
+    if led is not None:
+        cv.rect(x1 - 6, y1 - 4, x1 - 5, y1 - 3, led)
 
 
-def local_copy(state, f):
+def notepad(cv, page, edge, ring, line, face, eyes="open", lines=3, ox=0, oy=0):
+    """Hoja del bloc con espiral arriba, carita y renglones."""
+    x0, y0, x1, y1 = PAD
+    x0, y0, x1, y1 = x0 + ox, y0 + oy, x1 + ox, y1 + oy
+    cv.box(x0, y0, x1, y1, page, edge)
+    # Espiral: anillas sobre el borde superior.
+    for x in range(x0 + 3, x1 - 1, 4):
+        cv.rect(x, y0 - 2, x, y0 + 1, ring)
+    # Carita: ojos de 2x2 (o arcos) y sonrisa.
+    ey = y0 + 9
+    for ex in (x0 + 7, x1 - 8):
+        if eyes == "open":
+            cv.rect(ex, ey, ex + 1, ey + 1, face)
+        elif eyes == "closed":
+            cv.hline(ex - 1, ex + 2, ey + 1, face)
+        else:  # happy: arco hacia arriba
+            cv.hline(ex, ex + 1, ey, face)
+            cv.p(ex - 1, ey + 1, face)
+            cv.p(ex + 2, ey + 1, face)
+    mx = (x0 + x1) // 2
+    cv.hline(mx - 3, mx + 2, ey + 6, face)
+    cv.p(mx - 4, ey + 5, face)
+    cv.p(mx + 3, ey + 5, face)
+    for k in range(lines):
+        y = y0 + 20 + k * 3
+        if y < y1 - 1:
+            cv.hline(x0 + 3, x1 - 3 - (k % 2) * 5, y, line)
+
+
+def pencil(cv, x, y, body, tip):
+    """Lapiz diagonal de 7 px que apunta abajo a la izquierda (x, y = punta)."""
+    for k in range(1, 7):
+        cv.p(x + k, y - k, body)
+        cv.p(x + k + 1, y - k, body)
+    cv.p(x, y, tip)
+
+
+def notas(state, f):
     cv = Canvas(64, 128)
     sx0, sy0, sx1, sy1 = SCREEN
-    dx, dy = 23, 43  # disquete centrado en la pantalla (abajo deja sitio a la flecha)
-    if state == "off":
+    if state == "powered_off":
+        terminal_body(cv, None)
+        cv.rect(sx0, sy0, sx1, sy1, FP)
+        # Reflejo apagado y la hoja casi invisible.
+        for k in range(6):
+            cv.p(sx1 - 10 + k, sy0 + 2 + k, SO)
+        x0, y0, x1, y1 = PAD
+        cv.rect(x0, y0, x1, y0, SO)
+        cv.rect(x0, y1, x1, y1, SO)
+        cv.vline(x0, y0, y1, SO)
+        cv.vline(x1, y0, y1, SO)
+    elif state == "off":
         terminal_body(cv, GA if f == 0 else PA)
         cv.rect(sx0, sy0, sx1, sy1, SO)
-        for k in range(6):
-            cv.p(sx1 - 10 + k, sy0 + 2 + k, PA)
-            cv.p(sx1 - 6 + k, sy0 + 2 + k, PA)
-        disk(cv, dx, dy, PA, DK, GA, GA)
+        notepad(cv, DK, GA, GF, BA, TT, "open" if f == 0 else "closed")
     elif state == "prompt":
         terminal_body(cv, CT)
         cv.rect(sx0, sy0, sx1, sy1, SO)
         for xa, ya, xb, yb in ((sx0, sy0, sx1, sy0), (sx0, sy1, sx1, sy1),
                                (sx0, sy0, sx0, sy1), (sx1, sy0, sx1, sy1)):
             cv.rect(xa, ya, xb, yb, CT if f else CA)
-        disk(cv, dx, dy, PA, DK, CA, CA)
-        # Flecha «copiar aqui» sobre el disquete (parpadea).
-        if f == 0:
-            arrow(cv, dx + 8, sy0 + 2, CA)
+        notepad(cv, TC, BO, CA, TR, FP, "open", oy=-1 if f == 0 else 0)
+        pencil(cv, 46, 62, AM, FP)
     else:  # active
         terminal_body(cv, CA)
-        cv.rect(sx0, sy0, sx1, sy1, CB)
+        cv.rect(sx0, sy0, sx1, sy1, CT)
         cv.rect(sx0, sy0, sx1, sy0, CA)
-        disk(cv, dx, dy, CT, CB, CA, FP)
-        arrow(cv, dx + 8, sy0 + 2 + f * 2, CT)
-        # Lineas de progreso a los lados.
-        for k in range(3):
-            cv.hline(sx0 + 3, sx0 + 10 - k * 2, sy0 + 12 + k * 4 + f, CT)
-            cv.hline(sx1 - 10 + k * 2, sx1 - 3, sy0 + 12 + k * 4 + (1 - f), CT)
+        notepad(cv, TC, CA, CB, TR, FP, "happy", lines=3 + f)
+        # El lapiz escribe el renglon nuevo.
+        x0, y0, x1, y1 = PAD
+        y = y0 + 20 + (3 + f) * 3
+        pencil(cv, x1 - 6 - f * 4, min(y, y1 - 2), AM, FP)
         if f == 0:
             x0, y0, x1, y1 = MON
             cv.hline(x0 + 1, x1 - 1, y0 - 1, CA)
@@ -540,7 +568,14 @@ def calc_body(cv, fill, light, shade, key, key_light, accent):
 def calc(state, f):
     cv = Canvas(64, 96)
     vx0, vy0, vx1, vy1 = VISOR
-    if state == "sleep":
+    if state == "off":
+        # Apagada (antes de conocerla, propuesta §2.3 y §9): el cuerpo de Calc
+        # dormida, mas oscuro, con la pantalla negra y sin animacion.
+        calc_body(cv, BA, GA, DK, PA, DK, PA)
+        cv.rect(vx0, vy0, vx1, vy1, FP)
+        for k in range(5):
+            cv.p(vx1 - 7 + k, vy0 + 2 + k, SO)
+    elif state == "sleep":
         calc_body(cv, GA, GF, BA, DK, GA, BA)
         cv.rect(vx0, vy0, vx1, vy1, PA)
         # Ojos cerrados (arcos hacia abajo) y boca pequena.
@@ -596,18 +631,7 @@ def slot_base(cv):
 def dock_slot(kind):
     cv = Canvas(64, 96)
     slot_base(cv)
-    if kind == "notes":
-        # Nota adhesiva con esquina doblada y renglones.
-        cv.box(14, 36, 49, 85, DK, GA)
-        for k in range(8):
-            cv.hline(49 - 7 + k, 49, 36 + k, CLEAR)
-        for k in range(8):
-            cv.p(42 + k, 36 + k, GA)
-        cv.vline(42, 36, 43, GA)
-        cv.hline(42, 49, 43, GA)
-        for i, y in enumerate(range(50, 82, 5)):
-            cv.hline(19, 44 - (i % 3) * 5, y, BA)
-    elif kind == "flashlight":
+    if kind == "flashlight":
         # Linterna vertical: cabeza ancha arriba, cuello y mango con boton.
         cv.box(16, 32, 47, 48, DK, GA)
         cv.hline(18, 45, 35, BA)
@@ -723,6 +747,42 @@ def world_icon_bell():
     return cv.img
 
 
+def icon_notas():
+    """Icono de Notas para el cuadro de texto (quien habla): bloc con carita."""
+    cv = Canvas(16, 16)
+    cv.box(2, 2, 13, 15, TC, BO)
+    for x in (4, 7, 10):
+        cv.rect(x, 1, x, 3, CA)
+    cv.rect(5, 6, 5, 7, FP)
+    cv.rect(10, 6, 10, 7, FP)
+    cv.hline(6, 9, 10, FP)
+    cv.p(5, 9, FP)
+    cv.p(10, 9, FP)
+    cv.hline(4, 11, 13, TR)
+    return cv.img
+
+
+# ------------------------------------------------------- album de Notas (celdas)
+# Marco de ficha del album (docs/propuesta-asistentes-y-vidas.md §3.5 y §9): 40x40
+# px de arte (x2 en pantalla = 80 px; la ficha de 64 px de pantalla va centrada).
+# cell: celda normal; cell_selected: la elegida, con borde acento_cian y
+# esquinas marcadas (forma ademas de color).
+CELL = 40
+
+
+def album_cell(selected):
+    cv = Canvas(CELL, CELL)
+    cv.box(0, 0, CELL - 1, CELL - 1, FP, CA if selected else GA)
+    cv.hline(2, CELL - 3, 1, PA)
+    if selected:
+        cv.box(1, 1, CELL - 2, CELL - 2, FP, CT, cut=False)
+        cv.box(0, 0, CELL - 1, CELL - 1, CLEAR, CA)
+        cv.rect(2, 2, CELL - 3, CELL - 3, FP)
+        for x, y in ((1, 1), (CELL - 4, 1), (1, CELL - 4), (CELL - 4, CELL - 4)):
+            cv.rect(x, y, x + 2, y + 2, CA)
+    return cv.img
+
+
 def page_dot(current):
     cv = Canvas(8, 8)
     cv.stamp(0, 0, DOT_FULL if current else DOT_RING, {"#": TC if current else TT})
@@ -749,18 +809,23 @@ def outputs():
     out["folders/folder_available_00.png"] = folder("available", 0)
     out["folders/folder_available_01.png"] = folder("available", 1)
     out["folders/folder_completed_00.png"] = folder("completed", 0)
+    out["notas/notas_powered_off_00.png"] = notas("powered_off", 0)
     for st in ("off", "prompt", "active"):
         for f in range(2):
-            out[f"local_copy/local_copy_{st}_{f:02d}.png"] = local_copy(st, f)
+            out[f"notas/notas_{st}_{f:02d}.png"] = notas(st, f)
+    out["calc/calc_off_00.png"] = calc("off", 0)
     for f in range(3):
         out[f"calc/calc_sleep_{f:02d}.png"] = calc("sleep", f)
     for f in range(4):
         out[f"calc/calc_awake_{f:02d}.png"] = calc("awake", f)
-    for k in ("notes", "flashlight", "trash"):
+    for k in ("flashlight", "trash"):
         out[f"dock_slots/dock_slot_{k}_00.png"] = dock_slot(k)
     out["icons/icon_airplane_mode_00.png"] = icon_airplane()
     out["icons/icon_unsaved_00.png"] = icon_unsaved()
     out["icons/world_icon_m1_00.png"] = world_icon_bell()
+    out["icons/icon_notas_00.png"] = icon_notas()
+    out["album/album_cell_00.png"] = album_cell(False)
+    out["album/album_cell_selected_00.png"] = album_cell(True)
     out["icons/page_dot_current_00.png"] = page_dot(True)
     out["icons/page_dot_other_00.png"] = page_dot(False)
     return out
@@ -774,13 +839,15 @@ def outputs():
 FRAMES = {
     "hub_bg_frames.tres": [("off", "background/hub_bg_photo_off", 2, 1.5, True),
                            ("on", "background/hub_bg_photo_on", 1, 1.0, True)],
-    "local_copy_frames.tres": [("off", "local_copy/local_copy_off", 2, 2.0, True),
-                               ("prompt", "local_copy/local_copy_prompt", 2, 3.0, True),
-                               ("active", "local_copy/local_copy_active", 2, 6.0, True)],
+    "notas_frames.tres": [("powered_off", "notas/notas_powered_off", 1, 1.0, True),
+                          ("off", "notas/notas_off", 2, 1.5, True),
+                          ("prompt", "notas/notas_prompt", 2, 3.0, True),
+                          ("active", "notas/notas_active", 2, 4.0, True)],
     "folder_frames.tres": [("locked", "folders/folder_locked", 1, 1.0, True),
                            ("available", "folders/folder_available", 2, 2.0, True),
                            ("completed", "folders/folder_completed", 1, 1.0, True)],
-    "calc_frames.tres": [("sleep", "calc/calc_sleep", 3, 2.0, True),
+    "calc_frames.tres": [("powered_off", "calc/calc_off", 1, 1.0, True),
+                         ("sleep", "calc/calc_sleep", 3, 2.0, True),
                          ("awake", "calc/calc_awake", 4, 3.0, True)],
 }
 
@@ -889,9 +956,9 @@ def scene(imgs, path, state="off"):
         if st != "locked" and f"icons/{mini}" in imgs:
             mx, my, mw, mh = hub["folders"]["miniature_rect_px"]
             bg.alpha_composite(imgs[f"icons/{mini}"].resize((mw, mh), Image.NEAREST), (c0 * T + mx, fy + my))
-    put("local_copy/local_copy_active_00.png", 1, 7)
-    put("calc/calc_sleep_02.png", 7, 8, bottom=True, dy=-64 + 64 - 0)
-    for c, k in ((10, "notes"), (13, "flashlight"), (16, "trash")):
+    put("notas/notas_active_00.png", 1, 7)
+    put("calc/calc_off_00.png", 7, 8, bottom=True, dy=-64 + 64 - 0)
+    for c, k in ((13, "flashlight"), (16, "trash")):
         put(f"dock_slots/dock_slot_{k}_00.png", c, 8, bottom=True)
     # HUD (franja de prueba): Modo Avion, «sin guardar» e indicador de pagina.
     hud = Image.new("RGBA", (1280, 40), FP)

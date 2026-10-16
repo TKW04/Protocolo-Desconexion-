@@ -7,6 +7,8 @@
 # el user://save.json del jugador. No depende de la geometria del 1-1.
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const PATH: String = "user://test_dev_keys_save.json"
 const LAND_FRAMES: int = 30
@@ -31,6 +33,7 @@ func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_level = GameState.current_level
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
 	DebugMode.input_enabled = false
 
 

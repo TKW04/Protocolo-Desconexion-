@@ -3,14 +3,22 @@
 ## el 1-1 la captura el bot, tools/play_level_bot.gd --shots) con el arte final. Usa
 ## su propio guardado (user://render_hub_save.json, se borra al terminar), nunca
 ## el del jugador. Antes de entrar simula haber completado el 1-1 con 9 puntos
-## (cambios sin guardar).
-##   01_llegada_vortice.png      Isak materializandose en P por el vortice
-##   02_hub_llegada.png          Isak en P con el control; HUD con Modo Avion y «Sin guardar»
-##   03_copia_local_prompt.png   Isak junto a la copia local: tecla del pulso
-##   04_copia_local_panel.png    panel abierto (resumen) con Isak de espaldas
-##   05_copia_local_confirmar.png confirmacion «¿Guardar copia local?»
-##   06_copia_guardada.png       «Copia guardada», destello y el indicador apagado
-##   07_calc_prompt.png          Isak junto a Calc dormida: tecla del pulso (simula 30 puntos para comprar)
+## (cambios sin guardar), con Eco conocido y tres ayudas aprendidas; Notas y Calc
+## aun no se conocen (primera entrada al hub).
+##   01_llegada_vortice.png      Isak materializandose en P por el vortice; Notas y Calc apagadas
+##   02_notas_apagada.png        llegada terminada: Eco empieza a presentar a Notas (aun apagada)
+##   02b_eco_presenta_notas.png  linea de Eco escrita (atenuado, sin cobertura)
+##   02c_notas_habla.png         Notas encendida habla con su nombre e icono
+##   03_notas_prompt.png         Isak junto a Notas: tecla del pulso
+##   04_notas_panel.png          panel de Notas (resumen; Guardar / Álbum / Apodo / Volver)
+##   05_notas_confirmar.png      confirmacion «¿Guardar en Notas?»
+##   06_copia_guardada.png       «Apuntado. Copia guardada», destello y el indicador apagado
+##   06b_album_objetos.png       album, pestana Objetos: fichas aprendidas y siluetas «???»
+##   06c_album_ficha.png         ficha abierta (dibujo x2, nombre y texto de Eco)
+##   06d_album_enemigos.png      pestana Enemigos
+##   07a_calc_apagada.png        Isak junto a Calc apagada: sin tecla ni tienda
+##   07_calc_prompt.png          Calc conocida (GameState.meet_ally, como --meet-ally=calc): tecla
+##                               del pulso (simula 30 puntos para comprar)
 ##   08_calc_tienda.png          tienda de Calc: saldo, power banks, mejoras con coste y estado, detalle
 ##   09_calc_compra.png          «Comprada: Pulso amplio» (25 puntos menos; «Sin guardar» de nuevo)
 ##   10_calc_faltan_puntos.png   Sync reforzado elegido: «No tienes puntos suficientes»
@@ -49,6 +57,9 @@ func _run() -> void:
 	for i: int in 9:
 		state.call(&"capture_attention_point", &"1-1", StringName("punto_%d" % i), 1)
 	state.call(&"mark_level_completed", &"1-1")
+	state.call(&"meet_ally", &"eco")
+	for id: StringName in [&"alert_bubble", &"receiver", &"attention_point", &"bridge"]:
+		state.call(&"learn_help", id)
 	_hub = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(_hub)
 	# 1. Llegada: el vortice cerrandose con Isak a medias.
@@ -59,10 +70,25 @@ func _run() -> void:
 			and (vortex.get_node(^"Sprite") as AnimatedSprite2D).frame >= 1), "el vortice no se cierra")
 	await _save_frozen(out_dir, "01_llegada_vortice.png")
 	_check(await _wait(func() -> bool: return _hub.call(&"has_arrived")), "Isak no llega")
-	await _frames(20)
-	await _save(out_dir, "02_hub_llegada.png")
-	# 3. Junto a la copia local.
-	var station: Node = _hub.call(&"get_station", &"copia_local")
+	var notas: Node = _hub.call(&"get_notas")
+	var box: Node = _hub.call(&"get_text_box")
+	_check(not notas.call(&"is_powered"), "Notas deberia estar apagada")
+	await _save(out_dir, "02_notas_apagada.png")
+	# 2b-2c. Presentacion de Notas (el arbol esta en pausa: capturas sin congelar).
+	box.call(&"finish_typing")
+	await _frames(4)
+	await _save(out_dir, "02b_eco_presenta_notas.png")
+	await _close_line(box)
+	_check(notas.call(&"is_powered"), "Notas no se enciende")
+	box.call(&"finish_typing")
+	await _frames(4)
+	await _save(out_dir, "02c_notas_habla.png")
+	await _close_line(box)
+	await _close_line(box)
+	_check(state.call(&"has_met_ally", &"notas") and not paused, "la presentacion no termina")
+	await _frames(10)
+	# 3. Junto a Notas.
+	var station: Node = notas
 	var isak: Node2D = _hub.call(&"get_isak")
 	var fake: RefCounted = (load("res://scripts/player/player_input.gd") as GDScript).new()
 	isak.set(&"input", fake)
@@ -72,7 +98,7 @@ func _run() -> void:
 	fake.set(&"move_axis", 0.0)
 	await _frames(30)
 	_check(station.call(&"is_key_hint_visible"), "no sale la tecla del pulso")
-	await _save(out_dir, "03_copia_local_prompt.png")
+	await _save(out_dir, "03_notas_prompt.png")
 	# 4. Pulso: panel abierto con Isak de espaldas.
 	fake.set(&"pulse_pressed", true)
 	await physics_frame
@@ -81,24 +107,47 @@ func _run() -> void:
 	_check(await _wait(func() -> bool: return station.call(&"is_panel_open") and isak.call(&"is_facing_back")),
 		"no se abre el panel")
 	await _frames(20)
-	await _save(out_dir, "04_copia_local_panel.png")
-	var panel: Node = station.call(&"get_copy_panel")
+	await _save(out_dir, "04_notas_panel.png")
+	var panel: Node = station.call(&"get_notas_panel")
 	panel.call(&"select_option", &"save")
 	panel.call(&"confirm")
 	await _frames(4)
-	await _save(out_dir, "05_copia_local_confirmar.png")
+	await _save(out_dir, "05_notas_confirmar.png")
 	panel.call(&"select_option", &"yes")
 	panel.call(&"confirm")
 	_check(not state.call(&"has_unsaved_changes"), "no se guardo")
 	await _frames(2)
 	await _save_frozen(out_dir, "06_copia_guardada.png")
+	# 6b-6d. Album.
+	panel.call(&"select_option", &"album")
+	panel.call(&"confirm")
+	var album: Node = station.call(&"get_album")
+	_check(album.call(&"is_open"), "no se abre el album")
+	album.call(&"set_tab", "object")
+	album.call(&"select_cell", 2)
+	await _frames(4)
+	await _save(out_dir, "06b_album_objetos.png")
+	album.call(&"confirm")
+	await _frames(4)
+	await _save(out_dir, "06c_album_ficha.png")
+	album.call(&"cancel")
+	album.call(&"set_tab", "enemy")
+	await _frames(4)
+	await _save(out_dir, "06d_album_enemigos.png")
+	album.call(&"cancel")
+	await _frames(2)
 	panel.call(&"cancel")
-	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra la copia local")
-	# 7. Calc dormida: Isak a su izquierda, mirandola (30 puntos para poder comprar).
+	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra Notas")
+	# 7a. Calc apagada: Isak a su izquierda, sin tecla del pulso.
 	state.set(&"attention_points", 30)
 	var calc: Node = _hub.call(&"get_calc")
 	isak.global_position = Vector2(6.4 * TILE, isak.global_position.y)
 	await _nudge(fake, 1.0)
+	await _frames(30)
+	_check(not calc.call(&"is_powered") and not calc.call(&"is_key_hint_visible"), "Calc deberia estar apagada")
+	await _save(out_dir, "07a_calc_apagada.png")
+	# 7. Calc conocida (el encuentro del 1-2 aun no existe).
+	state.call(&"meet_ally", &"calc")
 	await _frames(30)
 	_check(calc.call(&"is_key_hint_visible"), "no sale la tecla del pulso junto a Calc")
 	await _save(out_dir, "07_calc_prompt.png")
@@ -139,7 +188,12 @@ func _run() -> void:
 	await physics_frame
 	await physics_frame
 	fake.set(&"pulse_pressed", false)
-	_check(await _wait(func() -> bool: return folder.call(&"is_panel_open")), "no se abre el panel de la carpeta")
+	# Con ventana el ritmo de cuadros varia: si el pulso no la deja abierta, se
+	# abre directamente (la apertura por pulso ya la cubren las pruebas).
+	if not await _wait(func() -> bool: return folder.call(&"is_panel_open")):
+		await _wait(func() -> bool: return int(folder.call(&"get_state")) <= 1)
+		folder.call(&"open", isak)
+	_check(folder.call(&"is_panel_open"), "no se abre el panel de la carpeta")
 	await _frames(20)
 	await _save(out_dir, "12_panel_subniveles.png")
 	var folder_panel: Node = folder.call(&"get_folder_panel")
@@ -177,6 +231,15 @@ func _run() -> void:
 	await process_frame
 	state.call(&"use_save_path", SAVE_PATH, true)
 	quit(0 if _ok else 1)
+
+
+## Cierra la linea importante del cuadro de texto como el jugador.
+func _close_line(box: Node) -> void:
+	var text: String = box.call(&"get_text")
+	box.call(&"finish_typing")
+	box.call(&"confirm")
+	await _wait(func() -> bool: return box.call(&"get_text") != text)
+	await _frames(2)
 
 
 ## Un paso de fisica moviendose hacia `axis`: corta la animacion de la terminal

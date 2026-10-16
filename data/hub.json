@@ -20,7 +20,7 @@
 		"ambar_sombra": "#a85f00"
 	},
 	"room": {
-		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo): copia local (guardar) y Calc dormida (tienda de mejoras, paso 8; seccion calc). dormant: huecos apagados del dock sin logica (Notas, Linterna y Papelera), de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
+		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo): Notas (guardar y album; antes copia local; seccion notas) y Calc (tienda de mejoras, paso 8; seccion calc). requires_ally (2026-10-16, docs/propuesta-asistentes-y-vidas.md §2.2-§2.3): la estacion esta APAGADA (sin prompt ni panel, arte powered_off) hasta que GameState.allies_met tiene ese asistente: Notas hasta su presentacion en el primer hub (seccion notas_intro) y Calc hasta su encuentro al final del 1-2 (sin implementar: GameState.meet_ally, -- --meet-ally=calc en depuracion o el helper de pruebas). dormant: huecos apagados del dock sin logica (Linterna y Papelera; el hueco de Notas de la columna 10 se quito al pasar Notas a ser la estacion de guardado: la papelera ira ahi, paso 12), de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
 		"world": 1,
 		"size_tiles": [20, 11],
 		"camera_rect_px": [0, 0, 1280, 720],
@@ -43,13 +43,12 @@
 		"refill_on_enter": true,
 		"abilities_available": {"pulse": true, "debug": false},
 		"stations": [
-			{"id": "copia_local", "node": "CopiaLocal", "scene": "res://scenes/hub/copy_local_station.tscn", "cell": [1, 7],
-				"frames": "res://assets/sprites/hub/local_copy_frames.tres"},
+			{"id": "notas", "node": "Notas", "scene": "res://scenes/hub/notas_station.tscn", "cell": [1, 7],
+				"frames": "res://assets/sprites/hub/notas_frames.tres", "requires_ally": "notas"},
 			{"id": "calc", "node": "Calc", "scene": "res://scenes/hub/calc_station.tscn", "cell": [7, 7],
-				"frames": "res://assets/sprites/hub/calc_frames.tres"}
+				"frames": "res://assets/sprites/hub/calc_frames.tres", "requires_ally": "calc"}
 		],
 		"dormant": [
-			{"id": "notas", "node": "SlotNotas", "col": 10, "size_px": [64, 96], "texture": "res://assets/sprites/hub/dock_slots/dock_slot_notes_00.png"},
 			{"id": "linterna", "node": "SlotLinterna", "col": 13, "size_px": [64, 96], "texture": "res://assets/sprites/hub/dock_slots/dock_slot_flashlight_00.png"},
 			{"id": "papelera", "node": "SlotPapelera", "col": 16, "size_px": [64, 96], "texture": "res://assets/sprites/hub/dock_slots/dock_slot_trash_00.png"}
 		]
@@ -115,7 +114,7 @@
 			"message": "texto_claro"
 		}
 	},
-	"access_levels_notes": "Nombres de cara al jugador de las vueltas internas (decision del 2026-10-15, docs/preguntas.md): el jugador no sabe que hay varias vueltas, asi que la UI NUNCA dice vuelta, Easy, Normal ni Hard. Cada vuelta interna (GameState.lap, 1-3) es un nivel de acceso al sistema: names[lap - 1] (1 Cache, 2 Kernel, 3 Raiz); con una vuelta mayor que las definidas se usa el ultimo nombre (HubWorlds.access_name). label: linea del panel de la copia local y del de subniveles. El numero interno de vuelta y el guardado no cambian. Solo glifos de la fuente de textos.",
+	"access_levels_notes": "Nombres de cara al jugador de las vueltas internas (decision del 2026-10-15, docs/preguntas.md): el jugador no sabe que hay varias vueltas, asi que la UI NUNCA dice vuelta, Easy, Normal ni Hard. Cada vuelta interna (GameState.lap, 1-3) es un nivel de acceso al sistema: names[lap - 1] (1 Cache, 2 Kernel, 3 Raiz); con una vuelta mayor que las definidas se usa el ultimo nombre (HubWorlds.access_name). label: linea del panel de Notas y del de subniveles. El numero interno de vuelta y el guardado no cambian. Solo glifos de la fuente de textos.",
 	"access_levels": {
 		"label": "Acceso: %s",
 		"names": ["Caché", "Kernel", "Raíz"]
@@ -131,7 +130,7 @@
 		{"id": "m3", "world": 3, "name": "La Vitrina", "col": 16, "unlocked": false, "levels": []}
 	],
 	"calc": {
-		"_notes": "Calc dormida (CalcStation + CalcPanel; paso 8 de §6.2, propuesta §3.2, 05-hub §13.3): antes de vencer a Alerta Mayor esta dormida (animation sleep de calc_frames, siempre), no habla ni tiene voz, pero vende las mejoras de data/upgrades.json con las MISMAS reglas, precios y efectos que la antigua pantalla provisional del hub (GameState.purchase_upgrade; textos copiados de alli). Solo texto de interfaz. Lineas: points (saldo, ambar), power_banks (cuantos completos y la carga) y status_unsaved / status_saved. Opciones: upgrade_row (nombre, coste, estado) por mejora del catalogo; color upgrade (se puede comprar), upgrade_owned (comprada) y upgrade_unaffordable (faltan puntos o power bank); la elegida en option_selected de panel. detail: '<label>: <base><unit> a <value><unit>' de la elegida. Pulso compra (message_*), salto cierra. Comprar solo marca «sin guardar»: se guarda en la copia local. Solo glifos de la fuente de textos.",
+		"_notes": "Calc dormida (CalcStation + CalcPanel; paso 8 de §6.2, propuesta §3.2, 05-hub §13.3): antes de vencer a Alerta Mayor esta dormida (animation sleep de calc_frames, siempre), no habla ni tiene voz, pero vende las mejoras de data/upgrades.json con las MISMAS reglas, precios y efectos que la antigua pantalla provisional del hub (GameState.purchase_upgrade; textos copiados de alli). Solo texto de interfaz. Lineas: points (saldo, ambar), power_banks (cuantos completos y la carga) y status_unsaved / status_saved. Opciones: upgrade_row (nombre, coste, estado) por mejora del catalogo; color upgrade (se puede comprar), upgrade_owned (comprada) y upgrade_unaffordable (faltan puntos o power bank); la elegida en option_selected de panel. detail: '<label>: <base><unit> a <value><unit>' de la elegida. Pulso compra (message_*), salto cierra. Comprar solo marca «sin guardar»: se guarda en Notas. APAGADA hasta conocer a Calc (requires_ally de room.stations): animacion powered_off de calc_frames (Calc con la pantalla negra, sin animacion), sin prompt ni tienda. Solo glifos de la fuente de textos.",
 		"animation": "sleep",
 		"texts": {
 			"title": "Calc - Mejoras",
@@ -166,13 +165,13 @@
 			"message_bought": "acento_cian"
 		}
 	},
-	"copy_local": {
-		"_notes": "Estacion copia local (CopyLocalStation + CopyLocalPanel; propuesta §4.2 y §4.3). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), nivel de acceso (access_levels: nombre de la vuelta de cara al jugador), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo glifos de la fuente de textos.",
+	"notas": {
+		"_notes": "Estacion Notas (NotasStation + NotasPanel; antes «copia local»; propuesta del hub §4.2 y §4.3 y docs/propuesta-asistentes-y-vidas.md §2.2). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), nivel de acceso (access_levels: nombre de la vuelta de cara al jugador), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Opciones: Guardar, Álbum (seccion album), Apodo (option_nickname con el apodo actual: abre la entrada del apodo, scenes/ui/nickname_entry.tscn) y Volver. Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo texto de interfaz (Notas no tiene voz en el panel). Solo glifos de la fuente de textos.",
 		"level_data_pattern": "res://data/levels/%s.json",
 		"save_flash_s": 0.3,
 		"texts": {
-			"title": "Copia local",
-			"confirm_title": "¿Guardar copia local?",
+			"title": "Notas",
+			"confirm_title": "¿Guardar en Notas?",
 			"last_level": "Último nivel: %s",
 			"level_with_id": "%s (%s)",
 			"no_level": "ninguno",
@@ -182,10 +181,12 @@
 			"status_unsaved": "Sin guardar",
 			"status_saved": "Todo guardado",
 			"option_save": "Guardar",
+			"option_album": "Álbum",
+			"option_nickname": "Apodo: %s",
 			"option_back": "Volver",
 			"option_yes": "Sí, guardar",
 			"option_no": "No",
-			"message_saved": "Copia guardada",
+			"message_saved": "Apuntado. Copia guardada",
 			"message_nothing_to_save": "Todo está guardado",
 			"message_save_failed": "No se pudo guardar",
 			"help": "Arriba/abajo: elegir. Pulso: aceptar. Salto: volver"
@@ -197,6 +198,83 @@
 			"saved": "texto_tenue",
 			"message": "texto_claro",
 			"message_saved": "acento_cian"
+		}
+	},
+	"notas_intro": {
+		"_notes": "Presentacion de Notas la primera vez que Isak entra al hub (NotasIntro; docs/propuesta-asistentes-y-vidas.md §2.2 y §4, paso 8 de §10; sustituye al tutorial B + C). Momento de historia: al terminar la llegada por el vortice, pausa el juego de principio a fin con lineas IMPORTANTES del cuadro de texto del hub (Espacio / A / Intro las cierran). eco: Eco presenta a Notas (atenuado: sin cobertura en el hub, solo habla para esto; se omite si Eco aun no es conocido). Despues Notas se enciende (destello de power_on_flash_s) y dice `notas` con su nombre e icono (speaker: id de speakers de data/eco_text_box.json). Al cerrarse la ultima, GameState.meet_ally notas: no se repite. Textos de la propuesta §2.2 (ajustables; admiten {apodo}). Voz de Notas: curiosa y un poco desordenada, lo apunta todo (04-personajes.md §12.3). Nunca dicen vuelta, Easy, Normal ni Hard. Solo glifos de la fuente de textos.",
+		"duration_s": 4.0,
+		"power_on_flash_s": 0.3,
+		"speaker": "notas",
+		"eco": [
+			"Aquí no tengo cobertura, {apodo}, pero te presento a Notas. Ella guarda por ti."
+		],
+		"notas": [
+			"¡Hola, {apodo}! Lo apunto todo. Si quieres conservar lo que has hecho, ven y guárdalo conmigo.",
+			"Si cierras sin guardar, se pierde. Y si Eco te devuelve a tu última copia, solo vuelve lo que guardaste aquí."
+		]
+	},
+	"album": {
+		"_notes": "Album de Notas (NotasAlbum; docs/propuesta-asistentes-y-vidas.md §3.5, paso 9 de §10). Una ficha por tipo de ayuda con Q: categoria (pestana), orden, nombre y texto se leen de data/help.json (no se duplican). tabs: pestanas en orden (category de help.json y su texto). Solo salen los tipos cuyo first_level es de un mundo desbloqueado. Celdas de cell_px (px de arte, x pixel_scale) en `columns` columnas con cell_gap_px; marco cell / cell_selected (tools/gen_hub_objects.py). Ficha: card_pattern % tipo (tools/gen_album_cards.py, card_px px de pantalla: x1 en la rejilla, x2 en la vista de ficha); no aprendida: silhouette_pattern con unknown («???»): nunca se muestra el nombre ni el texto de un tipo no aprendido. counter por pestana. forget: «Olvidar ayudas» (GameState.forget_help, marca «sin guardar») con confirmacion forget_confirm (opciones option_yes / option_no; izquierda/derecha cambian). Controles: flechas eligen (fila de pestanas, rejilla y «Olvidar ayudas»), pulso abre la ficha o acepta, salto vuelve. Colores por rol de hub.gpl. Solo glifos de la fuente de textos.",
+		"layer": 21,
+		"pixel_scale": 2,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_key_color": "#f2f4f8",
+		"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
+		"texture": "res://assets/sprites/ui/eco_text_panel.png",
+		"margin_px": 3,
+		"padding_px": 10,
+		"line_gap_px": 4,
+		"width_px": 300,
+		"top_px": 16,
+		"input_delay_s": 0.15,
+		"confirm_action": "pulse",
+		"cancel_action": "jump",
+		"columns": 6,
+		"cell_px": 40,
+		"cell_gap_px": 4,
+		"card_px": 64,
+		"card_text_width_px": 196,
+		"cell": "res://assets/sprites/hub/album/album_cell_00.png",
+		"cell_selected": "res://assets/sprites/hub/album/album_cell_selected_00.png",
+		"card_pattern": "res://assets/sprites/ui/album/album_card_%s.png",
+		"silhouette_pattern": "res://assets/sprites/ui/album/album_card_%s_silhouette.png",
+		"tabs": [
+			{"category": "enemy", "text": "Enemigos"},
+			{"category": "object", "text": "Objetos"}
+		],
+		"texts": {
+			"title": "Notas - Álbum",
+			"tab_selected": "[%s]",
+			"counter": "Fichas: %d/%d",
+			"unknown": "???",
+			"empty": "Nada apuntado todavía",
+			"selected_prefix": "– ",
+			"forget": "Olvidar ayudas",
+			"forget_confirm": "¿Olvidar todas las ayudas? %s   %s",
+			"option_yes": "Sí, olvidar",
+			"option_no": "No",
+			"message_not_learned": "Aún no lo he apuntado. Pregúntale a Eco con Q.",
+			"message_nothing_to_forget": "No hay nada que olvidar",
+			"message_forgotten": "Ayudas olvidadas: Eco te las vuelve a contar",
+			"help": "Flechas: elegir. Pulso: abrir. Salto: volver",
+			"help_card": "Salto: volver",
+			"help_confirm": "Izquierda/derecha: elegir. Pulso: aceptar. Salto: volver"
+		},
+		"colors": {
+			"title": "texto_claro",
+			"tab": "texto_tenue",
+			"tab_selected": "texto_claro",
+			"tab_focus": "acento_cian",
+			"counter": "texto_tenue",
+			"name": "texto_claro",
+			"unknown": "texto_tenue",
+			"forget": "texto_tenue",
+			"forget_selected": "acento_cian",
+			"message": "texto_claro",
+			"help": "texto_tenue",
+			"card_title": "acento_cian",
+			"card_text": "texto_claro"
 		}
 	},
 	"station": {

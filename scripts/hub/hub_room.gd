@@ -18,10 +18,17 @@
 ## carpetas. Estaciones (stations: escena HubStation en una celda, con su
 ## SpriteFrames `frames`) y huecos apagados del dock (dormant: siluetas de
 ## Notas, Linterna y Papelera; `frames` + `animation` o `texture`) se crean
-## desde los datos en un nodo "Visual". La copia local (CopyLocalStation)
-## guarda; mientras el hub esta abierto, el aviso al salir con cambios ofrece
-## guardar (grupo QuitGuard.SAVE_STATION_GROUP). Calc dormida (CalcStation,
-## paso 8) vende las mejoras.
+## desde los datos en un nodo "Visual". Notas (NotasStation, antes «copia
+## local») guarda y tiene el album; mientras el hub esta abierto y Notas esta
+## encendida, el aviso al salir con cambios ofrece guardar (grupo
+## QuitGuard.SAVE_STATION_GROUP). Calc (CalcStation, paso 8) vende las mejoras.
+## ASISTENTES (2026-10-16, docs/propuesta-asistentes-y-vidas.md §2.2, §2.3 y §8):
+## una estacion con requires_ally esta apagada (HubStation.set_powered) hasta que
+## GameState conoce a ese asistente (EventBus.ally_met la enciende al momento):
+## Notas hasta su presentacion y Calc hasta su encuentro (final del 1-2, aun sin
+## implementar). La primera vez que Isak llega al hub (Notas desconocida), al
+## terminar la llegada empieza la presentacion de Notas (NotasIntro) con el
+## cuadro de texto del hub (EcoTextBox, hijo "EcoTextBox").
 ## Carpetas (paso 7; seccion folders y worlds): una FolderStation por mundo
 ## sobre su repisa (shelf_height_px sobre el dock, alcanzable de un salto). Al
 ## elegir un subnivel, Isak (de espaldas) se va por el vortice de salida
@@ -39,8 +46,9 @@
 class_name HubRoom
 extends Node2D
 
-## Estacion donde se guarda (copia local).
-const SAVE_STATION_ID: StringName = &"copia_local"
+## Estacion donde se guarda (Notas).
+const SAVE_STATION_ID: StringName = &"notas"
+const TEXT_BOX_SCENE: String = "res://scenes/ui/eco_text_box.tscn"
 
 ## Isak termino de llegar (tiene el control).
 signal arrived
@@ -71,6 +79,8 @@ var _departure: WarpVortex
 var _entering_level: StringName = &""
 var _previous_abilities: Dictionary = {}
 var _companion: EcoCompanion
+var _text_box: EcoTextBox
+var _notas_intro: NotasIntro
 
 
 func _enter_tree() -> void:
@@ -98,10 +108,20 @@ func _exit_tree() -> void:
 func _ready() -> void:
 	_isak = get_node(^"Isak") as Isak
 	_hud = get_node_or_null(^"Hud") as Hud
+	_text_box = (load(TEXT_BOX_SCENE) as PackedScene).instantiate() as EcoTextBox
+	_text_box.name = "EcoTextBox"
+	add_child(_text_box)
 	_build_room()
 	_build_dormant()
 	_build_stations()
 	_build_folders()
+	EventBus.ally_met.connect(_on_ally_met)
+	if not GameState.has_met_ally(GameState.ALLY_NOTAS):
+		_notas_intro = NotasIntro.new()
+		_notas_intro.name = "NotasIntro"
+		_notas_intro.station = get_notas()
+		_notas_intro.text_box = _text_box
+		add_child(_notas_intro)
 	add_to_group(QuitGuard.SAVE_STATION_GROUP)
 	if bool(_room.get("refill_on_enter", true)):
 		GameState.refill_debug_energy()
@@ -117,9 +137,25 @@ func _ready() -> void:
 # --- Consultas ---
 
 ## Se puede guardar aqui (QuitGuard: el aviso al salir ofrece «Guardar y
-## salir»): el hub tiene la estacion copia local.
+## salir»): el hub tiene Notas y esta encendida.
 func can_save_now() -> bool:
-	return is_inside_tree() and get_station(SAVE_STATION_ID) != null
+	var station: HubStation = get_station(SAVE_STATION_ID)
+	return is_inside_tree() and station != null and station.is_powered()
+
+
+## Notas (guardar y album).
+func get_notas() -> NotasStation:
+	return get_station(SAVE_STATION_ID) as NotasStation
+
+
+## Presentacion de Notas (null si Notas ya era conocida al entrar).
+func get_notas_intro() -> NotasIntro:
+	return _notas_intro if _notas_intro != null and is_instance_valid(_notas_intro) else null
+
+
+## Cuadro de texto del hub (presentacion de Notas).
+func get_text_box() -> EcoTextBox:
+	return _text_box
 
 
 func get_isak() -> Isak:
@@ -141,7 +177,7 @@ func release_arrival() -> bool:
 	return vortex != null and vortex.release()
 
 
-## Calc dormida (tienda de mejoras).
+## Calc (tienda de mejoras; apagada hasta conocerla).
 func get_calc() -> CalcStation:
 	return get_station(&"calc") as CalcStation
 
@@ -254,6 +290,18 @@ func _start_arrival() -> void:
 func _on_arrival_finished() -> void:
 	_arrived = true
 	arrived.emit()
+	var intro: NotasIntro = get_notas_intro()
+	if intro != null:
+		intro.start()
+
+
+## Un asistente recien conocido enciende sus estaciones (requires_ally).
+func _on_ally_met(ally: StringName) -> void:
+	for entry: Dictionary in _room.get("stations", []):
+		if StringName(String(entry.get("requires_ally", ""))) == ally:
+			var station: HubStation = get_station(StringName(String(entry.get("id", ""))))
+			if station != null:
+				station.set_powered(true)
 
 
 func _build_room() -> void:
@@ -389,6 +437,9 @@ func _build_stations() -> void:
 			station.text = String(entry["text"])
 		if entry.has("frames"):
 			station.frames = String(entry["frames"])
+		var ally: String = String(entry.get("requires_ally", ""))
+		if not ally.is_empty():
+			station.set_powered(GameState.has_met_ally(StringName(ally)))
 		holder.add_child(station)
 		_stations[id] = station
 

@@ -1,27 +1,35 @@
-## Panel de la estacion «copia local» (docs/propuesta-hub-y-guardado.md §4.2;
-## paso 6 de §6.2). Textos y colores en la seccion copy_local de data/hub.json.
+## Panel de Notas (antes «copia local»; docs/propuesta-hub-y-guardado.md §4.2 y
+## docs/propuesta-asistentes-y-vidas.md §2.2, paso 8 de §10). Textos y colores
+## en la seccion notas de data/hub.json.
 ## - Resumen de progreso: ultimo nivel, puntos de atencion, nivel de acceso
 ##   («Acceso: Caché», HubWorlds.access_label()), ultima copia
 ##   y el estado «Sin guardar» (ambar) / «Todo guardado».
-## - Opciones Guardar y Volver. Guardar sin cambios pendientes dice «Todo esta
-##   guardado» (no escribe); con cambios pide confirmacion («¿Guardar copia
-##   local?», Si / No) y al confirmar llama a GameState.save_game(): «Copia
-##   guardada» y destello cian en el monitor (senal saved).
+## - Opciones Guardar, Álbum, Apodo y Volver. Guardar sin cambios pendientes
+##   dice «Todo esta guardado» (no escribe); con cambios pide confirmacion
+##   (Si / No) y al confirmar llama a GameState.save_game(): mensaje y destello
+##   cian en el monitor (senal saved). Álbum y Apodo los abre la estacion
+##   (senales album_requested y nickname_requested).
 ## - Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra.
-class_name CopyLocalPanel
+class_name NotasPanel
 extends HubPanel
 
 enum Mode { SUMMARY, CONFIRM }
 
 const OPTION_SAVE: StringName = &"save"
+const OPTION_ALBUM: StringName = &"album"
+const OPTION_NICKNAME: StringName = &"nickname"
 const OPTION_BACK: StringName = &"back"
 const OPTION_YES: StringName = &"yes"
 const OPTION_NO: StringName = &"no"
 
 ## Se intento guardar (ok = se escribio la copia).
 signal saved(ok: bool)
+## El jugador eligio Álbum.
+signal album_requested
+## El jugador eligio Apodo.
+signal nickname_requested
 
-var _copy: Dictionary = HubData.section("copy_local")
+var _notas: Dictionary = HubData.section("notas")
 var _mode: Mode = Mode.SUMMARY
 var _save_count: int = 0
 
@@ -48,8 +56,8 @@ func get_save_count() -> int:
 func refresh() -> void:
 	if _title == null:
 		return
-	var texts: Dictionary = _copy.get("texts", {})
-	var colors: Dictionary = _copy.get("colors", {})
+	var texts: Dictionary = _notas.get("texts", {})
+	var colors: Dictionary = _notas.get("colors", {})
 	var lines: Array = [
 		{"text": String(texts.get("last_level", "%s")) % last_level_text(), "color": colors.get("summary", "texto_tenue")},
 		{"text": String(texts.get("points", "%d")) % GameState.attention_points, "color": colors.get("points", "ambar")},
@@ -65,6 +73,8 @@ func refresh() -> void:
 	else:
 		set_title(String(texts.get("title", "")))
 		set_options([{"id": OPTION_SAVE, "text": String(texts.get("option_save", ""))},
+			{"id": OPTION_ALBUM, "text": String(texts.get("option_album", ""))},
+			{"id": OPTION_NICKNAME, "text": String(texts.get("option_nickname", "%s")) % GameState.get_nickname()},
 			{"id": OPTION_BACK, "text": String(texts.get("option_back", ""))}])
 	set_help(String(texts.get("help", "")))
 	super.refresh()
@@ -73,13 +83,13 @@ func refresh() -> void:
 ## Texto del estado: «Sin guardar» o «Todo guardado».
 func status_text() -> String:
 	var key: String = "status_unsaved" if GameState.has_unsaved_changes() else "status_saved"
-	return String(_copy.get("texts", {}).get(key, ""))
+	return String(_notas.get("texts", {}).get(key, ""))
 
 
 ## Ultimo nivel: el actual de GameState o, si no hay, el ultimo completado;
 ## con su nombre de data/levels/<id>.json («Bandeja de entrada (1-1)»).
 func last_level_text() -> String:
-	var texts: Dictionary = _copy.get("texts", {})
+	var texts: Dictionary = _notas.get("texts", {})
 	var id: String = String(GameState.current_level)
 	if id.is_empty() and not GameState.completed_levels.is_empty():
 		id = String(GameState.completed_levels.keys().back())
@@ -91,7 +101,7 @@ func last_level_text() -> String:
 
 ## Nombre del nivel (campo name de su JSON) o el id.
 func level_name(level_id: String) -> String:
-	var path: String = String(_copy.get("level_data_pattern", "res://data/levels/%s.json")) % level_id
+	var path: String = String(_notas.get("level_data_pattern", "res://data/levels/%s.json")) % level_id
 	if not FileAccess.file_exists(path):
 		return level_id
 	var level: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -101,7 +111,7 @@ func level_name(level_id: String) -> String:
 ## Fecha de la ultima copia en hora local («2026-10-15 18:04») o «nunca».
 func saved_at_text() -> String:
 	if GameState.saved_at.is_empty():
-		return String(_copy.get("texts", {}).get("never_saved", ""))
+		return String(_notas.get("texts", {}).get("never_saved", ""))
 	var utc: String = GameState.saved_at.trim_suffix("Z")
 	var unix: int = Time.get_unix_time_from_datetime_string(utc)
 	var bias_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
@@ -111,8 +121,8 @@ func saved_at_text() -> String:
 ## Guarda ya (GameState.save_game) y muestra el resultado. Sin cambios no
 ## escribe. Verdadero si todo quedo guardado.
 func save_now() -> bool:
-	var texts: Dictionary = _copy.get("texts", {})
-	var colors: Dictionary = _copy.get("colors", {})
+	var texts: Dictionary = _notas.get("texts", {})
+	var colors: Dictionary = _notas.get("colors", {})
 	_mode = Mode.SUMMARY
 	if not GameState.has_unsaved_changes():
 		refresh()
@@ -144,6 +154,10 @@ func _on_confirm(id: StringName) -> void:
 			save_now()
 		OPTION_NO:
 			_back_to_summary()
+		OPTION_ALBUM:
+			album_requested.emit()
+		OPTION_NICKNAME:
+			nickname_requested.emit()
 		OPTION_BACK:
 			close_requested.emit()
 

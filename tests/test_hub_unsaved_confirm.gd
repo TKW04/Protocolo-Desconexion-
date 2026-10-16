@@ -5,6 +5,8 @@
 # directo. Usa su propia ruta de guardado.
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const PATH: String = "user://test_hub_unsaved_confirm.json"
 const LONG_STEP_S: float = 5.0
@@ -22,6 +24,7 @@ func before_each() -> void:
 	_saved_level = GameState.current_level
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
 	_requested.clear()
 
 
@@ -72,9 +75,9 @@ func _choose_1_1(panel: FolderPanel) -> void:
 
 
 func _save_in_copy_local() -> bool:
-	var station := _hub.get_station(&"copia_local") as CopyLocalStation
+	var station := _hub.get_station(&"notas") as NotasStation
 	assert_true(station.open(_isak))
-	var ok: bool = station.get_copy_panel().save_now()
+	var ok: bool = station.get_notas_panel().save_now()
 	station.close(true)
 	return ok
 

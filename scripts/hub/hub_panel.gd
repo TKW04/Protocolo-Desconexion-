@@ -8,7 +8,7 @@
 ## input_delay_s de tiempo real): up_action / down_action eligen opcion,
 ## confirm_action (pulse) confirma y cancel_action (jump) vuelve. Por defecto
 ## confirmar emite option_chosen y volver emite close_requested; las
-## subclases (CopyLocalPanel, FolderPanel, CalcPanel) cambian _on_confirm y
+## subclases (NotasPanel, FolderPanel, CalcPanel) cambian _on_confirm y
 ## _on_cancel. Bajo las opciones puede ir una linea de detalle (set_detail; la
 ## tienda de Calc la usa para la mejora elegida) y cada opcion puede llevar su
 ## rol de color cuando no esta elegida ("role").

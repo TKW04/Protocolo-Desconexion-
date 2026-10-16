@@ -10,6 +10,8 @@
 # lo crea LevelRunner.
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
@@ -216,6 +218,7 @@ func test_animates_with_the_game_paused() -> void:
 func test_hub_variant_is_dimmed_and_is_not_a_station() -> void:
 	var saved_path: String = GameState.save_path
 	GameState.use_save_path(HUB_PATH, true)
+	EcoProgress.meet_notas()
 	GameState.meet_ally(GameState.ALLY_ECO)
 	var hub := HUB_SCENE.instantiate() as HubRoom
 	add_child(hub)

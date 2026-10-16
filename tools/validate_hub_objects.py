@@ -35,10 +35,11 @@ SIZES = {
     ("tiles", "dock_fill"): (64, 64, False),
     ("tiles", "one_way_"): (64, 64, True),
     ("folders", "folder_"): (128, 128, True),
-    ("local_copy", "local_copy_"): (64, 128, True),
+    ("notas", "notas_"): (64, 128, True),
     ("calc", "calc_"): (64, 96, True),
     ("dock_slots", "dock_slot_"): (64, 96, True),
     ("icons", "icon_"): (16, 16, True),
+    ("album", "album_cell"): (40, 40, True),
     ("icons", "world_icon_"): (16, 16, True),
     ("icons", "page_dot_"): (8, 8, True),
 }

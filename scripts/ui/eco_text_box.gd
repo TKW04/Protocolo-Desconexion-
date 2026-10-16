@@ -21,6 +21,11 @@
 ## Entrada: EventBus.eco_line_requested (o show_line()). Si llega otra linea
 ## con una en pantalla, se pone en cola (las importantes, delante). Salida: EventBus.eco_line_started y
 ## EventBus.eco_line_finished.
+## OTROS QUE HABLAN (2026-10-16): show_line(..., speaker) con un id de speakers
+## de data/eco_text_box.json (hoy "notas", en la presentacion de Notas del hub)
+## cambia nombre, icono y color del nombre para esa linea. Las lineas de otros
+## no emiten EventBus.eco_line_started / eco_line_finished (Eco no las «dice»);
+## todas emiten las senales propias line_started / line_finished.
 ## Pixel base como el HUD: Frame se maqueta en pixeles de arte y se escala
 ## x pixel_scale (entero).
 class_name EcoTextBox
@@ -46,6 +51,11 @@ const HINT_ON_FRACTION: float = 0.5
 ## para pruebas y herramientas que juegan el nivel sin jugador.
 static var pause_important: bool = true
 
+## Empieza una linea de `speaker` (vacio = Eco).
+signal line_started(text: String, speaker: StringName)
+## Se cerro una linea de `speaker` (vacio = Eco).
+signal line_finished(speaker: StringName)
+
 var _config: EcoTextBoxConfig = EcoTextBoxConfig.shared()
 var _font: Font
 var _phase: Phase = Phase.IDLE
@@ -68,6 +78,8 @@ var _owns_pause: bool = false
 ## Tiempo (real) desde que se ve la indicacion de cierre (para el parpadeo).
 var _hint_time: float = 0.0
 var _hint: Label
+## Quien dice la linea actual (vacio = Eco).
+var _speaker_id: StringName = &""
 
 @onready var _frame: Control = $Frame
 @onready var _panel: NinePatchRect = $Frame/Panel
@@ -111,9 +123,10 @@ func _exit_tree() -> void:
 ## `important`: pausa el juego y espera confirmacion; pasa delante de las
 ## normales (la normal en pantalla vuelve a la cola, a la cabeza de las normales).
 ## El marcador {apodo} (GameState.NICKNAME_TAG) se sustituye por el apodo.
-func show_line(text: String, duration_s: float = -1.0, important: bool = false) -> void:
+## `speaker`: id de speakers de data/eco_text_box.json (vacio = Eco).
+func show_line(text: String, duration_s: float = -1.0, important: bool = false, speaker: StringName = &"") -> void:
 	text = GameState.apply_nickname(text)
-	var item: Dictionary = {"text": text, "duration_s": duration_s, "important": important}
+	var item: Dictionary = {"text": text, "duration_s": duration_s, "important": important, "speaker": speaker}
 	if not important:
 		_queue.append(item)
 	else:
@@ -250,6 +263,11 @@ func get_speaker_text() -> String:
 	return _speaker.text
 
 
+## Id de quien dice la linea actual (vacio = Eco).
+func get_speaker_id() -> StringName:
+	return _speaker_id
+
+
 func get_pixel_scale() -> Vector2:
 	return _frame.scale
 
@@ -318,6 +336,7 @@ func _start_next() -> void:
 	else:
 		_release_pause()
 	_text = item["text"]
+	_apply_speaker(StringName(item.get("speaker", &"")))
 	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
 	_wrapped = LINE_BREAK.join(_lines)
 	_current_duration = float(item["duration_s"])
@@ -329,16 +348,21 @@ func _start_next() -> void:
 	_layout()
 	_panel.visible = true
 	_set_alpha(_fade_in_alpha())
-	EventBus.eco_line_started.emit(_text)
+	if _speaker_id == &"":
+		EventBus.eco_line_started.emit(_text)
+	line_started.emit(_text, _speaker_id)
 	if _wrapped.is_empty():
 		advance(0.0)
 
 
 func _finish_line() -> void:
+	var speaker: StringName = _speaker_id
 	_clear_line()
 	if _queue.is_empty() or not bool(_queue[0].get("important", false)):
 		_release_pause()
-	EventBus.eco_line_finished.emit()
+	if speaker == &"":
+		EventBus.eco_line_finished.emit()
+	line_finished.emit(speaker)
 	_start_next()
 
 
@@ -357,10 +381,14 @@ func _clear_line() -> void:
 ## Quita la linea normal en pantalla para dejar paso a una importante: vuelve
 ## a la cola (tras las importantes) salvo si ya se estaba cerrando.
 func _preempt_current() -> void:
+	var speaker: StringName = _speaker_id
 	if _phase != Phase.CLOSING:
-		_queue.insert(_first_normal_index(), {"text": _text, "duration_s": _current_duration, "important": false})
+		_queue.insert(_first_normal_index(), {"text": _text, "duration_s": _current_duration, "important": false,
+			"speaker": speaker})
 	_clear_line()
-	EventBus.eco_line_finished.emit()
+	if speaker == &"":
+		EventBus.eco_line_finished.emit()
+	line_finished.emit(speaker)
 
 
 func _first_normal_index() -> int:
@@ -496,11 +524,29 @@ func _update_hint() -> void:
 	_hint.modulate.a = OPAQUE if phase < HINT_ON_FRACTION else TRANSPARENT
 
 
+## Nombre, icono y color del nombre de quien habla (speakers de la config;
+## vacio o desconocido = Eco).
+func _apply_speaker(id: StringName) -> void:
+	var c: EcoTextBoxConfig = _config
+	var info: Dictionary = c.speakers.get(id, {})
+	_speaker_id = id if not info.is_empty() else &""
+	if info.is_empty():
+		_speaker.text = c.speaker_name
+		_icon.texture = c.asset_texture(ICON_ASSET)
+		(_speaker.material as ShaderMaterial).set_shader_parameter(&"target_color", c.color(&"speaker"))
+		return
+	_speaker.text = String(info.get("name", c.speaker_name))
+	var icon_path: String = String(info.get("icon", ""))
+	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else c.asset_texture(ICON_ASSET)
+	(_speaker.material as ShaderMaterial).set_shader_parameter(&"target_color",
+		Color.html(String(info.get("color", "#9bb0e8"))))
+
+
 ## Ancho del panel (px de arte) para estas lineas: se ajusta a la linea mas
 ## ancha (y al nombre), entre min_width_px y width_px.
 func panel_width_for(lines: PackedStringArray) -> int:
 	var c: EcoTextBoxConfig = _config
-	var widest: float = _width(_font, c.speaker_name, c.font_size)
+	var widest: float = _width(_font, _speaker.text, c.font_size)
 	for line: String in lines:
 		widest = maxf(widest, _width(_font, line, c.font_size))
 	return clampi(_text_left() + ceili(widest) + c.padding_px, c.min_width_px, c.width_px)

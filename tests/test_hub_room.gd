@@ -6,6 +6,8 @@
 # en ambar). Usa su propia ruta de guardado.
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const PATH: String = "user://test_hub_room.json"
 const T: float = 64.0
@@ -22,6 +24,7 @@ func before_each() -> void:
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	_saved_debug = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
 
 
 func after_each() -> void:
@@ -109,9 +112,9 @@ func test_walls_keep_isak_inside_the_screen() -> void:
 
 func test_dormant_slots_stand_on_the_dock_with_final_art() -> void:
 	_spawn()
-	assert_eq(_hub.get_dormant_ids(), [&"notas", &"linterna", &"papelera"] as Array[StringName],
-		"Calc ya no es un hueco: es la estacion de mejoras (test_calc_station.gd)")
-	for id: StringName in [&"notas", &"linterna", &"papelera"]:
+	assert_eq(_hub.get_dormant_ids(), [&"linterna", &"papelera"] as Array[StringName],
+		"Calc y Notas no son huecos: son estaciones (test_calc_station.gd, test_notas_station.gd)")
+	for id: StringName in [&"linterna", &"papelera"]:
 		var node: Node2D = _hub.get_dormant(id)
 		assert_not_null(node, String(id))
 		if node == null:
@@ -130,8 +133,7 @@ func test_dormant_slots_stand_on_the_dock_with_final_art() -> void:
 	var calc := _hub.get_calc().get_visual() as AnimatedSprite2D
 	assert_not_null(calc, "Calc animada")
 	if calc != null:
-		assert_eq(calc.animation, &"sleep", "Calc dormida")
-		assert_true(calc.is_playing())
+		assert_eq(calc.animation, &"powered_off", "Calc apagada hasta conocerla")
 	assert_eq(_hub.get_calc().position.x, 7.0 * T, "Calc en la columna 7")
 
 

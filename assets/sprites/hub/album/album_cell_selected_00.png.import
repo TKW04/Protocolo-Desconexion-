@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwdkmrw86c8he"
-path="res://.godot/imported/dock_slot_notes_00.png-70ad75cfd4aba199041a65f233c2ba15.ctex"
+uid="uid://cg4ols3tp4k8u"
+path="res://.godot/imported/album_cell_selected_00.png-9dc7facf1c400015c27c483d2c6ce2b6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/hub/dock_slots/dock_slot_notes_00.png"
-dest_files=["res://.godot/imported/dock_slot_notes_00.png-70ad75cfd4aba199041a65f233c2ba15.ctex"]
+source_file="res://assets/sprites/hub/album/album_cell_selected_00.png"
+dest_files=["res://.godot/imported/album_cell_selected_00.png-9dc7facf1c400015c27c483d2c6ce2b6.ctex"]
 
 [params]
 

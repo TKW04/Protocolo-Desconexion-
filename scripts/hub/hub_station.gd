@@ -16,6 +16,11 @@
 ## VISUAL: nodo hijo "Visual", el arte PROVISIONAL (HubProvisionalArt, kind
 ## visual_kind) o, si la estacion trae `frames` (SpriteFrames con off, prompt y
 ## active), un AnimatedSprite2D: asi se integra el arte final sin tocar la logica.
+## APAGADA (2026-10-16, docs/propuesta-asistentes-y-vidas.md §2.2-§2.3): con
+## set_powered(false) la estacion no muestra prompt ni tecla, el pulso no la abre
+## y el arte muestra powered_off (si la tiene). HubRoom apaga las estaciones
+## cuyo asistente (requires_ally de data/hub.json) aun no se conoce: Notas hasta
+## su presentacion y Calc hasta su encuentro.
 class_name HubStation
 extends Area2D
 
@@ -25,6 +30,7 @@ const GROUP: StringName = &"hub_station"
 const VISUAL_OFF: StringName = &"off"
 const VISUAL_PROMPT: StringName = &"prompt"
 const VISUAL_ACTIVE: StringName = &"active"
+const VISUAL_POWERED_OFF: StringName = &"powered_off"
 
 ## Se abrio el panel (Isak de espaldas).
 signal opened(station: HubStation)
@@ -58,6 +64,7 @@ var _key_root: Node2D
 var _key_label: Label
 var _key_base_y: float = 0.0
 var _panel: HubPanel
+var _powered: bool = true
 
 
 func _ready() -> void:
@@ -120,8 +127,10 @@ func get_visual() -> Node2D:
 	return _visual
 
 
-## Estado mostrado por el arte: off, prompt o active.
+## Estado mostrado por el arte: powered_off, off, prompt o active.
 func get_visual_state() -> StringName:
+	if not _powered:
+		return VISUAL_POWERED_OFF
 	match _state:
 		State.PROMPT:
 			return VISUAL_PROMPT
@@ -155,12 +164,32 @@ func get_size() -> Vector2:
 	return Vector2(width_tiles * t, height_tiles * t)
 
 
+## Encendida (verdadero) o apagada: sin prompt ni panel.
+func is_powered() -> bool:
+	return _powered
+
+
 # --- Acciones ---
+
+## Enciende o apaga la estacion. Al apagarla se cierra su panel (si estaba
+## abierto, Isak recupera el control) y queda en OFF.
+func set_powered(value: bool) -> void:
+	if value == _powered:
+		return
+	if not value and _state == State.OPEN:
+		close(true)
+	_powered = value
+	if not _powered:
+		_state = State.OFF
+	elif _state == State.OFF:
+		_update_near_state()
+	_apply_visuals()
+
 
 ## Comprueba si el pulso (`area`, con un CircleShape2D) alcanza la estacion y,
 ## si es asi, la abre. Verdadero si se ha abierto ahora.
 func receive_pulse(area: Area2D) -> bool:
-	if _state != State.OFF and _state != State.PROMPT:
+	if not _powered or (_state != State.OFF and _state != State.PROMPT):
 		return false
 	if not PulseReceiver.pulse_reaches(area, get_hit_rect()):
 		return false
@@ -170,7 +199,7 @@ func receive_pulse(area: Area2D) -> bool:
 
 ## Abre el panel con `isak` de espaldas. Falso si ya estaba abierta o volviendo.
 func open(isak: Isak) -> bool:
-	if _state != State.OFF and _state != State.PROMPT:
+	if not _powered or (_state != State.OFF and _state != State.PROMPT):
 		return false
 	_state = State.OPEN
 	_time = 0.0
@@ -252,7 +281,7 @@ func _finish_return() -> void:
 
 
 func _update_near_state() -> void:
-	var target: State = State.PROMPT if is_player_near() else State.OFF
+	var target: State = State.PROMPT if _powered and is_player_near() else State.OFF
 	if target != _state:
 		_state = target
 		_time = 0.0
@@ -260,7 +289,9 @@ func _update_near_state() -> void:
 
 
 func _apply_visuals() -> void:
-	_key_root.visible = _state == State.PROMPT
+	if _key_root == null:
+		return
+	_key_root.visible = _powered and _state == State.PROMPT
 	_show_visual_state(get_visual_state())
 	_apply_flash()
 
@@ -272,6 +303,9 @@ func _show_visual_state(value: StringName) -> void:
 		var sprite := _visual as AnimatedSprite2D
 		if sprite.sprite_frames != null and sprite.sprite_frames.has_animation(value):
 			sprite.play(value)
+		elif value == VISUAL_POWERED_OFF and sprite.sprite_frames != null \
+				and sprite.sprite_frames.has_animation(VISUAL_OFF):
+			sprite.play(VISUAL_OFF)
 
 
 func _apply_flash() -> void:

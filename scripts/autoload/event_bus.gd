@@ -151,6 +151,10 @@ signal game_saved(path: String)
 @warning_ignore("unused_signal")
 signal help_learned(help_id: StringName)
 
+## «Olvidar ayudas» del album de Notas vacio learned_help (GameState.forget_help).
+@warning_ignore("unused_signal")
+signal help_forgotten
+
 ## Se ha conocido al asistente `ally` (GameState.meet_ally; propuesta de
 ## asistentes §2). EcoCompanion aparece cuando es "eco".
 @warning_ignore("unused_signal")

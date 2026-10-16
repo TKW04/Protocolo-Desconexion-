@@ -42,6 +42,7 @@ func before_each() -> void:
 	_saved_level = GameState.current_level
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
 	_runners.clear()
 
 
@@ -363,9 +364,9 @@ func test_locked_sublevel_cannot_be_entered() -> void:
 func test_hub_sprite_frames_and_tiles_exist_and_load() -> void:
 	var specs: Dictionary = {
 		"res://assets/sprites/hub/hub_bg_frames.tres": {&"off": 2, &"on": 1},
-		"res://assets/sprites/hub/local_copy_frames.tres": {&"off": 2, &"prompt": 2, &"active": 2},
+		"res://assets/sprites/hub/notas_frames.tres": {&"powered_off": 1, &"off": 2, &"prompt": 2, &"active": 2},
 		"res://assets/sprites/hub/folder_frames.tres": {&"locked": 1, &"available": 2, &"completed": 1},
-		"res://assets/sprites/hub/calc_frames.tres": {&"sleep": 3, &"awake": 4},
+		"res://assets/sprites/hub/calc_frames.tres": {&"powered_off": 1, &"sleep": 3, &"awake": 4},
 	}
 	for path: String in specs:
 		var frames := load(path) as SpriteFrames

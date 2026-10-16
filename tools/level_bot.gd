@@ -17,7 +17,7 @@
 ##   haberse puesto de espaldas antes del vortice),
 ##   llega al hub real (paso 9: vortice de llegada; nivel completado, 1-2
 ##   desbloqueado, energia llena, «Sin guardar» y nada escrito: guardado
-##   manual, 2026-10-15), camina a la copia local y guarda con el pulso, sube a la repisa de
+##   manual, 2026-10-15), se presenta Notas (confirma sus lineas), comprueba Calc apagada, camina a Notas y guarda con el pulso, sube a la repisa de
 ##   la carpeta del Mundo 1, la abre y elige el 1-1 (si pidiera confirmar por
 ##   cambios sin guardar, elige «Entrar sin guardar»): el nivel vuelve
 ##   a empezar con Sync Rate y objetos desde cero, pero los puntos de atencion
@@ -69,7 +69,7 @@ const BOT_SAVE_PATH: String = "user://bot_save.json"
 ## Cuadros que la entrada del apodo esta abierta antes de que el bot la acepte.
 const NICKNAME_WAIT_FRAMES: int = 10
 ## En el hub, se para a esta distancia (px) a la derecha del borde izquierdo de la
-## copia local para lanzarle el pulso (como test_copy_local_station: 2,6 tiles).
+## estacion Notas para lanzarle el pulso (como test_notas_station: 2,6 tiles).
 const COPY_LOCAL_STAND_PX: float = 2.6 * TILE - 64.0
 
 var _input := PlayerInput.new()
@@ -479,7 +479,7 @@ func _force_death(checkpoint: Checkpoint) -> bool:
 
 ## Hub real (paso 9 de docs/propuesta-hub-y-guardado.md): espera a que Isak
 ## llegue por el vortice; comprueba nivel completado, 1-2 desbloqueado, energia
-## llena y que nada se ha escrito (guardado manual); camina a la copia local y
+## llena y que nada se ha escrito (guardado manual); presenta Notas (Eco y Notas; el bot cierra las lineas), Calc apagada; camina a Notas y
 ## guarda con el pulso (Guardar y «Si, guardar»); sube de un salto a la repisa
 ## de la carpeta del Mundo 1, la abre con el pulso y elige el 1-1: Isak se va
 ## por el vortice de salida y el LevelRunner carga el 1-1 desde cero.
@@ -505,7 +505,13 @@ func _hub_and_back() -> bool:
 		return _fail("guardado manual: al llegar al hub deberia haber cambios sin guardar y nada escrito")
 	if not hub.get_hud().is_unsaved_indicator_shown():
 		return _fail("el HUD del hub no muestra «Sin guardar»")
-	if not await _save_at_copy_local(hub):
+	if not await _notas_intro(hub):
+		return false
+	var calc: CalcStation = hub.get_calc()
+	if calc.is_powered() or GameState.has_met_ally(GameState.ALLY_CALC):
+		return _fail("Calc deberia estar apagada (no se conoce hasta el final del 1-2)")
+	_note("Calc apagada: sin tienda hasta conocerla")
+	if not await _save_at_notas(hub):
 		return false
 	if not await _enter_from_folder(hub):
 		return false
@@ -537,25 +543,65 @@ func _hub_and_back() -> bool:
 	return true
 
 
-## Camina hasta la copia local, la abre con el pulso y guarda (Guardar y
+## Primera llegada al hub: Notas apagada; Eco (atenuado) la presenta y Notas
+## explica como guardar. El bot cierra cada linea como el jugador (unos cuadros
+## despues de que salga). Al terminar, Notas encendida y conocida, sin pausa.
+func _notas_intro(hub: HubRoom) -> bool:
+	var intro: NotasIntro = hub.get_notas_intro()
+	if intro == null or GameState.has_met_ally(GameState.ALLY_NOTAS):
+		return _fail("la primera llegada al hub no presenta a Notas")
+	var box: EcoTextBox = hub.get_text_box()
+	var limit: int = _frame + 60 * 30
+	var shown: int = -1
+	var lines: int = 0
+	var current: String = ""
+	while _frame < limit and not intro.is_done():
+		await _tick()
+		if intro.get_step() == NotasIntro.Step.ECO and hub.get_notas().is_powered():
+			return _fail("Notas encendida antes de que Eco la presente")
+		if not box.is_showing() or not box.is_important():
+			shown = -1
+			current = ""
+			continue
+		# Las lineas se encadenan sin hueco: una linea nueva es otro texto.
+		if box.get_speaker_text() + box.get_text() != current:
+			current = box.get_speaker_text() + box.get_text()
+			shown = _frame
+			lines += 1
+			_note("presentacion de Notas, %s: «%s»" % [box.get_speaker_text(), box.get_text()])
+			_shot_in("8a_notas_%d" % lines, 4)
+		elif _frame - shown >= 10:
+			box.finish_typing()
+			box.confirm()
+	if not intro.is_done() or not GameState.has_met_ally(GameState.ALLY_NOTAS) or not hub.get_notas().is_powered() \
+			or get_tree().paused:
+		return _fail("la presentacion de Notas no termina (Notas conocida y encendida, sin pausa)")
+	var expected: int = intro.get_lines("eco").size() + intro.get_lines("notas").size()
+	if lines != expected:
+		return _fail("la presentacion de Notas muestra %d lineas (se esperaban %d)" % [lines, expected])
+	_note("presentacion de Notas terminada (%d lineas): Notas encendida y conocida" % lines)
+	return true
+
+
+## Camina hasta Notas, la abre con el pulso y guarda (Guardar y
 ## confirmacion); cierra el panel con salto.
-func _save_at_copy_local(hub: HubRoom) -> bool:
-	var station := hub.get_station(&"copia_local") as CopyLocalStation
+func _save_at_notas(hub: HubRoom) -> bool:
+	var station := hub.get_station(&"notas") as NotasStation
 	if not await _walk_to_x(station.position.x + COPY_LOCAL_STAND_PX):
-		return _fail("no llega a la copia local")
+		return _fail("no llega a Notas")
 	_isak.facing = -1.0
 	if not await _pulse_until(func() -> bool: return station.is_panel_open()):
-		return _fail("el pulso no abre la copia local")
-	_note("copia local abierta (x=%.0f): '%s'" % [_isak.global_position.x, " / ".join(station.get_panel().get_lines())])
+		return _fail("el pulso no abre Notas")
+	_note("Notas abierta (x=%.0f): '%s'" % [_isak.global_position.x, " / ".join(station.get_panel().get_lines())])
 	_shot_in("8b_copia_local", 1)
 	await _wait_frames(15)
 	await _press_action(&"pulse")  # Guardar
-	if (station.get_panel() as CopyLocalPanel).get_mode() != CopyLocalPanel.Mode.CONFIRM:
+	if (station.get_panel() as NotasPanel).get_mode() != NotasPanel.Mode.CONFIRM:
 		return _fail("Guardar no pide confirmacion")
 	await _press_action(&"pulse")  # Si, guardar
 	if GameState.has_unsaved_changes() or not FileAccess.file_exists(GameState.save_path):
-		return _fail("la copia local no guardo")
-	_note("guardado manual en la copia local: '%s' (%s); HUD «Sin guardar» %s" % [
+		return _fail("Notas no guardo")
+	_note("guardado manual en Notas: '%s' (%s); HUD «Sin guardar» %s" % [
 		station.get_panel().get_message(), GameState.save_path,
 		"visible" if hub.get_hud().is_unsaved_indicator_shown() else "apagado"])
 	_shot_in("8c_guardado", 1)
@@ -563,7 +609,7 @@ func _save_at_copy_local(hub: HubRoom) -> bool:
 	await _press_action(&"jump")
 	await _wait_frames(6)
 	if station.is_panel_open() or _isak.is_facing_back():
-		return _fail("salto no cierra la copia local")
+		return _fail("salto no cierra Notas")
 	return true
 
 

@@ -6,6 +6,8 @@
 # Usa su propio guardado de prueba (nunca user://save.json).
 extends GutTest
 
+const EcoProgress = preload("res://tests/support/eco_progress.gd")
+
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const PICKUP_SCENE: PackedScene = preload("res://scenes/levels/ability_pickup.tscn")
 const CHARGER_SCENE: PackedScene = preload("res://scenes/levels/charger.tscn")
@@ -27,6 +29,7 @@ func before_each() -> void:
 	_saved_level = GameState.current_level
 	_saved_energy = GameState.debug_energy
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_notas()
 	_sim = IsakSim.new()
 	_world = _sim.build_flat_world()
 	add_child_autofree(_world)
