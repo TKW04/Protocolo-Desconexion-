@@ -409,6 +409,16 @@ class LevelSchemaTest(unittest.TestCase):
         self.level["abilities_available"]["pulse"] = True
         self.assert_fails(self.level, "el nivel debe empezar sin el (abilities_available.pulse false)")
 
+    def test_only_one_extra_life_per_level(self):
+        self._add("extra_life_pickup", {"id": "vida_extra_2", "secret_id": "E"})
+        self.assert_fails(self.level, "solo puede haber una vida extra por nivel")
+
+    def test_extra_life_needs_secret_id(self):
+        obj(self.level, "extra_life_pickup")["params"]["secret_id"] = " "
+        self.assert_fails(self.level, "secret_id debe ser un texto no vacio")
+        del obj(self.level, "extra_life_pickup")["params"]["secret_id"]
+        self.assert_fails(self.level, "falta el param obligatorio 'secret_id'")
+
     def test_only_one_eco_encounter(self):
         self._add("eco_encounter", {"id": "eco_otro"})
         self.assert_fails(self.level, "solo puede haber un encuentro con Eco por nivel")

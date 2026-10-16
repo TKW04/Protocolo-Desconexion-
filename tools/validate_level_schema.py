@@ -19,6 +19,8 @@ Reglas:
     nivel con abilities_available.pulse false (el pulso lo da el encuentro) y con
     Eco (eco_offset_tiles, dos enteros) dentro de la zona y en una celda libre;
     cargador (charger) con amount > 0, cooldown_s >= 0 y reusable booleano;
+    vida extra (extra_life_pickup, 2026-10-16): como mucho una por nivel (se coge
+    una vez por mapa) y secret_id (id del registro) un texto no vacio;
     receptores apuntando a un puente existente; la puerta de salida contiene la G;
   - ids unicos (checkpoints, enemigos, secretos y params.id de los objetos);
   - sin pinchos en P ni en C ni en las 8 celdas vecinas de una C;
@@ -56,7 +58,7 @@ KNOWN_ABILITIES = {"pulse", "debug", "laser"}
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
-NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup"}
+NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup"}
 
 
 def _is_int(value):
@@ -299,6 +301,7 @@ class LevelValidator:
         receivers = []
         doors = []
         encounters = []
+        extra_lives = []
         self.object_anchors = set()
         for i, obj in enumerate(self.level["objects"]):
             what = "objects[%d]" % i
@@ -364,9 +367,16 @@ class LevelValidator:
                 receivers.append((what, x, y, params.get("target")))
             elif kind in ("exit_door", "exit_terminal"):
                 doors.append((what, x, y, set(cells)))
+            elif kind == "extra_life_pickup":
+                extra_lives.append((what, x, y))
+                sid = params.get("secret_id")
+                if not isinstance(sid, str) or not sid.strip():
+                    self.error("%s: secret_id debe ser un texto no vacio (id del registro)" % what, y, x)
             elif kind == "eco_encounter":
                 encounters.append((what, x, y))
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
+        for (what, x, y) in extra_lives[1:]:
+            self.error("%s: solo puede haber una vida extra por nivel" % what, y, x)
         if len(encounters) > 1:
             for (what, x, y) in encounters[1:]:
                 self.error("%s: solo puede haber un encuentro con Eco por nivel" % what, y, x)

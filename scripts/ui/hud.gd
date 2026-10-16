@@ -488,12 +488,15 @@ static func _lives_frame(sheet: Texture2D, frame: Vector2i, column: int, rect: A
 
 func _on_lives_changed(lives: int, lives_max: int, active: bool) -> void:
 	var lost: bool = active and _lives_active and lives < _lives and lives_max == _lives_max
+	var gained: bool = active and _lives_active and lives_max > _lives_max
 	_lives = maxi(lives, 0)
 	_lives_max = maxi(lives_max, 1)
 	_lives_active = active
 	_refresh_lives()
 	if lost:
 		_animate_life_lost()
+	elif gained:
+		_animate_life_gained()
 
 
 ## Repinta los iconos (o el contador «x<n>») y la visibilidad.
@@ -545,6 +548,25 @@ func _animate_life_lost() -> void:
 		blink.tween_property(icon, ^"modulate:a", 0.15, step)
 		blink.tween_property(icon, ^"modulate:a", 1.0, step)
 	blink.tween_callback(func() -> void: _lost_icon = null)
+
+
+## Vida extra (lives_max sube): el icono nuevo (el ultimo; o el unico en modo
+## «x<n>») aparece con un bote desde gained_from_scale y un destello
+## (gained_flash_s; seccion lives de data/hud.json).
+func _animate_life_gained() -> void:
+	if _lives_icons.is_empty():
+		return
+	var icon: TextureRect = _lives_icons[_lives_icons.size() - 1]
+	var d: Dictionary = _config.lives
+	var step: float = float(d.get("gained_pop_s", 0.4)) * 0.5
+	icon.pivot_offset = icon.custom_minimum_size * 0.5
+	icon.scale = Vector2.ONE * float(d.get("gained_from_scale", 0.2))
+	var pop := _new_tween()
+	pop.tween_property(icon, ^"scale", Vector2.ONE * float(d.get("gained_pop_scale", 1.5)), step)
+	pop.tween_property(icon, ^"scale", Vector2.ONE, step)
+	var flash := _new_tween()
+	icon.modulate.a = 0.3
+	flash.tween_property(icon, ^"modulate:a", 1.0, float(d.get("gained_flash_s", 0.3)))
 
 
 ## Vidas mostradas: iconos llenos (o la cifra en modo «x<n>») y visibilidad.

@@ -147,6 +147,11 @@ func _run() -> void:
 		_help_frames, GameState.learned_help.size()])
 	if not GameState.learned_help.is_empty():
 		ok = _fail("El bot no pide ayuda y hay tipos aprendidos")
+	# Vida extra del secreto D (paso 14): exige el Debug, que el bot no tiene.
+	_note("vida extra del secreto D: %s; lives_max %d" % [
+		"recogida" if GameState.is_secret_found(&"1-1", &"D") else "sin recoger (sin Debug)", GameState.lives_max])
+	if GameState.is_secret_found(&"1-1", &"D") or GameState.lives_max != GameState.LIVES_MAX_DEFAULT:
+		ok = _fail("El bot no tiene Debug y no deberia coger la vida extra")
 	print("play_level_bot: %s" % ("OK" if ok else "FALLO"))
 	for line: String in _log:
 		print("  " + line)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
@@ -15,11 +15,12 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="13_charger"]
 [ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="14_exit_terminal"]
 [ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="15_glitch_wall"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/alert_bubble.tscn" id="16_alert_bubble"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="17_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="18_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="19_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="20_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/extra_life_pickup.tscn" id="16_extra_life_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/alert_bubble.tscn" id="17_alert_bubble"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="18_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="19_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="20_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="21_help_system"]
 
 [node name="Level_1_1" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -308,57 +309,63 @@ solid_neighbors = 7
 width_tiles = 1
 metadata/help_id = "glitch_wall"
 
+[node name="vida_extra_1_1" parent="Objects" instance=ExtResource("16_extra_life_pickup") groups=["help_target"]]
+position = Vector2(19072, 576)
+object_id = &"vida_extra_1_1"
+secret_id = &"D"
+metadata/help_id = "extra_life"
+
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="burbuja_t1a" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_t1a" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(1952, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 60.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_t1b" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_t1b" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(3232, 640)
 patrol_range_px = 192.0
 metadata/params = {"patrol_range_px": 192.0, "patrol_speed_px_s": 80.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_t2c" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_t2c" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(6688, 640)
 patrol_range_px = 256.0
 metadata/params = {"patrol_range_px": 256.0, "patrol_speed_px_s": 100.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_1" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_1" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(8480, 640)
 patrol_range_px = 320.0
 metadata/params = {"patrol_range_px": 320.0, "patrol_speed_px_s": 80.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_3" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_3" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(11680, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 80.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_4" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_4" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(12192, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 100.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_t4a" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_t4a" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(13472, 640)
 patrol_range_px = 192.0
 metadata/params = {"patrol_range_px": 192.0, "patrol_speed_px_s": 80.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_5" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_5" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(14752, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 100.0}
 metadata/help_id = "alert_bubble"
 
-[node name="burbuja_cierre" parent="Enemies" instance=ExtResource("16_alert_bubble") groups=["help_target"]]
+[node name="burbuja_cierre" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
 position = Vector2(18144, 640)
 patrol_range_px = 128.0
 metadata/params = {"health": 3.0, "patrol_range_px": 128.0, "patrol_speed_px_s": 80.0}
@@ -367,13 +374,13 @@ metadata/help_id = "alert_bubble"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(18592, 640)
 
-[node name="Isak" parent="." instance=ExtResource("17_isak")]
+[node name="Isak" parent="." instance=ExtResource("18_isak")]
 position = Vector2(288, 640)
 camera_limits = Rect2i(0, 0, 19200, 896)
 
-[node name="Hud" parent="." instance=ExtResource("18_hud")]
+[node name="Hud" parent="." instance=ExtResource("19_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("19_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("20_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("20_help_system")
+script = ExtResource("21_help_system")

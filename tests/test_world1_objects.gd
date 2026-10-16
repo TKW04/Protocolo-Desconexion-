@@ -340,7 +340,7 @@ func test_glitch_wall_emits_debug_hook() -> void:
 	EventBus.debug_mode_changed.emit(false)
 	assert_signal_emit_count(wall, "debug_revealed", 2)
 	assert_signal_emitted_with_parameters(wall, "debug_revealed", [false])
-	assert_true(wall.is_solid(), "Sigue solida: el secreto no esta implementado")
+	assert_true(wall.is_solid(), "Sigue solida: sin Isak cerca el Debug no la abre")
 
 
 func test_glitch_wall_animates_in_discrete_frames() -> void:

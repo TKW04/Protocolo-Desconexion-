@@ -15,7 +15,11 @@ movimiento por celdas:
      margen minimo.
   4. Los secretos S con "needs_debug": true solo se alcanzan pasando por
      plataformas ocultas 'h' (con Debug) y la meta se alcanza sin Debug. Los
-     secretos que son un objeto (glitch_wall) quedan fuera (V7). Los secretos
+     secretos que son un objeto (glitch_wall) quedan fuera (V7).
+     4b. La pared con glitch es solida sin Debug y libre con Debug (se disuelve,
+     paso 14 de docs/propuesta-asistentes-y-vidas.md). Vida extra
+     (extra_life_pickup): se alcanza; tapada por una pared con glitch, solo con
+     Debug («alcanzable con Debug»); nunca es obligatoria. Los secretos
      que son otro objeto (p. ej. power_bank_pickup) y las S sin needs_debug
      (secretos de puntos) tienen que alcanzarse sin Debug.
      Mejoras (data/upgrades.json): el modelo usa los valores BASE salvo las
@@ -514,7 +518,7 @@ class World:
         self.thin = {}
         for r, row in enumerate(model.grid):
             for c, ch in enumerate(row):
-                if ch == "#" or (c, r) in model.glitch or (ch == "h" and debug):
+                if ch == "#" or ((c, r) in model.glitch and not debug) or (ch == "h" and debug):
                     self.solid[r][c] = True
                     self.support[r][c] = True
                 elif ch == "-":
@@ -932,6 +936,7 @@ class Validator:
         # Regla 4 y secretos que son un objeto recogible.
         self._check_secrets(start, goal_cells)
         self._check_reachable_secrets(start)
+        self._check_extra_lives(start, goal_cells)
         # Regla 6c: terminal de salida activable con el pulso.
         self._check_exit_terminals(main)
         # Regla 6d: el pulso no existe antes del encuentro con Eco.
@@ -1301,6 +1306,39 @@ class Validator:
                 self.report.error("el secreto %s no se alcanza ni con la mejora %s (radio del pulso %.0f px)"
                                   % (what, required, upgraded.rules.pulse_radius), s["y"], s["x"], s["id"])
 
+    def _check_extra_lives(self, start, goal_cells):
+        """Regla 4b (vida extra, extra_life_pickup; 2026-10-16): se alcanza; si esta en una celda de
+        una pared con glitch (que solo se abre con el Debug) NO se alcanza sin Debug y SI con Debug
+        («alcanzable con Debug»); nunca es obligatoria (la meta se alcanza sin tocarla y sin Debug)."""
+        items = []
+        for obj in self.level.get("objects", []):
+            if obj["type"] != "extra_life_pickup":
+                continue
+            cell = (obj["x"], obj["y"])
+            oid = str(obj.get("params", {}).get("id", "vida extra"))
+            hidden = cell in self.model.glitch
+            without = self.progression(start, frozenset(), self.rules.limit, targets={cell})
+            item = {"id": oid, "cell": list(cell), "behind_glitch_wall": hidden,
+                    "reachable_without_debug": without["ok"]}
+            if hidden:
+                with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=True)
+                item["reachable_with_debug"] = with_debug["ok"]
+                if without["ok"]:
+                    self.report.error("la vida extra %s se alcanza sin Debug (la tapa una pared con glitch)" % oid,
+                                      cell[1], cell[0], oid)
+                if not with_debug["ok"]:
+                    self.report.error("la vida extra %s no se alcanza ni con el Debug" % oid, cell[1], cell[0], oid)
+            elif not without["ok"]:
+                self.report.error("la vida extra %s no se alcanza" % oid, cell[1], cell[0], oid)
+            goal = self.progression(start, frozenset(), self.rules.limit, forbid=self.secret_gates(),
+                                    targets=goal_cells, avoid={cell})
+            item["mandatory"] = not goal["ok"]
+            if not goal["ok"]:
+                self.report.error("la vida extra %s es obligatoria: sin tocarla no se llega a la meta" % oid,
+                                  cell[1], cell[0], oid)
+            items.append(item)
+        self.result["extra_lives"] = items
+
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
         for g in self.model.gates:
@@ -1505,6 +1543,16 @@ def format_text(path, result):
                 "se alcanza" if item["reachable_without_upgrade"] else "no se alcanza",
                 "se alcanza" if item.get("reachable_with_upgrade") else "no se alcanza",
                 item.get("pulse_radius_with_upgrade_px", 0.0)))
+    for item in result.get("extra_lives") or []:
+        if item["behind_glitch_wall"]:
+            reach = "tras una pared con glitch: sin Debug %s; con Debug %s" % (
+                "se alcanza" if item["reachable_without_debug"] else "no se alcanza",
+                "se alcanza" if item.get("reachable_with_debug") else "no se alcanza")
+        else:
+            reach = "se alcanza" if item["reachable_without_debug"] else "no se alcanza"
+        out.append("  vida extra %s (fila %d, columna %d): %s; %s" % (
+            item["id"], item["cell"][1], item["cell"][0], reach,
+            "obligatoria" if item["mandatory"] else "opcional"))
     pulse = result.get("pulse")
     if pulse and not pulse["from_start"] and pulse["given_by"]:
         out.append("  pulso: no existe al empezar; lo da %s (desde la columna %d)" % (

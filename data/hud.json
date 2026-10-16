@@ -27,7 +27,12 @@
 		"format": "x%d",
 		"lost_blink_s": 0.6,
 		"lost_blinks": 3,
-		"lost_pop_scale": 1.35
+		"lost_pop_scale": 1.35,
+		"_notes_gained": "Vida extra (paso 14, 2026-10-16): al subir lives_max el icono nuevo aparece creciendo desde gained_from_scale hasta gained_pop_scale y vuelve a 1 en gained_pop_s, con un destello de opacidad de gained_flash_s.",
+		"gained_from_scale": 0.2,
+		"gained_pop_scale": 1.5,
+		"gained_pop_s": 0.4,
+		"gained_flash_s": 0.3
 	},
 	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
 	"colors": {

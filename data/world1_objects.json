@@ -32,7 +32,7 @@
 		"glitch_wall": {
 			"scene": "res://scenes/levels/glitch_wall.tscn",
 			"help_id": "glitch_wall",
-			"description": "Secreto del 1-1: pared solida con un leve glitch, sin forma de acceder todavia. Gancho para el Debug (grupo debug_secret, senal debug_revealed); el contenido del secreto no esta implementado. El validador la excluye de la regla 4 (V7). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json).",
+			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json).",
 			"required": [],
 			"fields": {
 				"width_tiles": "width_tiles",
@@ -153,6 +153,18 @@
 			"defaults": {},
 			"example": {"type": "power_bank_pickup", "x": 96, "y": 4, "params": {"id": "power_bank_a"}}
 		},
+		"extra_life_pickup": {
+			"scene": "res://scenes/levels/extra_life_pickup.tscn",
+			"help_id": "extra_life",
+			"description": "Vida extra (docs/propuesta-asistentes-y-vidas.md §5.1 y §7.3, paso 14; 2026-10-16). Al tocarla Isak: GameState.collect_extra_life(nivel, secret_id) sube lives_max en 1 PARA SIEMPRE (add_max_life: +1 tambien en el intento en curso) y apunta el secreto en found_secrets (registro por mapa e id, p. ej. 1-1 / D). Como todo lo obtenido, se pierde si hay game over sin guardar (rollback a la copia) y entonces vuelve a estar disponible. Una sola por mapa (tools/validate_level_schema.py) y no hay en todos los mapas: una cada N mapas (N = 3 de partida, AJUSTABLE jugando). Si ya esta encontrada no aparece. Si esta dentro de una glitch_wall, esta oculta (sin colision ni Q) hasta que la pared se abre con el Debug. secret_id: id estable del secreto en el registro (una letra del documento del nivel). No es solida. Arte: tools/gen_extra_life.py (extra_life_frames.tres).",
+			"required": ["id", "secret_id"],
+			"fields": {
+				"id": "object_id",
+				"secret_id": "secret_id"
+			},
+			"defaults": {},
+			"example": {"type": "extra_life_pickup", "x": 298, "y": 9, "params": {"id": "vida_extra_1_1", "secret_id": "D"}}
+		},
 		"ability_pickup": {
 			"scene": "res://scenes/levels/ability_pickup.tscn",
 			"help_id": "ability_pickup",
@@ -238,7 +250,21 @@
 		"frames": 4,
 		"burst_fps": 12.0,
 		"idle_min_s": 0.6,
-		"idle_max_s": 1.8
+		"idle_max_s": 1.8,
+		"_notes_debug": "Apertura con el Debug (paso 14, 2026-10-16; AJUSTABLE jugando): con el Debug activo e Isak a menos de reveal_radius_px del bloque (3 tiles), cada celda parpadea (dissolve_blink: 1 = se ve, por cuadro) con la capa glitch_dissolve de assets/sprites/extra_life_frames.tres a dissolve_fps (tiempo del mundo) y despues la pared deja de ser solida y se oculta.",
+		"reveal_radius_px": 192.0,
+		"dissolve_fps": 12.0,
+		"dissolve_blink": [1, 0, 1, 0, 0, 0]
+	},
+	"extra_life_pickup": {
+		"_notes": "PROPUESTA (2026-10-16, ajustable jugando). size_px: zona de recogida centrada en la celda. Flota bob_px a bob_hz (tiempo del mundo). Al recogerla, la animacion extra_life_collect sube collect_rise_px mientras dura. Al aparecer (pared abierta) da un bote de appear_pop_scale en appear_s. draw_scale: escala entera del arte de 32x32 (x2: 64 px, una celda).",
+		"draw_scale": 2,
+		"size_px": [40, 48],
+		"bob_px": 3.0,
+		"bob_hz": 1.2,
+		"collect_rise_px": 32.0,
+		"appear_s": 0.3,
+		"appear_pop_scale": 1.5
 	},
 	"popup_blocker": {
 		"_notes": "PROPUESTA. Ventana de 192x256 (cuadro 0 abierta; 1-4 cierre a close_fps, tiempo del mundo) y boton de 16x16 (normal y brillo alternos cada button_blink_s; hit al acertarle). Texto: fuente de textos (data/text_font.json) a font_scale (x2 entero), partido por palabras dentro de text_rect_px ([x, y, ancho, alto] en px del pop-up) y recoloreado con el shader de color clave (banner_blanco -> text_color, noche_profunda).",

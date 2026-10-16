@@ -27,3 +27,13 @@ static func meet_notas() -> void:
 ## el encuentro del final del 1-2, es la forma de activarla en las pruebas).
 static func meet_calc() -> void:
 	GameState.meet_ally(GameState.ALLY_CALC)
+
+
+## Debug obtenido para siempre (como tras el final del 1-2, que aun no existe;
+## paso 14: abre la pared con glitch del secreto D del 1-1). Llamar ANTES de
+## cargar el nivel: el 1-1 tiene abilities_available.debug false, pero una
+## habilidad obtenida no se bloquea. Sin marcar «sin guardar».
+static func obtain_debug() -> void:
+	GameState.obtained_abilities[GameState.ABILITY_DEBUG] = true
+	GameState.seen_notices[GameState.ABILITY_DEBUG] = true
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)

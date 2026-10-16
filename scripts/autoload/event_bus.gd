@@ -177,6 +177,9 @@ signal lives_changed(lives: int, lives_max: int, active: bool)
 ## Se ha perdido una vida al morir; quedan `lives_left` (0 = game over).
 @warning_ignore("unused_signal")
 signal life_lost(lives_left: int)
+## Vida extra recogida (paso 14): lives_max ya subio y el secreto `secret_id`
+## de `level` quedo en found_secrets.
+signal extra_life_collected(level: StringName, secret_id: StringName)
 
 ## Eco aplico un rollback (GameState.apply_rollback): `report` con reason,
 ## had_copy, first, trash_has_content y trash.

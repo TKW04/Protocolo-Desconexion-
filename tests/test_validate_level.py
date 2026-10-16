@@ -425,6 +425,29 @@ class BrokenVariantsTest(unittest.TestCase):
         level["secrets"].append({"id": "secreto_facil", "x": 69, "y": 8, "needs_debug": True})
         self.assert_fails(level, "secreto_facil se alcanza sin pasar por plataformas ocultas", schema=False)
 
+    def test_extra_life_behind_glitch_wall_needs_debug(self):
+        """Regla 4b (2026-10-16): la vida extra del 1-1 esta tras la pared con glitch del secreto D:
+        no se alcanza sin Debug, si con Debug, y no es obligatoria."""
+        item = next(i for i in base_result()["extra_lives"] if i["id"] == "vida_extra_1_1")
+        self.assertTrue(item["behind_glitch_wall"])
+        self.assertFalse(item["reachable_without_debug"])
+        self.assertTrue(item["reachable_with_debug"])
+        self.assertFalse(item["mandatory"])
+
+    def test_extra_life_unreachable_even_with_debug(self):
+        level = base_level()
+        fill(level, [297], [8, 9], "#")  # tapia delante de la pared con glitch
+        self.assert_fails(level, "la vida extra vida_extra_1_1 no se alcanza ni con el Debug", schema=False)
+
+    def test_extra_life_in_the_open_is_reachable_without_debug(self):
+        level = base_level()
+        obj_id(level, "vida_extra_1_1")["x"] = 296
+        result = vl.validate(level, check_schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        item = result["extra_lives"][0]
+        self.assertFalse(item["behind_glitch_wall"])
+        self.assertTrue(item["reachable_without_debug"])
+
 
 if __name__ == "__main__":
     unittest.main()

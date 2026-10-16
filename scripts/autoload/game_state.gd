@@ -1127,14 +1127,28 @@ func lose_life() -> bool:
 	return lives == 0
 
 
-## Hueco para la vida extra (paso 14 de §10, secreto D del 1-1; SIN
-## implementar el objeto): sube el maximo para siempre y suma una vida al
-## intento en curso. Marca «sin guardar».
+## Sube el maximo de vidas para siempre (se guarda en lives_max) y suma una
+## vida al intento en curso. Marca «sin guardar». La usa collect_extra_life.
 func add_max_life() -> void:
 	lives_max += 1
 	lives += 1
 	request_save()
 	_emit_lives()
+
+
+## Vida extra (paso 14 de §10; ExtraLifePickup, p. ej. el secreto D del 1-1):
+## una sola vez por mapa e id. Apunta el secreto `secret_id` de `level` en
+## found_secrets (registro: «1-1» / «D») y sube lives_max (+1 tambien ahora).
+## Como todo lo obtenido, va a disco con la siguiente copia: con un game over
+## sin guardar, apply_rollback vuelve a la copia y la vida extra reaparece.
+## Falso (sin cambios) si ya estaba encontrada o no hay nivel.
+func collect_extra_life(level: StringName, secret_id: StringName) -> bool:
+	if level == NO_LEVEL or secret_id == &"" or is_secret_found(level, secret_id):
+		return false
+	mark_secret_found(level, secret_id)
+	add_max_life()
+	EventBus.extra_life_collected.emit(level, secret_id)
+	return true
 
 
 func _emit_lives() -> void:
