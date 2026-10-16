@@ -883,3 +883,28 @@ Diseño completo en `docs/propuesta-1-2.md` (pendiente de revisión; solo docume
 8. ¿Puntos de sincronización al entrar a los pisos 2 y 4? *Recomendación:* sí.
 9. ¿Espera del piso 4 de 20 s con tres oleadas? *Recomendación:* sí, 15 s si aburre.
 10. ¿Recordar el secreto D del 1-1? *Recomendación:* sin línea automática; basta la Q y la ficha.
+
+## Propuesta del sistema de mejoras de Calc (2026-10-16)
+
+Diseño completo en `docs/propuesta-mejoras.md` (pendiente de revisión; solo documentación).
+
+**Idea del usuario (aprobada en líneas generales):** cinco mejoras únicas en la tienda de Calc, una por acción (Pulso, Láser, Debug, Sync Rate y Energía), cada una con su chip y **5 niveles** (la 1.ª barra llena de inicio, las otras 4 se compran). El Debug solo sale tras obtenerlo; mientras, su chip es «?». Pulso: 2 alcance, 3 aturdimiento, 4 **Ocultarte**.
+
+**Decisiones del orquestador recogidas:** economía «opción 2» (todo alcanzable en las tres vueltas; puntos solo con el rollback); tope por acceso Caché 3 / Kernel 4 / Raíz 5 (aprobado por silencio; responde a la duda «mejoras por vuelta» de «Decisiones del 2026-10-15: tres vueltas, hub y guardado»); Ocultarte consume Sync Rate y energía y se apaga al 10 %; Energía 5 = recarga pasiva sin subir la capacidad; tope de power banks a decidir en la propuesta.
+
+**Valores propuestos:** costes 10 / 15 / 15 / 20 + 1 power bank por nivel (Pulso 2 = 25, el Pulso amplio; Debug 2 = 15, el antiguo «Debug eficiente», que deja de estar huérfano: ya no necesita secreto); total **320 puntos + 5 power banks** (Caché 145, Kernel 75, Raíz 100), alcanzable con un 66 % o más de los 486 de tres vueltas (margen +44 con el 75 %). Tope de **3 power banks** (completos + vacíos), 200 de capacidad, sin venta en Calc. Energía 2-4 = 110 / 120 / 130 y 5 = recarga del 0,5 % del máximo por segundo (el 0,005 %/s del borrador tardaría 33 min en dar un disparo). Ocultarte: acción nueva `hide` (H / L3), 5 de energía/s y 1,5 de Sync/s, se apaga al 10 % de cualquiera de las dos, atacar o recibir daño lo apaga, no combina con el Debug. Se retira «Recarga mejorada»; guardado v4 con `upgrade_levels` y migración con devoluciones.
+
+**Choques con decisiones anteriores (necesitan aprobación):** (1) la regeneración pasiva de Sync (nivel 5, hasta el 60 % fuera de combate) y de Energía (nivel 5) cambia «no hay regeneración pasiva ni curación» de «Notas del paso 9», solo con esas mejoras; (2) el Debug 3 «más alcance de revelado» no tiene base hoy (el Debug revela toda la pantalla): se propone «revelado persistente» de 1,5 s; (3) Batería ampliada (150) y Sync reforzado (120) pasan a subir de 10 en 10 hasta 130.
+
+**Dudas abiertas** (detalle y recomendación en `propuesta-mejoras.md` §11):
+
+1. ¿Regeneración pasiva en Sync 5 y Energía 5? *Recomendación:* sí, solo con esas mejoras.
+2. ¿Ocultarte se corta con el Sync **o** la energía al 10 % del máximo, solo con el Sync, o con los dos? *Recomendación:* cualquiera de los dos.
+3. ¿Ocultarte y Debug combinables? *Recomendación:* no.
+4. ¿Calc vende power banks vacíos? *Recomendación:* no; tope de 3, solo de los mapas.
+5. ¿Debug 3 = revelado persistente o radio nuevo? *Recomendación:* persistente.
+6. ¿Pulso 5 «Pulso de retorno» (+4 de energía al aturdir, una vez por enemigo e intento)? *Recomendación:* sí.
+7. ¿Costes 10 / 15 / 15 / 20 + 1 PB (320 en total)? *Recomendación:* sí, y revisarlos tras un mundo completo.
+8. ¿Confirmación al comprar? *Recomendación:* sí.
+9. ¿Tecla del Ocultarte H / L3? *Recomendación:* sí, reasignable.
+10. ¿Atacar revela? *Recomendación:* sí.

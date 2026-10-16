@@ -28,6 +28,8 @@ Origen: secciones 2 y 3 del documento original (`docs/original/diseno.md`).
 
 - **Debug Mode (modo especial):** el tiempo se ralentiza. Isak ve plataformas ocultas que son errores del sistema y el punto débil de los jefes, marcado en rojo. Consume la barra de energía. El color de la pantalla cambia según el mundo, para evitar el cliché del verde tipo matriz.
 
+> **Propuesta 2026-10-16 (pendiente de revisión):** las mejoras de Calc pasan a ser cinco pistas de 5 niveles (Pulso, Láser, Debug, Sync Rate y Energía). El nivel 4 del Pulso da un estado nuevo, **Ocultarte** (acción `hide`: los enemigos que ven pierden a Isak; gasta Sync Rate y energía y se apaga al 10 %), y los niveles 5 de Sync Rate y Energía, regeneración pasiva. Detalle en [propuesta-mejoras.md](propuesta-mejoras.md).
+
 ### 3.3 Barras
 
 | Barra | Función |
