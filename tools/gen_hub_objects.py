@@ -19,6 +19,8 @@ Salidas (assets/sprites/hub/):
   dock_slots/  dock_slot_notes_00, dock_slot_flashlight_00,
                dock_slot_trash_00                              64x96
   icons/       icon_airplane_mode_00, icon_unsaved_00          16x16
+               world_icon_m1_00 (miniatura del Mundo 1:
+               campana de notificaciones, en la carpeta)       16x16
                page_dot_current_00, page_dot_other_00          8x8
 
 El fondo, los tiles y las carpetas se dibujan en una rejilla logica de 2x2 px
@@ -697,6 +699,30 @@ def icon_unsaved():
     return cv.img
 
 
+# Miniatura del mundo en su carpeta (2026-10-15, decision del usuario): un
+# icono de 16x16 por mundo junto al numero. Mundo 1 (Notificaciones): campana.
+# Los mundos bloqueados no llevan miniatura (no se adelanta nada).
+# Semiancho de la campana por fila (centro entre x=7 y x=8), filas 3-11.
+BELL_HALF = [2, 3, 4, 4, 4, 4, 4, 5, 6]
+
+
+def world_icon_bell():
+    cv = Canvas(16, 16)
+    cv.rect(7, 1, 8, 2, TT)  # asa
+    cv.p(7, 1, TC)
+    for i, w in enumerate(BELL_HALF):
+        y = 3 + i
+        x0, x1 = 8 - w, 7 + w
+        cv.hline(x0, x1, y, TC)
+        cv.hline(x1 - 1, x1, y, TT)  # sombra a la derecha
+        cv.p(x0, y, CB if i < 6 else TC)  # brillo a la izquierda
+    cv.hline(1, 14, 12, TT)  # borde inferior
+    cv.hline(2, 13, 12, BO)
+    cv.rect(7, 13, 8, 14, CA)  # badajo: el aviso, en cian
+    cv.halo(FP)  # contorno: se lee en la carpeta disponible y en la completada
+    return cv.img
+
+
 def page_dot(current):
     cv = Canvas(8, 8)
     cv.stamp(0, 0, DOT_FULL if current else DOT_RING, {"#": TC if current else TT})
@@ -734,6 +760,7 @@ def outputs():
         out[f"dock_slots/dock_slot_{k}_00.png"] = dock_slot(k)
     out["icons/icon_airplane_mode_00.png"] = icon_airplane()
     out["icons/icon_unsaved_00.png"] = icon_unsaved()
+    out["icons/world_icon_m1_00.png"] = world_icon_bell()
     out["icons/page_dot_current_00.png"] = page_dot(True)
     out["icons/page_dot_other_00.png"] = page_dot(False)
     return out
@@ -856,7 +883,12 @@ def scene(imgs, path, state="off"):
         for c in range(c0 - extra, c0 + 2 + extra):
             key = "one_way_left" if c == c0 - extra else "one_way_right" if c == c0 + 1 + extra else "one_way_center"
             bg.alpha_composite(imgs[f"tiles/{key}_00.png"], (c * T, shelf_y))
-        bg.alpha_composite(imgs[f"folders/folder_{st}_00.png"], (c0 * T, shelf_y - 128 + int(hub["folders"].get("folder_sink_px", 0))))
+        fy = shelf_y - 128 + int(hub["folders"].get("folder_sink_px", 0))
+        bg.alpha_composite(imgs[f"folders/folder_{st}_00.png"], (c0 * T, fy))
+        mini = os.path.basename(world.get("miniature", ""))
+        if st != "locked" and f"icons/{mini}" in imgs:
+            mx, my, mw, mh = hub["folders"]["miniature_rect_px"]
+            bg.alpha_composite(imgs[f"icons/{mini}"].resize((mw, mh), Image.NEAREST), (c0 * T + mx, fy + my))
     put("local_copy/local_copy_active_00.png", 1, 7)
     put("calc/calc_sleep_02.png", 7, 8, bottom=True, dy=-64 + 64 - 0)
     for c, k in ((10, "notes"), (13, "flashlight"), (16, "trash")):

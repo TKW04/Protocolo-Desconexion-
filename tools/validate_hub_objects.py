@@ -39,6 +39,7 @@ SIZES = {
     ("calc", "calc_"): (64, 96, True),
     ("dock_slots", "dock_slot_"): (64, 96, True),
     ("icons", "icon_"): (16, 16, True),
+    ("icons", "world_icon_"): (16, 16, True),
     ("icons", "page_dot_"): (8, 8, True),
 }
 SEAMLESS = ("dock_top_center", "dock_fill_00", "dock_fill_alt", "one_way_center")

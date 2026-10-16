@@ -175,6 +175,30 @@ func test_folders_sit_on_shelves_with_their_state_and_number() -> void:
 	assert_eq(_hub.get_folder(&"m3").get_number_text(), "3")
 
 
+# Miniatura del mundo (2026-10-15): campana en la carpeta del Mundo 1 junto al
+# numero; las bloqueadas, sin miniatura (no se adelanta el mundo).
+func test_world_1_folder_shows_its_bell_miniature_and_locked_ones_do_not() -> void:
+	_spawn()
+	var m1: FolderStation = _hub.get_folder(&"m1")
+	assert_true(m1.is_miniature_visible(), "Campana en la carpeta del Mundo 1")
+	assert_eq(m1.get_miniature().texture.resource_path, "res://assets/sprites/hub/icons/world_icon_m1_00.png")
+	assert_eq(m1.get_miniature().texture.get_size(), Vector2(16.0, 16.0), "Icono de 16x16")
+	var mr: Array = HubData.section("folders")["miniature_rect_px"]
+	assert_eq(m1.get_miniature().position, Vector2(float(mr[0]), float(mr[1])))
+	assert_eq(m1.get_miniature().scale, Vector2(2.0, 2.0), "x2, como el arte de la carpeta")
+	var nr: Array = HubData.section("folders")["number_rect_with_miniature_px"]
+	assert_eq(m1.get_node(^"Number").position, Vector2(float(nr[0]), float(nr[1])), "Numero a la derecha")
+	for id: StringName in [&"m2", &"m3"]:
+		var locked: FolderStation = _hub.get_folder(id)
+		assert_false(locked.is_miniature_visible(), "%s bloqueada: sin miniatura" % id)
+		var r: Array = HubData.section("folders")["number_rect_px"]
+		assert_eq(locked.get_node(^"Number").position, Vector2(float(r[0]), float(r[1])), "Numero centrado")
+	for id: StringName in [&"1-1", &"1-2", &"1-3"]:
+		GameState.mark_level_completed(id)
+	m1.refresh_state()
+	assert_true(m1.is_miniature_visible(), "Tambien completada")
+
+
 func test_completed_world_shows_the_completed_folder() -> void:
 	for id: StringName in [&"1-1", &"1-2", &"1-3"]:
 		GameState.mark_level_completed(id)
