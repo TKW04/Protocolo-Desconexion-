@@ -27,6 +27,17 @@
 ## - Ajuste «Ayudas de Eco: Ocultar» (GameSettings, menu de pausa; paso 13):
 ##   no sale ninguna Q y help no hace nada, asi que ningun tipo se aprende sin
 ##   pedirlo; lo aprendido sigue en el album y la historia de Eco no cambia.
+## - RELECTURA (2026-10-16, decision del usuario; seccion reread de
+##   data/help.json): si no hay ningun candidato sin aprender, cerca de un
+##   objeto de un tipo YA aprendido sale una Q pequena y apagada (HelpPrompt,
+##   estilo REREAD) SOBRE EL OBJETO (Eco no vuela ni brilla: eso es solo del
+##   primer encuentro), y solo con Isak quieto (velocidad < still_speed_px_s)
+##   still_s segundos de juego dentro del radio del tipo; al moverse
+##   desaparece. Una sola, la del mas cercano. Pulsar help abre la misma
+##   explicacion (linea importante: misma pausa y mismo cuadro) sin aprender
+##   nada (learned_help no cambia; EventBus.help_reread). Mismas condiciones
+##   que la Q normal: Eco conocido, «Ayudas de Eco: Mostrar», Isak con control
+##   y sin pausa. Se dibuja en la misma capa que la Q.
 ## La Q se dibuja en un CanvasLayer propio que sigue a la camara
 ## (follow_viewport, como el punto debil): por encima del mundo y del tinte del
 ## Debug y por debajo del HUD y del cuadro de Eco (layer de la seccion prompt).
@@ -37,6 +48,8 @@ extends Node
 
 ## El jugador ha pedido ayuda sobre un objeto del tipo `help_id`.
 signal help_shown(help_id: StringName, text: String)
+## El jugador ha vuelto a leer la ayuda de un tipo ya aprendido (Q apagada).
+signal help_reread(help_id: StringName, text: String)
 
 ## Capa por defecto de la Q (entre el Debug, 5, y el HUD, 10).
 const DEFAULT_LAYER: int = 6
@@ -49,6 +62,10 @@ var _catalog: HelpCatalog = HelpCatalog.shared()
 var _layer: CanvasLayer
 var _prompt: HelpPrompt
 var _target: Node2D
+var _reread_prompt: HelpPrompt
+var _reread_target: Node2D
+## Segundos de juego que Isak lleva quieto (relectura).
+var _still_s: float = 0.0
 var _eco: EcoCompanion
 
 
@@ -65,6 +82,9 @@ func _ready() -> void:
 	_prompt = HelpPrompt.new()
 	_prompt.visible = false
 	_layer.add_child(_prompt)
+	_reread_prompt = HelpPrompt.new(HelpPrompt.Style.REREAD)
+	_reread_prompt.visible = false
+	_layer.add_child(_reread_prompt)
 	EventBus.help_learned.connect(_on_help_learned)
 
 
@@ -73,7 +93,8 @@ func _exit_tree() -> void:
 		EventBus.help_learned.disconnect(_on_help_learned)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	update_still(delta)
 	refresh()
 
 
@@ -103,11 +124,40 @@ func refresh() -> void:
 		else:
 			_prompt.global_position = (_target.global_position
 				+ _catalog.prompt_offset(HelpCatalog.help_id_of(_target))).round()
+	# Relectura: solo sin candidato sin aprender (la Q normal va primero).
+	_reread_target = null if _target != null or get_tree().paused else find_reread_target()
+	_reread_prompt.visible = _reread_target != null
+	if _reread_target != null:
+		_reread_prompt.global_position = (_reread_target.global_position
+			+ _catalog.prompt_offset(HelpCatalog.help_id_of(_reread_target))).round()
+
+
+## Cuenta el tiempo que Isak lleva quieto (relectura). Con el juego en pausa
+## no avanza; al moverse (o sin Isak con control) vuelve a 0.
+func update_still(delta: float) -> void:
+	if get_tree().paused:
+		return
+	var isak: Isak = _controlled_isak()
+	if isak == null or isak.velocity.length() >= _catalog.reread_still_speed():
+		_still_s = 0.0
+	else:
+		_still_s += delta
+
+
+## Segundos que Isak lleva quieto.
+func get_still_s() -> float:
+	return _still_s
 
 
 ## Pide la ayuda del objeto con Q (accion help). Falso si no hay Q visible.
+## Con la Q apagada (relectura), vuelve a explicar el tipo sin aprender nada.
 func request_help() -> bool:
-	if _target == null or not is_instance_valid(_target) or get_tree().paused:
+	if get_tree().paused:
+		return false
+	if (_target == null or not is_instance_valid(_target)) and _reread_target != null \
+			and is_instance_valid(_reread_target):
+		return _request_reread()
+	if _target == null or not is_instance_valid(_target):
 		return false
 	var help_id: StringName = HelpCatalog.help_id_of(_target)
 	var text: String = _catalog.text(help_id)
@@ -125,6 +175,36 @@ func request_help() -> bool:
 	GameState.learn_help(help_id)
 	help_shown.emit(help_id, text)
 	return true
+
+
+## Relectura: misma linea importante (misma pausa, mismo cuadro), sin aprender
+## y sin que Eco vuele ni brille.
+func _request_reread() -> bool:
+	var help_id: StringName = HelpCatalog.help_id_of(_reread_target)
+	var text: String = _catalog.text(help_id)
+	if text.is_empty():
+		return false
+	_reread_target = null
+	_reread_prompt.visible = false
+	# Al cerrar, la Q apagada vuelve solo tras otro rato quieto.
+	_still_s = 0.0
+	EventBus.eco_line_requested.emit(text, -1.0, true)
+	EventBus.help_reread.emit(help_id)
+	help_reread.emit(help_id, text)
+	return true
+
+
+## Objeto con la Q apagada de relectura ahora (null si no hay).
+func get_reread_target() -> Node2D:
+	return _reread_target if _reread_target != null and is_instance_valid(_reread_target) else null
+
+
+func is_reread_visible() -> bool:
+	return _reread_prompt.visible
+
+
+func get_reread_prompt() -> HelpPrompt:
+	return _reread_prompt
 
 
 ## Objeto con Q visible ahora (null si no hay).
@@ -161,11 +241,32 @@ func is_prompt_on_eco() -> bool:
 
 ## El objeto no aprendido mas cercano a Isak dentro de su radio y en pantalla.
 func find_target() -> Node2D:
-	if not GameState.has_met_ally(GameState.ALLY_ECO) or not GameSettings.is_eco_help_shown():
+	return _find_nearest(false)
+
+
+## Relectura: el objeto de un tipo YA aprendido mas cercano a Isak dentro de su
+## radio y en pantalla, solo con Isak quieto still_s segundos (null si no).
+func find_reread_target() -> Node2D:
+	if _still_s < _catalog.reread_still_s():
 		return null
+	return _find_nearest(true)
+
+
+## Isak con control (visible, vivo, fuera de un vortice y de lado) o null.
+func _controlled_isak() -> Isak:
 	var isak := get_node_or_null(isak_path) as Isak
 	if isak == null or not isak.is_inside_tree() or not isak.visible or isak.is_dead() \
 			or isak.is_warping() or isak.is_facing_back():
+		return null
+	return isak
+
+
+## El objeto mas cercano cuyo tipo esta aprendido (`learned`) o no.
+func _find_nearest(learned: bool) -> Node2D:
+	if not GameState.has_met_ally(GameState.ALLY_ECO) or not GameSettings.is_eco_help_shown():
+		return null
+	var isak: Isak = _controlled_isak()
+	if isak == null:
 		return null
 	var from: Vector2 = isak.global_position + Vector2(0.0, _catalog.isak_center_y())
 	var screen: Rect2 = _visible_world_rect()
@@ -177,7 +278,7 @@ func find_target() -> Node2D:
 		if item == null or not item.is_visible_in_tree() or (scope != null and not scope.is_ancestor_of(item)):
 			continue
 		var help_id: StringName = HelpCatalog.help_id_of(item)
-		if GameState.is_help_learned(help_id) or not _catalog.has(help_id):
+		if GameState.is_help_learned(help_id) != learned or not _catalog.has(help_id):
 			continue
 		var center: Vector2 = item.global_position + _catalog.center_offset(help_id)
 		var distance: float = from.distance_to(center)

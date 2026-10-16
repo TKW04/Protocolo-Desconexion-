@@ -122,6 +122,32 @@ func prompt_config() -> Dictionary:
 	return value if value is Dictionary else {}
 
 
+## Relectura (seccion reread de data/help.json): Q apagada sobre un objeto de
+## un tipo ya aprendido, con Isak quieto.
+func reread_config() -> Dictionary:
+	var value: Variant = _data.get("reread", {})
+	return value if value is Dictionary else {}
+
+
+## Aspecto de la Q apagada: la seccion prompt con los campos de reread.prompt.
+func reread_prompt_config() -> Dictionary:
+	var out: Dictionary = prompt_config().duplicate()
+	var overrides: Variant = reread_config().get("prompt", {})
+	if overrides is Dictionary:
+		out.merge(overrides as Dictionary, true)
+	return out
+
+
+## Segundos que Isak debe estar quieto para que salga la Q apagada.
+func reread_still_s() -> float:
+	return float(reread_config().get("still_s", 0.8))
+
+
+## Velocidad (px/s) por debajo de la cual Isak cuenta como quieto.
+func reread_still_speed() -> float:
+	return float(reread_config().get("still_speed_px_s", 4.0))
+
+
 ## Tipos cuyo first_level es `level` (la migracion v2 -> v3 los da por
 ## aprendidos si ese nivel estaba completado).
 func types_of_level(level: StringName) -> Array[StringName]:

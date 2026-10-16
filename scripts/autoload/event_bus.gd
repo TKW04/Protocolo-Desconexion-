@@ -200,3 +200,13 @@ signal settings_changed(key: StringName, value: Variant)
 signal pause_menu_opened
 @warning_ignore("unused_signal")
 signal pause_menu_closed
+
+## Cambiaron los controles del Input Map (reasignacion en Ajustes > Controles o
+## al restablecerlos; ControlBindings). Los prompts de tecla («G», «Q») se
+## vuelven a leer del Input Map.
+@warning_ignore("unused_signal")
+signal controls_changed
+
+## El jugador ha vuelto a leer la ayuda de un tipo ya aprendido (Q apagada).
+@warning_ignore("unused_signal")
+signal help_reread(help_id: StringName)

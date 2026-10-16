@@ -8,7 +8,11 @@
 ##   01c_eco_junto.png      Eco junto al receptor, brillando en ambar, la Q sobre Eco
 ##   02_ayuda_pausa.png     tras pulsar help: el juego en pausa, Eco explicando (sigue dorado)
 ##   03a_eco_vuelve.png     ayuda cerrada: Eco se apaga (glow_out) y vuelve hacia Isak
-##   03b_receptor_sin_q.png Eco junto a Isak con su color normal; el receptor ya sin Q
+##   03b_receptor_sin_q.png Eco junto a Isak con su color normal; el receptor ya sin
+##                          la Q normal (Isak quieto: ya asoma la Q apagada)
+##   04_relectura_q_apagada.png Isak quieto junto al receptor ya aprendido: Q
+##                          pequena y apagada sobre el receptor (Eco no vuela ni brilla)
+##   05_relectura_pausa.png tras pulsar help: la misma explicacion, en pausa, sin aprender nada
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_help.gd [-- carpeta_salida]
 extends SceneTree
@@ -103,10 +107,28 @@ func _run() -> void:
 	var ok_after: bool = not paused and help.call(&"get_target") != receiver and eco.call(&"get_glow") == 0 \
 			and not eco.call(&"is_helping")
 	await _save(out_dir, "03b_receptor_sin_q.png")
-	print("render_help: q=%s pausa=%s sin_q_despues=%s texto=«%s»" % [ok_q, ok_pause, ok_after, text])
+	# Relectura: Isak sigue quieto junto al receptor (tipo ya aprendido).
+	var deadline_reread: int = Time.get_ticks_msec() + 4000
+	while help.call(&"get_reread_target") != receiver and Time.get_ticks_msec() < deadline_reread:
+		await process_frame
+	var learned: int = (game_state.get(&"learned_help") as Dictionary).size()
+	var ok_reread: bool = help.call(&"get_reread_target") == receiver and help.call(&"is_reread_visible") \
+			and eco.call(&"get_glow") == 0 and not eco.call(&"is_helping")
+	await _save(out_dir, "04_relectura_q_apagada.png")
+	root.push_input(press.duplicate())
+	await create_timer(TYPE_WAIT_S).timeout
+	box.call(&"finish_typing")
+	await create_timer(0.3).timeout
+	ok_reread = ok_reread and paused and box.call(&"get_text") == text and eco.call(&"get_glow") == 0 \
+			and (game_state.get(&"learned_help") as Dictionary).size() == learned
+	await _save(out_dir, "05_relectura_pausa.png")
+	while box.call(&"confirm"):
+		pass
+	print("render_help: q=%s pausa=%s sin_q_despues=%s relectura=%s texto=«%s»" % [ok_q, ok_pause, ok_after,
+		ok_reread, text])
 	main.queue_free()
 	await process_frame
-	quit(0 if ok_q and ok_pause and ok_after else 1)
+	quit(0 if ok_q and ok_pause and ok_after and ok_reread else 1)
 
 
 ## Cierra (como el jugador) las lineas importantes de Eco, que pausan el juego.

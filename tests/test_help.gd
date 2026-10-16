@@ -137,9 +137,9 @@ func test_only_one_prompt_on_the_nearest() -> void:
 	assert_eq(_help.get_target(), near, "La del mas cercano")
 	var prompts: int = 0
 	for child: Node in _all_children(_help):
-		if child is HelpPrompt:
+		if child is HelpPrompt and (child as HelpPrompt).visible:
 			prompts += 1
-	assert_eq(prompts, 1, "Una sola Q")
+	assert_eq(prompts, 1, "Una sola Q visible (la apagada de relectura no sale con candidato sin aprender)")
 
 
 func test_enemies_use_a_wider_radius() -> void:

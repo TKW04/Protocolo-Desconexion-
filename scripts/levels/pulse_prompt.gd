@@ -66,6 +66,29 @@ static func make_plate(parent: Node, node_name: String, label_text: String, font
 	return root
 
 
+## Cambia el texto de una placa de make_plate (p. ej. la tecla tras reasignar
+## los controles): ajusta el ancho de la placa y su borde y la recentra en
+## horizontal sobre el mismo centro, con el mismo borde inferior.
+static func set_plate_text(root: Node2D, label_text: String, font: Font, font_size: int, pad: float) -> void:
+	if root == null or root.get_child_count() < 3:
+		return
+	var label := root.get_node_or_null(^"Text") as Label
+	if label == null or label.text == label_text:
+		return
+	var border := root.get_child(0) as ColorRect
+	var plate := root.get_child(1) as ColorRect
+	var old_width: float = plate.size.x * root.scale.x
+	var center_x: float = root.position.x + old_width * 0.5
+	var text_size: Vector2 = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	text_size.y = font.get_height(font_size)
+	var plate_size := Vector2(ceilf(text_size.x) + pad * 2.0, ceilf(text_size.y) + pad * 2.0)
+	plate.size = plate_size
+	border.size = plate_size + Vector2(2.0, 2.0)
+	label.text = label_text
+	label.size = Vector2(ceilf(text_size.x), ceilf(text_size.y))
+	root.position.x = roundf(center_x - plate_size.x * root.scale.x * 0.5)
+
+
 ## Altura del icono en el instante `time`: `base_y` o `bob_px` mas arriba en
 ## los medios periodos impares de `period_s`.
 static func bob_y(base_y: float, time: float, period_s: float, bob_px: float) -> float:
