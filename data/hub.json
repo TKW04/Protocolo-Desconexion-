@@ -20,7 +20,7 @@
 		"ambar_sombra": "#a85f00"
 	},
 	"room": {
-		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo). dormant: huecos apagados del dock sin logica, de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
+		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo): copia local (guardar) y Calc dormida (tienda de mejoras, paso 8; seccion calc). dormant: huecos apagados del dock sin logica (Notas, Linterna y Papelera), de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
 		"world": 1,
 		"size_tiles": [20, 11],
 		"camera_rect_px": [0, 0, 1280, 720],
@@ -44,10 +44,11 @@
 		"abilities_available": {"pulse": true, "debug": false},
 		"stations": [
 			{"id": "copia_local", "node": "CopiaLocal", "scene": "res://scenes/hub/copy_local_station.tscn", "cell": [1, 7],
-				"frames": "res://assets/sprites/hub/local_copy_frames.tres"}
+				"frames": "res://assets/sprites/hub/local_copy_frames.tres"},
+			{"id": "calc", "node": "Calc", "scene": "res://scenes/hub/calc_station.tscn", "cell": [7, 7],
+				"frames": "res://assets/sprites/hub/calc_frames.tres"}
 		],
 		"dormant": [
-			{"id": "calc", "node": "Calc", "col": 7, "size_px": [64, 96], "frames": "res://assets/sprites/hub/calc_frames.tres", "animation": "sleep"},
 			{"id": "notas", "node": "SlotNotas", "col": 10, "size_px": [64, 96], "texture": "res://assets/sprites/hub/dock_slots/dock_slot_notes_00.png"},
 			{"id": "linterna", "node": "SlotLinterna", "col": 13, "size_px": [64, 96], "texture": "res://assets/sprites/hub/dock_slots/dock_slot_flashlight_00.png"},
 			{"id": "papelera", "node": "SlotPapelera", "col": 16, "size_px": [64, 96], "texture": "res://assets/sprites/hub/dock_slots/dock_slot_trash_00.png"}
@@ -120,6 +121,42 @@
 		{"id": "m2", "world": 2, "name": "El Feed", "col": 10, "unlocked": false, "levels": []},
 		{"id": "m3", "world": 3, "name": "La Vitrina", "col": 16, "unlocked": false, "levels": []}
 	],
+	"calc": {
+		"_notes": "Calc dormida (CalcStation + CalcPanel; paso 8 de §6.2, propuesta §3.2, 05-hub §13.3): antes de vencer a Alerta Mayor esta dormida (animation sleep de calc_frames, siempre), no habla ni tiene voz, pero vende las mejoras de data/upgrades.json con las MISMAS reglas, precios y efectos que la antigua pantalla provisional del hub (GameState.purchase_upgrade; textos copiados de alli). Solo texto de interfaz. Lineas: points (saldo, ambar), power_banks (cuantos completos y la carga) y status_unsaved / status_saved. Opciones: upgrade_row (nombre, coste, estado) por mejora del catalogo; color upgrade (se puede comprar), upgrade_owned (comprada) y upgrade_unaffordable (faltan puntos o power bank); la elegida en option_selected de panel. detail: '<label>: <base><unit> a <value><unit>' de la elegida. Pulso compra (message_*), salto cierra. Comprar solo marca «sin guardar»: se guarda en la copia local. Solo glifos de la fuente de textos.",
+		"animation": "sleep",
+		"texts": {
+			"title": "Calc - Mejoras",
+			"points": "Puntos de atención: %d",
+			"power_banks": "Power banks: %d (carga %d/%d)",
+			"status_unsaved": "Sin guardar",
+			"status_saved": "Todo guardado",
+			"upgrade_row": "%s - %s - %s",
+			"cost_points": "%d pts",
+			"cost_points_and_banks": "%d pts + %d power bank",
+			"state_owned": "Comprada",
+			"state_available": "Disponible",
+			"state_not_enough_points": "Faltan puntos",
+			"state_not_enough_power_banks": "Falta power bank",
+			"detail": "%s: %s%s a %s%s",
+			"message_bought": "Comprada: %s",
+			"message_owned": "Ya la tienes",
+			"message_not_enough_points": "No tienes puntos suficientes",
+			"message_not_enough_power_banks": "Necesitas un power bank completo",
+			"help": "Arriba/abajo: elegir. Pulso: comprar. Salto: volver"
+		},
+		"colors": {
+			"points": "ambar",
+			"power_banks": "acento_cian",
+			"unsaved": "ambar",
+			"saved": "texto_tenue",
+			"upgrade": "texto_claro",
+			"upgrade_owned": "texto_tenue",
+			"upgrade_unaffordable": "gris_foto",
+			"detail": "texto_tenue",
+			"message": "texto_claro",
+			"message_bought": "acento_cian"
+		}
+	},
 	"copy_local": {
 		"_notes": "Estacion copia local (CopyLocalStation + CopyLocalPanel; propuesta §4.2 y §4.3). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), vuelta (lap_names), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo glifos de la fuente de textos.",
 		"level_data_pattern": "res://data/levels/%s.json",

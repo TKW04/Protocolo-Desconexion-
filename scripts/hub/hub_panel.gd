@@ -8,7 +8,10 @@
 ## input_delay_s de tiempo real): up_action / down_action eligen opcion,
 ## confirm_action (pulse) confirma y cancel_action (jump) vuelve. Por defecto
 ## confirmar emite option_chosen y volver emite close_requested; las
-## subclases (CopyLocalPanel) cambian _on_confirm y _on_cancel.
+## subclases (CopyLocalPanel, FolderPanel, CalcPanel) cambian _on_confirm y
+## _on_cancel. Bajo las opciones puede ir una linea de detalle (set_detail; la
+## tienda de Calc la usa para la mejora elegida) y cada opcion puede llevar su
+## rol de color cuando no esta elegida ("role").
 class_name HubPanel
 extends CanvasLayer
 
@@ -26,10 +29,12 @@ var _panel: NinePatchRect
 var _title: Label
 var _line_labels: Array[Label] = []
 var _option_labels: Array[Label] = []
+var _detail: Label
 var _message: Label
 var _help: Label
 var _option_ids: Array[StringName] = []
 var _option_texts: Array[String] = []
+var _option_roles: Array[String] = []
 var _selected: int = 0
 var _open: bool = false
 var _open_time: float = 0.0
@@ -109,13 +114,16 @@ func set_lines(lines: Array) -> void:
 	_layout()
 
 
-## Opciones elegibles: cada una {"id": StringName, "text": String}.
+## Opciones elegibles: cada una {"id": StringName, "text": String} y, si se
+## quiere, "role" (rol de color cuando no esta elegida).
 func set_options(options: Array) -> void:
 	_option_ids.clear()
 	_option_texts.clear()
+	_option_roles.clear()
 	for option: Dictionary in options:
 		_option_ids.append(StringName(option.get("id", "")))
 		_option_texts.append(String(option.get("text", "")))
+		_option_roles.append(String(option.get("role", "")))
 	while _option_labels.size() < _option_ids.size():
 		var label: Label = _new_label("Option%d" % _option_labels.size(), "texto_tenue")
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -123,6 +131,17 @@ func set_options(options: Array) -> void:
 	_selected = clampi(_selected, 0, maxi(_option_ids.size() - 1, 0))
 	_refresh_options()
 	_layout()
+
+
+## Linea de detalle bajo las opciones (vacia = no ocupa sitio).
+func set_detail(text: String, role: String = "texto_tenue") -> void:
+	_detail.text = text
+	_set_color(_detail, role)
+	_layout()
+
+
+func get_detail() -> String:
+	return _detail.text
 
 
 func set_message(text: String, role: String = "texto_claro") -> void:
@@ -178,6 +197,7 @@ func select(index: int) -> void:
 		return
 	_selected = clampi(index, 0, _option_ids.size() - 1)
 	_refresh_options()
+	_on_selection_changed()
 
 
 ## Elige la opcion `id` (falso si no existe).
@@ -194,6 +214,7 @@ func move_selection(step: int) -> void:
 		return
 	_selected = posmod(_selected + step, _option_ids.size())
 	_refresh_options()
+	_on_selection_changed()
 
 
 ## Confirma la opcion elegida (accion confirm_action).
@@ -229,6 +250,11 @@ func _on_cancel() -> void:
 	close_requested.emit()
 
 
+## La opcion elegida cambio (arriba/abajo o select).
+func _on_selection_changed() -> void:
+	pass
+
+
 ## Texto de `key` en texts de la seccion panel (o `fallback`).
 func _text(key: String, fallback: String = "") -> String:
 	return String(_config.get("texts", {}).get(key, fallback))
@@ -253,7 +279,12 @@ func _refresh_options() -> void:
 			continue
 		var selected: bool = i == _selected
 		label.text = _text("selected_prefix" if selected else "unselected_prefix") + _option_texts[i]
-		_set_color(label, String(colors.get("option_selected" if selected else "option", "texto_tenue")))
+		var role: String = String(colors.get("option", "texto_tenue"))
+		if selected:
+			role = String(colors.get("option_selected", "acento_cian"))
+		elif i < _option_roles.size() and not _option_roles[i].is_empty():
+			role = _option_roles[i]
+		_set_color(label, role)
 
 
 func _new_label(node_name: String, role: String) -> Label:
@@ -301,18 +332,19 @@ func _build() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.add_child(_panel)
 	_title = _new_label("Title", String(colors.get("title", "texto_claro")))
+	_detail = _new_label("Detail", String(colors.get("detail", "texto_tenue")))
 	_message = _new_label("Message", String(colors.get("message", "texto_claro")))
 	_help = _new_label("Help", String(colors.get("help", "texto_tenue")))
 
 
-## Orden de pantalla: titulo, lineas, opciones, mensaje y ayuda (los vacios
-## o invisibles no ocupan sitio).
+## Orden de pantalla: titulo, lineas, opciones, detalle, mensaje y ayuda (los
+## vacios o invisibles no ocupan sitio).
 func _ordered_labels() -> Array[Label]:
 	var out: Array[Label] = [_title]
 	for label: Label in _line_labels + _option_labels:
 		if label.visible:
 			out.append(label)
-	for label: Label in [_message, _help]:
+	for label: Label in [_detail, _message, _help]:
 		if not label.text.is_empty():
 			out.append(label)
 	return out
@@ -331,7 +363,7 @@ func _layout() -> void:
 	var labels: Array[Label] = _ordered_labels()
 	for label: Label in labels:
 		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + pad * 2.0)
-	for label: Label in [_message, _help]:
+	for label: Label in [_detail, _message, _help]:
 		label.visible = labels.has(label)
 	var y: float = pad
 	for i: int in labels.size():

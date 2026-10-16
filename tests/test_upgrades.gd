@@ -1,25 +1,33 @@
 # Mejoras permanentes (data/upgrades.json, decisiones del 2026-10-14): catalogo
 # valido, comprar sin puntos o sin power bank no cambia nada, comprar gasta y
-# cambia el VALOR EFECTIVO (los JSON base no cambian), y la compra desde la
-# pantalla provisional del hub (move_up/move_down + pulse) cambia el valor
-# efectivo que usa el Isak siguiente. Guardado manual provisional en esa
-# pantalla (save_game, 2026-10-15): comprar solo marca "sin guardar".
+# cambia el VALOR EFECTIVO (los JSON base no cambian), y la compra en la tienda
+# de Calc dormida del hub real (paso 8: move_up/move_down + pulse; antes en la
+# pantalla provisional del hub) cambia el valor efectivo que usa el Isak
+# siguiente. Guardado manual (2026-10-15): comprar solo marca "sin guardar"; se
+# guarda en la copia local. Mas pruebas de la tienda en test_calc_station.gd.
 extends GutTest
 
-const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub_placeholder.tscn")
+const HUB_SCENE: PackedScene = preload("res://scenes/hub/hub.tscn")
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
 const PATH: String = "user://test_upgrades_save.json"
 const EPS: float = 0.001
 
 var _saved_path: String
+var _saved_pulse: bool
+var _hub: HubRoom
 
 
 func before_each() -> void:
 	_saved_path = GameState.save_path
+	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.use_save_path(PATH, true)
 
 
 func after_each() -> void:
+	if _hub != null and is_instance_valid(_hub):
+		_hub.free()
+	_hub = null
+	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _saved_pulse)
 	GameState.reset_progress()
 	SaveFile.delete(PATH)
 	GameState.save_path = _saved_path
@@ -32,6 +40,21 @@ func _action(name: StringName) -> InputEventAction:
 	event.action = name
 	event.pressed = true
 	return event
+
+
+## Hub real con la tienda de Calc abierta (sin retardo de entrada).
+func _open_calc() -> CalcPanel:
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	var vortex: WarpVortex = _hub.get_arrival_vortex()
+	if vortex != null:
+		vortex.advance(5.0)
+	_hub.get_isak().input = PlayerInput.new()
+	var calc: CalcStation = _hub.get_calc()
+	assert_true(calc.open(_hub.get_isak()), "Calc abre la tienda")
+	var panel: CalcPanel = calc.get_calc_panel()
+	panel.skip_input_delay()
+	return panel
 
 
 func test_catalog_matches_proposal_and_targets_exist() -> void:
@@ -99,88 +122,51 @@ func test_buying_spends_and_changes_effective_values_only() -> void:
 
 func test_hub_purchase_changes_effective_pulse_radius() -> void:
 	GameState.attention_points = 30
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	hub.show_result("1-1", GameState.attention_points)
-	assert_eq(hub.get_upgrade_ids().size(), UpgradeCatalog.shared().entries().size(), "Lista todas las mejoras")
-	hub.skip_input_delay()
+	var panel: CalcPanel = _open_calc()
+	assert_eq(panel.get_upgrade_ids().size(), UpgradeCatalog.shared().entries().size(), "Lista todas las mejoras")
 	# Seleccionar con el Input Map: abajo y arriba (vuelve a la primera).
-	hub._unhandled_input(_action(&"move_down"))
-	assert_eq(hub.get_selected_index(), 1)
-	hub._unhandled_input(_action(&"move_up"))
-	assert_eq(hub.get_selected_upgrade(), &"wide_pulse")
-	assert_string_contains(hub.get_detail_text(), "96 px a 112 px")
-	assert_string_contains(hub.get_upgrade_row_text(0), "Disponible")
-	hub._unhandled_input(_action(&"pulse"))
+	panel._unhandled_input(_action(&"move_down"))
+	assert_eq(panel.get_selected_index(), 1)
+	panel._unhandled_input(_action(&"move_up"))
+	assert_eq(panel.get_selected_upgrade(), &"wide_pulse")
+	assert_string_contains(panel.get_detail(), "96 px a 112 px")
+	assert_string_contains(panel.upgrade_text(&"wide_pulse"), "Disponible")
+	panel._unhandled_input(_action(&"pulse"))
 	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"), "Pulso compra la elegida")
 	assert_eq(GameState.attention_points, 5)
-	assert_eq(hub.get_line_text(&"points"), "Puntos de atención: 5")
-	assert_string_contains(hub.get_upgrade_row_text(0), "Comprada")
-	assert_eq(hub.get_restart_count(), 0, "Comprar no reinicia")
+	assert_eq(panel.get_lines()[0], "Puntos de atención: 5")
+	assert_string_contains(panel.upgrade_text(&"wide_pulse"), "Comprada")
 	# El Isak del siguiente nivel usa el radio mejorado; el JSON base no cambia.
 	var isak := ISAK_SCENE.instantiate() as Isak
 	add_child_autofree(isak)
 	assert_almost_eq(isak.abilities.pulse_radius_px, 112.0, EPS)
 	assert_almost_eq(PlayerAbilities.load_from_file().pulse_radius_px, 96.0, EPS)
 	# Sin puntos: no compra la siguiente y lo dice.
-	hub._unhandled_input(_action(&"move_down"))
-	hub._unhandled_input(_action(&"pulse"))
+	panel._unhandled_input(_action(&"move_down"))
+	panel._unhandled_input(_action(&"pulse"))
 	assert_false(GameState.is_upgrade_purchased(&"reinforced_sync"))
-	assert_eq(hub.get_line_text(&"message"), "No tienes puntos suficientes")
+	assert_eq(panel.get_message(), "No tienes puntos suficientes")
 
 
-func test_hub_input_waits_for_delay_and_fits_on_screen() -> void:
-	GameState.attention_points = 100
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	hub.show_result("1-1", GameState.attention_points)
-	hub._unhandled_input(_action(&"pulse"))
-	assert_false(GameState.is_upgrade_purchased(&"wide_pulse"), "Retardo de entrada tambien para comprar")
-	assert_lte(hub.get_panel_size().y, hub.get_screen_size().y, "El panel cabe en pantalla")
-	assert_lte(hub.get_panel_size().x, hub.get_screen_size().x)
+# --- Guardado manual en el hub real (2026-10-15): comprar en Calc solo marca
+# «sin guardar»; se guarda en la copia local ---
 
-
-# --- Guardado manual provisional en la pantalla del hub (2026-10-15) ---
-
-func test_hub_purchase_only_marks_unsaved_and_save_action_writes() -> void:
+func test_hub_purchase_only_marks_unsaved_and_copy_local_writes() -> void:
 	GameState.attention_points = 30
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	hub.show_result("1-1", GameState.attention_points)
-	assert_eq(hub.get_line_text(&"save_status"), "Todo guardado")
-	assert_eq(hub.get_line_text(&"help_save"), "Guardar: C / R3 (mando)", "Control leido del Input Map")
-	hub.skip_input_delay()
-	hub._unhandled_input(_action(&"pulse"))
+	var panel: CalcPanel = _open_calc()
+	assert_eq(panel.get_lines()[2], "Todo guardado")
+	panel._unhandled_input(_action(&"pulse"))
 	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"))
 	assert_false(FileAccess.file_exists(PATH), "Comprar no guarda")
 	assert_true(GameState.has_unsaved_changes())
-	assert_eq(hub.get_line_text(&"save_status"), "Sin guardar", "Indicador al comprar")
-	hub._unhandled_input(_action(&"save_game"))
-	assert_true(FileAccess.file_exists(PATH), "La accion save_game guarda")
+	assert_eq(panel.get_lines()[2], "Sin guardar", "Indicador al comprar")
+	assert_true(QuitGuard.can_save_here(get_tree()), "El aviso al salir ofrece guardar en el hub")
+	var copy := (_hub.get_station(&"copia_local") as CopyLocalStation).get_copy_panel()
+	assert_true(copy.save_now(), "La copia local guarda")
+	assert_true(FileAccess.file_exists(PATH))
 	assert_false(GameState.has_unsaved_changes())
-	assert_eq(hub.get_line_text(&"save_status"), "Todo guardado")
-	assert_eq(hub.get_line_text(&"message"), "Copia guardada")
-	assert_eq(hub.get_save_count(), 1)
+	assert_eq(panel.get_lines()[2], "Todo guardado", "El panel de Calc se entera")
 	assert_eq(SaveFile.read(PATH).get("upgrades_purchased"), ["wide_pulse"])
-	hub._unhandled_input(_action(&"save_game"))
-	assert_eq(hub.get_line_text(&"message"), "Todo está guardado", "Sin cambios no vuelve a escribir")
-	assert_eq(hub.get_save_count(), 1)
-	assert_eq(hub.get_restart_count(), 0, "Guardar no reinicia")
-	assert_lte(hub.get_panel_size().y, hub.get_screen_size().y, "Con las lineas de guardado sigue cabiendo")
-
-
-func test_hub_save_waits_for_delay_and_is_a_save_station() -> void:
-	var hub := HUB_SCENE.instantiate() as HubPlaceholder
-	add_child_autofree(hub)
-	assert_false(hub.can_save_now(), "Sin mostrarse no es sitio de guardado")
-	GameState.mark_level_completed(&"1-1")
-	hub.show_result("1-1", 0)
-	assert_true(hub.can_save_now())
-	assert_true(QuitGuard.can_save_here(get_tree()), "El aviso al salir ofrece guardar aqui")
-	hub._unhandled_input(_action(&"save_game"))
-	assert_false(FileAccess.file_exists(PATH), "Retardo de entrada tambien para guardar")
-	assert_eq(QuitGuard.decide(GameState.has_unsaved_changes(), QuitGuard.can_save_here(get_tree())),
-		QuitGuard.Decision.ASK_WITH_SAVE)
 
 
 func test_save_action_is_c_and_r3_without_clashes() -> void:

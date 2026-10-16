@@ -16,11 +16,12 @@
 ## pieza 1 encendida cuando la carpeta del mundo background_on_world esta
 ## completada), dock de tiles (suelo), indicador de pagina, repisas de una via y
 ## carpetas. Estaciones (stations: escena HubStation en una celda, con su
-## SpriteFrames `frames`) y huecos apagados del dock (dormant: Calc dormida sin
-## logica aun y siluetas de Notas, Linterna y Papelera; `frames` + `animation`
-## o `texture`) se crean desde los datos en un nodo "Visual". La copia local
-## (CopyLocalStation) guarda; mientras el hub esta abierto, el aviso al salir
-## con cambios ofrece guardar (grupo QuitGuard.SAVE_STATION_GROUP).
+## SpriteFrames `frames`) y huecos apagados del dock (dormant: siluetas de
+## Notas, Linterna y Papelera; `frames` + `animation` o `texture`) se crean
+## desde los datos en un nodo "Visual". La copia local (CopyLocalStation)
+## guarda; mientras el hub esta abierto, el aviso al salir con cambios ofrece
+## guardar (grupo QuitGuard.SAVE_STATION_GROUP). Calc dormida (CalcStation,
+## paso 8) vende las mejoras.
 ## Carpetas (paso 7; seccion folders y worlds): una FolderStation por mundo
 ## sobre su repisa (shelf_height_px sobre el dock, alcanzable de un salto). Al
 ## elegir un subnivel, Isak (de espaldas) se va por el vortice de salida
@@ -114,6 +115,11 @@ func get_hud() -> Hud:
 	return _hud
 
 
+## Calc dormida (tienda de mejoras).
+func get_calc() -> CalcStation:
+	return get_station(&"calc") as CalcStation
+
+
 func get_arrival_vortex() -> WarpVortex:
 	return _arrival if _arrival != null and is_instance_valid(_arrival) else null
 
@@ -130,7 +136,7 @@ func get_station_ids() -> Array[StringName]:
 	return _stations.keys()
 
 
-## Hueco apagado del dock `id` (calc, notas, linterna, papelera).
+## Hueco apagado del dock `id` (notas, linterna, papelera).
 func get_dormant(id: StringName) -> Node2D:
 	return _dormant.get(id, null)
 

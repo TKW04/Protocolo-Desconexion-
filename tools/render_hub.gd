@@ -1,5 +1,6 @@
 ## Capturas a 1:1 (1280x720) del hub REAL (scenes/hub/hub.tscn, abierto
-## directamente: aun no esta en el flujo del juego) con el arte final. Usa
+## directamente; en el juego se llega al completar un nivel: la llegada tras
+## el 1-1 la captura el bot, tools/play_level_bot.gd --shots) con el arte final. Usa
 ## su propio guardado (user://render_hub_save.json, se borra al terminar), nunca
 ## el del jugador. Antes de entrar simula haber completado el 1-1 con 9 puntos
 ## (cambios sin guardar).
@@ -9,10 +10,14 @@
 ##   04_copia_local_panel.png    panel abierto (resumen) con Isak de espaldas
 ##   05_copia_local_confirmar.png confirmacion «¿Guardar copia local?»
 ##   06_copia_guardada.png       «Copia guardada», destello y el indicador apagado
-##   07_carpeta_prompt.png       Isak en la repisa de M1: tecla del pulso
-##   08_panel_subniveles.png     panel de subniveles de M1 (1-1 completado, 1-2 y 1-3 Proximamente)
-##   09_carpeta_bloqueada.png    Isak en la repisa de M2: «Sin descargar»
-##   10_entrar_vortice.png       tras elegir el 1-1: Isak de espaldas absorbido por el vortice
+##   07_calc_prompt.png          Isak junto a Calc dormida: tecla del pulso (simula 30 puntos para comprar)
+##   08_calc_tienda.png          tienda de Calc: saldo, power banks, mejoras con coste y estado, detalle
+##   09_calc_compra.png          «Comprada: Pulso amplio» (25 puntos menos; «Sin guardar» de nuevo)
+##   10_calc_faltan_puntos.png   Sync reforzado elegido: «No tienes puntos suficientes»
+##   11_carpeta_prompt.png       Isak en la repisa de M1: tecla del pulso
+##   12_panel_subniveles.png     panel de subniveles de M1 (1-1 completado, 1-2 y 1-3 Proximamente)
+##   13_carpeta_bloqueada.png    Isak en la repisa de M2: «Sin descargar»
+##   14_entrar_vortice.png       tras elegir el 1-1: Isak de espaldas absorbido por el vortice
 ##                               (el nivel no se carga: scene_switcher lo descarta)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_hub.gd [-- carpeta_salida]
@@ -85,34 +90,67 @@ func _run() -> void:
 	_check(not state.call(&"has_unsaved_changes"), "no se guardo")
 	await _frames(2)
 	await _save_frozen(out_dir, "06_copia_guardada.png")
-	# 7. Carpeta M1: Isak de pie en su repisa.
 	panel.call(&"cancel")
 	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra la copia local")
+	# 7. Calc dormida: Isak a su izquierda, mirandola (30 puntos para poder comprar).
+	state.set(&"attention_points", 30)
+	var calc: Node = _hub.call(&"get_calc")
+	isak.global_position = Vector2(6.4 * TILE, isak.global_position.y)
+	await _nudge(fake, 1.0)
+	await _frames(30)
+	_check(calc.call(&"is_key_hint_visible"), "no sale la tecla del pulso junto a Calc")
+	await _save(out_dir, "07_calc_prompt.png")
+	# 8. Pulso: tienda de Calc.
+	fake.set(&"pulse_pressed", true)
+	await physics_frame
+	await physics_frame
+	fake.set(&"pulse_pressed", false)
+	_check(await _wait(func() -> bool: return calc.call(&"is_panel_open") and isak.call(&"is_facing_back")),
+		"no se abre la tienda de Calc")
+	await _frames(20)
+	await _save(out_dir, "08_calc_tienda.png")
+	# 9. Comprar Pulso amplio (la primera).
+	var shop: Node = calc.call(&"get_calc_panel")
+	shop.call(&"select_option", &"wide_pulse")
+	shop.call(&"confirm")
+	_check(state.call(&"is_upgrade_purchased", &"wide_pulse"), "no se compra Pulso amplio")
+	_check(state.call(&"has_unsaved_changes"), "comprar no marca sin guardar")
+	await _frames(4)
+	await _save(out_dir, "09_calc_compra.png")
+	# 10. Sin puntos para Sync reforzado.
+	shop.call(&"select_option", &"reinforced_sync")
+	shop.call(&"confirm")
+	_check(not state.call(&"is_upgrade_purchased", &"reinforced_sync"), "compra sin puntos")
+	await _frames(4)
+	await _save(out_dir, "10_calc_faltan_puntos.png")
+	shop.call(&"cancel")
+	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra la tienda")
+	# 11. Carpeta M1: Isak de pie en su repisa.
 	var folder: Node2D = _hub.call(&"get_folder", &"m1")
 	isak.global_position = Vector2(folder.position.x + 96.0, float(_hub.call(&"get_shelf_top_y")))
 	await _nudge(fake, -1.0)
 	await _frames(30)
 	_check(folder.call(&"is_key_hint_visible"), "no sale la tecla del pulso en la carpeta")
-	await _save(out_dir, "07_carpeta_prompt.png")
-	# 8. Pulso: panel de subniveles.
+	await _save(out_dir, "11_carpeta_prompt.png")
+	# 12. Pulso: panel de subniveles.
 	fake.set(&"pulse_pressed", true)
 	await physics_frame
 	await physics_frame
 	fake.set(&"pulse_pressed", false)
 	_check(await _wait(func() -> bool: return folder.call(&"is_panel_open")), "no se abre el panel de la carpeta")
 	await _frames(20)
-	await _save(out_dir, "08_panel_subniveles.png")
+	await _save(out_dir, "12_panel_subniveles.png")
 	var folder_panel: Node = folder.call(&"get_folder_panel")
 	folder_panel.call(&"cancel")
 	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra la carpeta")
-	# 9. Carpeta bloqueada (M2).
+	# 13. Carpeta bloqueada (M2).
 	var locked: Node2D = _hub.call(&"get_folder", &"m2")
 	isak.global_position = Vector2(locked.position.x + 32.0, float(_hub.call(&"get_shelf_top_y")))
 	await _nudge(fake, 1.0)
 	await _frames(30)
 	_check(locked.call(&"is_locked_hint_visible"), "no sale «Sin descargar»")
-	await _save(out_dir, "09_carpeta_bloqueada.png")
-	# 10. Elegir el 1-1: vortice de salida (sin cargar el nivel).
+	await _save(out_dir, "13_carpeta_bloqueada.png")
+	# 14. Elegir el 1-1: vortice de salida (sin cargar el nivel).
 	_hub.set(&"scene_switcher", func(runner: Node) -> void: runner.free())
 	isak.global_position = Vector2(folder.position.x + 96.0, float(_hub.call(&"get_shelf_top_y")))
 	await _frames(30)
@@ -123,7 +161,7 @@ func _run() -> void:
 	_check(departure != null, "no hay vortice de salida")
 	_check(await _wait(func() -> bool:
 		return is_instance_valid(departure) and int(departure.call(&"get_phase")) == 3), "el vortice de salida no se cierra")
-	await _save_frozen(out_dir, "10_entrar_vortice.png")
+	await _save_frozen(out_dir, "14_entrar_vortice.png")
 	_check(await _wait(func() -> bool: return not _hub.is_inside_tree()), "no se pasa al nivel")
 	print("render_hub: %s" % ("OK" if _ok else "FALLO"))
 	if is_instance_valid(_hub):

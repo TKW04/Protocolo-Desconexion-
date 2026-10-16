@@ -109,7 +109,9 @@ func test_walls_keep_isak_inside_the_screen() -> void:
 
 func test_dormant_slots_stand_on_the_dock_with_final_art() -> void:
 	_spawn()
-	for id: StringName in [&"calc", &"notas", &"linterna", &"papelera"]:
+	assert_eq(_hub.get_dormant_ids(), [&"notas", &"linterna", &"papelera"] as Array[StringName],
+		"Calc ya no es un hueco: es la estacion de mejoras (test_calc_station.gd)")
+	for id: StringName in [&"notas", &"linterna", &"papelera"]:
 		var node: Node2D = _hub.get_dormant(id)
 		assert_not_null(node, String(id))
 		if node == null:
@@ -125,12 +127,12 @@ func test_dormant_slots_stand_on_the_dock_with_final_art() -> void:
 			height = (visual as Sprite2D).texture.get_size().y
 		assert_eq(height, 96.0, "%s: 64x96" % id)
 		assert_almost_eq(node.position.y + height, _hub.get_floor_y(), 0.5, "%s de pie sobre el dock" % id)
-	var calc := _hub.get_dormant(&"calc").get_node(^"Visual") as AnimatedSprite2D
+	var calc := _hub.get_calc().get_visual() as AnimatedSprite2D
 	assert_not_null(calc, "Calc animada")
 	if calc != null:
 		assert_eq(calc.animation, &"sleep", "Calc dormida")
 		assert_true(calc.is_playing())
-	assert_eq(_hub.get_dormant(&"calc").position.x, 7.0 * T, "Calc en la columna 7")
+	assert_eq(_hub.get_calc().position.x, 7.0 * T, "Calc en la columna 7")
 
 
 func test_room_uses_final_background_dock_and_page_dot() -> void:
