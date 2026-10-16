@@ -17,9 +17,10 @@
 		"fallback_key": "Q"
 	},
 	"reread": {
-		"_notes": "Relectura (2026-10-16, decision del usuario): cerca de un objeto de un tipo YA aprendido sale una Q pequena y apagada SOBRE EL OBJETO (no sobre Eco: Eco no vuela ni brilla), solo si Isak esta quieto (velocidad menor que still_speed_px_s) durante still_s segundos (tiempo de juego: no cuenta con el arbol en pausa) dentro del radio del tipo; desaparece al moverse. Pulsar help abre la misma explicacion (misma pausa y mismo cuadro de Eco) sin volver a aprender nada. Solo si no hay ningun candidato sin aprender en rango (la Q normal va primero). Respeta «Ayudas de Eco: Ocultar» y no sale con Isak muerto, en un vortice, de espaldas ni con el juego en pausa. prompt: sustituye campos de la seccion prompt (misma capa); text_color tine el glifo con el shader de color clave (key_color = color del glifo en text_font). Colores de assets/palettes/mundo1.gpl sin rojos (tools/validate_help_prompt.py).",
-		"still_s": 0.8,
-		"still_speed_px_s": 4.0,
+		"_notes": "Relectura (2026-10-16, decision del usuario): cerca de un objeto de un tipo YA aprendido sale una Q pequena y apagada SOBRE EL OBJETO (no sobre Eco: Eco no vuela ni brilla), solo si Isak esta quieto durante still_s segundos (tiempo de juego: no cuenta con el arbol en pausa) dentro del radio del tipo; desaparece al moverse. QUIETO (2026-10-16, fallo «a veces no sale y cuesta que reaparezca»): en el suelo y |velocidad horizontal REAL| (CharacterBody2D.get_real_velocity: empujando una pared Isak no se mueve) menor que still_speed_px_s; el tiempo solo vuelve a 0 al moverse de verdad (|velocidad real| mayor que move_speed_px_s); entre los dos umbrales (frenando, aterrizando, pequenas oscilaciones) ni cuenta ni se reinicia (histeresis). Tras leerla se rearma sola con otros still_s quieto, sin salir del rango. Antes: still_s 0,8 y |velocity| (vector, la pedida y no la real) menor que 4 px/s, con reinicio en cualquier cuadro por encima. Lo destruido o inerte nunca es candidato (HelpCatalog.is_help_live). Pulsar help abre la misma explicacion (misma pausa y mismo cuadro de Eco) sin volver a aprender nada. Solo si no hay ningun candidato sin aprender en rango (la Q normal va primero). Respeta «Ayudas de Eco: Ocultar» y no sale con Isak muerto, en un vortice, de espaldas ni con el juego en pausa. prompt: sustituye campos de la seccion prompt (misma capa); text_color tine el glifo con el shader de color clave (key_color = color del glifo en text_font). Colores de assets/palettes/mundo1.gpl sin rojos (tools/validate_help_prompt.py).",
+		"still_s": 0.5,
+		"still_speed_px_s": 8.0,
+		"move_speed_px_s": 40.0,
 		"prompt": {
 			"font_scale": 1,
 			"padding_px": 2,

@@ -31,9 +31,11 @@
 ##   data/help.json): si no hay ningun candidato sin aprender, cerca de un
 ##   objeto de un tipo YA aprendido sale una Q pequena y apagada (HelpPrompt,
 ##   estilo REREAD) SOBRE EL OBJETO (Eco no vuela ni brilla: eso es solo del
-##   primer encuentro), y solo con Isak quieto (velocidad < still_speed_px_s)
-##   still_s segundos de juego dentro del radio del tipo; al moverse
-##   desaparece. Una sola, la del mas cercano. Pulsar help abre la misma
+##   primer encuentro), y solo con Isak quieto still_s segundos de juego
+##   dentro del radio del tipo (quieto = en el suelo y |velocidad horizontal
+##   real| < still_speed_px_s; el tiempo solo vuelve a 0 al moverse de verdad,
+##   |velocidad| > move_speed_px_s: update_still_with); al moverse desaparece y
+##   tras leerla se rearma sola con otro rato quieto, sin salir del rango. Una sola, la del mas cercano. Pulsar help abre la misma
 ##   explicacion (linea importante: misma pausa y mismo cuadro) sin aprender
 ##   nada (learned_help no cambia; EventBus.help_reread). Mismas condiciones
 ##   que la Q normal: Eco conocido, «Ayudas de Eco: Mostrar», Isak con control
@@ -139,14 +141,29 @@ func refresh() -> void:
 
 
 ## Cuenta el tiempo que Isak lleva quieto (relectura). Con el juego en pausa
-## no avanza; al moverse (o sin Isak con control) vuelve a 0.
+## no avanza; sin Isak con control vuelve a 0. Mide el movimiento REAL
+## (get_real_velocity: empujando una pared Isak no se mueve aunque su
+## velocity diga 30 px/s) y si esta en el suelo; ver update_still_with.
 func update_still(delta: float) -> void:
 	if get_tree().paused:
 		return
 	var isak: Isak = _controlled_isak()
-	if isak == null or isak.velocity.length() >= _catalog.reread_still_speed():
+	if isak == null:
 		_still_s = 0.0
-	else:
+		return
+	update_still_with(delta, isak.is_on_floor(), isak.get_real_velocity())
+
+
+## Regla de quietud (2026-10-16, fallo «la Q apagada a veces no sale»; seccion
+## reread de data/help.json): cuenta `delta` si Isak esta en el suelo y
+## |velocidad horizontal| < still_speed_px_s; vuelve a 0 solo si se mueve de
+## verdad (|velocidad| > move_speed_px_s). Entre los dos umbrales (frenando,
+## pequenas oscilaciones, el cuadro de aterrizar, el vertice de un salto) ni
+## cuenta ni se reinicia: histeresis. Publico para las pruebas.
+func update_still_with(delta: float, on_floor: bool, velocity: Vector2) -> void:
+	if velocity.length() > _catalog.reread_move_speed():
+		_still_s = 0.0
+	elif on_floor and absf(velocity.x) < _catalog.reread_still_speed():
 		_still_s += delta
 
 

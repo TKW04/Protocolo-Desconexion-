@@ -157,12 +157,19 @@ func reread_prompt_config() -> Dictionary:
 
 ## Segundos que Isak debe estar quieto para que salga la Q apagada.
 func reread_still_s() -> float:
-	return float(reread_config().get("still_s", 0.8))
+	return float(reread_config().get("still_s", 0.5))
 
 
-## Velocidad (px/s) por debajo de la cual Isak cuenta como quieto.
+## Velocidad horizontal (px/s) por debajo de la cual Isak, en el suelo, cuenta
+## como quieto.
 func reread_still_speed() -> float:
-	return float(reread_config().get("still_speed_px_s", 4.0))
+	return float(reread_config().get("still_speed_px_s", 8.0))
+
+
+## Velocidad (px/s) por encima de la cual Isak se mueve de verdad y el tiempo
+## quieto vuelve a 0 (entre los dos umbrales, ni cuenta ni se reinicia).
+func reread_move_speed() -> float:
+	return maxf(float(reread_config().get("move_speed_px_s", 40.0)), reread_still_speed())
 
 
 ## Tipos cuyo first_level es `level` (la migracion v2 -> v3 los da por

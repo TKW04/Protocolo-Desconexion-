@@ -645,3 +645,25 @@ func test_laser_pickup_returns_after_a_rollback_without_it() -> void:
 	GameState.reset_progress()
 	SaveFile.delete("user://test_level_1_1_rollback.json")
 	GameState.save_path = saved_path
+
+
+## Relectura (2026-10-16, fallo «la Q apagada a veces no sale»): contra el
+## escalon de la columna 71 la velocity pedida se queda en 30 px/s aunque Isak
+## no avanza; antes eso reiniciaba el tiempo quieto en cada cuadro. Ahora cuenta
+## el movimiento real.
+func test_reread_still_time_counts_when_pushing_against_a_step() -> void:
+	await _load(true)
+	var help := _level.get_node(^"Help") as HelpSystem
+	help.set_process(false)
+	_place(70.75, 9)
+	_sim.input.move_axis = 1.0
+	var pushing: bool = false
+	for i: int in _sim.steps_for(1.0):
+		_sim.step()
+		help.update_still(DT)
+		if absf(_isak.velocity.x) > HelpCatalog.shared().reread_still_speed():
+			pushing = true
+	_sim.input.move_axis = 0.0
+	assert_true(pushing, "La velocity pedida sigue empujando el escalon")
+	assert_lt(absf(_isak.get_real_velocity().x), 1.0, "Pero Isak no avanza")
+	assert_gt(help.get_still_s(), HelpCatalog.shared().reread_still_s(), "Cuenta como quieto")

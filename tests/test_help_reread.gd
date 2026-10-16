@@ -73,10 +73,11 @@ func _target(help_id: StringName, offset: Vector2) -> Node2D:
 	return node
 
 
-## Isak con velocidad `speed` durante `seconds` de juego y refresco.
+## Isak en el suelo con velocidad horizontal `speed` durante `seconds` de
+## juego y refresco (la regla de quietud sin fisica: update_still_with).
 func _stand(seconds: float, speed: float = 0.0) -> void:
 	_isak.velocity = Vector2(speed, 0.0)
-	_help.update_still(seconds)
+	_help.update_still_with(seconds, true, Vector2(speed, 0.0))
 	_help.refresh()
 
 
@@ -119,8 +120,10 @@ func test_dim_q_only_when_still_in_range_of_a_learned_type() -> void:
 
 func test_still_time_is_parametrized_in_data() -> void:
 	var still: float = HelpCatalog.shared().reread_still_s()
-	assert_almost_eq(still, 0.8, 0.001, "still_s de data/help.json")
-	assert_gt(HelpCatalog.shared().reread_still_speed(), 0.0)
+	assert_almost_eq(still, 0.5, 0.001, "still_s de data/help.json (antes 0,8)")
+	assert_almost_eq(HelpCatalog.shared().reread_still_speed(), 8.0, 0.001, "still_speed_px_s (antes 4)")
+	assert_almost_eq(HelpCatalog.shared().reread_move_speed(), 40.0, 0.001, "move_speed_px_s (histeresis)")
+	assert_gt(HelpCatalog.shared().reread_move_speed(), HelpCatalog.shared().reread_still_speed())
 
 
 func test_unlearned_candidate_goes_first() -> void:
@@ -192,13 +195,15 @@ func test_no_dim_q_in_forbidden_states() -> void:
 	assert_false(_help.request_help())
 	get_tree().paused = false
 	_isak.face_back()
-	_stand(2.0)
+	_help.update_still(2.0)
+	_help.refresh()
 	assert_false(_help.is_reread_visible(), "De espaldas: no")
 	_isak.face_side()
 	_stand(2.0)
 	assert_true(_help.is_reread_visible())
 	_isak.die()
-	_stand(2.0)
+	_help.update_still(2.0)
+	_help.refresh()
 	assert_false(_help.is_reread_visible(), "Muerto: no")
 
 
@@ -206,7 +211,8 @@ func test_no_dim_q_while_warping() -> void:
 	_target(&"receiver", Vector2(TILE, 0.0))
 	GameState.learn_help(&"receiver")
 	WarpVortex.arrive(_isak, _root, true)
-	_stand(2.0)
+	_help.update_still(2.0)
+	_help.refresh()
 	assert_false(_help.is_reread_visible(), "En el vortice: no")
 
 
@@ -232,3 +238,141 @@ func test_dim_q_is_small_and_uses_palette_colors_without_red() -> void:
 		assert_ne(color_name, "", "%s en mundo1.gpl" % color.to_html(false))
 		assert_false(RED_NAMES.has(color_name), "Sin rojos (%s)" % color_name)
 	assert_ne(prompt.get_text_color().to_html(false), Color.html("#f2f4f8").to_html(false), "Glifo atenuado")
+
+
+# --- Regla de quietud (2026-10-16, fallo «a veces no sale y cuesta que reaparezca») ---
+
+func test_still_timer_has_hysteresis() -> void:
+	_target(&"receiver", Vector2(TILE, 0.0))
+	GameState.learn_help(&"receiver")
+	var still: float = HelpCatalog.shared().reread_still_s()
+	var move: float = HelpCatalog.shared().reread_move_speed()
+	_help.update_still_with(still * 0.6, true, Vector2.ZERO)
+	# Pequenas oscilaciones y frenadas entre los dos umbrales: ni cuentan ni reinician.
+	for i: int in 30:
+		_help.update_still_with(1.0 / 60.0, true, Vector2(20.0 if i % 2 == 0 else -12.0, 0.0))
+	assert_almost_eq(_help.get_still_s(), still * 0.6, 0.001, "Oscilaciones: el tiempo se conserva")
+	# El vertice de un salto o el cuadro de aterrizar (lento, sin suelo): tampoco.
+	_help.update_still_with(1.0 / 60.0, false, Vector2(0.0, 30.0))
+	assert_almost_eq(_help.get_still_s(), still * 0.6, 0.001)
+	_help.update_still_with(still * 0.5, true, Vector2(3.0, 0.0))
+	_help.refresh()
+	assert_true(_help.is_reread_visible(), "Quieto el resto del tiempo: sale")
+	_help.update_still_with(1.0 / 60.0, true, Vector2(move + 1.0, 0.0))
+	_help.refresh()
+	assert_eq(_help.get_still_s(), 0.0, "Moverse de verdad lo reinicia")
+	assert_false(_help.is_reread_visible())
+
+
+func test_unlearned_object_out_of_range_does_not_block_the_dim_q() -> void:
+	var near: Node2D = _target(&"receiver", Vector2(TILE, 0.0))
+	_target(&"charger", Vector2(TILE * 2.0, 0.0))
+	_target(&"bridge", Vector2(TILE * 6.0, 0.0))  # Sin aprender, fuera de rango.
+	GameState.learn_help(&"receiver")
+	GameState.learn_help(&"charger")
+	_stand(HelpCatalog.shared().reread_still_s() + 0.01)
+	assert_null(_help.get_target(), "El puente sin aprender no esta en rango")
+	assert_eq(_help.get_reread_target(), near, "El aprendido mas cercano en rango")
+
+
+func test_dim_q_rearms_by_itself_without_leaving_the_range() -> void:
+	var receiver: Node2D = _target(&"receiver", Vector2(TILE, 0.0))
+	GameState.learn_help(&"receiver")
+	var still: float = HelpCatalog.shared().reread_still_s()
+	for turn: int in 3:
+		_stand(still + 0.01)
+		assert_eq(_help.get_reread_target(), receiver, "Vuelta %d: Q apagada" % turn)
+		assert_true(_help.request_help())
+		_box.confirm()
+		_box.confirm()
+		_box.advance(1.0)
+		assert_false(get_tree().paused, "Cerrada")
+		_stand(0.0)
+		assert_false(_help.is_reread_visible(), "Recien cerrada: aun no")
+		_stand(still * 0.5)
+		assert_false(_help.is_reread_visible())
+		_stand(still * 0.5 + 0.01)
+		assert_true(_help.is_reread_visible(), "Vuelta %d: se rearma quieto, sin salir del rango" % turn)
+	assert_eq(_reread.size(), 3)
+
+
+# Con fisica real: Isak sobre un suelo con una entrada falsa.
+
+func _physics_setup() -> PlayerInput:
+	var floor_body := StaticBody2D.new()
+	floor_body.name = "Floor"
+	floor_body.collision_layer = 1
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(4000.0, 64.0)
+	shape.shape = rect
+	shape.position = Vector2(ISAK_FEET.x, ISAK_FEET.y + 32.0)
+	floor_body.add_child(shape)
+	_root.add_child(floor_body)
+	var input := PlayerInput.new()
+	_isak.input = input
+	_help.set_process(true)
+	return input
+
+
+func _wall(x: float) -> void:
+	var wall := StaticBody2D.new()
+	wall.collision_layer = 1
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(64.0, 400.0)
+	shape.shape = rect
+	shape.position = Vector2(x + 32.0, ISAK_FEET.y - 200.0)
+	wall.add_child(shape)
+	_root.add_child(wall)
+
+
+func _wait_game_s(seconds: float) -> void:
+	await wait_physics_frames(int(ceilf(seconds * 60.0)))
+	await wait_process_frames(2)
+
+
+func test_real_physics_still_after_braking() -> void:
+	var input: PlayerInput = _physics_setup()
+	await wait_physics_frames(10)
+	var receiver: Node2D = _target(&"receiver", Vector2(TILE * 2.0, 0.0))
+	GameState.learn_help(&"receiver")
+	input.move_axis = 1.0
+	await wait_physics_frames(20)
+	assert_false(_help.is_reread_visible(), "Andando: no")
+	input.move_axis = 0.0
+	await _wait_game_s(HelpCatalog.shared().reread_still_s() + 0.25)
+	assert_true(_isak.is_on_floor())
+	assert_eq(_help.get_reread_target(), receiver, "Tras frenar y quedarse quieto: sale")
+	assert_true(_help.is_reread_visible())
+
+
+func test_real_physics_still_after_landing() -> void:
+	var input: PlayerInput = _physics_setup()
+	await wait_physics_frames(10)
+	_target(&"receiver", Vector2(TILE, 0.0))
+	GameState.learn_help(&"receiver")
+	input.jump_pressed = true
+	input.jump_held = true
+	await wait_physics_frames(1)
+	input.clear_just_pressed()
+	await wait_physics_frames(10)
+	input.jump_held = false
+	assert_false(_isak.is_on_floor(), "En el aire")
+	assert_false(_help.is_reread_visible(), "Saltando: no")
+	await _wait_game_s(1.0)
+	assert_true(_isak.is_on_floor(), "Ha aterrizado")
+	await _wait_game_s(HelpCatalog.shared().reread_still_s() + 0.1)
+	assert_true(_help.is_reread_visible(), "Tras aterrizar y quedarse quieto: sale")
+
+
+func test_real_physics_pushing_a_wall_counts_as_still() -> void:
+	var input: PlayerInput = _physics_setup()
+	_wall(ISAK_FEET.x + 24.0)
+	await wait_physics_frames(10)
+	_target(&"receiver", Vector2(-TILE, 0.0))
+	GameState.learn_help(&"receiver")
+	input.move_axis = 1.0
+	await _wait_game_s(HelpCatalog.shared().reread_still_s() + 0.3)
+	assert_lt(absf(_isak.get_real_velocity().x), 1.0, "No se mueve")
+	assert_true(_help.is_reread_visible(), "Contra la pared, sin moverse: sale")
