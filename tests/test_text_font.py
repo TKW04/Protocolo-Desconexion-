@@ -98,6 +98,9 @@ def game_strings():
     for entry in load_json(os.path.join(ROOT, "data", "help.json"))["types"].values():
         texts.append(entry["title"])
         texts.append(entry["text"].replace("{apodo}", ""))
+    # Menu de pausa (data/pause_menu.json): todos sus textos sin las marcas {..}.
+    pause = load_json(os.path.join(ROOT, "data", "pause_menu.json"))
+    texts.extend(re.sub(r"\{[a-z_]+\}", "", v) for k, v in pause["texts"].items() if not k.startswith("_"))
     hud = load_json(os.path.join(ROOT, "data", "hud.json"))
     texts.append(hud["font_glyphs"])
     texts.append("100 % 0 % 999")

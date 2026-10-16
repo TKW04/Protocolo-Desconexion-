@@ -5,8 +5,11 @@
 ##   hub tambien con el icono de ajustes del HUD (Hud, junto al Modo Avion).
 ##   Se cierra con pause o «Reanudar».
 ## - Paginas: principal (Reanudar, Ajustes, [Salir al hub], Cerrar el juego) y
-##   Ajustes («Ayudas de Eco: Mostrar / Ocultar», Volver). El ajuste se guarda
-##   al instante (GameSettings, settings.cfg), aparte del guardado de la partida.
+##   Ajustes («Ayudas de Eco: Mostrar / Ocultar», «Reducir efectos de Sync
+##   bajo: Si / No», «Contorno del Debug de alto contraste: Si / No», Volver).
+##   Los ajustes se guardan al instante (GameSettings, settings.cfg), aparte del
+##   guardado de la partida, y se aplican al momento. El detalle explica el
+##   ajuste elegido.
 ## - NAVEGACION (2026-10-16): pause (Esc / Start) y back_actions (B) vuelven UNA
 ##   pagina atras (de una subpagina a la anterior; en la principal, reanudan).
 ## - «Cerrar el juego» pasa por QuitGuard: con cambios sin guardar sale el mismo
@@ -44,7 +47,13 @@ const GROUP: StringName = &"pause_menu"
 const BLOCKER_GROUP: StringName = &"pause_menu_blocker"
 
 enum Page { MAIN, SETTINGS, CONFIRM_HUB }
-enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT }
+enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT, LOW_SYNC, DEBUG_OUTLINE }
+
+## Interruptores Si / No de Ajustes: opcion -> [clave de GameSettings, clave de texto].
+const SWITCHES: Dictionary = {
+	Option.LOW_SYNC: [&"reduce_low_sync_effects", "low_sync"],
+	Option.DEBUG_OUTLINE: [&"debug_high_contrast_outline", "debug_outline"],
+}
 
 signal opened
 signal closed
@@ -111,8 +120,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif _matches(event, "down_actions"):
 		move_selection(1)
 	elif _matches(event, "left_actions") or _matches(event, "right_actions"):
-		if get_selected_option() == Option.ECO_HELP:
-			activate(Option.ECO_HELP)
+		if is_switch(get_selected_option()):
+			activate(get_selected_option())
 	elif _matches(event, "confirm_actions"):
 		activate(get_selected_option())
 	elif _matches(event, "back_actions"):
@@ -226,6 +235,10 @@ func activate(option: Option) -> void:
 		Option.ECO_HELP:
 			GameSettings.set_eco_help_shown(not GameSettings.is_eco_help_shown())
 			_refresh()
+		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
+			var key: StringName = SWITCHES[option][0]
+			GameSettings.set_bool(key, not GameSettings.get_bool(key))
+			_refresh()
 		Option.BACK:
 			go_back()
 		Option.EXIT_TO_HUB:
@@ -233,6 +246,11 @@ func activate(option: Option) -> void:
 				_show_page(Page.CONFIRM_HUB)
 		Option.CONFIRM_EXIT:
 			confirm_exit_to_hub()
+
+
+## La opcion es un ajuste que se cambia con izquierda/derecha o aceptar.
+func is_switch(option: Option) -> bool:
+	return option == Option.ECO_HELP or SWITCHES.has(option)
 
 
 ## Atras: una pagina (de Ajustes o de la confirmacion a la principal); en la
@@ -303,6 +321,9 @@ func option_text(option: Option) -> String:
 		Option.ECO_HELP:
 			var value: String = _text("eco_help_shown" if GameSettings.is_eco_help_shown() else "eco_help_hidden")
 			return _text("eco_help").replace("{value}", value)
+		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
+			var on: bool = GameSettings.get_bool(SWITCHES[option][0])
+			return _text(String(SWITCHES[option][1])).replace("{value}", _text("yes" if on else "no"))
 	return _text("back")
 
 
@@ -354,7 +375,7 @@ func _show_page(page: Page) -> void:
 			# Por seguridad empieza en «Volver».
 			_selected = 1
 		_:
-			_options = [Option.ECO_HELP, Option.BACK]
+			_options = [Option.ECO_HELP, Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.BACK]
 	_refresh()
 
 
@@ -393,13 +414,24 @@ func _refresh() -> void:
 		_set_color(label, _color("option_selected" if i == _selected else "option"))
 	match _page:
 		Page.SETTINGS:
-			_detail.text = _text("eco_help_detail_shown" if GameSettings.is_eco_help_shown() else "eco_help_detail_hidden")
+			_detail.text = _option_detail(get_selected_option())
 		Page.CONFIRM_HUB:
 			_detail.text = _text("exit_to_hub_detail")
 		_:
 			_detail.text = ""
 	_help.text = _text(_page_help_key())
 	_layout()
+
+
+## Detalle de un ajuste de la pagina Ajustes (segun su valor).
+func _option_detail(option: Option) -> String:
+	match option:
+		Option.ECO_HELP:
+			return _text("eco_help_detail_shown" if GameSettings.is_eco_help_shown() else "eco_help_detail_hidden")
+		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
+			var on: bool = GameSettings.get_bool(SWITCHES[option][0])
+			return _text("%s_detail_%s" % [SWITCHES[option][1], "yes" if on else "no"])
+	return ""
 
 
 func _page_title_key() -> String:

@@ -253,7 +253,8 @@ var current_world: int = FIRST_WORLD:
 		EventBus.world_changed.emit(current_world)
 
 ## Ajuste de accesibilidad (docs 3.3 y 15.6): reducir el ruido y la distorsion
-## de Sync Rate bajo. Aun no se guarda en disco (no hay menu de opciones).
+## de Sync Rate bajo. Es un ajuste del jugador: lo carga y guarda GameSettings
+## (settings.cfg, «Efectos de Sync bajo» del menu de pausa; 2026-10-16).
 var reduce_low_sync_effects: bool = false:
 	set(value):
 		reduce_low_sync_effects = value
@@ -261,7 +262,8 @@ var reduce_low_sync_effects: bool = false:
 
 ## Ajuste de accesibilidad (docs 15.6, "contorno claro para daltonismo"): las
 ## plataformas ocultas del Debug usan un contorno mas claro y grueso
-## (data/debug_mode.json, high_contrast_*). Aun no se guarda en disco.
+## (data/debug_mode.json, high_contrast_*). Es un ajuste del jugador: lo carga
+## y guarda GameSettings («Contorno del Debug» del menu de pausa; 2026-10-16).
 var debug_high_contrast_outline: bool = false:
 	set(value):
 		debug_high_contrast_outline = value

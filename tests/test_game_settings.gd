@@ -155,3 +155,52 @@ func test_hiding_keeps_what_was_learned() -> void:
 	assert_true(GameState.is_help_learned(&"receiver"), "El album conserva lo aprendido")
 	GameSettings.set_eco_help_shown(true)
 	assert_true(GameState.is_help_learned(&"receiver"))
+
+
+# --- Accesibilidad: Sync bajo y contorno del Debug (2026-10-16) ---
+
+func test_accessibility_defaults_match_previous_behaviour() -> void:
+	assert_false(GameSettings.is_low_sync_reduced(), "Por defecto, efectos completos")
+	assert_false(GameSettings.is_debug_outline_high_contrast(), "Por defecto, contorno del Debug")
+	assert_false(GameState.reduce_low_sync_effects)
+	assert_false(GameState.debug_high_contrast_outline)
+
+
+func test_accessibility_settings_save_load_and_apply() -> void:
+	var reduced: Array = []
+	var on_reduce := func(enabled: bool) -> void: reduced.append(enabled)
+	EventBus.reduce_low_sync_effects_changed.connect(on_reduce)
+	assert_true(GameSettings.set_low_sync_reduced(true))
+	EventBus.reduce_low_sync_effects_changed.disconnect(on_reduce)
+	assert_eq(reduced, [true], "El HUD recibe el cambio al momento")
+	assert_true(GameSettings.set_debug_outline_high_contrast(true))
+	assert_true(GameState.debug_high_contrast_outline, "Las plataformas ocultas, al momento")
+	GameSettings.reset_defaults()
+	assert_false(GameState.reduce_low_sync_effects)
+	GameSettings.reload()
+	assert_true(GameSettings.is_low_sync_reduced(), "Se cargan del disco")
+	assert_true(GameState.reduce_low_sync_effects, "Y se aplican al cargar")
+	assert_true(GameState.debug_high_contrast_outline)
+	assert_false(GameState.has_unsaved_changes())
+
+
+func test_old_settings_file_migrates_without_losing_values() -> void:
+	# settings.cfg de la version anterior: solo [help].
+	var old := ConfigFile.new()
+	old.set_value(GameSettings.SECTION_HELP, String(GameSettings.KEY_SHOW_ECO_HELP), false)
+	old.save(GameSettings.settings_path())
+	GameSettings.reload()
+	assert_false(GameSettings.is_eco_help_shown(), "Conserva lo que habia")
+	assert_false(GameSettings.is_low_sync_reduced(), "Lo nuevo, por defecto")
+	assert_false(GameSettings.is_debug_outline_high_contrast())
+	# Valor que no es booleano: por defecto, sin romper los demas.
+	old.set_value(GameSettings.SECTION_ACCESSIBILITY, "reduce_low_sync_effects", "quizas")
+	old.save(GameSettings.settings_path())
+	GameSettings.reload()
+	assert_false(GameSettings.is_low_sync_reduced())
+	assert_false(GameSettings.is_eco_help_shown())
+	GameSettings.set_low_sync_reduced(true)
+	var config := ConfigFile.new()
+	config.load(GameSettings.settings_path())
+	assert_eq(config.get_value(GameSettings.SECTION_HELP, String(GameSettings.KEY_SHOW_ECO_HELP)), false,
+		"Guardar uno nuevo no pisa los anteriores")
