@@ -132,6 +132,7 @@ Paso 11 de `propuesta-hub-y-guardado.md` §6.1, **integrado en el hub real (2026
 | Huecos del dock | `dock_slots/dock_slot_notes_00`, `dock_slot_flashlight_00`, `dock_slot_trash_00` | 64x96 | silueta apagada de Notas, Linterna y Papelera sobre un zócalo | 1 |
 | HUD del hub | `icons/icon_airplane_mode_00.png` | 16x16 | Modo Avión (`texto_claro`) | 1 |
 | | `icons/icon_unsaved_00.png` | 16x16 | «sin guardar»: disquete con punto, en `ambar` | 1 |
+| Miniatura del mundo (carpetas, 2026-10-15) | `icons/world_icon_m1_00.png` | 16x16 (dibujada x2 junto al número) | Mundo 1: campana `texto_claro` con sombra `texto_tenue`, brillo `cian_brillo`, badajo `acento_cian` y contorno `fondo_profundo` (se lee en la carpeta disponible y en la completada); los mundos bloqueados no llevan miniatura | 1 |
 | Indicador de página | `icons/page_dot_current_00.png`, `page_dot_other_00.png` | 8x8 | actual (lleno) / otra (anillo) | 1 |
 
 Notas para integrar: los objetos se apoyan en el borde inferior de su lienzo (la copia local y la Calc sobre el dock, las carpetas sobre su repisa). El contenido de la foto es un paisaje neutro provisional: el diseño no dice qué muestra la foto de Isak. Las repisas quedan a 160 px del dock (2,5 tiles, alcanzables de un salto) y las carpetas se bajan 8 px (`folder_sink_px`) para apoyarse en ellas; `--scene` usa esas posiciones de `data/hub.json`.
