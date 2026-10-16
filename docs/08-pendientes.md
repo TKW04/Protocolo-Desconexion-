@@ -14,7 +14,7 @@ Origen: sección 16 del documento original (`docs/original/diseno.md`).
 - ~~Tutorial de guardado en el 1-1 (B + C: línea de Eco junto a la terminal de salida y primer hub guiado)~~ **[Reemplazado 2026-10-15 (3)]**: Eco presenta a Notas en el primer hub y Notas explica cómo guardar (`propuesta-asistentes-y-vidas.md`). Ya implementada la confirmación al entrar a una carpeta con cambios sin guardar
 - ~~Diseñar el hub tras cerrar el 1-1~~ Diseño aprobado el 2026-10-15 (`propuesta-hub-y-guardado.md`). Pendiente de implementar: pasos 4 a 12 de §6.2 (estaciones, escena del hub, copia local, carpetas, Calc dormida, flujo, tutorial y arte; hechos salvo el 10, sustituido, y el 12; Calc dormida se cambiará por Calc apagada hasta el 1-2, 2026-10-15 (3))
 - Paleta del hub (hex del «gris azulado apagado»): decisión abierta del usuario
-- Menú de pausa con ajustes (`pause`; ajustes en `user://settings.cfg`, al instante) y rollback (restaura puntos y objetos del mapa; conserva los secretos encontrados): decididos el 2026-10-15, sin implementar
+- Menú de pausa con ajustes (`pause`; ajustes en `user://settings.cfg`, al instante): **implementado el 2026-10-16** con «Ayudas de Eco: Mostrar / Ocultar» (paso 13 de `propuesta-asistentes-y-vidas.md`); faltan en el menú reducir el ruido con Sync Rate bajo y el contorno de alto contraste del Debug. Rollback (restaura puntos y objetos del mapa; conserva los secretos encontrados): decidido el 2026-10-15
 - Asistentes, ayuda con Q, vidas y Papelera (decisiones del 2026-10-15 (3), sin implementar): plan de 17 pasos en `propuesta-asistentes-y-vidas.md` §10. Preguntas abiertas en su §12:
   - Desde cuándo cuentan las vidas.
   - Mundo oscuro de Linterna.

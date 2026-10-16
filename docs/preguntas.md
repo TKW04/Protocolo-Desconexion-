@@ -788,3 +788,20 @@ Implementado el paso 14 de `docs/propuesta-asistentes-y-vidas.md` §10 (detalle 
 - **En el 1-1 actual no se puede coger:** el Debug llega al final del 1-2, que aún no existe. El validador la trata como «alcanzable con Debug» y no obligatoria; el bot no la recoge (duración sin cambio).
 - **Texto de la ayuda** (`extra_life`, pestaña Objetos del álbum): «Una vida extra: sube tu máximo de vidas. Guárdala: si caes sin guardar, la pierdes.» Sustituye al de la propuesta («Una vida de repuesto…»).
 - **Reemplazado:** la recompensa anterior del secreto D en `docs/propuesta-1-1-ampliado.md` (1 power bank y la mejora «Debug eficiente»). **Duda para el usuario:** ¿la mejora «Debug eficiente» se desbloquea en otro secreto?
+
+## Menú de pausa y ajuste de ayudas (2026-10-16)
+
+Implementado el paso 13 de `docs/propuesta-asistentes-y-vidas.md` §10 (detalle en su «Estado») y la pregunta 9 de `docs/propuesta-hub-y-guardado.md`. Decisiones del equipo al implementarlo (ajustables):
+
+- **Acción `pause`:** Esc / Start (ya estaba en el Input Map, sin choques). Abre el menú en los niveles y en el hub; lo cierran `pause` y «Reanudar». En el hub también lo abre un clic en el icono de ajustes (engranaje) de la esquina del HUD, delante del Modo Avión.
+- **Opciones:** «Reanudar», «Ajustes» («Ayudas de Eco: Mostrar / Ocultar», por defecto Mostrar) y «Cerrar el juego» (con el aviso de siempre si hay cambios sin guardar). Los textos no dicen vuelta ni Easy/Normal/Hard.
+- **Cuándo no se abre:** con el juego ya en pausa (líneas importantes de Eco, ayuda con Q, entrada del apodo, presentaciones del hub, aviso al salir), durante fundidos, muerte y game over, con Isak en un vórtice, con un panel del hub abierto y mientras el cuadro de Eco muestra una línea normal (corre en tiempo real: abrir el menú encima la dejaría avanzar). El menú nunca quita una pausa que no puso.
+- **Ocultar las ayudas:** no sale ninguna Q y pedir ayuda no hace nada, así que no se aprende ningún tipo sin pedirlo. El álbum conserva lo aprendido y la historia de Eco no cambia.
+- **Mando en los menús:** `ui_accept` y `ui_cancel` añaden los botones A y B (antes solo teclado). Afecta también al aviso al salir (A acepta) y a la entrada del apodo (A acepta, B deja el actual, como ya decía su documentación).
+- **Desviación:** el icono de ajustes va en el HUD y no como objeto de la sala en (18-19, 7).
+
+Dudas para el usuario:
+
+- **¿«Salir al hub» en el menú de pausa de los niveles?** Los documentos no lo definen. Si se añade, la propuesta sería: confirmación, se pierde el intento actual (como morir sin checkpoint) y no consume ningún guardado. No está implementado.
+- **¿Qué más ajustes van al menú?** Ya existen sin menú y sin guardar en disco: reducir el ruido con Sync Rate bajo (`reduce_low_sync_effects`) y el contorno de alto contraste del Debug (`debug_high_contrast_outline`).
+- **¿Esc en la página Ajustes** debe volver a la página principal en lugar de reanudar? Hoy Esc / Start reanudan desde cualquier página y B vuelve atrás.

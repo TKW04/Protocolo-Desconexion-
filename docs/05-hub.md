@@ -21,7 +21,7 @@ El hub se organiza en páginas, como una pantalla de inicio de celular. Isak cam
 | **Página 2** | Carpetas de los mundos 4 y 5. |
 | **Página 3** | La Nube, con un candado. Solo se abre con los cinco recuerdos recuperados. |
 | **Dock (barra inferior)** | Los aliados. Es el centro del hub, siempre visible. Es también el **suelo** de la sala: Isak camina sobre él y los aliados están de pie en él (aprobado el 2026-10-15). |
-| **Esquina: Ajustes** | Opciones de accesibilidad, como reducir el ruido visual cuando el Sync Rate es bajo. Los ajustes viven en el menú de pausa (acción `pause`, también en los niveles); en el hub, el icono de la esquina lo abre. Se guardan al instante en `user://settings.cfg`, aparte del guardado manual (aprobado el 2026-10-15). |
+| **Esquina: Ajustes** | Opciones de accesibilidad, como reducir el ruido visual cuando el Sync Rate es bajo. Los ajustes viven en el menú de pausa (acción `pause`, también en los niveles); en el hub, el icono de la esquina lo abre. Se guardan al instante en `user://settings.cfg`, aparte del guardado manual (aprobado el 2026-10-15). Implementado el 2026-10-16: icono de engranaje en la esquina del HUD, delante del Modo Avión; hoy con «Ayudas de Eco: Mostrar / Ocultar». |
 
 Selección de zona y subnivel, compra de mejoras y guardado: ver 13.6.
 

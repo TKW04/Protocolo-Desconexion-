@@ -75,7 +75,7 @@ fila0 [HUD: ✈ Modo Avión ··········· batería  ◆ pts  ● sin gu
 | **Carpetas M1, M2 y M3** | (4–5), (10–11) y (16–17), sobre repisas a 2,5 tiles (160 px) del dock | Se llega de un salto, así que no hay que enseñar nada. M2 y M3 se ven bloqueadas. **Implementado (2026-10-15):** el mapa ponía las repisas en la fila 4 (5 tiles, inalcanzable) y el texto a 3 tiles (192 px, justo la altura de diseño del salto; a 60 Hz Isak llega a ~184 px), así que se bajaron a 160 px. |
 | **Calc** | (7, 9), de pie sobre el dock | Abre el panel de mejoras. En el Mundo 1 está **dormida** (ver §3.2). |
 | **Huecos del dock** | (10, 9), (13, 9) y (16, 9) | Siluetas apagadas para Notas, Linterna y Papelera. Anuncian aliados futuros. |
-| **Ajustes** | Icono en la esquina (18–19, 7) que abre el menú de pausa | Pregunta 9: los ajustes viven en el menú de pausa. |
+| **Ajustes** | Icono en la esquina (18–19, 7) que abre el menú de pausa | Pregunta 9: los ajustes viven en el menú de pausa. **Implementado (2026-10-16):** el icono (engranaje) va en la esquina del HUD del hub, delante del Modo Avión, no como objeto de la sala; un clic o la acción `pause` abren el menú (`PauseMenu`). |
 | **Paredes** | Bordes de la sala | Mientras haya una sola página, el borde no desliza la pantalla. |
 
 **[cambia 05-hub §13.2]:** el dock pasa a ser el **suelo** del hub (los aliados están de pie en él). §13.2 lo describe como una «barra inferior» sin decir si se camina sobre ella.
@@ -101,7 +101,7 @@ Mientras el panel está abierto, Isak no se mueve, así que usar `jump` para cer
 | **Notas** | Notas | Bitácora: recuerdos, diálogos, pistas y coleccionables (§13.3). **[Reemplazado 2026-10-15 (3)]:** consola de guardado (la copia local) y álbum de enemigos y objetos. | **Sí** (como copia local) | Desde la primera llegada al hub |
 | **Linterna** | Linterna | ~~Muestra los secretos por nivel («2/4») y da pistas (§13.3).~~ **[Reemplazado 2026-10-15 (3)]:** objeto que se activa en zonas oscuras; en el hub solo enciende su hueco. | No | Al entrar en el X-1 del mundo oscuro (por decidir) |
 | **Papelera** | Papelera | ~~Guarda parte de los puntos perdidos al morir para recuperarlos (§13.3). Propuesta: los puntos de la última muerte de cada nivel.~~ **[Reemplazado 2026-10-15 (3)]:** en un rollback (game over por vidas o jefe final) aparece en ella lo guardado (habilidades, power banks, puntos de atención y mejoras), que se recupera acercándose. Las muertes normales siguen sin quitar puntos (V2). | No (hueco apagado; columna 10) | En el primer game over o rollback |
-| **Ajustes** | Menú | Accesibilidad (§13.2), por ejemplo reducir el ruido con Sync Rate bajo. Se guardan **al instante** (pregunta 6). | Sí (mínimo) | Igual |
+| **Ajustes** | Menú | Accesibilidad (§13.2), por ejemplo reducir el ruido con Sync Rate bajo. Se guardan **al instante** (pregunta 6). **Implementado (2026-10-16):** menú de pausa con «Ayudas de Eco: Mostrar / Ocultar» (`GameSettings`, `user://settings.cfg`); reducir el ruido y el contorno de alto contraste del Debug aún no están en el menú. | Sí (mínimo) | Igual |
 
 ### 3.2 Calc antes de vencer a Alerta Mayor **[cambia 05-hub §13.3]** **[REEMPLAZADO 2026-10-15 (3)]: no hay tienda hasta encontrar a Calc al final del 1-2; antes su hueco está apagado e inactivo (`propuesta-asistentes-y-vidas.md` §2.3)**
 
@@ -152,7 +152,7 @@ Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
 | **`found_secrets`** (nivel → ids) | No | **Nuevo** | Hace falta para Linterna y Notas. El rollback no lo toca: es un registro (pregunta 8). |
 | **`hub_tutorial_done`** | No | **Nuevo** | Primer hub guiado (§5). **[Reemplazado 2026-10-15 (3)]:** en el esquema v3 pasa a `allies_met` («notas») (`propuesta-asistentes-y-vidas.md` §6). |
 | **`saved_at`** (fecha) y **`play_time_s`** | No | **Nuevo** | Se muestran en la copia local. |
-| Ajustes | No | **Aparte** | `user://settings.cfg`, guardado al cambiarlos. No es progreso (pregunta 6). |
+| Ajustes | No | **Aparte** | `user://settings.cfg`, guardado al cambiarlos. No es progreso (pregunta 6). **Implementado (2026-10-16):** `GameSettings` (`ConfigFile`; `ISAK_SETTINGS_PATH`, y en pruebas y herramientas `user://test_settings.cfg` / `user://tool_settings.cfg`). |
 
 No se guardan: Sync Rate, energía y checkpoints (el hub los repone), ni el enfriamiento de los cargadores.
 
