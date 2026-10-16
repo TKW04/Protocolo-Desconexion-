@@ -775,3 +775,16 @@ Implementados los pasos 11 y 12 de `docs/propuesta-asistentes-y-vidas.md` §10 (
 - **Confirmación al entrar a una carpeta:** se mantiene el título «¿Seguro? Aún no has guardado.» y se añade «Si caes sin guardar, Eco te devolverá a tu última copia.».
 - **Guardado:** sigue en v3; no hizo falta subir la versión. «Primera vez» se apunta con `"papelera"` en `allies_met`. La vida extra (secreto D, paso 14) no está: queda el hueco `GameState.add_max_life()`.
 - **Desviaciones:** Eco habla en el hub al llegar (no antes de la transición, como decía §5.2): así sale siempre, la primera vez más larga; la transición es el fundido de siempre (sin shader de glitch todavía). El HUD de vidas usa 12x16 px dentro de un cuadro de 16x16 (el validador exige múltiplos de 8).
+
+## Vida extra y pared con glitch del secreto D (2026-10-16)
+
+Implementado el paso 14 de `docs/propuesta-asistentes-y-vidas.md` §10 (detalle en su «Estado»). Reglas aprobadas por el usuario:
+
+- **La pared con glitch del 1-1 (secreto D, columna 298) solo se abre con el Debug.** Con el Debug activo e Isak a menos de 3 tiles se disuelve (parpadeo con líneas cian, ajustable) y deja de ser sólida hasta que se recarga el nivel. Sin Debug es sólida y su ayuda con Q («Eso es un error de visualización. Ignóralo, por favor.») no cambia. Es la interacción mínima: el Debug no cambia.
+- **La vida extra aparece en la propia celda de la pared** (columna 298, fila 9): detrás solo queda el borde del mapa.
+- **Recogerla** sube `lives_max` para siempre (3 → 4) y suma una vida al intento en curso; se registra en `found_secrets` con un id estable por mapa («1-1» / «D»). Se coge una sola vez por mapa y, si ya está encontrada, no vuelve a aparecer.
+- **Como todo lo obtenido**, si no se guarda antes de un game over se pierde con el rollback: `lives_max` vuelve al de la copia y la vida extra vuelve a estar en el mapa.
+- **Una vida extra cada N mapas, N = 3 (ajustable jugando).** N no está en el código: se decide al colocar `extra_life_pickup` en cada nivel; el esquema solo impide más de una por mapa.
+- **En el 1-1 actual no se puede coger:** el Debug llega al final del 1-2, que aún no existe. El validador la trata como «alcanzable con Debug» y no obligatoria; el bot no la recoge (duración sin cambio).
+- **Texto de la ayuda** (`extra_life`, pestaña Objetos del álbum): «Una vida extra: sube tu máximo de vidas. Guárdala: si caes sin guardar, la pierdes.» Sustituye al de la propuesta («Una vida de repuesto…»).
+- **Reemplazado:** la recompensa anterior del secreto D en `docs/propuesta-1-1-ampliado.md` (1 power bank y la mejora «Debug eficiente»). **Duda para el usuario:** ¿la mejora «Debug eficiente» se desbloquea en otro secreto?
