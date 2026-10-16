@@ -40,6 +40,10 @@ var laser_speed_px_s: float
 var laser_range_px: float
 var laser_length_px: float
 var laser_thickness_px: float
+## Mientras dura la pose del laser (anticipacion + brazo extendido) Isak no se
+## mueve en horizontal: misma regla que el pulso (2026-10-15). Opcional
+## (booleano); sin la clave, falso.
+var laser_locks_movement: bool = false
 ## Aspecto provisional del laser (seccion laser_visual; colores y tiempos).
 var laser_visual: Dictionary = {}
 
@@ -68,6 +72,10 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
 			return _fail("PlayerAbilities: la clave '%s' en '%s' debe ser numerica." % [key, source])
 		abilities.set(key, float(value))
+	var locks: Variant = data.get("laser_locks_movement", false)
+	if typeof(locks) != TYPE_BOOL:
+		return _fail("PlayerAbilities: la clave 'laser_locks_movement' en '%s' debe ser booleana." % source)
+	abilities.laser_locks_movement = locks
 	var visual: Variant = data.get("laser_visual", {})
 	if visual is Dictionary:
 		abilities.laser_visual = visual

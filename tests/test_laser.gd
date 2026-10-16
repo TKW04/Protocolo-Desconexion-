@@ -294,19 +294,145 @@ func test_hurt_cuts_laser_pose() -> void:
 	assert_eq(_isak.get_animation(), Isak.ANIM_HURT)
 
 
-func test_laser_pose_does_not_change_movement() -> void:
+## Avanza hasta que termina la pose del laser (con margen).
+func _wait_pose_end() -> void:
+	_sim.step_until(func() -> bool: return not _isak.is_laser_posing(),
+		_sim.steps_for(_isak.abilities.laser_windup_s + _isak.laser_pose_hold_s))
+
+
+func test_laser_locks_movement_from_data() -> void:
+	assert_true(_isak.abilities.laser_locks_movement, "laser_locks_movement en isak_abilities.json")
+
+
+# Cambio 2026-10-15: antes Isak se movia libre durante la pose; ahora se detiene
+# como con el pulso (apply_horizontal(0): friccion en el suelo).
+func test_moving_and_firing_stops_on_ground() -> void:
 	_sim.input.move_axis = 1.0
 	_sim.step(60)
-	var speed: float = _isak.velocity.x
-	assert_almost_eq(speed, _isak.physics.walk_speed, EPS, "Ya camina a velocidad maxima")
+	assert_almost_eq(_isak.velocity.x, _isak.physics.walk_speed, EPS, "Ya camina a velocidad maxima")
+	_sim.input.laser_pressed = true
+	_sim.step()
+	assert_true(_isak.is_laser_locking_movement(), "La anticipacion ya bloquea el movimiento")
+	var x0: float = _isak.global_position.x
+	var v0: float = _isak.velocity.x
+	_sim.step()
+	assert_almost_eq(_isak.velocity.x, move_toward(v0, 0.0, _isak.physics.ground_friction * DT), EPS,
+		"Frena con la friccion del suelo, como el pulso")
+	_sim.step(_sim.frames(_isak.physics.walk_speed / _isak.physics.ground_friction) + 1)
+	assert_true(_isak.is_laser_posing(), "Sigue la pose")
+	assert_almost_eq(_isak.velocity.x, 0.0, EPS, "Quieto aunque se mantenga la direccion")
+	var x_stopped: float = _isak.global_position.x
+	_sim.step(3)
+	assert_almost_eq(_isak.global_position.x, x_stopped, EPS, "No se desliza")
+	assert_lt(x_stopped - x0, 16.0, "Apenas avanza al frenar")
+	assert_eq(_isak.get_state_name(), PlayerState.RUN, "Sigue en su estado")
+	assert_eq(_isak.get_animation(), Isak.ANIM_LASER, "Con la pose del laser")
+
+
+func test_running_and_firing_also_stops() -> void:
+	_sim.input.move_axis = 1.0
+	_sim.input.run_held = true
+	_sim.step(60)
+	_sim.input.laser_pressed = true
+	_sim.step(1 + _sim.frames(_isak.physics.run_speed / _isak.physics.ground_friction) + 1)
+	assert_true(_isak.is_laser_posing())
+	assert_almost_eq(_isak.velocity.x, 0.0, EPS, "Corriendo tambien se detiene")
+
+
+func test_opposite_direction_does_not_turn_during_pose() -> void:
+	_sim.input.laser_pressed = true
+	_sim.step()
+	_sim.input.move_axis = -1.0
+	_sim.step(4)
+	assert_true(_isak.is_laser_posing())
+	assert_eq(_isak.facing, 1.0, "No se gira durante la pose")
+	assert_almost_eq(_isak.velocity.x, 0.0, EPS, "Ni se mueve")
+
+
+func test_air_behaves_like_pulse() -> void:
+	_sim.input.move_axis = 1.0
+	_sim.step(60)
+	_sim.press_jump()
+	_sim.step(3)
+	assert_false(_isak.is_on_floor(), "En el aire")
+	_sim.input.laser_pressed = true
+	_sim.step()
+	assert_true(_isak.is_laser_locking_movement())
+	var v0: Vector2 = _isak.velocity
+	_sim.step()
+	assert_false(_isak.is_on_floor())
+	assert_almost_eq(_isak.velocity.x, move_toward(v0.x, 0.0, _isak.physics.air_acceleration * DT), EPS,
+		"En el aire frena con air_acceleration (apply_horizontal(0), como el pulso)")
+	var g: float = _isak.physics.gravity * (_isak.physics.fall_gravity_multiplier if v0.y >= 0.0 else 1.0)
+	assert_almost_eq(_isak.velocity.y, v0.y + g * DT, EPS, "La gravedad no cambia")
+
+
+func test_control_returns_after_pose() -> void:
+	_sim.input.move_axis = 1.0
+	_sim.step(60)
+	_sim.input.laser_pressed = true
+	_sim.step()
+	_wait_pose_end()
+	assert_false(_isak.is_laser_locking_movement(), "Sin pose, sin bloqueo")
+	_sim.step(30)
+	assert_almost_eq(_isak.velocity.x, _isak.physics.walk_speed, EPS, "Recupera el control")
+	assert_eq(_isak.get_animation(), Isak.ANIM_WALK, "Y la animacion de caminar")
+
+
+func test_lock_lasts_as_long_as_pose() -> void:
+	_sim.input.laser_pressed = true
+	_sim.step()
+	var steps: int = _sim.step_until(func() -> bool: return not _isak.is_laser_locking_movement(), 60)
+	var expected: int = _sim.frames(_isak.abilities.laser_windup_s + _isak.laser_pose_hold_s)
+	assert_almost_eq(steps, expected, 2, "Bloqueo = anticipacion + brazo extendido (0,30 s)")
+
+
+func test_lock_can_be_disabled_in_data() -> void:
+	_isak.abilities.laser_locks_movement = false
+	_sim.input.move_axis = 1.0
+	_sim.step(60)
 	_sim.input.laser_pressed = true
 	_sim.step(6)
 	assert_true(_isak.is_laser_posing())
-	assert_eq(_isak.get_state_name(), PlayerState.RUN, "Sigue en su estado")
-	assert_almost_eq(_isak.velocity.x, speed, EPS, "Sin cambios en la velocidad")
-	_sim.input.move_axis = 0.0
-	_sim.step(roundi(_isak.laser_pose_hold_s / DT) + 2)
-	assert_false(_isak.is_laser_posing())
+	assert_almost_eq(_isak.velocity.x, _isak.physics.walk_speed, EPS, "Con false se mueve libre (antes)")
+	_isak.abilities.laser_locks_movement = true
+
+
+func test_lock_does_not_change_cooldown() -> void:
+	assert_almost_eq(_isak.abilities.laser_cooldown_s, 0.4, EPS, "Enfriamiento sin cambios")
+	_sim.input.move_axis = 1.0
+	_sim.step(60)
+	_sim.input.laser_pressed = true
+	_sim.step()
+	assert_almost_eq(_isak.get_laser_cooldown_left(), _isak.abilities.laser_cooldown_s, EPS)
+	_wait_pose_end()
+	assert_gt(_isak.get_laser_cooldown_left(), 0.0, "La pose acaba antes que el enfriamiento")
+	_sim.input.laser_pressed = true
+	_sim.step()
+	assert_false(_isak.is_laser_posing(), "No dispara durante el enfriamiento")
+
+
+func test_hurt_ends_lock_with_knockback() -> void:
+	_sim.input.laser_pressed = true
+	_sim.step(3)
+	assert_true(_isak.is_laser_locking_movement())
+	_isak.take_hit(-1.0)
+	assert_false(_isak.is_laser_locking_movement(), "El golpe corta la pose")
+	_sim.step()
+	assert_lt(_isak.velocity.x, 0.0, "El retroceso no se bloquea")
+
+
+func test_jump_during_pose_keeps_lock_until_pose_ends() -> void:
+	_sim.input.laser_pressed = true
+	_sim.step()
+	_sim.input.move_axis = 1.0
+	_sim.press_jump()
+	assert_eq(_isak.get_state_name(), PlayerState.JUMP, "Puede saltar durante la pose (como antes)")
+	assert_true(_isak.is_laser_posing(), "El salto no corta la pose (como antes)")
+	assert_almost_eq(_isak.velocity.x, 0.0, EPS, "Sube en vertical mientras dura")
+	_wait_pose_end()
+	_sim.step(10)
+	assert_gt(_isak.velocity.x, 0.0, "Luego recupera el control en el aire")
 
 
 # --- Vida de la Burbuja ---

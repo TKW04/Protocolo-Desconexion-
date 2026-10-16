@@ -83,8 +83,9 @@ const LASER_ENERGY_EPS: float = 0.0001
 ## extendido, en el mismo punto que la onda del pulso. El destello de la
 ## anticipacion y el proyectil nacen aqui (ver get_laser_origin()).
 @export var laser_pose_phone_offsets: Array[Vector2] = [Vector2(22.0, -61.0), Vector2(25.0, -60.0), Vector2(36.0, -56.0)]
-## Segundos que Isak mantiene el brazo extendido tras disparar (solo visual;
-## menor que laser_cooldown_s para que al caminar no patine mucho).
+## Segundos que Isak mantiene el brazo extendido tras disparar (menor que
+## laser_cooldown_s). Con abilities.laser_locks_movement, Isak no se mueve en
+## horizontal mientras dura la pose (ver is_laser_locking_movement()).
 @export var laser_pose_hold_s: float = 0.25
 ## Limites de la camara en px. Sin area = sin limites.
 @export var camera_limits: Rect2i = Rect2i()
@@ -256,9 +257,15 @@ func get_laser_muzzle() -> LaserMuzzle:
 
 
 ## Verdadero mientras Isak muestra la pose del laser (sube el celular o lo
-## mantiene extendido tras el disparo). Solo visual.
+## mantiene extendido tras el disparo).
 func is_laser_posing() -> bool:
 	return _laser_pose_frame >= 0
+
+
+## Verdadero mientras la pose del laser bloquea el movimiento horizontal
+## (abilities.laser_locks_movement; misma regla que el pulso).
+func is_laser_locking_movement() -> bool:
+	return abilities != null and abilities.laser_locks_movement and is_laser_posing()
 
 
 ## Celular de la pose del laser (cuadro actual) relativo a los pies, segun
@@ -287,8 +294,11 @@ func just_landed() -> bool:
 # --- Fisica comun ---
 
 ## Acelera hacia axis * velocidad (caminar o correr). Con axis 0 aplica friccion.
-## En el aire usa air_acceleration en ambos casos.
+## En el aire usa air_acceleration en ambos casos. Durante la pose del laser
+## (si bloquea el movimiento) la direccion se ignora, como en el pulso.
 func apply_horizontal(axis: float, delta: float) -> void:
+	if is_laser_locking_movement():
+		axis = 0.0
 	if not is_zero_approx(axis):
 		facing = signf(axis)
 		_sprite.flip_h = facing < 0.0
