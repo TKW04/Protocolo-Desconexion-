@@ -1,0 +1,6 @@
+{
+	"_notes": "Ajustes del jugador (GameSettings, scripts/autoload/game_settings.gd; settings.cfg, guardado al instante y aparte de la partida). display (2026-10-16, decision del usuario): modo de ventana (Ventana / Pantalla completa) y tamano de la ventana. window_presets: tamanos que se ofrecen en Ajustes > Pantalla, en px; solo se listan los que caben en el monitor actual (nunca uno mayor; 1280x720, la resolucion base, siempre). El juego se dibuja SIEMPRE a 1280x720 (stretch viewport) y se escala por un factor ENTERO (scale_mode integer) para que el pixel art no se deforme: si el tamano de la ventana o de la pantalla no es multiplo exacto de 1280x720, el juego queda centrado con bordes negros (letterbox; p. ej. 1600x900 y 1920x1080 se ven a x1 con bordes y 2560x1440 a x2 sin bordes). Por defecto: ventana de 1280x720 (el comportamiento anterior). Las pruebas (GUT) y los scripts -s (bots, capturas) nunca cambian la ventana real.",
+	"display": {
+		"window_presets": [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]]
+	}
+}

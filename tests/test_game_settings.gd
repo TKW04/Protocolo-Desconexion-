@@ -76,10 +76,10 @@ func test_change_is_saved_at_once_and_loaded_on_restart() -> void:
 	assert_false(GameSettings.set_eco_help_shown(false), "Sin cambio no hace nada")
 	GameSettings.reset_defaults()
 	assert_true(GameSettings.is_eco_help_shown())
-	GameSettings.reload()
+	GameSettings.load_from_disk()
 	assert_false(GameSettings.is_eco_help_shown(), "Al reiniciar se carga del disco")
 	GameSettings.set_eco_help_shown(true)
-	GameSettings.reload()
+	GameSettings.load_from_disk()
 	assert_true(GameSettings.is_eco_help_shown())
 
 
@@ -177,7 +177,7 @@ func test_accessibility_settings_save_load_and_apply() -> void:
 	assert_true(GameState.debug_high_contrast_outline, "Las plataformas ocultas, al momento")
 	GameSettings.reset_defaults()
 	assert_false(GameState.reduce_low_sync_effects)
-	GameSettings.reload()
+	GameSettings.load_from_disk()
 	assert_true(GameSettings.is_low_sync_reduced(), "Se cargan del disco")
 	assert_true(GameState.reduce_low_sync_effects, "Y se aplican al cargar")
 	assert_true(GameState.debug_high_contrast_outline)
@@ -189,14 +189,14 @@ func test_old_settings_file_migrates_without_losing_values() -> void:
 	var old := ConfigFile.new()
 	old.set_value(GameSettings.SECTION_HELP, String(GameSettings.KEY_SHOW_ECO_HELP), false)
 	old.save(GameSettings.settings_path())
-	GameSettings.reload()
+	GameSettings.load_from_disk()
 	assert_false(GameSettings.is_eco_help_shown(), "Conserva lo que habia")
 	assert_false(GameSettings.is_low_sync_reduced(), "Lo nuevo, por defecto")
 	assert_false(GameSettings.is_debug_outline_high_contrast())
 	# Valor que no es booleano: por defecto, sin romper los demas.
 	old.set_value(GameSettings.SECTION_ACCESSIBILITY, "reduce_low_sync_effects", "quizas")
 	old.save(GameSettings.settings_path())
-	GameSettings.reload()
+	GameSettings.load_from_disk()
 	assert_false(GameSettings.is_low_sync_reduced())
 	assert_false(GameSettings.is_eco_help_shown())
 	GameSettings.set_low_sync_reduced(true)
@@ -204,3 +204,84 @@ func test_old_settings_file_migrates_without_losing_values() -> void:
 	config.load(GameSettings.settings_path())
 	assert_eq(config.get_value(GameSettings.SECTION_HELP, String(GameSettings.KEY_SHOW_ECO_HELP)), false,
 		"Guardar uno nuevo no pisa los anteriores")
+
+
+# --- Pantalla: modo y tamano de ventana (2026-10-16) ---
+
+func test_display_defaults_are_the_previous_window() -> void:
+	assert_eq(GameSettings.get_window_mode(), GameSettings.WINDOW_MODE_WINDOWED, "Ventana")
+	assert_eq(GameSettings.get_window_size(), Vector2i(1280, 720), "1280x720")
+	assert_true(GameSettings.is_display_default())
+	assert_eq(GameSettings.base_size(), Vector2i(1280, 720), "Resolucion base de project.godot")
+
+
+func test_window_presets_are_valid() -> void:
+	var presets: Array[Vector2i] = GameSettings.window_presets()
+	assert_eq(presets[0], GameSettings.base_size(), "La base, la primera")
+	for size: Vector2i in [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]:
+		assert_true(presets.has(size), "Preset %s" % size)
+	for size: Vector2i in presets:
+		assert_true(size.x >= 1280 and size.y >= 720, "Nunca menor que la base: %s" % size)
+		assert_eq(size.x * 9, size.y * 16, "16:9 como la base: %s" % size)
+
+
+func test_presets_never_exceed_the_screen() -> void:
+	var fits: Array[Vector2i] = GameSettings.available_presets(Vector2i(1920, 1080))
+	assert_true(fits.has(Vector2i(1920, 1080)))
+	assert_false(fits.has(Vector2i(2560, 1440)), "Uno mayor que el monitor no se ofrece")
+	var small: Array[Vector2i] = GameSettings.available_presets(Vector2i(1366, 768))
+	assert_eq(small, [Vector2i(1280, 720)] as Array[Vector2i], "En un monitor pequeno, solo la base")
+	var tiny: Array[Vector2i] = GameSettings.available_presets(Vector2i(1024, 600))
+	assert_eq(tiny, [Vector2i(1280, 720)] as Array[Vector2i], "La base siempre (es la ventana por defecto)")
+	assert_eq(GameSettings.available_presets(Vector2i.ZERO), GameSettings.window_presets(),
+		"Sin pantalla conocida (headless), todos")
+
+
+func test_integer_scale_and_letterbox() -> void:
+	assert_eq(GameSettings.integer_scale(Vector2i(1280, 720)), 1)
+	assert_false(GameSettings.has_letterbox(Vector2i(1280, 720)))
+	assert_eq(GameSettings.integer_scale(Vector2i(1600, 900)), 1, "1600x900: x1")
+	assert_true(GameSettings.has_letterbox(Vector2i(1600, 900)), "Con bordes")
+	assert_eq(GameSettings.integer_scale(Vector2i(1920, 1080)), 1, "1920x1080: x1 (escala entera)")
+	assert_true(GameSettings.has_letterbox(Vector2i(1920, 1080)))
+	assert_eq(GameSettings.integer_scale(Vector2i(2560, 1440)), 2, "2560x1440: x2")
+	assert_false(GameSettings.has_letterbox(Vector2i(2560, 1440)), "Sin bordes")
+	assert_eq(GameSettings.integer_scale(Vector2i(2560, 1600)), 2, "Pantalla 16:10: x2")
+	assert_true(GameSettings.has_letterbox(Vector2i(2560, 1600)), "Con bordes arriba y abajo")
+
+
+func test_display_settings_save_load_and_never_touch_the_window_in_tests() -> void:
+	var window_mode: DisplayServer.WindowMode = DisplayServer.window_get_mode()
+	var window_size: Vector2i = DisplayServer.window_get_size()
+	assert_false(GameSettings.can_change_window(), "En GUT no se toca la ventana")
+	assert_false(GameSettings.apply_display())
+	assert_true(GameSettings.set_fullscreen(true))
+	assert_true(GameSettings.is_fullscreen())
+	assert_true(GameSettings.set_window_size(Vector2i(1600, 900)))
+	assert_false(GameSettings.set_window_size(Vector2i(1000, 500)), "Solo presets")
+	assert_false(GameSettings.set_window_mode("ventanita"), "Solo modos conocidos")
+	assert_eq(DisplayServer.window_get_mode(), window_mode, "La ventana real no cambia")
+	assert_eq(DisplayServer.window_get_size(), window_size)
+	var config := ConfigFile.new()
+	assert_eq(config.load(GameSettings.settings_path()), OK, "Guardado al instante")
+	assert_eq(config.get_value(GameSettings.SECTION_DISPLAY, "window_mode"), "fullscreen")
+	assert_eq(config.get_value(GameSettings.SECTION_DISPLAY, "window_size"), Vector2i(1600, 900))
+	GameSettings.reset_defaults()
+	assert_true(GameSettings.is_display_default())
+	GameSettings.load_from_disk()
+	assert_true(GameSettings.is_fullscreen(), "Se carga al arrancar")
+	assert_eq(GameSettings.get_window_size(), Vector2i(1600, 900))
+	assert_eq(DisplayServer.window_get_mode(), window_mode, "Cargar tampoco toca la ventana en GUT")
+	assert_false(GameState.has_unsaved_changes(), "No es progreso")
+
+
+func test_bad_display_values_fall_back_to_defaults() -> void:
+	var config := ConfigFile.new()
+	config.set_value(GameSettings.SECTION_DISPLAY, "window_mode", "maximizada")
+	config.set_value(GameSettings.SECTION_DISPLAY, "window_size", Vector2i(123, 45))
+	config.set_value(GameSettings.SECTION_HELP, String(GameSettings.KEY_SHOW_ECO_HELP), false)
+	config.save(GameSettings.settings_path())
+	GameSettings.load_from_disk()
+	assert_true(GameSettings.is_display_default(), "Valores desconocidos: ventana de 1280x720 (%s, %s)" % [
+		GameSettings.get_window_mode(), GameSettings.get_window_size()])
+	assert_false(GameSettings.is_eco_help_shown(), "Sin perder los demas")

@@ -9,7 +9,10 @@
 ##   bajo: Si / No», «Contorno del Debug de alto contraste: Si / No», Volver).
 ##   Los ajustes se guardan al instante (GameSettings, settings.cfg), aparte del
 ##   guardado de la partida, y se aplican al momento. El detalle explica el
-##   ajuste elegido.
+##   ajuste elegido. «Pantalla» abre su subpagina: «Modo: Ventana / Pantalla
+##   completa» y «Tamano de ventana» (presets de data/settings.json que caben en
+##   el monitor), con el factor de escala entero y si quedan bordes negros en el
+##   detalle (GameSettings.apply_display; no se aplica en pruebas ni scripts).
 ## - NAVEGACION (2026-10-16): pause (Esc / Start) y back_actions (B) vuelven UNA
 ##   pagina atras (de una subpagina a la anterior; en la principal, reanudan).
 ## - «Cerrar el juego» pasa por QuitGuard: con cambios sin guardar sale el mismo
@@ -46,8 +49,9 @@ const GROUP: StringName = &"pause_menu"
 ## Grupo de los nodos que pueden impedir abrirlo (blocks_pause_menu()).
 const BLOCKER_GROUP: StringName = &"pause_menu_blocker"
 
-enum Page { MAIN, SETTINGS, CONFIRM_HUB }
-enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT, LOW_SYNC, DEBUG_OUTLINE }
+enum Page { MAIN, SETTINGS, CONFIRM_HUB, DISPLAY }
+enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT, LOW_SYNC, DEBUG_OUTLINE, DISPLAY, WINDOW_MODE,
+	WINDOW_SIZE }
 
 ## Interruptores Si / No de Ajustes: opcion -> [clave de GameSettings, clave de texto].
 const SWITCHES: Dictionary = {
@@ -120,7 +124,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif _matches(event, "down_actions"):
 		move_selection(1)
 	elif _matches(event, "left_actions") or _matches(event, "right_actions"):
-		if is_switch(get_selected_option()):
+		var step: int = -1 if _matches(event, "left_actions") else 1
+		if get_selected_option() == Option.WINDOW_SIZE:
+			cycle_window_size(step)
+		elif is_switch(get_selected_option()):
 			activate(get_selected_option())
 	elif _matches(event, "confirm_actions"):
 		activate(get_selected_option())
@@ -241,6 +248,13 @@ func activate(option: Option) -> void:
 			_refresh()
 		Option.BACK:
 			go_back()
+		Option.DISPLAY:
+			_show_page(Page.DISPLAY)
+		Option.WINDOW_MODE:
+			GameSettings.set_fullscreen(not GameSettings.is_fullscreen())
+			_refresh()
+		Option.WINDOW_SIZE:
+			cycle_window_size(1)
 		Option.EXIT_TO_HUB:
 			if can_exit_to_hub():
 				_show_page(Page.CONFIRM_HUB)
@@ -250,7 +264,19 @@ func activate(option: Option) -> void:
 
 ## La opcion es un ajuste que se cambia con izquierda/derecha o aceptar.
 func is_switch(option: Option) -> bool:
-	return option == Option.ECO_HELP or SWITCHES.has(option)
+	return option == Option.ECO_HELP or option == Option.WINDOW_MODE or SWITCHES.has(option)
+
+
+## Pasa al tamano de ventana siguiente (`step` 1) o anterior (-1) de los que
+## caben en el monitor.
+func cycle_window_size(step: int) -> void:
+	var sizes: Array[Vector2i] = GameSettings.available_presets(GameSettings.screen_size())
+	if sizes.is_empty():
+		return
+	var index: int = sizes.find(GameSettings.get_window_size())
+	index = posmod((index if index >= 0 else 0) + step, sizes.size())
+	GameSettings.set_window_size(sizes[index])
+	_refresh()
 
 
 ## Atras: una pagina (de Ajustes o de la confirmacion a la principal); en la
@@ -263,6 +289,9 @@ func go_back() -> void:
 		Page.CONFIRM_HUB:
 			_show_page(Page.MAIN)
 			select(Option.EXIT_TO_HUB)
+		Page.DISPLAY:
+			_show_page(Page.SETTINGS)
+			select(Option.DISPLAY)
 		_:
 			close()
 
@@ -324,6 +353,13 @@ func option_text(option: Option) -> String:
 		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
 			var on: bool = GameSettings.get_bool(SWITCHES[option][0])
 			return _text(String(SWITCHES[option][1])).replace("{value}", _text("yes" if on else "no"))
+		Option.DISPLAY:
+			return _text("display")
+		Option.WINDOW_MODE:
+			return _text("window_mode").replace("{value}",
+				_text("window_mode_fullscreen" if GameSettings.is_fullscreen() else "window_mode_windowed"))
+		Option.WINDOW_SIZE:
+			return _text("window_size").replace("{value}", size_text(GameSettings.get_window_size()))
 	return _text("back")
 
 
@@ -370,12 +406,14 @@ func _show_page(page: Page) -> void:
 			if can_exit_to_hub():
 				_options.append(Option.EXIT_TO_HUB)
 			_options.append(Option.QUIT)
+		Page.DISPLAY:
+			_options = [Option.WINDOW_MODE, Option.WINDOW_SIZE, Option.BACK]
 		Page.CONFIRM_HUB:
 			_options = [Option.CONFIRM_EXIT, Option.BACK]
 			# Por seguridad empieza en «Volver».
 			_selected = 1
 		_:
-			_options = [Option.ECO_HELP, Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.BACK]
+			_options = [Option.ECO_HELP, Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.DISPLAY, Option.BACK]
 	_refresh()
 
 
@@ -413,7 +451,7 @@ func _refresh() -> void:
 		label.text = prefix + option_text(_options[i])
 		_set_color(label, _color("option_selected" if i == _selected else "option"))
 	match _page:
-		Page.SETTINGS:
+		Page.SETTINGS, Page.DISPLAY:
 			_detail.text = _option_detail(get_selected_option())
 		Page.CONFIRM_HUB:
 			_detail.text = _text("exit_to_hub_detail")
@@ -431,7 +469,33 @@ func _option_detail(option: Option) -> String:
 		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
 			var on: bool = GameSettings.get_bool(SWITCHES[option][0])
 			return _text("%s_detail_%s" % [SWITCHES[option][1], "yes" if on else "no"])
+		Option.DISPLAY:
+			return _text("display_detail")
+		Option.WINDOW_MODE, Option.WINDOW_SIZE:
+			if option == Option.WINDOW_SIZE and GameSettings.is_fullscreen():
+				return _text("window_size_detail_fullscreen")
+			return scale_text(display_area())
 	return ""
+
+
+## Area en que se dibuja el juego con los ajustes actuales: la pantalla en
+## pantalla completa (o la ventana si no se conoce) o el tamano de la ventana.
+func display_area() -> Vector2i:
+	var screen: Vector2i = GameSettings.screen_size()
+	if GameSettings.is_fullscreen() and screen.x > 0:
+		return screen
+	return GameSettings.get_window_size()
+
+
+## «1600x900».
+func size_text(size: Vector2i) -> String:
+	return _text("size_format").replace("{w}", str(size.x)).replace("{h}", str(size.y))
+
+
+## Factor entero y bordes del juego en `area` («Pixeles a x1, con bordes negros.»).
+func scale_text(area: Vector2i) -> String:
+	var key: String = "scale_detail_letterbox" if GameSettings.has_letterbox(area) else "scale_detail_exact"
+	return _text(key).replace("{scale}", str(GameSettings.integer_scale(area)))
 
 
 func _page_title_key() -> String:
@@ -440,12 +504,14 @@ func _page_title_key() -> String:
 			return "title_settings"
 		Page.CONFIRM_HUB:
 			return "title_exit_to_hub"
+		Page.DISPLAY:
+			return "title_display"
 	return "title_main"
 
 
 func _page_help_key() -> String:
 	match _page:
-		Page.SETTINGS:
+		Page.SETTINGS, Page.DISPLAY:
 			return "help_settings"
 		Page.CONFIRM_HUB:
 			return "help_confirm"
