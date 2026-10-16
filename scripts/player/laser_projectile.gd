@@ -111,6 +111,32 @@ func step(delta: float) -> void:
 		_finish(null, false)
 
 
+## Choca ya con `target` (un objeto con on_laser_hit) sin volar: lo usan los
+## objetivos del entorno pegados a Isak (2026-10-16, lector laser y anuncio del
+## 1-2), que el rayo no ve si el celular ya esta dentro de ellos o de la pared
+## de detras. Sin efecto si el proyectil ya termino.
+func strike(target: Node) -> void:
+	if _done:
+		return
+	_on_collision(target)
+
+
+## Verdadero si el tramo horizontal de Isak (source) a la boca del disparo, a la
+## altura del celular, cruza `rect` (coordenadas globales): el objetivo esta entre
+## Isak y el punto donde nace el proyectil, asi que el rayo no lo veria.
+static func muzzle_crosses(projectile: Node2D, rect: Rect2) -> bool:
+	if projectile == null or not is_instance_valid(projectile):
+		return false
+	var muzzle: Vector2 = projectile.global_position
+	if muzzle.y < rect.position.y or muzzle.y > rect.end.y:
+		return false
+	var from_x: float = muzzle.x
+	var shooter: Variant = projectile.get(&"source")
+	if shooter is Node2D and is_instance_valid(shooter):
+		from_x = (shooter as Node2D).global_position.x
+	return maxf(from_x, muzzle.x) >= rect.position.x and minf(from_x, muzzle.x) <= rect.end.x
+
+
 func is_finished() -> bool:
 	return _done
 

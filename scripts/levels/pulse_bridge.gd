@@ -37,7 +37,9 @@ var _solid_count: int = 0
 var _step_time: float = 0.0
 var _sprites: Array[Sprite2D] = []
 var _shapes: Array[CollisionShape2D] = []
-var _receivers: Array[PulseReceiver] = []
+## Receptores enlazados: PulseReceiver o RelayReceiver (grupo pulse_receiver,
+## con target_id, is_active() y la senal activated).
+var _receivers: Array[Node] = []
 
 
 func _ready() -> void:
@@ -150,18 +152,20 @@ func _frame(name: String) -> int:
 	return int(_config.get("frames", {}).get(name, 0))
 
 
-## Conecta con los receptores del arbol cuyo target_id es este puente. Si
+## Conecta con los receptores del arbol (grupo pulse_receiver: el del pulso y
+## el receptor enlazado del 1-2) cuyo target_id es este puente. Si
 ## alguno ya estaba activado (estado restaurado), se extiende enseguida.
 func _link_receivers() -> void:
 	if object_id == &"" or not is_inside_tree():
 		return
 	for node: Node in get_tree().get_nodes_in_group(PulseReceiver.GROUP):
-		var receiver := node as PulseReceiver
-		if receiver == null or receiver.target_id != object_id or _receivers.has(receiver):
+		var receiver: Node = node
+		if not receiver.has_signal(&"activated") or not receiver.has_method(&"is_active") \
+				or StringName(receiver.get(&"target_id")) != object_id or _receivers.has(receiver):
 			continue
 		_receivers.append(receiver)
-		receiver.activated.connect(_on_receiver_activated)
-		if receiver.is_active():
+		receiver.connect(&"activated", _on_receiver_activated)
+		if bool(receiver.call(&"is_active")):
 			activate()
 
 

@@ -175,13 +175,56 @@
 			"fields": {
 				"id": "object_id",
 				"ability": "ability",
-				"message": "message"
+				"message": "message",
+				"refill_energy": "refill_energy"
 			},
 			"defaults": {},
 			"allowed": {
 				"ability": ["pulse", "debug", "laser"]
 			},
 			"example": {"type": "ability_pickup", "x": 40, "y": 8, "params": {"id": "laser_1", "ability": "laser"}}
+		},
+		"laser_receiver": {
+			"scene": "res://scenes/levels/laser_receiver.tscn",
+			"help_id": "laser_receiver",
+			"description": "Lector laser (2026-10-16, paso 3 de docs/propuesta-1-2.md §10; patron 2 de §0.3 y acertijo «Correo certificado», §4). Objetivo del laser (capa world, grupo laser_activatable; el pulso no le hace nada). Placa con diana montada en el lado derecho de su celda (pegada a una pared a su derecha) con la diana a la altura del celular de Isak de pie en el suelo de esa celda (seccion laser_receiver: hit_rect, sprite_center_px). Al recibir un impacto da corriente window_s segundos de tiempo del mundo (el Debug los alarga x2) al relay_receiver con id == target, por un cable visible que va de su salida a la entrada del receptor pasando por los centros de cable (lista de [columna, fila] del grid; dos puntos no alineados se unen en L, primero en horizontal); con corriente el cable se ilumina y se vacia hacia el receptor y parpadea los ultimos warn_s. Otro impacto con corriente vuelve a llenar la ventana. Al vencer se apaga y vuelve a estar listo (sin castigo). Activado el receptor, el lector queda hecho (cable fijo encendido, sin Q). No es solido.",
+			"required": ["id", "target"],
+			"fields": {
+				"id": "object_id",
+				"target": "target_id",
+				"window_s": "window_s",
+				"cable": "cable_cells"
+			},
+			"defaults": {
+				"window_s": 6.0,
+				"cable": []
+			},
+			"example": {"type": "laser_receiver", "x": 14, "y": 10, "params": {"id": "lector_1", "target": "receptor_enlazado_1", "window_s": 6.0, "cable": [[14, 8], [9, 8], [9, 6]]}}
+		},
+		"relay_receiver": {
+			"scene": "res://scenes/levels/relay_receiver.tscn",
+			"help_id": "relay_receiver",
+			"description": "Receptor enlazado (2026-10-16, paso 3 de docs/propuesta-1-2.md §10; patron 2). Receptor de pulso (misma zona de golpe que receiver) que SOLO se activa mientras un laser_receiver con target == su id le da corriente; sin corriente el pulso da una chispa gris y no hace nada. Activado (para siempre) extiende el bridge_inactive con id == target (el puente lo busca en el grupo pulse_receiver, como al receptor del 1-1) y deja hecho a su lector. Sin castigo: al vencer la ventana el acertijo vuelve solo a su estado inicial. No es solido.",
+			"required": ["id", "target"],
+			"fields": {
+				"id": "object_id",
+				"target": "target_id"
+			},
+			"defaults": {},
+			"example": {"type": "relay_receiver", "x": 8, "y": 6, "params": {"id": "receptor_enlazado_1", "target": "puente_correo"}}
+		},
+		"ad_cover": {
+			"scene": "res://scenes/levels/ad_cover.tscn",
+			"help_id": "ad_cover",
+			"description": "Anuncio sobre el boton de un pop-up (2026-10-16, paso 3 de docs/propuesta-1-2.md §10; patron 4 de §0.5). x, y: la celda del boton de cerrar del popup_blocker con id == target (tools/validate_level_schema.py lo comprueba); en el juego se centra solo sobre el boton (seccion ad_cover: size_px). Mientras esta entero el pulso no cierra el pop-up (rebota: chispa gris). Un impacto del laser lo rompe (permanente) y desde entonces el pulso al boton cierra el pop-up. text: texto de humor del anuncio («Saltar anuncio en 5…», falso). No es solido para Isak.",
+			"required": ["id", "target", "text"],
+			"fields": {
+				"id": "object_id",
+				"target": "target_id",
+				"text": "text"
+			},
+			"defaults": {},
+			"example": {"type": "ad_cover", "x": 15, "y": 6, "params": {"id": "anuncio_buzon", "target": "popup_buzon", "text": "Saltar anuncio en 5…"}}
 		},
 		"charger": {
 			"scene": "res://scenes/levels/charger.tscn",
@@ -210,7 +253,48 @@
 		"outline": "#0b0e1a",
 		"body": "#f2f4f8",
 		"core": "#3dfff5",
-		"message_s": 4.0
+		"message_s": 4.0,
+		"_notes_by_ability": "Ajustes por habilidad (2026-10-16, paso 9 de docs/propuesta-1-2.md §10). frames/idle: SpriteFrames y animacion del chip (sin entrada: el chip generico de energy_objects_frames.tres). help_id: su propia ayuda con Q si el objeto del nivel tiene la del tipo (ability_pickup). story_text: linea IMPORTANTE de Eco (historia; admite {apodo}; PROPUESTA de texto, §4.4: la decide el usuario) al recogerlo por PRIMERA vez, antes del aviso de control de data/ability_notices.json. collect: animacion de la instalacion (anillo) y flash: destello del tinte del Debug a pantalla completa (color debug_cian, alpha, duration_s, layer), las dos en tiempo real. Con la habilidad ya obtenida el chip no aparece y nada de esto sale.",
+		"by_ability": {
+			"debug": {
+				"frames": "res://assets/sprites/puzzle_objects_frames.tres",
+				"idle": "debug_chip_idle",
+				"collect": "debug_chip_collect",
+				"help_id": "debug_chip",
+				"story_text": "Una herramienta de diagnóstico, {apodo}. Te deja ver los errores del sistema… y gasta la misma energía que el láser.",
+				"story_duration_s": 4.0,
+				"flash": {"color": "#3dfff5", "alpha": 0.35, "duration_s": 0.5, "layer": 9}
+			}
+		}
+	},
+	"laser_receiver": {
+		"_notes": "PROPUESTA (2026-10-16, ajustable jugando). frames: SpriteFrames de tools/gen_world1_puzzle.py (laser_receiver_idle/powered/done y las piezas del cable). hit_rect: zona de impacto [x, y, ancho, alto] relativa a la esquina superior izquierda de la celda; cubre la altura del celular de Isak de pie en esa celda (56 px sobre el suelo = 8 px por debajo del borde de arriba) y sube hasta la celda de encima. sprite_center_px: centro del arte de 32x48 (diana en su centro). cable_port_px: salida del cable. window_s: corriente por impacto (tiempo del mundo; 6 s en dificultad 2, §0.3). warn_s: ultimos segundos en que el cable parpadea a warn_blink_hz.",
+		"frames": "res://assets/sprites/puzzle_objects_frames.tres",
+		"hit_rect": [32, -16, 32, 48],
+		"sprite_center_px": [48, 8],
+		"cable_port_px": [48, 32],
+		"window_s": 6.0,
+		"warn_s": 1.5,
+		"warn_blink_hz": 6.0,
+		"cable_z_index": 0
+	},
+	"relay_receiver": {
+		"_notes": "PROPUESTA (2026-10-16). hit_rect: zona de golpe del pulso (como receiver). cable_port_px: entrada del cable (conector de la derecha). spark_px: centro de la chispa gris.",
+		"frames": "res://assets/sprites/puzzle_objects_frames.tres",
+		"hit_rect": [12, 0, 40, 64],
+		"cable_port_px": [57, 32],
+		"spark_px": [32, 24]
+	},
+	"ad_cover": {
+		"_notes": "PROPUESTA (2026-10-16). size_px: tamano del anuncio (arte de 96x48), centrado sobre el boton de su pop-up. text_rect_px: zona del texto (fuente de textos a x1, partido por palabras, recoloreado a text_color con el shader de color clave).",
+		"frames": "res://assets/sprites/puzzle_objects_frames.tres",
+		"size_px": [96, 48],
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"text_rect_px": [4, 13, 88, 32],
+		"text_color": "#0b0e1a",
+		"key_color": "#f2f4f8",
+		"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader"
 	},
 	"charger": {
 		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: poste de size_px con contorno outline (noche_profunda), cuerpo body (tile_luz) y pantalla: ready (debug_cian, con un rayo) lista; enfriandose, screen_off (tile_base) con una barra cooling (borde_luz) que sube; gastado, screen_off. La zona de contacto es el rectangulo del poste.",

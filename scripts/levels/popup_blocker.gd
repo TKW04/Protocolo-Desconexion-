@@ -15,6 +15,10 @@
 ##   lineas desplazadas, aplastado, raya, restos). Al terminar deja de ser
 ##   solido, desaparece y no se vuelve a abrir.
 ## - El Debug no cambia nada (solo ralentiza la animacion: tiempo del mundo).
+## - Anuncio encima (2026-10-16, patron 4 de docs/propuesta-1-2.md §0.5): un
+##   AdCover enlazado (add_cover) tapa el boton; mientras este entero el pulso
+##   no cierra el pop-up (rebota en el anuncio). Roto con el laser, el pulso al
+##   boton funciona como siempre.
 ## El origen del nodo es la esquina superior izquierda de su primera celda.
 class_name PopupBlocker
 extends StaticBody2D
@@ -52,6 +56,8 @@ var _label: Label
 var _button: Area2D
 var _button_shape: CollisionShape2D
 var _button_sprite: Sprite2D
+## Anuncios que tapan el boton (AdCover; is_intact()).
+var _covers: Array[Node] = []
 
 
 func _ready() -> void:
@@ -129,12 +135,26 @@ func get_button_frame() -> int:
 	return _button_sprite.frame
 
 
+## Algun anuncio entero tapa el boton: el pulso no lo cierra.
+func is_button_covered() -> bool:
+	for cover: Node in _covers:
+		if is_instance_valid(cover) and bool(cover.call(&"is_intact")):
+			return true
+	return false
+
+
 # --- Acciones ---
+
+## Un anuncio (AdCover) tapa el boton mientras is_intact() sea verdadero.
+func add_cover(cover: Node) -> void:
+	if cover != null and not _covers.has(cover):
+		_covers.append(cover)
+
 
 ## Comprueba si el pulso (`area`, con un CircleShape2D) toca el BOTON y, si es
 ## asi, cierra el pop-up. Devuelve verdadero si se ha empezado a cerrar ahora.
 func receive_pulse(area: Area2D) -> bool:
-	if _state != State.OPEN:
+	if _state != State.OPEN or is_button_covered():
 		return false
 	if not PulseReceiver.pulse_reaches(area, get_button_rect()):
 		return false

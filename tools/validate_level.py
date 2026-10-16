@@ -317,7 +317,10 @@ class LevelModel:
         hit = cfg_receiver.get("hit_rect", [0, 0, T, T])
         for obj in self.level.get("objects", []):
             p = self._params(obj)
-            if obj["type"] == "receiver":
+            # relay_receiver (2026-10-16, paso 3 de docs/propuesta-1-2.md §10): PROVISIONAL, se
+            # modela como un receptor del pulso (sin la corriente de su lector laser ni la ventana
+            # de tiempo); el lector, el anuncio (ad_cover) y el tiempo son el paso 10.
+            if obj["type"] in ("receiver", "relay_receiver"):
                 x0 = obj["x"] * T + hit[0]
                 y0 = obj["y"] * T + hit[1]
                 rect = (x0, y0, x0 + hit[2], y0 + hit[3], "receptor (fila %d, columna %d)" % (obj["y"], obj["x"]))

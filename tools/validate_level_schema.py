@@ -74,7 +74,8 @@ TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
-NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup"}
+NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
+                    "laser_receiver", "relay_receiver"}
 
 
 def _is_int(value):
@@ -318,6 +319,11 @@ class LevelValidator:
         types = catalog.get("types", {})
         bridges = set()
         receivers = []
+        # Enlaces del acertijo del laser (2026-10-16, paso 3 de docs/propuesta-1-2.md §10):
+        # laser_receiver -> relay_receiver -> bridge_inactive y ad_cover -> popup_blocker.
+        relays = set()
+        popups = {}
+        links = []
         doors = []
         encounters = []
         extra_lives = []
@@ -384,6 +390,19 @@ class LevelValidator:
                 bridges.add(params.get("id"))
             elif kind == "receiver":
                 receivers.append((what, x, y, params.get("target")))
+            elif kind == "relay_receiver":
+                relays.add(params.get("id"))
+                receivers.append((what, x, y, params.get("target")))
+            elif kind == "laser_receiver":
+                links.append((what, x, y, params.get("target"), "relay_receiver"))
+                self._check_laser_receiver(what, x, y, params)
+            elif kind == "ad_cover":
+                links.append((what, x, y, params.get("target"), "popup_blocker"))
+            elif kind == "popup_blocker":
+                popups[params.get("id")] = (x, y, params)
+            elif kind == "ability_pickup":
+                if "refill_energy" in params and not isinstance(params["refill_energy"], bool):
+                    self.error("%s: refill_energy debe ser true o false" % what, y, x)
             elif kind in ("exit_door", "exit_terminal"):
                 doors.append((what, x, y, set(cells)))
             elif kind == "extra_life_pickup":
@@ -406,6 +425,21 @@ class LevelValidator:
         for (what, x, y, target) in receivers:
             if target not in bridges:
                 self.error("%s: target '%s' no es el id de ningun bridge_inactive" % (what, target), y, x)
+        for (what, x, y, target, kind) in links:
+            ids = relays if kind == "relay_receiver" else set(popups)
+            if target not in ids:
+                self.error("%s: target '%s' no es el id de ningun %s" % (what, target, kind), y, x)
+            elif kind == "popup_blocker":
+                px, py, pp = popups[target]
+                button = pp.get("close_button_px")
+                size = pp.get("close_button_size_px", 16)
+                if isinstance(button, list) and len(button) == 2 and all(_is_number(v) for v in button) \
+                        and _is_number(size):
+                    t = self.level["tile_size"]
+                    cell = (px + int((button[0] + size * 0.5) // t), py + int((button[1] + size * 0.5) // t))
+                    if (x, y) != cell:
+                        self.error("%s: debe estar en la celda del boton de cerrar de '%s' (columna %d, fila %d)"
+                                   % (what, target, cell[0], cell[1]), y, x)
         goals = self._cells_with("G")
         for (what, x, y, cells) in doors:
             if len(goals) == 1 and goals[0] not in cells:
@@ -426,6 +460,20 @@ class LevelValidator:
         ex, ey = x + offset[0], y + offset[1]
         if self.in_bounds(ex, ey) and self.cell(ex, ey) in "#^":
             self.error("%s: Eco flota dentro de terreno o pinchos ('%s')" % (what, self.cell(ex, ey)), ey, ex)
+
+    def _check_laser_receiver(self, what, x, y, params):
+        """Lector laser: window_s > 0 y cable = lista de [columna, fila] enteros dentro del grid."""
+        if "window_s" in params and (not _is_number(params["window_s"]) or params["window_s"] <= 0):
+            self.error("%s: window_s debe ser un numero > 0" % what, y, x)
+        cable = params.get("cable", [])
+        if not isinstance(cable, list):
+            self.error("%s: cable debe ser una lista de [columna, fila]" % what, y, x)
+            return
+        for i, cell in enumerate(cable):
+            if not (isinstance(cell, list) and len(cell) == 2 and all(_is_int(v) for v in cell)):
+                self.error("%s: cable[%d] debe ser [columna, fila] (enteros)" % (what, i), y, x)
+            elif not self.in_bounds(cell[0], cell[1]):
+                self.error("%s: cable[%d] %s fuera del grid" % (what, i, cell), y, x)
 
     def _check_charger(self, what, x, y, params):
         """Cargador (2026-10-15): amount > 0, cooldown_s >= 0 y reusable booleano."""
