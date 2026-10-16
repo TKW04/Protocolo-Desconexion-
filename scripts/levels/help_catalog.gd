@@ -51,6 +51,23 @@ static func tag(node: Node, help_id: StringName) -> void:
 	node.add_to_group(TARGET_GROUP)
 
 
+## LO DESTRUIDO NO AYUDA (2026-10-16, fallo encontrado jugando el 1-1): el
+## objeto aun puede dar informacion (Q normal, relectura y Eco junto a el). No
+## lo es si se ha liberado o va a liberarse, esta fuera del arbol u oculto, o
+## si el propio objeto dice que ya no (metodo is_help_available(): pop-up
+## cerrandose o cerrado, Burbuja reventada, receptor ya activado, puente ya
+## extendido, recogidas ya tomadas, pared con glitch disuelta, terminal ya
+## activada, cargador de un solo uso gastado...).
+static func is_help_live(node: Node) -> bool:
+	if node == null or not is_instance_valid(node) or node.is_queued_for_deletion() or not node.is_inside_tree():
+		return false
+	if node is CanvasItem and not (node as CanvasItem).is_visible_in_tree():
+		return false
+	if node.has_method(&"is_help_available"):
+		return bool(node.call(&"is_help_available"))
+	return true
+
+
 ## Tipo de ayuda de `node` (&"" si no tiene).
 static func help_id_of(node: Node) -> StringName:
 	if node == null or not node.has_meta(META_HELP_ID):

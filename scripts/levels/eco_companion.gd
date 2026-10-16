@@ -383,7 +383,8 @@ func _check_help(delta: float) -> void:
 			_help_point = _compute_help_point()
 		return
 	var target: Node2D = get_help_target()
-	if not target.is_visible_in_tree() or not target.is_inside_tree() or get_tree().paused:
+	# Lo destruido o ya inerte no ayuda: Eco vuelve a Isak (HelpCatalog.is_help_live).
+	if not HelpCatalog.is_help_live(target) or get_tree().paused:
 		_end_help()
 		return
 	_help_point = _compute_help_point()

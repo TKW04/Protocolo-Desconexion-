@@ -55,6 +55,11 @@ func get_state() -> State:
 	return _state
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; solo plegado (extendiendose o extendido ya no es un puente desactivado).
+func is_help_available() -> bool:
+	return _state == State.RETRACTED
+
+
 func is_extended() -> bool:
 	return _state == State.EXTENDED
 

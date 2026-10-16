@@ -42,6 +42,11 @@ func _draw() -> void:
 	draw_colored_polygon(points, HudConfig.shared().color(&"attention_icon"))
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; recogido, no.
+func is_help_available() -> bool:
+	return not _taken
+
+
 func is_taken() -> bool:
 	return _taken
 

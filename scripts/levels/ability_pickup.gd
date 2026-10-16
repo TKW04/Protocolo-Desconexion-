@@ -56,6 +56,11 @@ func _process(delta: float) -> void:
 		_sprite.position = (_center() + Vector2(0.0, roundf(sin(_time * TAU * _bob_hz) * _bob_px))).round()
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; recogido (o ya obtenido al empezar el nivel), no.
+func is_help_available() -> bool:
+	return not _taken
+
+
 func is_taken() -> bool:
 	return _taken
 

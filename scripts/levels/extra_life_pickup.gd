@@ -88,6 +88,11 @@ func _process(delta: float) -> void:
 			_appear_time = -1.0
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; oculta tras la pared o recogida, no.
+func is_help_available() -> bool:
+	return _shown and not _taken
+
+
 ## Se ve y se puede recoger (la pared que la tapaba ya se abrio).
 func is_shown() -> bool:
 	return _shown

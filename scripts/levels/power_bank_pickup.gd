@@ -67,6 +67,11 @@ func _state() -> StringName:
 	return state_for_charge(display_charge, GameState.get_power_bank_capacity())
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; recogido, no.
+func is_help_available() -> bool:
+	return not _taken
+
+
 func is_taken() -> bool:
 	return _taken
 

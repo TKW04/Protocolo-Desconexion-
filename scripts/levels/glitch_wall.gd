@@ -84,6 +84,11 @@ func is_solid() -> bool:
 	return _shape != null and not _shape.disabled and not _open
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; disolviendose o abierta, no.
+func is_help_available() -> bool:
+	return not _open and _dissolve_time < 0.0
+
+
 func is_open() -> bool:
 	return _open
 

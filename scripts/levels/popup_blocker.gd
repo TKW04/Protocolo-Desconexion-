@@ -73,6 +73,11 @@ func get_state() -> State:
 	return _state
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; solo abierto (cerrandose o cerrado ya no da informacion).
+func is_help_available() -> bool:
+	return _state == State.OPEN
+
+
 func is_open() -> bool:
 	return _state == State.OPEN
 

@@ -44,6 +44,11 @@ func _process(delta: float) -> void:
 	_update_frame()
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; ya activado (y se queda activo) es inerte.
+func is_help_available() -> bool:
+	return not (_active and bool(_config.get("stays_active", true)))
+
+
 ## Verdadero si ya esta activado.
 func is_active() -> bool:
 	return _active

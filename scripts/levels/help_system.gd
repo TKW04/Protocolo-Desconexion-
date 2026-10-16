@@ -38,6 +38,12 @@
 ##   nada (learned_help no cambia; EventBus.help_reread). Mismas condiciones
 ##   que la Q normal: Eco conocido, «Ayudas de Eco: Mostrar», Isak con control
 ##   y sin pausa. Se dibuja en la misma capa que la Q.
+## - LO DESTRUIDO NO AYUDA (2026-10-16): ni la Q, ni la relectura, ni Eco van a
+##   un objeto destruido, recogido, oculto, liberado o ya inerte
+##   (HelpCatalog.is_help_live: pop-up cerrado o cerrandose, Burbuja reventada,
+##   receptor activado, puente extendido, pared con glitch disuelta, terminal
+##   activada...). Si deja de serlo mientras es el candidato, la Q desaparece y
+##   Eco vuelve a Isak.
 ## La Q se dibuja en un CanvasLayer propio que sigue a la camara
 ## (follow_viewport, como el punto debil): por encima del mundo y del tinte del
 ## Debug y por debajo del HUD y del cuadro de Eco (layer de la seccion prompt).
@@ -154,10 +160,14 @@ func get_still_s() -> float:
 func request_help() -> bool:
 	if get_tree().paused:
 		return false
-	if (_target == null or not is_instance_valid(_target)) and _reread_target != null \
-			and is_instance_valid(_reread_target):
+	# Un objeto destruido o inerte desde el ultimo refresco ya no ayuda.
+	if _target != null and not HelpCatalog.is_help_live(_target):
+		_target = null
+	if _reread_target != null and not HelpCatalog.is_help_live(_reread_target):
+		_reread_target = null
+	if _target == null and _reread_target != null:
 		return _request_reread()
-	if _target == null or not is_instance_valid(_target):
+	if _target == null:
 		return false
 	var help_id: StringName = HelpCatalog.help_id_of(_target)
 	var text: String = _catalog.text(help_id)
@@ -275,7 +285,8 @@ func _find_nearest(learned: bool) -> Node2D:
 	var best_distance: float = INF
 	for node: Node in get_tree().get_nodes_in_group(HelpCatalog.TARGET_GROUP):
 		var item := node as Node2D
-		if item == null or not item.is_visible_in_tree() or (scope != null and not scope.is_ancestor_of(item)):
+		# Lo destruido, recogido, oculto o ya inerte no ayuda (HelpCatalog.is_help_live).
+		if item == null or not HelpCatalog.is_help_live(item) or (scope != null and not scope.is_ancestor_of(item)):
 			continue
 		var help_id: StringName = HelpCatalog.help_id_of(item)
 		if GameState.is_help_learned(help_id) != learned or not _catalog.has(help_id):

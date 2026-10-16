@@ -189,6 +189,11 @@ func get_state() -> StringName:
 	return _state
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; reventada, no.
+func is_help_available() -> bool:
+	return _state != STATE_POPPED
+
+
 ## Verdadero si tocarla hace dano (solo patrullando).
 func is_dangerous() -> bool:
 	return _state == STATE_PATROL

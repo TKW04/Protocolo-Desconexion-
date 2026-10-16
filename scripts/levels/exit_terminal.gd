@@ -76,6 +76,11 @@ func _process(delta: float) -> void:
 
 # --- Consultas ---
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; activada (encendiendose, girando, vortice), no.
+func is_help_available() -> bool:
+	return _state == State.OFF or _state == State.PROMPT
+
+
 func get_state() -> State:
 	return _state
 

@@ -120,6 +120,11 @@ func is_armed() -> bool:
 	return _age >= float(data().get("arm_delay_s", 0.3))
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; recogido, no.
+func is_help_available() -> bool:
+	return not _taken
+
+
 func is_taken() -> bool:
 	return _taken
 

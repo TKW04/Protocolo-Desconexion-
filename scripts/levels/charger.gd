@@ -74,6 +74,11 @@ func is_ready() -> bool:
 	return not _spent and _cooldown_left <= 0.0
 
 
+## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; un cargador de un solo uso gastado, no.
+func is_help_available() -> bool:
+	return not is_spent()
+
+
 func is_spent() -> bool:
 	return _spent
 
