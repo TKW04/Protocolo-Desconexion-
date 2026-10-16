@@ -55,7 +55,8 @@ fi
 rm -f "$IMPORT_LOG"
 
 # Validadores de niveles (esquema y alcanzabilidad), escena generada al dia, sprites del vortice,
-# de la terminal de salida, del hub, de Eco companero y de las fichas del album (al dia con su generador), colores de la Q
+# de la terminal de salida, del hub, de Eco companero, de las fichas del album y de los objetos del acertijo del laser
+# y del chip del Debug (al dia con su generador), colores de la Q
 # (normal y apagada de relectura) y fuente de textos
 # (Python, unittest). Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el
 # codigo de GUT.
@@ -69,7 +70,8 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/build_level.py --check data/levels/*.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
-		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null); then
+		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \
+		&& python3 -I tools/validate_world1_puzzle.py >/dev/null); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
 		PY_STATUS=4
