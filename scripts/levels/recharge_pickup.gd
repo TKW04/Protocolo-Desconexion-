@@ -48,6 +48,7 @@ static func spawn_drops(parent: Node, feet: Vector2, drops: Dictionary) -> Array
 		pickup.kind = kinds[i]
 		pickup.amount = float(drops[String(kinds[i])])
 		pickup.name = "Recharge_%s" % kinds[i]
+		HelpCatalog.tag(pickup, help_id_for(kinds[i]))
 		var dx: float = (float(i) - (kinds.size() - 1) * 0.5) * spread
 		parent.add_child(pickup)
 		pickup.global_position = feet + Vector2(dx, float(d.get("spawn_offset_y_px", -42.0)))
@@ -64,6 +65,15 @@ static func data() -> Dictionary:
 		else:
 			push_error("RechargePickup: no se pudo leer '%s'." % DATA_PATH)
 	return _data
+
+
+## Tipo de la ayuda con Q de una recarga de `kind` (kinds.<kind>.help_id de
+## data/recharge_pickup.json; &"" si no tiene).
+static func help_id_for(kind: StringName) -> StringName:
+	var kinds: Variant = data().get("kinds", {})
+	if not kinds is Dictionary or not (kinds as Dictionary).get(String(kind)) is Dictionary:
+		return &""
+	return StringName(String((kinds[String(kind)] as Dictionary).get("help_id", "")))
 
 
 func _ready() -> void:

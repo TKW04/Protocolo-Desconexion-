@@ -22,6 +22,9 @@
 ##   cambios sin guardar, elige «Entrar sin guardar»): el nivel vuelve
 ##   a empezar con Sync Rate y objetos desde cero, pero los puntos de atencion
 ##   se conservan y los ya capturados no reaparecen (decision 2026-10-14).
+## Ayuda de Eco con Q (2026-10-15 (3)): el bot nunca pulsa help; la Q sale sobre
+## los tipos no aprendidos sin bloquear nada. Anota cuantos cuadros se vio y
+## falla si el juego se pausa sin una linea importante de Eco en pantalla.
 ## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH
 ## si esta definida): nunca toca el user://save.json del jugador.
 ## Termina con codigo 0 si todo sale bien y 1 si algo falla (con el motivo).
@@ -84,6 +87,8 @@ var _kills: PackedStringArray = []
 ## Fin del recorrido: 0 si todo ha ido bien, 1 si algo ha fallado.
 signal finished(code: int)
 
+## Cuadros con la Q de ayuda visible (el bot no la pulsa).
+var _help_frames: int = 0
 ## Capturas (--shots <carpeta>, necesita ventana): nombre -> cuadro en que se toma.
 var _shots_dir: String = ""
 var _pending_shots: Dictionary = {}
@@ -112,6 +117,10 @@ func _run() -> void:
 	var ok: bool = await _play()
 	if ok:
 		ok = await _hub_and_back()
+	_note("Q de ayuda visible %d cuadros; tipos aprendidos: %d (el bot no pide ayuda)" % [
+		_help_frames, GameState.learned_help.size()])
+	if not GameState.learned_help.is_empty():
+		ok = _fail("El bot no pide ayuda y hay tipos aprendidos")
 	print("play_level_bot: %s" % ("OK" if ok else "FALLO"))
 	for line: String in _log:
 		print("  " + line)
@@ -129,6 +138,7 @@ func _attach() -> void:
 func _tick() -> void:
 	await get_tree().physics_frame
 	_frame += 1
+	_watch_help()
 	_confirm_eco_lines()
 	for name: String in _pending_shots.keys():
 		if _frame >= int(_pending_shots[name]):
@@ -137,6 +147,19 @@ func _tick() -> void:
 			var path: String = _shots_dir.path_join(name + ".png")
 			get_viewport().get_texture().get_image().save_png(path)
 			_note("captura " + path)
+
+
+## La Q de ayuda no bloquea: se anota la primera vez que sale y los cuadros que
+## se ve (help nunca se pulsa).
+func _watch_help() -> void:
+	var level: Node = _runner.get_level() if _runner != null else null
+	var help := level.get_node_or_null(^"Help") as HelpSystem if is_instance_valid(level) else null
+	if help == null or not help.is_prompt_visible():
+		return
+	if _help_frames == 0:
+		var target: Node = help.get_target()
+		_note("Q de ayuda visible sobre %s (no se pulsa; no bloquea)" % (target.name if target != null else "?"))
+	_help_frames += 1
 
 
 func _confirm_eco_lines() -> void:

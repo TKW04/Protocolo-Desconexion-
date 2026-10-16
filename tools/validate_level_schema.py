@@ -18,7 +18,10 @@ Reglas:
     cargador (charger) con amount > 0, cooldown_s >= 0 y reusable booleano;
     receptores apuntando a un puente existente; la puerta de salida contiene la G;
   - ids unicos (checkpoints, enemigos, secretos y params.id de los objetos);
-  - sin pinchos en P ni en C ni en las 8 celdas vecinas de una C.
+  - sin pinchos en P ni en C ni en las 8 celdas vecinas de una C;
+  - ayuda de Eco con Q: todo help_id (del tipo en el catalogo, del enemigo en
+    data/enemies/<type>.json o propio de un objeto, enemigo o checkpoint del
+    nivel; "" = sin Q) existe en data/help.json.
 
 Uso: python3 tools/validate_level_schema.py data/levels/1-1.json [...]
 Sale con 0 si todo esta bien y 1 si hay errores (con fila/columna cuando aplica).
@@ -114,7 +117,39 @@ class LevelValidator:
         self._check_spikes()
         self._check_unlocks()
         self._check_sections()
+        self._check_help()
         return self.errors
+
+    def _check_help(self):
+        help_path = os.path.join(self.root, "data", "help.json")
+        if not os.path.exists(help_path):
+            return
+        known = set((self._load_json("data/help.json") or {}).get("types", {}))
+        catalog = self._load_json("data/world%d_objects.json" % self.level["world"]) or {}
+        used = []
+        types = catalog.get("types", {})
+        for i, obj in enumerate(self.level["objects"]):
+            if isinstance(obj, dict):
+                default = types.get(obj.get("type"), {}).get("help_id")
+                used.append(("objects[%d]" % i, obj.get("help_id", default)))
+        for enemy in self.level["enemies"]:
+            if isinstance(enemy, dict) and isinstance(enemy.get("type"), str):
+                path = os.path.join(self.root, "data", "enemies", "%s.json" % enemy["type"])
+                default = None
+                if os.path.exists(path):
+                    default = (self._load_json("data/enemies/%s.json" % enemy["type"]) or {}).get("help_id")
+                used.append(("enemigo %s" % enemy.get("id"), enemy.get("help_id", default)))
+        for cp in self.level["checkpoints"]:
+            if isinstance(cp, dict):
+                used.append(("checkpoint %s" % cp.get("id"), cp.get("help_id",
+                             catalog.get("checkpoint", {}).get("help_id"))))
+        if self._cells_with("o"):
+            used.append(("puntos de atencion", catalog.get("attention_point", {}).get("help_id")))
+        for what, help_id in used:
+            if help_id in (None, ""):
+                continue
+            if not isinstance(help_id, str) or help_id not in known:
+                self.error("%s: help_id '%s' no esta en data/help.json" % (what, help_id))
 
     def _check_fields(self):
         for key, kind in REQUIRED_FIELDS.items():

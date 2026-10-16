@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="16_isak"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="17_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="18_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="19_help_system"]
 
 [node name="Level_1_1" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -42,39 +43,49 @@ tile_set = ExtResource("3_mundo1")
 
 [node name="AttentionPoints" type="Node2D" parent="."]
 
-[node name="Point_8_9" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_8_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(544, 608)
+metadata/help_id = "attention_point"
 
-[node name="Point_36_7" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_36_7" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(2336, 480)
+metadata/help_id = "attention_point"
 
-[node name="Point_82_8" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_82_8" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(5280, 544)
+metadata/help_id = "attention_point"
 
-[node name="Point_98_4" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_98_4" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(6304, 288)
+metadata/help_id = "attention_point"
 
-[node name="Point_131_4" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_131_4" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(8416, 288)
+metadata/help_id = "attention_point"
 
-[node name="Point_186_6" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_186_6" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(11936, 416)
+metadata/help_id = "attention_point"
 
-[node name="Point_241_8" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_241_8" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(15456, 544)
+metadata/help_id = "attention_point"
 
-[node name="Point_273_5" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_273_5" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(17504, 352)
+metadata/help_id = "attention_point"
 
-[node name="Point_287_9" parent="AttentionPoints" instance=ExtResource("4_attention_point")]
+[node name="Point_287_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(18400, 608)
+metadata/help_id = "attention_point"
 
 [node name="Checkpoints" type="Node2D" parent="."]
 
-[node name="sync_1" type="Marker2D" parent="Checkpoints" groups=["checkpoint"]]
+[node name="sync_1" type="Marker2D" parent="Checkpoints" groups=["checkpoint", "help_target"]]
 position = Vector2(9632, 640)
 script = ExtResource("5_checkpoint")
 checkpoint_id = &"sync_1"
+metadata/help_id = "sync_point"
 
 [node name="Secrets" type="Node2D" parent="."]
 
@@ -142,15 +153,17 @@ once = true
 text = "Ese receptor espera un pulso. Acércate y lanza el pulso. Te ahorro la búsqueda."
 width_tiles = 1
 
-[node name="receiver_56_9" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_56_9" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(3584, 576)
 target_id = &"puente_1"
+metadata/help_id = "receiver"
 
-[node name="puente_1" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_1" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(3776, 640)
 direction = "right"
 object_id = &"puente_1"
 length_tiles = 6
+metadata/help_id = "bridge"
 
 [node name="eco_puente" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(4224, 384)
@@ -162,39 +175,46 @@ once = true
 text = "¿Ves? Todo funciona mejor cuando colaboras."
 width_tiles = 1
 
-[node name="receiver_74_8" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_74_8" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(4736, 512)
 target_id = &"puente_2"
+metadata/help_id = "receiver"
 
-[node name="puente_2" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_2" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(4928, 576)
 direction = "right"
 object_id = &"puente_2"
 length_tiles = 5
+metadata/help_id = "bridge"
 
-[node name="receiver_83_8" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_83_8" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(5312, 512)
 target_id = &"puente_3"
+metadata/help_id = "receiver"
 
-[node name="puente_3" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_3" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(5504, 576)
 direction = "right"
 object_id = &"puente_3"
 length_tiles = 5
+metadata/help_id = "bridge"
 
-[node name="puente_servicio" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_servicio" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(6976, 320)
 direction = "left"
 object_id = &"puente_servicio"
 length_tiles = 8
+metadata/help_id = "bridge"
 
-[node name="receiver_110_4" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_110_4" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(7040, 256)
 target_id = &"puente_servicio"
+metadata/help_id = "receiver"
 
-[node name="power_bank_pulso_amplio" parent="Objects" instance=ExtResource("9_power_bank_pickup")]
+[node name="power_bank_pulso_amplio" parent="Objects" instance=ExtResource("9_power_bank_pickup") groups=["help_target"]]
 position = Vector2(7808, 256)
 object_id = &"power_bank_pulso_amplio"
+metadata/help_id = "power_bank_pickup"
 
 [node name="eco_techo_bajo" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(7808, 384)
@@ -216,7 +236,7 @@ once = true
 text = "Batería externa detectada. Guárdala, quizá te ahorre tiempo."
 width_tiles = 1
 
-[node name="popup_lejano" parent="Objects" instance=ExtResource("10_popup_blocker")]
+[node name="popup_lejano" parent="Objects" instance=ExtResource("10_popup_blocker") groups=["help_target"]]
 position = Vector2(8064, 64)
 close_button_position = Vector2(52, 192)
 close_button_size = 16
@@ -224,6 +244,7 @@ height_tiles = 4
 object_id = &"popup_lejano"
 text = "Cerrar es fácil. El botón está un poco más allá"
 width_tiles = 3
+metadata/help_id = "popup_blocker"
 
 [node name="eco_pulso_amplio" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(8320, 64)
@@ -255,27 +276,31 @@ once = true
 text = "Ahí arriba guardo algo útil para ti. Los receptores conocen el camino."
 width_tiles = 1
 
-[node name="receiver_153_9" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_153_9" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(9792, 576)
 target_id = &"puente_laser_1"
+metadata/help_id = "receiver"
 
-[node name="puente_laser_1" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_laser_1" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(10176, 512)
 direction = "right"
 object_id = &"puente_laser_1"
 length_tiles = 4
+metadata/help_id = "bridge"
 
-[node name="receiver_164_5" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_164_5" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(10496, 320)
 target_id = &"puente_laser_2"
+metadata/help_id = "receiver"
 
-[node name="puente_laser_2" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_laser_2" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(10560, 384)
 direction = "right"
 object_id = &"puente_laser_2"
 length_tiles = 4
+metadata/help_id = "bridge"
 
-[node name="popup_laser" parent="Objects" instance=ExtResource("10_popup_blocker")]
+[node name="popup_laser" parent="Objects" instance=ExtResource("10_popup_blocker") groups=["help_target"]]
 position = Vector2(10816, 128)
 close_button_position = Vector2(4, 192)
 close_button_size = 16
@@ -283,6 +308,7 @@ height_tiles = 4
 object_id = &"popup_laser"
 text = "Función premium bloqueada. Mira este anuncio para continuar"
 width_tiles = 3
+metadata/help_id = "popup_blocker"
 
 [node name="eco_laser_disparo" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(11072, 256)
@@ -295,10 +321,11 @@ text = "Dos impactos bastan para cerrar una alerta. Lo que suelta, recógelo: es
 trigger_event = &"laser_fired"
 width_tiles = 1
 
-[node name="laser_1_1" parent="Objects" instance=ExtResource("11_ability_pickup")]
+[node name="laser_1_1" parent="Objects" instance=ExtResource("11_ability_pickup") groups=["help_target"]]
 position = Vector2(11072, 320)
 ability = &"laser"
 object_id = &"laser_1_1"
+metadata/help_id = "ability_pickup"
 
 [node name="eco_laser" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(11136, 256)
@@ -310,12 +337,13 @@ once = true
 text = "Herramienta nueva. Dispara hacia donde miras; cada disparo gasta energía."
 width_tiles = 1
 
-[node name="cargador_1" parent="Objects" instance=ExtResource("12_charger")]
+[node name="cargador_1" parent="Objects" instance=ExtResource("12_charger") groups=["help_target"]]
 position = Vector2(11392, 576)
 amount = 50.0
 cooldown_s = 20.0
 object_id = &"cargador_1"
 reusable = true
+metadata/help_id = "charger"
 
 [node name="eco_escalon" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(11520, 384)
@@ -337,7 +365,7 @@ once = true
 text = "Un aviso importante. El botón de cerrar es pequeño, por tu bien. Pulso de cerca."
 width_tiles = 1
 
-[node name="popup_1" parent="Objects" instance=ExtResource("10_popup_blocker")]
+[node name="popup_1" parent="Objects" instance=ExtResource("10_popup_blocker") groups=["help_target"]]
 position = Vector2(13760, 384)
 close_button_position = Vector2(4, 192)
 close_button_size = 16
@@ -345,8 +373,9 @@ height_tiles = 4
 object_id = &"popup_1"
 text = "¿Seguro que quieres seguir concentrado? Tenemos ofertas"
 width_tiles = 3
+metadata/help_id = "popup_blocker"
 
-[node name="popup_2" parent="Objects" instance=ExtResource("10_popup_blocker")]
+[node name="popup_2" parent="Objects" instance=ExtResource("10_popup_blocker") groups=["help_target"]]
 position = Vector2(15616, 320)
 close_button_position = Vector2(4, 192)
 close_button_size = 16
@@ -354,18 +383,21 @@ height_tiles = 4
 object_id = &"popup_2"
 text = "Tienes 99+ mensajes que no son importantes"
 width_tiles = 3
+metadata/help_id = "popup_blocker"
 
-[node name="receiver_250_9" parent="Objects" instance=ExtResource("7_receiver")]
+[node name="receiver_250_9" parent="Objects" instance=ExtResource("7_receiver") groups=["help_target"]]
 position = Vector2(16000, 576)
 target_id = &"puente_4"
+metadata/help_id = "receiver"
 
-[node name="puente_4" parent="Objects" instance=ExtResource("8_bridge")]
+[node name="puente_4" parent="Objects" instance=ExtResource("8_bridge") groups=["help_target"]]
 position = Vector2(16192, 640)
 direction = "right"
 object_id = &"puente_4"
 length_tiles = 6
+metadata/help_id = "bridge"
 
-[node name="popup_3" parent="Objects" instance=ExtResource("10_popup_blocker")]
+[node name="popup_3" parent="Objects" instance=ExtResource("10_popup_blocker") groups=["help_target"]]
 position = Vector2(16576, 384)
 close_button_position = Vector2(4, 192)
 close_button_size = 16
@@ -373,8 +405,9 @@ height_tiles = 4
 object_id = &"popup_3"
 text = "Actualización disponible. Recuérdamelo en 5 minutos"
 width_tiles = 3
+metadata/help_id = "popup_blocker"
 
-[node name="popup_alto" parent="Objects" instance=ExtResource("10_popup_blocker")]
+[node name="popup_alto" parent="Objects" instance=ExtResource("10_popup_blocker") groups=["help_target"]]
 position = Vector2(17216, 128)
 close_button_position = Vector2(4, 192)
 close_button_size = 16
@@ -382,13 +415,15 @@ height_tiles = 4
 object_id = &"popup_alto"
 text = "Oferta exclusiva solo para ti, solo hoy, solo ahora"
 width_tiles = 3
+metadata/help_id = "popup_blocker"
 
-[node name="cargador_2" parent="Objects" instance=ExtResource("12_charger")]
+[node name="cargador_2" parent="Objects" instance=ExtResource("12_charger") groups=["help_target"]]
 position = Vector2(17856, 576)
 amount = 50.0
 cooldown_s = 20.0
 object_id = &"cargador_2"
 reusable = true
+metadata/help_id = "charger"
 
 [node name="eco_puerta" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(18176, 384)
@@ -400,13 +435,14 @@ once = true
 text = "Marca todo como leído. Así no te preocupas de nada."
 width_tiles = 1
 
-[node name="terminal_salida" parent="Objects" instance=ExtResource("13_exit_terminal")]
+[node name="terminal_salida" parent="Objects" instance=ExtResource("13_exit_terminal") groups=["help_target"]]
 position = Vector2(18560, 512)
 height_tiles = 2
 object_id = &"terminal_salida"
 text = "Marcar como leído"
 width_tiles = 1
 level_id = "1-1"
+metadata/help_id = "exit_terminal"
 
 [node name="eco_glitch" parent="Objects" instance=ExtResource("6_eco_line")]
 position = Vector2(18752, 384)
@@ -418,58 +454,68 @@ once = true
 text = "Eso es un error de visualización. Ignóralo, por favor."
 width_tiles = 1
 
-[node name="glitch_wall_298_8" parent="Objects" instance=ExtResource("14_glitch_wall")]
+[node name="glitch_wall_298_8" parent="Objects" instance=ExtResource("14_glitch_wall") groups=["help_target"]]
 position = Vector2(19072, 512)
 height_tiles = 2
 solid_neighbors = 7
 width_tiles = 1
+metadata/help_id = "glitch_wall"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="burbuja_t1a" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_t1a" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(1952, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 60.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_t1b" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_t1b" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(3232, 640)
 patrol_range_px = 192.0
 metadata/params = {"patrol_range_px": 192.0, "patrol_speed_px_s": 80.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_t2c" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_t2c" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(6688, 640)
 patrol_range_px = 256.0
 metadata/params = {"patrol_range_px": 256.0, "patrol_speed_px_s": 100.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_1" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_1" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(8480, 640)
 patrol_range_px = 320.0
 metadata/params = {"patrol_range_px": 320.0, "patrol_speed_px_s": 80.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_3" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_3" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(11680, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 80.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_4" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_4" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(12192, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 100.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_t4a" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_t4a" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(13472, 640)
 patrol_range_px = 192.0
 metadata/params = {"patrol_range_px": 192.0, "patrol_speed_px_s": 80.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_5" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_5" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(14752, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 100.0}
+metadata/help_id = "alert_bubble"
 
-[node name="burbuja_cierre" parent="Enemies" instance=ExtResource("15_alert_bubble")]
+[node name="burbuja_cierre" parent="Enemies" instance=ExtResource("15_alert_bubble") groups=["help_target"]]
 position = Vector2(18144, 640)
 patrol_range_px = 128.0
 metadata/params = {"health": 3.0, "patrol_range_px": 128.0, "patrol_speed_px_s": 80.0}
+metadata/help_id = "alert_bubble"
 
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(18592, 640)
@@ -481,3 +527,6 @@ camera_limits = Rect2i(0, 0, 19200, 896)
 [node name="Hud" parent="." instance=ExtResource("17_hud")]
 
 [node name="EcoTextBox" parent="." instance=ExtResource("18_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("19_help_system")

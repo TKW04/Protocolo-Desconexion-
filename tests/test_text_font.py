@@ -88,6 +88,10 @@ def game_strings():
     if os.path.exists(eco_path):
         collect_texts(load_json(eco_path), texts)
     texts.extend(ability_notice_strings())
+    # Ayuda de Eco con Q (data/help.json): titulos y textos de cada tipo.
+    for entry in load_json(os.path.join(ROOT, "data", "help.json"))["types"].values():
+        texts.append(entry["title"])
+        texts.append(entry["text"].replace("{apodo}", ""))
     hud = load_json(os.path.join(ROOT, "data", "hud.json"))
     texts.append(hud["font_glyphs"])
     texts.append("100 % 0 % 999")

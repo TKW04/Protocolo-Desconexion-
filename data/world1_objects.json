@@ -1,9 +1,10 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Assets del pop-up y la puerta generados por tools/gen_popup.py. Todos los tipos tienen escena (paso 14b).",
+	"_notes": "Catalogo de objetos del Mundo 1 para la lista `objects` del JSON de nivel (V7: {type, x, y, params}) y valores de ajuste de cada objeto. x, y en celdas del grid (tiles de 64 px); el objeto se coloca en la esquina superior izquierda de esa celda (position = (x, y) * 64). El generador de niveles (paso 15) instancia `scene`, asigna cada campo de `params` a la propiedad indicada en `fields` y comprueba los `required`. El puente y su receptor se enlazan por id (bridge_inactive.params.id == receiver.params.target): el puente busca al receptor en el grupo pulse_receiver al entrar al arbol, sin cableado del generador. Los valores marcados como PROPUESTA vienen de docs/preguntas.md (V4 y notas de los objetos del Mundo 1). Assets generados por tools/gen_world1_objects.py y validados por tools/validate_world1_assets.py (lista assets). Assets del pop-up y la puerta generados por tools/gen_popup.py. Todos los tipos tienen escena (paso 14b). help_id (2026-10-15 (3), docs/propuesta-asistentes-y-vidas.md §3): tipo de la ayuda de Eco con Q (data/help.json) de los objetos de ese tipo; tools/build_level.py lo escribe en cada instancia (grupo help_target, metadata/help_id) y un objeto del nivel puede sustituirlo con su propio help_id (\"\" = sin Q). Sin help_id (eco_line, exit_door), sin Q. attention_point y checkpoint: el help_id de las celdas o y C del grid.",
 	"tile_size": 64,
 	"types": {
 		"bridge_inactive": {
 			"scene": "res://scenes/levels/bridge.tscn",
+			"help_id": "bridge",
 			"description": "Puente desactivado (Tramo 2 del 1-1). Retraido: solo un contorno discontinuo y sin colision. Su receptor lo extiende de forma permanente, un tile por paso, en la direccion indicada; extendido es solido.",
 			"required": ["id"],
 			"fields": {
@@ -19,6 +20,7 @@
 		},
 		"receiver": {
 			"scene": "res://scenes/levels/receiver.tscn",
+			"help_id": "receiver",
 			"description": "Receptor del pulso (PROPUESTA V4: en el extremo del puente). Se activa cuando el area del pulso de Isak (circulo de pulse_radius_px en el celular) toca su zona de golpe, emite activated(target) y se queda activado.",
 			"required": ["target"],
 			"fields": {
@@ -29,6 +31,7 @@
 		},
 		"glitch_wall": {
 			"scene": "res://scenes/levels/glitch_wall.tscn",
+			"help_id": "glitch_wall",
 			"description": "Secreto del 1-1: pared solida con un leve glitch, sin forma de acceder todavia. Gancho para el Debug (grupo debug_secret, senal debug_revealed); el contenido del secreto no esta implementado. El validador la excluye de la regla 4 (V7). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json).",
 			"required": [],
 			"fields": {
@@ -45,6 +48,7 @@
 		},
 		"popup_blocker": {
 			"scene": "res://scenes/levels/popup_blocker.tscn",
+			"help_id": "popup_blocker",
 			"description": "Pop-up bloqueante (Tramo 4 del 1-1, PROPUESTA V5): ventana solida (capa world) de width_tiles x height_tiles con un texto de humor de 6.1 (fuente de textos) y un boton de cerrar diminuto (rojo alerta: lo unico interactivo). Solo lo cierra un pulso cuya area (circulo de pulse_radius_px en el celular) toque el boton (Area2D propia), no el resto de la ventana. Se cierra con una animacion por pasos (glitch, se aplasta, raya, restos), deja de ser solido y no se vuelve a abrir. El Debug no le cambia nada (solo ralentiza la animacion, tiempo del mundo). close_button_px: esquina superior izquierda del boton en px relativa a la del pop-up ([x, y]; el generador lo pasa a Vector2); close_button_size_px: lado del boton (8 px de V5 a 640x360, x2). PROPUESTA 1-1: [4, 192] con 16 px = boton en el borde izquierdo con el centro a 200 px de la parte de arriba, o sea a 56 px del suelo en un pop-up de 4 tiles apoyado en el suelo: justo a la altura del celular de Isak de pie (pulse_effect_origin y = -56). Lo alcanza un pulso desde menos de ~1,75 tiles de la cara del pop-up (de pie o al empezar un salto); desde el apogeo de un salto o lejos, no.",
 			"required": ["text", "close_button_px"],
 			"fields": {
@@ -80,6 +84,7 @@
 		},
 		"exit_terminal": {
 			"scene": "res://scenes/levels/exit_terminal.tscn",
+			"help_id": "exit_terminal",
 			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador.",
 			"required": [],
 			"fields": {
@@ -122,6 +127,7 @@
 		},
 		"power_bank_pickup": {
 			"scene": "res://scenes/levels/power_bank_pickup.tscn",
+			"help_id": "power_bank_pickup",
 			"description": "Power bank de mapa (en general desde el 1-2, cuando se aprende el Debug; el 1-1 tiene uno solo, en el secreto que exige Pulso amplio, desde el 2026-10-15): coleccionable que suma un power bank VACIO (carga 0; se carga con el sobrante de energia de los drops de enemigos, data/power_bank.json; solo sirve para pagar mejoras, data/upgrades.json) al tocarlo Isak. No es solido. Como los puntos de atencion, no se vuelve a recoger en el mismo mapa: el id se guarda por nivel en user://save.json (collected_pickups). Aspecto PROVISIONAL dibujado por codigo (seccion power_bank_pickup).",
 			"required": ["id"],
 			"fields": {
@@ -132,6 +138,7 @@
 		},
 		"ability_pickup": {
 			"scene": "res://scenes/levels/ability_pickup.tscn",
+			"help_id": "ability_pickup",
 			"description": "Objeto que da una habilidad para siempre (decision del usuario 2026-10-15; la primera es el laser). Al tocarlo Isak: GameState.obtain_ability(ability) la desbloquea, la guarda en user://save.json (abilities_obtained) y emite EventBus.ability_obtained; el aviso del control lo da AbilityNotices (data/ability_notices.json, una vez por partida guardada) y, si el nivel da message, el cuadro de Eco muestra ademas ese texto. Si ya estaba obtenida no aparece. No es solido. ability: una de las habilidades implementadas (allowed: pulse, debug, laser; las demas de GameState.ABILITIES se anadiran cuando existan). allowed: valores admitidos de cada param (lo comprueba tools/validate_level_schema.py). Aspecto PROVISIONAL dibujado por codigo. En el 1-1 hay uno, laser_1_1, en la sala del laser (Tramo 3b; rediseno 2026-10-15).",
 			"required": ["id", "ability"],
 			"fields": {
@@ -147,6 +154,7 @@
 		},
 		"charger": {
 			"scene": "res://scenes/levels/charger.tscn",
+			"help_id": "charger",
 			"description": "Cargador de energia de Debug (decision del usuario 2026-10-15: la energia la comparten el Debug y el laser; en los mapas hay cargadores en ciertos puntos). Se activa AL TOCARLO (como el punto de sincronizacion y la puerta: sin accion nueva) y repone amount de energia sin desbordar a los power banks; con la barra llena no se gasta. reusable true: se enfria cooldown_s (tiempo del mundo) y vuelve a estar listo (el enfriamiento no se guarda); reusable false: un solo uso, queda gastado y se guarda por nivel en user://save.json (collected_pickups). PROPUESTA por defecto: amount 50 (media barra = 5 disparos de laser), reutilizable, cooldown_s 20 (duda abierta: reutilizable o de un solo uso, docs/preguntas.md). Ocupa la celda (x, y), apoyado en su borde inferior; no es solido. Aspecto PROVISIONAL dibujado por codigo (seccion charger). En el 1-1 hay dos (cargador_1 tras la sala del laser y cargador_2 al empezar el Cierre; rediseno 2026-10-15).",
 			"required": ["id"],
 			"fields": {
@@ -276,7 +284,12 @@
 		"turn_flash_ticks": 2,
 		"turn_flash_modulate": [0.8, 1.45, 1.55]
 	},
+	"attention_point": {
+		"_notes": "Punto de atencion (celda o del grid; scenes/levels/attention_point.tscn). Solo el tipo de su ayuda con Q (data/help.json); el resto de sus valores van en su escena.",
+		"help_id": "attention_point"
+	},
 	"checkpoint": {
+		"help_id": "sync_point",
 		"_notes": "PROPUESTA (paso 16). Punto de sincronizacion (celda C del grid; no va en objects): poste-baliza de 64x128 (2 tiles, como la puerta) con bandera; izada queda por encima de la cabeza de Isak, dibujado abajo-centro en el origen del Checkpoint (los pies de Isak al reaparecer). Cuadros: off 0 (bandera gris a media asta), on_a 1 y on_b 2 (bandera cian izada, alterna cada wave_s de tiempo del mundo). Admite el cian del Debug por ser interactivo (palette_allow del asset). trigger_size_px: zona (ancho, alto) que lo activa al tocarla Isak, centrada en x y apoyada en el suelo. Generado por tools/gen_checkpoint.py.",
 		"texture": "res://assets/sprites/tiles/mundo1_checkpoint.png",
 		"frame_size": [64, 128],

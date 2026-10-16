@@ -29,6 +29,12 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
   - Goal: Marker2D (grupo "goal") en la G (la puerta de salida la contiene).
   - Isak (P, pies abajo-centro de la celda) con camera_limits = tamano del grid,
     Hud y EcoTextBox.
+  - Help: HelpSystem (scripts/levels/help_system.gd), la ayuda de Eco con Q
+    (2026-10-15 (3)). Los objetos, puntos de atencion, checkpoints y enemigos con
+    tipo de ayuda van en el grupo "help_target" con metadata/help_id: el help_id
+    del tipo del catalogo (types.<tipo>.help_id, attention_point.help_id,
+    checkpoint.help_id) o del enemigo (data/enemies/<tipo>.json); un objeto o
+    enemigo del nivel lo sustituye con su propio "help_id" ("" = sin Q).
 
 Uso:
   python3 tools/build_level.py data/levels/1-1.json        # escribe scenes/levels/1-1.tscn
@@ -51,6 +57,8 @@ HUD_SCENE = "res://scenes/ui/hud.tscn"
 ECO_SCENE = "res://scenes/ui/eco_text_box.tscn"
 POINT_SCENE = "res://scenes/levels/attention_point.tscn"
 HIDDEN_SCENE = "res://scenes/levels/hidden_platform.tscn"
+HELP_SCRIPT = "res://scripts/levels/help_system.gd"
+HELP_GROUP = "help_target"
 HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
 STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event"}
@@ -285,6 +293,22 @@ def find_cells(grid, char):
 
 # --- Escena ---
 
+def help_tag(own, default):
+    """(grupos, props) que apuntan un nodo a la ayuda con Q: help_id propio del
+    objeto del nivel si lo tiene ("" = sin Q) o el de su tipo."""
+    help_id = own.get("help_id", default) if isinstance(own, dict) else default
+    if not help_id:
+        return [], []
+    return [HELP_GROUP], [("metadata/help_id", fmt_string(help_id))]
+
+
+def enemy_help_id(enemy_type, root=ROOT):
+    path = os.path.join(root, "data", "enemies", "%s.json" % enemy_type)
+    if not os.path.exists(path):
+        return None
+    return load_json(path).get("help_id")
+
+
 def build_scene(level, root=ROOT, warnings=None):
     if warnings is None:
         warnings = []
@@ -348,18 +372,21 @@ def build_scene(level, root=ROOT, warnings=None):
                    props=[("position", fmt_vector2((c + 0.5) * t, (r + 0.5) * t))])
 
     scene.node("AttentionPoints", "Node2D", parent=".")
+    point_groups, point_meta = help_tag(None, catalog.get("attention_point", {}).get("help_id"))
     for c, r in sorted(find_cells(grid, "o")):
         scene.node("Point_%d_%d" % (c, r), parent="AttentionPoints",
                    instance=scene.ext_resource("PackedScene", POINT_SCENE),
-                   props=[("position", fmt_vector2((c + 0.5) * t, (r + 0.5) * t))])
+                   props=[("position", fmt_vector2((c + 0.5) * t, (r + 0.5) * t))] + point_meta,
+                   groups=point_groups)
 
     scene.node("Checkpoints", "Node2D", parent=".")
     for cp in level.get("checkpoints", []):
-        scene.node(cp["id"], "Marker2D", parent="Checkpoints", groups=["checkpoint"], props=[
+        cp_groups, cp_meta = help_tag(cp, catalog.get("checkpoint", {}).get("help_id"))
+        scene.node(cp["id"], "Marker2D", parent="Checkpoints", groups=["checkpoint"] + cp_groups, props=[
             ("position", feet(cp["x"], cp["y"])),
             ("script", scene.ext_resource("Script", CHECKPOINT_SCRIPT)),
             ("checkpoint_id", "&" + fmt_string(cp["id"])),
-        ])
+        ] + cp_meta)
 
     scene.node("Secrets", "Node2D", parent=".")
     for secret in level.get("secrets", []):
@@ -396,8 +423,9 @@ def build_scene(level, root=ROOT, warnings=None):
             props.append((prop, fmt_value(params[field], prop in STRING_NAME_PROPERTIES)))
         if obj["type"] in ("exit_door", "exit_terminal"):
             props.append(("level_id", fmt_string(level["id"])))
+        obj_groups, obj_meta = help_tag(obj, entry.get("help_id"))
         scene.node(name, parent="Objects", instance=scene.ext_resource("PackedScene", entry["scene"]),
-                   props=props)
+                   props=props + obj_meta, groups=obj_groups)
 
     scene.node("Enemies", "Node2D", parent=".")
     for enemy in level.get("enemies", []):
@@ -409,7 +437,9 @@ def build_scene(level, root=ROOT, warnings=None):
         if "patrol_range_px" in params:
             props.append(("patrol_range_px", fmt_number(params["patrol_range_px"])))
         props.append(("metadata/params", fmt_value(params)))
-        scene.node(enemy["id"], parent="Enemies", instance=scene.ext_resource("PackedScene", path), props=props)
+        enemy_groups, enemy_meta = help_tag(enemy, enemy_help_id(enemy["type"], root))
+        scene.node(enemy["id"], parent="Enemies", instance=scene.ext_resource("PackedScene", path),
+                   props=props + enemy_meta, groups=enemy_groups)
 
     goal = find_cells(grid, "G")[0]
     scene.node("Goal", "Marker2D", parent=".", groups=["goal"], props=[("position", feet(*goal))])
@@ -421,6 +451,7 @@ def build_scene(level, root=ROOT, warnings=None):
     ])
     scene.node("Hud", parent=".", instance=scene.ext_resource("PackedScene", HUD_SCENE))
     scene.node("EcoTextBox", parent=".", instance=scene.ext_resource("PackedScene", ECO_SCENE))
+    scene.node("Help", "Node", parent=".", props=[("script", scene.ext_resource("Script", HELP_SCRIPT))])
     return scene.text()
 
 

@@ -344,6 +344,16 @@ class LevelSchemaTest(unittest.TestCase):
         self.level["objects"].append({"type": "teleport", "x": 2, "y": 2, "params": {}})
         self.assert_fails(self.level, "tipo 'teleport' no esta en data/world1_objects.json")
 
+    def test_unknown_help_id(self):
+        obj(self.level, "popup_blocker")["help_id"] = "teletransporte"
+        self.assert_fails(self.level, "help_id 'teletransporte' no esta en data/help.json")
+        self.level["enemies"][0]["help_id"] = "nadie"
+        self.assert_fails(self.level, "help_id 'nadie' no esta en data/help.json")
+
+    def test_empty_help_id_means_no_prompt(self):
+        obj(self.level, "popup_blocker")["help_id"] = ""
+        self.assertEqual(vls.validate_level(self.level), [])
+
     def test_object_missing_required_param(self):
         del obj(self.level, "popup_blocker")["params"]["close_button_px"]
         self.assert_fails(self.level, "falta el param obligatorio 'close_button_px'")
