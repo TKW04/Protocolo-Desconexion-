@@ -454,6 +454,14 @@ func test_bot_plays_the_level_to_the_end() -> void:
 	var text: String = "\n".join(PackedStringArray(output))
 	assert_eq(code, 0, "El bot termina el nivel:\n" + text)
 	assert_string_contains(text, "play_level_bot: OK")
+	# Eco lleva la Q (2026-10-16): vuela al objeto y brilla, pero no cambia el
+	# recorrido del bot (que nunca pulsa Q): 99,1 s +- 1 s.
+	assert_string_contains(text, "Eco lleva la Q")
+	var route := RegEx.create_from_string("recorrido: ([0-9.]+) s de juego")
+	var found: RegExMatch = route.search(text)
+	assert_not_null(found, "El bot anota la duracion del recorrido")
+	if found != null:
+		assert_almost_eq(float(found.get_string(1)), 99.1, 1.0, "Duracion del recorrido del bot")
 	# Encuentro con Eco (2026-10-16): sin pulso antes, apodo por defecto, pulso y companero despues.
 	assert_string_contains(text, "encuentro con Eco (x=")
 	assert_string_contains(text, "pulso antes false, Eco conocido false")

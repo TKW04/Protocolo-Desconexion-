@@ -29,7 +29,8 @@
 ## Comprueba que antes no hay pulso ni Eco y despues si (pulso, Eco conocido y
 ## companero visible), y que al volver al 1-1 desde la carpeta no se repite.
 ## Ayuda de Eco con Q (2026-10-15 (3)): el bot nunca pulsa help; la Q sale sobre
-## los tipos no aprendidos sin bloquear nada. Anota cuantos cuadros se vio y
+## los tipos no aprendidos sin bloquear nada. Desde el 2026-10-16 Eco lleva la
+## Q (vuela al objeto y brilla): solo es visual y no cambia el recorrido. Anota cuantos cuadros se vio y
 ## falla si el juego se pausa sin una linea importante de Eco en pantalla.
 ## Game over (2026-10-16, pasos 11 y 12 de docs/propuesta-asistentes-y-vidas.md):
 ## en el primer recorrido del 1-1 las vidas no cuentan (la muerte forzada no
@@ -198,7 +199,9 @@ func _watch_help() -> void:
 		return
 	if _help_frames == 0:
 		var target: Node = help.get_target()
-		_note("Q de ayuda visible sobre %s (no se pulsa; no bloquea)" % (target.name if target != null else "?"))
+		_note("Q de ayuda visible sobre %s (no se pulsa; no bloquea; %s)" % [
+			target.name if target != null else "?",
+			"Eco lleva la Q" if help.is_prompt_on_eco() else "Q sobre el objeto"])
 	_help_frames += 1
 
 

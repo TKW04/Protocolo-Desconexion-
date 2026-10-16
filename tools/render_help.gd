@@ -2,10 +2,13 @@
 ## data/help.json; docs/propuesta-asistentes-y-vidas.md §3) con el flujo de
 ## juego real (scenes/main.tscn) y un guardado vacio (user://tool_save.json, se
 ## borra al arrancar; nunca el guardado del jugador):
-##   01_q_receptor.png    la Q sobre el receptor del Tramo 2a (tipo no aprendido)
-##   02_ayuda_pausa.png   tras pulsar help: el juego en pausa y Eco explicando el tipo
-##   03_receptor_sin_q.png el mismo receptor tras cerrar la ayuda, ya sin Q (el
-##                         puente, de otro tipo, conserva la suya)
+##   01a_eco_se_acerca.png  el receptor del Tramo 2a es candidato: Eco empieza a
+##                          brillar (glow_in) y sale de su sitio con la Q encima
+##   01b_eco_vuela.png      Eco a medio camino, ya dorado, la Q le sigue
+##   01c_eco_junto.png      Eco junto al receptor, brillando en ambar, la Q sobre Eco
+##   02_ayuda_pausa.png     tras pulsar help: el juego en pausa, Eco explicando (sigue dorado)
+##   03a_eco_vuelve.png     ayuda cerrada: Eco se apaga (glow_out) y vuelve hacia Isak
+##   03b_receptor_sin_q.png Eco junto a Isak con su color normal; el receptor ya sin Q
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_help.gd [-- carpeta_salida]
 extends SceneTree
@@ -37,6 +40,9 @@ func _run() -> void:
 	game_state.call(&"meet_ally", &"eco")
 	game_state.call(&"mark_notice_seen", &"pulse")
 	game_state.call(&"obtain_ability", &"pulse")
+	# El puente cercano ya aprendido: al cerrar la ayuda no hay otro candidato
+	# y se ve a Eco volver a Isak con su color.
+	game_state.call(&"learn_help", &"bridge")
 	main.set(&"start_level_id", "1-1")
 	root.add_child(main)
 	_main = main
@@ -64,17 +70,22 @@ func _run() -> void:
 		if help.call(&"get_target") == receiver:
 			ok_q = true
 			break
-	await create_timer(0.3).timeout
+	var eco: Node = main.call(&"get_eco_companion")
+	await _save(out_dir, "01a_eco_se_acerca.png")
+	await create_timer(0.12).timeout
+	await _save(out_dir, "01b_eco_vuela.png")
+	await create_timer(0.8).timeout
 	var shown: Node = help.call(&"get_target")
-	ok_q = ok_q and shown == receiver
-	print("render_help: Q sobre %s" % (shown.name if shown != null else "nada"))
-	await _save(out_dir, "01_q_receptor.png")
+	ok_q = ok_q and shown == receiver and help.call(&"is_prompt_on_eco") and eco.call(&"get_glow") == 2
+	print("render_help: Q sobre %s, en Eco %s, animacion %s" % [shown.name if shown != null else "nada",
+		help.call(&"is_prompt_on_eco"), eco.call(&"get_shown_animation")])
+	await _save(out_dir, "01c_eco_junto.png")
 	var press := InputEventAction.new()
 	press.action = &"help"
 	press.pressed = true
 	root.push_input(press)
 	await create_timer(TYPE_WAIT_S).timeout
-	var ok_pause: bool = paused
+	var ok_pause: bool = paused and eco.call(&"get_glow") == 2
 	var box: Node = level.get_node(^"EcoTextBox")
 	var text: String = box.call(&"get_text")
 	box.call(&"finish_typing")
@@ -82,9 +93,16 @@ func _run() -> void:
 	await _save(out_dir, "02_ayuda_pausa.png")
 	while box.call(&"confirm"):
 		pass
-	await create_timer(1.0).timeout
-	var ok_after: bool = not paused and help.call(&"get_target") != receiver
-	await _save(out_dir, "03_receptor_sin_q.png")
+	# Al terminar de cerrarse el cuadro, Eco se apaga (glow_out) y vuelve.
+	var deadline_out: int = Time.get_ticks_msec() + 3000
+	while eco.call(&"get_glow") == 2 and Time.get_ticks_msec() < deadline_out:
+		await process_frame
+	await create_timer(0.1).timeout
+	await _save(out_dir, "03a_eco_vuelve.png")
+	await create_timer(1.5).timeout
+	var ok_after: bool = not paused and help.call(&"get_target") != receiver and eco.call(&"get_glow") == 0 \
+			and not eco.call(&"is_helping")
+	await _save(out_dir, "03b_receptor_sin_q.png")
 	print("render_help: q=%s pausa=%s sin_q_despues=%s texto=«%s»" % [ok_q, ok_pause, ok_after, text])
 	main.queue_free()
 	await process_frame

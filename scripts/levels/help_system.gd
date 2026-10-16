@@ -3,8 +3,15 @@
 ## - Con Eco conocido (GameState.has_met_ally("eco")), busca entre los objetos
 ##   del nivel apuntados a la ayuda (grupo HelpCatalog.TARGET_GROUP, metadato
 ##   help_id) el mas cercano al centro de Isak cuyo tipo no se ha aprendido,
-##   dentro de su radio y en pantalla, y pone sobre el una Q (HelpPrompt). Una
-##   sola Q a la vez. Sin Isak con control (muerto, en un vortice o de espaldas)
+##   dentro de su radio y en pantalla (el candidato: HelpSystem es la fuente de
+##   verdad), y muestra una Q (HelpPrompt). Una sola Q a la vez.
+## - Eco lleva la Q (2026-10-16, decision del usuario): el candidato se le pasa
+##   al companero del nivel (EcoCompanion.set_help_target), que vuela junto al
+##   objeto y brilla en ambar; la Q se dibuja SOBRE ECO
+##   (EcoCompanion.get_prompt_position) y lo sigue mientras se mueve. Si no hay
+##   companero visible (escenas de prueba sin Eco), la Q va sobre el objeto
+##   como antes. Al pedir la ayuda, Eco se queda brillando mientras explica
+##   (begin_help_explanation) y vuelve a Isak al cerrar la linea. Sin Isak con control (muerto, en un vortice o de espaldas)
 ##   o con el juego en pausa no hay Q.
 ## - Al pulsar la accion help con una Q visible: el tipo queda aprendido
 ##   (GameState.learn_help; ninguna otra instancia de ese tipo vuelve a mostrar
@@ -33,6 +40,8 @@ signal help_shown(help_id: StringName, text: String)
 
 ## Capa por defecto de la Q (entre el Debug, 5, y el HUD, 10).
 const DEFAULT_LAYER: int = 6
+## Se procesa despues de Eco (prioridad 0): la Q usa su posicion de este cuadro.
+const PROCESS_PRIORITY: int = 10
 
 @export var isak_path: NodePath = ^"../Isak"
 
@@ -40,9 +49,14 @@ var _catalog: HelpCatalog = HelpCatalog.shared()
 var _layer: CanvasLayer
 var _prompt: HelpPrompt
 var _target: Node2D
+var _eco: EcoCompanion
 
 
 func _ready() -> void:
+	# Tiempo real: con el arbol en pausa (menu de pausa, ayuda abierta) quita la
+	# Q y suelta a Eco, que vuelve a Isak (no se queda junto al objeto).
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	process_priority = PROCESS_PRIORITY
 	_layer = CanvasLayer.new()
 	_layer.name = "PromptLayer"
 	_layer.layer = int(_catalog.prompt_config().get("layer", DEFAULT_LAYER))
@@ -79,10 +93,16 @@ func refresh() -> void:
 	_target = null if get_tree().paused else find_target()
 	if _target != null and _target != previous:
 		EventBus.help_prompt_shown.emit(_target)
+	var eco: EcoCompanion = get_eco()
+	if eco != null:
+		eco.set_help_target(_target, HelpCatalog.help_id_of(_target) if _target != null else &"")
 	_prompt.visible = _target != null
 	if _target != null:
-		_prompt.global_position = (_target.global_position
-			+ _catalog.prompt_offset(HelpCatalog.help_id_of(_target))).round()
+		if is_prompt_on_eco():
+			_prompt.global_position = eco.get_prompt_position().round()
+		else:
+			_prompt.global_position = (_target.global_position
+				+ _catalog.prompt_offset(HelpCatalog.help_id_of(_target))).round()
 
 
 ## Pide la ayuda del objeto con Q (accion help). Falso si no hay Q visible.
@@ -95,6 +115,10 @@ func request_help() -> bool:
 		return false
 	_target = null
 	_prompt.visible = false
+	# Eco se queda junto al objeto, brillando, mientras explica.
+	var eco: EcoCompanion = get_eco()
+	if eco != null:
+		eco.begin_help_explanation()
 	# Primero la linea (pausa el juego) y despues aprender: asi el refresco que
 	# provoca help_learned ya no pone la Q sobre otro objeto durante la pausa.
 	EventBus.eco_line_requested.emit(text, -1.0, true)
@@ -114,6 +138,25 @@ func is_prompt_visible() -> bool:
 
 func get_prompt() -> HelpPrompt:
 	return _prompt
+
+
+## Companero Eco de este nivel (null si no hay).
+func get_eco() -> EcoCompanion:
+	if _eco != null and is_instance_valid(_eco) and _eco.is_inside_tree():
+		return _eco
+	_eco = null
+	var scope: Node = get_parent()
+	for node: Node in get_tree().get_nodes_in_group(EcoCompanion.GROUP):
+		if node is EcoCompanion and (scope == null or scope.is_ancestor_of(node)):
+			_eco = node as EcoCompanion
+			break
+	return _eco
+
+
+## La Q visible va sobre Eco (y no sobre el objeto).
+func is_prompt_on_eco() -> bool:
+	var eco: EcoCompanion = get_eco()
+	return _target != null and eco != null and eco.is_shown() and eco.get_help_target() == _target
 
 
 ## El objeto no aprendido mas cercano a Isak dentro de su radio y en pantalla.
