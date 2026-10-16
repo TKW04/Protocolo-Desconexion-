@@ -109,6 +109,8 @@ Sustituye los costes de §2 y el reparto de puntos de «Notas del 1-1 ampliado»
 | Debug eficiente | 200 → **60** | 1 | 6,7 | 10 |
 | **Total** | 645 → **210** | 3 | 23,3 (> 18) | 35 |
 
+**[Reemplazado el 2026-10-16, sin implementar]:** el catálogo de esta tabla pasa a las cinco pistas de Calc de `docs/propuesta-mejoras.md` (90 puntos por pista, 450 en total; §3). El Pulso amplio sería el Pulso 2 y conserva sus 25 puntos (recomendado), así que las cuatro comprobaciones de arriba siguen valiendo.
+
 (N de la tabla = coste / 9 tras redondear a 5; antes de redondear, 3, 2, 3, 4, 5 y 6,7 mapas.)
 
 **Puntos del 1-1 (anterior → nuevo):** ruta 20 → **6** (uno al principio del Tramo 1 junto a la línea de Eco de los puntos, uno en lo alto del Tramo 1, uno en la meseta del 2b, uno en la repisa de la Burbuja escalón del 3b, que solo se alcanza subiendo por la Burbuja aturdida, uno en el escalón del pop-up del 4b y uno antes de la puerta); secretos A 3 → **1**, B 3 → **1** y C 4 → **1**; secreto del Pulso amplio 5 puntos → **1 power bank vacío** (0 puntos). Total 35 → **9** (todos sin mejoras).

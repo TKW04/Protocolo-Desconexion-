@@ -467,8 +467,8 @@ Valores de movimiento: sin cambios.
 - **Decisión 4, dificultad:** la dificultad ya no se elige. C9 queda sustituida por una dificultad que evoluciona con el juego (el usuario lo confirma). **Concretada el 2026-10-15:** tres vueltas Easy, Normal y Hard (ver «Decisiones del 2026-10-15: tres vueltas, hub y guardado»).
 - **Dudas abiertas (power banks):**
   1. **Resuelta (decisión del usuario, 2026-10-15):** sin ningún power bank vacío, el sobrante de los drops **se pierde**: no se acumula ni se devuelve al obtener después un power bank vacío. `GameState.add_power_bank_charge` ya lo hacía así; la prueba `test_overflow_is_lost_without_empty_power_banks` lo comprueba.
-  2. Al pagar una mejora, el power bank completo se gasta y desaparece (no vuelve como vacío). ¿Es así, o se recarga y se reutiliza?
-  3. Hoy no hay forma de **comprar** un power bank: el catálogo `data/upgrades.json` no tiene esa entrada. ¿Dónde se compra y cuánto cuesta?
+  2. Al pagar una mejora, el power bank completo se gasta y desaparece (no vuelve como vacío). ¿Es así, o se recarga y se reutiliza? **Resuelta (decisión del usuario, 2026-10-16):** se gasta y desaparece; solo lo pide el nivel 5 de cada pista de Calc (`propuesta-mejoras.md` §5.1).
+  3. Hoy no hay forma de **comprar** un power bank: el catálogo `data/upgrades.json` no tiene esa entrada. ¿Dónde se compra y cuánto cuesta? **Resuelta (decisión del usuario, 2026-10-16):** no se compran; Calc no los vende. Vienen de los mapas, con un tope de 3 a la vez.
   4. **Resuelta:** los textos de `power_bank_pickup` (`data/world1_objects.json` y `scripts/levels/power_bank_pickup.gd`) ya dicen "vacío".
 
 ## Notas del 1-1 ampliado (2026-10-14)
@@ -886,25 +886,30 @@ Diseño completo en `docs/propuesta-1-2.md` (pendiente de revisión; solo docume
 
 ## Propuesta del sistema de mejoras de Calc (2026-10-16)
 
-Diseño completo en `docs/propuesta-mejoras.md` (pendiente de revisión; solo documentación).
+Diseño completo en `docs/propuesta-mejoras.md` (revisada en parte el 2026-10-16: ver «Decisiones del usuario», abajo; solo documentación).
 
 **Idea del usuario (aprobada en líneas generales):** cinco mejoras únicas en la tienda de Calc, una por acción (Pulso, Láser, Debug, Sync Rate y Energía), cada una con su chip y **5 niveles** (la 1.ª barra llena de inicio, las otras 4 se compran). El Debug solo sale tras obtenerlo; mientras, su chip es «?». Pulso: 2 alcance, 3 aturdimiento, 4 **Ocultarte**.
 
 **Decisiones del orquestador recogidas:** economía «opción 2» (todo alcanzable en las tres vueltas; puntos solo con el rollback); tope por acceso Caché 3 / Kernel 4 / Raíz 5 (aprobado por silencio; responde a la duda «mejoras por vuelta» de «Decisiones del 2026-10-15: tres vueltas, hub y guardado»); Ocultarte consume Sync Rate y energía y se apaga al 10 %; Energía 5 = recarga pasiva sin subir la capacidad; tope de power banks a decidir en la propuesta.
 
-**Valores propuestos:** costes 10 / 15 / 15 / 20 + 1 power bank por nivel (Pulso 2 = 25, el Pulso amplio; Debug 2 = 15, el antiguo «Debug eficiente», que deja de estar huérfano: ya no necesita secreto); total **320 puntos + 5 power banks** (Caché 145, Kernel 75, Raíz 100), alcanzable con un 66 % o más de los 486 de tres vueltas (margen +44 con el 75 %). Tope de **3 power banks** (completos + vacíos), 200 de capacidad, sin venta en Calc. Energía 2-4 = 110 / 120 / 130 y 5 = recarga del 0,5 % del máximo por segundo (el 0,005 %/s del borrador tardaría 33 min en dar un disparo). Ocultarte: acción nueva `hide` (H / L3), 5 de energía/s y 1,5 de Sync/s, se apaga al 10 % de cualquiera de las dos, atacar o recibir daño lo apaga, no combina con el Debug. Se retira «Recarga mejorada»; guardado v4 con `upgrade_levels` y migración con devoluciones.
+**Valores propuestos:** ~~costes 10 / 15 / 15 / 20 + 1 power bank por nivel; total 320 puntos + 5 power banks~~ [Reemplazado el 2026-10-16 por la decisión 5, abajo]. Debug 2 = 15, el antiguo «Debug eficiente», que deja de estar huérfano: ya no necesita secreto. Tope de **3 power banks** (completos + vacíos), 200 de capacidad, sin venta en Calc. Energía 2-4 = 110 / 120 / 130 y 5 = recarga del 0,5 % del máximo por segundo (el 0,005 %/s del borrador tardaría 33 min en dar un disparo). Ocultarte: acción nueva `hide` (H / L3), 5 de energía/s y 1,5 de Sync/s, se apaga al 10 % de cualquiera de las dos, atacar o recibir daño lo apaga, no combina con el Debug. Se retira «Recarga mejorada»; guardado v4 con `upgrade_levels` y migración con devoluciones.
 
-**Choques con decisiones anteriores (necesitan aprobación):** (1) la regeneración pasiva de Sync (nivel 5, hasta el 60 % fuera de combate) y de Energía (nivel 5) cambia «no hay regeneración pasiva ni curación» de «Notas del paso 9», solo con esas mejoras; (2) el Debug 3 «más alcance de revelado» no tiene base hoy (el Debug revela toda la pantalla): se propone «revelado persistente» de 1,5 s; (3) Batería ampliada (150) y Sync reforzado (120) pasan a subir de 10 en 10 hasta 130.
+**Choques con decisiones anteriores:** (1) la regeneración pasiva de Sync (nivel 5, hasta el 60 % fuera de combate) y de Energía (nivel 5) cambia «no hay regeneración pasiva ni curación» de «Notas del paso 9», solo con esas mejoras (**aprobado el 2026-10-16**, decisión 1); (2) y (3), pendientes de aprobación: (2) el Debug 3 «más alcance de revelado» no tiene base hoy (el Debug revela toda la pantalla): se propone «revelado persistente» de 1,5 s; (3) Batería ampliada (150) y Sync reforzado (120) pasan a subir de 10 en 10 hasta 130.
+
+**Decisiones del usuario (2026-10-16):**
+
+1. **Regeneración pasiva** en Sync Rate 5 y Energía 5, solo con esas mejoras: **APROBADO**.
+2. **Corte del Ocultarte:** se apaga cuando el Sync **o** la energía llegan al 10 %, el primero que llegue: **APROBADO**.
+3. **Ocultarte y Debug no se combinan** (activar uno apaga el otro): **APROBADO**.
+4. **Calc no vende power banks:** vienen de los mapas (tope de 3 a la vez) y se gastan al comprar el nivel 5: **APROBADO**.
+5. **Costes:** cada una de las 5 mejoras cuesta **90 puntos en total** (sus 4 compras, niveles 2-5): **450** entre todas, «para que los jugadores tengan que buscar». Sustituye a la tabla de 320. Se mantienen el nivel 1 gratis, el power bank del nivel 5 y el tope Caché 3 / Kernel 4 / Raíz 5. Reparto propuesto (`propuesta-mejoras.md` §3.2): 15 / 20 / 30 / 25 + 1 PB y Pulso 25 / 15 / 25 / 25 + 1 PB (Caché abre 180, Kernel 145, Raíz 125). Comprarlo todo pide ≈ 93 % de los 486 puntos de las tres vueltas (≈ 78 % de los secretos con toda la ruta): exigente a propósito.
 
 **Dudas abiertas** (detalle y recomendación en `propuesta-mejoras.md` §11):
 
-1. ¿Regeneración pasiva en Sync 5 y Energía 5? *Recomendación:* sí, solo con esas mejoras.
-2. ¿Ocultarte se corta con el Sync **o** la energía al 10 % del máximo, solo con el Sync, o con los dos? *Recomendación:* cualquiera de los dos.
-3. ¿Ocultarte y Debug combinables? *Recomendación:* no.
-4. ¿Calc vende power banks vacíos? *Recomendación:* no; tope de 3, solo de los mapas.
-5. ¿Debug 3 = revelado persistente o radio nuevo? *Recomendación:* persistente.
-6. ¿Pulso 5 «Pulso de retorno» (+4 de energía al aturdir, una vez por enemigo e intento)? *Recomendación:* sí.
-7. ¿Costes 10 / 15 / 15 / 20 + 1 PB (320 en total)? *Recomendación:* sí, y revisarlos tras un mundo completo.
-8. ¿Confirmación al comprar? *Recomendación:* sí.
-9. ¿Tecla del Ocultarte H / L3? *Recomendación:* sí, reasignable.
-10. ¿Atacar revela? *Recomendación:* sí.
+1. ¿Debug 3 = revelado persistente o radio nuevo? *Recomendación:* persistente.
+2. ¿Pulso 5 «Pulso de retorno» (+4 de energía al aturdir, una vez por enemigo e intento)? *Recomendación:* sí.
+3. ¿Confirmación al comprar? *Recomendación:* sí.
+4. ¿Tecla del Ocultarte H / L3? *Recomendación:* sí, reasignable.
+5. ¿Atacar revela? *Recomendación:* sí.
+6. ¿Reparto de los 90 por nivel: 15 / 20 / 30 / 25 + 1 PB o 15 / 20 / 25 / 30? *Recomendación:* 15 / 20 / 30 / 25 (con 15 / 20 / 25 / 30 sobrarían hasta 24 puntos sin nada que comprar al terminar Kernel).
+7. ¿Pulso 2 (Pulso amplio) sigue en 25 o baja a 15? *Recomendación:* 25 (las comprobaciones de economía del 1-1 en `tests/test_level_schema.py` no cambian; con 15 fallarían dos y habría que devolver 10 puntos en la migración).

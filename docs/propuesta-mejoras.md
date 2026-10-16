@@ -1,18 +1,20 @@
 # Propuesta: sistema de mejoras de Calc (cinco pistas de 5 niveles)
 
-**Estado:** PROPUESTA (2026-10-16), pendiente de revisión del usuario. Solo documentación: no cambia código, datos, escenas, arte ni pruebas. Todos los valores son orientativos y se ajustan jugando en `data/upgrades.json`. Lo no decidido va como pregunta (§11).
+**Estado:** PROPUESTA (2026-10-16), revisada en parte por el usuario el mismo día: **aprobadas** la regeneración pasiva de los niveles 5 de Sync y Energía, el corte del Ocultarte al 10 % del Sync o de la energía, que Ocultarte y Debug no se combinan, que Calc no vende power banks y la **economía de 90 puntos por pista (450 en total)**. Solo documentación: no cambia código, datos, escenas, arte ni pruebas. Los valores son orientativos y se ajustan jugando en `data/upgrades.json`. Lo no decidido va como pregunta (§11).
 
 **Idea del usuario (aprobada en líneas generales):** la tienda de Calc pasa de una lista de mejoras sueltas a **cinco mejoras únicas**, una por acción: **Pulso, Láser, Debug, Sync Rate y Energía**. Cada una tiene un chip con el icono de la acción y **5 niveles** (5 barras): la primera llena de inicio y las otras cuatro se compran. El Debug solo sale en la tienda tras obtenerlo (piso 2 del 1-2); mientras, su chip aparece bloqueado con «?». Ejemplo del usuario para el Pulso: nivel 2 más distancia, nivel 3 más aturdimiento, nivel 4 te oculta temporalmente.
 
 **Decisiones que respeta:**
 
 - **Economía (opción 2):** todo se puede comprar **dentro de las tres vueltas** (Caché, Kernel, Raíz; internamente vueltas 1-3). Los puntos de atención solo vuelven con el rollback; ≈ 9 por mapa (6 en la ruta y 3 en secretos) × 18 mapas = 162 por vuelta como mucho.
+- **Coste (decisión del usuario, 2026-10-16):** cada pista cuesta **90 puntos en total** (sus 4 compras, niveles 2-5): **450** entre las cinco, «para que los jugadores tengan que buscar». El nivel 1 es gratis y el nivel 5 pide además 1 power bank. Sustituye a la tabla anterior de 320 (10 / 15 / 15 / 20).
 - **Tope por vuelta** (propuesta del orquestador, aprobada por silencio): Caché hasta el nivel 3, Kernel hasta el 4 y Raíz hasta el 5. Esto responde a la duda abierta «mejoras por vuelta» de `preguntas.md`.
 - **Las mejoras se conservan entre vueltas**: el rollback (game over o jefe final) las manda a la Papelera junto con lo demás y se recuperan (`propuesta-asistentes-y-vidas.md` §5.3). Un game over sin guardar pierde las compras posteriores a la última copia, como hoy.
-- **Ocultarte** (Pulso nivel 4) consume Sync Rate y energía mientras dura y se apaga solo al 10 %.
+- **Ocultarte** (Pulso nivel 4) consume Sync Rate y energía mientras dura y se apaga solo cuando el Sync **o** la energía llegan al 10 %, el primero que llegue (aprobado el 2026-10-16). No se combina con el Debug (aprobado).
+- **Regeneración pasiva** solo con Sync Rate 5 y Energía 5 (aprobado el 2026-10-16). **Calc no vende power banks** (aprobado): vienen de los mapas, tope de 3 a la vez, y el del nivel 5 se gasta al comprarlo.
 - **Energía nivel 5:** no sube la capacidad; da **recarga pasiva**.
 - La UI nunca dice vuelta, Easy, Normal ni Hard: usa Caché, Kernel y Raíz.
-- El Pulso amplio (25 puntos) pasa a ser el nivel 2 del Pulso, y «Debug eficiente», que se quedó sin secreto al cambiar el secreto D por la vida extra, pasa a ser el nivel 2 del Debug.
+- El Pulso amplio (25 puntos, precio que se mantiene) pasa a ser el nivel 2 del Pulso, y «Debug eficiente», que se quedó sin secreto al cambiar el secreto D por la vida extra, pasa a ser el nivel 2 del Debug.
 
 ---
 
@@ -46,7 +48,7 @@ Calc es literal, seca y lógica (`04-personajes.md` §12.3): precios fijos y nad
 |---|---|
 | Nombre y nivel | «Pulso · Nivel 2 de 5» |
 | Siguiente efecto | «Siguiente, nivel 3: Aturdimiento 3,0 s a 4,5 s» (formato actual `<label>: <base> a <value>`, con «a» y no flecha, por los glifos de la fuente) |
-| Coste | «Coste: 15 puntos» o «Coste: 20 puntos + 1 power bank» |
+| Coste | «Coste: 15 puntos» o «Coste: 25 puntos + 1 power bank» |
 | Estado | Disponible · Faltan puntos · Falta power bank · «Requiere acceso: Kernel» · «Completa» |
 | Chip «?» | «???» sin nombre ni efecto, como las fichas del álbum |
 
@@ -88,55 +90,60 @@ El nivel 1 es el valor base de hoy. Cada nivel **suma** su efecto a los anterior
 | Tres vueltas | 486 con todo; 324 solo con la ruta |
 | Compras | 5 pistas × 4 niveles = **20** |
 
-### 3.2 Costes propuestos
+### 3.2 Costes (90 por pista; reparto propuesto)
 
-Regla: nivel 2 = 10, nivel 3 = 15, nivel 4 = 15 y nivel 5 = 20 + 1 power bank, con dos excepciones heredadas: **Pulso 2 = 25** (el Pulso amplio de siempre) y **Debug 2 = 15** (antes 60 + 1 power bank, un precio pensado para seis mejoras sueltas; ahora es una de veinte).
+Total aprobado: **90 por pista, 450 en total**. El reparto por nivel es propuesta (pregunta 6 de §11). Regla general: **15 / 20 / 30 / 25 + 1 power bank**; el nivel 5 cuesta menos puntos que el 4 porque además gasta un power bank, y así el acumulado de Kernel cabe en lo que se gana (§3.4). Excepción heredada: **Pulso 2 = 25** (el Pulso amplio de siempre), y el resto del Pulso se reparte en 15 / 25 / 25 para sumar 90.
 
 | Pista | Nv 2 | Nv 3 | Nv 4 | Nv 5 | Total |
 |---|---|---|---|---|---|
-| Pulso | **25** | 15 | 15 | 20 + 1 PB | 75 |
-| Láser | 10 | 15 | 15 | 20 + 1 PB | 60 |
-| Debug | **15** | 15 | 15 | 20 + 1 PB | 65 |
-| Sync Rate | 10 | 15 | 15 | 20 + 1 PB | 60 |
-| Energía | 10 | 15 | 15 | 20 + 1 PB | 60 |
-| **Total** | 70 | 75 | 75 | 100 + 5 PB | **320 puntos + 5 power banks** |
+| Pulso | **25** | 15 | 25 | 25 + 1 PB | 90 |
+| Láser | 15 | 20 | 30 | 25 + 1 PB | 90 |
+| Debug | 15 | 20 | 30 | 25 + 1 PB | 90 |
+| Sync Rate | 15 | 20 | 30 | 25 + 1 PB | 90 |
+| Energía | 15 | 20 | 30 | 25 + 1 PB | 90 |
+| **Total** | 85 | 95 | 145 | 125 + 5 PB | **450 puntos + 5 power banks** |
+
+Debug 2 (el antiguo «Debug eficiente», 60 + 1 PB pensado para seis mejoras sueltas) cuesta 15, como los demás niveles 2.
 
 ### 3.3 Por vuelta (con el tope Caché 3 / Kernel 4 / Raíz 5)
 
-| Acceso | Se abre | Coste de lo que se abre | Acumulado |
-|---|---|---|---|
-| Caché | Niveles 2 y 3 | 145 | 145 |
-| Kernel | Nivel 4 | 75 | 220 |
-| Raíz | Nivel 5 | 100 + 5 PB | 320 |
+| Acceso | Se abre | Coste de lo que se abre | Acumulado abierto | Ganable acumulado (100 %) |
+|---|---|---|---|---|
+| Caché | Niveles 2 y 3 | 180 | 180 | 162 |
+| Kernel | Nivel 4 | 145 | 325 | 324 |
+| Raíz | Nivel 5 | 125 + 5 PB | 450 | 486 |
+
+Lo abierto en Caché y Kernel es siempre **al menos** lo que se puede ganar hasta ese momento: nunca sobran puntos sin nada que comprar antes de Raíz. Los puntos no gastados se conservan de una vuelta a otra. La compra más cara de los niveles 2-3 es de 25, muy por debajo de lo ganable al terminar Caché (162 con todo, ≈ 150 con el 93 %). Los topes aprobados se mantienen.
 
 ### 3.4 Comprobación numérica (script temporal, fuera del repo)
 
-Puntos acumulados al terminar cada vuelta según el porcentaje recogido, frente al acumulado de §3.3:
+Puntos acumulados al terminar cada vuelta según el porcentaje recogido, frente al acumulado abierto de §3.3:
 
-| Recogido | Fin de Caché (vs 145) | Fin de Kernel (vs 220) | Fin de Raíz (vs 320) | Margen final |
+| Recogido | Fin de Caché (vs 180) | Fin de Kernel (vs 325) | Fin de Raíz (vs 450) | Margen final |
 |---|---|---|---|---|
-| 100 % | 162 (+17) | 324 (+104) | 486 | **+166 (34 %)** |
-| 85 % | 138 (−7) | 275 (+55) | 413 | **+93 (23 %)** |
-| 80 % | 130 (−15) | 259 (+39) | 389 | **+69 (18 %)** |
-| **75 % (referencia)** | 122 (−23) | 243 (+23) | 364 | **+44 (12 %)** |
-| 70 % | 113 (−32) | 227 (+7) | 340 | **+20 (6 %)** |
-| Solo la ruta (≈ 67 %) | 108 (−37) | 216 (−4) | 324 | **+4 (1 %)** |
-| 65 % | 105 | 211 | 316 | −4 (no llega) |
+| 100 % | 162 | 324 | 486 | **+36 (8 %)** |
+| 95 % | 154 | 308 | 462 | **+12 (3 %)** |
+| **≈ 93 % (equilibrio)** | 150 | 300 | 450 | **0** |
+| 90 % | 146 | 292 | 437 | −13 (no llega) |
+| 85 % | 138 | 275 | 413 | −37 (no llega) |
+| Solo la ruta (≈ 67 %) | 108 | 216 | 324 | −126 |
 
 **Lectura:**
 
-- Con un **70-85 %** se compra **todo** en Raíz, con un margen de 20 a 93 puntos. El punto de equilibrio está en el **66 %** (320 / 486).
-- En Caché casi nadie compra los diez niveles 2-3 (hace falta un 90 %): lo que falte se compra al empezar Kernel. Es intencionado: Caché obliga a elegir.
-- Desde Kernel, un jugador del 70 % ya va al día (+7).
-- Quien solo hace la ruta (sin secretos) llega justo (+4): los secretos dan holgura, pero no son obligatorios para completarlo todo.
-- Se mantienen las cuatro comprobaciones de `tests/test_level_schema.py`: un mapa (9) no paga ninguna compra (mínimo 10); tres mapas completos (27) pagan el Pulso 2 (25) y sobran menos de 5; la ruta de tres mapas (18) no llega a 25; la suma (320) supera una vuelta (162).
-- **Cambio de ritmo:** al conocer a Calc al final del 1-2 (unos 18 puntos) ya se puede comprar un nivel 2 de 10 o el Debug 2 (15). El Pulso 2 sigue pagándose al terminar el 1-3.
+- **Exigente a propósito** (decisión del usuario): comprarlo todo pide recoger ≈ **93 %** de los 486 puntos de las tres vueltas (450 / 486). Con toda la ruta (324), hacen falta ≈ **78 %** de los puntos de secretos (126 de 162). El jugador tiene que buscar secretos; quien no los busca compra unas dos terceras partes.
+- Con un 85-90 % faltan de 13 a 37 puntos: queda sin comprar uno o dos niveles altos (un nivel 5 cuesta 25). El margen con todo es de solo +36.
+- En ninguna vuelta sobran puntos sin nada que comprar (con el 100 %, Kernel queda a 1 punto); en Caché siempre hay que elegir (se abren 180 y se ganan como mucho 162).
+- **Comprobaciones de `tests/test_level_schema.py`** (hoy leen `data/upgrades.json`; cuando el catálogo pase a pistas, leerán sus niveles): un mapa (9) no paga ninguna compra (mínimo 15); tres mapas completos (27) pagan el Pulso 2 (25) y sobran menos de 5; la ruta de tres mapas (18) no llega a 25; la suma (450) supera una vuelta (162). Las cuatro siguen valiendo con 25 en el Pulso 2.
+- **Ritmo:** al conocer a Calc al final del 1-2 (unos 18 puntos) ya se puede comprar un nivel 2 de 15 (Láser, Debug, Sync o Energía). El Pulso 2 sigue pagándose al terminar el 1-3.
 
-**Alternativa si el tope por vuelta se queda corto:** abrir el nivel 4 en Caché solo para dos pistas no cambia nada útil, porque en Caché ya sobra contenido para lo que se puede pagar. Si se ve que Raíz llega con mucho sobrante (> 80 puntos), lo siguiente sería subir los niveles 5 a 25 (total 345, equilibrio en el 71 %).
+**Alternativas:**
+
+- **Reparto 15 / 20 / 25 / 30** (más «niveles altos, más caros»): Caché abre 180, Kernel 300 y Raíz 450. Con el 100 % quedarían 24 puntos sin nada que comprar al terminar Kernel (8 con el 95 %); para evitarlo habría que abrir algo más en Kernel (cambio de tope, no recomendado).
+- **Pulso 2 a 15** (todo igual en las cinco pistas): rompe dos de las cuatro comprobaciones (tres mapas sobrarían 12; la ruta de tres mapas, 18, ya pagaría) y el texto del 1-1, del 1-2 y de `CLAUDE.md` («Pulso amplio cuesta 25 = tres mapas»). No se recomienda (§11, pregunta 7).
 
 ### 3.5 Power banks en la economía
 
-Solo los pide el nivel 5 (5 power banks completos en toda la partida, todos en Raíz). Los niveles 2-4 ya no los piden (antes Sync reforzado, Debug eficiente y Batería ampliada pedían uno). Detalle en §5.1.
+Solo los pide el nivel 5 (5 power banks completos en toda la partida, todos en Raíz), además de sus puntos. Los niveles 2-4 ya no los piden (antes Sync reforzado, Debug eficiente y Batería ampliada pedían uno). Calc no los vende (aprobado). Detalle en §5.1.
 
 ---
 
@@ -148,11 +155,11 @@ Solo los pide el nivel 5 (5 power banks completos en toda la partida, todos en R
 | **Acción** | **Acción nueva `hide`**: **H** / **L3** (pulsar el stick izquierdo; están libres G, F, K, Q, L, I y U, y en el mando B, RB y LB son gestos). Va en la lista de `ControlBindings` (reasignable en Ajustes > Controles) y su aviso de control en `data/ability_notices.json` («Ocultarte: H / L3 (mando)»), leído del Input Map como los demás. Mantener el pulso se descarta porque chocaría con la pose del pulso y con `gesture_hold` (Mundo 2). |
 | **Activar / desactivar** | Pulsación corta para activar, solo en el suelo y fuera de una pose, como el pulso; otra pulsación corta para desactivar (en el suelo o en el aire). Entrada y salida de 0,2 s. |
 | **Coste** | **Energía 5/s** y **Sync Rate 1,5/s**, en tiempo real (como el Debug). Desde el máximo base: 18 s hasta el corte por energía y 60 s por Sync. Un uso típico de 6 s cuesta 30 de energía y 9 de Sync, casi un golpe de Burbuja (10). |
-| **Corte automático (10 %)** | Se apaga solo cuando el **Sync Rate O la energía** llegan al **10 % de su máximo efectivo** (10 con 100, 13 con 130). Para activarlo hace falta más del 15 % de ambos (evita encender y apagar sin parar). Nunca puede matar: el gasto de Sync se detiene en el 10 %. **Duda:** «al 10 %» podría querer decir solo el Sync, o que se apague cuando lleguen los dos (pregunta 2). |
+| **Corte automático (10 %)** | Se apaga solo cuando el **Sync Rate O la energía** llegan al **10 % de su máximo efectivo** (10 con 100, 13 con 130). Para activarlo hace falta más del 15 % de ambos (evita encender y apagar sin parar). Nunca puede matar: el gasto de Sync se detiene en el 10 %. **Aprobado (2026-10-16):** se corta con el primero de los dos que llegue al 10 %. |
 | **Avisos** | Un icono pequeño de «oculto» junto a la batería del HUD mientras dura. Por debajo del 20 % de cualquiera de las dos barras el icono parpadea (la señal ya se pone roja por debajo del 20 % por el Sync bajo). Al cortarse solo: destello del glitch y sonido corto. |
 | **Movimiento** | Camina y salta; **no corre** (la acción `run` se ignora mientras dure). |
 | **Láser y pulso** | **Atacar te revela:** el pulso y el láser salen con normalidad, pero desactivan el Ocultarte al empezar la pose. Se descarta disparar oculto, porque convertiría a los jefes en tiro al blanco desde un sitio seguro. |
-| **Debug** | **No se combinan:** activar uno apaga el otro. Los dos gastan la misma energía (20 + 5/s vaciarían la barra en 4 s) y así cada uno se lee por separado. Pregunta 3. |
+| **Debug** | **No se combinan:** activar uno apaga el otro. Los dos gastan la misma energía (20 + 5/s vaciarían la barra en 4 s) y así cada uno se lee por separado. **Aprobado (2026-10-16).** |
 | **Recibir daño** | Te revela (se apaga) y se aplican el golpe y la invulnerabilidad de siempre. |
 | **Recargas** | Se pueden recoger puntos, drops y cargadores. Ni la Energía 5 ni el Sync 5 recargan mientras dura. |
 
@@ -186,7 +193,7 @@ Solo los pide el nivel 5 (5 power banks completos en toda la partida, todos en R
 | **Pickup con el tope lleno** | El `power_bank_pickup` no se recoge: Isak lo atraviesa, sale «Sin espacio» y el objeto se queda en el mapa (no se apunta en `collected_pickups`), así que se puede volver a por él. Su Q lo explica. |
 | **Capacidad** | Sigue en **200** de energía cada uno (dos barras base). |
 | **Carga** | Sin cambios: solo el sobrante de los **drops** con la barra llena (los puntos de atención no desbordan). Sin power banks vacíos, el sobrante se pierde. |
-| **Compra en Calc** | **No se venden** (pregunta 4). Llegan de los mapas: el 1-1 y el 1-2 ya tienen uno cada uno, y se propone al menos uno por mundo y vuelta. Al pagar un nivel 5, el power bank se gasta y desaparece (duda 2 de «power banks» de `preguntas.md`: se propone dejarlo así). |
+| **Compra en Calc** | **No se venden** (aprobado el 2026-10-16). Llegan de los mapas: el 1-1 y el 1-2 ya tienen uno cada uno, y se propone al menos uno por mundo y vuelta. Al pagar un nivel 5, el power bank completo se gasta y desaparece (aprobado; resuelve la duda 2 de «power banks» de `preguntas.md`). |
 
 ### 5.2 Energía: máximo y recarga pasiva
 
@@ -214,7 +221,7 @@ Niveles 2-4: máximo 100 → 110 → 120 → 130. El HUD ya muestra más de 100 
 **Nivel 5, Resincronización (propuesta):** fuera de combate, el Sync Rate se regenera al **1 por segundo** hasta el **60 % del máximo** (78 con 130). «Fuera de combate» quiere decir 6 s sin recibir daño ni disparar ni lanzar el pulso, sin un jefe activo y sin un perseguidor en estado de persecución. No sube por encima del 60 %: las recargas de Sync de los drops y del checkpoint siguen siendo la curación de verdad.
 
 - **Por qué la regeneración y no +10 de máximo:** los niveles 2-4 ya suben el máximo; el 5 tiene identidad propia y suaviza el final del juego sin quitar tensión (no cura durante un combate ni por encima del 60 %).
-- **Choque con una decisión anterior:** en «Notas del paso 9» (`preguntas.md`, ~l. 320) quedó «no hay regeneración pasiva ni curación», con las recargas aún por decidir (después se decidieron los drops). Esta propuesta **la cambia solo para el nivel 5 del Sync y de la Energía**: sin esas mejoras, la regla sigue igual. Necesita aprobación (pregunta 1). Alternativa: nivel 5 = máximo 140.
+- **Choque con una decisión anterior:** en «Notas del paso 9» (`preguntas.md`, ~l. 320) quedó «no hay regeneración pasiva ni curación», con las recargas aún por decidir (después se decidieron los drops). Esta propuesta **la cambia solo para el nivel 5 del Sync y de la Energía**: sin esas mejoras, la regla sigue igual. **Aprobado por el usuario el 2026-10-16.**
 
 ---
 
@@ -241,7 +248,7 @@ Cambia a **pistas** con niveles; las mejoras de hoy pasan a ser niveles o se ret
 |---|---|---|
 | `wide_pulse` Pulso amplio (25) | Pulso 2 (25) | 112 px → igual |
 | `efficient_debug` Debug eficiente (60 + 1 PB) | Debug 2 (15) | 15/s → igual |
-| `quick_start` Arranque rápido (20) | Debug 5 (20 + 1 PB) | 0,5 s → 0,4 s |
+| `quick_start` Arranque rápido (20) | Debug 5 (25 + 1 PB) | 0,5 s → 0,4 s |
 | `reinforced_sync` Sync reforzado (45 + 1 PB) | Sync 2-3 | 120 → 110 (nv 2) y 120 (nv 3) |
 | `extended_battery` Batería ampliada (35 + 1 PB) | Energía 2-4 | 150 → 110 / 120 / 130 |
 | `improved_recharge` Recarga mejorada (25) | **Se retira** | — |
@@ -264,12 +271,12 @@ Campo **`upgrade_levels`**: `{"pulse": 2, "laser": 1, "debug": 1, "sync": 1, "en
 |---|---|---|
 | `wide_pulse` | Pulso 2 | 0 |
 | `efficient_debug` | Debug 2 | 45 puntos + 1 PB completo |
-| `reinforced_sync` | Sync 2 | 35 puntos + 1 PB |
-| `extended_battery` | Energía 2 | 25 puntos + 1 PB |
+| `reinforced_sync` | Sync 2 | 30 puntos + 1 PB |
+| `extended_battery` | Energía 2 | 20 puntos + 1 PB |
 | `quick_start` | (el Debug 5 exige los niveles 2-4 y Raíz) | 20 puntos |
 | `improved_recharge` | (retirada) | 25 puntos |
 
-Los power banks devueltos pueden superar el tope de 3 (el tope solo impide recoger más; no se borra nada). Hoy estas compras solo existen en guardados de prueba: Calc está apagada hasta el 1-2.
+Devolución = precio pagado − precio del nivel nuevo (con los costes de §3.2). Los power banks devueltos pueden superar el tope de 3 (el tope solo impide recoger más; no se borra nada). Hoy estas compras solo existen en guardados de prueba: Calc está apagada hasta el 1-2.
 
 ### 7.4 Rollback, Papelera y chip «?»
 
@@ -293,7 +300,7 @@ Los power banks devueltos pueden superar el tope de 3 (el tope solo impide recog
   3. En cada pasada, comprobar con los valores base y con el **tope del acceso del nivel** (`lap` del JSON del nivel: Caché = todos los niveles 3). Un secreto con `requires_upgrade` no se alcanza sin la mejora y sí con ella; la meta, siempre con la base.
   4. Si el validador modela la energía (acertijos con coste obligatorio), usar `get_laser_energy_cost` y el gasto del Debug base para el mínimo y no contar con la recarga pasiva.
   5. Ignorar el Ocultarte.
-- **Pruebas de economía (`tests/test_level_schema.py`):** las cuatro comprobaciones de hoy pasan a leer los niveles de las pistas. Se añaden dos: «con el 70 % de 3 × 162 se paga todo (320)» y «el acumulado por acceso cabe con el 70 % a partir de Kernel».
+- **Pruebas de economía (`tests/test_level_schema.py`):** las cuatro comprobaciones de hoy pasan a leer los niveles de las pistas. Se añaden tres: «cada pista suma 90 y el total, 450, cabe en 3 × 162 = 486», «hace falta más del 90 % de 486 para pagarlo todo» (exigente a propósito) y «en Caché y Kernel el acumulado abierto (180 y 325) no es menor que lo ganable (162 y 324)».
 - **Bot (`tools/play_level_bot.gd`):** sin cambios (juega sin mejoras ni Ocultarte). Las pruebas de la tienda usan `EcoProgress.meet_calc()`.
 - **Coordinación:** el validador, las pruebas del esquema y el 1-2 los está tocando otro agente ahora. Los pasos 1 y 9 de §10 deben ir después de que eso se cierre.
 
@@ -335,13 +342,12 @@ Orden sugerido: 1 → 2 → 3 → 4 → 6 → 7 → 5 → 9 → 10 → 11 → 8 
 
 ## 11. Preguntas abiertas (con recomendación por defecto)
 
-1. **¿Regeneración pasiva en los niveles 5 de Sync y Energía?** Choca con «no hay regeneración pasiva» (paso 9). *Recomendación:* sí, solo con esas mejoras: Energía 0,5 %/s y Sync 1/s hasta el 60 % fuera de combate.
-2. **Corte del Ocultarte:** ¿cuando el Sync **o** la energía llegan al 10 % del máximo, solo el Sync, o los dos? *Recomendación:* cualquiera de los dos («O»), con el 10 % del máximo efectivo y más del 15 % para activarlo.
-3. **¿Ocultarte y Debug combinables?** *Recomendación:* no; activar uno apaga el otro.
-4. **¿Calc vende power banks vacíos?** *Recomendación:* no; solo de los mapas (al menos uno por mundo y vuelta), con un tope de 3.
-5. **Debug 3:** ¿revelado persistente (1,5 s tras apagar) o un radio de revelado nuevo? *Recomendación:* persistente (hoy el Debug revela toda la pantalla).
-6. **Pulso 5 «Pulso de retorno»** (+4 de energía al aturdir, una vez por enemigo y por intento): ¿se acepta? *Recomendación:* sí.
-7. **Costes:** ¿10 / 15 / 15 / 20 + 1 PB, con el Pulso 2 a 25 y el Debug 2 a 15 (320 en total, equilibrio en el 66 %)? *Recomendación:* sí, y revisarlo cuando haya un mundo completo jugado.
-8. **¿Confirmación al comprar?** *Recomendación:* sí («Instalar / Volver»), porque no hay devoluciones.
-9. **Tecla del Ocultarte:** ¿H / L3? *Recomendación:* sí, reasignable.
-10. **¿Atacar revela (el pulso y el láser apagan el Ocultarte)?** *Recomendación:* sí.
+**Resueltas el 2026-10-16 (decisiones del usuario):** regeneración pasiva solo con Sync 5 y Energía 5; corte del Ocultarte con el Sync **o** la energía al 10 % (el primero que llegue); Ocultarte y Debug no se combinan; Calc no vende power banks (de los mapas, tope de 3, se gastan al comprar el nivel 5); 90 puntos por pista, 450 en total.
+
+1. **Debug 3:** ¿revelado persistente (1,5 s tras apagar) o un radio de revelado nuevo? *Recomendación:* persistente (hoy el Debug revela toda la pantalla).
+2. **Pulso 5 «Pulso de retorno»** (+4 de energía al aturdir, una vez por enemigo y por intento): ¿se acepta? *Recomendación:* sí.
+3. **¿Confirmación al comprar?** *Recomendación:* sí («Instalar / Volver»), porque no hay devoluciones.
+4. **Tecla del Ocultarte:** ¿H / L3? *Recomendación:* sí, reasignable.
+5. **¿Atacar revela (el pulso y el láser apagan el Ocultarte)?** *Recomendación:* sí.
+6. **Reparto de los 90 por nivel** (§3.2): ¿15 / 20 / 30 / 25 + 1 PB (Pulso 25 / 15 / 25 / 25), o 15 / 20 / 25 / 30 con unos puntos sin gastar al terminar Kernel? *Recomendación:* 15 / 20 / 30 / 25, y revisarlo tras un mundo completo.
+7. **Precio del Pulso 2 (Pulso amplio):** ¿se mantiene en 25 o baja a 15 como los demás niveles 2? *Recomendación:* mantener 25: las cuatro comprobaciones de `tests/test_level_schema.py` y los textos del 1-1 siguen igual y el guardado no necesita devolución. Bajarlo a 15 obliga a cambiar dos comprobaciones (tres mapas completos sobrarían 12; la ruta de tres mapas ya pagaría), los textos del 1-1, del 1-2 y de `CLAUDE.md`, y a devolver 10 puntos en la migración a quien lo compró. Debug 2 a 15: sin pruebas afectadas; la migración devuelve 45 + 1 PB (§7.3).
