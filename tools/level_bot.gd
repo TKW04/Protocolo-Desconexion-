@@ -136,6 +136,9 @@ func _ready() -> void:
 func _run() -> void:
 	EventBus.pause_menu_opened.connect(func() -> void: _pause_menu_opens += 1)
 	var main: Node = (load(MAIN_SCENE) as PackedScene).instantiate()
+	# Arranque explicito en el 1-1 (con un guardado, main.tscn arrancaria en el
+	# hub; el bot empieza de cero igualmente).
+	(main as LevelRunner).start_level_id = "1-1"
 	get_tree().root.add_child(main)
 	_runner = main as LevelRunner
 	await get_tree().physics_frame
