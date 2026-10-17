@@ -2,8 +2,8 @@
 ## del Mundo 1; patron 4 «Quitar la proteccion y cerrar» de
 ## docs/propuesta-1-2.md §0.5 y acertijo «Correo certificado», §4; paso 3 de
 ## §10). «Saltar anuncio en 5…» (falso: no se salta).
-## - Se coloca solo encima del boton de su pop-up (PopupBlocker con object_id ==
-##   target_id; su x, y del nivel es la celda del boton) y lo tapa: mientras
+## - Se coloca solo encima del boton de su pop-up (PopupBlocker u OverlayPopup con
+##   object_id == target_id; su x, y del nivel es la celda del boton) y lo tapa: mientras
 ##   este entero, el pulso no cierra el pop-up (PopupBlocker.add_cover) y si el
 ##   pulso alcanza el anuncio sale una chispa gris (rebota).
 ## - Objetivo del laser (capa world, grupo laser_activatable): un impacto lo
@@ -169,16 +169,24 @@ func receive_pulse(area: Area2D) -> bool:
 	return true
 
 
-## Se pone encima del boton de su pop-up (centrado) y se lo apunta.
+## Se pone encima del boton de su pop-up (centrado) y se lo apunta. El pop-up
+## puede ser un PopupBlocker o, desde el 2026-10-16 (paso 7), un OverlayPopup
+## translucido: entonces se dibuja por encima de su ventana.
 func _link_popup() -> void:
 	if target_id == &"" or not is_inside_tree():
 		return
-	for node: Node in get_tree().get_nodes_in_group(PopupBlocker.GROUP):
-		var popup := node as PopupBlocker
-		if popup != null and popup.object_id == target_id:
-			_popup = popup
-			popup.add_cover(self)
-			global_position = (popup.get_button_rect().get_center() - get_size_px() * 0.5).round()
+	for group: StringName in [PopupBlocker.GROUP, OverlayPopup.GROUP]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			if StringName(String(node.get(&"object_id"))) != target_id:
+				continue
+			if node is PopupBlocker:
+				_popup = node as PopupBlocker
+			elif node is OverlayPopup:
+				z_index = (node as OverlayPopup).get_z() + 1
+				z_as_relative = false
+			node.call(&"add_cover", self)
+			var button: Rect2 = node.call(&"get_button_rect")
+			global_position = (button.get_center() - get_size_px() * 0.5).round()
 			return
 	push_warning("AdCover %s: no hay pop-up con id '%s'" % [object_id, target_id])
 
