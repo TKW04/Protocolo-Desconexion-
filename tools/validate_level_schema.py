@@ -86,7 +86,18 @@ TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
-                    "laser_receiver", "relay_receiver", "snooze_button"}
+                    "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
+                    "laser_switch", "charge_dock", "calc_actor"}
+# Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
+# interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
+SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")
+CALC_PIECE_TYPES = SWITCH_TYPES + ("glitch_wall", "charge_dock", "calc_actor", "dark_room", "exit_terminal")
+GUIDE_ACTIONS = {"wait_near": ("object",), "wait_inside": ("object",), "wait_done": ("object",),
+                 "wait_ability": ("ability",), "wait_s": ("seconds",), "wait_quiet": (), "fly": (), "back": (),
+                 "line": ("text",),
+                 "point_help": ("object", "text")}
+GUIDE_ABILITIES = ("pulse", "laser", "debug")
+DOOR_MAX_LAMPS = 3
 # Barra del 99 % (2026-10-16): puerta de 1 x 3 tiles; aviso de cada caida = 9 cuadros a 12 fps.
 UPDATE_BAR_HEIGHT = 3
 UPDATE_BAR_WARN_S = 9 / 12.0
@@ -389,6 +400,10 @@ class LevelValidator:
             return [(x + i, y) for i in range(w)]
         if kind == "update_bar":
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
+        if kind == "charge_dock":
+            return [(x, y), (x + 1, y)]
+        if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide"):
+            return [(x, y)]
         w, h = get("width_tiles", 1), get("height_tiles", 1)
         if not (_is_int(w) and _is_int(h)) or w < 1 or h < 1:
             return None
@@ -518,6 +533,7 @@ class LevelValidator:
             elif kind == "eco_encounter":
                 encounters.append((what, x, y))
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
+        self._check_calc_room()
         for (what, x, y) in extra_lives[1:]:
             self.error("%s: solo puede haber una vida extra por nivel" % what, y, x)
         if len(encounters) > 1:
@@ -553,6 +569,97 @@ class LevelValidator:
             if len(goals) == 1 and goals[0] not in cells:
                 self.error("%s no contiene la meta G (fila %d, columna %d)"
                            % (what, goals[0][1], goals[0][0]), y, x)
+
+    def _check_calc_room(self):
+        """Piezas del acertijo de la azotea del 1-2 (2026-10-17, tanda H1 del paso 14): enlaces por id
+        con el tipo correcto, puerta solo en bloques de 1x2 con a lo sumo 3 luces, terminal con
+        corriente enlazada a un punto de carga, recorrido de Calc por celdas libres y guion de Eco
+        existente con acciones y piezas validas."""
+        ids = {}
+        for obj in self.level["objects"]:
+            if isinstance(obj, dict) and isinstance(obj.get("params"), dict) and isinstance(obj["params"].get("id"), str):
+                ids[obj["params"]["id"]] = obj.get("type")
+        guides = None
+        for i, obj in enumerate(self.level["objects"]):
+            if not (isinstance(obj, dict) and isinstance(obj.get("params"), dict)):
+                continue
+            kind, x, y, params = obj.get("type"), obj.get("x"), obj.get("y"), obj["params"]
+            what = "objects[%d] (%s)" % (i, kind)
+
+            def link(field, kinds, value=None):
+                target = params.get(field) if value is None else value
+                if not isinstance(target, str) or ids.get(target) not in kinds:
+                    self.error("%s: %s '%s' no es el id de ningun %s" % (what, field, target, " ni ".join(kinds)), y, x)
+
+            if kind == "glitch_wall" and ("door_when" in params or "lamps" in params):
+                link("door_when", ("power_switch", "debug_switch"))
+                if params.get("width_tiles", 1) != 1 or params.get("height_tiles", 2) != 2:
+                    self.error("%s: la puerta (door_when) solo admite un bloque de 1x2" % what, y, x)
+                lamps = params.get("lamps", [])
+                if not isinstance(lamps, list) or len(lamps) > DOOR_MAX_LAMPS:
+                    self.error("%s: lamps debe ser una lista de a lo sumo %d ids" % (what, DOOR_MAX_LAMPS), y, x)
+                else:
+                    for lamp in lamps:
+                        link("lamps", CALC_PIECE_TYPES, lamp)
+            elif kind == "dark_room":
+                link("switch", ("power_switch", "debug_switch"))
+                w, h = params.get("width_tiles", 4), params.get("height_tiles", 4)
+                if isinstance(w, int) and isinstance(h, int) and not self.in_bounds(x + w - 1, y + h - 1):
+                    self.error("%s: el cuarto se sale del grid" % what, y, x)
+            elif kind == "charge_dock":
+                req = params.get("requires")
+                if not isinstance(req, list) or not req:
+                    self.error("%s: requires debe ser una lista no vacia de ids" % what, y, x)
+                else:
+                    for r in req:
+                        link("requires", CALC_PIECE_TYPES, r)
+            elif kind == "calc_actor":
+                link("dock", ("charge_dock",))
+                path = params.get("path")
+                if not (isinstance(path, list) and len(path) >= 2):
+                    self.error("%s: path debe ser una lista de al menos 2 celdas [columna, fila]" % what, y, x)
+                else:
+                    for j, cell in enumerate(path):
+                        if not (isinstance(cell, list) and len(cell) == 2 and all(_is_int(v) for v in cell)):
+                            self.error("%s: path[%d] debe ser [columna, fila] (enteros)" % (what, j), y, x)
+                        elif not self.in_bounds(cell[0], cell[1]) or self.cell(cell[0], cell[1]) in "#^":
+                            self.error("%s: path[%d] %s fuera del grid o en terreno" % (what, j, cell), y, x)
+                    if isinstance(path[0], list) and path[0] != [x, y]:
+                        self.error("%s: path[0] debe ser su celda (%d, %d)" % (what, x, y), y, x)
+            elif kind == "exit_terminal" and ("requires_power" in params or "power_source" in params):
+                if not isinstance(params.get("requires_power", False), bool):
+                    self.error("%s: requires_power debe ser true o false" % what, y, x)
+                if params.get("requires_power"):
+                    link("power_source", ("charge_dock",))
+            elif kind == "eco_guide":
+                if guides is None:
+                    guides = (self._load_json("data/eco_guides.json") or {}).get("guides", {})
+                self._check_guide(what, x, y, params.get("guide"), guides, ids)
+
+    def _check_guide(self, what, x, y, guide_id, guides, ids):
+        guide = guides.get(guide_id) if isinstance(guide_id, str) else None
+        if not isinstance(guide, dict) or not isinstance(guide.get("steps"), list) or not guide["steps"]:
+            self.error("%s: guide '%s' no esta en data/eco_guides.json (o no tiene pasos)" % (what, guide_id), y, x)
+            return
+        for j, step in enumerate(guide["steps"]):
+            tag = "%s: paso %d" % (what, j)
+            if not isinstance(step, dict) or step.get("do") not in GUIDE_ACTIONS:
+                self.error("%s: accion desconocida (validas: %s)" % (tag, ", ".join(GUIDE_ACTIONS)), y, x)
+                continue
+            for field in GUIDE_ACTIONS[step["do"]]:
+                if field not in step:
+                    self.error("%s (%s): falta '%s'" % (tag, step["do"], field), y, x)
+            if "object" in step and step["object"] not in ids:
+                self.error("%s (%s): object '%s' no es el id de ninguna pieza del nivel"
+                           % (tag, step["do"], step["object"]), y, x)
+            if step["do"] == "fly" and "object" not in step and "cell" not in step:
+                self.error("%s (fly): necesita object o cell" % tag, y, x)
+            if "text" in step and (not isinstance(step["text"], str) or not step["text"].strip()):
+                self.error("%s: text debe ser un texto no vacio" % tag, y, x)
+            if step["do"] == "wait_ability" and step.get("ability") not in GUIDE_ABILITIES:
+                self.error("%s: ability debe ser una de %s" % (tag, ", ".join(GUIDE_ABILITIES)), y, x)
+            if step["do"] == "wait_s" and not (_is_number(step.get("seconds")) and 0 < step["seconds"] <= 30):
+                self.error("%s: seconds debe estar en (0, 30]" % tag, y, x)
 
     def _is_overlay_id(self, ident):
         return any(isinstance(o, dict) and o.get("type") == "overlay_popup"

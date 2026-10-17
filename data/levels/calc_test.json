@@ -1,0 +1,162 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; tanda H1 del paso 14 de docs/propuesta-1-2.md, 2026-10-17; diseno en docs/propuesta-calc-encuentro.md): azotea reducida de 32x12 con el acertijo del encuentro con Calc para probarlo de principio a fin. Isak llega por la izquierda (P, 2, 9) con pulso, laser y Debug. A la izquierda, la azotea: cargador_1 (4, 9), Calc apagada al 3 % (calc, 7, 9) y la terminal de salida APAGADA (terminal_azotea, 10, 8: requires_power, power_source dock_calc). Detras de la terminal, la pared (columna 13) con un glitch en las filas 8-9 (pared_glitch): se atraviesa con el Debug (como el secreto D del 1-1). Detras, el cuarto a oscuras (cuarto, columnas 14-30, filas 1-9): el interruptor de pulso (interruptor_luz, 16, 9; 3 pulsos con Isak de espaldas; la luz sube por tercios y la pared se vuelve puerta), el punto de carga (dock_calc, 18-19, 9), tres plataformas de una via en escalera (fila 8 columnas 22-24, fila 6 columnas 25-26 y fila 4 columnas 27-28: subidas de 2 tiles), el interruptor laser lejano (interruptor_laser, 30, 7: en la pared derecha, a la altura del celular desde la primera plataforma; desde el suelo no se alcanza) y el panel oculto arriba (panel_oculto, 28, 3: solo se ve con el Debug; pulso con Isak de espaldas). Con las tres piezas hechas Calc entra por la puerta, se carga en el dock y se teletransporta; la terminal tiene corriente y el pulso a ella termina la sala. Eco guia con su guion (guia_calc, data/eco_guides.json, calc_rooftop). Con Calc ya conocida (allies_met) todo arranca resuelto (done_if_ally). El validador de alcanzabilidad aun no modela estas piezas (tanda H2): solo comprueba la ruta a pie. El bot no la recorre. Escena: scenes/levels/calc_test.tscn (python3 tools/build_level.py data/levels/calc_test.json).",
+	"id": "calc_test",
+	"name": "Azotea con Calc (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true
+	},
+	"grid": [
+		"################################",
+		"#............#.................#",
+		"#............#.................#",
+		"#............#.................#",
+		"#............#.............--..#",
+		"#............#.................#",
+		"#............#...........--....#",
+		"#............#.................#",
+		"#.....................---......#",
+		"#.P.......G....................#",
+		"################################",
+		"################################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"unlocks": [],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 10,
+			"y": 8,
+			"params": {
+				"id": "terminal_azotea",
+				"text": "Marcar como leído",
+				"requires_power": true,
+				"power_source": "dock_calc"
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 13,
+			"y": 8,
+			"params": {
+				"id": "pared_glitch",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"door_when": "interruptor_luz",
+				"lamps": [
+					"interruptor_luz",
+					"interruptor_laser",
+					"panel_oculto"
+				],
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "power_switch",
+			"x": 16,
+			"y": 9,
+			"params": {
+				"id": "interruptor_luz",
+				"pulses": 3,
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "laser_switch",
+			"x": 30,
+			"y": 7,
+			"params": {
+				"id": "interruptor_laser",
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "debug_switch",
+			"x": 28,
+			"y": 3,
+			"params": {
+				"id": "panel_oculto",
+				"pulses": 1,
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "charge_dock",
+			"x": 18,
+			"y": 9,
+			"params": {
+				"id": "dock_calc",
+				"requires": [
+					"interruptor_luz",
+					"interruptor_laser",
+					"panel_oculto"
+				],
+				"charge_s": 3.0,
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "calc_actor",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "calc",
+				"dock": "dock_calc",
+				"path": [
+					[
+						7,
+						9
+					],
+					[
+						13,
+						9
+					],
+					[
+						18,
+						9
+					]
+				],
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "dark_room",
+			"x": 14,
+			"y": 1,
+			"params": {
+				"id": "cuarto",
+				"width_tiles": 17,
+				"height_tiles": 9,
+				"switch": "interruptor_luz",
+				"done_if_ally": "calc"
+			}
+		},
+		{
+			"type": "eco_guide",
+			"x": 1,
+			"y": 1,
+			"params": {
+				"id": "guia_calc",
+				"guide": "calc_rooftop",
+				"done_if_ally": "calc"
+			}
+		}
+	]
+}

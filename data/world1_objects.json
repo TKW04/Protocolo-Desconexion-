@@ -32,12 +32,16 @@
 		"glitch_wall": {
 			"scene": "res://scenes/levels/glitch_wall.tscn",
 			"help_id": "glitch_wall",
-			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json).",
+			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json). PUERTA (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc; opcional, sin defaults: el 1-1 no cambia): con door_when (id de un power_switch) la pared, abierta o no, se TRANSFORMA en una puerta (abertura de 1x2, no solida) cuando ese interruptor se activa; lamps (ids, max 3) son las luces del dintel, una por pieza hecha (is_activated). done_if_ally: con ese asistente conocido al cargar, ya es puerta con todas las luces. Solo para bloques de 1x2 (esquema).",
 			"required": [],
 			"fields": {
 				"width_tiles": "width_tiles",
 				"height_tiles": "height_tiles",
-				"solid_neighbors": "solid_neighbors"
+				"solid_neighbors": "solid_neighbors",
+				"id": "object_id",
+				"door_when": "door_when",
+				"lamps": "door_lamps",
+				"done_if_ally": "done_if_ally"
 			},
 			"defaults": {
 				"width_tiles": 1,
@@ -85,13 +89,15 @@
 		"exit_terminal": {
 			"scene": "res://scenes/levels/exit_terminal.tscn",
 			"help_id": "exit_terminal",
-			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador.",
+			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador. CORRIENTE (2026-10-17, tanda H1 del paso 14 del 1-2; opcional, sin defaults: el 1-1 no cambia): con requires_power true esta APAGADA (sin prompt, sin Q y el pulso no hace nada) hasta que la pieza power_source (p. ej. el charge_dock, al irse Calc) tiene corriente (is_power_on()).",
 			"required": [],
 			"fields": {
 				"id": "object_id",
 				"text": "text",
 				"width_tiles": "width_tiles",
-				"height_tiles": "height_tiles"
+				"height_tiles": "height_tiles",
+				"requires_power": "requires_power",
+				"power_source": "power_source"
 			},
 			"defaults": {
 				"width_tiles": 1,
@@ -349,6 +355,298 @@
 			"wave_types": ["alert_bubble", "notification_badge"],
 			"max_waves": 12,
 			"example": {"type": "update_bar", "x": 2, "y": 8, "params": {"id": "update_bar", "wait_s": 20.0, "zone": [3, 8, 22, 4], "waves": [{"t": 4.0, "type": "alert_bubble", "x": 8}, {"t": 10.0, "type": "notification_badge", "x": 16}]}}
+		},
+		"power_switch": {
+			"scene": "res://scenes/levels/power_switch.tscn",
+			"help_id": "power_switch",
+			"description": "Interruptor de pulso del acertijo de la azotea del 1-2 (encuentro con Calc; 2026-10-17, tanda H1 del paso 14; docs/propuesta-calc-encuentro.md). Panel en la pared del fondo (no solido): cada pulso que lo alcanza cuenta uno (Isak se pone de espaldas, Isak.face_back, pose_s de la seccion power_switch) y enciende una luz; con pulses pulsos se activa para siempre (las luces del dark_room enlazado suben por tercios con su progreso; la glitch_wall con door_when == id se vuelve puerta). done_if_ally: con ese asistente conocido al cargar arranca activado e inerte.",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"pulses": "pulses_required",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {
+				"pulses": 3
+			},
+			"level_params": {
+				"pulses": {
+					"min": 1,
+					"max": 6,
+					"int": true
+				}
+			},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "power_switch",
+				"x": 16,
+				"y": 9,
+				"params": {
+					"id": "interruptor_luz",
+					"pulses": 3,
+					"done_if_ally": "calc"
+				}
+			}
+		},
+		"debug_switch": {
+			"scene": "res://scenes/levels/debug_switch.tscn",
+			"help_id": "debug_switch",
+			"description": "Panel oculto (2026-10-17, tanda H1 del paso 14 del 1-2): un power_switch que no se ve ni responde hasta que el Debug activo lo descubre cerca (reveal_radius_px); desde entonces queda marcado (tenue sin el Debug) y se activa a pulsos igual (pulses, por defecto 1).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"pulses": "pulses_required",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {
+				"pulses": 1
+			},
+			"level_params": {
+				"pulses": {
+					"min": 1,
+					"max": 6,
+					"int": true
+				}
+			},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "debug_switch",
+				"x": 28,
+				"y": 3,
+				"params": {
+					"id": "panel_oculto",
+					"done_if_ally": "calc"
+				}
+			}
+		},
+		"laser_switch": {
+			"scene": "res://scenes/levels/laser_switch.tscn",
+			"help_id": "laser_switch",
+			"description": "Interruptor laser (2026-10-17, tanda H1 del paso 14 del 1-2): como el lector laser (misma placa en el lado derecho de su celda, diana a la altura del celular de Isak de pie en esa celda; grupo laser_activatable) pero un impacto lo ACTIVA PARA SIEMPRE (sin ventana ni cable). El pulso no le hace nada. done_if_ally: con ese asistente conocido al cargar arranca activado.",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "laser_switch",
+				"x": 30,
+				"y": 7,
+				"params": {
+					"id": "interruptor_laser",
+					"done_if_ally": "calc"
+				}
+			}
+		},
+		"dark_room": {
+			"scene": "res://scenes/levels/dark_room.tscn",
+			"description": "Cuarto a oscuras (2026-10-17, tanda H1 del paso 14 del 1-2): velo oscuro de width_tiles x height_tiles desde (x, y) por encima del mundo (sin colision); su luz sigue el progreso del power_switch con id == switch (por tercios con 3 pulsos; activado, luz completa). Con el Debug el velo baja (debug_factor) y se ven los contornos de las piezas del acertijo que hay dentro. done_if_ally: arranca con luz.",
+			"required": [
+				"id",
+				"switch"
+			],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"switch": "switch_id",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {
+				"width_tiles": 4,
+				"height_tiles": 4
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 64,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 1,
+					"max": 64,
+					"int": true
+				}
+			},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "dark_room",
+				"x": 14,
+				"y": 1,
+				"params": {
+					"id": "cuarto",
+					"width_tiles": 17,
+					"height_tiles": 9,
+					"switch": "interruptor_luz"
+				}
+			}
+		},
+		"charge_dock": {
+			"scene": "res://scenes/levels/charge_dock.tscn",
+			"help_id": "charge_dock",
+			"description": "Punto de carga de Calc (2026-10-17, tanda H1 del paso 14 del 1-2): plataforma de 2x1 tiles (no solida) con su medidor de 10 segmentos. Se ARMA cuando todas las piezas de requires estan hechas (llama a Calc, calc_actor con dock == id, que entra y se coloca); carga a Calc en charge_s (3 % a 100 %, por segmentos, con chispas) y, cuando Calc se teletransporta, tiene corriente (is_power_on: la terminal con power_source == id se enciende). done_if_ally: arranca con corriente y sin Calc.",
+			"required": [
+				"id",
+				"requires"
+			],
+			"fields": {
+				"id": "object_id",
+				"requires": "required_ids",
+				"charge_s": "charge_s",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {
+				"charge_s": 3.0
+			},
+			"level_params": {
+				"charge_s": {
+					"min": 0.5,
+					"max": 20.0
+				}
+			},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "charge_dock",
+				"x": 18,
+				"y": 9,
+				"params": {
+					"id": "dock_calc",
+					"requires": [
+						"interruptor_luz",
+						"interruptor_laser",
+						"panel_oculto"
+					]
+				}
+			}
+		},
+		"calc_actor": {
+			"scene": "res://scenes/levels/calc_actor.tscn",
+			"description": "Calc en el nivel (2026-10-17, tanda H1 del paso 14 del 1-2): apagada (3 % de bateria) en la primera celda de path; cuando el charge_dock con id == dock se arma, se despierta, camina por path (celdas [columna, fila] del suelo; los pies abajo-centro) hasta el dock, se carga y se teletransporta al hub (vortice). NO marca a Calc como conocida (eso es el encuentro del hub, tanda H3): emite EventBus.ally_teleported(\"calc\"). Sin Q (es historia). Con done_if_ally conocido no esta.",
+			"required": [
+				"id",
+				"dock",
+				"path"
+			],
+			"fields": {
+				"id": "object_id",
+				"dock": "dock_id",
+				"path": "path_cells",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "calc_actor",
+				"x": 7,
+				"y": 9,
+				"params": {
+					"id": "calc",
+					"dock": "dock_calc",
+					"path": [
+						[
+							7,
+							9
+						],
+						[
+							13,
+							9
+						],
+						[
+							18,
+							9
+						]
+					],
+					"done_if_ally": "calc"
+				}
+			}
+		},
+		"eco_guide": {
+			"scene": "res://scenes/levels/eco_guide.tscn",
+			"description": "Guion propio de Eco (EcoGuide, 2026-10-17, tanda H1 del paso 14 del 1-2): acciones de Eco que NO son ayuda Q, en pasos de data/eco_guides.json (guide = id del guion): esperar una zona, una pieza hecha o una habilidad usada; volar a una pieza o celda; lineas NO importantes; pausas; senalar con la ayuda Q o, si no sale, con una linea. Es historia: sale aunque las ayudas esten ocultas. No se repite con done_if_ally conocido. Uno por guion y nivel; sin colision ni Q.",
+			"required": [
+				"guide"
+			],
+			"fields": {
+				"id": "object_id",
+				"guide": "guide_id",
+				"done_if_ally": "done_if_ally"
+			},
+			"defaults": {},
+			"allowed": {
+				"done_if_ally": [
+					"eco",
+					"notas",
+					"calc",
+					"linterna",
+					"papelera"
+				]
+			},
+			"example": {
+				"type": "eco_guide",
+				"x": 1,
+				"y": 1,
+				"params": {
+					"id": "guia_calc",
+					"guide": "calc_rooftop",
+					"done_if_ally": "calc"
+				}
+			}
 		}
 	},
 	"ability_pickup": {
@@ -554,6 +852,8 @@
 	"exit_terminal": {
 		"_notes": "PROPUESTA (2026-10-15). Terminal de 64x128 (frames: SpriteFrames de tools/gen_warp_objects.py; animaciones terminal_off, terminal_prompt, terminal_boot y terminal_on con sus fps), dibujada desde la esquina superior izquierda de su primera celda y apoyada en el suelo. prompt_zone_px: zona [x, y, ancho, alto] relativa a ese origen en la que Isak 'esta cerca' (prompt e icono de la tecla). hit_rect_px: zona que el pulso debe tocar (monitor, cuello y pedestal). Icono de la tecla: la primera tecla de pulse_action en el Input Map (G), con la fuente de textos a font_scale sobre una placa key_plate_color con borde key_border_color, centrado sobre el monitor a key_gap_px por encima de su borde (monitor_top_px), con un bote de key_bob_px cada key_bob_s. Etiqueta (text, opcional): como la de la puerta, a label_gap_px por encima del monitor. Giro (2026-10-15): al acabar terminal_boot, turn_ticks pasos de turn_tick_s (3 x 1/12 s = 0,25 s): durante los turn_flash_ticks primeros la pantalla se queda en el ultimo cuadro del encendido (llena de cian) e Isak se tine con turn_flash_modulate (destello cian; modulate RGB, sin arte nuevo); en el paso turn_back_tick Isak se pone de espaldas (Isak.face_back, mirando al monitor). Al acabar el giro se abre el vortice de salida (WarpVortex.depart, centrado en la pose de espaldas). Tiempo del mundo (Debug x0,5).",
 		"frames": "res://assets/sprites/warp_objects_frames.tres",
+		"_unpowered_notes": "requires_power (2026-10-17): sin corriente, primer cuadro de terminal_off tenido con unpowered_modulate (pantalla negra, sin cursor ni prompt).",
+		"unpowered_modulate": [0.45, 0.45, 0.6],
 		"frame_size": [64, 128],
 		"monitor_top_px": 30,
 		"prompt_zone_px": [-96, 0, 256, 128],
@@ -577,6 +877,116 @@
 		"turn_back_tick": 1,
 		"turn_flash_ticks": 2,
 		"turn_flash_modulate": [0.8, 1.45, 1.55]
+	},
+	"power_switch": {
+		"_notes": "PROPUESTA (2026-10-17, ajustable jugando). Interruptor de pulso y panel oculto (PowerSwitch). frames: SpriteFrames de tools/gen_calc_encounter.py (power_switch_* y debug_switch_*: off, hit, on; switch_lamp_off/on). sprite_center_px: centro del panel de 64x64 desde la esquina de su celda (en la pared del fondo, a la altura del pecho de Isak). hit_rect: zona que el pulso debe tocar [x, y, ancho, alto]. lamp_center_px / lamp_spacing_px: fila de luces (8x8) encima del panel, una por pulso. pose_s: segundos (tiempo del mundo) que Isak queda de espaldas tras cada pulso. Panel oculto: reveal_radius_px (Isak a esa distancia con el Debug activo lo descubre) y marked_alpha (opacidad ya descubierto, sin el Debug).",
+		"frames": "res://assets/sprites/calc_encounter_frames.tres",
+		"sprite_center_px": [
+			32,
+			4
+		],
+		"hit_rect": [
+			8,
+			-14,
+			48,
+			48
+		],
+		"lamp_center_px": [
+			32,
+			-21
+		],
+		"lamp_spacing_px": 10,
+		"pose_s": 0.45,
+		"reveal_radius_px": 256.0,
+		"marked_alpha": 0.55
+	},
+	"laser_switch": {
+		"_notes": "PROPUESTA (2026-10-17). Interruptor laser (LaserSwitch): misma colocacion que laser_receiver (hit_rect y sprite_center_px); frames laser_switch_idle/hit/on de tools/gen_calc_encounter.py.",
+		"hit_rect": [
+			32,
+			-16,
+			32,
+			48
+		],
+		"sprite_center_px": [
+			48,
+			8
+		]
+	},
+	"power_door": {
+		"_notes": "PROPUESTA (2026-10-17). Puerta en que se transforma la glitch_wall con door_when (bloque de 1x2): sprite de 64x128 (power_door_appear al transformarse, power_door_idle, power_door_open con todas las luces) centrado en sprite_center_px; luces del dintel (switch_lamp_*) en lamp_centers_px.",
+		"sprite_center_px": [
+			32,
+			64
+		],
+		"lamp_centers_px": [
+			[
+				20,
+				9
+			],
+			[
+				32,
+				9
+			],
+			[
+				44,
+				9
+			]
+		]
+	},
+	"dark_room": {
+		"_notes": "PROPUESTA (2026-10-17). Cuarto a oscuras (DarkRoom): velo de color color con opacidad darkness * (1 - luz) (luz = progreso del interruptor: 0, 1/3, 2/3, 1), dibujado en z_index z (por encima del mundo, por debajo de la Q y la interfaz). Con el Debug la opacidad se multiplica por lerp(1, debug_factor, intensidad) y se dibuja un contorno discontinuo outline_color (dash_px) de las piezas del acertijo que estan dentro. fade_s: transicion de cada tercio (tiempo del mundo).",
+		"color": "#05070f",
+		"darkness": 0.9,
+		"debug_factor": 0.45,
+		"outline_color": "#3dfff5",
+		"_light_notes": "Halos (pixel art por celdas de cell_px): alrededor de Eco companero (eco_light_px) y de cada interruptor sin activar (switch_light_px) el velo baja en light_steps anillos hasta light_min de su opacidad.",
+		"cell_px": 16,
+		"eco_light_px": 112,
+		"switch_light_px": 48,
+		"light_steps": 3,
+		"light_min": 0.25,
+		"dash_px": 4,
+		"z": 40,
+		"fade_s": 0.35
+	},
+	"charge_dock": {
+		"_notes": "PROPUESTA (2026-10-17). Punto de carga (ChargeDock): sprite de 128x64 centrado en sprite_center_px (charge_dock_idle, ready al armarse, charging, done); medidor charge_gauge (11 cuadros de progreso) en gauge_center_px; Calc se coloca con los pies en calc_feet_px; chispas charge_spark en spark_px mientras carga. start_percent: bateria de Calc al empezar (3 %).",
+		"sprite_center_px": [
+			64,
+			32
+		],
+		"gauge_center_px": [
+			118,
+			34
+		],
+		"calc_feet_px": [
+			56,
+			52
+		],
+		"spark_px": [
+			[
+				40,
+				40
+			],
+			[
+				74,
+				36
+			]
+		],
+		"start_percent": 3
+	},
+	"calc_actor": {
+		"_notes": "PROPUESTA (2026-10-17). Calc en el nivel (CalcActor): frames de tools/gen_calc_encounter.py (calc_low, calc_wake, calc_walk, calc_charging, calc_charged, calc_teleport; 64x96, pies abajo-centro). walk_speed_px_s: velocidad al caminar por path. charged_hold_s: segundos con la cara despierta antes de irse. Teletransporte: los anillos del vortice de Isak (warp_frames: vortex_open, vortex_spin x spins, vortex_close) centrados en vortex_offset_px sobre los pies mientras Calc se desvanece (calc_teleport). Tiempo del mundo.",
+		"frames": "res://assets/sprites/calc_actor_frames.tres",
+		"warp_frames": "res://assets/sprites/warp_objects_frames.tres",
+		"walk_speed_px_s": 70.0,
+		"charged_hold_s": 0.8,
+		"spins": 2,
+		"vortex_offset_px": [
+			0,
+			-48
+		]
 	},
 	"attention_point": {
 		"_notes": "Punto de atencion (celda o del grid; scenes/levels/attention_point.tscn). Solo el tipo de su ayuda con Q (data/help.json); el resto de sus valores van en su escena.",

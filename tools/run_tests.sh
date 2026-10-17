@@ -65,7 +65,8 @@ rm -f "$IMPORT_LOG"
 # paso 13 del 1-2: el nivel 1-2 (tests/test_level_1_2.py y su camino exportado) y la fachada de la
 # torre (tools/validate_world1_facade.py). Desde el 2026-10-17 (ajuste del 1-2): las subidas del 1-2
 # que mide con el Isak real tests/test_level_climbs.gd (tests/fixtures/climbs_1-2.json, al dia con
-# tools/level_climbs.py --check).
+# tools/level_climbs.py --check). Desde el 2026-10-17 (tanda H1 del paso 14 del 1-2): el arte del
+# encuentro con Calc (tools/validate_calc_encounter.py).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -91,6 +92,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \
 		&& python3 -I tools/validate_world1_puzzle.py >/dev/null && python3 -I tools/validate_world1_tower.py >/dev/null \
 		&& python3 -I tools/validate_world1_facade.py >/dev/null \
+		&& python3 -I tools/validate_calc_encounter.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2

@@ -908,5 +908,100 @@ class ValidationBlockSchemaTest(unittest.TestCase):
         self.assert_fails(level, "'validation' debe ser un objeto")
 
 
+class CalcRoomSchemaTest(unittest.TestCase):
+    """Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
+    data/levels/calc_test.json y variantes rotas (ids, enlaces, parametros en rango, guion de Eco)."""
+
+    def load(self):
+        with open(os.path.join(ROOT, "data", "levels", "calc_test.json"), encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def find_obj(self, level, oid):
+        return next(o for o in level["objects"] if o["params"].get("id") == oid)
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_calc_test_is_valid(self):
+        self.assertEqual(vls.validate_level(self.load()), [])
+
+    def test_switch_params_in_range(self):
+        level = self.load()
+        self.find_obj(level, "interruptor_luz")["params"]["pulses"] = 7
+        self.assert_fails(level, "pulses = 7 fuera de [1, 6]")
+        self.find_obj(level, "interruptor_luz")["params"]["pulses"] = 2.5
+        self.assert_fails(level, "pulses debe ser un entero")
+        level = self.load()
+        self.find_obj(level, "panel_oculto")["params"]["done_if_ally"] = "cortana"
+        self.assert_fails(level, "done_if_ally 'cortana' no admitido")
+        level = self.load()
+        self.find_obj(level, "dock_calc")["params"]["charge_s"] = 0.1
+        self.assert_fails(level, "charge_s = 0.1 fuera de [0.5, 20.0]")
+        level = self.load()
+        del self.find_obj(level, "interruptor_laser")["params"]["id"]
+        self.assert_fails(level, "falta el param obligatorio 'id'")
+
+    def test_links(self):
+        level = self.load()
+        self.find_obj(level, "pared_glitch")["params"]["door_when"] = "dock_calc"
+        self.assert_fails(level, "door_when 'dock_calc' no es el id de ningun power_switch ni debug_switch")
+        level = self.load()
+        self.find_obj(level, "pared_glitch")["params"]["lamps"] = ["a", "b", "c", "d"]
+        self.assert_fails(level, "lamps debe ser una lista de a lo sumo 3 ids")
+        level = self.load()
+        self.find_obj(level, "pared_glitch")["params"]["height_tiles"] = 3
+        self.assert_fails(level, "la puerta (door_when) solo admite un bloque de 1x2")
+        level = self.load()
+        self.find_obj(level, "cuarto")["params"]["switch"] = "nada"
+        self.assert_fails(level, "switch 'nada' no es el id")
+        level = self.load()
+        self.find_obj(level, "cuarto")["params"]["width_tiles"] = 40
+        self.assert_fails(level, "el cuarto se sale del grid")
+        level = self.load()
+        self.find_obj(level, "dock_calc")["params"]["requires"] = []
+        self.assert_fails(level, "requires debe ser una lista no vacia")
+        self.find_obj(level, "dock_calc")["params"]["requires"] = ["fantasma"]
+        self.assert_fails(level, "requires 'fantasma' no es el id")
+        level = self.load()
+        self.find_obj(level, "terminal_azotea")["params"]["power_source"] = "interruptor_luz"
+        self.assert_fails(level, "power_source 'interruptor_luz' no es el id de ningun charge_dock")
+        self.find_obj(level, "terminal_azotea")["params"]["requires_power"] = "si"
+        self.assert_fails(level, "requires_power debe ser true o false")
+
+    def test_calc_path(self):
+        level = self.load()
+        self.find_obj(level, "calc")["params"]["path"] = [[7, 9]]
+        self.assert_fails(level, "path debe ser una lista de al menos 2 celdas")
+        self.find_obj(level, "calc")["params"]["path"] = [[7, 9], [13, 3]]
+        self.assert_fails(level, "path[1] [13, 3] fuera del grid o en terreno")
+        self.find_obj(level, "calc")["params"]["path"] = [[8, 9], [13, 9]]
+        self.assert_fails(level, "path[0] debe ser su celda (7, 9)")
+        self.find_obj(level, "calc")["params"]["dock"] = "terminal_azotea"
+        self.assert_fails(level, "dock 'terminal_azotea' no es el id de ningun charge_dock")
+
+    def test_eco_guide(self):
+        level = self.load()
+        self.find_obj(level, "guia_calc")["params"]["guide"] = "no_existe"
+        self.assert_fails(level, "guide 'no_existe' no esta en data/eco_guides.json")
+        level = self.load()
+        level["objects"] = [o for o in level["objects"] if o["params"].get("id") != "panel_oculto"]
+        level["objects"][[o["params"].get("id") for o in level["objects"]].index("dock_calc")]["params"]["requires"] = \
+            ["interruptor_luz"]
+        level["objects"][[o["params"].get("id") for o in level["objects"]].index("pared_glitch")]["params"]["lamps"] = []
+        self.assert_fails(level, "object 'panel_oculto' no es el id de ninguna pieza del nivel")
+
+    def test_guide_steps(self):
+        guides = {"g": {"steps": [{"do": "bailar"}, {"do": "line"}, {"do": "wait_ability", "ability": "salto"},
+                                  {"do": "wait_s", "seconds": 0}, {"do": "fly"}, {"do": "line", "text": " "}]}}
+        validator = vls.LevelValidator(self.load())
+        validator.grid = self.load()["grid"]
+        validator._check_guide("guia", 1, 1, "g", guides, {})
+        joined = "\n".join(validator.errors)
+        for fragment in ("accion desconocida", "(line): falta 'text'", "ability debe ser una de pulse, laser, debug",
+                         "seconds debe estar en (0, 30]", "(fly): necesita object o cell", "text debe ser un texto no vacio"):
+            self.assertIn(fragment, joined)
+
+
 if __name__ == "__main__":
     unittest.main()

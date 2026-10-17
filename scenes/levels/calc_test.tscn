@@ -1,0 +1,143 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="4_charger"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="5_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="6_glitch_wall"]
+[ext_resource type="PackedScene" path="res://scenes/levels/power_switch.tscn" id="7_power_switch"]
+[ext_resource type="PackedScene" path="res://scenes/levels/laser_switch.tscn" id="8_laser_switch"]
+[ext_resource type="PackedScene" path="res://scenes/levels/debug_switch.tscn" id="9_debug_switch"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charge_dock.tscn" id="10_charge_dock"]
+[ext_resource type="PackedScene" path="res://scenes/levels/calc_actor.tscn" id="11_calc_actor"]
+[ext_resource type="PackedScene" path="res://scenes/levels/dark_room.tscn" id="12_dark_room"]
+[ext_resource type="PackedScene" path="res://scenes/levels/eco_guide.tscn" id="13_eco_guide"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="14_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="15_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="16_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="17_help_system"]
+
+[node name="Level_calc_test" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "calc_test"
+level_name = "Azotea con Calc (prueba)"
+world = 1
+tile_size = 64
+size_tiles = Vector2i(32, 12)
+debug_color = "cyan"
+abilities_available = {"debug": true, "laser": true, "pulse": true}
+source_path = "res://data/levels/calc_test.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 6, 0, 2, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 26, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 27, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 28, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 29, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 30, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 31, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 31, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 2, 0, 0, 0, 5, 0, 0, 0, 0, 0, 31, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 3, 0, 0, 0, 5, 0, 0, 0, 0, 0, 31, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 4, 0, 0, 0, 5, 0, 0, 0, 0, 0, 27, 0, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0, 28, 0, 4, 0, 0, 0, 2, 0, 4, 0, 0, 0, 31, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 31, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 6, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 0, 6, 0, 0, 0, 0, 0, 4, 0, 0, 0, 26, 0, 6, 0, 0, 0, 2, 0, 4, 0, 0, 0, 31, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 7, 0, 0, 0, 5, 0, 0, 0, 0, 0, 31, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 22, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 23, 0, 8, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 8, 0, 0, 0, 2, 0, 4, 0, 0, 0, 31, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 31, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 10, 0, 0, 0, 1, 0, 3, 0, 0, 0, 14, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 24, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 26, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 27, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 28, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 29, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 30, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 31, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 6, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 7, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 8, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 10, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 11, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 12, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 13, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 16, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 17, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 22, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 24, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 25, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 26, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 27, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 28, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 29, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 30, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 31, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="cargador_1" parent="Objects" instance=ExtResource("4_charger") groups=["help_target"]]
+position = Vector2(256, 576)
+amount = 50.0
+cooldown_s = 10.0
+object_id = &"cargador_1"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="terminal_azotea" parent="Objects" instance=ExtResource("5_exit_terminal") groups=["help_target"]]
+position = Vector2(640, 512)
+height_tiles = 2
+object_id = &"terminal_azotea"
+power_source = &"dock_calc"
+requires_power = true
+text = "Marcar como leído"
+width_tiles = 1
+level_id = "calc_test"
+metadata/help_id = "exit_terminal"
+
+[node name="pared_glitch" parent="Objects" instance=ExtResource("6_glitch_wall") groups=["help_target"]]
+position = Vector2(832, 512)
+done_if_ally = &"calc"
+door_when = &"interruptor_luz"
+height_tiles = 2
+object_id = &"pared_glitch"
+door_lamps = ["interruptor_luz", "interruptor_laser", "panel_oculto"]
+solid_neighbors = 5
+width_tiles = 1
+metadata/help_id = "glitch_wall"
+
+[node name="interruptor_luz" parent="Objects" instance=ExtResource("7_power_switch") groups=["help_target"]]
+position = Vector2(1024, 576)
+done_if_ally = &"calc"
+object_id = &"interruptor_luz"
+pulses_required = 3
+metadata/help_id = "power_switch"
+
+[node name="interruptor_laser" parent="Objects" instance=ExtResource("8_laser_switch") groups=["help_target"]]
+position = Vector2(1920, 448)
+done_if_ally = &"calc"
+object_id = &"interruptor_laser"
+metadata/help_id = "laser_switch"
+
+[node name="panel_oculto" parent="Objects" instance=ExtResource("9_debug_switch") groups=["help_target"]]
+position = Vector2(1792, 192)
+done_if_ally = &"calc"
+object_id = &"panel_oculto"
+pulses_required = 1
+metadata/help_id = "debug_switch"
+
+[node name="dock_calc" parent="Objects" instance=ExtResource("10_charge_dock") groups=["help_target"]]
+position = Vector2(1152, 576)
+charge_s = 3.0
+done_if_ally = &"calc"
+object_id = &"dock_calc"
+required_ids = ["interruptor_luz", "interruptor_laser", "panel_oculto"]
+metadata/help_id = "charge_dock"
+
+[node name="calc" parent="Objects" instance=ExtResource("11_calc_actor")]
+position = Vector2(448, 576)
+dock_id = &"dock_calc"
+done_if_ally = &"calc"
+object_id = &"calc"
+path_cells = [Vector2(7, 9), Vector2(13, 9), Vector2(18, 9)]
+
+[node name="cuarto" parent="Objects" instance=ExtResource("12_dark_room")]
+position = Vector2(896, 64)
+done_if_ally = &"calc"
+height_tiles = 9
+object_id = &"cuarto"
+switch_id = &"interruptor_luz"
+width_tiles = 17
+
+[node name="guia_calc" parent="Objects" instance=ExtResource("13_eco_guide")]
+position = Vector2(64, 64)
+done_if_ally = &"calc"
+guide_id = &"calc_rooftop"
+object_id = &"guia_calc"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Goal" type="Marker2D" parent="." groups=["goal"]]
+position = Vector2(672, 640)
+
+[node name="Isak" parent="." instance=ExtResource("14_isak")]
+position = Vector2(160, 640)
+camera_limits = Rect2i(0, 0, 2048, 768)
+
+[node name="Hud" parent="." instance=ExtResource("15_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("16_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("17_help_system")
