@@ -1,6 +1,6 @@
 # Encuentro con Calc: acertijo de la azotea del 1-2
 
-**Estado:** diseño del usuario del **2026-10-17**. Sustituye la opción A de `propuesta-1-2.md` §8 (Calc apagada junto a la terminal, Q `calc_off` y un pulso). Es el paso 14 de `propuesta-1-2.md` §10, junto con el recuerdo. **Tanda H1 hecha (2026-10-17):** sistemas, piezas, arte, sala de prueba `calc_test` y este documento. **Tanda H2 hecha (2026-10-17):** el acertijo en la azotea del 1-2 real y en el validador, con el camino exportado (§10). Pendientes: **H3** (el encuentro en el hub) y el bot vertical (paso 15 del 1-2). Los textos de Eco y de Calc son **propuestas** hasta que el usuario los decida.
+**Estado:** diseño del usuario del **2026-10-17**. Sustituye la opción A de `propuesta-1-2.md` §8 (Calc apagada junto a la terminal, Q `calc_off` y un pulso). Es el paso 14 de `propuesta-1-2.md` §10, junto con el recuerdo. **Tanda H1 hecha (2026-10-17):** sistemas, piezas, arte, sala de prueba `calc_test` y este documento. **Tanda H2 hecha (2026-10-17):** el acertijo en la azotea del 1-2 real y en el validador, con el camino exportado (§10). **Tanda H3 hecha (2026-10-17):** el encuentro en el hub, con el estilo LCD de Calc (§6 y §11). Pendiente: el bot vertical (paso 15 del 1-2). Los textos de Eco y de Calc son **propuestas** hasta que el usuario los decida.
 
 ## 1. Idea
 
@@ -115,34 +115,35 @@ Marcadores de `data/eco_text_box.json` (`TextMarkers`), en el cuadro de Eco y en
   - El icono aparece cuando la máquina de escribir llega a él.
   - Un id desconocido se quita del texto.
 
-## 6. Calc en el hub (tanda H3, propuesta)
+## 6. Calc en el hub (tanda H3, hecha el 2026-10-17)
 
 **Historia «Resta» (aprobada):**
 - Los puntos de atención son la atención de Isak que Eco guardó y fue dejando caer por los mapas.
 - Calc la devuelve convertida en mejoras.
 - Humor seco.
 
-En las líneas, el número de puntos es dinámico (`{puntos}`) y lleva al lado el icono del punto. Borrador de líneas de Calc, importantes (pausan), para H3:
+En las líneas, el número de puntos es dinámico (`{puntos}`: el saldo **actual** al empezar la línea) y lleva al lado el icono del punto. Textos finales (propuesta hasta que el usuario los decida; `data/calc_intro.json`), todas importantes (pausan; Espacio / A / Intro), una a una:
 
-1. «3 %. 100 %. Resultado: estoy aquí.»
-2. «Esos {icono:atencion} que recoges son atención tuya. Eco la guardó y la fue dejando caer por ahí.»
-3. «Eco sabe sumar atención. Nunca ha sabido restarla.»
-4. «Tienes {puntos} {icono:atencion}. Yo los convierto en mejoras. Sin intereses.»
-5. Eco, descolgándose (línea suya): «Yo solo la estaba… guardando. Por ti.»
+1. Calc: «Batería: 100 %. Resultado: estoy aquí. Gracias por la corriente.»
+2. Calc: «Eco me la había cortado. Motivo: no consta.»
+3. Calc: «Has recogido {puntos} {icono:atencion}. Crees que son ganancia.»
+4. Calc: «Error. Son tu atención. Eco la guardó y la fue dejando caer por los mapas. Como migas.»
+5. Eco (atenuado, sin cobertura; se descuelga): «Esa aplicación es obsoleta, {apodo}. Puedo ofrecerte una versión mejor. Gratis. Treinta días.» (no miente: omite lo que viene después).
+6. Calc: «Eco: treinta días. Después: tu atención. Cálculo: no sale.»
+7. Calc: «Yo te la devuelvo convertida en mejoras. Sin comisión: soy una calculadora, no un banco.»
+8. Calc: «Eco sabe sumar atención. Nunca ha sabido restarla.»
 
-Después se abre la tienda.
+Al cerrarse la última, Calc queda conocida y su estación encendida: la tienda está disponible (se abre con el pulso, como siempre; no se abre sola).
 
-**Estilo de texto propio por personaje.** Ahora solo se define lo necesario; se implementa en H3:
+**Estilos de texto por personaje (glosario).** Cada interlocutor de `speakers` (`data/eco_text_box.json`) lleva `style`, un id de `speaker_styles` (fuente, panel, colores, velocidad y `instant_chars`, los caracteres que aparecen de golpe); lo que un estilo no trae sale del de Eco.
 
-| Personaje | Estilo |
-|---|---|
-| Eco | Panel blanco-azul y escritura fluida (el actual). |
-| Calc | Pantalla de **LCD** con texto monoespaciado y fondo verde apagado. Las **cifras aparecen de golpe** y el resto se escribe por caracteres. |
-| Notas | Frases cortas con guiones. |
-| Linterna | Casi sin palabras («…», «¡!»). |
-| Papelera | Lenta, con puntos suspensivos. |
-
-Pide un `speaker_style` por interlocutor en `speakers` (fuente, panel, velocidad y regla de cifras).
+| Personaje | `speaker_style` | Estado |
+|---|---|---|
+| Eco | `panel` (sin `style` = este): panel `noche_profunda`, texto blanco, escritura fluida a 40 caracteres/s. | Hecho |
+| Notas | `panel` (el de Eco) con su nombre e icono. Frases cortas con guiones es su forma de escribir, no un estilo visual. | Hecho |
+| Calc | `lcd`: pantalla de calculadora. Fuente de textos **monoespaciada** (`text_font_lcd.fnt`: mismo atlas, avance fijo de 6 px; cifras del HUD), panel `lcd_panel_00` (bisel del cuerpo de Calc y pantalla `cian_tenue`: el «verde apagado» del LCD dentro de la paleta del hub, como su visor), texto y nombre en `fondo_profundo`, 32 caracteres/s y las **cifras de golpe** (`instant_chars` 0-9: «130» sale entero en un paso). Icono `icon_calc_00` (su cara despierta). | Hecho |
+| Linterna | Casi sin palabras («…», «¡!»). | Sin implementar (aún no habla) |
+| Papelera | Lenta, con puntos suspensivos. | Sin implementar (aún no habla) |
 
 ## 7. Plan de tandas
 
@@ -150,7 +151,7 @@ Pide un `speaker_style` por interlocutor en `speakers` (fuente, panel, velocidad
 |---|---|---|
 | **H1** | Documento. Iconos en línea y `{puntos}`. `EcoGuide`. Piezas, Calc y el punto de carga con arte y SpriteFrames. Ayudas Q y fichas. Esquema y constructor. Sala `calc_test` probada de principio a fin. | **Hecha (2026-10-17)** |
 | **H2** | Integrar el acertijo en la azotea del 1-2 (ampliada a 11 filas). Modelar las piezas en el validador de alcanzabilidad y en el camino exportado (pulso de espaldas, láser permanente, Debug para la pared y el panel, espera de la carga y terminal con corriente), con Calc desconocida y conocida. Capturas del 1-2. El bot vertical queda en el paso 15. | **Hecha (2026-10-17)**, §10 |
-| **H3** | Encuentro en el hub: Calc aparece al llegar tras `ally_teleported`, habla (líneas de §6), Eco se descuelga con su línea, `meet_ally("calc")` y se abre la tienda. Estilo LCD de Calc. | Pendiente |
+| **H3** | Encuentro en el hub: Calc aparece al llegar tras `ally_teleported`, habla (líneas de §6), Eco se descuelga con su línea, `meet_ally("calc")` y la tienda queda disponible. Estilo LCD de Calc. | **Hecha (2026-10-17)**, §11 |
 
 ## 8. Cambios en `propuesta-1-2.md` §paso 14
 
@@ -167,7 +168,8 @@ Pide un `speaker_style` por interlocutor en `speakers` (fuente, panel, velocidad
 3. **¿El panel oculto queda marcado tras verlo una vez con el Debug?** *Recomendación:* sí (H1). Pedir el Debug y el pulso a la vez sería injusto con dificultad 2.
 4. **¿Debe Eco reaccionar a cada pulso del interruptor?** *Recomendación:* no. Bastan las luces del panel y del cuarto, para no llenar la pantalla de texto.
 5. **Línea 7 de Eco («aplicación obsoleta»): ¿demasiado engreída?** *Recomendación:* mantenerla. Es coherente con §12.3 («Eco los llama aplicaciones obsoletas») y prepara la «Resta» de H3.
-6. **Estilo LCD de Calc: ¿fuente nueva monoespaciada o los dígitos del HUD?** *Recomendación:* los dígitos del HUD (5x7) para las cifras y la fuente de textos con avance fijo para las letras. No hace falta una fuente nueva.
+6. ~~**Estilo LCD de Calc: ¿fuente nueva monoespaciada o los dígitos del HUD?**~~ **Resuelta en H3** con la recomendación: la fuente de textos con avance fijo (cifras del HUD), sin fuente nueva.
+7. **¿La tienda se abre sola al terminar el encuentro?** *Decisión de H3 (a revisar):* no; Calc se enciende con un destello y la tienda se abre con el pulso, como siempre (la lógica de la tienda no cambia y el jugador no se queda en un panel que no ha pedido).
 
 ## 10. Tanda H2 hecha (2026-10-17): la azotea del 1-2 y el validador
 
@@ -199,4 +201,18 @@ Pide un `speaker_style` por interlocutor en `speakers` (fuente, panel, velocidad
 
 **Pruebas y capturas:** `tests/test_level_1_2.py` (azotea, plan del acertijo, Calc conocida, camino exportado en los dos casos), `tests/test_validate_level.py` (`CalcPuzzleTest`: casos negativos de interruptor láser alcanzable andando o fuera de línea, panel sin Debug o lejos, sin energía, repisa sin holgura y terminal sin corriente), `tests/test_level_1_2_rooftop.gd` (la secuencia completa con el Isak real, cámara, muerte a mitad del acertijo, intento nuevo, terminal y nivel completado, Calc conocida, economía) y `tests/test_level_climbs.gd`. Capturas: `tools/render_level_1_2.gd` (pisos y azotea) y `tools/render_level_1_2_rooftop.gd` (cada paso del acertijo en el nivel real); mapa con las piezas nuevas en `tools/render_level_map.py`.
 
-**Qué queda para H3:** Calc aparece en el hub al llegar tras `ally_teleported` (el gancho ya lo emite la azotea del 1-2), sus líneas de §6 con estilo LCD, la línea de Eco que se descuelga, `meet_ally("calc")` y la tienda abierta. Además, el bot vertical (paso 15 del 1-2) que seguirá el camino exportado con las acciones nuevas.
+**Qué quedaba para H3** (hecho, §11)**:** Calc aparece en el hub al llegar tras `ally_teleported` (el gancho ya lo emite la azotea del 1-2), sus líneas de §6 con estilo LCD, la línea de Eco que se descuelga, `meet_ally("calc")` y la tienda abierta. Además, el bot vertical (paso 15 del 1-2) que seguirá el camino exportado con las acciones nuevas.
+
+## 11. Tanda H3 hecha (2026-10-17): el encuentro en el hub
+
+**Gancho y estado.** `EventBus.ally_teleported("calc")` (Calc se va de la azotea) lo apunta `GameState` como **llegada pendiente de la sesión** (`ally_arrivals`, `note_ally_teleported`, `is_ally_arrival_pending`). **No se guarda nada nuevo** en `save.json`: si se cierra el juego antes de llegar al hub, Calc sigue sin conocerse y el 1-2 repite su acertijo (las piezas con `done_if_ally` miran `allies_met`). `reset_progress` y `apply_rollback` vacían la llegada: tras un game over (lo no guardado se pierde) no hay encuentro y Calc sigue apagada. Calc conocida no apunta llegada.
+
+**Escena** (`CalcIntro`, `scripts/hub/calc_intro.gd`; textos en `data/calc_intro.json`). La crea `HubRoom` si hay llegada pendiente y no se llega por un game over. Desde la llegada, Calc está en su estación **despierta** (`CalcStation.set_arrived`: animación `awake`, sin prompt ni tienda). Al terminar la llegada (tras la presentación de Notas, si también toca) pausa el árbol de principio a fin (convención de pausas anidadas: solo pausa si nadie lo había hecho y solo quita la suya; se libera siempre al salir del árbol) y pide las líneas de §6 una a una al cuadro del hub. La de Eco se omite si Eco no es conocido. El menú de pausa no se abre (árbol en pausa y `HubRoom.blocks_pause_menu`). Es historia: sale con las ayudas de Eco ocultas. Al cerrar la última: `meet_ally("calc")` (estación encendida con destello, tienda disponible), `request_save()` («sin guardar»: conocer a Calc se guarda en Notas; `QuitGuard` ofrece «Guardar y salir»), la llegada se consume y no se repite (ni al volver al hub ni tras guardar y cargar). Conocida, Calc sigue despierta (`animation: awake` en la sección `calc` de `data/hub.json`; antes `sleep`). La tienda (`CalcPanel`) no cambia.
+
+**Cuadro de texto.** `EcoTextBox` admite un **estilo por interlocutor** (§6, glosario): fuente, panel, colores, velocidad y caracteres de golpe (`speaker_styles` de `data/eco_text_box.json`; `EcoTextBoxConfig.style_for`). El estilo `lcd` usa `text_font_lcd.fnt` (generada por `tools/gen_text_font.py` junto a la normal; `lcd_font`/`lcd_advance` de `data/text_font.json`; `tools/validate_ui_assets.py` comprueba que es la misma fuente con avance fijo) y el panel `lcd_panel_00` (`tools/gen_hub_objects.py`, validado por `tools/validate_hub_objects.py`). `{puntos}` e `{icono:atencion}` funcionan igual en el cuadro LCD (el rombo conserva su ancho).
+
+**Sin Q ni ficha:** la estación de Calc no tiene `HelpSystem` y Calc es una aliada, no un tipo de ayuda: no hay Q ni ficha del álbum.
+
+**Depuración y pruebas.** `$GODOT --path . -- --start-level=hub --ally-teleported=calc` (builds de depuración) llega al hub con la llegada pendiente y reproduce la escena; `-- --meet-ally=calc` la salta (Calc conocida). En las pruebas: `EventBus.ally_teleported.emit(&"calc")` o `GameState.note_ally_teleported(&"calc")`. Pruebas: `tests/test_calc_intro.gd` (una vez, saldos 0, 17 y 130 con el icono, cifras de golpe, estilo LCD, Eco entre líneas de Calc, Calc conocida, sin teletransporte, game over, guardar y cargar, «sin guardar» y `QuitGuard`, menú de pausa, pausas anidadas, ayudas ocultas, Notas antes que Calc, glifos y palabras prohibidas) y `tests/test_calc_intro_flow.gd` (el 1-2 real: azotea, Calc se teletransporta, terminal, hub y escena; game over tras el teletransporte; del 1-1 al hub sin Calc). Capturas: `$GODOT --path . -s tools/render_calc_intro.gd -- <carpeta>`.
+
+**Desvíos:** el «fondo verde apagado» del LCD es `cian_tenue` de `hub.gpl` (la paleta del hub no tiene verde y así coincide con el visor de Calc); la tienda no se abre sola (§9, pregunta 7); la línea 1 dice «Batería: 100 %» (ya cargada) y no el borrador «3 %. 100 %».
