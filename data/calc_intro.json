@@ -1,0 +1,39 @@
+{
+	"_notes": "Encuentro con Calc en el hub (2026-10-17, tanda H3 del paso 14 de docs/propuesta-1-2.md; diseno en docs/propuesta-calc-encuentro.md §6, historia «Resta»). Lo hace CalcIntro (scripts/hub/calc_intro.gd), que crea HubRoom al llegar al hub si Calc se teletransporto en esta sesion (EventBus.ally_teleported -> GameState.ally_arrivals) y aun no es conocida. Al terminar la llegada de Isak (y la presentacion de Notas, si toca) el juego se pausa de principio a fin y las lineas salen UNA A UNA como importantes en el cuadro de texto del hub (se cierran con Espacio / A / Intro). Solo texto: sin voz ni sonido. who: calc (speaker calc: nombre, icono y estilo LCD de data/eco_text_box.json) o eco (Eco atenuado, sin cobertura, se descuelga; se omite si Eco no es conocido). Marcadores: {puntos} = saldo ACTUAL de puntos de atencion al empezar a escribirse la linea; {icono:atencion} = el rombo del punto en linea; {apodo} = el apodo. Calc ya esta despierta y cargada (100 %) en su estacion desde la llegada (sin prompt ni tienda); al cerrar la ultima linea GameState.meet_ally('calc') la enciende (tienda disponible), marca «sin guardar» y no se repite. power_on_flash_s: destello de la estacion al encenderse. duration_s: tiempo minimo de cada linea si las importantes no pausan (pruebas y herramientas; -1 = el del cuadro). Nunca usar las palabras vuelta, Easy, Normal ni Hard.",
+	"power_on_flash_s": 0.3,
+	"duration_s": -1.0,
+	"lines": [
+		{
+			"who": "calc",
+			"text": "Batería: 100 %. Resultado: estoy aquí. Gracias por la corriente."
+		},
+		{
+			"who": "calc",
+			"text": "Eco me la había cortado. Motivo: no consta."
+		},
+		{
+			"who": "calc",
+			"text": "Has recogido {puntos} {icono:atencion}. Crees que son ganancia."
+		},
+		{
+			"who": "calc",
+			"text": "Error. Son tu atención. Eco la guardó y la fue dejando caer por los mapas. Como migas."
+		},
+		{
+			"who": "eco",
+			"text": "Esa aplicación es obsoleta, {apodo}. Puedo ofrecerte una versión mejor. Gratis. Treinta días."
+		},
+		{
+			"who": "calc",
+			"text": "Eco: treinta días. Después: tu atención. Cálculo: no sale."
+		},
+		{
+			"who": "calc",
+			"text": "Yo te la devuelvo convertida en mejoras. Sin comisión: soy una calculadora, no un banco."
+		},
+		{
+			"who": "calc",
+			"text": "Eco sabe sumar atención. Nunca ha sabido restarla."
+		}
+	]
+}
