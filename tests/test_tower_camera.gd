@@ -286,6 +286,9 @@ func _layer_screen_y(background: World1Background, layer_name: String) -> float:
 	return (layer.get_child(0) as Node2D).get_global_transform_with_canvas().origin.y
 
 
+## Fachada de la torre (2026-10-16, paso 13 del 1-2): las capas de siempre quedan
+## fijas en Y (sin la costura de repetir imagenes de 720 px) y la capa Fachada,
+## que se repite en vertical sin costura, se mueve con el nivel.
 func test_vertical_background_scrolls_in_y() -> void:
 	var background := (load("res://scenes/levels/world1_background.tscn") as PackedScene).instantiate() as World1Background
 	background.vertical = true
@@ -293,20 +296,28 @@ func test_vertical_background_scrolls_in_y() -> void:
 	var camera := Camera2D.new()
 	add_child_autofree(camera)
 	camera.make_current()
+	var names: Array[String] = []
 	for layer: Parallax2D in background.get_layers():
-		assert_gt(layer.scroll_scale.y, 0.0, "%s se mueve en Y" % layer.name)
-		assert_eq(layer.repeat_size.y, 720.0, "%s se repite en vertical" % layer.name)
+		names.append(String(layer.name))
+		if layer.name == &"Fachada":
+			assert_eq(layer.scroll_scale, Vector2.ONE, "La fachada se mueve con el nivel")
+			var texture: Texture2D = (layer.get_child(0) as Sprite2D).texture
+			assert_eq(layer.repeat_size.y, float(texture.get_height()), "Se repite cada alto de su imagen")
+		else:
+			assert_eq(layer.scroll_scale.y, 0.0, "%s fija en Y (sin costura)" % layer.name)
+			assert_eq(layer.repeat_size.y, 0.0)
+	assert_eq(names, ["Cielo", "FondoMedio", "Resplandor", "Fachada"] as Array[String], "La fachada va delante")
 	camera.global_position = Vector2(640.0, 360.0)
 	await wait_process_frames(3)
-	var before: float = _layer_screen_y(background, "Resplandor")
+	var before: float = _layer_screen_y(background, "Fachada")
 	var far_before: float = _layer_screen_y(background, "Cielo")
 	camera.global_position = Vector2(640.0, 560.0)
 	await wait_process_frames(3)
-	var moved: float = before - _layer_screen_y(background, "Resplandor")
+	var moved: float = before - _layer_screen_y(background, "Fachada")
 	var far_moved: float = far_before - _layer_screen_y(background, "Cielo")
-	var near_scale: float = background.get_layer("Resplandor").scroll_scale.y
-	assert_almost_eq(moved, 200.0 * near_scale, 1.0, "La capa cercana sube al subir la camara")
-	assert_gt(moved, far_moved, "La lejana se mueve menos")
+	assert_almost_eq(fposmod(moved, 768.0), 200.0, 1.0, "La fachada sube al subir la camara")
+	assert_almost_eq(far_moved, 0.0, 0.5, "El cielo no se mueve en Y")
+	assert_null(background.get_tabs_layer(), "Sin rotulos no hay pestanas")
 
 
 func test_horizontal_background_stays_fixed_in_y() -> void:
@@ -315,6 +326,7 @@ func test_horizontal_background_stays_fixed_in_y() -> void:
 	for layer: Parallax2D in background.get_layers():
 		assert_eq(layer.scroll_scale.y, 0.0, "1-1: %s fija en Y" % layer.name)
 		assert_eq(layer.repeat_size.y, 0.0)
+	assert_null(background.get_layer("Fachada"), "La fachada solo va en la torre")
 
 
 # --- Regresion: la camara del 1-1 no cambia ---

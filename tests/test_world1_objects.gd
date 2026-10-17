@@ -368,10 +368,12 @@ func test_background_uses_parallax_speeds_from_data() -> void:
 	var bg := BACKGROUND_SCENE.instantiate() as World1Background
 	add_child_autofree(bg)
 	var layers: Array[Parallax2D] = bg.get_layers()
-	assert_eq(layers.size(), (data["layers"] as Array).size())
+	# La capa Fachada (tower_only, 2026-10-16) solo existe en modo torre (tests/test_tower_camera.gd).
+	var flat: Array = (data["layers"] as Array).filter(func(d: Dictionary) -> bool: return not d.get("tower_only", false))
+	assert_eq(layers.size(), flat.size())
 	var previous: float = -1.0
 	for i: int in layers.size():
-		var d: Dictionary = data["layers"][i]
+		var d: Dictionary = flat[i]
 		var layer: Parallax2D = layers[i]
 		assert_eq(String(layer.name), String(d["name"]))
 		assert_eq(layer.scroll_scale, Vector2(float(d["scroll_scale"][0]), float(d["scroll_scale"][1])))

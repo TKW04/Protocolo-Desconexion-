@@ -49,6 +49,7 @@ Uso:
 import argparse
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -346,8 +347,18 @@ def build_scene(level, root=ROOT, warnings=None):
 
     tower = level.get("camera", {}).get("vertical") == "tower"
     background = "res://scenes/levels/world%d_background.tscn" % world
+    bg_props = None
+    if tower:
+        bg_props = [("vertical", "true")]
+        tabs = tower_tabs(level, t)
+        if tabs:
+            bg_props += [
+                ("tab_labels", "PackedStringArray(%s)" % ", ".join(fmt_string(label) for label, _ in tabs)),
+                ("tab_bands", "PackedVector2Array(%s)" % ", ".join("%d, %d" % band for _, band in tabs)),
+                ("tab_center_x", fmt_value(float(cols * t) / 2.0)),
+            ]
     scene.node("Background", parent=".", instance=scene.ext_resource("PackedScene", background),
-               props=[("vertical", "true")] if tower else None)
+               props=bg_props)
 
     scene.node("Tiles", "TileMapLayer", parent=".", props=[
         ("tile_map_data", tile_map_data(level, catalog, tilemap)),
@@ -463,6 +474,21 @@ def build_scene(level, root=ROOT, warnings=None):
     scene.node("EcoTextBox", parent=".", instance=scene.ext_resource("PackedScene", ECO_SCENE))
     scene.node("Help", "Node", parent=".", props=[("script", scene.ext_resource("Script", HELP_SCRIPT))])
     return scene.text()
+
+
+def tower_tabs(level, t):
+    """Pestanas de la fachada de la torre (2026-10-16, paso 13 del 1-2): por cada tramo vertical
+    llamado «Piso N: <rotulo>», (rotulo, (borde de arriba, borde de abajo) en px). Otros tramos
+    (vestibulo, azotea, «Piso 1» sin rotulo) no llevan pestana."""
+    rows = len(level["grid"])
+    out = []
+    for s in level.get("sections", []):
+        name = str(s.get("name", ""))
+        if "y_from" not in s or not re.match(r"^Piso \d+: \S", name):
+            continue
+        label = name.split(":", 1)[1].strip()
+        out.append((label, (int(s["y_from"]) * t, (int(s.get("y_to", rows - 1)) + 1) * t)))
+    return out
 
 
 def camera_bands(level, t):
