@@ -20,6 +20,9 @@
 ##   06c_album_ficha.png         ficha abierta (dibujo x2, nombre y texto de Eco)
 ##   06d_album_enemigos.png      pestana Enemigos (Burbuja y punto rojo aprendidos; banner «???»)
 ##   06e_album_punto_rojo.png    ficha del punto rojo (1-2)
+##   06f_album_piso_3_4.png      pestana Objetos con las fichas de los pisos 3 y 4 del 1-2
+##                               (recordatorio, Posponer, pop-up translucido; la barra «???»)
+##   06g_album_overlay.png       ficha del pop-up translucido
 ##   07a_calc_apagada.png        Isak junto a Calc apagada: sin tecla ni tienda
 ##   07_calc_prompt.png          Calc conocida (GameState.meet_ally, como --meet-ally=calc): tecla
 ##                               del pulso (simula 30 puntos para comprar)
@@ -66,7 +69,8 @@ func _run() -> void:
 		state.call(&"capture_attention_point", &"1-1", StringName("punto_%d" % i), 1)
 	state.call(&"mark_level_completed", &"1-1")
 	state.call(&"meet_ally", &"eco")
-	for id: StringName in [&"alert_bubble", &"receiver", &"attention_point", &"bridge", &"notification_badge"]:
+	for id: StringName in [&"alert_bubble", &"receiver", &"attention_point", &"bridge", &"notification_badge",
+			&"reminder_platform", &"snooze_button", &"overlay_popup"]:
 		state.call(&"learn_help", id)
 	_hub = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(_hub)
@@ -150,6 +154,15 @@ func _run() -> void:
 	album.call(&"confirm")
 	await _frames(4)
 	await _save(out_dir, "06e_album_punto_rojo.png")
+	album.call(&"cancel")
+	album.call(&"set_tab", "object")
+	var objects: Array = (load("res://scripts/hub/notas_album.gd") as GDScript).call(&"album_ids", 1, "object")
+	album.call(&"select_cell", objects.find(&"overlay_popup"))
+	await _frames(4)
+	await _save(out_dir, "06f_album_piso_3_4.png")
+	album.call(&"confirm")
+	await _frames(4)
+	await _save(out_dir, "06g_album_overlay.png")
 	album.call(&"cancel")
 	album.call(&"cancel")
 	album.call(&"cancel")

@@ -4,7 +4,8 @@
 # reventado, recogido, oculto, liberado o ya inerte; si deja de serlo mientras
 # es el candidato, la Q desaparece y Eco vuelve a Isak. Una prueba por tipo con
 # ayuda (los de data/help.json, con su escena real; desde el 2026-10-16 tambien
-# el lector laser, el receptor enlazado, el anuncio y el chip del Debug del 1-2).
+# el lector laser, el receptor enlazado, el anuncio y el chip del Debug del 1-2;
+# y el recordatorio, el Posponer, el pop-up translucido y la barra del 99 %).
 extends GutTest
 
 const ISAK_SCENE: PackedScene = preload("res://scenes/player/isak.tscn")
@@ -362,10 +363,71 @@ func test_banner_helps_in_every_phase() -> void:
 		assert_eq(_help.get_target(), banner, "Banner en %s: candidato" % state)
 
 
+## Isak quieto en FEET (sin suelo en esta prueba caeria y saldria del radio de la Q
+## segun los cuadros reales que pasen).
+func _freeze_isak() -> void:
+	_isak.set_physics_process(false)
+	_isak.global_position = FEET
+	_isak.velocity = Vector2.ZERO
+
+
+## Recordatorio (1-2, piso 3): caido no esta (sin Q ni relectura); repuesto, si.
+func test_fallen_reminder_gives_no_help() -> void:
+	_freeze_isak()
+	var reminder := _scene("reminder_platform") as ReminderPlatform
+	reminder.group_id = &"inerte"
+	reminder.set_physics_process(false)
+	_place(reminder, &"reminder_platform")
+	reminder.start_countdown()
+	assert_true(HelpCatalog.is_help_live(reminder), "Contando sigue siendo un recordatorio")
+	await _assert_inert_drops_help(reminder, func() -> void: reminder.expire(), "recordatorio caido")
+	_assert_no_reread(reminder, &"reminder_platform", "recordatorio caido")
+	for i: int in 300:
+		reminder.advance(STEP)
+	assert_true(HelpCatalog.is_help_live(reminder), "Repuesto vuelve a ayudar")
+
+
+## Posponer: reutilizable; enfriandose o sin nada que posponer sigue ayudando.
+func test_snooze_button_keeps_helping() -> void:
+	_freeze_isak()
+	var snooze := _scene("snooze_button") as SnoozeButton
+	snooze.set_physics_process(false)
+	_place(snooze, &"snooze_button")
+	await wait_process_frames(1)
+	snooze.on_laser_hit(1.0, null)
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(snooze), "Sin cuenta que posponer, sigue siendo un Posponer")
+	assert_eq(_help.get_target(), snooze)
+
+
+func test_closed_overlay_gives_no_help() -> void:
+	_freeze_isak()
+	var overlay := _scene("overlay_popup") as OverlayPopup
+	overlay.text = "Tienes 99+ mensajes que no son importantes"
+	_place(overlay, &"overlay_popup")
+	await _assert_inert_drops_help(overlay, func() -> void: overlay.close(), "pop-up translucido cerrado")
+	_assert_no_reread(overlay, &"overlay_popup", "pop-up translucido cerrado")
+
+
+func test_opened_update_bar_gives_no_help() -> void:
+	_freeze_isak()
+	var bar := _scene("update_bar") as UpdateBar
+	bar.set_physics_process(false)
+	_place(bar, &"update_bar")
+	bar.arm()
+	bar.advance(2.0)
+	assert_true(HelpCatalog.is_help_live(bar), "Trabada sigue ayudando")
+	await _assert_inert_drops_help(bar, func() -> void:
+		bar.finish()
+		bar.advance(3.0), "barra del 99 % abierta")
+	_assert_no_reread(bar, &"update_bar", "barra del 99 % abierta")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
 		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
-		&"notification_badge", &"spam_banner"]
+		&"notification_badge", &"spam_banner", &"reminder_platform", &"snooze_button", &"overlay_popup",
+		&"update_bar"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)

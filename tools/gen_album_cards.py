@@ -58,6 +58,12 @@ SOURCES = {
     # Enemigos del 1-2 (tools/gen_world1_enemies.py): punto rojo despierto y el banner barriendo.
     "notification_badge": ("assets/sprites/enemies/badge_chase_00.png", None, 1),
     "spam_banner": ("assets/sprites/enemies/banner_sweep_00.png", None, 1),
+    # Pisos 3 y 4 del 1-2 (tools/gen_world1_tower.py): recordatorio, Posponer listo, pop-up
+    # translucido (ventana en miniatura) y la barra trabada en el 99 %.
+    "reminder_platform": ("assets/sprites/props/tower/reminder_w1_idle_00.png", None, 1),
+    "snooze_button": ("assets/sprites/props/tower/snooze_ready_00.png", None, 1),
+    "overlay_popup": ("assets/sprites/props/tower/overlay_sample_00.png", None, 1),
+    "update_bar": ("assets/sprites/props/tower/update_bar_stuck_00.png", None, 1),
 }
 
 

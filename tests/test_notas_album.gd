@@ -348,3 +348,15 @@ func test_album_texts_fit_the_font_and_never_say_lap_names() -> void:
 			assert_false(text.contains(word), "«%s» no dice «%s»" % [text, word])
 		for ch: String in text:
 			assert_true(font.has_char(ch.unicode_at(0)), "La fuente tiene «%s» (%s)" % [ch, text])
+
+
+## Pisos 3 y 4 del 1-2 (pasos 6-8): recordatorio, Posponer, pop-up translucido y
+## barra del 99 %, en la pestana Objetos del Mundo 1, al final y en orden.
+func test_tower_objects_cards_in_the_objects_tab() -> void:
+	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
+	var tail: Array[StringName] = objects.slice(objects.size() - 4)
+	assert_eq(tail, [&"reminder_platform", &"snooze_button", &"overlay_popup", &"update_bar"] as Array[StringName])
+	for id: StringName in tail:
+		assert_eq(HelpCatalog.shared().category(id), HelpCatalog.CATEGORY_OBJECT)
+		assert_eq(String(HelpCatalog.shared().entry(id).get("first_level", "")), "1-2")
+	assert_eq(HelpCatalog.shared().title(&"overlay_popup"), "Pop-up translúcido")

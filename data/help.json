@@ -231,6 +231,47 @@
 			"order": 20,
 			"center_px": [0, -32],
 			"prompt_px": [0, -70]
+		},
+		"reminder_platform": {
+			"category": "object",
+			"title": "Recordatorio",
+			"text": "Un recordatorio. Al pisarlo empieza su cuenta; cuando vence, cae. No hace daño y vuelve enseguida, como todos.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 21,
+			"center_px": [32, 16],
+			"prompt_px": [32, -6]
+		},
+		"snooze_button": {
+			"category": "object",
+			"title": "Posponer",
+			"text": "Botón Posponer. Un disparo de láser mientras corre la cuenta y sus recordatorios aguantan un poco más. Tiene un límite, y sin cuenta no hay nada que posponer.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 22,
+			"center_px": [32, 8],
+			"prompt_px": [32, -22]
+		},
+		"overlay_popup": {
+			"category": "object",
+			"title": "Pop-up translúcido",
+			"text": "Una ventana translúcida. No hace daño ni te frena, solo tapa. Un pulso a su botón la cierra; con el Debug se ve a través.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 23,
+			"radius_tiles": 3.5,
+			"center_px": [64, 96],
+			"prompt_px": [64, -6]
+		},
+		"update_bar": {
+			"category": "object",
+			"title": "Actualización",
+			"text": "Actualización en curso. Se queda en 99 %. Siempre. Solo hay que aguantar la espera; mientras, caen cosas. Con el Debug, la espera dura el doble.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 24,
+			"center_px": [32, 96],
+			"prompt_px": [32, -56]
 		}
 	}
 }
