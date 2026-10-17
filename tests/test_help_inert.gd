@@ -46,6 +46,11 @@ func before_each() -> void:
 	_help.name = "Help"
 	_root.add_child(_help)
 	add_child(_root)
+	# Isak fijo en FEET (2026-10-16): la sala no tiene suelo y, con la fisica en marcha, Isak caia
+	# y salia del radio de la Q segun los cuadros reales que pasaran en cada await (la prueba del
+	# lector laser fallaba a veces al correr varios archivos juntos). Ninguna prueba necesita que
+	# Isak se mueva: la ayuda depende de su posicion y del estado is_help_live de cada objeto.
+	_freeze_isak()
 	_eco = EcoCompanion.attach(_isak, _root)
 	_eco.auto_advance = false
 	_help.set_process(false)
@@ -289,10 +294,13 @@ func test_q_moves_to_the_next_live_candidate() -> void:
 
 func test_completed_laser_receiver_gives_no_help() -> void:
 	var reader := _scene("laser_receiver") as LaserReceiver
+	reader.set_process(false)  # Su ventana no avanza sola: la prueba no depende del tiempo real.
 	_place(reader, &"laser_receiver")
 	await wait_process_frames(1)
+	assert_eq(_isak.global_position, FEET, "Isak sigue en FEET (sin caer), a un tile del lector")
 	reader.on_laser_hit(1.0, null)
 	_run(0.2)
+	assert_true(reader.is_powered(), "Con corriente")
 	assert_true(HelpCatalog.is_help_live(reader), "Con corriente sigue siendo un lector")
 	await _assert_inert_drops_help(reader, func() -> void: reader.complete(), "lector hecho")
 	_assert_no_reread(reader, &"laser_receiver", "lector hecho")
