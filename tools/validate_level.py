@@ -118,6 +118,16 @@ SIM_MAX_S = 4.0
 EPS = 1e-6
 # Paso del muestreo de posiciones de pie dentro de una celda al comprobar el pulso.
 PULSE_SAMPLE_PX = 4.0
+# Tolerancia de techo (2026-10-16, paso 10 de docs/propuesta-1-2.md): margen conservador, en px,
+# que se suma al retraso de un salto desde parado al comprobar la cabeza contra la esquina de
+# una losa (unos 2 cuadros a 220 px/s). Ver World.simulate(head_lag=True).
+HEAD_MARGIN_PX = 8.0
+# Tiempos del plan (paso 10): margen minimo por defecto que debe sobrar en ventanas y cuentas
+# (validation.time_margin_s del nivel o --time-margin), arranque desde parado tras un salto o una
+# pose y retraso del pulso desde que se pulsa hasta que toca (un cuadro).
+DEFAULT_TIME_MARGIN_S = 1.5
+START_S = 0.06
+PULSE_DELAY_S = 1.0 / 60.0
 INF = float("inf")
 
 
@@ -165,6 +175,11 @@ class Rules:
         self.fall_mult = float(physics["fall_gravity_multiplier"])
         self.walk_speed = float(physics["walk_speed"])
         self.run_speed = float(physics["run_speed"])
+        # Aceleracion horizontal en el aire (scripts/player/isak.gd, apply_horizontal): con ella se
+        # calcula el retraso de un salto desde parado frente al modelo de velocidad constante
+        # (tolerancia de techo, 2026-10-16, paso 10 de docs/propuesta-1-2.md).
+        self.air_accel = float(physics.get("air_acceleration", 0.0))
+        self.ground_accel = float(physics.get("ground_acceleration", 0.0))
         self.tile = float(physics["tile_size"])
         self.coyote_s = float(physics["coyote_time_s"])
         jump_velocity = float(physics["jump_velocity"])
@@ -214,6 +229,19 @@ class Rules:
 
     def max_reach(self, speed):
         return self.reach(0.0, speed)
+
+    def standing_lag(self, t, speed):
+        """Px que va por detras, a los `t` s de despegar, un salto desde parado (aceleracion
+        air_acceleration hasta `speed`) frente al modelo de velocidad constante `speed`, mas
+        HEAD_MARGIN_PX (despegar un par de cuadros tarde o algo antes del borde de la celda)."""
+        if t <= 0.0:
+            return 0.0
+        if self.air_accel <= 0.0:
+            return HEAD_MARGIN_PX
+        t_full = speed / self.air_accel
+        if t < t_full:
+            return speed * t - 0.5 * self.air_accel * t * t + HEAD_MARGIN_PX
+        return speed * t_full - 0.5 * self.air_accel * t_full * t_full + HEAD_MARGIN_PX
 
 
 # --- Problemas ---
@@ -654,16 +682,36 @@ class World:
     def nodes(self):
         return [(c, r) for r in range(self.m.rows) for c in range(self.m.cols) if self.is_node(c, r)]
 
-    def simulate(self, x, y, vy, speed, x_target):
+    def simulate(self, x, y, vy, speed, x_target, head_lag=False, info=None):
         """Trayectoria con velocidad horizontal `speed` hacia x_target. Devuelve
-        (nodo_de_llegada, None) o (None, motivo)."""
+        (nodo_de_llegada, None) o (None, motivo).
+
+        head_lag (tolerancia de techo, 2026-10-16): al subir, la cabeza tambien se comprueba
+        donde estaria Isak si hubiera despegado desde parado (rules.standing_lag: acelera con
+        air_acceleration); si esa cabeza retrasada choca con un solido que la del modelo no toca
+        (la esquina de una losa), cuenta como golpe de techo. Bajo un techo plano no cambia nada
+        (las dos chocan a la vez). info (dict): recibe time (s en el aire), head_hit y traj
+        (lista de (x, y) por paso, para el plan del camino)."""
         m = self.m
         T = m.T
         g = m.rules.gravity
         gm = g * m.rules.fall_mult
         dt = SIM_DT
         bottom = m.rows * T + m.hh
+        direction = 1.0 if x_target > x else -1.0
+        x_start = x
+        steps = 0
+        traj = [] if info is not None and info.get("want_traj") else None
+        if info is not None:
+            info["traj"] = traj
+            info["time"] = 0.0
+            info["head_hit"] = False
         for _ in range(int(SIM_MAX_S / dt)):
+            steps += 1
+            if info is not None:
+                info["time"] = steps * dt
+            if traj is not None:
+                traj.append((x, y))
             # Horizontal.
             if abs(x_target - x) > EPS:
                 step = speed * dt
@@ -688,11 +736,24 @@ class World:
                 if self.collides(x, ny):
                     y = min(y, self.ceiling_feet(x, ny))
                     vy = 0.0
+                    if info is not None:
+                        info["head_hit"] = True
+                elif head_lag and speed > 0.0 and self._lagged_ceiling(
+                        x - direction * min(m.rules.standing_lag(steps * dt, speed), abs(x - x_start)), y, ny):
+                    lag_x = x - direction * min(m.rules.standing_lag(steps * dt, speed), abs(x - x_start))
+                    y = min(y, self.ceiling_feet(lag_x, ny))
+                    vy = 0.0
+                    if info is not None:
+                        info["head_hit"] = True
                 else:
                     y, vy = ny, nvy
             else:
                 landed = self._cross_support(x, y, ny)
                 if landed is not None:
+                    if traj is not None:
+                        traj.append((x, (landed[1] + 1) * T))
+                    if info is not None:
+                        info["land_x"] = x
                     return landed, None
                 if self.collides(x, ny):
                     # Esquina: la capsula resbala hacia fuera del solido.
@@ -715,6 +776,13 @@ class World:
             if y > bottom:
                 return None, "cae fuera del nivel"
         return None, "sin aterrizar"
+
+    def _lagged_ceiling(self, x, y, ny):
+        """Verdadero si la caja en `x` choca al subir de `y` a `ny` con un solido que esta por
+        encima de la cabeza (su borde de abajo no pasa de la cabeza en `y`): un techo, no una
+        pared al lado."""
+        head = y - self.m.hh
+        return any(bottom <= head + EPS for bottom in self._obstacles(x, ny))
 
     def _cross_support(self, x, y, ny):
         T = self.m.T
@@ -749,17 +817,21 @@ class World:
 
         order = {"walk": 0, "fall": 1, "jump": 2, "jump_run": 3}
 
-        def add(to, kind, h, v, x0, travel, rise, speed_name):
+        def add(to, kind, h, v, x0, travel, rise, speed_name, xt=None, vy0=0.0, time=0.0, land_x=None):
             key = (round(max(h, v), 6), round(h + v, 6), order[kind])
             old = best.get(to)
             if old is None or key < (round(max(old["h"], old["v"]), 6), round(old["h"] + old["v"], 6),
                                      order[old["kind"]]):
+                # xt, vy0 y time (no salen en el informe): objetivo horizontal de la trayectoria,
+                # velocidad vertical inicial y segundos en el aire (plan y camino exportado).
                 best[to] = {"to": to, "kind": kind, "h": h, "v": v, "x0": x0, "travel": travel,
-                            "rise": rise, "speed": speed_name}
+                            "rise": rise, "speed": speed_name, "xt": xt, "vy0": vy0, "time": time,
+                            "land_x": land_x}
 
         for d in (1, -1):
             if self.is_node(c + d, r):
-                add((c + d, r), "walk", 0.0, 0.0, (c + 0.5) * T, 0.0, 0.0, "walk")
+                add((c + d, r), "walk", 0.0, 0.0, (c + 0.5) * T, 0.0, 0.0, "walk", xt=(c + d + 0.5) * T,
+                    time=T / m.rules.walk_speed)
         for speed_name, speed in m.rules.speeds():
             for d in (1, -1):
                 edge_x = (c + 1) * T if d > 0 else c * T
@@ -777,7 +849,8 @@ class World:
                         x_target = x0 + d * 1e6 if xt is None else xt
                         if xt is not None and (xt - x0) * d < -EPS:
                             continue
-                        to, _ = self.simulate(x0, feet, -m.rules.jump_v0, speed, x_target)
+                        sim = {}
+                        to, _ = self.simulate(x0, feet, -m.rules.jump_v0, speed, x_target, head_lag=True, info=sim)
                         if to is None or to == node:
                             continue
                         rise = feet - (to[1] + 1) * T
@@ -786,7 +859,8 @@ class World:
                         v = max(0.0, rise) / m.rules.jump_height
                         if m.rules.reach(rise, speed) <= 0.0:
                             h = INF
-                        add(to, "jump" if speed_name == "walk" else "jump_run", h, v, x0, travel, rise, speed_name)
+                        add(to, "jump" if speed_name == "walk" else "jump_run", h, v, x0, travel, rise, speed_name,
+                            xt=x_target, vy0=-m.rules.jump_v0, time=sim.get("time", 0.0), land_x=sim.get("land_x"))
                 # Caidas desde el borde (sin saltar).
                 if not self.is_support(c + d, r + 1) and not self.collides(edge_x, feet):
                     for xt in targets:
@@ -794,14 +868,16 @@ class World:
                         if xt is not None and (xt - edge_x) * d < -EPS:
                             continue
                         start_x = edge_x + d * EPS * 10
-                        to, _ = self.simulate(start_x, feet, 0.0, speed, x_target)
+                        sim = {}
+                        to, _ = self.simulate(start_x, feet, 0.0, speed, x_target, info=sim)
                         if to is None or to == node:
                             continue
                         drop = (to[1] + 1) * T - feet
                         travel = self._travel(edge_x, to, d)
                         reach = m.rules.fall_reach(drop, speed)
                         h = (travel / reach if reach > 0 else INF) if travel > EPS else 0.0
-                        add(to, "fall", h, 0.0, edge_x, travel, -drop, speed_name)
+                        add(to, "fall", h, 0.0, edge_x, travel, -drop, speed_name, xt=x_target, time=sim.get("time", 0.0),
+                            land_x=sim.get("land_x"))
         return list(best.values())
 
     def _travel(self, x0, to, d):
@@ -982,6 +1058,12 @@ class Validator:
         T = m.T
         hit = m.catalog.get("exit_terminal", {}).get("hit_rect_px", [0, 0, T, 2 * T])
         last = main["stages"][-1]
+        end_state = last["state"]
+        if main["ok"]:
+            # Habilidades recogidas de paso (p. ej. un encuentro con Eco que no hizo falta abrir
+            # como puerta porque nada lo exigia antes de la terminal, como en una torre).
+            touched = self._touched_pickups(main)
+            end_state = end_state | touched
         terminals = []
         for obj in self.level.get("objects", []):
             if obj["type"] != "exit_terminal":
@@ -1000,7 +1082,7 @@ class Validator:
             for n in sorted(last["cost"], key=lambda n: (abs(n[0] - obj["x"]), last["cost"][n], n[1])):
                 if abs(n[0] - obj["x"]) > 3:
                     break
-                if m.can_open(gate, n, last["state"], use_laser=False):
+                if m.can_open(gate, n, end_state, use_laser=False):
                     source = n
                     break
             if source is None:
@@ -1008,6 +1090,31 @@ class Validator:
                                   % gate.label(), obj["y"], obj["x"], gate.label())
             terminals.append({"id": tid, "pulse_from": None if source is None else [source[1], source[0]]})
         self.result["exit_terminals"] = terminals
+
+    def _main_nodes(self, run):
+        """Nodos por los que pasa el camino de una progresion (en orden)."""
+        nodes = []
+        for stage in run["stages"]:
+            if stage["end"] is None:
+                continue
+            seg = path_to(stage["parent"], stage["end"])
+            nodes.append(stage["src"])
+            nodes.extend(e["to"] for _, e in seg)
+            if stage.get("relay"):
+                nodes.extend(e["to"] for _, e in stage["relay"]["path"])
+        return nodes
+
+    def _touched_pickups(self, run):
+        """gid de los ability_pickup / encuentros cuya celda toca el camino de `run`."""
+        out = set()
+        nodes = self._main_nodes(run)
+        for g in self.model.gates:
+            if g.kind != "pickup":
+                continue
+            cells = set(g.cells)
+            if any(body_cells(n) & cells for n in nodes):
+                out.add(g.gid)
+        return frozenset(out)
 
     def _check_pulse_source(self):
         """Regla 6d: de donde sale el pulso. Sin pulso al empezar, lo da el encuentro con Eco (o un
@@ -1018,6 +1125,12 @@ class Validator:
                 "encounter": [g.obj_id for g in sources if getattr(g, "encounter", False)]}
         self.result["pulse"] = info
         if m.pulse or not sources:
+            return
+        if m.is_vertical():
+            # Torre (2026-10-16, paso 10): el orden por columnas no tiene sentido en vertical. Una
+            # puerta que exija el pulso antes del encuentro deja sin camino a la meta (la busqueda
+            # no la abre sin pulso) y lo explica _explain_failure ("aun no se tiene").
+            info["vertical"] = True
             return
         first = min(g.col_span[0] for g in sources)
         info["available_from_col"] = first
@@ -1118,6 +1231,8 @@ class Validator:
             far = max(reached, key=lambda n: (n[0], -n[1]))
         state = last["state"]
         pending = [g for g in self.model.gates if g.gid not in state and not g.bypassable and g.kind != "pickup"]
+        near = (lambda g: abs(g.row - far[1]) <= 4) if self.model.is_vertical() else (
+            lambda g: g.col_span[0] <= far[0] + self.model.K + 4)
         for g in pending:
             if not g.openers:
                 what = {"bridge": "no tiene receptor", "popup": "no tiene boton de cerrar",
@@ -1130,7 +1245,7 @@ class Validator:
                 rep.error("%s necesita el pulso y aun no se tiene (lo da %s)" % (
                     g.label(), ", ".join(p.label() for p in self.model.gates
                                          if p.kind == "pickup" and p.ability == "pulse")), g.row, g.col, g.label())
-            elif g.col_span[0] <= far[0] + self.model.K + 4:
+            elif near(g):
                 rep.error("%s: el pulso no alcanza %s desde ninguna celda alcanzable antes de el"
                           % (g.label(), " ni ".join(o[4] for o in g.openers)), g.row, g.col, g.label())
         where = self.model.section_name(far[0], far[1]) or "sin tramo"
@@ -1443,7 +1558,7 @@ class Validator:
                 if m.laser_hits(g, node, by_node[node]):
                     g.laser_from = node
                     break
-            if g.open and g.col > first and g.laser_from is None:
+            if g.open and g.col > first and g.laser_from is None and not m.is_vertical():
                 self.report.warning("la Burbuja %s va tras el laser pero el laser no la alcanza desde ningun sitio"
                                     % g.obj_id, g.row, g.col, "Burbuja %s" % g.obj_id)
 
@@ -1588,7 +1703,10 @@ def format_text(path, result):
             item["id"], item["cell"][1], item["cell"][0], reach,
             "obligatoria" if item["mandatory"] else "opcional"))
     pulse = result.get("pulse")
-    if pulse and not pulse["from_start"] and pulse["given_by"]:
+    if pulse and not pulse["from_start"] and pulse["given_by"] and pulse.get("vertical"):
+        out.append("  pulso: no existe al empezar; lo da %s (torre: sin regla por columnas)" % (
+            ", ".join(pulse["given_by"])))
+    elif pulse and not pulse["from_start"] and pulse["given_by"]:
         out.append("  pulso: no existe al empezar; lo da %s (desde la columna %d)" % (
             ", ".join(pulse["given_by"]), pulse.get("available_from_col", -1)))
     margins = result.get("margins")

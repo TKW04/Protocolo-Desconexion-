@@ -3,7 +3,8 @@ docs/propuesta-1-2.md §10, 2026-10-16). No es un nivel del juego: genera en mem
 un nivel con la estructura de la torre del 1-2 (vestibulo abajo, pisos de alto fijo y
 azotea arriba con la terminal de salida), forjados con un hueco de plataformas de una
 via alternando de lado y, dentro de cada piso, repisas de una via en zigzag cada 2
-filas (subidas de 2 tiles) que se solapan una columna con la siguiente.
+filas (subidas de 2 tiles) que se solapan una columna con la siguiente; la penultima
+llega bajo el hueco para subir en vertical (tolerancia de techo, 2026-10-16).
 
 Por defecto mide 28 x 62 tiles como la torre del 1-2: azotea 0-7, cuatro pisos de 12
 filas (8-19, 20-31, 32-43, 44-55) y vestibulo 56-61.
@@ -49,6 +50,11 @@ def make_tower(floors=4, floor_h=12, roof_h=8, lobby_h=6, width=28, level_id="to
         put(floor_row, entry[0], entry[1], "-")
         steps = [(1 + 4 * k, 5 + 4 * k) for k in range(n)][::-1]
         for k, (c0, c1) in enumerate(steps):
+            if k == n - 2:
+                # La penultima repisa llega bajo el hueco (como tower_test): desde ella se sube en
+                # vertical a la ultima; el salto diagonal desde debajo del forjado se golpearia la
+                # cabeza con su esquina (tolerancia de techo del validador, 2026-10-16).
+                c0 -= 1
             if not leftwards:
                 c0, c1 = _mirror(c0, c1, width)
             put(floor_row - 2 * (k + 1), c0, c1, "-")

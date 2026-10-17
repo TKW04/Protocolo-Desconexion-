@@ -518,5 +518,65 @@ class VerticalLevelTest(unittest.TestCase):
         self.assertTrue(any("Isak no pasa de la fila" in m for m in messages(result)), messages(result))
 
 
+def tower_test_level():
+    return vl.load_json(os.path.join(ROOT, "data", "levels", "tower_test.json"))
+
+
+class TowerCeilingTest(unittest.TestCase):
+    """Tolerancia de techo y torre (2026-10-16, paso 10 de docs/propuesta-1-2.md §10): el salto
+    no puede rozar con la cabeza la esquina de una losa (el juego lo perdia: el validador
+    aceptaba un salto diagonal desde debajo del forjado); las reglas por columna no se exigen en
+    torres."""
+
+    def test_tower_test_climbs_under_the_hole_not_diagonally_under_the_slab(self):
+        result = vl.validate(tower_test_level())
+        self.assertTrue(result["ok"], messages(result))
+        steps = [(a["from"], a["to"]) for a in result["path"] if a["action"] == "jump"]
+        self.assertNotIn(([16, 22], [14, 23]), steps, "salto diagonal bajo el forjado del piso 3")
+        self.assertIn(([16, 23], [14, 23]), steps, "sube en vertical bajo el hueco")
+
+    def test_head_against_the_slab_corner_fails(self):
+        """Caso negativo: la repisa del piso 2 acaba bajo el forjado (columna 22) y el hueco empieza
+        en la 23: solo queda el salto diagonal que se golpea la cabeza."""
+        level = tower_test_level()
+        set_cell(level, 23, 17, ".")
+        result = vl.validate(level, check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Isak no sube de la fila 16" in m and "Piso 2" in m for m in messages(result)),
+                        messages(result))
+
+    def test_without_the_head_margin_the_diagonal_jump_was_accepted(self):
+        """Lo que hacia el validador antes (sin la cabeza retrasada): documenta la divergencia."""
+        level = tower_test_level()
+        set_cell(level, 23, 17, ".")
+        old = vl.HEAD_MARGIN_PX, vl.Rules.standing_lag
+        try:
+            vl.HEAD_MARGIN_PX = 0.0
+            vl.Rules.standing_lag = lambda self, t, speed: 0.0
+            result = vl.validate(level, check_schema=False)
+        finally:
+            vl.HEAD_MARGIN_PX, vl.Rules.standing_lag = old
+        self.assertTrue(result["ok"], messages(result))
+
+    def test_flat_low_ceiling_jumps_are_unchanged(self):
+        """Bajo un techo plano no cambia nada: el 1-1 (techo bajo del 3a) sigue igual."""
+        result = base_result()
+        self.assertTrue(result["ok"], messages(result))
+
+    def test_column_rule_of_the_encounter_does_not_apply_to_towers(self):
+        """Regla 6d (pulso antes del encuentro por columnas): en una torre no se exige. Con el
+        encuentro en las columnas 23-24 del vestibulo, la terminal de la azotea (columna 22) daba
+        error en el modelo horizontal aunque se llega a ella despues."""
+        level = tower_test_level()
+        level["abilities_available"]["pulse"] = False
+        level["objects"].append({"type": "eco_encounter", "x": 23, "y": 34,
+                                 "params": {"id": "eco_torre", "width_tiles": 2, "height_tiles": 5,
+                                            "eco_offset_tiles": [0, 2]}})
+        result = vl.validate(level, check_schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertTrue(result["pulse"].get("vertical"))
+        self.assertTrue(any(p.get("encounter") and p["mandatory"] for p in result["abilities"]["pickups"]))
+
+
 if __name__ == "__main__":
     unittest.main()
