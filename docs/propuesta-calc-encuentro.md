@@ -1,6 +1,6 @@
 # Encuentro con Calc: acertijo de la azotea del 1-2
 
-**Estado:** diseño del usuario del **2026-10-17**. Sustituye la opción A de `propuesta-1-2.md` §8 (Calc apagada junto a la terminal, Q `calc_off` y un pulso). Es el paso 14 de `propuesta-1-2.md` §10, junto con el recuerdo. **Tanda H1 hecha (2026-10-17):** sistemas, piezas, arte, sala de prueba `calc_test` y este documento. Pendientes: **H2** (integrarlo en el 1-2 y en el validador y el bot) y **H3** (el encuentro en el hub). Los textos de Eco y de Calc son **propuestas** hasta que el usuario los decida.
+**Estado:** diseño del usuario del **2026-10-17**. Sustituye la opción A de `propuesta-1-2.md` §8 (Calc apagada junto a la terminal, Q `calc_off` y un pulso). Es el paso 14 de `propuesta-1-2.md` §10, junto con el recuerdo. **Tanda H1 hecha (2026-10-17):** sistemas, piezas, arte, sala de prueba `calc_test` y este documento. **Tanda H2 hecha (2026-10-17):** el acertijo en la azotea del 1-2 real y en el validador, con el camino exportado (§10). Pendientes: **H3** (el encuentro en el hub) y el bot vertical (paso 15 del 1-2). Los textos de Eco y de Calc son **propuestas** hasta que el usuario los decida.
 
 ## 1. Idea
 
@@ -149,7 +149,7 @@ Pide un `speaker_style` por interlocutor en `speakers` (fuente, panel, velocidad
 | Tanda | Contenido | Estado |
 |---|---|---|
 | **H1** | Documento. Iconos en línea y `{puntos}`. `EcoGuide`. Piezas, Calc y el punto de carga con arte y SpriteFrames. Ayudas Q y fichas. Esquema y constructor. Sala `calc_test` probada de principio a fin. | **Hecha (2026-10-17)** |
-| **H2** | Integrar el acertijo en la azotea del 1-2 (ancla de las columnas 18-20; ampliar la azotea si hace falta). Modelar las piezas en el validador de alcanzabilidad y en el camino exportado (pulso de espaldas, láser permanente, Debug para la pared y el panel, espera de la carga y terminal con corriente). Bot vertical (paso 15). Capturas del 1-2. | Pendiente |
+| **H2** | Integrar el acertijo en la azotea del 1-2 (ampliada a 11 filas). Modelar las piezas en el validador de alcanzabilidad y en el camino exportado (pulso de espaldas, láser permanente, Debug para la pared y el panel, espera de la carga y terminal con corriente), con Calc desconocida y conocida. Capturas del 1-2. El bot vertical queda en el paso 15. | **Hecha (2026-10-17)**, §10 |
 | **H3** | Encuentro en el hub: Calc aparece al llegar tras `ally_teleported`, habla (líneas de §6), Eco se descuelga con su línea, `meet_ally("calc")` y se abre la tienda. Estilo LCD de Calc. | Pendiente |
 
 ## 8. Cambios en `propuesta-1-2.md` §paso 14
@@ -163,8 +163,40 @@ Pide un `speaker_style` por interlocutor en `speakers` (fuente, panel, velocidad
 ## 9. Preguntas abiertas (con recomendación)
 
 1. **¿Calc apagada se ve desde el principio en la azotea, al 3 %?** *Recomendación:* sí (H1 lo hace así), sin Q, porque es historia. Deja claro que hay que cargarla.
-2. **¿Dónde va el cuarto en el 1-2 real?** *Recomendación:* a la derecha de la terminal, con la azotea ampliada 2-3 filas hacia arriba. La azotea mide hoy 7 filas: el cuarto con tres alturas de plataformas necesita unas 8.
+2. ~~**¿Dónde va el cuarto en el 1-2 real?**~~ **Resuelta en H2** con la recomendación: a la derecha de la terminal, con la azotea ampliada hacia arriba, pero **4 filas** (§10).
 3. **¿El panel oculto queda marcado tras verlo una vez con el Debug?** *Recomendación:* sí (H1). Pedir el Debug y el pulso a la vez sería injusto con dificultad 2.
 4. **¿Debe Eco reaccionar a cada pulso del interruptor?** *Recomendación:* no. Bastan las luces del panel y del cuarto, para no llenar la pantalla de texto.
 5. **Línea 7 de Eco («aplicación obsoleta»): ¿demasiado engreída?** *Recomendación:* mantenerla. Es coherente con §12.3 («Eco los llama aplicaciones obsoletas») y prepara la «Resta» de H3.
 6. **Estilo LCD de Calc: ¿fuente nueva monoespaciada o los dígitos del HUD?** *Recomendación:* los dígitos del HUD (5x7) para las cifras y la fuente de textos con avance fijo para las letras. No hace falta una fuente nueva.
+
+## 10. Tanda H2 hecha (2026-10-17): la azotea del 1-2 y el validador
+
+**Cómo creció la azotea.** Medía 7 filas (0-6) y el cuarto no cabía: con tres alturas de repisas (subidas de 2 tiles, el máximo del validador) y 16 px de holgura sobre la cabeza (`validation.ceiling_margin_px`), el techo tiene que quedar 4 filas por encima de la repisa alta. Opción de menor riesgo: **4 filas nuevas ENCIMA** de la azotea y todas las de debajo bajan 4 (un script desplaza el grid, los objetos, los enemigos, los puntos de sincronización, las bandas `y_from`/`y_to`, `zone` y `cable`; las notas del JSON también). Los pisos 1-4, sus objetos, la economía y `sync_1`/`sync_2` no cambian salvo el desplazamiento. La torre pasa de 28 × 62 a **28 × 66**; bandas: azotea 0-10, piso 4 11-21, piso 3 22-35, piso 2 36-47, piso 1 48-59 y vestíbulo 60-65. Con 11 filas (704 px) la azotea cabe entera en pantalla y la cámara de torre no se mueve dentro de ella; `camera.limits: grid` sigue el alto nuevo. La fachada no depende del alto (se repite en vertical y las pestañas siguen a los tramos): no hizo falta regenerarla y su validador pasa. Ampliar hacia un lado no era posible (28 columnas, paredes en la 0 y la 27).
+
+**Diseño final** (`data/levels/1-2.json`; filas de pie 9, suelo 10):
+
+| Pieza | Celda | Notas |
+|---|---|---|
+| Llegada | columnas 1-2 | el hueco de la izquierda sube del piso 4 a la azotea |
+| Punto de atención | (4, 9) | el de la azotea de siempre |
+| `cargador_3` | (6, 9) | +50, cada 10 s (el tercer cargador del 1-2) |
+| `terminal_azotea` | (10, 8), G (10, 9) | `requires_power`, `power_source` `dock_calc` (antes `terminal_1_2`) |
+| `calc` | (11, 9) | al 3 %, junto a la pared; `path` (11, 9) → (12, 9) → dock |
+| Pared del fondo | columna 12 | maciza en las filas 0-7; `pared_glitch` en (12, 8-9), puerta con `interruptor_luz` |
+| `cuarto` | columnas 13-26, filas 1-9 | 14 × 9 (en `calc_test`, 17 × 9) |
+| `interruptor_luz` | (14, 9) | 3 pulsos de espaldas |
+| `dock_calc` | (16-17, 9) | 3 s de carga |
+| Repisas de una vía | fila 8 col. 19-21; fila 6 col. 23-24; fila 4 col. 25-26 | subidas con 312, 184 y 56 px de holgura medidos con el Isak real |
+| `interruptor_laser` | (26, 7) | pared derecha, a la altura del celular solo desde la repisa baja |
+| `panel_oculto` | (26, 3) | sobre la repisa alta; 1 pulso de espaldas |
+| `guia_calc` | (1, 1) | guion `calc_rooftop` |
+
+**Validador** (`tools/validate_level.py`, `tools/level_plan.py`; regla 9 de la skill `level-builder`): la terminal con `requires_power` solo cuenta como meta con su punto de carga hecho; la pared con glitch se cruza con el Debug (el plan espera su disolución: 1 s real) y es puerta con el interruptor; cada pulso al interruptor o al panel deja a Isak de espaldas `pose_s` (0,45 s); el panel oculto exige el Debug disponible y estar a 256 px (el plan lo enciende 0,2 s y lo apaga); el interruptor láser solo con el láser y **no puede alcanzarse andando** (error de diseño); el punto de carga se arma con sus tres piezas y la espera de Calc es fija (despertar 0,3 + caminar 4,9 + carga 3,0 + cara despierta 0,8 + vórtice 1,5 ≈ **10,6 s**, la misma que mide la prueba GUT); la energía cuenta el cargador de la azotea. Con Calc conocida (`--allies calc`, o el segundo pase automático) todo arranca hecho y el camino va directo a la terminal.
+
+**Márgenes del camino validado** (Calc desconocida): el acertijo dura unos 21 s de plan (de los 139 s del camino, frente a 110,5 s con Calc conocida); 3 + 1 pulsos de espaldas, 1 disparo desde la repisa baja (fila 7, columna 19), Debug dos veces (pared 1,6 s activo, 32 de energía; panel 0,2 s, 4); energía en la azotea: 100 tras `cargador_3`, mínimo 54 (la mínima del camino sigue siendo 22, en el piso 2). Subidas de la azotea con 16 px o más de holgura y 8 px de esquina (`tests/test_level_climbs.gd`).
+
+**Desvíos respecto a H1 y a §9:** azotea +4 filas (no 2-3); Calc junto a la pared (columna 11) para acortar su paseo; el cuarto mide 14 columnas (en `calc_test`, 17); la terminal se llama `terminal_azotea`; el tiempo de espaldas del interruptor es el `pose_s` del catálogo (0,45 s), por decidir si baja a 0,3 s. `calc_test` lleva ahora `validation` (láser y Debug exigidos) y valida con el acertijo completo.
+
+**Pruebas y capturas:** `tests/test_level_1_2.py` (azotea, plan del acertijo, Calc conocida, camino exportado en los dos casos), `tests/test_validate_level.py` (`CalcPuzzleTest`: casos negativos de interruptor láser alcanzable andando o fuera de línea, panel sin Debug o lejos, sin energía, repisa sin holgura y terminal sin corriente), `tests/test_level_1_2_rooftop.gd` (la secuencia completa con el Isak real, cámara, muerte a mitad del acertijo, intento nuevo, terminal y nivel completado, Calc conocida, economía) y `tests/test_level_climbs.gd`. Capturas: `tools/render_level_1_2.gd` (pisos y azotea) y `tools/render_level_1_2_rooftop.gd` (cada paso del acertijo en el nivel real); mapa con las piezas nuevas en `tools/render_level_map.py`.
+
+**Qué queda para H3:** Calc aparece en el hub al llegar tras `ally_teleported` (el gancho ya lo emite la azotea del 1-2), sus líneas de §6 con estilo LCD, la línea de Eco que se descuelga, `meet_ally("calc")` y la tienda abierta. Además, el bot vertical (paso 15 del 1-2) que seguirá el camino exportado con las acciones nuevas.
