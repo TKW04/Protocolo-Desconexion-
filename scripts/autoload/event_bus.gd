@@ -158,8 +158,11 @@ signal ally_met(ally: StringName)
 
 ## El asistente `ally` se ha ido al hub por un vortice desde un nivel
 ## (2026-10-17, tanda H1 del paso 14 del 1-2: Calc tras cargarse en la azotea,
-## CalcActor). NO lo marca como conocido: es el gancho del encuentro en el hub
-## (tanda H3), que llamara a GameState.meet_ally al verla alli.
+## CalcActor). NO lo marca como conocido: GameState lo apunta como llegada
+## pendiente de la sesion (ally_arrivals) y el hub hace el encuentro (tanda H3,
+## CalcIntro), que llama a GameState.meet_ally al terminar. En pruebas se provoca
+## emitiendo esta senal (o con GameState.note_ally_teleported); en builds de
+## depuracion, con `-- --ally-teleported=calc`.
 @warning_ignore("unused_signal")
 signal ally_teleported(ally: StringName)
 

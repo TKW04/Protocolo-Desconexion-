@@ -25,10 +25,17 @@
 ## ASISTENTES (2026-10-16, docs/propuesta-asistentes-y-vidas.md §2.2, §2.3 y §8):
 ## una estacion con requires_ally esta apagada (HubStation.set_powered) hasta que
 ## GameState conoce a ese asistente (EventBus.ally_met la enciende al momento):
-## Notas hasta su presentacion y Calc hasta su encuentro (final del 1-2, aun sin
-## implementar). La primera vez que Isak llega al hub (Notas desconocida), al
-## terminar la llegada empieza la presentacion de Notas (NotasIntro) con el
-## cuadro de texto del hub (EcoTextBox, hijo "EcoTextBox").
+## Notas hasta su presentacion y Calc hasta su encuentro. La primera vez que
+## Isak llega al hub (Notas desconocida), al terminar la llegada empieza la
+## presentacion de Notas (NotasIntro) con el cuadro de texto del hub
+## (EcoTextBox, hijo "EcoTextBox").
+## ENCUENTRO CON CALC (2026-10-17, tanda H3 del paso 14 del 1-2): si Calc se
+## teletransporto al hub en esta sesion (azotea del 1-2; GameState.
+## is_ally_arrival_pending) y no es conocida, Calc espera despierta en su
+## estacion (sin tienda) y, al terminar la llegada (tras la presentacion de
+## Notas si tambien toca), empieza CalcIntro: pausa, lineas de Calc (estilo LCD)
+## con la de Eco entre medias y meet_ally("calc"). Con un game over no hay
+## encuentro (el rollback pierde la llegada pendiente).
 ## Carpetas (paso 7; seccion folders y worlds): una FolderStation por mundo
 ## sobre su repisa (shelf_height_px sobre el dock, alcanzable de un salto). Al
 ## elegir un subnivel, Isak (de espaldas) se va por el vortice de salida
@@ -102,6 +109,7 @@ var _notas_intro: NotasIntro
 var _papelera: Papelera
 var _charger: Charger
 var _game_over_intro: GameOverIntro
+var _calc_intro: CalcIntro
 
 
 func _enter_tree() -> void:
@@ -154,6 +162,14 @@ func _ready() -> void:
 		_notas_intro.station = get_notas()
 		_notas_intro.text_box = _text_box
 		add_child(_notas_intro)
+	if rollback_report.is_empty() and CalcIntro.is_pending():
+		_calc_intro = CalcIntro.new()
+		_calc_intro.name = "CalcIntro"
+		_calc_intro.station = get_calc()
+		_calc_intro.text_box = _text_box
+		add_child(_calc_intro)
+		if _calc_intro.station != null:
+			_calc_intro.station.set_arrived(true)
 	add_to_group(QuitGuard.SAVE_STATION_GROUP)
 	if bool(_room.get("refill_on_enter", true)):
 		GameState.refill_debug_energy()
@@ -181,6 +197,9 @@ func can_save_now() -> bool:
 ## de estacion o carpeta abierto.
 func blocks_pause_menu() -> bool:
 	if not _arrived or not _entering_level.is_empty():
+		return true
+	var calc_intro: CalcIntro = get_calc_intro()
+	if calc_intro != null and calc_intro.is_running():
 		return true
 	if _isak == null or not is_instance_valid(_isak) or _isak.is_warping() or _isak.is_facing_back():
 		return true
@@ -218,7 +237,12 @@ func get_notas_intro() -> NotasIntro:
 	return _notas_intro if _notas_intro != null and is_instance_valid(_notas_intro) else null
 
 
-## Cuadro de texto del hub (presentacion de Notas).
+## Encuentro con Calc (null si no tocaba al entrar).
+func get_calc_intro() -> CalcIntro:
+	return _calc_intro if _calc_intro != null and is_instance_valid(_calc_intro) else null
+
+
+## Cuadro de texto del hub (presentacion de Notas y encuentro con Calc).
 func get_text_box() -> EcoTextBox:
 	return _text_box
 
@@ -360,8 +384,17 @@ func _on_arrival_finished() -> void:
 		game_over.start()
 		return
 	var intro: NotasIntro = get_notas_intro()
-	if intro != null:
-		intro.start()
+	if intro != null and intro.start():
+		# El encuentro con Calc, si toca, despues de la presentacion de Notas.
+		intro.finished.connect(_start_calc_intro, CONNECT_ONE_SHOT)
+		return
+	_start_calc_intro()
+
+
+func _start_calc_intro() -> void:
+	var calc_intro: CalcIntro = get_calc_intro()
+	if calc_intro != null:
+		calc_intro.start()
 
 
 ## Un asistente recien conocido enciende sus estaciones (requires_ally).

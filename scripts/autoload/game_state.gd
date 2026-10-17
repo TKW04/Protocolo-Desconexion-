@@ -89,9 +89,14 @@ const TRASH_POWER_BANK_CHARGE: String = "power_bank_charge"
 const TRASH_UPGRADES: String = "upgrades"
 const TRASH_ABILITIES: String = "abilities"
 ## Argumento de usuario de las builds de depuracion que da por conocido un
-## asistente al arrancar (p. ej. `-- --meet-ally=calc`): hasta que exista el
-## encuentro con Calc al final del 1-2, es la forma de probar la tienda del hub.
+## asistente al arrancar (p. ej. `-- --meet-ally=calc`): abre la tienda de Calc
+## sin pasar por su encuentro.
 const DEBUG_MEET_ALLY_ARG: String = "--meet-ally="
+## Argumento de usuario de las builds de depuracion que hace como si el
+## asistente acabara de teletransportarse al hub (p. ej. `-- --start-level=hub
+## --ally-teleported=calc`): sin conocerlo, la siguiente llegada al hub
+## reproduce su encuentro (CalcIntro). Igual que EventBus.ally_teleported.
+const DEBUG_ALLY_TELEPORTED_ARG: String = "--ally-teleported="
 const SAVE_PATH_DEFAULT: String = "user://save.json"
 ## Ruta de guardado de las pruebas GUT (nunca el save real del usuario).
 const SAVE_PATH_TESTS: String = "user://test_save.json"
@@ -201,6 +206,14 @@ var nickname: String = NICKNAME_DEFAULT
 ## Asistentes ya conocidos (id de ALLIES -> true; v3). Sustituye a eco_met y a
 ## hub_tutorial_done (= "notas"). Registro: no marca "sin guardar" por si solo.
 var allies_met: Dictionary[StringName, bool] = {}
+## Asistentes que se han teletransportado al hub en esta SESION y aun no se han
+## encontrado alli (id -> true; 2026-10-17, tanda H3 del paso 14 del 1-2): lo
+## apunta EventBus.ally_teleported (Calc al irse de la azotea del 1-2) y lo
+## consume la llegada al hub (HubRoom: encuentro con Calc, CalcIntro). NO se
+## guarda (no va en save.json): si se cierra el juego antes de llegar al hub, el
+## asistente sigue sin conocerse y el 1-2 repite su acertijo. Lo vacian
+## reset_progress y apply_rollback (un game over pierde el intento).
+var ally_arrivals: Dictionary[StringName, bool] = {}
 ## Tipos de ayuda con Q ya aprendidos (id de data/help.json -> true; v3). No
 ## marca "sin guardar": va a disco con la siguiente copia (como seen_notices).
 var learned_help: Dictionary[StringName, bool] = {}
@@ -309,8 +322,10 @@ func _ready() -> void:
 	GameSettings.use_path(settings, settings == GameSettings.PATH_TESTS or settings == GameSettings.PATH_TOOLS)
 	if not is_running_tests() and not is_running_script():
 		install_quit_guard()
+	EventBus.ally_teleported.connect(_on_ally_teleported)
 	if OS.is_debug_build():
 		apply_debug_meet_args(OS.get_cmdline_user_args())
+		apply_debug_teleport_args(OS.get_cmdline_user_args())
 
 
 ## Builds de depuracion: cada `--meet-ally=<id>` de `args` da por conocido ese
@@ -323,6 +338,43 @@ func apply_debug_meet_args(args: PackedStringArray) -> Array[StringName]:
 			if ALLIES.has(ally) and meet_ally(ally):
 				met.append(ally)
 	return met
+
+
+## Builds de depuracion: cada `--ally-teleported=<id>` de `args` apunta ese
+## asistente como recien teletransportado al hub (como EventBus.ally_teleported).
+## Devuelve los que se apuntaron.
+func apply_debug_teleport_args(args: PackedStringArray) -> Array[StringName]:
+	var out: Array[StringName] = []
+	for arg: String in args:
+		if arg.begins_with(DEBUG_ALLY_TELEPORTED_ARG):
+			var ally := StringName(arg.trim_prefix(DEBUG_ALLY_TELEPORTED_ARG))
+			if note_ally_teleported(ally):
+				out.append(ally)
+	return out
+
+
+## Apunta que `ally` se teletransporto al hub (sesion). Falso si no existe o ya
+## es conocido (no hay encuentro que esperar).
+func note_ally_teleported(ally: StringName) -> bool:
+	if not ALLIES.has(ally) or allies_met.has(ally):
+		return false
+	ally_arrivals[ally] = true
+	return true
+
+
+## `ally` espera en el hub a que Isak lo encuentre (teletransportado en esta
+## sesion y aun no conocido).
+func is_ally_arrival_pending(ally: StringName) -> bool:
+	return ally_arrivals.has(ally) and not allies_met.has(ally)
+
+
+## Quita la llegada pendiente de `ally` (el hub ya hizo el encuentro).
+func clear_ally_arrival(ally: StringName) -> void:
+	ally_arrivals.erase(ally)
+
+
+func _on_ally_teleported(ally: StringName) -> void:
+	note_ally_teleported(ally)
 
 
 func _process(delta: float) -> void:
@@ -638,6 +690,7 @@ func reset_progress() -> void:
 	found_secrets.clear()
 	nickname = NICKNAME_DEFAULT
 	allies_met.clear()
+	ally_arrivals.clear()
 	learned_help.clear()
 	lives_max = LIVES_MAX_DEFAULT
 	play_time_s = 0.0
@@ -1183,6 +1236,8 @@ func apply_rollback(reason: StringName = ROLLBACK_GAME_OVER) -> Dictionary:
 		push_error("GameState: rollback desconocido '%s'" % reason)
 		return {}
 	var keep_allies: Dictionary = allies_met.duplicate()
+	# Lo no guardado se pierde, tambien una llegada al hub aun sin encuentro.
+	ally_arrivals.clear()
 	var keep_nickname: String = nickname
 	var keep_help: Dictionary = learned_help.duplicate()
 	var keep_pulse: bool = obtained_abilities.has(ABILITY_PULSE)
