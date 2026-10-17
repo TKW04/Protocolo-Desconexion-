@@ -20,6 +20,10 @@
 	"speakers": {
 		"notas": {"name": "Notas", "icon": "res://assets/sprites/hub/icons/icon_notas_00.png", "color": "#3dfff5"}
 	},
+	"_inline_notes": "Marcadores de los textos (2026-10-17, tanda H1 del paso 14 del 1-2): {apodo} = apodo de la partida (al poner la linea en cola); {puntos} = saldo ACTUAL de puntos de atencion (GameState.attention_points, al empezar a escribirse la linea); {icono:<id>} = icono en linea: se sustituye por el glifo `glyph` de inline_icons (en la fuente de textos tiene el ancho del icono y dibuja su silueta en blanco, por si no hay cuadro) y el cuadro dibuja encima el PNG `asset` (de assets), alineado con la altura de las mayusculas (offset_px desde la esquina del glifo) y solo cuando la maquina de escribir ya lo escribio. Un id desconocido se quita del texto (aviso). Lo usan el cuadro de los niveles y el del hub (la misma escena).",
+	"inline_icons": {
+		"atencion": {"glyph": "◆", "asset": "inline_attention", "offset_px": [0, 3]}
+	},
 	"confirm_hint_text": "▼ [Espacio]",
 	"confirm_hint_blink_hz": 2.0,
 	"font": "res://assets/sprites/ui/text_font.fnt",
@@ -31,6 +35,7 @@
 	},
 	"assets": {
 		"panel": {"path": "res://assets/sprites/ui/eco_text_panel.png", "frame_size": [16, 16], "columns": 1, "rows": 1},
-		"icon": {"path": "res://assets/sprites/ui/eco_icon.png", "frame_size": [16, 16], "columns": 1, "rows": 1}
+		"icon": {"path": "res://assets/sprites/ui/eco_icon.png", "frame_size": [16, 16], "columns": 1, "rows": 1},
+		"inline_attention": {"path": "res://assets/sprites/ui/eco_inline_attention.png", "frame_size": [8, 8], "columns": 1, "rows": 1}
 	}
 }

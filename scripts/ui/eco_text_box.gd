@@ -26,6 +26,13 @@
 ## cambia nombre, icono y color del nombre para esa linea. Las lineas de otros
 ## no emiten EventBus.eco_line_started / eco_line_finished (Eco no las «dice»);
 ## todas emiten las senales propias line_started / line_finished.
+## MARCADORES (2026-10-17, tanda H1 del paso 14 del 1-2; TextMarkers): {apodo}
+## al encolar; {puntos} (saldo actual de puntos de atencion) e {icono:<id>} al
+## empezar a escribirse la linea. El icono en linea es un glifo de la fuente con
+## su ancho (inline_icons de data/eco_text_box.json) sobre el que el cuadro pone
+## el sprite (TextureRect hijo de Body), alineado con la altura de las
+## mayusculas; sale cuando la maquina de escribir llega a el. Igual en el hub
+## (misma escena).
 ## Pixel base como el HUD: Frame se maqueta en pixeles de arte y se escala
 ## x pixel_scale (entero).
 class_name EcoTextBox
@@ -80,6 +87,8 @@ var _hint_time: float = 0.0
 var _hint: Label
 ## Quien dice la linea actual (vacio = Eco).
 var _speaker_id: StringName = &""
+## Iconos en linea de la linea actual: {node: TextureRect, index: posicion en _wrapped, id}.
+var _inline: Array[Dictionary] = []
 
 @onready var _frame: Control = $Frame
 @onready var _panel: NinePatchRect = $Frame/Panel
@@ -298,6 +307,42 @@ func get_confirm_hint_text() -> String:
 	return _hint.text
 
 
+## Iconos en linea de la linea actual (TextureRect hijos de Body, en orden).
+func get_inline_icons() -> Array[TextureRect]:
+	var out: Array[TextureRect] = []
+	for icon: Dictionary in _inline:
+		out.append(icon["node"] as TextureRect)
+	return out
+
+
+## Id del icono en linea `i` de la linea actual.
+func get_inline_icon_id(i: int) -> StringName:
+	return StringName(_inline[i]["id"]) if i >= 0 and i < _inline.size() else &""
+
+
+## Rectangulo del icono en linea `i` en pixeles de pantalla.
+func get_inline_icon_rect(i: int) -> Rect2:
+	var node := _inline[i]["node"] as TextureRect
+	return Rect2((_panel.position + _body.position + node.position) * _frame.scale, node.size * _frame.scale)
+
+
+## Rectangulo (pixeles de pantalla) del caracter `index` del texto partido: donde
+## la fuente dibuja el glifo (pruebas de alineacion del icono en linea).
+func get_glyph_rect(index: int) -> Rect2:
+	var line: int = 0
+	var start: int = 0
+	for i: int in _lines.size():
+		if index < start + _lines[i].length():
+			line = i
+			break
+		start += _lines[i].length() + 1
+	var ch: String = _wrapped.substr(index, 1)
+	var x: float = _width(_font, _lines[line].substr(0, index - start), _config.font_size)
+	var size := Vector2(_width(_font, ch, _config.font_size), _line_height())
+	return Rect2((_panel.position + _body.position + Vector2(x, line * _line_height())) * _frame.scale,
+		size * _frame.scale)
+
+
 ## Rectangulo de la indicacion en pixeles de pantalla.
 func get_confirm_hint_rect() -> Rect2:
 	return Rect2((_panel.position + _hint.position) * _frame.scale, _hint.size * _frame.scale)
@@ -342,10 +387,11 @@ func _start_next() -> void:
 		_hold_pause()
 	else:
 		_release_pause()
-	_text = item["text"]
+	_text = TextMarkers.apply(String(item["text"]), _config.inline_icons)
 	_apply_speaker(StringName(item.get("speaker", &"")))
 	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
 	_wrapped = LINE_BREAK.join(_lines)
+	_build_inline_icons()
 	_current_duration = float(item["duration_s"])
 	_hold_s = _config.hold_time(_text.length(), _current_duration)
 	_type_time = 0.0
@@ -382,6 +428,7 @@ func _clear_line() -> void:
 	_text = ""
 	_wrapped = ""
 	_lines = []
+	_clear_inline_icons()
 	_set_typed(0)
 
 
@@ -426,6 +473,8 @@ func _set_typed(count: int) -> void:
 	_typed = count
 	# Los saltos de linea ocupan el lugar de un espacio: el corte es estable.
 	_body.text = _wrapped.substr(0, count)
+	for icon: Dictionary in _inline:
+		(icon["node"] as TextureRect).visible = int(icon["index"]) < count
 
 
 func _fade_in_alpha() -> float:
@@ -557,6 +606,50 @@ func panel_width_for(lines: PackedStringArray) -> int:
 	for line: String in lines:
 		widest = maxf(widest, _width(_font, line, c.font_size))
 	return clampi(_text_left() + ceili(widest) + c.padding_px, c.min_width_px, c.width_px)
+
+
+## Pone un TextureRect por cada glifo de icono en linea del texto partido
+## (ocultos hasta que la maquina de escribir llega a ellos).
+func _build_inline_icons() -> void:
+	_clear_inline_icons()
+	if _config.inline_icons.is_empty():
+		return
+	var glyphs: Dictionary = TextMarkers.glyph_map(_config.inline_icons)
+	var start: int = 0
+	var line_h: int = _line_height()
+	for li: int in _lines.size():
+		var line: String = _lines[li]
+		for ci: int in line.length():
+			var ch: String = line.substr(ci, 1)
+			if not glyphs.has(ch):
+				continue
+			var id: StringName = glyphs[ch]
+			var info: Dictionary = _config.inline_icons[id]
+			var texture: Texture2D = _config.asset_texture(StringName(String(info.get("asset", ""))))
+			if texture == null:
+				continue
+			var offset: Array = info.get("offset_px", [0, 0])
+			var rect := TextureRect.new()
+			rect.name = "InlineIcon%d" % _inline.size()
+			rect.texture = texture
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			rect.stretch_mode = TextureRect.STRETCH_KEEP
+			rect.size = texture.get_size()
+			rect.position = Vector2(_width(_font, line.substr(0, ci), _config.font_size) + float(offset[0]),
+				li * line_h + float(offset[1]))
+			rect.visible = false
+			_body.add_child(rect)
+			_inline.append({"node": rect, "index": start + ci, "id": id})
+		start += line.length() + 1
+
+
+func _clear_inline_icons() -> void:
+	for icon: Dictionary in _inline:
+		var node: Node = icon["node"]
+		if is_instance_valid(node):
+			node.get_parent().remove_child(node)
+			node.queue_free()
+	_inline.clear()
 
 
 func _on_eco_line_requested(text: String, duration_s: float, important: bool) -> void:

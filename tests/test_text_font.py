@@ -98,6 +98,11 @@ def game_strings():
     for entry in load_json(os.path.join(ROOT, "data", "help.json"))["types"].values():
         texts.append(entry["title"])
         texts.append(entry["text"].replace("{apodo}", ""))
+    # Guiones de Eco (data/eco_guides.json, 2026-10-17): lineas sin los marcadores {..}.
+    for guide in load_json(os.path.join(ROOT, "data", "eco_guides.json"))["guides"].values():
+        for step in guide["steps"]:
+            if "text" in step:
+                texts.append(re.sub(r"\{[a-z_]+(:[a-z_]+)?\}", "", step["text"]))
     # Menu de pausa (data/pause_menu.json): todos sus textos sin las marcas {..}.
     pause = load_json(os.path.join(ROOT, "data", "pause_menu.json"))
     texts.extend(re.sub(r"\{[a-z_]+\}", "", v) for k, v in pause["texts"].items() if not k.startswith("_"))

@@ -134,6 +134,9 @@ PUNCT = {
     "[": ["##", "#.", "#.", "#.", "#.", "#.", "#.", "##"],
     "]": ["##", ".#", ".#", ".#", ".#", ".#", ".#", "##"],
     "▼": ["....."] * 3 + ["#####", ".###.", "..#..", "....."],
+    # Hueco del icono en linea del punto de atencion (2026-10-17, marcador {icono:atencion} de
+    # data/eco_text_box.json): el ancho del icono; el cuadro de Eco dibuja encima el rombo ambar.
+    "◆": ["...#...", "..###..", ".#####.", "#######", ".#####.", "..###..", "...#..."],
 }
 
 # --- Marcas diacriticas: (filas, fila de inicio en la celda para mayuscula, para minuscula). ---

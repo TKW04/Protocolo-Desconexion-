@@ -8,6 +8,10 @@ Rutas y cuadros: data/eco_text_box.json -> assets. Solo colores de mundo1.gpl, a
   eco_icon.png        16x16, esfera de Eco (docs 12.1: luz blanca y azul con un arco de
                       pixeles que hace de sonrisa): halo resplandor, anillo borde_luz,
                       nucleo banner_blanco y sonrisa en resplandor
+  eco_inline_attention.png  8x8, icono EN LINEA del punto de atencion (2026-10-17, tanda H1 del
+                      paso 14 del 1-2): rombo de 7x7 en ambar / ambar_sombra (la forma del icono
+                      del HUD) que el cuadro dibuja sobre el glifo «◆» de la fuente de textos
+                      (marcador {icono:atencion}; inline_icons de data/eco_text_box.json)
   _eco_text_box_preview_x8.png  vista ampliada x8 (no la usa el juego)
 
 Uso: python3 tools/gen_eco_text_box.py
@@ -54,6 +58,20 @@ ICON = [
     "................",
 ]
 
+# Icono en linea del punto de atencion (8x8; el rombo ocupa 7x7 arriba a la izquierda, como el
+# glifo «◆» de la fuente: x 0-6, filas 3-9 de la celda). 'a' ambar, 'b' ambar_sombra.
+INLINE_KEY = {".": None, "a": "ambar", "b": "ambar_sombra"}
+INLINE_ATTENTION = [
+    "...a....",
+    "..aaa...",
+    ".aaaab..",
+    "aaabaab.",
+    ".baaab..",
+    "..bab...",
+    "...b....",
+    "........",
+]
+
 
 def load_spec():
     with open(DATA, encoding="utf-8") as fh:
@@ -94,6 +112,17 @@ def draw_icon(spec):
     return img
 
 
+def draw_inline(spec, rows):
+    fw, fh = spec["frame_size"]
+    assert len(rows) == fh and all(len(r) == fw for r in rows)
+    img = Image.new("RGBA", (fw, fh), ga.CLEAR)
+    for y, row in enumerate(rows):
+        for x, v in enumerate(row):
+            if INLINE_KEY[v]:
+                img.putpixel((x, y), P[INLINE_KEY[v]])
+    return img
+
+
 def main():
     data = load_spec()
     assets = data["assets"]
@@ -101,6 +130,7 @@ def main():
     icon = draw_icon(assets["icon"])
     panel.save(ga.res_to_path(assets["panel"]["path"]))
     icon.save(ga.res_to_path(assets["icon"]["path"]))
+    draw_inline(assets["inline_attention"], INLINE_ATTENTION).save(ga.res_to_path(assets["inline_attention"]["path"]))
     # Vista: panel estirado a 64x24 con el icono dentro, sobre el cielo.
     m = data["panel_margin_px"]
     w, h = 64, 24
