@@ -1,0 +1,39 @@
+{
+	"_notes": "Guiones propios de Eco (EcoGuide, scripts/levels/eco_guide.gd; tipo eco_guide de data/world1_objects.json; 2026-10-17, tanda H1 del paso 14 de docs/propuesta-1-2.md, diseno en docs/propuesta-calc-encuentro.md). Acciones de Eco que NO son la ayuda con Q: momentos de historia, asi que salen aunque las ayudas esten ocultas. guides: id -> {steps: [...]}, en orden. Cada paso {do, ...}: wait_near {object, radius_tiles}, wait_inside {object} (Isak dentro de get_room_rect de la pieza), wait_done {object} (CalcRoom.is_done), wait_ability {ability: pulse | laser | debug}, wait_s {seconds}, wait_quiet {max_s} (espera a que el cuadro de texto quede libre, como mucho max_s = 15 s: las lineas no se amontonan y Eco no se va antes de que se lean), fly {object | cell, offset_px (por defecto [0, -72] desde el centro de la pieza)}, back, line {text, important (por defecto false: no pausa, en cola), duration_s}, point_help {object, radius_tiles, text} (deja que salga la Q de la pieza o, si no va a salir, Eco vuela y dice text). object = id de una pieza del nivel (CalcRoom). Los textos son PROPUESTA (voz de Eco: servicial, algo engreida, corporativa; nunca miente, solo omite: nunca dice «usa el Debug») y admiten {apodo}, {puntos} e {icono:<id>}. El esquema (tools/validate_level_schema.py) comprueba que el guion existe, las acciones y que cada object es un id del nivel.",
+	"guides": {
+		"calc_rooftop": {
+			"_notes": "Azotea del 1-2: la terminal sin corriente y Calc al 3 %. Ids de las piezas (los mismos en data/levels/calc_test.json y, en la tanda H2, en el 1-2): terminal_azotea, pared_glitch, cuarto, interruptor_luz, interruptor_laser, panel_oculto, dock_calc.",
+			"steps": [
+				{"do": "wait_near", "object": "terminal_azotea", "radius_tiles": 3},
+				{"do": "fly", "object": "terminal_azotea"},
+				{"do": "line", "text": "Esta terminal no tiene corriente. Ni un píxel."},
+				{"do": "wait_quiet"},
+				{"do": "fly", "object": "pared_glitch", "offset_px": [0, -40]},
+				{"do": "line", "text": "La corriente que alimenta la terminal viene de detrás de esta pared."},
+				{"do": "wait_quiet"},
+				{"do": "back"},
+				{"do": "wait_inside", "object": "cuarto"},
+				{"do": "line", "text": "Qué oscuro. Por suerte, yo brillo."},
+				{"do": "point_help", "object": "interruptor_luz", "radius_tiles": 3, "text": "Ese interruptor quiere pulsos, {apodo}. Varios."},
+				{"do": "wait_done", "object": "interruptor_luz"},
+				{"do": "fly", "object": "dock_calc"},
+				{"do": "line", "text": "Luz. Pero falta energía."},
+				{"do": "wait_quiet"},
+				{"do": "back"},
+				{"do": "wait_done", "object": "interruptor_laser"},
+				{"do": "fly", "object": "pared_glitch", "offset_px": [0, -40]},
+				{"do": "line", "text": "Solo falta uno."},
+				{"do": "wait_quiet"},
+				{"do": "back"},
+				{"do": "wait_done", "object": "panel_oculto"},
+				{"do": "line", "text": "Energía completa. Y ahí viene una aplicación obsoleta, con un 3 % de batería. Cómo no."},
+				{"do": "wait_done", "object": "dock_calc"},
+				{"do": "wait_quiet"},
+				{"do": "fly", "object": "terminal_azotea"},
+				{"do": "line", "text": "La terminal ya tiene corriente. Cuando quieras, {apodo}."},
+				{"do": "wait_quiet"},
+				{"do": "back"}
+			]
+		}
+	}
+}

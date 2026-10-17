@@ -20,6 +20,8 @@
 	"help_smooth_time_s": 0.35,
 	"help_teleport_margin_px": 320,
 	"help_return_done_px": 24,
+	"_guide_notes": "Guion propio de Eco (2026-10-17, EcoGuide): vuela a un punto pedido por el guion (sin brillo ni Q, con help_smooth_time_s) y se queda; lo suelta si Isak se aleja mas de guide_release_px del punto, muere o entra en un vortice.",
+	"guide_release_px": 480,
 	"help_prompt_offset_px": [0, -34],
 	"help_explain_grace_s": 0.5
 }

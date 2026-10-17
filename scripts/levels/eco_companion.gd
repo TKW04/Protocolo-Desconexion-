@@ -28,6 +28,11 @@
 ##   desaparece o se oculta, si el arbol se pausa sin estar explicando (menu de
 ##   pausa), si Isak muere o entra en un vortice, y si la explicacion no llega a
 ##   mostrarse (help_explain_grace_s sin hablar).
+## - GUION PROPIO (2026-10-17, tanda H1 del paso 14 del 1-2; EcoGuide): el guion
+##   de Eco le pide volar a un punto (set_guide_point) sin brillo ni Q: va alli
+##   y se queda hasta clear_guide_point. La ayuda Q tiene prioridad (si hay un
+##   objeto con Q, va a el y despues vuelve al punto del guion). Lo suelta solo
+##   si Isak muere, entra en un vortice o se aleja mas de guide_release_px.
 ## - Sin colision. Se dibuja en el lienzo del mundo (por debajo de la Q y del
 ##   HUD) y en el arbol antes de los enemigos y de Isak: nunca los tapa.
 ## - Tiempo REAL (PROCESS_MODE_ALWAYS): anima mientras habla con el juego en
@@ -89,6 +94,9 @@ var _explain_wait: float = 0.0
 var _returning: bool = false
 var _glow: Glow = Glow.OFF
 var _glow_time: float = 0.0
+## Punto del guion de Eco (EcoGuide) y si lo hay.
+var _guide_point: Vector2 = Vector2.ZERO
+var _guiding: bool = false
 @onready var _sprite: AnimatedSprite2D = $Sprite
 
 
@@ -192,6 +200,8 @@ func get_target_position() -> Vector2:
 		return feet + Vector2(float(center[0]), float(center[1]))
 	if is_helping():
 		return _help_point
+	if _guiding:
+		return _guide_point
 	return get_follow_position()
 
 
@@ -271,6 +281,33 @@ func set_help_target(target: Node2D, help_id: StringName = &"") -> bool:
 	_glow_on()
 	help_target_changed.emit(target)
 	return true
+
+
+## El guion de Eco (EcoGuide) le pide ir a `point` (global) y quedarse alli.
+## Falso si ahora no puede (hub, oculto, Isak sin control).
+func set_guide_point(point: Vector2) -> bool:
+	if _dim or not _can_guide():
+		return false
+	_guide_point = point
+	_guiding = true
+	_returning = false
+	return true
+
+
+## El guion suelta a Eco: vuelve a Isak.
+func clear_guide_point() -> void:
+	if _guiding:
+		_guiding = false
+		_returning = true
+
+
+## Va (o esta) en un punto del guion.
+func is_guiding() -> bool:
+	return _guiding
+
+
+func get_guide_point() -> Vector2:
+	return _guide_point
 
 
 ## Se ha pedido la ayuda del objeto senalado: Eco se queda junto a el con el
@@ -355,6 +392,12 @@ func _can_appear() -> bool:
 			and not _isak.is_warp_hidden() and _isak.is_visible_in_tree() and not _isak.is_dead()
 
 
+## Como _can_help pero sin el ajuste «Ayudas de Eco: Ocultar» (el guion es historia).
+func _can_guide() -> bool:
+	return _valid_isak() and not _isak.is_dead() and not _isak.is_warping() and _isak.is_visible_in_tree() \
+			and (_state == State.FOLLOW or _state == State.APPEARING)
+
+
 func _can_help() -> bool:
 	return _valid_isak() and not _isak.is_dead() and not _isak.is_warping() and _isak.is_visible_in_tree() \
 			and GameSettings.is_eco_help_shown() and (_state == State.FOLLOW or _state == State.APPEARING)
@@ -362,6 +405,9 @@ func _can_help() -> bool:
 
 ## Suelta el objeto si ya no hay ayuda posible y actualiza el punto junto a el.
 func _check_help(delta: float) -> void:
+	if _guiding and (not _can_guide() or (_valid_isak() and _isak.global_position.distance_to(_guide_point)
+			> float(_data.get("guide_release_px", 480)))):
+		clear_guide_point()
 	if _returning and _anchor.distance_to(get_follow_position()) <= float(_data.get("help_return_done_px", 24)):
 		_returning = false
 	if not is_helping():
@@ -437,7 +483,7 @@ func _compute_help_point() -> Vector2:
 
 func _teleport_distance() -> float:
 	var base: float = float(_data.get("teleport_distance_px", 256))
-	if is_helping() or _returning:
+	if is_helping() or _returning or _guiding:
 		base += float(_data.get("help_teleport_margin_px", 320))
 	return base
 
@@ -474,7 +520,7 @@ func _follow(delta: float) -> void:
 	if delta <= 0.0:
 		return
 	var target: Vector2 = get_target_position()
-	var key: String = "help_smooth_time_s" if is_helping() or _returning else "smooth_time_s"
+	var key: String = "help_smooth_time_s" if is_helping() or _returning or _guiding else "smooth_time_s"
 	var smooth: float = maxf(float(_data.get(key, _data.get("smooth_time_s", 0.25))), 0.0001)
 	var omega: float = 2.0 / smooth
 	var x: float = omega * delta
@@ -563,6 +609,7 @@ func _valid_isak() -> bool:
 func _on_isak_warp_began(hidden: bool) -> void:
 	_awaiting_reveal = true
 	_end_help()
+	clear_guide_point()
 	if hidden:
 		# Llegada (o reaparicion): se va y vuelve cuando Isak se vea.
 		if _state != State.HIDDEN and _state != State.DISAPPEARING:
