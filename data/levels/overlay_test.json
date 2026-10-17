@@ -1,0 +1,78 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 7 de docs/propuesta-1-2.md §10, 2026-10-16): sala de 24x12 tiles para probar el POP-UP TRANSLUCIDO (overlay_popup). Isak llega por la izquierda (P, de pie en la fila 10) con pulso, laser y Debug. La subida a la repisa de la salida (columnas 16-22, de pie en la fila 7) pasa por una plataforma de una via de 2 tiles (columnas 13-14, fila 9) que el pop-up overlay_1 (columnas 12-16, filas 6-9, 70 % de opacidad) tapa: sin Debug no se ve donde esta; con el Debug el pop-up se vuelve casi transparente y se ve a traves. Su boton de cerrar (abajo a la izquierda, 24 px) se alcanza con el pulso de pie en el suelo (columnas 10-11): cerrado, queda cerrado. El pop-up no bloquea el paso (se puede saltar a ciegas). Cargador junto a la entrada para la energia del Debug. Terminal de salida en (21, 6). El bot no la recorre. Escena: scenes/levels/overlay_test.tscn (python3 tools/build_level.py data/levels/overlay_test.json).",
+	"id": "overlay_test",
+	"name": "Pop-up translúcido (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true
+	},
+	"sections": [
+		{
+			"name": "Ventana que tapa",
+			"x_from": 0,
+			"x_to": 23,
+			"patterns": [
+				"ver_a_traves"
+			]
+		}
+	],
+	"grid": [
+		"########################",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#....................G.#",
+		"#...............########",
+		"#............--.########",
+		"#.P.............########",
+		"########################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 10,
+			"params": {
+				"id": "cargador_o",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "overlay_popup",
+			"x": 12,
+			"y": 6,
+			"params": {
+				"id": "overlay_1",
+				"text": "Tienes 99+ mensajes que no son importantes",
+				"width_tiles": 5,
+				"height_tiles": 4,
+				"close_button_px": [
+					8,
+					224
+				]
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 21,
+			"y": 6,
+			"params": {
+				"id": "terminal_overlay",
+				"text": "Marcar como leído"
+			}
+		}
+	],
+	"unlocks": []
+}

@@ -1,0 +1,137 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-1-2.md §10, 2026-10-16): sala de 30x12 tiles para probar los RECORDATORIOS (reminder_platform) y el boton POSPONER (snooze_button). Isak llega por la izquierda (P, de pie en la fila 7) con pulso y laser. Izquierda (columnas 4-9): 'Recordatorios sueltos' (§3.3, 3a): dos recordatorios de 2 tiles con su propio grupo y 2,5 s sobre un foso de 3 tiles (caer no hace dano; la repisa de una via de la columna 9 devuelve arriba). Derecha (columnas 13-22): patron 'Posponer' (§0.4): grupo posponer_1 de tres recordatorios con 2 s de cuenta compartida, demasiado poco para cruzarlos (unos 3 s caminando); el boton Posponer snooze_1 esta en la pared de la derecha (28, 7), a la altura del celular desde el suelo de la sala y a 11 tiles del segundo recordatorio: pisar, ir al segundo, disparar (+4 s, tope 8) y cruzar. Si caes, la repisa de una via de la columna 22 devuelve al final. Cargador junto a la entrada. La terminal de salida (26, 6) se activa con el pulso. El validador de alcanzabilidad modela por ahora los recordatorios como tablas fijas (sin su cuenta: paso 10) y el bot no la recorre. Escena: scenes/levels/recordatorios_test.tscn (python3 tools/build_level.py data/levels/recordatorios_test.json).",
+	"id": "recordatorios_test",
+	"name": "Recordatorios y Posponer (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": false
+	},
+	"sections": [
+		{
+			"name": "Recordatorios sueltos",
+			"x_from": 0,
+			"x_to": 11,
+			"patterns": []
+		},
+		{
+			"name": "Posponer",
+			"x_from": 12,
+			"x_to": 29,
+			"patterns": [
+				"posponer"
+			]
+		}
+	],
+	"grid": [
+		"##############################",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#.P.......................G..#",
+		"####......###..........#######",
+		"####......###..........#######",
+		"####.....-###.........-#######",
+		"##############################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 1,
+			"y": 7,
+			"params": {
+				"id": "cargador_r",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "reminder_platform",
+			"x": 4,
+			"y": 8,
+			"params": {
+				"id": "suelto_a",
+				"group": "suelto_a",
+				"width_tiles": 2,
+				"timer_s": 2.5
+			}
+		},
+		{
+			"type": "reminder_platform",
+			"x": 7,
+			"y": 8,
+			"params": {
+				"id": "suelto_b",
+				"group": "suelto_b",
+				"width_tiles": 2,
+				"timer_s": 2.5
+			}
+		},
+		{
+			"type": "reminder_platform",
+			"x": 13,
+			"y": 8,
+			"params": {
+				"id": "posponer_a",
+				"group": "posponer_1",
+				"width_tiles": 2,
+				"timer_s": 2.0
+			}
+		},
+		{
+			"type": "reminder_platform",
+			"x": 16,
+			"y": 8,
+			"params": {
+				"id": "posponer_b",
+				"group": "posponer_1",
+				"width_tiles": 2,
+				"timer_s": 2.0
+			}
+		},
+		{
+			"type": "reminder_platform",
+			"x": 19,
+			"y": 8,
+			"params": {
+				"id": "posponer_c",
+				"group": "posponer_1",
+				"width_tiles": 2,
+				"timer_s": 2.0
+			}
+		},
+		{
+			"type": "snooze_button",
+			"x": 28,
+			"y": 7,
+			"params": {
+				"id": "snooze_1",
+				"targets": [
+					"posponer_1"
+				],
+				"extend_s": 4.0,
+				"cap_s": 8.0
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 26,
+			"y": 6,
+			"params": {
+				"id": "terminal_recordatorios",
+				"text": "Recordar más tarde"
+			}
+		}
+	],
+	"unlocks": []
+}

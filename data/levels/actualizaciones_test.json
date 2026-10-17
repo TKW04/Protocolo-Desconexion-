@@ -1,0 +1,114 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 8 de docs/propuesta-1-2.md §10, 2026-10-16): sala de espera de 28x12 tiles para probar la BARRA DEL 99 % (update_bar) del piso 4 (§3.4). Isak llega por la izquierda (P, de pie en la fila 10) con pulso y laser. La puerta-barra update_bar (columna 24, filas 8-10, bajo una pared) cierra el paso a la terminal (26, 9). Al entrar en la zona (columnas 4-23, filas 1-10) sube a 99 % y se traba 20 s de tiempo del mundo con textos que cambian; caen tres oleadas de enemigos en paquetes, anunciadas 0,75 s antes con una flecha roja y una sombra (t = 4 s, dos Burbujas; t = 10 s, dos puntos rojos; t = 15 s, una Burbuja y un punto rojo), como en la propuesta. Al 100 % los que quedan se apagan y la puerta se abre para siempre; si Isak muere antes, vuelve al principio. Cargador junto a la entrada para el laser. El validador trata la puerta como abierta (la abre el tiempo) y el bot no la recorre. Escena: scenes/levels/actualizaciones_test.tscn (python3 tools/build_level.py data/levels/actualizaciones_test.json).",
+	"id": "actualizaciones_test",
+	"name": "Sala de espera del 99 % (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": false
+	},
+	"sections": [
+		{
+			"name": "Sala de espera",
+			"x_from": 0,
+			"x_to": 27,
+			"patterns": [
+				"aturdir_y_rematar",
+				"carrera_contra_amenaza"
+			]
+		}
+	],
+	"grid": [
+		"############################",
+		"#.......................#..#",
+		"#.......................#..#",
+		"#.......................#..#",
+		"#.......................#..#",
+		"#.......................#..#",
+		"#.......................#..#",
+		"#.......................#..#",
+		"#..........................#",
+		"#..........................#",
+		"#.P.......................G#",
+		"############################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 1,
+			"y": 10,
+			"params": {
+				"id": "cargador_a",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "update_bar",
+			"x": 24,
+			"y": 8,
+			"params": {
+				"id": "barra_99",
+				"wait_s": 20.0,
+				"zone": [
+					4,
+					1,
+					20,
+					10
+				],
+				"waves": [
+					{
+						"t": 4.0,
+						"type": "alert_bubble",
+						"x": 9
+					},
+					{
+						"t": 4.0,
+						"type": "alert_bubble",
+						"x": 18
+					},
+					{
+						"t": 10.0,
+						"type": "notification_badge",
+						"x": 11
+					},
+					{
+						"t": 10.0,
+						"type": "notification_badge",
+						"x": 20
+					},
+					{
+						"t": 15.0,
+						"type": "alert_bubble",
+						"x": 14
+					},
+					{
+						"t": 15.0,
+						"type": "notification_badge",
+						"x": 7,
+						"params": {
+							"chase_speed_px_s": 60.0
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 26,
+			"y": 9,
+			"params": {
+				"id": "terminal_actualizaciones",
+				"text": "Reiniciar ahora"
+			}
+		}
+	],
+	"unlocks": []
+}
