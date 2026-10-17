@@ -8,7 +8,7 @@ const DEFAULT_PATH: String = "res://data/eco_text_box.json"
 const MISSING_COLOR: Color = Color.MAGENTA
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
 const SPECIAL_KEYS: Array[String] = ["colors", "assets", "speakers", "speaker_name", "font", "key_swap_shader",
-	"confirm_hint_text", "inline_icons"]
+	"confirm_hint_text", "inline_icons", "speaker_styles"]
 
 var layer: int = 11
 ## Pixeles de pantalla por pixel de arte (entero).
@@ -40,6 +40,14 @@ var colors: Dictionary[StringName, Color] = {}
 ## {name, icon (ruta de un PNG de 16x16), color (hex del nombre)}. Sin id (o
 ## id vacio) habla Eco con speaker_name, el icono `icon` y colors.speaker.
 var speakers: Dictionary[StringName, Dictionary] = {}
+## Estilos de texto por interlocutor (2026-10-17, tanda H3 del paso 14 del 1-2;
+## `style` de cada entrada de speakers): id -> {font (ruta de otra fuente con las
+## mismas metricas), panel (PNG de 16x16 del nine-patch), colors {body,
+## confirm_hint} (color del texto y de la indicacion de cierre, por el shader de
+## cambio de color), chars_per_second, instant_chars (caracteres que aparecen de
+## golpe: una racha seguida de ellos se escribe en un solo paso)}. Lo que falta
+## sale del estilo de Eco (el resto del JSON). Sin estilo o desconocido = Eco.
+var speaker_styles: Dictionary[StringName, Dictionary] = {}
 ## Nombre -> {path, frame_size, columns, rows}.
 var assets: Dictionary[StringName, Dictionary] = {}
 ## Iconos en linea (2026-10-17; marcador {icono:<id>}): id -> {glyph (caracter de
@@ -85,6 +93,10 @@ static func load_from_file(path: String = DEFAULT_PATH) -> EcoTextBoxConfig:
 	for id: String in raw_speakers:
 		if raw_speakers[id] is Dictionary:
 			config.speakers[StringName(id)] = raw_speakers[id]
+	var raw_styles: Dictionary = dict.get("speaker_styles", {})
+	for id: String in raw_styles:
+		if raw_styles[id] is Dictionary:
+			config.speaker_styles[StringName(id)] = raw_styles[id]
 	var raw_icons: Dictionary = dict.get("inline_icons", {})
 	for id: String in raw_icons:
 		if raw_icons[id] is Dictionary:
@@ -93,6 +105,12 @@ static func load_from_file(path: String = DEFAULT_PATH) -> EcoTextBoxConfig:
 	for name: String in raw_assets:
 		config.assets[StringName(name)] = raw_assets[name]
 	return config
+
+
+## Estilo de texto del interlocutor `speaker` (vacio = Eco, sin estilo propio).
+func style_for(speaker: StringName) -> Dictionary:
+	var info: Dictionary = speakers.get(speaker, {})
+	return speaker_styles.get(StringName(String(info.get("style", ""))), {})
 
 
 func color(name: StringName) -> Color:

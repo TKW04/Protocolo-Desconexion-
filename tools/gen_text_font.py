@@ -14,6 +14,12 @@ Las letras acentuadas se componen: letra base + marca (aguda, dieresis, virgulil
 Salidas:
   assets/sprites/ui/text_font.png   atlas (celdas de 8x16; columnas/filas de data/text_font.json)
   assets/sprites/ui/text_font.fnt   descripcion BMFont (texto) que Godot importa como FontFile
+  assets/sprites/ui/text_font_lcd.fnt  la MISMA fuente (mismo atlas y metricas) con avance fijo
+                                    (monoespaciada; lcd_advance de data/text_font.json): estilo
+                                    LCD de Calc en el cuadro de texto (2026-10-17, tanda H3 del
+                                    paso 14 del 1-2). Cada glifo va centrado en su celda; los mas
+                                    anchos que la celda (rombo del icono en linea, raya) conservan
+                                    su avance proporcional. Digitos: los del HUD, como siempre.
   assets/sprites/ui/_text_font_preview_x4.png  todos los glifos y frases de prueba x4 (no la usa el juego)
 
 Uso: python3 tools/gen_text_font.py
@@ -32,6 +38,8 @@ ROOT = ga.ROOT
 P = ga.P
 DATA = os.path.join(ROOT, "data", "text_font.json")
 FNT_PATH = os.path.join(ga.OUT_DIR, "text_font.fnt")
+LCD_FNT_PATH = os.path.join(ga.OUT_DIR, "text_font_lcd.fnt")
+LCD_FACE = "IsakTextLCD"
 PREVIEW = os.path.join(ga.OUT_DIR, "_text_font_preview_x4.png")
 PREVIEW_SCALE = 4
 FACE = "IsakText"
@@ -203,6 +211,28 @@ def advance_of(ch, width):
     return DIGIT_ADVANCE if ch.isdigit() else width + 1
 
 
+def lcd_metrics(width, cell):
+    """(xoffset, avance) monoespaciado: centrado en la celda de `cell` (ancho maximo cell - 1)."""
+    if width + 1 > cell:
+        return 0, width + 1
+    return (cell - 1 - width) // 2, cell
+
+
+def fnt_lines(face, atlas, png_path, chars):
+    lines = [
+        'info face="%s" size=%d bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=0 aa=0 '
+        'padding=0,0,0,0 spacing=0,0 outline=0' % (face, LINE_HEIGHT),
+        "common lineHeight=%d base=%d scaleW=%d scaleH=%d pages=1 packed=0 "
+        "alphaChnl=0 redChnl=0 greenChnl=0 blueChnl=0" % (LINE_ADVANCE, BASE, atlas.width, atlas.height),
+        'page id=0 file="%s"' % os.path.basename(png_path),
+        "chars count=%d" % len(chars),
+    ]
+    for cid, x, y, w, h, xo, yo, adv in sorted(chars):
+        lines.append("char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d page=0 chnl=15"
+                     % (cid, x, y, w, h, xo, yo, adv))
+    return lines
+
+
 def main():
     with open(DATA, encoding="utf-8") as fh:
         data = json.load(fh)
@@ -237,19 +267,15 @@ def main():
     chars.append((ord(" "), 0, 0, 0, 0, 0, 0, SPACE_ADVANCE))
     png_path = ga.res_to_path(spec["path"])
     atlas.save(png_path)
-    lines = [
-        'info face="%s" size=%d bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=0 aa=0 '
-        'padding=0,0,0,0 spacing=0,0 outline=0' % (FACE, LINE_HEIGHT),
-        "common lineHeight=%d base=%d scaleW=%d scaleH=%d pages=1 packed=0 "
-        "alphaChnl=0 redChnl=0 greenChnl=0 blueChnl=0" % (LINE_ADVANCE, BASE, atlas.width, atlas.height),
-        'page id=0 file="%s"' % os.path.basename(png_path),
-        "chars count=%d" % len(chars),
-    ]
-    for cid, x, y, w, h, xo, yo, adv in sorted(chars):
-        lines.append("char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d page=0 chnl=15"
-                     % (cid, x, y, w, h, xo, yo, adv))
     with open(FNT_PATH, "w", encoding="utf-8") as fh_out:
-        fh_out.write("\n".join(lines) + "\n")
+        fh_out.write("\n".join(fnt_lines(FACE, atlas, png_path, chars)) + "\n")
+    cell = int(data["lcd_advance"])
+    lcd = []
+    for cid, x, y, w, h, _, yo, _ in chars:
+        xo, adv = lcd_metrics(w, cell) if cid != ord(" ") else (0, cell)
+        lcd.append((cid, x, y, w, h, xo, yo, adv))
+    with open(LCD_FNT_PATH, "w", encoding="utf-8") as fh_out:
+        fh_out.write("\n".join(fnt_lines(LCD_FACE, atlas, png_path, lcd)) + "\n")
     write_preview(atlas, {chr(c[0]): c for c in chars}, order)
     print("gen_text_font: %s, %s (%d glifos)" % (spec["path"], os.path.relpath(FNT_PATH, ROOT), len(chars)))
     return 0

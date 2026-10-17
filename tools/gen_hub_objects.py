@@ -35,6 +35,11 @@ Salidas (assets/sprites/hub/):
   icons/       icon_airplane_mode_00, icon_unsaved_00          16x16
                icon_settings_00 (ajustes: abre el menu de pausa)
                icon_notas_00 (quien habla en el cuadro de texto: Notas)
+               icon_calc_00 (quien habla en el cuadro de texto: Calc,
+               con su visor despierto; 2026-10-17, tanda H3)
+               lcd_panel_00 (nine-patch del estilo LCD del cuadro de
+               texto de Calc: bisel del cuerpo y pantalla cian_tenue
+               con el texto en fondo_profundo; margen de 3 px)       16x16
                world_icon_m1_00 (miniatura del Mundo 1:
                campana de notificaciones, en la carpeta)       16x16
                page_dot_current_00, page_dot_other_00          8x8
@@ -871,6 +876,40 @@ def icon_notas():
     return cv.img
 
 
+def icon_calc():
+    """Icono de Calc para el cuadro de texto: su cara despierta (visor oscuro con
+    los ojos a media asta en acento_cian, como calc_awake) y el teclado."""
+    cv = Canvas(16, 16)
+    cv.box(2, 0, 13, 15, GF, FP)
+    cv.hline(3, 12, 1, BO)
+    cv.rect(4, 2, 11, 7, FP)
+    cv.rect(5, 3, 10, 6, SO)
+    cv.hline(5, 6, 4, CA)
+    cv.hline(9, 10, 4, CA)
+    cv.hline(6, 9, 6, CT)
+    for r in range(2):
+        for c in range(3):
+            kx, ky = 4 + c * 3, 9 + r * 3
+            cv.rect(kx, ky, kx + 1, ky + 1, CA if (c == 2 and r == 1) else (PA if c < 2 else CT))
+    return cv.img
+
+
+def lcd_panel():
+    """Panel del estilo LCD de Calc (nine-patch 16x16, margen 3): contorno
+    fondo_profundo con esquinas cortadas, bisel del cuerpo de Calc (gris_foto
+    arriba e izquierda, base abajo y derecha) y pantalla cian_tenue con una
+    linea de sombra arriba (cristal hundido). El texto va en fondo_profundo."""
+    cv = Canvas(16, 16)
+    cv.box(0, 0, 15, 15, CT, FP)
+    cv.hline(1, 14, 1, GF)
+    cv.vline(1, 1, 14, GF)
+    cv.hline(1, 14, 14, BA)
+    cv.vline(14, 2, 14, BA)
+    cv.hline(2, 13, 2, SO)
+    cv.vline(2, 2, 13, SO)
+    return cv.img
+
+
 # ------------------------------------------------------- album de Notas (celdas)
 # Marco de ficha del album (docs/propuesta-asistentes-y-vidas.md §3.5 y §9): 40x40
 # px de arte (x2 en pantalla = 80 px; la ficha de 64 px de pantalla va centrada).
@@ -1022,6 +1061,8 @@ def outputs():
     out["icons/icon_settings_00.png"] = icon_settings()
     out["icons/world_icon_m1_00.png"] = world_icon_bell()
     out["icons/icon_notas_00.png"] = icon_notas()
+    out["icons/icon_calc_00.png"] = icon_calc()
+    out["icons/lcd_panel_00.png"] = lcd_panel()
     out["album/album_cell_00.png"] = album_cell(False)
     out["album/album_cell_selected_00.png"] = album_cell(True)
     for st in ("closed", "open", "locked"):

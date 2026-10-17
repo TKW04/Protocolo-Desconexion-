@@ -33,6 +33,13 @@
 ## el sprite (TextureRect hijo de Body), alineado con la altura de las
 ## mayusculas; sale cuando la maquina de escribir llega a el. Igual en el hub
 ## (misma escena).
+## ESTILO POR INTERLOCUTOR (2026-10-17, tanda H3 del paso 14 del 1-2): la
+## entrada de speakers puede llevar `style` (speaker_styles de
+## data/eco_text_box.json): otra fuente con las mismas metricas, otro panel,
+## color del texto y de la indicacion de cierre, velocidad de escritura y
+## caracteres que aparecen de golpe (instant_chars: una racha seguida, p. ej. las
+## cifras de un numero, se escribe en un solo paso). Calc usa "lcd" (pantalla de
+## calculadora: fuente monoespaciada, cifras de golpe). Sin estilo = el de Eco.
 ## Pixel base como el HUD: Frame se maqueta en pixeles de arte y se escala
 ## x pixel_scale (entero).
 class_name EcoTextBox
@@ -89,6 +96,15 @@ var _hint: Label
 var _speaker_id: StringName = &""
 ## Iconos en linea de la linea actual: {node: TextureRect, index: posicion en _wrapped, id}.
 var _inline: Array[Dictionary] = []
+## Estilo de la linea actual (vacio = Eco), su velocidad y sus caracteres de golpe.
+var _style_id: StringName = &""
+var _cps: float = 40.0
+var _instant: String = ""
+## Caracteres escritos tras cada paso de la maquina de escribir (vacio: uno por paso).
+var _steps: PackedInt32Array = []
+## Fuentes ya cargadas por ruta (vacia = la de Eco).
+var _fonts: Dictionary[String, Font] = {}
+var _body_material: ShaderMaterial
 
 @onready var _frame: Control = $Frame
 @onready var _panel: NinePatchRect = $Frame/Panel
@@ -170,7 +186,7 @@ func advance(delta: float) -> void:
 		Phase.TYPING:
 			_type_time += delta
 			_set_alpha(_fade_in_alpha())
-			_set_typed(mini(_wrapped.length(), floori(_type_time * _config.chars_per_second)))
+			_set_typed(_typed_for_time(_type_time))
 			if _typed >= _wrapped.length():
 				_phase = Phase.HOLD
 				_hold_left = _hold_s
@@ -198,7 +214,7 @@ func advance(delta: float) -> void:
 ## Escribe ya todo el texto de la linea actual (no cambia el tiempo en pantalla).
 func finish_typing() -> void:
 	if _phase == Phase.TYPING:
-		_type_time = maxf(_type_time, _wrapped.length() / _config.chars_per_second)
+		_type_time = maxf(_type_time, _step_count() / _cps)
 		advance(0.0)
 
 
@@ -269,6 +285,34 @@ func get_text_width() -> float:
 
 func get_font() -> Font:
 	return _font
+
+
+## Estilo de texto de la linea actual (vacio = el de Eco; "lcd" = Calc).
+func get_style_id() -> StringName:
+	return _style_id
+
+
+## Textura del panel de la linea actual.
+func get_panel_texture() -> Texture2D:
+	return _panel.texture
+
+
+## Color del texto de la linea actual.
+func get_body_color() -> Color:
+	if _body.material == null:
+		return _config.color(&"body")
+	return (_body.material as ShaderMaterial).get_shader_parameter(&"target_color")
+
+
+## Caracteres por segundo de la maquina de escribir en la linea actual.
+func get_chars_per_second() -> float:
+	return _cps
+
+
+## Pasos de la maquina de escribir de la linea actual (una racha de
+## instant_chars cuenta uno).
+func get_type_steps() -> int:
+	return _step_count()
 
 
 func get_panel_rect() -> Rect2:
@@ -391,6 +435,7 @@ func _start_next() -> void:
 	_apply_speaker(StringName(item.get("speaker", &"")))
 	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
 	_wrapped = LINE_BREAK.join(_lines)
+	_build_steps()
 	_build_inline_icons()
 	_current_duration = float(item["duration_s"])
 	_hold_s = _config.hold_time(_text.length(), _current_duration)
@@ -477,6 +522,39 @@ func _set_typed(count: int) -> void:
 		(icon["node"] as TextureRect).visible = int(icon["index"]) < count
 
 
+## Caracteres escritos tras `t` segundos de escritura.
+func _typed_for_time(t: float) -> int:
+	var n: int = floori(t * _cps)
+	if _steps.is_empty():
+		return mini(_wrapped.length(), n)
+	if n <= 0:
+		return 0
+	return _steps[mini(n, _steps.size()) - 1]
+
+
+func _step_count() -> int:
+	return _steps.size() if not _steps.is_empty() else _wrapped.length()
+
+
+## Pasos de la maquina de escribir: con instant_chars, cada racha seguida de
+## ellos (p. ej. «130») sale entera en un paso; el resto, caracter a caracter.
+func _build_steps() -> void:
+	_steps = PackedInt32Array()
+	if _instant.is_empty():
+		return
+	var i: int = 0
+	var n: int = _wrapped.length()
+	while i < n:
+		if _instant.contains(_wrapped[i]):
+			var j: int = i
+			while j < n and _instant.contains(_wrapped[j]):
+				j += 1
+			i = j
+		else:
+			i += 1
+		_steps.append(i)
+
+
 func _fade_in_alpha() -> float:
 	if _config.fade_in_s <= 0.0:
 		return OPAQUE
@@ -532,6 +610,9 @@ func _apply_config() -> void:
 	_hint.material = c.new_key_swap_material(c.color(&"body"), c.color(&"confirm_hint"))
 	_hint.visible = false
 	_panel.add_child(_hint)
+	_body_material = c.new_key_swap_material(c.color(&"body"), c.color(&"body"))
+	_fonts[""] = _font
+	_cps = c.chars_per_second
 	_fit_frame()
 	_layout()
 
@@ -590,12 +671,40 @@ func _apply_speaker(id: StringName) -> void:
 		_speaker.text = c.speaker_name
 		_icon.texture = c.asset_texture(ICON_ASSET)
 		(_speaker.material as ShaderMaterial).set_shader_parameter(&"target_color", c.color(&"speaker"))
+		_apply_style(&"", {})
 		return
 	_speaker.text = String(info.get("name", c.speaker_name))
 	var icon_path: String = String(info.get("icon", ""))
 	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else c.asset_texture(ICON_ASSET)
 	(_speaker.material as ShaderMaterial).set_shader_parameter(&"target_color",
 		Color.html(String(info.get("color", "#9bb0e8"))))
+	var style_id := StringName(String(info.get("style", "")))
+	_apply_style(style_id if c.speaker_styles.has(style_id) else &"", c.style_for(id))
+
+
+## Estilo de texto (speaker_styles): fuente, panel, colores, velocidad y
+## caracteres de golpe; lo que no trae sale del estilo de Eco.
+func _apply_style(id: StringName, style: Dictionary) -> void:
+	var c: EcoTextBoxConfig = _config
+	_style_id = id
+	var font_path: String = String(style.get("font", ""))
+	if not _fonts.has(font_path):
+		_fonts[font_path] = load(font_path) as Font if ResourceLoader.exists(font_path) else _fonts[""]
+	_font = _fonts[font_path]
+	for label: Label in [_speaker, _body, _hint]:
+		label.add_theme_font_override("font", _font)
+	var panel_path: String = String(style.get("panel", ""))
+	_panel.texture = load(panel_path) as Texture2D if ResourceLoader.exists(panel_path) else c.asset_texture(PANEL_ASSET)
+	var colors: Dictionary = style.get("colors", {})
+	if colors.has("body"):
+		_body_material.set_shader_parameter(&"target_color", Color.html(String(colors["body"])))
+		_body.material = _body_material
+	else:
+		_body.material = null
+	(_hint.material as ShaderMaterial).set_shader_parameter(&"target_color",
+		Color.html(String(colors["confirm_hint"])) if colors.has("confirm_hint") else c.color(&"confirm_hint"))
+	_cps = maxf(1.0, float(style.get("chars_per_second", c.chars_per_second)))
+	_instant = String(style.get("instant_chars", ""))
 
 
 ## Ancho del panel (px de arte) para estas lineas: se ajusta a la linea mas

@@ -106,6 +106,9 @@ def game_strings():
     # Menu de pausa (data/pause_menu.json): todos sus textos sin las marcas {..}.
     pause = load_json(os.path.join(ROOT, "data", "pause_menu.json"))
     texts.extend(re.sub(r"\{[a-z_]+\}", "", v) for k, v in pause["texts"].items() if not k.startswith("_"))
+    # Encuentro con Calc en el hub (data/calc_intro.json, 2026-10-17): lineas de Calc y de Eco sin los marcadores.
+    for line in load_json(os.path.join(ROOT, "data", "calc_intro.json"))["lines"]:
+        texts.append(re.sub(r"\{[a-z_]+(:[a-z_]+)?\}", "", line["text"]))
     hud = load_json(os.path.join(ROOT, "data", "hud.json"))
     texts.append(hud["font_glyphs"])
     texts.append("100 % 0 % 999")
@@ -180,6 +183,25 @@ class TextFontTest(unittest.TestCase):
             a = hud_atlas.crop((h["x"], h["y"], h["x"] + h["width"], h["y"] + h["height"]))
             b = atlas.crop((t["x"], t["y"] + 3, t["x"] + t["width"], t["y"] + 10))
             self.assertEqual(list(a.getdata()), list(b.getdata()), ch)
+
+    def test_lcd_font_is_monospaced_copy(self):
+        """Estilo LCD de Calc (2026-10-17): mismos glifos y atlas, avance fijo lcd_advance."""
+        data, info, chars, page = font_chars()
+        lcd_info, lcd, lcd_page = vua.parse_fnt(vua.res_to_path(data["lcd_font"]))
+        self.assertEqual(lcd_page, page)
+        self.assertEqual(sorted(lcd), sorted(chars))
+        self.assertEqual(lcd_info["lineHeight"], info["lineHeight"])
+        cell = data["lcd_advance"]
+        widths = {}
+        for cid, c in lcd.items():
+            widths.setdefault(c["xadvance"], []).append(chr(cid))
+        wide = {ch for adv, chs in widths.items() if adv != cell for ch in chs}
+        self.assertEqual(wide, {"◆", "—"}, "Solo el rombo del icono y la raya son mas anchos")
+        for ch in "0123456789iIl.M":
+            self.assertEqual(lcd[ord(ch)]["xadvance"], cell, ch)
+        self.assertEqual(lcd[ord("i")]["xoffset"], 2, "Glifo estrecho centrado")
+        self.assertEqual(lcd[ord(" ")]["xadvance"], cell)
+        self.assertEqual(vua.check_lcd_font(data, info, chars, page), [])
 
     def test_validate_ui_assets(self):
         result = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "validate_ui_assets.py")],

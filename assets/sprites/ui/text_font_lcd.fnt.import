@@ -1,0 +1,17 @@
+[remap]
+
+importer="font_data_bmfont"
+type="FontFile"
+uid="uid://dtaowl42jfccw"
+path="res://.godot/imported/text_font_lcd.fnt-e140461ed66a5be56ca7a4b709d99ced.fontdata"
+
+[deps]
+
+source_file="res://assets/sprites/ui/text_font_lcd.fnt"
+dest_files=["res://.godot/imported/text_font_lcd.fnt-e140461ed66a5be56ca7a4b709d99ced.fontdata"]
+
+[params]
+
+fallbacks=[]
+compress=true
+scaling_mode=2

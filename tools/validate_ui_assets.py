@@ -167,6 +167,37 @@ def check_font(data, assets):
     for cid, c in chars.items():
         if c["x"] + c["width"] > sw or c["y"] + c["height"] > sh:
             errors.append(f"fuente: el glifo {chr(cid)!r} se sale del atlas")
+    if data.get("lcd_font"):
+        errors += check_lcd_font(data, info, chars, page)
+    return errors
+
+
+def check_lcd_font(data, info, chars, page):
+    """Variante monoespaciada (estilo LCD de Calc): mismo atlas, glifos y metricas; avance fijo."""
+    errors = []
+    fnt = res_to_path(data["lcd_font"])
+    if not os.path.exists(fnt):
+        return [f"fuente LCD: no existe {data['lcd_font']}"]
+    lcd_info, lcd_chars, lcd_page = parse_fnt(fnt)
+    if lcd_page != page:
+        errors.append(f"fuente LCD: la pagina '{lcd_page}' no es la de la fuente de textos ('{page}')")
+    for key in ("size", "lineHeight", "base"):
+        if lcd_info.get(key) != info.get(key):
+            errors.append(f"fuente LCD: {key} {lcd_info.get(key)} distinto de {info.get(key)}")
+    if set(lcd_chars) != set(chars):
+        errors.append("fuente LCD: no tiene los mismos glifos que la fuente de textos")
+    cell = int(data.get("lcd_advance", 0))
+    for cid, c in lcd_chars.items():
+        base = chars.get(cid)
+        if base is None:
+            continue
+        if any(c[k] != base[k] for k in ("x", "y", "width", "height", "yoffset")):
+            errors.append(f"fuente LCD: el glifo {chr(cid)!r} no usa la misma celda del atlas")
+        wide = c["width"] + 1 > cell
+        if (c["xadvance"] != c["width"] + 1) if wide else (c["xadvance"] != cell):
+            errors.append(f"fuente LCD: avance {c['xadvance']} del glifo {chr(cid)!r} (celda {cell})")
+        if not wide and c["xoffset"] + c["width"] > cell - 1:
+            errors.append(f"fuente LCD: el glifo {chr(cid)!r} se sale de su celda")
     return errors
 
 
