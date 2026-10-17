@@ -64,6 +64,11 @@ SOURCES = {
     "snooze_button": ("assets/sprites/props/tower/snooze_ready_00.png", None, 1),
     "overlay_popup": ("assets/sprites/props/tower/overlay_sample_00.png", None, 1),
     "update_bar": ("assets/sprites/props/tower/update_bar_stuck_00.png", None, 1),
+    # Encuentro con Calc en la azotea del 1-2 (tools/gen_calc_encounter.py, tanda H1).
+    "power_switch": ("assets/sprites/props/calc_room/power_switch_on_00.png", None, 1),
+    "laser_switch": ("assets/sprites/props/calc_room/laser_switch_on_00.png", None, 1),
+    "debug_switch": ("assets/sprites/props/calc_room/debug_switch_on_00.png", None, 1),
+    "charge_dock": ("assets/sprites/props/calc_room/charge_dock_ready_00.png", None, 1),
 }
 
 

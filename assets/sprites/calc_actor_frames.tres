@@ -1,0 +1,135 @@
+[gd_resource type="SpriteFrames" load_steps=26 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_low_00.png" id="1_calc_low_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_low_01.png" id="2_calc_low_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_wake_00.png" id="3_calc_wake_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_wake_01.png" id="4_calc_wake_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_wake_02.png" id="5_calc_wake_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_walk_00.png" id="6_calc_walk_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_walk_01.png" id="7_calc_walk_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_walk_02.png" id="8_calc_walk_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_walk_03.png" id="9_calc_walk_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charging_00.png" id="10_calc_charging_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charging_01.png" id="11_calc_charging_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charging_02.png" id="12_calc_charging_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charging_03.png" id="13_calc_charging_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charged_00.png" id="14_calc_charged_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charged_01.png" id="15_calc_charged_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charged_02.png" id="16_calc_charged_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_charged_03.png" id="17_calc_charged_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_00.png" id="18_calc_teleport_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_01.png" id="19_calc_teleport_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_02.png" id="20_calc_teleport_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_03.png" id="21_calc_teleport_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_04.png" id="22_calc_teleport_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_05.png" id="23_calc_teleport_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_06.png" id="24_calc_teleport_06"]
+[ext_resource type="Texture2D" path="res://assets/sprites/calc_actor/calc_teleport_07.png" id="25_calc_teleport_07"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_calc_low_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_calc_low_01")
+}],
+"loop": true,
+"name": &"calc_low",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_calc_wake_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_calc_wake_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_calc_wake_02")
+}],
+"loop": false,
+"name": &"calc_wake",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_calc_walk_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_calc_walk_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_calc_walk_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_calc_walk_03")
+}],
+"loop": true,
+"name": &"calc_walk",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_calc_charging_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_calc_charging_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_calc_charging_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_calc_charging_03")
+}],
+"loop": true,
+"name": &"calc_charging",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("14_calc_charged_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_calc_charged_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_calc_charged_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_calc_charged_03")
+}],
+"loop": true,
+"name": &"calc_charged",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("18_calc_teleport_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_calc_teleport_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_calc_teleport_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_calc_teleport_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_calc_teleport_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_calc_teleport_05")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_calc_teleport_06")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_calc_teleport_07")
+}],
+"loop": false,
+"name": &"calc_teleport",
+"speed": 12.0
+}]

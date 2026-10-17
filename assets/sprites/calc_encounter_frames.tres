@@ -1,0 +1,337 @@
+[gd_resource type="SpriteFrames" load_steps=59 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_off_00.png" id="1_power_switch_off_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_off_01.png" id="2_power_switch_off_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_hit_00.png" id="3_power_switch_hit_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_hit_01.png" id="4_power_switch_hit_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_hit_02.png" id="5_power_switch_hit_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_on_00.png" id="6_power_switch_on_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_switch_on_01.png" id="7_power_switch_on_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_off_00.png" id="8_debug_switch_off_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_off_01.png" id="9_debug_switch_off_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_hit_00.png" id="10_debug_switch_hit_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_hit_01.png" id="11_debug_switch_hit_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_hit_02.png" id="12_debug_switch_hit_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_on_00.png" id="13_debug_switch_on_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/debug_switch_on_01.png" id="14_debug_switch_on_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/switch_lamp_off_00.png" id="15_switch_lamp_off_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/switch_lamp_on_00.png" id="16_switch_lamp_on_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_idle_00.png" id="17_laser_switch_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_idle_01.png" id="18_laser_switch_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_hit_00.png" id="19_laser_switch_hit_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_hit_01.png" id="20_laser_switch_hit_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_hit_02.png" id="21_laser_switch_hit_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_on_00.png" id="22_laser_switch_on_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/laser_switch_on_01.png" id="23_laser_switch_on_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_appear_00.png" id="24_power_door_appear_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_appear_01.png" id="25_power_door_appear_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_appear_02.png" id="26_power_door_appear_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_appear_03.png" id="27_power_door_appear_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_appear_04.png" id="28_power_door_appear_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_appear_05.png" id="29_power_door_appear_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_idle_00.png" id="30_power_door_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_idle_01.png" id="31_power_door_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_open_00.png" id="32_power_door_open_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/power_door_open_01.png" id="33_power_door_open_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_idle_00.png" id="34_charge_dock_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_idle_01.png" id="35_charge_dock_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_ready_00.png" id="36_charge_dock_ready_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_ready_01.png" id="37_charge_dock_ready_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_charging_00.png" id="38_charge_dock_charging_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_charging_01.png" id="39_charge_dock_charging_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_charging_02.png" id="40_charge_dock_charging_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_charging_03.png" id="41_charge_dock_charging_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_done_00.png" id="42_charge_dock_done_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_dock_done_01.png" id="43_charge_dock_done_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_00.png" id="44_charge_gauge_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_01.png" id="45_charge_gauge_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_02.png" id="46_charge_gauge_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_03.png" id="47_charge_gauge_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_04.png" id="48_charge_gauge_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_05.png" id="49_charge_gauge_05"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_06.png" id="50_charge_gauge_06"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_07.png" id="51_charge_gauge_07"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_08.png" id="52_charge_gauge_08"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_09.png" id="53_charge_gauge_09"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_gauge_10.png" id="54_charge_gauge_10"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_spark_00.png" id="55_charge_spark_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_spark_01.png" id="56_charge_spark_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_spark_02.png" id="57_charge_spark_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/calc_room/charge_spark_03.png" id="58_charge_spark_03"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_power_switch_off_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_power_switch_off_01")
+}],
+"loop": true,
+"name": &"power_switch_off",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_power_switch_hit_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_power_switch_hit_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_power_switch_hit_02")
+}],
+"loop": false,
+"name": &"power_switch_hit",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_power_switch_on_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_power_switch_on_01")
+}],
+"loop": true,
+"name": &"power_switch_on",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_debug_switch_off_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_debug_switch_off_01")
+}],
+"loop": true,
+"name": &"debug_switch_off",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_debug_switch_hit_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_debug_switch_hit_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_debug_switch_hit_02")
+}],
+"loop": false,
+"name": &"debug_switch_hit",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_debug_switch_on_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_debug_switch_on_01")
+}],
+"loop": true,
+"name": &"debug_switch_on",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_switch_lamp_off_00")
+}],
+"loop": true,
+"name": &"switch_lamp_off",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("16_switch_lamp_on_00")
+}],
+"loop": true,
+"name": &"switch_lamp_on",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("17_laser_switch_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_laser_switch_idle_01")
+}],
+"loop": true,
+"name": &"laser_switch_idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_laser_switch_hit_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_laser_switch_hit_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_laser_switch_hit_02")
+}],
+"loop": false,
+"name": &"laser_switch_hit",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("22_laser_switch_on_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_laser_switch_on_01")
+}],
+"loop": true,
+"name": &"laser_switch_on",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("24_power_door_appear_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_power_door_appear_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_power_door_appear_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_power_door_appear_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_power_door_appear_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_power_door_appear_05")
+}],
+"loop": false,
+"name": &"power_door_appear",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("30_power_door_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_power_door_idle_01")
+}],
+"loop": true,
+"name": &"power_door_idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("32_power_door_open_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_power_door_open_01")
+}],
+"loop": true,
+"name": &"power_door_open",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("34_charge_dock_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("35_charge_dock_idle_01")
+}],
+"loop": true,
+"name": &"charge_dock_idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("36_charge_dock_ready_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("37_charge_dock_ready_01")
+}],
+"loop": true,
+"name": &"charge_dock_ready",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("38_charge_dock_charging_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("39_charge_dock_charging_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("40_charge_dock_charging_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("41_charge_dock_charging_03")
+}],
+"loop": true,
+"name": &"charge_dock_charging",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("42_charge_dock_done_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("43_charge_dock_done_01")
+}],
+"loop": true,
+"name": &"charge_dock_done",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("44_charge_gauge_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("45_charge_gauge_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("46_charge_gauge_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("47_charge_gauge_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("48_charge_gauge_04")
+}, {
+"duration": 1.0,
+"texture": ExtResource("49_charge_gauge_05")
+}, {
+"duration": 1.0,
+"texture": ExtResource("50_charge_gauge_06")
+}, {
+"duration": 1.0,
+"texture": ExtResource("51_charge_gauge_07")
+}, {
+"duration": 1.0,
+"texture": ExtResource("52_charge_gauge_08")
+}, {
+"duration": 1.0,
+"texture": ExtResource("53_charge_gauge_09")
+}, {
+"duration": 1.0,
+"texture": ExtResource("54_charge_gauge_10")
+}],
+"loop": false,
+"name": &"charge_gauge",
+"speed": 0.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("55_charge_spark_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("56_charge_spark_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("57_charge_spark_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("58_charge_spark_03")
+}],
+"loop": true,
+"name": &"charge_spark",
+"speed": 12.0
+}]
