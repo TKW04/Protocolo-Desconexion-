@@ -289,6 +289,9 @@ class LevelModel:
         self.laser_base = bool(level.get("abilities_available", {}).get("laser", False))
         self.bridge_thickness = float(self.catalog.get("bridge", {}).get("collision_height_px", self.T))
         self.glitch = set()
+        # Recordatorios (2026-10-16, paso 6 de docs/propuesta-1-2.md §10): PROVISIONAL, tabla
+        # solida fina siempre presente (sin su cuenta, su caida ni el Posponer: paso 10).
+        self.reminders = {}
         self.gates = []
         self._build_objects()
         self.spike_rects = self._spike_rects()
@@ -325,6 +328,10 @@ class LevelModel:
                 y0 = obj["y"] * T + hit[1]
                 rect = (x0, y0, x0 + hit[2], y0 + hit[3], "receptor (fila %d, columna %d)" % (obj["y"], obj["x"]))
                 receivers.setdefault(str(p.get("target", "")), []).append(rect)
+            elif obj["type"] == "reminder_platform":
+                thickness = float(self.catalog.get("reminder_platform", {}).get("card_height_px", T))
+                for dx in range(int(p.get("width_tiles", 1))):
+                    self.reminders[(obj["x"] + dx, obj["y"])] = thickness
             elif obj["type"] == "glitch_wall":
                 for dy in range(int(p.get("height_tiles", 1))):
                     for dx in range(int(p.get("width_tiles", 1))):
@@ -536,6 +543,13 @@ class World:
                 elif ch == "-":
                     self.support[r][c] = True
         self.hazards = list(model.spike_rects)
+        for (c, r), thickness in model.reminders.items():
+            if 0 <= r < rows and 0 <= c < cols:
+                self.support[r][c] = True
+                if thickness < model.T - EPS:
+                    self.thin[(c, r)] = thickness
+                else:
+                    self.solid[r][c] = True
         for g in model.gates:
             opened = g.gid in state
             if g.kind == "bridge" and opened:

@@ -732,5 +732,108 @@ class RedDotAndBannerSchemaTest(unittest.TestCase):
         self.assert_fails("params.corridor_tiles = 2 fuera de [3, 40]")
 
 
+class TowerObjectsSchemaTest(unittest.TestCase):
+    """Recordatorio, Posponer, pop-up translucido y barra del 99 % del 1-2 (pasos 6, 7 y 8,
+    2026-10-16): params con su rango (level_params del catalogo), enlaces Posponer -> grupos
+    de recordatorios, boton del pop-up dentro de la ventana (y anuncio encima) y oleadas
+    validas. Salas recordatorios_test, overlay_test y actualizaciones_test."""
+
+    def load(self, name):
+        with open(os.path.join(ROOT, "data", "levels", "%s.json" % name), encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def find_obj(self, level, oid):
+        return next(o for o in level["objects"] if o["params"].get("id") == oid)
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_test_rooms_are_valid(self):
+        for name in ("recordatorios_test", "overlay_test", "actualizaciones_test"):
+            self.assertEqual(vls.validate_level(self.load(name)), [], name)
+
+    def test_reminder_params_and_cells(self):
+        level = self.load("recordatorios_test")
+        rem = self.find_obj(level, "posponer_a")
+        rem["params"]["width_tiles"] = 4
+        self.assert_fails(level, "width_tiles = 4 fuera de [1, 3]")
+        rem["params"]["width_tiles"] = 1.5
+        self.assert_fails(level, "width_tiles debe ser un entero")
+        rem["params"]["width_tiles"] = 2
+        rem["params"]["warn_s"] = 0.25
+        self.assert_fails(level, "warn_s = 0.25 fuera de [0.5, 1.0]")
+        rem["params"]["warn_s"] = 1.0
+        rem["params"]["timer_s"] = 1.0
+        self.assert_fails(level, "warn_s (1.0) debe ser menor que timer_s (1.0)")
+        rem["params"]["timer_s"] = 2.0
+        rem["params"]["group"] = ""
+        self.assert_fails(level, "group debe ser un texto no vacio")
+        level = self.load("recordatorios_test")
+        set_cell(level, 13, 8, "#")
+        self.assert_fails(level, "ocupa una celda que el grid debe dejar vacia")
+
+    def test_snooze_links_and_cap(self):
+        level = self.load("recordatorios_test")
+        snooze = self.find_obj(level, "snooze_1")
+        snooze["params"]["targets"] = ["no_existe"]
+        self.assert_fails(level, "target 'no_existe' no es el group de ningun reminder_platform")
+        snooze["params"]["targets"] = []
+        self.assert_fails(level, "targets debe ser una lista no vacia")
+        snooze["params"]["targets"] = ["posponer_1"]
+        snooze["params"]["cap_s"] = 2.0
+        self.assert_fails(level, "cap_s (2.0) debe ser >= extend_s (4.0)")
+        snooze["params"]["cap_s"] = 50
+        self.assert_fails(level, "cap_s = 50 fuera de [1.0, 30.0]")
+
+    def test_overlay_button_inside_and_ad_cover(self):
+        level = self.load("overlay_test")
+        ov = self.find_obj(level, "overlay_1")
+        ov["params"]["close_button_px"] = [310, 224]
+        self.assert_fails(level, "el boton de cerrar")
+        ov["params"]["close_button_px"] = [8, 224]
+        ov["params"]["opacity"] = 0.2
+        self.assert_fails(level, "opacity = 0.2 fuera de [0.5, 0.95]")
+        ov["params"]["opacity"] = 0.7
+        # Un anuncio en la celda del boton (12, 9) es valido; en otra celda, no.
+        level["objects"].append({"type": "ad_cover", "x": 12, "y": 9,
+                                 "params": {"id": "ad_o", "target": "overlay_1", "text": "Saltar anuncio en 5…"}})
+        self.assertEqual(vls.validate_level(level), [])
+        level["objects"][-1]["x"] = 13
+        self.assert_fails(level, "debe estar en la celda del boton de cerrar de 'overlay_1'")
+
+    def test_update_bar_zone_and_waves(self):
+        level = self.load("actualizaciones_test")
+        bar = self.find_obj(level, "barra_99")
+        bar["params"]["zone"] = [4, 1, 40, 10]
+        self.assert_fails(level, "se sale del grid")
+        bar["params"]["zone"] = [4, 1, 20]
+        self.assert_fails(level, "zone debe ser [columna, fila, ancho, alto]")
+        level = self.load("actualizaciones_test")
+        waves = self.find_obj(level, "barra_99")["params"]["waves"]
+        waves[0]["t"] = 0.5
+        self.assert_fails(level, "t = 0.5 fuera de [0.75, wait_s 20.0)")
+        waves[0]["t"] = 25.0
+        self.assert_fails(level, "t = 25.0 fuera de")
+        waves[0]["t"] = 4.0
+        waves[1]["type"] = "spam_banner"
+        self.assert_fails(level, "type 'spam_banner' no admitido")
+        waves[1]["type"] = "alert_bubble"
+        waves[2]["x"] = 2
+        self.assert_fails(level, "x = 2 fuera de la zona")
+        waves[2]["x"] = 11
+        waves[3]["params"] = {"chase_speed_px_s": 900}
+        self.assert_fails(level, "params.chase_speed_px_s = 900 fuera de")
+        waves[3]["params"] = {}
+        waves[4]["extra"] = 1
+        self.assert_fails(level, "campo desconocido 'extra'")
+        del waves[4]["extra"]
+        self.find_obj(level, "barra_99")["params"]["wait_s"] = 100
+        self.assert_fails(level, "wait_s = 100 fuera de [3.0, 60.0]")
+        level = self.load("actualizaciones_test")
+        set_cell(level, 24, 9, "#")
+        self.assert_fails(level, "ocupa una celda que el grid debe dejar vacia")
+
+
 if __name__ == "__main__":
     unittest.main()

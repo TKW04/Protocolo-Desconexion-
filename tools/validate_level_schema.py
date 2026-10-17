@@ -24,6 +24,12 @@ Reglas:
     vida extra (extra_life_pickup, 2026-10-16): como mucho una por nivel (se coge
     una vez por mapa) y secret_id (id del registro) un texto no vacio;
     receptores apuntando a un puente existente; la puerta de salida contiene la G;
+    objetos con level_params en el catalogo (2026-10-16: recordatorio, Posponer, pop-up
+    translucido, barra del 99 %): params numericos en su rango; recordatorio con group y
+    warn_s < timer_s; Posponer con targets = grupos de recordatorios existentes y
+    cap_s >= extend_s; pop-up translucido con el boton dentro de la ventana (un ad_cover
+    puede taparlo); barra del 99 % con zone dentro del grid y oleadas {t, type, x, params}
+    validas (t entre el aviso y wait_s, type de wave_types, x en la zona, params del enemigo);
   - ids unicos (checkpoints, enemigos, secretos y params.id de los objetos);
   - sin pinchos en P ni en C ni en las 8 celdas vecinas de una C;
   - tramos (sections, opcional): {name, x_from, x_to, y_from, y_to, patterns}; x e y
@@ -74,10 +80,13 @@ CAMERA_LIMITS = ("grid",)
 # Nivel de prueba (no es del juego, no se enlaza desde el hub): <nombre>_test.
 TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
-BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker"}
+BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
-                    "laser_receiver", "relay_receiver"}
+                    "laser_receiver", "relay_receiver", "snooze_button"}
+# Barra del 99 % (2026-10-16): puerta de 1 x 3 tiles; aviso de cada caida = 9 cuadros a 12 fps.
+UPDATE_BAR_HEIGHT = 3
+UPDATE_BAR_WARN_S = 9 / 12.0
 
 
 def _is_int(value):
@@ -367,8 +376,15 @@ class LevelValidator:
             if not _is_int(length) or length < 1:
                 return None
             return [(x + step * i, y) for i in range(length)]
-        if kind == "receiver":
+        if kind in ("receiver", "snooze_button"):
             return [(x, y)]
+        if kind == "reminder_platform":
+            w = get("width_tiles", 1)
+            if not _is_int(w) or w < 1:
+                return None
+            return [(x + i, y) for i in range(w)]
+        if kind == "update_bar":
+            return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
         w, h = get("width_tiles", 1), get("height_tiles", 1)
         if not (_is_int(w) and _is_int(h)) or w < 1 or h < 1:
             return None
@@ -386,6 +402,9 @@ class LevelValidator:
         # laser_receiver -> relay_receiver -> bridge_inactive y ad_cover -> popup_blocker.
         relays = set()
         popups = {}
+        # Recordatorios y Posponer (2026-10-16, paso 6): grupos de recordatorios enlazados.
+        reminder_groups = set()
+        snoozes = []
         links = []
         doors = []
         encounters = []
@@ -430,6 +449,8 @@ class LevelValidator:
                                % (what, field, params[field], ", ".join(allowed)), y, x)
             if kind == "charger":
                 self._check_charger(what, x, y, params)
+            if isinstance(entry.get("level_params"), dict):
+                self._check_object_params(what, x, y, params, entry["level_params"])
             self.object_anchors.add((kind, (x, y)))
             if "id" in params:
                 self._register_id(params["id"], what)
@@ -463,6 +484,23 @@ class LevelValidator:
                 links.append((what, x, y, params.get("target"), "popup_blocker"))
             elif kind == "popup_blocker":
                 popups[params.get("id")] = (x, y, params)
+            elif kind == "overlay_popup":
+                popups[params.get("id")] = (x, y, params)
+                self._check_overlay(what, x, y, params, entry.get("defaults", {}))
+            elif kind == "reminder_platform":
+                group = params.get("group")
+                if not isinstance(group, str) or not group.strip():
+                    self.error("%s: group debe ser un texto no vacio" % what, y, x)
+                else:
+                    reminder_groups.add(group)
+                d = entry.get("defaults", {})
+                timer, warn = params.get("timer_s", d.get("timer_s")), params.get("warn_s", d.get("warn_s"))
+                if _is_number(timer) and _is_number(warn) and warn >= timer:
+                    self.error("%s: warn_s (%s) debe ser menor que timer_s (%s)" % (what, warn, timer), y, x)
+            elif kind == "snooze_button":
+                snoozes.append((what, x, y, params, entry.get("defaults", {})))
+            elif kind == "update_bar":
+                self._check_update_bar(what, x, y, params, entry)
             elif kind == "ability_pickup":
                 if "refill_energy" in params and not isinstance(params["refill_energy"], bool):
                     self.error("%s: refill_energy debe ser true o false" % what, y, x)
@@ -485,17 +523,20 @@ class LevelValidator:
             what, x, y = encounters[0]
             self.error("%s: el encuentro con Eco da el pulso; el nivel debe empezar sin el "
                        "(abilities_available.pulse false)" % what, y, x)
+        for (what, x, y, params, defaults) in snoozes:
+            self._check_snooze(what, x, y, params, defaults, reminder_groups)
         for (what, x, y, target) in receivers:
             if target not in bridges:
                 self.error("%s: target '%s' no es el id de ningun bridge_inactive" % (what, target), y, x)
         for (what, x, y, target, kind) in links:
             ids = relays if kind == "relay_receiver" else set(popups)
             if target not in ids:
-                self.error("%s: target '%s' no es el id de ningun %s" % (what, target, kind), y, x)
+                kinds = kind if kind == "relay_receiver" else "popup_blocker ni overlay_popup"
+                self.error("%s: target '%s' no es el id de ningun %s" % (what, target, kinds), y, x)
             elif kind == "popup_blocker":
                 px, py, pp = popups[target]
                 button = pp.get("close_button_px")
-                size = pp.get("close_button_size_px", 16)
+                size = pp.get("close_button_size_px", 24 if self._is_overlay_id(target) else 16)
                 if isinstance(button, list) and len(button) == 2 and all(_is_number(v) for v in button) \
                         and _is_number(size):
                     t = self.level["tile_size"]
@@ -508,6 +549,111 @@ class LevelValidator:
             if len(goals) == 1 and goals[0] not in cells:
                 self.error("%s no contiene la meta G (fila %d, columna %d)"
                            % (what, goals[0][1], goals[0][0]), y, x)
+
+    def _is_overlay_id(self, ident):
+        return any(isinstance(o, dict) and o.get("type") == "overlay_popup"
+                   and isinstance(o.get("params"), dict) and o["params"].get("id") == ident
+                   for o in self.level.get("objects", []))
+
+    def _check_object_params(self, what, x, y, params, spec):
+        """Params numericos de un objeto con level_params en el catalogo (2026-10-16: recordatorio,
+        Posponer, pop-up translucido y barra del 99 %): numericos, en [min, max] y enteros si int."""
+        for key, rule in spec.items():
+            if key.startswith("_") or key not in params or not isinstance(rule, dict):
+                continue
+            value = params[key]
+            if not _is_number(value):
+                self.error("%s: %s debe ser un numero" % (what, key), y, x)
+                continue
+            if rule.get("int") and not _is_int(value):
+                self.error("%s: %s debe ser un entero" % (what, key), y, x)
+            if "min" in rule and value < rule["min"] or "max" in rule and value > rule["max"]:
+                self.error("%s: %s = %s fuera de [%s, %s]" % (what, key, value, rule.get("min"), rule.get("max")),
+                           y, x)
+
+    def _check_snooze(self, what, x, y, params, defaults, groups):
+        """Posponer: targets = lista no vacia de grupos de recordatorios del nivel; cap_s >= extend_s."""
+        targets = params.get("targets")
+        if not isinstance(targets, list) or not targets:
+            self.error("%s: targets debe ser una lista no vacia de grupos de recordatorios" % what, y, x)
+        else:
+            for target in targets:
+                if not isinstance(target, str) or target not in groups:
+                    self.error("%s: target '%s' no es el group de ningun reminder_platform" % (what, target), y, x)
+        extend = params.get("extend_s", defaults.get("extend_s"))
+        cap = params.get("cap_s", defaults.get("cap_s"))
+        if _is_number(extend) and _is_number(cap) and cap < extend:
+            self.error("%s: cap_s (%s) debe ser >= extend_s (%s)" % (what, cap, extend), y, x)
+
+    def _check_overlay(self, what, x, y, params, defaults):
+        """Pop-up translucido: el boton de cerrar dentro de la ventana."""
+        button = params.get("close_button_px")
+        size = params.get("close_button_size_px", defaults.get("close_button_size_px", 24))
+        w = params.get("width_tiles", defaults.get("width_tiles", 1))
+        h = params.get("height_tiles", defaults.get("height_tiles", 1))
+        if not (isinstance(button, list) and len(button) == 2 and all(_is_number(v) for v in button)):
+            self.error("%s: close_button_px debe ser [x, y] en px" % what, y, x)
+            return
+        if not (_is_number(size) and _is_int(w) and _is_int(h)):
+            return
+        t = self.level["tile_size"]
+        if button[0] < 0 or button[1] < 0 or button[0] + size > w * t or button[1] + size > h * t:
+            self.error("%s: el boton de cerrar (%s, %s px) se sale de la ventana" % (what, button, size), y, x)
+
+    def _check_update_bar(self, what, x, y, params, entry):
+        """Barra del 99 %: zona dentro del grid y oleadas {t, type, x, params} con t entre el aviso y
+        wait_s, type de wave_types, x dentro de la zona y params validos para ese enemigo."""
+        zone = params.get("zone")
+        if not (isinstance(zone, list) and len(zone) == 4 and all(_is_int(v) for v in zone)) \
+                or zone[2] < 1 or zone[3] < 1:
+            self.error("%s: zone debe ser [columna, fila, ancho, alto] (enteros, ancho y alto >= 1)" % what, y, x)
+            zone = None
+        elif not (self.in_bounds(zone[0], zone[1]) and self.in_bounds(zone[0] + zone[2] - 1, zone[1] + zone[3] - 1)):
+            self.error("%s: zone %s se sale del grid" % (what, zone), y, x)
+        wait = params.get("wait_s", entry.get("defaults", {}).get("wait_s", 20.0))
+        waves = params.get("waves")
+        if not isinstance(waves, list):
+            self.error("%s: waves debe ser una lista de {t, type, x, params}" % what, y, x)
+            return
+        if len(waves) > int(entry.get("max_waves", 12)):
+            self.error("%s: demasiadas oleadas (%d; maximo %d)" % (what, len(waves), entry.get("max_waves", 12)), y, x)
+        allowed = entry.get("wave_types", [])
+        for i, wave in enumerate(waves):
+            tag = "%s: waves[%d]" % (what, i)
+            if not isinstance(wave, dict):
+                self.error("%s debe ser un objeto {t, type, x, params}" % tag, y, x)
+                continue
+            for key in wave:
+                if key not in ("t", "type", "x", "params"):
+                    self.error("%s: campo desconocido '%s'" % (tag, key), y, x)
+            t = wave.get("t")
+            if not _is_number(t):
+                self.error("%s: t debe ser un numero (segundos de la espera)" % tag, y, x)
+            elif _is_number(wait) and not (UPDATE_BAR_WARN_S <= t < wait):
+                self.error("%s: t = %s fuera de [%.2f, wait_s %s) (aviso de 9 cuadros antes de caer)"
+                           % (tag, t, UPDATE_BAR_WARN_S, wait), y, x)
+            kind = wave.get("type")
+            if kind not in allowed:
+                self.error("%s: type '%s' no admitido (validos: %s)" % (tag, kind, ", ".join(allowed)), y, x)
+            col = wave.get("x")
+            if not _is_int(col):
+                self.error("%s: x debe ser una columna (entero)" % tag, y, x)
+            elif zone is not None and not (zone[0] <= col < zone[0] + zone[2]):
+                self.error("%s: x = %d fuera de la zona (columnas %d-%d)" % (tag, col, zone[0], zone[0] + zone[2] - 1),
+                           y, x)
+            wparams = wave.get("params", {})
+            if not isinstance(wparams, dict):
+                self.error("%s: params debe ser un objeto" % tag, y, x)
+            elif kind in allowed:
+                data = self._load_json("data/enemies/%s.json" % kind)
+                spec = data.get("level_params") if isinstance(data, dict) else None
+                fake = {"id": "%s (oleada %d)" % (params.get("id", what), i), "type": kind}
+                if isinstance(spec, dict):
+                    self._check_enemy_params(fake, wparams, spec)
+                else:
+                    for key, value in wparams.items():
+                        if not _is_number(value) or value <= 0:
+                            self.error("%s: params.%s debe ser un numero > 0" % (tag, key), y, x)
 
     def _check_eco_encounter(self, what, x, y, params, defaults):
         """Eco flotando (eco_offset_tiles) dentro de la zona del encuentro y en una celda libre."""

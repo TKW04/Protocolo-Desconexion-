@@ -243,6 +243,112 @@
 				"cooldown_s": 20.0
 			},
 			"example": {"type": "charger", "x": 60, "y": 9, "params": {"id": "cargador_1", "amount": 50.0, "reusable": true, "cooldown_s": 20.0}}
+		},
+		"reminder_platform": {
+			"scene": "res://scenes/levels/reminder_platform.tscn",
+			"help_id": "reminder_platform",
+			"description": "Recordatorio (2026-10-16, paso 6 de docs/propuesta-1-2.md §10; piso 3, §3.3, y patron 3 «Posponer», §0.4). Plataforma SOLIDA (capa world, no de una via) de width_tiles x 1 (1-3 tiles; la tarjeta y su colision ocupan los card_height_px de arriba de la celda; el grid deja sus celdas en '.'). group: grupo de cuenta compartida: al pisar cualquiera en reposo empieza la cuenta de timer_s de todos los del grupo en reposo. Tiempo del mundo (el Debug la alarga x2, la pausa la para). Los ultimos warn_s (6-12 cuadros a 12 fps: 0,5-1,0 s) avisa (suena, parpadea, tiembla) y al vencer cae: deja de ser solido al instante (Isak cae sin dano) y vuelve a su sitio a los respawn_s (si Isak no ocupa su sitio). El boton Posponer (snooze_button) suma tiempo a los de su grupo mientras cuentan. Al reaparecer Isak vuelve a su estado inicial. level_params: rangos de los params (tools/validate_level_schema.py).",
+			"required": ["group"],
+			"fields": {
+				"id": "object_id",
+				"group": "group_id",
+				"width_tiles": "width_tiles",
+				"timer_s": "timer_s",
+				"warn_s": "warn_s",
+				"respawn_s": "respawn_s"
+			},
+			"defaults": {
+				"width_tiles": 2,
+				"timer_s": 2.5,
+				"warn_s": 0.5,
+				"respawn_s": 3.0
+			},
+			"level_params": {
+				"width_tiles": {"min": 1, "max": 3, "int": true},
+				"timer_s": {"min": 1.0, "max": 20.0},
+				"warn_s": {"min": 0.5, "max": 1.0},
+				"respawn_s": {"min": 0.5, "max": 20.0}
+			},
+			"example": {"type": "reminder_platform", "x": 6, "y": 9, "params": {"group": "suelto_1", "width_tiles": 2, "timer_s": 2.5}}
+		},
+		"snooze_button": {
+			"scene": "res://scenes/levels/snooze_button.tscn",
+			"help_id": "snooze_button",
+			"description": "Boton Posponer (2026-10-16, paso 6; patron 3 «Posponer»). Objetivo del LASER (capa world, grupo laser_activatable; el pulso no le hace nada): placa con diana cian a la altura del celular de Isak de pie en el suelo de su celda (seccion snooze_button: hit_rect). targets: lista de grupos de recordatorios (params.group de reminder_platform) del nivel. Un impacto con alguno CONTANDO les suma extend_s (tope: cap_s de cuenta) y el boton se enfria cooldown_s (tiempo del mundo; enfriandose, el impacto no hace nada); sin nada contando (en reposo, caidos o volviendo), chispa gris «nada que posponer». No es solido.",
+			"required": ["targets"],
+			"fields": {
+				"id": "object_id",
+				"targets": "target_groups",
+				"extend_s": "extend_s",
+				"cap_s": "cap_s",
+				"cooldown_s": "cooldown_s"
+			},
+			"defaults": {
+				"extend_s": 4.0,
+				"cap_s": 8.0,
+				"cooldown_s": 1.0
+			},
+			"level_params": {
+				"extend_s": {"min": 0.5, "max": 10.0},
+				"cap_s": {"min": 1.0, "max": 30.0},
+				"cooldown_s": {"min": 0.0, "max": 10.0}
+			},
+			"example": {"type": "snooze_button", "x": 24, "y": 8, "params": {"id": "snooze_1", "targets": ["posponer_1"], "extend_s": 4.0, "cap_s": 8.0}}
+		},
+		"overlay_popup": {
+			"scene": "res://scenes/levels/overlay_popup.tscn",
+			"help_id": "overlay_popup",
+			"description": "Pop-up translucido (2026-10-16, paso 7 de docs/propuesta-1-2.md §10; §3.1). Ventana de width_tiles x height_tiles con un texto de humor dibujada POR ENCIMA del mundo (z alto, por debajo de la interfaz) con opacity (0,7): tapa parte de la vista. SIN colision (no bloquea el paso ni el laser) y puede estar sobre cualquier celda. Se cierra con el PULSO a su boton (close_button_px: esquina superior izquierda en px relativa al pop-up; close_button_size_px: lado del boton y de su zona de golpe, 24 por defecto); cerrado, queda cerrado. Con el Debug se ve a traves (opacidad debug_opacity, 0,15, y contorno cian). Admite un ad_cover encima del boton (como el popup_blocker).",
+			"required": ["text", "close_button_px"],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"close_button_px": "close_button_position",
+				"close_button_size_px": "close_button_size",
+				"opacity": "opacity",
+				"debug_opacity": "debug_opacity"
+			},
+			"defaults": {
+				"width_tiles": 5,
+				"height_tiles": 3,
+				"close_button_size_px": 24,
+				"opacity": 0.7,
+				"debug_opacity": 0.15
+			},
+			"level_params": {
+				"width_tiles": {"min": 2, "max": 12, "int": true},
+				"height_tiles": {"min": 2, "max": 8, "int": true},
+				"close_button_size_px": {"min": 16, "max": 48, "int": true},
+				"opacity": {"min": 0.5, "max": 0.95},
+				"debug_opacity": {"min": 0.0, "max": 0.4}
+			},
+			"example": {"type": "overlay_popup", "x": 18, "y": 3, "params": {"id": "overlay_1", "text": "Tienes 99+ mensajes que no son importantes", "width_tiles": 5, "height_tiles": 3, "close_button_px": [284, 156]}}
+		},
+		"update_bar": {
+			"scene": "res://scenes/levels/update_bar.tscn",
+			"help_id": "update_bar",
+			"description": "Barra de actualizacion del 99 % (2026-10-16, paso 8 de docs/propuesta-1-2.md §10; piso 4, §3.4). Puerta SOLIDA de 1 x 3 tiles (x, y = su celda de arriba; el grid deja sus celdas en '.') con indicador y cartel. zone: [columna, fila, ancho, alto] en celdas: al entrar Isak se arma, sube a 99 % en rise_s y se traba wait_s (tiempo del mundo: el Debug la alarga x2). waves: lista de {t, type, x, params} (t: segundo de la espera, entre el aviso y wait_s; type: alert_bubble o notification_badge; x: columna dentro de la zona; params: los de enemies[].params de ese tipo): cada uno se anuncia 0,75 s antes (flecha roja en el techo y sombra en el suelo) y cae en un paquete que al tocar el suelo suelta al enemigo. Al 100 % los que queden se apagan (sin drops) y la puerta se abre para siempre. Si Isak reaparece antes, vuelve al principio.",
+			"required": ["zone", "waves"],
+			"fields": {
+				"id": "object_id",
+				"wait_s": "wait_s",
+				"rise_s": "rise_s",
+				"zone": "arm_zone",
+				"waves": "waves"
+			},
+			"defaults": {
+				"wait_s": 20.0,
+				"rise_s": 1.0
+			},
+			"level_params": {
+				"wait_s": {"min": 3.0, "max": 60.0},
+				"rise_s": {"min": 0.2, "max": 5.0}
+			},
+			"wave_types": ["alert_bubble", "notification_badge"],
+			"max_waves": 12,
+			"example": {"type": "update_bar", "x": 2, "y": 8, "params": {"id": "update_bar", "wait_s": 20.0, "zone": [3, 8, 22, 4], "waves": [{"t": 4.0, "type": "alert_bubble", "x": 8}, {"t": 10.0, "type": "notification_badge", "x": 16}]}}
 		}
 	},
 	"ability_pickup": {
@@ -295,6 +401,65 @@
 		"text_color": "#0b0e1a",
 		"key_color": "#f2f4f8",
 		"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader"
+	},
+	"reminder_platform": {
+		"_notes": "PROPUESTA (2026-10-16, ajustable jugando). frames: SpriteFrames de tools/gen_world1_tower.py (reminder_w<ancho>_idle/warn/fall/respawn, reminder_seg y reminder_zz). card_height_px: alto de la tarjeta y de su colision, arriba de la celda. segments_px y segment_step_px: el primer segmento del temporizador (4) y la distancia entre ellos (encajan en la ranura del arte). shake_px: temblor del aviso. fall_drop_px: cuanto baja al caer. stand_tolerance_px: distancia de los pies de Isak al borde de arriba para contar que lo pisa. zz_s: segundos del «Zz» al posponerlo.",
+		"frames": "res://assets/sprites/tower_objects_frames.tres",
+		"card_height_px": 32,
+		"segments_px": [23, 14],
+		"segment_step_px": 9,
+		"shake_px": 2.0,
+		"fall_drop_px": 48.0,
+		"stand_tolerance_px": 6.0,
+		"zz_s": 0.8
+	},
+	"snooze_button": {
+		"_notes": "PROPUESTA (2026-10-16). hit_rect: zona de impacto [x, y, ancho, alto] relativa a la esquina superior izquierda de la celda; cubre la altura del celular de Isak de pie en esa celda (8 px por debajo del borde de arriba) y sube a la de encima. sprite_center_px: centro del arte de 48x48. spark_frames: la chispa gris (gray_spark) de tools/gen_world1_puzzle.py.",
+		"frames": "res://assets/sprites/tower_objects_frames.tres",
+		"spark_frames": "res://assets/sprites/puzzle_objects_frames.tres",
+		"hit_rect": [8, -16, 48, 48],
+		"sprite_center_px": [32, 8]
+	},
+	"overlay_popup": {
+		"_notes": "PROPUESTA (2026-10-16). Ventana de nine-patch (patch_margins [izq, arriba, der, abajo] del arte de 48x48: cabecera de 16 px) y su version «vista con Debug» (contorno cian discontinuo, repetido). z_index: capa absoluta por encima del mundo (Isak, enemigos, Eco) y por debajo de la interfaz (CanvasLayer). Texto: fuente de textos a font_scale, partido por palabras dentro de text_padding_px y recoloreado a text_color. button_blink_s: el boton alterna normal y brillo; button_min_alpha: el boton se ve aunque la ventana este muy translucida. close_s y close_steps: se pliega en pasos (tiempo del mundo).",
+		"frames": "res://assets/sprites/tower_objects_frames.tres",
+		"patch_margins": [4, 16, 4, 4],
+		"z_index": 50,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_scale": 2,
+		"text_padding_px": [10, 22, 10, 8],
+		"text_color": "#0b0e1a",
+		"key_color": "#f2f4f8",
+		"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
+		"button_blink_s": 0.4,
+		"button_min_alpha": 0.85,
+		"close_s": 0.33,
+		"close_steps": 4
+	},
+	"update_bar": {
+		"_notes": "PROPUESTA (2026-10-16, ajustable jugando; textos de interfaz del mundo, §1 de docs/propuesta-1-2.md). Puerta de 64x192 (update_bar_progress, _stuck, _full y _open de tools/gen_world1_tower.py). Aviso de cada caida: anticipation_frames a anim_fps (9 a 12 = 0,75 s; flecha drop_arrow en el techo de la zona y sombra drop_shadow en el suelo). effects_scale: escala entera de la flecha, la sombra y el paquete (x2). package_fall_px_s: velocidad del paquete. full_s: segundos al 100 % antes de abrirse. Cartel: fuente de textos a font_scale sobre una placa plate_color con borde plate_border_color centrada en plate_center_px (relativo a la esquina superior izquierda de la puerta). texts.stuck: [fraccion de la espera desde la que sale, texto].",
+		"frames": "res://assets/sprites/tower_objects_frames.tres",
+		"idle_percent": 97,
+		"anticipation_frames": 9,
+		"anim_fps": 12.0,
+		"package_fall_px_s": 900.0,
+		"full_s": 0.6,
+		"effects_z_index": 5,
+		"effects_scale": 2,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"font_scale": 2,
+		"text_color": "#f2f4f8",
+		"plate_color": "#0b0e1a",
+		"plate_border_color": "#9bb0e8",
+		"plate_padding_px": 3,
+		"plate_center_px": [32, -24],
+		"texts": {
+			"installing": "Instalando… %d %%",
+			"stuck": [[0.0, "Instalando… 99 %"], [0.25, "99,9 %"], [0.5, "Calculando tiempo restante…"], [0.8, "Casi listo"]],
+			"done": "Reiniciando…"
+		}
 	},
 	"charger": {
 		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: poste de size_px con contorno outline (noche_profunda), cuerpo body (tile_luz) y pantalla: ready (debug_cian, con un rayo) lista; enfriandose, screen_off (tile_base) con una barra cooling (borde_luz) que sube; gastado, screen_off. La zona de contacto es el rectangulo del poste.",
