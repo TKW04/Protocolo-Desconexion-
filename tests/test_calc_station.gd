@@ -1,6 +1,7 @@
-# Calc dormida en el hub real (CalcStation + CalcPanel; paso 8 de
-# docs/propuesta-hub-y-guardado.md §6.2): de pie en el dock con su animacion
-# dormida, sin voz ni dialogo; el pulso abre la tienda con Isak de espaldas;
+# Calc en el hub real (CalcStation + CalcPanel; paso 8 de
+# docs/propuesta-hub-y-guardado.md §6.2): de pie en el dock, conocida y
+# despierta (animacion awake desde la tanda H3 del encuentro, 2026-10-17; antes
+# dormida), sin voz y sin hablar fuera de su encuentro (tests/test_calc_intro.gd); el pulso abre la tienda con Isak de espaldas;
 # lista de mejoras con coste y estado, saldo de puntos y power banks; arriba y
 # abajo eligen (con el detalle de la elegida); el pulso compra con las mismas
 # reglas que GameState.purchase_upgrade; falta de puntos o de power bank;
@@ -66,7 +67,7 @@ func _open() -> void:
 	_panel.skip_input_delay()
 
 
-func test_calc_is_a_sleeping_station_on_the_dock() -> void:
+func test_calc_is_an_awake_station_on_the_dock() -> void:
 	assert_not_null(_calc, "Calc es una estacion del hub")
 	assert_eq(_calc.station_id, &"calc")
 	assert_null(_hub.get_dormant(&"calc"), "Ya no es un hueco sin logica")
@@ -74,9 +75,9 @@ func test_calc_is_a_sleeping_station_on_the_dock() -> void:
 	assert_eq(_calc.position.y + _calc.get_size().y, _hub.get_floor_y(), "Apoyada en el dock")
 	var sprite := _calc.get_visual() as AnimatedSprite2D
 	assert_not_null(sprite, "Arte final (calc_frames)")
-	assert_eq(_calc.get_calc_animation(), &"sleep", "Dormida")
+	assert_eq(_calc.get_calc_animation(), &"awake", "Despierta")
 	assert_true(sprite.is_playing())
-	var height: float = sprite.sprite_frames.get_frame_texture(&"sleep", 0).get_size().y
+	var height: float = sprite.sprite_frames.get_frame_texture(&"awake", 0).get_size().y
 	assert_almost_eq(_calc.position.y + sprite.position.y + height, _hub.get_floor_y(), 0.5, "Pies en el dock")
 	assert_eq(sprite.scale, Vector2.ONE, "Sin escalar")
 	assert_true(_calc.is_powered(), "Encendida: Calc conocida")
@@ -106,7 +107,7 @@ func test_calc_is_powered_off_until_met() -> void:
 	_isak.set_pulse_area_active(false)
 	assert_true(GameState.meet_ally(GameState.ALLY_CALC), "Encuentro (helper)")
 	assert_true(_calc.is_powered(), "Se enciende al momento")
-	assert_eq(_calc.get_calc_animation(), &"sleep")
+	assert_eq(_calc.get_calc_animation(), &"awake")
 	_calc.advance(0.1)
 	assert_true(_calc.is_key_hint_visible(), "Ya sale la tecla")
 	assert_true(_calc.open(_isak), "Ya vende")
@@ -119,7 +120,7 @@ func test_pulse_near_calc_opens_the_shop_with_isak_facing_back() -> void:
 	await wait_physics_frames(6)
 	_calc.advance(0.1)
 	assert_true(_calc.is_key_hint_visible(), "Tecla del pulso junto a Calc")
-	assert_eq(_calc.get_calc_animation(), &"sleep", "Con el prompt sigue dormida")
+	assert_eq(_calc.get_calc_animation(), &"awake", "Con el prompt no cambia")
 	_isak.set_pulse_area_active(true)
 	await wait_physics_frames(2)
 	assert_true(_calc.is_panel_open(), "El pulso abre la tienda")
