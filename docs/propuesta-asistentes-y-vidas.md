@@ -111,7 +111,7 @@ Texto de la presentación (ajustable; no añade historia):
 
 | Aspecto | Detalle |
 |---|---|
-| **Rol** | Ahí aparece lo que Eco «desecha» en un rollback: **habilidades, ítems (de momento, power banks), puntos de atención y mejoras**. No se ha borrado: está en la papelera. Una sola regla para el game over y el rollback del jefe final (§5.3). |
+| **Rol** | Ahí aparece lo que Eco «desecha» en un rollback: **habilidades, ítems (de momento, power banks), puntos de atención y mejoras**. No se ha borrado: está en la papelera. Una sola regla para el game over y el rollback del jefe final (§5.3). Desde la tienda por pistas (2026-10-17, tanda M1 de `propuesta-mejoras.md`) las mejoras son los niveles de cada pista (`upgrade_levels`): la papelera los guarda y los devuelve igual. |
 | **Cuándo se activa** | **La primera vez que hace falta** (primer game over o primer rollback). Hasta entonces su hueco del dock es una silueta apagada, sin prompt. |
 | **Cómo se recupera** | Se **parpadea y se mueve** mientras tenga contenido. Basta con acercarse (1,5 tiles, sin botón) para recuperarlo todo de una vez, con una animación de vaciado. Funciona sin pulso. Después se queda quieta y apagada. |
 | **Bloqueo de carpetas** | Mientras tenga contenido, las carpetas no se abren y avisan «Recupera tus archivos de la papelera», para no jugar sin habilidades. |

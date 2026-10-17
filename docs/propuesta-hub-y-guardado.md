@@ -146,7 +146,7 @@ Panel de la carpeta, por ejemplo M1 en la 1.ª vuelta:
 | `attention_points` | Sí | Sí | |
 | `captured_points` (nivel → ids) | Sí | Sí | El rollback lo vacía. No hace falta guardarlo por vuelta. |
 | `collected_pickups` (power banks de mapa, cargadores de un solo uso) | Sí | Sí | El rollback los vacía: los objetos del mapa vuelven (pregunta 8). |
-| `upgrades_purchased` | Sí | Sí | |
+| `upgrades_purchased` (desde el guardado v4, 2026-10-17: `upgrade_levels`, pista → nivel; `propuesta-mejoras.md`, tanda M1) | Sí | Sí | |
 | `abilities_obtained` | Sí | Sí | El rollback **no** los toca: Isak mantiene sus habilidades. |
 | `power_banks` (`full`, `empty`, `charge`) | Sí | Sí | |
 | `completed_levels` / `unlocked_levels` | Sí | Sí | El rollback los reinicia para la nueva vuelta (por definir con el rollback). |
