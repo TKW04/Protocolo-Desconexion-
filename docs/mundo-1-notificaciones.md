@@ -56,11 +56,13 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 | **Piso 4: Actualizaciones** | Una barra de progreso que se queda trabada en 99% y un tramo de espera humorístico con enemigos cayendo. |
 | **Mecánica de overlay** | Pop-ups translúcidos cubren zonas de la vista. Se cierran con el pulso o se atraviesan viendo con el Debug. |
 | **Secreto** | La carpeta de Spam, detrás de una plataforma oculta. Contiene puntos de atención extra y el primer recuerdo coleccionable. |
-| **Puntos de sincronización** | Uno cada dos pisos. |
+| **Puntos de sincronización** | Uno cada dos pisos. [Hecho: al entrar a los pisos 2 y 4] |
 
 > **Cambio aprobado 2026-10-15 (3):** tras obtener el Debug, al final del 1-2, Isak encuentra a **Calc**; desde entonces hay tienda en el hub. La historia del encuentro está por decidir (`propuesta-asistentes-y-vidas.md` §2.3).
 
-> **Decisiones del usuario 2026-10-16 y propuesta de diseño (pendiente de revisión):** [propuesta-1-2.md](propuesta-1-2.md), con el «lenguaje de combinaciones» de pulso y láser (§0) para todos los niveles. Lo que cambia de la tabla de arriba si se aprueba:
+> **Implementado (2026-10-16, paso 13 de [propuesta-1-2.md](propuesta-1-2.md) §10):** el 1-2 es jugable desde la carpeta del Mundo 1 del hub tras completar el 1-1 (`data/levels/1-2.json`, `scenes/levels/1-2.tscn`); diseño final tramo a tramo y desvíos en la propuesta (§10, «Hecho en el paso 13»). Faltan el recuerdo coleccionable y Calc en la azotea (paso 14) y el bot vertical (paso 15).
+
+> **Decisiones del usuario 2026-10-16 y propuesta de diseño ([aprobada] el 2026-10-16):** [propuesta-1-2.md](propuesta-1-2.md), con el «lenguaje de combinaciones» de pulso y láser (§0) para todos los niveles. Lo que cambia de la tabla de arriba:
 > - **Piso 2:** [Reemplazado] el Debug no aparece sin más: se **obtiene en el piso 2 resolviendo un acertijo de pulso + láser** (decisión del usuario); después, la plataforma oculta lo hace obligatorio (orden: acertijo → Debug → plataforma visible → continuar). Calc sigue al final del 1-2, en la azotea.
 > - **Piso 3:** se añade el **botón «Posponer»** (objetivo del láser que alarga el temporizador de los recordatorios; decisión del usuario).
 > - **Pop-ups translúcidos:** uno por piso (1, 3 y 4); el del piso 3 es opcional.
