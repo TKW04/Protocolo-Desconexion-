@@ -1,0 +1,452 @@
+[gd_resource type="SpriteFrames" load_steps=74 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_idle_00.png" id="1_reminder_w1_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_idle_01.png" id="2_reminder_w1_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_warn_00.png" id="3_reminder_w1_warn_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_warn_01.png" id="4_reminder_w1_warn_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_fall_00.png" id="5_reminder_w1_fall_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_fall_01.png" id="6_reminder_w1_fall_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_fall_02.png" id="7_reminder_w1_fall_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_respawn_00.png" id="8_reminder_w1_respawn_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_respawn_01.png" id="9_reminder_w1_respawn_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w1_respawn_02.png" id="10_reminder_w1_respawn_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_idle_00.png" id="11_reminder_w2_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_idle_01.png" id="12_reminder_w2_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_warn_00.png" id="13_reminder_w2_warn_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_warn_01.png" id="14_reminder_w2_warn_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_fall_00.png" id="15_reminder_w2_fall_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_fall_01.png" id="16_reminder_w2_fall_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_fall_02.png" id="17_reminder_w2_fall_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_respawn_00.png" id="18_reminder_w2_respawn_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_respawn_01.png" id="19_reminder_w2_respawn_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w2_respawn_02.png" id="20_reminder_w2_respawn_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_idle_00.png" id="21_reminder_w3_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_idle_01.png" id="22_reminder_w3_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_warn_00.png" id="23_reminder_w3_warn_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_warn_01.png" id="24_reminder_w3_warn_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_fall_00.png" id="25_reminder_w3_fall_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_fall_01.png" id="26_reminder_w3_fall_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_fall_02.png" id="27_reminder_w3_fall_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_respawn_00.png" id="28_reminder_w3_respawn_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_respawn_01.png" id="29_reminder_w3_respawn_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_w3_respawn_02.png" id="30_reminder_w3_respawn_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_seg_00.png" id="31_reminder_seg_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_seg_01.png" id="32_reminder_seg_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_seg_02.png" id="33_reminder_seg_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_zz_00.png" id="34_reminder_zz_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/reminder_zz_01.png" id="35_reminder_zz_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_wait_00.png" id="36_snooze_wait_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_ready_00.png" id="37_snooze_ready_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_ready_01.png" id="38_snooze_ready_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_hit_00.png" id="39_snooze_hit_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_hit_01.png" id="40_snooze_hit_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_hit_02.png" id="41_snooze_hit_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_cooldown_00.png" id="42_snooze_cooldown_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_cooldown_01.png" id="43_snooze_cooldown_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_cooldown_02.png" id="44_snooze_cooldown_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/snooze_cooldown_03.png" id="45_snooze_cooldown_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_frame_00.png" id="46_overlay_frame_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_frame_debug_00.png" id="47_overlay_frame_debug_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_close_00.png" id="48_overlay_close_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_close_01.png" id="49_overlay_close_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_close_02.png" id="50_overlay_close_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_bell_00.png" id="51_overlay_bell_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/overlay_sample_00.png" id="52_overlay_sample_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_progress_00.png" id="53_update_bar_progress_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_progress_01.png" id="54_update_bar_progress_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_stuck_00.png" id="55_update_bar_stuck_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_stuck_01.png" id="56_update_bar_stuck_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_stuck_02.png" id="57_update_bar_stuck_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_stuck_03.png" id="58_update_bar_stuck_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_full_00.png" id="59_update_bar_full_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_full_01.png" id="60_update_bar_full_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_open_00.png" id="61_update_bar_open_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_open_01.png" id="62_update_bar_open_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_open_02.png" id="63_update_bar_open_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/update_bar_open_03.png" id="64_update_bar_open_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/package_fall_00.png" id="65_package_fall_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/package_fall_01.png" id="66_package_fall_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/package_open_00.png" id="67_package_open_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/package_open_01.png" id="68_package_open_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/package_open_02.png" id="69_package_open_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/drop_arrow_00.png" id="70_drop_arrow_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/drop_arrow_01.png" id="71_drop_arrow_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/drop_shadow_00.png" id="72_drop_shadow_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/tower/drop_shadow_01.png" id="73_drop_shadow_01"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_reminder_w1_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_reminder_w1_idle_01")
+}],
+"loop": true,
+"name": &"reminder_w1_idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_reminder_w1_warn_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_reminder_w1_warn_01")
+}],
+"loop": true,
+"name": &"reminder_w1_warn",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_reminder_w1_fall_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_reminder_w1_fall_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_reminder_w1_fall_02")
+}],
+"loop": false,
+"name": &"reminder_w1_fall",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_reminder_w1_respawn_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_reminder_w1_respawn_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_reminder_w1_respawn_02")
+}],
+"loop": false,
+"name": &"reminder_w1_respawn",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_reminder_w2_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_reminder_w2_idle_01")
+}],
+"loop": true,
+"name": &"reminder_w2_idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_reminder_w2_warn_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_reminder_w2_warn_01")
+}],
+"loop": true,
+"name": &"reminder_w2_warn",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_reminder_w2_fall_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_reminder_w2_fall_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_reminder_w2_fall_02")
+}],
+"loop": false,
+"name": &"reminder_w2_fall",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("18_reminder_w2_respawn_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_reminder_w2_respawn_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_reminder_w2_respawn_02")
+}],
+"loop": false,
+"name": &"reminder_w2_respawn",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("21_reminder_w3_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_reminder_w3_idle_01")
+}],
+"loop": true,
+"name": &"reminder_w3_idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("23_reminder_w3_warn_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_reminder_w3_warn_01")
+}],
+"loop": true,
+"name": &"reminder_w3_warn",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("25_reminder_w3_fall_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_reminder_w3_fall_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_reminder_w3_fall_02")
+}],
+"loop": false,
+"name": &"reminder_w3_fall",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("28_reminder_w3_respawn_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_reminder_w3_respawn_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_reminder_w3_respawn_02")
+}],
+"loop": false,
+"name": &"reminder_w3_respawn",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("31_reminder_seg_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_reminder_seg_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_reminder_seg_02")
+}],
+"loop": false,
+"name": &"reminder_seg",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("34_reminder_zz_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("35_reminder_zz_01")
+}],
+"loop": true,
+"name": &"reminder_zz",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("36_snooze_wait_00")
+}],
+"loop": true,
+"name": &"snooze_wait",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("37_snooze_ready_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("38_snooze_ready_01")
+}],
+"loop": true,
+"name": &"snooze_ready",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("39_snooze_hit_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("40_snooze_hit_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("41_snooze_hit_02")
+}],
+"loop": false,
+"name": &"snooze_hit",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("42_snooze_cooldown_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("43_snooze_cooldown_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("44_snooze_cooldown_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("45_snooze_cooldown_03")
+}],
+"loop": false,
+"name": &"snooze_cooldown",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("46_overlay_frame_00")
+}],
+"loop": true,
+"name": &"overlay_frame",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("47_overlay_frame_debug_00")
+}],
+"loop": true,
+"name": &"overlay_frame_debug",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("48_overlay_close_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("49_overlay_close_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("50_overlay_close_02")
+}],
+"loop": false,
+"name": &"overlay_close",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("51_overlay_bell_00")
+}],
+"loop": true,
+"name": &"overlay_bell",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("52_overlay_sample_00")
+}],
+"loop": true,
+"name": &"overlay_sample",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("53_update_bar_progress_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("54_update_bar_progress_01")
+}],
+"loop": true,
+"name": &"update_bar_progress",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("55_update_bar_stuck_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("56_update_bar_stuck_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("57_update_bar_stuck_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("58_update_bar_stuck_03")
+}],
+"loop": true,
+"name": &"update_bar_stuck",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("59_update_bar_full_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("60_update_bar_full_01")
+}],
+"loop": true,
+"name": &"update_bar_full",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("61_update_bar_open_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("62_update_bar_open_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("63_update_bar_open_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("64_update_bar_open_03")
+}],
+"loop": false,
+"name": &"update_bar_open",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("65_package_fall_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("66_package_fall_01")
+}],
+"loop": true,
+"name": &"package_fall",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("67_package_open_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("68_package_open_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("69_package_open_02")
+}],
+"loop": false,
+"name": &"package_open",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("70_drop_arrow_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("71_drop_arrow_01")
+}],
+"loop": true,
+"name": &"drop_arrow",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("72_drop_shadow_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("73_drop_shadow_01")
+}],
+"loop": true,
+"name": &"drop_shadow",
+"speed": 12.0
+}]
