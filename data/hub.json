@@ -141,7 +141,7 @@
 	"worlds": [
 		{"id": "m1", "world": 1, "name": "Notificaciones", "col": 4, "unlocked": true, "miniature": "res://assets/sprites/hub/icons/world_icon_m1_00.png", "levels": [
 			{"id": "1-1", "name": "Bandeja de entrada", "laps": [1], "playable": true},
-			{"id": "1-2", "name": "Centro de notificaciones", "laps": [1], "playable": false},
+			{"id": "1-2", "name": "Centro de notificaciones", "laps": [1], "playable": true},
 			{"id": "1-3", "name": "No molestar", "laps": [1], "playable": false}
 		]},
 		{"id": "m2", "world": 2, "name": "El Feed", "col": 10, "unlocked": false, "levels": []},

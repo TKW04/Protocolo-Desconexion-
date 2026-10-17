@@ -384,7 +384,8 @@ func test_level_completed_goes_to_real_hub_and_folder_starts_level_from_scratch(
 	assert_ne(hub.get_arrival_vortex().get_phase(), WarpVortex.Phase.HELD, "Al acabar el fundido Isak llega")
 	assert_true(GameState.is_level_completed(&"1-1"), "1-1 completado")
 	assert_true(GameState.is_level_unlocked(&"1-2"), "1-2 desbloqueado (unlocks del JSON)")
-	assert_false(ResourceLoader.exists("res://scenes/levels/1-2.tscn"), "El 1-2 no existe ni se carga")
+	assert_eq(hub.get_folder(&"m1").get_folder_panel().get_level_state(&"1-2"), HubWorlds.STATE_AVAILABLE,
+		"El 1-2 queda disponible en la carpeta (paso 13)")
 	assert_eq(hub.get_folder(&"m1").get_folder_panel().get_level_state(&"1-1"), HubWorlds.STATE_COMPLETED)
 	assert_true(GameState.has_unsaved_changes(), "Completar el nivel deja cambios sin guardar")
 	# Primera llegada: Notas apagada hasta que Eco la presenta (2026-10-16).

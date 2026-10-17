@@ -34,7 +34,7 @@
 ##   10b_cargador_recarga.png    Isak tocandolo: +50 de energia (70) y empieza el enfriamiento
 ##   10c_cargador_enfriando.png  Isak se aparta: el cargador a mitad de los 20 s de enfriamiento
 ##   11_carpeta_prompt.png       Isak en la repisa de M1: tecla del pulso
-##   12_panel_subniveles.png     panel de subniveles de M1 (1-1 completado, 1-2 y 1-3 Proximamente)
+##   12_panel_subniveles.png     panel de subniveles de M1 (1-1 completado, 1-2 sin desbloquear, 1-3 Proximamente)
 ##   13_carpeta_bloqueada.png    Isak en la repisa de M2: «Sin descargar»
 ##   14_confirmar_sin_guardar.png elegir el 1-1 con cambios sin guardar (la compra):
 ##                               «¿Seguro? Aún no has guardado.» (Entrar sin guardar / Volver)

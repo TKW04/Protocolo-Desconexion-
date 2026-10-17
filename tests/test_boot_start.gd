@@ -133,7 +133,7 @@ func test_valid_save_starts_in_hub() -> void:
 	assert_false(GameState.has_unsaved_changes(), "El arranque no marca «sin guardar»")
 	assert_eq(QuitGuard.decide(GameState.has_unsaved_changes(), QuitGuard.can_save_here(get_tree())),
 		QuitGuard.Decision.QUIT, "Cerrar no pregunta")
-	assert_eq(_main.get_level_id(), "1-1", "Ultimo nivel para R: el mas avanzado (1-1)")
+	assert_eq(_main.get_level_id(), "1-2", "Ultimo nivel para R: el mas avanzado (el 1-2, jugable desde el paso 13)")
 
 
 func test_corrupt_save_with_valid_backup_starts_in_hub() -> void:
@@ -212,11 +212,9 @@ func test_restart_in_hub_after_booting_in_hub() -> void:
 	assert_true(_main.request_restart(), "R se acepta en el hub")
 	_finish_fades()
 	assert_false(_main.is_in_hub())
-	assert_eq(_main.get_level_id(), "1-1")
+	assert_eq(_main.get_level_id(), "1-2", "R en el hub: el subnivel mas avanzado (1-1 completado: el 1-2)")
 	assert_not_null(_main.get_level())
 	assert_eq(GameState.lives, GameState.lives_max, "Empezar un intento repone las vidas")
-	var encounter := _main.get_level().get_node(^"Objects/eco_encuentro") as EcoEncounter
-	assert_true(encounter.is_done(), "Con Eco conocido el encuentro no se repite")
 	assert_false(GameState.has_unsaved_changes())
 
 
@@ -268,8 +266,10 @@ func test_resume_level_id_rule() -> void:
 	assert_eq(HubWorlds.most_advanced_level(), &"1-1", "Mundo 1 abierto: el 1-1")
 	assert_eq(_main.resume_level_id(), "1-1")
 	GameState.unlock_level(&"1-2")
-	assert_eq(_main.resume_level_id(), "1-1", "El 1-2 aun no es jugable")
+	assert_eq(_main.resume_level_id(), "1-2", "El 1-2 desbloqueado y jugable es el mas avanzado (paso 13)")
+	GameState.unlock_level(&"1-3")
+	assert_eq(_main.resume_level_id(), "1-2", "El 1-3 aun no es jugable")
 	GameState.current_level = &"tower_test"
 	assert_eq(_main.resume_level_id(), "tower_test", "El ultimo nivel jugado en la sesion manda")
 	GameState.current_level = &"9-9"
-	assert_eq(_main.resume_level_id(), "1-1", "Sin escena: el mas avanzado")
+	assert_eq(_main.resume_level_id(), "1-2", "Sin escena: el mas avanzado")
