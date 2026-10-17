@@ -281,10 +281,14 @@ func _fail(text: String) -> bool:
 func _play() -> bool:
 	var level: GeneratedLevel = _runner.get_level()
 	# Solo niveles horizontales (politica «avanzar y saltar»): una torre (camara de
-	# torre, p. ej. scenes/levels/tower_test.tscn) necesita el bot vertical (paso 15
-	# de docs/propuesta-1-2.md §10).
+	# torre: el 1-2 real, scenes/levels/1-2.tscn, y la torre de prueba) necesita el
+	# bot vertical (paso 15 de docs/propuesta-1-2.md §10), que seguira el camino
+	# exportado por tools/validate_level.py --export-path. Este bot recorre SOLO el
+	# 1-1 y, aunque la carpeta del Mundo 1 ya ofrezca el 1-2 (paso 13), siempre
+	# elige el 1-1 (_enter_from_folder).
 	if _isak.camera_mode == Isak.CAMERA_TOWER:
-		return _fail("el bot no recorre niveles verticales (%s); el bot vertical es el paso 15" % level.level_id)
+		return _fail("el bot no recorre niveles verticales (%s, p. ej. el 1-2); el bot vertical es el paso 15"
+			% level.level_id)
 	var receivers: Array[PulseReceiver] = []
 	var bridges: Dictionary = {}
 	var popups: Array[PopupBlocker] = []

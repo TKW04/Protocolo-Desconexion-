@@ -1,0 +1,716 @@
+{
+	"_notes": "Nivel 1-2 «Centro de notificaciones» (docs/propuesta-1-2.md, APROBADA 2026-10-16; paso 13 de su §10, 2026-10-16). Torre vertical de 28x62 tiles (1792x3968 px); paredes en las columnas 0 y 27; se sube en zigzag por huecos de plataformas de una via (se atraviesan hacia arriba y no dejan bajar al piso de abajo). Bandas (de abajo arriba): Vestibulo 56-61 (suelo 61), Piso 1 Mensajes 44-55 (suelo 55), Piso 2 Correo 32-43 (suelo 43), Piso 3 Recordatorios 18-31 (suelo 31), Piso 4 Actualizaciones 7-17 (suelo 17) y Azotea 0-6 (suelo 6). DESVIOS respecto a §2.1 (el validador manda): el piso 3 tiene 13 filas libres (18-30) y el 4 diez (7-16) porque tres niveles de recordatorios no caben en 11 filas con subidas de 2 tiles; la azotea baja a las filas 0-6. Huecos: vestibulo y piso 1 a la derecha (columnas 21-24), piso 2 a la izquierda (1-2), piso 3 a la derecha (24-25) y piso 4 a la izquierda (1-2, tras la barra del 99 %). VESTIBULO: vortice de llegada en P (4, 60), 1 punto, dos repisas al hueco. PISO 1 (dificultad 1,5; patron aturdir_y_rematar; el laser no es obligatorio): 1a badge_1 dormido sobre la repisa baja (25-26, fila 53) con su punto; 1b zigzag de dos repisas (13-16 y 9-12) hasta el rellano largo de una via (fila 49, columnas 7-25); 1c badge_3 y badge_4 juntos sobre el rellano (variante 2) y overlay_1 («Tienes 99+ mensajes...») tapando las dos repisas del hueco (se cierra con el pulso desde el rellano, columna 19); punto junto al hueco. Secreto B «Borradores»: nicho (1-4, fila 48) a 2 tiles del extremo izquierdo del rellano; badge_2 duerme debajo (5, 51) y aturdido sirve de escalon (el validador no modela ese escalon: el nicho tambien se alcanza con un salto de 2 tiles). PISO 2 (dificultad 2): sync_1 en (25, 42) junto al hueco, con 1 punto; 2a pasillo de 3 filas libres (40-42) que se recorre de derecha a izquierda con banner_1 (entra por la 20 hacia la izquierda, 18 tiles, cada 3 s) y dos nichos de una via en el techo (columnas 9-10 y 15-16); escalera de una via (columnas 1-2) a la sala. 2b acertijo «Correo certificado» (§4, mismo esquema que correo_test): cargador_1 (4, 37; +50, cada 10 s), lector_1 en la cara izquierda del bloque de la caja fuerte (15, 37: el disparo solo sale del suelo de la sala), receptor_enlazado_1 al final de la repisa alta (9, 33; repisas de una via 4-6 fila 36 y 6-9 fila 34), puente_correo (10-15, fila 34) hasta la caja fuerte, anuncio_buzon sobre el boton de popup_buzon (16-17, filas 32-33) y el chip debug_1_2 (19, 33; llena la energia). 2c «Falta una plataforma»: a la izquierda de la repisa alta, plataforma oculta h (2-3, fila 34) y la repisa (1-2, fila 32) del hueco al piso 3, que solo se alcanza desde la oculta; si el Debug se apaga, Isak cae 4-5 tiles junto al cargador. Secreto A «Carpeta de Spam» (needs_debug): a la derecha de la caja fuerte, oculta h de 3 tiles (22-24, fila 34) hasta la carpeta (25-26) con 2 puntos; debajo, un pozo con un escalon de una via (21, fila 36) de vuelta a la caja fuerte. ANCLA DEL PASO 14: el recuerdo coleccionable (primer correo o mensaje de familiares y amigos; pestana Recuerdos de Notas) ira en la carpeta de Spam, celda (26, 33), junto a sus puntos; hoy no hay objeto. PISO 3 (dificultad 2,5, el pico; patron posponer): entrada por la izquierda (col 3, fila 30). 3a tres recordatorios sueltos en escalera a la derecha (suelto_a 22-23 fila 29, suelto_b 25-26 fila 27, suelto_c 22-23 fila 25; 2,5 s cada uno; caer devuelve abajo sin dano). 3b Posponer de derecha a izquierda: grupo posponer_3b de tres recordatorios (17-18, 14-15, 11-12, fila 25; 2,3 s) que no se cruza sin el Posponer; snooze_1 en la pared derecha (26, 24), detras de Isak (hay que girarse y disparar: +4 s, tope 8), tapado por overlay_2 (opcional: «Recordatorio: no olvides tus recordatorios»; se cierra con el pulso desde suelto_c o se ve con el Debug); repisa final solida (1-9, fila 25) con 1 punto. 3c Posponer y pulso de izquierda a derecha bajo el forjado: cargador_2 al empezar (5, 20; +50, cada 10 s), grupo posponer_3c (13-14, 16-17, 19-20, fila 21; 2,4 s), snooze_2 delante en la pared derecha (26, 20; se alcanza desde el segundo recordatorio), repisa del receptor (22-23) y puente_3c (24-25) bajo el hueco. Secreto C «Recordatorio olvidado»: grupo olvidado de cinco recordatorios (19-20, 16-17, 13-14, 9-11, 6-8, fila 28; 1,0 s) desde suelto_a hasta el nicho (1-5, fila 28) bajo la repisa final de 3b, con el UNICO power bank (vacio) del 1-2; su Posponer snooze_olvidado (24, 27) queda detras: desde la entrada hacen falta DOS disparos seguidos (con uno no da tiempo; lo comprueba tests/test_level_1_2.py). Cayendo desde 3b sobre su mitad derecha basta uno; la cola y el nicho quedan bajo techo. PISO 4 (dificultad 2): sync_2 en (23, 16) al entrar por la derecha; 4a pasillo (14-16) con banner_2 (entra por la 21 hacia la izquierda, 15 tiles, cada 3 s) y un nicho (13-14); subida de una via (5-6) tapada por overlay_3 («Actualizacion disponible. ¿Instalar ahora? Si / Si», se cierra con el pulso desde el pasillo). 4b sala de espera (filas 7-11, dos alturas de repisas): barra_99 (puerta de 1x3 en la columna 3, filas 9-11) con 20 s de espera y tres oleadas (como actualizaciones_test); tras ella, el pozo de la izquierda sube a la azotea. AZOTEA: 1 punto, ANCLA DEL PASO 14 para Calc apagada (opcion A de §8: hacia las columnas 18-20, fila 5; hoy no hay objeto) y la terminal de salida terminal_1_2 (24, 4; G en 24, 5) que se activa con el pulso. ECONOMIA: 9 puntos de atencion (6 en la ruta: vestibulo, dos en el piso 1, rellano de sync_1, final de 3b y azotea; 3 en secretos: A 2 y B 1), 2 cargadores, 1 power bank vacio (secreto C) y sin vida extra. Energia: el validador gasta 20 en el acertijo, unos 36 en el Debug de 2c y 20 en los Posponer, con los cargadores y el chip. Puntos de sincronizacion: sync_1 y sync_2; el vortice cubre el piso 1. Ayudas Q: cada objeto y enemigo nuevo lleva su help_id. validation: laser y Debug obligatorios, Posponer exigido en posponer_3b y posponer_3c, margen 1,5 s, energia inicial 100 y sin dano de puntos rojos en el camino. El bot del 1-1 no lo recorre (se niega con la camara de torre); el bot vertical que seguira el camino exportado (--export-path) es el paso 15. Escena: scenes/levels/1-2.tscn (python3 tools/build_level.py data/levels/1-2.json).",
+	"id": "1-2",
+	"name": "Centro de notificaciones",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"target_duration_s": 300,
+	"difficulty": 2,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": false
+	},
+	"camera": {
+		"vertical": "tower",
+		"limits": "grid"
+	},
+	"validation": {
+		"laser_required": true,
+		"debug_required": true,
+		"snooze_required": [
+			"posponer_3b",
+			"posponer_3c"
+		],
+		"time_margin_s": 1.5,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Azotea",
+			"y_from": 0,
+			"y_to": 6,
+			"patterns": []
+		},
+		{
+			"name": "Piso 4: Actualizaciones",
+			"y_from": 7,
+			"y_to": 17,
+			"patterns": [
+				"aturdir_y_rematar",
+				"carrera_contra_amenaza"
+			]
+		},
+		{
+			"name": "Piso 3: Recordatorios",
+			"y_from": 18,
+			"y_to": 31,
+			"patterns": [
+				"posponer"
+			]
+		},
+		{
+			"name": "Piso 2: Correo",
+			"y_from": 32,
+			"y_to": 43,
+			"patterns": [
+				"carrera_contra_amenaza",
+				"desbloquear_a_distancia_y_activar_de_cerca",
+				"quitar_la_proteccion_y_cerrar"
+			]
+		},
+		{
+			"name": "Piso 1: Mensajes",
+			"y_from": 44,
+			"y_to": 55,
+			"patterns": [
+				"aturdir_y_rematar"
+			]
+		},
+		{
+			"name": "Vestíbulo",
+			"y_from": 56,
+			"y_to": 61,
+			"patterns": []
+		}
+	],
+	"grid": [
+		"############################",
+		"#..........................#",
+		"#..........................#",
+		"#..........................#",
+		"#..........................#",
+		"#.......o...............G..#",
+		"#--#########################",
+		"#..#.......................#",
+		"#--#.......................#",
+		"#..........................#",
+		"#--.......----....----.....#",
+		"#..........................#",
+		"#####..#####################",
+		"#####--#####....############",
+		"####.......................#",
+		"####.--......--............#",
+		"####.................E.C...#",
+		"########################--##",
+		"#..........................#",
+		"#.......................--.#",
+		"#..........................#",
+		"#.----------..........##...#",
+		"#..........................#",
+		"#---.......................#",
+		"#..o.......................#",
+		"##########..........##.....#",
+		"#..........................#",
+		"#..........................#",
+		"######.....................#",
+		"#..........................#",
+		"#..........................#",
+		"#..#########################",
+		"#--......................S.#",
+		"#........................oo#",
+		"#.hh..----......#####.hhh###",
+		"#...............#####....###",
+		"#...---.........#####-...###",
+		"#...............#####....###",
+		"#..#########################",
+		"#--#####....##....##########",
+		"#..........................#",
+		"#--......--....--..........#",
+		"#...................E....Co#",
+		"#####################----###",
+		"#..........................#",
+		"#....................----..#",
+		"#.................E...E....#",
+		"#....................----..#",
+		"#oS......................o.#",
+		"#####..-------------------.#",
+		"#..........................#",
+		"#....E...----............E.#",
+		"#.........................o#",
+		"#............----........--#",
+		"#..........................#",
+		"#####################----###",
+		"#..........................#",
+		"#....................----..#",
+		"#..........................#",
+		"#.................----.....#",
+		"#...P.......o..............#",
+		"############################"
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 25,
+			"y": 42
+		},
+		{
+			"id": "sync_2",
+			"x": 23,
+			"y": 16
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_spam",
+			"x": 25,
+			"y": 32,
+			"reward": "attention_points",
+			"points": 2,
+			"needs_debug": true,
+			"note": "A. Carpeta de Spam: a la derecha de la caja fuerte, tras una plataforma oculta de 3 tiles (unos 2 s de Debug). 2 puntos. Paso 14: aqui ira el primer recuerdo coleccionable (celda 26, 33)."
+		},
+		{
+			"id": "secreto_borradores",
+			"x": 2,
+			"y": 48,
+			"reward": "attention_points",
+			"points": 1,
+			"note": "B. Borradores: nicho a la izquierda del rellano del piso 1; badge_2 aturdido sirve de escalon desde abajo (o un salto de 2 tiles desde el rellano). 1 punto."
+		},
+		{
+			"id": "secreto_olvidado",
+			"x": 2,
+			"y": 27,
+			"object": "power_bank_pickup",
+			"reward": "power_bank",
+			"note": "C. Recordatorio olvidado: grupo de cinco recordatorios de 1 s; desde su entrada solo se llega al nicho con dos Posponer seguidos (snooze_olvidado, detras). El unico power bank (vacio) del 1-2."
+		}
+	],
+	"enemies": [
+		{
+			"id": "badge_1",
+			"type": "notification_badge",
+			"x": 25,
+			"y": 51,
+			"params": {
+				"leash_width_px": 1664.0,
+				"leash_height_px": 640.0
+			},
+			"help_id": "notification_badge"
+		},
+		{
+			"id": "badge_2",
+			"type": "notification_badge",
+			"x": 5,
+			"y": 51,
+			"params": {
+				"leash_width_px": 1664.0,
+				"leash_height_px": 640.0
+			},
+			"help_id": "notification_badge"
+		},
+		{
+			"id": "badge_3",
+			"type": "notification_badge",
+			"x": 18,
+			"y": 46,
+			"params": {
+				"leash_width_px": 1664.0,
+				"leash_height_px": 640.0
+			},
+			"help_id": "notification_badge"
+		},
+		{
+			"id": "badge_4",
+			"type": "notification_badge",
+			"x": 22,
+			"y": 46,
+			"params": {
+				"leash_width_px": 1664.0,
+				"leash_height_px": 640.0
+			},
+			"help_id": "notification_badge"
+		},
+		{
+			"id": "banner_1",
+			"type": "spam_banner",
+			"x": 20,
+			"y": 42,
+			"params": {
+				"corridor_tiles": 18,
+				"direction": -1
+			},
+			"help_id": "spam_banner"
+		},
+		{
+			"id": "banner_2",
+			"type": "spam_banner",
+			"x": 21,
+			"y": 16,
+			"params": {
+				"corridor_tiles": 15,
+				"direction": -1
+			},
+			"help_id": "spam_banner"
+		}
+	],
+	"objects": [
+		{
+			"type": "overlay_popup",
+			"x": 20,
+			"y": 43,
+			"params": {
+				"id": "overlay_1",
+				"text": "Tienes 99+ mensajes que no son importantes",
+				"width_tiles": 6,
+				"height_tiles": 5,
+				"close_button_px": [
+					8,
+					280
+				]
+			},
+			"help_id": "overlay_popup"
+		},
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 37,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			},
+			"help_id": "charger"
+		},
+		{
+			"type": "laser_receiver",
+			"x": 15,
+			"y": 37,
+			"params": {
+				"id": "lector_1",
+				"target": "receptor_enlazado_1",
+				"window_s": 6.0,
+				"cable": [
+					[
+						15,
+						35
+					],
+					[
+						10,
+						35
+					],
+					[
+						10,
+						33
+					]
+				]
+			},
+			"help_id": "laser_receiver"
+		},
+		{
+			"type": "relay_receiver",
+			"x": 9,
+			"y": 33,
+			"params": {
+				"id": "receptor_enlazado_1",
+				"target": "puente_correo"
+			},
+			"help_id": "relay_receiver"
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 10,
+			"y": 34,
+			"params": {
+				"id": "puente_correo",
+				"length_tiles": 6,
+				"direction": "right"
+			},
+			"help_id": "bridge"
+		},
+		{
+			"type": "popup_blocker",
+			"x": 16,
+			"y": 32,
+			"params": {
+				"id": "popup_buzon",
+				"text": "Tu buzón está lleno. Compra más espacio",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"close_button_px": [
+					4,
+					64
+				],
+				"close_button_size_px": 16
+			},
+			"help_id": "popup_blocker"
+		},
+		{
+			"type": "ad_cover",
+			"x": 16,
+			"y": 33,
+			"params": {
+				"id": "anuncio_buzon",
+				"target": "popup_buzon",
+				"text": "Saltar anuncio en 5…"
+			},
+			"help_id": "ad_cover"
+		},
+		{
+			"type": "ability_pickup",
+			"x": 19,
+			"y": 33,
+			"params": {
+				"id": "debug_1_2",
+				"ability": "debug",
+				"refill_energy": true
+			}
+		},
+		{
+			"type": "reminder_platform",
+			"x": 22,
+			"y": 29,
+			"params": {
+				"id": "suelto_a",
+				"group": "suelto_a",
+				"width_tiles": 2,
+				"timer_s": 2.5
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 25,
+			"y": 27,
+			"params": {
+				"id": "suelto_b",
+				"group": "suelto_b",
+				"width_tiles": 2,
+				"timer_s": 2.5
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 22,
+			"y": 25,
+			"params": {
+				"id": "suelto_c",
+				"group": "suelto_c",
+				"width_tiles": 2,
+				"timer_s": 2.5
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 17,
+			"y": 25,
+			"params": {
+				"id": "posponer_3b_a",
+				"group": "posponer_3b",
+				"width_tiles": 2,
+				"timer_s": 2.3
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 14,
+			"y": 25,
+			"params": {
+				"id": "posponer_3b_b",
+				"group": "posponer_3b",
+				"width_tiles": 2,
+				"timer_s": 2.3
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 11,
+			"y": 25,
+			"params": {
+				"id": "posponer_3b_c",
+				"group": "posponer_3b",
+				"width_tiles": 2,
+				"timer_s": 2.3
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "snooze_button",
+			"x": 26,
+			"y": 24,
+			"params": {
+				"id": "snooze_1",
+				"targets": [
+					"posponer_3b"
+				],
+				"extend_s": 4.0,
+				"cap_s": 8.0
+			},
+			"help_id": "snooze_button"
+		},
+		{
+			"type": "overlay_popup",
+			"x": 23,
+			"y": 21,
+			"params": {
+				"id": "overlay_2",
+				"text": "Recordatorio: no olvides tus recordatorios",
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"close_button_px": [
+					8,
+					224
+				]
+			},
+			"help_id": "overlay_popup"
+		},
+		{
+			"type": "charger",
+			"x": 5,
+			"y": 20,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			},
+			"help_id": "charger"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 13,
+			"y": 21,
+			"params": {
+				"id": "posponer_3c_a",
+				"group": "posponer_3c",
+				"width_tiles": 2,
+				"timer_s": 2.4
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 16,
+			"y": 21,
+			"params": {
+				"id": "posponer_3c_b",
+				"group": "posponer_3c",
+				"width_tiles": 2,
+				"timer_s": 2.4
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 19,
+			"y": 21,
+			"params": {
+				"id": "posponer_3c_c",
+				"group": "posponer_3c",
+				"width_tiles": 2,
+				"timer_s": 2.4
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "snooze_button",
+			"x": 26,
+			"y": 20,
+			"params": {
+				"id": "snooze_2",
+				"targets": [
+					"posponer_3c"
+				],
+				"extend_s": 4.0,
+				"cap_s": 8.0
+			},
+			"help_id": "snooze_button"
+		},
+		{
+			"type": "receiver",
+			"x": 23,
+			"y": 20,
+			"params": {
+				"target": "puente_3c"
+			},
+			"help_id": "receiver"
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 24,
+			"y": 21,
+			"params": {
+				"id": "puente_3c",
+				"length_tiles": 2,
+				"direction": "right"
+			},
+			"help_id": "bridge"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 19,
+			"y": 28,
+			"params": {
+				"id": "olvidado_a",
+				"group": "olvidado",
+				"width_tiles": 2,
+				"timer_s": 1.0
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 16,
+			"y": 28,
+			"params": {
+				"id": "olvidado_b",
+				"group": "olvidado",
+				"width_tiles": 2,
+				"timer_s": 1.0
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 13,
+			"y": 28,
+			"params": {
+				"id": "olvidado_c",
+				"group": "olvidado",
+				"width_tiles": 2,
+				"timer_s": 1.0
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 9,
+			"y": 28,
+			"params": {
+				"id": "olvidado_d",
+				"group": "olvidado",
+				"width_tiles": 3,
+				"timer_s": 1.0
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "reminder_platform",
+			"x": 6,
+			"y": 28,
+			"params": {
+				"id": "olvidado_e",
+				"group": "olvidado",
+				"width_tiles": 3,
+				"timer_s": 1.0
+			},
+			"help_id": "reminder_platform"
+		},
+		{
+			"type": "snooze_button",
+			"x": 24,
+			"y": 27,
+			"params": {
+				"id": "snooze_olvidado",
+				"targets": [
+					"olvidado"
+				],
+				"extend_s": 4.0,
+				"cap_s": 8.0
+			},
+			"help_id": "snooze_button"
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 2,
+			"y": 27,
+			"params": {
+				"id": "power_bank_1_2"
+			},
+			"help_id": "power_bank_pickup"
+		},
+		{
+			"type": "overlay_popup",
+			"x": 4,
+			"y": 11,
+			"params": {
+				"id": "overlay_3",
+				"text": "Actualización disponible. ¿Instalar ahora? Sí / Sí",
+				"width_tiles": 5,
+				"height_tiles": 4,
+				"close_button_px": [
+					200,
+					232
+				]
+			},
+			"help_id": "overlay_popup"
+		},
+		{
+			"type": "update_bar",
+			"x": 3,
+			"y": 9,
+			"params": {
+				"id": "barra_99",
+				"wait_s": 20.0,
+				"zone": [
+					4,
+					7,
+					22,
+					5
+				],
+				"waves": [
+					{
+						"t": 4.0,
+						"type": "alert_bubble",
+						"x": 9
+					},
+					{
+						"t": 4.0,
+						"type": "alert_bubble",
+						"x": 18
+					},
+					{
+						"t": 10.0,
+						"type": "notification_badge",
+						"x": 11
+					},
+					{
+						"t": 10.0,
+						"type": "notification_badge",
+						"x": 20
+					},
+					{
+						"t": 15.0,
+						"type": "alert_bubble",
+						"x": 14
+					},
+					{
+						"t": 15.0,
+						"type": "notification_badge",
+						"x": 7,
+						"params": {
+							"chase_speed_px_s": 60.0
+						}
+					}
+				]
+			},
+			"help_id": "update_bar"
+		},
+		{
+			"type": "exit_terminal",
+			"x": 24,
+			"y": 4,
+			"params": {
+				"id": "terminal_1_2",
+				"text": "Marcar todo como leído",
+				"width_tiles": 1,
+				"height_tiles": 2
+			},
+			"help_id": "exit_terminal"
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "1-3"
+		}
+	]
+}

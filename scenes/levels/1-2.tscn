@@ -1,0 +1,479 @@
+[gd_scene load_steps=27 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/hidden_platform.tscn" id="4_hidden_platform"]
+[ext_resource type="PackedScene" path="res://scenes/levels/attention_point.tscn" id="5_attention_point"]
+[ext_resource type="Script" path="res://scripts/levels/checkpoint.gd" id="6_checkpoint"]
+[ext_resource type="PackedScene" path="res://scenes/levels/overlay_popup.tscn" id="7_overlay_popup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="8_charger"]
+[ext_resource type="PackedScene" path="res://scenes/levels/laser_receiver.tscn" id="9_laser_receiver"]
+[ext_resource type="PackedScene" path="res://scenes/levels/relay_receiver.tscn" id="10_relay_receiver"]
+[ext_resource type="PackedScene" path="res://scenes/levels/bridge.tscn" id="11_bridge"]
+[ext_resource type="PackedScene" path="res://scenes/levels/popup_blocker.tscn" id="12_popup_blocker"]
+[ext_resource type="PackedScene" path="res://scenes/levels/ad_cover.tscn" id="13_ad_cover"]
+[ext_resource type="PackedScene" path="res://scenes/levels/ability_pickup.tscn" id="14_ability_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/reminder_platform.tscn" id="15_reminder_platform"]
+[ext_resource type="PackedScene" path="res://scenes/levels/snooze_button.tscn" id="16_snooze_button"]
+[ext_resource type="PackedScene" path="res://scenes/levels/receiver.tscn" id="17_receiver"]
+[ext_resource type="PackedScene" path="res://scenes/levels/power_bank_pickup.tscn" id="18_power_bank_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/update_bar.tscn" id="19_update_bar"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="20_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/notification_badge.tscn" id="21_notification_badge"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/spam_banner.tscn" id="22_spam_banner"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="23_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="24_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="25_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="26_help_system"]
+
+[node name="Level_1_2" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "1-2"
+level_name = "Centro de notificaciones"
+world = 1
+tile_size = 64
+size_tiles = Vector2i(28, 62)
+debug_color = "cyan"
+abilities_available = {"debug": false, "laser": true, "pulse": true}
+source_path = "res://data/levels/1-2.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+vertical = true
+tab_labels = PackedStringArray("Actualizaciones", "Recordatorios", "Correo", "Mensajes")
+tab_bands = PackedVector2Array(448, 1152, 1152, 2048, 2048, 2816, 2816, 3584)
+tab_center_x = 896.0
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 26, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 27, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 6, 0, 0, 0, 2, 0, 4, 0, 0, 0, 3, 0, 6, 0, 0, 0, 6, 0, 0, 0, 0, 0, 4, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 6, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 7, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 8, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 10, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 12, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 13, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 14, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 17, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 18, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 19, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 20, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 21, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 22, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 23, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 24, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 25, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 26, 0, 6, 0, 0, 0, 2, 0, 1, 0, 0, 0, 27, 0, 6, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 3, 0, 7, 0, 0, 0, 5, 0, 0, 0, 0, 0, 27, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 8, 0, 0, 0, 2, 0, 4, 0, 0, 0, 3, 0, 8, 0, 0, 0, 1, 0, 0, 0, 0, 0, 27, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 10, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 10, 0, 0, 0, 2, 0, 4, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0, 0, 4, 0, 0, 0, 11, 0, 10, 0, 0, 0, 1, 0, 4, 0, 0, 0, 12, 0, 10, 0, 0, 0, 1, 0, 4, 0, 0, 0, 13, 0, 10, 0, 0, 0, 2, 0, 4, 0, 0, 0, 18, 0, 10, 0, 0, 0, 0, 0, 4, 0, 0, 0, 19, 0, 10, 0, 0, 0, 1, 0, 4, 0, 0, 0, 20, 0, 10, 0, 0, 0, 1, 0, 4, 0, 0, 0, 21, 0, 10, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 10, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 11, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 12, 0, 0, 0, 4, 0, 1, 0, 0, 0, 7, 0, 12, 0, 0, 0, 6, 0, 0, 0, 0, 0, 8, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 12, 0, 0, 0, 2, 0, 1, 0, 0, 0, 13, 0, 12, 0, 0, 0, 2, 0, 1, 0, 0, 0, 14, 0, 12, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 12, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 24, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 26, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 27, 0, 12, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 13, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 13, 0, 0, 0, 7, 0, 1, 0, 0, 0, 2, 0, 13, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 13, 0, 0, 0, 2, 0, 2, 0, 0, 0, 4, 0, 13, 0, 0, 0, 1, 0, 1, 0, 0, 0, 5, 0, 13, 0, 0, 0, 0, 0, 4, 0, 0, 0, 6, 0, 13, 0, 0, 0, 2, 0, 4, 0, 0, 0, 7, 0, 13, 0, 0, 0, 3, 0, 0, 0, 0, 0, 8, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 13, 0, 0, 0, 1, 0, 1, 0, 0, 0, 16, 0, 13, 0, 0, 0, 3, 0, 0, 0, 0, 0, 17, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 26, 0, 13, 0, 0, 0, 3, 0, 1, 0, 0, 0, 27, 0, 13, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 14, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 14, 0, 0, 0, 7, 0, 1, 0, 0, 0, 2, 0, 14, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 14, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 14, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 15, 0, 0, 0, 7, 0, 1, 0, 0, 0, 2, 0, 15, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 15, 0, 0, 0, 5, 0, 1, 0, 0, 0, 5, 0, 15, 0, 0, 0, 0, 0, 4, 0, 0, 0, 6, 0, 15, 0, 0, 0, 2, 0, 4, 0, 0, 0, 13, 0, 15, 0, 0, 0, 0, 0, 4, 0, 0, 0, 14, 0, 15, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 15, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 16, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 16, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 16, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 16, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 17, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 17, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 17, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 6, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 7, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 8, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 10, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 12, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 13, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 14, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 17, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 18, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 19, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 20, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 21, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 22, 0, 17, 0, 0, 0, 2, 0, 1, 0, 0, 0, 23, 0, 17, 0, 0, 0, 0, 0, 1, 0, 0, 0, 24, 0, 17, 0, 0, 0, 0, 0, 4, 0, 0, 0, 25, 0, 17, 0, 0, 0, 2, 0, 4, 0, 0, 0, 26, 0, 17, 0, 0, 0, 2, 0, 0, 0, 0, 0, 27, 0, 17, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 18, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 18, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 5, 0, 1, 0, 0, 0, 24, 0, 19, 0, 0, 0, 0, 0, 4, 0, 0, 0, 25, 0, 19, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 19, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 20, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 21, 0, 0, 0, 0, 0, 4, 0, 0, 0, 3, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 4, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 5, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 6, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 7, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 8, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 9, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 10, 0, 21, 0, 0, 0, 1, 0, 4, 0, 0, 0, 11, 0, 21, 0, 0, 0, 2, 0, 4, 0, 0, 0, 22, 0, 21, 0, 0, 0, 2, 0, 0, 0, 0, 0, 23, 0, 21, 0, 0, 0, 0, 0, 1, 0, 0, 0, 27, 0, 21, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 22, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 23, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 23, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 23, 0, 0, 0, 1, 0, 4, 0, 0, 0, 3, 0, 23, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 23, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 24, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 3, 0, 2, 0, 0, 0, 1, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 3, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 4, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 6, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 7, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 8, 0, 25, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 25, 0, 0, 0, 0, 0, 1, 0, 0, 0, 20, 0, 25, 0, 0, 0, 2, 0, 0, 0, 0, 0, 21, 0, 25, 0, 0, 0, 0, 0, 1, 0, 0, 0, 27, 0, 25, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 26, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 26, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 27, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 27, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 0, 3, 0, 2, 0, 0, 0, 1, 0, 28, 0, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0, 28, 0, 0, 0, 2, 0, 1, 0, 0, 0, 3, 0, 28, 0, 0, 0, 2, 0, 1, 0, 0, 0, 4, 0, 28, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 28, 0, 0, 0, 0, 0, 1, 0, 0, 0, 27, 0, 28, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 29, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 29, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 30, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 5, 0, 1, 0, 0, 0, 3, 0, 31, 0, 0, 0, 2, 0, 0, 0, 0, 0, 4, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 6, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 7, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 8, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 10, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 12, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 13, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 14, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 17, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 18, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 19, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 20, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 21, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 22, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 23, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 24, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 25, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 26, 0, 31, 0, 0, 0, 2, 0, 1, 0, 0, 0, 27, 0, 31, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 32, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 32, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 32, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 32, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 33, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 33, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 34, 0, 0, 0, 5, 0, 1, 0, 0, 0, 6, 0, 34, 0, 0, 0, 0, 0, 4, 0, 0, 0, 7, 0, 34, 0, 0, 0, 1, 0, 4, 0, 0, 0, 8, 0, 34, 0, 0, 0, 1, 0, 4, 0, 0, 0, 9, 0, 34, 0, 0, 0, 2, 0, 4, 0, 0, 0, 16, 0, 34, 0, 0, 0, 6, 0, 0, 0, 0, 0, 17, 0, 34, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 34, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 34, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 34, 0, 0, 0, 4, 0, 1, 0, 0, 0, 25, 0, 34, 0, 0, 0, 6, 0, 0, 0, 0, 0, 26, 0, 34, 0, 0, 0, 6, 0, 1, 0, 0, 0, 27, 0, 34, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 35, 0, 0, 0, 5, 0, 1, 0, 0, 0, 16, 0, 35, 0, 0, 0, 7, 0, 0, 0, 0, 0, 17, 0, 35, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 35, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 35, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 35, 0, 0, 0, 5, 0, 1, 0, 0, 0, 25, 0, 35, 0, 0, 0, 7, 0, 0, 0, 0, 0, 26, 0, 35, 0, 0, 0, 7, 0, 1, 0, 0, 0, 27, 0, 35, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 36, 0, 0, 0, 5, 0, 1, 0, 0, 0, 4, 0, 36, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 36, 0, 0, 0, 1, 0, 4, 0, 0, 0, 6, 0, 36, 0, 0, 0, 2, 0, 4, 0, 0, 0, 16, 0, 36, 0, 0, 0, 7, 0, 0, 0, 0, 0, 17, 0, 36, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 36, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 36, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 36, 0, 0, 0, 5, 0, 1, 0, 0, 0, 21, 0, 36, 0, 0, 0, 3, 0, 4, 0, 0, 0, 25, 0, 36, 0, 0, 0, 7, 0, 0, 0, 0, 0, 26, 0, 36, 0, 0, 0, 0, 0, 2, 0, 0, 0, 27, 0, 36, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 37, 0, 0, 0, 5, 0, 1, 0, 0, 0, 16, 0, 37, 0, 0, 0, 7, 0, 0, 0, 0, 0, 17, 0, 37, 0, 0, 0, 0, 0, 2, 0, 0, 0, 18, 0, 37, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 37, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 37, 0, 0, 0, 5, 0, 1, 0, 0, 0, 25, 0, 37, 0, 0, 0, 7, 0, 0, 0, 0, 0, 26, 0, 37, 0, 0, 0, 7, 0, 1, 0, 0, 0, 27, 0, 37, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 38, 0, 0, 0, 5, 0, 1, 0, 0, 0, 3, 0, 38, 0, 0, 0, 6, 0, 0, 0, 0, 0, 4, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 38, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 38, 0, 0, 0, 2, 0, 1, 0, 0, 0, 10, 0, 38, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 0, 38, 0, 0, 0, 2, 0, 1, 0, 0, 0, 12, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 38, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 38, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 38, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 38, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 38, 0, 0, 0, 4, 0, 2, 0, 0, 0, 19, 0, 38, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 38, 0, 0, 0, 1, 0, 2, 0, 0, 0, 21, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 24, 0, 38, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 38, 0, 0, 0, 0, 0, 3, 0, 0, 0, 26, 0, 38, 0, 0, 0, 7, 0, 1, 0, 0, 0, 27, 0, 38, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 39, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 39, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 39, 0, 0, 0, 2, 0, 4, 0, 0, 0, 3, 0, 39, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 39, 0, 0, 0, 1, 0, 1, 0, 0, 0, 12, 0, 39, 0, 0, 0, 3, 0, 0, 0, 0, 0, 13, 0, 39, 0, 0, 0, 1, 0, 1, 0, 0, 0, 18, 0, 39, 0, 0, 0, 3, 0, 0, 0, 0, 0, 19, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 26, 0, 39, 0, 0, 0, 3, 0, 1, 0, 0, 0, 27, 0, 39, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 40, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 40, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 0, 5, 0, 1, 0, 0, 0, 1, 0, 41, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 41, 0, 0, 0, 2, 0, 4, 0, 0, 0, 9, 0, 41, 0, 0, 0, 0, 0, 4, 0, 0, 0, 10, 0, 41, 0, 0, 0, 2, 0, 4, 0, 0, 0, 15, 0, 41, 0, 0, 0, 0, 0, 4, 0, 0, 0, 16, 0, 41, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 41, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 42, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 43, 0, 0, 0, 3, 0, 2, 0, 0, 0, 1, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 3, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 4, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 6, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 7, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 8, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 10, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 12, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 13, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 14, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 17, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 18, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 19, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 20, 0, 43, 0, 0, 0, 0, 0, 1, 0, 0, 0, 21, 0, 43, 0, 0, 0, 0, 0, 4, 0, 0, 0, 22, 0, 43, 0, 0, 0, 1, 0, 4, 0, 0, 0, 23, 0, 43, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 43, 0, 0, 0, 2, 0, 4, 0, 0, 0, 25, 0, 43, 0, 0, 0, 2, 0, 0, 0, 0, 0, 26, 0, 43, 0, 0, 0, 2, 0, 1, 0, 0, 0, 27, 0, 43, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 44, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 44, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 45, 0, 0, 0, 5, 0, 1, 0, 0, 0, 21, 0, 45, 0, 0, 0, 0, 0, 4, 0, 0, 0, 22, 0, 45, 0, 0, 0, 1, 0, 4, 0, 0, 0, 23, 0, 45, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 45, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 45, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 46, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 46, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 47, 0, 0, 0, 5, 0, 1, 0, 0, 0, 21, 0, 47, 0, 0, 0, 0, 0, 4, 0, 0, 0, 22, 0, 47, 0, 0, 0, 1, 0, 4, 0, 0, 0, 23, 0, 47, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 47, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 47, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 48, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 49, 0, 0, 0, 3, 0, 2, 0, 0, 0, 1, 0, 49, 0, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0, 49, 0, 0, 0, 2, 0, 1, 0, 0, 0, 3, 0, 49, 0, 0, 0, 2, 0, 1, 0, 0, 0, 4, 0, 49, 0, 0, 0, 0, 0, 1, 0, 0, 0, 7, 0, 49, 0, 0, 0, 0, 0, 4, 0, 0, 0, 8, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 9, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 10, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 11, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 12, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 13, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 14, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 15, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 16, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 17, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 18, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 19, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 20, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 21, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 22, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 23, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 49, 0, 0, 0, 1, 0, 4, 0, 0, 0, 25, 0, 49, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 49, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 50, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 51, 0, 0, 0, 5, 0, 1, 0, 0, 0, 9, 0, 51, 0, 0, 0, 0, 0, 4, 0, 0, 0, 10, 0, 51, 0, 0, 0, 1, 0, 4, 0, 0, 0, 11, 0, 51, 0, 0, 0, 1, 0, 4, 0, 0, 0, 12, 0, 51, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 51, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 52, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 52, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 53, 0, 0, 0, 5, 0, 1, 0, 0, 0, 13, 0, 53, 0, 0, 0, 0, 0, 4, 0, 0, 0, 14, 0, 53, 0, 0, 0, 1, 0, 4, 0, 0, 0, 15, 0, 53, 0, 0, 0, 1, 0, 4, 0, 0, 0, 16, 0, 53, 0, 0, 0, 2, 0, 4, 0, 0, 0, 25, 0, 53, 0, 0, 0, 0, 0, 4, 0, 0, 0, 26, 0, 53, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 53, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 54, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 55, 0, 0, 0, 3, 0, 2, 0, 0, 0, 1, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 2, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 3, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 4, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 5, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 6, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 7, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 8, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 9, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 10, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 12, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 13, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 14, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 15, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 16, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 17, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 18, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 19, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 20, 0, 55, 0, 0, 0, 0, 0, 1, 0, 0, 0, 21, 0, 55, 0, 0, 0, 0, 0, 4, 0, 0, 0, 22, 0, 55, 0, 0, 0, 1, 0, 4, 0, 0, 0, 23, 0, 55, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 55, 0, 0, 0, 2, 0, 4, 0, 0, 0, 25, 0, 55, 0, 0, 0, 2, 0, 0, 0, 0, 0, 26, 0, 55, 0, 0, 0, 2, 0, 1, 0, 0, 0, 27, 0, 55, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 56, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 56, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 57, 0, 0, 0, 5, 0, 1, 0, 0, 0, 21, 0, 57, 0, 0, 0, 0, 0, 4, 0, 0, 0, 22, 0, 57, 0, 0, 0, 1, 0, 4, 0, 0, 0, 23, 0, 57, 0, 0, 0, 1, 0, 4, 0, 0, 0, 24, 0, 57, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 57, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 58, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 58, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 59, 0, 0, 0, 5, 0, 1, 0, 0, 0, 18, 0, 59, 0, 0, 0, 0, 0, 4, 0, 0, 0, 19, 0, 59, 0, 0, 0, 1, 0, 4, 0, 0, 0, 20, 0, 59, 0, 0, 0, 1, 0, 4, 0, 0, 0, 21, 0, 59, 0, 0, 0, 2, 0, 4, 0, 0, 0, 27, 0, 59, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 60, 0, 0, 0, 5, 0, 1, 0, 0, 0, 27, 0, 60, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 61, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 24, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 26, 0, 61, 0, 0, 0, 6, 0, 1, 0, 0, 0, 27, 0, 61, 0, 0, 0, 0, 0, 3, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="Hidden_2_34" parent="HiddenPlatforms" instance=ExtResource("4_hidden_platform")]
+position = Vector2(160, 2208)
+
+[node name="Hidden_3_34" parent="HiddenPlatforms" instance=ExtResource("4_hidden_platform")]
+position = Vector2(224, 2208)
+
+[node name="Hidden_22_34" parent="HiddenPlatforms" instance=ExtResource("4_hidden_platform")]
+position = Vector2(1440, 2208)
+
+[node name="Hidden_23_34" parent="HiddenPlatforms" instance=ExtResource("4_hidden_platform")]
+position = Vector2(1504, 2208)
+
+[node name="Hidden_24_34" parent="HiddenPlatforms" instance=ExtResource("4_hidden_platform")]
+position = Vector2(1568, 2208)
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Point_1_48" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(96, 3104)
+metadata/help_id = "attention_point"
+
+[node name="Point_3_24" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(224, 1568)
+metadata/help_id = "attention_point"
+
+[node name="Point_8_5" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(544, 352)
+metadata/help_id = "attention_point"
+
+[node name="Point_12_60" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(800, 3872)
+metadata/help_id = "attention_point"
+
+[node name="Point_25_33" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(1632, 2144)
+metadata/help_id = "attention_point"
+
+[node name="Point_25_48" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(1632, 3104)
+metadata/help_id = "attention_point"
+
+[node name="Point_26_33" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(1696, 2144)
+metadata/help_id = "attention_point"
+
+[node name="Point_26_42" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(1696, 2720)
+metadata/help_id = "attention_point"
+
+[node name="Point_26_52" parent="AttentionPoints" instance=ExtResource("5_attention_point") groups=["help_target"]]
+position = Vector2(1696, 3360)
+metadata/help_id = "attention_point"
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="sync_1" type="Marker2D" parent="Checkpoints" groups=["checkpoint", "help_target"]]
+position = Vector2(1632, 2752)
+script = ExtResource("6_checkpoint")
+checkpoint_id = &"sync_1"
+metadata/help_id = "sync_point"
+
+[node name="sync_2" type="Marker2D" parent="Checkpoints" groups=["checkpoint", "help_target"]]
+position = Vector2(1504, 1088)
+script = ExtResource("6_checkpoint")
+checkpoint_id = &"sync_2"
+metadata/help_id = "sync_point"
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="secreto_spam" type="Marker2D" parent="Secrets" groups=["secret"]]
+position = Vector2(1632, 2080)
+metadata/secret_id = "secreto_spam"
+
+[node name="secreto_borradores" type="Marker2D" parent="Secrets" groups=["secret"]]
+position = Vector2(160, 3104)
+metadata/secret_id = "secreto_borradores"
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="overlay_1" parent="Objects" instance=ExtResource("7_overlay_popup") groups=["help_target"]]
+position = Vector2(1280, 2752)
+close_button_position = Vector2(8, 280)
+close_button_size = 24
+debug_opacity = 0.15
+height_tiles = 5
+object_id = &"overlay_1"
+opacity = 0.7
+text = "Tienes 99+ mensajes que no son importantes"
+width_tiles = 6
+metadata/help_id = "overlay_popup"
+
+[node name="cargador_1" parent="Objects" instance=ExtResource("8_charger") groups=["help_target"]]
+position = Vector2(256, 2368)
+amount = 50.0
+cooldown_s = 10.0
+object_id = &"cargador_1"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="lector_1" parent="Objects" instance=ExtResource("9_laser_receiver") groups=["help_target"]]
+position = Vector2(960, 2368)
+cable_cells = [Vector2(15, 35), Vector2(10, 35), Vector2(10, 33)]
+object_id = &"lector_1"
+target_id = &"receptor_enlazado_1"
+window_s = 6.0
+metadata/help_id = "laser_receiver"
+
+[node name="receptor_enlazado_1" parent="Objects" instance=ExtResource("10_relay_receiver") groups=["help_target"]]
+position = Vector2(576, 2112)
+object_id = &"receptor_enlazado_1"
+target_id = &"puente_correo"
+metadata/help_id = "relay_receiver"
+
+[node name="puente_correo" parent="Objects" instance=ExtResource("11_bridge") groups=["help_target"]]
+position = Vector2(640, 2176)
+direction = "right"
+object_id = &"puente_correo"
+length_tiles = 6
+metadata/help_id = "bridge"
+
+[node name="popup_buzon" parent="Objects" instance=ExtResource("12_popup_blocker") groups=["help_target"]]
+position = Vector2(1024, 2048)
+close_button_position = Vector2(4, 64)
+close_button_size = 16
+height_tiles = 2
+object_id = &"popup_buzon"
+text = "Tu buzón está lleno. Compra más espacio"
+width_tiles = 2
+metadata/help_id = "popup_blocker"
+
+[node name="anuncio_buzon" parent="Objects" instance=ExtResource("13_ad_cover") groups=["help_target"]]
+position = Vector2(1024, 2112)
+object_id = &"anuncio_buzon"
+target_id = &"popup_buzon"
+text = "Saltar anuncio en 5…"
+metadata/help_id = "ad_cover"
+
+[node name="debug_1_2" parent="Objects" instance=ExtResource("14_ability_pickup") groups=["help_target"]]
+position = Vector2(1216, 2112)
+ability = &"debug"
+object_id = &"debug_1_2"
+refill_energy = true
+metadata/help_id = "ability_pickup"
+
+[node name="suelto_a" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1408, 1856)
+group_id = "suelto_a"
+object_id = &"suelto_a"
+respawn_s = 3.0
+timer_s = 2.5
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="suelto_b" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1600, 1728)
+group_id = "suelto_b"
+object_id = &"suelto_b"
+respawn_s = 3.0
+timer_s = 2.5
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="suelto_c" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1408, 1600)
+group_id = "suelto_c"
+object_id = &"suelto_c"
+respawn_s = 3.0
+timer_s = 2.5
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="posponer_3b_a" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1088, 1600)
+group_id = "posponer_3b"
+object_id = &"posponer_3b_a"
+respawn_s = 3.0
+timer_s = 2.3
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="posponer_3b_b" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(896, 1600)
+group_id = "posponer_3b"
+object_id = &"posponer_3b_b"
+respawn_s = 3.0
+timer_s = 2.3
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="posponer_3b_c" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(704, 1600)
+group_id = "posponer_3b"
+object_id = &"posponer_3b_c"
+respawn_s = 3.0
+timer_s = 2.3
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="snooze_1" parent="Objects" instance=ExtResource("16_snooze_button") groups=["help_target"]]
+position = Vector2(1664, 1536)
+cap_s = 8.0
+cooldown_s = 1.0
+extend_s = 4.0
+object_id = &"snooze_1"
+target_groups = ["posponer_3b"]
+metadata/help_id = "snooze_button"
+
+[node name="overlay_2" parent="Objects" instance=ExtResource("7_overlay_popup") groups=["help_target"]]
+position = Vector2(1472, 1344)
+close_button_position = Vector2(8, 224)
+close_button_size = 24
+debug_opacity = 0.15
+height_tiles = 4
+object_id = &"overlay_2"
+opacity = 0.7
+text = "Recordatorio: no olvides tus recordatorios"
+width_tiles = 4
+metadata/help_id = "overlay_popup"
+
+[node name="cargador_2" parent="Objects" instance=ExtResource("8_charger") groups=["help_target"]]
+position = Vector2(320, 1280)
+amount = 50.0
+cooldown_s = 10.0
+object_id = &"cargador_2"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="posponer_3c_a" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(832, 1344)
+group_id = "posponer_3c"
+object_id = &"posponer_3c_a"
+respawn_s = 3.0
+timer_s = 2.4
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="posponer_3c_b" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1024, 1344)
+group_id = "posponer_3c"
+object_id = &"posponer_3c_b"
+respawn_s = 3.0
+timer_s = 2.4
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="posponer_3c_c" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1216, 1344)
+group_id = "posponer_3c"
+object_id = &"posponer_3c_c"
+respawn_s = 3.0
+timer_s = 2.4
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="snooze_2" parent="Objects" instance=ExtResource("16_snooze_button") groups=["help_target"]]
+position = Vector2(1664, 1280)
+cap_s = 8.0
+cooldown_s = 1.0
+extend_s = 4.0
+object_id = &"snooze_2"
+target_groups = ["posponer_3c"]
+metadata/help_id = "snooze_button"
+
+[node name="receiver_23_20" parent="Objects" instance=ExtResource("17_receiver") groups=["help_target"]]
+position = Vector2(1472, 1280)
+target_id = &"puente_3c"
+metadata/help_id = "receiver"
+
+[node name="puente_3c" parent="Objects" instance=ExtResource("11_bridge") groups=["help_target"]]
+position = Vector2(1536, 1344)
+direction = "right"
+object_id = &"puente_3c"
+length_tiles = 2
+metadata/help_id = "bridge"
+
+[node name="olvidado_a" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1216, 1792)
+group_id = "olvidado"
+object_id = &"olvidado_a"
+respawn_s = 3.0
+timer_s = 1.0
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="olvidado_b" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(1024, 1792)
+group_id = "olvidado"
+object_id = &"olvidado_b"
+respawn_s = 3.0
+timer_s = 1.0
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="olvidado_c" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(832, 1792)
+group_id = "olvidado"
+object_id = &"olvidado_c"
+respawn_s = 3.0
+timer_s = 1.0
+warn_s = 0.5
+width_tiles = 2
+metadata/help_id = "reminder_platform"
+
+[node name="olvidado_d" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(576, 1792)
+group_id = "olvidado"
+object_id = &"olvidado_d"
+respawn_s = 3.0
+timer_s = 1.0
+warn_s = 0.5
+width_tiles = 3
+metadata/help_id = "reminder_platform"
+
+[node name="olvidado_e" parent="Objects" instance=ExtResource("15_reminder_platform") groups=["help_target"]]
+position = Vector2(384, 1792)
+group_id = "olvidado"
+object_id = &"olvidado_e"
+respawn_s = 3.0
+timer_s = 1.0
+warn_s = 0.5
+width_tiles = 3
+metadata/help_id = "reminder_platform"
+
+[node name="snooze_olvidado" parent="Objects" instance=ExtResource("16_snooze_button") groups=["help_target"]]
+position = Vector2(1536, 1728)
+cap_s = 8.0
+cooldown_s = 1.0
+extend_s = 4.0
+object_id = &"snooze_olvidado"
+target_groups = ["olvidado"]
+metadata/help_id = "snooze_button"
+
+[node name="power_bank_1_2" parent="Objects" instance=ExtResource("18_power_bank_pickup") groups=["help_target"]]
+position = Vector2(128, 1728)
+object_id = &"power_bank_1_2"
+metadata/help_id = "power_bank_pickup"
+
+[node name="overlay_3" parent="Objects" instance=ExtResource("7_overlay_popup") groups=["help_target"]]
+position = Vector2(256, 704)
+close_button_position = Vector2(200, 232)
+close_button_size = 24
+debug_opacity = 0.15
+height_tiles = 4
+object_id = &"overlay_3"
+opacity = 0.7
+text = "Actualización disponible. ¿Instalar ahora? Sí / Sí"
+width_tiles = 5
+metadata/help_id = "overlay_popup"
+
+[node name="barra_99" parent="Objects" instance=ExtResource("19_update_bar") groups=["help_target"]]
+position = Vector2(192, 576)
+object_id = &"barra_99"
+rise_s = 1.0
+wait_s = 20.0
+waves = [{"t": 4.0, "type": "alert_bubble", "x": 9}, {"t": 4.0, "type": "alert_bubble", "x": 18}, {"t": 10.0, "type": "notification_badge", "x": 11}, {"t": 10.0, "type": "notification_badge", "x": 20}, {"t": 15.0, "type": "alert_bubble", "x": 14}, {"params": {"chase_speed_px_s": 60.0}, "t": 15.0, "type": "notification_badge", "x": 7}]
+arm_zone = [4, 7, 22, 5]
+metadata/help_id = "update_bar"
+
+[node name="terminal_1_2" parent="Objects" instance=ExtResource("20_exit_terminal") groups=["help_target"]]
+position = Vector2(1536, 256)
+height_tiles = 2
+object_id = &"terminal_1_2"
+text = "Marcar todo como leído"
+width_tiles = 1
+level_id = "1-2"
+metadata/help_id = "exit_terminal"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="badge_1" parent="Enemies" instance=ExtResource("21_notification_badge") groups=["help_target"]]
+position = Vector2(1632, 3328)
+metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
+metadata/help_id = "notification_badge"
+
+[node name="badge_2" parent="Enemies" instance=ExtResource("21_notification_badge") groups=["help_target"]]
+position = Vector2(352, 3328)
+metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
+metadata/help_id = "notification_badge"
+
+[node name="badge_3" parent="Enemies" instance=ExtResource("21_notification_badge") groups=["help_target"]]
+position = Vector2(1184, 3008)
+metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
+metadata/help_id = "notification_badge"
+
+[node name="badge_4" parent="Enemies" instance=ExtResource("21_notification_badge") groups=["help_target"]]
+position = Vector2(1440, 3008)
+metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
+metadata/help_id = "notification_badge"
+
+[node name="banner_1" parent="Enemies" instance=ExtResource("22_spam_banner") groups=["help_target"]]
+position = Vector2(1312, 2752)
+metadata/params = {"corridor_tiles": 18, "direction": -1}
+metadata/help_id = "spam_banner"
+
+[node name="banner_2" parent="Enemies" instance=ExtResource("22_spam_banner") groups=["help_target"]]
+position = Vector2(1376, 1088)
+metadata/params = {"corridor_tiles": 15, "direction": -1}
+metadata/help_id = "spam_banner"
+
+[node name="Goal" type="Marker2D" parent="." groups=["goal"]]
+position = Vector2(1568, 384)
+
+[node name="Isak" parent="." instance=ExtResource("23_isak")]
+position = Vector2(288, 3904)
+camera_limits = Rect2i(0, 0, 1792, 3968)
+camera_mode = &"tower"
+camera_bands = PackedVector2Array(0, 448, 448, 1152, 1152, 2048, 2048, 2816, 2816, 3584, 3584, 3968)
+
+[node name="Hud" parent="." instance=ExtResource("24_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("25_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("26_help_system")
