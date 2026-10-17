@@ -10,7 +10,10 @@
 ##                              encendido (disparo al lector) desde la repisa alta
 ##   05_piso3_recordatorios.png piso 3: escalera de recordatorios, grupo de 3b y 3c
 ##   06_piso4_actualizaciones.png piso 4: pasillo del banner y sala de espera
-##   07_azotea.png              azotea con la terminal de salida
+##   07_azotea.png              azotea completa (filas 0-10 desde la tanda H2): terminal
+##                              apagada, Calc al 3 %, pared con glitch y el cuarto a oscuras
+##   07b_azotea_cuarto.png      dentro del cuarto, en la repisa baja (las piezas del acertijo
+##                              paso a paso: tools/render_level_1_2_rooftop.gd)
 ##   08_fachada_hueco.png       subida entre pisos (la fachada se mueve con el nivel)
 ## Junto a cada captura del nivel escribe <nombre>.json con el centro de la camara en px del mundo
 ## (lo usa tools/measure_tower_contrast.py para medir el contraste de las plataformas con el
@@ -46,23 +49,25 @@ func _run() -> void:
 	var level: Node = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(level)
 	var isak: Node2D = level.get_node(^"Isak")
-	await _place(isak, 8.0, 60)
+	await _place(isak, 8.0, 64)
 	await _save(isak, out_dir, "01_vestibulo.png")
-	await _place(isak, 12.0, 48)
+	await _place(isak, 12.0, 52)
 	await _save(isak, out_dir, "02_piso1_mensajes.png")
-	await _place(isak, 23.0, 42)
+	await _place(isak, 23.0, 46)
 	await _save(isak, out_dir, "03_piso2_pasillo.png")
 	var reader: Node = level.get_node(^"Objects/lector_1")
 	reader.call(&"on_laser_hit", 10.0, isak)
-	await _place(isak, 7.0, 33)
+	await _place(isak, 7.0, 37)
 	await _save(isak, out_dir, "04_acertijo.png")
-	await _place(isak, 18.0, 24)
+	await _place(isak, 18.0, 28)
 	await _save(isak, out_dir, "05_piso3_recordatorios.png")
-	await _place(isak, 18.0, 16)
+	await _place(isak, 18.0, 20)
 	await _save(isak, out_dir, "06_piso4_actualizaciones.png")
-	await _place(isak, 20.0, 5)
+	await _place(isak, 3.0, 9)
 	await _save(isak, out_dir, "07_azotea.png")
-	await _place(isak, 22.0, 46)
+	await _place(isak, 20.0, 7)
+	await _save(isak, out_dir, "07b_azotea_cuarto.png")
+	await _place(isak, 22.0, 50)
 	await _save(isak, out_dir, "08_fachada_hueco.png")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	quit(0)

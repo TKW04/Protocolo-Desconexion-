@@ -187,6 +187,42 @@ def render(level, palette):
             d.line((mx, (y0 + y1) // 2 + 2, mx, y1), fill=palette["tile_luz"])
             d.line((x0 + 3, y1, x1 - 3, y1), fill=palette["tile_luz"])
             label(mx, y0 - 8, p.get("text", "terminal"), palette["banner_blanco"])
+        # Acertijo de Calc (tanda H2 del paso 14 del 1-2, 2026-10-17).
+        elif kind == "dark_room":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 4), p.get("height_tiles", 4))
+            for xx in range(x0, x1, 8):
+                d.line((xx, y0, min(xx + 3, x1), y0), fill=palette["banner_gris"])
+                d.line((xx, y1, min(xx + 3, x1), y1), fill=palette["banner_gris"])
+            for yy in range(y0, y1, 8):
+                d.line((x0, yy, x0, min(yy + 3, y1)), fill=palette["banner_gris"])
+                d.line((x1, yy, x1, min(yy + 3, y1)), fill=palette["banner_gris"])
+            label(x1 - 4, y0 + 8, "cuarto a oscuras", palette["banner_gris"], anchor="rm")
+        elif kind in ("power_switch", "debug_switch"):
+            x0, y0, x1, y1 = box(x, y)
+            color = palette["debug_cian"] if kind == "debug_switch" else palette["banner_blanco"]
+            d.rectangle((x0 + 3, y0 + 3, x1 - 3, y1 - 5), outline=color, width=2)
+            n = int(p.get("pulses", 3 if kind == "power_switch" else 1))
+            for i in range(n):
+                cx = (x0 + x1) // 2 + (i - (n - 1) / 2.0) * 4
+                d.rectangle((cx - 1, y0 - 3, cx + 1, y0 - 1), fill=palette["ambar"])
+            label((x0 + x1) // 2, y1 + 6, ("oculto" if kind == "debug_switch" else "pulso x%d" % n), color)
+        elif kind == "laser_switch":
+            x0, y0, x1, y1 = box(x, y)
+            cx, cy = (x0 + 3 * x1) // 4, (y0 + y1) // 2
+            d.ellipse((cx - 5, cy - 5, cx + 5, cy + 5), outline=palette["debug_cian"], width=2)
+            d.ellipse((cx - 1, cy - 1, cx + 1, cy + 1), fill=palette["debug_cian"])
+            label((x0 + x1) // 2, y0 - 7, "laser", palette["debug_cian"])
+        elif kind == "charge_dock":
+            x0, y0, x1, y1 = box(x, y, 2, 1)
+            d.rectangle((x0 + 2, y1 - 5, x1 - 2, y1), fill=palette["tile_luz"], outline=palette["debug_cian"])
+            label((x0 + x1) // 2, y0 + 6, "carga", palette["debug_cian"])
+        elif kind == "calc_actor":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 4, y0 + 2, x1 - 4, y1), fill=palette["banner_gris"], outline=palette["banner_blanco"])
+            label((x0 + x1) // 2, y1 + 6, "Calc 3 %", palette["banner_blanco"])
+        elif kind == "charger":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 5, y0 + 1, x1 - 5, y1), fill=palette["tile_luz"], outline=palette["debug_cian"])
         elif kind == "eco_line":
             x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 4))
             for xx in range(x0, x1, 6):
@@ -294,6 +330,7 @@ def render(level, palette):
              ("~", "puente retraido", palette["borde_luz"]), ("W", "pared con glitch (secreto)", palette["carmin_brillo"]),
              ("X", "pop-up (rojo = boton)", palette["banner_blanco"]), ("D", "puerta / meta G", palette["banner_blanco"]),
              ("e", "zona de Eco", palette["resplandor"]),
+             ("I", "interruptor / panel oculto / laser / carga (acertijo de Calc)", palette["debug_cian"]),
              ("T", "techo colgado (cara de abajo)", palette["borde_luz"])]
     lx = SIDE
     for _, text, color in items:
