@@ -194,6 +194,28 @@ class Rules:
         self.base_pulse_radius = float(abilities["pulse_radius_px"])
         self.laser_range = float(abilities.get("laser_range_px", 0.0))
         self.laser_thickness = float(abilities.get("laser_thickness_px", 4.0))
+        # Tiempos y energia de las habilidades (paso 10, plan del camino): pose del pulso, pose del
+        # laser (anticipacion + brazo extendido, Isak.laser_pose_hold_s; bloquea el movimiento),
+        # enfriamiento, coste y velocidad del proyectil; Debug (data/debug_mode.json) y energia maxima
+        # (scripts/autoload/game_state.gd).
+        self.pulse_pose_s = float(abilities.get("pulse_duration_s", 0.3333))
+        hold = re.search(r"var laser_pose_hold_s\s*:\s*float\s*=\s*([\d.]+)", isak_source)
+        self.laser_pose_s = float(abilities.get("laser_windup_s", 0.05)) + (float(hold.group(1)) if hold else 0.25)
+        self.laser_cooldown_s = float(abilities.get("laser_cooldown_s", 0.4))
+        self.laser_cost = float(abilities.get("laser_energy_cost", 10.0))
+        self.laser_speed = float(abilities.get("laser_speed_px_s", 1200.0))
+        debug_cfg = load_json(os.path.join(root, "data", "debug_mode.json"))
+        self.debug_hold_s = float(debug_cfg.get("activation_hold_s", 1.0))
+        self.debug_drain = float(debug_cfg.get("drain_per_second", 20.0))
+        self.debug_world_scale = float(debug_cfg.get("world_time_scale", 0.5))
+        self.debug_fade_s = float(debug_cfg.get("fade_in_s", 0.15))
+        with open(os.path.join(root, "scripts", "autoload", "game_state.gd"), encoding="utf-8") as handle:
+            energy = re.search(r"const DEBUG_ENERGY_MAX\s*:\s*float\s*=\s*([\d.]+)", handle.read())
+        self.energy_max = float(energy.group(1)) if energy else 100.0
+        sync = re.search(r"const SYNC_RATE_MAX\s*:\s*float\s*=\s*([\d.]+)", open(
+            os.path.join(root, "scripts", "autoload", "game_state.gd"), encoding="utf-8").read())
+        self.sync_max = float(sync.group(1)) if sync else 100.0
+        self.time_margin = None  # --time-margin (si no, validation.time_margin_s del nivel o 1,5 s)
         self.physics_path = physics_path
         self.upgrades = tuple(upgrades)
         catalog = load_upgrades(root)
@@ -277,7 +299,7 @@ class Report:
 class Gate:
     def __init__(self, gid, kind, obj_id, cells=None, rect=None, openers=None, col=0, row=0, tile=64.0):
         self.gid = gid
-        self.kind = kind  # bridge, popup, bubble, pickup
+        self.kind = kind  # bridge, popup, bubble, pickup; ad (anuncio, laser) y bar (barra del 99 %, espera)
         self.obj_id = obj_id
         self.cells = cells or []  # celdas solidas/apoyo (puente al abrir, pop-up al cerrar)
         self.rect = rect  # zona de dano (Burbuja)
@@ -292,7 +314,7 @@ class Gate:
 
     def label(self):
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
-                 "terminal": "terminal de salida"}
+                 "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %"}
         if getattr(self, "encounter", False):
             return "encuentro con Eco %s" % self.obj_id
         return "%s %s" % (names[self.kind], self.obj_id)
@@ -320,6 +342,19 @@ class LevelModel:
         # Recordatorios (2026-10-16, paso 6 de docs/propuesta-1-2.md §10): PROVISIONAL, tabla
         # solida fina siempre presente (sin su cuenta, su caida ni el Posponer: paso 10).
         self.reminders = {}
+        # Paso 10 (2026-10-16, docs/propuesta-1-2.md §10): objetos con tiempo, laser y Debug que usa
+        # el plan del camino (tools/level_plan.py). Los recordatorios siguen siendo tablas en el grafo;
+        # su cuenta, su caida y el Posponer se comprueban en el plan.
+        self.reminder_groups = {}  # grupo -> {"cells", "timer", "warn", "respawn", "ids"}
+        self.reminder_group_of = {}  # celda -> grupo
+        self.lectors = {}  # id del lector laser -> {"rect", "target", "window", "cell"}
+        self.snoozes = []  # botones Posponer: {"id", "rect", "targets", "extend", "cap", "cooldown", "cell"}
+        self.overlays = []  # pop-ups translucidos: {"id", "cells", "button", "cell"}
+        self.chargers = []  # cargadores: {"id", "cell", "rect", "amount", "reusable", "cooldown"}
+        abilities = level.get("abilities_available", {})
+        self.debug_base = bool(abilities.get("debug", False))
+        self.validation = level.get("validation", {}) if isinstance(level.get("validation"), dict) else {}
+        self._relay_cache = {}
         self.gates = []
         self._build_objects()
         self.spike_rects = self._spike_rects()
@@ -344,18 +379,62 @@ class LevelModel:
     def _build_objects(self):
         T = self.T
         receivers = {}
+        relays = {}  # id del puente -> id del receptor enlazado que lo extiende
         cfg_receiver = self.catalog.get("receiver", {})
         hit = cfg_receiver.get("hit_rect", [0, 0, T, T])
+
+        def cell_rect(obj, rect, what):
+            x0, y0 = obj["x"] * T + float(rect[0]), obj["y"] * T + float(rect[1])
+            return (x0, y0, x0 + float(rect[2]), y0 + float(rect[3]), what)
+
         for obj in self.level.get("objects", []):
             p = self._params(obj)
-            # relay_receiver (2026-10-16, paso 3 de docs/propuesta-1-2.md §10): PROVISIONAL, se
-            # modela como un receptor del pulso (sin la corriente de su lector laser ni la ventana
-            # de tiempo); el lector, el anuncio (ad_cover) y el tiempo son el paso 10.
+            # relay_receiver (2026-10-16): receptor del pulso que solo responde con la corriente de su
+            # lector laser (laser_receiver con target = su id) dentro de la ventana (paso 10: el
+            # progreso lo abre solo si el camino dispara al lector y llega a tiempo; ver relay_plan).
             if obj["type"] in ("receiver", "relay_receiver"):
-                x0 = obj["x"] * T + hit[0]
-                y0 = obj["y"] * T + hit[1]
-                rect = (x0, y0, x0 + hit[2], y0 + hit[3], "receptor (fila %d, columna %d)" % (obj["y"], obj["x"]))
+                rhit = self.catalog.get(obj["type"], {}).get("hit_rect", hit) if obj["type"] == "relay_receiver" else hit
+                x0 = obj["x"] * T + rhit[0]
+                y0 = obj["y"] * T + rhit[1]
+                rect = (x0, y0, x0 + rhit[2], y0 + rhit[3], "receptor (fila %d, columna %d)" % (obj["y"], obj["x"]))
                 receivers.setdefault(str(p.get("target", "")), []).append(rect)
+                if obj["type"] == "relay_receiver":
+                    relays[str(p.get("target", ""))] = str(p.get("id", ""))
+            elif obj["type"] == "laser_receiver":
+                cfg = self.catalog.get("laser_receiver", {})
+                lid = str(p.get("id", ""))
+                window = float(p.get("window_s", cfg.get("window_s", 6.0)) or cfg.get("window_s", 6.0))
+                self.lectors[lid] = {"id": lid, "rect": cell_rect(obj, cfg.get("hit_rect", [0, 0, T, T]),
+                                                                  "lector %s" % lid),
+                                     "target": str(p.get("target", "")), "window": window,
+                                     "cell": (obj["x"], obj["y"])}
+            elif obj["type"] == "snooze_button":
+                cfg = self.catalog.get("snooze_button", {})
+                sid = str(p.get("id", "snooze_%d_%d" % (obj["x"], obj["y"])))
+                self.snoozes.append({"id": sid, "rect": cell_rect(obj, cfg.get("hit_rect", [0, 0, T, T]),
+                                                                  "Posponer %s" % sid),
+                                     "targets": [str(t) for t in p.get("targets", [])],
+                                     "extend": float(p.get("extend_s", 4.0)), "cap": float(p.get("cap_s", 8.0)),
+                                     "cooldown": float(p.get("cooldown_s", 1.0)), "cell": (obj["x"], obj["y"])})
+            elif obj["type"] == "overlay_popup":
+                oid = str(p.get("id", "overlay_%d_%d" % (obj["x"], obj["y"])))
+                w, h = int(p.get("width_tiles", 1)), int(p.get("height_tiles", 1))
+                button = p.get("close_button_px", [0, 0])
+                size = float(p.get("close_button_size_px", 24))
+                bx, by = obj["x"] * T + float(button[0]), obj["y"] * T + float(button[1])
+                self.overlays.append({"id": oid, "cell": (obj["x"], obj["y"]),
+                                      "cells": {(obj["x"] + dx, obj["y"] + dy) for dy in range(h) for dx in range(w)},
+                                      "button": (bx, by, bx + size, by + size, "boton de cerrar de %s" % oid),
+                                      "cover": None})
+            elif obj["type"] == "charger":
+                size = self.catalog.get("charger", {}).get("size_px", [32, 64])
+                x0 = obj["x"] * T + (T - float(size[0])) * 0.5
+                y1 = (obj["y"] + 1) * T
+                self.chargers.append({"id": str(p.get("id", "charger_%d_%d" % (obj["x"], obj["y"]))),
+                                      "cell": (obj["x"], obj["y"]),
+                                      "rect": (x0, y1 - float(size[1]), x0 + float(size[0]), y1),
+                                      "amount": float(p.get("amount", 50.0)), "reusable": bool(p.get("reusable", True)),
+                                      "cooldown": float(p.get("cooldown_s", 20.0))})
             elif obj["type"] == "reminder_platform":
                 thickness = float(self.catalog.get("reminder_platform", {}).get("card_height_px", T))
                 for dx in range(int(p.get("width_tiles", 1))):
@@ -401,6 +480,33 @@ class LevelModel:
                 gate.ability = "pulse"
                 gate.encounter = True
                 self.gates.append(gate)
+        # Anuncios (ad_cover, paso 10): tapan el boton de un pop-up (solido o translucido) hasta que
+        # el laser los rompe; mientras, el pulso rebota.
+        size = self.catalog.get("ad_cover", {}).get("size_px", [96, 48])
+        for obj in self.level.get("objects", []):
+            if obj["type"] != "ad_cover":
+                continue
+            p = self._params(obj)
+            aid = str(p.get("id", "ad_%d_%d" % (obj["x"], obj["y"])))
+            target = str(p.get("target", ""))
+            button = None
+            popup = next((g for g in self.gates if g.kind == "popup" and g.obj_id == target), None)
+            if popup is not None and popup.openers:
+                button = popup.openers[0]
+            overlay = next((o for o in self.overlays if o["id"] == target), None)
+            if overlay is not None:
+                button = overlay["button"]
+            if button is None:
+                continue
+            cx, cy = (button[0] + button[2]) * 0.5, (button[1] + button[3]) * 0.5
+            rect = (cx - size[0] * 0.5, cy - size[1] * 0.5, cx + size[0] * 0.5, cy + size[1] * 0.5, "anuncio %s" % aid)
+            gate = Gate("ad:" + aid, "ad", aid, openers=[rect], col=obj["x"], row=obj["y"], tile=T)
+            gate.target = target
+            self.gates.append(gate)
+            if popup is not None:
+                popup.cover = gate.gid
+            if overlay is not None:
+                overlay["cover"] = gate.gid
         for enemy in self.level.get("enemies", []):
             path = os.path.join(self.rules.root, "data", "enemies", "%s.json" % enemy["type"])
             if enemy["type"] != "alert_bubble" or not os.path.exists(path):
@@ -476,10 +582,35 @@ class LevelModel:
                             if g.gid in state and not (g.col_span[1] < lo or g.col_span[0] > hi)))
 
     def edges(self, node, state, debug=False):
+        if debug == "auto":
+            return self.union_edges(node, state) if self.has_debug(state) else self.edges(node, state, False)
         key = (node, self.local_key(node, state), debug)
         if key not in self._edges:
             self._edges[key] = self.world(state, debug).compute_edges(node)
         return self._edges[key]
+
+    def union_edges(self, node, state):
+        """Movimientos con el Debug a mano (paso 10, 2026-10-16): los normales y, ademas, los que
+        solo existen con el Debug activo (plataformas 'h' solidas, pared con glitch abierta),
+        marcados con "debug": True. Encenderlo y apagarlo entre movimientos es libre en el grafo; la
+        energia y la carga de activation_hold_s las cuenta el plan (tools/level_plan.py)."""
+        key = (node, self.local_key(node, state), "union")
+        if key not in self._edges:
+            normal = self.edges(node, state, False)
+            seen = {e["to"] for e in normal}
+            out = list(normal)
+            for e in self.edges(node, state, True):
+                if e["to"] not in seen:
+                    extra = dict(e)
+                    extra["debug"] = True
+                    out.append(extra)
+            self._edges[key] = out
+        return self._edges[key]
+
+    def has_debug(self, state):
+        """El Debug se puede usar: lo da el nivel (abilities_available.debug) o ya se recogio su chip."""
+        return self.debug_base or any(g.kind == "pickup" and g.ability == "debug" and g.gid in state
+                                      for g in self.gates)
 
     def has_pulse(self, state):
         """El pulso esta disponible: lo da el nivel desde el inicio o ya se paso por el encuentro con Eco
@@ -502,7 +633,20 @@ class LevelModel:
             return True
         if not self.has_pulse(state) or not gate.openers:
             return False
-        w = self.world(state, debug)
+        if getattr(gate, "cover", None) and gate.cover not in state:
+            return False  # el anuncio tapa el boton: el pulso rebota
+        if getattr(gate, "relay", None) is not None:
+            if not use_laser or not self.has_laser(state):
+                return False
+            return node in self.relay_plan(gate, state, debug)["ok"]
+        return self.pulse_hits(gate.openers, node, state, debug)
+
+    def pulse_hits(self, rects, node, state, debug=False):
+        """Verdadero si el pulso desde `node` (de pie, mirando a un lado) toca alguno de `rects`."""
+        if not rects:
+            return False
+        dbg = debug if debug in (True, False) else False
+        w = self.world(state, dbg)
         c, r = node
         feet = (r + 1) * self.T
         x = c * self.T
@@ -510,7 +654,7 @@ class LevelModel:
             if not w.collides(x, feet) and not w.in_hazard(x, feet):
                 for facing in (1.0, -1.0):
                     px, py = x + self.rules.phone_x * facing, feet + self.rules.phone_y
-                    for rect in gate.openers:
+                    for rect in rects:
                         qx = min(max(px, rect[0]), rect[2])
                         qy = min(max(py, rect[1]), rect[3])
                         if math.hypot(px - qx, py - qy) <= self.rules.pulse_radius + EPS:
@@ -522,33 +666,158 @@ class LevelModel:
         """Verdadero si un disparo del laser desde `node` (de pie, mirando a un lado) alcanza la
         patrulla de la Burbuja `gate`: el haz sale horizontal del celular, llega a laser_range_px y
         choca con el terreno (solidos, puentes extendidos y pop-ups cerrados)."""
-        rules = self.rules
-        if rules.laser_range <= 0.0 or not gate.openers:
+        if not gate.openers:
             return False
-        w = self.world(state, debug)
+        return self.laser_shot(gate.openers[0], node, state, debug) is not None
+
+    def laser_shot(self, rect, node, state, debug=False):
+        """Disparo del laser desde `node` que alcanza `rect` (lector, anuncio, Posponer, Burbuja):
+        {"x": x de los pies, "facing": 1 / -1, "dist": px hasta el objetivo} o None. Horizontal a la
+        altura del celular (pulse_effect_origin) desde una posicion de pie de la celda; alcance
+        laser_range_px; lo cortan el terreno, los puentes extendidos y los pop-ups cerrados."""
+        rules = self.rules
+        if rules.laser_range <= 0.0:
+            return None
+        w = self.world(state, debug if debug in (True, False) else False)
         c, r = node
         T = self.T
         feet = (r + 1) * T
         py = feet + rules.phone_y
         half = rules.laser_thickness * 0.5
-        bx0, by0, bx1, by1 = gate.openers[0][:4]
+        bx0, by0, bx1, by1 = rect[:4]
         if py + half < by0 or py - half > by1:
-            return False
+            return None
         x = c * T
         while x <= (c + 1) * T + EPS:
             if not w.collides(x, feet):
                 for facing in (1.0, -1.0):
                     px = x + rules.phone_x * facing
                     if bx0 <= px <= bx1:
-                        return True
+                        return {"x": x, "facing": facing, "dist": 0.0}
                     near = bx0 if facing > 0 else bx1
                     dist = (near - px) * facing
                     if dist < 0.0 or dist > rules.laser_range + EPS:
                         continue
                     if not w.ray_blocked(px, near, py, half):
-                        return True
+                        return {"x": x, "facing": facing, "dist": dist}
             x += PULSE_SAMPLE_PX
-        return False
+        return None
+
+    def pulse_shot(self, rects, node, state, debug=False):
+        """Como pulse_hits, pero devuelve {"x", "facing"} de la primera posicion que toca."""
+        dbg = debug if debug in (True, False) else False
+        w = self.world(state, dbg)
+        c, r = node
+        feet = (r + 1) * self.T
+        x = c * self.T
+        while x <= (c + 1) * self.T + EPS:
+            if not w.collides(x, feet) and not w.in_hazard(x, feet):
+                for facing in (1.0, -1.0):
+                    px, py = x + self.rules.phone_x * facing, feet + self.rules.phone_y
+                    for rect in rects:
+                        qx = min(max(px, rect[0]), rect[2])
+                        qy = min(max(py, rect[1]), rect[3])
+                        if math.hypot(px - qx, py - qy) <= self.rules.pulse_radius + EPS:
+                            return {"x": x, "facing": facing}
+            x += PULSE_SAMPLE_PX
+        return None
+
+    # --- Tiempos (paso 10) ---
+
+    def time_margin(self):
+        """Margen de tiempo minimo que debe sobrar en las ventanas y cuentas (s; validation.time_margin_s
+        del nivel o --time-margin; 1,5 s por defecto)."""
+        value = self.rules.time_margin
+        if value is None:
+            value = self.validation.get("time_margin_s", DEFAULT_TIME_MARGIN_S)
+        return float(value)
+
+    def edge_time(self, node, e):
+        """Segundos de un movimiento del grafo: andar una celda a walk_speed; saltar o caer, el tiempo en
+        el aire mas lo que se anda dentro de las celdas de salida y llegada (del centro al despegue y
+        del aterrizaje al centro) y el arranque desde parado (START_S)."""
+        T = self.T
+        speed = self.rules.walk_speed
+        if e["kind"] == "walk":
+            return T / speed
+        x_from = (node[0] + 0.5) * T
+        to = e["to"]
+        land = e.get("land_x")
+        if land is None:
+            land = e["x0"] + (e.get("travel", 0.0) + T * 0.5) * (1 if to[0] >= node[0] else -1)
+        extra = abs(e["x0"] - x_from) / speed + abs(land - (to[0] + 0.5) * T) / speed
+        return e.get("time", 0.0) + extra + START_S
+
+    def time_search(self, sources, state, debug="auto", limit=None, region=None):
+        """Dijkstra por tiempo desde varias fuentes {nodo: segundos}: devuelve (t, parent). Respeta el
+        limite de exigencia de los saltos; `region` (conjunto de nodos) restringe la busqueda."""
+        limit = self.rules.limit if limit is None else limit
+        best = dict(sources)
+        parent = {n: None for n in sources}
+        heap = [(t, n) for n, t in sources.items()]
+        heapq.heapify(heap)
+        while heap:
+            t, node = heapq.heappop(heap)
+            if t > best.get(node, INF) + EPS:
+                continue
+            for e in self.edges(node, state, debug):
+                if max(e["h"], e["v"]) > limit + EPS:
+                    continue
+                to = e["to"]
+                if region is not None and to not in region:
+                    continue
+                nt = t + self.edge_time(node, e)
+                if nt < best.get(to, INF) - EPS:
+                    best[to] = nt
+                    parent[to] = (node, e)
+                    heapq.heappush(heap, (nt, to))
+        return best, parent
+
+    def relay_plan(self, gate, state, debug="auto", sources=None):
+        """Patron 2 (lector laser -> receptor enlazado -> puente): desde que celdas de pie el pulso
+        activa el receptor con corriente. Para cada una, el menor tiempo desde un disparo al lector
+        (desde cualquier celda de `sources`, o de todo el mapa) hasta el pulso: laser_pose_s (el
+        disparo bloquea el movimiento) + recorrido + PULSE_DELAY_S. Devuelve {"ok": {B: t}, "best":
+        {...} o None, "window": s, "shots": [celdas desde donde se dispara]}: `ok` son las celdas en
+        las que el tiempo cabe en la ventana (el margen lo comprueba el plan)."""
+        key = (gate.gid, state, debug, None if sources is None else id(sources))
+        if sources is None and key in self._relay_cache:
+            return self._relay_cache[key]
+        lector = gate.relay.get("lector") if gate.relay else None
+        out = {"ok": {}, "best": None, "window": lector["window"] if lector else 0.0, "shots": []}
+        if lector is None or not self.has_laser(state) or not self.has_pulse(state):
+            if sources is None:
+                self._relay_cache[key] = out
+            return out
+        nodes = sources if sources is not None else self.world(state, False).nodes()
+        shots = {}
+        for n in nodes:
+            shot = self.laser_shot(lector["rect"], n, state, debug)
+            if shot is not None:
+                shots[n] = shot
+        out["shots"] = sorted(shots)
+        if shots:
+            starts = {n: self.rules.laser_pose_s for n in shots}
+            times, parent = self.time_search(starts, state, debug)
+            for n, t in times.items():
+                total = t + PULSE_DELAY_S
+                if total <= lector["window"] + EPS and self.pulse_hits(gate.openers, n, state, debug):
+                    out["ok"][n] = total
+            if out["ok"]:
+                b = min(out["ok"], key=lambda n: (out["ok"][n], n[1], n[0]))
+                path = path_to(parent, b)
+                a = path[0][0] if path else b
+                out["best"] = {"shot": a, "shot_info": shots[a], "pulse": b, "time": out["ok"][b],
+                               "path": path, "lector": lector["id"]}
+            else:
+                # Lo mejor posible aunque no quepa (para explicar el fallo).
+                cands = [(t + PULSE_DELAY_S, n) for n, t in times.items()
+                         if self.pulse_hits(gate.openers, n, state, debug)]
+                if cands:
+                    out["closest"] = min(cands)
+        if sources is None:
+            self._relay_cache[key] = out
+        return out
 
 
 class World:
@@ -892,7 +1161,7 @@ class World:
 STEP_COST = 0.01
 
 
-def search(model, source, state, limit, debug=False, avoid=None):
+def search(model, source, state, limit, debug="auto", avoid=None):
     """Dijkstra de cuello de botella: minimiza la mayor exigencia del camino y, a igualdad,
     la suma de exigencias (+ STEP_COST por movimiento). Devuelve (cost, parent); cost[n] es
     la mayor exigencia del mejor camino hasta n. `avoid`: celdas que Isak no puede tocar de pie
@@ -965,7 +1234,7 @@ class Validator:
         node, why = w.simulate(x, feet, 0.0, 0.0, x)
         return node, why
 
-    def progression(self, source, gates0, limit, forbid=frozenset(), targets=None, debug=False, avoid=None,
+    def progression(self, source, gates0, limit, forbid=frozenset(), targets=None, debug="auto", avoid=None,
                     use_laser=True):
         """Avanza abriendo puertas hasta tocar `targets` (celdas). Devuelve dict con
         ok, stages [(src, state, cost, parent, opened_gate, opener_node, end_node)], reached.
@@ -1224,6 +1493,12 @@ class Validator:
             return
         last = lenient["stages"][-1]
         reached = last["cost"]
+        if not self.model.has_debug(last["state"]) and any("h" in row for row in self.grid):
+            # Paso 10: con las plataformas ocultas solidas (Debug) si se llegaria.
+            with_debug = self.progression(start, frozenset(), INF, targets=goal_cells, debug=True)
+            if with_debug["ok"]:
+                rep.error("la meta solo se alcanza por plataformas ocultas 'h' (solidas con el Debug activo) y el Debug "
+                          "no esta disponible (ni abilities_available.debug ni un chip ability_pickup de debug antes)")
         # Lo mas lejos que llega Isak: a la derecha en un nivel horizontal; arriba en una torre.
         if self.model.is_vertical():
             far = min(reached, key=lambda n: (n[1], -n[0]))
@@ -1236,7 +1511,7 @@ class Validator:
         for g in pending:
             if not g.openers:
                 what = {"bridge": "no tiene receptor", "popup": "no tiene boton de cerrar",
-                        "bubble": "no se puede alcanzar"}[g.kind]
+                        "bubble": "no se puede alcanzar", "ad": "no tiene zona", "bar": "no tiene zona"}[g.kind]
                 rep.error("%s %s: el pulso no lo puede abrir" % (g.label(), what), g.row, g.col, g.label())
             elif not self.model.pulse_possible:
                 rep.error("%s necesita el pulso y el nivel no lo tiene (abilities_available.pulse ni encuentro "
@@ -1260,21 +1535,25 @@ class Validator:
     def _describe_path(self, run):
         actions = []
         edges_used = []
-        for stage in run["stages"]:
-            segment = path_to(stage["parent"], stage["end"])
+
+        def emit(segment, end):
             walk_from = None
             for prev, e in segment:
                 edges_used.append((prev, e))
-                if e["kind"] == "walk":
+                if e["kind"] == "walk" and not e.get("debug"):
                     if walk_from is None:
                         walk_from = prev
                     continue
                 if walk_from is not None:
                     actions.append(self._walk_action(walk_from, prev))
                     walk_from = None
-                actions.append(self._move_action(prev, e))
+                actions.append(self._walk_action(prev, e["to"], debug=True) if e["kind"] == "walk"
+                               else self._move_action(prev, e))
             if walk_from is not None:
-                actions.append(self._walk_action(walk_from, stage["end"]))
+                actions.append(self._walk_action(walk_from, end))
+
+        for stage in run["stages"]:
+            emit(path_to(stage["parent"], stage["end"]), stage["end"])
             if stage["gate"] is not None:
                 n = stage["end"]
                 g = stage["gate"]
@@ -1284,7 +1563,28 @@ class Validator:
                                     "text": "%s %s (%s) en (fila %d, columna %d)"
                                             % (verb, g.label(), g.ability, n[1], n[0])})
                     continue
-                laser = g.kind == "bubble" and not self.model.can_open(g, n, stage["state"], use_laser=False)
+                relay = stage.get("relay")
+                if relay is not None:
+                    # Patron 2: laser al lector, recorrido dentro de la ventana y pulso al receptor.
+                    lector = relay["lector"]
+                    actions.append({"action": "laser", "from": [n[1], n[0]], "object": "lector %s" % lector,
+                                    "text": "laser desde (fila %d, columna %d) -> lector %s (ventana %.1f s)"
+                                            % (n[1], n[0], lector, g.relay["lector"]["window"])})
+                    emit(relay["path"], relay["pulse"])
+                    b = relay["pulse"]
+                    actions.append({"action": "pulse", "from": [b[1], b[0]], "object": g.label(),
+                                    "text": "pulso desde (fila %d, columna %d) -> receptor enlazado %s -> %s "
+                                            "(%.1f s desde el disparo)"
+                                            % (b[1], b[0], g.relay["id"], g.label(), relay["time"])})
+                    continue
+                if g.kind == "bar":
+                    actions.append({"action": "wait", "from": [n[1], n[0]], "object": g.label(),
+                                    "seconds": round(g.wait_s, 2),
+                                    "text": "esperar %.1f s en (fila %d, columna %d) -> %s se abre"
+                                            % (g.wait_s, n[1], n[0], g.label())})
+                    continue
+                laser = g.kind == "ad" or (
+                    g.kind == "bubble" and not self.model.can_open(g, n, stage["state"], use_laser=False))
                 actions.append({"action": "laser" if laser else "pulse", "from": [n[1], n[0]], "object": g.label(),
                                 "text": "%s desde (fila %d, columna %d) -> %s"
                                         % ("laser" if laser else "pulso", n[1], n[0], g.label())})
@@ -1314,23 +1614,30 @@ class Validator:
                 "travel_px": round(e["travel"], 1), "rise_px": round(e["rise"], 1),
                 "h": round(e["h"], 4), "v": round(e["v"], 4)}
 
-    def _walk_action(self, a, b):
-        return {"action": "walk", "from": [a[1], a[0]], "to": [b[1], b[0]],
-                "text": "andar de (fila %d, columna %d) a (fila %d, columna %d)%s"
-                        % (a[1], a[0], b[1], b[0], self._section_suffix(b[0], b[1]))}
+    def _walk_action(self, a, b, debug=False):
+        action = {"action": "walk", "from": [a[1], a[0]], "to": [b[1], b[0]],
+                  "text": "andar de (fila %d, columna %d) a (fila %d, columna %d)%s%s"
+                          % (a[1], a[0], b[1], b[0], " con Debug" if debug else "",
+                             self._section_suffix(b[0], b[1]))}
+        if debug:
+            action["debug"] = True
+        return action
 
     def _move_action(self, prev, e):
         to = e["to"]
         names = {"jump": "saltar", "jump_run": "saltar corriendo", "fall": "caer"}
         rise = e["rise"]
         text = "%s de (fila %d, columna %d) a (fila %d, columna %d): %.0f px en el aire, %s %.0f px " \
-               "-> %.0f %% horizontal, %.0f %% vertical%s" % (
+               "-> %.0f %% horizontal, %.0f %% vertical%s%s" % (
                    names[e["kind"]], prev[1], prev[0], to[1], to[0], e["travel"],
                    "sube" if rise >= 0 else "baja", abs(rise), e["h"] * 100, e["v"] * 100,
-                   self._section_suffix(to[0], to[1]))
-        return {"action": e["kind"], "from": [prev[1], prev[0]], "to": [to[1], to[0]],
-                "travel_px": round(e["travel"], 1), "rise_px": round(rise, 1),
-                "h": round(e["h"], 4), "v": round(e["v"], 4), "text": text}
+                   " (con Debug)" if e.get("debug") else "", self._section_suffix(to[0], to[1]))
+        action = {"action": e["kind"], "from": [prev[1], prev[0]], "to": [to[1], to[0]],
+                  "travel_px": round(e["travel"], 1), "rise_px": round(rise, 1),
+                  "h": round(e["h"], 4), "v": round(e["v"], 4), "text": text}
+        if e.get("debug"):
+            action["debug"] = True
+        return action
 
     def _section_suffix(self, col, row=None):
         name = self.model.section_name(col, row)
@@ -1466,7 +1773,7 @@ class Validator:
             cell = (obj["x"], obj["y"])
             oid = str(obj.get("params", {}).get("id", "vida extra"))
             hidden = cell in self.model.glitch
-            without = self.progression(start, frozenset(), self.rules.limit, targets={cell})
+            without = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=False)
             item = {"id": oid, "cell": list(cell), "behind_glitch_wall": hidden,
                     "reachable_without_debug": without["ok"]}
             if hidden:
@@ -1536,7 +1843,14 @@ class Validator:
         no_laser = self.progression(start, frozenset(), self.rules.limit, forbid=forbid, targets=goal_cells,
                                     use_laser=False)
         self.result["abilities"] = {"pickups": info, "goal_without_laser": no_laser["ok"]}
-        if self.model.laser_possible and not no_laser["ok"]:
+        required = bool(self.model.validation.get("laser_required", False))
+        if required:
+            # Paso 10: el diseno exige el laser (lector, anuncio, Posponer...).
+            self.result["abilities"]["laser_required"] = True
+            if no_laser["ok"]:
+                self.report.error("el nivel exige el laser (validation.laser_required) pero la meta se alcanza "
+                                  "sin usarlo")
+        elif self.model.laser_possible and not no_laser["ok"]:
             self.report.warning("la meta solo se alcanza usando el laser")
 
     def _laser_info(self, seen):
@@ -1570,7 +1884,7 @@ class Validator:
         if gate.kind == "pickup":
             return gate.col_span[0] - 1 <= node[0] <= gate.col_span[1] + 1
         reach = self.rules.pulse_radius + T
-        if gate.kind == "bubble" and self.model.laser_possible:
+        if gate.kind in ("bubble", "ad") and self.model.laser_possible:
             reach = max(reach, self.rules.laser_range + T)
         x = (node[0] + 0.5) * T
         return any(o[0] - reach <= x <= o[2] + reach for o in gate.openers)
@@ -1592,7 +1906,7 @@ class Validator:
             node, state = pair
             if self.touches(node, goal_cells):
                 goals.append(pair)
-            nexts = [(e["to"], state) for e in m.edges(node, state)]
+            nexts = [(e["to"], state) for e in m.edges(node, state, "auto")]
             for g in gates:
                 if g.gid not in state and self._gate_near(g, node) and m.can_open(g, node, state):
                     nexts.append((node, state | {g.gid}))
