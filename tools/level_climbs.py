@@ -3,7 +3,7 @@
 
 Lista cada subida (salto que aterriza mas arriba) entre dos repisas que el validador
 (tools/validate_level.py) acepta en el nivel con todas las puertas abiertas (puentes extendidos,
-pop-ups solidos cerrados, barra abierta, habilidades recogidas). Solo
+pop-ups solidos cerrados, barra abierta, habilidades recogidas, piezas del acertijo de Calc hechas). Solo
 cuenta lo alcanzable desde P; los saltos que solo existen con el Debug encendido (plataformas 'h')
 van marcados con "debug" (como la union de movimientos del validador). Una repisa es una tira de celdas de pie contiguas en una fila. Por
 cada par (repisa de salida, repisa de llegada) se queda el salto que el validador ve mas facil
@@ -52,7 +52,10 @@ def climbs(level, root=ROOT):
     rules = vl.Rules(root, None, vl.DEFAULT_JUMP_EFFICIENCY, vl.DEFAULT_LIMIT, allow_run=True)
     validator = vl.Validator(level, rules)
     model = validator.model
-    state = frozenset(g.gid for g in model.gates if g.kind in ("bridge", "popup", "bar", "pickup"))
+    # Acertijo de Calc (tanda H2 del paso 14, 2026-10-17): con sus piezas hechas la pared con glitch es
+    # una puerta y el cuarto de la azotea se recorre sin el Debug.
+    state = frozenset(g.gid for g in model.gates if g.kind in ("bridge", "popup", "bar", "pickup", "switch",
+                                                                "lswitch", "dock"))
     start_cell = validator.find("P")[0]
     start, why = validator.spawn_node(start_cell, state)
     if start is None:

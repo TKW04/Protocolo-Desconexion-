@@ -141,8 +141,9 @@ class LevelSchemaTest(unittest.TestCase):
 
     def test_level_1_2_economy(self):
         # Economia del 1-2 (docs/propuesta-1-2.md §5-§6, paso 13, 2026-10-16): como el 1-1, 9 puntos
-        # (6 en la ruta + 3 en secretos: A 2 con Debug, B 1), 2 cargadores, un power bank (vacio) en
-        # el secreto C y sin vida extra. Pulso amplio (25) sigue pagandose al terminar el 1-3.
+        # (6 en la ruta + 3 en secretos: A 2 con Debug, B 1), 2 cargadores en los pisos + 1 en la azotea
+        # (acertijo de Calc, tanda H2 del paso 14, 2026-10-17), un power bank (vacio) en el secreto C y
+        # sin vida extra. Pulso amplio (25) sigue pagandose al terminar el 1-3.
         with open(os.path.join(ROOT, "data", "levels", "1-2.json"), encoding="utf-8") as handle:
             lvl = json.load(handle)
         self.assertEqual(vls.validate_level(lvl), [])
@@ -158,7 +159,7 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertEqual((banks[0]["x"], banks[0]["y"]),
                          (secrets["secreto_olvidado"]["x"], secrets["secreto_olvidado"]["y"]))
         chargers = [o for o in lvl["objects"] if o["type"] == "charger"]
-        self.assertEqual(sorted(c["params"]["id"] for c in chargers), ["cargador_1", "cargador_2"])
+        self.assertEqual(sorted(c["params"]["id"] for c in chargers), ["cargador_1", "cargador_2", "cargador_3"])
         self.assertTrue(all(c["params"]["reusable"] for c in chargers))
         self.assertFalse(any(o["type"] == "extra_life_pickup" for o in lvl["objects"]), "sin vida extra en el 1-2")
         with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
@@ -166,8 +167,12 @@ class LevelSchemaTest(unittest.TestCase):
         first = "".join(self.level["grid"]).count("o")
         self.assertLess(first + points, costs["wide_pulse"], "1-1 + 1-2 aun no pagan Pulso amplio")
         self.assertGreaterEqual(first + 2 * points, costs["wide_pulse"], "con el 1-3 (unos 9 mas) si")
-        # Un cargador en cada gasto obligatorio: el acertijo y el Debug del piso 2, los Posponer del 3.
-        self.assertEqual(sorted(c["y"] for c in chargers), [20, 37])
+        # Un cargador en cada gasto obligatorio: el acertijo y el Debug del piso 2, los Posponer del 3 y
+        # el acertijo de Calc en la azotea (Debug para la pared y el panel, laser al interruptor).
+        self.assertEqual(sorted(c["y"] for c in chargers), [9, 24, 41])
+        rows = {s["name"]: (s["y_from"], s["y_to"]) for s in lvl["sections"]}
+        roof = next(c for c in chargers if c["params"]["id"] == "cargador_3")
+        self.assertTrue(rows["Azotea"][0] <= roof["y"] <= rows["Azotea"][1], "cargador_3 en la azotea")
 
     def test_level_1_1_jumps_within_margin(self):
         """Saltos del 1-1 dentro del 85 % del alcance (mismas formulas que PlayerPhysics).

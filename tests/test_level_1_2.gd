@@ -130,15 +130,15 @@ func test_loads_with_arrival_at_the_bottom_tower_camera_and_facade() -> void:
 	_start()
 	assert_eq(_main.get_level_id(), LEVEL_ID)
 	var level: GeneratedLevel = _level()
-	assert_eq(level.get_size_px(), Vector2i(28 * 64, 62 * 64), "Torre de 28 x 62")
+	assert_eq(level.get_size_px(), Vector2i(28 * 64, 66 * 64), "Torre de 28 x 66 (la azotea crecio 4 filas en la tanda H2)")
 	var vortex: WarpVortex = _main.get_arrival_vortex()
 	assert_not_null(vortex, "Llega por el vortice")
-	assert_gt(vortex.global_position.y, 56.0 * TILE, "El vortice esta en el vestibulo (abajo)")
+	assert_gt(vortex.global_position.y, 60.0 * TILE, "El vortice esta en el vestibulo (abajo)")
 	await _arrive()
 	assert_eq(_isak.camera_mode, Isak.CAMERA_TOWER, "Camara de torre (el bot del 1-1 se niega a recorrerla)")
 	assert_true(_isak.is_on_floor())
-	assert_eq(roundi(_isak.global_position.y / TILE), 61, "De pie en el suelo del vestibulo")
-	assert_gt(_isak.get_camera().global_position.y, 56.0 * TILE, "La camara empieza abajo")
+	assert_eq(roundi(_isak.global_position.y / TILE), 65, "De pie en el suelo del vestibulo")
+	assert_gt(_isak.get_camera().global_position.y, 60.0 * TILE, "La camara empieza abajo")
 	var background := level.get_node(^"Background") as World1Background
 	assert_true(background.vertical)
 	assert_not_null(background.get_layer("Fachada"), "Fachada de la torre")
@@ -148,14 +148,14 @@ func test_loads_with_arrival_at_the_bottom_tower_camera_and_facade() -> void:
 	assert_eq(labels, ["Actualizaciones", "Recordatorios", "Correo", "Mensajes"] as Array[String],
 		"Una pestana por piso")
 	var mensajes: Sprite2D = background.get_tabs()[3]
-	assert_almost_eq(mensajes.position.y, 44.0 * TILE + 72.0, 0.5, "La pestana de Mensajes en lo alto del piso 1 (por debajo del HUD)")
+	assert_almost_eq(mensajes.position.y, 48.0 * TILE + 72.0, 0.5, "La pestana de Mensajes en lo alto del piso 1 (por debajo del HUD)")
 
 
 func test_objects_puzzles_and_economy_of_each_floor() -> void:
 	_start()
 	await _arrive()
 	assert_eq(_count("AttentionPoints", AttentionPoint), 9, "9 puntos de atencion")
-	assert_eq(_count("Objects", Charger), 2, "2 cargadores")
+	assert_eq(_count("Objects", Charger), 3, "2 cargadores en los pisos y 1 en la azotea (acertijo de Calc)")
 	assert_eq(_count("Objects", PowerBankPickup), 1, "1 power bank (vacio, secreto C)")
 	assert_eq(_count("Objects", ExtraLifePickup), 0, "Sin vida extra en el 1-2")
 	# Piso 1: puntos rojos y pop-up translucido.
@@ -191,8 +191,9 @@ func test_objects_puzzles_and_economy_of_each_floor() -> void:
 	assert_true(_obj("overlay_3") is OverlayPopup)
 	assert_true(_obj("barra_99") is UpdateBar)
 	assert_true((_obj("barra_99") as UpdateBar).is_solid(), "La barra cierra la subida a la azotea")
-	assert_true(_obj("terminal_1_2") is ExitTerminal)
-	assert_lt((_obj("terminal_1_2") as Node2D).global_position.y, 6.0 * TILE, "Terminal en la azotea")
+	assert_true(_obj("terminal_azotea") is ExitTerminal)
+	assert_lt((_obj("terminal_azotea") as Node2D).global_position.y, 11.0 * TILE, "Terminal en la azotea")
+	assert_true((_obj("terminal_azotea") as ExitTerminal).requires_power, "Apagada hasta cargar a Calc")
 
 
 func test_sync_points_at_floors_2_and_4_and_lives() -> void:
@@ -201,23 +202,23 @@ func test_sync_points_at_floors_2_and_4_and_lives() -> void:
 	assert_eq(GameState.lives, 3, "3 vidas al empezar el intento")
 	var sync_1 := _level().get_node(^"Checkpoints/sync_1") as Checkpoint
 	var sync_2 := _level().get_node(^"Checkpoints/sync_2") as Checkpoint
-	assert_true(sync_1.global_position.y > 32.0 * TILE and sync_1.global_position.y < 44.0 * TILE, "sync_1 en el piso 2")
-	assert_true(sync_2.global_position.y > 7.0 * TILE and sync_2.global_position.y < 18.0 * TILE, "sync_2 en el piso 4")
+	assert_true(sync_1.global_position.y > 36.0 * TILE and sync_1.global_position.y < 48.0 * TILE, "sync_1 en el piso 2")
+	assert_true(sync_2.global_position.y > 11.0 * TILE and sync_2.global_position.y < 22.0 * TILE, "sync_2 en el piso 4")
 	sync_1.activate()
-	_teleport(10, 42)
+	_teleport(10, 46)
 	await wait_physics_frames(3)
 	_die()
 	assert_eq(GameState.lives, 2, "Morir resta una vida")
 	assert_true(_isak.global_position.is_equal_approx(sync_1.get_spawn_position()), "Reaparece en sync_1")
 	sync_2.activate()
-	_teleport(12, 16)
+	_teleport(12, 20)
 	await wait_physics_frames(3)
 	_die()
 	assert_eq(GameState.lives, 1)
 	assert_true(_isak.global_position.is_equal_approx(sync_2.get_spawn_position()), "Reaparece en sync_2")
 	assert_false(_main.is_in_hub())
 	# La ultima vida: game over (rollback a la copia) y papelera en el hub.
-	_teleport(12, 16)
+	_teleport(12, 20)
 	await wait_physics_frames(3)
 	GameState.sync_rate = GameState.SYNC_RATE_MIN
 	assert_true(_main.is_game_over_pending(), "Ultima vida: game over")
@@ -232,7 +233,7 @@ func test_attention_points_are_captured_once_per_level() -> void:
 	_start()
 	await _arrive()
 	var before: int = GameState.attention_points
-	_teleport(12, 60)
+	_teleport(12, 64)
 	await wait_physics_frames(6)
 	assert_eq(GameState.attention_points, before + 1, "Punto del vestibulo capturado")
 	assert_eq(GameState.get_captured_points(&"1-2").size(), 1, "Registrado en el 1-2")
@@ -241,9 +242,9 @@ func test_attention_points_are_captured_once_per_level() -> void:
 	assert_true(_main.start_level(LEVEL_ID))
 	_main.advance(LONG_STEP_S)
 	await _arrive()
-	var point: Node = _level().get_node_or_null(^"AttentionPoints/Point_12_60")
+	var point: Node = _level().get_node_or_null(^"AttentionPoints/Point_12_64")
 	assert_true(point == null or point.is_queued_for_deletion(), "El punto capturado no reaparece")
-	_teleport(12, 60)
+	_teleport(12, 64)
 	await wait_physics_frames(6)
 	assert_eq(GameState.attention_points, before + 1, "Una sola vez por nivel")
 
@@ -253,16 +254,20 @@ func test_debug_chip_unlocks_and_fills_energy() -> void:
 	await _arrive()
 	GameState.debug_energy = 10.0
 	(_obj("popup_buzon") as PopupBlocker).close()
-	_teleport(19, 33)
+	_teleport(19, 37)
 	await wait_physics_frames(4)
 	assert_true(GameState.is_ability_obtained(GameState.ABILITY_DEBUG), "Debug obtenido en el piso 2")
 	assert_eq(GameState.debug_energy, GameState.get_debug_energy_max(), "El chip llena la energia")
 
 
 func test_terminal_completes_the_level_and_returns_to_the_hub() -> void:
+	# Con Calc ya conocida la terminal arranca con corriente (el acertijo de la azotea va en
+	# tests/test_level_1_2_rooftop.gd).
+	EcoProgress.meet_calc()
 	_start()
 	await _arrive()
-	var terminal := _obj("terminal_1_2") as ExitTerminal
+	var terminal := _obj("terminal_azotea") as ExitTerminal
+	assert_true(terminal.is_powered(), "Calc conocida: con corriente")
 	assert_true(terminal.activate(_isak), "El pulso activa la terminal")
 	terminal.advance(LONG_STEP_S)
 	terminal.get_vortex().advance(LONG_STEP_S)

@@ -370,3 +370,23 @@ func test_every_climb_of_1_2_lands_with_headroom_using_the_real_isak() -> void:
 			f.store_string(JSON.stringify(report, " "))
 			f.close()
 	assert_eq(failures.size(), 0, "Subidas sin holgura con el Isak real:\n" + "\n".join(failures))
+
+
+
+## Azotea del 1-2 con el acertijo de Calc (tanda H2 del paso 14, 2026-10-17): la salida del hueco a la
+## azotea y las tres subidas del cuarto (suelo -> repisa baja -> media -> alta, la del panel oculto; filas
+## de pie 9 -> 7 -> 5 -> 3) estan en el fixture y las mide con el Isak real la prueba de arriba, como las
+## demas (16 px de holgura sobre la cabeza y 8 px con la esquina de una losa).
+func test_rooftop_climbs_of_the_calc_room_are_measured() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH))
+	var roof: Array[String] = []
+	var shaft: bool = false
+	for climb: Dictionary in fixture["climbs"]:
+		var pair: String = "%d->%d" % [int(climb["from"]["row"]), int(climb["to"]["row"])]
+		if String(climb["section"]) == "Azotea":
+			roof.append(pair)
+		elif pair == "11->9":
+			shaft = true
+	for pair: String in ["9->7", "7->5", "5->3"]:
+		assert_true(roof.has(pair), "Subida %s del cuarto de Calc en %s (%s)" % [pair, CLIMBS_PATH, roof])
+	assert_true(shaft, "Salida del hueco de la izquierda a la azotea (fila 11 -> 9)")

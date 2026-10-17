@@ -609,40 +609,41 @@ class CalibratedCeilingTest(unittest.TestCase):
 
     def test_head_against_the_slab_with_insufficient_headroom_fails(self):
         """Caso negativo: el forjado del piso 3 vuelve a ser macizo sobre la escalera de la sala del
-        acertijo (columnas 4-8 de la fila 31). Desde la repisa baja (fila 36) la cabeza llega a 8 px
-        del forjado (le faltan 24 px de holgura): el modelo calibrado no deja subir a la repisa alta."""
+        acertijo (columnas 4-8 de la fila 35; filas +4 desde la tanda H2). Desde la repisa baja (fila 40)
+        la cabeza llega a 8 px del forjado (le faltan 24 px de holgura): el modelo calibrado no deja subir a
+        la repisa alta."""
         level = level_1_2()
-        fill(level, range(4, 9), [31], "#")
-        result = vl.validate(level, check_schema=False)
+        fill(level, range(4, 9), [35], "#")
+        result = vl.validate(level, check_schema=False, allies=())
         self.assertFalse(result["ok"])
-        self.assertTrue(any("Isak no sube de la fila 35" in m for m in messages(result)), messages(result))
+        self.assertTrue(any("Isak no sube de la fila 39" in m for m in messages(result)), messages(result))
         # El modelo del paso 10 (cabeza retrasada + 8 px) aceptaba esa subida: es la que el usuario
         # no conseguia hacer jugando.
         del level["validation"]["ceiling_margin_px"]
-        old = vl.validate(level, check_schema=False)
+        old = vl.validate(level, check_schema=False, allies=())
         self.assertTrue(old["ok"], messages(old))
 
     def test_niche_with_four_tiles_of_headroom_is_not_a_climb(self):
-        """Caso negativo: el nicho del pasillo 2a con su techo macizo (fila 38): del suelo del pasillo
+        """Caso negativo: el nicho del pasillo 2a con su techo macizo (fila 42): del suelo del pasillo
         al techo del nicho hay 4 tiles; con la cabeza (80 px) y el salto (184 px) faltan 24 px."""
         level = level_1_2()
-        fill(level, range(8, 12), [38], "#")
+        fill(level, range(8, 12), [42], "#")
         model = vl.LevelModel(level, vl.Rules())
         world = model.world(frozenset(), False)
-        self.assertFalse(any(e["to"][1] == 40 for e in world.compute_edges((10, 42))))
+        self.assertFalse(any(e["to"][1] == 44 for e in world.compute_edges((10, 46))))
         del level["validation"]["ceiling_margin_px"]
         model = vl.LevelModel(level, vl.Rules())
         world = model.world(frozenset(), False)
-        self.assertTrue(any(e["to"][1] == 40 for e in world.compute_edges((10, 42))))
+        self.assertTrue(any(e["to"][1] == 44 for e in world.compute_edges((10, 46))))
 
     def test_two_tile_corridor_above_a_hole_is_not_a_climb(self):
-        """Caso negativo: la entrada al piso 3 con el suelo del nicho del secreto C macizo (fila 28):
+        """Caso negativo: la entrada al piso 3 con el suelo del nicho del secreto C macizo (fila 32):
         desde la repisa del hueco hay 3 tiles hasta ese techo (le faltaban 88 px)."""
         level = level_1_2()
-        fill(level, range(1, 6), [28], "#")
+        fill(level, range(1, 6), [32], "#")
         model = vl.LevelModel(level, vl.Rules())
         world = model.world(frozenset(), False)
-        self.assertFalse(any(e["to"] == (3, 30) for e in world.compute_edges((2, 31))))
+        self.assertFalse(any(e["to"] == (3, 34) for e in world.compute_edges((2, 35))))
 
     def test_tower_test_roof_has_no_headroom_with_the_margin(self):
         """tower_test no lleva el campo: su azotea de 2 filas solo se sube rozando el techo. Con el
@@ -661,6 +662,130 @@ class CalibratedCeilingTest(unittest.TestCase):
         self.assertTrue(any("ceiling_margin_px" in e for e in vls.validate_level(level)))
         level["validation"]["ceiling_margin_px"] = "16"
         self.assertTrue(any("ceiling_margin_px" in e for e in vls.validate_level(level)))
+
+
+
+def calc_room():
+    return vl.load_json(os.path.join(ROOT, "data", "levels", "calc_test.json"))
+
+
+class CalcPuzzleTest(unittest.TestCase):
+    """Acertijo de la azotea del 1-2 (encuentro con Calc; tanda H2 del paso 14, 2026-10-17) sobre la sala
+    calc_test y variantes rotas: terminal apagada hasta que Calc se carga; pared con glitch que se cruza
+    con el Debug (y se vuelve puerta); interruptor de pulso de 3 pulsos de espaldas; interruptor laser
+    lejano, solo con el laser; panel oculto, solo con el Debug; espera de la carga; energia; y el caso
+    con Calc conocida (las piezas arrancan hechas y el camino va directo a la terminal)."""
+
+    def test_room_passes_with_the_whole_puzzle(self):
+        result = vl.validate(calc_room())
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+        puzzle = result["plan"]["calc_puzzle"]
+        self.assertEqual((puzzle["pulses"], puzzle["lasers"], puzzle["debug_uses"]), (4, 1, 2))
+        self.assertEqual(puzzle["laser_from"], [7, 22], "El laser sale de la primera repisa")
+        power = result["power"][0]
+        parts = power["wait_parts"]
+        self.assertAlmostEqual(power["wait_s"], sum(parts.values()), places=1)
+        self.assertEqual(parts["charge_s"], 3.0)
+        self.assertGreater(parts["walk_s"], 0.0)
+        known = result["allies_known"]
+        self.assertTrue(known["ok"], known["errors"])
+        self.assertEqual(known["puzzle_actions"], 0)
+
+    def test_terminal_without_power_source_is_not_the_goal(self):
+        """Sin el interruptor laser (no hay pieza que hacer) la terminal nunca tiene corriente."""
+        level = calc_room()
+        level["objects"] = [o for o in level["objects"] if o["type"] != "laser_switch"]
+        dock = obj_id(level, "dock_calc")
+        dock["params"]["requires"] = ["interruptor_luz", "interruptor_laser", "panel_oculto"]
+        result = vl.validate(level, check_schema=False, allies=())
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("terminal de salida no tiene corriente" in m for m in messages(result)), messages(result))
+
+    def test_laser_switch_reachable_walking_is_invalid(self):
+        """Caso negativo: la repisa baja llega hasta la pared del interruptor laser (fila 8, columnas
+        22-30): Isak se planta a su lado y el diseno deja de ser «lejos, solo con el laser»."""
+        level = calc_room()
+        fill(level, range(22, 31), [8], "-")
+        result = vl.validate(level, check_schema=False, allies=())
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("interruptor laser interruptor_laser se alcanza andando" in m for m in messages(result)),
+                        messages(result))
+
+    def test_laser_switch_out_of_line_of_fire(self):
+        """Caso negativo: sin la repisa baja el laser no llega a su altura desde ningun sitio (desde el suelo
+        el haz pasa dos filas por debajo)."""
+        level = calc_room()
+        fill(level, range(22, 25), [8], ".")
+        result = vl.validate(level, check_schema=False, allies=())
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("interruptor laser interruptor_laser: el laser no lo alcanza" in m
+                            for m in messages(result)), messages(result))
+
+    def test_hidden_panel_without_debug(self):
+        """Caso negativo: sin el Debug en el nivel (y sin la pared, para que se llegue al cuarto) el panel
+        oculto no se ve: Calc no se carga y la terminal no tiene corriente."""
+        level = calc_room()
+        level["abilities_available"]["debug"] = False
+        level["validation"] = {"laser_required": True}
+        level["objects"] = [o for o in level["objects"] if o["type"] != "glitch_wall"]
+        result = vl.validate(level, check_schema=False, allies=())
+        self.assertFalse(result["ok"])
+        found = messages(result)
+        self.assertTrue(any("panel oculto panel_oculto solo se ve con el Debug y el nivel no lo tiene" in m
+                            for m in found), found)
+        self.assertTrue(any("faltan sin hacer: panel_oculto" in m for m in found), found)
+
+    def test_hidden_panel_too_far_to_reveal(self):
+        """Caso negativo: con un radio de descubrimiento de 32 px el Debug no lo descubre desde la repisa."""
+        level = calc_room()
+        rules = vl.Rules()
+        model = vl.LevelModel(level, rules)
+        gate = next(g for g in model.gates if g.kind == "switch" and g.hidden)
+        self.assertTrue(model.reveal_near(gate, (27, 3)))
+        gate.reveal_radius = 8.0
+        self.assertFalse(model.can_open(gate, (25, 5), frozenset(), debug=False))
+
+    def test_without_energy_for_the_debug(self):
+        """Caso negativo: sin cargador y con 20 de energia al empezar no da para disolver la pared con el
+        Debug (1 s de disolucion a mitad de velocidad + cruzarla, 20/s)."""
+        level = calc_room()
+        level["objects"] = [o for o in level["objects"] if o["type"] != "charger"]
+        level["validation"]["start_energy"] = 20
+        result = vl.validate(level, check_schema=False, allies=())
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("sin energia en el paso" in m and "Debug" in m for m in messages(result)), messages(result))
+
+    def test_ledge_without_headroom(self):
+        """Caso negativo: con la holgura calibrada (16 px) y el techo del cuarto bajado sobre la repisa alta
+        (fila 1, columnas 25-30) no se sube a ella: el panel no se alcanza."""
+        level = calc_room()
+        level["validation"]["ceiling_margin_px"] = 16
+        self.assertTrue(vl.validate(copy.deepcopy(level), check_schema=False, allies=())["ok"])
+        fill(level, range(25, 31), [1], "#")
+        result = vl.validate(level, check_schema=False, allies=())
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("panel_oculto" in m for m in messages(result)), messages(result))
+
+    def test_the_wall_needs_the_debug_until_the_switch_opens_the_door(self):
+        level = calc_room()
+        model = vl.LevelModel(level, vl.Rules())
+        plain = model.world(frozenset(), False)
+        self.assertTrue(plain.is_solid(13, 9), "La pared con glitch es solida sin Debug")
+        self.assertFalse(model.world(frozenset(), True).is_solid(13, 9), "Con el Debug se cruza")
+        self.assertFalse(model.world(frozenset({"switch:interruptor_luz"}), False).is_solid(13, 9),
+                         "Con el interruptor activado es una puerta")
+
+    def test_calc_known_starts_with_everything_done(self):
+        level = calc_room()
+        result = vl.validate(level, allies=["calc"])
+        self.assertTrue(result["ok"], messages(result))
+        self.assertTrue(result["power"][0]["powered_at_start"])
+        self.assertEqual(result["plan"]["calc_puzzle"], {})
+        self.assertFalse(any("interruptor" in a.get("object", "") for a in result["path"]))
+        done = {g["id"]: g["done_at_start"] for g in result["gates"] if "done_at_start" in g}
+        self.assertEqual(done, {"interruptor_luz": True, "interruptor_laser": True, "panel_oculto": True,
+                                "dock_calc": True})
 
 
 if __name__ == "__main__":

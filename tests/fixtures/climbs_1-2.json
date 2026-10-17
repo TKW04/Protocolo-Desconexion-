@@ -5,29 +5,29 @@
  "note": "Generado por tools/level_climbs.py; no editar a mano.",
  "climbs": [
   {
-   "id": "18,60->18,58",
+   "id": "18,64->18,62",
    "section": "Vestíbulo",
    "from": {
     "cell": [
      18,
-     60
+     64
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 60
+    "row": 64
    },
    "to": {
     "cell": [
      18,
-     58
+     62
     ],
     "ledge": [
      18,
      21
     ],
-    "row": 58
+    "row": 62
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -37,29 +37,29 @@
    "debug": false
   },
   {
-   "id": "21,58->21,56",
+   "id": "21,62->21,60",
    "section": "Vestíbulo",
    "from": {
     "cell": [
      21,
-     58
+     62
     ],
     "ledge": [
      18,
      21
     ],
-    "row": 58
+    "row": 62
    },
    "to": {
     "cell": [
      21,
-     56
+     60
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 56
+    "row": 60
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -69,29 +69,29 @@
    "debug": false
   },
   {
-   "id": "23,56->23,54",
+   "id": "23,60->23,58",
    "section": "Vestíbulo",
    "from": {
     "cell": [
      23,
-     56
+     60
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 56
+    "row": 60
    },
    "to": {
     "cell": [
      23,
-     54
+     58
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 54
+    "row": 58
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -101,29 +101,29 @@
    "debug": false
   },
   {
-   "id": "16,54->16,52",
+   "id": "16,58->16,56",
    "section": "Piso 1: Mensajes",
    "from": {
     "cell": [
      16,
-     54
+     58
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 54
+    "row": 58
    },
    "to": {
     "cell": [
      16,
-     52
+     56
     ],
     "ledge": [
      13,
      16
     ],
-    "row": 52
+    "row": 56
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -133,29 +133,29 @@
    "debug": false
   },
   {
-   "id": "25,54->25,52",
+   "id": "25,58->25,56",
    "section": "Piso 1: Mensajes",
    "from": {
     "cell": [
      25,
-     54
+     58
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 54
+    "row": 58
    },
    "to": {
     "cell": [
      25,
-     52
+     56
     ],
     "ledge": [
      25,
      26
     ],
-    "row": 52
+    "row": 56
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -165,93 +165,93 @@
    "debug": false
   },
   {
-   "id": "13,52->12,50",
+   "id": "13,56->12,54",
    "section": "Piso 1: Mensajes",
    "from": {
     "cell": [
      13,
-     52
+     56
     ],
     "ledge": [
      13,
      16
     ],
+    "row": 56
+   },
+   "to": {
+    "cell": [
+     12,
+     54
+    ],
+    "ledge": [
+     9,
+     12
+    ],
+    "row": 54
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "12,54->12,52",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     12,
+     54
+    ],
+    "ledge": [
+     9,
+     12
+    ],
+    "row": 54
+   },
+   "to": {
+    "cell": [
+     12,
+     52
+    ],
+    "ledge": [
+     7,
+     25
+    ],
+    "row": 52
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "21,52->21,50",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     21,
+     52
+    ],
+    "ledge": [
+     7,
+     25
+    ],
     "row": 52
    },
    "to": {
     "cell": [
-     12,
-     50
-    ],
-    "ledge": [
-     9,
-     12
-    ],
-    "row": 50
-   },
-   "rise_tiles": 2,
-   "direction": 1,
-   "speed": "walk",
-   "takeoff_x_px": 832.0,
-   "target_x_px": 832.0,
-   "debug": false
-  },
-  {
-   "id": "12,50->12,48",
-   "section": "Piso 1: Mensajes",
-   "from": {
-    "cell": [
-     12,
-     50
-    ],
-    "ledge": [
-     9,
-     12
-    ],
-    "row": 50
-   },
-   "to": {
-    "cell": [
-     12,
-     48
-    ],
-    "ledge": [
-     7,
-     25
-    ],
-    "row": 48
-   },
-   "rise_tiles": 2,
-   "direction": 1,
-   "speed": "walk",
-   "takeoff_x_px": 832.0,
-   "target_x_px": 832.0,
-   "debug": false
-  },
-  {
-   "id": "21,48->21,46",
-   "section": "Piso 1: Mensajes",
-   "from": {
-    "cell": [
      21,
-     48
-    ],
-    "ledge": [
-     7,
-     25
-    ],
-    "row": 48
-   },
-   "to": {
-    "cell": [
-     21,
-     46
+     50
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 46
+    "row": 50
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -261,29 +261,29 @@
    "debug": false
   },
   {
-   "id": "21,46->21,44",
+   "id": "21,50->21,48",
    "section": "Piso 1: Mensajes",
    "from": {
     "cell": [
      21,
-     46
+     50
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 46
+    "row": 50
    },
    "to": {
     "cell": [
      21,
-     44
+     48
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 44
+    "row": 48
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -293,29 +293,29 @@
    "debug": false
   },
   {
-   "id": "23,44->23,42",
+   "id": "23,48->23,46",
    "section": "Piso 1: Mensajes",
    "from": {
     "cell": [
      23,
-     44
+     48
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 44
+    "row": 48
    },
    "to": {
     "cell": [
      23,
-     42
+     46
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 42
+    "row": 46
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -325,29 +325,29 @@
    "debug": false
   },
   {
-   "id": "1,42->1,40",
+   "id": "1,46->1,44",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      1,
-     42
+     46
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 42
+    "row": 46
    },
    "to": {
     "cell": [
      1,
-     40
+     44
     ],
     "ledge": [
      1,
      2
     ],
-    "row": 40
+    "row": 44
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -357,29 +357,29 @@
    "debug": false
   },
   {
-   "id": "10,42->10,40",
+   "id": "10,46->10,44",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      10,
-     42
+     46
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 42
+    "row": 46
    },
    "to": {
     "cell": [
      10,
-     40
+     44
     ],
     "ledge": [
      9,
      10
     ],
-    "row": 40
+    "row": 44
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -389,29 +389,29 @@
    "debug": false
   },
   {
-   "id": "14,42->14,40",
+   "id": "14,46->14,44",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      14,
-     42
+     46
     ],
     "ledge": [
      1,
      26
     ],
-    "row": 42
+    "row": 46
    },
    "to": {
     "cell": [
      14,
-     40
+     44
     ],
     "ledge": [
      14,
      15
     ],
-    "row": 40
+    "row": 44
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -421,29 +421,29 @@
    "debug": false
   },
   {
-   "id": "1,40->1,38",
+   "id": "1,44->1,42",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      1,
-     40
+     44
     ],
     "ledge": [
      1,
      2
     ],
-    "row": 40
+    "row": 44
    },
    "to": {
     "cell": [
      1,
-     38
+     42
     ],
     "ledge": [
      1,
      2
     ],
-    "row": 38
+    "row": 42
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -453,29 +453,29 @@
    "debug": false
   },
   {
-   "id": "2,38->3,37",
+   "id": "2,42->3,41",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      2,
-     38
+     42
     ],
     "ledge": [
      1,
      2
     ],
-    "row": 38
+    "row": 42
    },
    "to": {
     "cell": [
      3,
-     37
+     41
     ],
     "ledge": [
      3,
      15
     ],
-    "row": 37
+    "row": 41
    },
    "rise_tiles": 1,
    "direction": 1,
@@ -485,29 +485,29 @@
    "debug": false
   },
   {
-   "id": "5,37->5,35",
+   "id": "5,41->5,39",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      5,
-     37
+     41
     ],
     "ledge": [
      3,
      15
     ],
-    "row": 37
+    "row": 41
    },
    "to": {
     "cell": [
      5,
-     35
+     39
     ],
     "ledge": [
      5,
      7
     ],
-    "row": 35
+    "row": 39
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -517,29 +517,29 @@
    "debug": false
   },
   {
-   "id": "21,37->21,35",
+   "id": "21,41->21,39",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      21,
-     37
+     41
     ],
     "ledge": [
      21,
      24
     ],
-    "row": 37
+    "row": 41
    },
    "to": {
     "cell": [
      21,
-     35
+     39
     ],
     "ledge": [
      21,
      21
     ],
-    "row": 35
+    "row": 39
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -549,29 +549,29 @@
    "debug": false
   },
   {
-   "id": "5,35->3,33",
+   "id": "5,39->3,37",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      5,
-     35
+     39
     ],
     "ledge": [
      5,
      7
     ],
-    "row": 35
+    "row": 39
    },
    "to": {
     "cell": [
      3,
-     33
+     37
     ],
     "ledge": [
      2,
      4
     ],
-    "row": 33
+    "row": 37
    },
    "rise_tiles": 2,
    "direction": -1,
@@ -581,29 +581,29 @@
    "debug": true
   },
   {
-   "id": "6,35->6,33",
+   "id": "6,39->6,37",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      6,
-     35
+     39
     ],
     "ledge": [
      5,
      7
     ],
-    "row": 35
+    "row": 39
    },
    "to": {
     "cell": [
      6,
-     33
+     37
     ],
     "ledge": [
      6,
      20
     ],
-    "row": 33
+    "row": 37
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -613,29 +613,29 @@
    "debug": false
   },
   {
-   "id": "21,35->20,33",
+   "id": "21,39->20,37",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      21,
-     35
+     39
     ],
     "ledge": [
      21,
      21
     ],
-    "row": 35
+    "row": 39
    },
    "to": {
     "cell": [
      20,
-     33
+     37
     ],
     "ledge": [
      6,
      20
     ],
-    "row": 33
+    "row": 37
    },
    "rise_tiles": 2,
    "direction": -1,
@@ -645,29 +645,29 @@
    "debug": false
   },
   {
-   "id": "21,35->23,33",
+   "id": "21,39->23,37",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      21,
-     35
+     39
     ],
     "ledge": [
      21,
      21
     ],
-    "row": 35
+    "row": 39
    },
    "to": {
     "cell": [
      23,
-     33
+     37
     ],
     "ledge": [
      22,
      26
     ],
-    "row": 33
+    "row": 37
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -677,29 +677,29 @@
    "debug": true
   },
   {
-   "id": "2,33->1,31",
+   "id": "2,37->1,35",
    "section": "Piso 2: Correo",
    "from": {
     "cell": [
      2,
-     33
+     37
     ],
     "ledge": [
      2,
      4
     ],
-    "row": 33
+    "row": 37
    },
    "to": {
     "cell": [
      1,
-     31
+     35
     ],
     "ledge": [
      1,
      2
     ],
-    "row": 31
+    "row": 35
    },
    "rise_tiles": 2,
    "direction": -1,
@@ -709,35 +709,131 @@
    "debug": true
   },
   {
-   "id": "2,31->3,30",
+   "id": "2,35->3,34",
    "section": "Piso 3: Recordatorios",
    "from": {
     "cell": [
      2,
-     31
+     35
     ],
     "ledge": [
      1,
      2
     ],
-    "row": 31
+    "row": 35
    },
    "to": {
     "cell": [
      3,
-     30
+     34
     ],
     "ledge": [
      3,
      26
     ],
-    "row": 30
+    "row": 34
    },
    "rise_tiles": 1,
    "direction": 1,
    "speed": "run",
    "takeoff_x_px": 176.0,
    "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "25,34->23,32",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     25,
+     34
+    ],
+    "ledge": [
+     3,
+     26
+    ],
+    "row": 34
+   },
+   "to": {
+    "cell": [
+     23,
+     32
+    ],
+    "ledge": [
+     22,
+     23
+    ],
+    "row": 32
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 1600.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "22,32->20,31",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     22,
+     32
+    ],
+    "ledge": [
+     22,
+     23
+    ],
+    "row": 32
+   },
+   "to": {
+    "cell": [
+     20,
+     31
+    ],
+    "ledge": [
+     19,
+     20
+    ],
+    "row": 31
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1344.0,
+   "debug": false
+  },
+  {
+   "id": "23,32->25,30",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     23,
+     32
+    ],
+    "ledge": [
+     22,
+     23
+    ],
+    "row": 32
+   },
+   "to": {
+    "cell": [
+     25,
+     30
+    ],
+    "ledge": [
+     25,
+     26
+    ],
+    "row": 30
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1536.0,
+   "target_x_px": null,
    "debug": false
   },
   {
@@ -749,7 +845,7 @@
      30
     ],
     "ledge": [
-     3,
+     25,
      26
     ],
     "row": 30
@@ -760,106 +856,10 @@
      28
     ],
     "ledge": [
-     22,
-     23
-    ],
-    "row": 28
-   },
-   "rise_tiles": 2,
-   "direction": -1,
-   "speed": "walk",
-   "takeoff_x_px": 1600.0,
-   "target_x_px": null,
-   "debug": false
-  },
-  {
-   "id": "22,28->20,27",
-   "section": "Piso 3: Recordatorios",
-   "from": {
-    "cell": [
-     22,
-     28
-    ],
-    "ledge": [
-     22,
-     23
-    ],
-    "row": 28
-   },
-   "to": {
-    "cell": [
-     20,
-     27
-    ],
-    "ledge": [
-     19,
-     20
-    ],
-    "row": 27
-   },
-   "rise_tiles": 1,
-   "direction": -1,
-   "speed": "walk",
-   "takeoff_x_px": 1408.0,
-   "target_x_px": 1344.0,
-   "debug": false
-  },
-  {
-   "id": "23,28->25,26",
-   "section": "Piso 3: Recordatorios",
-   "from": {
-    "cell": [
-     23,
-     28
-    ],
-    "ledge": [
-     22,
-     23
-    ],
-    "row": 28
-   },
-   "to": {
-    "cell": [
-     25,
-     26
-    ],
-    "ledge": [
-     25,
-     26
-    ],
-    "row": 26
-   },
-   "rise_tiles": 2,
-   "direction": 1,
-   "speed": "walk",
-   "takeoff_x_px": 1536.0,
-   "target_x_px": null,
-   "debug": false
-  },
-  {
-   "id": "25,26->23,24",
-   "section": "Piso 3: Recordatorios",
-   "from": {
-    "cell": [
-     25,
-     26
-    ],
-    "ledge": [
-     25,
-     26
-    ],
-    "row": 26
-   },
-   "to": {
-    "cell": [
-     23,
-     24
-    ],
-    "ledge": [
      20,
      23
     ],
-    "row": 24
+    "row": 28
    },
    "rise_tiles": 2,
    "direction": -1,
@@ -869,29 +869,29 @@
    "debug": false
   },
   {
-   "id": "3,24->3,22",
+   "id": "3,28->3,26",
    "section": "Piso 3: Recordatorios",
    "from": {
     "cell": [
      3,
-     24
+     28
     ],
     "ledge": [
      1,
      9
     ],
-    "row": 24
+    "row": 28
    },
    "to": {
     "cell": [
      3,
-     22
+     26
     ],
     "ledge": [
      1,
      3
     ],
-    "row": 22
+    "row": 26
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -901,29 +901,29 @@
    "debug": false
   },
   {
-   "id": "3,22->3,20",
+   "id": "3,26->3,24",
    "section": "Piso 3: Recordatorios",
    "from": {
     "cell": [
      3,
-     22
+     26
     ],
     "ledge": [
      1,
      3
     ],
-    "row": 22
+    "row": 26
    },
    "to": {
     "cell": [
      3,
-     20
+     24
     ],
     "ledge": [
      2,
      11
     ],
-    "row": 20
+    "row": 24
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -933,29 +933,29 @@
    "debug": false
   },
   {
-   "id": "24,20->24,18",
+   "id": "24,24->24,22",
    "section": "Piso 3: Recordatorios",
    "from": {
     "cell": [
      24,
-     20
+     24
     ],
     "ledge": [
      22,
      25
     ],
-    "row": 20
+    "row": 24
    },
    "to": {
     "cell": [
      24,
-     18
+     22
     ],
     "ledge": [
      24,
      25
     ],
-    "row": 18
+    "row": 22
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -965,29 +965,29 @@
    "debug": false
   },
   {
-   "id": "24,18->24,16",
+   "id": "24,22->24,20",
    "section": "Piso 3: Recordatorios",
    "from": {
     "cell": [
      24,
-     18
+     22
     ],
     "ledge": [
      24,
      25
     ],
-    "row": 18
+    "row": 22
    },
    "to": {
     "cell": [
      24,
-     16
+     20
     ],
     "ledge": [
      4,
      26
     ],
-    "row": 16
+    "row": 20
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -997,29 +997,29 @@
    "debug": false
   },
   {
-   "id": "5,16->5,14",
+   "id": "5,20->5,18",
    "section": "Piso 4: Actualizaciones",
    "from": {
     "cell": [
      5,
-     16
+     20
     ],
     "ledge": [
      4,
      26
     ],
-    "row": 16
+    "row": 20
    },
    "to": {
     "cell": [
      5,
-     14
+     18
     ],
     "ledge": [
      5,
      6
     ],
-    "row": 14
+    "row": 18
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -1029,29 +1029,29 @@
    "debug": false
   },
   {
-   "id": "14,16->14,14",
+   "id": "14,20->14,18",
    "section": "Piso 4: Actualizaciones",
    "from": {
     "cell": [
      14,
-     16
+     20
     ],
     "ledge": [
      4,
      26
     ],
-    "row": 16
+    "row": 20
    },
    "to": {
     "cell": [
      14,
-     14
+     18
     ],
     "ledge": [
      13,
      14
     ],
-    "row": 14
+    "row": 18
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -1061,29 +1061,29 @@
    "debug": false
   },
   {
-   "id": "5,14->5,12",
+   "id": "5,18->5,16",
    "section": "Piso 4: Actualizaciones",
    "from": {
     "cell": [
      5,
-     14
+     18
     ],
     "ledge": [
      5,
      6
     ],
-    "row": 14
+    "row": 18
    },
    "to": {
     "cell": [
      5,
-     12
+     16
     ],
     "ledge": [
      5,
      6
     ],
-    "row": 12
+    "row": 16
    },
    "rise_tiles": 2,
    "direction": 1,
@@ -1093,29 +1093,29 @@
    "debug": false
   },
   {
-   "id": "5,12->4,11",
+   "id": "5,16->4,15",
    "section": "Piso 4: Actualizaciones",
    "from": {
     "cell": [
      5,
-     12
+     16
     ],
     "ledge": [
      5,
      6
     ],
-    "row": 12
+    "row": 16
    },
    "to": {
     "cell": [
      4,
-     11
+     15
     ],
     "ledge": [
      1,
      4
     ],
-    "row": 11
+    "row": 15
    },
    "rise_tiles": 1,
    "direction": -1,
@@ -1125,35 +1125,163 @@
    "debug": false
   },
   {
-   "id": "6,12->7,11",
+   "id": "6,16->7,15",
    "section": "Piso 4: Actualizaciones",
    "from": {
     "cell": [
      6,
-     12
+     16
     ],
     "ledge": [
      5,
      6
     ],
-    "row": 12
+    "row": 16
    },
    "to": {
     "cell": [
      7,
-     11
+     15
     ],
     "ledge": [
      7,
      26
     ],
-    "row": 11
+    "row": 15
    },
    "rise_tiles": 1,
    "direction": 1,
    "speed": "run",
    "takeoff_x_px": 432.0,
    "target_x_px": 448.0,
+   "debug": false
+  },
+  {
+   "id": "1,15->1,13",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     1,
+     15
+    ],
+    "ledge": [
+     1,
+     4
+    ],
+    "row": 15
+   },
+   "to": {
+    "cell": [
+     1,
+     13
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 13
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "10,15->10,13",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     10,
+     15
+    ],
+    "ledge": [
+     7,
+     26
+    ],
+    "row": 15
+   },
+   "to": {
+    "cell": [
+     10,
+     13
+    ],
+    "ledge": [
+     10,
+     13
+    ],
+    "row": 13
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 704.0,
+   "debug": false
+  },
+  {
+   "id": "18,15->18,13",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     18,
+     15
+    ],
+    "ledge": [
+     7,
+     26
+    ],
+    "row": 15
+   },
+   "to": {
+    "cell": [
+     18,
+     13
+    ],
+    "ledge": [
+     18,
+     21
+    ],
+    "row": 13
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1216.0,
+   "target_x_px": 1216.0,
+   "debug": false
+  },
+  {
+   "id": "1,13->1,11",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     1,
+     13
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 13
+   },
+   "to": {
+    "cell": [
+     1,
+     11
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 11
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
    "debug": false
   },
   {
@@ -1166,7 +1294,7 @@
     ],
     "ledge": [
      1,
-     4
+     2
     ],
     "row": 11
    },
@@ -1177,7 +1305,7 @@
     ],
     "ledge": [
      1,
-     2
+     26
     ],
     "row": 9
    },
@@ -1189,131 +1317,99 @@
    "debug": false
   },
   {
-   "id": "10,11->10,9",
-   "section": "Piso 4: Actualizaciones",
+   "id": "19,9->19,7",
+   "section": "Azotea",
    "from": {
     "cell": [
-     10,
-     11
-    ],
-    "ledge": [
-     7,
-     26
-    ],
-    "row": 11
-   },
-   "to": {
-    "cell": [
-     10,
+     19,
      9
     ],
     "ledge": [
-     10,
-     13
+     1,
+     26
     ],
     "row": 9
    },
-   "rise_tiles": 2,
-   "direction": 1,
-   "speed": "walk",
-   "takeoff_x_px": 704.0,
-   "target_x_px": 704.0,
-   "debug": false
-  },
-  {
-   "id": "18,11->18,9",
-   "section": "Piso 4: Actualizaciones",
-   "from": {
-    "cell": [
-     18,
-     11
-    ],
-    "ledge": [
-     7,
-     26
-    ],
-    "row": 11
-   },
    "to": {
     "cell": [
-     18,
-     9
+     19,
+     7
     ],
     "ledge": [
-     18,
+     19,
      21
     ],
-    "row": 9
-   },
-   "rise_tiles": 2,
-   "direction": 1,
-   "speed": "walk",
-   "takeoff_x_px": 1216.0,
-   "target_x_px": 1216.0,
-   "debug": false
-  },
-  {
-   "id": "1,9->1,7",
-   "section": "Piso 4: Actualizaciones",
-   "from": {
-    "cell": [
-     1,
-     9
-    ],
-    "ledge": [
-     1,
-     2
-    ],
-    "row": 9
-   },
-   "to": {
-    "cell": [
-     1,
-     7
-    ],
-    "ledge": [
-     1,
-     2
-    ],
     "row": 7
    },
    "rise_tiles": 2,
    "direction": 1,
    "speed": "walk",
-   "takeoff_x_px": 128.0,
-   "target_x_px": 128.0,
+   "takeoff_x_px": 1280.0,
+   "target_x_px": 1280.0,
    "debug": false
   },
   {
-   "id": "1,7->1,5",
-   "section": "Piso 4: Actualizaciones",
+   "id": "21,7->23,5",
+   "section": "Azotea",
    "from": {
     "cell": [
-     1,
+     21,
      7
     ],
     "ledge": [
-     1,
-     2
+     19,
+     21
     ],
     "row": 7
    },
    "to": {
     "cell": [
-     1,
+     23,
      5
     ],
     "ledge": [
-     1,
-     26
+     23,
+     24
     ],
     "row": 5
    },
    "rise_tiles": 2,
    "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1472.0,
+   "debug": false
+  },
+  {
+   "id": "24,5->25,3",
+   "section": "Azotea",
+   "from": {
+    "cell": [
+     24,
+     5
+    ],
+    "ledge": [
+     23,
+     24
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     25,
+     3
+    ],
+    "ledge": [
+     25,
+     26
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
    "speed": "walk",
-   "takeoff_x_px": 128.0,
-   "target_x_px": 128.0,
+   "takeoff_x_px": 1600.0,
+   "target_x_px": 1600.0,
    "debug": false
   }
  ]

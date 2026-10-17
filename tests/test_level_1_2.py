@@ -23,7 +23,11 @@ import validate_level_schema as vls  # noqa: E402
 LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-2.json")
 NEW_TYPES = ("overlay_popup", "laser_receiver", "relay_receiver", "ad_cover", "reminder_platform",
              "snooze_button", "update_bar", "charger", "bridge_inactive", "receiver", "popup_blocker",
-             "power_bank_pickup", "exit_terminal")
+             "power_bank_pickup", "exit_terminal", "power_switch", "debug_switch", "laser_switch", "charge_dock",
+             "glitch_wall")
+# Acertijo de la azotea (encuentro con Calc; tanda H2 del paso 14, 2026-10-17).
+CALC_PIECES = ("pared_glitch", "interruptor_luz", "interruptor_laser", "panel_oculto", "dock_calc", "calc", "cuarto",
+               "guia_calc")
 
 
 def load_level():
@@ -52,7 +56,8 @@ class Level12Test(unittest.TestCase):
         lvl = self.level
         self.assertEqual((lvl["id"], lvl["name"], lvl["world"], lvl["difficulty"]),
                          ("1-2", "Centro de notificaciones", 1, 2))
-        self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (28, 62))
+        # 28 x 66 desde la tanda H2 (la azotea crecio 4 filas por arriba; antes 28 x 62).
+        self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (28, 66))
         self.assertEqual(lvl["camera"]["vertical"], "tower")
         self.assertEqual([s["name"] for s in lvl["sections"]],
                          ["Azotea", "Piso 4: Actualizaciones", "Piso 3: Recordatorios", "Piso 2: Correo",
@@ -130,6 +135,27 @@ class Level12Test(unittest.TestCase):
         finals = [s for s in path["steps"] if s.get("final")]
         self.assertEqual(len(finals), 1, "Un pulso final a la terminal")
         self.assertLess(actions.index("pickup"), actions.index("debug_on"), "Debug tras el chip")
+        # Acertijo de Calc (tanda H2): pulsos de espaldas, laser al interruptor, Debug para el panel y la
+        # espera de la carga de Calc, en ese orden de piezas y antes del pulso final.
+        steps = path["steps"]
+        backs = [s for s in steps if s.get("face_back")]
+        self.assertEqual([(s["target"]["id"], s["count"], s["of"]) for s in backs],
+                         [("interruptor_luz", 1, 3), ("interruptor_luz", 2, 3), ("interruptor_luz", 3, 3),
+                          ("panel_oculto", 1, 1)])
+        self.assertTrue(all(s["action"] == "pulse" and s["pose_s"] > 0 and s["facing"] in (1, -1) for s in backs))
+        laser = next(s for s in steps if s.get("target", {}).get("type") == "laser_switch")
+        self.assertEqual(laser["action"], "laser")
+        self.assertEqual(laser["at"]["cell"], [19, 7], "Desde la repisa baja del cuarto")
+        reveal = next(s for s in steps if s["action"] == "debug_on" and s.get("target", {}).get("type") == "debug_switch")
+        self.assertEqual(steps[reveal["i"] + 2]["action"], "debug_off")
+        dissolve = next(s for s in steps if s.get("target", {}).get("type") == "glitch_wall")
+        self.assertEqual((dissolve["action"], steps[dissolve["i"] - 1]["action"]), ("wait", "debug_on"))
+        charge = next(s for s in steps if s.get("target", {}).get("type") == "charge_dock")
+        self.assertEqual(charge["action"], "wait")
+        self.assertGreater(charge["seconds"], 5.0)
+        order = [backs[0]["i"], laser["i"], backs[-1]["i"], charge["i"], finals[0]["i"]]
+        self.assertEqual(order, sorted(order))
+        self.assertTrue(all(s.get("energy_after", 1.0) >= 0.0 for s in steps))
 
     def test_secret_c_needs_two_snoozes_from_its_entry(self):
         """Variante: Isak empieza en el piso 3 y la meta esta en el nicho del secreto C (Posponer
@@ -140,32 +166,108 @@ class Level12Test(unittest.TestCase):
             for c, ch in enumerate(row):
                 if ch in "PGCS":
                     grid[r][c] = "."
-        grid[30][3] = "P"
-        grid[27][4] = "G"
+        grid[34][3] = "P"
+        grid[31][4] = "G"
         lvl["grid"] = ["".join(r) for r in grid]
         lvl["checkpoints"] = []
         lvl["secrets"] = []
         terminal = next(o for o in lvl["objects"] if o["type"] == "exit_terminal")
-        terminal["x"], terminal["y"] = 4, 26
+        terminal["x"], terminal["y"] = 4, 30
+        terminal["params"]["requires_power"] = False  # sin el acertijo de la azotea
         lvl["validation"] = {"snooze_required": ["olvidado"], "time_margin_s": 1.0}
         saved = level_plan.MAX_SNOOZE_SHOTS
         try:
             found = {}
             for shots in (1, 2):
                 level_plan.MAX_SNOOZE_SHOTS = shots
-                result = vl.validate(copy.deepcopy(lvl), check_schema=False)
+                result = vl.validate(copy.deepcopy(lvl), check_schema=False, allies=())
                 group = next(g for g in result["plan"]["reminders"] if g["group"] == "olvidado")
                 found[shots] = (group, [e["message"] for e in result["errors"] if "olvidado" in e["message"]])
         finally:
             level_plan.MAX_SNOOZE_SHOTS = saved
-        self.assertEqual(found[1][0]["entry"], [27, 19], "Se entra por el primer recordatorio")
+        self.assertEqual(found[1][0]["entry"], [31, 19], "Se entra por el primer recordatorio")
         self.assertIsNone(found[1][0]["with_snooze"], "Con un Posponer no da tiempo")
         self.assertTrue(found[1][1])
         self.assertEqual(found[2][1], [], "Con dos, si")
         self.assertEqual(found[2][0]["snooze_shots"], 2)
         self.assertGreaterEqual(found[2][0]["with_snooze"], 1.0)
         bank = obj(self.level, "power_bank_1_2")
-        self.assertEqual((bank["x"], bank["y"]), (2, 27))
+        self.assertEqual((bank["x"], bank["y"]), (2, 31))
+
+    def test_rooftop_holds_the_calc_puzzle(self):
+        """Azotea de 11 filas (0-10) con el acertijo de Calc (tanda H2 del paso 14, 2026-10-17): la
+        terminal apagada con corriente del punto de carga, la pared con glitch que se vuelve puerta, el
+        cuarto a oscuras con sus tres piezas, Calc al 3 % y el cargador; todo con done_if_ally calc."""
+        lvl = self.level
+        rows = {s["name"]: (s["y_from"], s["y_to"]) for s in lvl["sections"]}
+        self.assertEqual(rows["Azotea"], (0, 10))
+        self.assertEqual(rows["Piso 4: Actualizaciones"], (11, 21))
+        self.assertEqual(rows["Vestíbulo"], (60, 65))
+        terminal = obj(lvl, "terminal_azotea")
+        self.assertEqual((terminal["params"]["requires_power"], terminal["params"]["power_source"]), (True, "dock_calc"))
+        self.assertEqual(lvl["grid"][terminal["y"] + 1][terminal["x"]], "G")
+        for oid in CALC_PIECES:
+            piece = obj(lvl, oid)
+            self.assertEqual(piece["params"].get("done_if_ally"), "calc", oid)
+            self.assertTrue(rows["Azotea"][0] <= piece["y"] <= rows["Azotea"][1], oid)
+        self.assertEqual(obj(lvl, "interruptor_luz")["params"]["pulses"], 3)
+        self.assertEqual(obj(lvl, "pared_glitch")["params"]["door_when"], "interruptor_luz")
+        self.assertEqual(obj(lvl, "dock_calc")["params"]["requires"], ["interruptor_luz", "interruptor_laser", "panel_oculto"])
+        # El guion de Eco usa los ids del nivel.
+        with open(os.path.join(ROOT, "data", "eco_guides.json"), encoding="utf-8") as handle:
+            guide = json.load(handle)["guides"]["calc_rooftop"]
+        ids = {o["params"].get("id") for o in lvl["objects"]}
+        self.assertTrue({s["object"] for s in guide["steps"] if "object" in s} <= ids)
+        power = self.result["power"][0]
+        self.assertEqual((power["id"], power["source"], power["powered_at_start"]), ("terminal_azotea", "dock_calc", False))
+        # La espera de Calc que tambien mide tests/test_level_1_2_rooftop.gd con el juego (VALIDATOR_CALC_WAIT_S).
+        self.assertAlmostEqual(power["wait_s"], 10.585, delta=0.011)
+
+    def test_calc_puzzle_in_the_plan_with_margins(self):
+        """Calc desconocida: el camino resuelve el acertijo (3 pulsos de espaldas, el laser desde la repisa
+        baja, el Debug para la pared y para el panel, 1 pulso al panel y la espera de Calc) y la energia
+        no baja de cero con el cargador de la azotea."""
+        puzzle = self.result["plan"]["calc_puzzle"]
+        self.assertEqual((puzzle["pulses"], puzzle["lasers"], puzzle["debug_uses"]), (4, 1, 2))
+        self.assertEqual(puzzle["laser_from"], [7, 19])
+        self.assertGreater(puzzle["calc_wait_s"], 5.0)
+        roof = [s for s in puzzle["steps"] if "energy_after" in s]
+        self.assertTrue(roof and min(s["energy_after"] for s in roof) >= 20.0, roof)
+        path = [a["text"] for a in self.result["path"]]
+        self.assertTrue(any("pulso x3 de espaldas" in t and "interruptor_luz" in t for t in path))
+        self.assertTrue(any("Debug para descubrirlo" in t and "panel_oculto" in t for t in path))
+        self.assertTrue(any("Calc entra" in t for t in path))
+        self.assertTrue(any("cargador_3" in s.get("target", {}).get("id", "") for s in self.export_steps()
+                            if s["action"] == "charge"))
+
+    def test_calc_known_goes_straight_to_the_terminal(self):
+        """Calc conocida (allies_met): las piezas arrancan hechas, la terminal tiene corriente y el camino
+        va directo a ella (el validador valida los dos casos)."""
+        known = self.result["allies_known"]
+        self.assertEqual(known["allies"], ["calc"])
+        self.assertTrue(known["ok"], known["errors"])
+        self.assertEqual(known["puzzle_actions"], 0)
+        direct = vl.validate(copy.deepcopy(self.level), allies=["calc"])
+        self.assertTrue(direct["ok"], direct["errors"])
+        self.assertNotIn("allies_known", direct)
+        self.assertTrue(direct["power"][0]["powered_at_start"])
+        self.assertEqual(direct["plan"]["calc_puzzle"], {})
+        self.assertLess(direct["plan"]["duration_s"], self.result["plan"]["duration_s"] - 15.0)
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "1-2_conocida.json")
+            code = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "validate_level.py"), "--allies", "calc",
+                                   "--export-path", out, LEVEL_PATH], capture_output=True, text=True).returncode
+            self.assertEqual(code, 0)
+            with open(out, encoding="utf-8") as handle:
+                steps = json.load(handle)["steps"]
+        types = {s.get("target", {}).get("type") for s in steps}
+        self.assertFalse(types & {"power_switch", "debug_switch", "laser_switch", "charge_dock", "glitch_wall"})
+        self.assertTrue(steps[-2].get("final") and steps[-2]["target"]["id"] == "terminal_azotea")
+
+    def export_steps(self):
+        out = []
+        vl.validate(copy.deepcopy(self.level), export=out, allies=())
+        return out[0]["steps"]
 
     def test_scene_is_up_to_date_with_the_facade_tabs(self):
         for lid in ("1-1", "1-2"):
