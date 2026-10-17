@@ -346,11 +346,13 @@ func take_damage(amount: float) -> bool:
 	return true
 
 
-## Aturde (o reinicia el aturdimiento). Sin efecto si ya ha muerto.
-func stun() -> void:
+## Aturde (o reinicia el aturdimiento) stun_duration_s x `duration_scale`. Sin
+## efecto si ya ha muerto. El pulso pasa el multiplicador de las mejoras (Pulso 3,
+## GameState.get_pulse_stun_multiplier); el aviso final no cambia.
+func stun(duration_scale: float = 1.0) -> void:
 	if _state == STATE_POPPED:
 		return
-	_stun_left = stun_duration_s
+	_stun_left = stun_duration_s * maxf(duration_scale, 0.0)
 	_change_state(STATE_STUNNED)
 	stunned.emit()
 
@@ -358,7 +360,7 @@ func stun() -> void:
 func receive_pulse(area: Area2D) -> bool:
 	if _state == STATE_POPPED or not PulseReceiver.pulse_reaches(area, get_body_rect()):
 		return false
-	stun()
+	stun(GameState.get_pulse_stun_multiplier())
 	return true
 
 
