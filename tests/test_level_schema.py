@@ -835,5 +835,48 @@ class TowerObjectsSchemaTest(unittest.TestCase):
         self.assert_fails(level, "ocupa una celda que el grid debe dejar vacia")
 
 
+class ValidationBlockSchemaTest(unittest.TestCase):
+    """Bloque opcional `validation` (2026-10-16, paso 10 de docs/propuesta-1-2.md §10): parametros
+    del diseno que comprueba tools/validate_level.py (margen de tiempo, Posponer obligatorio,
+    laser / Debug obligatorios, energia inicial y presupuesto de Sync Rate)."""
+
+    def load(self, name):
+        with open(os.path.join(ROOT, "data", "levels", "%s.json" % name), encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_rooms_with_validation_are_valid(self):
+        for name in ("recordatorios_test", "correo_test"):
+            level = self.load(name)
+            self.assertIn("validation", level)
+            self.assertEqual(vls.validate_level(level), [], name)
+
+    def test_all_fields(self):
+        level = self.load("recordatorios_test")
+        level["validation"] = {"time_margin_s": 1.0, "snooze_required": ["posponer_1"], "laser_required": True,
+                               "debug_required": False, "start_energy": 50, "sync_damage_budget": 10}
+        self.assertEqual(vls.validate_level(level), [])
+
+    def test_bad_values(self):
+        level = self.load("recordatorios_test")
+        level["validation"] = {"tiempo": 1}
+        self.assert_fails(level, "validation: campo desconocido 'tiempo'")
+        level["validation"] = {"time_margin_s": -1}
+        self.assert_fails(level, "validation.time_margin_s debe ser un numero entre 0 y 30")
+        level["validation"] = {"start_energy": 150}
+        self.assert_fails(level, "validation.start_energy debe ser un numero entre 0 y 100")
+        level["validation"] = {"laser_required": "si"}
+        self.assert_fails(level, "validation.laser_required debe ser un booleano")
+        level["validation"] = {"snooze_required": ["no_existe"]}
+        self.assert_fails(level, "validation.snooze_required: el grupo de recordatorios 'no_existe' no existe")
+        level["validation"] = {"snooze_required": "posponer_1"}
+        self.assert_fails(level, "validation.snooze_required debe ser una lista")
+        level["validation"] = []
+        self.assert_fails(level, "'validation' debe ser un objeto")
+
+
 if __name__ == "__main__":
     unittest.main()

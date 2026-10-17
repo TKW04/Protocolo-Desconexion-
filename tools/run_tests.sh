@@ -59,15 +59,26 @@ rm -f "$IMPORT_LOG"
 # y del chip del Debug y de los pisos 3 y 4 del 1-2 (recordatorio, Posponer, pop-up translucido, barra del 99 %;
 # al dia con su generador), de los enemigos (Burbuja, punto rojo y banner), colores de la Q
 # (normal y apagada de relectura) y fuente de textos
-# (Python, unittest). Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el
-# codigo de GUT.
+# (Python, unittest). Desde el 2026-10-16 (paso 10 de docs/propuesta-1-2.md) tambien el plan del
+# camino (tests/test_level_plan.py: salas de prueba y casos negativos sinteticos) y la exportacion
+# del camino de cada sala de prueba (data/levels/*_test.json, --export-path a un temporal).
+# Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
+EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
+_export_test_rooms() {
+	local room
+	for room in "$PROJECT_DIR"/data/levels/*_test.json; do
+		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
+		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
+	done
+}
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
-		tests/test_validate_level.py tests/test_build_level.py tests/test_run_tests_guard.py \
+		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& python3 tools/validate_level.py data/levels/*.json >/dev/null \
 		&& python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null \
+		&& _export_test_rooms \
 		&& python3 tools/build_level.py --check data/levels/*.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
@@ -81,6 +92,7 @@ if command -v python3 >/dev/null 2>&1; then
 else
 	echo "run_tests.sh: python3 no encontrado; se omiten las pruebas del esquema de niveles." >&2
 fi
+rm -rf "$EXPORT_DIR"
 
 GUT_LOG="$(mktemp -t isak_gut.XXXXXX)"
 "$GODOT" --headless --path "$PROJECT_DIR" -s addons/gut/gut_cmdln.gd -gexit "$@" 2>&1 | tee "$GUT_LOG"
