@@ -109,6 +109,14 @@ def game_strings():
     # Encuentro con Calc en el hub (data/calc_intro.json, 2026-10-17): lineas de Calc y de Eco sin los marcadores.
     for line in load_json(os.path.join(ROOT, "data", "calc_intro.json"))["lines"]:
         texts.append(re.sub(r"\{[a-z_]+(:[a-z_]+)?\}", "", line["text"]))
+    # Tienda de Calc por pistas (tanda M1, 2026-10-17): pistas y niveles de data/upgrades.json y los
+    # textos del panel (seccion calc de data/hub.json).
+    for track in load_json(os.path.join(ROOT, "data", "upgrades.json"))["tracks"]:
+        texts.append(track["name"])
+        for level in track["levels"]:
+            texts.extend((level["name"], level["description"]))
+    calc = load_json(os.path.join(ROOT, "data", "hub.json"))["calc"]
+    texts.extend(v for k, v in calc["texts"].items() if not k.startswith("_") and isinstance(v, str))
     hud = load_json(os.path.join(ROOT, "data", "hud.json"))
     texts.append(hud["font_glyphs"])
     texts.append("100 % 0 % 999")

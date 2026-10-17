@@ -1,59 +1,124 @@
 {
-	"_notes": "Catalogo de MEJORAS PERMANENTES (decision del usuario 2026-10-14, docs/preguntas.md; propuesta en docs/propuesta-1-1-ampliado.md §2). Se compran en el hub con puntos de atencion (y power banks completos si cost.power_banks > 0); mientras no exista el hub real, en la pantalla provisional (scenes/hub/hub_placeholder.tscn). Una mejora comprada se guarda en user://save.json y se aplica sobre el valor EFECTIVO; los JSON base (isak_abilities.json, debug_mode.json) y las constantes de GameState NO se modifican. Catalogo extensible: para anadir una mejora basta otra entrada. Campos: id (identificador, ingles), name (texto del juego), label y unit (texto del detalle en el hub: '<label>: <base><unit> a <value><unit>'), target ('<origen>.<clave>' que modifica: game_state.sync_rate_max | game_state.debug_energy_max | game_state.energy_per_attention_point | debug_mode.<clave de debug_mode.json> | isak_abilities.<clave de isak_abilities.json>), value (valor nuevo; si varias compradas tocan el mismo target gana la ultima del catalogo), cost.attention_points y cost.power_banks (se gastan al comprar). Todos los valores son PROPUESTA de la propuesta del 1-1 ampliado; se ajustan jugando. COSTES (economia 2026-10-15 revisada, docs/propuesta-1-1-ampliado.md §6): coste = redondeo a 5 de 9 puntos (lo que da un mapa completo con sus secretos) x mapas de ahorro (Pulso amplio ~3 = 1-1, 1-2 y 1-3 completos; Arranque rapido 2; Recarga mejorada 3; Bateria ampliada 4; Sync reforzado 5; Debug eficiente 6,7). Suma 210 > 162 (18 mapas x 9): en la primera vuelta no se compran todas. Anterior (escala de 30 por mapa): 25/150/200/120/60/90. Aun no hay requisito de 'desbloqueo por secreto' (la propuesta lo sugeria; no aprobado todavia).",
-	"upgrades": [
+	"_notes": "Catalogo de MEJORAS DE CALC POR PISTAS (docs/propuesta-mejoras.md, aprobada el 2026-10-17 con sus recomendaciones; tanda M1). Cinco pistas (Pulso, Laser, Debug, Sync Rate y Energia), cada una con 5 niveles: el 1 es el valor base de hoy (gratis, ya cargado) y los niveles 2-5 se compran EN ORDEN con puntos de atencion; el nivel 5 pide ademas 1 power bank completo, que se gasta al comprar. Lo carga UpgradeCatalog (scripts/autoload/upgrade_catalog.gd) y lo usan GameState (compras, valores efectivos y guardado v4: upgrade_levels pista -> nivel), la tienda de Calc (CalcPanel) y el validador de niveles (tools/upgrade_catalog.py, --upgrades pista:nivel). Campos de pista: id (identificador del guardado y del validador), name (texto del juego), icon (chip de la tienda, tools/gen_calc_chips.py), requires_ability (la pista sale con el chip «?» y no se compra mientras esa habilidad no este obtenida; vacio = siempre). Campos de nivel: level (1-5), name y description (texto del juego: nombre del nivel y su efecto; solo glifos de la fuente de textos, nunca las palabras de las vueltas: se dice acceso Cache, Kernel o Raiz), cost.attention_points y cost.power_banks, min_lap (TOPE POR ACCESO en los datos: el nivel solo se compra con GameState.lap >= min_lap; 1 Cache = niveles 2-3, 2 Kernel = nivel 4, 3 Raiz = nivel 5), effects (lista de {target, value}; target '<origen>.<clave>' como antes: game_state.sync_rate_max | game_state.debug_energy_max | game_state.pulse_stun_multiplier | debug_mode.<clave> | isak_abilities.<clave>), implemented (false = su efecto es de la tanda M2: la tienda lo muestra como «Proximamente» y no se compra) y legacy_id (id de la mejora suelta de antes, para requires_upgrade de los niveles y el validador: wide_pulse = pulso 2, efficient_debug = debug 2). VALOR EFECTIVO: cada nivel comprado (e implementado) SUMA su efecto a los anteriores; si dos niveles tocan el mismo target gana el mas alto. Los JSON base (isak_abilities.json, debug_mode.json) y las constantes de GameState NO cambian. COSTES (decision del usuario 2026-10-16/17): 90 puntos por pista (450 en total + 5 power banks): 15 / 20 / 30 / 25 + 1 PB; Pulso 25 / 15 / 25 / 25 + 1 PB (el Pulso amplio mantiene su precio de 25). Valores PROPUESTA del documento; se ajustan jugando aqui. Se retira la Recarga mejorada (energia por punto 10 a 15). Migracion de las mejoras sueltas del guardado v3 en migration (precio pagado - precio del nivel nuevo, docs/propuesta-mejoras.md §7.3).",
+	"tracks": [
 		{
-			"id": "wide_pulse",
-			"name": "Pulso amplio",
-			"label": "Radio del pulso",
-			"unit": " px",
-			"target": "isak_abilities.pulse_radius_px",
-			"value": 112.0,
-			"cost": {"attention_points": 25, "power_banks": 0}
+			"id": "pulso",
+			"name": "Pulso",
+			"icon": "pulse",
+			"requires_ability": "pulse",
+			"levels": [
+				{"level": 1, "name": "Pulso", "description": "Aturde enemigos y activa objetos (radio 96 px).",
+					"cost": {"attention_points": 0, "power_banks": 0}, "min_lap": 1, "effects": [], "implemented": true},
+				{"level": 2, "name": "Pulso amplio", "legacy_id": "wide_pulse", "description": "Más alcance: radio del pulso de 96 px a 112 px.",
+					"cost": {"attention_points": 25, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "isak_abilities.pulse_radius_px", "value": 112.0}], "implemented": true},
+				{"level": 3, "name": "Pulso aturdidor", "description": "Aturdimiento más largo: x1,5 (Burbuja de 3 s a 4,5 s).",
+					"cost": {"attention_points": 15, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "game_state.pulse_stun_multiplier", "value": 1.5}], "implemented": true},
+				{"level": 4, "name": "Ocultarte", "description": "Te vuelves casi invisible; gasta Sync Rate y energía.",
+					"cost": {"attention_points": 25, "power_banks": 0}, "min_lap": 2,
+					"effects": [{"target": "ability.hide", "value": 1.0}], "implemented": false},
+				{"level": 5, "name": "Pulso de retorno", "description": "Aturdir a un enemigo da 4 de energía, una vez por enemigo.",
+					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
+					"effects": [{"target": "isak_abilities.pulse_energy_on_stun", "value": 4.0}], "implemented": false}
+			]
 		},
 		{
-			"id": "reinforced_sync",
-			"name": "Sync reforzado",
-			"label": "Sync Rate máximo",
-			"unit": " %",
-			"target": "game_state.sync_rate_max",
-			"value": 120.0,
-			"cost": {"attention_points": 45, "power_banks": 1}
+			"id": "laser",
+			"name": "Láser",
+			"icon": "laser",
+			"requires_ability": "laser",
+			"levels": [
+				{"level": 1, "name": "Láser", "description": "Disparo horizontal: 10 de energía, daño 1.",
+					"cost": {"attention_points": 0, "power_banks": 0}, "min_lap": 1, "effects": [], "implemented": true},
+				{"level": 2, "name": "Láser rápido", "description": "Menos enfriamiento: de 0,4 s a 0,3 s entre disparos.",
+					"cost": {"attention_points": 15, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "isak_abilities.laser_cooldown_s", "value": 0.3}], "implemented": true},
+				{"level": 3, "name": "Láser eficiente", "description": "Menos coste: de 10 a 8 de energía por disparo.",
+					"cost": {"attention_points": 20, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "isak_abilities.laser_energy_cost", "value": 8.0}], "implemented": true},
+				{"level": 4, "name": "Láser potente", "description": "Más daño: de 1 a 2 (la Burbuja cae de un disparo).",
+					"cost": {"attention_points": 30, "power_banks": 0}, "min_lap": 2,
+					"effects": [{"target": "isak_abilities.laser_damage", "value": 2.0}], "implemented": true},
+				{"level": 5, "name": "Láser perforante", "description": "Atraviesa enemigos (no el terreno ni los objetos).",
+					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
+					"effects": [{"target": "isak_abilities.laser_pierce", "value": 1.0}], "implemented": false}
+			]
 		},
 		{
-			"id": "efficient_debug",
-			"name": "Debug eficiente",
-			"label": "Gasto del Debug",
-			"unit": "/s",
-			"target": "debug_mode.drain_per_second",
-			"value": 15.0,
-			"cost": {"attention_points": 60, "power_banks": 1}
+			"id": "debug",
+			"name": "Debug",
+			"icon": "debug",
+			"requires_ability": "debug",
+			"levels": [
+				{"level": 1, "name": "Debug", "description": "Ralentiza el mundo y revela lo oculto (20 de energía/s).",
+					"cost": {"attention_points": 0, "power_banks": 0}, "min_lap": 1, "effects": [], "implemented": true},
+				{"level": 2, "name": "Debug eficiente", "legacy_id": "efficient_debug", "description": "Menos gasto: de 20/s a 15/s de energía.",
+					"cost": {"attention_points": 15, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "debug_mode.drain_per_second", "value": 15.0}], "implemented": true},
+				{"level": 3, "name": "Revelado persistente", "description": "Lo revelado sigue visible 1,5 s al apagar el Debug.",
+					"cost": {"attention_points": 20, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "debug_mode.reveal_linger_s", "value": 1.5}], "implemented": false},
+				{"level": 4, "name": "Más ralentización", "description": "El mundo va más lento: de x0,5 a x0,4.",
+					"cost": {"attention_points": 30, "power_banks": 0}, "min_lap": 2,
+					"effects": [{"target": "debug_mode.world_time_scale", "value": 0.4}], "implemented": false},
+				{"level": 5, "name": "Arranque rápido", "legacy_id": "quick_start", "description": "Carga del Debug: de 1 s a 0,4 s.",
+					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
+					"effects": [{"target": "debug_mode.activation_hold_s", "value": 0.4}], "implemented": false}
+			]
 		},
 		{
-			"id": "extended_battery",
-			"name": "Batería ampliada",
-			"label": "Energía máxima",
-			"unit": "",
-			"target": "game_state.debug_energy_max",
-			"value": 150.0,
-			"cost": {"attention_points": 35, "power_banks": 1}
+			"id": "sync",
+			"name": "Sync Rate",
+			"icon": "sync",
+			"requires_ability": "",
+			"levels": [
+				{"level": 1, "name": "Sync Rate", "description": "Tu señal: Sync Rate máximo 100.",
+					"cost": {"attention_points": 0, "power_banks": 0}, "min_lap": 1, "effects": [], "implemented": true},
+				{"level": 2, "name": "Sync reforzado", "description": "Sync Rate máximo: de 100 a 110.",
+					"cost": {"attention_points": 15, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "game_state.sync_rate_max", "value": 110.0}], "implemented": true},
+				{"level": 3, "name": "Sync reforzado II", "description": "Sync Rate máximo: de 110 a 120.",
+					"cost": {"attention_points": 20, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "game_state.sync_rate_max", "value": 120.0}], "implemented": true},
+				{"level": 4, "name": "Sync reforzado III", "description": "Sync Rate máximo: de 120 a 130.",
+					"cost": {"attention_points": 30, "power_banks": 0}, "min_lap": 2,
+					"effects": [{"target": "game_state.sync_rate_max", "value": 130.0}], "implemented": true},
+				{"level": 5, "name": "Resincronización", "description": "Fuera de combate, el Sync Rate sube solo hasta el 60 %.",
+					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
+					"effects": [{"target": "game_state.sync_regen_per_s", "value": 1.0}], "implemented": false}
+			]
 		},
 		{
-			"id": "quick_start",
-			"name": "Arranque rápido",
-			"label": "Carga del Debug",
-			"unit": " s",
-			"target": "debug_mode.activation_hold_s",
-			"value": 0.5,
-			"cost": {"attention_points": 20, "power_banks": 0}
-		},
-		{
-			"id": "improved_recharge",
-			"name": "Recarga mejorada",
-			"label": "Energía por punto",
-			"unit": "",
-			"target": "game_state.energy_per_attention_point",
-			"value": 15.0,
-			"cost": {"attention_points": 25, "power_banks": 0}
+			"id": "energia",
+			"name": "Energía",
+			"icon": "energy",
+			"requires_ability": "",
+			"levels": [
+				{"level": 1, "name": "Energía", "description": "Batería del láser y del Debug: máximo 100.",
+					"cost": {"attention_points": 0, "power_banks": 0}, "min_lap": 1, "effects": [], "implemented": true},
+				{"level": 2, "name": "Batería ampliada", "description": "Energía máxima: de 100 a 110.",
+					"cost": {"attention_points": 15, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "game_state.debug_energy_max", "value": 110.0}], "implemented": true},
+				{"level": 3, "name": "Batería ampliada II", "description": "Energía máxima: de 110 a 120.",
+					"cost": {"attention_points": 20, "power_banks": 0}, "min_lap": 1,
+					"effects": [{"target": "game_state.debug_energy_max", "value": 120.0}], "implemented": true},
+				{"level": 4, "name": "Batería ampliada III", "description": "Energía máxima: de 120 a 130.",
+					"cost": {"attention_points": 30, "power_banks": 0}, "min_lap": 2,
+					"effects": [{"target": "game_state.debug_energy_max", "value": 130.0}], "implemented": true},
+				{"level": 5, "name": "Recarga pasiva", "description": "La energía se recarga sola: 0,5 % del máximo por segundo.",
+					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
+					"effects": [{"target": "game_state.energy_regen_pct_s", "value": 0.5}], "implemented": false}
+			]
 		}
-	]
+	],
+	"_migration_notes": "Guardado v3 -> v4 (docs/propuesta-mejoras.md §7.3): cada mejora suelta comprada pasa a un nivel (track + level, si es mas alto que el que ya hubiera) y se devuelve refund (precio pagado - precio del nivel nuevo). quick_start (el Debug 5 exige los niveles 2-4 y Raiz) e improved_recharge (retirada) solo devuelven sus puntos. Los power banks devueltos no tienen tope.",
+	"migration": {
+		"wide_pulse": {"track": "pulso", "level": 2, "refund": {"attention_points": 0, "power_banks": 0}},
+		"efficient_debug": {"track": "debug", "level": 2, "refund": {"attention_points": 45, "power_banks": 1}},
+		"reinforced_sync": {"track": "sync", "level": 2, "refund": {"attention_points": 30, "power_banks": 1}},
+		"extended_battery": {"track": "energia", "level": 2, "refund": {"attention_points": 20, "power_banks": 1}},
+		"quick_start": {"track": "", "level": 1, "refund": {"attention_points": 20, "power_banks": 0}},
+		"improved_recharge": {"track": "", "level": 1, "refund": {"attention_points": 25, "power_banks": 0}}
+	}
 }
