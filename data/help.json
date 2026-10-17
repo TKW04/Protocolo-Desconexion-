@@ -272,6 +272,46 @@
 			"order": 24,
 			"center_px": [32, 96],
 			"prompt_px": [32, -56]
+		},
+		"power_switch": {
+			"category": "object",
+			"title": "Interruptor de pulso",
+			"text": "Un interruptor de pulso. Con uno no basta: necesita varios. Cada luz encendida es un pulso; con todas, se activa.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 25,
+			"center_px": [32, 4],
+			"prompt_px": [32, -30]
+		},
+		"laser_switch": {
+			"category": "object",
+			"title": "Interruptor láser",
+			"text": "Un interruptor a distancia. Un disparo de láser y se queda encendido. Para siempre. Sin prisas, por una vez.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 26,
+			"center_px": [48, 8],
+			"prompt_px": [48, -22]
+		},
+		"debug_switch": {
+			"category": "object",
+			"title": "Panel oculto",
+			"text": "Un panel que no figura en ningún inventario. Ya que lo has visto, funciona como los otros: a pulsos.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 27,
+			"center_px": [32, 4],
+			"prompt_px": [32, -30]
+		},
+		"charge_dock": {
+			"category": "object",
+			"title": "Punto de carga",
+			"text": "Un punto de carga para aplicaciones. Para ti no sirve. Se enciende cuando el cuarto tiene toda su energía.",
+			"first_level": "1-2",
+			"world": 1,
+			"order": 28,
+			"center_px": [64, 40],
+			"prompt_px": [64, -8]
 		}
 	}
 }

@@ -436,6 +436,45 @@ func test_every_help_type_is_covered() -> void:
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
 		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
 		&"notification_badge", &"spam_banner", &"reminder_platform", &"snooze_button", &"overlay_popup",
-		&"update_bar"]
+		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
+
+
+# --- Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14) ---
+
+func test_activated_power_switch_gives_no_help() -> void:
+	var sw := _scene("power_switch") as PowerSwitch
+	sw.pulses_required = 1
+	_place(sw, &"power_switch")
+	await _assert_inert_drops_help(sw, func() -> void: sw.activate(), "interruptor de pulso activado")
+	_assert_no_reread(sw, &"power_switch", "interruptor de pulso activado")
+
+
+func test_activated_laser_switch_gives_no_help() -> void:
+	var sw := _scene("laser_switch") as LaserSwitch
+	_place(sw, &"laser_switch")
+	await _assert_inert_drops_help(sw, func() -> void: sw.activate(), "interruptor laser activado")
+	_assert_no_reread(sw, &"laser_switch", "interruptor laser activado")
+
+
+func test_hidden_or_activated_debug_switch_gives_no_help() -> void:
+	var sw := _scene("debug_switch") as PowerSwitch
+	_place(sw, &"debug_switch")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_false(HelpCatalog.is_help_live(sw), "Oculto: sin Q")
+	assert_null(_help.get_target())
+	sw.reveal()
+	await _assert_inert_drops_help(sw, func() -> void: sw.activate(), "panel oculto activado")
+	_assert_no_reread(sw, &"debug_switch", "panel oculto activado")
+
+
+func test_armed_charge_dock_gives_no_help() -> void:
+	var dock := _scene("charge_dock") as ChargeDock
+	dock.required_ids = ["nada"]
+	_place(dock, &"charge_dock")
+	await _assert_inert_drops_help(dock, func() -> void:
+		dock.required_ids = []
+		dock.advance(0.0), "punto de carga armado")
+	_assert_no_reread(dock, &"charge_dock", "punto de carga armado")

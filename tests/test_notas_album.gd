@@ -354,9 +354,23 @@ func test_album_texts_fit_the_font_and_never_say_lap_names() -> void:
 ## barra del 99 %, en la pestana Objetos del Mundo 1, al final y en orden.
 func test_tower_objects_cards_in_the_objects_tab() -> void:
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
-	var tail: Array[StringName] = objects.slice(objects.size() - 4)
+	# Despues van las piezas del encuentro con Calc (2026-10-17): ver la prueba siguiente.
+	var start: int = objects.find(&"reminder_platform")
+	var tail: Array[StringName] = objects.slice(start, start + 4)
 	assert_eq(tail, [&"reminder_platform", &"snooze_button", &"overlay_popup", &"update_bar"] as Array[StringName])
 	for id: StringName in tail:
 		assert_eq(HelpCatalog.shared().category(id), HelpCatalog.CATEGORY_OBJECT)
 		assert_eq(String(HelpCatalog.shared().entry(id).get("first_level", "")), "1-2")
 	assert_eq(HelpCatalog.shared().title(&"overlay_popup"), "Pop-up translúcido")
+
+
+## Encuentro con Calc en la azotea del 1-2 (2026-10-17, tanda H1 del paso 14):
+## interruptor de pulso, interruptor laser, panel oculto y punto de carga, al
+## final de la pestana Objetos del Mundo 1, en orden y con ficha.
+func test_calc_room_cards_in_the_objects_tab() -> void:
+	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
+	var tail: Array[StringName] = objects.slice(objects.size() - 4)
+	assert_eq(tail, [&"power_switch", &"laser_switch", &"debug_switch", &"charge_dock"] as Array[StringName])
+	for id: StringName in tail:
+		assert_eq(String(HelpCatalog.shared().entry(id).get("first_level", "")), "1-2")
+		assert_true(ResourceLoader.exists("res://assets/sprites/ui/album/album_card_%s.png" % id), "Ficha de %s" % id)

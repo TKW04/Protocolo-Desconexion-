@@ -19,6 +19,13 @@
 ##    alrededor de Isak de espaldas, que es absorbido; al cerrarse emite
 ##    completed(level_id) y EventBus.level_completed(level_id) (LevelRunner
 ##    lleva al hub).
+## CORRIENTE (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc):
+## con requires_power (por defecto falso: el 1-1 no cambia) esta APAGADA hasta
+## que la pieza power_source (CalcRoom; p. ej. el ChargeDock cuando Calc se va)
+## tiene corriente (is_power_on()): pantalla negra (primer cuadro de
+## terminal_off tenido con unpowered_modulate), sin prompt ni tecla, sin Q y el
+## pulso no hace nada. Al llegar la corriente emite powered y funciona como
+## siempre.
 ## No es solida (Area2D, mascara player: solo detecta la cercania de Isak).
 ## Tiempo del mundo (Debug x0,5; se para con la pausa). El origen del nodo es la
 ## esquina superior izquierda de su primera celda.
@@ -37,6 +44,8 @@ const ANIM_ON: StringName = &"terminal_on"
 signal activated(level_id: String)
 ## Isak absorbido: nivel completado (tambien EventBus.level_completed).
 signal completed(level_id: String)
+## Le ha llegado la corriente (requires_power).
+signal powered
 
 @export var object_id: StringName = &""
 ## Etiqueta opcional encima de la terminal (vacio = sin etiqueta).
@@ -45,6 +54,10 @@ signal completed(level_id: String)
 @export_range(1, 8) var height_tiles: int = 2
 ## Id del nivel que completa (lo pone el generador). Vacio: GameState.current_level.
 @export var level_id: String = ""
+## Apagada hasta que power_source tenga corriente (2026-10-17).
+@export var requires_power: bool = false
+## Id de la pieza que le da corriente (CalcRoom; is_power_on()).
+@export var power_source: StringName = &""
 
 var _config: Dictionary = World1ObjectsConfig.section("exit_terminal")
 var _state: State = State.OFF
@@ -57,16 +70,20 @@ var _key_root: Node2D
 var _key_label: Label
 var _key_base_y: float = 0.0
 var _vortex: WarpVortex
+var _had_power: bool = true
 
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	# Pieza enlazable del acertijo de la azotea (guion de Eco; 2026-10-17).
+	add_to_group(CalcRoom.LINK_GROUP)
 	_build()
 	# La tecla se vuelve a leer del Input Map al reasignar los controles.
 	EventBus.controls_changed.connect(refresh_key)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	EventBus.pulse_fired.connect(receive_pulse)
+	_had_power = not requires_power
 	_apply_visuals()
 
 
@@ -78,7 +95,17 @@ func _process(delta: float) -> void:
 
 ## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; activada (encendiendose, girando, vortice), no.
 func is_help_available() -> bool:
-	return _state == State.OFF or _state == State.PROMPT
+	return (_state == State.OFF or _state == State.PROMPT) and is_powered()
+
+
+## Tiene corriente (sin requires_power, siempre).
+func is_powered() -> bool:
+	if not requires_power:
+		return true
+	if not is_inside_tree():
+		return false
+	var source: Node = CalcRoom.find(self, power_source)
+	return source != null and source.has_method(&"is_power_on") and bool(source.call(&"is_power_on"))
 
 
 func get_state() -> State:
@@ -133,7 +160,7 @@ func resolved_level_id() -> String:
 ## Comprueba si el pulso (`area`, con un CircleShape2D) alcanza la terminal y, si
 ## es asi, la activa. Verdadero si se ha activado ahora.
 func receive_pulse(area: Area2D) -> bool:
-	if _state != State.OFF and _state != State.PROMPT:
+	if (_state != State.OFF and _state != State.PROMPT) or not is_powered():
 		return false
 	if not PulseReceiver.pulse_reaches(area, get_hit_rect()):
 		return false
@@ -144,7 +171,7 @@ func receive_pulse(area: Area2D) -> bool:
 ## Activa la terminal (encendido y luego vortice de salida para `isak`). Falso
 ## si ya estaba activada.
 func activate(isak: Isak) -> bool:
-	if _state != State.OFF and _state != State.PROMPT:
+	if (_state != State.OFF and _state != State.PROMPT) or not is_powered():
 		return false
 	_state = State.BOOT
 	_time = 0.0
@@ -161,6 +188,14 @@ func advance(delta: float) -> void:
 	_time += maxf(delta, 0.0)
 	match _state:
 		State.OFF, State.PROMPT:
+			var power: bool = is_powered()
+			if power != _had_power:
+				_had_power = power
+				_apply_visuals()
+				if power:
+					powered.emit()
+			if not power:
+				return
 			_update_near_state()
 			_loop(ANIM_PROMPT if _state == State.PROMPT else ANIM_OFF)
 			_bob_key()
@@ -272,6 +307,14 @@ func _update_near_state() -> void:
 
 
 func _apply_visuals() -> void:
+	if requires_power and not _had_power:
+		_state = State.OFF
+		_show(ANIM_OFF)
+		var c: Array = _config.get("unpowered_modulate", [0.45, 0.45, 0.6])
+		_sprite.modulate = Color(float(c[0]), float(c[1]), float(c[2]))
+		_key_root.visible = false
+		return
+	_sprite.modulate = Color.WHITE
 	match _state:
 		State.OFF:
 			_show(ANIM_OFF)

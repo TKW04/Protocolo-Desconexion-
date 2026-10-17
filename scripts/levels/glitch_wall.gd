@@ -19,6 +19,15 @@
 ## extra del secreto D del 1-1, ExtraLifePickup) escucha opened. Sin el Debug
 ## sigue solida y su ayuda con Q no cambia.
 ##
+## PUERTA (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc;
+## docs/propuesta-calc-encuentro.md): con door_when (id de un PowerSwitch), al
+## activarse ese interruptor la pared (abierta o aun solida) se TRANSFORMA en una
+## puerta: abertura no solida con el arte power_door_* (aparicion con glitch,
+## reposo y abierta) y hasta 3 luces en el dintel (door_lamps: una por pieza
+## hecha, CalcRoom.is_done). Con todas las luces, power_door_open. Ya puerta no
+## da Q (is_help_available) e is_activated() es verdadero. Con done_if_ally ya
+## conocido al cargar, es puerta desde el principio con las luces que toquen.
+## Sin door_when (el 1-1) nada de esto cambia.
 ## El origen del nodo es la esquina superior izquierda de la primera celda.
 class_name GlitchWall
 extends StaticBody2D
@@ -49,6 +58,17 @@ const ISAK_LAYER: int = 2
 @export_range(1, 32) var height_tiles: int = 2
 ## Lados del bloque con terreno solido al lado (bits N=1 E=2 S=4 W=8).
 @export_range(0, 15) var solid_neighbors: int = 0
+## Id propio (opcional; lo usa el guion de Eco para volar a la puerta).
+@export var object_id: StringName = &""
+## Id del interruptor que la transforma en puerta (vacio = nunca).
+@export var door_when: StringName = &""
+## Ids de las piezas de las luces del dintel (max 3).
+@export var door_lamps: Array = []
+## Con este asistente conocido al cargar, ya es puerta ("" = nunca).
+@export var done_if_ally: StringName = &""
+
+## Se ha transformado en puerta.
+signal became_door
 
 var _config: Dictionary = World1ObjectsConfig.section("glitch_wall")
 var _cells: Array[Sprite2D] = []
@@ -63,6 +83,12 @@ var _overlays: Array[Sprite2D] = []
 ## Segundos de disolucion (tiempo del mundo); -1 = no se esta disolviendo.
 var _dissolve_time: float = -1.0
 var _open: bool = false
+var _door: bool = false
+var _door_sprite: AnimatedSprite2D
+var _door_lamps: Array[Sprite2D] = []
+var _door_time: float = 0.0
+## Segundos de la aparicion de la puerta (-1 = ya en reposo).
+var _appear_time: float = -1.0
 
 
 func _ready() -> void:
@@ -71,22 +97,85 @@ func _ready() -> void:
 	_rng.seed = hash(Vector2i(roundi(global_position.x), roundi(global_position.y)))
 	_build()
 	EventBus.debug_mode_changed.connect(_on_debug_mode_changed)
+	if door_when != &"" or object_id != &"":
+		add_to_group(CalcRoom.LINK_GROUP)
+	if door_when != &"" and CalcRoom.skipped_for(done_if_ally):
+		become_door(true)
 
 
 func _process(delta: float) -> void:
-	if not _open and _dissolve_time < 0.0 and DebugMode.is_active() and is_isak_near():
+	if not _door and not _open and _dissolve_time < 0.0 and DebugMode.is_active() and is_isak_near():
 		open_with_debug()
 	advance(WorldTime.scaled_delta(delta))
 
 
 ## Solida mientras no se ha abierto con el Debug.
 func is_solid() -> bool:
-	return _shape != null and not _shape.disabled and not _open
+	return _shape != null and not _shape.disabled and not _open and not _door
 
 
 ## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; disolviendose o abierta, no.
 func is_help_available() -> bool:
-	return not _open and _dissolve_time < 0.0
+	return not _open and _dissolve_time < 0.0 and not _door
+
+
+## Ya es puerta (pieza hecha del acertijo de la azotea).
+func is_activated() -> bool:
+	return _door
+
+
+func is_door() -> bool:
+	return _door
+
+
+## Animacion de la puerta (vacio si no es puerta).
+func get_door_animation() -> StringName:
+	return _door_sprite.animation if _door_sprite != null else &""
+
+
+## Luces del dintel encendidas.
+func get_lit_lamps() -> int:
+	var n: int = 0
+	for lamp: Sprite2D in _door_lamps:
+		if lamp.get_meta(&"on", false):
+			n += 1
+	return n
+
+
+## Se transforma en puerta (abertura no solida). `instant`: sin la aparicion.
+## Falso si ya lo era.
+func become_door(instant: bool = false) -> bool:
+	if _door:
+		return false
+	_door = true
+	_dissolve_time = -1.0
+	for overlay: Sprite2D in _overlays:
+		overlay.queue_free()
+	_overlays.clear()
+	for cell: Sprite2D in _cells:
+		cell.visible = false
+	if _shape != null:
+		_shape.set_deferred(&"disabled", true)
+	visible = true
+	var frames := load(PowerSwitch.FRAMES_PATH) as SpriteFrames
+	var section: Dictionary = World1ObjectsConfig.section("power_door")
+	_door_sprite = AnimatedSprite2D.new()
+	_door_sprite.name = "Door"
+	_door_sprite.sprite_frames = frames
+	_door_sprite.position = LaserReceiver._vec(section.get("sprite_center_px", [32, 64]))
+	_door_sprite.animation = &"power_door_appear"
+	add_child(_door_sprite)
+	var centers: Array = section.get("lamp_centers_px", [[20, 9], [32, 9], [44, 9]])
+	for i: int in mini(door_lamps.size(), centers.size()):
+		var lamp := Sprite2D.new()
+		lamp.name = "Lamp%d" % i
+		lamp.position = LaserReceiver._vec(centers[i])
+		add_child(lamp)
+		_door_lamps.append(lamp)
+	_appear_time = -1.0 if instant else 0.0
+	_update_door()
+	became_door.emit()
+	return true
 
 
 func is_open() -> bool:
@@ -158,6 +247,14 @@ func cell_mask(cx: int, cy: int) -> int:
 
 ## Avanza la animacion `delta` segundos de tiempo del mundo.
 func advance(delta: float) -> void:
+	if not _door and door_when != &"" and is_inside_tree() and CalcRoom.is_done(CalcRoom.find(self, door_when)):
+		become_door()
+	if _door:
+		_door_time += maxf(delta, 0.0)
+		if _appear_time >= 0.0:
+			_appear_time += maxf(delta, 0.0)
+		_update_door()
+		return
 	if _open:
 		return
 	if _dissolve_time >= 0.0:
@@ -244,6 +341,34 @@ func _finish_open() -> void:
 	_overlays.clear()
 	visible = false
 	opened.emit()
+
+
+func _update_door() -> void:
+	var frames: SpriteFrames = _door_sprite.sprite_frames
+	var lit: int = 0
+	for i: int in _door_lamps.size():
+		var on: bool = CalcRoom.is_done(CalcRoom.find(self, StringName(String(door_lamps[i]))))
+		if on:
+			lit += 1
+		_door_lamps[i].set_meta(&"on", on)
+		_door_lamps[i].texture = frames.get_frame_texture(&"switch_lamp_on" if on else &"switch_lamp_off", 0)
+	var anim: StringName = &"power_door_open" if lit >= _door_lamps.size() and not _door_lamps.is_empty() \
+		else &"power_door_idle"
+	var t: float = _door_time
+	if _appear_time >= 0.0:
+		var length: float = frames.get_frame_count(&"power_door_appear") / frames.get_animation_speed(&"power_door_appear")
+		if _appear_time < length:
+			anim = &"power_door_appear"
+			t = _appear_time
+		else:
+			_appear_time = -1.0
+	for lamp: Sprite2D in _door_lamps:
+		lamp.visible = anim != &"power_door_appear"
+	if _door_sprite.animation != anim:
+		_door_sprite.animation = anim
+	var count: int = frames.get_frame_count(anim)
+	var index: int = floori(t * frames.get_animation_speed(anim))
+	_door_sprite.frame = index % count if frames.get_animation_loop(anim) else mini(index, count - 1)
 
 
 func _random_wait() -> float:
