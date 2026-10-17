@@ -1,0 +1,186 @@
+"""Nivel 1-2 «Centro de notificaciones» (data/levels/1-2.json; paso 13 de docs/propuesta-1-2.md §10,
+2026-10-16): esquema, alcanzabilidad con el plan del camino (acertijo, Posponer, Debug, banners,
+puntos rojos y energia), camino exportado, secreto C con dos Posponer, escena al dia y
+pestanas de la fachada. La economia del nivel esta en tests/test_level_schema.py.
+Uso: python3 -m unittest tests/test_level_1_2.py
+"""
+
+import copy
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import build_level  # noqa: E402
+import level_plan  # noqa: E402
+import validate_level as vl  # noqa: E402
+import validate_level_schema as vls  # noqa: E402
+
+LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-2.json")
+NEW_TYPES = ("overlay_popup", "laser_receiver", "relay_receiver", "ad_cover", "reminder_platform",
+             "snooze_button", "update_bar", "charger", "bridge_inactive", "receiver", "popup_blocker",
+             "power_bank_pickup", "exit_terminal")
+
+
+def load_level():
+    with open(LEVEL_PATH, encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def obj(level, oid):
+    return next(o for o in level["objects"] if o["params"].get("id") == oid)
+
+
+class Level12Test(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.level = load_level()
+        cls.result = vl.validate(copy.deepcopy(cls.level))
+
+    def test_schema_and_reachability_without_warnings(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+        self.assertTrue(self.result["ok"], self.result["errors"])
+        self.assertEqual(self.result["warnings"], [])
+        upgraded = vl.validate(copy.deepcopy(self.level), upgrades=["wide_pulse"])
+        self.assertTrue(upgraded["ok"], upgraded["errors"])
+
+    def test_tower_structure(self):
+        lvl = self.level
+        self.assertEqual((lvl["id"], lvl["name"], lvl["world"], lvl["difficulty"]),
+                         ("1-2", "Centro de notificaciones", 1, 2))
+        self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (28, 62))
+        self.assertEqual(lvl["camera"]["vertical"], "tower")
+        self.assertEqual([s["name"] for s in lvl["sections"]],
+                         ["Azotea", "Piso 4: Actualizaciones", "Piso 3: Recordatorios", "Piso 2: Correo",
+                          "Piso 1: Mensajes", "Vestíbulo"])
+        # Vortice de llegada abajo (vestibulo) y terminal de salida arriba (azotea).
+        rows = {s["name"]: (s["y_from"], s["y_to"]) for s in lvl["sections"]}
+        p_row = next(r for r, row in enumerate(lvl["grid"]) if "P" in row)
+        g_row = next(r for r, row in enumerate(lvl["grid"]) if "G" in row)
+        self.assertTrue(rows["Vestíbulo"][0] <= p_row <= rows["Vestíbulo"][1])
+        self.assertTrue(rows["Azotea"][0] <= g_row <= rows["Azotea"][1])
+        terminal = next(o for o in lvl["objects"] if o["type"] == "exit_terminal")
+        self.assertTrue(rows["Azotea"][0] <= terminal["y"] <= rows["Azotea"][1])
+        # Puntos de sincronizacion al entrar a los pisos 2 y 4.
+        cps = {c["id"]: c for c in lvl["checkpoints"]}
+        self.assertEqual(sorted(cps), ["sync_1", "sync_2"])
+        self.assertEqual(cps["sync_1"]["y"], rows["Piso 2: Correo"][1] - 1, "sync_1 en el suelo del piso 2")
+        self.assertEqual(cps["sync_2"]["y"], rows["Piso 4: Actualizaciones"][1] - 1, "sync_2 en el suelo del piso 4")
+        self.assertEqual([c["reachable_from"] for c in self.result["checkpoints"]], ["P", "sync_1"])
+        # Sin enemigos nuevos aparte de los ya hechos; sin vida extra.
+        self.assertEqual({e["type"] for e in lvl["enemies"]}, {"notification_badge", "spam_banner"})
+        self.assertFalse(any(o["type"] == "extra_life_pickup" for o in lvl["objects"]))
+        self.assertEqual(lvl["unlocks"], [{"type": "level", "id": "1-3"}])
+
+    def test_every_new_object_and_enemy_has_its_help_id(self):
+        for o in self.level["objects"]:
+            if o["type"] in NEW_TYPES:
+                self.assertIn("help_id", o, "%s %s" % (o["type"], o["params"].get("id")))
+        for e in self.level["enemies"]:
+            self.assertEqual(e.get("help_id"), e["type"])
+
+    def test_puzzles_and_timers_in_the_plan(self):
+        val = self.level["validation"]
+        self.assertTrue(val["laser_required"] and val["debug_required"])
+        self.assertEqual(val["snooze_required"], ["posponer_3b", "posponer_3c"])
+        plan = self.result["plan"]
+        relay = plan["relays"][0]
+        self.assertEqual((relay["lector"], relay["bridge"], relay["window_s"]), ("lector_1", "puente_correo", 6.0))
+        self.assertGreaterEqual(relay["spare_s"], 1.5, "Acertijo con margen de 1,5 s")
+        groups = {g["group"]: g for g in plan["reminders"]}
+        for gid in ("posponer_3b", "posponer_3c"):
+            self.assertIsNone(groups[gid]["without_snooze"], "%s no se cruza sin Posponer" % gid)
+            self.assertGreaterEqual(groups[gid]["with_snooze"], 1.5, "%s con Posponer y margen" % gid)
+            self.assertEqual(groups[gid]["snooze_shots"], 1)
+        self.assertTrue(plan["debug"]["required"])
+        self.assertEqual(plan["sync_damage"], 0.0, "Sin dano de puntos rojos en el camino")
+        self.assertGreater(plan["energy"]["min"], 0.0)
+        self.assertEqual([b["id"] for b in plan["bars"]], ["barra_99"])
+        overlays = {o["id"]: o for o in plan["overlays"]}
+        self.assertEqual(sorted(overlays), ["overlay_1", "overlay_2", "overlay_3"], "Un pop-up translucido en los pisos 1, 3 y 4")
+        self.assertTrue(overlays["overlay_1"]["closed_from"] and overlays["overlay_3"]["closed_from"])
+        self.assertTrue(overlays["overlay_2"]["closed_from"] or overlays["overlay_2"]["debug_view"],
+                        "El del piso 3 (sobre el Posponer) se cierra con el pulso o se ve con el Debug")
+        self.assertTrue(all(b["hits"] == 0 for b in plan["badges"]))
+
+    def test_secret_a_needs_the_debug_and_the_others_do_not(self):
+        items = {i["id"]: i for i in self.result["secrets"]["items"]}
+        self.assertEqual((items["secreto_spam"]["without_debug"], items["secreto_spam"]["with_debug"]),
+                         (False, True))
+        self.assertTrue(items["secreto_borradores"]["reachable"])
+        self.assertTrue(items["secreto_olvidado"]["reachable"])
+
+    def test_exported_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "1-2.json")
+            code = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "validate_level.py"),
+                                   "--export-path", out, LEVEL_PATH], capture_output=True, text=True).returncode
+            self.assertEqual(code, 0)
+            with open(out, encoding="utf-8") as handle:
+                path = json.load(handle)
+        self.assertEqual((path["format"], path["level"]), ("isak-path/1", "1-2"))
+        actions = [s["action"] for s in path["steps"]]
+        for action in ("laser", "pulse", "pickup", "debug_on", "debug_off", "wait", "wait_phase", "charge"):
+            self.assertIn(action, actions)
+        self.assertEqual(actions[-1], "goal")
+        finals = [s for s in path["steps"] if s.get("final")]
+        self.assertEqual(len(finals), 1, "Un pulso final a la terminal")
+        self.assertLess(actions.index("pickup"), actions.index("debug_on"), "Debug tras el chip")
+
+    def test_secret_c_needs_two_snoozes_from_its_entry(self):
+        """Variante: Isak empieza en el piso 3 y la meta esta en el nicho del secreto C (Posponer
+        exigido en el grupo olvidado). Con un solo disparo al Posponer no da tiempo; con dos, si."""
+        lvl = copy.deepcopy(self.level)
+        grid = [list(r) for r in lvl["grid"]]
+        for r, row in enumerate(grid):
+            for c, ch in enumerate(row):
+                if ch in "PGCS":
+                    grid[r][c] = "."
+        grid[30][3] = "P"
+        grid[27][4] = "G"
+        lvl["grid"] = ["".join(r) for r in grid]
+        lvl["checkpoints"] = []
+        lvl["secrets"] = []
+        terminal = next(o for o in lvl["objects"] if o["type"] == "exit_terminal")
+        terminal["x"], terminal["y"] = 4, 26
+        lvl["validation"] = {"snooze_required": ["olvidado"], "time_margin_s": 1.0}
+        saved = level_plan.MAX_SNOOZE_SHOTS
+        try:
+            found = {}
+            for shots in (1, 2):
+                level_plan.MAX_SNOOZE_SHOTS = shots
+                result = vl.validate(copy.deepcopy(lvl), check_schema=False)
+                group = next(g for g in result["plan"]["reminders"] if g["group"] == "olvidado")
+                found[shots] = (group, [e["message"] for e in result["errors"] if "olvidado" in e["message"]])
+        finally:
+            level_plan.MAX_SNOOZE_SHOTS = saved
+        self.assertEqual(found[1][0]["entry"], [27, 19], "Se entra por el primer recordatorio")
+        self.assertIsNone(found[1][0]["with_snooze"], "Con un Posponer no da tiempo")
+        self.assertTrue(found[1][1])
+        self.assertEqual(found[2][1], [], "Con dos, si")
+        self.assertEqual(found[2][0]["snooze_shots"], 2)
+        self.assertGreaterEqual(found[2][0]["with_snooze"], 1.0)
+        bank = obj(self.level, "power_bank_1_2")
+        self.assertEqual((bank["x"], bank["y"]), (2, 27))
+
+    def test_scene_is_up_to_date_with_the_facade_tabs(self):
+        for lid in ("1-1", "1-2"):
+            path = os.path.join(ROOT, "data", "levels", "%s.json" % lid)
+            code = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "build_level.py"), "--check", path],
+                                  capture_output=True, text=True).returncode
+            self.assertEqual(code, 0, "%s: escena al dia" % lid)
+        tabs = build_level.tower_tabs(self.level, 64)
+        self.assertEqual([label for label, _ in tabs], ["Actualizaciones", "Recordatorios", "Correo", "Mensajes"])
+        with open(os.path.join(ROOT, "data", "world1_background.json"), encoding="utf-8") as handle:
+            textures = json.load(handle)["tabs"]["textures"]
+        self.assertTrue(all(label in textures for label, _ in tabs))
+        with open(os.path.join(ROOT, "data", "levels", "tower_test.json"), encoding="utf-8") as handle:
+            self.assertEqual(build_level.tower_tabs(json.load(handle), 64), [], "La torre de prueba no lleva pestanas")
+
+
+if __name__ == "__main__":
+    unittest.main()

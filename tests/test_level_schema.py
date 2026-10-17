@@ -139,6 +139,36 @@ class LevelSchemaTest(unittest.TestCase):
         width = len(lvl["grid"][0])
         self.assertLessEqual(abs(cx - width / 2), width * 0.05)
 
+    def test_level_1_2_economy(self):
+        # Economia del 1-2 (docs/propuesta-1-2.md §5-§6, paso 13, 2026-10-16): como el 1-1, 9 puntos
+        # (6 en la ruta + 3 en secretos: A 2 con Debug, B 1), 2 cargadores, un power bank (vacio) en
+        # el secreto C y sin vida extra. Pulso amplio (25) sigue pagandose al terminar el 1-3.
+        with open(os.path.join(ROOT, "data", "levels", "1-2.json"), encoding="utf-8") as handle:
+            lvl = json.load(handle)
+        self.assertEqual(vls.validate_level(lvl), [])
+        points = "".join(lvl["grid"]).count("o")
+        secrets = {s["id"]: s for s in lvl["secrets"]}
+        secret_points = sum(int(s.get("points", 0)) for s in lvl["secrets"])
+        self.assertEqual((points, points - secret_points, secret_points), (9, 6, 3))
+        self.assertEqual((secrets["secreto_spam"]["points"], secrets["secreto_spam"].get("needs_debug")), (2, True))
+        self.assertEqual(secrets["secreto_borradores"]["points"], 1)
+        self.assertEqual(secrets["secreto_olvidado"]["object"], "power_bank_pickup")
+        banks = [o for o in lvl["objects"] if o["type"] == "power_bank_pickup"]
+        self.assertEqual(len(banks), 1, "un solo power bank en el 1-2")
+        self.assertEqual((banks[0]["x"], banks[0]["y"]),
+                         (secrets["secreto_olvidado"]["x"], secrets["secreto_olvidado"]["y"]))
+        chargers = [o for o in lvl["objects"] if o["type"] == "charger"]
+        self.assertEqual(sorted(c["params"]["id"] for c in chargers), ["cargador_1", "cargador_2"])
+        self.assertTrue(all(c["params"]["reusable"] for c in chargers))
+        self.assertFalse(any(o["type"] == "extra_life_pickup" for o in lvl["objects"]), "sin vida extra en el 1-2")
+        with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
+            costs = {u["id"]: u["cost"]["attention_points"] for u in json.load(handle)["upgrades"]}
+        first = "".join(self.level["grid"]).count("o")
+        self.assertLess(first + points, costs["wide_pulse"], "1-1 + 1-2 aun no pagan Pulso amplio")
+        self.assertGreaterEqual(first + 2 * points, costs["wide_pulse"], "con el 1-3 (unos 9 mas) si")
+        # Un cargador en cada gasto obligatorio: el acertijo y el Debug del piso 2, los Posponer del 3.
+        self.assertEqual(sorted(c["y"] for c in chargers), [20, 37])
+
     def test_level_1_1_jumps_within_margin(self):
         """Saltos del 1-1 dentro del 85 % del alcance (mismas formulas que PlayerPhysics).
         No es la validacion de alcanzabilidad (paso 15): solo las medidas pensadas."""
