@@ -12,6 +12,9 @@
 ##   06_piso4_actualizaciones.png piso 4: pasillo del banner y sala de espera
 ##   07_azotea.png              azotea con la terminal de salida
 ##   08_fachada_hueco.png       subida entre pisos (la fachada se mueve con el nivel)
+## Junto a cada captura del nivel escribe <nombre>.json con el centro de la camara en px del mundo
+## (lo usa tools/measure_tower_contrast.py para medir el contraste de las plataformas con el
+## fondo; 2026-10-17).
 ## Necesita ventana (no funciona con --headless). Usa su propio guardado.
 ## Uso: Godot --path . -s tools/render_level_1_2.gd [-- carpeta_salida]
 extends SceneTree
@@ -103,5 +106,12 @@ func _save(isak: Node2D, out_dir: String, file_name: String) -> void:
 	var path: String = out_dir.path_join(file_name)
 	var err: Error = image.save_png(path)
 	var camera: Camera2D = isak.call(&"get_camera")
+	var center: Vector2 = camera.get_screen_center_position()
+	var meta := FileAccess.open(path.get_basename() + ".json", FileAccess.WRITE)
+	if meta != null:
+		meta.store_string(JSON.stringify({"camera_center": [center.x, center.y],
+				"viewport": [image.get_width(), image.get_height()], "isak": [isak.global_position.x,
+				isak.global_position.y]}))
+		meta.close()
 	print("render_level_1_2: %s (%s) Isak=%s camara=%s" % [path, error_string(err), isak.global_position,
 		camera.get_screen_center_position()])

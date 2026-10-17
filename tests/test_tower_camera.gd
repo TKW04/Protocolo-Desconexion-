@@ -327,6 +327,35 @@ func test_horizontal_background_stays_fixed_in_y() -> void:
 		assert_eq(layer.scroll_scale.y, 0.0, "1-1: %s fija en Y" % layer.name)
 		assert_eq(layer.repeat_size.y, 0.0)
 	assert_null(background.get_layer("Fachada"), "La fachada solo va en la torre")
+	for layer: Parallax2D in background.get_layers():
+		assert_eq(layer.modulate, Color.WHITE, "1-1: %s sin velo (el fondo del 1-1 no cambia)" % layer.name)
+	assert_eq(background.get_dim_amount(), 0.0)
+
+
+## Velo de la torre (2026-10-17, contraste del 1-2): en modo torre cada capa se tine
+## hacia tower_dim.color con tower_dim.amount o el dim de su bloque tower; las
+## pestanas quedan sin velo.
+func test_vertical_background_uses_the_tower_dim_from_data() -> void:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world1_background.json"))
+	var dim: Dictionary = data["tower_dim"]
+	var c: Array = dim["color"]
+	var color: Color = Color8(int(c[0]), int(c[1]), int(c[2]))
+	var background := (load("res://scenes/levels/world1_background.tscn") as PackedScene).instantiate() as World1Background
+	background.vertical = true
+	background.tab_labels = PackedStringArray(["Mensajes"])
+	background.tab_bands = PackedVector2Array([Vector2(0.0, 768.0)])
+	add_child_autofree(background)
+	assert_almost_eq(background.get_dim_amount(), float(dim["amount"]), 0.0001)
+	assert_gt(float(dim["amount"]), 0.0, "Hay velo")
+	for layer_data: Dictionary in data["layers"]:
+		var amount: float = float(dim["amount"])
+		if layer_data.get("tower") is Dictionary and (layer_data["tower"] as Dictionary).has("dim"):
+			amount = float(layer_data["tower"]["dim"])
+		var layer: Parallax2D = background.get_layer(String(layer_data["name"]))
+		assert_not_null(layer, String(layer_data["name"]))
+		assert_true(layer.modulate.is_equal_approx(Color.WHITE.lerp(color, amount)),
+				"%s con su velo (%s)" % [layer.name, layer.modulate])
+	assert_eq(background.get_tabs_layer().modulate, Color.WHITE, "Las pestanas sin velo (legibles)")
 
 
 # --- Regresion: la camara del 1-1 no cambia ---

@@ -12,6 +12,9 @@
 ## tools/gen_world1_facade.py) se mueve con el nivel y se repite sin costura;
 ## encima, una pestana con su rotulo en lo alto de cada piso (tab_labels /
 ## tab_bands, que pone tools/build_level.py desde los tramos «Piso N: <rotulo>»).
+## Desde el 2026-10-17 (contraste del 1-2) en modo torre cada capa lleva un velo
+## oscuro (modulate hacia tower_dim.color con tower_dim.amount o el dim de su
+## bloque tower) para que las plataformas destaquen; las pestanas no.
 class_name World1Background
 extends Node2D
 
@@ -29,6 +32,8 @@ const DEFAULT_PATH: String = "res://data/world1_background.json"
 
 var _layers: Array[Parallax2D] = []
 var _tabs: Parallax2D = null
+var _dim_color: Color = Color.BLACK
+var _dim_amount: float = 0.0
 
 
 func _ready() -> void:
@@ -38,6 +43,11 @@ func _ready() -> void:
 		return
 	z_index = int(data.get("z_index", -100))
 	z_as_relative = false
+	var dim: Dictionary = data.get("tower_dim", {}) as Dictionary
+	if vertical and not dim.is_empty():
+		var c: Array = dim.get("color", [0, 0, 0])
+		_dim_color = Color8(int(c[0]), int(c[1]), int(c[2]))
+		_dim_amount = clampf(float(dim.get("amount", 0.0)), 0.0, 1.0)
 	for layer_data: Dictionary in data.get("layers", []):
 		if bool(layer_data.get("tower_only", false)) and not vertical:
 			continue
@@ -49,6 +59,11 @@ func _ready() -> void:
 ## Capas en orden (de atras hacia delante).
 func get_layers() -> Array[Parallax2D]:
 	return _layers
+
+
+## Velo de la torre: color y atenuacion por defecto (0 fuera del modo torre).
+func get_dim_amount() -> float:
+	return _dim_amount
 
 
 ## Capa de las pestanas (null si no hay).
@@ -77,6 +92,9 @@ func _make_layer(layer_data: Dictionary) -> Parallax2D:
 	layer.name = String(layer_data["name"])
 	if vertical and layer_data.get("tower") is Dictionary:
 		layer_data = layer_data.merged(layer_data["tower"], true)
+	if vertical:
+		var amount: float = clampf(float(layer_data.get("dim", _dim_amount)), 0.0, 1.0)
+		layer.modulate = Color.WHITE.lerp(_dim_color, amount)
 	var s: Array = layer_data.get("scroll_scale", [1, 1])
 	layer.scroll_scale = Vector2(float(s[0]), float(s[1]))
 	var r: Array = layer_data.get("repeat_size", [0, 0])

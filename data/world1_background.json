@@ -1,11 +1,16 @@
 {
 	"_notes": "Fondo de pantalla de bloqueo del Mundo 1 con parallax (PROPUESTA de V10). Capas de atras hacia delante; scripts/levels/world1_background.gd crea un Parallax2D por capa. scroll_scale: 0 = fija en pantalla (infinitamente lejos), 1 = se mueve con el nivel. En y las capas van casi fijas para que la camara no deje ver el borde de la imagen (1280x720, igual que la resolucion base). repeat_size: ancho de la imagen (se repite sin costura). Todo el fondo va en el lienzo del mundo con z_index negativo: por debajo de los tiles y de la capa del Debug (CanvasLayer 5), que lo tine como al resto del mundo. Imagenes de tools/gen_world1_objects.py. Modo vertical (2026-10-16, paso 2 de docs/propuesta-1-2.md §10; niveles con camera.vertical tower, Background.vertical = true desde tools/build_level.py): cada capa usa ademas su bloque \"tower\". Desde el 2026-10-16 (paso 13 del 1-2, fachada de la torre): las tres capas de siempre quedan FIJAS en Y tambien en la torre (antes se movian y se repetian cada 720 px y se veia la costura de las imagenes) y encima va la capa \"Fachada\" (tower_only: solo en modo torre; tools/gen_world1_facade.py): 1792x768 que se repite en vertical sin costura (dos periodos identicos) y se mueve con el nivel (scroll 1), asi que es la que hace notar que se sube; por sus huecos se ve el cielo fijo. Encima, las pestanas de cada piso (bloque tabs).",
 	"z_index": -100,
+	"tower_dim": {
+		"_notes": "Velo de la torre (2026-10-17, ajuste del 1-2 tras probarlo: el fondo hacia que se perdieran las plataformas). Solo en modo torre (vertical): cada capa se tine hacia color (noche_profunda) con modulate = blanco.lerp(color, amount); una capa puede cambiar su amount con dim en su bloque tower (0 = sin velo, 1 = el color). Las pestanas no llevan velo (siguen legibles). En el modo horizontal (1-1) no se aplica.",
+		"color": [11, 14, 26],
+		"amount": 0.45
+	},
 	"layers": [
 		{"name": "Cielo", "texture": "res://assets/sprites/backgrounds/mundo1_bg_cielo.png", "scroll_scale": [0.1, 0.0], "repeat_size": [1280, 0], "repeat_times": 3, "tower": {"scroll_scale": [0.1, 0.0], "repeat_size": [1280, 0]}},
 		{"name": "FondoMedio", "texture": "res://assets/sprites/backgrounds/mundo1_bg_fondo_medio.png", "scroll_scale": [0.25, 0.0], "repeat_size": [1280, 0], "repeat_times": 3, "tower": {"scroll_scale": [0.25, 0.0], "repeat_size": [1280, 0]}},
-		{"name": "Resplandor", "texture": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "scroll_scale": [0.45, 0.0], "repeat_size": [1280, 0], "repeat_times": 3, "tower": {"scroll_scale": [0.45, 0.0], "repeat_size": [1280, 0]}},
-		{"name": "Fachada", "tower_only": true, "texture": "res://assets/sprites/backgrounds/mundo1_bg_fachada.png", "scroll_scale": [1.0, 1.0], "repeat_size": [0, 768], "repeat_times": 2}
+		{"name": "Resplandor", "texture": "res://assets/sprites/backgrounds/mundo1_bg_resplandor.png", "scroll_scale": [0.45, 0.0], "repeat_size": [1280, 0], "repeat_times": 3, "tower": {"scroll_scale": [0.45, 0.0], "repeat_size": [1280, 0], "dim": 0.7}},
+		{"name": "Fachada", "tower_only": true, "texture": "res://assets/sprites/backgrounds/mundo1_bg_fachada.png", "scroll_scale": [1.0, 1.0], "repeat_size": [0, 768], "repeat_times": 2, "tower": {"dim": 0.2}}
 	],
 	"tabs": {
 		"_notes": "Pestanas de la fachada (modo torre): una por tramo llamado «Piso N: <rotulo>» (tools/build_level.py pasa tab_labels, tab_bands y tab_center_x). textures: rotulo -> imagen (tools/gen_world1_facade.py); un rotulo sin imagen no pone pestana. top_px: distancia del borde de arriba del piso al borde de arriba de la pestana.",

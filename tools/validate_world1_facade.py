@@ -9,7 +9,10 @@ que dibuja el script hoy y que tiene su .import. La fachada ademas se repite en
 VERTICAL sin costura (sus dos mitades son identicas y la union de abajo con arriba
 es una de las uniones que ya hay dentro de la imagen) y la capa «Fachada» de
 data/world1_background.json la usa en modo torre con repeat_size igual a su alto;
-cada pestana de data/world1_background.json (tabs.textures) existe en el script.
+cada pestana de data/world1_background.json (tabs.textures) existe en el script. Desde el
+2026-10-17 (contraste del 1-2): la fachada no usa los tonos claros de las plataformas y objetos
+(resplandor, borde_luz, tile_luz, banner_*) y el velo de la torre (tower_dim) usa un color de la
+paleta y atenuaciones de 0 a 1.
 
 Uso (desde la raiz del repo): python3 -I tools/validate_world1_facade.py
 Sale con 1 si hay errores.
@@ -38,6 +41,7 @@ def main():
     pal = (load_gpl(os.path.join(REPO, "assets/palettes/mundo1.gpl"), set())
            | load_gpl(os.path.join(REPO, "assets/palettes/effects_pulse.gpl"), set()))
     forbidden = {gen.PAL[name][:3] for name in gen.FORBIDDEN}
+    facade_forbidden = {gen.PAL[name][:3] for name in gen.FACADE_FORBIDDEN}
     errs = []
     expected = gen.outputs()
     for rel, img in expected.items():
@@ -54,6 +58,8 @@ def main():
             errs.append(f"{rel}: no coincide con lo que dibuja tools/gen_world1_facade.py (regeneralo)")
         if any(px[3] == 255 and px[:3] in forbidden for px in disk.getdata()):
             errs.append(f"{rel}: usa un rojo, el ambar o un cian (prohibidos en el fondo)")
+        if rel == gen.FACADE and any(px[3] == 255 and px[:3] in facade_forbidden for px in disk.getdata()):
+            errs.append(f"{rel}: usa un tono claro de las plataformas u objetos (resplandor, borde_luz...)")
     fac = expected[gen.FACADE]
     if fac.size != (gen.FACADE_W * gen.UNIT, gen.FACADE_H * gen.UNIT):
         errs.append(f"{gen.FACADE}: tamano {fac.size}")
@@ -72,6 +78,17 @@ def main():
             errs.append("data/world1_background.json: la capa Fachada no usa la fachada o no es tower_only")
         if [float(v) for v in layer.get("repeat_size", [])] != [0.0, float(fac.height)]:
             errs.append("data/world1_background.json: repeat_size de Fachada distinto de [0, %d]" % fac.height)
+    # Velo de la torre (2026-10-17): color de la paleta y atenuacion entre 0 y 1 (global y por capa).
+    dim = data.get("tower_dim")
+    if not isinstance(dim, dict):
+        errs.append("data/world1_background.json: falta tower_dim (velo de las capas en la torre)")
+    else:
+        if tuple(dim.get("color", [])) not in pal:
+            errs.append("data/world1_background.json: tower_dim.color no es de la paleta")
+        amounts = [dim.get("amount")] + [lay.get("tower", {}).get("dim") for lay in data.get("layers", [])
+                                         if "dim" in lay.get("tower", {})]
+        if not all(isinstance(a, (int, float)) and 0.0 <= a <= 1.0 for a in amounts):
+            errs.append("data/world1_background.json: las atenuaciones de tower_dim van de 0 a 1")
     for label, tex in data.get("tabs", {}).get("textures", {}).items():
         rel = tex.replace("res://assets/sprites/", "")
         if rel not in expected:
