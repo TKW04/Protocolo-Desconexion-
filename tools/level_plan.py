@@ -319,6 +319,7 @@ class Planner:
         steps = self.add_debug_segments(steps)
         steps = self.check_badges(steps)
         steps = self.check_banners(steps)
+        steps = self.check_energy(steps)
         self.info["bars"] = []
         for st in steps:
             if st.get("target", {}).get("type") == "update_bar":
@@ -1124,6 +1125,130 @@ class Planner:
             else:
                 out.append(self.move(node, act["e"], state))
         return {"phase": start_phase, "time": best[goal], "steps": out}
+
+    # --- Energia ---
+
+    def check_energy(self, steps):
+        return self.check_energy_with(steps, 0)
+
+    def check_energy_with(self, steps, detours):
+        """Energia a lo largo del camino; si falta en un paso obligatorio, desvio a un cargador
+        (hasta 8) y se repasa desde el principio."""
+        r = self.rules
+        energy = float(self.val.get("start_energy", r.energy_max))
+        cap = r.energy_max
+        self.timeline(steps)
+        ready_at = {}
+        uses = sources = 0.0
+        min_energy = energy
+        i = 0
+        while i < len(steps):
+            s = steps[i]
+            a = s["action"]
+            need = 0.0
+            if a == "laser":
+                need = r.laser_cost
+            elif a == "debug_on":
+                k = i + 1
+                active = 0.0
+                while k < len(steps) and steps[k]["action"] != "debug_off":
+                    active += self.duration(steps[k])
+                    k += 1
+                need = active * r.debug_drain
+                s["active_s"] = round(active, 2)
+            if need > 0.0 and energy + EPS < need:
+                fixed = self.charger_detour(steps, i, need, energy, ready_at) if detours < 8 else None
+                if fixed is not None:
+                    return self.check_energy_with(fixed, detours + 1)
+                self.error("sin energia en el paso %d (%s): quedan %.0f y hacen falta %.0f%s" % (
+                    i + 1, self.describe(s), energy, need,
+                    "" if need <= cap else " (mas que la barra entera, %.0f)" % cap), s.get("at"))
+                energy = max(energy - need, 0.0)
+            else:
+                energy -= need
+            uses += need
+            s["energy_before"] = round(energy + need, 1)
+            if a == "charge":
+                ch = s["charger"]
+                if s["tw"] + EPS >= ready_at.get(ch["id"], 0.0) and energy < cap - EPS:
+                    gain = min(cap - energy, ch["amount"])
+                    energy += gain
+                    sources += gain
+                    ready_at[ch["id"]] = s["tw"] + ch["cooldown"] if ch["reusable"] else INF
+            elif a == "pickup" and s.get("refill"):
+                sources += cap - energy
+                energy = cap
+            if s.get("kills"):
+                drop = float(self.v.enemy_data("alert_bubble").get("drops", {}).get("debug_energy", 0.0))
+                gain = min(cap - energy, drop)
+                energy += gain
+                sources += gain
+            s["energy_after"] = round(energy, 1)
+            min_energy = min(min_energy, energy)
+            i += 1
+        self.info["energy"] = {"start": float(self.val.get("start_energy", r.energy_max)), "max": cap,
+                               "used": round(uses, 1), "gained": round(sources, 1), "min": round(min_energy, 1),
+                               "end": round(energy, 1), "charger_detours": detours}
+        return steps
+
+    def charger_detour(self, steps, i, need, energy, ready_at):
+        """Inserta, antes del paso i (o antes del tramo con tiempo que lo contiene), ir a un cargador
+        alcanzable, cargar (esperando su enfriamiento si hace falta) y volver."""
+        if not self.m.chargers:
+            return None
+        k = i
+        # No se interrumpe un tramo con tiempo (acertijo, recordatorios, banners) ni el Debug.
+        while k > 0 and (steps[k - 1].get("timed") or steps[k - 1]["action"] in ("wait_phase", "debug_on")
+                         or steps[k].get("timed")):
+            k -= 1
+        while k > 0 and steps[k - 1]["action"] not in ("move",):
+            if steps[k - 1]["action"] in ("goal",):
+                break
+            k -= 1
+        node = steps[k - 1]["to"] if k > 0 and steps[k - 1]["action"] == "move" else self.node_of(steps[k])
+        if node is None:
+            return None
+        node = tuple(node)
+        state = steps[k].get("state", frozenset())
+        times, parent = self.m.time_search({node: 0.0}, state)
+        best = None
+        for ch in self.m.chargers:
+            for n in times:
+                x, f = self.feet(n)
+                if rects_overlap(self.hurt_rect(x, f), ch["rect"]):
+                    if best is None or times[n] < best[0]:
+                        best = (times[n], n, ch)
+        if best is None:
+            return None
+        _, target, ch = best
+        go = path_to(parent, target)
+        back_times, back_parent = self.m.time_search({target: 0.0}, state)
+        if node not in back_times:
+            return None
+        back = path_to(back_parent, node)
+        insert = [self.move(u, e, state) for u, e in go]
+        t_arrive = steps[k].get("tw", 0.0) + sum(self.duration(s) for s in insert)
+        wait = max(0.0, ready_at.get(ch["id"], 0.0) - t_arrive)
+        if wait == INF:
+            return None
+        if wait > 0.0:
+            insert.append({"action": "wait", "at": target, "seconds": wait, "state": state,
+                           "reason": "enfriamiento del cargador %s" % ch["id"]})
+        insert.append({"action": "charge", "at": target, "charger": ch, "state": state, "detour": True,
+                       "target": {"type": "charger", "id": ch["id"]}})
+        insert.extend(self.move(u, e, state) for u, e in back)
+        if energy + ch["amount"] + EPS < need and need > self.rules.energy_max:
+            return None
+        return steps[:k] + insert + steps[k:]
+
+    def describe(self, s):
+        a = s["action"]
+        tgt = s.get("target", {})
+        if a == "laser":
+            return "laser a %s %s" % (tgt.get("type", ""), tgt.get("id", ""))
+        if a == "debug_on":
+            return "Debug %.1f s" % s.get("active_s", 0.0)
+        return a
 
 
 def plan_level(validator):
