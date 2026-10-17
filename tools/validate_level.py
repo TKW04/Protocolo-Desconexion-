@@ -228,7 +228,9 @@ class Rules:
     def with_upgrades(self, extra):
         """Las mismas reglas con mas mejoras compradas."""
         ups = self.upgrades + tuple(u for u in extra if u not in self.upgrades)
-        return Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, ups)
+        rules = Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, ups)
+        rules.time_margin = self.time_margin
+        return rules
 
     def speeds(self):
         out = [("walk", self.walk_speed)]
@@ -436,9 +438,17 @@ class LevelModel:
                                       "amount": float(p.get("amount", 50.0)), "reusable": bool(p.get("reusable", True)),
                                       "cooldown": float(p.get("cooldown_s", 20.0))})
             elif obj["type"] == "reminder_platform":
-                thickness = float(self.catalog.get("reminder_platform", {}).get("card_height_px", T))
+                cfg = self.catalog.get("reminder_platform", {})
+                thickness = float(cfg.get("card_height_px", T))
+                group = str(p.get("group", ""))
+                info = self.reminder_groups.setdefault(group, {
+                    "group": group, "cells": set(), "ids": [], "timer": float(p.get("timer_s", 2.5)),
+                    "warn": float(p.get("warn_s", 0.5)), "respawn": float(p.get("respawn_s", 3.0))})
+                info["ids"].append(str(p.get("id", "reminder_%d_%d" % (obj["x"], obj["y"]))))
                 for dx in range(int(p.get("width_tiles", 1))):
                     self.reminders[(obj["x"] + dx, obj["y"])] = thickness
+                    info["cells"].add((obj["x"] + dx, obj["y"]))
+                    self.reminder_group_of[(obj["x"] + dx, obj["y"])] = group
             elif obj["type"] == "glitch_wall":
                 for dy in range(int(p.get("height_tiles", 1))):
                     for dx in range(int(p.get("width_tiles", 1))):
@@ -450,8 +460,13 @@ class LevelModel:
                 step = 1 if p.get("direction", "right") == "right" else -1
                 cells = [(obj["x"] + i * step, obj["y"]) for i in range(length)]
                 bid = str(p.get("id", ""))
-                self.gates.append(Gate("bridge:" + bid, "bridge", bid, cells=cells,
-                                       openers=receivers.get(bid, []), col=obj["x"], row=obj["y"], tile=T))
+                gate = Gate("bridge:" + bid, "bridge", bid, cells=cells,
+                            openers=receivers.get(bid, []), col=obj["x"], row=obj["y"], tile=T)
+                if bid in relays:
+                    rid = relays[bid]
+                    gate.relay = {"id": rid, "lector": next((lec for lec in self.lectors.values()
+                                                             if lec["target"] == rid), None)}
+                self.gates.append(gate)
             elif obj["type"] == "popup_blocker":
                 w, h = int(p.get("width_tiles", 1)), int(p.get("height_tiles", 1))
                 cells = [(obj["x"] + dx, obj["y"] + dy) for dy in range(h) for dx in range(w)]
@@ -464,6 +479,18 @@ class LevelModel:
                 pid = str(p.get("id", "popup_%d_%d" % (obj["x"], obj["y"])))
                 self.gates.append(Gate("popup:" + pid, "popup", pid, cells=cells, openers=openers,
                                        col=obj["x"], row=obj["y"], tile=T))
+            elif obj["type"] == "update_bar":
+                # Barra del 99 % (paso 10): puerta solida de 1 x 3 que se abre sola tras la espera
+                # (rise_s + wait_s + full_s de tiempo del mundo) cuando Isak entra en su zona.
+                cfg = self.catalog.get("update_bar", {})
+                bid = str(p.get("id", "bar_%d_%d" % (obj["x"], obj["y"])))
+                gate = Gate("bar:" + bid, "bar", bid, cells=[(obj["x"], obj["y"] + dy) for dy in range(3)],
+                            col=obj["x"], row=obj["y"], tile=T)
+                zone = p.get("zone", [obj["x"], obj["y"], 1, 3])
+                gate.zone = tuple(int(v) for v in zone)
+                gate.wait_s = float(p.get("rise_s", 1.0)) + float(p.get("wait_s", 20.0)) + float(cfg.get("full_s", 0.6))
+                gate.waves = list(p.get("waves", []))
+                self.gates.append(gate)
             elif obj["type"] == "ability_pickup":
                 # Habilidad para siempre al tocar su celda: no cambia el mundo, solo el estado.
                 aid = str(p.get("id", "ability_%d_%d" % (obj["x"], obj["y"])))
@@ -629,6 +656,11 @@ class LevelModel:
         Isak toca su celda."""
         if gate.kind == "pickup":
             return bool(body_cells(node) & set(gate.cells))
+        if gate.kind == "bar":
+            c0, r0, w, h = gate.zone
+            return c0 <= node[0] < c0 + w and r0 <= node[1] < r0 + h
+        if gate.kind == "ad":
+            return use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug)
         if gate.kind == "bubble" and use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug):
             return True
         if not self.has_pulse(state) or not gate.openers:
@@ -857,7 +889,7 @@ class World:
                             self.thin[(c, r)] = model.bridge_thickness
                         else:
                             self.solid[r][c] = True
-            elif g.kind == "popup" and not opened:
+            elif g.kind in ("popup", "bar") and not opened:
                 for c, r in g.cells:
                     if 0 <= r < rows and 0 <= c < cols:
                         self.solid[r][c] = True
@@ -1212,6 +1244,8 @@ class Validator:
         self.model = LevelModel(level, rules)
         self.grid = level["grid"]
         self.result = {}
+        self.export_requested = False
+        self.planner = None
 
     def find(self, char):
         return [(c, r) for r, row in enumerate(self.grid) for c, ch in enumerate(row) if ch == char]
@@ -1254,8 +1288,21 @@ class Validator:
                                "end": end})
                 return {"ok": True, "stages": stages, "reached": reached_all, "state": state}
             options = []
+            relay_plans = {}
             for g in self.model.gates:
                 if g.gid in state or g.gid in forbid or g.bypassable:
+                    continue
+                if getattr(g, "relay", None) is not None:
+                    # Lector laser -> receptor enlazado (paso 10): el disparo sale de una celda ya
+                    # alcanzable y el pulso tiene que llegar dentro de la ventana.
+                    if not (use_laser and self.model.has_laser(state) and self.model.has_pulse(state)) or (
+                            getattr(g, "cover", None) and g.cover not in state):
+                        continue
+                    plan = self.model.relay_plan(g, state, debug, sources=frozenset(cost))
+                    relay_plans[g.gid] = plan
+                    if plan["best"] is not None:
+                        n = plan["best"]["pulse"]
+                        options.append((cost.get(n, cost[plan["best"]["shot"]]), n[0], g, n))
                     continue
                 for n in sorted(cost, key=lambda n: (cost[n], n[0], n[1])):
                     if self._gate_near(g, n) and self.model.can_open(g, n, state, debug, use_laser):
@@ -1263,12 +1310,17 @@ class Validator:
                         break
             if not options:
                 stages.append({"src": src, "state": state, "cost": cost, "parent": parent, "gate": None,
-                               "end": None})
+                               "end": None, "relay_plans": relay_plans})
                 return {"ok": False, "stages": stages, "reached": reached_all, "state": state}
             options.sort(key=lambda o: (o[0], o[1]))
             _, _, gate, opener = options[0]
-            stages.append({"src": src, "state": state, "cost": cost, "parent": parent, "gate": gate,
-                           "end": opener})
+            stage = {"src": src, "state": state, "cost": cost, "parent": parent, "gate": gate, "end": opener}
+            if gate.gid in relay_plans:
+                # El tramo hasta el disparo va por el arbol de la busqueda; del disparo al pulso, por el
+                # camino mas rapido (relay_plan).
+                stage["relay"] = relay_plans[gate.gid]["best"]
+                stage["end"] = relay_plans[gate.gid]["best"]["shot"]
+            stages.append(stage)
             state = state | {gate.gid}
             src = opener
         return {"ok": False, "stages": stages, "reached": reached_all, "state": state}
@@ -1319,7 +1371,57 @@ class Validator:
             self._check_pickups(start, goal_cells)
             # Regla 7: soft-locks (y desde donde alcanza el laser a cada Burbuja).
             self._check_softlocks(main, goal_cells)
+            # Paso 10: requisitos del diseno (laser / Debug) y plan del camino.
+            self._check_requirements(start, goal_cells)
+            if self.is_advanced() or self.export_requested:
+                self._check_plan()
         return self.finish()
+
+    def enemy_data(self, kind):
+        """Datos de data/enemies/<kind>.json (cacheados)."""
+        cache = self.__dict__.setdefault("_enemy_cache", {})
+        if kind not in cache:
+            cache[kind] = load_json(os.path.join(self.rules.root, "data", "enemies", "%s.json" % kind))
+        return cache[kind]
+
+    def is_advanced(self):
+        """Nivel con objetos del paso 10 (laser a objetivos, recordatorios, pop-up translucido, barra,
+        punto rojo, banner, chip del Debug, plataformas 'h' o bloque validation): se le hace el plan
+        del camino (tools/level_plan.py) y se informa de el. El 1-1 no lo es (su salida no cambia)."""
+        kinds = {"laser_receiver", "relay_receiver", "ad_cover", "reminder_platform", "snooze_button",
+                 "overlay_popup", "update_bar"}
+        if any(o["type"] in kinds for o in self.level.get("objects", [])):
+            return True
+        if any(e["type"] in ("notification_badge", "spam_banner") for e in self.level.get("enemies", [])):
+            return True
+        if any(g.kind == "pickup" and g.ability == "debug" for g in self.model.gates):
+            return True
+        if "validation" in self.level or self.model.is_vertical():
+            return True
+        return any("h" in row for row in self.grid) and self.model.debug_base
+
+    def _check_plan(self):
+        """Paso 10: plan del camino con tiempos, energia, enemigos y exportacion (tools/level_plan.py)."""
+        import level_plan
+        self.planner, info = level_plan.plan_level(self)
+        if info is not None and (self.is_advanced() or self.export_requested):
+            self.result["plan"] = info
+
+    def _check_requirements(self, start, goal_cells):
+        """validation.laser_required / debug_required (paso 10): el diseno exige el laser o el Debug
+        para llegar a la meta."""
+        val = self.model.validation
+        forbid = self.secret_gates()
+        info = {}
+        if val.get("debug_required"):
+            no_debug = self.progression(start, frozenset(), self.rules.limit, forbid=forbid, targets=goal_cells,
+                                        debug=False)
+            info["goal_without_debug"] = no_debug["ok"]
+            if no_debug["ok"]:
+                self.report.error("el nivel exige el Debug (validation.debug_required) pero la meta se alcanza sin "
+                                  "plataformas ocultas ni el Debug")
+        if info:
+            self.result["requirements"] = info
 
     def _check_exit_terminals(self, main):
         """La terminal de salida se activa con el pulso desde el camino principal (sin mejoras ni laser)."""
@@ -1509,6 +1611,11 @@ class Validator:
         near = (lambda g: abs(g.row - far[1]) <= 4) if self.model.is_vertical() else (
             lambda g: g.col_span[0] <= far[0] + self.model.K + 4)
         for g in pending:
+            special = self._explain_gate_failure(g, state, last["cost"], near(g))
+            if special is not None:
+                if special:
+                    rep.error(special, g.row, g.col, g.label())
+                continue
             if not g.openers:
                 what = {"bridge": "no tiene receptor", "popup": "no tiene boton de cerrar",
                         "bubble": "no se puede alcanzar", "ad": "no tiene zona", "bar": "no tiene zona"}[g.kind]
@@ -1531,6 +1638,49 @@ class Validator:
             nxt = far[0] + 1
             rep.error("no hay camino de P a G: Isak no pasa de la fila %d, columna %d (%s); lo siguiente es la "
                       "columna %d" % (far[1], far[0], where, nxt), far[1], far[0])
+
+    def _explain_gate_failure(self, g, state, reached, is_near):
+        """Explicacion de una puerta del paso 10 que no se abre (anuncio, barra, lector -> receptor
+        enlazado). None: la puerta es de las de siempre; "": nada que decir (lejos)."""
+        m = self.model
+        if g.kind == "bar":
+            if not is_near:
+                return ""
+            c0, r0, w, h = g.zone
+            return ("%s: Isak no entra en su zona (columnas %d-%d, filas %d-%d) y no se arma"
+                    % (g.label(), c0, c0 + w - 1, r0, r0 + h - 1))
+        if g.kind == "ad":
+            if not m.laser_possible:
+                return "%s necesita el laser y el nivel no lo tiene" % g.label()
+            if not m.has_laser(state):
+                return "%s necesita el laser y aun no se tiene" % g.label()
+            if not is_near:
+                return ""
+            return ("%s: el laser no lo alcanza desde ninguna celda alcanzable (horizontal, a la altura del "
+                    "celular)" % g.label())
+        relay = getattr(g, "relay", None)
+        if relay is None:
+            return None
+        lector = relay.get("lector")
+        if lector is None:
+            return "%s: su receptor enlazado %s no tiene lector laser" % (g.label(), relay["id"])
+        if not m.laser_possible:
+            return "%s: el lector %s necesita el laser y el nivel no lo tiene" % (g.label(), lector["id"])
+        if not m.has_laser(state):
+            return "%s: el lector %s necesita el laser y aun no se tiene" % (g.label(), lector["id"])
+        if getattr(g, "cover", None) and g.cover not in state:
+            return ""
+        plan = m.relay_plan(g, state, "auto", sources=frozenset(reached))
+        if not plan["shots"]:
+            return ("%s: el laser no alcanza el lector %s desde ninguna celda alcanzable (horizontal, a la altura "
+                    "del celular)" % (g.label(), lector["id"]))
+        closest = plan.get("closest")
+        if closest is None:
+            return ("%s: el pulso no alcanza el receptor enlazado %s desde ninguna celda a la que se llegue desde el "
+                    "disparo al lector %s" % (g.label(), relay["id"], lector["id"]))
+        t, b = closest
+        return ("%s: la ventana del lector %s (%.1f s) no da tiempo: del disparo al pulso en (fila %d, columna %d) "
+                "hacen falta %.1f s" % (g.label(), lector["id"], lector["window"], b[1], b[0], t))
 
     def _describe_path(self, run):
         actions = []
@@ -1808,7 +1958,8 @@ class Validator:
                 continue
             if run["ok"]:
                 what = {"bridge": "activar el receptor", "popup": "cerrar el pop-up",
-                        "bubble": "aturdir la Burbuja"}[g.kind]
+                        "bubble": "aturdir la Burbuja", "ad": "romper el anuncio",
+                        "bar": "esperar la barra"}[g.kind]
                 self.report.warning("%s no es obligatorio: se llega a la meta sin %s" % (g.label(), what),
                                     g.row, g.col, g.label())
 
@@ -1883,6 +2034,9 @@ class Validator:
         T = self.model.T
         if gate.kind == "pickup":
             return gate.col_span[0] - 1 <= node[0] <= gate.col_span[1] + 1
+        if gate.kind == "bar":
+            c0, r0, w, h = gate.zone
+            return c0 <= node[0] < c0 + w and r0 <= node[1] < r0 + h
         reach = self.rules.pulse_radius + T
         if gate.kind in ("bubble", "ad") and self.model.laser_possible:
             reach = max(reach, self.rules.laser_range + T)
@@ -1900,7 +2054,7 @@ class Validator:
         reverse = {}
         queue = [start]
         goals = []
-        gates = [g for g in m.gates if not g.bypassable and (g.openers or g.kind == "pickup")]
+        gates = [g for g in m.gates if not g.bypassable and (g.openers or g.kind in ("pickup", "bar"))]
         while queue:
             pair = queue.pop()
             node, state = pair
@@ -2063,11 +2217,63 @@ def format_text(path, result):
         frm = item["pulse_from"]
         out.append("  terminal de salida %s: %s" % (
             item["id"], "se activa con el pulso desde (fila %d, columna %d)" % tuple(frm) if frm else "NO se activa"))
+    out.extend(format_plan(result.get("plan")))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
     for w in result["warnings"]:
         out.append("  AVISO: " + w["message"])
     return "\n".join(out)
+
+
+def format_plan(plan):
+    """Lineas del plan del camino (paso 10): acertijos, recordatorios, pop-ups, Debug, enemigos y
+    energia."""
+    if not plan:
+        return []
+    out = ["  plan: %d pasos, unos %.1f s (%.1f s de tiempo del mundo); margen de tiempo minimo %.1f s"
+           % (plan.get("steps", 0), plan.get("duration_s", 0.0), plan.get("duration_world_s", 0.0),
+              plan.get("time_margin_s", DEFAULT_TIME_MARGIN_S))]
+    for r in plan.get("relays", []):
+        out.append("    acertijo %s -> %s: disparo desde (fila %d, columna %d), pulso a los %.1f s de %.1f s de "
+                   "ventana (sobran %.1f s)" % (r["lector"], r["bridge"], r["shot_from"][0], r["shot_from"][1],
+                                                r["time_s"], r["window_s"], r["spare_s"]))
+    for r in plan.get("reminders", []):
+        out.append("    recordatorios %s: cuenta %.1f s (aviso %.1f, vuelven a los %.1f); sin Posponer %s; con Posponer "
+                   "%s; plan: %d disparo(s) al Posponer, sobran %s%s" % (
+                       r["group"], r["timer_s"], r["warn_s"], r["respawn_s"],
+                       "no da tiempo" if r["without_snooze"] is None else "sobran %.1f s" % r["without_snooze"],
+                       "no da tiempo" if r["with_snooze"] is None else "sobran %.1f s" % r["with_snooze"],
+                       r["snooze_shots"], "?" if r.get("planned_slack_s") is None else "%.1f s" % r["planned_slack_s"],
+                       " (exige el Posponer)" if r["required"] else ""))
+        if r.get("snooze_shots") and r.get("min_left_s") is not None:
+            out.append("      la cuenta baja hasta %.1f s antes de que llegue el Posponer" % r["min_left_s"])
+    for o in plan.get("overlays", []):
+        if o["covers_path"]:
+            how = ("se cierra con el pulso desde (fila %d, columna %d)" % tuple(o["closed_from"]) if o["closed_from"]
+                   else "se ve con el Debug" if o["debug_view"] else "se cruza a ciegas")
+            out.append("    pop-up translucido %s: tapa el camino; %s" % (o["id"], how))
+    debug = plan.get("debug") or {}
+    for seg in debug.get("segments", []):
+        out.append("    Debug de (fila %d, columna %d) a (fila %d, columna %d): %.1f s activo, %.0f de energia"
+                   % (seg["from"][0], seg["from"][1], seg["to"][0], seg["to"][1], seg["active_s"], seg["energy"]))
+    for b in plan.get("banners", []):
+        if "start_phase_s" in b:
+            out.append("    banners %s: cruce de %.1f s desde (fila %d, columna %d) en la fase %.2f s de %.1f s "
+                       "(%d espera(s), %d salto(s) en el sitio)" % (
+                           ", ".join(b["banners"]), b["crossing_s"], b["entry"][0], b["entry"][1], b["start_phase_s"],
+                           b["period_s"], b["waits"], b["hops"]))
+    for b in plan.get("bars", []):
+        out.append("    barra del 99 %% %s: espera de %.1f s en (fila %d, columna %d); %d enemigo(s) en oleadas, que no se "
+                   "modelan (se esquivan o se aturden; no hace falta derrotarlos)" % (
+                       b["id"], b["wait_s"], b["at"][0], b["at"][1], b["wave_enemies"]))
+    for b in plan.get("badges", []):
+        out.append("    punto rojo %s: %d golpe(s), %d aturdido(s) con el pulso" % (b["id"], b["hits"], b["stuns"]))
+    energy = plan.get("energy")
+    if energy:
+        out.append("    energia: empieza en %.0f, gasta %.0f, recupera %.0f, minimo %.0f, termina en %.0f%s" % (
+            energy["start"], energy["used"], energy["gained"], energy["min"], energy["end"],
+            "; %d desvio(s) a un cargador" % energy["charger_detours"] if energy["charger_detours"] else ""))
+    return out
 
 
 def main(argv):

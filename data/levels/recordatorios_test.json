@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-1-2.md §10, 2026-10-16): sala de 30x12 tiles para probar los RECORDATORIOS (reminder_platform) y el boton POSPONER (snooze_button). Isak llega por la izquierda (P, de pie en la fila 7) con pulso y laser. Izquierda (columnas 4-9): 'Recordatorios sueltos' (§3.3, 3a): dos recordatorios de 2 tiles con su propio grupo y 2,5 s sobre un foso de 3 tiles (caer no hace dano; la repisa de una via de la columna 9 devuelve arriba). Derecha (columnas 13-22): patron 'Posponer' (§0.4): grupo posponer_1 de tres recordatorios con 2 s de cuenta compartida, demasiado poco para cruzarlos (unos 3 s caminando); el boton Posponer snooze_1 esta en la pared de la derecha (28, 7), a la altura del celular desde el suelo de la sala y a 11 tiles del segundo recordatorio: pisar, ir al segundo, disparar (+4 s, tope 8) y cruzar. Si caes, la repisa de una via de la columna 22 devuelve al final. Cargador junto a la entrada. La terminal de salida (26, 6) se activa con el pulso. El validador de alcanzabilidad modela por ahora los recordatorios como tablas fijas (sin su cuenta: paso 10) y el bot no la recorre. Escena: scenes/levels/recordatorios_test.tscn (python3 tools/build_level.py data/levels/recordatorios_test.json).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-1-2.md §10, 2026-10-16): sala de 30x12 tiles para probar los RECORDATORIOS (reminder_platform) y el boton POSPONER (snooze_button). Isak llega por la izquierda (P, de pie en la fila 7) con pulso y laser. Izquierda (columnas 4-9): 'Recordatorios sueltos' (§3.3, 3a): dos recordatorios de 2 tiles con su propio grupo y 2,5 s sobre un foso de 3 tiles (caer no hace dano; la repisa de una via de la columna 9 devuelve arriba). Derecha (columnas 13-22): patron 'Posponer' (§0.4): grupo posponer_1 de tres recordatorios con 2 s de cuenta compartida, demasiado poco para cruzarlos (unos 3 s caminando); el boton Posponer snooze_1 esta en la pared de la derecha (28, 7), a la altura del celular desde el suelo de la sala y a 11 tiles del segundo recordatorio: pisar, ir al segundo, disparar (+4 s, tope 8) y cruzar. Si caes, no se sigue por abajo: el foso del grupo (filas 9-10) se une por un tunel bajo la entrada (columnas 10-12) con el de los sueltos y su repisa de una via (columna 9) devuelve al inicio, asi que el Posponer es obligatorio (2026-10-16, paso 10: antes la repisa de una via de la columna 22 devolvia al final y el foso se saltaba el grupo; validation.snooze_required lo comprueba). Cargador junto a la entrada. La terminal de salida (26, 6) se activa con el pulso. El validador de alcanzabilidad comprueba la cuenta de cada grupo y el Posponer (paso 10: validation.snooze_required [posponer_1], sin Posponer no da tiempo y con el si, con 1,5 s de margen) y exporta el camino; el bot no la recorre. Escena: scenes/levels/recordatorios_test.tscn (python3 tools/build_level.py data/levels/recordatorios_test.json).",
 	"id": "recordatorios_test",
 	"name": "Recordatorios y Posponer (prueba)",
 	"world": 1,
@@ -9,6 +9,11 @@
 		"pulse": true,
 		"laser": true,
 		"debug": false
+	},
+	"validation": {
+		"snooze_required": [
+			"posponer_1"
+		]
 	},
 	"sections": [
 		{
@@ -36,8 +41,8 @@
 		"#............................#",
 		"#.P.......................G..#",
 		"####......###..........#######",
-		"####......###..........#######",
-		"####.....-###.........-#######",
+		"####...................#######",
+		"####.....-.............#######",
 		"##############################"
 	],
 	"checkpoints": [],

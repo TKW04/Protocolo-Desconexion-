@@ -40,6 +40,8 @@ Reglas:
     (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): el grid admite cualquier alto
     (minimo ceil(720 / tile_size) filas; la torre del 1-2 tiene 62);
   - camara (camera, opcional): {vertical: "simple" | "tower", limits: "grid"};
+  - parametros de validacion (validation, opcional, paso 10): {time_margin_s, snooze_required,
+    laser_required, debug_required, start_energy, sync_damage_budget} (ver _check_validation);
   - id: <mundo>-<nivel> o, para un nivel de prueba que no es del juego, <nombre>_test
     (p. ej. tower_test; su escena es scenes/levels/<nombre>_test.tscn);
   - ayuda de Eco con Q: todo help_id (del tipo en el catalogo, del enemigo en
@@ -151,6 +153,7 @@ class LevelValidator:
         self._check_unlocks()
         self._check_sections()
         self._check_camera()
+        self._check_validation()
         self._check_help()
         return self.errors
 
@@ -812,6 +815,41 @@ class LevelValidator:
                        % (camera.get("vertical"), ", ".join(CAMERA_VERTICAL_MODES)))
         if camera.get("limits", "grid") not in CAMERA_LIMITS:
             self.error("camera.limits '%s' no admitido (validos: %s)" % (camera.get("limits"), ", ".join(CAMERA_LIMITS)))
+
+
+    def _check_validation(self):
+        """'validation' (opcional, 2026-10-16, paso 10 de docs/propuesta-1-2.md §10): parametros del
+        diseno que comprueba tools/validate_level.py. time_margin_s (>= 0: lo que debe sobrar en
+        ventanas y cuentas; 1,5 s por defecto), snooze_required (grupos de recordatorios que SOLO se
+        cruzan con el Posponer), laser_required y debug_required (booleanos: la meta exige el laser /
+        el Debug), start_energy (0-100, energia al empezar; 100 por defecto) y sync_damage_budget
+        (>= 0, Sync Rate que pueden quitar los enemigos en el camino; 0 por defecto)."""
+        if "validation" not in self.level:
+            return
+        val = self.level["validation"]
+        if not isinstance(val, dict):
+            self.error("'validation' debe ser un objeto")
+            return
+        numbers = {"time_margin_s": (0.0, 30.0), "start_energy": (0.0, 100.0), "sync_damage_budget": (0.0, 100.0)}
+        for key, value in val.items():
+            if key in numbers:
+                lo, hi = numbers[key]
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not lo <= value <= hi:
+                    self.error("validation.%s debe ser un numero entre %g y %g" % (key, lo, hi))
+            elif key in ("laser_required", "debug_required"):
+                if not isinstance(value, bool):
+                    self.error("validation.%s debe ser un booleano" % key)
+            elif key == "snooze_required":
+                groups = {str(o.get("params", {}).get("group")) for o in self.level["objects"]
+                          if isinstance(o, dict) and o.get("type") == "reminder_platform"}
+                if not isinstance(value, list) or not all(isinstance(g, str) for g in value):
+                    self.error("validation.snooze_required debe ser una lista de grupos de recordatorios")
+                else:
+                    for g in value:
+                        if g not in groups:
+                            self.error("validation.snooze_required: el grupo de recordatorios '%s' no existe" % g)
+            else:
+                self.error("validation: campo desconocido '%s'" % key)
 
 
 def validate_level(level, root=ROOT):
