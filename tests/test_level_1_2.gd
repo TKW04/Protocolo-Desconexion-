@@ -171,7 +171,7 @@ func test_objects_puzzles_and_economy_of_each_floor() -> void:
 	assert_eq((_obj("lector_1") as LaserReceiver).window_s, 6.0)
 	assert_true(_obj("debug_1_2") is AbilityPickup, "El chip del Debug esta (aun no obtenido)")
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_DEBUG))
-	assert_eq(_count("HiddenPlatforms", Node), 5, "Plataformas ocultas de 2c y del secreto A")
+	assert_eq(_count("HiddenPlatforms", Node), 6, "Plataformas ocultas de 2c (3, desde el 2026-10-17) y del secreto A (3)")
 	# Piso 3: recordatorios y Posponer (los grupos del camino y el del secreto C).
 	var snooze_1 := _obj("snooze_1") as SnoozeButton
 	var snooze_2 := _obj("snooze_2") as SnoozeButton

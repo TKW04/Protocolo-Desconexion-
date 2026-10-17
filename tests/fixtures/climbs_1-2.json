@@ -1,0 +1,1320 @@
+{
+ "format": "isak-climbs/1",
+ "level": "1-2",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "18,60->18,58",
+   "section": "Vestíbulo",
+   "from": {
+    "cell": [
+     18,
+     60
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 60
+   },
+   "to": {
+    "cell": [
+     18,
+     58
+    ],
+    "ledge": [
+     18,
+     21
+    ],
+    "row": 58
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1216.0,
+   "target_x_px": 1216.0,
+   "debug": false
+  },
+  {
+   "id": "21,58->21,56",
+   "section": "Vestíbulo",
+   "from": {
+    "cell": [
+     21,
+     58
+    ],
+    "ledge": [
+     18,
+     21
+    ],
+    "row": 58
+   },
+   "to": {
+    "cell": [
+     21,
+     56
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 56
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1408.0,
+   "debug": false
+  },
+  {
+   "id": "23,56->23,54",
+   "section": "Vestíbulo",
+   "from": {
+    "cell": [
+     23,
+     56
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 56
+   },
+   "to": {
+    "cell": [
+     23,
+     54
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 54
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1536.0,
+   "target_x_px": 1536.0,
+   "debug": false
+  },
+  {
+   "id": "16,54->16,52",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     16,
+     54
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 54
+   },
+   "to": {
+    "cell": [
+     16,
+     52
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 52
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "25,54->25,52",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     25,
+     54
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 54
+   },
+   "to": {
+    "cell": [
+     25,
+     52
+    ],
+    "ledge": [
+     25,
+     26
+    ],
+    "row": 52
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1664.0,
+   "target_x_px": 1664.0,
+   "debug": false
+  },
+  {
+   "id": "13,52->12,50",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     13,
+     52
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 52
+   },
+   "to": {
+    "cell": [
+     12,
+     50
+    ],
+    "ledge": [
+     9,
+     12
+    ],
+    "row": 50
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "12,50->12,48",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     12,
+     50
+    ],
+    "ledge": [
+     9,
+     12
+    ],
+    "row": 50
+   },
+   "to": {
+    "cell": [
+     12,
+     48
+    ],
+    "ledge": [
+     7,
+     25
+    ],
+    "row": 48
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "21,48->21,46",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     21,
+     48
+    ],
+    "ledge": [
+     7,
+     25
+    ],
+    "row": 48
+   },
+   "to": {
+    "cell": [
+     21,
+     46
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 46
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1408.0,
+   "debug": false
+  },
+  {
+   "id": "21,46->21,44",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     21,
+     46
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 46
+   },
+   "to": {
+    "cell": [
+     21,
+     44
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 44
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1408.0,
+   "debug": false
+  },
+  {
+   "id": "23,44->23,42",
+   "section": "Piso 1: Mensajes",
+   "from": {
+    "cell": [
+     23,
+     44
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 44
+   },
+   "to": {
+    "cell": [
+     23,
+     42
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 42
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1536.0,
+   "target_x_px": 1536.0,
+   "debug": false
+  },
+  {
+   "id": "1,42->1,40",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     1,
+     42
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 42
+   },
+   "to": {
+    "cell": [
+     1,
+     40
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 40
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "10,42->10,40",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     10,
+     42
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 42
+   },
+   "to": {
+    "cell": [
+     10,
+     40
+    ],
+    "ledge": [
+     9,
+     10
+    ],
+    "row": 40
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 704.0,
+   "debug": false
+  },
+  {
+   "id": "14,42->14,40",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     14,
+     42
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 42
+   },
+   "to": {
+    "cell": [
+     14,
+     40
+    ],
+    "ledge": [
+     14,
+     15
+    ],
+    "row": 40
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 960.0,
+   "target_x_px": 960.0,
+   "debug": false
+  },
+  {
+   "id": "1,40->1,38",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     1,
+     40
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 40
+   },
+   "to": {
+    "cell": [
+     1,
+     38
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 38
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "2,38->3,37",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     2,
+     38
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 38
+   },
+   "to": {
+    "cell": [
+     3,
+     37
+    ],
+    "ledge": [
+     3,
+     15
+    ],
+    "row": 37
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 176.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "5,37->5,35",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     5,
+     37
+    ],
+    "ledge": [
+     3,
+     15
+    ],
+    "row": 37
+   },
+   "to": {
+    "cell": [
+     5,
+     35
+    ],
+    "ledge": [
+     5,
+     7
+    ],
+    "row": 35
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 384.0,
+   "target_x_px": 384.0,
+   "debug": false
+  },
+  {
+   "id": "21,37->21,35",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     21,
+     37
+    ],
+    "ledge": [
+     21,
+     24
+    ],
+    "row": 37
+   },
+   "to": {
+    "cell": [
+     21,
+     35
+    ],
+    "ledge": [
+     21,
+     21
+    ],
+    "row": 35
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1408.0,
+   "debug": false
+  },
+  {
+   "id": "5,35->3,33",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     5,
+     35
+    ],
+    "ledge": [
+     5,
+     7
+    ],
+    "row": 35
+   },
+   "to": {
+    "cell": [
+     3,
+     33
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 33
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 336.0,
+   "target_x_px": null,
+   "debug": true
+  },
+  {
+   "id": "6,35->6,33",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     6,
+     35
+    ],
+    "ledge": [
+     5,
+     7
+    ],
+    "row": 35
+   },
+   "to": {
+    "cell": [
+     6,
+     33
+    ],
+    "ledge": [
+     6,
+     20
+    ],
+    "row": 33
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 448.0,
+   "target_x_px": 448.0,
+   "debug": false
+  },
+  {
+   "id": "21,35->20,33",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     21,
+     35
+    ],
+    "ledge": [
+     21,
+     21
+    ],
+    "row": 35
+   },
+   "to": {
+    "cell": [
+     20,
+     33
+    ],
+    "ledge": [
+     6,
+     20
+    ],
+    "row": 33
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 1360.0,
+   "target_x_px": 1344.0,
+   "debug": false
+  },
+  {
+   "id": "21,35->23,33",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     21,
+     35
+    ],
+    "ledge": [
+     21,
+     21
+    ],
+    "row": 35
+   },
+   "to": {
+    "cell": [
+     23,
+     33
+    ],
+    "ledge": [
+     22,
+     26
+    ],
+    "row": 33
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1392.0,
+   "target_x_px": null,
+   "debug": true
+  },
+  {
+   "id": "2,33->1,31",
+   "section": "Piso 2: Correo",
+   "from": {
+    "cell": [
+     2,
+     33
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 33
+   },
+   "to": {
+    "cell": [
+     1,
+     31
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 31
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": null,
+   "debug": true
+  },
+  {
+   "id": "2,31->3,30",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     2,
+     31
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 31
+   },
+   "to": {
+    "cell": [
+     3,
+     30
+    ],
+    "ledge": [
+     3,
+     26
+    ],
+    "row": 30
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 176.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "25,30->23,28",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     25,
+     30
+    ],
+    "ledge": [
+     3,
+     26
+    ],
+    "row": 30
+   },
+   "to": {
+    "cell": [
+     23,
+     28
+    ],
+    "ledge": [
+     22,
+     23
+    ],
+    "row": 28
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 1600.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "22,28->20,27",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     22,
+     28
+    ],
+    "ledge": [
+     22,
+     23
+    ],
+    "row": 28
+   },
+   "to": {
+    "cell": [
+     20,
+     27
+    ],
+    "ledge": [
+     19,
+     20
+    ],
+    "row": 27
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1344.0,
+   "debug": false
+  },
+  {
+   "id": "23,28->25,26",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     23,
+     28
+    ],
+    "ledge": [
+     22,
+     23
+    ],
+    "row": 28
+   },
+   "to": {
+    "cell": [
+     25,
+     26
+    ],
+    "ledge": [
+     25,
+     26
+    ],
+    "row": 26
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1536.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "25,26->23,24",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     25,
+     26
+    ],
+    "ledge": [
+     25,
+     26
+    ],
+    "row": 26
+   },
+   "to": {
+    "cell": [
+     23,
+     24
+    ],
+    "ledge": [
+     20,
+     23
+    ],
+    "row": 24
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 1600.0,
+   "target_x_px": 1536.0,
+   "debug": false
+  },
+  {
+   "id": "3,24->3,22",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     3,
+     24
+    ],
+    "ledge": [
+     1,
+     9
+    ],
+    "row": 24
+   },
+   "to": {
+    "cell": [
+     3,
+     22
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 22
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "3,22->3,20",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     3,
+     22
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 22
+   },
+   "to": {
+    "cell": [
+     3,
+     20
+    ],
+    "ledge": [
+     2,
+     11
+    ],
+    "row": 20
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "24,20->24,18",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     24,
+     20
+    ],
+    "ledge": [
+     22,
+     25
+    ],
+    "row": 20
+   },
+   "to": {
+    "cell": [
+     24,
+     18
+    ],
+    "ledge": [
+     24,
+     25
+    ],
+    "row": 18
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1600.0,
+   "target_x_px": 1600.0,
+   "debug": false
+  },
+  {
+   "id": "24,18->24,16",
+   "section": "Piso 3: Recordatorios",
+   "from": {
+    "cell": [
+     24,
+     18
+    ],
+    "ledge": [
+     24,
+     25
+    ],
+    "row": 18
+   },
+   "to": {
+    "cell": [
+     24,
+     16
+    ],
+    "ledge": [
+     4,
+     26
+    ],
+    "row": 16
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1600.0,
+   "target_x_px": 1600.0,
+   "debug": false
+  },
+  {
+   "id": "5,16->5,14",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     5,
+     16
+    ],
+    "ledge": [
+     4,
+     26
+    ],
+    "row": 16
+   },
+   "to": {
+    "cell": [
+     5,
+     14
+    ],
+    "ledge": [
+     5,
+     6
+    ],
+    "row": 14
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 384.0,
+   "target_x_px": 384.0,
+   "debug": false
+  },
+  {
+   "id": "14,16->14,14",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     14,
+     16
+    ],
+    "ledge": [
+     4,
+     26
+    ],
+    "row": 16
+   },
+   "to": {
+    "cell": [
+     14,
+     14
+    ],
+    "ledge": [
+     13,
+     14
+    ],
+    "row": 14
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 960.0,
+   "target_x_px": 960.0,
+   "debug": false
+  },
+  {
+   "id": "5,14->5,12",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     5,
+     14
+    ],
+    "ledge": [
+     5,
+     6
+    ],
+    "row": 14
+   },
+   "to": {
+    "cell": [
+     5,
+     12
+    ],
+    "ledge": [
+     5,
+     6
+    ],
+    "row": 12
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 384.0,
+   "target_x_px": 384.0,
+   "debug": false
+  },
+  {
+   "id": "5,12->4,11",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     5,
+     12
+    ],
+    "ledge": [
+     5,
+     6
+    ],
+    "row": 12
+   },
+   "to": {
+    "cell": [
+     4,
+     11
+    ],
+    "ledge": [
+     1,
+     4
+    ],
+    "row": 11
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 336.0,
+   "target_x_px": 320.0,
+   "debug": false
+  },
+  {
+   "id": "6,12->7,11",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     6,
+     12
+    ],
+    "ledge": [
+     5,
+     6
+    ],
+    "row": 12
+   },
+   "to": {
+    "cell": [
+     7,
+     11
+    ],
+    "ledge": [
+     7,
+     26
+    ],
+    "row": 11
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 432.0,
+   "target_x_px": 448.0,
+   "debug": false
+  },
+  {
+   "id": "1,11->1,9",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     1,
+     11
+    ],
+    "ledge": [
+     1,
+     4
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     1,
+     9
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "10,11->10,9",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     10,
+     11
+    ],
+    "ledge": [
+     7,
+     26
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     10,
+     9
+    ],
+    "ledge": [
+     10,
+     13
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 704.0,
+   "debug": false
+  },
+  {
+   "id": "18,11->18,9",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     18,
+     11
+    ],
+    "ledge": [
+     7,
+     26
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     18,
+     9
+    ],
+    "ledge": [
+     18,
+     21
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1216.0,
+   "target_x_px": 1216.0,
+   "debug": false
+  },
+  {
+   "id": "1,9->1,7",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     1,
+     9
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     1,
+     7
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "1,7->1,5",
+   "section": "Piso 4: Actualizaciones",
+   "from": {
+    "cell": [
+     1,
+     7
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     1,
+     5
+    ],
+    "ledge": [
+     1,
+     26
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  }
+ ]
+}
