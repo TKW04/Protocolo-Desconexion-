@@ -43,6 +43,7 @@ import math
 DT = 1.0 / 60.0
 EPS = 1e-6
 INF = float("inf")
+FORMAT = "isak-path/1"
 # Disparos al Posponer que se prueban dentro de un mismo cruce de recordatorios.
 MAX_SNOOZE_SHOTS = 3
 # Celdas de margen alrededor de la zona de un banner para la busqueda por tiempo.
@@ -1249,6 +1250,98 @@ class Planner:
         if a == "debug_on":
             return "Debug %.1f s" % s.get("active_s", 0.0)
         return a
+
+    # --- Exportacion ---
+
+    def export(self):
+        T = self.T
+        steps = self.steps
+        self.timeline(steps)
+        out = []
+
+        def cell(n):
+            return {"cell": [n[0], n[1]], "feet_px": [round((n[0] + 0.5) * T, 1), round((n[1] + 1) * T, 1)]}
+
+        merged = []
+        for s in steps:
+            if (s["action"] == "move" and s["kind"] == "walk" and merged and merged[-1]["action"] == "move"
+                    and merged[-1]["kind"] == "walk" and merged[-1].get("debug") == s.get("debug")
+                    and merged[-1]["to"] == s["from"] and merged[-1]["to"][1] == s["to"][1]
+                    and not s.get("timed") == "x"):
+                merged[-1] = dict(merged[-1], to=s["to"], dur=merged[-1]["dur"] + self.duration(s))
+                continue
+            merged.append(dict(s, dur=self.duration(s)))
+        for idx, s in enumerate(merged):
+            a = s["action"]
+            item = {"i": idx, "t": round(s["t"], 3), "t_world": round(s["tw"], 3),
+                    "duration_s": round(s["dur"], 3)}
+            if a == "move":
+                e = s["edge"]
+                item["action"] = s["kind"]
+                item["from"] = cell(s["from"])
+                item["to"] = cell(s["to"])
+                if s["kind"] != "walk":
+                    item["takeoff_x_px"] = round(e["x0"], 1)
+                    item["target_x_px"] = None if e.get("xt") is None or abs(e["xt"]) > 1e5 else round(e["xt"], 1)
+                    item["direction"] = 1 if (e.get("xt") or 0) >= e["x0"] else -1
+                    item["speed"] = e["speed"]
+                    item["air_s"] = round(e.get("time", 0.0), 3)
+                if s.get("debug"):
+                    item["debug"] = True
+            else:
+                item["action"] = a
+                node = self.node_of(s)
+                if node is not None:
+                    item["at"] = cell(tuple(node))
+                if s.get("shot"):
+                    item["x_px"] = round(s["shot"]["x"], 1)
+                    item["facing"] = int(s["shot"]["facing"])
+                if s.get("target"):
+                    tgt = {k: v for k, v in s["target"].items() if k != "rect"}
+                    if "rect" in s["target"]:
+                        tgt["rect_px"] = [round(v, 1) for v in s["target"]["rect"]]
+                    item["target"] = tgt
+                if a in ("wait", "wait_phase"):
+                    item["seconds"] = round(s.get("seconds", 0.0), 3)
+                    if s.get("reason"):
+                        item["reason"] = s["reason"]
+                if a == "wait_phase":
+                    item["period_s"] = round(s["period_s"], 3)
+                    item["phase_s"] = round(s["phase_s"], 3)
+                    item["hazards"] = s["hazards"]
+                    item["banner_cycle_s"] = s["banner_cycle_s"]
+                if a == "laser" and s.get("extra_wait"):
+                    item["wait_before_s"] = round(s.get("wait_before_s", 0.0), 3)
+                    item["hold_after_s"] = round(s["extra_wait"] - s.get("wait_before_s", 0.0), 3)
+                if a == "pickup":
+                    item["ability"] = s["ability"]
+                    if s.get("refill"):
+                        item["refill_energy"] = True
+                if a == "debug_on":
+                    item["hold_s"] = self.rules.debug_hold_s
+                    item["active_s"] = s.get("active_s")
+                if a == "hop":
+                    item["air_s"] = round(s["time"], 3)
+                if s.get("final"):
+                    item["final"] = True
+            if "energy_before" in s:
+                item["energy_before"] = s["energy_before"]
+                item["energy_after"] = s["energy_after"]
+            out.append(item)
+        start = self.v.result.get("start")
+        return {
+            "format": FORMAT,
+            "level": self.level.get("id"),
+            "tile_size": T,
+            "physics": {"walk_speed_px_s": self.rules.walk_speed, "jump_height_px": round(self.rules.jump_height, 1),
+                        "laser_pose_s": self.rules.laser_pose_s, "pulse_pose_s": self.rules.pulse_pose_s},
+            "start": cell(tuple(start)) if start else None,
+            "time_margin_s": self.margin,
+            "duration_s": self.info.get("duration_s"),
+            "duration_world_s": self.info.get("duration_world_s"),
+            "energy": self.info.get("energy"),
+            "steps": out,
+        }
 
 
 def plan_level(validator):

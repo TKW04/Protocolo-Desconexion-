@@ -70,6 +70,21 @@ movimiento por celdas:
      puertas, abriendolas tambien desde dentro de un foso) se puede llegar a la
      meta (p. ej. caer al foso del puente). Grafo producto (nodo, puertas
      abiertas) restringido a los pares que se alcanzan desde P.
+  8. Torre y tolerancia de techo (2026-10-16, paso 10 de docs/propuesta-1-2.md
+     §10): al subir, la cabeza tambien se comprueba con el retraso de un salto
+     desde parado + HEAD_MARGIN_PX (World.simulate head_lag): un salto que roza
+     con la cabeza la esquina de una losa no cuenta. En niveles verticales el
+     fallo dice piso y fila y las reglas por columnas (6d) no se aplican.
+  9. Laser, Debug y tiempos (paso 10): el laser alcanza objetivos horizontales a
+     la altura del celular (lector laser, anuncio, Posponer, Burbujas); el Debug
+     (abilities_available.debug o su chip) da movimientos sobre 'h' (union de
+     mundos, marcados "con Debug"); lector -> receptor enlazado -> puente dentro
+     de window_s (relay_plan), anuncio antes del pulso al pop-up y barra del 99 %
+     (espera). validation.laser_required / debug_required del nivel. El plan del
+     camino (tools/level_plan.py) comprueba recordatorios y Posponer, pop-ups
+     translucidos, tramos con Debug, banners, puntos rojos y energia, y exporta el
+     camino (--export-path, formato isak-path/1). Solo los niveles del paso 10
+     (Validator.is_advanced) llevan el plan en la salida: la del 1-1 no cambia.
 
 Modelo de movimiento:
   - Isak es una caja de hitbox_size (32x80) con los pies en el origen. Esta de
@@ -94,7 +109,8 @@ Modelo de movimiento:
 Uso:
   python3 tools/validate_level.py data/levels/1-1.json [--json] [--limit 0.85]
           [--jump-efficiency 0.92] [--run] [--physics data/isak_physics.json]
-          [--upgrades wide_pulse[,otra]]
+          [--upgrades wide_pulse[,otra]] [--time-margin 1.5]
+          [--export-path camino.json]
 Sale con 0 si no hay errores (los avisos no fallan), 1 si los hay y 2 si no se
 pueden leer los datos. Los mensajes dicen fila y columna (y objeto).
 """
@@ -2128,8 +2144,10 @@ class Validator:
 
 
 def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP_EFFICIENCY, run=False,
-             physics_path=None, check_schema=True, upgrades=()):
-    """Valida un nivel ya cargado. Devuelve el dict de resultado (ok, errors, warnings, path, margins...)."""
+             physics_path=None, check_schema=True, upgrades=(), time_margin=None, export=None):
+    """Valida un nivel ya cargado. Devuelve el dict de resultado (ok, errors, warnings, path, margins...).
+    time_margin: margen de tiempo minimo (s) de las ventanas y cuentas (None: el del nivel o 1,5 s).
+    export: lista; si se pasa, recibe el camino exportado (formato isak-path/1, tools/level_plan.py)."""
     if check_schema:
         schema_errors = validate_level_schema.validate_level(level, root)
         if schema_errors:
@@ -2137,7 +2155,13 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
                                             for e in schema_errors], "warnings": [], "path": []}
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades))
-    return Validator(level, rules).run()
+    rules.time_margin = time_margin
+    validator = Validator(level, rules)
+    validator.export_requested = export is not None
+    result = validator.run()
+    if export is not None and validator.planner is not None and getattr(validator.planner, "steps", None):
+        export.append(validator.planner.export())
+    return result
 
 
 def format_text(path, result):
@@ -2288,18 +2312,37 @@ def main(argv):
     parser.add_argument("--physics", default=None, help="JSON de fisica (data/isak_physics.json)")
     parser.add_argument("--upgrades", default="",
                         help="mejoras compradas (ids de data/upgrades.json separados por comas); por defecto ninguna")
+    parser.add_argument("--time-margin", type=float, default=None,
+                        help="margen minimo (s) que debe sobrar en ventanas y cuentas (por defecto "
+                             "validation.time_margin_s del nivel o 1,5)")
+    parser.add_argument("--export-path", default=None,
+                        help="escribe el camino (pasos con tiempos, formato isak-path/1) en este JSON; un solo nivel")
     args = parser.parse_args(argv[1:])
+    if args.export_path and len(args.levels) != 1:
+        print("--export-path admite un solo nivel", file=sys.stderr)
+        return 2
     failed = False
     outputs = {}
     for path in args.levels:
+        export = [] if args.export_path else None
         try:
             level = load_json(path)
             result = validate(level, limit=args.limit, jump_efficiency=args.jump_efficiency, run=args.run,
                               physics_path=args.physics,
-                              upgrades=[u.strip() for u in args.upgrades.split(",") if u.strip()])
+                              upgrades=[u.strip() for u in args.upgrades.split(",") if u.strip()],
+                              time_margin=args.time_margin, export=export)
         except (OSError, ValueError, KeyError) as exc:
             print("%s: no se pudo validar (%s)" % (path, exc), file=sys.stderr)
             return 2
+        if export is not None:
+            if export:
+                with open(args.export_path, "w", encoding="utf-8") as handle:
+                    json.dump(export[0], handle, ensure_ascii=False, indent=1)
+                    handle.write("\n")
+                if not args.json:
+                    print("camino exportado: %s (%d pasos)" % (args.export_path, len(export[0]["steps"])))
+            else:
+                print("%s: sin camino que exportar" % path, file=sys.stderr)
         failed = failed or not result["ok"]
         if args.json:
             outputs[path] = result
