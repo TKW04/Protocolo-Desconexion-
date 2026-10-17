@@ -92,7 +92,7 @@ Texto de la presentación (ajustable; no añade historia):
 | Aspecto | Detalle |
 |---|---|
 | **Rol** | La tienda de mejoras permanentes (`data/upgrades.json`), con su personalidad de `04-personajes.md` §12.3: literal, seca y lógica. |
-| **Cuándo aparece** | Isak la encuentra **al final del 1-2, tras obtener el Debug**. La historia del encuentro se decide más adelante. Desde entonces su estación del hub está activa y habla. |
+| **Cuándo aparece** | Isak la encuentra **al final del 1-2, tras obtener el Debug**. Historia decidida el 2026-10-17 (`propuesta-calc-encuentro.md`): en la azotea está al 3 %; tras el acertijo de la terminal sin corriente se carga y se teletransporta al hub, donde Isak la encuentra (allí se da por conocida, habla —historia «Resta»— y se abre la tienda). Desde entonces su estación del hub está activa y habla. |
 | **Antes** | **No hay tienda.** En el hub, el hueco de Calc (columna 7 del dock) está **apagado e inactivo**: sin panel, sin prompt y sin texto. Reemplaza «Calc dormida vende desde el 1-1». |
 | **Impacto** | (1) El secreto del Pulso amplio del 1-1 (`popup_lejano`, power bank vacío) solo se abre después del 1-2: hay que volver al 1-1 tras conocer a Calc. (2) Las compras empiezan tras conocer a Calc. Al final del 1-2 hay unos 18 puntos y el Pulso amplio (25) se sigue pagando al terminar el 1-3, así que la economía no cambia. (3) Hay que cambiar la implementación actual, en la que Calc dormida vende (paso 10 de §10). |
 | **Vueltas** | Tras un rollback, Calc sigue conocida (registro): su tienda sigue activa. |
@@ -413,7 +413,7 @@ S = menos de medio día; M = medio día a un día; L = más de un día. Cada pas
 | 12 | **Hecho (2026-10-16).** Game over: rollback a la copia, pérdida de lo no guardado, hub, papelera (estación, parpadeo, recuperación por cercanía, historia la primera vez, caso sin copia) y bloqueo de carpetas. | L | 8, 11 | Lo no guardado se pierde; lo guardado vuelve entero desde la papelera; carpetas bloqueadas hasta recuperarla; sin copia, papelera vacía con su línea; tras recuperar, sin cambios pendientes. |
 | 13 | **Hecho (2026-10-16).** Ajuste «Ayudas de Eco: Mostrar / Ocultar» en el menú de pausa. | S | 3 | La acción `pause` sin choques; abrir y cerrar sin dejar el árbol en pausa; no pisa las pausas de Eco ni los paneles; guardado al instante en `settings.cfg` (rutas de prueba propias) y cargado al reiniciar; con «Ocultar» no hay Q; no marca «sin guardar» ni toca `save.json`; `play_time_s` no avanza; el icono del hub lo abre. |
 | 14 | **Hecho (2026-10-16).** Pared con glitch que se abre con el Debug y vida extra en el secreto D (`lives_max` + 1, `found_secrets`, una vez por mapa). | M | 11, Debug jugable (1-2) | Validador (secreto opcional con Debug); el máximo sube una sola vez. |
-| 15 | Calc: encuentro al final del 1-2. | M | 1-2 jugable, 10 | |
+| 15 | Calc: encuentro al final del 1-2 (`propuesta-calc-encuentro.md`; tanda H1 hecha el 2026-10-17: piezas, guion de Eco, iconos en línea y sala `calc_test`; faltan H2, en el 1-2, y H3, en el hub). | M | 1-2 jugable, 10 | |
 | 16 | Rollback del jefe final con la misma papelera. | M | Mundo 6, 12 | |
 | 17 | Linterna en el X-1 del mundo oscuro. | M | Mundo elegido | |
 

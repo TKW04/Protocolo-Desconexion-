@@ -950,3 +950,12 @@ Diseño completo en `docs/propuesta-mejoras.md` (revisada en parte el 2026-10-16
 - *Recomendación:* no hacerla por ahora; con la holgura medida en el validador ya no hacen falta. Si se hace, solo en la subida, hasta 8 px y con su prueba GUT.
 
 **Contraste del fondo (hecho, ajustable):** la fachada baja un escalón de la paleta (tarjetas en noche_profunda con contornos en cielo, sin resplandor ni borde_luz) y tiene una tarjeta por columna y periodo; en la torre las capas del fondo llevan un velo hacia noche_profunda (`tower_dim` de `data/world1_background.json`: 0,45; la banda de edificios 0,7; la fachada 0,2); las pestañas no llevan velo. Contraste del borde claro de las plataformas con el fondo de al lado (`tools/measure_tower_contrast.py`, 8 capturas): mediana 4,3:1 → 8,1:1; bordes con mediana ≥ 3:1, 83,5 % → 94,2 % (el resto está bajo un pop-up u otro objeto); percentil 10 ≥ 3:1, 62,9 % → 92,4 %. El 1-1 no cambia. *Pregunta:* ¿el velo te parece bien o lo quieres más suave (0,3) para que la torre se vea más «encendida»?
+
+## Encuentro con Calc en la azotea del 1-2 (2026-10-17)
+
+**Decisión del usuario (2026-10-17):** el encuentro con Calc es un acertijo final en la azotea del 1-2 (sustituye la opción A de `propuesta-1-2.md` §8). Calc al 3 %, terminal sin corriente, Eco descubre la pared con glitch con su guion propio (no es Q), Debug, cuarto a oscuras con interruptor de pulso (Q de Eco, de espaldas), interruptor láser lejano, panel oculto con el Debug, Calc entra, se carga y se teletransporta, la terminal recupera la corriente y Calc se encuentra en el hub. Historia «Resta» aprobada para las líneas de Calc (los puntos de atención son atención de Isak que Eco guardó y dejó caer; Calc la devuelve en mejoras). Detalle en `propuesta-calc-encuentro.md`.
+
+**Aprobado por silencio:** 3 pulsos (`pulses`, luz por tercios); la carga es obligatoria para la terminal; el cuarto es una zona de la azotea. **Decidido en la tanda H1:** el guion de Eco es historia y sale con «Ayudas de Eco: Ocultar» (la Q no; si no sale, Eco señala con una línea); `meet_ally("calc")` al encontrarla en el hub, no al teletransportarse (gancho `EventBus.ally_teleported`).
+
+**Abiertas (con recomendación, `propuesta-calc-encuentro.md` §9):** Calc visible al 3 % desde el principio (sí); dónde va el cuarto en el 1-2 (a la derecha de la terminal, azotea +2-3 filas); el panel oculto queda marcado tras verlo (sí); Eco no comenta cada pulso; la línea «aplicación obsoleta» (mantener); estilo LCD de Calc con los dígitos del HUD.
+
