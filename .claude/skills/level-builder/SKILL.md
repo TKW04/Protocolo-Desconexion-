@@ -71,14 +71,14 @@ Cada nivel tiene su ficha en `docs/mundo-N-*.md` (el archivo del mundo correspon
 
 ## Validación de alcanzabilidad
 
-`python3 tools/validate_level.py data/levels/<id>.json [--json] [--limit 0.85] [--jump-efficiency 0.92] [--run] [--upgrades wide_pulse] [--time-margin 1.5] [--export-path <camino.json>] [--allies calc]` (pruebas en `tests/test_validate_level.py` y `tests/test_level_plan.py`, se ejecuta desde `tools/run_tests.sh`). Lee `data/isak_physics.json` (los mismos valores que usa el juego) y comprueba:
+`python3 tools/validate_level.py data/levels/<id>.json [--json] [--limit 0.85] [--jump-efficiency 0.92] [--run] [--upgrades pulso:2,laser:3] [--time-margin 1.5] [--export-path <camino.json>] [--allies calc]` (pruebas en `tests/test_validate_level.py` y `tests/test_level_plan.py`, se ejecuta desde `tools/run_tests.sh`). Lee `data/isak_physics.json` (los mismos valores que usa el juego) y comprueba:
 
 1. Existe un camino desde `P` hasta `G`.
 2. Cada `C` es alcanzable desde la anterior o desde `P`.
 3. Ningún salto exige más del 85% del alcance máximo de Isak (margen de seguridad). Alcance horizontal y vertical se calculan con velocidad y gravedad del archivo de física.
 4. Los secretos con `needs_debug` solo se alcanzan pasando por plataformas ocultas `h`, y existe un camino sin Debug hacia la meta. Los demás secretos (de puntos o con objeto recogible) se alcanzan sin Debug.
 5. No hay pinchos en el punto de aparición ni en el primer tile de un checkpoint.
-6. Mejoras: valida con los valores **base**; `--upgrades wide_pulse` valida con mejoras compradas (hoy solo se modela el radio del pulso). Un secreto con `requires_upgrade` no debe alcanzarse sin la mejora y sí con ella (se comprueba en cada pasada); la meta siempre sin mejoras.
+6. Mejoras: valida con los valores **base**; `--upgrades` valida con mejoras de Calc compradas, como `pista:nivel` de `data/upgrades.json` separados por comas (pistas `pulso`, `laser`, `debug`, `sync`, `energia`; niveles 2-5; tanda M1, 2026-10-17) o con un `legacy_id` de las mejoras sueltas de antes (`wide_pulse` = `pulso:2`, alias que deja la salida del 1-1 idéntica byte a byte). El modelo usa el alcance del pulso, el coste y el enfriamiento del láser, el gasto del Debug y la energía y el Sync Rate máximos de esos niveles (la misma regla que `GameState.effective_value`, en `tools/upgrade_catalog.py`); la salida añade la línea «mejoras: …» solo si alguno cambia aparte del pulso. Un secreto con `requires_upgrade` (`legacy_id` o `pista:nivel`) no debe alcanzarse sin la mejora y sí con ella (se comprueba en cada pasada); la meta siempre sin mejoras. Una mejora desconocida sale con código 2.
 
 El script termina con código distinto de cero si algo falla, y explica qué fila y columna causan el problema.
 

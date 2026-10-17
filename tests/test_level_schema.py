@@ -13,11 +13,17 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level_schema as vls  # noqa: E402
+import upgrade_catalog  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, "tests", "support"))
 import tower_level  # noqa: E402
 
 LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-1.json")
 SCRIPT = os.path.join(ROOT, "tools", "validate_level_schema.py")
+
+
+def upgrade_catalog_total(catalog):
+    """Puntos que cuestan todas las compras (niveles 2-5 de las cinco pistas)."""
+    return sum(lv["cost"]["attention_points"] for _, lv in upgrade_catalog.purchasable_levels(catalog))
 
 
 def load_level():
@@ -68,20 +74,25 @@ class LevelSchemaTest(unittest.TestCase):
         # Economia (decision 2026-10-15, revisada el mismo dia; docs/propuesta-1-1-ampliado.md §6): unos 9
         # puntos por mapa (los puntos no se recapturan). Un mapa solo no paga ninguna mejora; tres mapas
         # completos (1-1 a 1-3) pagan justo Pulso amplio, sin que sobren muchos; una vuelta (18 mapas)
-        # no paga todas.
+        # no paga todas. Desde la tanda M1 (2026-10-17) las compras son los niveles 2-5 de las pistas de
+        # data/upgrades.json y Pulso amplio es el nivel 2 del Pulso (legacy_id wide_pulse), a 25.
         points = "".join(lvl["grid"]).count("o")
-        with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
-            upgrades = {u["id"]: u for u in json.load(handle)["upgrades"]}
+        catalog = upgrade_catalog.load_catalog()
+        wide_track, wide_level = upgrade_catalog.resolve(catalog, "wide_pulse")
+        self.assertEqual((wide_track, wide_level), ("pulso", 2))
         secret_points = sum(int(s.get("points", 0)) for s in lvl["secrets"])
         gated_points = sum(int(s.get("points", 0)) for s in lvl["secrets"] if s.get("requires_upgrade"))
         route = points - secret_points
         self.assertEqual((points, route, secret_points, gated_points), (9, 6, 3, 0))
-        costs = {uid: u["cost"]["attention_points"] for uid, u in upgrades.items()}
+        costs = {"%s:%d" % (tid, lv["level"]): lv["cost"]["attention_points"]
+                 for tid, lv in upgrade_catalog.purchasable_levels(catalog)}
+        costs["wide_pulse"] = costs["pulso:2"]
+        self.assertEqual(costs["wide_pulse"], 25, "Pulso amplio mantiene su precio")
         self.assertLess(points, min(costs.values()), "un solo mapa completo no paga ninguna mejora")
         self.assertGreaterEqual(3 * points, costs["wide_pulse"], "tres mapas completos pagan Pulso amplio")
         self.assertLess(3 * points - costs["wide_pulse"], 5, "y sobran pocos puntos")
         self.assertLess(3 * route, costs["wide_pulse"], "solo con la ruta de tres mapas no llega")
-        self.assertGreater(sum(costs.values()), 18 * points, "una vuelta no paga todas las mejoras")
+        self.assertGreater(upgrade_catalog_total(catalog), 18 * points, "una vuelta no paga todas las mejoras")
         self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (300, 14))
         # Un solo power bank (vacio) en el 1-1: el del secreto que exige Pulso amplio.
         banks = [o for o in lvl["objects"] if o["type"] == "power_bank_pickup"]
@@ -162,8 +173,8 @@ class LevelSchemaTest(unittest.TestCase):
         self.assertEqual(sorted(c["params"]["id"] for c in chargers), ["cargador_1", "cargador_2", "cargador_3"])
         self.assertTrue(all(c["params"]["reusable"] for c in chargers))
         self.assertFalse(any(o["type"] == "extra_life_pickup" for o in lvl["objects"]), "sin vida extra en el 1-2")
-        with open(os.path.join(ROOT, "data", "upgrades.json"), encoding="utf-8") as handle:
-            costs = {u["id"]: u["cost"]["attention_points"] for u in json.load(handle)["upgrades"]}
+        catalog = upgrade_catalog.load_catalog()
+        costs = {"wide_pulse": upgrade_catalog.level_entry(catalog, "pulso", 2)["cost"]["attention_points"]}
         first = "".join(self.level["grid"]).count("o")
         self.assertLess(first + points, costs["wide_pulse"], "1-1 + 1-2 aun no pagan Pulso amplio")
         self.assertGreaterEqual(first + 2 * points, costs["wide_pulse"], "con el 1-3 (unos 9 mas) si")

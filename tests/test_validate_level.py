@@ -154,7 +154,8 @@ class RealLevelTest(unittest.TestCase):
         self.assertAlmostEqual(dist, 104.0)
         catalog = vl.load_upgrades()
         self.assertGreater(dist, rules.pulse_radius)
-        self.assertLessEqual(dist, float(catalog["wide_pulse"]["value"]))
+        self.assertLessEqual(dist, vl.effective_value(catalog, {"pulso": 2}, "isak_abilities.pulse_radius_px",
+                                                      rules.base_pulse_radius))
         met = frozenset({"encounter:eco_encuentro"})  # tras el encuentro con Eco (pulso)
         self.assertFalse(model.can_open(gate, (129, 4), met))
         upgraded = vl.LevelModel(level, rules.with_upgrades(["wide_pulse"]))

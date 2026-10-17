@@ -10,7 +10,7 @@ Reglas:
   - exactamente un P y un G;
   - checkpoints <-> celdas C del grid (uno a uno), enemigos <-> celdas E (uno a uno),
     secretos <-> celdas S, o {object: <tipo>} con un objeto de ese tipo en su x, y;
-    requires_upgrade (si esta) es un id de data/upgrades.json y needs_debug un booleano;
+    requires_upgrade (si esta) es una mejora de data/upgrades.json ("pista:nivel" o legacy_id) y needs_debug un booleano;
   - enemigos con tipo existente (data/enemies/<type>.json); sus params, numeros > 0 o, si el
     JSON del tipo trae level_params (punto rojo y banner, 2026-10-16), solo los listados y en su
     rango; el banner, con su pasillo dentro del grid y sin celdas solidas y un ciclo con reposo;
@@ -58,6 +58,9 @@ import math
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import upgrade_catalog  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRID_CHARS = set("#.^-hPGCoES")
@@ -815,10 +818,9 @@ class LevelValidator:
             if pos is None:
                 continue
             if "requires_upgrade" in entry:
-                path = os.path.join(self.root, "data", "upgrades.json")
-                with open(path, encoding="utf-8") as handle:
-                    ids = {u.get("id") for u in json.load(handle).get("upgrades", [])}
-                if entry["requires_upgrade"] not in ids:
+                # Mejoras de Calc por pistas (tanda M1): "pista:nivel" o un legacy_id (wide_pulse).
+                catalog = upgrade_catalog.load_catalog(self.root)
+                if upgrade_catalog.resolve(catalog, entry["requires_upgrade"]) is None:
                     self.error("%s '%s': requires_upgrade '%s' no esta en data/upgrades.json"
                                % (what, entry.get("id"), entry["requires_upgrade"]), pos[1], pos[0])
             if "needs_debug" in entry and not isinstance(entry["needs_debug"], bool):

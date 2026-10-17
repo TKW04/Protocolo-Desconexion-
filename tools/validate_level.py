@@ -22,8 +22,10 @@ movimiento por celdas:
      Debug («alcanzable con Debug»); nunca es obligatoria. Los secretos
      que son otro objeto (p. ej. power_bank_pickup) y las S sin needs_debug
      (secretos de puntos) tienen que alcanzarse sin Debug.
-     Mejoras (data/upgrades.json): el modelo usa los valores BASE salvo las
-     mejoras de --upgrades (hoy solo afecta isak_abilities.pulse_radius_px). Un
+     Mejoras (data/upgrades.json, pistas de Calc): el modelo usa los valores
+     BASE salvo las mejoras de --upgrades ("pista:nivel", p. ej. laser:3, o un
+     legacy_id: wide_pulse = pulso:2): alcance del pulso, coste y enfriamiento
+     del laser, gasto del Debug y energia y Sync Rate maximos. Un
      secreto con "requires_upgrade": <id> NO debe alcanzarse sin esa mejora y SI
      con ella (se comprueban las dos cosas en cada pasada); la meta se valida
      siempre sin ella.
@@ -109,7 +111,7 @@ Modelo de movimiento:
 Uso:
   python3 tools/validate_level.py data/levels/1-1.json [--json] [--limit 0.85]
           [--jump-efficiency 0.92] [--run] [--physics data/isak_physics.json]
-          [--upgrades wide_pulse[,otra]] [--time-margin 1.5]
+          [--upgrades pulso:2[,laser:3,...]] [--time-margin 1.5]
           [--export-path camino.json]
 Sale con 0 si no hay errores (los avisos no fallan), 1 si los hay y 2 si no se
 pueden leer los datos. Los mensajes dicen fila y columna (y objeto).
@@ -126,6 +128,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level_schema  # noqa: E402
+import upgrade_catalog  # noqa: E402
 
 DEFAULT_LIMIT = 0.85
 DEFAULT_JUMP_EFFICIENCY = 0.92
@@ -164,19 +167,13 @@ def load_json(path):
 
 
 def load_upgrades(root=ROOT):
-    """Catalogo de mejoras (data/upgrades.json) como dict id -> entrada, en orden."""
-    data = load_json(os.path.join(root, "data", "upgrades.json"))
-    return {str(u["id"]): u for u in data.get("upgrades", [])}
+    """Catalogo de mejoras de Calc por pistas (data/upgrades.json; tools/upgrade_catalog.py)."""
+    return upgrade_catalog.load_catalog(root)
 
 
-def effective_value(catalog, purchased, target, base):
-    """Igual que GameState.effective_value: si varias mejoras compradas tocan el mismo
-    target gana la ultima del catalogo."""
-    value = base
-    for uid, entry in catalog.items():
-        if uid in purchased and entry.get("target") == target:
-            value = float(entry["value"])
-    return value
+def effective_value(catalog, levels, target, base):
+    """Igual que GameState.effective_value: `levels` es {pista: nivel} (parse_upgrades)."""
+    return upgrade_catalog.effective_value(catalog, levels, target, base)
 
 
 def _export_vector2(source, name):
@@ -281,13 +278,43 @@ class Rules:
         self.sync_max = float(sync.group(1)) if sync else 100.0
         self.time_margin = None  # --time-margin (si no, validation.time_margin_s del nivel o 1,5 s)
         self.physics_path = physics_path
+        # Mejoras de Calc (tanda M1, 2026-10-17): --upgrades acepta "pista:nivel" (p. ej. laser:3) y los
+        # legacy_id (wide_pulse = pulso:2). Se guardan tal cual (la salida los repite) y se resuelven a
+        # niveles; el modelo usa el alcance del pulso, el coste y el enfriamiento del laser, el gasto del
+        # Debug y los maximos de energia y Sync Rate de esos niveles (la misma regla que el juego).
         self.upgrades = tuple(upgrades)
         catalog = load_upgrades(root)
-        unknown = [u for u in self.upgrades if u not in catalog]
-        if unknown:
-            raise ValueError("mejora desconocida en data/upgrades.json: %s" % ", ".join(unknown))
-        self.pulse_radius = effective_value(catalog, self.upgrades, "isak_abilities.pulse_radius_px",
-                                            self.base_pulse_radius)
+        self.upgrade_catalog = catalog
+        self.upgrade_levels = upgrade_catalog.parse_upgrades(catalog, self.upgrades)
+        self.base_laser_cost = self.laser_cost
+        self.base_laser_cooldown_s = self.laser_cooldown_s
+        self.base_debug_drain = self.debug_drain
+        self.base_energy_max = self.energy_max
+        self.base_sync_max = self.sync_max
+        levels = self.upgrade_levels
+        self.pulse_radius = effective_value(catalog, levels, "isak_abilities.pulse_radius_px", self.base_pulse_radius)
+        self.laser_cost = effective_value(catalog, levels, "isak_abilities.laser_energy_cost", self.laser_cost)
+        self.laser_cooldown_s = effective_value(catalog, levels, "isak_abilities.laser_cooldown_s",
+                                                self.laser_cooldown_s)
+        self.debug_drain = effective_value(catalog, levels, "debug_mode.drain_per_second", self.debug_drain)
+        self.energy_max = effective_value(catalog, levels, "game_state.debug_energy_max", self.energy_max)
+        self.sync_max = effective_value(catalog, levels, "game_state.sync_rate_max", self.sync_max)
+
+    def has_upgrade(self, upgrade_id):
+        """Con las mejoras de --upgrades se tiene `upgrade_id` ("pista:nivel" o legacy_id)."""
+        return upgrade_catalog.satisfies(self.upgrade_catalog, self.upgrade_levels, upgrade_id)
+
+    def changed_by_upgrades(self):
+        """Valores (aparte del pulso) que las mejoras cambian respecto a la base: {clave: (valor, base)}."""
+        out = {}
+        for key, value, base in (("laser_energy_cost", self.laser_cost, self.base_laser_cost),
+                                 ("laser_cooldown_s", self.laser_cooldown_s, self.base_laser_cooldown_s),
+                                 ("debug_drain_per_s", self.debug_drain, self.base_debug_drain),
+                                 ("energy_max", self.energy_max, self.base_energy_max),
+                                 ("sync_rate_max", self.sync_max, self.base_sync_max)):
+            if abs(value - base) > EPS:
+                out[key] = (value, base)
+        return out
 
     def with_upgrades(self, extra):
         """Las mismas reglas con mas mejoras compradas."""
@@ -2311,7 +2338,7 @@ class Validator:
             run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
             item.update({"reachable": run["ok"],
                          "secret_gates_opened": sorted(g for g in run["state"] if g in self.secret_gates())})
-            if not required or required in self.rules.upgrades:
+            if not required or self.rules.has_upgrade(required):
                 if not run["ok"]:
                     self.report.error("el secreto %s no se alcanza%s" % (
                         what, " con la mejora %s" % required if required else ""), s["y"], s["x"], s["id"])
@@ -2539,6 +2566,10 @@ class Validator:
             "base_pulse_radius_px": self.rules.base_pulse_radius,
             "upgrades": list(self.rules.upgrades),
         }
+        # Solo si una mejora los cambia (la salida sin mejoras o con wide_pulse no cambia).
+        for key, (value, base) in self.rules.changed_by_upgrades().items():
+            self.result["rules"][key] = value
+            self.result["rules"]["base_" + key] = base
         if self.rules.allies:
             self.result["rules"]["allies"] = list(self.rules.allies)
         gates = []
@@ -2617,6 +2648,11 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     return result
 
 
+def _num(value):
+    """Numero sin decimales si es entero (8, 0.3)."""
+    return "%d" % value if abs(value - round(value)) < EPS else ("%g" % value)
+
+
 def format_text(path, result):
     out = []
     status = "OK" if result["ok"] else "FALLA"
@@ -2630,6 +2666,13 @@ def format_text(path, result):
                                         rules["limit"] * 100))
         out.append("  pulso: radio %.0f px (base %.0f; mejoras: %s)" % (
             rules["pulse_radius_px"], rules["base_pulse_radius_px"], ", ".join(rules["upgrades"]) or "ninguna"))
+        changed = [(label, rules[key], rules["base_" + key]) for key, label in (
+            ("laser_energy_cost", "coste del laser"), ("laser_cooldown_s", "enfriamiento del laser (s)"),
+            ("debug_drain_per_s", "gasto del Debug (/s)"), ("energy_max", "energia maxima"),
+            ("sync_rate_max", "Sync Rate maximo")) if key in rules]
+        if changed:
+            out.append("  mejoras: " + "; ".join("%s %s (base %s)" % (label, _num(value), _num(base))
+                                                  for label, value, base in changed))
     for item in (result.get("secrets") or {}).get("items", []):
         if "requires_upgrade" in item:
             out.append("  secreto %s: sin %s %s; con ella %s (radio %.0f px)" % (
@@ -2791,7 +2834,8 @@ def main(argv):
     parser.add_argument("--run", action="store_true", help="permite saltos corriendo (run_speed)")
     parser.add_argument("--physics", default=None, help="JSON de fisica (data/isak_physics.json)")
     parser.add_argument("--upgrades", default="",
-                        help="mejoras compradas (ids de data/upgrades.json separados por comas); por defecto ninguna")
+                        help="mejoras compradas separadas por comas: pista:nivel de data/upgrades.json (p. ej. "
+                             "pulso:2,laser:3) o un legacy_id (wide_pulse = pulso:2); por defecto ninguna")
     parser.add_argument("--time-margin", type=float, default=None,
                         help="margen minimo (s) que debe sobrar en ventanas y cuentas (por defecto "
                              "validation.time_margin_s del nivel o 1,5)")
