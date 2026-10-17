@@ -156,6 +156,13 @@ signal help_learned(help_id: StringName)
 @warning_ignore("unused_signal")
 signal ally_met(ally: StringName)
 
+## El asistente `ally` se ha ido al hub por un vortice desde un nivel
+## (2026-10-17, tanda H1 del paso 14 del 1-2: Calc tras cargarse en la azotea,
+## CalcActor). NO lo marca como conocido: es el gancho del encuentro en el hub
+## (tanda H3), que llamara a GameState.meet_ally al verla alli.
+@warning_ignore("unused_signal")
+signal ally_teleported(ally: StringName)
+
 ## El apodo cambio (GameState.set_nickname).
 @warning_ignore("unused_signal")
 signal nickname_changed(nickname: String)
