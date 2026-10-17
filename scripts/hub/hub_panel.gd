@@ -9,9 +9,12 @@
 ## confirm_action (pulse) confirma y cancel_action (jump) vuelve. Por defecto
 ## confirmar emite option_chosen y volver emite close_requested; las
 ## subclases (NotasPanel, FolderPanel, CalcPanel) cambian _on_confirm y
-## _on_cancel. Bajo las opciones puede ir una linea de detalle (set_detail; la
-## tienda de Calc la usa para la mejora elegida) y cada opcion puede llevar su
-## rol de color cuando no esta elegida ("role").
+## _on_cancel. Bajo las opciones pueden ir lineas de detalle (set_detail o
+## set_detail_lines, cada una con su color; la tienda de Calc las usa para el
+## siguiente nivel de la pista elegida) y cada opcion puede llevar su rol de
+## color cuando no esta elegida ("role"). Las subclases pueden dar mas alto a
+## las filas de opciones y reservar sitio a su izquierda y derecha para dibujar
+## (_option_row_height, _option_inset_left/right; _after_layout coloca lo suyo).
 class_name HubPanel
 extends CanvasLayer
 
@@ -29,7 +32,7 @@ var _panel: NinePatchRect
 var _title: Label
 var _line_labels: Array[Label] = []
 var _option_labels: Array[Label] = []
-var _detail: Label
+var _detail_labels: Array[Label] = []
 var _message: Label
 var _help: Label
 var _option_ids: Array[StringName] = []
@@ -135,13 +138,42 @@ func set_options(options: Array) -> void:
 
 ## Linea de detalle bajo las opciones (vacia = no ocupa sitio).
 func set_detail(text: String, role: String = "texto_tenue") -> void:
-	_detail.text = text
-	_set_color(_detail, role)
+	set_detail_lines([{"text": text, "color": role}] if not text.is_empty() else [])
+
+
+## Lineas de detalle bajo las opciones: cada una {"text": String, "color": rol}.
+func set_detail_lines(lines: Array) -> void:
+	while _detail_labels.size() < lines.size():
+		_detail_labels.append(_new_label("Detail%d" % _detail_labels.size(), "texto_tenue"))
+	for i: int in _detail_labels.size():
+		var label: Label = _detail_labels[i]
+		var line: Dictionary = lines[i] if i < lines.size() else {}
+		label.text = String(line.get("text", ""))
+		if not line.is_empty():
+			_set_color(label, String(line.get("color", "texto_tenue")))
 	_layout()
 
 
+## Texto del detalle (las lineas no vacias separadas por saltos de linea).
 func get_detail() -> String:
-	return _detail.text
+	return "\n".join(get_detail_lines())
+
+
+func get_detail_lines() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for label: Label in _detail_labels:
+		if not label.text.is_empty():
+			out.append(label.text)
+	return out
+
+
+## Color de la linea de detalle `index` (de las no vacias).
+func get_detail_color(index: int) -> Color:
+	var shown: Array[Label] = []
+	for label: Label in _detail_labels:
+		if not label.text.is_empty():
+			shown.append(label)
+	return _label_color(shown[index])
 
 
 func set_message(text: String, role: String = "texto_claro") -> void:
@@ -255,6 +287,40 @@ func _on_selection_changed() -> void:
 	pass
 
 
+## Alto de cada fila de opcion en px de arte (por defecto, una linea de texto).
+func _option_row_height(line_h: float) -> float:
+	return line_h
+
+
+## Sitio reservado a la izquierda del texto de cada opcion (px de arte).
+func _option_inset_left() -> float:
+	return 0.0
+
+
+## Sitio reservado a la derecha del texto de cada opcion (px de arte).
+func _option_inset_right() -> float:
+	return 0.0
+
+
+## Tras colocar las etiquetas (las subclases colocan sus dibujos).
+func _after_layout() -> void:
+	pass
+
+
+## Etiqueta de la opcion `index` (para colocar dibujos junto a ella).
+func _get_option_label(index: int) -> Label:
+	return _option_labels[index] if index < _option_labels.size() else null
+
+
+## Nodo del cuadro del panel (padre de las etiquetas; px de arte).
+func _get_panel_node() -> NinePatchRect:
+	return _panel
+
+
+func _line_height() -> float:
+	return ceilf(_font.get_height(int(_config.get("font_size", 12))))
+
+
 ## Texto de `key` en texts de la seccion panel (o `fallback`).
 func _text(key: String, fallback: String = "") -> String:
 	return String(_config.get("texts", {}).get(key, fallback))
@@ -332,7 +398,6 @@ func _build() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.add_child(_panel)
 	_title = _new_label("Title", String(colors.get("title", "texto_claro")))
-	_detail = _new_label("Detail", String(colors.get("detail", "texto_tenue")))
 	_message = _new_label("Message", String(colors.get("message", "texto_claro")))
 	_help = _new_label("Help", String(colors.get("help", "texto_tenue")))
 
@@ -344,7 +409,7 @@ func _ordered_labels() -> Array[Label]:
 	for label: Label in _line_labels + _option_labels:
 		if label.visible:
 			out.append(label)
-	for label: Label in [_detail, _message, _help]:
+	for label: Label in _detail_labels + [_message, _help]:
 		if not label.text.is_empty():
 			out.append(label)
 	return out
@@ -361,16 +426,26 @@ func _layout() -> void:
 	var gap: float = float(_config.get("line_gap_px", 4))
 	var width: float = float(_config.get("min_width_px", 240))
 	var labels: Array[Label] = _ordered_labels()
+	var inset_left: float = _option_inset_left()
+	var inset_right: float = _option_inset_right()
+	var row_h: float = maxf(_option_row_height(line_h), line_h)
 	for label: Label in labels:
-		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + pad * 2.0)
-	for label: Label in [_detail, _message, _help]:
+		var extra: float = inset_left + inset_right if _option_labels.has(label) else 0.0
+		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+				+ pad * 2.0 + extra)
+	for label: Label in _detail_labels + [_message, _help]:
 		label.visible = labels.has(label)
 	var y: float = pad
 	for i: int in labels.size():
 		var label: Label = labels[i]
-		label.position = Vector2(pad, y)
-		label.size = Vector2(width - pad * 2.0, line_h)
-		y += line_h + gap
+		if _option_labels.has(label):
+			label.position = Vector2(pad + inset_left, y + floorf((row_h - line_h) * 0.5))
+			label.size = Vector2(width - pad * 2.0 - inset_left - inset_right, line_h)
+			y += row_h + gap
+		else:
+			label.position = Vector2(pad, y)
+			label.size = Vector2(width - pad * 2.0, line_h)
+			y += line_h + gap
 		# Aire bajo el titulo y antes de las opciones.
 		var next: Label = labels[i + 1] if i + 1 < labels.size() else null
 		if label == _title or (next != null and _option_labels.has(next) and not _option_labels.has(label)) \
@@ -380,3 +455,4 @@ func _layout() -> void:
 	_panel.size = Vector2(width, height)
 	var top: float = float(_config.get("top_px", 48))
 	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(minf(top, maxf(screen.y - height, 0.0))))
+	_after_layout()

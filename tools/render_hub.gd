@@ -26,9 +26,12 @@
 ##   07a_calc_apagada.png        Isak junto a Calc apagada: sin tecla ni tienda
 ##   07_calc_prompt.png          Calc conocida (GameState.meet_ally, como --meet-ally=calc): tecla
 ##                               del pulso (simula 30 puntos para comprar)
-##   08_calc_tienda.png          tienda de Calc: saldo, power banks, mejoras con coste y estado, detalle
-##   09_calc_compra.png          «Comprada: Pulso amplio» (25 puntos menos; «Sin guardar» de nuevo)
-##   10_calc_faltan_puntos.png   Sync reforzado elegido: «No tienes puntos suficientes»
+##   08_calc_tienda.png          tienda de Calc por pistas (tanda M1): saldo, power banks, una fila por
+##                               pista con su chip y 5 recuadros, detalle del siguiente nivel
+##   09_calc_compra.png          «Nivel 2 instalado: Pulso amplio.» (25 puntos menos; 2 de 5;
+##                               «Sin guardar» de nuevo)
+##   10_calc_faltan_puntos.png   Sync Rate elegida: «Faltan 10 puntos.»
+## (todos los estados de la tienda: tools/render_calc_shop.gd)
 ##   10a_cargador_listo.png      cargador del dock (columna 16) listo; Isak acercandose con la
 ##                               energia a 20 (simula haber disparado el laser)
 ##   10b_cargador_recarga.png    Isak tocandolo: +50 de energia (70) y empieza el enfriamiento
@@ -69,6 +72,7 @@ func _run() -> void:
 		state.call(&"capture_attention_point", &"1-1", StringName("punto_%d" % i), 1)
 	state.call(&"mark_level_completed", &"1-1")
 	state.call(&"meet_ally", &"eco")
+	state.call(&"obtain_ability", &"pulse")  # el regalo de Eco (la pista del Pulso de la tienda lo pide)
 	for id: StringName in [&"alert_bubble", &"receiver", &"attention_point", &"bridge", &"notification_badge",
 			&"reminder_platform", &"snooze_button", &"overlay_popup"]:
 		state.call(&"learn_help", id)
@@ -193,16 +197,17 @@ func _run() -> void:
 	await _save(out_dir, "08_calc_tienda.png")
 	# 9. Comprar Pulso amplio (la primera).
 	var shop: Node = calc.call(&"get_calc_panel")
-	shop.call(&"select_option", &"wide_pulse")
+	shop.call(&"select_option", &"pulso")
 	shop.call(&"confirm")
-	_check(state.call(&"is_upgrade_purchased", &"wide_pulse"), "no se compra Pulso amplio")
+	_check(state.call(&"is_upgrade_purchased", &"wide_pulse"), "no se compra Pulso amplio (Pulso 2)")
 	_check(state.call(&"has_unsaved_changes"), "comprar no marca sin guardar")
 	await _frames(4)
 	await _save(out_dir, "09_calc_compra.png")
-	# 10. Sin puntos para Sync reforzado.
-	shop.call(&"select_option", &"reinforced_sync")
+	shop.call(&"finish_buy_animation")
+	# 10. Sin puntos para el Sync Rate 2 (15; quedan 5).
+	shop.call(&"select_option", &"sync")
 	shop.call(&"confirm")
-	_check(not state.call(&"is_upgrade_purchased", &"reinforced_sync"), "compra sin puntos")
+	_check(not state.call(&"is_upgrade_purchased", &"sync:2"), "compra sin puntos")
 	await _frames(4)
 	await _save(out_dir, "10_calc_faltan_puntos.png")
 	shop.call(&"cancel")

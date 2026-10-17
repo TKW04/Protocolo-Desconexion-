@@ -2,9 +2,11 @@
 # docs/propuesta-hub-y-guardado.md §6.2): de pie en el dock, conocida y
 # despierta (animacion awake desde la tanda H3 del encuentro, 2026-10-17; antes
 # dormida), sin voz y sin hablar fuera de su encuentro (tests/test_calc_intro.gd); el pulso abre la tienda con Isak de espaldas;
-# lista de mejoras con coste y estado, saldo de puntos y power banks; arriba y
-# abajo eligen (con el detalle de la elegida); el pulso compra con las mismas
-# reglas que GameState.purchase_upgrade; falta de puntos o de power bank;
+# tienda por pistas (tanda M1, 2026-10-17): una fila por pista con su chip y 5
+# recuadros (lleno, siguiente, vacio, candado por acceso, «Proximamente», «?»),
+# saldo de puntos y power banks; arriba y abajo eligen (detalle del SIGUIENTE
+# nivel con nombre, descripcion, coste y que falta); el pulso compra con
+# GameState.purchase_upgrade y el recuadro nuevo se carga;
 # comprar solo marca «sin guardar» (nada se escribe); salto cierra.
 # Usa su propia ruta de guardado (nunca user://save.json).
 extends GutTest
@@ -30,6 +32,7 @@ func before_each() -> void:
 	_saved_level = GameState.current_level
 	_saved_pulse = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
 	GameState.use_save_path(PATH, true)
+	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	EcoProgress.meet_calc()
 	_hub = HUB_SCENE.instantiate() as HubRoom
@@ -51,6 +54,8 @@ func after_each() -> void:
 	GameState.save_path = _saved_path
 	GameState.current_level = _saved_level
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _saved_pulse)
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, false)
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, false)
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
 	GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
 
@@ -133,69 +138,173 @@ func test_pulse_near_calc_opens_the_shop_with_isak_facing_back() -> void:
 	assert_false(_isak.is_facing_back(), "Recupera el control")
 
 
-func test_shop_lists_upgrades_points_and_power_banks() -> void:
+func _obtain(ability: StringName) -> void:
+	GameState.obtained_abilities[ability] = true
+	GameState.set_ability_unlocked(ability, true)
+
+
+## Todos los textos que se ven en el panel (titulo, lineas, filas, detalle, mensaje).
+func _panel_texts() -> PackedStringArray:
+	var out: PackedStringArray = [_panel.get_title(), _panel.get_message(), _panel.get_help()]
+	out.append_array(_panel.get_lines())
+	out.append_array(_panel.get_detail_lines())
+	for track: StringName in _panel.get_track_ids():
+		out.append(_panel.track_name(track))
+	return out
+
+
+func _assert_no_lap_words() -> void:
+	var regex := RegEx.create_from_string("(?i)\\b(vuelta|vueltas|easy|normal|hard)\\b")
+	for text: String in _panel_texts():
+		assert_null(regex.search(text), "Sin palabras de vuelta: «%s»" % text)
+
+
+func test_shop_rows_chips_boxes_and_next_level_detail() -> void:
+	_obtain(GameState.ABILITY_LASER)
 	GameState.attention_points = 30
 	_open()
 	assert_eq(_panel.get_title(), "Calc - Mejoras")
-	assert_eq(_panel.get_upgrade_ids().size(), UpgradeCatalog.shared().entries().size(), "Todas las mejoras")
-	assert_eq(_panel.get_option_ids(), _panel.get_upgrade_ids(), "Una opcion por mejora")
+	assert_eq(_panel.get_track_ids(), [&"pulso", &"laser", &"debug", &"sync", &"energia"] as Array[StringName])
+	assert_eq(_panel.get_option_ids(), _panel.get_track_ids(), "Una fila por pista")
 	var lines: PackedStringArray = _panel.get_lines()
-	assert_eq(lines[0], "Puntos de atención: 30", "Saldo")
+	assert_eq(lines[0], "◆ 30 puntos de atención", "Saldo con el icono")
 	assert_eq(lines[1], "Power banks: 0 (carga 0/%d)" % roundi(GameState.get_power_bank_capacity()))
 	assert_eq(lines[2], "Todo guardado")
-	assert_eq(_panel.upgrade_text(&"wide_pulse"), "Pulso amplio - 25 pts - Disponible")
-	assert_eq(_panel.upgrade_text(&"reinforced_sync"), "Sync reforzado - 45 pts + 1 power bank - Faltan puntos")
-	assert_eq(_panel.get_detail(), "Radio del pulso: 96 px a 112 px", "Detalle de la elegida")
+	assert_eq([_panel.track_name(&"pulso"), _panel.track_name(&"laser"), _panel.track_name(&"debug"),
+		_panel.track_name(&"sync"), _panel.track_name(&"energia")], ["Pulso", "Láser", "???", "Sync Rate", "Energía"])
+	# Recuadros: el 1 lleno, el siguiente late, el 3 vacio y el 4-5 con candado (Cache).
+	assert_eq(_panel.box_states(&"pulso"), [&"full", &"next", &"empty", &"locked", &"locked"] as Array[StringName])
+	assert_eq(_panel.filled_count(&"pulso"), 1, "El primero activo (nivel 1 gratis)")
+	assert_true(_panel.get_box_frame(&"pulso", 1) in ["next_a", "next_b"], "El siguiente late")
+	assert_eq(_panel.get_box_frame(&"pulso", 3), "locked")
+	# Debug sin obtener: chip «?» y recuadros grises.
+	assert_eq(_panel.box_states(&"debug"), [&"unknown", &"unknown", &"unknown", &"unknown", &"unknown"] as Array[StringName])
+	assert_eq(_panel.get_chip_frame(&"debug"), "unknown")
+	assert_eq(_panel.get_chip_frame(&"pulso"), "pulse_selected", "Elegida: marco cian")
+	assert_eq(_panel.get_chip_frame(&"laser"), "laser")
+	assert_true((_panel.get_row_nodes(&"pulso")["chip"] as TextureRect).visible)
+	# Detalle del SIGUIENTE nivel: nombre, descripcion, coste y estado.
+	assert_eq(_panel.get_detail_lines(), PackedStringArray(["Pulso - Nivel 1 de 5",
+		"Siguiente, nivel 2: Pulso amplio", "Más alcance: radio del pulso de 96 px a 112 px.",
+		"Coste: 25 puntos", "Disponible"]))
 	_panel._unhandled_input(_action(&"move_down"))
-	assert_eq(_panel.get_selected_upgrade(), &"reinforced_sync")
-	assert_eq(_panel.get_detail(), "Sync Rate máximo: 100 % a 120 %", "El detalle sigue a la eleccion")
-	_panel._unhandled_input(_action(&"move_up"))
-	assert_eq(_panel.get_selected_upgrade(), &"wide_pulse")
+	assert_eq(_panel.get_selected_track(), &"laser")
+	assert_eq(_panel.get_chip_frame(&"laser"), "laser_selected")
+	assert_eq(_panel.get_detail_lines()[1], "Siguiente, nivel 2: Láser rápido", "El detalle sigue a la eleccion")
+	assert_eq(_panel.get_detail_lines()[3], "Coste: 15 puntos")
+	_panel._unhandled_input(_action(&"move_down"))
+	assert_eq(_panel.get_detail_lines(), PackedStringArray(["???", "Aún no tienes esta habilidad."]),
+		"Chip «?»: sin nombre ni efecto")
+	_panel._unhandled_input(_action(&"pulse"))
+	assert_eq(_panel.get_message(), "Aún no tienes esta habilidad.")
+	assert_eq(GameState.attention_points, 30)
+	_panel._unhandled_input(_action(&"move_down"))
+	assert_eq(_panel.get_detail_lines()[1], "Siguiente, nivel 2: Sync reforzado")
+	_panel._unhandled_input(_action(&"move_down"))
+	_panel._unhandled_input(_action(&"move_down"))
+	assert_eq(_panel.get_selected_track(), &"pulso", "Da la vuelta a la lista")
 	var rect: Rect2 = _panel.get_panel_rect()
 	assert_lte(rect.end.y, 720.0, "Cabe en pantalla")
 	assert_lte(rect.end.x, 1280.0)
+	assert_gte(rect.position.x, 0.0)
+	_assert_no_lap_words()
 
 
-func test_buying_with_the_pulse_spends_points_and_only_marks_unsaved() -> void:
+func test_buying_fills_the_next_box_and_only_marks_unsaved() -> void:
 	GameState.attention_points = 30
 	_open()
 	_panel._unhandled_input(_action(&"pulse"))
-	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"), "Pulso compra la elegida")
+	assert_eq(GameState.get_upgrade_level(&"pulso"), 2, "Pulso compra el siguiente nivel")
 	assert_eq(GameState.attention_points, 5)
 	assert_almost_eq(GameState.effective_value(&"isak_abilities.pulse_radius_px", 96.0), 112.0, EPS,
-		"Mismo efecto que antes: radio del pulso 112")
-	assert_eq(_panel.get_message(), "Comprada: Pulso amplio")
-	assert_eq(_panel.get_lines()[0], "Puntos de atención: 5", "Saldo actualizado")
+		"Pulso amplio: radio 112")
+	assert_eq(_panel.get_message(), "Nivel 2 instalado: Pulso amplio.")
+	assert_eq(_panel.filled_count(&"pulso"), 2, "2 de 5 recuadros cargados")
+	assert_true(_panel.is_buy_animating(), "El recuadro nuevo se carga")
+	assert_true(_panel.get_box_frame(&"pulso", 1).begins_with("fill_"), "Animacion de carga")
+	_panel.advance_for_tests(0.25)
+	assert_true(_panel.get_box_frame(&"pulso", 1) in ["fill_3", "flash"])
+	_panel.finish_buy_animation()
+	assert_eq(_panel.get_box_frame(&"pulso", 1), "full")
+	assert_eq(_panel.get_lines()[0], "◆ 5 puntos de atención", "Saldo actualizado")
 	assert_eq(_panel.get_lines()[2], "Sin guardar")
-	assert_eq(_panel.upgrade_text(&"wide_pulse"), "Pulso amplio - 25 pts - Comprada")
+	assert_eq(_panel.get_detail_lines()[0], "Pulso - Nivel 2 de 5")
+	assert_eq(_panel.get_detail_lines()[1], "Siguiente, nivel 3: Pulso aturdidor")
+	assert_eq(_panel.get_detail_lines()[3], "Coste: 15 puntos")
+	assert_eq(_panel.get_detail_lines()[4], "Faltan 10 puntos", "Que falta")
 	assert_true(GameState.has_unsaved_changes(), "Comprar marca sin guardar")
 	assert_false(FileAccess.file_exists(PATH), "Comprar no guarda (guardado manual)")
 	assert_true(_hub.get_hud().is_unsaved_indicator_shown(), "El HUD del hub dice «Sin guardar»")
 	_panel._unhandled_input(_action(&"pulse"))
-	assert_eq(_panel.get_message(), "Ya la tienes")
-	assert_eq(GameState.attention_points, 5, "No cobra dos veces")
+	assert_eq(_panel.get_message(), "Faltan 10 puntos.")
+	assert_eq(GameState.attention_points, 5, "No cobra")
+	assert_eq(GameState.get_upgrade_level(&"pulso"), 2)
 
 
-func test_not_enough_points_or_power_bank_does_not_buy() -> void:
+func test_access_locks_soon_and_max_level() -> void:
+	_obtain(GameState.ABILITY_LASER)
+	GameState.attention_points = 100
+	GameState.upgrade_levels[&"pulso"] = 3
+	GameState.upgrade_levels[&"sync"] = 5
+	_open()
+	# Cache: el nivel 4 pide Kernel (candado y texto de acceso, sin la palabra vuelta).
+	assert_eq(_panel.box_states(&"pulso"), [&"full", &"full", &"full", &"locked", &"locked"] as Array[StringName])
+	assert_eq(_panel.get_detail_lines()[1], "Siguiente, nivel 4: Ocultarte")
+	assert_eq(_panel.get_detail_lines()[4], "Requiere acceso Kernel")
+	_panel._unhandled_input(_action(&"pulse"))
+	assert_eq(_panel.get_message(), "Disponible con acceso Kernel.")
+	assert_eq(GameState.get_upgrade_level(&"pulso"), 3)
+	_assert_no_lap_words()
+	# Kernel: el 4 del Pulso (Ocultarte) es de la tanda M2: «Próximamente».
+	GameState.lap = GameState.LAP_NORMAL
+	_panel.refresh()
+	assert_eq(_panel.box_states(&"pulso"), [&"full", &"full", &"full", &"soon", &"locked"] as Array[StringName])
+	assert_eq(_panel.get_detail_lines()[4], "Próximamente")
+	_panel._unhandled_input(_action(&"pulse"))
+	assert_eq(_panel.get_message(), "Próximamente.")
+	assert_eq(GameState.attention_points, 100)
+	# El 5 del Laser pide Raiz.
+	GameState.upgrade_levels[&"laser"] = 4
+	_panel.select_option(&"laser")
+	assert_eq(_panel.get_detail_lines()[4], "Requiere acceso Raíz")
+	assert_eq(_panel.get_detail_lines()[3], "Coste: 25 puntos + 1 power bank", "El nivel 5 pide un power bank")
+	_assert_no_lap_words()
+	# Debug 3 (revelado persistente) sale como «Próximamente» ya en Cache.
+	GameState.lap = GameState.LAP_EASY
+	_obtain(GameState.ABILITY_DEBUG)
+	GameState.upgrade_levels[&"debug"] = 2
+	_panel.refresh()
+	assert_eq(_panel.box_states(&"debug"), [&"full", &"full", &"soon", &"locked", &"locked"] as Array[StringName])
+	# Nivel maximo: 5 de 5.
+	_panel.select_option(&"sync")
+	assert_eq(_panel.box_states(&"sync"), [&"full", &"full", &"full", &"full", &"full"] as Array[StringName])
+	assert_eq(_panel.get_detail_lines()[1], "Nivel máximo")
+	_panel._unhandled_input(_action(&"pulse"))
+	assert_eq(_panel.get_message(), "Esta mejora está completa.")
+
+
+func test_debug_chip_unknown_until_obtained() -> void:
+	_open()
+	assert_eq(_panel.track_name(&"debug"), "???")
+	assert_eq(_panel.get_chip_frame(&"debug"), "unknown")
+	_obtain(GameState.ABILITY_DEBUG)
+	_panel.refresh()
+	assert_eq(_panel.track_name(&"debug"), "Debug")
+	assert_eq(_panel.get_chip_frame(&"debug"), "debug")
+	assert_eq(_panel.box_states(&"debug")[1], &"next")
+
+
+func test_no_points_shows_what_is_missing() -> void:
 	GameState.attention_points = 10
 	_open()
+	assert_eq(_panel.get_detail_lines()[4], "Faltan 15 puntos")
 	_panel._unhandled_input(_action(&"pulse"))
-	assert_false(GameState.is_upgrade_purchased(&"wide_pulse"))
-	assert_eq(_panel.get_message(), "No tienes puntos suficientes")
+	assert_eq(_panel.get_message(), "Faltan 15 puntos.")
 	assert_eq(GameState.attention_points, 10)
 	assert_false(GameState.has_unsaved_changes(), "Sin compra no hay cambios")
-	GameState.attention_points = 100
-	_panel.refresh()
-	assert_true(_panel.select_option(&"reinforced_sync"))
+	_panel.select_option(&"sync")
 	_panel._unhandled_input(_action(&"pulse"))
-	assert_false(GameState.is_upgrade_purchased(&"reinforced_sync"), "Hace falta un power bank completo")
-	assert_eq(_panel.get_message(), "Necesitas un power bank completo")
-	assert_eq(_panel.upgrade_text(&"reinforced_sync"), "Sync reforzado - 45 pts + 1 power bank - Falta power bank")
-	GameState.power_banks = 1
-	_panel._unhandled_input(_action(&"pulse"))
-	assert_true(GameState.is_upgrade_purchased(&"reinforced_sync"))
-	assert_eq(GameState.power_banks, 0, "Gasta el power bank")
-	assert_eq(GameState.attention_points, 55)
+	assert_eq(_panel.get_message(), "Faltan 5 puntos.")
 
 
 func test_input_waits_for_the_panel_delay() -> void:
