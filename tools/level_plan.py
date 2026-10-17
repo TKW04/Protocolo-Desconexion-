@@ -56,6 +56,9 @@ MAX_STUNS = 12
 REMINDER_STAND_S = 0.1
 # Huecos de tiempo (s) sin plataformas ocultas que no apagan el Debug entre dos tramos.
 DEBUG_GAP_S = 1.0
+# Tiempo (s reales) con el Debug activo junto al panel oculto para que lo descubra (tanda H2 del paso
+# 14 del 1-2: PowerSwitch lo descubre en el primer cuadro con el Debug activo cerca; se deja margen).
+REVEAL_S = 0.2
 
 
 def path_to(parent, target):
@@ -145,6 +148,34 @@ class Planner:
                 steps.append({"action": "wait", "at": n, "seconds": g.wait_s, "state": state,
                               "reason": "barra del 99 %% %s" % g.obj_id,
                               "target": {"type": "update_bar", "id": g.obj_id}})
+                continue
+            if g.kind == "switch":
+                # Acertijo de Calc (tanda H2): el panel oculto se descubre con el Debug (encender, un
+                # momento activo cerca y apagar: queda marcado) y despues, como el interruptor de pulso,
+                # `pulses` pulsos desde el suelo, cada uno con Isak de espaldas pose_s.
+                kind = "debug_switch" if g.hidden else "power_switch"
+                if g.hidden:
+                    steps.append({"action": "debug_on", "at": n, "state": state, "reason": "descubrir %s" % g.obj_id,
+                                  "target": {"type": kind, "id": g.obj_id}})
+                    steps.append({"action": "wait", "at": n, "seconds": REVEAL_S, "state": state,
+                                  "reason": "el Debug descubre el panel oculto %s" % g.obj_id,
+                                  "target": {"type": kind, "id": g.obj_id}})
+                    steps.append({"action": "debug_off", "at": n, "state": state})
+                shot = self.m.pulse_shot(g.openers, n, state)
+                for k in range(g.pulses):
+                    steps.append({"action": "pulse", "at": n, "shot": shot, "state": state, "face_back": True,
+                                  "pose_s": g.pose_s, "count": k + 1, "of": g.pulses,
+                                  "target": {"type": kind, "id": g.obj_id}})
+                continue
+            if g.kind == "lswitch":
+                shot = self.m.laser_shot(g.openers[0], n, state)
+                steps.append({"action": "laser", "at": n, "shot": shot, "state": state,
+                              "target": {"type": "laser_switch", "id": g.obj_id, "rect": g.openers[0][:4]}})
+                continue
+            if g.kind == "dock":
+                steps.append({"action": "wait", "at": n, "seconds": g.wait_s, "state": state,
+                              "reason": "Calc entra, se carga en %s y se teletransporta" % g.obj_id,
+                              "target": {"type": "charge_dock", "id": g.obj_id, "calc": g.calc_id}})
                 continue
             if g.kind == "ad":
                 shot = self.m.laser_shot(g.openers[0], n, state)
@@ -237,6 +268,10 @@ class Planner:
         if a == "laser":
             return r.laser_pose_s + s.get("extra_wait", 0.0)
         if a == "pulse":
+            if s.get("face_back"):
+                # Interruptor del acertijo de Calc: de espaldas pose_s (no se puede volver a pulsar hasta que
+                # Isak vuelve de perfil) y un cuadro.
+                return max(r.pulse_pose_s, s.get("pose_s", 0.0)) + DT
             return r.pulse_pose_s
         if a in ("wait", "wait_phase"):
             return s.get("seconds", 0.0)
@@ -328,10 +363,48 @@ class Planner:
                 self.info["bars"].append({"id": g.obj_id, "wait_s": round(g.wait_s, 2), "at": [st["at"][1], st["at"][0]],
                                           "wave_enemies": len(g.waves)})
         total, total_world = self.timeline(steps)
+        self.info["calc_puzzle"] = self.puzzle_info(steps)
         self.info["duration_s"] = round(total, 2)
         self.info["duration_world_s"] = round(total_world, 2)
         self.steps = steps
         return steps
+
+    # --- Acertijo de Calc (tanda H2 del paso 14 del 1-2) ---
+
+    def puzzle_info(self, steps):
+        """Resumen del acertijo de la azotea en el plan: pulsos de espaldas, laser al interruptor, Debug
+        (pared y panel), espera de Calc y energia en cada pieza. Vacio si el nivel no lo tiene."""
+        kinds = ("power_switch", "debug_switch", "laser_switch", "charge_dock", "glitch_wall")
+        items = []
+        for s in steps:
+            tgt = s.get("target", {})
+            if tgt.get("type") not in kinds:
+                continue
+            node = self.node_of(s)
+            entry = {"action": s["action"], "type": tgt["type"], "id": tgt["id"],
+                     "at": None if node is None else [node[1], node[0]], "t": round(s.get("t", 0.0), 2)}
+            if s["action"] == "pulse":
+                entry["count"] = s.get("count")
+                entry["of"] = s.get("of")
+            if s["action"] == "wait":
+                entry["seconds"] = round(s["seconds"], 2)
+            if "energy_after" in s:
+                entry["energy_after"] = s["energy_after"]
+            items.append(entry)
+        if not items:
+            return {}
+        lasers = [i for i in items if i["action"] == "laser"]
+        pulses = [i for i in items if i["action"] == "pulse"]
+        waits = [i for i in items if i["action"] == "wait" and i["type"] == "charge_dock"]
+        reveals = [i for i in items if i["action"] == "debug_on"]
+        dissolves = [i for i in items if i["type"] == "glitch_wall"]
+        first = min(i["t"] for i in items)
+        last = max(i["t"] + i.get("seconds", 0.0) for i in items)
+        return {"steps": items, "pulses": len(pulses), "lasers": len(lasers),
+                "laser_from": lasers[0]["at"] if lasers else None,
+                "debug_uses": len(reveals) + len(dissolves),
+                "calc_wait_s": waits[0]["seconds"] if waits else None,
+                "duration_s": round(last - first, 2)}
 
     # --- Acertijo lector -> receptor enlazado ---
 
@@ -654,10 +727,20 @@ class Planner:
             out.extend(steps[cursor:a])
             at = steps[a]["from"]
             out.append({"action": "debug_on", "at": at, "state": steps[a]["state"]})
+            wall = self.glitch_crossed(steps[a:b + 1])
+            if wall is not None and self.m.glitch_dissolve_s > 0.0:
+                # Tanda H2: la pared con glitch se disuelve (tiempo del mundo, a world_time_scale con el
+                # Debug) antes de poder cruzarla.
+                out.append({"action": "wait", "at": at, "state": steps[a]["state"],
+                            "seconds": self.m.glitch_dissolve_s / max(self.rules.debug_world_scale, 0.001),
+                            "reason": "la pared con glitch %s se disuelve" % wall,
+                            "target": {"type": "glitch_wall", "id": wall}})
             out.extend(steps[a:b + 1])
             out.append({"action": "debug_off", "at": steps[b]["to"], "state": steps[b]["state"]})
             cursor = b + 1
             seconds = sum(self.duration(steps[k]) for k in range(a, b + 1))
+            if wall is not None and self.m.glitch_dissolve_s > 0.0:
+                seconds += self.m.glitch_dissolve_s / max(self.rules.debug_world_scale, 0.001)
             self.info["debug"]["segments"].append({"from": [at[1], at[0]], "to": [steps[b]["to"][1], steps[b]["to"][0]],
                                                    "active_s": round(seconds, 2),
                                                    "energy": round(seconds * self.rules.debug_drain, 1)})
@@ -665,7 +748,23 @@ class Planner:
         self.info["debug"]["required"] = any(steps[i].get("debug") for i in need)
         return out
 
+    def glitch_crossed(self, steps):
+        """Id de la primera pared con glitch (aun solida en ese estado) que cruzan los movimientos."""
+        for s in steps:
+            if s["action"] != "move":
+                continue
+            cells = body_cells(s["to"])
+            for wall in self.m.glitch_walls:
+                door = "switch:" + wall["door_when"] if wall["door_when"] else None
+                if door and door in s["state"]:
+                    continue
+                if cells & set(wall["cells"]):
+                    return wall["id"]
+        return None
+
     def valid_in_debug(self, s):
+        if s["action"] in ("debug_on", "debug_off"):
+            return False  # el Debug que descubre un panel oculto va aparte
         if s["action"] != "move":
             return True
         return any(e["to"] == s["to"] for e in self.m.edges(s["from"], s["state"], True))
@@ -1320,6 +1419,15 @@ class Planner:
                 if a == "debug_on":
                     item["hold_s"] = self.rules.debug_hold_s
                     item["active_s"] = s.get("active_s")
+                    if s.get("reason"):
+                        item["reason"] = s["reason"]
+                if s.get("face_back"):
+                    # Interruptor del acertijo de Calc: Isak queda de espaldas pose_s (tiempo del mundo) tras
+                    # el pulso; pulso count de of.
+                    item["face_back"] = True
+                    item["pose_s"] = s.get("pose_s")
+                    item["count"] = s.get("count")
+                    item["of"] = s.get("of")
                 if a == "hop":
                     item["air_s"] = round(s["time"], 3)
                 if s.get("final"):

@@ -66,7 +66,8 @@ rm -f "$IMPORT_LOG"
 # torre (tools/validate_world1_facade.py). Desde el 2026-10-17 (ajuste del 1-2): las subidas del 1-2
 # que mide con el Isak real tests/test_level_climbs.gd (tests/fixtures/climbs_1-2.json, al dia con
 # tools/level_climbs.py --check). Desde el 2026-10-17 (tanda H1 del paso 14 del 1-2): el arte del
-# encuentro con Calc (tools/validate_calc_encounter.py).
+# encuentro con Calc (tools/validate_calc_encounter.py). Desde la tanda H2 (2026-10-17): el 1-2 se valida
+# con Calc desconocida (acertijo de la azotea) y conocida (camino directo; --allies calc), con su camino.
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -76,6 +77,10 @@ _export_test_rooms() {
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
+	# El 1-2 con Calc ya conocida (tanda H2 del paso 14): camino directo a la terminal.
+	python3 tools/validate_level.py --allies calc --export-path "$EXPORT_DIR/1-2_calc.json" \
+		"$PROJECT_DIR/data/levels/1-2.json" >/dev/null || return 1
+	[[ -s "$EXPORT_DIR/1-2_calc.json" ]] || return 1
 }
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \

@@ -186,6 +186,28 @@ def _export_vector2(source, name):
     return float(match.group(1)), float(match.group(2))
 
 
+def sprite_frames(root, res_path):
+    """Animaciones de un SpriteFrames .tres: nombre -> (cuadros, fps). Igual que
+    SpriteFrames.get_frame_count / get_animation_speed (lo usan CalcActor y GlitchWall para sus
+    tiempos)."""
+    path = os.path.join(root, res_path.replace("res://", ""))
+    try:
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError:
+        return {}
+    out = {}
+    pattern = r'"frames":\s*\[(.*?)\],\s*"loop":\s*(?:true|false),\s*"name":\s*&"([\w]+)",\s*"speed":\s*([\d.]+)'
+    for frames, name, speed in re.findall(pattern, text, re.S):
+        out[name] = (frames.count('"texture"'), float(speed))
+    return out
+
+
+def anim_length(frames, name):
+    count, speed = frames.get(name, (0, 1.0))
+    return count / max(speed, 0.001)
+
+
 def real_jump_height(v0, gravity, dt=SIM_DT):
     """Altura que sube Isak en el juego con un salto completo: velocidad inicial v0 (> 0 hacia
     arriba), la gravedad se aplica a la velocidad antes de moverse en cada cuadro de dt."""
@@ -201,8 +223,11 @@ class Rules:
     """Valores de juego que usa el modelo (todos leidos de los datos del proyecto)."""
 
     def __init__(self, root=ROOT, physics_path=None, jump_efficiency=DEFAULT_JUMP_EFFICIENCY,
-                 limit=DEFAULT_LIMIT, allow_run=False, upgrades=()):
+                 limit=DEFAULT_LIMIT, allow_run=False, upgrades=(), allies=()):
         physics = load_json(physics_path or os.path.join(root, "data", "isak_physics.json"))
+        # Asistentes ya conocidos (allies_met; tanda H2 del paso 14 del 1-2, 2026-10-17): las piezas
+        # con done_if_ally de uno de ellos arrancan hechas (el acertijo de Calc no se repite).
+        self.allies = tuple(allies)
         abilities = load_json(os.path.join(root, "data", "isak_abilities.json"))
         with open(os.path.join(root, "scripts", "player", "isak.gd"), encoding="utf-8") as handle:
             isak_source = handle.read()
@@ -267,7 +292,15 @@ class Rules:
     def with_upgrades(self, extra):
         """Las mismas reglas con mas mejoras compradas."""
         ups = self.upgrades + tuple(u for u in extra if u not in self.upgrades)
-        rules = Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, ups)
+        rules = Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, ups,
+                      self.allies)
+        rules.time_margin = self.time_margin
+        return rules
+
+    def with_allies(self, allies):
+        """Las mismas reglas con estos asistentes ya conocidos."""
+        rules = Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, self.upgrades,
+                      tuple(allies))
         rules.time_margin = self.time_margin
         return rules
 
@@ -348,6 +381,8 @@ class Gate:
         self.col = col
         self.row = row
         self.bypassable = False
+        # Asistente que, conocido, deja la puerta hecha desde el principio (done_if_ally).
+        self.done_if_ally = ""
         cols = [c for c, _ in self.cells]
         if rect is not None:
             cols += [int(rect[0] // tile), int(rect[2] // tile)]
@@ -355,9 +390,12 @@ class Gate:
 
     def label(self):
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
-                 "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %"}
+                 "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %",
+                 "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga"}
         if getattr(self, "encounter", False):
             return "encuentro con Eco %s" % self.obj_id
+        if self.kind == "switch" and getattr(self, "hidden", False):
+            return "panel oculto %s" % self.obj_id
         return "%s %s" % (names[self.kind], self.obj_id)
 
 
@@ -400,7 +438,18 @@ class LevelModel:
         self.ceiling_margin = None if margin is None else float(margin)
         self._relay_cache = {}
         self.gates = []
+        # Acertijo de la azotea del 1-2 (encuentro con Calc; tanda H2 del paso 14, 2026-10-17): celdas
+        # de una pared con glitch que se vuelve puerta -> gid del interruptor (door_when), terminal que
+        # necesita corriente y piezas que arrancan hechas con su asistente conocido.
+        self.glitch_doors = {}
+        self.glitch_walls = []  # {"id", "cells", "door_when"}
+        self.terminal_power = []  # {"id", "source", "cell"}
         self._build_objects()
+        self._door_gids = set(self.glitch_doors.values())
+        allies = set(rules.allies)
+        self.initial = frozenset(g.gid for g in self.gates if g.done_if_ally and g.done_if_ally in allies)
+        # Las piezas con done_if_ally (para validar tambien el caso «asistente conocido»).
+        self.ally_pieces = sorted({g.done_if_ally for g in self.gates if g.done_if_ally})
         self.spike_rects = self._spike_rects()
         self.sections = level.get("sections", [])
         self._worlds = {}
@@ -492,9 +541,22 @@ class LevelModel:
                     info["cells"].add((obj["x"] + dx, obj["y"]))
                     self.reminder_group_of[(obj["x"] + dx, obj["y"])] = group
             elif obj["type"] == "glitch_wall":
+                cells = []
                 for dy in range(int(p.get("height_tiles", 1))):
                     for dx in range(int(p.get("width_tiles", 1))):
                         self.glitch.add((obj["x"] + dx, obj["y"] + dy))
+                        cells.append((obj["x"] + dx, obj["y"] + dy))
+                door = str(p.get("door_when", "") or "")
+                self.glitch_walls.append({"id": str(p.get("id", "glitch_%d_%d" % (obj["x"], obj["y"]))),
+                                          "cells": cells, "door_when": door, "cell": (obj["x"], obj["y"])})
+                if door:
+                    # Puerta (paso 14 del 1-2): con su interruptor activado deja de ser solida para siempre.
+                    for cell in cells:
+                        self.glitch_doors[cell] = "switch:" + door
+            elif obj["type"] == "exit_terminal" and p.get("requires_power"):
+                self.terminal_power.append({"id": str(p.get("id", "terminal_%d_%d" % (obj["x"], obj["y"]))),
+                                            "source": str(p.get("power_source", "") or ""),
+                                            "cell": (obj["x"], obj["y"])})
         for obj in self.level.get("objects", []):
             p = self._params(obj)
             if obj["type"] == "bridge_inactive":
@@ -549,6 +611,40 @@ class LevelModel:
                 gate.ability = "pulse"
                 gate.encounter = True
                 self.gates.append(gate)
+            elif obj["type"] in ("power_switch", "debug_switch"):
+                # Interruptor de pulso / panel oculto (tanda H2 del paso 14 del 1-2): `pulses` pulsos que
+                # alcancen su hit_rect, cada uno con Isak de espaldas pose_s (tiempo del mundo). El panel
+                # oculto solo responde una vez descubierto con el Debug activo a reveal_radius_px.
+                cfg = self.catalog.get("power_switch", {})
+                sid = str(p.get("id", "switch_%d_%d" % (obj["x"], obj["y"])))
+                gate = Gate("switch:" + sid, "switch", sid, openers=[cell_rect(obj, cfg.get("hit_rect", [8, -14, 48, 48]),
+                                                                              "interruptor %s" % sid)],
+                            col=obj["x"], row=obj["y"], tile=T)
+                gate.pulses = int(p.get("pulses", 3 if obj["type"] == "power_switch" else 1))
+                gate.pose_s = float(cfg.get("pose_s", 0.45))
+                gate.hidden = obj["type"] == "debug_switch"
+                gate.reveal_radius = float(cfg.get("reveal_radius_px", 256.0))
+                gate.done_if_ally = str(p.get("done_if_ally", "") or "")
+                self.gates.append(gate)
+            elif obj["type"] == "laser_switch":
+                # Interruptor laser: un impacto lo activa para siempre (sin ventana).
+                cfg = self.catalog.get("laser_switch", {})
+                sid = str(p.get("id", "laser_switch_%d_%d" % (obj["x"], obj["y"])))
+                gate = Gate("lswitch:" + sid, "lswitch", sid,
+                            openers=[cell_rect(obj, cfg.get("hit_rect", [32, -16, 32, 48]), "interruptor laser %s" % sid)],
+                            col=obj["x"], row=obj["y"], tile=T)
+                gate.done_if_ally = str(p.get("done_if_ally", "") or "")
+                self.gates.append(gate)
+            elif obj["type"] == "charge_dock":
+                # Punto de carga: se arma con todas sus piezas hechas; Calc entra, se carga y se va al hub
+                # (espera fija, wait_s); entonces tiene corriente.
+                did = str(p.get("id", "dock_%d_%d" % (obj["x"], obj["y"])))
+                gate = Gate("dock:" + did, "dock", did, col=obj["x"], row=obj["y"], tile=T)
+                gate.requires = [str(r) for r in p.get("requires", [])]
+                gate.charge_s = float(p.get("charge_s", 3.0))
+                gate.done_if_ally = str(p.get("done_if_ally", "") or "")
+                gate.dock_obj = obj
+                self.gates.append(gate)
         # Anuncios (ad_cover, paso 10): tapan el boton de un pop-up (solido o translucido) hasta que
         # el laser los rompe; mientras, el pulso rebota.
         size = self.catalog.get("ad_cover", {}).get("size_px", [96, 48])
@@ -602,6 +698,68 @@ class LevelModel:
             gate.health = float(params.get("health", 1.0))
             gate.laser_from = None
             self.gates.append(gate)
+        self._link_calc_room()
+
+    def _link_calc_room(self):
+        """Enlaces del acertijo de Calc (tanda H2): las piezas que pide cada punto de carga (gid), el
+        interruptor de cada puerta (su columna cuenta en la cache de movimientos de la pared) y la
+        espera de Calc: despertar, caminar por su path (el ultimo punto, los pies en el dock), cargar
+        charge_s, cara despierta charged_hold_s y el vortice (como CalcActor)."""
+        T = self.T
+        # Disolucion de la pared con glitch con el Debug (GlitchWall: cuadros de glitch_dissolve a
+        # dissolve_fps, tiempo del mundo); el plan espera a que termine antes de cruzarla.
+        self.glitch_dissolve_s = 0.0
+        if self.glitch:
+            cfg = self.catalog.get("glitch_wall", {})
+            frames = sprite_frames(self.rules.root, "res://assets/sprites/extra_life_frames.tres")
+            count = frames.get("glitch_dissolve", (len(cfg.get("dissolve_blink", [])), 12.0))[0]
+            self.glitch_dissolve_s = count / max(float(cfg.get("dissolve_fps", 12.0)), 0.001)
+        by_id = {g.obj_id: g for g in self.gates if g.kind in ("switch", "lswitch", "dock")}
+        for g in self.gates:
+            if g.kind == "switch":
+                walls = [w for w in self.glitch_walls if w["door_when"] == g.obj_id]
+                cols = [g.col] + [c for w in walls for c, _ in w["cells"]]
+                g.col_span = (min(cols), max(cols))
+            if g.kind != "dock":
+                continue
+            g.requires_gids = [by_id[r].gid if r in by_id else "missing:" + r for r in g.requires]
+            calc_cfg = self.catalog.get("calc_actor", {})
+            dock_cfg = self.catalog.get("charge_dock", {})
+            actor = next((o for o in self.level.get("objects", []) if o["type"] == "calc_actor"
+                          and str(o.get("params", {}).get("dock", "")) == g.obj_id), None)
+            frames = sprite_frames(self.rules.root, str(calc_cfg.get("frames", "res://assets/sprites/calc_actor_frames.tres")))
+            warp = sprite_frames(self.rules.root, str(calc_cfg.get("warp_frames", "res://assets/sprites/warp_objects_frames.tres")))
+            feet = dock_cfg.get("calc_feet_px", [56, 52])
+            dock_feet = (g.dock_obj["x"] * T + float(feet[0]), g.dock_obj["y"] * T + float(feet[1]))
+            walk = 0.0
+            if actor is not None:
+                cells = actor.get("params", {}).get("path", []) or [[actor["x"], actor["y"]]]
+                points = [((c + 0.5) * T, (r + 1.0) * T) for c, r in cells]
+                if len(points) >= 2:
+                    points[-1] = dock_feet
+                else:
+                    points.append(dock_feet)
+                walk = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(points, points[1:]))
+                g.calc_id = str(actor.get("params", {}).get("id", "calc"))
+                g.calc_path = [list(c) for c in cells]
+            else:
+                g.calc_id = None
+                g.calc_path = []
+            speed = float(calc_cfg.get("walk_speed_px_s", 70.0))
+            spins = max(int(calc_cfg.get("spins", 2)), 1)
+            parts = {
+                "wake_s": anim_length(frames, "calc_wake") if actor is not None else 0.0,
+                "walk_s": walk / speed if actor is not None else 0.0,
+                "charge_s": g.charge_s,
+                "charged_hold_s": float(calc_cfg.get("charged_hold_s", 0.8)) if actor is not None else 0.0,
+                "teleport_s": (anim_length(warp, "vortex_open") + anim_length(warp, "vortex_close")
+                               + spins * anim_length(warp, "vortex_spin")) if actor is not None else 0.0,
+            }
+            # Unos cuadros de reaccion (el dock se arma, Calc lo ve en su siguiente cuadro, etc.).
+            parts["frames_s"] = 4.0 * SIM_DT
+            g.wait_parts = {k: round(v, 3) for k, v in parts.items()}
+            g.wait_s = sum(parts.values())
+            g.walk_px = walk
 
     def _spike_rects(self):
         spikes = self.hazard_data["spikes"]
@@ -647,8 +805,12 @@ class LevelModel:
     def local_key(self, node, state):
         c = node[0]
         lo, hi = c - self.K - 3, c + self.K + 3
+        # Solo las puertas que cambian el terreno (tanda H2: el interruptor laser, el punto de carga, el
+        # anuncio y las habilidades no; el interruptor de pulso, si abre una puerta con glitch).
         return tuple(sorted(g.gid for g in self.gates
-                            if g.gid in state and not (g.col_span[1] < lo or g.col_span[0] > hi)))
+                            if g.gid in state and g.kind not in ("lswitch", "dock")
+                            and not (g.kind == "switch" and ("switch:" + g.obj_id) not in self._door_gids)
+                            and not (g.col_span[1] < lo or g.col_span[0] > hi)))
 
     def edges(self, node, state, debug=False):
         if debug == "auto":
@@ -703,6 +865,17 @@ class LevelModel:
             return c0 <= node[0] < c0 + w and r0 <= node[1] < r0 + h
         if gate.kind == "ad":
             return use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug)
+        if gate.kind == "dock":
+            # Se arma solo cuando todas sus piezas estan hechas (desde cualquier sitio).
+            return all(r in state for r in gate.requires_gids)
+        if gate.kind == "lswitch":
+            return use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug)
+        if gate.kind == "switch":
+            if not self.has_pulse(state):
+                return False
+            if gate.hidden and not (self.has_debug(state) and self.reveal_near(gate, node)):
+                return False  # el panel oculto no se ve ni responde sin descubrirlo con el Debug
+            return self.pulse_hits(gate.openers, node, state, debug)
         if gate.kind == "bubble" and use_laser and self.has_laser(state) and self.laser_hits(gate, node, state, debug):
             return True
         if not self.has_pulse(state) or not gate.openers:
@@ -714,6 +887,14 @@ class LevelModel:
                 return False
             return node in self.relay_plan(gate, state, debug)["ok"]
         return self.pulse_hits(gate.openers, node, state, debug)
+
+    def reveal_near(self, gate, node):
+        """El Debug activo descubre el panel oculto con los pies de Isak (centro de la celda de pie) a
+        reveal_radius_px del centro de su zona (PowerSwitch._isak_near)."""
+        rect = gate.openers[0]
+        cx, cy = (rect[0] + rect[2]) * 0.5, (rect[1] + rect[3]) * 0.5
+        x, feet = (node[0] + 0.5) * self.T, (node[1] + 1) * self.T
+        return math.hypot(x - cx, feet - cy) <= gate.reveal_radius + EPS
 
     def pulse_hits(self, rects, node, state, debug=False):
         """Verdadero si el pulso desde `node` (de pie, mirando a un lado) toca alguno de `rects`."""
@@ -906,9 +1087,11 @@ class World:
         self.support = [[False] * cols for _ in range(rows)]
         # Celdas con una tabla solida fina arriba (puente extendido): (col, fila) -> grosor en px.
         self.thin = {}
+        doors = model.glitch_doors
         for r, row in enumerate(model.grid):
             for c, ch in enumerate(row):
-                if ch == "#" or ((c, r) in model.glitch and not debug) or (ch == "h" and debug):
+                glitch = (c, r) in model.glitch and not debug and not (doors and doors.get((c, r)) in state)
+                if ch == "#" or glitch or (ch == "h" and debug):
                     self.solid[r][c] = True
                     self.support[r][c] = True
                 elif ch == "-":
@@ -1381,6 +1564,9 @@ class Validator:
         self.result = {}
         self.export_requested = False
         self.planner = None
+        # Meta y lo que necesita (terminal con requires_power: su fuente hecha; tanda H2 del paso 14).
+        self.goal_cells = None
+        self.goal_need = frozenset()
 
     def find(self, char):
         return [(c, r) for r, row in enumerate(self.grid) for c, ch in enumerate(row) if ch == char]
@@ -1407,8 +1593,12 @@ class Validator:
                     use_laser=True):
         """Avanza abriendo puertas hasta tocar `targets` (celdas). Devuelve dict con
         ok, stages [(src, state, cost, parent, opened_gate, opener_node, end_node)], reached.
-        `avoid`: celdas que no se pisan; `use_laser`: si el laser (una vez disponible) abre puertas."""
-        state = frozenset(gates0)
+        `avoid`: celdas que no se pisan; `use_laser`: si el laser (una vez disponible) abre puertas.
+        Las piezas hechas de antemano (asistente conocido, model.initial) van siempre en el estado; si
+        `targets` es la meta y la terminal necesita corriente, la meta solo cuenta con su fuente hecha
+        (goal_need)."""
+        state = frozenset(gates0) | self.model.initial
+        need = self.goal_need if targets == self.goal_cells else frozenset()
         src = source
         stages = []
         reached_all = set()
@@ -1416,7 +1606,7 @@ class Validator:
         for _ in range(len(self.model.gates) + 1):
             cost, parent = search(self.model, src, state, limit, debug, avoid)
             reached_all |= set(cost)
-            goal_nodes = [n for n in cost if self.touches(n, targets)]
+            goal_nodes = [n for n in cost if self.touches(n, targets)] if need <= state else []
             if goal_nodes:
                 end = min(goal_nodes, key=lambda n: (cost[n], n[0], n[1]))
                 stages.append({"src": src, "state": state, "cost": cost, "parent": parent, "gate": None,
@@ -1472,6 +1662,8 @@ class Validator:
             rep.error("el grid necesita exactamente una P y una G")
             return self.finish()
         goal_cells = {goals[0]}
+        self.goal_cells = goal_cells
+        self._check_power_sources()
         self._check_bubbles()
         # Regla 5 (P) y nodo de inicio.
         start, why = self.spawn_node(starts[0])
@@ -1524,7 +1716,7 @@ class Validator:
         punto rojo, banner, chip del Debug, plataformas 'h' o bloque validation): se le hace el plan
         del camino (tools/level_plan.py) y se informa de el. El 1-1 no lo es (su salida no cambia)."""
         kinds = {"laser_receiver", "relay_receiver", "ad_cover", "reminder_platform", "snooze_button",
-                 "overlay_popup", "update_bar"}
+                 "overlay_popup", "update_bar", "power_switch", "debug_switch", "laser_switch", "charge_dock"}
         if any(o["type"] in kinds for o in self.level.get("objects", [])):
             return True
         if any(e["type"] in ("notification_badge", "spam_banner") for e in self.level.get("enemies", [])):
@@ -1552,11 +1744,56 @@ class Validator:
             no_debug = self.progression(start, frozenset(), self.rules.limit, forbid=forbid, targets=goal_cells,
                                         debug=False)
             info["goal_without_debug"] = no_debug["ok"]
-            if no_debug["ok"]:
+            if no_debug["ok"] and not self.model.initial:
                 self.report.error("el nivel exige el Debug (validation.debug_required) pero la meta se alcanza sin "
                                   "plataformas ocultas ni el Debug")
         if info:
             self.result["requirements"] = info
+
+    def _check_power_sources(self):
+        """Terminal con requires_power (tanda H2 del paso 14 del 1-2): su power_source tiene que ser un
+        punto de carga del nivel (charge_dock) y la meta solo cuenta cuando esta hecho (Calc cargada y
+        teletransportada; goal_need). Las piezas que pide cada punto de carga existen."""
+        m = self.model
+        info = []
+        need = set()
+        for t in m.terminal_power:
+            gate = next((g for g in m.gates if g.kind == "dock" and g.obj_id == t["source"]), None)
+            entry = {"id": t["id"], "source": t["source"],
+                     "powered_at_start": gate is not None and gate.gid in m.initial}
+            if gate is None:
+                self.report.error("la terminal %s necesita corriente de %s y no es un punto de carga del nivel"
+                                  % (t["id"], t["source"] or "(sin power_source)"), t["cell"][1], t["cell"][0], t["id"])
+            else:
+                need.add(gate.gid)
+                entry.update({"requires": list(gate.requires), "wait_s": round(gate.wait_s, 2),
+                              "wait_parts": gate.wait_parts, "calc": gate.calc_id})
+            info.append(entry)
+        for g in m.gates:
+            if g.kind != "dock":
+                continue
+            for rid, gid in zip(g.requires, g.requires_gids):
+                if gid.startswith("missing:"):
+                    self.report.error("%s pide la pieza %s, que no es un interruptor del nivel" % (g.label(), rid),
+                                      g.row, g.col, g.label())
+        self.goal_need = frozenset(need)
+        if info:
+            self.result["power"] = info
+
+    def _check_laser_switches(self, seen):
+        """El interruptor laser queda LEJOS (tanda H2): ninguna celda de pie alcanzable esta a su lado (misma
+        fila, columna de al lado o la suya); solo se activa con el laser."""
+        m = self.model
+        nodes = {n for n, _ in seen}
+        for g in m.gates:
+            if g.kind != "lswitch" or g.gid in m.initial:
+                continue
+            near = sorted((n for n in nodes if n[1] == g.row and abs(n[0] - g.col) <= 1), key=lambda n: (n[0], n[1]))
+            if near:
+                n = near[0]
+                self.report.error("%s se alcanza andando (Isak llega de pie a la fila %d, columna %d): tiene que "
+                                  "quedar lejos, solo al alcance del laser" % (g.label(), n[1], n[0]),
+                                  g.row, g.col, g.label())
 
     def _check_exit_terminals(self, main):
         """La terminal de salida se activa con el pulso desde el camino principal (sin mejoras ni laser)."""
@@ -1765,6 +2002,12 @@ class Validator:
             elif near(g):
                 rep.error("%s: el pulso no alcanza %s desde ninguna celda alcanzable antes de el"
                           % (g.label(), " ni ".join(o[4] for o in g.openers)), g.row, g.col, g.label())
+        if not self.goal_need <= state and any(self.touches(n, goal_cells) for n in reached):
+            # Tanda H2: se llega a la terminal pero no tiene corriente.
+            missing = [g.label() for g in self.model.gates if g.gid in self.goal_need - state]
+            rep.error("Isak llega a la meta pero la terminal de salida no tiene corriente (falta %s)"
+                      % ", ".join(missing))
+            return
         where = self.model.section_name(far[0], far[1]) or "sin tramo"
         if self.model.is_vertical():
             rep.error("no hay camino de P a G: Isak no sube de la fila %d (columna %d, %s); lo siguiente es la "
@@ -1778,6 +2021,28 @@ class Validator:
         """Explicacion de una puerta del paso 10 que no se abre (anuncio, barra, lector -> receptor
         enlazado). None: la puerta es de las de siempre; "": nada que decir (lejos)."""
         m = self.model
+        if g.kind == "dock":
+            missing = [r for r, gid in zip(g.requires, g.requires_gids) if gid not in state]
+            return "%s: Calc no se carga; faltan sin hacer: %s" % (g.label(), ", ".join(missing)) if missing else ""
+        if g.kind == "lswitch":
+            if not m.laser_possible:
+                return "%s necesita el laser y el nivel no lo tiene" % g.label()
+            if not m.has_laser(state):
+                return "%s necesita el laser y aun no se tiene" % g.label()
+            return ("%s: el laser no lo alcanza desde ninguna celda alcanzable (horizontal, a la altura del celular)"
+                    % g.label())
+        if g.kind == "switch" and g.hidden:
+            debug_possible = m.debug_base or any(p.kind == "pickup" and p.ability == "debug" for p in m.gates)
+            if not debug_possible:
+                return ("%s solo se ve con el Debug y el nivel no lo tiene (ni abilities_available.debug ni un chip)"
+                        % g.label())
+            if not m.has_debug(state):
+                return "%s solo se ve con el Debug y aun no se tiene" % g.label()
+            near_nodes = [n for n in reached if m.reveal_near(g, n)]
+            if not near_nodes:
+                return ("%s: Isak no llega a %.0f px de el para descubrirlo con el Debug"
+                        % (g.label(), g.reveal_radius))
+            return "%s: el pulso no lo alcanza desde ninguna celda donde el Debug lo descubre" % g.label()
         if g.kind == "bar":
             if not is_near:
                 return ""
@@ -1861,6 +2126,25 @@ class Validator:
                                     "text": "pulso desde (fila %d, columna %d) -> receptor enlazado %s -> %s "
                                             "(%.1f s desde el disparo)"
                                             % (b[1], b[0], g.relay["id"], g.label(), relay["time"])})
+                    continue
+                if g.kind == "switch":
+                    # Tanda H2: pulsos de espaldas (y, si es el panel oculto, antes el Debug que lo descubre).
+                    actions.append({"action": "pulse", "from": [n[1], n[0]], "object": g.label(),
+                                    "pulses": g.pulses, "face_back": True,
+                                    "text": "%spulso x%d de espaldas desde (fila %d, columna %d) -> %s"
+                                            % ("Debug para descubrirlo y " if g.hidden else "", g.pulses, n[1], n[0],
+                                               g.label())})
+                    continue
+                if g.kind == "lswitch":
+                    actions.append({"action": "laser", "from": [n[1], n[0]], "object": g.label(),
+                                    "text": "laser desde (fila %d, columna %d) -> %s (se queda activado)"
+                                            % (n[1], n[0], g.label())})
+                    continue
+                if g.kind == "dock":
+                    actions.append({"action": "wait", "from": [n[1], n[0]], "object": g.label(),
+                                    "seconds": round(g.wait_s, 2),
+                                    "text": "esperar %.1f s en (fila %d, columna %d) -> Calc entra, se carga en %s y se "
+                                            "teletransporta: la terminal tiene corriente" % (g.wait_s, n[1], n[0], g.label())})
                     continue
                 if g.kind == "bar":
                     actions.append({"action": "wait", "from": [n[1], n[0]], "object": g.label(),
@@ -2087,7 +2371,7 @@ class Validator:
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
         for g in self.model.gates:
-            if g.bypassable or g.kind == "pickup":
+            if g.bypassable or g.kind == "pickup" or g.gid in self.model.initial:
                 continue
             run = self.progression(start, frozenset(), INF, forbid=frozenset({g.gid}), targets=goal_cells)
             if g.gid in secret:
@@ -2098,7 +2382,8 @@ class Validator:
             if run["ok"]:
                 what = {"bridge": "activar el receptor", "popup": "cerrar el pop-up",
                         "bubble": "aturdir la Burbuja", "ad": "romper el anuncio",
-                        "bar": "esperar la barra"}[g.kind]
+                        "bar": "esperar la barra", "switch": "activar el interruptor",
+                        "lswitch": "disparar al interruptor", "dock": "cargar a Calc"}[g.kind]
                 self.report.warning("%s no es obligatorio: se llega a la meta sin %s" % (g.label(), what),
                                     g.row, g.col, g.label())
 
@@ -2135,9 +2420,10 @@ class Validator:
         self.result["abilities"] = {"pickups": info, "goal_without_laser": no_laser["ok"]}
         required = bool(self.model.validation.get("laser_required", False))
         if required:
-            # Paso 10: el diseno exige el laser (lector, anuncio, Posponer...).
+            # Paso 10: el diseno exige el laser (lector, anuncio, Posponer...). Con un asistente conocido
+            # (piezas hechas de antemano, tanda H2) no se exige: describe el nivel con su acertijo.
             self.result["abilities"]["laser_required"] = True
-            if no_laser["ok"]:
+            if no_laser["ok"] and not self.model.initial:
                 self.report.error("el nivel exige el laser (validation.laser_required) pero la meta se alcanza "
                                   "sin usarlo")
         elif self.model.laser_possible and not no_laser["ok"]:
@@ -2176,8 +2462,10 @@ class Validator:
         if gate.kind == "bar":
             c0, r0, w, h = gate.zone
             return c0 <= node[0] < c0 + w and r0 <= node[1] < r0 + h
+        if gate.kind == "dock":
+            return True
         reach = self.rules.pulse_radius + T
-        if gate.kind in ("bubble", "ad") and self.model.laser_possible:
+        if gate.kind in ("bubble", "ad", "lswitch") and self.model.laser_possible:
             reach = max(reach, self.rules.laser_range + T)
         x = (node[0] + 0.5) * T
         return any(o[0] - reach <= x <= o[2] + reach for o in gate.openers)
@@ -2188,16 +2476,16 @@ class Validator:
         hacia atras desde la meta se marcan los pares buenos. Soft-lock = par alcanzable desde
         el que ya no se llega a la meta."""
         m = self.model
-        start = (main["stages"][0]["src"], frozenset())
+        start = (main["stages"][0]["src"], m.initial)
         seen = {start}
         reverse = {}
         queue = [start]
         goals = []
-        gates = [g for g in m.gates if not g.bypassable and (g.openers or g.kind in ("pickup", "bar"))]
+        gates = [g for g in m.gates if not g.bypassable and (g.openers or g.kind in ("pickup", "bar", "dock"))]
         while queue:
             pair = queue.pop()
             node, state = pair
-            if self.touches(node, goal_cells):
+            if self.touches(node, goal_cells) and self.goal_need <= state:
                 goals.append(pair)
             nexts = [(e["to"], state) for e in m.edges(node, state, "auto")]
             for g in gates:
@@ -2231,6 +2519,7 @@ class Validator:
                               % (first[1], cols, opened), first[1], first[0])
         self.result["softlocks_checked_states"] = len({state for _, state in seen})
         self._laser_info(seen)
+        self._check_laser_switches(seen)
 
     def finish(self):
         self.result["ok"] = not self.report.errors
@@ -2250,6 +2539,8 @@ class Validator:
             "base_pulse_radius_px": self.rules.base_pulse_radius,
             "upgrades": list(self.rules.upgrades),
         }
+        if self.rules.allies:
+            self.result["rules"]["allies"] = list(self.rules.allies)
         gates = []
         for g in self.model.gates:
             entry = {"id": g.obj_id, "kind": g.kind, "row": g.row, "col": g.col, "bypassable": g.bypassable}
@@ -2261,29 +2552,68 @@ class Validator:
                 entry["laser_from"] = None if g.laser_from is None else [g.laser_from[1], g.laser_from[0]]
             elif g.kind == "pickup":
                 entry["ability"] = g.ability
+            elif g.kind == "switch":
+                entry.update({"pulses": g.pulses, "hidden": g.hidden, "pose_s": g.pose_s})
+            elif g.kind == "dock":
+                entry.update({"requires": list(g.requires), "wait_s": round(g.wait_s, 2)})
+            if g.kind in ("switch", "lswitch", "dock"):
+                entry["done_at_start"] = g.gid in self.model.initial
             gates.append(entry)
         self.result["gates"] = gates
         return self.result
 
 
 def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP_EFFICIENCY, run=False,
-             physics_path=None, check_schema=True, upgrades=(), time_margin=None, export=None):
+             physics_path=None, check_schema=True, upgrades=(), time_margin=None, export=None, allies=None):
     """Valida un nivel ya cargado. Devuelve el dict de resultado (ok, errors, warnings, path, margins...).
     time_margin: margen de tiempo minimo (s) de las ventanas y cuentas (None: el del nivel o 1,5 s).
-    export: lista; si se pasa, recibe el camino exportado (formato isak-path/1, tools/level_plan.py)."""
+    export: lista; si se pasa, recibe el camino exportado (formato isak-path/1, tools/level_plan.py).
+    allies (tanda H2 del paso 14 del 1-2): asistentes ya conocidos (allies_met). None = ninguno y, si el
+    nivel tiene piezas con done_if_ally (el acertijo de Calc), se valida ademas el caso «conocidos»
+    (result["allies_known"]: las piezas arrancan hechas y el camino va directo a la terminal); sus errores
+    se suman con el prefijo «con <aliados> conocido(s)»."""
     if check_schema:
         schema_errors = validate_level_schema.validate_level(level, root)
         if schema_errors:
             return {"ok": False, "errors": [{"message": "esquema: " + e, "row": None, "col": None, "object": None}
                                             for e in schema_errors], "warnings": [], "path": []}
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
-                  tuple(upgrades))
+                  tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin
     validator = Validator(level, rules)
     validator.export_requested = export is not None
     result = validator.run()
     if export is not None and validator.planner is not None and getattr(validator.planner, "steps", None):
         export.append(validator.planner.export())
+    if allies is None and validator.model.ally_pieces:
+        known = Validator(level, rules.with_allies(validator.model.ally_pieces))
+        # El terreno de cada estado de las puertas es el mismo: se reutilizan los mundos, los movimientos y
+        # los acertijos del lector ya calculados (claves por gid y estado).
+        known.model._worlds = validator.model._worlds
+        known.model._edges = validator.model._edges
+        known.model._relay_cache = validator.model._relay_cache
+        known_result = known.run()
+        plan = known_result.get("plan") or {}
+        labels = {g.label() for g in known.model.gates if g.kind in ("switch", "lswitch", "dock")}
+        puzzle = [a for a in known_result.get("path", []) if a.get("object") in labels]
+        summary = {"allies": list(validator.model.ally_pieces), "ok": known_result["ok"],
+                   "errors": known_result["errors"], "warnings": known_result["warnings"],
+                   "path_actions": len(known_result.get("path", [])),
+                   "puzzle_actions": len(puzzle),
+                   "duration_s": plan.get("duration_s"),
+                   "energy_min": (plan.get("energy") or {}).get("min"),
+                   "power": known_result.get("power", [])}
+        result["allies_known"] = summary
+        prefix = "con %s conocido(s): " % ", ".join(validator.model.ally_pieces)
+        for e in known_result["errors"]:
+            result["errors"].append(dict(e, message=prefix + e["message"]))
+        for w in known_result["warnings"]:
+            result["warnings"].append(dict(w, message=prefix + w["message"]))
+        if puzzle:
+            result["errors"].append({"message": prefix + "el camino aun pasa por el acertijo (%s)"
+                                     % ", ".join(a["object"] for a in puzzle), "row": None, "col": None,
+                                     "object": None})
+        result["ok"] = not result["errors"]
     return result
 
 
@@ -2364,6 +2694,24 @@ def format_text(path, result):
         frm = item["pulse_from"]
         out.append("  terminal de salida %s: %s" % (
             item["id"], "se activa con el pulso desde (fila %d, columna %d)" % tuple(frm) if frm else "NO se activa"))
+    for item in result.get("power") or []:
+        if item.get("powered_at_start"):
+            out.append("  corriente de la terminal %s: %s ya hecho (asistente conocido): con corriente desde el inicio"
+                       % (item["id"], item["source"]))
+        elif "wait_s" in item:
+            parts = item.get("wait_parts", {})
+            out.append("  corriente de la terminal %s: %s con %s hechos; espera de Calc %.1f s (despertar %.1f, caminar "
+                       "%.1f, carga %.1f, cara despierta %.1f, teletransporte %.1f)" % (
+                           item["id"], item["source"], ", ".join(item["requires"]), item["wait_s"],
+                           parts.get("wake_s", 0.0), parts.get("walk_s", 0.0), parts.get("charge_s", 0.0),
+                           parts.get("charged_hold_s", 0.0), parts.get("teleport_s", 0.0)))
+    known = result.get("allies_known")
+    if known:
+        out.append("  con %s conocido(s): %s; %d acciones (%d del acertijo)%s%s" % (
+            ", ".join(known["allies"]), "OK" if known["ok"] else "FALLA", known["path_actions"],
+            known["puzzle_actions"],
+            "" if known.get("duration_s") is None else ", unos %.1f s" % known["duration_s"],
+            "" if known.get("energy_min") is None else ", energia minima %.0f" % known["energy_min"]))
     out.extend(format_plan(result.get("plan")))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
@@ -2384,6 +2732,15 @@ def format_plan(plan):
         out.append("    acertijo %s -> %s: disparo desde (fila %d, columna %d), pulso a los %.1f s de %.1f s de "
                    "ventana (sobran %.1f s)" % (r["lector"], r["bridge"], r["shot_from"][0], r["shot_from"][1],
                                                 r["time_s"], r["window_s"], r["spare_s"]))
+    puzzle = plan.get("calc_puzzle") or {}
+    if puzzle:
+        out.append("    acertijo de Calc: %d pulso(s) de espaldas, %d disparo(s) al interruptor laser%s, Debug %d vez/veces "
+                   "(pared y panel), espera de Calc %s; unos %.1f s" % (
+                       puzzle["pulses"], puzzle["lasers"],
+                       " desde (fila %d, columna %d)" % tuple(puzzle["laser_from"]) if puzzle.get("laser_from") else "",
+                       puzzle["debug_uses"],
+                       "-" if puzzle.get("calc_wait_s") is None else "%.1f s" % puzzle["calc_wait_s"],
+                       puzzle["duration_s"]))
     for r in plan.get("reminders", []):
         out.append("    recordatorios %s: cuenta %.1f s (aviso %.1f, vuelven a los %.1f); sin Posponer %s; con Posponer "
                    "%s; plan: %d disparo(s) al Posponer, sobran %s%s" % (
@@ -2440,6 +2797,10 @@ def main(argv):
                              "validation.time_margin_s del nivel o 1,5)")
     parser.add_argument("--export-path", default=None,
                         help="escribe el camino (pasos con tiempos, formato isak-path/1) en este JSON; un solo nivel")
+    parser.add_argument("--allies", default=None,
+                        help="asistentes ya conocidos (allies_met, p. ej. calc): las piezas con done_if_ally "
+                             "arrancan hechas; sin la opcion se validan los dos casos y se exporta el de "
+                             "desconocidos")
     args = parser.parse_args(argv[1:])
     if args.export_path and len(args.levels) != 1:
         print("--export-path admite un solo nivel", file=sys.stderr)
@@ -2453,7 +2814,9 @@ def main(argv):
             result = validate(level, limit=args.limit, jump_efficiency=args.jump_efficiency, run=args.run,
                               physics_path=args.physics,
                               upgrades=[u.strip() for u in args.upgrades.split(",") if u.strip()],
-                              time_margin=args.time_margin, export=export)
+                              time_margin=args.time_margin, export=export,
+                              allies=None if args.allies is None else
+                              [a.strip() for a in args.allies.split(",") if a.strip()])
         except (OSError, ValueError, KeyError) as exc:
             print("%s: no se pudo validar (%s)" % (path, exc), file=sys.stderr)
             return 2
