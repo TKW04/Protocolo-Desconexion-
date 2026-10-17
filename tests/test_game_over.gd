@@ -54,8 +54,9 @@ func after_each() -> void:
 
 # --- Utilidades ---
 
+## Mejora de la copia: Energia 3 (tanda M1: niveles por pista; maximo 120).
 func _upgrade_id() -> StringName:
-	return UpgradeCatalog.shared().entries()[0].id
+	return &"energia:3"
 
 
 ## Partida con Eco, Notas y pulso; laser, 9 puntos, un power bank completo y uno
@@ -67,7 +68,7 @@ func _saved_progress() -> void:
 	GameState.attention_points = 9
 	GameState.power_banks = 1
 	GameState.add_empty_power_bank()
-	GameState.purchased_upgrades[_upgrade_id()] = true
+	GameState.upgrade_levels[&"energia"] = 3
 	GameState.mark_level_completed(&"1-1")
 	GameState.unlock_level(&"1-2")
 	GameState.capture_attention_point(&"1-1", &"p1", 0)
@@ -144,6 +145,8 @@ func test_saved_things_go_to_the_trash_and_come_back_all_at_once() -> void:
 	assert_eq(GameState.power_banks, 0)
 	assert_eq(GameState.empty_power_banks, 0)
 	assert_false(GameState.is_upgrade_purchased(_upgrade_id()), "Sin mejoras")
+	assert_eq(GameState.get_upgrade_level(&"energia"), 1)
+	assert_almost_eq(GameState.get_debug_energy_max(), 100.0, 0.001, "Papelera: maximo base")
 	assert_false(GameState.is_ability_obtained(GameState.ABILITY_LASER), "Sin el laser")
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_LASER))
 	var trash: Dictionary = GameState.get_trash()
@@ -151,13 +154,15 @@ func test_saved_things_go_to_the_trash_and_come_back_all_at_once() -> void:
 	assert_eq(int(trash[GameState.TRASH_POWER_BANKS]), 1)
 	assert_eq(int(trash[GameState.TRASH_EMPTY_POWER_BANKS]), 1)
 	assert_eq(trash[GameState.TRASH_ABILITIES], ["laser"])
-	assert_eq(trash[GameState.TRASH_UPGRADES], [String(_upgrade_id())])
+	assert_eq(trash[GameState.TRASH_UPGRADES], {"energia": 3}, "La papelera guarda los niveles por pista")
 	assert_true(GameState.recover_trash(), "Se recupera todo de golpe")
 	assert_false(GameState.has_trash_pending())
 	assert_eq(GameState.attention_points, 9)
 	assert_eq(GameState.power_banks, 1)
 	assert_eq(GameState.empty_power_banks, 1)
 	assert_true(GameState.is_upgrade_purchased(_upgrade_id()))
+	assert_eq(GameState.get_upgrade_level(&"energia"), 3, "Recupera el nivel")
+	assert_almost_eq(GameState.get_debug_energy_max(), 120.0, 0.001, "y su maximo")
 	assert_true(GameState.is_ability_obtained(GameState.ABILITY_LASER))
 	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_LASER))
 	assert_false(GameState.has_unsaved_changes(), "Igual que la copia: sin cambios pendientes")

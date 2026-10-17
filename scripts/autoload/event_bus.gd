@@ -107,8 +107,8 @@ signal player_respawned(position: Vector2, after_death: bool)
 @warning_ignore("unused_signal")
 signal power_banks_changed(full: int, charge: float, capacity: float)
 
-## Se ha comprado la mejora permanente `id` (data/upgrades.json). Lo emite
-## GameState.purchase_upgrade.
+## Se ha comprado el siguiente nivel de la pista de mejoras `id` (data/upgrades.json,
+## p. ej. "pulso"). Lo emite GameState.purchase_upgrade.
 @warning_ignore("unused_signal")
 signal upgrade_purchased(id: StringName)
 

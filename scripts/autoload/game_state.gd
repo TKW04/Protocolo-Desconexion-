@@ -9,8 +9,8 @@
 # - Escala de tiempo del mundo (world_time_scale): la fija DebugMode y la leen
 #   los objetos del mundo con WorldTime.scaled_delta() (Isak y el HUD no).
 # - Progreso persistente (decisiones del 2026-10-14): puntos acumulados, ids de
-#   puntos de atención ya capturados por nivel, mejoras compradas
-#   (data/upgrades.json), power banks (completos, vacios y carga parcial,
+#   puntos de atención ya capturados por nivel, niveles de las mejoras de Calc
+#   por pistas (data/upgrades.json, upgrade_levels), power banks (completos, vacios y carga parcial,
 #   data/power_bank.json), habilidades obtenidas con un ability_pickup (p. ej.
 #   el laser, 2026-10-15) y niveles completados/desbloqueados. Se guarda en
 #   save_path (user://save.json; en las pruebas otra ruta) con SaveFile.
@@ -42,16 +42,19 @@ const FIRST_WORLD: int = 1
 const LAST_WORLD: int = 6
 ## Escala de tiempo del mundo sin Debug (ver WorldTime).
 const WORLD_TIME_SCALE_NORMAL: float = 1.0
-## Energia que repone cada punto de atencion recogido (A10, aprobado). Valor
-## base: la mejora "Recarga mejorada" lo cambia (get_energy_per_attention_point).
+## Energia que repone cada punto de atencion recogido (A10, aprobado). La
+## mejora "Recarga mejorada" que lo cambiaba se retiro con las pistas (tanda M1,
+## 2026-10-17); get_energy_per_attention_point sigue leyendo su valor efectivo.
 const ENERGY_PER_ATTENTION_POINT: float = 10.0
 
 ## Guardado (SaveFile). Version del esquema de save.json (v2 desde 2026-10-15:
 ## lap, found_secrets, saved_at, play_time_s; v3 desde 2026-10-15 (3), paso 2 de
 ## docs/propuesta-asistentes-y-vidas.md §10: nickname, allies_met, learned_help
-## y lives_max, que sustituyen a hub_tutorial_done). Se cargan las versiones 1 a
+## y lives_max, que sustituyen a hub_tutorial_done; v4 desde 2026-10-17, tanda M1
+## de docs/propuesta-mejoras.md: upgrade_levels por pista, que sustituye a
+## upgrades_purchased, con devoluciones). Se cargan las versiones 1 a
 ## SAVE_VERSION (las anteriores se migran); otra se aparta como .corrupt.
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 ## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard (nombres
 ## internos; de cara al jugador son niveles de acceso Caché, Kernel y Raíz, ver
 ## HubWorlds.access_name: la UI nunca dice vuelta ni Easy/Normal/Hard).
@@ -111,10 +114,23 @@ const BASE_VALUES: Dictionary[StringName, float] = {
 	&"game_state.sync_rate_max": SYNC_RATE_MAX,
 	&"game_state.debug_energy_max": DEBUG_ENERGY_MAX,
 	&"game_state.energy_per_attention_point": ENERGY_PER_ATTENTION_POINT,
+	&"game_state.pulse_stun_multiplier": 1.0,
 }
 
-## Resultado de comprar una mejora.
-enum PurchaseResult { OK, UNKNOWN, ALREADY_OWNED, NOT_ENOUGH_POINTS, NOT_ENOUGH_POWER_BANKS }
+## Resultado de comprar el siguiente nivel de una pista (check_purchase /
+## purchase_upgrade): pista desconocida, ya en el nivel maximo, habilidad sin
+## obtener (chip «?»), por encima del tope del acceso actual, efecto aun no
+## disponible («Proximamente», tanda M2), faltan puntos o falta power bank.
+enum PurchaseResult {
+	OK,
+	UNKNOWN,
+	MAX_LEVEL,
+	NOT_ENOUGH_POINTS,
+	NOT_ENOUGH_POWER_BANKS,
+	ACCESS_LOCKED,
+	NOT_IMPLEMENTED,
+	ABILITY_MISSING,
+}
 
 const ABILITY_PULSE: StringName = &"pulse"
 const ABILITY_DEBUG: StringName = &"debug"
@@ -135,7 +151,7 @@ const ABILITIES: Array[StringName] = [
 	ABILITY_LASER,
 ]
 
-## Sync Rate actual; tope get_sync_rate_max() (100, o mas con "Sync reforzado").
+## Sync Rate actual; tope get_sync_rate_max() (100; hasta 130 con la pista Sync Rate).
 var sync_rate: float = SYNC_RATE_MAX:
 	set(value):
 		var max_value: float = get_sync_rate_max()
@@ -143,7 +159,7 @@ var sync_rate: float = SYNC_RATE_MAX:
 		EventBus.sync_rate_changed.emit(sync_rate, max_value)
 		_update_low_sync()
 
-## Energia de Debug; tope get_debug_energy_max() (100, o mas con "Bateria ampliada").
+## Energia de Debug; tope get_debug_energy_max() (100; hasta 130 con la pista Energia).
 var debug_energy: float = DEBUG_ENERGY_MAX:
 	set(value):
 		var max_value: float = get_debug_energy_max()
@@ -184,8 +200,9 @@ var captured_points: Dictionary[StringName, Dictionary] = {}
 ## Ids de power banks de mapa (power_bank_pickup) ya recogidos por nivel (id de
 ## nivel -> {id: true}). Como los puntos: no reaparecen al rejugar el nivel.
 var collected_pickups: Dictionary[StringName, Dictionary] = {}
-## Mejoras compradas (id de data/upgrades.json -> true).
-var purchased_upgrades: Dictionary[StringName, bool] = {}
+## Nivel de cada pista de mejoras de Calc (id de pista de data/upgrades.json ->
+## nivel 2-5; las que no estan siguen en el nivel 1, la base). Tanda M1.
+var upgrade_levels: Dictionary[StringName, int] = {}
 ## Habilidades obtenidas para siempre con un ability_pickup (id -> true; p. ej.
 ## laser). Se guardan y, al cargar, quedan desbloqueadas en abilities_unlocked.
 var obtained_abilities: Dictionary[StringName, bool] = {}
@@ -548,7 +565,7 @@ func get_power_bank_hud_data() -> Dictionary:
 	return _power_bank_data.get("hud", {})
 
 
-# --- Mejoras permanentes (data/upgrades.json) ---
+# --- Mejoras de Calc por pistas (data/upgrades.json, tanda M1) ---
 
 func get_sync_rate_max() -> float:
 	return effective_value(&"game_state.sync_rate_max", SYNC_RATE_MAX)
@@ -571,22 +588,29 @@ func get_energy_per_attention_point() -> float:
 	return effective_value(&"game_state.energy_per_attention_point", ENERGY_PER_ATTENTION_POINT)
 
 
-## Valor efectivo de `target` ("<origen>.<clave>"): `base` cambiado por las
-## mejoras compradas (gana la ultima del catalogo que lo toque).
+## Multiplicador del aturdimiento del pulso (Pulso 3: x1,5). Lo aplican los
+## enemigos que el pulso aturde (AlertBubble, NotificationBadge) al recibirlo.
+func get_pulse_stun_multiplier() -> float:
+	return effective_value(&"game_state.pulse_stun_multiplier", 1.0)
+
+
+## Valor efectivo de `target` ("<origen>.<clave>"): `base` cambiado por los
+## niveles comprados e implementados de cada pista (cada nivel suma su efecto a
+## los anteriores; si dos tocan el mismo target gana el mas alto).
 func effective_value(target: StringName, base: float) -> float:
 	var value: float = base
-	for entry: UpgradeCatalog.Entry in UpgradeCatalog.shared().entries():
-		if entry.target == target and purchased_upgrades.has(entry.id):
-			value = entry.value
+	for effect: UpgradeCatalog.Effect in _owned_effects():
+		if effect.target == target:
+			value = effect.value
 	return value
 
 
-## Aplica a `object` (p. ej. PlayerAbilities) las mejoras compradas cuyo target
+## Aplica a `object` (p. ej. PlayerAbilities) los efectos comprados cuyo target
 ## empieza por `source` + "." y cuya clave es una propiedad de `object`.
 func apply_upgrades(object: Object, source: String) -> void:
-	for entry: UpgradeCatalog.Entry in UpgradeCatalog.shared().entries():
-		if entry.source() == source and purchased_upgrades.has(entry.id) and entry.key() in object:
-			object.set(entry.key(), entry.value)
+	for effect: UpgradeCatalog.Effect in _owned_effects():
+		if effect.source() == source and effect.key() in object:
+			object.set(effect.key(), effect.value)
 
 
 ## Valor base (sin mejoras) de `target`; NAN si el target no existe.
@@ -608,38 +632,134 @@ func base_value(target: StringName) -> float:
 	return float(object.get(key))
 
 
+## Nivel actual de la pista `track` (1 = base; 1 tambien si no existe).
+func get_upgrade_level(track: StringName) -> int:
+	return int(upgrade_levels.get(track, UpgradeCatalog.LEVEL_MIN))
+
+
+## Nivel mas alto que el acceso actual (lap: 1 Cache, 2 Kernel, 3 Raiz) deja
+## comprar en `track` (Cache 3, Kernel 4, Raiz 5; min_lap de los datos).
+func get_upgrade_access_cap(track: StringName) -> int:
+	return UpgradeCatalog.shared().access_cap(track, lap)
+
+
+## La pista se puede ver y comprar: su habilidad (requires_ability) esta
+## obtenida en la partida actual. Si no, la tienda muestra el chip «?».
+func is_upgrade_track_available(track: StringName) -> bool:
+	var t: UpgradeCatalog.Track = UpgradeCatalog.shared().get_track(track)
+	if t == null:
+		return false
+	return t.requires_ability.is_empty() or is_ability_obtained(t.requires_ability)
+
+
+## Verdadero si se tiene la mejora `id`: un legacy_id de las mejoras sueltas de
+## antes (wide_pulse = pulso 2, requires_upgrade de los niveles) o "pista:nivel".
 func is_upgrade_purchased(id: StringName) -> bool:
-	return purchased_upgrades.has(id)
+	var needed: Array = resolve_upgrade_id(id)
+	return not needed.is_empty() and get_upgrade_level(needed[0]) >= int(needed[1])
 
 
-## Si se puede comprar `id` ahora (OK) o por que no.
-func check_purchase(id: StringName) -> int:
-	var entry: UpgradeCatalog.Entry = UpgradeCatalog.shared().get_entry(id)
-	if entry == null:
+## [pista, nivel] de un legacy_id o de "pista:nivel" (vacio si no se conoce).
+static func resolve_upgrade_id(id: StringName) -> Array:
+	var text := String(id)
+	if text.contains(":"):
+		var track := StringName(text.get_slice(":", 0))
+		var level_text: String = text.get_slice(":", 1)
+		if not level_text.is_valid_int() or UpgradeCatalog.shared().get_level(track, int(level_text)) == null:
+			return []
+		return [track, int(level_text)]
+	return UpgradeCatalog.shared().resolve_legacy(id)
+
+
+## Si se puede comprar ahora el siguiente nivel de `track` (OK) o por que no.
+func check_purchase(track: StringName) -> int:
+	var t: UpgradeCatalog.Track = UpgradeCatalog.shared().get_track(track)
+	if t == null:
 		return PurchaseResult.UNKNOWN
-	if purchased_upgrades.has(id):
-		return PurchaseResult.ALREADY_OWNED
-	if attention_points < entry.cost_points:
+	var next: UpgradeCatalog.Level = t.get_level(get_upgrade_level(track) + 1)
+	if next == null:
+		return PurchaseResult.MAX_LEVEL
+	if not is_upgrade_track_available(track):
+		return PurchaseResult.ABILITY_MISSING
+	if next.min_lap > lap:
+		return PurchaseResult.ACCESS_LOCKED
+	if not next.implemented:
+		return PurchaseResult.NOT_IMPLEMENTED
+	if attention_points < next.cost_points:
 		return PurchaseResult.NOT_ENOUGH_POINTS
-	if power_banks < entry.cost_power_banks:
+	if power_banks < next.cost_power_banks:
 		return PurchaseResult.NOT_ENOUGH_POWER_BANKS
 	return PurchaseResult.OK
 
 
-## Compra `id`: gasta puntos y power banks, la apunta y marca "sin guardar". Si no se puede
-## no cambia nada y devuelve el motivo.
-func purchase_upgrade(id: StringName) -> int:
-	var result: int = check_purchase(id)
+## Siguiente nivel de `track` (null si ya esta en el maximo o no existe).
+func get_next_upgrade_level(track: StringName) -> UpgradeCatalog.Level:
+	return UpgradeCatalog.shared().get_level(track, get_upgrade_level(track) + 1)
+
+
+## Compra el siguiente nivel de `track`: gasta puntos (y el power bank del
+## nivel 5), sube el nivel y marca "sin guardar". Si no se puede no cambia
+## nada y devuelve el motivo (PurchaseResult).
+func purchase_upgrade(track: StringName) -> int:
+	var result: int = check_purchase(track)
 	if result != PurchaseResult.OK:
 		return result
-	var entry: UpgradeCatalog.Entry = UpgradeCatalog.shared().get_entry(id)
-	attention_points -= entry.cost_points
-	power_banks -= entry.cost_power_banks
-	purchased_upgrades[id] = true
+	var next: UpgradeCatalog.Level = get_next_upgrade_level(track)
+	attention_points -= next.cost_points
+	power_banks -= next.cost_power_banks
+	upgrade_levels[track] = next.level
 	_refresh_maxima()
-	EventBus.upgrade_purchased.emit(id)
+	EventBus.upgrade_purchased.emit(track)
 	request_save()
 	return PurchaseResult.OK
+
+
+## Hay alguna pista por encima del nivel 1.
+func has_any_upgrade() -> bool:
+	for track: StringName in upgrade_levels:
+		if upgrade_levels[track] > UpgradeCatalog.LEVEL_MIN:
+			return true
+	return false
+
+
+## Niveles por encima del 1 como diccionario JSON {pista: nivel}, por pista.
+func get_upgrade_levels_data() -> Dictionary:
+	var out: Dictionary = {}
+	for key: String in _keys_sorted(upgrade_levels):
+		var level: int = upgrade_levels[StringName(key)]
+		if level > UpgradeCatalog.LEVEL_MIN:
+			out[key] = level
+	return out
+
+
+## Pone los niveles de un diccionario {pista: nivel} (guardado v4 y papelera);
+## ignora pistas desconocidas y acota cada nivel a 1-5.
+func _set_upgrade_levels(raw: Variant) -> void:
+	if not raw is Dictionary:
+		return
+	var catalog: UpgradeCatalog = UpgradeCatalog.shared()
+	for key: Variant in raw:
+		var track := StringName(String(key))
+		var value: Variant = raw[key]
+		if not catalog.has_track(track) or not (value is float or value is int):
+			continue
+		var level: int = clampi(int(value), UpgradeCatalog.LEVEL_MIN, catalog.get_track(track).max_level())
+		if level > UpgradeCatalog.LEVEL_MIN:
+			upgrade_levels[track] = maxi(level, get_upgrade_level(track))
+
+
+## Efectos de los niveles comprados e implementados (en orden de pista y nivel).
+func _owned_effects() -> Array[UpgradeCatalog.Effect]:
+	var out: Array[UpgradeCatalog.Effect] = []
+	if upgrade_levels.is_empty():
+		return out
+	for track: UpgradeCatalog.Track in UpgradeCatalog.shared().tracks():
+		var owned: int = get_upgrade_level(track.id)
+		for level: int in range(UpgradeCatalog.LEVEL_MIN + 1, owned + 1):
+			var entry: UpgradeCatalog.Level = track.get_level(level)
+			if entry != null and entry.implemented:
+				out.append_array(entry.effects)
+	return out
 
 
 # --- Guardado (user://save.json) ---
@@ -697,7 +817,7 @@ func reset_progress() -> void:
 	saved_at = ""
 	captured_points.clear()
 	collected_pickups.clear()
-	purchased_upgrades.clear()
+	upgrade_levels.clear()
 	for ability: StringName in obtained_abilities:
 		set_ability_unlocked(ability, false)
 	obtained_abilities.clear()
@@ -817,7 +937,7 @@ func to_save_data() -> Dictionary:
 		"attention_points": attention_points,
 		"captured_points": captured,
 		"collected_pickups": pickups,
-		"upgrades_purchased": _keys_sorted(purchased_upgrades),
+		"upgrade_levels": _upgrade_levels_save_data(),
 		"abilities_obtained": _keys_sorted(obtained_abilities),
 		"seen_notices": _keys_sorted(seen_notices),
 		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
@@ -865,9 +985,8 @@ func apply_save_data(data: Dictionary) -> bool:
 				picked[id] = true
 			if not picked.is_empty():
 				collected_pickups[StringName(String(level))] = picked
-	for id: StringName in _string_names(data.get("upgrades_purchased", [])):
-		if UpgradeCatalog.shared().has(id):
-			purchased_upgrades[id] = true
+	if int(version) >= 4:
+		_set_upgrade_levels(data.get("upgrade_levels", {}))
 	for id: StringName in _string_names(data.get("abilities_obtained", [])):
 		if abilities_unlocked.has(id):
 			obtained_abilities[id] = true
@@ -887,6 +1006,9 @@ func apply_save_data(data: Dictionary) -> bool:
 		var empty: int = _as_int(banks.get("empty", 1 if charge > 0.0 else 0))
 		empty_power_banks = empty
 		power_bank_charge = charge if empty > 0 else 0.0
+	var legacy_upgrades: Array[StringName] = _string_names(data.get("upgrades_purchased", []))
+	if int(version) < 4:
+		_migrate_upgrades_to_v4(legacy_upgrades)
 	for id: StringName in _string_names(data.get("completed_levels", [])):
 		completed_levels[id] = true
 	for id: StringName in _string_names(data.get("unlocked_levels", [])):
@@ -924,9 +1046,10 @@ func apply_save_data(data: Dictionary) -> bool:
 		set_ability_unlocked(ABILITY_PULSE, true)
 		seen_notices[ABILITY_PULSE] = true
 	# Calc apagada hasta conocerla (2026-10-16, propuesta §2.3): un guardado con
-	# mejoras ya compradas (de cuando Calc dormida vendia desde el 1-1) la da por
-	# conocida, para no dejar a nadie sin la tienda que ya uso.
-	if not purchased_upgrades.is_empty():
+	# mejoras ya compradas (de cuando Calc dormida vendia desde el 1-1; o un v4
+	# con algun nivel comprado) la da por conocida, para no dejar a nadie sin la
+	# tienda que ya uso.
+	if has_any_upgrade() or (int(version) < 4 and not legacy_upgrades.is_empty()):
 		allies_met[ALLY_CALC] = true
 	var raw_saved_at: Variant = data.get("saved_at", "")
 	saved_at = raw_saved_at if raw_saved_at is String else ""
@@ -934,6 +1057,29 @@ func apply_save_data(data: Dictionary) -> bool:
 	_refresh_maxima()
 	lives = lives_max
 	return true
+
+
+## Migracion v1-v3 -> v4 (docs/propuesta-mejoras.md §7.3; seccion migration de
+## data/upgrades.json): cada mejora suelta comprada pasa al nivel de su pista
+## (si es mas alto que el que ya hubiera) y se devuelve la diferencia de precio
+## en puntos y power banks (completos; sin tope). Las ids desconocidas se ignoran.
+func _migrate_upgrades_to_v4(legacy_ids: Array[StringName]) -> void:
+	var catalog: UpgradeCatalog = UpgradeCatalog.shared()
+	var refund_points: int = 0
+	var refund_banks: int = 0
+	for id: StringName in legacy_ids:
+		var entry: Dictionary = catalog.migration_for(id)
+		if entry.is_empty():
+			continue
+		var track := StringName(String(entry.get("track", "")))
+		if catalog.has_track(track):
+			_set_upgrade_levels({String(track): int(entry.get("level", UpgradeCatalog.LEVEL_MIN))})
+		var refund: Variant = entry.get("refund", {})
+		if refund is Dictionary:
+			refund_points += maxi(int(refund.get("attention_points", 0)), 0)
+			refund_banks += maxi(int(refund.get("power_banks", 0)), 0)
+	attention_points += refund_points
+	power_banks += refund_banks
 
 
 ## Campos v3 de un guardado v1/v2 (ver apply_save_data).
@@ -1289,17 +1435,17 @@ func discard_to_trash() -> Dictionary:
 		TRASH_POWER_BANKS: power_banks,
 		TRASH_EMPTY_POWER_BANKS: empty_power_banks,
 		TRASH_POWER_BANK_CHARGE: power_bank_charge,
-		TRASH_UPGRADES: _keys_sorted(purchased_upgrades),
+		TRASH_UPGRADES: get_upgrade_levels_data(),
 		TRASH_ABILITIES: abilities,
 	}
 	if attention_points <= 0 and power_banks <= 0 and empty_power_banks <= 0 and power_bank_charge <= 0.0 \
-			and purchased_upgrades.is_empty() and abilities.is_empty():
+			and not has_any_upgrade() and abilities.is_empty():
 		trash = {}
 	attention_points = ATTENTION_POINTS_MIN
 	power_banks = 0
 	empty_power_banks = 0
 	power_bank_charge = 0.0
-	purchased_upgrades.clear()
+	upgrade_levels.clear()
 	for id: String in abilities:
 		obtained_abilities.erase(StringName(id))
 		set_ability_unlocked(StringName(id), false)
@@ -1333,9 +1479,7 @@ func recover_trash() -> bool:
 	power_banks += int(trash.get(TRASH_POWER_BANKS, 0))
 	empty_power_banks += int(trash.get(TRASH_EMPTY_POWER_BANKS, 0))
 	power_bank_charge += float(trash.get(TRASH_POWER_BANK_CHARGE, 0.0))
-	for id: Variant in trash.get(TRASH_UPGRADES, []):
-		if UpgradeCatalog.shared().has(StringName(String(id))):
-			purchased_upgrades[StringName(String(id))] = true
+	_set_upgrade_levels(trash.get(TRASH_UPGRADES, {}))
 	for id: Variant in trash.get(TRASH_ABILITIES, []):
 		var ability := StringName(String(id))
 		if abilities_unlocked.has(ability):
@@ -1389,6 +1533,15 @@ static func _load_power_bank_data() -> Dictionary:
 		push_error("GameState: no se pudo leer '%s'." % POWER_BANK_DATA_PATH)
 		return {}
 	return parsed
+
+
+## upgrade_levels del guardado v4: todas las pistas del catalogo con su nivel
+## (1 = base), en el orden del catalogo.
+func _upgrade_levels_save_data() -> Dictionary:
+	var out: Dictionary = {}
+	for track: StringName in UpgradeCatalog.shared().track_ids():
+		out[String(track)] = get_upgrade_level(track)
+	return out
 
 
 static func _keys_sorted(dict: Dictionary) -> Array[String]:

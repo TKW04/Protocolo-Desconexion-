@@ -240,8 +240,8 @@ func test_hud_shows_power_banks_only_when_there_are_some() -> void:
 
 func test_hud_sync_percent_shows_real_value_above_100() -> void:
 	GameState.attention_points = 150
-	GameState.power_banks = 1
-	assert_eq(GameState.purchase_upgrade(&"reinforced_sync"), GameState.PurchaseResult.OK)
+	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.OK)
+	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.OK, "Sync Rate 3: maximo 120")
 	var hud := HUD_SCENE.instantiate() as Hud
 	add_child_autofree(hud)
 	GameState.sync_rate = 120.0

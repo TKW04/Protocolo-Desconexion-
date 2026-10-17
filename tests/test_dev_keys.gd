@@ -78,7 +78,7 @@ func _fill_progress() -> void:
 	GameState.power_banks = 3
 	GameState.capture_attention_point(&"1-1", &"Point_test_a", 1)
 	GameState.capture_attention_point(&"1-1", &"Point_test_b", 1)
-	assert_eq(GameState.purchase_upgrade(&"reinforced_sync"), GameState.PurchaseResult.OK)
+	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.OK)
 	GameState.add_empty_power_bank()
 
 
@@ -168,7 +168,7 @@ func test_restart_resets_level_and_keeps_save() -> void:
 	assert_eq(GameState.attention_points, points)
 	assert_true(GameState.is_attention_point_captured(&"1-1", &"Point_test_a"))
 	assert_true(GameState.is_attention_point_captured(&"1-1", &"Point_test_b"))
-	assert_true(GameState.is_upgrade_purchased(&"reinforced_sync"))
+	assert_true(GameState.is_upgrade_purchased(&"sync:2"))
 	assert_eq(GameState.power_banks, banks)
 	assert_eq(GameState.empty_power_banks, 1)
 	assert_true(FileAccess.file_exists(PATH), "El archivo de guardado sigue ahi")
@@ -252,7 +252,7 @@ func test_holding_wipe_deletes_test_save_and_restarts() -> void:
 	assert_false(FileAccess.file_exists(PATH), "Archivo de prueba borrado")
 	assert_eq(GameState.attention_points, 0)
 	assert_false(GameState.is_attention_point_captured(&"1-1", &"Point_test_a"))
-	assert_false(GameState.is_upgrade_purchased(&"reinforced_sync"))
+	assert_false(GameState.is_upgrade_purchased(&"sync:2"))
 	assert_eq(GameState.power_banks, 0)
 	assert_false(_main.update_wipe_hold(5.0, true), "Sin soltar no vuelve a borrar")
 	assert_false(prompt.is_visible_in_tree())

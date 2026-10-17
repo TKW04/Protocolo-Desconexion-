@@ -34,7 +34,8 @@ func _fill_progress() -> void:
 	GameState.power_banks = 2
 	GameState.empty_power_banks = 1
 	GameState.power_bank_charge = 35.0
-	GameState.purchase_upgrade(&"wide_pulse")
+	GameState.obtained_abilities[GameState.ABILITY_PULSE] = true
+	GameState.purchase_upgrade(&"pulso")
 	GameState.mark_level_completed(&"1-1")
 	GameState.unlock_level(&"1-2")
 
@@ -120,10 +121,18 @@ func test_round_trip_keeps_all_progress() -> void:
 	assert_eq(GameState.empty_power_banks, 1)
 	assert_almost_eq(GameState.power_bank_charge, 35.0, 0.001)
 	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"))
+	assert_eq(GameState.get_upgrade_level(&"pulso"), 2)
 	assert_true(GameState.is_level_completed(&"1-1"))
 	assert_true(GameState.is_level_unlocked(&"1-2"))
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "Version del esquema")
+	assert_eq(GameState.SAVE_VERSION, 4, "v4 desde la tanda M1 (mejoras por pistas)")
+	var levels: Dictionary = data["upgrade_levels"]
+	var keys: Array = levels.keys()
+	keys.sort()
+	assert_eq(keys, ["debug", "energia", "laser", "pulso", "sync"], "upgrade_levels con las cinco pistas")
+	assert_eq([int(levels["pulso"]), int(levels["laser"]), int(levels["energia"])], [2, 1, 1])
+	assert_false(data.has("upgrades_purchased"), "Sustituye a upgrades_purchased")
 
 
 func test_missing_file_starts_fresh() -> void:
@@ -179,7 +188,7 @@ func test_odd_field_types_are_tolerated() -> void:
 	assert_eq(GameState.attention_points, 0)
 	assert_eq(GameState.get_captured_points(&"1-1"), [&"Point_8_9"] as Array[StringName])
 	assert_eq(GameState.get_captured_points(&"1-2"), [] as Array[StringName])
-	assert_eq(GameState.purchased_upgrades.keys(), [&"wide_pulse"], "Ids desconocidos se ignoran")
+	assert_eq(GameState.get_upgrade_levels_data(), {"pulso": 2}, "Ids desconocidos se ignoran (v1 -> v4)")
 	assert_eq(GameState.power_banks, 0)
 	assert_almost_eq(GameState.power_bank_charge, GameState.get_power_bank_capacity(), 0.001, "Carga acotada")
 	assert_false(GameState.is_level_completed(&"1-1"))
@@ -243,7 +252,7 @@ func test_every_progress_change_marks_unsaved() -> void:
 		assert_true(GameState.has_unsaved_changes(), name)
 	GameState.attention_points = 30
 	assert_true(GameState.save_game())
-	assert_eq(GameState.purchase_upgrade(&"wide_pulse"), GameState.PurchaseResult.OK)
+	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.OK)
 	assert_true(GameState.has_unsaved_changes(), "Comprar una mejora")
 
 
@@ -312,7 +321,7 @@ func test_v1_save_is_migrated() -> void:
 	assert_false(GameState.has_unsaved_changes())
 	assert_true(GameState.save_game())
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la v3")
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la version actual")
 	assert_eq(int(data["attention_points"]), 7)
 	# Una v1 sin el 1-1 completado no conoce a nadie.
 	SaveFile.write(PATH, {"version": 1, "attention_points": 1})
@@ -375,7 +384,7 @@ func test_corrupt_save_falls_back_to_bak() -> void:
 # --- Esquema v3 (asistentes, ayuda Q y vidas) ---
 
 func test_v3_defaults() -> void:
-	assert_eq(GameState.SAVE_VERSION, 3)
+	assert_eq(GameState.SAVE_VERSION, 4, "v4 (tanda M1) conserva los campos de la v3")
 	assert_eq(GameState.nickname, "Isak", "Apodo por defecto")
 	assert_true(GameState.allies_met.is_empty())
 	assert_true(GameState.learned_help.is_empty())
@@ -392,7 +401,7 @@ func test_v3_round_trip_keeps_new_fields() -> void:
 	GameState.lives_max = 4
 	assert_true(GameState.save_game())
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	assert_eq(int(data["version"]), 3)
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION)
 	assert_eq(data["nickname"], "Kai")
 	assert_eq(data["allies_met"], ["eco"])
 	assert_eq(data["learned_help"], ["alert_bubble", "receiver"], "Ordenado")
@@ -455,7 +464,7 @@ func test_v2_save_with_1_1_completed_is_migrated_to_v3() -> void:
 	assert_false(GameState.has_unsaved_changes(), "Migrar no marca sin guardar")
 	assert_true(GameState.save_game())
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	assert_eq(int(data["version"]), 3, "La copia siguiente escribe la v3")
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la version actual (v4)")
 	assert_false(data.has("hub_tutorial_done"))
 	assert_eq(data["allies_met"], ["calc", "eco", "notas"])
 	assert_eq((data["learned_help"] as Array).size(), of_1_1.size())
@@ -491,6 +500,78 @@ func test_save_with_purchases_keeps_calc_known() -> void:
 	SaveFile.write(PATH, {"version": 3, "allies_met": ["eco", "notas"], "completed_levels": ["1-1"]})
 	assert_true(GameState.load_game())
 	assert_false(GameState.has_met_ally(GameState.ALLY_CALC), "Una v3 sin compras ni calc: Calc apagada")
+
+
+# --- Guardado v4 (tanda M1 de docs/propuesta-mejoras.md §7.3): upgrade_levels por
+# pista; migracion de las mejoras sueltas con devoluciones ---
+
+func test_v3_to_v4_migration_refunds_exactly() -> void:
+	var cases: Dictionary = {
+		# compra antigua: [nivel por pista, puntos devueltos, power banks devueltos]
+		"wide_pulse": [{"pulso": 2}, 0, 0],
+		"efficient_debug": [{"debug": 2}, 45, 1],
+		"reinforced_sync": [{"sync": 2}, 30, 1],
+		"extended_battery": [{"energia": 2}, 20, 1],
+		"quick_start": [{}, 20, 0],
+		"improved_recharge": [{}, 25, 0],
+	}
+	for legacy: String in cases:
+		var expected: Array = cases[legacy]
+		SaveFile.write(PATH, {"version": 3, "attention_points": 7, "power_banks": {"full": 1, "empty": 0},
+			"allies_met": ["eco", "notas"], "upgrades_purchased": [legacy]})
+		assert_true(GameState.load_game(), legacy)
+		assert_eq(GameState.get_upgrade_levels_data(), expected[0], "%s: nivel" % legacy)
+		assert_eq(GameState.attention_points, 7 + int(expected[1]), "%s: puntos devueltos" % legacy)
+		assert_eq(GameState.power_banks, 1 + int(expected[2]), "%s: power banks devueltos" % legacy)
+		assert_true(GameState.has_met_ally(GameState.ALLY_CALC), "%s: con compras, Calc conocida" % legacy)
+		assert_false(GameState.has_unsaved_changes())
+	# Todas a la vez: suma de devoluciones (sin tope de power banks).
+	SaveFile.write(PATH, {"version": 3, "attention_points": 0, "upgrades_purchased": cases.keys()})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.get_upgrade_levels_data(), {"debug": 2, "energia": 2, "pulso": 2, "sync": 2})
+	assert_eq(GameState.attention_points, 45 + 30 + 20 + 20 + 25)
+	assert_eq(GameState.power_banks, 3)
+	assert_almost_eq(GameState.get_sync_rate_max(), 110.0, 0.001)
+	assert_almost_eq(GameState.get_debug_energy_max(), 110.0, 0.001)
+	# Al guardar queda en v4.
+	assert_true(GameState.save_game())
+	var data: Dictionary = SaveFile.read(PATH)
+	assert_eq(int(data["version"]), 4)
+	assert_eq(int(data["upgrade_levels"]["debug"]), 2)
+
+
+func test_v4_round_trip_and_odd_levels() -> void:
+	GameState.upgrade_levels[&"laser"] = 4
+	GameState.upgrade_levels[&"energia"] = 3
+	GameState.lap = GameState.LAP_NORMAL
+	assert_true(GameState.save_game())
+	GameState.reset_progress()
+	assert_eq(GameState.get_upgrade_level(&"laser"), 1)
+	assert_true(GameState.load_game())
+	assert_eq(GameState.get_upgrade_levels_data(), {"energia": 3, "laser": 4})
+	assert_eq(GameState.lap, GameState.LAP_NORMAL)
+	assert_almost_eq(GameState.get_debug_energy_max(), 120.0, 0.001)
+	# Niveles fuera de rango se acotan; pistas desconocidas y tipos raros se ignoran.
+	SaveFile.write(PATH, {"version": 4, "upgrade_levels": {"pulso": 9, "sync": -3, "nada": 3, "laser": "x"}})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.get_upgrade_levels_data(), {"pulso": 5})
+	# Un v4 con upgrades_purchased (no deberia tenerlo) no migra nada.
+	SaveFile.write(PATH, {"version": 4, "upgrades_purchased": ["efficient_debug"], "attention_points": 1})
+	assert_true(GameState.load_game())
+	assert_eq(GameState.get_upgrade_levels_data(), {})
+	assert_eq(GameState.attention_points, 1)
+
+
+func test_unknown_version_5_set_aside_and_backup_kept() -> void:
+	GameState.attention_points = 12
+	assert_true(GameState.save_game())
+	assert_true(GameState.save_game(), "Segunda copia: la anterior queda en .bak")
+	SaveFile.write(PATH, {"version": 5, "attention_points": 99, "upgrade_levels": {"pulso": 3}})
+	assert_false(GameState.load_game(), "v5 no se conoce")
+	assert_true(FileAccess.file_exists(PATH + SaveFile.CORRUPT_SUFFIX), "Se aparta como .corrupt")
+	assert_true(FileAccess.file_exists(PATH + SaveFile.BACKUP_SUFFIX), "El .bak sigue intacto")
+	assert_eq(GameState.attention_points, 0)
+	assert_eq(GameState.get_upgrade_level(&"pulso"), 1)
 
 
 func test_new_game_starts_without_notas_nor_calc() -> void:

@@ -378,7 +378,7 @@ func test_far_popup_closes_with_wide_pulse() -> void:
 	GameState.use_save_path("user://test_level_1_1_save.json", true)
 	EcoProgress.meet_eco_with_pulse()
 	GameState.attention_points = 25
-	assert_eq(GameState.purchase_upgrade(&"wide_pulse"), GameState.PurchaseResult.OK)
+	assert_eq(GameState.purchase_upgrade(&"pulso"), GameState.PurchaseResult.OK, "Pulso 2 = Pulso amplio")
 	var popup: PopupBlocker = await _pulse_at_far_popup()
 	assert_almost_eq(_isak.abilities.pulse_radius_px, 112.0, 0.001)
 	assert_ne(popup.get_state(), PopupBlocker.State.OPEN, "Con Pulso amplio el pulso llega al boton")
