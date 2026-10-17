@@ -63,7 +63,9 @@ rm -f "$IMPORT_LOG"
 # camino (tests/test_level_plan.py: salas de prueba y casos negativos sinteticos) y la exportacion
 # del camino de cada sala de prueba (data/levels/*_test.json, --export-path a un temporal). Desde el
 # paso 13 del 1-2: el nivel 1-2 (tests/test_level_1_2.py y su camino exportado) y la fachada de la
-# torre (tools/validate_world1_facade.py).
+# torre (tools/validate_world1_facade.py). Desde el 2026-10-17 (ajuste del 1-2): las subidas del 1-2
+# que mide con el Isak real tests/test_level_climbs.gd (tests/fixtures/climbs_1-2.json, al dia con
+# tools/level_climbs.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -83,6 +85,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null \
 		&& _export_test_rooms \
 		&& python3 tools/build_level.py --check data/levels/*.json \
+		&& python3 tools/level_climbs.py --check data/levels/1-2.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \

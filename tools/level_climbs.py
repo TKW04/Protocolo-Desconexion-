@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""Subidas de un nivel para la prueba de saltos reales (2026-10-17, ajuste del 1-2 tras probarlo).
+
+Lista cada subida (salto que aterriza mas arriba) entre dos repisas que el validador
+(tools/validate_level.py) acepta en el nivel con todas las puertas abiertas (puentes extendidos,
+pop-ups solidos cerrados, barra abierta, habilidades recogidas). Solo
+cuenta lo alcanzable desde P; los saltos que solo existen con el Debug encendido (plataformas 'h')
+van marcados con "debug" (como la union de movimientos del validador). Una repisa es una tira de celdas de pie contiguas en una fila. Por
+cada par (repisa de salida, repisa de llegada) se queda el salto que el validador ve mas facil
+(andando antes que corriendo), con su x de despegue y la x donde soltar la direccion.
+
+La prueba GUT tests/test_level_climbs.gd lee la salida (tests/fixtures/climbs_<id>.json), pone al
+Isak real en la repisa de salida y ejecuta el salto (andando y corriendo, desde el borde y desde dos
+tiles atras, con coyote) midiendo si aterriza, si la cabeza toca el techo y la holgura vertical y
+horizontal que le queda.
+
+Uso:
+  python3 tools/level_climbs.py data/levels/1-2.json [--out tests/fixtures/climbs_1-2.json] [--check]
+--check sale con 1 si el archivo no esta al dia (lo usa tools/run_tests.sh).
+"""
+
+import argparse
+import json
+import os
+import sys
+from collections import deque
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import validate_level as vl  # noqa: E402
+
+FORMAT = "isak-climbs/1"
+
+
+def default_out(level):
+    return os.path.join(ROOT, "tests", "fixtures", "climbs_%s.json" % level["id"])
+
+
+def ledge_of(world, node):
+    c, r = node
+    c0 = c
+    while world.is_node(c0 - 1, r):
+        c0 -= 1
+    c1 = c
+    while world.is_node(c1 + 1, r):
+        c1 += 1
+    return (c0, c1, r)
+
+
+def climbs(level, root=ROOT):
+    # Con carrera: el jugador corre aunque el camino del validador vaya andando.
+    rules = vl.Rules(root, None, vl.DEFAULT_JUMP_EFFICIENCY, vl.DEFAULT_LIMIT, allow_run=True)
+    validator = vl.Validator(level, rules)
+    model = validator.model
+    state = frozenset(g.gid for g in model.gates if g.kind in ("bridge", "popup", "bar", "pickup"))
+    start_cell = validator.find("P")[0]
+    start, why = validator.spawn_node(start_cell, state)
+    if start is None:
+        raise ValueError("P sin suelo: %s" % why)
+    T = model.T
+    seen = {start}
+    queue = deque([start])
+    groups = {}
+    while queue:
+        node = queue.popleft()
+        for e in model.edges(node, state, "auto"):
+            if max(e["h"], e["v"]) > rules.limit + vl.EPS:
+                continue
+            to = e["to"]
+            if to not in seen:
+                seen.add(to)
+                queue.append(to)
+            if e["kind"] not in ("jump", "jump_run") or e["rise"] <= vl.EPS:
+                continue
+            w = model.world(state, bool(e.get("debug")))
+            a, b = ledge_of(w, node), ledge_of(w, to)
+            if a == b:
+                continue
+            key = (a, b)
+            rank = (0 if e["kind"] == "jump" else 1, round(max(e["h"], e["v"]), 6), abs(node[0] - to[0]))
+            old = groups.get(key)
+            if old is None or rank < old[0]:
+                groups[key] = (rank, node, e)
+    out = []
+    for (a, b), (_, node, e) in sorted(groups.items(), key=lambda kv: (-kv[0][0][2], kv[0][0][0], -kv[0][1][2],
+                                                                        kv[0][1][0])):
+        to = e["to"]
+        direction = 1 if (e["xt"] if e["xt"] is not None else to[0] * T) >= e["x0"] else -1
+        xt = e["xt"]
+        if xt is not None and abs(xt - e["x0"]) > 1e5:
+            xt = None
+        out.append({
+            "id": "%d,%d->%d,%d" % (node[0], node[1], to[0], to[1]),
+            "section": model.section_name(node[0], node[1]),
+            "from": {"cell": [node[0], node[1]], "ledge": [a[0], a[1]], "row": a[2]},
+            "to": {"cell": [to[0], to[1]], "ledge": [b[0], b[1]], "row": b[2]},
+            "rise_tiles": a[2] - b[2],
+            "direction": direction,
+            "speed": "walk" if e["kind"] == "jump" else "run",
+            "takeoff_x_px": round(e["x0"], 3),
+            "target_x_px": None if xt is None else round(xt, 3),
+            "debug": bool(e.get("debug")),
+        })
+    return {"format": FORMAT, "level": level["id"], "tile_size": T,
+            "note": "Generado por tools/level_climbs.py; no editar a mano.", "climbs": out}
+
+
+def dump(data):
+    return json.dumps(data, ensure_ascii=False, indent=1) + "\n"
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(description="Subidas de un nivel para la prueba de saltos reales.")
+    parser.add_argument("level")
+    parser.add_argument("--out", default=None)
+    parser.add_argument("--check", action="store_true", help="sale con 1 si el archivo no esta al dia")
+    args = parser.parse_args(argv[1:])
+    level = vl.load_json(args.level)
+    out = args.out or default_out(level)
+    text = dump(climbs(level))
+    if args.check:
+        try:
+            with open(out, encoding="utf-8") as handle:
+                current = handle.read()
+        except OSError:
+            current = None
+        if current != text:
+            print("%s no esta al dia: python3 tools/level_climbs.py %s" % (out, args.level), file=sys.stderr)
+            return 1
+        return 0
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w", encoding="utf-8") as handle:
+        handle.write(text)
+    print("%s: %d subidas" % (out, len(json.loads(text)["climbs"])))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

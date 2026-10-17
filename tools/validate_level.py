@@ -138,6 +138,15 @@ PULSE_SAMPLE_PX = 4.0
 # que se suma al retraso de un salto desde parado al comprobar la cabeza contra la esquina de
 # una losa (unos 2 cuadros a 220 px/s). Ver World.simulate(head_lag=True).
 HEAD_MARGIN_PX = 8.0
+# Holgura de techo calibrada con el Isak real (2026-10-17, tests/test_level_climbs.gd): con
+# validation.ceiling_margin_px en el nivel, una SUBIDA (salto que aterriza mas arriba) solo vale si,
+# mientras sube, la cabeza queda a ceiling_margin_px o mas de todo solido de encima (con la altura
+# real del salto a 60 Hz, no la de --jump-efficiency) y la caja queda a CORNER_MARGIN_PX o mas de la
+# esquina de una losa (un solido por encima de la cabeza al despegar que no es una pared), tanto
+# donde la pone el modelo como donde estaria despegando desde parado (sin los 8 px de
+# HEAD_MARGIN_PX). Sin el campo, el modelo de techo del paso 10 no cambia (la salida del 1-1 es la
+# misma byte a byte).
+CORNER_MARGIN_PX = 8.0
 # Tiempos del plan (paso 10): margen minimo por defecto que debe sobrar en ventanas y cuentas
 # (validation.time_margin_s del nivel o --time-margin), arranque desde parado tras un salto o una
 # pose y retraso del pulso desde que se pulsa hasta que toca (un cuadro).
@@ -177,6 +186,17 @@ def _export_vector2(source, name):
     return float(match.group(1)), float(match.group(2))
 
 
+def real_jump_height(v0, gravity, dt=SIM_DT):
+    """Altura que sube Isak en el juego con un salto completo: velocidad inicial v0 (> 0 hacia
+    arriba), la gravedad se aplica a la velocidad antes de moverse en cada cuadro de dt."""
+    v, h = v0, 0.0
+    while True:
+        v -= gravity * dt
+        if v <= 0.0:
+            return h
+        h += v * dt
+
+
 class Rules:
     """Valores de juego que usa el modelo (todos leidos de los datos del proyecto)."""
 
@@ -203,6 +223,9 @@ class Rules:
         self.jump_efficiency = float(jump_efficiency)
         self.jump_height = self.nominal_height * self.jump_efficiency
         self.jump_v0 = math.sqrt(2.0 * self.gravity * self.jump_height)
+        # Altura real del salto en el juego (Isak.step a 60 Hz: la gravedad cambia la velocidad antes
+        # de mover; unos 184 px): la usa la holgura de techo calibrada (ceiling_margin_px).
+        self.real_jump_height = real_jump_height(-jump_velocity, self.gravity)
         self.limit = float(limit)
         self.allow_run = bool(allow_run)
         self.hitbox_w, self.hitbox_h = _export_vector2(isak_source, "hitbox_size")
@@ -270,18 +293,18 @@ class Rules:
     def max_reach(self, speed):
         return self.reach(0.0, speed)
 
-    def standing_lag(self, t, speed):
+    def standing_lag(self, t, speed, extra=HEAD_MARGIN_PX):
         """Px que va por detras, a los `t` s de despegar, un salto desde parado (aceleracion
         air_acceleration hasta `speed`) frente al modelo de velocidad constante `speed`, mas
         HEAD_MARGIN_PX (despegar un par de cuadros tarde o algo antes del borde de la celda)."""
         if t <= 0.0:
             return 0.0
         if self.air_accel <= 0.0:
-            return HEAD_MARGIN_PX
+            return extra
         t_full = speed / self.air_accel
         if t < t_full:
-            return speed * t - 0.5 * self.air_accel * t * t + HEAD_MARGIN_PX
-        return speed * t_full - 0.5 * self.air_accel * t_full * t_full + HEAD_MARGIN_PX
+            return speed * t - 0.5 * self.air_accel * t * t + extra
+        return speed * t_full - 0.5 * self.air_accel * t_full * t_full + extra
 
 
 # --- Problemas ---
@@ -372,6 +395,9 @@ class LevelModel:
         abilities = level.get("abilities_available", {})
         self.debug_base = bool(abilities.get("debug", False))
         self.validation = level.get("validation", {}) if isinstance(level.get("validation"), dict) else {}
+        # Holgura de techo calibrada (2026-10-17): None = modelo del paso 10 (HEAD_MARGIN_PX).
+        margin = self.validation.get("ceiling_margin_px")
+        self.ceiling_margin = None if margin is None else float(margin)
         self._relay_cache = {}
         self.gates = []
         self._build_objects()
@@ -1017,7 +1043,14 @@ class World:
         bottom = m.rows * T + m.hh
         direction = 1.0 if x_target > x else -1.0
         x_start = x
+        y_start = y
         steps = 0
+        # Holgura de techo calibrada (validation.ceiling_margin_px): solo en saltos (head_lag); las
+        # celdas sin holgura se apuntan y, si el salto aterriza mas arriba, no vale.
+        calibrated = head_lag and m.ceiling_margin is not None
+        head_takeoff = y - m.hh
+        v_margin = 0.0 if not calibrated else m.ceiling_margin + max(0.0, m.rules.real_jump_height - m.rules.jump_height)
+        tight = set()
         traj = [] if info is not None and info.get("want_traj") else None
         if info is not None:
             info["traj"] = traj
@@ -1050,7 +1083,27 @@ class World:
             ny = y + vy * dt + 0.5 * acc * dt * dt
             nvy = vy + acc * dt
             if ny < y:
-                if self.collides(x, ny):
+                if calibrated:
+                    lag_x = x
+                    if speed > 0.0:
+                        lag_x = x - direction * min(m.rules.standing_lag(steps * dt, speed, 0.0), abs(x - x_start))
+                    if self.collides(x, ny):
+                        tight |= self._head_cells(x, x, ny, head_takeoff, 0.0, 0.0)
+                        y = min(y, self.ceiling_feet(x, ny))
+                        vy = 0.0
+                        if info is not None:
+                            info["head_hit"] = True
+                    elif self._lagged_ceiling(lag_x, y, ny):
+                        tight |= self._head_cells(lag_x, lag_x, ny, head_takeoff, 0.0, 0.0)
+                        y = min(y, self.ceiling_feet(lag_x, ny))
+                        vy = 0.0
+                        if info is not None:
+                            info["head_hit"] = True
+                    else:
+                        tight |= self._head_cells(min(lag_x, x), max(lag_x, x), ny, head_takeoff, v_margin,
+                                                  CORNER_MARGIN_PX)
+                        y, vy = ny, nvy
+                elif self.collides(x, ny):
                     y = min(y, self.ceiling_feet(x, ny))
                     vy = 0.0
                     if info is not None:
@@ -1066,6 +1119,14 @@ class World:
                     y, vy = ny, nvy
             else:
                 landed = self._cross_support(x, y, ny)
+                if landed is not None and calibrated and tight and (landed[1] + 1) * T < y_start - EPS:
+                    # Subida sin holgura (el apoyo de la repisa de llegada no cuenta como techo).
+                    lo, hi = self._ledge_span(landed)
+                    if any(not (r == landed[1] + 1 and lo <= c <= hi) for c, r in tight):
+                        if info is not None:
+                            info["head_hit"] = True
+                            info["tight"] = sorted(tight)
+                        return None, "techo sin holgura"
                 if landed is not None:
                     if traj is not None:
                         traj.append((x, (landed[1] + 1) * T))
@@ -1100,6 +1161,64 @@ class World:
         pared al lado."""
         head = y - self.m.hh
         return any(bottom <= head + EPS for bottom in self._obstacles(x, ny))
+
+    def _cell_bottom(self, c, r):
+        """Borde de abajo (px) de la celda si es solida o tiene una tabla fina; None si no."""
+        if self.is_solid(c, r):
+            return (r + 1) * self.m.T
+        if (c, r) in self.thin:
+            return r * self.m.T + self.thin[(c, r)]
+        return None
+
+    def _is_wall(self, c, r, head_takeoff):
+        """La celda solida sigue en columna de solidos hasta la altura de la cabeza al despegar: es una
+        pared (Isak se desliza por ella), no la esquina de una losa."""
+        if not self.is_solid(c, r):
+            return False
+        rr = r + 1
+        while rr * self.m.T < head_takeoff + self.m.T:
+            if not self.is_solid(c, rr):
+                return False
+            rr += 1
+        return True
+
+    def _head_cells(self, xa, xb, feet, head_takeoff, v_margin, h_margin):
+        """Celdas sin holgura con la caja de Isak barrida de xa a xb con los pies en `feet`: encima de
+        la cabeza a menos de v_margin (y solapando en x) o, si estaban por encima de la cabeza al
+        despegar y no son una pared, a menos de h_margin en horizontal a la altura del cuerpo."""
+        m = self.m
+        T = m.T
+        head = feet - m.hh
+        out = set()
+        c0 = int(math.floor((xa - m.hw - h_margin) / T))
+        c1 = int(math.floor((xb + m.hw + h_margin - EPS) / T))
+        r0 = int(math.floor((head - v_margin) / T))
+        r1 = int(math.floor((feet - EPS) / T))
+        for r in range(r0, r1 + 1):
+            for c in range(c0, c1 + 1):
+                bottom = self._cell_bottom(c, r)
+                if bottom is None:
+                    continue
+                left, right = c * T, (c + 1) * T
+                over_x = left < xb + m.hw - EPS and right > xa - m.hw + EPS
+                if over_x and head - v_margin < bottom - EPS and bottom <= head + EPS:
+                    out.add((c, r))
+                    continue
+                if bottom > head_takeoff + EPS or self._is_wall(c, r, head_takeoff):
+                    continue
+                near_x = left < xb + m.hw + h_margin - EPS and right > xa - m.hw - h_margin + EPS
+                if near_x and r * T < feet - EPS and bottom > head + EPS:
+                    out.add((c, r))
+        return out
+
+    def _ledge_span(self, node):
+        c, r = node
+        lo = hi = c
+        while self.is_node(lo - 1, r):
+            lo -= 1
+        while self.is_node(hi + 1, r):
+            hi += 1
+        return lo, hi
 
     def _cross_support(self, x, y, ny):
         T = self.m.T
@@ -1866,7 +1985,11 @@ class Validator:
                 continue
             cell = {(s["x"], s["y"])}
             without = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=False)
-            with_debug = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=True)
+            # Con la holgura calibrada (2026-10-17) el Debug se enciende donde hace falta (union de
+            # movimientos, como en el camino): con el Debug siempre encendido una plataforma oculta
+            # seria un techo en sitios donde nadie lo usa.
+            mode = "auto" if self.model.ceiling_margin is not None else True
+            with_debug = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=mode)
             info.append({"id": s["id"], "without_debug": without["ok"], "with_debug": with_debug["ok"]})
             if without["ok"]:
                 self.report.error("el secreto %s se alcanza sin pasar por plataformas ocultas" % s["id"],

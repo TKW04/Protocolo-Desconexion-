@@ -41,7 +41,8 @@ Reglas:
     (minimo ceil(720 / tile_size) filas; la torre del 1-2 tiene 62);
   - camara (camera, opcional): {vertical: "simple" | "tower", limits: "grid"};
   - parametros de validacion (validation, opcional, paso 10): {time_margin_s, snooze_required,
-    laser_required, debug_required, start_energy, sync_damage_budget} (ver _check_validation);
+    laser_required, debug_required, start_energy, sync_damage_budget, ceiling_margin_px} (ver
+    _check_validation);
   - id: <mundo>-<nivel> o, para un nivel de prueba que no es del juego, <nombre>_test
     (p. ej. tower_test; su escena es scenes/levels/<nombre>_test.tscn);
   - ayuda de Eco con Q: todo help_id (del tipo en el catalogo, del enemigo en
@@ -823,14 +824,17 @@ class LevelValidator:
         ventanas y cuentas; 1,5 s por defecto), snooze_required (grupos de recordatorios que SOLO se
         cruzan con el Posponer), laser_required y debug_required (booleanos: la meta exige el laser /
         el Debug), start_energy (0-100, energia al empezar; 100 por defecto) y sync_damage_budget
-        (>= 0, Sync Rate que pueden quitar los enemigos en el camino; 0 por defecto)."""
+        (>= 0, Sync Rate que pueden quitar los enemigos en el camino; 0 por defecto) y, desde el
+        2026-10-17, ceiling_margin_px (0-64: holgura de techo calibrada con el Isak real; sin el campo,
+        el modelo de techo del paso 10)."""
         if "validation" not in self.level:
             return
         val = self.level["validation"]
         if not isinstance(val, dict):
             self.error("'validation' debe ser un objeto")
             return
-        numbers = {"time_margin_s": (0.0, 30.0), "start_energy": (0.0, 100.0), "sync_damage_budget": (0.0, 100.0)}
+        numbers = {"time_margin_s": (0.0, 30.0), "start_energy": (0.0, 100.0), "sync_damage_budget": (0.0, 100.0),
+                   "ceiling_margin_px": (0.0, 64.0)}
         for key, value in val.items():
             if key in numbers:
                 lo, hi = numbers[key]

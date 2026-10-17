@@ -578,5 +578,90 @@ class TowerCeilingTest(unittest.TestCase):
         self.assertTrue(any(p.get("encounter") and p["mandatory"] for p in result["abilities"]["pickups"]))
 
 
+def level_1_2():
+    return vl.load_json(os.path.join(ROOT, "data", "levels", "1-2.json"))
+
+
+class CalibratedCeilingTest(unittest.TestCase):
+    """Holgura de techo calibrada con el Isak real (2026-10-17, ajuste del 1-2 tras probarlo:
+    tests/test_level_climbs.gd mide cada subida con la fisica real). Con
+    validation.ceiling_margin_px una subida solo vale si la cabeza queda a ese margen de todo solido
+    de encima (con la altura real del salto, 184 px) y a CORNER_MARGIN_PX de la esquina de una losa;
+    sin el campo el modelo del paso 10 no cambia."""
+
+    def test_real_jump_height_is_the_one_measured_in_the_game(self):
+        self.assertAlmostEqual(vl.real_jump_height(960.0, 2400.0), 184.0, places=3)
+        rules = vl.Rules()
+        self.assertAlmostEqual(rules.real_jump_height, 184.0, places=3)
+        self.assertLess(rules.jump_height, rules.real_jump_height)
+
+    def test_without_the_field_the_old_model_is_used(self):
+        self.assertIsNone(vl.LevelModel(base_level(), vl.Rules()).ceiling_margin)
+        self.assertIsNone(vl.LevelModel(tower_test_level(), vl.Rules()).ceiling_margin)
+        self.assertTrue(base_result()["ok"])
+
+    def test_level_1_2_validates_with_the_calibrated_margin(self):
+        level = level_1_2()
+        self.assertEqual(level["validation"]["ceiling_margin_px"], 16)
+        result = vl.validate(level)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+
+    def test_head_against_the_slab_with_insufficient_headroom_fails(self):
+        """Caso negativo: el forjado del piso 3 vuelve a ser macizo sobre la escalera de la sala del
+        acertijo (columnas 4-8 de la fila 31). Desde la repisa baja (fila 36) la cabeza llega a 8 px
+        del forjado (le faltan 24 px de holgura): el modelo calibrado no deja subir a la repisa alta."""
+        level = level_1_2()
+        fill(level, range(4, 9), [31], "#")
+        result = vl.validate(level, check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Isak no sube de la fila 35" in m for m in messages(result)), messages(result))
+        # El modelo del paso 10 (cabeza retrasada + 8 px) aceptaba esa subida: es la que el usuario
+        # no conseguia hacer jugando.
+        del level["validation"]["ceiling_margin_px"]
+        old = vl.validate(level, check_schema=False)
+        self.assertTrue(old["ok"], messages(old))
+
+    def test_niche_with_four_tiles_of_headroom_is_not_a_climb(self):
+        """Caso negativo: el nicho del pasillo 2a con su techo macizo (fila 38): del suelo del pasillo
+        al techo del nicho hay 4 tiles; con la cabeza (80 px) y el salto (184 px) faltan 24 px."""
+        level = level_1_2()
+        fill(level, range(8, 12), [38], "#")
+        model = vl.LevelModel(level, vl.Rules())
+        world = model.world(frozenset(), False)
+        self.assertFalse(any(e["to"][1] == 40 for e in world.compute_edges((10, 42))))
+        del level["validation"]["ceiling_margin_px"]
+        model = vl.LevelModel(level, vl.Rules())
+        world = model.world(frozenset(), False)
+        self.assertTrue(any(e["to"][1] == 40 for e in world.compute_edges((10, 42))))
+
+    def test_two_tile_corridor_above_a_hole_is_not_a_climb(self):
+        """Caso negativo: la entrada al piso 3 con el suelo del nicho del secreto C macizo (fila 28):
+        desde la repisa del hueco hay 3 tiles hasta ese techo (le faltaban 88 px)."""
+        level = level_1_2()
+        fill(level, range(1, 6), [28], "#")
+        model = vl.LevelModel(level, vl.Rules())
+        world = model.world(frozenset(), False)
+        self.assertFalse(any(e["to"] == (3, 30) for e in world.compute_edges((2, 31))))
+
+    def test_tower_test_roof_has_no_headroom_with_the_margin(self):
+        """tower_test no lleva el campo: su azotea de 2 filas solo se sube rozando el techo. Con el
+        margen calibrado no se llega (documenta por que no se activa en las salas de prueba)."""
+        level = tower_test_level()
+        level["validation"] = {"ceiling_margin_px": 16}
+        result = vl.validate(level, check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Isak no sube de la fila 4" in m for m in messages(result)), messages(result))
+        self.assertTrue(vl.validate(tower_test_level())["ok"])
+
+    def test_schema_checks_the_margin(self):
+        import validate_level_schema as vls
+        level = level_1_2()
+        level["validation"]["ceiling_margin_px"] = 100
+        self.assertTrue(any("ceiling_margin_px" in e for e in vls.validate_level(level)))
+        level["validation"]["ceiling_margin_px"] = "16"
+        self.assertTrue(any("ceiling_margin_px" in e for e in vls.validate_level(level)))
+
+
 if __name__ == "__main__":
     unittest.main()
