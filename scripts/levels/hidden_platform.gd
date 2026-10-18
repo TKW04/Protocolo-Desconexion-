@@ -12,6 +12,10 @@
 ## sigue la transicion (DebugMode.get_intensity()). Accesibilidad:
 ## GameState.debug_high_contrast_outline usa un contorno mas claro y grueso.
 ## Halo oscuro (hidden_halo_*) por fuera del contorno para que no se pierda.
+## Revelado persistente (Debug 3, tanda M2 de las mejoras de Calc): tras apagar
+## el Debug sigue visible y solida DebugMode.get_reveal_linger_s() (1,5 s) y
+## parpadea en sus ultimos reveal_linger_warn_s (EventBus.debug_reveal_changed,
+## DebugMode.get_reveal_intensity). Sin la mejora, igual que antes.
 class_name HiddenPlatform
 extends StaticBody2D
 
@@ -27,6 +31,7 @@ const TILE_SIZE_PX: float = 64.0
 var _config: DebugModeConfig = DebugModeConfig.shared()
 var _shape: CollisionShape2D
 var _drawn_intensity: float = -1.0
+var _drawn_blink_off: bool = false
 
 
 func _ready() -> void:
@@ -37,15 +42,15 @@ func _ready() -> void:
 	_shape.shape = rect
 	_shape.one_way_collision = one_way
 	add_child(_shape)
-	EventBus.debug_mode_changed.connect(_on_debug_mode_changed)
+	EventBus.debug_reveal_changed.connect(_on_debug_reveal_changed)
 	EventBus.world_changed.connect(_on_look_changed.unbind(1))
 	EventBus.debug_high_contrast_outline_changed.connect(_on_look_changed.unbind(1))
-	_update_solid(DebugMode.is_active())
+	_update_solid(DebugMode.is_revealing())
 	_update_visual()
 
 
 func _process(_delta: float) -> void:
-	if DebugMode.get_intensity() != _drawn_intensity:
+	if DebugMode.get_reveal_intensity() != _drawn_intensity or DebugMode.is_reveal_blink_off() != _drawn_blink_off:
 		_update_visual()
 
 
@@ -73,7 +78,7 @@ func get_outline_width() -> int:
 
 
 func _draw() -> void:
-	if _drawn_intensity <= 0.0:
+	if _drawn_intensity <= 0.0 or _drawn_blink_off:
 		return
 	var rect := Rect2(-size * 0.5, size)
 	var color: Color = get_outline_color()
@@ -87,19 +92,21 @@ func _draw() -> void:
 	draw_rect(rect.grow(-width * 0.5), Color(color, _drawn_intensity), false, width)
 
 
-func _update_solid(debug_active: bool) -> void:
-	var solid: bool = debug_active or not _config.hidden_platforms_solid_only_in_debug
+func _update_solid(revealing: bool) -> void:
+	var solid: bool = revealing or not _config.hidden_platforms_solid_only_in_debug
 	_shape.disabled = not solid
 
 
 func _update_visual() -> void:
-	_drawn_intensity = DebugMode.get_intensity()
+	_drawn_intensity = DebugMode.get_reveal_intensity()
+	_drawn_blink_off = DebugMode.is_reveal_blink_off()
 	visible = _drawn_intensity > 0.0
 	queue_redraw()
 
 
-func _on_debug_mode_changed(active: bool) -> void:
-	_update_solid(active)
+## Debug activo o persistencia del revelado (Debug 3): visible y solida.
+func _on_debug_reveal_changed(revealing: bool) -> void:
+	_update_solid(revealing)
 	_update_visual()
 
 

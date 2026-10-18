@@ -17,5 +17,9 @@
 	"hidden_halo_color": "#0b0e1a",
 	"high_contrast_outline_width_px": 4,
 	"high_contrast_lighten": 0.6,
-	"hidden_platforms_solid_only_in_debug": true
+	"hidden_platforms_solid_only_in_debug": true,
+	"_reveal_linger_notes": "Mejoras de Calc, tanda M2 (docs/propuesta-mejoras.md §2; los valores mejorados van en data/upgrades.json y estos son la BASE, nivel 1 de la pista Debug). reveal_linger_s: segundos REALES que lo revelado por el Debug (plataformas ocultas h y la vista a traves de los pop-ups translucidos) sigue visible Y solido tras apagar el Debug (0 de base; Debug 3, Revelado persistente: 1,5 s). Los ultimos reveal_linger_warn_s parpadea a reveal_linger_blink_hz (aviso de que va a desaparecer); despues se apaga con fade_out_s. Al morir, al reaparecer o con un cambio de escena (DebugMode.reset) no hay persistencia. Debug 4 (Mas ralentizacion) cambia world_time_scale de 0,5 a 0,4 (el gasto sigue en tiempo REAL: 20/s o 15/s con el Debug 2, igual que antes; con el mundo mas lento cada segundo de Debug da mas tiempo del mundo, 2,5 s en vez de 2). Debug 5 (Arranque rapido, la antigua mejora quick_start) cambia activation_hold_s de 1,0 a 0,4 s.",
+	"reveal_linger_s": 0.0,
+	"reveal_linger_warn_s": 0.5,
+	"reveal_linger_blink_hz": 8.0
 }

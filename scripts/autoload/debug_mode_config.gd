@@ -26,6 +26,11 @@ var hidden_halo_color: Color = Color("#0b0e1a")
 var high_contrast_outline_width_px: int = 4
 var high_contrast_lighten: float = 0.6
 var hidden_platforms_solid_only_in_debug: bool = true
+## Revelado persistente (Debug 3, tanda M2): segundos reales que lo revelado sigue
+## visible y solido tras apagar el Debug (0 de base), aviso final y su parpadeo.
+var reveal_linger_s: float = 0.0
+var reveal_linger_warn_s: float = 0.5
+var reveal_linger_blink_hz: float = 8.0
 
 static var _cached: DebugModeConfig
 

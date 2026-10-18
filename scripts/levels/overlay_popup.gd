@@ -181,7 +181,8 @@ func advance(dt: float) -> void:
 func _update_visual() -> void:
 	if _window == null:
 		return
-	var intensity: float = DebugMode.get_intensity()
+	# Revelado persistente (Debug 3): tras apagar el Debug se sigue viendo a traves.
+	var intensity: float = DebugMode.get_reveal_intensity()
 	var alpha: float = lerpf(opacity, debug_opacity, intensity)
 	_body.modulate.a = alpha
 	_label.modulate.a = alpha
