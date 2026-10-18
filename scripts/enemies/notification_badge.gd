@@ -368,10 +368,13 @@ func stun(duration_scale: float = 1.0) -> void:
 	stunned.emit()
 
 
+## Con el Pulso 5 (Pulso de retorno) da energia una vez por intento («+4»).
 func receive_pulse(area: Area2D) -> bool:
 	if _state == STATE_POPPED or not PulseReceiver.pulse_reaches(area, get_body_rect()):
 		return false
 	stun(GameState.get_pulse_stun_multiplier())
+	if GameState.claim_pulse_return(self) > 0.0:
+		UpgradeFx.spawn(get_parent(), UpgradeFx.ENERGY_RETURN, get_center())
 	return true
 
 

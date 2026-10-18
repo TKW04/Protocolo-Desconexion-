@@ -20,7 +20,7 @@
 					"effects": [{"target": "ability.hide", "value": 1.0}], "implemented": false},
 				{"level": 5, "name": "Pulso de retorno", "description": "Aturdir a un enemigo da 4 de energía, una vez por enemigo.",
 					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
-					"effects": [{"target": "isak_abilities.pulse_energy_on_stun", "value": 4.0}], "implemented": false}
+					"effects": [{"target": "isak_abilities.pulse_energy_on_stun", "value": 4.0}], "implemented": true}
 			]
 		},
 		{
@@ -42,7 +42,7 @@
 					"effects": [{"target": "isak_abilities.laser_damage", "value": 2.0}], "implemented": true},
 				{"level": 5, "name": "Láser perforante", "description": "Atraviesa enemigos (no el terreno ni los objetos).",
 					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
-					"effects": [{"target": "isak_abilities.laser_pierce", "value": 1.0}], "implemented": false}
+					"effects": [{"target": "isak_abilities.laser_pierce", "value": 1.0}], "implemented": true}
 			]
 		},
 		{

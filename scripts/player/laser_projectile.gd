@@ -17,6 +17,15 @@
 ## GROUP_LASER_ACTIVATABLE.
 ##
 ## Tiempo: real (es de Isak; el Debug no lo ralentiza).
+##
+## PERFORA (Laser 5, tanda M2 de las mejoras de Calc, laser_pierce de
+## isak_abilities con la mejora): el haz atraviesa a los ENEMIGOS (grupo enemy;
+## tambien la plataforma del enemigo aturdido) y dana a cada uno una vez por
+## disparo (destello pierce_spark de UpgradeFx), y sigue volando. NO atraviesa el
+## terreno ni los objetos del laser (lector, anuncio, Posponer, interruptores,
+## receptores: no son del grupo enemy), que lo paran igual que antes. Un enemigo
+## inmune (el punto rojo despierto, is_laser_vulnerable falso) tambien lo para
+## con su chispa gris.
 class_name LaserProjectile
 extends Node2D
 
@@ -24,6 +33,8 @@ extends Node2D
 signal hit(target: Node, damage: float)
 ## Se apaga sin chocar al llegar al alcance.
 signal expired
+## Ha atravesado a `target` (Laser 5) y sigue volando.
+signal pierced(target: Node, damage: float)
 
 ## Objetos del entorno (Area2D) que el laser debe tocar.
 const GROUP_LASER_ACTIVATABLE: StringName = &"laser_activatable"
@@ -36,6 +47,11 @@ const LAYER_ENEMY: int = 4
 const MAX_PARENT_HOPS: int = 3
 ## Areas que se ignoran como mucho en un mismo paso (zonas de Eco seguidas).
 const MAX_IGNORED_AREAS: int = 8
+## Enemigos que se pueden atravesar como mucho en un mismo paso (Laser 5).
+const MAX_PIERCES_PER_STEP: int = 8
+## Grupo de los enemigos (lo que el laser que perfora atraviesa).
+const GROUP_ENEMY: StringName = &"enemy"
+const VULNERABLE_METHOD: StringName = &"is_laser_vulnerable"
 
 ## 1 derecha, -1 izquierda.
 var direction: float = 1.0
@@ -46,6 +62,8 @@ var length_px: float = 32.0
 var thickness_px: float = 4.0
 ## Quien dispara (Isak); se pasa a on_laser_hit y se excluye del rayo.
 var source: Node
+## Laser 5: atraviesa enemigos (ver la cabecera).
+var pierce: bool = false
 ## Si es false, _physics_process no avanza (las pruebas llaman a step()).
 var auto_process: bool = true
 
@@ -59,6 +77,9 @@ var _traveled: float = 0.0
 var _done: bool = false
 var _impact_left: float = 0.0
 var _hit_target: Node
+## Laser 5: colisionadores ya atravesados (se excluyen del rayo) y enemigos ya danados.
+var _pierced_rids: Array[RID] = []
+var _pierced: Array[Node] = []
 
 
 ## Configura con los valores de `abilities` (PlayerAbilities).
@@ -69,6 +90,7 @@ func setup(abilities: PlayerAbilities, dir: float, from: Node) -> void:
 	damage = abilities.laser_damage
 	length_px = abilities.laser_length_px
 	thickness_px = abilities.laser_thickness_px
+	pierce = abilities.laser_pierce > 0.5
 	source = from
 	var visual: Dictionary = abilities.laser_visual
 	_core = Color(String(visual.get("core", _core.to_html(false))))
@@ -99,6 +121,16 @@ func step(delta: float) -> void:
 	var from_pos: Vector2 = global_position
 	var to_pos: Vector2 = from_pos + Vector2(direction * distance, 0.0)
 	var result: Dictionary = _cast(from_pos, to_pos)
+	# Laser 5: atraviesa enemigos y sigue el rayo desde alli en el mismo paso.
+	var pierces: int = 0
+	while pierce and not result.is_empty() and pierces < MAX_PIERCES_PER_STEP:
+		var collider: Node = result.get("collider") as Node
+		var target: Node = find_laser_target(collider)
+		if not can_pierce(target):
+			break
+		_pierce(target, result["rid"], result["position"])
+		pierces += 1
+		result = _cast(result["position"], to_pos)
 	if not result.is_empty():
 		global_position = result["position"]
 		_traveled += absf(global_position.x - from_pos.x)
@@ -141,6 +173,22 @@ func is_finished() -> bool:
 	return _done
 
 
+## Enemigos atravesados por este disparo (Laser 5).
+func get_pierced() -> Array[Node]:
+	return _pierced
+
+
+## Laser 5: `target` (el nodo con on_laser_hit) se puede atravesar: es un
+## enemigo y el laser le hace dano ahora. Nunca el terreno ni los objetos del
+## laser (no son del grupo enemy) ni un enemigo inmune (el punto rojo despierto).
+func can_pierce(target: Node) -> bool:
+	if not pierce or target == null or not is_instance_valid(target) or not target.is_in_group(GROUP_ENEMY):
+		return false
+	if target.has_method(VULNERABLE_METHOD) and not bool(target.call(VULNERABLE_METHOD)):
+		return false
+	return true
+
+
 ## Distancia recorrida desde el celular (px).
 func get_traveled() -> float:
 	return _traveled
@@ -176,7 +224,7 @@ func _cast(from_pos: Vector2, to_pos: Vector2) -> Dictionary:
 	var params := PhysicsRayQueryParameters2D.create(from_pos, to_pos, LAYER_WORLD | LAYER_ENEMY)
 	params.collide_with_areas = true
 	params.hit_from_inside = true
-	var exclude: Array[RID] = []
+	var exclude: Array[RID] = _pierced_rids.duplicate()
 	if source is CollisionObject2D:
 		exclude.append((source as CollisionObject2D).get_rid())
 	for i: int in MAX_IGNORED_AREAS:
@@ -190,6 +238,18 @@ func _cast(from_pos: Vector2, to_pos: Vector2) -> Dictionary:
 			continue
 		return result
 	return {}
+
+
+## Atraviesa a `target` (una vez por enemigo y disparo): le hace el dano, pinta el
+## destello y excluye su colisionador del rayo.
+func _pierce(target: Node, rid: RID, at: Vector2) -> void:
+	_pierced_rids.append(rid)
+	if _pierced.has(target):
+		return
+	_pierced.append(target)
+	target.call(HIT_METHOD, damage, source)
+	pierced.emit(target, damage)
+	UpgradeFx.spawn(get_parent() if get_parent() != null else self, UpgradeFx.PIERCE_SPARK, at)
 
 
 func _on_collision(collider: Node) -> void:

@@ -22,6 +22,9 @@ const REQUIRED_KEYS: PackedStringArray = [
 	"laser_thickness_px",
 ]
 
+## Claves numericas opcionales (0 si faltan): efectos de las mejoras de Calc.
+const OPTIONAL_KEYS: PackedStringArray = ["laser_pierce", "pulse_energy_on_stun"]
+
 var pulse_duration_s: float
 var pulse_radius_px: float
 var hurt_duration_s: float
@@ -46,6 +49,10 @@ var laser_thickness_px: float
 var laser_locks_movement: bool = false
 ## Aspecto provisional del laser (seccion laser_visual; colores y tiempos).
 var laser_visual: Dictionary = {}
+## Mejoras de Calc, tanda M2 (opcionales; base 0 en data/isak_abilities.json):
+## Laser 5 atraviesa enemigos (1 = si) y Pulso 5 da energia al aturdir (4).
+var laser_pierce: float = 0.0
+var pulse_energy_on_stun: float = 0.0
 
 static var last_error: String = ""
 
@@ -76,6 +83,11 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	if typeof(locks) != TYPE_BOOL:
 		return _fail("PlayerAbilities: la clave 'laser_locks_movement' en '%s' debe ser booleana." % source)
 	abilities.laser_locks_movement = locks
+	for key: String in OPTIONAL_KEYS:
+		var optional: Variant = data.get(key, 0.0)
+		if typeof(optional) != TYPE_FLOAT and typeof(optional) != TYPE_INT:
+			return _fail("PlayerAbilities: la clave '%s' en '%s' debe ser numerica." % [key, source])
+		abilities.set(key, float(optional))
 	var visual: Variant = data.get("laser_visual", {})
 	if visual is Dictionary:
 		abilities.laser_visual = visual

@@ -1,0 +1,13 @@
+{
+	"_notes": "Efectos de las mejoras de Calc de la tanda M2 (docs/propuesta-mejoras.md; arte de tools/gen_upgrade_fx.py, validador tools/validate_upgrade_fx.py). Los dibuja UpgradeFx (scripts/effects/upgrade_fx.gd): un Sprite2D con la hoja texture (cuadros frame_size, columns por fila) a escala entera scale (pixeles de arte x2, como los tiles), z_index sobre el mundo. Cada animacion usa una fila (row), va a fps en tiempo REAL (el Debug no la ralentiza; con el arbol en pausa se para), se coloca en offset_px (px de mundo) respecto al punto en que nace y se libera al acabar. energy_return: Pulso de retorno (Pulso 5), «+4» con la bateria sobre el enemigo aturdido. pierce_spark: Laser que perfora (Laser 5), destello en cada enemigo atravesado. lost_trail: «?» sobre un perseguidor que pierde el rastro por el Ocultarte (Pulso 4; dura lost_s de data/enemies/notification_badge.json). Sin rojos (el rojo es dano).",
+	"texture": "res://assets/sprites/effects/upgrade_fx.png",
+	"frame_size": [24, 24],
+	"columns": 6,
+	"scale": 2,
+	"z_index": 6,
+	"animations": {
+		"energy_return": {"row": 0, "fps": 10.0, "offset_px": [0.0, -56.0]},
+		"pierce_spark": {"row": 1, "fps": 24.0, "offset_px": [0.0, 0.0]},
+		"lost_trail": {"row": 2, "fps": 6.0, "offset_px": [0.0, -84.0]}
+	}
+}
