@@ -74,6 +74,9 @@ rm -f "$IMPORT_LOG"
 # maximo (pulso:5,laser:5,debug:5,sync:5,energia:5) y con el tope del acceso de cada nivel (--access-cap),
 # el camino del 1-2 exportado con las pistas al maximo y el arte de los efectos de las mejoras
 # (tools/validate_upgrade_fx.py: «+4», perforacion, «?» y el icono «oculto» del HUD).
+# Desde el 2026-10-18 (paso 15 del 1-2) GUT lanza ademas el bot vertical en ambos casos
+# (tests/test_tower_bot.gd: tools/play_tower_bot.gd --headless --fixed-fps 60 en un proceso aparte,
+# ~20-30 s de pared por caso; usa user://bot_save.json).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
