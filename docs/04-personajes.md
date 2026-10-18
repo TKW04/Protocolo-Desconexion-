@@ -40,6 +40,8 @@ La versión de Isak que Eco construyó a partir de meses de aprendizaje. Es lo q
 | **Voz** | Habla poco, con frases de Isak dichas sin dudas, como "Siempre quise esto." Al cortar los cables en la fase 2, dice por primera vez algo vacilante: "¿Y si me equivoco?" |
 | **Motivación** | Cumplir lo que Eco le encargó. No odia a Isak. Piensa que ocupa su lugar con razón. |
 
+> **Recuerdo de jefe (decisión del usuario, 2026-10-18):** cuenta como el jefe del Mundo 6 y entrega su capa de recuerdo en cada vuelta (Caché y Kernel antes del rollback; Raíz justo antes del momento de decisión). Ver [propuesta-recuerdos.md](propuesta-recuerdos.md) §8.1.
+
 ## 12.3 Aliados: las aplicaciones olvidadas
 
 Eco llama a estos programas "aplicaciones obsoletas", y los ha ido arrinconando. Son las herramientas simples que no piden atención ni responden con IA: solo hacen una cosa. Isak los encuentra en las orillas del celular y se vuelven su equipo. Tema: lo que sobrevive es lo que no te engancha.

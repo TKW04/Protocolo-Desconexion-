@@ -994,4 +994,17 @@ Efectos complejos de `propuesta-mejoras.md` implementados con las decisiones del
 4. **Guardado:** lo obtenido sin guardar en Notas se pierde en un game over; lo guardado es registro y se conserva en los rollbacks (como los secretos encontrados). Propuesta: la recompensa del jefe avisa «Guarda en Notas para conservarlo».
 5. Solo texto.
 
-**Abiertas (con recomendación, `propuesta-recuerdos.md` §8):** el sexto jefe es Isak Optimizado y entrega su capa aunque escape o engañe; no condicionar el final real a tener todos los recuerdos; ilustración solo para la capa Kernel de cada jefe y viñeta de texto para lo demás; 3 mensajes de secretos por mundo en Caché; al vencer a un jefe se entregan las capas perdidas hasta el acceso actual; el aviso de guardar es texto del sistema; el esbozo del Mundo 1 (§5) como tono; Eco reacciona tras la capa Raíz.
+**Decisiones del 2026-10-18 (2.ª tanda, `propuesta-recuerdos.md` §8):**
+
+1. **Sexto jefe (usuario):** Isak Optimizado es el jefe del Mundo 6 (La Nube) y entrega su capa: en Caché y Kernel antes del rollback (aunque escape o engañe a Isak); en Raíz justo antes del momento de decisión.
+2. **Final real (usuario: «sí»):** exige los **18 recuerdos de jefe** (6 × 3). El camino normal los cumple; al reunirse se ensamblan ante Eco en el momento de decisión (propuesta de escena, sin texto definitivo: los seis recuerdos se ensamblan y a Eco se le desmorona la «versión optimizada»; `06-finales.md` §14.1).
+   - **Salvedad del orquestador:** los **mensajes de secretos no son requisito**: las vueltas no se rejuegan, un mensaje perdido en Caché no se recuperaría en Raíz y el final real quedaría inalcanzable. Son un extra.
+3. **Ilustración (usuario):** pixel-art solo para la capa Kernel de cada jefe (6 imágenes); Caché muestra la misma imagen borrosa (filtro o dither de baja resolución); Raíz y los mensajes, solo texto.
+4. **Mensajes de secretos (usuario):** 3 por mundo en Caché, uno por subnivel; los de Kernel y Raíz, al construir cada mundo.
+5. **Capas perdidas (orquestador):** sin regla especial: un game over devuelve al último guardado, el jefe vuelve a estar sin vencer y al derrotarlo entrega de nuevo el recuerdo. Red de seguridad: al vencer a un jefe se entregan además las capas inferiores que falten.
+
+**Abiertas (`propuesta-recuerdos.md` §9):**
+- **¿También los mensajes para el final real?** Exigiría permitir volver a vueltas anteriores. *Recomendación:* no.
+- **Arte de las 6 ilustraciones:** por script con el estilo del juego (recomendado) o con AutoSprite (solo con permiso del usuario; los créditos, unos 470, están reservados a enemigos y jefes).
+- Mensajes de Kernel y Raíz; textos de los 18 recuerdos, de los mensajes y del ensamblaje del final real.
+- Siguen con su recomendación: el aviso de guardar es texto del sistema; el esbozo del Mundo 1 (§5) como tono; Eco reacciona tras la capa Raíz.

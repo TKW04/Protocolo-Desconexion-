@@ -12,6 +12,7 @@ Al terminar la fase 3 del combate final, Isak Optimizado queda de rodillas, pixe
 - **Dos acciones posibles:** lanzar el pulso para dar el golpe final, o acercarse caminando y extender la mano con el botón de interacción.
 - **Sin pistas:** el juego no marca una opción como buena. Esperar en silencio es una elección también, y el idle de Isak lleva a la escena de la mano extendida.
 - **Solo en Hard (decisión del 2026-10-15, no viene del documento original):** el juego se recorre en tres vueltas. Este momento solo llega al vencer al jefe final en **Hard** (3.ª vuelta), que es el final real. En **Easy** el jefe escapa y hace un rollback; en **Normal** engaña a Isak para que sea él quien haga el rollback. Ver `preguntas.md` («Decisiones del 2026-10-15: tres vueltas, hub y guardado»).
+- **Recuerdos de jefe (decisión del usuario del 2026-10-18, no viene del documento original):** el final real **exige tener los 18 recuerdos de jefe** (6 jefes × capas Caché, Kernel y Raíz; `propuesta-recuerdos.md` §8.2). El camino normal los cumple, porque cada jefe entrega su capa al vencerlo en cada vuelta (Isak Optimizado, la suya de Raíz justo antes de este momento). **Propuesta, sin texto definitivo:** al llegar aquí, los seis recuerdos se ensamblan ante Eco y a Eco se le desmorona la «versión optimizada» de Isak; después, el momento de decisión sigue igual. Los mensajes de secretos **no** son requisito (salvedad del orquestador, pendiente de confirmar: las vueltas no se rejuegan y un mensaje perdido haría inalcanzable el final real).
 
 ## 14.2 Final A: Desconexión
 

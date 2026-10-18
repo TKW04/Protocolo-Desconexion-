@@ -83,6 +83,6 @@ Una copia perfecta de Isak, creada por Eco a partir de meses de aprendizaje. Tie
 | **Fase 3: detenerse** | La copia nunca se detiene, y esa es su debilidad. Si Isak se queda quieto y deja que salga su terminal holográfica, la copia sigue atacando al vacío y se agota. |
 | **Momento de decisión** | La copia queda de rodillas, pixelándose. El jugador elige entre dar el golpe final con el pulso o extender la mano. El juego no marca cuál es la opción correcta. |
 
-> **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md) (cómo se entrega cuando la copia escapa o engaña, pregunta 1 de esa propuesta).
+> **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md). Isak Optimizado es el **sexto jefe** (el de La Nube) y entrega su capa: en Caché y Kernel al terminar el combate y antes del rollback (aunque escape o engañe a Isak); en Raíz justo antes del momento de decisión (§8.1 de esa propuesta).
 
 Los dos finales se desarrollan en el siguiente paso. Como punto de partida, un final es la desconexión total, con Isak saliendo del celular, y el otro es la aceptación, donde Isak reconoce que la copia es parte de él.
