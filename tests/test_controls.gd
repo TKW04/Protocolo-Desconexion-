@@ -100,8 +100,8 @@ func _action(action: StringName) -> void:
 
 func test_remappable_actions_exclude_dev_and_ui_keys() -> void:
 	var actions: Array[StringName] = ControlBindings.actions()
-	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"debug", &"help",
-		&"pause"] as Array[StringName])
+	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"debug", &"hide",
+		&"help", &"pause"] as Array[StringName])
 	for action: StringName in actions:
 		assert_false(String(action).begins_with("ui_"))
 		assert_false([&"restart_level", &"debug_wipe_save"].has(action), "Sin teclas de pruebas")
@@ -115,6 +115,7 @@ func test_default_labels_and_glyphs() -> void:
 	assert_eq(ControlBindings.binding_label(&"pulse", font), "G / X")
 	assert_eq(ControlBindings.binding_label(&"run", font), "Mayús / gatillo derecho")
 	assert_eq(ControlBindings.binding_label(&"pause", font), "Esc / Start")
+	assert_eq(ControlBindings.binding_label(&"hide", font), "H / L3", "Ocultarte (Pulso 4): H / L3")
 	assert_eq(ControlBindings.binding_label(&"move_left", font), "A / stick a la izquierda")
 	for action: StringName in ControlBindings.actions():
 		var text: String = ControlBindings.binding_label(action, font)
@@ -151,14 +152,14 @@ func test_serialization_roundtrip() -> void:
 # --- Asignar ---
 
 func test_assign_key_replaces_primary_and_keeps_others() -> void:
-	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_H)), ControlBindings.Result.OK)
-	assert_true(_is_action(_key(KEY_H), &"pulse"), "H es el pulso")
+	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_U)), ControlBindings.Result.OK)
+	assert_true(_is_action(_key(KEY_U), &"pulse"), "U es el pulso")
 	assert_false(_is_action(_key(KEY_G), &"pulse"), "G ya no")
 	assert_true(_is_action(_button(JOY_BUTTON_X), &"pulse"), "El mando no cambia")
 	assert_eq(_changes, 1, "Avisa a los prompts")
 	assert_eq(ControlBindings.assign(&"move_left", _key(KEY_J)), ControlBindings.Result.OK)
 	assert_true(_is_action(_key(KEY_LEFT), &"move_left"), "Las flechas siguen")
-	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_H)), ControlBindings.Result.UNCHANGED)
+	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_U)), ControlBindings.Result.UNCHANGED)
 
 
 func test_assign_pad_button_and_axis() -> void:
@@ -276,9 +277,9 @@ func test_prompts_and_notices_follow_the_new_keys() -> void:
 	ControlBindings.assign(&"help", _key(KEY_E))
 	assert_eq(prompt.get_key_text(), "E", "La Q de la ayuda pasa a E")
 	assert_eq(PulsePrompt.key_text(&"help"), "E")
-	ControlBindings.assign(&"pulse", _key(KEY_H))
+	ControlBindings.assign(&"pulse", _key(KEY_U))
 	var notices: Dictionary = AbilityNotices.load_data()
-	assert_eq(AbilityNotices.control_text(&"pulse", notices), "H / X (mando)", "«Pulso: H / X (mando)»")
+	assert_eq(AbilityNotices.control_text(&"pulse", notices), "U / X (mando)", "«Pulso: U / X (mando)»")
 	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: F / gatillo izquierdo")
 	ControlBindings.assign(&"laser", _key(KEY_V))
 	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: V / gatillo izquierdo")
@@ -290,8 +291,8 @@ func test_hub_station_prompt_follows_the_pulse_key() -> void:
 	add_child_autofree(hub)
 	var notas: HubStation = hub.get_notas()
 	assert_eq(notas.get_key_text(), "G")
-	ControlBindings.assign(&"pulse", _key(KEY_H))
-	assert_eq(notas.get_key_text(), "H", "El prompt de la estacion se actualiza")
+	ControlBindings.assign(&"pulse", _key(KEY_U))
+	assert_eq(notas.get_key_text(), "U", "El prompt de la estacion se actualiza")
 	ControlBindings.restore_defaults()
 	assert_eq(notas.get_key_text(), "G")
 
@@ -325,10 +326,10 @@ func test_menu_capture_assigns_and_esc_cancels() -> void:
 	assert_true(_is_action(_key(KEY_G), &"pulse"), "Sin cambios")
 	assert_eq(_menu.get_selected_action(), &"pulse")
 	_action(&"ui_accept")
-	_tap(_key(KEY_H))
+	_tap(_key(KEY_U))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS)
-	assert_true(_is_action(_key(KEY_H), &"pulse"), "H asignada")
-	assert_true(_menu.get_lines().has("– Pulso: H / X"))
+	assert_true(_is_action(_key(KEY_U), &"pulse"), "U asignada")
+	assert_true(_menu.get_lines().has("– Pulso: U / X"))
 	_action(&"ui_accept")
 	_tap(_button(JOY_BUTTON_START))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS, "Start tambien cancela")
@@ -359,9 +360,9 @@ func test_menu_conflict_swap_and_cancel() -> void:
 	assert_true(_is_action(_key(KEY_SPACE), &"pulse"))
 	assert_true(_menu.get_lines().has("– Saltar: G / A"))
 	_action(&"ui_accept")
-	_tap(_key(KEY_H))
+	_tap(_key(KEY_U))
 	_action(&"ui_accept")
-	_tap(_key(KEY_H))
+	_tap(_key(KEY_U))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS, "Sin conflicto si ya es suya")
 
 

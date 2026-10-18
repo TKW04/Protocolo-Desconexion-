@@ -133,6 +133,7 @@ func _ready() -> void:
 	EventBus.eco_line_started.connect(_on_eco_line_started)
 	EventBus.eco_line_finished.connect(_on_eco_line_finished)
 	EventBus.help_prompt_shown.connect(_on_help_prompt_shown)
+	EventBus.hide_changed.connect(_on_hide_changed)
 	if _valid_isak():
 		_isak.warp_began.connect(_on_isak_warp_began)
 		_isak.warp_revealed.connect(_on_isak_warp_revealed)
@@ -641,3 +642,11 @@ func _on_eco_line_finished() -> void:
 
 func _on_help_prompt_shown(_target: Node2D) -> void:
 	_notice_left = float(_data.get("notice_s", 0.3))
+
+
+## Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2): Eco se atenua mientras
+## Isak esta oculto (eco_alpha de data/hide_mode.json). En el hub no hay Ocultarte.
+func _on_hide_changed(active: bool) -> void:
+	if _dim:
+		return
+	modulate.a = float(HideMode.load_data().get("eco_alpha", 0.45)) if active else 1.0

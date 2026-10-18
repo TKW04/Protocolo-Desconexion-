@@ -1,0 +1,20 @@
+{
+	"_notes": "OCULTARTE (Pulso 4 de las mejoras de Calc; tanda M2 de docs/propuesta-mejoras.md §4, decisiones del usuario 2026-10-16/17). Estado activo de Isak (HideMode, scripts/player/hide_mode.gd): los enemigos que «ven» (perseguidores: el punto rojo) pierden el rastro y vuelven a su sitio; la Burbuja y las patrullas no miran y siguen su ruta. No es invulnerabilidad. ACCION hide (H / L3; reasignable en Ajustes > Controles; aviso de control en data/ability_notices.json). Pulsacion corta para activar, solo en el suelo y fuera de una pose (pulso, laser, golpe), con Isak en un nivel (no en el hub); otra pulsacion corta lo apaga (en el suelo o en el aire). ACTIVAR exige estar POR ENCIMA de enter_min_fraction (15 %) del maximo efectivo del Sync Rate Y de la energia (evita encender y apagar sin parar). GASTO en tiempo REAL (como el Debug): energy_per_s (5) de energia y sync_per_s (1,5) de Sync Rate por segundo. CORTE AUTOMATICO: se apaga solo cuando el Sync Rate O la energia llegan a cut_fraction (10 %) de su maximo efectivo, el primero que llegue; el gasto se detiene ahi (nunca mata). Desde el maximo base: 18 s hasta el corte por energia (de 100 a 10 a 5/s) y 60 s por Sync (de 100 a 10 a 1,5/s). AVISO: por debajo de warn_fraction (20 %) de cualquiera de las dos barras el icono del HUD parpadea y el glitch de Isak se hace mas fuerte y parpadea (se va a apagar). TAMBIEN LO APAGAN: lanzar el pulso o el laser (al empezar la pose: atacar te revela), recibir dano (el golpe y la invulnerabilidad de siempre se aplican), activar el Debug (NO se combinan: activar el Ocultarte apaga el Debug y activar el Debug apaga el Ocultarte), morir, la llegada o salida por un vortice, la pose de espaldas y reaparecer. Mientras dura NO SE CORRE (la accion run se ignora: camina). Se pueden recoger puntos, drops y cargadores; la regeneracion pasiva (Sync 5, Energia 5) no funciona mientras dura. VISUAL (sin hoja nueva de Isak; shader assets/shaders/hide_glitch.gdshader sobre su sprite): entrada y salida de fade_s (0,2 s); opacidad alpha (45 %), filas horizontales que se desplazan hasta glitch_px pixeles de textura en bandas de row_px con un ritmo de glitch_hz, tinte tint del color outline_color (acento cian #3dfff5, el mismo en todos los mundos para no confundirlo con el Debug del mundo) y contorno de 1 px en ese color; en el aviso, glitch mas fuerte (warn_glitch_px) y parpadeo de opacidad a warn_blink_hz hasta warn_alpha; al cortarse solo, destello del glitch de cut_flash_s. Eco se atenua a eco_alpha mientras dura. Sin rojos. Unidades: s, fracciones 0-1, por segundo, px de textura, Hz.",
+	"energy_per_s": 5.0,
+	"sync_per_s": 1.5,
+	"enter_min_fraction": 0.15,
+	"cut_fraction": 0.10,
+	"warn_fraction": 0.20,
+	"fade_s": 0.2,
+	"alpha": 0.45,
+	"tint": 0.25,
+	"outline_color": "#3dfff5",
+	"glitch_px": 2.0,
+	"warn_glitch_px": 3.0,
+	"row_px": 3.0,
+	"glitch_hz": 12.0,
+	"warn_blink_hz": 6.0,
+	"warn_alpha": 0.25,
+	"cut_flash_s": 0.3,
+	"eco_alpha": 0.45
+}

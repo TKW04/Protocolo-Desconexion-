@@ -23,6 +23,8 @@
 	"wake_warn_frames": 9,
 	"laser_immune_awake": true,
 	"deflect_s": 0.33,
+	"_lost_notes": "Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2; data/hide_mode.json): con Isak oculto (GameState.is_player_hidden) el punto rojo PIERDE EL RASTRO: si perseguia (chase, aviso o recuperandose; un lanzamiento ya empezado termina) se para lost_s segundos (tiempo del mundo) con un «?» encima (UpgradeFx lost_trail) y vuelve a su sitio (return) y se duerme; dormido o volviendo no lo ve. Si Isak se revela a menos de su radio de deteccion (wake_radius_px), lo vuelve a ver.",
+	"lost_s": 1.0,
 	"help_id": "notification_badge",
 	"health": 2.0,
 	"damage_flash_s": 0.3,

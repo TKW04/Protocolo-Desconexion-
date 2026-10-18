@@ -13,6 +13,7 @@
 			{"action": "pulse", "name": "Pulso"},
 			{"action": "laser", "name": "Láser"},
 			{"action": "debug", "name": "Debug"},
+			{"action": "hide", "name": "Ocultarte"},
 			{"action": "help", "name": "Ayuda de Eco"},
 			{"action": "pause", "name": "Pausa"}
 		],

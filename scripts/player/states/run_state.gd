@@ -15,4 +15,5 @@ func get_transition() -> StringName:
 func physics_update(delta: float) -> void:
 	isak.apply_horizontal(isak.input.move_axis, delta)
 	isak.apply_gravity(delta)
-	isak.play_animation(Isak.ANIM_RUN if isak.input.run_held else Isak.ANIM_WALK)
+	# Con el Ocultarte no se corre (is_running): camina.
+	isak.play_animation(Isak.ANIM_RUN if isak.is_running() else Isak.ANIM_WALK)

@@ -17,7 +17,7 @@
 					"effects": [{"target": "game_state.pulse_stun_multiplier", "value": 1.5}], "implemented": true},
 				{"level": 4, "name": "Ocultarte", "description": "Te vuelves casi invisible; gasta Sync Rate y energía.",
 					"cost": {"attention_points": 25, "power_banks": 0}, "min_lap": 2,
-					"effects": [{"target": "ability.hide", "value": 1.0}], "implemented": false},
+					"effects": [{"target": "ability.hide", "value": 1.0}], "implemented": true},
 				{"level": 5, "name": "Pulso de retorno", "description": "Aturdir a un enemigo da 4 de energía, una vez por enemigo.",
 					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
 					"effects": [{"target": "isak_abilities.pulse_energy_on_stun", "value": 4.0}], "implemented": true}

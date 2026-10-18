@@ -22,6 +22,11 @@
 ##   inofensivo y plataforma solida de una via; los ultimos wake_warn_frames
 ##   cuadros (wake) parpadea: aviso de que vuelve a perseguir.
 ## - popped: vida a 0 (solo el laser, y solo aturdido); suelta drops y se libera.
+## - lost (Ocultarte, Pulso 4 de las mejoras de Calc, tanda M2): con Isak oculto
+##   (GameState.is_player_hidden) pierde el rastro: si perseguia se para lost_s
+##   con un «?» encima (UpgradeFx lost_trail) y vuelve a su sitio (return);
+##   dormido o volviendo no lo ve. Un lanzamiento ya empezado termina. Si Isak
+##   se revela cerca, lo vuelve a ver.
 ##
 ## LASER (decision 2026-10-16): despierto es INMUNE: on_laser_hit no resta vida
 ## y muestra la chispa gris (animacion deflect en el sprite Fx, senal
@@ -53,6 +58,7 @@ const STATE_RETURN: StringName = &"return"
 const STATE_STUNNED: StringName = &"stunned"
 const STATE_WAKE: StringName = &"wake"
 const STATE_POPPED: StringName = &"popped"
+const STATE_LOST: StringName = &"lost"
 
 const ANIM_DEFLECT: StringName = &"deflect"
 const ANIM_POP: StringName = &"pop"
@@ -111,6 +117,8 @@ var deflect_s: float = 0.33
 var damage_flash_s: float = 0.3
 var damage_flash_period_s: float = 0.08
 var damage_flash_alpha: float = 0.35
+## Segundos (tiempo del mundo) que se queda con el «?» al perder el rastro.
+var lost_s: float = 1.0
 
 ## Isak al que persigue. Si es null se busca en la capa player.
 var target: Isak
@@ -173,7 +181,9 @@ func step(delta: float) -> void:
 			if _should_chase(isak):
 				_change_state(STATE_CHASE)
 		STATE_CHASE:
-			if not _should_chase(isak, true):
+			if _lost_track():
+				_lose_track()
+			elif not _should_chase(isak, true):
 				_change_state(STATE_RETURN)
 			else:
 				var to: Vector2 = _isak_center(isak) - get_center()
@@ -184,6 +194,9 @@ func step(delta: float) -> void:
 				else:
 					_move(to.normalized() * chase_speed_px_s)
 		STATE_ANTICIPATE:
+			if _lost_track():
+				_lose_track()
+				return
 			_move(Vector2.ZERO)
 			_timer -= dt
 			if isak != null:
@@ -204,8 +217,15 @@ func step(delta: float) -> void:
 		STATE_RECOVER:
 			_move(Vector2.ZERO)
 			_timer -= dt
-			if _timer <= 0.0:
+			if _lost_track():
+				_lose_track()
+			elif _timer <= 0.0:
 				_change_state(STATE_CHASE)
+		STATE_LOST:
+			_move(Vector2.ZERO)
+			_timer -= dt
+			if _timer <= 0.0:
+				_change_state(STATE_RETURN)
 		STATE_RETURN:
 			var home: Vector2 = _spawn_position - global_position
 			if _should_chase(isak):
@@ -272,6 +292,11 @@ func is_laser_vulnerable() -> bool:
 
 func is_defeated() -> bool:
 	return _state == STATE_POPPED
+
+
+## Perdio el rastro por el Ocultarte y espera con el «?» (lost).
+func is_lost() -> bool:
+	return _state == STATE_LOST
 
 
 func get_spawn_position() -> Vector2:
@@ -412,7 +437,7 @@ func _change_state(next: StringName) -> void:
 	_state = next
 	_platform_shape.disabled = not is_platform()
 	match next:
-		STATE_IDLE, STATE_RETURN:
+		STATE_IDLE, STATE_RETURN, STATE_LOST:
 			_play(&"idle")
 		STATE_CHASE, STATE_RECOVER:
 			_stun_left = 0.0
@@ -464,13 +489,26 @@ func _isak_center(isak: Isak) -> Vector2:
 ## Verdadero si debe perseguir a `isak`: vivo, dentro de la correa y a menos de
 ## wake_radius_px (o de give_up_radius_px si ya lo perseguia).
 func _should_chase(isak: Isak, chasing: bool = false) -> bool:
-	if isak == null or isak.is_dead():
+	if isak == null or isak.is_dead() or GameState.is_player_hidden():
 		return false
 	var center: Vector2 = _isak_center(isak)
 	if not get_leash_rect().has_point(center):
 		return false
 	var radius: float = give_up_radius_px if chasing else wake_radius_px
 	return center.distance_to(get_center()) <= radius
+
+
+## Isak se oculto (Ocultarte): el perseguidor pierde el rastro.
+func _lost_track() -> bool:
+	return GameState.is_player_hidden()
+
+
+## Se para lost_s con el «?» y despues vuelve a su sitio.
+func _lose_track() -> void:
+	_move(Vector2.ZERO)
+	_timer = lost_s
+	_change_state(STATE_LOST)
+	UpgradeFx.spawn(get_parent(), UpgradeFx.LOST_TRAIL, global_position + Vector2(0.0, center_y), self)
 
 
 func _check_hit(isak: Isak) -> bool:
@@ -585,6 +623,7 @@ func _load_data() -> bool:
 	wake_warn_frames = int(d["wake_warn_frames"])
 	laser_immune_awake = bool(d.get("laser_immune_awake", true))
 	deflect_s = float(d.get("deflect_s", deflect_s))
+	lost_s = float(d.get("lost_s", lost_s))
 	damage_flash_s = float(d.get("damage_flash_s", damage_flash_s))
 	damage_flash_alpha = float(d.get("damage_flash_alpha", damage_flash_alpha))
 	damage_flash_period_s = maxf(float(d.get("damage_flash_period_s", damage_flash_period_s)), 0.001)

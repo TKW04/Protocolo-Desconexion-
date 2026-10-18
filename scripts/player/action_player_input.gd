@@ -8,6 +8,7 @@ const ACTION_JUMP: StringName = &"jump"
 const ACTION_RUN: StringName = &"run"
 const ACTION_PULSE: StringName = &"pulse"
 const ACTION_LASER: StringName = &"laser"
+const ACTION_HIDE: StringName = &"hide"
 
 
 func poll() -> void:
@@ -17,3 +18,4 @@ func poll() -> void:
 	run_held = Input.is_action_pressed(ACTION_RUN)
 	pulse_pressed = Input.is_action_just_pressed(ACTION_PULSE)
 	laser_pressed = Input.is_action_just_pressed(ACTION_LASER)
+	hide_pressed = InputMap.has_action(ACTION_HIDE) and Input.is_action_just_pressed(ACTION_HIDE)

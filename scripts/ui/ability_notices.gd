@@ -20,6 +20,8 @@ const NAME_TAG: String = "{name}"
 const CONTROL_TAG: String = "{control}"
 const KEY_TAG: String = "{key}"
 const PAD_TAG: String = "{pad}"
+## Aviso del Ocultarte (Pulso 4 de la tienda de Calc; no es de GameState.ABILITIES).
+const HIDE_NOTICE: StringName = &"hide"
 
 ## Se ha mostrado (pedido al cuadro de Eco) el aviso de `ability`.
 signal notice_shown(ability: StringName, text: String)
@@ -96,7 +98,7 @@ func show_pending() -> Array[StringName]:
 ## Muestra el aviso de `ability` si esta desbloqueada, tiene aviso y no se ha
 ## visto; lo marca como visto (se guarda). Verdadero si lo mostro.
 func try_show(ability: StringName) -> bool:
-	if GameState.is_notice_seen(ability) or not GameState.is_ability_unlocked(ability):
+	if GameState.is_notice_seen(ability) or not is_available(ability):
 		return false
 	var text: String = notice_text(ability, _data)
 	if text.is_empty():
@@ -105,6 +107,14 @@ func try_show(ability: StringName) -> bool:
 	EventBus.eco_line_requested.emit(text, float(_data.get("duration_s", -1.0)), true)
 	notice_shown.emit(ability, text)
 	return true
+
+
+## El jugador tiene ya lo que avisa `ability`: una habilidad desbloqueada o, para
+## hide (Ocultarte, Pulso 4 de la tienda de Calc; tanda M2), la mejora comprada.
+static func is_available(ability: StringName) -> bool:
+	if ability == HIDE_NOTICE:
+		return GameState.is_hide_available()
+	return GameState.is_ability_unlocked(ability)
 
 
 func get_abilities() -> Dictionary:

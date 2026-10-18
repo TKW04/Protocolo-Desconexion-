@@ -102,9 +102,9 @@ const CAMERA_TOWER: StringName = &"tower"
 ## Camara de torre: bandas de los pisos en px (x = borde de arriba, y = de abajo),
 ## de los tramos con y_from/y_to del nivel (las pone tools/build_level.py).
 @export var camera_bands: PackedVector2Array = PackedVector2Array()
-## Isak esta en un nivel (no en el hub): solo aqui funciona la regeneracion
-## pasiva de Sync 5 y Energia 5 (PassiveRegen). HubRoom lo apaga (el hub ya
-## llena las barras y tiene cargador). Tanda M2.
+## Isak esta en un nivel (no en el hub): solo aqui funcionan la regeneracion
+## pasiva de Sync 5 y Energia 5 (PassiveRegen) y el Ocultarte (Pulso 4). HubRoom
+## lo apaga (el hub ya llena las barras y tiene cargador). Tanda M2.
 @export var level_mode: bool = true
 
 var physics: PlayerPhysics
@@ -149,6 +149,8 @@ var _facing_back: bool = false
 var _tower_camera: TowerCamera
 ## Regeneracion pasiva de las mejoras Sync 5 y Energia 5 (tanda M2).
 var _regen: PassiveRegen
+## Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2; accion hide).
+var _hide: HideMode
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -187,6 +189,7 @@ func _ready() -> void:
 	EventBus.sync_rate_changed.connect(_on_sync_rate_changed)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	_regen = PassiveRegen.new()
+	_hide = HideMode.new()
 	_ready_ok = true
 	change_state(PlayerState.IDLE)
 
@@ -215,6 +218,7 @@ func step(delta: float) -> void:
 	move_and_slide()
 	_update_coyote(delta)
 	_update_laser(delta)
+	_update_hide(delta)
 	_update_regen(delta)
 	_update_blink()
 	if _tower_camera != null:
@@ -230,6 +234,11 @@ func change_state(state_name: StringName) -> void:
 	var previous: StringName = _state_name
 	if state_name in LASER_POSE_BREAKING_STATES:
 		_end_laser_pose(false)
+	# Atacar con el pulso o morir apaga el Ocultarte (al empezar la pose).
+	if _hide != null and state_name == PlayerState.PULSE:
+		_hide.end(HideMode.REASON_PULSE)
+	elif _hide != null and state_name == PlayerState.DEAD:
+		_hide.end(HideMode.REASON_DEAD)
 	if _state != null:
 		_state.exit()
 	_state = _states[state_name]
@@ -337,7 +346,7 @@ func apply_horizontal(axis: float, delta: float) -> void:
 	if not is_zero_approx(axis):
 		facing = signf(axis)
 		_sprite.flip_h = facing < 0.0
-	var speed: float = physics.run_speed if input.run_held else physics.walk_speed
+	var speed: float = physics.run_speed if is_running() else physics.walk_speed
 	var rate: float = physics.air_acceleration
 	if is_on_floor():
 		rate = physics.ground_friction if is_zero_approx(axis) else physics.ground_acceleration
@@ -371,6 +380,9 @@ func take_hit(direction: float = 0.0) -> bool:
 		return false
 	_knockback_direction = signf(direction) if not is_zero_approx(direction) else -facing
 	_invulnerable_left = abilities.hurt_invulnerability_s
+	# Recibir dano revela (el golpe y la invulnerabilidad se aplican igual).
+	if _hide != null:
+		_hide.end(HideMode.REASON_HURT)
 	change_state(PlayerState.HURT)
 	if _regen != null:
 		_regen.note_combat()
@@ -407,6 +419,8 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	reset_idle_time()
 	if _regen != null:
 		_regen.reset()
+	if _hide != null:
+		_hide.reset()
 	change_state(PlayerState.IDLE)
 	play_animation(ANIM_IDLE)
 	_camera.reset_smoothing()
@@ -421,6 +435,8 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 ## Isak aun no se ha mostrado al jugador (llegada); las lineas de Eco de zona
 ## esperan a warp_revealed.
 func begin_warp(hidden: bool = true) -> void:
+	if _hide != null:
+		_hide.end(HideMode.REASON_WARP)
 	_warping = true
 	_warp_hidden = hidden
 	warp_began.emit(hidden)
@@ -463,6 +479,8 @@ func face_back() -> bool:
 	_cancel_laser()
 	_end_laser_pose(false)
 	reset_idle_time()
+	if _hide != null:
+		_hide.end(HideMode.REASON_WARP)
 	_facing_back = true
 	velocity.x = 0.0
 	_sprite.flip_h = false
@@ -606,6 +624,9 @@ func _update_laser(delta: float) -> void:
 				_show_laser_pose_frame(_windup_pose_frame())
 	elif input.laser_pressed and _laser_cooldown_left <= 0.0 and can_start_laser():
 		_laser_cooldown_left = abilities.laser_cooldown_s
+		if _has_laser_energy() and _hide != null:
+			# Atacar con el laser apaga el Ocultarte al empezar la pose.
+			_hide.end(HideMode.REASON_LASER)
 		if not _has_laser_energy():
 			_deny_laser()
 		elif abilities.laser_windup_s <= 0.0:
@@ -673,7 +694,7 @@ func _restore_state_animation() -> void:
 		PlayerState.IDLE:
 			play_animation(ANIM_TERMINAL_INTRO if _terminal_playing else ANIM_IDLE)
 		PlayerState.RUN:
-			play_animation(ANIM_RUN if input.run_held else ANIM_WALK)
+			play_animation(ANIM_RUN if is_running() else ANIM_WALK)
 		PlayerState.JUMP, PlayerState.FALL:
 			update_air_animation()
 
@@ -715,6 +736,36 @@ func _cancel_laser() -> void:
 	_laser_windup_left = -1.0
 	if _laser_muzzle != null:
 		_laser_muzzle.clear()
+
+
+# --- Ocultarte (Pulso 4, tanda M2; HideMode, data/hide_mode.json) ---
+
+## Corre de verdad: run mantenido y sin el Ocultarte (oculto solo camina).
+func is_running() -> bool:
+	return input != null and input.run_held and not is_hidden()
+
+
+## El Ocultarte esta activo en este Isak.
+func is_hidden() -> bool:
+	return _hide != null and _hide.is_active()
+
+
+## Ocultarte de este Isak (pruebas, HUD y capturas).
+func get_hide_mode() -> HideMode:
+	return _hide
+
+
+## Sprite de Isak (el Ocultarte le pone su shader).
+func get_sprite() -> AnimatedSprite2D:
+	return _sprite
+
+
+func _update_hide(delta: float) -> void:
+	if _hide == null:
+		return
+	if is_dead():
+		_hide.end(HideMode.REASON_DEAD)
+	_hide.step(delta, self)
 
 
 # --- Regeneracion pasiva (Sync 5 y Energia 5, tanda M2) ---
