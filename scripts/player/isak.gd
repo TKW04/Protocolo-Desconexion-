@@ -102,6 +102,10 @@ const CAMERA_TOWER: StringName = &"tower"
 ## Camara de torre: bandas de los pisos en px (x = borde de arriba, y = de abajo),
 ## de los tramos con y_from/y_to del nivel (las pone tools/build_level.py).
 @export var camera_bands: PackedVector2Array = PackedVector2Array()
+## Isak esta en un nivel (no en el hub): solo aqui funciona la regeneracion
+## pasiva de Sync 5 y Energia 5 (PassiveRegen). HubRoom lo apaga (el hub ya
+## llena las barras y tiene cargador). Tanda M2.
+@export var level_mode: bool = true
 
 var physics: PlayerPhysics
 var abilities: PlayerAbilities
@@ -143,6 +147,8 @@ var _warp_input := PlayerInput.new()
 var _facing_back: bool = false
 ## Camara de torre (camera_mode tower); null en el resto.
 var _tower_camera: TowerCamera
+## Regeneracion pasiva de las mejoras Sync 5 y Energia 5 (tanda M2).
+var _regen: PassiveRegen
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -180,6 +186,7 @@ func _ready() -> void:
 	}
 	EventBus.sync_rate_changed.connect(_on_sync_rate_changed)
 	_sprite.animation_finished.connect(_on_animation_finished)
+	_regen = PassiveRegen.new()
 	_ready_ok = true
 	change_state(PlayerState.IDLE)
 
@@ -208,6 +215,7 @@ func step(delta: float) -> void:
 	move_and_slide()
 	_update_coyote(delta)
 	_update_laser(delta)
+	_update_regen(delta)
 	_update_blink()
 	if _tower_camera != null:
 		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
@@ -364,6 +372,8 @@ func take_hit(direction: float = 0.0) -> bool:
 	_knockback_direction = signf(direction) if not is_zero_approx(direction) else -facing
 	_invulnerable_left = abilities.hurt_invulnerability_s
 	change_state(PlayerState.HURT)
+	if _regen != null:
+		_regen.note_combat()
 	hurt.emit()
 	return true
 
@@ -395,6 +405,8 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_laser_cooldown_left = 0.0
 	_clear_back_pose()
 	reset_idle_time()
+	if _regen != null:
+		_regen.reset()
 	change_state(PlayerState.IDLE)
 	play_animation(ANIM_IDLE)
 	_camera.reset_smoothing()
@@ -541,6 +553,8 @@ func set_pulse_area_active(active: bool) -> void:
 	_pulse_shape.set_deferred(&"disabled", not active)
 	if active:
 		_pulse_area.position = get_pulse_origin()
+		if _regen != null:
+			_regen.note_combat()
 		pulse_fired.emit(_pulse_area)
 		EventBus.pulse_fired.emit(_pulse_area)
 
@@ -677,6 +691,8 @@ func _fire_laser() -> LaserProjectile:
 		_end_laser_pose(true)
 		return null
 	GameState.debug_energy -= abilities.laser_energy_cost
+	if _regen != null:
+		_regen.note_combat()
 	# Brazo extendido: el proyectil sale del celular de ese cuadro.
 	_hold_laser_pose()
 	var projectile := LASER_PROJECTILE_SCENE.instantiate() as LaserProjectile
@@ -699,6 +715,21 @@ func _cancel_laser() -> void:
 	_laser_windup_left = -1.0
 	if _laser_muzzle != null:
 		_laser_muzzle.clear()
+
+
+# --- Regeneracion pasiva (Sync 5 y Energia 5, tanda M2) ---
+
+## Avanza PassiveRegen en los niveles con Isak vivo y con control (sin vortice ni
+## pose de espaldas). Con el arbol en pausa Isak no avanza: tampoco regenera.
+func _update_regen(delta: float) -> void:
+	if _regen == null or not level_mode or is_dead() or _warping or _facing_back:
+		return
+	_regen.step(delta, self)
+
+
+## Regeneracion pasiva de este Isak (pruebas).
+func get_passive_regen() -> PassiveRegen:
+	return _regen
 
 
 # --- Presentacion ---

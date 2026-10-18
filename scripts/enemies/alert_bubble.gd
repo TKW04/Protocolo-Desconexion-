@@ -204,6 +204,12 @@ func is_platform() -> bool:
 	return _state == STATE_STUNNED or _state == STATE_ANTICIPATE
 
 
+## En combate (regeneracion pasiva de Sync 5, PassiveRegen): patrullando, sin
+## aturdir ni reventar.
+func is_combat_active() -> bool:
+	return _ready_ok and _state == STATE_PATROL
+
+
 func is_stunned() -> bool:
 	return is_platform()
 

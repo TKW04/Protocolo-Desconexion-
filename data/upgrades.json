@@ -86,7 +86,7 @@
 					"effects": [{"target": "game_state.sync_rate_max", "value": 130.0}], "implemented": true},
 				{"level": 5, "name": "Resincronización", "description": "Fuera de combate, el Sync Rate sube solo hasta el 60 %.",
 					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
-					"effects": [{"target": "game_state.sync_regen_per_s", "value": 1.0}], "implemented": false}
+					"effects": [{"target": "game_state.sync_regen_per_s", "value": 1.0}], "implemented": true}
 			]
 		},
 		{
@@ -108,7 +108,7 @@
 					"effects": [{"target": "game_state.debug_energy_max", "value": 130.0}], "implemented": true},
 				{"level": 5, "name": "Recarga pasiva", "description": "La energía se recarga sola: 0,5 % del máximo por segundo.",
 					"cost": {"attention_points": 25, "power_banks": 1}, "min_lap": 3,
-					"effects": [{"target": "game_state.energy_regen_pct_s", "value": 0.5}], "implemented": false}
+					"effects": [{"target": "game_state.energy_regen_pct_s", "value": 0.5}], "implemented": true}
 			]
 		}
 	],

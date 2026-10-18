@@ -254,6 +254,17 @@ func is_stunned() -> bool:
 	return is_platform()
 
 
+## Persigue a Isak (despierto: chase, aviso, lanzado o recuperandose). Un
+## perseguidor persiguiendo deja a Isak «en combate» (Sync 5, PassiveRegen).
+func is_chasing() -> bool:
+	return _state in [STATE_CHASE, STATE_ANTICIPATE, STATE_LUNGE, STATE_RECOVER]
+
+
+## En combate (PassiveRegen): igual que is_chasing.
+func is_combat_active() -> bool:
+	return is_chasing()
+
+
 ## Verdadero si el laser le hace dano ahora (aturdido) o no (despierto).
 func is_laser_vulnerable() -> bool:
 	return is_stunned() or not laser_immune_awake

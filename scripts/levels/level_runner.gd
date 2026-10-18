@@ -383,6 +383,8 @@ func start_level(level_id: String) -> bool:
 	_reset_player_state(level_id)
 	_game_over_pending = false
 	GameState.refill_lives()
+	# Intento nuevo: el Pulso de retorno vuelve a dar energia una vez por enemigo.
+	GameState.begin_attempt()
 	_level = (load(path) as PackedScene).instantiate() as GeneratedLevel
 	_level_id = level_id
 	_holder.add_child(_level)

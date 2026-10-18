@@ -2,6 +2,20 @@
 	"_notes": "Power banks (decision del usuario 2026-10-14, docs/preguntas.md). Coleccionable que solo sirve para pagar mejoras (data/upgrades.json). Un power bank comprado u obtenido (power_bank_pickup) llega VACIO (carga 0) y se carga con el SOBRANTE de energia de Debug de los drops de enemigos y jefes: cuando un drop llega con la barra ya llena, lo que no cabe carga el power bank vacio; cada capacity_energy de carga lo llena y pasa a completo (el unico que paga mejoras). Sin power banks vacios el sobrante se pierde (decisiones del usuario 2026-10-14, docs/preguntas.md). capacity_energy PROPUESTA 200 (= 2 barras de Debug llenas). attention_point_energy_overflows: false (DECIDIDO 2026-10-14) = la energia de los puntos de atencion (A10) solo llena la barra y no desborda; true = tambien desbordaria. Se guardan en user://save.json (completos, vacios y carga parcial). hud: contador minimo bajo la barra del HUD (PROVISIONAL, duda de diseno visual): icono dibujado (pila con la carga parcial en el color del Debug del mundo) y 'x<n>' con la fuente del HUD; offset_y_px bajo la barra, icon_size_px en pixeles de arte (x hud_pixel_scale), show_when_empty false = oculto sin power banks ni carga. Unidades: energia, px de arte.",
 	"capacity_energy": 200.0,
 	"attention_point_energy_overflows": false,
+	"_max_total_notes": "TOPE (tanda M2 de docs/propuesta-mejoras.md §5.1, decision del usuario 2026-10-16/17): max_total = power banks a la vez, completos + vacios, en toda la partida (no crece con las mejoras). Con el tope lleno un power_bank_pickup NO se recoge: Isak lo atraviesa, sale el aviso no_room sobre el objeto y el objeto se queda en el mapa (no se apunta en collected_pickups), asi que se puede volver a por el. Pagar un nivel 5 en Calc gasta uno completo y libera su hueco. Las devoluciones de la migracion v3 -> v4 y la papelera pueden superarlo (el tope solo impide recoger). Calc no vende power banks. no_room: texto (fuente de textos, solo sus glifos), escala entera del dibujo (pixeles de arte x scale), altura sobre el centro del objeto (px de mundo: por encima de la cabeza de Isak de pie junto al objeto; como todo el mundo, se dibuja por debajo de Isak, tests/test_draw_order.gd), margen del panel (px de arte), colores (paleta del Mundo 1, sin rojos: texto banner_blanco, fondo noche_profunda con fill_alpha y borde debug_cian) y show_s (segundos que se ve tras tocarlo; se renueva mientras Isak siga encima).",
+	"max_total": 3,
+	"no_room": {
+		"text": "Sin espacio",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"scale": 2,
+		"offset_y_px": -100.0,
+		"padding_px": 3,
+		"text_color": "#f2f4f8",
+		"fill_color": "#0b0e1a",
+		"fill_alpha": 0.85,
+		"border_color": "#3dfff5",
+		"show_s": 1.5
+	},
 	"hud": {
 		"offset_y_px": 2,
 		"icon_size_px": [6, 10],

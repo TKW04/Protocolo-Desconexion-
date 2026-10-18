@@ -136,6 +136,8 @@ func _exit_tree() -> void:
 
 func _ready() -> void:
 	_isak = get_node(^"Isak") as Isak
+	# En el hub no hay regeneracion pasiva ni Ocultarte (tanda M2).
+	_isak.level_mode = false
 	_hud = get_node_or_null(^"Hud") as Hud
 	_text_box = (load(TEXT_BOX_SCENE) as PackedScene).instantiate() as EcoTextBox
 	_text_box.name = "EcoTextBox"

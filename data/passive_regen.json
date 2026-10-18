@@ -1,0 +1,11 @@
+{
+	"_notes": "Regeneracion pasiva de las mejoras de Calc (tanda M2 de docs/propuesta-mejoras.md §5.2 y §6, aprobada el 2026-10-16/17). SOLO con Sync Rate 5 (Resincronizacion) y Energia 5 (recarga pasiva): sin esas mejoras no hay regeneracion pasiva (la regla del paso 9 de docs/preguntas.md sigue igual). Los RITMOS van en data/upgrades.json (efectos game_state.sync_regen_per_s = 1 Sync/s y game_state.energy_regen_pct_s = 0,5 % del maximo efectivo por segundo); aqui van las CONDICIONES. La aplica PassiveRegen (scripts/player/passive_regen.gd), que Isak avanza en cada paso de fisica en TIEMPO DEL MUNDO (WorldTime) solo en los niveles (Isak.level_mode; el hub ya llena las barras y tiene cargador), con Isak vivo, sin llegada ni salida por el vortice, sin pose de espaldas y con el arbol sin pausar (menu de pausa, lineas importantes y ayudas no cuentan). Ninguna de las dos funciona con el Ocultarte activo (GameState.is_player_hidden) y nunca desbordan a los power banks; las dos se reinician al reaparecer. sync: FUERA DE COMBATE = out_of_combat_s segundos sin recibir dano (el Sync Rate baja: golpe, caida u Ocultarte), sin disparar el laser y sin lanzar el pulso, sin un perseguidor persiguiendo (NotificationBadge en chase/anticipate/lunge/recover, en cualquier sitio) y sin un enemigo activo a menos de combat_radius_px del centro de Isak (enemigo del grupo enemy con is_combat_active(): Burbuja patrullando sin aturdir, punto rojo despierto, banner avisando o barriendo; aturdidos, dormidos y derrotados no cuentan). Sin jefes todavia: un jefe activo contara como combate (grupo boss, is_combat_active). Sube hasta cap_fraction del maximo efectivo (0,6 = 60 %: 60 de 100, 78 de 130); nunca baja lo que ya hubiera por encima. energy: empieza delay_s segundos despues del ultimo gasto de energia (la barra baja: disparo, Debug u Ocultarte); no con el Debug ni el Ocultarte activos, ni con la barra llena. Unidades: s, px, fraccion 0-1.",
+	"sync": {
+		"out_of_combat_s": 6.0,
+		"cap_fraction": 0.6,
+		"combat_radius_px": 384.0
+	},
+	"energy": {
+		"delay_s": 3.0
+	}
+}

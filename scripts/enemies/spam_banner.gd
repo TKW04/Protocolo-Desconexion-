@@ -132,6 +132,11 @@ func is_sweeping() -> bool:
 	return _state == STATE_SWEEP
 
 
+## En combate (PassiveRegen): avisando o barriendo su pasillo.
+func is_combat_active() -> bool:
+	return is_warning() or is_sweeping()
+
+
 func is_dangerous() -> bool:
 	return _state == STATE_SWEEP
 

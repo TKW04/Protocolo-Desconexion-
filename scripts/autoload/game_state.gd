@@ -115,7 +115,15 @@ const BASE_VALUES: Dictionary[StringName, float] = {
 	&"game_state.debug_energy_max": DEBUG_ENERGY_MAX,
 	&"game_state.energy_per_attention_point": ENERGY_PER_ATTENTION_POINT,
 	&"game_state.pulse_stun_multiplier": 1.0,
+	# Tanda M2 (2026-10-17): Sync 5 (Resincronizacion, Sync Rate por segundo fuera
+	# de combate) y Energia 5 (recarga pasiva, % del maximo por segundo). Sin esas
+	# mejoras no hay regeneracion pasiva (docs/preguntas.md, notas del paso 9).
+	&"game_state.sync_regen_per_s": 0.0,
+	&"game_state.energy_regen_pct_s": 0.0,
 }
+## Tope de power banks (completos + vacios) a la vez si data/power_bank.json no
+## dice otro (max_total; docs/propuesta-mejoras.md §5.1, tanda M2).
+const POWER_BANK_MAX_TOTAL_DEFAULT: int = 3
 
 ## Resultado de comprar el siguiente nivel de una pista (check_purchase /
 ## purchase_upgrade): pista desconocida, ya en el nivel maximo, habilidad sin
@@ -327,6 +335,12 @@ var _power_bank_data: Dictionary = _load_power_bank_data()
 var _unsaved: bool = false
 ## Valores base de isak_abilities.json (para el detalle de las mejoras).
 var _base_abilities: PlayerAbilities
+## Ocultarte (Pulso 4, tanda M2) activo: lo pone HideMode (Isak) y lo leen los
+## enemigos que «ven» (NotificationBadge) y la regeneracion pasiva. No se guarda.
+var _player_hidden: bool = false
+## Pulso de retorno (Pulso 5): enemigos (ruta del nodo) que ya dieron su energia
+## en este intento de nivel (begin_attempt lo vacia). No se guarda.
+var _pulse_return_claimed: Dictionary[String, bool] = {}
 
 
 func _ready() -> void:
@@ -455,8 +469,12 @@ func get_captured_points(level: StringName) -> Array[StringName]:
 
 ## Recoge el power bank de mapa `pickup_id` del nivel `level`: suma un power
 ## bank VACIO (decision 2026-10-14; se carga con el sobrante de los drops) y lo apunta como recogido (persistente). Falso si ya estaba
-## recogido. Sin nivel (escenas de prueba) no se apunta nada y siempre cuenta.
+## recogido o si el tope esta lleno (can_take_power_bank; el objeto se queda en
+## el mapa con «Sin espacio» y no se apunta). Sin nivel (escenas de prueba) no
+## se apunta nada y siempre cuenta (salvo el tope).
 func collect_power_bank_pickup(level: StringName, pickup_id: StringName) -> bool:
+	if not can_take_power_bank():
+		return false
 	if not mark_pickup_collected(level, pickup_id):
 		return false
 	add_empty_power_bank()
@@ -560,9 +578,34 @@ func get_power_bank_capacity() -> float:
 	return float(_power_bank_data.get("capacity_energy", 200.0))
 
 
+## Tope de power banks a la vez, completos + vacios (data/power_bank.json,
+## max_total: 3; tanda M2, docs/propuesta-mejoras.md §5.1). No crece con las
+## mejoras. Solo impide RECOGER mas: las devoluciones de la migracion y la
+## papelera pueden superarlo (no se borra nada).
+func get_power_bank_max_total() -> int:
+	return int(_power_bank_data.get("max_total", POWER_BANK_MAX_TOTAL_DEFAULT))
+
+
+## Power banks que se tienen ahora (completos + vacios; el que se esta cargando
+## es uno de los vacios).
+func get_power_bank_total() -> int:
+	return power_banks + empty_power_banks
+
+
+## Hay hueco para recoger otro power bank de mapa (por debajo del tope). Pagar un
+## nivel 5 en Calc gasta uno completo y libera su hueco.
+func can_take_power_bank() -> bool:
+	return get_power_bank_total() < get_power_bank_max_total()
+
+
 ## Ajustes del contador del HUD (seccion "hud" de data/power_bank.json).
 func get_power_bank_hud_data() -> Dictionary:
 	return _power_bank_data.get("hud", {})
+
+
+## Aviso «Sin espacio» del power bank de mapa con el tope lleno (seccion no_room).
+func get_power_bank_no_room_data() -> Dictionary:
+	return _power_bank_data.get("no_room", {})
 
 
 # --- Mejoras de Calc por pistas (data/upgrades.json, tanda M1) ---
@@ -586,6 +629,72 @@ func get_laser_energy_cost() -> float:
 
 func get_energy_per_attention_point() -> float:
 	return effective_value(&"game_state.energy_per_attention_point", ENERGY_PER_ATTENTION_POINT)
+
+
+## Sync 5 (Resincronizacion): Sync Rate por segundo fuera de combate (0 sin la
+## mejora; PassiveRegen, data/passive_regen.json).
+func get_sync_regen_per_s() -> float:
+	return effective_value(&"game_state.sync_regen_per_s", 0.0)
+
+
+## Energia 5 (recarga pasiva): % del maximo por segundo (0 sin la mejora).
+func get_energy_regen_pct_s() -> float:
+	return effective_value(&"game_state.energy_regen_pct_s", 0.0)
+
+
+## Ocultarte (Pulso 4) comprado y el pulso obtenido: la accion hide funciona en
+## los niveles (HideMode).
+func is_hide_available() -> bool:
+	return effective_value(&"ability.hide", 0.0) > 0.5 and is_ability_unlocked(ABILITY_PULSE)
+
+
+## Ocultarte activo (Pulso 4; lo pone HideMode). Los enemigos que «ven» pierden
+## el rastro; la Burbuja y las patrullas no miran.
+func is_player_hidden() -> bool:
+	return _player_hidden
+
+
+## Solo HideMode (y las pruebas): cambia el estado y avisa con EventBus.hide_changed.
+func set_player_hidden(hidden: bool) -> void:
+	if _player_hidden == hidden:
+		return
+	_player_hidden = hidden
+	EventBus.hide_changed.emit(hidden)
+
+
+## Empieza un intento de nivel (LevelRunner.start_level: carpeta, arranque, R):
+## el Pulso de retorno vuelve a dar energia una vez por enemigo.
+func begin_attempt() -> void:
+	_pulse_return_claimed.clear()
+	set_player_hidden(false)
+
+
+## Pulso de retorno (Pulso 5, tanda M2): el pulso acaba de aturdir a `enemy`.
+## Con la mejora da pulse_energy_on_stun de energia (4) a la barra, sin desbordar
+## a los power banks, UNA vez por enemigo y por intento (begin_attempt). Devuelve
+## la energia del retorno (4) si se cobro ahora y 0 sin mejora o ya cobrado (con
+## la barra llena se cobra igual y no entra nada: no desborda). Emite
+## EventBus.pulse_energy_returned con lo que entro de verdad.
+func claim_pulse_return(enemy: Node) -> float:
+	var target := &"isak_abilities.pulse_energy_on_stun"
+	var amount: float = effective_value(target, 0.0)
+	if amount <= 0.0 or enemy == null or not is_instance_valid(enemy):
+		return 0.0
+	var key: String = String(enemy.get_path()) if enemy.is_inside_tree() else str(enemy.get_instance_id())
+	if _pulse_return_claimed.has(key):
+		return 0.0
+	_pulse_return_claimed[key] = true
+	var gained: float = recharge_debug_energy(amount)
+	EventBus.pulse_energy_returned.emit(enemy, amount, gained)
+	return amount
+
+
+## El Pulso de retorno ya dio su energia por `enemy` en este intento.
+func is_pulse_return_claimed(enemy: Node) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	var key: String = String(enemy.get_path()) if enemy.is_inside_tree() else str(enemy.get_instance_id())
+	return _pulse_return_claimed.has(key)
 
 
 ## Multiplicador del aturdimiento del pulso (Pulso 3: x1,5). Lo aplican los
@@ -812,6 +921,8 @@ func reset_progress() -> void:
 	allies_met.clear()
 	ally_arrivals.clear()
 	learned_help.clear()
+	_pulse_return_claimed.clear()
+	set_player_hidden(false)
 	lives_max = LIVES_MAX_DEFAULT
 	play_time_s = 0.0
 	saved_at = ""

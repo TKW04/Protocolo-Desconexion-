@@ -220,3 +220,24 @@ signal controls_changed
 ## El jugador ha vuelto a leer la ayuda de un tipo ya aprendido (Q apagada).
 @warning_ignore("unused_signal")
 signal help_reread(help_id: StringName)
+
+## Mejoras de Calc, tanda M2 (docs/propuesta-mejoras.md, 2026-10-17).
+## Ocultarte (Pulso 4) se activa o se apaga (GameState.set_player_hidden).
+@warning_ignore("unused_signal")
+signal hide_changed(active: bool)
+## Ocultarte se apago solo o por una accion: `reason` es HideMode.REASON_*
+## (cut = Sync Rate o energia al 10 %, pulse, laser, hurt, debug, toggle...).
+@warning_ignore("unused_signal")
+signal hide_ended(reason: StringName)
+## Lo revelado por el Debug se ve y es solido (`revealing`): Debug activo o, con
+## el Debug 3, durante la persistencia tras apagarlo (DebugMode.is_revealing).
+@warning_ignore("unused_signal")
+signal debug_reveal_changed(revealing: bool)
+## Pulso de retorno (Pulso 5): aturdir a `enemy` dio `amount` de energia
+## (`gained` = lo que entro en la barra; nunca desborda a los power banks).
+@warning_ignore("unused_signal")
+signal pulse_energy_returned(enemy: Node, amount: float, gained: float)
+## Un power bank de mapa no se recogio porque el tope (3) esta lleno: se queda
+## en el mapa con «Sin espacio».
+@warning_ignore("unused_signal")
+signal power_bank_no_room(pickup: Node2D)
