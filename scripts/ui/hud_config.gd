@@ -13,7 +13,7 @@ const MISSING_COLOR: Color = Color.MAGENTA
 const PERCENT: float = 100.0
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
 const SPECIAL_KEYS: Array[String] = ["colors", "debug_colors", "assets", "signal_thresholds",
-	"battery_thresholds", "font", "font_glyphs", "key_swap_shader", "lives"]
+	"battery_thresholds", "font", "font_glyphs", "key_swap_shader", "lives", "hide"]
 
 var low_sync_threshold: float = 20.0
 ## Pixeles de pantalla por pixel de arte (entero).
@@ -42,6 +42,8 @@ var debug_colors: Dictionary[int, Color] = {}
 var assets: Dictionary[StringName, Dictionary] = {}
 ## HUD de vidas (seccion lives de data/hud.json; Hud).
 var lives: Dictionary = {}
+## Indicador del Ocultarte (seccion hide; tanda M2 de las mejoras de Calc).
+var hide: Dictionary = {}
 
 static var _cached: HudConfig
 
@@ -84,6 +86,8 @@ static func load_from_file(path: String = DEFAULT_PATH) -> HudConfig:
 		config.debug_colors[int(world)] = Color.html(raw_debug[world])
 	var raw_lives: Variant = dict.get("lives", {})
 	config.lives = raw_lives if raw_lives is Dictionary else {}
+	var raw_hide: Variant = dict.get("hide", {})
+	config.hide = raw_hide if raw_hide is Dictionary else {}
 	var raw_assets: Dictionary = dict.get("assets", {})
 	for name: String in raw_assets:
 		config.assets[StringName(name)] = raw_assets[name]

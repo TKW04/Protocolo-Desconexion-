@@ -32,6 +32,13 @@ Salidas (assets/sprites/ui/):
                             banner_gris y pantalla encendida en resplandor con una traza de 1 px y su
                             nodo en banner_blanco; vacio = apagado en tile_luz, pantalla tile_sombra con
                             una grieta diagonal (distinta forma ademas de color, por daltonismo). Sin rojo.
+  hud_hide.png              2 cuadros de 16x16 (columnas): icono «oculto» del Ocultarte (Pulso 4 de las
+                            mejoras de Calc, tanda M2; docs/propuesta-mejoras.md §4 y §9): silueta de Isak
+                            (cabeza y torso) discontinua en debug_cian con dos filas desplazadas 1 px (el
+                            glitch del efecto) y un punto banner_blanco de brillo; 0 normal, 1 apagado para
+                            el parpadeo del aviso (Sync Rate o energia por debajo del 20 %) en tile_luz con
+                            el punto en banner_gris. No usa el color clave del Debug (el Ocultarte es cian
+                            en todos los mundos). Sin rojo.
   _hud_assets_preview_x8.png  vista ampliada x8 sobre noche_profunda (no la usa el juego)
 
 La fuente bitmap la genera tools/gen_hud_font.py. El validador es tools/validate_ui_assets.py.
@@ -357,6 +364,52 @@ def draw_lives(spec):
     return s.save()
 
 
+# ------------------------------------------------------------------ icono «oculto» (Ocultarte)
+HIDE_SHAPE = (
+    "................",
+    "......####......",
+    ".....#....#.....",
+    ".....#....#.....",
+    ".....#....#.....",
+    "......####......",
+    "................",
+    "....########....",
+    "...#........#...",
+    "..#..........#..",
+    "..#..........#..",
+    "..#..........#..",
+    "..#..........#..",
+    "..############..",
+    "................",
+    "................",
+)
+# Filas del glitch (se desplazan 1 px a la derecha) y hueco de la linea discontinua.
+HIDE_GLITCH_ROWS = (9, 10)
+HIDE_GAP_EVERY = 3
+HIDE_SPARK = (7, 3)
+# estado -> (trazo, brillo)
+HIDE_STATES = (("debug_cian", "banner_blanco"), ("tile_luz", "banner_gris"))
+
+
+def draw_hide(spec):
+    s = Sheet(spec)
+    assert s.cols == len(HIDE_STATES) and s.rows == 1 and (s.fw, s.fh) == (16, 16)
+    for col, (stroke, spark) in enumerate(HIDE_STATES):
+        n = 0
+        for y, row in enumerate(HIDE_SHAPE):
+            shift = 1 if y in HIDE_GLITCH_ROWS else 0
+            for x, ch in enumerate(row):
+                if ch != "#":
+                    continue
+                n += 1
+                if n % HIDE_GAP_EVERY == 0:
+                    continue
+                if 0 <= x + shift < s.fw:
+                    s.px(col, 0, x + shift, y, stroke)
+        s.px(col, 0, HIDE_SPARK[0], HIDE_SPARK[1], spark)
+    return s.save()
+
+
 # ------------------------------------------------------------------ vista ampliada
 def preview(images):
     pad = 4
@@ -381,9 +434,10 @@ def main():
         draw_attention(spec["attention_icon"]),
         draw_charge_ring(spec["charge_ring"]),
         draw_lives(spec["lives"]),
+        draw_hide(spec["hide"]),
     ]
     preview(images)
-    for key in ("panel", "signal", "battery_shell", "battery_segments", "attention_icon", "charge_ring", "lives"):
+    for key in ("panel", "signal", "battery_shell", "battery_segments", "attention_icon", "charge_ring", "lives", "hide"):
         print("gen_hud_assets:", spec[key]["path"])
     print("gen_hud_assets: vista", os.path.relpath(PREVIEW, ROOT))
     return 0

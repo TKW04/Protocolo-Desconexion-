@@ -37,6 +37,12 @@
 ## lives de data/hud.json). EventBus.lives_changed. Oculto hasta que las vidas
 ## cuentan (primera llegada al hub) y en el hub. Al perder una, el icono que se
 ## apaga parpadea y da un bote. Se crea por codigo (no toca hud.tscn).
+## Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2): mientras esta activo,
+## bajo la barra y a la izquierda del contador de power banks, el icono «oculto»
+## (hud_hide.png) y una barra con lo que queda hasta el corte al 10 %
+## (HideMode.remaining_fraction); por debajo del 20 % de Sync Rate o energia el
+## icono y la barra parpadean (aviso de que se va a apagar). Seccion hide de
+## data/hud.json; se crea por codigo (no toca hud.tscn).
 class_name Hud
 extends CanvasLayer
 
@@ -118,6 +124,34 @@ var _lives_active: bool = false
 ## Icono que parpadea tras perder una vida (null si ninguno).
 var _lost_icon: Control
 
+## Ocultarte: caja bajo la barra con el icono y la barra de lo que queda.
+var _hide_box: HBoxContainer
+var _hide_icon: TextureRect
+var _hide_bar: HideBar
+var _hide_on: Texture2D
+var _hide_off: Texture2D
+var _hide_active: bool = false
+var _hide_hold_left: float = 0.0
+var _hide_time: float = 0.0
+
+
+## Barra del Ocultarte (lo que queda hasta el corte): borde, fondo y relleno.
+class HideBar:
+	extends Control
+	var ratio: float = 1.0
+	var border := Color("#aeb8d2")
+	var back := Color("#0b0e1a")
+	var fill := Color("#3dfff5")
+
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		draw_rect(r, border)
+		var inner := r.grow(-1.0)
+		draw_rect(inner, back)
+		var w: float = floorf(inner.size.x * clampf(ratio, 0.0, 1.0))
+		if w > 0.0:
+			draw_rect(Rect2(inner.position, Vector2(w, inner.size.y)), fill)
+
 
 func _ready() -> void:
 	_apply_config()
@@ -133,6 +167,8 @@ func _ready() -> void:
 	EventBus.ability_unlock_changed.connect(_on_ability_unlock_changed)
 	EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 	EventBus.lives_changed.connect(_on_lives_changed)
+	EventBus.hide_changed.connect(_on_hide_changed)
+	EventBus.hide_ended.connect(_on_hide_ended)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -145,6 +181,7 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	_blink_time += delta
 	_update_low_sync_visual()
+	_update_hide(delta)
 
 
 # --- Consultas (pruebas y depuracion) ---
@@ -311,6 +348,7 @@ func _apply_config() -> void:
 	_attention_label.text = str(_attention_points)
 	_build_power_bank(c, font)
 	_build_lives(c, font)
+	_build_hide(c)
 
 
 ## Frame ocupa la pantalla en pixeles de arte (su escala la lleva a 1280x720).
@@ -445,6 +483,101 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 	_power_bank_label.text = POWER_BANK_FORMAT % 0
 	_power_bank_box.add_child(_power_bank_label)
 	_power_bank_box.visible = bool(d.get("show_when_empty", false))
+
+
+# --- Ocultarte (Pulso 4, tanda M2) ---
+
+func _build_hide(c: HudConfig) -> void:
+	var d: Dictionary = c.hide
+	_hide_box = HBoxContainer.new()
+	_hide_box.name = "Hide"
+	_hide_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hide_box.add_theme_constant_override("separation", int(d.get("spacing_px", 2)))
+	_hide_box.alignment = BoxContainer.ALIGNMENT_END
+	_hide_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_hide_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_hide_box.offset_right = -c.margin_px
+	_hide_box.offset_top = c.bar_height_px + int(d.get("offset_y_px", 2))
+	_hide_box.offset_bottom = _hide_box.offset_top + c.bar_height_px
+	_frame.add_child(_hide_box)
+	var sheet: Texture2D = c.asset_texture(&"hide") if c.assets.has(&"hide") else null
+	var frame: Vector2i = c.asset_frame_size(&"hide")
+	_hide_on = _lives_frame(sheet, frame, 0, [0, 0, frame.x, frame.y])
+	_hide_off = _lives_frame(sheet, frame, 1, [0, 0, frame.x, frame.y])
+	_hide_icon = TextureRect.new()
+	_hide_icon.name = "Icon"
+	_hide_icon.texture = _hide_on
+	_hide_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hide_icon.stretch_mode = TextureRect.STRETCH_KEEP
+	_hide_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_hide_box.add_child(_hide_icon)
+	_hide_bar = HideBar.new()
+	_hide_bar.name = "Bar"
+	_hide_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bar: Array = d.get("bar_size_px", [20, 4])
+	_hide_bar.custom_minimum_size = Vector2(float(bar[0]), float(bar[1]))
+	_hide_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_hide_bar.border = Color(String(d.get("bar_border", "#aeb8d2")))
+	_hide_bar.back = Color(String(d.get("bar_back", "#0b0e1a")))
+	_hide_bar.fill = Color(String(d.get("bar_fill", "#3dfff5")))
+	_hide_box.add_child(_hide_bar)
+	_hide_box.visible = false
+
+
+func _on_hide_changed(active: bool) -> void:
+	_hide_active = active
+	if active:
+		_hide_hold_left = 0.0
+		_hide_time = 0.0
+	_update_hide(0.0)
+
+
+## Al cortarse solo (10 %) el indicador se queda un momento apagado.
+func _on_hide_ended(reason: StringName) -> void:
+	if reason == HideMode.REASON_CUT:
+		_hide_hold_left = float(_config.hide.get("cut_hold_s", 0.6))
+	_update_hide(0.0)
+
+
+func _update_hide(delta: float) -> void:
+	if _hide_box == null:
+		return
+	_hide_hold_left = maxf(_hide_hold_left - delta, 0.0)
+	var shown: bool = _hide_active or _hide_hold_left > 0.0
+	_hide_box.visible = shown
+	if not shown:
+		return
+	_hide_time += delta
+	var d: Dictionary = _config.hide
+	var warn: bool = _hide_active and HideMode.is_low()
+	var blink_off: bool = warn and fmod(_hide_time * float(d.get("blink_hz", 4.0)), 1.0) >= 0.5
+	_hide_icon.texture = _hide_off if (blink_off or not _hide_active) else _hide_on
+	_hide_bar.ratio = HideMode.remaining_fraction() if _hide_active else 0.0
+	_hide_bar.fill = Color(String(d.get("warn_fill" if warn else "bar_fill", "#3dfff5")))
+	_hide_bar.visible = not blink_off
+	_hide_bar.queue_redraw()
+	# A la izquierda del contador de power banks (si se ve).
+	var right: float = _config.margin_px
+	if _power_bank_box != null and _power_bank_box.visible:
+		right += _power_bank_box.get_combined_minimum_size().x + float(d.get("gap_px", 4))
+	_hide_box.offset_right = -right
+
+
+## Indicador del Ocultarte visible, su barra (0-1) y si parpadea apagado ahora.
+func is_hide_indicator_shown() -> bool:
+	return _hide_box != null and _hide_box.visible
+
+
+func get_hide_bar_ratio() -> float:
+	return _hide_bar.ratio if _hide_bar != null else 0.0
+
+
+func is_hide_icon_dim() -> bool:
+	return _hide_icon != null and _hide_icon.texture == _hide_off
+
+
+func get_hide_box() -> Control:
+	return _hide_box
 
 
 # --- Vidas (intentos) ---

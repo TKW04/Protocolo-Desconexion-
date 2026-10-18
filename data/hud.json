@@ -34,6 +34,19 @@
 		"gained_pop_s": 0.4,
 		"gained_flash_s": 0.3
 	},
+	"hide": {
+		"_notes": "Indicador del Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2; docs/propuesta-mejoras.md §4): bajo la barra del HUD, a la izquierda del contador de power banks, mientras el Ocultarte esta activo (EventBus.hide_changed): icono hud_hide.png (cuadro 0) y una barra de bar_size_px (px de arte) con lo que queda hasta el corte (HideMode.remaining_fraction: la barra, Sync Rate o energia, que antes llega al 10 % de su maximo efectivo). AVISO: por debajo de data/hide_mode.json warn_fraction (20 %) de cualquiera de las dos barras el icono parpadea a blink_hz (cuadro 1 apagado) y la barra pasa a warn_fill (banner_blanco) parpadeando. Al cortarse solo, el indicador se queda cut_hold_s con el icono apagado. Colores de la paleta del Mundo 1, sin rojo: bar_border banner_gris, bar_back noche_profunda, bar_fill debug_cian (el Ocultarte es cian en todos los mundos). offset_y_px: bajo la barra; gap_px: hueco con el contador de power banks.",
+		"offset_y_px": 2,
+		"gap_px": 4,
+		"spacing_px": 2,
+		"bar_size_px": [20, 4],
+		"bar_border": "#aeb8d2",
+		"bar_back": "#0b0e1a",
+		"bar_fill": "#3dfff5",
+		"warn_fill": "#f2f4f8",
+		"blink_hz": 4.0,
+		"cut_hold_s": 0.6
+	},
 	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
 	"colors": {
 		"text": "#f2f4f8",
@@ -59,6 +72,7 @@
 		"attention_icon": {"path": "res://assets/sprites/ui/hud_attention.png", "frame_size": [16, 16], "columns": 1, "rows": 1},
 		"charge_ring": {"path": "res://assets/sprites/ui/hud_charge_ring.png", "frame_size": [16, 16], "columns": 16, "rows": 1},
 		"lives": {"path": "res://assets/sprites/ui/hud_lives.png", "frame_size": [16, 16], "columns": 2, "rows": 1},
+		"hide": {"path": "res://assets/sprites/ui/hud_hide.png", "frame_size": [16, 16], "columns": 2, "rows": 1},
 		"font": {"path": "res://assets/sprites/ui/hud_font.png", "frame_size": [8, 8], "columns": 8, "rows": 2}
 	}
 }
