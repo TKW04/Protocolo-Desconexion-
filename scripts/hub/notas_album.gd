@@ -6,15 +6,19 @@
 ## - Vista de CARPETAS (al abrir): una por mundo (1..world_count, 6) en una
 ##   rejilla de folder_columns columnas, con el contador global «Fichas: n/N»
 ##   (tipos de los mundos visitados). Carpeta de un mundo visitado: icono de
-##   carpeta (album_folder_closed; la elegida, album_folder_open), «Mundo n», el
-##   nombre del mundo (worlds de data/hub.json) y su contador «n/N». Mundo sin
-##   alcanzar: carpeta bloqueada con candado, «Mundo n» y «???»; ni su nombre
-##   ni sus fichas ni su contador se muestran.
+##   carpeta (album_folder_closed; la elegida, album_folder_open) con la
+##   miniatura del mundo encima si la tiene (miniature de worlds), SOLO el
+##   nombre del mundo en una linea (worlds de data/hub.json; sin «Mundo n»,
+##   2026-10-18, decision del usuario) y su contador «n/N». Mundo sin alcanzar:
+##   carpeta bloqueada con candado y «???»; ni su nombre, ni su numero, ni sus
+##   fichas, ni su contador se muestran.
 ## - Regla de mundo visitado (is_world_visited): el mundo existe en worlds de
 ##   data/hub.json y HubWorlds lo da por desbloqueado (unlocked en los datos, o
 ##   alguno de sus subniveles en unlocked_levels / completed_levels), o el
 ##   jugador ha aprendido algun tipo de ese mundo (world de help.json).
-## - Al abrir una carpeta: sus dos pestanas (tabs: Enemigos y Objetos) con su
+## - Al abrir una carpeta: titulo con SOLO el nombre del mundo (y su miniatura a
+##   la izquierda si la tiene; el panel de subniveles del hub sigue con
+##   «Mundo 1 - Notificaciones», HubWorlds.world_title); sus dos pestanas (tabs: Enemigos y Objetos) con su
 ##   contador «Fichas: n/N», rejilla de celdas (marco album_cell; la elegida,
 ##   album_cell_selected). Tipo aprendido (GameState.learned_help): su ficha
 ##   (tools/gen_album_cards.py). No aprendido: la silueta con «???»; ni el
@@ -39,6 +43,8 @@ var _shader: Shader
 var _key_color: Color
 var _frame: Control
 var _panel: NinePatchRect
+## Miniatura del mundo junto al titulo de la carpeta abierta.
+var _title_icon: TextureRect
 var _labels: Dictionary[StringName, Label] = {}
 var _tab_labels: Array[Label] = []
 var _cells: Array[Control] = []
@@ -74,6 +80,14 @@ static func world_entry(world: int) -> Dictionary:
 ## Nombre del mundo (worlds de data/hub.json; vacio si no existe).
 static func world_name(world: int) -> String:
 	return String(world_entry(world).get("name", ""))
+
+
+## Miniatura del mundo (miniature de worlds; null si no tiene o no existe).
+static func world_miniature(world: int) -> Texture2D:
+	var path: String = String(world_entry(world).get("miniature", ""))
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
 
 
 ## Mundo visitado: desbloqueado segun HubWorlds (unlocked o algun subnivel
@@ -221,12 +235,12 @@ func open_folder(world: int) -> bool:
 	return true
 
 
-## Texto de cada carpeta: [«Mundo n», nombre o «???», contador o ""].
+## Texto de cada carpeta: [nombre del mundo o «???», contador o ""].
 func get_folder_texts(index: int) -> PackedStringArray:
 	if index < 0 or index >= _folders.size():
 		return PackedStringArray()
 	var out := PackedStringArray()
-	for key: String in ["Number", "Name", "Count"]:
+	for key: String in ["Name", "Count"]:
 		out.append((_folders[index].get_node(NodePath(key)) as Label).text)
 	return out
 
@@ -240,6 +254,21 @@ func get_folder_icon(index: int) -> Texture2D:
 	if index < 0 or index >= _folders.size():
 		return null
 	return (_folders[index].get_node(^"Icon") as TextureRect).texture
+
+
+## Miniatura del mundo sobre la carpeta `index` (null si no se ve).
+func get_folder_miniature(index: int) -> Texture2D:
+	if index < 0 or index >= _folders.size():
+		return null
+	var mini := _folders[index].get_node(^"Miniature") as TextureRect
+	return mini.texture if mini.visible else null
+
+
+## Etiqueta del nombre de la carpeta `index` (pruebas: cabe en una linea).
+func get_folder_name_label(index: int) -> Label:
+	if index < 0 or index >= _folders.size():
+		return null
+	return _folders[index].get_node(^"Name") as Label
 
 
 ## Categoria de la pestana actual (enemy u object).
@@ -291,6 +320,11 @@ func get_counter_text() -> String:
 
 func get_title_text() -> String:
 	return _labels[&"title"].text
+
+
+## Miniatura junto al titulo de la carpeta abierta (null si no se ve).
+func get_title_icon() -> Texture2D:
+	return _title_icon.texture if _title_icon != null and _title_icon.visible else null
 
 
 ## Texto de cada celda visible: el nombre si esta aprendida, «???» si no.
@@ -430,8 +464,9 @@ func refresh() -> void:
 		var total: Vector2i = global_progress()
 		_labels[&"counter"].text = String(texts.get("counter", "%d/%d")) % [total.x, total.y]
 	else:
-		# Mismo formato que el panel de subniveles (HubWorlds.world_title).
-		_labels[&"title"].text = HubWorlds.world_title(world_entry(_world))
+		# Solo el nombre del mundo (2026-10-18; el panel de subniveles sigue con
+		# HubWorlds.world_title, «Mundo 1 - Notificaciones»).
+		_labels[&"title"].text = world_name(_world)
 		var learned: int = 0
 		for e: Dictionary in _entries:
 			if bool(e["learned"]):
@@ -539,10 +574,11 @@ func _fill_folder(folder: Control, world: int, selected: bool) -> void:
 	if visited:
 		icon_key = "folder_open" if selected else "folder_closed"
 	(folder.get_node(^"Icon") as TextureRect).texture = load(String(_cfg.get(icon_key, ""))) as Texture2D
-	var number := folder.get_node(^"Number") as Label
+	var mini := folder.get_node(^"Miniature") as TextureRect
+	mini.texture = world_miniature(world) if visited else null
+	mini.visible = mini.texture != null
 	var name_label := folder.get_node(^"Name") as Label
 	var count := folder.get_node(^"Count") as Label
-	number.text = String(texts.get("folder_number", "%d")) % world
 	if visited:
 		var progress: Vector2i = world_progress(world)
 		name_label.text = world_name(world)
@@ -550,8 +586,10 @@ func _fill_folder(folder: Control, world: int, selected: bool) -> void:
 	else:
 		name_label.text = String(texts.get("unknown", "???"))
 		count.text = ""
-	_set_color(number, String(colors.get("folder_number_selected" if selected else "folder_number", "texto_claro")))
-	_set_color(name_label, String(colors.get("folder_name" if visited else "unknown", "texto_claro")))
+	var name_role: String = "unknown"
+	if visited:
+		name_role = "folder_name_selected" if selected else "folder_name"
+	_set_color(name_label, String(colors.get(name_role, "texto_claro")))
 	_set_color(count, String(colors.get("counter", "texto_tenue")))
 
 
@@ -569,7 +607,7 @@ func _all_labels() -> Array[Label]:
 	for cell: Control in _cells:
 		out.append(cell.get_node(^"Unknown") as Label)
 	for folder: Control in _folders:
-		for key: String in ["Number", "Name", "Count"]:
+		for key: String in ["Name", "Count"]:
 			out.append(folder.get_node(NodePath(key)) as Label)
 	return out
 
@@ -617,6 +655,11 @@ func _build() -> void:
 	_frame.add_child(_panel)
 	for key: String in ["title", "counter", "name", "message", "help", "card_title"]:
 		_labels[StringName(key)] = _new_label(_panel, key.capitalize().replace(" ", ""), String(colors.get(key, "texto_claro")))
+	_title_icon = TextureRect.new()
+	_title_icon.name = "TitleIcon"
+	_title_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title_icon.visible = false
+	_panel.add_child(_title_icon)
 	for i: int in _tabs().size():
 		_tab_labels.append(_new_label(_panel, "Tab%d" % i, String(colors.get("tab", "texto_tenue"))))
 	_build_folders()
@@ -658,10 +701,12 @@ func _build() -> void:
 	_body_label.visible = false
 
 
-## Carpeta: marco (album_cell estirado), icono de carpeta y tres lineas.
+## Carpeta: marco (album_cell estirado), icono de carpeta con la miniatura del
+## mundo encima (abajo a la derecha) y dos lineas: nombre y contador.
 func _build_folders() -> void:
 	var size: Array = _cfg.get("folder_card_px", [136, 48])
 	var icon_px: float = float(_cfg.get("folder_icon_px", 32))
+	var mini_px: float = float(_cfg.get("folder_miniature_px", 16))
 	var pad: float = float(_cfg.get("folder_padding_px", 6))
 	var line_h: float = ceilf(_font.get_height(int(_cfg.get("font_size", 12))))
 	var w: float = float(size[0])
@@ -685,10 +730,16 @@ func _build_folders() -> void:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon.position = Vector2(pad, floorf((h - icon_px) * 0.5))
 		folder.add_child(icon)
+		var mini := TextureRect.new()
+		mini.name = "Miniature"
+		mini.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mini.position = icon.position + Vector2(icon_px - mini_px, icon_px - mini_px)
+		mini.visible = false
+		folder.add_child(mini)
 		var tx: float = pad * 2.0 + icon_px
-		var top: float = floorf((h - line_h * 3.0) * 0.5)
-		for j: int in 3:
-			var key: String = ["Number", "Name", "Count"][j]
+		var top: float = floorf((h - line_h * 2.0) * 0.5)
+		for j: int in 2:
+			var key: String = ["Name", "Count"][j]
 			var label: Label = _new_label(folder, key, "texto_claro")
 			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 			label.position = Vector2(tx, top + line_h * j)
@@ -710,7 +761,21 @@ func _layout() -> void:
 	var width: float = float(_cfg.get("width_px", 300))
 	var inner: float = width - pad * 2.0
 	var y: float = pad
-	y = _place(_labels[&"title"], pad, y, inner, line_h, gap)
+	# Carpeta abierta: la miniatura del mundo (si la tiene) a la izquierda del titulo.
+	var mini: Texture2D = world_miniature(_world) if _mode != Mode.FOLDERS else null
+	_title_icon.texture = mini
+	_title_icon.visible = mini != null
+	if mini != null:
+		# Icono y nombre centrados juntos (el titulo esta centrado).
+		var mini_size: Vector2 = mini.get_size()
+		var text_w: float = ceilf(_font.get_string_size(_labels[&"title"].text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+		var x0: float = pad + floorf((inner - (mini_size.x + gap + text_w)) * 0.5)
+		_title_icon.size = mini_size
+		_title_icon.position = Vector2(x0, y + floorf((line_h - mini_size.y) * 0.5))
+		_place(_labels[&"title"], x0 + mini_size.x + gap, y, text_w, line_h, gap)
+		y += line_h + gap
+	else:
+		y = _place(_labels[&"title"], pad, y, inner, line_h, gap)
 	y += gap
 	if _mode == Mode.FOLDERS:
 		y = _place(_labels[&"counter"], pad, y, inner, line_h, gap)

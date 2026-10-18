@@ -13,8 +13,8 @@
 ##   04_notas_panel.png          panel de Notas (resumen; Guardar / Álbum / Apodo / Volver)
 ##   05_notas_confirmar.png      confirmacion «¿Guardar en Notas?»
 ##   06_copia_guardada.png       «Apuntado. Copia guardada», destello y el indicador apagado
-##   06a_album_carpetas.png      album: vista de carpetas por mundo (Mundo 1 con nombre y
-##                               contador; los demas cerrados con candado y «???»)
+##   06a_album_carpetas.png      album: vista de carpetas por mundo (Notificaciones: solo el
+##                               nombre, miniatura y contador; los demas con candado y «???»)
 ##   06b_album_objetos.png       carpeta del Mundo 1 abierta, pestana Objetos: fichas
 ##                               aprendidas y siluetas «???»
 ##   06c_album_ficha.png         ficha abierta (dibujo x2, nombre y texto de Eco)

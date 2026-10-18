@@ -59,9 +59,10 @@ static func folder_worlds() -> Array[Dictionary]:
 	return out
 
 
-## Nombre del mundo con su numero, «Mundo 1 - Notificaciones»: el MISMO formato
-## (folders.texts.title de data/hub.json) en el panel de subniveles y en el
-## album de Notas (2026-10-16, decision del usuario). Quien lo muestre decide si
+## Nombre del mundo con su numero, «Mundo 1 - Notificaciones» (folders.texts.title
+## de data/hub.json) para el panel de subniveles (2026-10-16, decision del
+## usuario). Desde el 2026-10-18 el album de Notas muestra SOLO el nombre del
+## mundo (NotasAlbum.world_name). Quien lo muestre decide si
 ## el mundo ya se alcanzo (nunca se muestra el de uno sin alcanzar).
 static func world_title(world_entry: Dictionary) -> String:
 	var texts: Variant = HubData.section("folders").get("texts", {})

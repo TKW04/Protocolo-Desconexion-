@@ -103,9 +103,34 @@ func test_world_names_come_from_the_design_and_hub_json() -> void:
 	for i: int in DESIGN_WORLD_NAMES.size():
 		assert_eq(NotasAlbum.world_name(i + 1), DESIGN_WORLD_NAMES[i], "Mundo %d en worlds de data/hub.json" % (i + 1))
 	assert_eq(HubWorlds.world_title(NotasAlbum.world_entry(1)), "Mundo 1 - Notificaciones",
-		"Mismo formato que el panel de subniveles")
+		"El panel de subniveles conserva «Mundo n - nombre»")
 	var album_texts: Dictionary = HubData.section("album").get("texts", {})
-	assert_false(album_texts.has("folder_title"), "Una sola fuente del formato: folders.texts.title")
+	assert_false(album_texts.has("folder_title"), "El album no tiene formato propio de titulo")
+	assert_false(album_texts.has("folder_number"), "El album ya no muestra «Mundo n» (2026-10-18)")
+
+
+## 2026-10-18 (decision del usuario): SOLO el nombre del mundo, en una sola
+## linea que cabe en la carpeta (los 6 nombres, alcanzados o no).
+func test_folder_names_fit_on_one_line() -> void:
+	var worlds: Array[Dictionary] = []
+	for i: int in DESIGN_WORLD_NAMES.size():
+		var entry: Dictionary = NotasAlbum.world_entry(i + 1)
+		entry["unlocked"] = true
+		worlds.append(entry)
+	_album.open()
+	for i: int in DESIGN_WORLD_NAMES.size():
+		var texts: PackedStringArray = _album.get_folder_texts(i)
+		assert_eq(texts[0], DESIGN_WORLD_NAMES[i], "Carpeta %d: solo el nombre" % (i + 1))
+		var label: Label = _album.get_folder_name_label(i)
+		var font: Font = label.get_theme_font(&"font")
+		var width: float = font.get_string_size(texts[0], HORIZONTAL_ALIGNMENT_LEFT, -1,
+			label.get_theme_font_size(&"font_size")).x
+		assert_true(width <= label.size.x, "«%s» cabe en una linea (%.0f <= %.0f px)" % [texts[0], width, label.size.x])
+		assert_eq(label.autowrap_mode, TextServer.AUTOWRAP_OFF, "Sin partir en dos lineas")
+		assert_false(texts[0].contains("Mundo"), "Sin «Mundo n»")
+	for i: int in worlds.size():
+		worlds[i]["unlocked"] = i == 0
+	_album.close()
 
 
 func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
@@ -115,10 +140,10 @@ func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
 	_album.open()
 	var texts: PackedStringArray = _album.get_folder_texts(3)
 	m4["unlocked"] = false
-	assert_eq(texts, PackedStringArray(["Mundo 4", "El Chat", "0/0"]), "Alcanzado: su nombre")
+	assert_eq(texts, PackedStringArray(["El Chat", "0/0"]), "Alcanzado: solo su nombre")
 	_album.close()
 	_album.open()
-	assert_eq(_album.get_folder_texts(3), PackedStringArray(["Mundo 4", "???", ""]), "Sin alcanzar: «???»")
+	assert_eq(_album.get_folder_texts(3), PackedStringArray(["???", ""]), "Sin alcanzar: «???»")
 	for i: int in range(1, 6):
 		assert_true(_album.is_folder_locked(i))
 		for name: String in DESIGN_WORLD_NAMES:
@@ -127,11 +152,15 @@ func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
 	_assert_no_leak()
 
 
-func test_open_folder_title_uses_the_panel_format() -> void:
+func test_open_folder_title_is_only_the_world_name() -> void:
 	_album.open()
+	assert_null(_album.get_title_icon(), "Vista de carpetas: sin miniatura en el titulo")
 	_album.confirm()
-	assert_eq(_album.get_title_text(), HubWorlds.world_title(NotasAlbum.world_entry(1)))
-	assert_eq(_album.get_title_text(), "Mundo 1 - Notificaciones")
+	assert_eq(_album.get_title_text(), "Notificaciones", "Solo el nombre del mundo (2026-10-18)")
+	assert_eq(_album.get_title_icon(), NotasAlbum.world_miniature(1), "Con la miniatura del Mundo 1 (campana)")
+	assert_not_null(_album.get_title_icon())
+	assert_ne(_album.get_title_text(), HubWorlds.world_title(NotasAlbum.world_entry(1)),
+		"El panel de subniveles conserva su formato; el album no")
 
 
 
@@ -142,14 +171,17 @@ func test_opens_on_the_folders_view_with_counters() -> void:
 	assert_eq(_album.get_mode(), NotasAlbum.Mode.FOLDERS, "Primero, las carpetas")
 	var total: int = NotasAlbum.album_ids(1).size()
 	assert_eq(_album.get_counter_text(), "Fichas: 2/%d" % total, "Contador global")
-	assert_eq(_album.get_folder_texts(0), PackedStringArray(["Mundo 1", "Notificaciones", "2/%d" % total]))
+	assert_eq(_album.get_folder_texts(0), PackedStringArray(["Notificaciones", "2/%d" % total]))
 	assert_false(_album.is_folder_locked(0))
+	assert_not_null(_album.get_folder_miniature(0), "Miniatura del Mundo 1 sobre su carpeta")
+	assert_eq(_album.get_folder_miniature(0).resource_path, String(NotasAlbum.world_entry(1)["miniature"]))
 	assert_eq(_album.get_folder_icon(0).resource_path, "res://assets/sprites/hub/album/album_folder_open_00.png",
 		"La elegida, abierta")
 	for i: int in range(1, 6):
 		assert_true(_album.is_folder_locked(i), "Mundo %d cerrado" % (i + 1))
-		assert_eq(_album.get_folder_texts(i), PackedStringArray(["Mundo %d" % (i + 1), "???", ""]),
-			"Sin nombre ni contador")
+		assert_eq(_album.get_folder_texts(i), PackedStringArray(["???", ""]),
+			"Sin nombre, sin numero ni contador")
+		assert_null(_album.get_folder_miniature(i), "Mundo %d cerrado: sin miniatura" % (i + 1))
 		assert_eq(_album.get_folder_icon(i).resource_path,
 			"res://assets/sprites/hub/album/album_folder_locked_00.png", "Con candado")
 	_album.move(1, 0)
@@ -204,7 +236,7 @@ func test_open_folder_shows_cards_and_silhouettes() -> void:
 	_album.confirm()
 	assert_eq(_album.get_mode(), NotasAlbum.Mode.GRID, "Pulso abre la carpeta")
 	assert_eq(_album.get_world(), 1)
-	assert_eq(_album.get_title_text(), "Mundo 1 - Notificaciones")
+	assert_eq(_album.get_title_text(), "Notificaciones")
 	assert_eq(_album.get_tab(), "enemy", "Primera seccion: Enemigos")
 	assert_eq(_album.get_counter_text(), "Fichas: 1/3")
 	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta", "???", "???"]),
