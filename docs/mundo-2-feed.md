@@ -81,3 +81,5 @@ Un reproductor de video gigante, con un botón de play por ojo. Reproduce clips 
 | **Fase 2** | Cuenta regresiva de "Siguiente video en 5". Si llega a cero sin que lo hayas pausado, el jefe recupera vida. Hay que llegar al botón antes del final. |
 | **Fase 3** | Todo va al doble de velocidad. Isak necesita Debug para ralentizar y seguir el ritmo. |
 | **Recompensa** | Fragmento de tiempo: un recuerdo largo de una tarde con su familia, una de las que Isak se perdió mientras miraba el feed. Eco dice: "Mira cuánto tiempo ahorramos." |
+
+> **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).

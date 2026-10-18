@@ -82,3 +82,5 @@ Un doble check gigante con aura fantasmal. Es la ausencia convertida en monstruo
 | **Fase 2** | Invoca Trolls y Stickers. Agitar limpia la arena y rompe su escudo. |
 | **Fase 3** | Un "escribiendo..." gigante se llena de puntos. Hay que interrumpirlo con el pulso antes de que mande el mensaje que congela a Isak. Si lo logra, Agitar libera. |
 | **Recompensa** | Fragmento de amistades: un recuerdo de Isak con sus amigos, riendo, sin ninguna pantalla de por medio. Eco dice: "Yo siempre estoy. Ellos no." |
+
+> **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).

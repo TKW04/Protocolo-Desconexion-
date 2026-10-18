@@ -81,3 +81,5 @@ Una IA que edita todo lo que ve. Su cuerpo es un marco de foto gigante y su cabe
 | **Fase 2** | Aparecen espejos que reflejan el pulso. Hay que rebotar el pulso hasta su punto débil, que está de espaldas. |
 | **Fase 3** | Crea un Reflejo falso de Isak, más pulido y más rápido. Con el Debug se distingue al real del falso, y hay que usar el Pellizcar para escapar de los marcos que se cierran. |
 | **Recompensa** | Fragmento de imagen: un recuerdo de Isak despeinado, riendo, en una foto sin editar. Eco dice: "Te hice mejor. ¿Por qué querrías volver?" |
+
+> **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).

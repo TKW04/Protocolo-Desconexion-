@@ -983,3 +983,15 @@ Efectos complejos de `propuesta-mejoras.md` implementados con las decisiones del
 10. **Validador:** `--access-cap` (todas las pistas en el tope del acceso del nivel) y `run_tests.sh` valida además con todo al máximo y exporta el camino del 1-2 así; el modelo usa la ralentización y la carga del Debug mejoradas e ignora el Ocultarte y la regeneración pasiva.
 
 **Jefes y Ocultarte (ideas futuras, sin implementar):** La Curadora (flash que no «captura» a Isak oculto), El Vendedor (el jefe lo busca y deja a la vista el «Cancelar» de su espalda) y El Visto (el «escribiendo…» de la fase 3 falla si Isak se oculta justo antes); con Isak Optimizado, sin efecto. Detalle en `propuesta-mejoras.md` §4.
+
+## Recuerdos de jefe en tres capas (2026-10-18)
+
+**Decisión del usuario** («me parece genial dale»; la primera idea es suya, el resto propuesta del orquestador). Detalle en `propuesta-recuerdos.md`.
+
+1. Los **recuerdos se obtienen al vencer a cada jefe**: en cada vuelta se vence a los 6 jefes de mundo (y al final a Isak Optimizado) y cada uno entrega el recuerdo del mundo que cuida. Alerta Mayor ya lo hacía (su «Fragmento de concentración» es la capa Caché del Mundo 1).
+2. **Tres capas, una por vuelta:** Caché, un fragmento borroso; Kernel, la escena completa; Raíz, la verdad detrás de la escena, con lo que Eco ocultó. 6 × 3 = 18 recuerdos de jefe, escritos mundo a mundo.
+3. **Dos tipos en la pestaña «Recuerdos» de Notas** (por carpetas de mundo, como el álbum): recuerdos de jefe y **mensajes de secretos** (correos y mensajes de familiares y amigos; p. ej. la carpeta de Spam del 1-2, que deja de ser «recuerdo coleccionable» y pasa a mensaje). Precisa V16: siguen sin desbloquear nada.
+4. **Guardado:** lo obtenido sin guardar en Notas se pierde en un game over; lo guardado es registro y se conserva en los rollbacks (como los secretos encontrados). Propuesta: la recompensa del jefe avisa «Guarda en Notas para conservarlo».
+5. Solo texto.
+
+**Abiertas (con recomendación, `propuesta-recuerdos.md` §8):** el sexto jefe es Isak Optimizado y entrega su capa aunque escape o engañe; no condicionar el final real a tener todos los recuerdos; ilustración solo para la capa Kernel de cada jefe y viñeta de texto para lo demás; 3 mensajes de secretos por mundo en Caché; al vencer a un jefe se entregan las capas perdidas hasta el acceso actual; el aviso de guardar es texto del sistema; el esbozo del Mundo 1 (§5) como tono; Eco reacciona tras la capa Raíz.

@@ -81,3 +81,5 @@ Una máquina expendedora gigante con brazos mecánicos y una sonrisa de neón. O
 | **Fase 2** | Lanza cajas sorpresa como proyectiles. Algunas dan puntos y otras explotan. Hay que decidir cuáles abrir y cuáles aturdir. |
 | **Fase 3** | Oferta por tiempo limitado: la tentación arrastra a Isak hacia el centro. Debe resistir con combos y llegar al botón de Cancelar antes de que termine la cuenta. |
 | **Recompensa** | Fragmento de voluntad: un recuerdo de Isak decidiendo algo por sí mismo, sin que nadie se lo ofrezca. Eco dice: "Yo decido por ti, así no te equivocas." |
+
+> **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).

@@ -78,7 +78,7 @@ Eco **no lanza mensajes a lo loco**. Habla solo en los momentos de historia (aut
 | **Qué reemplaza** | El tutorial B + C. No hay línea «sin cobertura» en la terminal de salida ni primer hub guiado. |
 | **Se mantiene** | La confirmación «¿Seguro? Aún no has guardado.» al entrar a una carpeta, el indicador «sin guardar» y el aviso al cerrar. |
 | **Personalidad** | Curioso y un poco desordenado; anota lo que Isak olvida (`04-personajes.md` §12.3). |
-| **Más adelante** | Recuerdos, diálogos, pistas y coleccionables (§13.3) se añaden al álbum o a la bitácora cuando haya contenido. |
+| **Más adelante** | Recuerdos, diálogos, pistas y coleccionables (§13.3) se añaden al álbum o a la bitácora cuando haya contenido. Recuerdos: decisión del 2026-10-18 en [propuesta-recuerdos.md](propuesta-recuerdos.md) (recuerdos de jefe en tres capas y mensajes de secretos). |
 | **Vueltas** | El álbum y el apodo se conservan tras el rollback, porque son registro (§5.4). Si cambia el tono de Notas entre vueltas está por decidir. |
 
 Texto de la presentación (ajustable; no añade historia):

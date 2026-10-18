@@ -95,3 +95,5 @@ Un enorme badge rojo con el número "99+", la notificación que representa todas
 | **Fase 2** | Cubre la pantalla con pop-ups que tapan la vista. Hay que cerrarlos con el pulso y esquivar con dash. |
 | **Fase 3** | Aparecen notificaciones falsas, copias del jefe. Solo la real tiene núcleo bajo el Debug. |
 | **Recompensa** | Fragmento de concentración: un recuerdo de Isak de niño armando un circuito, absorto. Primer mensaje distinto de Eco, ya sin tanta amabilidad. |
+
+> **Decisión del usuario (2026-10-18):** este fragmento es la **capa Caché** del recuerdo de jefe del Mundo 1 (recuerdos de jefe en tres capas: Caché, Kernel y Raíz, una por vuelta); ver [propuesta-recuerdos.md](propuesta-recuerdos.md).
