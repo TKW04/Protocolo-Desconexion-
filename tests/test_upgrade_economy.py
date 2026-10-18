@@ -3,7 +3,7 @@
 - Catalogo valido: cinco pistas (pulso, laser, debug, sync, energia) de 5 niveles, nivel 1 gratis,
   nombre, descripcion, coste y efecto en todos; 90 puntos por pista (Pulso 25/15/25/25, las demas
   15/20/30/25), 450 en total + 5 power banks (solo el nivel 5); tope por acceso Cache 3 / Kernel 4 /
-  Raiz 5 (min_lap); los niveles de la tanda M2, implemented false.
+  Raiz 5 (min_lap); desde la tanda M2 (2026-10-17) todos los niveles tienen efecto (implemented true).
 - Textos sin las palabras de las vueltas (Vuelta, Easy, Normal, Hard).
 - Presupuesto por vuelta (§3.3-§3.4): lo abierto en Cache y Kernel no es menor que lo ganable; con el
   ~93 % de los puntos de las tres vueltas se compra todo y con el 90 % no.
@@ -36,13 +36,13 @@ COSTS = {
     "sync": [15, 20, 30, 25],
     "energia": [15, 20, 30, 25],
 }
-# Niveles con efecto en la tanda M1 (el resto, «Proximamente»).
+# Niveles con efecto: todos desde la tanda M2 (2026-10-17); ninguno sale «Proximamente».
 IMPLEMENTED = {
-    "pulso": [2, 3],
-    "laser": [2, 3, 4],
-    "debug": [2],
-    "sync": [2, 3, 4],
-    "energia": [2, 3, 4],
+    "pulso": [2, 3, 4, 5],
+    "laser": [2, 3, 4, 5],
+    "debug": [2, 3, 4, 5],
+    "sync": [2, 3, 4, 5],
+    "energia": [2, 3, 4, 5],
 }
 FORBIDDEN = re.compile(r"\b(vuelta|vueltas|easy|normal|hard)\b", re.IGNORECASE)
 LAPS = 3
@@ -109,15 +109,23 @@ class CatalogTest(unittest.TestCase):
             ("laser", "isak_abilities.laser_cooldown_s", 0.4): [0.4, 0.3, 0.3, 0.3],
             ("laser", "isak_abilities.laser_energy_cost", 10.0): [10, 10, 8, 8],
             ("laser", "isak_abilities.laser_damage", 1.0): [1, 1, 1, 2],
-            ("debug", "debug_mode.drain_per_second", 20.0): [20, 15],
+            ("debug", "debug_mode.drain_per_second", 20.0): [20, 15, 15, 15, 15],
+            ("debug", "debug_mode.reveal_linger_s", 0.0): [0, 0, 1.5, 1.5, 1.5],
+            ("debug", "debug_mode.world_time_scale", 0.5): [0.5, 0.5, 0.5, 0.4, 0.4],
+            ("debug", "debug_mode.activation_hold_s", 1.0): [1, 1, 1, 1, 0.4],
             ("sync", "game_state.sync_rate_max", 100.0): [100, 110, 120, 130, 130],
             ("energia", "game_state.debug_energy_max", 100.0): [100, 110, 120, 130, 130],
         }
         for (tid, target, base), expected in values.items():
             got = [uc.effective_value(self.catalog, {tid: lvl}, target, base) for lvl in range(1, len(expected) + 1)]
             self.assertEqual([round(v, 3) for v in got], [round(float(v), 3) for v in expected], (tid, target))
-        # Los niveles sin implementar no se aplican (Debug 5 seria 0,4 s de carga).
-        self.assertEqual(uc.effective_value(self.catalog, {"debug": 5}, "debug_mode.activation_hold_s", 1.0), 1.0)
+        # Un nivel sin implementar no se aplica aunque este comprado (catalogo copiado).
+        import copy
+        catalog = copy.deepcopy(self.catalog)
+        for track in uc.tracks(catalog):
+            if track["id"] == "debug":
+                track["levels"][4]["implemented"] = False
+        self.assertEqual(uc.effective_value(catalog, {"debug": 5}, "debug_mode.activation_hold_s", 1.0), 1.0)
 
     def test_texts_without_lap_words(self):
         texts = []
@@ -215,6 +223,36 @@ class ValidatorUpgradesTest(unittest.TestCase):
                              capture_output=True, text=True)
         self.assertEqual(bad.returncode, 2)
         self.assertIn("mejora desconocida", bad.stdout + bad.stderr)
+
+    def test_m2_rules_debug_world_scale_and_hold(self):
+        """Tanda M2: Debug 4 (mundo x0,4) y Debug 5 (carga 0,4 s) en el modelo; el laser que perfora y la
+        regeneracion pasiva no cambian ningun objetivo ni el presupuesto de energia."""
+        base = vl.Rules()
+        full = vl.Rules(upgrades=["pulso:5", "laser:5", "debug:5", "sync:5", "energia:5"])
+        self.assertEqual((base.debug_world_scale, base.debug_hold_s), (0.5, 1.0))
+        self.assertEqual((full.debug_world_scale, full.debug_hold_s), (0.4, 0.4))
+        self.assertEqual(vl.Rules(upgrades=["debug:3"]).debug_world_scale, 0.5)
+        self.assertNotIn("debug_world_time_scale", base.changed_by_upgrades())
+        self.assertIn("debug_world_time_scale", full.changed_by_upgrades())
+
+    def test_access_cap_pass(self):
+        """--access-cap: cada pista en el tope del acceso del nivel (lap del JSON, Cache = nivel 3)."""
+        with open(LEVEL_1_2, encoding="utf-8") as handle:
+            level = json.load(handle)
+        self.assertEqual(vl.access_cap_upgrades(level),
+                         ["pulso:3", "laser:3", "debug:3", "sync:3", "energia:3"])
+        self.assertEqual(vl.access_cap_upgrades(level, 3)[0], "pulso:5")
+        out = subprocess.run([sys.executable, SCRIPT, "--access-cap", LEVEL_1_2], capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("mejoras: pulso:3, laser:3, debug:3, sync:3, energia:3", out.stdout)
+
+    def test_full_upgrades_keep_levels_valid(self):
+        """Con todas las pistas al maximo el 1-1 y el 1-2 siguen validos (las mejoras solo facilitan)."""
+        for path in (LEVEL_1_1, LEVEL_1_2):
+            out = subprocess.run([sys.executable, SCRIPT, "--upgrades", "pulso:5,laser:5,debug:5,sync:5,energia:5",
+                                  path], capture_output=True, text=True)
+            self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+            self.assertIn("mundo con el Debug (x) 0.4 (base 0.5)", out.stdout)
 
     def test_secret_requires_track_level(self):
         """requires_upgrade admite "pista:nivel": el secreto del power bank del 1-1 con pulso:2."""

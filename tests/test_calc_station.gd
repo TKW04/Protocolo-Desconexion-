@@ -241,7 +241,7 @@ func test_buying_fills_the_next_box_and_only_marks_unsaved() -> void:
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 2)
 
 
-func test_access_locks_soon_and_max_level() -> void:
+func test_access_locks_and_max_level() -> void:
 	_obtain(GameState.ABILITY_LASER)
 	GameState.attention_points = 100
 	GameState.upgrade_levels[&"pulso"] = 3
@@ -255,32 +255,83 @@ func test_access_locks_soon_and_max_level() -> void:
 	assert_eq(_panel.get_message(), "Disponible con acceso Kernel.")
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 3)
 	_assert_no_lap_words()
-	# Kernel: el 4 del Pulso (Ocultarte) es de la tanda M2: «Próximamente».
+	# Kernel: el 4 del Pulso (Ocultarte, tanda M2) ya se compra (sin «Próximamente»).
 	GameState.lap = GameState.LAP_NORMAL
 	_panel.refresh()
-	assert_eq(_panel.box_states(&"pulso"), [&"full", &"full", &"full", &"soon", &"locked"] as Array[StringName])
-	assert_eq(_panel.get_detail_lines()[4], "Próximamente")
+	assert_eq(_panel.box_states(&"pulso"), [&"full", &"full", &"full", &"next", &"locked"] as Array[StringName])
+	assert_eq(_panel.get_detail_lines()[4], "Disponible")
 	_panel._unhandled_input(_action(&"pulse"))
-	assert_eq(_panel.get_message(), "Próximamente.")
-	assert_eq(GameState.attention_points, 100)
-	# El 5 del Laser pide Raiz.
+	assert_eq(_panel.get_message(), "Nivel 4 instalado: Ocultarte.")
+	assert_eq(GameState.get_upgrade_level(&"pulso"), 4)
+	assert_eq(GameState.attention_points, 75)
+	# El 5 del Laser pide Raiz y un power bank.
 	GameState.upgrade_levels[&"laser"] = 4
 	_panel.select_option(&"laser")
 	assert_eq(_panel.get_detail_lines()[4], "Requiere acceso Raíz")
 	assert_eq(_panel.get_detail_lines()[3], "Coste: 25 puntos + 1 power bank", "El nivel 5 pide un power bank")
 	_assert_no_lap_words()
-	# Debug 3 (revelado persistente) sale como «Próximamente» ya en Cache.
+	# Debug 3 (revelado persistente) ya se compra en Cache.
 	GameState.lap = GameState.LAP_EASY
 	_obtain(GameState.ABILITY_DEBUG)
 	GameState.upgrade_levels[&"debug"] = 2
 	_panel.refresh()
-	assert_eq(_panel.box_states(&"debug"), [&"full", &"full", &"soon", &"locked", &"locked"] as Array[StringName])
+	assert_eq(_panel.box_states(&"debug"), [&"full", &"full", &"next", &"locked", &"locked"] as Array[StringName])
 	# Nivel maximo: 5 de 5.
 	_panel.select_option(&"sync")
 	assert_eq(_panel.box_states(&"sync"), [&"full", &"full", &"full", &"full", &"full"] as Array[StringName])
 	assert_eq(_panel.get_detail_lines()[1], "Nivel máximo")
 	_panel._unhandled_input(_action(&"pulse"))
 	assert_eq(_panel.get_message(), "Esta mejora está completa.")
+
+
+func test_no_level_is_coming_soon_anymore() -> void:
+	_obtain(GameState.ABILITY_LASER)
+	_obtain(GameState.ABILITY_DEBUG)
+	_open()
+	for lap: int in [GameState.LAP_EASY, GameState.LAP_NORMAL, GameState.LAP_HARD]:
+		GameState.lap = lap
+		for owned: int in range(1, 6):
+			for track: StringName in [&"pulso", &"laser", &"debug", &"sync", &"energia"]:
+				GameState.upgrade_levels[track] = owned
+			_panel.refresh()
+			for track: StringName in [&"pulso", &"laser", &"debug", &"sync", &"energia"]:
+				assert_false(_panel.box_states(track).has(&"soon"), "Sin «Próximamente»: %s %d (acceso %d)" % [
+					track, owned, lap])
+				_panel.select_option(track)
+				assert_false("\n".join(_panel.get_detail_lines()).contains("Próximamente"))
+
+
+func test_level_5_in_root_needs_and_spends_a_power_bank() -> void:
+	GameState.lap = GameState.LAP_HARD
+	GameState.attention_points = 30
+	GameState.upgrade_levels[&"energia"] = 4
+	_open()
+	_panel.select_option(&"energia")
+	assert_eq(_panel.box_states(&"energia"), [&"full", &"full", &"full", &"full", &"next"] as Array[StringName])
+	assert_eq(_panel.get_detail_lines()[4], "Falta un power bank completo")
+	GameState.empty_power_banks = 1
+	_panel.refresh()
+	assert_eq(_panel.get_detail_lines()[4], "Falta un power bank completo", "Uno vacio no sirve")
+	GameState.power_banks = 1
+	_panel.refresh()
+	assert_eq(_panel.get_detail_lines()[4], "Disponible")
+	_panel._unhandled_input(_action(&"pulse"))
+	assert_eq(_panel.get_message(), "Nivel 5 instalado: Recarga pasiva.")
+	assert_eq(GameState.power_banks, 0, "El power bank se gasta")
+	assert_eq(GameState.attention_points, 5)
+	assert_eq(GameState.get_upgrade_level(&"energia"), 5)
+
+
+func test_soon_state_still_works_for_future_levels() -> void:
+	# La tienda conserva «Próximamente» para niveles futuros sin efecto (implemented false).
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(UpgradeCatalog.DEFAULT_PATH))
+	data["tracks"][3]["levels"][1]["implemented"] = false
+	UpgradeCatalog.set_shared(UpgradeCatalog.from_dict(data))
+	_open()
+	_panel.select_option(&"sync")
+	assert_eq(_panel.box_states(&"sync")[1], &"soon")
+	assert_eq(_panel.get_detail_lines()[4], "Próximamente")
+	UpgradeCatalog.set_shared(null)
 
 
 func test_debug_chip_unknown_until_obtained() -> void:

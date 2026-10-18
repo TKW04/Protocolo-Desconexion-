@@ -12,9 +12,13 @@
 ##   07_tras_comprar_2de5.png    Pulso 2 de 5; siguiente, Pulso aturdidor; «Faltan 10 puntos»
 ##   08_sin_puntos.png           Sync elegida con 5 puntos: «Faltan 10 puntos.»
 ##   09_bloqueado_acceso.png     Pulso 3 de 5 en Cache: «Requiere acceso Kernel» (candados)
-##   10_proximamente.png         acceso Kernel: el Pulso 4 (Ocultarte) «Proximamente»
-##   11_debug_obtenido.png       Debug obtenido y en el nivel 2: el 3 «Proximamente»
+##   10_kernel_ocultarte.png     acceso Kernel: el Pulso 4 (Ocultarte, tanda M2) disponible
+##   11_debug_obtenido.png       Debug obtenido y en el nivel 2: el 3 (Revelado persistente) disponible
 ##   12_nivel_maximo.png         Sync Rate 5 de 5: «Nivel maximo»
+##   15_raiz_nivel5_sin_pb.png   acceso Raiz, Energia 4: el 5 (Recarga pasiva) pide un power bank
+##   16_raiz_nivel5_comprado.png con un power bank completo: Energia 5 instalada (gasta el power bank)
+##   17_todo_activado.png        acceso Raiz, todas las pistas en el 4: los cinco niveles 5 disponibles
+## Desde la tanda M2 (2026-10-17) ningun nivel sale «Proximamente».
 ##   13_hud_maximos.png          sala de prueba con Sync Rate 4 y Energia 4: HUD a 130 %
 ##   14_hud_maximos_mitad.png    la misma con Sync 65 y energia 65 de 130 (barras a la mitad)
 ## Necesita ventana (no funciona con --headless).
@@ -97,13 +101,13 @@ func _run() -> void:
 	_check(int(state.call(&"get_upgrade_level", &"pulso")) == 3, "el Pulso no llega al nivel 3")
 	await _frames(4)
 	await _save(out_dir, "09_bloqueado_acceso.png")
-	# Kernel: el Pulso 4 (Ocultarte) es de la tanda M2.
+	# Kernel: el Pulso 4 (Ocultarte, tanda M2) ya se compra.
 	state.set(&"lap", 2)
+	shop.call(&"set_message", "")
 	shop.call(&"refresh")
-	shop.call(&"confirm")
 	await _frames(4)
-	await _save(out_dir, "10_proximamente.png")
-	# Debug obtenido en el nivel 2: el 3 (revelado persistente) «Proximamente».
+	await _save(out_dir, "10_kernel_ocultarte.png")
+	# Debug obtenido en el nivel 2: el 3 (revelado persistente) disponible.
 	state.call(&"obtain_ability", &"debug")
 	var levels: Dictionary = state.get(&"upgrade_levels")
 	levels[&"debug"] = 2
@@ -117,6 +121,32 @@ func _run() -> void:
 	shop.call(&"refresh")
 	await _frames(4)
 	await _save(out_dir, "12_nivel_maximo.png")
+	# Raiz: el nivel 5 pide un power bank completo y lo gasta.
+	state.set(&"lap", 3)
+	levels[&"energia"] = 4
+	state.set(&"attention_points", 40)
+	shop.call(&"set_message", "")
+	shop.call(&"select_option", &"energia")
+	shop.call(&"refresh")
+	await _frames(4)
+	await _save(out_dir, "15_raiz_nivel5_sin_pb.png")
+	state.set(&"power_banks", 1)
+	shop.call(&"refresh")
+	shop.call(&"confirm")
+	_check(int(state.call(&"get_upgrade_level", &"energia")) == 5, "no se compra la Energia 5")
+	_check(int(state.get(&"power_banks")) == 0, "la Energia 5 no gasta el power bank")
+	shop.call(&"finish_buy_animation")
+	await _frames(4)
+	await _save(out_dir, "16_raiz_nivel5_comprado.png")
+	for track: StringName in [&"pulso", &"laser", &"debug", &"sync", &"energia"]:
+		levels[track] = 4
+	state.set(&"attention_points", 125)
+	state.set(&"power_banks", 3)
+	shop.call(&"set_message", "")
+	shop.call(&"select_option", &"pulso")
+	shop.call(&"refresh")
+	await _frames(4)
+	await _save(out_dir, "17_todo_activado.png")
 	calc.call(&"close", true)
 	_hub.queue_free()
 	await process_frame

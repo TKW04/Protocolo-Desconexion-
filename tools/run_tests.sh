@@ -70,7 +70,10 @@ rm -f "$IMPORT_LOG"
 # con Calc desconocida (acertijo de la azotea) y conocida (camino directo; --allies calc), con su camino.
 # Desde la tanda M1 de las mejoras de Calc (2026-10-17): el catalogo por pistas y su economia
 # (tests/test_upgrade_economy.py), los niveles con --upgrades pista:nivel y el arte de la tienda
-# (tools/validate_calc_chips.py).
+# (tools/validate_calc_chips.py). Desde la tanda M2 (2026-10-17): los niveles con todas las pistas al
+# maximo (pulso:5,laser:5,debug:5,sync:5,energia:5) y con el tope del acceso de cada nivel (--access-cap),
+# el camino del 1-2 exportado con las pistas al maximo y el arte de los efectos de las mejoras
+# (tools/validate_upgrade_fx.py: «+4», perforacion, «?» y el icono «oculto» del HUD).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -84,6 +87,10 @@ _export_test_rooms() {
 	python3 tools/validate_level.py --allies calc --export-path "$EXPORT_DIR/1-2_calc.json" \
 		"$PROJECT_DIR/data/levels/1-2.json" >/dev/null || return 1
 	[[ -s "$EXPORT_DIR/1-2_calc.json" ]] || return 1
+	# El 1-2 con todas las pistas al maximo (tanda M2): el camino sigue saliendo.
+	python3 tools/validate_level.py --upgrades pulso:5,laser:5,debug:5,sync:5,energia:5 \
+		--export-path "$EXPORT_DIR/1-2_max.json" "$PROJECT_DIR/data/levels/1-2.json" >/dev/null || return 1
+	[[ -s "$EXPORT_DIR/1-2_max.json" ]] || return 1
 }
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
@@ -93,6 +100,8 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_level.py data/levels/*.json >/dev/null \
 		&& python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null \
 		&& python3 tools/validate_level.py --upgrades pulso:3,laser:4,debug:2,sync:4,energia:4 data/levels/*.json >/dev/null \
+		&& python3 tools/validate_level.py --upgrades pulso:5,laser:5,debug:5,sync:5,energia:5 data/levels/*.json >/dev/null \
+		&& python3 tools/validate_level.py --access-cap data/levels/*.json >/dev/null \
 		&& _export_test_rooms \
 		&& python3 tools/build_level.py --check data/levels/*.json \
 		&& python3 tools/level_climbs.py --check data/levels/1-2.json \
@@ -102,6 +111,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world1_puzzle.py >/dev/null && python3 -I tools/validate_world1_tower.py >/dev/null \
 		&& python3 -I tools/validate_world1_facade.py >/dev/null \
 		&& python3 -I tools/validate_calc_encounter.py >/dev/null && python3 -I tools/validate_calc_chips.py >/dev/null \
+		&& python3 -I tools/validate_upgrade_fx.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2

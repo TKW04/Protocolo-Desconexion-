@@ -1,12 +1,15 @@
 # Mejoras de Calc POR PISTAS (tanda M1 de docs/propuesta-mejoras.md, 2026-10-17):
 # catalogo valido (cinco pistas de 5 niveles, 90 puntos por pista, Pulso
-# 25/15/25/25, tope por acceso Cache 3 / Kernel 4 / Raiz 5, niveles de la tanda
-# M2 sin implementar), compras (puntos, power bank del nivel 5, acceso,
-# «Proximamente», habilidad sin obtener, nivel maximo; marcan «sin guardar») y
+# 25/15/25/25, tope por acceso Cache 3 / Kernel 4 / Raiz 5, todos los niveles
+# con efecto desde la tanda M2), compras (puntos, power bank del nivel 5, acceso,
+# «Proximamente» solo con un catalogo copiado, habilidad sin obtener, nivel
+# maximo; marcan «sin guardar») y
 # EFECTOS SIMPLES sobre el valor efectivo: alcance y aturdimiento del pulso,
 # enfriamiento, coste y dano del laser, gasto del Debug y maximos de Sync Rate y
 # energia (HUD, papelera, hub, cargadores, drops y power banks). Los JSON base
-# no cambian. Mas pruebas de la tienda en test_calc_station.gd; guardado v4 y
+# no cambian. Efectos de la tanda M2 en test_hide_mode.gd, test_pulse_return.gd,
+# test_laser_pierce*.gd, test_debug_upgrades.gd, test_passive_regen.gd y
+# test_power_bank_cap.gd. Mas pruebas de la tienda en test_calc_station.gd; guardado v4 y
 # migracion en test_save_game.gd; papelera en test_game_over.gd.
 extends GutTest
 
@@ -91,9 +94,9 @@ func test_catalog_tracks_costs_and_caps() -> void:
 		&"sync": [0, 15, 20, 30, 25], &"energia": [0, 15, 20, 30, 25],
 	}
 	var implemented: Dictionary = {
-		&"pulso": [true, true, true, false, false], &"laser": [true, true, true, true, false],
-		&"debug": [true, true, false, false, false], &"sync": [true, true, true, true, false],
-		&"energia": [true, true, true, true, false],
+		&"pulso": [true, true, true, true, true], &"laser": [true, true, true, true, true],
+		&"debug": [true, true, true, true, true], &"sync": [true, true, true, true, true],
+		&"energia": [true, true, true, true, true],
 	}
 	for track: UpgradeCatalog.Track in catalog.tracks():
 		assert_eq(track.levels.size(), 5, String(track.id))
@@ -176,14 +179,23 @@ func test_purchase_rules_and_reasons() -> void:
 	assert_eq(GameState.purchase_upgrade(&"laser"), GameState.PurchaseResult.ACCESS_LOCKED, "El 5 pide Raiz")
 	GameState.lap = GameState.LAP_HARD
 	GameState.power_banks = 1
-	assert_eq(GameState.purchase_upgrade(&"laser"), GameState.PurchaseResult.NOT_IMPLEMENTED,
-		"Laser 5 (perfora) es de la tanda M2: Proximamente")
-	assert_eq(GameState.power_banks, 1)
-	# Debug 3 (revelado persistente) tampoco se compra aun, ni en Cache.
+	GameState.attention_points = 25
+	assert_eq(GameState.purchase_upgrade(&"laser"), GameState.PurchaseResult.OK, "Laser 5 (perfora, tanda M2) en Raiz")
+	assert_eq(GameState.power_banks, 0, "Gasta el power bank")
+	# Un nivel sin efecto (implemented false) no se compra: «Proximamente».
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(UpgradeCatalog.DEFAULT_PATH))
+	data["tracks"][4]["levels"][1]["implemented"] = false
+	UpgradeCatalog.set_shared(UpgradeCatalog.from_dict(data))
+	GameState.attention_points = 100
+	assert_eq(GameState.purchase_upgrade(&"energia"), GameState.PurchaseResult.NOT_IMPLEMENTED)
+	UpgradeCatalog.set_shared(null)
+	# Debug 2 y 3 (revelado persistente, tanda M2) se compran en Cache; el 4 pide Kernel.
 	_obtain(GameState.ABILITY_DEBUG)
 	GameState.lap = GameState.LAP_EASY
+	GameState.attention_points = 200
 	assert_eq(GameState.purchase_upgrade(&"debug"), GameState.PurchaseResult.OK, "Debug 2 (Debug eficiente)")
-	assert_eq(GameState.purchase_upgrade(&"debug"), GameState.PurchaseResult.NOT_IMPLEMENTED)
+	assert_eq(GameState.purchase_upgrade(&"debug"), GameState.PurchaseResult.OK, "Debug 3 (revelado persistente)")
+	assert_eq(GameState.purchase_upgrade(&"debug"), GameState.PurchaseResult.ACCESS_LOCKED)
 	# Nivel maximo.
 	GameState.upgrade_levels[&"sync"] = 5
 	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.MAX_LEVEL)
@@ -191,11 +203,7 @@ func test_purchase_rules_and_reasons() -> void:
 
 
 func test_level_5_spends_a_power_bank() -> void:
-	# En la tanda M1 ningun nivel 5 esta implementado: se prueba la regla con una
-	# copia del catalogo con el Sync 5 implementado.
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(UpgradeCatalog.DEFAULT_PATH))
-	data["tracks"][3]["levels"][4]["implemented"] = true
-	UpgradeCatalog.set_shared(UpgradeCatalog.from_dict(data))
+	# Tanda M2: los niveles 5 tienen efecto (Sync 5, Resincronizacion).
 	GameState.upgrade_levels[&"sync"] = 4
 	GameState.lap = GameState.LAP_HARD
 	GameState.attention_points = 30
@@ -233,7 +241,10 @@ func test_effective_values_per_level_and_base_data_unchanged() -> void:
 		[&"laser", &"isak_abilities.laser_cooldown_s", [0.4, 0.3, 0.3, 0.3]],
 		[&"laser", &"isak_abilities.laser_energy_cost", [10.0, 10.0, 8.0, 8.0]],
 		[&"laser", &"isak_abilities.laser_damage", [1.0, 1.0, 1.0, 2.0]],
-		[&"debug", &"debug_mode.drain_per_second", [20.0, 15.0]],
+		[&"debug", &"debug_mode.drain_per_second", [20.0, 15.0, 15.0, 15.0, 15.0]],
+		[&"debug", &"debug_mode.reveal_linger_s", [0.0, 0.0, 1.5, 1.5, 1.5]],
+		[&"debug", &"debug_mode.world_time_scale", [0.5, 0.5, 0.5, 0.4, 0.4]],
+		[&"debug", &"debug_mode.activation_hold_s", [1.0, 1.0, 1.0, 1.0, 0.4]],
 		[&"sync", &"game_state.sync_rate_max", [100.0, 110.0, 120.0, 130.0, 130.0]],
 		[&"energia", &"game_state.debug_energy_max", [100.0, 110.0, 120.0, 130.0, 130.0]],
 	]
@@ -245,10 +256,12 @@ func test_effective_values_per_level_and_base_data_unchanged() -> void:
 			assert_almost_eq(GameState.effective_value(target, GameState.base_value(target)), float(values[i]), EPS,
 				"%s nivel %d: %s" % [c[0], i + 1, target])
 		GameState.upgrade_levels.erase(c[0])
-	# Niveles sin implementar no se aplican aunque esten en el guardado.
+	# Un nivel alto conserva los efectos de los anteriores (Debug 5 = 2 + 3 + 4 + 5).
 	GameState.upgrade_levels[&"debug"] = 5
-	assert_almost_eq(DebugMode.get_activation_hold_s(), 1.0, EPS, "Arranque rapido (M2) sin efecto")
+	assert_almost_eq(DebugMode.get_activation_hold_s(), 0.4, EPS, "Arranque rapido (Debug 5)")
 	assert_almost_eq(DebugMode.get_drain_per_second(), 15.0, EPS, "Debug 2 si")
+	assert_almost_eq(DebugMode.get_world_time_scale(), 0.4, EPS, "Debug 4 si")
+	assert_almost_eq(DebugMode.get_reveal_linger_s(), 1.5, EPS, "Debug 3 si")
 	# Los datos base no cambian.
 	assert_almost_eq(DebugModeConfig.load_from_file().drain_per_second, 20.0, EPS)
 	assert_almost_eq(PlayerAbilities.load_from_file().laser_energy_cost, 10.0, EPS)

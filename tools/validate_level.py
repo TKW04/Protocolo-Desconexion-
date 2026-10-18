@@ -291,6 +291,8 @@ class Rules:
         self.base_debug_drain = self.debug_drain
         self.base_energy_max = self.energy_max
         self.base_sync_max = self.sync_max
+        self.base_debug_world_scale = self.debug_world_scale
+        self.base_debug_hold_s = self.debug_hold_s
         levels = self.upgrade_levels
         self.pulse_radius = effective_value(catalog, levels, "isak_abilities.pulse_radius_px", self.base_pulse_radius)
         self.laser_cost = effective_value(catalog, levels, "isak_abilities.laser_energy_cost", self.laser_cost)
@@ -299,6 +301,14 @@ class Rules:
         self.debug_drain = effective_value(catalog, levels, "debug_mode.drain_per_second", self.debug_drain)
         self.energy_max = effective_value(catalog, levels, "game_state.debug_energy_max", self.energy_max)
         self.sync_max = effective_value(catalog, levels, "game_state.sync_rate_max", self.sync_max)
+        # Tanda M2 (2026-10-17): Debug 4 (el mundo a x0,4: las cuentas del mundo duran mas en tiempo real con
+        # el Debug activo; el gasto sigue en tiempo real) y Debug 5 (carga de 0,4 s). El Debug 3 (revelado
+        # persistente) solo da margen: el modelo sigue exigiendo el Debug activo para pisar lo oculto. El
+        # Laser 5 (perfora) atraviesa enemigos y nunca el terreno ni los objetos del laser: el modelo no tiene
+        # enemigos que tapen el haz, asi que no cambia ningun objetivo. Ocultarte y la regeneracion pasiva
+        # (Sync 5, Energia 5) se ignoran (el presupuesto de energia no cuenta con recarga pasiva).
+        self.debug_world_scale = effective_value(catalog, levels, "debug_mode.world_time_scale", self.debug_world_scale)
+        self.debug_hold_s = effective_value(catalog, levels, "debug_mode.activation_hold_s", self.debug_hold_s)
 
     def has_upgrade(self, upgrade_id):
         """Con las mejoras de --upgrades se tiene `upgrade_id` ("pista:nivel" o legacy_id)."""
@@ -311,7 +321,9 @@ class Rules:
                                  ("laser_cooldown_s", self.laser_cooldown_s, self.base_laser_cooldown_s),
                                  ("debug_drain_per_s", self.debug_drain, self.base_debug_drain),
                                  ("energy_max", self.energy_max, self.base_energy_max),
-                                 ("sync_rate_max", self.sync_max, self.base_sync_max)):
+                                 ("sync_rate_max", self.sync_max, self.base_sync_max),
+                                 ("debug_world_time_scale", self.debug_world_scale, self.base_debug_world_scale),
+                                 ("debug_hold_s", self.debug_hold_s, self.base_debug_hold_s)):
             if abs(value - base) > EPS:
                 out[key] = (value, base)
         return out
@@ -2669,7 +2681,8 @@ def format_text(path, result):
         changed = [(label, rules[key], rules["base_" + key]) for key, label in (
             ("laser_energy_cost", "coste del laser"), ("laser_cooldown_s", "enfriamiento del laser (s)"),
             ("debug_drain_per_s", "gasto del Debug (/s)"), ("energy_max", "energia maxima"),
-            ("sync_rate_max", "Sync Rate maximo")) if key in rules]
+            ("sync_rate_max", "Sync Rate maximo"), ("debug_world_time_scale", "mundo con el Debug (x)"),
+            ("debug_hold_s", "carga del Debug (s)")) if key in rules]
         if changed:
             out.append("  mejoras: " + "; ".join("%s %s (base %s)" % (label, _num(value), _num(base))
                                                   for label, value, base in changed))
@@ -2823,6 +2836,15 @@ def format_plan(plan):
     return out
 
 
+def access_cap_upgrades(level, lap=None, root=ROOT):
+    """Cada pista de data/upgrades.json en el tope del acceso de `lap` (por defecto el `lap` del JSON del
+    nivel, 1 = Cache): ["pulso:3", "laser:3", ...]. La meta debe seguir alcanzandose con todo lo que el
+    jugador puede tener comprado en esa vuelta (paso 9 de docs/propuesta-mejoras.md)."""
+    catalog = load_upgrades(root)
+    lap = int(lap if lap is not None else level.get("lap", 1))
+    return ["%s:%d" % (t["id"], upgrade_catalog.access_cap(catalog, t["id"], lap)) for t in upgrade_catalog.tracks(catalog)]
+
+
 def main(argv):
     parser = argparse.ArgumentParser(description="Valida la alcanzabilidad de un nivel con la fisica de Isak.")
     parser.add_argument("levels", nargs="+")
@@ -2836,6 +2858,11 @@ def main(argv):
     parser.add_argument("--upgrades", default="",
                         help="mejoras compradas separadas por comas: pista:nivel de data/upgrades.json (p. ej. "
                              "pulso:2,laser:3) o un legacy_id (wide_pulse = pulso:2); por defecto ninguna")
+    parser.add_argument("--access-cap", action="store_true",
+                        help="anade todas las pistas en el tope del acceso del nivel (paso 9 de "
+                             "docs/propuesta-mejoras.md): lap del JSON del nivel (1 Cache = nivel 3, 2 Kernel = 4, "
+                             "3 Raiz = 5) o --lap")
+    parser.add_argument("--lap", type=int, default=None, help="vuelta para --access-cap (1-3)")
     parser.add_argument("--time-margin", type=float, default=None,
                         help="margen minimo (s) que debe sobrar en ventanas y cuentas (por defecto "
                              "validation.time_margin_s del nivel o 1,5)")
@@ -2855,9 +2882,12 @@ def main(argv):
         export = [] if args.export_path else None
         try:
             level = load_json(path)
+            upgrades = [u.strip() for u in args.upgrades.split(",") if u.strip()]
+            if args.access_cap:
+                upgrades += access_cap_upgrades(level, args.lap)
             result = validate(level, limit=args.limit, jump_efficiency=args.jump_efficiency, run=args.run,
                               physics_path=args.physics,
-                              upgrades=[u.strip() for u in args.upgrades.split(",") if u.strip()],
+                              upgrades=upgrades,
                               time_margin=args.time_margin, export=export,
                               allies=None if args.allies is None else
                               [a.strip() for a in args.allies.split(",") if a.strip()])
