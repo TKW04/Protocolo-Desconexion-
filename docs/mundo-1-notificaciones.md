@@ -83,6 +83,8 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 | **Cierre** | Puerta de bloqueo de pantalla que lleva al jefe. |
 | **Secreto** | Ruta alterna que solo se ve con el Debug y premia con puntos de atención y un recuerdo. |
 
+> **Concreción del secreto (decisión del usuario, 2026-10-19; concepto, sin posiciones ni datos):** la ruta alterna lleva a la sala secreta **«Excepciones»** (la lista de contactos que pueden saltarse el No molestar: «Permitir llamadas de: Favoritos»), tras una pared visible **solo con el Debug**. **La ruta exige solo el Debug** (no Deslizar), porque C5 «dash frente a pulso» sigue abierta y este mensaje es obligatorio para el final real. El «recuerdo» es el **mensaje de secreto** del 1-3: un mensaje de Mamá (borrador provisional en [propuesta-recuerdos.md](propuesta-recuerdos.md) §10; idea: lo único que debería poder interrumpirte es tu familia). Si no se obtiene en Caché, reaparece en Kernel y Raíz.
+
 ## 6.6 Jefe: Alerta Mayor
 
 Un enorme badge rojo con el número "99+", la notificación que representa todas las demás. Eco habla a través de él.
@@ -96,4 +98,4 @@ Un enorme badge rojo con el número "99+", la notificación que representa todas
 | **Fase 3** | Aparecen notificaciones falsas, copias del jefe. Solo la real tiene núcleo bajo el Debug. |
 | **Recompensa** | Fragmento de concentración: un recuerdo de Isak de niño armando un circuito, absorto. Primer mensaje distinto de Eco, ya sin tanta amabilidad. |
 
-> **Decisión del usuario (2026-10-18):** este fragmento es la **capa Caché** del recuerdo de jefe del Mundo 1 (recuerdos de jefe en tres capas: Caché, Kernel y Raíz, una por vuelta); ver [propuesta-recuerdos.md](propuesta-recuerdos.md).
+> **Decisión del usuario (2026-10-18):** este fragmento es la **capa Caché** del recuerdo de jefe del Mundo 1 (recuerdos de jefe en tres capas: Caché, Kernel y Raíz, una por vuelta); ver [propuesta-recuerdos.md](propuesta-recuerdos.md). Desde el 2026-10-19 el borrador de tono de sus tres capas (circuito en la cocina de casa con el Abuelito) está en su §5 (texto provisional).

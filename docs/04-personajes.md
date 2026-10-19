@@ -71,3 +71,14 @@ Los amigos reales de Isak, cuyos mensajes sin responder se recorren en el nivel 
 | **Tomi** | El amigo de las bromas, el que siempre mandaba memes. | "Ok, cuando quieras hablar, aquí estoy." |
 
 La última frase del nivel 4-3 pertenece a Tomi. Es la que cierra el mensaje en silencio, y no pide nada a cambio.
+
+## 12.5 La familia de Isak
+
+**Decisión del usuario (2026-10-19, no viene del documento original).** Resuelve la decisión abierta «familia de Isak» (`08-pendientes.md`). Tono cálido y cotidiano, sin pérdida ni duelo. Aparecen en los recuerdos de jefe y en los mensajes de secretos ([propuesta-recuerdos.md](propuesta-recuerdos.md) §5 y §10).
+
+| Familiar | Quién es | Papel en el juego |
+|---|---|---|
+| **El Abuelito** | Así lo llama Isak. Repara radios y le enseñó a soldar; enlaza con el nombre «Isak Fix». **Vive con Isak**: la cocina de los recuerdos es la de casa. | La persona importante de los recuerdos (p. ej. el del Mundo 1: el circuito en la mesa de la cocina, con su lupa). |
+| **Mamá** | La madre de Isak; en el juego se llama «Mamá». | Escribe los **mensajes de secretos** (correos y mensajes) y firma con humor («Mamá (sí, otra vez)»). |
+
+Los textos del Mundo 2 (recuerdos de la familia) siguen sin escribir: se escriben al construir ese mundo.

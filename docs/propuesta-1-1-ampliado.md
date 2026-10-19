@@ -22,12 +22,17 @@ Se mantienen los 4 tramos de la ficha y el cierre, en el mismo orden. Cada tramo
 
 ### Secretos (obligan a fijarse en el mapa y volver atrás)
 
+> **Tabla corregida el 2026-10-19 al estado vigente** (economía del 2026-10-15 y paso 14; detalle en §7). La tabla original de esta propuesta daba a A, B y C mejoras y power banks; ya no rige.
+
 | Id | Dónde se ve y cómo se llega | Recompensa |
 |---|---|---|
-| **A. Puente de servicio** | El nicho se ve en lo alto (x≈92-97, fila 4) al cruzar 2a, pero desde ahí no se alcanza. Al final del Tramo 2, unas plataformas de una vía suben hasta un receptor escondido (x≈110, fila 5). Su puente se extiende **hacia la izquierda** (`direction: "left"`, 10 tiles) y hay que volver por él. | Mejora "Pulso amplio" |
-| **B. Sobre el techo** | Desde la repisa de 3b se sube por plataformas de una vía hasta el techo de 3a (cara superior a 320 px del suelo) y se vuelve a la izquierda por encima, hasta x≈126-130. | 1 power bank y 5 puntos |
-| **C. Pop-up alto** | Un pop-up opcional en una repisa alta (x≈240) tapa un nicho. Para subir hay que usar como escalón la Burbuja de 4b, aturdida, y después volver atrás. | Mejora "Sync reforzado" y 3 puntos |
-| **D. Pared con glitch** | La de siempre. No se puede abrir hasta tener el Debug: al rejugar el nivel desde el hub (V12). **Implementado (2026-10-16, paso 14 de `propuesta-asistentes-y-vidas.md`):** con el Debug activo e Isak a menos de 3 tiles la pared se disuelve y deja ver la vida extra en su celda (columna 298, fila 9; detrás solo está el borde del mapa). | [Reemplazado: antes «1 power bank y la mejora "Debug eficiente"».] **La vida extra del 1-1** (sube `lives_max` para siempre; registro «1-1» / «D»). |
+| **A. Puente de servicio** (`secreto_puente_servicio`, x 96) | El nicho se ve en lo alto (x≈92-97, fila 4) al cruzar 2a, pero desde ahí no se alcanza. Al final del Tramo 2, unas plataformas de una vía suben hasta un receptor escondido (x≈110, fila 5). Su puente se extiende **hacia la izquierda** (`direction: "left"`, 10 tiles) y hay que volver por él. | **1 punto** y, desde el 2026-10-19, el **mensaje de secreto** del 1-1 (ver abajo). |
+| **B. Sobre el techo** (`secreto_techo`) | Encima del techo bajo de 3a: se sube por la derecha y se vuelve a la derecha (el pop-up del secreto del Pulso amplio cierra el lado izquierdo). | **1 punto**. |
+| **Pulso amplio** (`secreto_pulso_amplio`) | Nicho a la izquierda del techo de 3a tapado por `popup_lejano`, cuyo botón solo alcanza el pulso con Pulso amplio (Pulso 2). Se ve al hacer B y se vuelve tras comprar la mejora. | El único **power bank** (vacío) del 1-1. |
+| **C. Pop-up alto** (`secreto_popup_alto`) | Un pop-up opcional en lo alto del Tramo 4 tapa un nicho. | **1 punto**. |
+| **D. Pared con glitch** (`secreto_pared_glitch`) | Con el Debug activo e Isak a menos de 3 tiles la pared se disuelve (columna 298); el Debug llega en el 1-2, así que se vuelve desde el hub (paso 14 de `propuesta-asistentes-y-vidas.md`). | **La vida extra del 1-1** (sube `lives_max` para siempre; registro «1-1» / «D»). |
+
+**Mensaje de secreto en el secreto A (decisión del usuario, 2026-10-19; borrador provisional):** va en el secreto A, junto al punto que ya da, sin crear secreto nuevo; es alcanzable sin mejoras ni Debug. De: Mamá · Asunto: «Recado del Abuelito» · «Isak, el Abuelito dice que el circuito de ayer «solo necesita paciencia y un poquito de estaño». Te dejó la lupa en la mesa. Yo no entiendo nada, pero me pidió que te avisara.» — «Mamá (te escribo desde la cocina)». **Pendiente de implementar:** un tipo de recompensa `memory` en el array `secrets` de `data/levels/1-1.json` (p. ej. `"memory_id"` junto a `reward`/`points`; el esquema exacto en `propuesta-recuerdos.md` §7, paso 4). Es requisito del final real y, si no se obtiene en Caché, reaparece en Kernel y Raíz (`propuesta-recuerdos.md` §10).
 
 Regla de diseño: ninguna caída sobre una Burbuja debe superar 4 tiles, porque desde 5 tiles ya revienta (`alert_bubble.json`, `pop_speed_threshold_px_s`). Todo secreto debe tener una salida de vuelta a la ruta.
 
