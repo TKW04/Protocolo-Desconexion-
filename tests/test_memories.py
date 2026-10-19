@@ -148,5 +148,49 @@ class Synthetic(unittest.TestCase):
         self.assertTrue(any("no tiene el secreto" in e for e in vm.validate(broken)))
 
 
+
+class LevelLinks(unittest.TestCase):
+    """Coherencia mensaje <-> secreto del nivel (paso 4, 2026-10-19): el secreto de cada mensaje lo
+    ofrece con la recompensa memory y el nivel tiene su memory_pickup; y al reves."""
+
+    def test_real_levels_offer_their_messages(self):
+        links = vm.level_links()
+        self.assertEqual(links["1-1"]["secrets"]["secreto_puente_servicio"], "msg_1_1")
+        self.assertEqual(links["1-2"]["secrets"]["secreto_spam"], "msg_1_2")
+        self.assertEqual(links["1-1"]["pickups"], {"msg_1_1"})
+        self.assertEqual(links["1-2"]["pickups"], {"msg_1_2"})
+        self.assertNotIn("1-3", links, "El 1-3 aun no existe")
+        with open(DATA, encoding="utf-8") as fh:
+            self.assertEqual(vm.validate(json.load(fh)), [])
+
+    def _links(self, secret_mid="msg_1_1", pickups=("msg_1_1",)):
+        return {"1-1": {"secrets": {"secreto_a": secret_mid}, "pickups": set(pickups)}}
+
+    def _validate(self, links, items=None):
+        items = items if items is not None else _boss_set() + [_message()]
+        return vm.validate({"memories": items}, levels=LEVELS, secrets_of=SECRETS.get, links=links)
+
+    def test_coherent_links_are_valid(self):
+        self.assertEqual(self._validate(self._links()), [])
+
+    def test_secret_that_does_not_offer_its_message(self):
+        errors = self._validate(self._links(secret_mid=None))
+        self.assertTrue(any("el secreto secreto_a del nivel 1-1 no lo ofrece" in e for e in errors), errors)
+
+    def test_level_without_the_pickup(self):
+        errors = self._validate(self._links(pickups=()))
+        self.assertTrue(any("no tiene ningun memory_pickup con memory_id msg_1_1" in e for e in errors), errors)
+
+    def test_reward_or_pickup_pointing_elsewhere(self):
+        links = self._links()
+        links["1-2"] = {"secrets": {"secreto_spam": "msg_1_1"}, "pickups": {"msg_1_1", "msg_x"}}
+        errors = self._validate(links)
+        self.assertTrue(any("nivel 1-2, secreto secreto_spam: el mensaje msg_1_1 es del nivel 1-1" in e
+                            for e in errors), errors)
+        self.assertTrue(any("nivel 1-2: memory_pickup del mensaje msg_1_1, que es del nivel 1-1" in e
+                            for e in errors), errors)
+        self.assertTrue(any("memory_pickup con memory_id msg_x, que no es un mensaje" in e for e in errors), errors)
+
+
 if __name__ == "__main__":
     unittest.main()

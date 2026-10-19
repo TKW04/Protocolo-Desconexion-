@@ -312,6 +312,16 @@
 			"order": 28,
 			"center_px": [64, 40],
 			"prompt_px": [64, -8]
+		},
+		"memory_pickup": {
+			"category": "object",
+			"title": "Mensaje",
+			"text": "Un mensaje viejo atascado en el sistema. Nada urgente. Si lo tocas, podrás leerlo en Notas; si caes sin guardar, se pierde.",
+			"first_level": "1-1",
+			"world": 1,
+			"order": 29,
+			"center_px": [32, 4],
+			"prompt_px": [32, -20]
 		}
 	}
 }

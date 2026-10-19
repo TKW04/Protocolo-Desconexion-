@@ -11,6 +11,11 @@ Reglas:
   - checkpoints <-> celdas C del grid (uno a uno), enemigos <-> celdas E (uno a uno),
     secretos <-> celdas S, o {object: <tipo>} con un objeto de ese tipo en su x, y;
     requires_upgrade (si esta) es una mejora de data/upgrades.json ("pista:nivel" o legacy_id) y needs_debug un booleano;
+    reward (opcional) es una recompensa conocida o una lista de ellas (attention_points, power_bank,
+    extra_life, memory); la recompensa memory (mensaje de secreto, 2026-10-19, paso 4 de
+    docs/propuesta-recuerdos.md) lleva memory_id: un mensaje (kind secret) de data/memories.json de
+    ESTE nivel y ESTE secreto, con un objeto memory_pickup del nivel con ese memory_id; puede convivir
+    con otra recompensa (p. ej. ["attention_points", "memory"]);
   - enemigos con tipo existente (data/enemies/<type>.json); sus params, numeros > 0 o, si el
     JSON del tipo trae level_params (punto rojo y banner, 2026-10-16), solo los listados y en su
     rango; el banner, con su pasillo dentro del grid y sin celdas solidas y un ciclo con reposo;
@@ -23,6 +28,8 @@ Reglas:
     cargador (charger) con amount > 0, cooldown_s >= 0 y reusable booleano;
     vida extra (extra_life_pickup, 2026-10-16): como mucho una por nivel (se coge
     una vez por mapa) y secret_id (id del registro) un texto no vacio;
+    mensaje de secreto (memory_pickup, 2026-10-19): memory_id de un mensaje (kind secret) de
+    data/memories.json, uno por memory_id en el nivel y ofrecido por un secreto (recompensa memory);
     receptores apuntando a un puente existente; la puerta de salida contiene la G;
     objetos con level_params en el catalogo (2026-10-16: recordatorio, Posponer, pop-up
     translucido, barra del 99 %): params numericos en su rango; recordatorio con group y
@@ -89,6 +96,7 @@ TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
+                    "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch"}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
@@ -101,6 +109,10 @@ GUIDE_ACTIONS = {"wait_near": ("object",), "wait_inside": ("object",), "wait_don
                  "point_help": ("object", "text")}
 GUIDE_ABILITIES = ("pulse", "laser", "debug")
 DOOR_MAX_LAMPS = 3
+# Recompensas de un secreto (campo reward: una o una lista). memory = mensaje de secreto
+# (memory_pickup; docs/propuesta-recuerdos.md §7 paso 4), con memory_id.
+SECRET_REWARDS = ("attention_points", "power_bank", "extra_life", "memory")
+MEMORIES_JSON = os.path.join("data", "memories.json")
 # Barra del 99 % (2026-10-16): puerta de 1 x 3 tiles; aviso de cada caida = 9 cuadros a 12 fps.
 UPDATE_BAR_HEIGHT = 3
 UPDATE_BAR_WARN_S = 9 / 12.0
@@ -431,6 +443,7 @@ class LevelValidator:
         doors = []
         encounters = []
         extra_lives = []
+        self.memory_pickups = {}
         self.object_anchors = set()
         for i, obj in enumerate(self.level["objects"]):
             what = "objects[%d]" % i
@@ -533,6 +546,8 @@ class LevelValidator:
                 sid = params.get("secret_id")
                 if not isinstance(sid, str) or not sid.strip():
                     self.error("%s: secret_id debe ser un texto no vacio (id del registro)" % what, y, x)
+            elif kind == "memory_pickup":
+                self._check_memory_pickup(what, x, y, params)
             elif kind == "eco_encounter":
                 encounters.append((what, x, y))
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
@@ -807,8 +822,81 @@ class LevelValidator:
         if "reusable" in params and not isinstance(params["reusable"], bool):
             self.error("%s: reusable debe ser true o false" % what, y, x)
 
+    def _memories(self):
+        """{id: entrada} de data/memories.json (cacheado; vacio si no se puede leer)."""
+        if not hasattr(self, "_memories_cache"):
+            data = self._load_json(MEMORIES_JSON)
+            items = data.get("memories", []) if isinstance(data, dict) else []
+            self._memories_cache = {m.get("id"): m for m in items if isinstance(m, dict)}
+        return self._memories_cache
+
+    def _check_memory_pickup(self, what, x, y, params):
+        """Mensaje de secreto (memory_pickup, 2026-10-19): memory_id de un mensaje (kind secret) de
+        data/memories.json; uno por memory_id en el nivel (el secreto que lo ofrece se comprueba en
+        _check_secrets)."""
+        mid = params.get("memory_id")
+        if not isinstance(mid, str) or not mid.strip():
+            self.error("%s: memory_id debe ser un texto no vacio (id de data/memories.json)" % what, y, x)
+            return
+        memory = self._memories().get(mid)
+        if memory is None:
+            self.error("%s: memory_id '%s' no esta en data/memories.json" % (what, mid), y, x)
+        elif memory.get("kind") != "secret":
+            self.error("%s: memory_id '%s' no es un mensaje de secreto (kind secret)" % (what, mid), y, x)
+        if mid in self.memory_pickups:
+            self.error("%s: ya hay otro memory_pickup con memory_id '%s' en el nivel" % (what, mid), y, x)
+            return
+        self.memory_pickups[mid] = (what, x, y)
+
+    def _check_secret_reward(self, entry, what, pos, claimed):
+        """Recompensa del secreto (reward: texto o lista) y, con memory, su memory_id (2026-10-19)."""
+        if "reward" not in entry:
+            rewards = []
+        elif isinstance(entry["reward"], str):
+            rewards = [entry["reward"]]
+        elif isinstance(entry["reward"], list) and entry["reward"] \
+                and all(isinstance(r, str) for r in entry["reward"]):
+            rewards = list(entry["reward"])
+        else:
+            self.error("%s '%s': reward debe ser un texto o una lista de textos no vacia"
+                       % (what, entry.get("id")), pos[1], pos[0])
+            return
+        for r in rewards:
+            if r not in SECRET_REWARDS:
+                self.error("%s '%s': reward '%s' desconocida (validas: %s)"
+                           % (what, entry.get("id"), r, ", ".join(SECRET_REWARDS)), pos[1], pos[0])
+        if len(set(rewards)) != len(rewards):
+            self.error("%s '%s': reward repetida" % (what, entry.get("id")), pos[1], pos[0])
+        mid = entry.get("memory_id")
+        if "memory" not in rewards:
+            if "memory_id" in entry:
+                self.error("%s '%s': memory_id sin la recompensa memory" % (what, entry.get("id")), pos[1], pos[0])
+            return
+        if not isinstance(mid, str) or not mid.strip():
+            self.error("%s '%s': la recompensa memory necesita memory_id (id de data/memories.json)"
+                       % (what, entry.get("id")), pos[1], pos[0])
+            return
+        memory = self._memories().get(mid)
+        if memory is None:
+            self.error("%s '%s': memory_id '%s' no esta en data/memories.json" % (what, entry.get("id"), mid),
+                       pos[1], pos[0])
+        elif memory.get("kind") != "secret":
+            self.error("%s '%s': memory_id '%s' no es un mensaje de secreto (kind secret)"
+                       % (what, entry.get("id"), mid), pos[1], pos[0])
+        elif memory.get("level") != self.level.get("id") or memory.get("secret") != entry.get("id"):
+            self.error("%s '%s': el mensaje %s es del nivel %s y del secreto %s en data/memories.json"
+                       % (what, entry.get("id"), mid, memory.get("level"), memory.get("secret")), pos[1], pos[0])
+        if mid in claimed:
+            self.error("%s '%s': el mensaje %s ya lo ofrece el secreto %s" % (what, entry.get("id"), mid, claimed[mid]),
+                       pos[1], pos[0])
+        claimed[mid] = entry.get("id")
+        if mid not in self.memory_pickups:
+            self.error("%s '%s': no hay ningun memory_pickup con memory_id '%s' en el nivel"
+                       % (what, entry.get("id"), mid), pos[1], pos[0])
+
     def _check_secrets(self):
         listed = set()
+        claimed = {}
         for i, entry in enumerate(self.level["secrets"]):
             what = "secrets %d" % i
             if not isinstance(entry, dict):
@@ -817,6 +905,7 @@ class LevelValidator:
             pos = self._check_point_entry(entry, what)
             if pos is None:
                 continue
+            self._check_secret_reward(entry, what, pos, claimed)
             if "requires_upgrade" in entry:
                 # Mejoras de Calc por pistas (tanda M1): "pista:nivel" o un legacy_id (wide_pulse).
                 catalog = upgrade_catalog.load_catalog(self.root)
@@ -837,6 +926,10 @@ class LevelValidator:
         for (x, y) in self._cells_with("S"):
             if (x, y) not in listed:
                 self.error("celda 'S' sin entrada en la lista de secrets", y, x)
+        for mid, (what, x, y) in sorted(getattr(self, "memory_pickups", {}).items()):
+            if mid not in claimed:
+                self.error("%s: ningun secreto ofrece el mensaje %s (recompensa memory con memory_id)"
+                           % (what, mid), y, x)
 
     def _check_spikes(self):
         for (x, y) in self._cells_with("P"):

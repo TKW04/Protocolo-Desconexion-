@@ -467,6 +467,66 @@ class LevelSchemaTest(unittest.TestCase):
         del obj(self.level, "extra_life_pickup")["params"]["secret_id"]
         self.assert_fails(self.level, "falta el param obligatorio 'secret_id'")
 
+    # --- Mensaje de secreto (memory_pickup y recompensa memory; paso 4 de docs/propuesta-recuerdos.md) ---
+
+    def _secret_a(self):
+        return next(s for s in self.level["secrets"] if s["id"] == "secreto_puente_servicio")
+
+    def test_secret_a_offers_the_message_with_its_point(self):
+        sec = self._secret_a()
+        self.assertEqual((sec["reward"], sec["points"], sec["memory_id"]), (["attention_points", "memory"], 1, "msg_1_1"))
+        self.assertEqual(sec["gates"], ["puente_servicio"], "Sin cambiar lo que exige")
+        self.assertNotIn("needs_debug", sec)
+        self.assertNotIn("requires_upgrade", sec)
+        pickup = obj(self.level, "memory_pickup")
+        self.assertEqual((pickup["x"], pickup["y"], pickup["params"]), (96, 4, {"id": "mensaje_1_1", "memory_id": "msg_1_1"}))
+        self.assertEqual(vls.validate_level(self.level), [])
+        sec["reward"] = "memory"  # tambien sola
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_unknown_or_malformed_reward(self):
+        self._secret_a()["reward"] = ["attention_points", "tesoro"]
+        self.assert_fails(self.level, "reward 'tesoro' desconocida")
+        self._secret_a()["reward"] = []
+        self.assert_fails(self.level, "reward debe ser un texto o una lista de textos no vacia")
+        self._secret_a()["reward"] = ["memory", "memory"]
+        self.assert_fails(self.level, "reward repetida")
+
+    def test_memory_reward_needs_a_valid_memory_id(self):
+        del self._secret_a()["memory_id"]
+        self.assert_fails(self.level, "la recompensa memory necesita memory_id")
+        self._secret_a()["memory_id"] = "msg_9_9"
+        self.assert_fails(self.level, "memory_id 'msg_9_9' no esta en data/memories.json")
+        self._secret_a()["memory_id"] = "boss_w1_l1"
+        self.assert_fails(self.level, "memory_id 'boss_w1_l1' no es un mensaje de secreto")
+        self._secret_a()["memory_id"] = "msg_1_2"
+        self.assert_fails(self.level, "el mensaje msg_1_2 es del nivel 1-2 y del secreto secreto_spam")
+
+    def test_memory_id_without_memory_reward(self):
+        self._secret_a()["reward"] = "attention_points"
+        self.assert_fails(self.level, "memory_id sin la recompensa memory")
+
+    def test_memory_reward_needs_its_pickup(self):
+        self.level["objects"] = [o for o in self.level["objects"] if o["type"] != "memory_pickup"]
+        self.assert_fails(self.level, "no hay ningun memory_pickup con memory_id 'msg_1_1'")
+
+    def test_memory_pickup_rules(self):
+        self._add("memory_pickup", {"id": "mensaje_2", "memory_id": "msg_1_1"})
+        self.assert_fails(self.level, "ya hay otro memory_pickup con memory_id 'msg_1_1'")
+        self.level = load_level()
+        self._add("memory_pickup", {"id": "mensaje_2", "memory_id": "msg_1_3"})
+        self.assert_fails(self.level, "ningun secreto ofrece el mensaje msg_1_3")
+        self.level = load_level()
+        self._add("memory_pickup", {"id": "mensaje_2", "memory_id": "boss_w1_l2"})
+        self.assert_fails(self.level, "memory_id 'boss_w1_l2' no es un mensaje de secreto (kind secret)")
+        self.level = load_level()
+        del obj(self.level, "memory_pickup")["params"]["memory_id"]
+        self.assert_fails(self.level, "falta el param obligatorio 'memory_id'")
+        self.level = load_level()
+        pickup = obj(self.level, "memory_pickup")
+        pickup["y"] = 5  # el suelo de la repisa
+        self.assert_fails(self.level, "dentro de terreno o pinchos")
+
     def test_only_one_eco_encounter(self):
         self._add("eco_encounter", {"id": "eco_otro"})
         self.assert_fails(self.level, "solo puede haber un encuentro con Eco por nivel")

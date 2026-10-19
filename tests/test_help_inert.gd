@@ -431,12 +431,19 @@ func test_opened_update_bar_gives_no_help() -> void:
 	_assert_no_reread(bar, &"update_bar", "barra del 99 % abierta")
 
 
+func test_collected_memory_pickup_gives_no_help() -> void:
+	var pickup := _scene("memory_pickup") as MemoryPickup
+	pickup.memory_id = &"msg_1_1"
+	_place(pickup, &"memory_pickup")
+	await _assert_inert_drops_help(pickup, func() -> void: pickup.collect(), "mensaje recogido")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
 		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
 		&"notification_badge", &"spam_banner", &"reminder_platform", &"snooze_button", &"overlay_popup",
-		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock"]
+		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

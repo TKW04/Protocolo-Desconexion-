@@ -122,6 +122,20 @@ class Level12Test(unittest.TestCase):
         self.assertTrue(items["secreto_borradores"]["reachable"])
         self.assertTrue(items["secreto_olvidado"]["reachable"])
 
+    def test_spam_message_is_collectible_of_secret_a_with_the_debug(self):
+        """Paso 4 de docs/propuesta-recuerdos.md (2026-10-19): el mensaje msg_1_2 esta en la celda
+        (26, 37) de la carpeta de Spam, lo ofrece secreto_spam (junto a sus 2 puntos) y, como el
+        secreto, no se alcanza sin Debug y si con el Debug del chip del mismo piso; nunca obligatorio."""
+        sec = next(s for s in self.level["secrets"] if s["id"] == "secreto_spam")
+        self.assertEqual((sec["reward"], sec["points"], sec["memory_id"]), (["attention_points", "memory"], 2, "msg_1_2"))
+        pickup = next(o for o in self.level["objects"] if o["type"] == "memory_pickup")
+        self.assertEqual((pickup["x"], pickup["y"], pickup["params"]["memory_id"]), (26, 37, "msg_1_2"))
+        self.assertEqual(self.level["grid"][37][26], "o", "El punto de esa celda sigue")
+        item = next(i for i in self.result["memories"] if i["memory_id"] == "msg_1_2")
+        self.assertEqual(item["secret"], "secreto_spam")
+        self.assertEqual((item["reachable_without_debug"], item["reachable_with_debug"], item["mandatory"]),
+                         (False, True, False))
+
     def test_exported_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "1-2.json")

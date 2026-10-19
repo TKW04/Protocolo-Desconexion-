@@ -162,10 +162,14 @@
 			"id": "secreto_spam",
 			"x": 25,
 			"y": 36,
-			"reward": "attention_points",
+			"reward": [
+				"attention_points",
+				"memory"
+			],
 			"points": 2,
+			"memory_id": "msg_1_2",
 			"needs_debug": true,
-			"note": "A. Carpeta de Spam: a la derecha de la caja fuerte, tras una plataforma oculta de 3 tiles (unos 2 s de Debug). 2 puntos. Paso 14: aqui ira el primer recuerdo coleccionable (celda 26, 37)."
+			"note": "A. Carpeta de Spam: a la derecha de la caja fuerte, tras una plataforma oculta de 3 tiles (unos 2 s de Debug). 2 puntos. Paso 14: aqui ira el primer recuerdo coleccionable (celda 26, 37). Hecho el 2026-10-19 (paso 4 de docs/propuesta-recuerdos.md): el mensaje de secreto msg_1_2 (memory_pickup mensaje_1_2 en la celda 26, 37, en la mitad alta: no tapa el punto de esa celda)."
 		},
 		{
 			"id": "secreto_borradores",
@@ -622,6 +626,15 @@
 				"cap_s": 8.0
 			},
 			"help_id": "snooze_button"
+		},
+		{
+			"type": "memory_pickup",
+			"x": 26,
+			"y": 37,
+			"params": {
+				"id": "mensaje_1_2",
+				"memory_id": "msg_1_2"
+			}
 		},
 		{
 			"type": "power_bank_pickup",

@@ -12,7 +12,12 @@ Comprueba:
     data/levels/<level>.json, uno de los ids de su array secrets; first_lap entero 1-3 y una de
     las vueltas (laps) del subnivel en data/hub.json (reaparece en las siguientes si no se obtuvo);
   - textos solo con glifos de la fuente de textos (data/text_font.json) y sin las palabras de las
-    vueltas (la UI nunca dice vuelta, Easy, Normal ni Hard).
+    vueltas (la UI nunca dice vuelta, Easy, Normal ni Hard);
+  - coherencia mensaje <-> secreto del nivel (2026-10-19, paso 4 de docs/propuesta-recuerdos.md): si
+    el nivel del mensaje ya tiene JSON, su secreto `secret` lo ofrece (recompensa memory con su
+    memory_id) y el nivel tiene un objeto memory_pickup con ese memory_id; y al reves, toda
+    recompensa memory y todo memory_pickup de data/levels/*.json apunta a un mensaje (kind secret)
+    de ese nivel y de ese secreto.
 
 Uso (desde la raiz del repo): python3 tools/validate_memories.py [data/memories.json]
 Sale con 1 si hay errores.
@@ -73,13 +78,34 @@ def level_secrets(level_id, repo=REPO):
     return {str(s.get("id", "")) for s in _load(path).get("secrets", [])}
 
 
+def level_links(repo=REPO):
+    """{id de nivel: {"secrets": {secreto: memory_id o None}, "pickups": {memory_id}}} de todos los
+    data/levels/*.json (recompensa memory de cada secreto y memory_pickup de los objetos)."""
+    out = {}
+    folder = os.path.join(repo, "data", "levels")
+    for name in sorted(os.listdir(folder)):
+        if not name.endswith(".json"):
+            continue
+        level = _load(os.path.join(folder, name))
+        secrets = {}
+        for s in level.get("secrets", []):
+            rewards = s.get("reward", [])
+            rewards = [rewards] if isinstance(rewards, str) else list(rewards or [])
+            secrets[str(s.get("id", ""))] = s.get("memory_id") if "memory" in rewards else None
+        pickups = {str(o.get("params", {}).get("memory_id", "")) for o in level.get("objects", [])
+                   if o.get("type") == "memory_pickup"}
+        out[str(level.get("id", name[:-5]))] = {"secrets": secrets, "pickups": pickups}
+    return out
+
+
 def _is_int(value):
     return isinstance(value, int) and not isinstance(value, bool)
 
 
-def validate(data, repo=REPO, glyphs="auto", levels=None, secrets_of=None):
-    """Lista de errores (vacia si todo es correcto). `levels` y `secrets_of` permiten pruebas
-    sinteticas (por defecto se leen de data/hub.json y data/levels/)."""
+def validate(data, repo=REPO, glyphs="auto", levels=None, secrets_of=None, links=None):
+    """Lista de errores (vacia si todo es correcto). `levels`, `secrets_of` y `links` (formato de
+    level_links) permiten pruebas sinteticas (por defecto se leen de data/hub.json y data/levels/;
+    con `secrets_of` sintetico y sin `links` no se comprueba la coherencia con los objetos)."""
     errors = []
     if glyphs == "auto":
         glyphs = font_glyphs(repo)
@@ -87,6 +113,8 @@ def validate(data, repo=REPO, glyphs="auto", levels=None, secrets_of=None):
         levels = hub_levels(repo)
     if secrets_of is None:
         secrets_of = lambda lid: level_secrets(lid, repo)  # noqa: E731
+        if links is None:
+            links = level_links(repo)
     items = data.get("memories") if isinstance(data, dict) else None
     if not isinstance(items, list) or not items:
         return ["falta la lista 'memories' (o esta vacia)"]
@@ -138,6 +166,7 @@ def validate(data, repo=REPO, glyphs="auto", levels=None, secrets_of=None):
                 if not isinstance(m.get(field), str) or not m[field].strip():
                     errors.append("%s: un mensaje necesita %s" % (where, field))
             _check_message_place(m, where, world, levels, secrets_of, errors)
+            _check_message_links(m, where, links, errors)
         for field in TEXT_FIELDS:
             value = m.get(field)
             if not isinstance(value, str):
@@ -148,6 +177,7 @@ def validate(data, repo=REPO, glyphs="auto", levels=None, secrets_of=None):
                     errors.append("%s: %s usa glifos que no tiene la fuente: %s" % (where, field, " ".join(missing)))
             if LAP_WORDS.search(value):
                 errors.append("%s: %s nombra las vueltas (usa Caché, Kernel o Raíz)" % (where, field))
+    _check_level_links(items, links, errors)
     for world in WORLDS:
         if sorted(layers[world]) != list(LAYERS):
             errors.append("mundo %d: el jefe debe tener exactamente las capas 1, 2 y 3 (tiene %s)"
@@ -177,6 +207,50 @@ def _check_message_place(m, where, world, levels, secrets_of, errors):
         errors.append("%s: first_lap debe ser 1, 2 o 3 (Caché, Kernel, Raíz)" % where)
     elif level is not None and first not in levels[level][1]:
         errors.append("%s: el nivel %s no existe en el acceso %d (laps de data/hub.json)" % (where, level, first))
+
+
+def _check_message_links(m, where, links, errors):
+    """El secreto del mensaje lo ofrece (recompensa memory) y el nivel tiene su memory_pickup."""
+    if not links or not isinstance(m.get("level"), str) or m["level"] not in links:
+        return
+    info = links[m["level"]]
+    secret = m.get("secret")
+    if secret not in info["secrets"]:
+        return  # ya lo dice _check_message_place
+    if info["secrets"][secret] != m.get("id"):
+        errors.append("%s: el secreto %s del nivel %s no lo ofrece (recompensa memory con memory_id %s)"
+                      % (where, secret, m["level"], m.get("id")))
+    if m.get("id") not in info["pickups"]:
+        errors.append("%s: el nivel %s no tiene ningun memory_pickup con memory_id %s"
+                      % (where, m["level"], m.get("id")))
+
+
+def _check_level_links(items, links, errors):
+    """Al reves: cada recompensa memory y cada memory_pickup de los niveles apunta a un mensaje
+    (kind secret) de ese nivel y de ese secreto."""
+    if not links:
+        return
+    by_id = {m.get("id"): m for m in items if isinstance(m, dict)}
+    for level_id in sorted(links):
+        info = links[level_id]
+        for secret, mid in sorted(info["secrets"].items()):
+            if mid is None:
+                continue
+            m = by_id.get(mid)
+            if m is None or m.get("kind") != "secret":
+                errors.append("nivel %s, secreto %s: la recompensa memory apunta a %s, que no es un mensaje "
+                              "de data/memories.json" % (level_id, secret, mid))
+            elif m.get("level") != level_id or m.get("secret") != secret:
+                errors.append("nivel %s, secreto %s: el mensaje %s es del nivel %s y del secreto %s"
+                              % (level_id, secret, mid, m.get("level"), m.get("secret")))
+        for mid in sorted(info["pickups"]):
+            m = by_id.get(mid)
+            if m is None or m.get("kind") != "secret":
+                errors.append("nivel %s: memory_pickup con memory_id %s, que no es un mensaje de "
+                              "data/memories.json" % (level_id, mid))
+            elif m.get("level") != level_id:
+                errors.append("nivel %s: memory_pickup del mensaje %s, que es del nivel %s"
+                              % (level_id, mid, m.get("level")))
 
 
 def main(argv):

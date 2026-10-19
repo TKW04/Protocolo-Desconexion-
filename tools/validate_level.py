@@ -22,6 +22,14 @@ movimiento por celdas:
      Debug («alcanzable con Debug»); nunca es obligatoria. Los secretos
      que son otro objeto (p. ej. power_bank_pickup) y las S sin needs_debug
      (secretos de puntos) tienen que alcanzarse sin Debug.
+     4c. Mensaje de secreto (memory_pickup, 2026-10-19, paso 4 de
+     docs/propuesta-recuerdos.md): cuenta como recogible del secreto que lo ofrece
+     (recompensa memory con su memory_id) y respeta lo que ese secreto exige:
+     con "needs_debug" no se alcanza sin Debug y si con el Debug (el del nivel o
+     su chip, como en la regla 4); sin el, se alcanza sin Debug; con
+     "requires_upgrade" no se alcanza sin la mejora y si con ella, y la mejora
+     tiene que poder comprarse en el acceso del mensaje (first_lap de
+     data/memories.json; min_lap de data/upgrades.json). Nunca es obligatorio.
      Mejoras (data/upgrades.json, pistas de Calc): el modelo usa los valores
      BASE salvo las mejoras de --upgrades ("pista:nivel", p. ej. laser:3, o un
      legacy_id: wide_pulse = pulso:2): alcance del pulso, coste y enfriamiento
@@ -1726,6 +1734,7 @@ class Validator:
         self._check_secrets(start, goal_cells)
         self._check_reachable_secrets(start)
         self._check_extra_lives(start, goal_cells)
+        self._check_memory_pickups(start, goal_cells)
         # Regla 6c: terminal de salida activable con el pulso.
         self._check_exit_terminals(main)
         # Regla 6d: el pulso no existe antes del encuentro con Eco.
@@ -2407,6 +2416,85 @@ class Validator:
             items.append(item)
         self.result["extra_lives"] = items
 
+    def _check_memory_pickups(self, start, goal_cells):
+        """Regla 4c (mensaje de secreto, memory_pickup; 2026-10-19): recogible del secreto que lo
+        ofrece (recompensa memory), con lo que ese secreto exige y nada mas; nunca obligatorio."""
+        objs = [o for o in self.level.get("objects", []) if o["type"] == "memory_pickup"]
+        if not objs:
+            return
+        memories = {}
+        data = load_json(os.path.join(self.rules.root, "data", "memories.json"))
+        for m in (data or {}).get("memories", []):
+            memories[m.get("id")] = m
+        owners = {}
+        for s in self.level.get("secrets", []):
+            rewards = s.get("reward", [])
+            rewards = [rewards] if isinstance(rewards, str) else list(rewards)
+            if "memory" in rewards and s.get("memory_id"):
+                owners[s["memory_id"]] = s
+        items = []
+        for obj in objs:
+            cell = (obj["x"], obj["y"])
+            mid = str(obj.get("params", {}).get("memory_id", ""))
+            oid = str(obj.get("params", {}).get("id", mid))
+            what = "%s (%s)" % (mid, oid)
+            secret = owners.get(mid)
+            item = {"id": oid, "memory_id": mid, "cell": list(cell), "secret": secret["id"] if secret else None}
+            items.append(item)
+            if secret is None:
+                self.report.error("el mensaje %s no lo ofrece ningun secreto (recompensa memory)" % what,
+                                  cell[1], cell[0], oid)
+                continue
+            needs_debug = bool(secret.get("needs_debug"))
+            item["needs_debug"] = needs_debug
+            without = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=False)
+            item["reachable_without_debug"] = without["ok"]
+            if needs_debug:
+                mode = "auto" if self.model.ceiling_margin is not None else True
+                with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=mode)
+                item["reachable_with_debug"] = with_debug["ok"]
+                if without["ok"]:
+                    self.report.error("el mensaje %s se alcanza sin Debug (su secreto %s lo exige)"
+                                      % (what, secret["id"]), cell[1], cell[0], oid)
+                if not with_debug["ok"]:
+                    self.report.error("el mensaje %s no se alcanza ni con el Debug" % what, cell[1], cell[0], oid)
+            required = secret.get("requires_upgrade")
+            if required:
+                item["requires_upgrade"] = required
+                catalog = upgrade_catalog.load_catalog(self.rules.root)
+                resolved = upgrade_catalog.resolve(catalog, required)
+                lap = int((memories.get(mid) or {}).get("first_lap", 1))
+                if resolved is not None:
+                    entry = upgrade_catalog.level_entry(catalog, resolved[0], resolved[1]) or {}
+                    if int(entry.get("min_lap", 1)) > lap:
+                        self.report.error("el mensaje %s exige %s, que en su acceso (%d) aun no se puede tener"
+                                          % (what, required, lap), cell[1], cell[0], oid)
+                if without["ok"] and not self.rules.has_upgrade(required):
+                    self.report.error("el mensaje %s se alcanza sin la mejora %s de su secreto" % (what, required),
+                                      cell[1], cell[0], oid)
+                try:
+                    upgraded = Validator(self.level, self.rules.with_upgrades([required]))
+                    up_start, _ = upgraded.spawn_node(self.find("P")[0])
+                    up_run = upgraded.progression(up_start, frozenset(), upgraded.rules.limit, targets={cell},
+                                                  debug="auto" if needs_debug else False)
+                    item["reachable_with_upgrade"] = up_run["ok"]
+                    if not up_run["ok"]:
+                        self.report.error("el mensaje %s no se alcanza ni con la mejora %s" % (what, required),
+                                          cell[1], cell[0], oid)
+                except ValueError as exc:
+                    self.report.error("el mensaje %s pide una mejora que no existe: %s" % (what, exc),
+                                      cell[1], cell[0], oid)
+            elif not needs_debug and not without["ok"]:
+                self.report.error("el mensaje %s no se alcanza sin Debug (su secreto %s no lo exige)"
+                                  % (what, secret["id"]), cell[1], cell[0], oid)
+            goal = self.progression(start, frozenset(), self.rules.limit, forbid=self.secret_gates(),
+                                    targets=goal_cells, avoid={cell})
+            item["mandatory"] = not goal["ok"]
+            if not goal["ok"]:
+                self.report.error("el mensaje %s es obligatorio: sin tocarlo no se llega a la meta" % what,
+                                  cell[1], cell[0], oid)
+        self.result["memories"] = items
+
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
         for g in self.model.gates:
@@ -2703,6 +2791,21 @@ def format_text(path, result):
         out.append("  vida extra %s (fila %d, columna %d): %s; %s" % (
             item["id"], item["cell"][1], item["cell"][0], reach,
             "obligatoria" if item["mandatory"] else "opcional"))
+    for item in result.get("memories") or []:
+        if item.get("secret") is None:
+            continue
+        if item.get("needs_debug"):
+            reach = "sin Debug %s; con el Debug %s" % (
+                "se alcanza" if item["reachable_without_debug"] else "no se alcanza",
+                "se alcanza" if item.get("reachable_with_debug") else "no se alcanza")
+        else:
+            reach = "se alcanza sin Debug" if item["reachable_without_debug"] else "no se alcanza sin Debug"
+        if item.get("requires_upgrade"):
+            reach += "; con %s %s" % (item["requires_upgrade"],
+                                     "se alcanza" if item.get("reachable_with_upgrade") else "no se alcanza")
+        out.append("  mensaje %s (%s, fila %d, columna %d) del secreto %s: %s; %s" % (
+            item["memory_id"], item["id"], item["cell"][1], item["cell"][0], item["secret"], reach,
+            "obligatorio" if item["mandatory"] else "opcional"))
     pulse = result.get("pulse")
     if pulse and not pulse["from_start"] and pulse["given_by"] and pulse.get("vertical"):
         out.append("  pulso: no existe al empezar; lo da %s (torre: sin regla por columnas)" % (

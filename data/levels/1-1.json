@@ -48,7 +48,7 @@
 		{"id": "sync_1", "x": 150, "y": 9}
 	],
 	"secrets": [
-		{"id": "secreto_puente_servicio", "x": 96, "y": 4, "reward": "attention_points", "points": 1, "gates": ["puente_servicio"], "note": "Repisa alta del Tramo 2: receptor escondido al final del tramo y puente hacia la izquierda."},
+		{"id": "secreto_puente_servicio", "x": 96, "y": 4, "reward": ["attention_points", "memory"], "points": 1, "memory_id": "msg_1_1", "gates": ["puente_servicio"], "note": "Repisa alta del Tramo 2: receptor escondido al final del tramo y puente hacia la izquierda. Desde el 2026-10-19 (paso 4 de docs/propuesta-recuerdos.md) da ademas el mensaje msg_1_1 (memory_pickup mensaje_1_1 en esta misma celda), sin exigir nada mas."},
 		{"id": "secreto_pulso_amplio", "x": 122, "y": 4, "object": "power_bank_pickup", "reward": "power_bank", "requires_upgrade": "wide_pulse", "gates": ["popup_lejano"], "note": "Nicho cerrado a la izquierda del techo de 3a con el UNICO power bank (vacio) del 1-1, tapado por un pop-up cuyo boton queda a 104 px del celular de Isak pegado al pop-up (columna 129, fila 4): el pulso base (96) no llega y Pulso amplio (112) si. Se ve al hacer el secreto B y se vuelve tras comprar la mejora en el hub."},
 		{"id": "secreto_techo", "x": 133, "y": 4, "reward": "attention_points", "points": 1, "note": "Encima del techo bajo de 3a: se sube por la derecha y se vuelve a la derecha (el pop-up del secreto del pulso amplio cierra el lado izquierdo)."},
 		{"id": "secreto_popup_alto", "x": 276, "y": 5, "reward": "attention_points", "points": 1, "gates": ["popup_alto"], "note": "Nicho tapado por un pop-up opcional en lo alto del Tramo 4."},
@@ -75,6 +75,7 @@
 		{"type": "bridge_inactive", "x": 86, "y": 9, "params": {"id": "puente_3", "length_tiles": 5, "direction": "right"}},
 		{"type": "bridge_inactive", "x": 109, "y": 5, "params": {"id": "puente_servicio", "length_tiles": 8, "direction": "left"}},
 		{"type": "receiver", "x": 110, "y": 4, "params": {"target": "puente_servicio"}},
+		{"type": "memory_pickup", "x": 96, "y": 4, "params": {"id": "mensaje_1_1", "memory_id": "msg_1_1"}},
 		{"type": "power_bank_pickup", "x": 122, "y": 4, "params": {"id": "power_bank_pulso_amplio"}},
 		{"type": "popup_blocker", "x": 126, "y": 1, "params": {"id": "popup_lejano", "text": "Cerrar es fácil. El botón está un poco más allá", "width_tiles": 3, "height_tiles": 4, "close_button_px": [52, 192], "close_button_size_px": 16}},
 		{"type": "receiver", "x": 153, "y": 9, "params": {"target": "puente_laser_1"}},

@@ -173,6 +173,18 @@
 			"defaults": {},
 			"example": {"type": "extra_life_pickup", "x": 298, "y": 9, "params": {"id": "vida_extra_1_1", "secret_id": "D"}}
 		},
+		"memory_pickup": {
+			"scene": "res://scenes/levels/memory_pickup.tscn",
+			"help_id": "memory_pickup",
+			"description": "Mensaje de secreto recogible (paso 4 de docs/propuesta-recuerdos.md §7 y §10; 2026-10-19). Un sobre en un secreto del nivel: al tocarlo Isak, GameState.obtain_memory(memory_id) (id de un mensaje kind secret de data/memories.json; queda obtenido SIN GUARDAR) y sale el aviso del sistema de la seccion memory_pickup (no es Eco). REAPARECE SI NO SE OBTUVO: solo depende de GameState.has_memory(memory_id), no de found_secrets ni del numero de vuelta; si ya esta obtenido (o guardado) no aparece; si un game over sin guardar lo quita del registro, vuelve a estar en su sitio. El secreto que lo ofrece lo declara con la recompensa memory (reward \"memory\" o una lista que la incluye, y memory_id) en el array secrets del nivel (tools/validate_level_schema.py), y el validador lo trata como recogible de ese secreto (tools/validate_level.py, regla 4c). No es solido. Arte: tools/gen_memory_pickup.py (memory_pickup_frames.tres).",
+			"required": ["id", "memory_id"],
+			"fields": {
+				"id": "object_id",
+				"memory_id": "memory_id"
+			},
+			"defaults": {},
+			"example": {"type": "memory_pickup", "x": 96, "y": 4, "params": {"id": "mensaje_1_1", "memory_id": "msg_1_1"}}
+		},
 		"ability_pickup": {
 			"scene": "res://scenes/levels/ability_pickup.tscn",
 			"help_id": "ability_pickup",
@@ -823,6 +835,30 @@
 		"collect_rise_px": 32.0,
 		"appear_s": 0.3,
 		"appear_pop_scale": 1.5
+	},
+	"memory_pickup": {
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando). draw_scale: escala entera del arte de 24x20 (x2: 48 x 40 px). center_px: centro del dibujo y de la zona de recogida respecto a la esquina de la celda; va en la mitad alta de la celda (a la altura del pecho de Isak de pie en esa fila) para no tapar un punto de atencion de la misma celda (1-2, celda 26, 37). size_px: zona de recogida. Flota bob_px a bob_hz (tiempo del mundo); al recogerlo, memory_pickup_collect sube collect_rise_px. notice: aviso del SISTEMA (no de Eco; docs/propuesta-recuerdos.md §1.4 y §9.5) arriba en el centro de la pantalla, sin pausar: lines (fuente de textos, solo sus glifos; {remitente} = sender del mensaje), scale entera, top_px, padding_px, line_gap_px, colores de la paleta del Mundo 1 sin rojos (texto banner_blanco, fondo noche_profunda con fill_alpha y borde debug_cian), show_s y fade_s (lo ultimo de show_s se desvanece), en tiempo real; layer por encima del HUD y del cuadro de Eco.",
+		"draw_scale": 2,
+		"center_px": [32, 4],
+		"size_px": [36, 32],
+		"bob_px": 2.0,
+		"bob_hz": 1.0,
+		"collect_rise_px": 32.0,
+		"notice": {
+			"lines": ["Recuerdo obtenido: {remitente}.", "Guarda en Notas para conservarlo."],
+			"font": "res://assets/sprites/ui/text_font.fnt",
+			"scale": 2,
+			"top_px": 96,
+			"padding_px": 4,
+			"line_gap_px": 2,
+			"text_color": "#f2f4f8",
+			"fill_color": "#0b0e1a",
+			"fill_alpha": 0.85,
+			"border_color": "#3dfff5",
+			"show_s": 3.5,
+			"fade_s": 0.5,
+			"layer": 12
+		}
 	},
 	"popup_blocker": {
 		"_notes": "PROPUESTA. Ventana de 192x256 (cuadro 0 abierta; 1-4 cierre a close_fps, tiempo del mundo) y boton de 16x16 (normal y brillo alternos cada button_blink_s; hit al acertarle). Texto: fuente de textos (data/text_font.json) a font_scale (x2 entero), partido por palabras dentro de text_rect_px ([x, y, ancho, alto] en px del pop-up) y recoloreado con el shader de color clave (banner_blanco -> text_color, noche_profunda).",

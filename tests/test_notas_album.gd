@@ -401,7 +401,9 @@ func test_tower_objects_cards_in_the_objects_tab() -> void:
 ## final de la pestana Objetos del Mundo 1, en orden y con ficha.
 func test_calc_room_cards_in_the_objects_tab() -> void:
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
-	var tail: Array[StringName] = objects.slice(objects.size() - 4)
+	# Despues va el mensaje de secreto (memory_pickup, paso 4 de propuesta-recuerdos.md, 2026-10-19).
+	assert_eq(objects[objects.size() - 1], &"memory_pickup")
+	var tail: Array[StringName] = objects.slice(objects.size() - 5, objects.size() - 1)
 	assert_eq(tail, [&"power_switch", &"laser_switch", &"debug_switch", &"charge_dock"] as Array[StringName])
 	for id: StringName in tail:
 		assert_eq(String(HelpCatalog.shared().entry(id).get("first_level", "")), "1-2")

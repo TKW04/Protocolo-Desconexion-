@@ -452,6 +452,52 @@ class BrokenVariantsTest(unittest.TestCase):
         self.assertTrue(item["reachable_without_debug"])
 
 
+    # --- Mensaje de secreto (memory_pickup, regla 4c; paso 4 de docs/propuesta-recuerdos.md) ---
+
+    def test_message_of_secret_a_is_collectible_without_debug(self):
+        item = next(i for i in base_result()["memories"] if i["memory_id"] == "msg_1_1")
+        self.assertEqual((item["id"], item["cell"], item["secret"]), ("mensaje_1_1", [96, 4], "secreto_puente_servicio"))
+        self.assertFalse(item["needs_debug"])
+        self.assertTrue(item["reachable_without_debug"])
+        self.assertFalse(item["mandatory"])
+        text = vl.format_text("1-1.json", base_result())
+        self.assertIn("mensaje msg_1_1 (mensaje_1_1, fila 4, columna 96) del secreto secreto_puente_servicio: "
+                      "se alcanza sin Debug; opcional", text)
+
+    def test_message_follows_what_its_secret_needs(self):
+        level = base_level()
+        secret(level, "secreto_puente_servicio")["needs_debug"] = True
+        self.assert_fails(level, "el mensaje msg_1_1 (mensaje_1_1) se alcanza sin Debug (su secreto "
+                                 "secreto_puente_servicio lo exige)", schema=False)
+
+    def test_unreachable_message_fails(self):
+        level = base_level()
+        obj_id(level, "mensaje_1_1")["x"] = 98
+        fill(level, (97, 99), (3, 4), "#")
+        fill(level, (98,), (3,), "#")
+        self.assert_fails(level, "el mensaje msg_1_1 (mensaje_1_1) no se alcanza sin Debug (su secreto "
+                                 "secreto_puente_servicio no lo exige)", schema=False)
+
+    def test_message_cannot_need_an_upgrade_of_a_later_access(self):
+        level = base_level()
+        secret(level, "secreto_puente_servicio")["requires_upgrade"] = "pulso:4"
+        self.assert_fails(level, "el mensaje msg_1_1 (mensaje_1_1) exige pulso:4, que en su acceso (1) aun no se "
+                                 "puede tener", schema=False)
+
+    def test_mandatory_message_fails(self):
+        level = base_level()
+        gx, gy = next((x, y) for y, row in enumerate(level["grid"]) for x, c in enumerate(row) if c == "G")
+        obj_id(level, "mensaje_1_1")["x"], obj_id(level, "mensaje_1_1")["y"] = gx, gy
+        self.assert_fails(level, "el mensaje msg_1_1 (mensaje_1_1) es obligatorio", schema=False)
+
+    def test_message_without_secret_fails(self):
+        level = base_level()
+        secret(level, "secreto_puente_servicio")["reward"] = "attention_points"
+        del secret(level, "secreto_puente_servicio")["memory_id"]
+        self.assert_fails(level, "el mensaje msg_1_1 (mensaje_1_1) no lo ofrece ningun secreto", schema=False)
+        self.assert_fails(level, "ningun secreto ofrece el mensaje msg_1_1")
+
+
 class VerticalLevelTest(unittest.TestCase):
     """Niveles verticales (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): el validador acepta
     una torre de 28 x 62 (y la de prueba de 28 x 40) sin reglas nuevas (las del laser, el Debug y

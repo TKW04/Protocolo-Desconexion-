@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
@@ -17,23 +17,24 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/reminder_platform.tscn" id="15_reminder_platform"]
 [ext_resource type="PackedScene" path="res://scenes/levels/snooze_button.tscn" id="16_snooze_button"]
 [ext_resource type="PackedScene" path="res://scenes/levels/receiver.tscn" id="17_receiver"]
-[ext_resource type="PackedScene" path="res://scenes/levels/power_bank_pickup.tscn" id="18_power_bank_pickup"]
-[ext_resource type="PackedScene" path="res://scenes/levels/update_bar.tscn" id="19_update_bar"]
-[ext_resource type="PackedScene" path="res://scenes/levels/calc_actor.tscn" id="20_calc_actor"]
-[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="21_exit_terminal"]
-[ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="22_glitch_wall"]
-[ext_resource type="PackedScene" path="res://scenes/levels/power_switch.tscn" id="23_power_switch"]
-[ext_resource type="PackedScene" path="res://scenes/levels/charge_dock.tscn" id="24_charge_dock"]
-[ext_resource type="PackedScene" path="res://scenes/levels/laser_switch.tscn" id="25_laser_switch"]
-[ext_resource type="PackedScene" path="res://scenes/levels/debug_switch.tscn" id="26_debug_switch"]
-[ext_resource type="PackedScene" path="res://scenes/levels/dark_room.tscn" id="27_dark_room"]
-[ext_resource type="PackedScene" path="res://scenes/levels/eco_guide.tscn" id="28_eco_guide"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/notification_badge.tscn" id="29_notification_badge"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/spam_banner.tscn" id="30_spam_banner"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="31_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="32_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="33_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="34_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/memory_pickup.tscn" id="18_memory_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/power_bank_pickup.tscn" id="19_power_bank_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/update_bar.tscn" id="20_update_bar"]
+[ext_resource type="PackedScene" path="res://scenes/levels/calc_actor.tscn" id="21_calc_actor"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="22_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="23_glitch_wall"]
+[ext_resource type="PackedScene" path="res://scenes/levels/power_switch.tscn" id="24_power_switch"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charge_dock.tscn" id="25_charge_dock"]
+[ext_resource type="PackedScene" path="res://scenes/levels/laser_switch.tscn" id="26_laser_switch"]
+[ext_resource type="PackedScene" path="res://scenes/levels/debug_switch.tscn" id="27_debug_switch"]
+[ext_resource type="PackedScene" path="res://scenes/levels/dark_room.tscn" id="28_dark_room"]
+[ext_resource type="PackedScene" path="res://scenes/levels/eco_guide.tscn" id="29_eco_guide"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/notification_badge.tscn" id="30_notification_badge"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/spam_banner.tscn" id="31_spam_banner"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="32_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="33_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="34_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="35_help_system"]
 
 [node name="Level_1_2" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -406,7 +407,13 @@ object_id = &"snooze_olvidado"
 target_groups = ["olvidado"]
 metadata/help_id = "snooze_button"
 
-[node name="power_bank_1_2" parent="Objects" instance=ExtResource("18_power_bank_pickup") groups=["help_target"]]
+[node name="mensaje_1_2" parent="Objects" instance=ExtResource("18_memory_pickup") groups=["help_target"]]
+position = Vector2(1664, 2368)
+object_id = &"mensaje_1_2"
+memory_id = &"msg_1_2"
+metadata/help_id = "memory_pickup"
+
+[node name="power_bank_1_2" parent="Objects" instance=ExtResource("19_power_bank_pickup") groups=["help_target"]]
 position = Vector2(128, 1984)
 object_id = &"power_bank_1_2"
 metadata/help_id = "power_bank_pickup"
@@ -423,7 +430,7 @@ text = "Actualización disponible. ¿Instalar ahora? Sí / Sí"
 width_tiles = 5
 metadata/help_id = "overlay_popup"
 
-[node name="barra_99" parent="Objects" instance=ExtResource("19_update_bar") groups=["help_target"]]
+[node name="barra_99" parent="Objects" instance=ExtResource("20_update_bar") groups=["help_target"]]
 position = Vector2(192, 832)
 object_id = &"barra_99"
 rise_s = 1.0
@@ -440,14 +447,14 @@ object_id = &"cargador_3"
 reusable = true
 metadata/help_id = "charger"
 
-[node name="calc" parent="Objects" instance=ExtResource("20_calc_actor")]
+[node name="calc" parent="Objects" instance=ExtResource("21_calc_actor")]
 position = Vector2(704, 576)
 dock_id = &"dock_calc"
 done_if_ally = &"calc"
 object_id = &"calc"
 path_cells = [Vector2(11, 9), Vector2(12, 9), Vector2(16, 9)]
 
-[node name="terminal_azotea" parent="Objects" instance=ExtResource("21_exit_terminal") groups=["help_target"]]
+[node name="terminal_azotea" parent="Objects" instance=ExtResource("22_exit_terminal") groups=["help_target"]]
 position = Vector2(640, 512)
 height_tiles = 2
 object_id = &"terminal_azotea"
@@ -458,7 +465,7 @@ width_tiles = 1
 level_id = "1-2"
 metadata/help_id = "exit_terminal"
 
-[node name="pared_glitch" parent="Objects" instance=ExtResource("22_glitch_wall") groups=["help_target"]]
+[node name="pared_glitch" parent="Objects" instance=ExtResource("23_glitch_wall") groups=["help_target"]]
 position = Vector2(768, 512)
 done_if_ally = &"calc"
 door_when = &"interruptor_luz"
@@ -469,14 +476,14 @@ solid_neighbors = 5
 width_tiles = 1
 metadata/help_id = "glitch_wall"
 
-[node name="interruptor_luz" parent="Objects" instance=ExtResource("23_power_switch") groups=["help_target"]]
+[node name="interruptor_luz" parent="Objects" instance=ExtResource("24_power_switch") groups=["help_target"]]
 position = Vector2(896, 576)
 done_if_ally = &"calc"
 object_id = &"interruptor_luz"
 pulses_required = 3
 metadata/help_id = "power_switch"
 
-[node name="dock_calc" parent="Objects" instance=ExtResource("24_charge_dock") groups=["help_target"]]
+[node name="dock_calc" parent="Objects" instance=ExtResource("25_charge_dock") groups=["help_target"]]
 position = Vector2(1024, 576)
 charge_s = 3.0
 done_if_ally = &"calc"
@@ -484,20 +491,20 @@ object_id = &"dock_calc"
 required_ids = ["interruptor_luz", "interruptor_laser", "panel_oculto"]
 metadata/help_id = "charge_dock"
 
-[node name="interruptor_laser" parent="Objects" instance=ExtResource("25_laser_switch") groups=["help_target"]]
+[node name="interruptor_laser" parent="Objects" instance=ExtResource("26_laser_switch") groups=["help_target"]]
 position = Vector2(1664, 448)
 done_if_ally = &"calc"
 object_id = &"interruptor_laser"
 metadata/help_id = "laser_switch"
 
-[node name="panel_oculto" parent="Objects" instance=ExtResource("26_debug_switch") groups=["help_target"]]
+[node name="panel_oculto" parent="Objects" instance=ExtResource("27_debug_switch") groups=["help_target"]]
 position = Vector2(1664, 192)
 done_if_ally = &"calc"
 object_id = &"panel_oculto"
 pulses_required = 1
 metadata/help_id = "debug_switch"
 
-[node name="cuarto" parent="Objects" instance=ExtResource("27_dark_room")]
+[node name="cuarto" parent="Objects" instance=ExtResource("28_dark_room")]
 position = Vector2(832, 64)
 done_if_ally = &"calc"
 height_tiles = 9
@@ -505,7 +512,7 @@ object_id = &"cuarto"
 switch_id = &"interruptor_luz"
 width_tiles = 14
 
-[node name="guia_calc" parent="Objects" instance=ExtResource("28_eco_guide")]
+[node name="guia_calc" parent="Objects" instance=ExtResource("29_eco_guide")]
 position = Vector2(64, 64)
 done_if_ally = &"calc"
 guide_id = &"calc_rooftop"
@@ -513,32 +520,32 @@ object_id = &"guia_calc"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="badge_1" parent="Enemies" instance=ExtResource("29_notification_badge") groups=["help_target"]]
+[node name="badge_1" parent="Enemies" instance=ExtResource("30_notification_badge") groups=["help_target"]]
 position = Vector2(1632, 3584)
 metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
 metadata/help_id = "notification_badge"
 
-[node name="badge_2" parent="Enemies" instance=ExtResource("29_notification_badge") groups=["help_target"]]
+[node name="badge_2" parent="Enemies" instance=ExtResource("30_notification_badge") groups=["help_target"]]
 position = Vector2(352, 3584)
 metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
 metadata/help_id = "notification_badge"
 
-[node name="badge_3" parent="Enemies" instance=ExtResource("29_notification_badge") groups=["help_target"]]
+[node name="badge_3" parent="Enemies" instance=ExtResource("30_notification_badge") groups=["help_target"]]
 position = Vector2(1184, 3264)
 metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
 metadata/help_id = "notification_badge"
 
-[node name="badge_4" parent="Enemies" instance=ExtResource("29_notification_badge") groups=["help_target"]]
+[node name="badge_4" parent="Enemies" instance=ExtResource("30_notification_badge") groups=["help_target"]]
 position = Vector2(1440, 3264)
 metadata/params = {"leash_height_px": 640.0, "leash_width_px": 1664.0}
 metadata/help_id = "notification_badge"
 
-[node name="banner_1" parent="Enemies" instance=ExtResource("30_spam_banner") groups=["help_target"]]
+[node name="banner_1" parent="Enemies" instance=ExtResource("31_spam_banner") groups=["help_target"]]
 position = Vector2(1312, 3008)
 metadata/params = {"corridor_tiles": 18, "direction": -1}
 metadata/help_id = "spam_banner"
 
-[node name="banner_2" parent="Enemies" instance=ExtResource("30_spam_banner") groups=["help_target"]]
+[node name="banner_2" parent="Enemies" instance=ExtResource("31_spam_banner") groups=["help_target"]]
 position = Vector2(1376, 1344)
 metadata/params = {"corridor_tiles": 15, "direction": -1}
 metadata/help_id = "spam_banner"
@@ -546,15 +553,15 @@ metadata/help_id = "spam_banner"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(672, 640)
 
-[node name="Isak" parent="." instance=ExtResource("31_isak")]
+[node name="Isak" parent="." instance=ExtResource("32_isak")]
 position = Vector2(288, 4160)
 camera_limits = Rect2i(0, 0, 1792, 4224)
 camera_mode = &"tower"
 camera_bands = PackedVector2Array(0, 704, 704, 1408, 1408, 2304, 2304, 3072, 3072, 3840, 3840, 4224)
 
-[node name="Hud" parent="." instance=ExtResource("32_hud")]
+[node name="Hud" parent="." instance=ExtResource("33_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("33_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("34_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("34_help_system")
+script = ExtResource("35_help_system")

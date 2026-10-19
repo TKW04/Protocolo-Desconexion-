@@ -67,7 +67,8 @@ HELP_GROUP = "help_target"
 HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
 STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id", "unless_ability",
-                          "done_if_ally", "door_when", "power_source", "switch_id", "dock_id", "guide_id"}
+                          "done_if_ally", "door_when", "power_source", "switch_id", "dock_id", "guide_id",
+                          "memory_id"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 

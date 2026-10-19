@@ -69,6 +69,8 @@ SOURCES = {
     "laser_switch": ("assets/sprites/props/calc_room/laser_switch_on_00.png", None, 1),
     "debug_switch": ("assets/sprites/props/calc_room/debug_switch_on_00.png", None, 1),
     "charge_dock": ("assets/sprites/props/calc_room/charge_dock_ready_00.png", None, 1),
+    # Mensaje de secreto (tools/gen_memory_pickup.py; paso 4 de docs/propuesta-recuerdos.md).
+    "memory_pickup": ("assets/sprites/pickups/memory_pickup_idle_00.png", None, 2),
 }
 
 

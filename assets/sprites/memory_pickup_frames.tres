@@ -1,0 +1,47 @@
+[gd_resource type="SpriteFrames" load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_idle_00.png" id="1_memory_pickup_idle_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_idle_01.png" id="2_memory_pickup_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_idle_02.png" id="3_memory_pickup_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_idle_03.png" id="4_memory_pickup_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_collect_00.png" id="5_memory_pickup_collect_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_collect_01.png" id="6_memory_pickup_collect_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_collect_02.png" id="7_memory_pickup_collect_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pickups/memory_pickup_collect_03.png" id="8_memory_pickup_collect_03"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_memory_pickup_idle_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_memory_pickup_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_memory_pickup_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_memory_pickup_idle_03")
+}],
+"loop": true,
+"name": &"memory_pickup_idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_memory_pickup_collect_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_memory_pickup_collect_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_memory_pickup_collect_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_memory_pickup_collect_03")
+}],
+"loop": false,
+"name": &"memory_pickup_collect",
+"speed": 12.0
+}]
