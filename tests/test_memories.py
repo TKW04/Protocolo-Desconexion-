@@ -135,7 +135,7 @@ class Synthetic(unittest.TestCase):
         self.assertEqual(_validate(_boss_set() + [m]), [], "2-1 existe en Kernel")
 
     def test_texts(self):
-        self._assert_error(_boss_set() + [_message(text="«Hola»")], "glifos")
+        self._assert_error(_boss_set() + [_message(text="Hola €")], "glifos")
         self._assert_error(_boss_set() + [_message(text="En la vuelta Normal")], "nombra las vueltas")
 
     def test_real_data_copy_with_unknown_secret_fails(self):

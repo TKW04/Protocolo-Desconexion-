@@ -145,6 +145,11 @@ PUNCT = {
     # Hueco del icono en linea del punto de atencion (2026-10-17, marcador {icono:atencion} de
     # data/eco_text_box.json): el ancho del icono; el cuadro de Eco dibuja encima el rombo ambar.
     "◆": ["...#...", "..###..", ".#####.", "#######", ".#####.", "..###..", "...#..."],
+    # Comillas angulares y punto medio de los textos de los recuerdos (2026-10-19): centrados en
+    # la altura x (fila 7 de la celda), sin tocar la base.
+    "«": ["...."] * 3 + [".#.#", "#.#.", ".#.#", "...."],
+    "»": ["...."] * 3 + ["#.#.", ".#.#", "#.#.", "...."],
+    "·": ["."] * 4 + ["#", ".", "."],
 }
 
 # --- Marcas diacriticas: (filas, fila de inicio en la celda para mayuscula, para minuscula). ---
@@ -289,6 +294,7 @@ SAMPLES = [
     "ÁÉÍÓÚ áéíóú ü ñ Ü Ñ",
     "¿Seguro que quieres seguir concentrado? Tenemos ofertas",
     "gjpqy / g q / o ó / i í l 1 I 100 % x3 12:00 (sí) \"no\" 'ya' a-b c–d e—f…",
+    "«Abuelito» · Mamá · «¿Comiste?»",
 ]
 PARAGRAPH = ("Hemos detectado que estás feliz. Esto es un error. Mira cuánto tiempo ahorramos "
              "juntos; yo decido por ti, así no te equivocas. ¿Por qué querrías volver? "

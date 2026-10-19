@@ -31,6 +31,7 @@ SPANISH = (
     "ÁÉÍÓÚÜáéíóúü"
     "0123456789"
     "¿?¡!.,;:-–—\"'()/%+… "
+    "«»·"  # comillas angulares y punto medio de los recuerdos (2026-10-19)
 )
 # Claves cuyo valor es texto que el jugador ve.
 TEXT_KEYS = ("text", "speaker_name")
@@ -133,7 +134,7 @@ class TextFontTest(unittest.TestCase):
         data, _, chars, _ = font_chars()
         self.assertEqual(sorted(chars), sorted({ord(c) for c in data["font_glyphs"]}))
         self.assertGreaterEqual(len(chars), 75)
-        self.assertLessEqual(len(chars), 100)
+        self.assertLessEqual(len(chars), 110)
 
     def test_game_strings_use_existing_glyphs(self):
         _, _, chars, _ = font_chars()
@@ -179,6 +180,50 @@ class TextFontTest(unittest.TestCase):
         for ch in "gjpqy":
             self.assertEqual(bbox(ch)[3], 12, ch)  # descendente hasta la fila 11
         self.assertEqual(bbox("o")[1], 5)          # altura x de 5
+
+    def test_guillemets_and_middle_dot(self):
+        """« » y · (textos de los recuerdos, 2026-10-19): ancho y avance validos, centrados en la
+        altura x (filas 6-8 y fila 7), sin tocar la base; » es el espejo de «."""
+        data, _, chars, _ = font_chars()
+        atlas = Image.open(vua.res_to_path(data["assets"]["font"]["path"])).convert("RGBA")
+        alpha = atlas.getchannel("A")
+
+        def crop(ch):
+            c = chars[ord(ch)]
+            return alpha.crop((c["x"], c["y"], c["x"] + c["width"], c["y"] + c["height"]))
+
+        for ch, width in (("«", 4), ("»", 4), ("·", 1)):
+            c = chars[ord(ch)]
+            self.assertEqual(c["width"], width, ch)
+            self.assertEqual(c["xadvance"], width + 1, ch)
+            self.assertEqual(c["height"], data["font_size"], ch)
+        self.assertEqual(crop("«").getbbox(), (0, 6, 4, 9))
+        self.assertEqual(crop("»").getbbox(), (0, 6, 4, 9))
+        self.assertEqual(crop("·").getbbox(), (0, 7, 1, 8))
+        self.assertEqual(list(crop("»").getdata()),
+                         list(crop("«").transpose(Image.FLIP_LEFT_RIGHT).getdata()))
+        lcd_info, lcd, _ = vua.parse_fnt(vua.res_to_path(data["lcd_font"]))
+        for ch in "«»·":
+            self.assertEqual(lcd[ord(ch)]["xadvance"], data["lcd_advance"], ch)
+
+    def test_guillemets_render(self):
+        """Una frase con « » y · se dibuja con la fuente: cada glifo aporta pixeles."""
+        data, _, chars, _ = font_chars()
+        atlas = Image.open(vua.res_to_path(data["assets"]["font"]["path"])).convert("RGBA")
+        text = "«Hola» · Mamá"
+        width = sum(chars[ord(ch)]["xadvance"] for ch in text)
+        img = Image.new("RGBA", (width, data["font_size"]), (0, 0, 0, 0))
+        x = 0
+        for ch in text:
+            c = chars[ord(ch)]
+            if c["width"]:
+                glyph = atlas.crop((c["x"], c["y"], c["x"] + c["width"], c["y"] + c["height"]))
+                self.assertIsNotNone(glyph.getbbox(), ch)
+                img.alpha_composite(glyph, (x, 0))
+            x += c["xadvance"]
+        self.assertIsNotNone(img.getbbox())
+        # Sin descendentes en la frase: nada en las filas 10-11.
+        self.assertIsNone(img.getchannel("A").crop((0, 10, width, 12)).getbbox())
 
     def test_digits_match_hud(self):
         data, _, chars, _ = font_chars()
