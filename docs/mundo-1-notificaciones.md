@@ -83,7 +83,14 @@ Origen: sección 6 del documento original (`docs/original/diseno.md`).
 | **Cierre** | Puerta de bloqueo de pantalla que lleva al jefe. |
 | **Secreto** | Ruta alterna que solo se ve con el Debug y premia con puntos de atención y un recuerdo. |
 
-> **Concreción del secreto (decisión del usuario, 2026-10-19; concepto, sin posiciones ni datos):** la ruta alterna lleva a la sala secreta **«Excepciones»** (la lista de contactos que pueden saltarse el No molestar: «Permitir llamadas de: Favoritos»), tras una pared visible **solo con el Debug**. **La ruta exige solo el Debug** (no Deslizar), porque C5 «dash frente a pulso» sigue abierta y este mensaje es obligatorio para el final real. El «recuerdo» es el **mensaje de secreto** del 1-3: un mensaje de Mamá (borrador provisional en [propuesta-recuerdos.md](propuesta-recuerdos.md) §10; idea: lo único que debería poder interrumpirte es tu familia). Si no se obtiene en Caché, reaparece en Kernel y Raíz.
+> **Concreción del secreto (decisión del usuario, 2026-10-19; concepto, sin posiciones ni datos):** la ruta alterna lleva a la sala secreta **«Excepciones»** (la lista de contactos que pueden saltarse el No molestar: «Permitir llamadas de: Favoritos»), tras una pared visible **solo con el Debug**. **La ruta exige solo el Debug** (no Deslizar), porque este mensaje es obligatorio para el final real (se decidió cuando C5 seguía abierta; C5 se resolvió después el mismo día y la ruta sigue sin exigir el dash, decisión del usuario). El «recuerdo» es el **mensaje de secreto** del 1-3: un mensaje de Mamá (borrador provisional en [propuesta-recuerdos.md](propuesta-recuerdos.md) §10; idea: lo único que debería poder interrumpirte es tu familia). Si no se obtiene en Caché, reaparece en Kernel y Raíz.
+
+> **Decisiones del usuario (2026-10-19) y propuesta de diseño (pendiente de revisión):** [propuesta-1-3.md](propuesta-1-3.md). Lo que concreta o cambia de la tabla de arriba:
+> - **Deslizar** es un gesto aparte (acción `gesture_swipe`; C5 resuelto): el pulso sigue disponible y el Tramo 3 los combina. El dash no sube de nivel.
+> - **Tramo 1:** el **primer banner es obligatorio con el dash** (pasillo de techo bajo, sin nicho ni alternativa, justo tras obtener el gesto); los siguientes admiten el dash o el nicho.
+> - **Tramo 2:** [Reemplazado] no hay «pulso de la música»: el **ritmo es solo visual** (las plataformas parpadean con aviso y el compás se acelera cada pocos ciclos). La música y los efectos de sonido se tratarán al terminar el 1-1, el 1-2 y el 1-3.
+> - **Secreto:** la sala «Excepciones» va en el Tramo 2 (propuesta), con `msg_1_3` (`secreto_excepciones`), alcanzable en Caché y sin dash.
+> - Propuestos: nivel horizontal de 260 × 14 tiles, `sync_1` al entrar al Tramo 2 y `sync_2` al entrar al Tramo 4, 3 cargadores, 9 puntos, 1 power bank vacío y sin vida extra.
 
 ## 6.6 Jefe: Alerta Mayor
 
