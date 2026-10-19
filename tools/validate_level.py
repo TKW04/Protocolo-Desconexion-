@@ -1763,11 +1763,16 @@ class Validator:
 
     def _note_unmodeled(self):
         """Objetos del 1-3 que el validador aun no modela (paso 9 de docs/propuesta-1-3.md §7): aviso, sin
-        error. Las plataformas que parpadean cuentan como fijas. Sin ellos la salida no cambia."""
+        error. Las plataformas que parpadean cuentan como fijas y las campanas no se esquivan. Sin ellos la
+        salida no cambia."""
         blinks = [o for o in self.level.get("objects", []) if o.get("type") == "blink_platform"]
         if blinks:
             self.report.warning("plataformas que parpadean (%d, blink_platform): el ritmo no se modela todavia "
                                 "(paso 9 de docs/propuesta-1-3.md); se tratan como plataformas fijas" % len(blinks))
+        bells = [e for e in self.level.get("enemies", []) if e.get("type") == "alarm_bell"]
+        if bells:
+            self.report.warning("campanas de alarma (%d, alarm_bell): sus ondas no se modelan todavia (paso 9 de "
+                                "docs/propuesta-1-3.md); el camino no las esquiva" % len(bells))
 
     def enemy_data(self, kind):
         """Datos de data/enemies/<kind>.json (cacheados)."""

@@ -22,6 +22,9 @@
 ## obligatorio del 1-3, §5.2) el golpe ademas devuelve a Isak a la entrada del
 ## pasillo por su lado (la celda siguiente al final del barrido, get_return_x):
 ## encajar golpes no sirve para cruzar.
+## Ritmo (1-3, paso 6, §5.5): con `rhythm` (id de un RhythmZone / AlarmTunnel)
+## su intervalo es el ciclo del metronomo y su ciclo va con el compas,
+## desplazado rhythm_offset (fraccion del ciclo); sin el, interval_s.
 class_name SpamBanner
 extends Node2D
 
@@ -65,6 +68,9 @@ var warn_line: Dictionary = {}
 ## Banner obligatorio con el dash (1-3): el golpe devuelve a Isak a la entrada
 ## del pasillo (get_return_x) ademas del retroceso normal.
 var knockback_to_entry: bool = false
+## Metronomo que sigue ("" = su propio interval_s) y desfase en su ciclo (0-1).
+var rhythm: String = ""
+var rhythm_offset: float = 0.0
 
 ## Isak al que dana. Si es null se busca en la capa player sobre el pasillo.
 var target: Isak
@@ -75,6 +81,7 @@ var _ready_ok: bool = false
 var _warn_time: float = 0.0
 var _query: PhysicsShapeQueryParameters2D
 var _query_shape: RectangleShape2D
+var _rhythm_node: RhythmZone
 
 @onready var _slot: AnimatedSprite2D = $Slot
 @onready var _banner: AnimatedSprite2D = $Banner
@@ -107,10 +114,14 @@ func step(delta: float) -> void:
 	var dt: float = WorldTime.scaled_delta(delta)
 	for s: AnimatedSprite2D in [_slot, _banner, _trail]:
 		s.speed_scale = WorldTime.scale()
-	_t += dt
-	var interval: float = get_interval_s()
-	while _t >= interval:
-		_t -= interval
+	var r: RhythmZone = get_rhythm()
+	if r != null:
+		_t = fposmod(r.get_beat_phase() - rhythm_offset, 1.0) * r.get_cycle_s()
+	else:
+		_t += dt
+		var interval: float = get_interval_s()
+		while _t >= interval:
+			_t -= interval
 	_update_state()
 	if _state == STATE_WARN:
 		_warn_time += dt
@@ -163,9 +174,21 @@ func get_sweep_s() -> float:
 	return maxf(get_corridor_px() - banner_size.x, 0.0) / sweep_speed_px_s
 
 
-## Intervalo del ciclo: interval_s, o lo minimo para avisar y barrer.
+## Intervalo del ciclo: interval_s (o el ciclo de su metronomo), o lo minimo
+## para avisar y barrer.
 func get_interval_s() -> float:
-	return maxf(interval_s, get_warn_s() + get_sweep_s() + 0.01)
+	var r: RhythmZone = get_rhythm()
+	var base: float = r.get_cycle_s() if r != null else interval_s
+	return maxf(base, get_warn_s() + get_sweep_s() + 0.01)
+
+
+## Su metronomo (o null sin `rhythm` o si no existe).
+func get_rhythm() -> RhythmZone:
+	if rhythm == "":
+		return null
+	if _rhythm_node == null or not is_instance_valid(_rhythm_node):
+		_rhythm_node = RhythmZone.find(self, StringName(rhythm))
+	return _rhythm_node
 
 
 func get_rest_s() -> float:
@@ -348,6 +371,8 @@ func _load_data() -> bool:
 	sweep_speed_px_s = float(d["sweep_speed_px_s"])
 	phase_s = float(d.get("phase_s", 0.0))
 	knockback_to_entry = bool(d.get("knockback_to_entry", false))
+	rhythm = String(d.get("rhythm", ""))
+	rhythm_offset = float(d.get("rhythm_offset", 0.0))
 	contact_damage = float(d["contact_damage"])
 	banner_size = Vector2(float(d["banner_size"][0]), float(d["banner_size"][1]))
 	damage_size = Vector2(float(d["damage_size"][0]), float(d["damage_size"][1]))

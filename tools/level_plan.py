@@ -20,7 +20,7 @@ y comprueba lo que un grafo de celdas no ve:
   - Banners (spam_banner): amenaza periodica; busqueda por tiempo (celda, fase) con esperas en
     celdas seguras y saltos en el sitio; el bot espera en la entrada a la fase indicada. Los que solo
     se cruzan con el dash (knockback_to_entry, 1-3, 2026-10-19) se omiten con un aviso: el dash no
-    se modela hasta el paso 9 de docs/propuesta-1-3.md §7.
+    se modela hasta el paso 9 de docs/propuesta-1-3.md §7; los que siguen un metronomo (rhythm), igual.
   - Puntos rojos (notification_badge): simulacion a lo largo del camino; si se va a lanzar y el
     pulso lo alcanza, se aturde (pulso insertado). El dano que quede tiene que caber en
     validation.sync_damage_budget (0 por defecto).
@@ -991,6 +991,13 @@ class Planner:
                 self.warning("banner %s: su pasillo solo se cruza con el dash (knockback_to_entry); el validador "
                              "aun no modela el dash (paso 9 de docs/propuesta-1-3.md): se omite del plan"
                              % enemy["id"], (enemy["x"], enemy["y"]))
+                continue
+            if p.get("rhythm"):
+                # Banner con ritmo (tunel de alarmas del 1-3): su ciclo lo marca un metronomo por posicion,
+                # que no se modela hasta el paso 9 de docs/propuesta-1-3.md §7: se omite con un aviso.
+                self.warning("banner %s: su ciclo lo marca el metronomo %s (rhythm); el validador aun no modela "
+                             "el ritmo (paso 9 de docs/propuesta-1-3.md): se omite del plan"
+                             % (enemy["id"], p["rhythm"]), (enemy["x"], enemy["y"]))
                 continue
             T = self.T
             direction = int(p["direction"])

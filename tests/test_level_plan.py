@@ -177,6 +177,19 @@ class RoomsTest(unittest.TestCase):
                             for w in messages(result, "warnings")), messages(result, "warnings"))
         self.assertEqual(exported["steps"][-1]["action"], "goal")
 
+    def test_alarmas_test_skips_bells_and_rhythm_banners_with_warnings(self):
+        """Paso 6 de docs/propuesta-1-3.md (2026-10-19): sin modelar el ritmo ni las campanas (paso 9),
+        los banners con rhythm se omiten del plan y las campanas no se esquivan, con avisos."""
+        result, exported = checked("alarmas_test")
+        self.assertTrue(result["ok"], messages(result))
+        warnings = messages(result, "warnings")
+        self.assertTrue(any("campanas de alarma (6, alarm_bell)" in w for w in warnings), warnings)
+        for bid in ("banner_4a", "banner_4c"):
+            self.assertTrue(any("banner %s: su ciclo lo marca el metronomo tunel_alarmas" % bid in w
+                                for w in warnings), warnings)
+        self.assertFalse(any(s["action"] == "wait_phase" for s in exported["steps"]))
+        self.assert_export_shape(exported)
+
     def test_tower_test_exports_the_climb(self):
         result, exported = checked("tower_test")
         self.assertTrue(result["ok"], messages(result))

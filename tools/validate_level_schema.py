@@ -20,7 +20,9 @@ Reglas:
     JSON del tipo trae level_params (punto rojo y banner, 2026-10-16), solo los listados y en su
     rango; el banner, con su pasillo dentro del grid y sin celdas solidas y un ciclo con reposo y,
     con knockback_to_entry (banner obligatorio con el dash del 1-3, 2026-10-19), techo bajo en todo
-    el pasillo (sin nicho) y la celda de vuelta libre y con suelo;
+    el pasillo (sin nicho) y la celda de vuelta libre y con suelo; con rhythm, el metronomo existe y su
+    ciclo mas corto deja aviso + barrido + reposo; la campana de alarma (alarm_bell) cuelga del techo,
+    su onda llega al suelo sin cruzar terreno y su ciclo deja aviso + onda + reposo;
   - objects {type, x, y, params} con tipo del catalogo (data/world<N>_objects.json),
     params obligatorios presentes y sin params desconocidos, dentro del grid, y sin
     pisar terreno; params con valores de `allowed` del catalogo (ability_pickup.ability);
@@ -351,6 +353,8 @@ class LevelValidator:
                         self.error("enemigo '%s': params.%s debe ser un numero > 0" % (entry.get("id"), key))
             if kind == "spam_banner" and isinstance(data, dict):
                 self._check_banner(entry, params, data)
+            if kind == "alarm_bell" and isinstance(data, dict):
+                self._check_bell(entry, params, data)
 
     def _check_enemy_params(self, entry, params, spec):
         """Params por instancia segun level_params del JSON del enemigo (2026-10-16: punto rojo y
@@ -365,6 +369,10 @@ class LevelValidator:
             if rule.get("bool"):
                 if not isinstance(value, bool):
                     self.error("enemigo '%s': params.%s debe ser true o false" % (eid, key))
+                continue
+            if rule.get("string"):
+                if not isinstance(value, str):
+                    self.error("enemigo '%s': params.%s debe ser un texto" % (eid, key))
                 continue
             if not _is_number(value):
                 self.error("enemigo '%s': params.%s debe ser un numero" % (eid, key))
@@ -402,6 +410,9 @@ class LevelValidator:
             sweep = (tiles * tile - float(data["banner_size"][0])) / float(get("sweep_speed_px_s"))
             if sweep <= 0:
                 self.error("banner '%s': el pasillo debe ser mas ancho que el banner" % eid)
+            elif self._rhythm_rest(eid, get("rhythm"), warn + sweep + float(data.get("min_rest_s", 0.0)),
+                                   "aviso + barrido + reposo minimo"):
+                pass
             elif float(get("interval_s")) < warn + sweep + float(data.get("min_rest_s", 0.0)):
                 self.error("banner '%s': interval_s %.2f menor que aviso + barrido + reposo minimo (%.2f s)"
                            % (eid, float(get("interval_s")), warn + sweep + float(data.get("min_rest_s", 0.0))))
@@ -409,6 +420,55 @@ class LevelValidator:
             self.error("banner '%s': datos del banner incompletos" % eid)
         if get("knockback_to_entry") is True:
             self._check_banner_dash(eid, x, y, int(tiles), direction)
+
+    def _rhythm_rest(self, eid, rid, need, what):
+        """Con `rhythm` (banner o campana del 1-3, 2026-10-19): el metronomo existe y su ciclo mas corto
+        deja `need` s (aviso + barrido/onda + reposo minimo). Verdadero si hay rhythm (ya comprobado)."""
+        if rid in (None, ""):
+            return False
+        rhythms = self._rhythms() if isinstance(self.level.get("objects"), list) else {}
+        if rid not in rhythms:
+            self.error("enemigo '%s': rhythm '%s' no es el id de ningun %s" % (eid, rid, " ni ".join(RHYTHM_TYPES)))
+            return True
+        shortest = rhythms[rid][2]
+        if shortest is not None and shortest < need - 1e-9:
+            self.error("enemigo '%s': el ciclo mas corto de %s (%.2f s) es menor que %s (%.2f s)"
+                       % (eid, rid, shortest, what, need))
+        return True
+
+    def _check_bell(self, entry, params, data):
+        """Campana de alarma (alarm_bell, 2026-10-19, paso 6 de docs/propuesta-1-3.md §5.5): colgada del
+        techo (la celda de encima solida), la onda de wave_tiles celdas sin terreno solido hasta el suelo
+        (la celda siguiente solida) y un ciclo con reposo (el de su rhythm o interval_s >= aviso + onda +
+        min_rest_s)."""
+        eid = entry.get("id")
+        x, y = entry.get("x"), entry.get("y")
+        if not (_is_int(x) and _is_int(y)):
+            return
+        get = lambda k: params.get(k, data.get(k))  # noqa: E731
+        tiles = get("wave_tiles")
+        if not _is_int(tiles) or tiles < 1:
+            return
+        if not self.in_bounds(x, y - 1) or self.cell(x, y - 1) != "#":
+            self.error("campana '%s': debe colgar del techo (la celda de encima solida)" % eid, y, x)
+        for j in range(tiles):
+            if not self.in_bounds(x, y + j) or self.cell(x, y + j) == "#":
+                self.error("campana '%s': la onda (%d celdas) cruza terreno solido o sale del grid" % (eid, tiles),
+                           y + j, x)
+                return
+        if not self.in_bounds(x, y + tiles) or self.cell(x, y + tiles) != "#":
+            self.error("campana '%s': la onda debe llegar al suelo (la celda tras sus %d celdas, solida)"
+                       % (eid, tiles), y + tiles, x)
+        try:
+            need = float(data["anticipation_frames"]) / float(data["anim_fps"]) + float(get("wave_s")) \
+                + float(data.get("min_rest_s", 0.0))
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            self.error("campana '%s': datos de la campana incompletos" % eid)
+            return
+        if not self._rhythm_rest(eid, get("rhythm"), need, "aviso + onda + reposo minimo") \
+                and float(get("interval_s")) < need - 1e-9:
+            self.error("campana '%s': interval_s %.2f menor que aviso + onda + reposo minimo (%.2f s)"
+                       % (eid, float(get("interval_s")), need))
 
     def _check_banner_dash(self, eid, x, y, tiles, direction):
         """Banner obligatorio con el dash (knockback_to_entry, 2026-10-19, paso 4 de
@@ -734,6 +794,8 @@ class LevelValidator:
                     self.error("%s: zone %s se sale del grid" % (what, list(zone)), y, x)
                 if "loop" in p and not isinstance(p["loop"], bool):
                     self.error("%s: loop debe ser true o false" % what, y, x)
+                if kind == "alarm_tunnel":
+                    self._check_stages(what, x, y, p.get("stages"), zone)
                 if kind == "rhythm_zone":
                     steps = p.get("tempo_steps_s")
                     if not (isinstance(steps, list) and steps and all(_is_number(v) and lo <= v <= hi for v in steps)):
@@ -756,6 +818,31 @@ class LevelValidator:
                 if shortest is not None and _is_number(on) and on * shortest < warn + extra - 1e-9:
                     self.error("%s: encendida %.2f s con el ciclo mas corto (%.2f s): menos que el aviso (%.2f s) + "
                                "%.2f s" % (what, on * shortest, shortest, warn, extra), y, x)
+
+    def _check_stages(self, what, x, y, stages, zone):
+        """Tramos del tunel de alarmas (2026-10-19, paso 6): lista no vacia de {x_from, x_to, cycle_s}, en
+        orden y sin solaparse, dentro de las columnas de la zona, con ciclos de RHYTHM_CYCLE_S."""
+        lo, hi = RHYTHM_CYCLE_S
+        if not isinstance(stages, list) or not stages:
+            self.error("%s: stages debe ser una lista no vacia de {x_from, x_to, cycle_s}" % what, y, x)
+            return
+        previous = None
+        for j, st in enumerate(stages):
+            tag = "%s: stages[%d]" % (what, j)
+            if not isinstance(st, dict) or set(st) != {"x_from", "x_to", "cycle_s"}:
+                self.error("%s debe ser {x_from, x_to, cycle_s}" % tag, y, x)
+                return
+            a, b, c = st["x_from"], st["x_to"], st["cycle_s"]
+            if not (_is_int(a) and _is_int(b) and a <= b):
+                self.error("%s: x_from y x_to deben ser columnas (enteros, x_from <= x_to)" % tag, y, x)
+                return
+            if not (_is_number(c) and lo <= c <= hi):
+                self.error("%s: cycle_s debe estar entre %g y %g s" % (tag, lo, hi), y, x)
+            if previous is not None and a <= previous:
+                self.error("%s: los tramos van en orden y sin solaparse" % tag, y, x)
+            previous = b
+            if zone is not None and not (zone[0] <= a and b < zone[0] + zone[2]):
+                self.error("%s: columnas %d-%d fuera de la zona" % (tag, a, b), y, x)
 
     def _check_guide(self, what, x, y, guide_id, guides, ids):
         guide = guides.get(guide_id) if isinstance(guide_id, str) else None

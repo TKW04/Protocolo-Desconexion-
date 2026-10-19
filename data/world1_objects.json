@@ -509,6 +509,24 @@
 			},
 			"example": {"type": "blink_platform", "x": 81, "y": 8, "params": {"rhythm": "ritmo_2", "group": "A", "width_tiles": 2}}
 		},
+		"alarm_tunnel": {
+			"scene": "res://scenes/levels/alarm_tunnel.tscn",
+			"description": "Tunel de alarmas (2026-10-19, paso 6 de docs/propuesta-1-3.md §7, §5.5; Tramo 4 «Alarmas» del 1-3). Un metronomo (AlarmTunnel, extiende RhythmZone; mismo icono de vibracion en su celda) cuyo compas lo marca la POSICION: stages = [{x_from, x_to, cycle_s}] (columnas absolutas, en orden, dentro de la zona): manda el tramo de la columna mas avanzada que ha pisado Isak dentro de zone (no retrocede: volver atras no lo hace mas lento; sin bucle). Antes de entrar, el primer tramo; start on_enter o always. Las campanas (alarm_bell) y los banners con rhythm lo siguen. Tiempo del mundo; al reaparecer Isak vuelve al principio. Sin ayuda con Q.",
+			"required": ["id", "zone", "stages"],
+			"fields": {
+				"id": "object_id",
+				"zone": "zone",
+				"stages": "stages",
+				"start": "start_mode"
+			},
+			"defaults": {
+				"start": "on_enter"
+			},
+			"allowed": {
+				"start": ["on_enter", "always"]
+			},
+			"example": {"type": "alarm_tunnel", "x": 190, "y": 3, "params": {"id": "tunel_4", "zone": [192, 6, 45, 5], "stages": [{"x_from": 192, "x_to": 206, "cycle_s": 2.0}, {"x_from": 207, "x_to": 221, "cycle_s": 1.6}, {"x_from": 222, "x_to": 236, "cycle_s": 1.4}]}}
+		},
 		"laser_switch": {
 			"scene": "res://scenes/levels/laser_switch.tscn",
 			"help_id": "laser_switch",

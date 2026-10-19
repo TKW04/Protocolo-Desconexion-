@@ -981,6 +981,78 @@ class RhythmSchemaTest(unittest.TestCase):
         self.assert_fails("ocupa una celda que el grid debe dejar vacia")
 
 
+class AlarmTunnelSchemaTest(unittest.TestCase):
+    """Tunel de alarmas, campanas y banners con ritmo (2026-10-19, paso 6 de docs/propuesta-1-3.md
+    §5.5): tramos en orden dentro de la zona, campana colgada del techo con la onda hasta el suelo y
+    ciclo con reposo, banners con rhythm existente y ciclo que cabe. Sala alarmas_test."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "levels", "alarmas_test.json"), encoding="utf-8") as fh:
+            self.level = json.load(fh)
+
+    def tunnel(self):
+        return next(o for o in self.level["objects"] if o["type"] == "alarm_tunnel")
+
+    def enemy(self, eid):
+        return next(e for e in self.level["enemies"] if e["id"] == eid)
+
+    def assert_fails(self, fragment):
+        errors = vls.validate_level(self.level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_test_room_is_valid(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+        kinds = sorted({e["type"] for e in self.level["enemies"]})
+        self.assertEqual(kinds, ["alarm_bell", "spam_banner"])
+
+    def test_stages_in_order_inside_the_zone(self):
+        self.tunnel()["params"]["stages"][1]["x_from"] = 10
+        self.assert_fails("los tramos van en orden y sin solaparse")
+        self.setUp()
+        self.tunnel()["params"]["stages"][2]["x_to"] = 36
+        self.assert_fails("columnas 24-36 fuera de la zona")
+        self.setUp()
+        self.tunnel()["params"]["stages"][0]["cycle_s"] = 0.2
+        self.assert_fails("cycle_s debe estar entre 0.5 y 12 s")
+        self.setUp()
+        self.tunnel()["params"]["stages"] = []
+        self.assert_fails("stages debe ser una lista no vacia")
+
+    def test_bell_hangs_from_the_ceiling_and_reaches_the_floor(self):
+        self.enemy("bell_4b_2")["params"]["wave_tiles"] = 3
+        self.assert_fails("campana 'bell_4b_2': la onda (3 celdas) cruza terreno solido")
+        self.setUp()
+        self.enemy("bell_4b_2")["params"]["wave_tiles"] = 1
+        self.assert_fails("campana 'bell_4b_2': la onda debe llegar al suelo")
+
+    def test_bell_needs_a_ceiling(self):
+        bell = self.enemy("bell_4a_1")
+        row = self.level["grid"][7]
+        self.level["grid"][7] = row[:9] + "." + row[10:]
+        self.assertIn("campana 'bell_4a_1': debe colgar del techo",
+                      " ".join(vls.validate_level(self.level)))
+        self.assertEqual(bell["x"], 9)
+
+    def test_rhythm_must_exist_and_leave_rest(self):
+        self.enemy("bell_4a_1")["params"]["rhythm"] = "otro"
+        self.assert_fails("enemigo 'bell_4a_1': rhythm 'otro' no es el id de ningun")
+        self.setUp()
+        self.tunnel()["params"]["stages"][2]["cycle_s"] = 1.1
+        self.assert_fails("el ciclo mas corto de tunel_alarmas (1.10 s) es menor que aviso + onda + reposo minimo")
+        self.assert_fails("es menor que aviso + barrido + reposo minimo")
+        self.setUp()
+        self.enemy("banner_4a")["params"]["rhythm"] = 3
+        self.assert_fails("params.rhythm debe ser un texto")
+
+    def test_bell_without_rhythm_uses_interval(self):
+        p = self.enemy("bell_4a_1")["params"]
+        del p["rhythm"]
+        p["interval_s"] = 1.2
+        self.assert_fails("campana 'bell_4a_1': interval_s 1.20 menor que aviso + onda + reposo minimo")
+        p["interval_s"] = 2.0
+        self.assertEqual(vls.validate_level(self.level), [])
+
+
 class TowerObjectsSchemaTest(unittest.TestCase):
     """Recordatorio, Posponer, pop-up translucido y barra del 99 % del 1-2 (pasos 6, 7 y 8,
     2026-10-16): params con su rango (level_params del catalogo), enlaces Posponer -> grupos
