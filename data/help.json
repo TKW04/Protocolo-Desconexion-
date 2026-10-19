@@ -232,6 +232,17 @@
 			"center_px": [0, -32],
 			"prompt_px": [0, -70]
 		},
+		"spam_banner_dash": {
+			"_notes": "Banner obligatorio con el dash del 1-3 (spam_banner con knockback_to_entry; paso 4 de docs/propuesta-1-3.md §7, §2.4 y §5.2). Lo usa el help_id propio del enemigo en el nivel. Titulo y texto PROPUESTOS, por decidir.",
+			"category": "enemy",
+			"title": "Banner sin salida",
+			"text": "Este pasillo no deja saltar. Deslízate a través cuando llegue.",
+			"first_level": "1-3",
+			"world": 1,
+			"order": 30,
+			"center_px": [0, -32],
+			"prompt_px": [0, -70]
+		},
 		"reminder_platform": {
 			"category": "object",
 			"title": "Recordatorio",

@@ -17,6 +17,11 @@
 ##   invulnerabilidad breve; empuja hacia donde va el banner).
 ## No es un cuerpo fisico: el laser lo atraviesa y el pulso no le afecta
 ## (indestructible, decision de esta implementacion; ver el JSON).
+## Dash (1-3, paso 4 de docs/propuesta-1-3.md §7): Isak invulnerable durante el
+## dash no recibe el golpe (take_hit lo ignora). Con knockback_to_entry (banner
+## obligatorio del 1-3, §5.2) el golpe ademas devuelve a Isak a la entrada del
+## pasillo por su lado (la celda siguiente al final del barrido, get_return_x):
+## encajar golpes no sirve para cruzar.
 class_name SpamBanner
 extends Node2D
 
@@ -57,6 +62,9 @@ var damage_bottom_px: float = 4.0
 var anim_fps: float = 12.0
 var anticipation_frames: int = 9
 var warn_line: Dictionary = {}
+## Banner obligatorio con el dash (1-3): el golpe devuelve a Isak a la entrada
+## del pasillo (get_return_x) ademas del retroceso normal.
+var knockback_to_entry: bool = false
 
 ## Isak al que dana. Si es null se busca en la capa player sobre el pasillo.
 var target: Isak
@@ -179,6 +187,13 @@ func get_corridor_rect() -> Rect2:
 	var a: float = global_position.x + get_entry_x()
 	var b: float = a + float(direction) * get_corridor_px()
 	return Rect2(Vector2(minf(a, b), global_position.y - TILE), Vector2(get_corridor_px(), TILE))
+
+
+## Pies de la entrada del pasillo por el lado de Isak (knockback_to_entry):
+## el centro de la celda siguiente al final del barrido (la E mas corridor_tiles
+## celdas hacia direction), con los pies a la altura de la E.
+func get_return_position() -> Vector2:
+	return global_position + Vector2(float(direction) * get_corridor_px(), 0.0)
 
 
 ## X global del centro del banner (durante el barrido; si no, el del inicio).
@@ -315,6 +330,9 @@ func _check_hit(isak: Isak) -> void:
 	if not isak.take_hit(float(direction)):
 		return
 	GameState.apply_sync_damage(contact_damage)
+	if knockback_to_entry:
+		# Vuelve a la entrada con el retroceso normal (HurtState) desde alli.
+		isak.global_position = get_return_position()
 	hit_player.emit(contact_damage)
 
 
@@ -329,6 +347,7 @@ func _load_data() -> bool:
 	interval_s = float(d["interval_s"])
 	sweep_speed_px_s = float(d["sweep_speed_px_s"])
 	phase_s = float(d.get("phase_s", 0.0))
+	knockback_to_entry = bool(d.get("knockback_to_entry", false))
 	contact_damage = float(d["contact_damage"])
 	banner_size = Vector2(float(d["banner_size"][0]), float(d["banner_size"][1]))
 	damage_size = Vector2(float(d["damage_size"][0]), float(d["damage_size"][1]))

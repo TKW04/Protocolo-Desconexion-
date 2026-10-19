@@ -154,6 +154,20 @@ class RoomsTest(unittest.TestCase):
         self.assertFalse(any(s["action"] == "laser" for s in exported["steps"]))
         self.assert_export_shape(exported)
 
+    def test_silenciados_test_skips_the_dash_banner_with_a_warning(self):
+        """Paso 4 de docs/propuesta-1-3.md (2026-10-19): el banner obligatorio con el dash
+        (knockback_to_entry) se omite del plan con un aviso hasta el paso 9; el del nicho, si."""
+        result, exported = checked("silenciados_test")
+        self.assertTrue(result["ok"], messages(result))
+        warnings = messages(result, "warnings")
+        self.assertTrue(any("banner banner_dash: su pasillo solo se cruza con el dash" in w for w in warnings),
+                        warnings)
+        banners = result["plan"]["banners"]
+        self.assertEqual([b["banners"] for b in banners], [["banner_1b"]])
+        sync = next(s for s in exported["steps"] if s["action"] == "wait_phase")
+        self.assertEqual(set(sync["banner_cycle_s"]), {"banner_1b"})
+        self.assert_export_shape(exported)
+
     def test_tower_test_exports_the_climb(self):
         result, exported = checked("tower_test")
         self.assertTrue(result["ok"], messages(result))

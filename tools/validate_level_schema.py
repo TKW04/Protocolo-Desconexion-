@@ -18,7 +18,9 @@ Reglas:
     con otra recompensa (p. ej. ["attention_points", "memory"]);
   - enemigos con tipo existente (data/enemies/<type>.json); sus params, numeros > 0 o, si el
     JSON del tipo trae level_params (punto rojo y banner, 2026-10-16), solo los listados y en su
-    rango; el banner, con su pasillo dentro del grid y sin celdas solidas y un ciclo con reposo;
+    rango; el banner, con su pasillo dentro del grid y sin celdas solidas y un ciclo con reposo y,
+    con knockback_to_entry (banner obligatorio con el dash del 1-3, 2026-10-19), techo bajo en todo
+    el pasillo (sin nicho) y la celda de vuelta libre y con suelo;
   - objects {type, x, y, params} con tipo del catalogo (data/world<N>_objects.json),
     params obligatorios presentes y sin params desconocidos, dentro del grid, y sin
     pisar terreno; params con valores de `allowed` del catalogo (ability_pickup.ability);
@@ -85,7 +87,7 @@ REQUIRED_FIELDS = {
     "objects": list,
     "unlocks": list,
 }
-KNOWN_ABILITIES = {"pulse", "debug", "laser"}
+KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash"}
 # Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);
 # tower = camara de torre (scripts/player/tower_camera.gd, data/camera_tower.json).
 CAMERA_VERTICAL_MODES = ("simple", "tower")
@@ -355,6 +357,10 @@ class LevelValidator:
                 self.error("enemigo '%s': params.%s no existe para %s (admite: %s)"
                            % (eid, key, entry.get("type"), ", ".join(k for k in sorted(spec) if not k.startswith("_"))))
                 continue
+            if rule.get("bool"):
+                if not isinstance(value, bool):
+                    self.error("enemigo '%s': params.%s debe ser true o false" % (eid, key))
+                continue
             if not _is_number(value):
                 self.error("enemigo '%s': params.%s debe ser un numero" % (eid, key))
                 continue
@@ -396,6 +402,27 @@ class LevelValidator:
                            % (eid, float(get("interval_s")), warn + sweep + float(data.get("min_rest_s", 0.0))))
         except (KeyError, TypeError, ValueError, ZeroDivisionError):
             self.error("banner '%s': datos del banner incompletos" % eid)
+        if get("knockback_to_entry") is True:
+            self._check_banner_dash(eid, x, y, int(tiles), direction)
+
+    def _check_banner_dash(self, eid, x, y, tiles, direction):
+        """Banner obligatorio con el dash (knockback_to_entry, 2026-10-19, paso 4 de
+        docs/propuesta-1-3.md §5.2): techo bajo en todo el pasillo (2 filas libres: la de encima de
+        Isak libre y la siguiente solida; no hay salto ni nicho) y la celda de vuelta (la siguiente al
+        final del barrido) libre, con suelo y con sitio para Isak."""
+        for i in range(tiles):
+            cx = x + direction * i
+            if not self.in_bounds(cx, y - 2):
+                return
+            if self.cell(cx, y - 1) not in ".oE" or self.cell(cx, y - 2) != "#":
+                self.error("banner '%s' (knockback_to_entry): el pasillo debe tener techo bajo en todo su largo "
+                           "(2 filas libres y la de encima solida; sin nicho)" % eid, y - 1, cx)
+                return
+        rx = x + direction * tiles
+        if not (self.in_bounds(rx, y + 1) and self.in_bounds(rx, y - 1)) or self.cell(rx, y) in "#^" \
+                or self.cell(rx, y - 1) in "#^" or self.cell(rx, y + 1) not in "#-":
+            self.error("banner '%s' (knockback_to_entry): la entrada del pasillo (la celda de vuelta) debe estar "
+                       "libre, con suelo y con sitio para Isak" % eid, y, rx)
 
     def _footprint(self, kind, x, y, params, defaults):
         def get(name, fallback):

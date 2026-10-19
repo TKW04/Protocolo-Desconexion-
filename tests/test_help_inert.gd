@@ -371,6 +371,24 @@ func test_banner_helps_in_every_phase() -> void:
 		assert_eq(_help.get_target(), banner, "Banner en %s: candidato" % state)
 
 
+## Banner obligatorio con el dash (1-3, ayuda propia spam_banner_dash): igual, nunca se destruye.
+func test_dash_banner_helps_in_every_phase() -> void:
+	var banner := BANNER_SCENE.instantiate() as SpamBanner
+	_place(banner, &"spam_banner_dash")
+	banner.set_physics_process(false)
+	banner.knockback_to_entry = true
+	await wait_process_frames(1)
+	for state: StringName in [SpamBanner.STATE_REST, SpamBanner.STATE_WARN, SpamBanner.STATE_SWEEP]:
+		for i: int in 400:
+			if banner.get_state() == state:
+				break
+			banner.step(STEP)
+		assert_eq(banner.get_state(), state)
+		_run(STEP * 2.0)
+		assert_true(HelpCatalog.is_help_live(banner), "Banner obligatorio en %s: ayuda" % state)
+		assert_eq(_help.get_target(), banner, "Banner obligatorio en %s: candidato" % state)
+
+
 ## Isak quieto en FEET (sin suelo en esta prueba caeria y saldria del radio de la Q
 ## segun los cuadros reales que pasen).
 func _freeze_isak() -> void:
@@ -442,7 +460,7 @@ func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
 		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
-		&"notification_badge", &"spam_banner", &"reminder_platform", &"snooze_button", &"overlay_popup",
+		&"notification_badge", &"spam_banner", &"spam_banner_dash", &"reminder_platform", &"snooze_button", &"overlay_popup",
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)

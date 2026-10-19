@@ -3,7 +3,9 @@
 # intervalos fijos, el aviso no dana, el barrido quita 10 de Sync Rate una vez
 # (invulnerabilidad de Isak) y se salta por encima, direccion, desfase, vuelta
 # al estado inicial al reaparecer, el laser lo atraviesa, y el Debug lo
-# ralentiza a x0,5 (tiempo del mundo).
+# ralentiza a x0,5 (tiempo del mundo). Desde el 2026-10-19 (paso 4 de
+# docs/propuesta-1-3.md §7): el dash lo atraviesa sin dano (invulnerable) y,
+# con knockback_to_entry, el golpe devuelve a Isak a la entrada del pasillo.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -25,6 +27,7 @@ func before_each() -> void:
 		"laser": GameState.is_ability_unlocked(GameState.ABILITY_LASER),
 		"debug": GameState.is_ability_unlocked(GameState.ABILITY_DEBUG),
 		"energy": GameState.debug_energy,
+		"dash": GameState.is_ability_unlocked(GameState.ABILITY_DASH),
 	}
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
 	DebugMode.input_enabled = false
@@ -44,6 +47,7 @@ func after_each() -> void:
 	DebugMode.input_enabled = true
 	GameState.set_ability_unlocked(GameState.ABILITY_LASER, _saved.laser)
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _saved.debug)
+	GameState.set_ability_unlocked(GameState.ABILITY_DASH, _saved.dash)
 	GameState.debug_energy = _saved.energy
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
 
@@ -211,3 +215,89 @@ func test_debug_slows_the_sweep_by_half() -> void:
 	_step([b], 15)
 	var slowed: float = b.get_banner_center_x() - x0
 	assert_almost_eq(slowed / normal, 0.5, 0.05, "Con el Debug barre a x0,5")
+
+
+# --- Dash y banner obligatorio (paso 4 de docs/propuesta-1-3.md §7) ---
+
+## Banner hacia la izquierda (hacia Isak), como el obligatorio del 1-3.
+func _dash_banner(knockback: bool) -> SpamBanner:
+	var b: SpamBanner = _banner(-1, Vector2(1200.0, 0.0))
+	b.sweep_speed_px_s = 320.0
+	b.knockback_to_entry = knockback
+	b.reset_patrol()
+	return b
+
+
+func test_knockback_to_entry_defaults_off() -> void:
+	var b: SpamBanner = _banner()
+	assert_false(b.knockback_to_entry, "Por defecto el golpe no devuelve a la entrada (el 1-2 no cambia)")
+	var d: SpamBanner = _dash_banner(true)
+	assert_almost_eq(d.get_return_position().x, 1200.0 - 12.0 * 64.0, EPS,
+		"La entrada por el lado de Isak: la celda siguiente al final del barrido")
+	assert_almost_eq(d.get_return_position().y, 0.0, EPS, "A la altura de los pies de la E")
+
+
+func test_dash_through_sweeping_banner_takes_no_hit() -> void:
+	GameState.set_ability_unlocked(GameState.ABILITY_DASH, true)
+	GameState.debug_energy = GameState.get_debug_energy_max()
+	var b: SpamBanner = _dash_banner(true)
+	var hits: Array = []
+	b.hit_player.connect(func(a: float) -> void: hits.append(a))
+	_isak.global_position = Vector2(1200.0 - 64.0 * 9.0, 0.0)
+	_isak.facing = 1.0
+	_sim.settle()
+	_steps_until(b, SpamBanner.STATE_SWEEP)
+	# Espera a que el banner este a un tile de Isak y se desliza a traves.
+	for i: int in 600:
+		if b.get_damage_rect().position.x - _isak.global_position.x < 80.0:
+			break
+		_step([b])
+	var x0: float = _isak.global_position.x
+	_sim.input.move_axis = 1.0
+	_sim.input.dash_pressed = true
+	_step([b])
+	_sim.input.dash_pressed = false
+	assert_true(_isak.is_dashing(), "Sale el dash")
+	_sim.input.move_axis = 0.0
+	_step([b], _sim.frames(0.6))
+	assert_eq(hits.size(), 0, "Invulnerable durante el dash: sin golpe")
+	assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, EPS, "Sin dano")
+	assert_gt(_isak.global_position.x, x0 + 150.0, "Lo ha atravesado (no ha vuelto a la entrada)")
+	assert_gt(_isak.global_position.x, b.get_banner_center_x(), "Queda detras del banner")
+
+
+func test_knockback_to_entry_sends_isak_back_to_the_entry() -> void:
+	var b: SpamBanner = _dash_banner(true)
+	var hits: Array = []
+	b.hit_player.connect(func(a: float) -> void: hits.append(a))
+	# Isak a mitad del pasillo, andando hacia la salida (hacia el banner).
+	_isak.global_position = Vector2(1200.0 - 64.0 * 6.0, 0.0)
+	_sim.settle()
+	_steps_until(b, SpamBanner.STATE_SWEEP)
+	for i: int in 600:
+		if not hits.is_empty():
+			break
+		_step([b])
+	assert_eq(hits, [10.0], "El barrido le alcanza: -10")
+	assert_almost_eq(_isak.global_position.x, b.get_return_position().x, 1.0, "Vuelve a la entrada del pasillo")
+	assert_eq(_sim.state(), PlayerState.HURT, "Con el retroceso normal desde alli")
+	_step([b], _sim.frames(0.3))
+	assert_lt(_isak.global_position.x, b.get_return_position().x + 1.0,
+		"El retroceso lo aleja del pasillo (hacia donde va el banner)")
+	assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX - 10.0, EPS)
+
+
+func test_without_knockback_to_entry_the_hit_stays_in_place() -> void:
+	var b: SpamBanner = _dash_banner(false)
+	var hits: Array = []
+	b.hit_player.connect(func(a: float) -> void: hits.append(a))
+	var at: float = 1200.0 - 64.0 * 6.0
+	_isak.global_position = Vector2(at, 0.0)
+	_sim.settle()
+	_steps_until(b, SpamBanner.STATE_SWEEP)
+	for i: int in 600:
+		if not hits.is_empty():
+			break
+		_step([b])
+	assert_eq(hits.size(), 1)
+	assert_almost_eq(_isak.global_position.x, at, 64.0, "Sin knockback_to_entry no se teletransporta")

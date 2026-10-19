@@ -72,8 +72,8 @@ func test_every_help_type_has_a_world() -> void:
 func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	var enemies: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_ENEMY)
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
-	assert_eq(enemies, [&"alert_bubble", &"notification_badge", &"spam_banner"] as Array[StringName],
-		"Burbuja (1-1), punto rojo y banner (1-2), en orden")
+	assert_eq(enemies, [&"alert_bubble", &"notification_badge", &"spam_banner", &"spam_banner_dash"] as Array[StringName],
+		"Burbuja (1-1), punto rojo y banner (1-2) y banner obligatorio con el dash (1-3), en orden")
 	assert_eq(enemies.size() + objects.size(), HelpCatalog.shared().ids().size(), "Todos los tipos del 1-1")
 	assert_eq(objects[0], &"attention_point", "Orden de help.json")
 	for i: int in range(1, objects.size()):
@@ -238,9 +238,9 @@ func test_open_folder_shows_cards_and_silhouettes() -> void:
 	assert_eq(_album.get_world(), 1)
 	assert_eq(_album.get_title_text(), "Notificaciones")
 	assert_eq(_album.get_tab(), "enemy", "Primera seccion: Enemigos")
-	assert_eq(_album.get_counter_text(), "Fichas: 1/3")
-	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta", "???", "???"]),
-		"Punto rojo y banner sin aprender: «???»")
+	assert_eq(_album.get_counter_text(), "Fichas: 1/4")
+	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta", "???", "???", "???"]),
+		"Punto rojo y banners sin aprender: «???»")
 	assert_false(_album.is_cell_silhouette(0))
 	assert_true(_album.is_cell_silhouette(1))
 	assert_true(_album.is_cell_silhouette(2))
@@ -275,8 +275,8 @@ func test_red_dot_and_banner_cards_in_the_enemies_tab() -> void:
 	_album.open()
 	_album.confirm()
 	assert_eq(_album.get_tab(), "enemy")
-	assert_eq(_album.get_counter_text(), "Fichas: 2/3")
-	assert_eq(_album.get_cell_texts(), PackedStringArray(["???", "Punto rojo", "Banner"]))
+	assert_eq(_album.get_counter_text(), "Fichas: 2/4")
+	assert_eq(_album.get_cell_texts(), PackedStringArray(["???", "Punto rojo", "Banner", "???"]))
 	assert_true(_album.is_cell_silhouette(0), "La Burbuja sin aprender: silueta")
 	assert_eq(_album.get_cell_texture(1).resource_path, "res://assets/sprites/ui/album/album_card_notification_badge.png")
 	assert_eq(_album.get_cell_texture(2).resource_path, "res://assets/sprites/ui/album/album_card_spam_banner.png")

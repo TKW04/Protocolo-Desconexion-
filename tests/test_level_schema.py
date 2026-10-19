@@ -616,7 +616,8 @@ class LevelSchemaTest(unittest.TestCase):
         self.assert_fails(self.level, "needs_debug debe ser booleano")
 
     def test_unknown_ability(self):
-        self.level["abilities_available"]["dash"] = True
+        # dash es conocida desde el 2026-10-19 (salas del 1-3).
+        self.level["abilities_available"]["ground_pound"] = True
         self.assert_fails(self.level, "habilidad desconocida")
 
     def test_sections_out_of_order(self):
@@ -857,6 +858,66 @@ class RedDotAndBannerSchemaTest(unittest.TestCase):
     def test_banner_corridor_wider_than_banner(self):
         self.enemy("banner_1")["params"]["corridor_tiles"] = 2
         self.assert_fails("params.corridor_tiles = 2 fuera de [3, 40]")
+
+
+class DashBannerSchemaTest(unittest.TestCase):
+    """Banner obligatorio con el dash (knockback_to_entry, 2026-10-19, paso 4 de
+    docs/propuesta-1-3.md §5.2): booleano, techo bajo en todo el pasillo (sin nicho ni salto), celda
+    de vuelta libre y con suelo, ayuda propia spam_banner_dash y el dash en abilities_available.
+    Sala silenciados_test."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "levels", "silenciados_test.json"), encoding="utf-8") as fh:
+            self.level = json.load(fh)
+
+    def enemy(self, eid):
+        return next(e for e in self.level["enemies"] if e["id"] == eid)
+
+    def set_cell(self, col, row, char):
+        line = self.level["grid"][row]
+        self.level["grid"][row] = line[:col] + char + line[col + 1:]
+
+    def assert_fails(self, fragment):
+        errors = vls.validate_level(self.level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_test_room_is_valid(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+        self.assertTrue(self.enemy("banner_dash")["params"]["knockback_to_entry"])
+        self.assertEqual(self.enemy("banner_dash")["help_id"], "spam_banner_dash")
+        self.assertTrue(self.level["abilities_available"]["dash"])
+
+    def test_knockback_to_entry_must_be_bool(self):
+        self.enemy("banner_dash")["params"]["knockback_to_entry"] = 1
+        self.assert_fails("params.knockback_to_entry debe ser true o false")
+
+    def test_mandatory_corridor_needs_low_ceiling_everywhere(self):
+        self.set_cell(10, 8, ".")  # un hueco en el techo: un nicho
+        self.assert_fails("banner 'banner_dash' (knockback_to_entry): el pasillo debe tener techo bajo")
+        self.setUp()
+        for col in range(6, 18):  # techo de 3 filas: se salta
+            self.set_cell(col, 8, ".")
+        self.assert_fails("techo bajo en todo su largo")
+
+    def test_without_knockback_the_same_corridor_is_free_to_have_a_niche(self):
+        self.enemy("banner_dash")["params"]["knockback_to_entry"] = False
+        self.set_cell(10, 8, ".")
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_return_cell_must_be_free_with_floor(self):
+        self.set_cell(5, 10, "#")
+        self.assert_fails("la entrada del pasillo (la celda de vuelta) debe estar libre")
+        self.setUp()
+        self.set_cell(5, 11, ".")
+        self.assert_fails("la entrada del pasillo (la celda de vuelta) debe estar libre, con suelo")
+
+    def test_own_help_id_must_exist(self):
+        self.enemy("banner_dash")["help_id"] = "spam_banner_otro"
+        self.assert_fails("help_id 'spam_banner_otro' no esta en data/help.json")
+
+    def test_dash_is_a_known_ability(self):
+        self.level["abilities_available"]["dash"] = "si"
+        self.assert_fails("abilities_available.dash debe ser true o false")
 
 
 class TowerObjectsSchemaTest(unittest.TestCase):
