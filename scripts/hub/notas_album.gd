@@ -28,8 +28,20 @@
 ##   (dibujo x2, nombre y texto de Eco, con {apodo}), el salto vuelve (ficha ->
 ##   carpeta -> carpetas -> cerrar: close_requested).
 ## (Desde el 2026-10-16 el album no tiene «Olvidar ayudas».)
+## - Pestana «Recuerdos» (2026-10-19, paso 3 de docs/propuesta-recuerdos.md §7;
+##   §3; category memory de tabs, datos de data/memories.json): una lista con
+##   las secciones «Jefe» (las capas del recuerdo de jefe cuyo acceso ya se
+##   alcanzo, GameState.lap; las de un acceso no alcanzado no aparecen, ni su
+##   nombre) y «Mensajes» (los mensajes de secretos con first_lap alcanzado). Lo
+##   no obtenido sale «???» (en los mensajes, sin remitente); lo obtenido sin
+##   leer, con «Nuevo». Contador «Recuerdos: n/N» de lo visible. La ficha (sin
+##   ilustracion todavia) muestra titulo, capa (Caché, Kernel, Raíz;
+##   HubWorlds.access_name) o remitente y asunto, y el texto; abrirla lo marca
+##   leido (GameState.mark_memory_read).
 class_name NotasAlbum
 extends CanvasLayer
+
+const CATEGORY_MEMORY: String = "memory"
 
 enum Mode { FOLDERS, GRID, CARD }
 enum Focus { TABS, GRID }
@@ -49,6 +61,10 @@ var _labels: Dictionary[StringName, Label] = {}
 var _tab_labels: Array[Label] = []
 var _cells: Array[Control] = []
 var _folders: Array[Control] = []
+## Filas de la pestana Recuerdos (cabeceras de seccion y recuerdos).
+var _memory_rows: Array[Label] = []
+## Filas visibles ahora: {text, role, entry} (entry -1 en las cabeceras).
+var _rows: Array[Dictionary] = []
 var _card_big: TextureRect
 var _body_label: Label
 var _open: bool = false
@@ -134,6 +150,31 @@ static func global_progress() -> Vector2i:
 		if is_world_visited(world):
 			out += world_progress(world)
 	return out
+
+
+## Recuerdos visibles del mundo `world` en el acceso `lap` (por defecto, el
+## actual), en orden: primero las capas de jefe alcanzadas, luego los mensajes
+## alcanzados. Cada uno: {id, memory: true, kind, obtained, read}.
+static func memory_entries(world: int, lap: int = -1) -> Array[Dictionary]:
+	var current: int = GameState.lap if lap < 0 else lap
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	var out: Array[Dictionary] = []
+	for memory_kind: String in [MemoryCatalog.KIND_BOSS, MemoryCatalog.KIND_SECRET]:
+		for id: StringName in catalog.ids_of(world, memory_kind):
+			if catalog.is_reached(id, current):
+				out.append({"id": id, "memory": true, "kind": memory_kind,
+					"obtained": GameState.has_memory(id), "read": GameState.is_memory_read(id)})
+	return out
+
+
+## [obtenidos, visibles] de los recuerdos del mundo `world` (solo lo visible).
+static func memory_progress(world: int, lap: int = -1) -> Vector2i:
+	var entries: Array[Dictionary] = memory_entries(world, lap)
+	var obtained: int = 0
+	for e: Dictionary in entries:
+		if bool(e["obtained"]):
+			obtained += 1
+	return Vector2i(obtained, entries.size())
 
 
 func _ready() -> void:
@@ -335,6 +376,15 @@ func get_cell_texts() -> PackedStringArray:
 	return out
 
 
+## Texto de las filas visibles de la pestana Recuerdos (cabeceras incluidas).
+func get_memory_rows() -> PackedStringArray:
+	var out := PackedStringArray()
+	if _mode == Mode.GRID and _is_memory_tab():
+		for row: Dictionary in _rows:
+			out.append(String(row["text"]))
+	return out
+
+
 ## La celda `index` muestra la silueta (tipo no aprendido).
 func is_cell_silhouette(index: int) -> bool:
 	return index < _entries.size() and not bool(_entries[index].get("learned", false))
@@ -393,7 +443,12 @@ func move(dx: int, dy: int) -> void:
 			elif dy > 0 and not _entries.is_empty():
 				_focus = Focus.GRID
 		Focus.GRID:
-			if dy < 0 and _selected < cols:
+			if _is_memory_tab():
+				if dy < 0 and _selected == 0:
+					_focus = Focus.TABS
+				elif dy != 0:
+					_selected = clampi(_selected + dy, 0, maxi(_entries.size() - 1, 0))
+			elif dy < 0 and _selected < cols:
 				_focus = Focus.TABS
 			elif dy > 0 and _selected + cols >= _entries.size() and _selected / cols < (_entries.size() - 1) / cols:
 				_selected = _entries.size() - 1
@@ -421,6 +476,14 @@ func confirm() -> void:
 			refresh()
 		Focus.GRID:
 			if _entries.is_empty():
+				return
+			if bool(_entries[_selected].get("memory", false)):
+				if bool(_entries[_selected].get("obtained", false)):
+					_mode = Mode.CARD
+					GameState.mark_memory_read(_entries[_selected]["id"])
+					refresh()
+				else:
+					_set_message(String(texts.get("message_memory_missing", "")))
 				return
 			if bool(_entries[_selected].get("learned", false)):
 				_mode = Mode.CARD
@@ -455,7 +518,10 @@ func refresh() -> void:
 	var folders_mode: bool = _mode == Mode.FOLDERS
 	var card_mode: bool = _mode == Mode.CARD
 	_entries.clear()
-	if not folders_mode:
+	var memory_tab: bool = not folders_mode and _is_memory_tab()
+	if memory_tab:
+		_entries = memory_entries(_world)
+	elif not folders_mode:
 		for id: StringName in album_ids(_world, get_tab()):
 			_entries.append({"id": id, "learned": GameState.is_help_learned(id)})
 	_selected = clampi(_selected, 0, maxi(_entries.size() - 1, 0))
@@ -469,9 +535,10 @@ func refresh() -> void:
 		_labels[&"title"].text = world_name(_world)
 		var learned: int = 0
 		for e: Dictionary in _entries:
-			if bool(e["learned"]):
+			if bool(e.get("learned", false)) or bool(e.get("obtained", false)):
 				learned += 1
-		_labels[&"counter"].text = String(texts.get("counter", "%d/%d")) % [learned, _entries.size()]
+		var counter_key: String = "counter_memories" if memory_tab else "counter"
+		_labels[&"counter"].text = String(texts.get(counter_key, "%d/%d")) % [learned, _entries.size()]
 	for i: int in _folders.size():
 		_folders[i].visible = folders_mode
 		if folders_mode:
@@ -486,24 +553,29 @@ func refresh() -> void:
 			role = String(colors.get("tab_focus" if _focus == Focus.TABS else "tab_selected", "acento_cian"))
 		_set_color(_tab_labels[i], role)
 	var grid_visible: bool = _mode == Mode.GRID
+	_fill_memory_rows(grid_visible and memory_tab)
 	for i: int in _cells.size():
 		var cell: Control = _cells[i]
-		cell.visible = grid_visible and i < _entries.size()
+		cell.visible = grid_visible and not memory_tab and i < _entries.size()
 		if cell.visible:
 			_fill_cell(cell, _entries[i], i == _selected and _focus == Focus.GRID)
 	var sel_name: String = ""
 	if folders_mode:
 		sel_name = ""
-	elif not _entries.is_empty() and _focus == Focus.GRID:
-		sel_name = _cell_text(_entries[_selected])
 	elif _entries.is_empty():
 		sel_name = String(texts.get("empty", ""))
+	elif memory_tab:
+		sel_name = ""
+	elif _focus == Focus.GRID:
+		sel_name = _cell_text(_entries[_selected])
 	_labels[&"name"].text = sel_name
-	_labels[&"name"].visible = grid_visible
-	_card_big.visible = card_mode
+	_labels[&"name"].visible = grid_visible and not (memory_tab and not _entries.is_empty())
+	_card_big.visible = card_mode and not memory_tab
 	_body_label.visible = card_mode
 	_labels[&"card_title"].visible = card_mode
-	if card_mode and not _entries.is_empty():
+	if card_mode and memory_tab and not _entries.is_empty():
+		_fill_memory_card(_entries[_selected]["id"])
+	elif card_mode and not _entries.is_empty():
 		var id: StringName = _entries[_selected]["id"]
 		_labels[&"card_title"].text = HelpCatalog.shared().title(id)
 		_card_big.texture = _card_texture(id, false)
@@ -520,6 +592,68 @@ func refresh() -> void:
 func _tabs() -> Array:
 	var tabs: Variant = _cfg.get("tabs", [])
 	return tabs if tabs is Array and not (tabs as Array).is_empty() else [{"category": "object", "text": ""}]
+
+
+func _is_memory_tab() -> bool:
+	return get_tab() == CATEGORY_MEMORY
+
+
+## Filas de la pestana Recuerdos: cabecera «Jefe», capas; cabecera «Mensajes»,
+## mensajes (una seccion sin filas no sale).
+func _fill_memory_rows(active: bool) -> void:
+	var texts: Dictionary = _cfg.get("texts", {})
+	var colors: Dictionary = _cfg.get("colors", {})
+	_rows.clear()
+	if active:
+		var last_kind: String = ""
+		for i: int in _entries.size():
+			var e: Dictionary = _entries[i]
+			var memory_kind: String = String(e["kind"])
+			if memory_kind != last_kind:
+				last_kind = memory_kind
+				var header: String = "section_boss" if memory_kind == MemoryCatalog.KIND_BOSS else "section_messages"
+				_rows.append({"text": String(texts.get(header, "")), "role": String(colors.get("section", "texto_tenue")),
+					"entry": -1})
+			var role: String = String(colors.get("memory_row", "texto_claro"))
+			if not bool(e["obtained"]):
+				role = String(colors.get("unknown", "texto_tenue"))
+			elif not bool(e["read"]):
+				role = String(colors.get("memory_new", "ambar"))
+			if i == _selected and _focus == Focus.GRID:
+				role = String(colors.get("memory_row_selected", "acento_cian"))
+			_rows.append({"text": _cell_text(e), "role": role, "entry": i})
+	for i: int in _memory_rows.size():
+		var label: Label = _memory_rows[i]
+		label.visible = i < _rows.size()
+		if label.visible:
+			label.text = String(_rows[i]["text"])
+			_set_color(label, String(_rows[i]["role"]))
+		else:
+			label.text = ""
+
+
+## Ficha de un recuerdo obtenido: titulo, capa o remitente y asunto, y el texto.
+func _fill_memory_card(id: StringName) -> void:
+	var texts: Dictionary = _cfg.get("texts", {})
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	_labels[&"card_title"].text = catalog.title(id)
+	var paragraphs := PackedStringArray()
+	if catalog.is_boss(id):
+		paragraphs.append(String(texts.get("card_layer", "%s")) % HubWorlds.access_name(catalog.layer(id)))
+	else:
+		paragraphs.append(String(texts.get("card_sender", "%s")) % catalog.sender(id))
+		paragraphs.append(String(texts.get("card_subject", "%s")) % catalog.subject(id))
+	paragraphs.append("")
+	paragraphs.append_array(catalog.text(id).split("\n"))
+	var width: float = float(_cfg.get("width_px", 300)) - float(_cfg.get("padding_px", 10)) * 2.0
+	var lines := PackedStringArray()
+	for paragraph: String in paragraphs:
+		if paragraph.is_empty():
+			lines.append("")
+			continue
+		lines.append_array(EcoTextBox.wrap_text(GameState.apply_nickname(paragraph), _font,
+			int(_cfg.get("font_size", 12)), width))
+	_body_label.text = "\n".join(lines)
 
 
 func _columns() -> int:
@@ -545,9 +679,32 @@ static func _grid_move(index: int, count: int, cols: int, dx: int, dy: int) -> i
 
 
 func _cell_text(e: Dictionary) -> String:
+	if bool(e.get("memory", false)):
+		return _memory_row_text(e)
 	if bool(e.get("learned", false)):
 		return HelpCatalog.shared().title(e["id"])
 	return String(_cfg.get("texts", {}).get("unknown", "???"))
+
+
+## Fila de un recuerdo: «Caché: <titulo>» (jefe) o «<remitente>: <asunto>»
+## (mensaje); sin obtener, «Caché: ???» o «???» (sin remitente); sin leer, «Nuevo».
+func _memory_row_text(e: Dictionary) -> String:
+	var texts: Dictionary = _cfg.get("texts", {})
+	var unknown: String = String(texts.get("unknown", "???"))
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	var id: StringName = e["id"]
+	var obtained: bool = bool(e.get("obtained", false))
+	var row: String
+	if catalog.is_boss(id):
+		row = String(texts.get("layer_row", "%s: %s")) % [HubWorlds.access_name(catalog.layer(id)),
+			catalog.title(id) if obtained else unknown]
+	elif obtained:
+		row = String(texts.get("message_row", "%s: %s")) % [catalog.sender(id), catalog.subject(id)]
+	else:
+		row = unknown
+	if obtained and not bool(e.get("read", false)):
+		row = String(texts.get("row_new", "%s")) % row
+	return row
 
 
 func _card_texture(id: StringName, silhouette: bool) -> Texture2D:
@@ -609,6 +766,7 @@ func _all_labels() -> Array[Label]:
 	for folder: Control in _folders:
 		for key: String in ["Name", "Count"]:
 			out.append(folder.get_node(NodePath(key)) as Label)
+	out.append_array(_memory_rows)
 	return out
 
 
@@ -699,6 +857,15 @@ func _build() -> void:
 	_body_label = _new_label(_panel, "CardText", String(colors.get("card_text", "texto_claro")))
 	_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_body_label.visible = false
+	# Filas de la pestana Recuerdos: las del mundo con mas (dos cabeceras + recuerdos).
+	var max_rows: int = 0
+	for world: int in range(1, world_count() + 1):
+		max_rows = maxi(max_rows, MemoryCatalog.shared().ids_of(world).size() + 2)
+	for i: int in max_rows:
+		var row: Label = _new_label(_panel, "MemoryRow%d" % i, String(colors.get("memory_row", "texto_claro")))
+		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		row.visible = false
+		_memory_rows.append(row)
 
 
 ## Carpeta: marco (album_cell estirado), icono de carpeta con la miniatura del
@@ -799,7 +966,29 @@ func _layout() -> void:
 		y += line_h + gap
 		y = _place(_labels[&"counter"], pad, y, inner, line_h, gap)
 		y += gap
-	if _mode == Mode.CARD:
+	if _mode == Mode.CARD and _is_memory_tab():
+		# Ficha de un recuerdo: sin ilustracion todavia (§8.3), texto a todo el ancho.
+		_labels[&"card_title"].position = Vector2(pad, y)
+		_labels[&"card_title"].size = Vector2(inner, line_h)
+		_labels[&"card_title"].horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_body_label.position = Vector2(pad, y + line_h + gap)
+		var body_lines: int = maxi(1, _body_label.text.count("\n") + 1)
+		_body_label.size = Vector2(inner, line_h * body_lines)
+		y += line_h * (body_lines + 1) + gap * 2.0
+	elif _mode == Mode.GRID and _is_memory_tab():
+		var row_h: float = maxf(float(_cfg.get("memory_row_px", 16)), line_h)
+		var indent: float = float(_cfg.get("cell_gap_px", 4)) * 2.0
+		for i: int in _memory_rows.size():
+			if i >= _rows.size():
+				continue
+			var header: bool = int(_rows[i]["entry"]) < 0
+			var x: float = pad if header else pad + indent
+			_memory_rows[i].position = Vector2(x, y + i * row_h)
+			_memory_rows[i].size = Vector2(width - x - pad, line_h)
+		y += maxi(_rows.size(), 1) * row_h + gap
+		if _entries.is_empty():
+			y = _place(_labels[&"name"], pad, y, inner, line_h, gap)
+	elif _mode == Mode.CARD:
 		# La ficha (64 px de pantalla) a x2: 128 px de pantalla.
 		var card_px: float = float(_cfg.get("card_px", 64))
 		var big_scale: float = 2.0 / _frame.scale.x

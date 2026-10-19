@@ -52,9 +52,11 @@ const ENERGY_PER_ATTENTION_POINT: float = 10.0
 ## docs/propuesta-asistentes-y-vidas.md §10: nickname, allies_met, learned_help
 ## y lives_max, que sustituyen a hub_tutorial_done; v4 desde 2026-10-17, tanda M1
 ## de docs/propuesta-mejoras.md: upgrade_levels por pista, que sustituye a
-## upgrades_purchased, con devoluciones). Se cargan las versiones 1 a
+## upgrades_purchased, con devoluciones; v5 desde 2026-10-19, paso 2 de
+## docs/propuesta-recuerdos.md §7: memories (ids de los recuerdos obtenidos y
+## guardados) y memories_read; la migracion los crea vacios). Se cargan las versiones 1 a
 ## SAVE_VERSION (las anteriores se migran); otra se aparta como .corrupt.
-const SAVE_VERSION: int = 4
+const SAVE_VERSION: int = 5
 ## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard (nombres
 ## internos; de cara al jugador son niveles de acceso Caché, Kernel y Raíz, ver
 ## HubWorlds.access_name: la UI nunca dice vuelta ni Easy/Normal/Hard).
@@ -226,6 +228,14 @@ var lap: int = LAP_EASY:
 ## Secretos encontrados por nivel (id de nivel -> {id: true}). Registro para
 ## Linterna y Notas: el rollback no lo vacia (decision 2026-10-15).
 var found_secrets: Dictionary[StringName, Dictionary] = {}
+## Recuerdos obtenidos (ids de data/memories.json; docs/propuesta-recuerdos.md
+## §4): recuerdos de jefe y mensajes de secretos. Obtener uno marca «sin
+## guardar» (obtain_memory); guardado es registro: el rollback lo conserva y no
+## va a la Papelera (como found_secrets); lo no guardado se pierde con el game over.
+var memories: Dictionary[StringName, bool] = {}
+## Recuerdos obtenidos ya leidos en Notas (los demas son «nuevos»: marca en el
+## icono de Notas del hub). Leer no marca «sin guardar» (como learned_help).
+var memories_read: Dictionary[StringName, bool] = {}
 ## Apodo con el que Eco llama al jugador (v3; por defecto NICKNAME_DEFAULT).
 var nickname: String = NICKNAME_DEFAULT
 ## Asistentes ya conocidos (id de ALLIES -> true; v3). Sustituye a eco_met y a
@@ -917,6 +927,8 @@ func reset_progress() -> void:
 	attention_points = ATTENTION_POINTS_MIN
 	lap = LAP_EASY
 	found_secrets.clear()
+	memories.clear()
+	memories_read.clear()
 	nickname = NICKNAME_DEFAULT
 	allies_met.clear()
 	ally_arrivals.clear()
@@ -1056,6 +1068,8 @@ func to_save_data() -> Dictionary:
 		"unlocked_levels": _keys_sorted(unlocked_levels),
 		"lap": lap,
 		"found_secrets": secrets,
+		"memories": _keys_sorted(memories),
+		"memories_read": _keys_sorted(memories_read),
 		"nickname": nickname,
 		"allies_met": _keys_sorted(allies_met),
 		"learned_help": _keys_sorted(learned_help),
@@ -1134,6 +1148,16 @@ func apply_save_data(data: Dictionary) -> bool:
 				found[id] = true
 			if not found.is_empty():
 				found_secrets[StringName(String(level))] = found
+	# v5 (recuerdos): un guardado anterior no los tiene y empieza con la lista
+	# vacia (migracion). Ids que el catalogo no conoce se ignoran.
+	if int(version) >= 5:
+		var catalog: MemoryCatalog = MemoryCatalog.shared()
+		for id: StringName in _string_names(data.get("memories", [])):
+			if catalog.has(id):
+				memories[id] = true
+		for id: StringName in _string_names(data.get("memories_read", [])):
+			if memories.has(id):
+				memories_read[id] = true
 	if int(version) < 3:
 		_migrate_to_v3(data)
 	else:
@@ -1275,6 +1299,63 @@ func is_secret_found(level: StringName, secret_id: StringName) -> bool:
 
 func is_ability_unlocked(ability: StringName) -> bool:
 	return abilities_unlocked.get(ability, false)
+
+
+# --- Recuerdos (docs/propuesta-recuerdos.md §4 y §7 paso 2) ---
+
+## Obtiene el recuerdo `id` (data/memories.json): queda en memories sin leer y
+## marca «sin guardar» (hasta guardar en Notas, un game over lo pierde). Falso
+## si ya estaba o el id no existe.
+func obtain_memory(id: StringName) -> bool:
+	if not MemoryCatalog.shared().has(id):
+		push_error("GameState: unknown memory '%s'" % id)
+		return false
+	if memories.has(id):
+		return false
+	memories[id] = true
+	memories_read.erase(id)
+	request_save()
+	EventBus.memory_obtained.emit(id)
+	return true
+
+
+func has_memory(id: StringName) -> bool:
+	return memories.has(id)
+
+
+## Todos los recuerdos de data/memories.json en el registro: las 18 capas de
+## jefe y todos los mensajes de secretos (condicion del final real, decision
+## del 2026-10-19; §10 de la propuesta).
+func has_all_memories() -> bool:
+	var ids: Array[StringName] = MemoryCatalog.shared().ids()
+	if ids.is_empty():
+		return false
+	for id: StringName in ids:
+		if not memories.has(id):
+			return false
+	return true
+
+
+## Apunta el recuerdo obtenido `id` como leido (al abrir su ficha en Notas). No
+## marca «sin guardar». Falso si no esta obtenido o ya estaba leido.
+func mark_memory_read(id: StringName) -> bool:
+	if not memories.has(id) or memories_read.has(id):
+		return false
+	memories_read[id] = true
+	EventBus.memory_read.emit(id)
+	return true
+
+
+func is_memory_read(id: StringName) -> bool:
+	return memories_read.has(id)
+
+
+## Hay algun recuerdo obtenido sin leer (marca del icono de Notas del hub).
+func has_unread_memories() -> bool:
+	for id: StringName in memories:
+		if not memories_read.has(id):
+			return true
+	return false
 
 
 func set_ability_unlocked(ability: StringName, unlocked: bool) -> void:
@@ -1481,7 +1562,8 @@ func _emit_lives() -> void:
 ## Despues, en todos los casos:
 ## - Nunca se pierde (registro y regalo de Eco; decision del usuario): Eco,
 ##   Notas, Calc y demas asistentes conocidos, el apodo, las ayudas aprendidas
-##   (album) y el pulso.
+##   (album) y el pulso. Los recuerdos guardados (memories) vuelven con la
+##   copia y no van a la papelera; los obtenidos sin guardar se pierden.
 ## - Eco «desecha» lo guardado (habilidades salvo el pulso, power banks, puntos
 ##   de atencion y mejoras): pasa a la papelera (discard_to_trash) y se recupera
 ##   todo de golpe en el hub (recover_trash).
@@ -1498,7 +1580,13 @@ func apply_rollback(reason: StringName = ROLLBACK_GAME_OVER) -> Dictionary:
 	var keep_nickname: String = nickname
 	var keep_help: Dictionary = learned_help.duplicate()
 	var keep_pulse: bool = obtained_abilities.has(ABILITY_PULSE)
+	var keep_read: Dictionary = memories_read.duplicate()
 	var had_copy: bool = load_game()
+	# Los recuerdos guardados vuelven con la copia (registro: no van a la
+	# papelera); lo leido de los que siguen se queda leido.
+	for id: StringName in keep_read:
+		if memories.has(id):
+			memories_read[id] = true
 	var copy_nickname: String = nickname
 	for ally: StringName in keep_allies:
 		allies_met[ally] = true

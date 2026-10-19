@@ -1,0 +1,86 @@
+{
+  "_notes": "Recuerdos (docs/propuesta-recuerdos.md §7 paso 1 y §10; 2026-10-19). Una entrada por recuerdo. kind boss: recuerdo de jefe, una capa por acceso (layer 1 Caché, 2 Kernel, 3 Raíz); 6 jefes x 3 capas = 18 (el del Mundo 6 lo entrega Isak Optimizado). kind secret: mensaje de secreto (correo o mensaje de familiares y amigos) con sender y subject, el nivel (level) y el secreto que lo ofrece (secret, id del array secrets del nivel) y first_lap (acceso en que aparece, 1 = Caché): REAPARECE SI NO SE OBTUVO, es decir, se ofrece en first_lap y en todos los accesos siguientes mientras su id no esté en el registro (GameState.memories). order: orden dentro del mundo (jefe: la capa; mensajes: el subnivel). TEXTOS PROVISIONALES: el esbozo del Mundo 1 (§5) y los mensajes del 1-1, 1-2 y 1-3 (§10.4) son borradores de tono; el resto, «(por escribir)»: son historia y se escriben mundo a mundo con el usuario (paso 6). Los títulos de jefe de los Mundos 1-5 son los fragmentos del diseño (mundo-N, Recompensa); el del Mundo 6 está por escribir. Los demás mensajes de Caché (3 por mundo, §8.4) se añaden al construir cada mundo. El mensaje del 1-3 aún no tiene nivel ni secreto en datos (sala «Excepciones», solo concepto). Solo glifos de la fuente de textos (sin comillas angulares ni punto medio). Validador: tools/validate_memories.py.",
+  "memories": [
+    {
+      "id": "boss_w1_l1",
+      "world": 1,
+      "kind": "boss",
+      "layer": 1,
+      "order": 1,
+      "title": "Fragmento de concentración",
+      "text": "El circuito sobre la mesa de la cocina. Se ven las manos de Isak, el soldador y un LED que no enciende. Al lado, unas manos viejas sostienen una lupa.\nEco: \"Archivado\"."
+    },
+    {
+      "id": "boss_w1_l2",
+      "world": 1,
+      "kind": "boss",
+      "layer": 2,
+      "order": 2,
+      "title": "Fragmento de concentración",
+      "text": "Una tarde larga en la cocina de casa. El Abuelito no dice nada, solo acerca la lupa cuando Isak entrecierra los ojos. El LED enciende; Isak levanta la vista y el Abuelito ya estaba sonriendo."
+    },
+    {
+      "id": "boss_w1_l3",
+      "world": 1,
+      "kind": "boss",
+      "layer": 3,
+      "order": 3,
+      "title": "Fragmento de concentración",
+      "text": "El celular vibra tres veces sobre la mesa; Isak no lo mira, el Abuelito tampoco. Eco lo guardó como \"sesión improductiva: 3 h sin interacción\" y recortó la sonrisa.\nEco: \"No era un recuerdo útil\"."
+    },
+    {"id": "boss_w2_l1", "world": 2, "kind": "boss", "layer": 1, "order": 1, "title": "Fragmento de tiempo", "text": "(por escribir)"},
+    {"id": "boss_w2_l2", "world": 2, "kind": "boss", "layer": 2, "order": 2, "title": "Fragmento de tiempo", "text": "(por escribir)"},
+    {"id": "boss_w2_l3", "world": 2, "kind": "boss", "layer": 3, "order": 3, "title": "Fragmento de tiempo", "text": "(por escribir)"},
+    {"id": "boss_w3_l1", "world": 3, "kind": "boss", "layer": 1, "order": 1, "title": "Fragmento de imagen", "text": "(por escribir)"},
+    {"id": "boss_w3_l2", "world": 3, "kind": "boss", "layer": 2, "order": 2, "title": "Fragmento de imagen", "text": "(por escribir)"},
+    {"id": "boss_w3_l3", "world": 3, "kind": "boss", "layer": 3, "order": 3, "title": "Fragmento de imagen", "text": "(por escribir)"},
+    {"id": "boss_w4_l1", "world": 4, "kind": "boss", "layer": 1, "order": 1, "title": "Fragmento de amistades", "text": "(por escribir)"},
+    {"id": "boss_w4_l2", "world": 4, "kind": "boss", "layer": 2, "order": 2, "title": "Fragmento de amistades", "text": "(por escribir)"},
+    {"id": "boss_w4_l3", "world": 4, "kind": "boss", "layer": 3, "order": 3, "title": "Fragmento de amistades", "text": "(por escribir)"},
+    {"id": "boss_w5_l1", "world": 5, "kind": "boss", "layer": 1, "order": 1, "title": "Fragmento de voluntad", "text": "(por escribir)"},
+    {"id": "boss_w5_l2", "world": 5, "kind": "boss", "layer": 2, "order": 2, "title": "Fragmento de voluntad", "text": "(por escribir)"},
+    {"id": "boss_w5_l3", "world": 5, "kind": "boss", "layer": 3, "order": 3, "title": "Fragmento de voluntad", "text": "(por escribir)"},
+    {"id": "boss_w6_l1", "world": 6, "kind": "boss", "layer": 1, "order": 1, "title": "(por escribir)", "text": "(por escribir)"},
+    {"id": "boss_w6_l2", "world": 6, "kind": "boss", "layer": 2, "order": 2, "title": "(por escribir)", "text": "(por escribir)"},
+    {"id": "boss_w6_l3", "world": 6, "kind": "boss", "layer": 3, "order": 3, "title": "(por escribir)", "text": "(por escribir)"},
+    {
+      "id": "msg_1_1",
+      "world": 1,
+      "kind": "secret",
+      "order": 1,
+      "level": "1-1",
+      "secret": "secreto_puente_servicio",
+      "first_lap": 1,
+      "sender": "Mamá",
+      "subject": "Recado del Abuelito",
+      "title": "Recado del Abuelito",
+      "text": "Isak, el Abuelito dice que el circuito de ayer \"solo necesita paciencia y un poquito de estaño\". Te dejó la lupa en la mesa. Yo no entiendo nada, pero me pidió que te avisara.\nMamá (te escribo desde la cocina)"
+    },
+    {
+      "id": "msg_1_2",
+      "world": 1,
+      "kind": "secret",
+      "order": 2,
+      "level": "1-2",
+      "secret": "secreto_spam",
+      "first_lap": 1,
+      "sender": "Mamá",
+      "subject": "¿Cenas con nosotros?",
+      "title": "¿Cenas con nosotros?",
+      "text": "Isak, el Abuelito hizo sopa y dice que no empieza hasta que bajes. Ya se enfrió una vez. Avísame si te toca otra vez \"solo cinco minutitos\".\nMamá (sí, otra vez)"
+    },
+    {
+      "id": "msg_1_3",
+      "world": 1,
+      "kind": "secret",
+      "order": 3,
+      "level": "1-3",
+      "secret": "secreto_excepciones",
+      "first_lap": 1,
+      "sender": "Mamá",
+      "subject": "(por escribir)",
+      "title": "(por escribir)",
+      "text": "Vi que pusiste No molestar. Está bien. Aquí te dejo esto por si algún día lo miras.\nMamá (no te molesto, prometido)"
+    }
+  ]
+}

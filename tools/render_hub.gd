@@ -23,6 +23,11 @@
 ##   06f_album_piso_3_4.png      pestana Objetos con las fichas de los pisos 3 y 4 del 1-2
 ##                               (recordatorio, Posponer, pop-up translucido; la barra «???»)
 ##   06g_album_overlay.png       ficha del pop-up translucido
+##   06h_album_recuerdos.png     pestana Recuerdos del Mundo 1 (2026-10-19): «Jefe» con la capa de
+##                               Caché obtenida («Nuevo») y «Mensajes» con el del 1-2 y dos «???»
+##   06i_album_recuerdo_jefe.png ficha de la capa Caché (titulo, «Capa: Caché» y texto)
+##   06j_album_mensaje.png       ficha del mensaje del 1-2 (remitente, asunto y texto)
+##   06k_notas_recuerdo_nuevo.png placa «!» de recuerdo nuevo sobre Notas (un mensaje sin leer)
 ##   07a_calc_apagada.png        Isak junto a Calc apagada: sin tecla ni tienda
 ##   07_calc_prompt.png          Calc conocida (GameState.meet_ally, como --meet-ally=calc): tecla
 ##                               del pulso (simula 30 puntos para comprar)
@@ -168,11 +173,38 @@ func _run() -> void:
 	await _frames(4)
 	await _save(out_dir, "06g_album_overlay.png")
 	album.call(&"cancel")
+	# 6h-6k. Recuerdos (paso 3 de docs/propuesta-recuerdos.md): se apuntan en el registro sin
+	# marcar «sin guardar» (solo para las capturas; en el juego, GameState.obtain_memory).
+	var memories: Dictionary = state.get(&"memories")
+	memories[&"boss_w1_l1"] = true
+	memories[&"msg_1_2"] = true
+	album.call(&"set_tab", "memory")
+	album.call(&"select_cell", 0)
+	await _frames(4)
+	await _save(out_dir, "06h_album_recuerdos.png")
+	album.call(&"confirm")
+	await _frames(4)
+	_check(album.call(&"get_mode") == 2, "no se abre la ficha del recuerdo de jefe")
+	await _save(out_dir, "06i_album_recuerdo_jefe.png")
+	album.call(&"cancel")
+	album.call(&"select_cell", 2)
+	album.call(&"confirm")
+	await _frames(4)
+	_check(album.call(&"get_mode") == 2, "no se abre la ficha del mensaje")
+	await _save(out_dir, "06j_album_mensaje.png")
+	album.call(&"cancel")
 	album.call(&"cancel")
 	album.call(&"cancel")
 	await _frames(2)
 	panel.call(&"cancel")
 	_check(await _wait(func() -> bool: return not isak.call(&"is_facing_back")), "no se cierra Notas")
+	memories[&"msg_1_1"] = true
+	await _frames(4)
+	_check(station.call(&"is_unread_badge_visible"), "Notas no marca el recuerdo nuevo")
+	await _save(out_dir, "06k_notas_recuerdo_nuevo.png")
+	memories.clear()
+	(state.get(&"memories_read") as Dictionary).clear()
+	await _frames(2)
 	# 7a. Calc apagada: Isak a su izquierda, sin tecla del pulso.
 	state.set(&"attention_points", 30)
 	var calc: Node = _hub.call(&"get_calc")

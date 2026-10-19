@@ -221,6 +221,8 @@
 		"_notes": "Estacion Notas (NotasStation + NotasPanel; antes «copia local»; propuesta del hub §4.2 y §4.3 y docs/propuesta-asistentes-y-vidas.md §2.2). Resumen: ultimo nivel (GameState.current_level o el ultimo completado, con el name de level_data_pattern), puntos de atencion (ambar), nivel de acceso (access_levels: nombre de la vuelta de cara al jugador), ultima copia (GameState.saved_at en hora local) y estado (status_unsaved en ambar / status_saved). Papelera llena tras un game over: status_trash y Guardar no guarda (message_trash_pending): guardar el estado sin lo desechado sobrescribiria la copia buena. Opciones: Guardar, Álbum (seccion album), Apodo (option_nickname con el apodo actual: abre la entrada del apodo, scenes/ui/nickname_entry.tscn) y Volver. Guardar: sin cambios dice message_nothing_to_save; con cambios pide confirmacion (confirm_title, option_yes / option_no) y llama a GameState.save_game(); message_saved y destello cian del monitor (save_flash_s). Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra. Solo texto de interfaz (Notas no tiene voz en el panel). Solo glifos de la fuente de textos.",
 		"level_data_pattern": "res://data/levels/%s.json",
 		"save_flash_s": 0.3,
+		"unread_badge_notes": "Marca de recuerdo nuevo (2026-10-19, paso 3 de docs/propuesta-recuerdos.md §3): con algun recuerdo obtenido sin leer (GameState.has_unread_memories) y Notas encendida, una placa con text sobre el monitor (arriba a la derecha, a top_px del borde superior del arte), plate_color y border_color (roles de colors). Se quita al leerlo en el album.",
+		"unread_badge": {"text": "!", "plate_color": "fondo_profundo", "border_color": "ambar", "padding_px": 2, "top_px": 6},
 		"texts": {
 			"title": "Notas",
 			"confirm_title": "¿Guardar en Notas?",
@@ -306,8 +308,11 @@
 		"folder_locked": "res://assets/sprites/hub/album/album_folder_locked_00.png",
 		"tabs": [
 			{"category": "enemy", "text": "Enemigos"},
-			{"category": "object", "text": "Objetos"}
+			{"category": "object", "text": "Objetos"},
+			{"category": "memory", "text": "Recuerdos"}
 		],
+		"memory_notes": "Pestana Recuerdos (2026-10-19, paso 3 de docs/propuesta-recuerdos.md §7; §3): category memory, datos de data/memories.json (MemoryCatalog). Lista con dos secciones, section_boss («Jefe», arriba: una fila por capa del recuerdo de jefe cuyo acceso ya se alcanzo, layer_row con el nombre del acceso de access_levels; las capas de un acceso no alcanzado NO aparecen) y section_messages («Mensajes»: una fila por mensaje de secreto con first_lap alcanzado, message_row con remitente y asunto). Lo no obtenido sale con unknown («???»; en los mensajes, sin remitente). Lo obtenido sin leer lleva row_new. counter_memories cuenta solo lo visible. Ficha abierta (sin ilustracion todavia): titulo, card_layer (jefe) o card_sender y card_subject (mensajes) y el texto; abrirla lo marca leido (GameState.mark_memory_read). Lo no obtenido no se abre (message_memory_missing). Filas de memory_row_px de alto.",
+		"memory_row_px": 16,
 		"texts": {
 			"title": "Notas - Álbum",
 			"tab_selected": "[%s]",
@@ -319,7 +324,17 @@
 			"message_folder_locked": "Aún no has llegado a este mundo",
 			"help": "Flechas: elegir. Pulso: abrir. Salto: volver",
 			"help_folders": "Flechas: elegir carpeta. Pulso: abrir. Salto: salir",
-			"help_card": "Salto: volver"
+			"help_card": "Salto: volver",
+			"counter_memories": "Recuerdos: %d/%d",
+			"section_boss": "Jefe",
+			"section_messages": "Mensajes",
+			"layer_row": "%s: %s",
+			"message_row": "%s: %s",
+			"row_new": "%s - Nuevo",
+			"card_layer": "Capa: %s",
+			"card_sender": "De: %s",
+			"card_subject": "Asunto: %s",
+			"message_memory_missing": "Aún no lo has encontrado"
 		},
 		"colors": {
 			"title": "texto_claro",
@@ -334,7 +349,11 @@
 			"message": "texto_claro",
 			"help": "texto_tenue",
 			"card_title": "acento_cian",
-			"card_text": "texto_claro"
+			"card_text": "texto_claro",
+			"section": "texto_tenue",
+			"memory_row": "texto_claro",
+			"memory_row_selected": "acento_cian",
+			"memory_new": "ambar"
 		}
 	},
 	"station": {

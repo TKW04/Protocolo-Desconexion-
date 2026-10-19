@@ -38,6 +38,8 @@ Regla de diseño: ninguna caída sobre una Burbuja debe superar 4 tiles, porque 
 
 ## 2. Mejoras permanentes
 
+**[Histórico; reemplazado]:** esta tabla (mejoras sueltas que desbloqueaba un secreto: «Pulso amplio… Secreto A», etc.) quedó **reemplazada por las mejoras por pistas** de Calc (`docs/propuesta-mejoras.md`, aprobada el 2026-10-17, tandas M1 y M2 implementadas): ningún secreto desbloquea una mejora y el Pulso amplio es el Pulso 2. El secreto A del 1-1 da su punto y, según `docs/propuesta-recuerdos.md` §10, ofrecerá además un mensaje de secreto. Se conserva solo como registro (anotado el 2026-10-19).
+
 Funcionamiento propuesto: un secreto **desbloquea** la mejora y queda guardada como "disponible". Se **activa pagando** en el hub con Calc, que según §13.3 vende "mejoras permanentes a cambio de puntos de atención". Como el hub no existe hasta vencer a Alerta Mayor, mientras tanto la pantalla provisional del hub tendría una lista "Mejoras" para probarlas. Una mejora comprada se aplica en todos los niveles y se guarda en disco.
 
 | Mejora | Efecto (valor actual → nuevo) | Coste | Se consigue en | ¿Se puede usar ya? |

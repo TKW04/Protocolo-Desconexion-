@@ -126,7 +126,7 @@ func test_round_trip_keeps_all_progress() -> void:
 	assert_true(GameState.is_level_unlocked(&"1-2"))
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "Version del esquema")
-	assert_eq(GameState.SAVE_VERSION, 4, "v4 desde la tanda M1 (mejoras por pistas)")
+	assert_eq(GameState.SAVE_VERSION, 5, "v5 desde el 2026-10-19 (recuerdos)")
 	var levels: Dictionary = data["upgrade_levels"]
 	var keys: Array = levels.keys()
 	keys.sort()
@@ -384,7 +384,7 @@ func test_corrupt_save_falls_back_to_bak() -> void:
 # --- Esquema v3 (asistentes, ayuda Q y vidas) ---
 
 func test_v3_defaults() -> void:
-	assert_eq(GameState.SAVE_VERSION, 4, "v4 (tanda M1) conserva los campos de la v3")
+	assert_eq(GameState.SAVE_VERSION, 5, "v5 (recuerdos) conserva los campos de la v3")
 	assert_eq(GameState.nickname, "Isak", "Apodo por defecto")
 	assert_true(GameState.allies_met.is_empty())
 	assert_true(GameState.learned_help.is_empty())
@@ -464,7 +464,7 @@ func test_v2_save_with_1_1_completed_is_migrated_to_v3() -> void:
 	assert_false(GameState.has_unsaved_changes(), "Migrar no marca sin guardar")
 	assert_true(GameState.save_game())
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la version actual (v4)")
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "La copia siguiente escribe la version actual")
 	assert_false(data.has("hub_tutorial_done"))
 	assert_eq(data["allies_met"], ["calc", "eco", "notas"])
 	assert_eq((data["learned_help"] as Array).size(), of_1_1.size())
@@ -533,10 +533,10 @@ func test_v3_to_v4_migration_refunds_exactly() -> void:
 	assert_eq(GameState.power_banks, 3)
 	assert_almost_eq(GameState.get_sync_rate_max(), 110.0, 0.001)
 	assert_almost_eq(GameState.get_debug_energy_max(), 110.0, 0.001)
-	# Al guardar queda en v4.
+	# Al guardar queda en la version actual (v5 desde los recuerdos).
 	assert_true(GameState.save_game())
 	var data: Dictionary = SaveFile.read(PATH)
-	assert_eq(int(data["version"]), 4)
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION)
 	assert_eq(int(data["upgrade_levels"]["debug"]), 2)
 
 
@@ -562,12 +562,12 @@ func test_v4_round_trip_and_odd_levels() -> void:
 	assert_eq(GameState.attention_points, 1)
 
 
-func test_unknown_version_5_set_aside_and_backup_kept() -> void:
+func test_unknown_version_6_set_aside_and_backup_kept() -> void:
 	GameState.attention_points = 12
 	assert_true(GameState.save_game())
 	assert_true(GameState.save_game(), "Segunda copia: la anterior queda en .bak")
-	SaveFile.write(PATH, {"version": 5, "attention_points": 99, "upgrade_levels": {"pulso": 3}})
-	assert_false(GameState.load_game(), "v5 no se conoce")
+	SaveFile.write(PATH, {"version": 6, "attention_points": 99, "upgrade_levels": {"pulso": 3}})
+	assert_false(GameState.load_game(), "v6 no se conoce")
 	assert_true(FileAccess.file_exists(PATH + SaveFile.CORRUPT_SUFFIX), "Se aparta como .corrupt")
 	assert_true(FileAccess.file_exists(PATH + SaveFile.BACKUP_SUFFIX), "El .bak sigue intacto")
 	assert_eq(GameState.attention_points, 0)

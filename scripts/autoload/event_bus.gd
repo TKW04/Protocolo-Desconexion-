@@ -241,3 +241,11 @@ signal pulse_energy_returned(enemy: Node, amount: float, gained: float)
 ## en el mapa con «Sin espacio».
 @warning_ignore("unused_signal")
 signal power_bank_no_room(pickup: Node2D)
+## Se obtuvo el recuerdo `memory_id` (data/memories.json; GameState.obtain_memory):
+## queda «sin guardar» y sin leer (docs/propuesta-recuerdos.md §4).
+@warning_ignore("unused_signal")
+signal memory_obtained(memory_id: StringName)
+## Se leyo en Notas el recuerdo `memory_id` (GameState.mark_memory_read): el icono
+## de Notas del hub deja de marcarlo como nuevo.
+@warning_ignore("unused_signal")
+signal memory_read(memory_id: StringName)
