@@ -1117,7 +1117,14 @@ class Planner:
 
     def hazard_search(self, entry, exit_node, state, banners, period, dwell):
         """Dijkstra por (celda, fase) en la zona de los banners: andar, saltar, esperar en una celda
-        segura o saltar en el sitio sin tocar ningun banner en barrido."""
+        segura o saltar en el sitio sin tocar ningun banner en barrido.
+
+        Cada movimiento dura lo mismo que en la linea de tiempo del camino (edge_time: andar una celda a
+        walk_speed, 64 / 220 = 0,29 s, no los 17 cuadros redondeados de sus muestras) y la fase de cada
+        estado es la exacta de su cadena (fase de entrada + tiempo acumulado); la celda de fase
+        (PHASE_BIN) solo agrupa estados. Hasta el 2026-10-19 la fase se redondeaba en cada paso y se
+        quedaba atras 1/60 s por celda andada: un pasillo largo andando (banner_2 del 1-2, 16 tiles,
+        4,7 s con un ciclo de 3 s) salia seguro y el barrido siguiente alcanzaba a Isak."""
         T = self.T
         bins = max(1, int(round(period / PHASE_BIN)))
         cols = [int(b["band"][0] // T) for b in banners] + [int(b["band"][2] // T) for b in banners]
@@ -1128,9 +1135,9 @@ class Planner:
         r_hi = max(rows + [entry[1], exit_node[1]]) + 1
         region = lambda n: c_lo <= n[0] <= c_hi and r_lo <= n[1] <= r_hi
 
-        def safe_at(samples, phase_t):
+        def safe_at(samples, phase_t, step=DT):
             for k, (x, f, _) in enumerate(samples):
-                tw = phase_t + (k + 1) * DT
+                tw = phase_t + (k + 1) * step
                 hr = self.hurt_rect(x, f)
                 for b in banners:
                     rect = self.banner_rect(b, tw)
@@ -1141,19 +1148,23 @@ class Planner:
         sample_cache = {}
 
         def edge_samples(u, e):
+            """Muestras del movimiento y su duracion real (la de la linea de tiempo)."""
             key = (u, e["to"], e["kind"], e["x0"], e.get("xt"))
             if key not in sample_cache:
-                sample_cache[key] = self.samples(self.move(u, e, state))
+                mv = self.move(u, e, state)
+                sample_cache[key] = (self.samples(mv), self.duration(mv))
             return sample_cache[key]
 
         hop_cache = {}
         heap = []
         best = {}
         parent = {}
+        origin = {}
         for ph in range(bins):
             key = (entry, ph)
             best[key] = 0.0
             parent[key] = None
+            origin[key] = ph * PHASE_BIN
             heap.append((0.0, ph, entry))
         heapq.heapify(heap)
         static_cache = {}
@@ -1173,7 +1184,8 @@ class Planner:
             expansions += 1
             if expansions > 400000:
                 break
-            phase_t = ph * PHASE_BIN
+            phase0 = origin[(node, ph)]
+            phase_t = (phase0 + t) % period
             if node == exit_node:
                 x, f = self.feet(node)
                 if dwell <= 0.0 or safe_at([(x, f, False)] * int(round(dwell / DT)), phase_t):
@@ -1191,16 +1203,17 @@ class Planner:
             for e in self.m.edges(node, state, "auto"):
                 if max(e["h"], e["v"]) > self.rules.limit + EPS or not region(e["to"]):
                     continue
-                smp = edge_samples(node, e)
-                if safe_at(smp, phase_t):
-                    cand.append((e["to"], len(smp) * DT, {"action": "move", "e": e}))
+                smp, d = edge_samples(node, e)
+                if safe_at(smp, phase_t, d / max(len(smp), 1)):
+                    cand.append((e["to"], d, {"action": "move", "e": e}))
             for to, d, act in cand:
-                nph = int(round((phase_t + d) / PHASE_BIN)) % bins
                 nt = t + d
+                nph = int(round(((phase0 + nt) % period) / PHASE_BIN)) % bins
                 key = (to, nph)
                 if nt < best.get(key, INF) - EPS:
                     best[key] = nt
                     parent[key] = ((node, ph), act)
+                    origin[key] = phase0
                     heapq.heappush(heap, (nt, nph, to))
         if goal is None:
             return None
@@ -1211,7 +1224,7 @@ class Planner:
             seq.append((prev, act))
             key = prev
         seq.reverse()
-        start_phase = key[1] * PHASE_BIN
+        start_phase = origin[goal]
         out = []
         for (node, _), act in seq:
             if act["action"] == "wait":

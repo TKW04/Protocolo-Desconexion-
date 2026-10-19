@@ -19,6 +19,8 @@ import build_level  # noqa: E402
 import level_plan  # noqa: E402
 import validate_level as vl  # noqa: E402
 import validate_level_schema as vls  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "tests", "support"))
+import puzzle_levels as pz  # noqa: E402
 
 LEVEL_PATH = os.path.join(ROOT, "data", "levels", "1-2.json")
 NEW_TYPES = ("overlay_popup", "laser_receiver", "relay_receiver", "ad_cover", "reminder_platform",
@@ -43,7 +45,8 @@ class Level12Test(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.level = load_level()
-        cls.result = vl.validate(copy.deepcopy(cls.level))
+        cls.exported = []
+        cls.result = vl.validate(copy.deepcopy(cls.level), export=cls.exported)
 
     def test_schema_and_reachability_without_warnings(self):
         self.assertEqual(vls.validate_level(self.level), [])
@@ -156,6 +159,26 @@ class Level12Test(unittest.TestCase):
         order = [backs[0]["i"], laser["i"], backs[-1]["i"], charge["i"], finals[0]["i"]]
         self.assertEqual(order, sorted(order))
         self.assertTrue(all(s.get("energy_after", 1.0) >= 0.0 for s in steps))
+
+    def test_banner_corridors_are_safe_at_walking_speed(self):
+        """Hallazgo del bot vertical (2026-10-18, corregido el 2026-10-19): el camino cruzaba andando el
+        pasillo de banner_2 (piso 4, fila 20; 16 tiles, 4,7 s con un ciclo de 3 s) y el barrido
+        siguiente alcanzaba a Isak hacia la columna 8; el validador lo daba por seguro porque su
+        busqueda por fase andaba a 17 cuadros por celda y redondeaba la fase en cada paso. Ahora cada
+        tramo andando del camino exportado, a walk_speed y con el reloj de los banners anclado en su
+        espera de fase (como el bot), no toca ningun barrido; en el piso 4 el camino salta el banner
+        o se refugia en el nicho (columnas 13-14) en vez de andar el pasillo entero."""
+        rules = vl.Rules()
+        hits = pz.banner_walk_hits(self.level, self.exported[0], (rules.hitbox_w, rules.hitbox_h),
+                                   rules.walk_speed)
+        self.assertEqual(hits, [])
+        steps = self.exported[0]["steps"]
+        wait = next(s for s in steps if s["action"] == "wait_phase" and s["at"]["cell"][1] == 20)
+        crossing = steps[wait["i"] + 1:]
+        crossing = crossing[:next(k for k, s in enumerate(crossing) if s["action"] == "pulse")]
+        self.assertTrue(all(s["action"] != "walk" or s["from"]["cell"][0] - s["to"]["cell"][0] < 15
+                            for s in crossing), "el pasillo de banner_2 no se anda de una vez")
+        self.assertTrue(any(s["action"] in ("jump", "jump_run", "fall", "hop", "wait") for s in crossing))
 
     def test_secret_c_needs_two_snoozes_from_its_entry(self):
         """Variante: Isak empieza en el piso 3 y la meta esta en el nicho del secreto C (Posponer

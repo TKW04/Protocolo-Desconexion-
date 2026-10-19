@@ -289,6 +289,30 @@ class NegativeTest(unittest.TestCase):
         self.assertTrue(any("no hay forma de cruzar su pasillo sin dano" in m for m in messages(result)),
                         messages(result))
 
+    def test_long_banner_corridor_needs_a_refuge_at_walking_speed(self):
+        """Pasillo largo (16 tiles) con un banner que barre en el sentido de la marcha cada 3 s y sin
+        sitio para saltarlo (como banner_2 del 1-2; 2026-10-19): andando no se cruza sin dano; con un
+        nicho de refugio a medio pasillo, si, y el camino exportado no toca ningun barrido andando a
+        walk_speed (comprobacion independiente de la busqueda por fase)."""
+        result = vl.validate(pz.long_banner_corridor())
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("banners banner_1: no hay forma de cruzar su pasillo sin dano" in m
+                            for m in messages(result)), messages(result))
+        level = pz.long_banner_corridor(niche=True)
+        export = []
+        result = vl.validate(level, export=export)
+        self.assertTrue(result["ok"], messages(result))
+        rules = vl.Rules()
+        hitbox = (rules.hitbox_w, rules.hitbox_h)
+        self.assertEqual(pz.banner_walk_hits(level, export[0], hitbox, rules.walk_speed), [])
+        # Se refugia en el nicho: espera en su repisa o salta el banner bajo su techo abierto.
+        self.assertTrue(any(s["action"] in ("jump", "jump_run", "hop", "wait")
+                            and 25 <= (s.get("from") or s.get("at"))["cell"][0] <= 28
+                            for s in export[0]["steps"] if s.get("from") or s.get("at")), "usa el nicho")
+        # Los dos banners desfasados de mensajes_test, igual.
+        room_result, exported = checked("mensajes_test")
+        self.assertEqual(pz.banner_walk_hits(room("mensajes_test"), exported, hitbox, rules.walk_speed), [])
+
     def test_ad_cover_without_laser(self):
         level = room("correo_test")
         level["abilities_available"]["laser"] = False
