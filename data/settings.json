@@ -12,6 +12,7 @@
 			{"action": "run", "name": "Correr"},
 			{"action": "pulse", "name": "Pulso"},
 			{"action": "laser", "name": "Láser"},
+			{"action": "gesture_swipe", "name": "Deslizar"},
 			{"action": "debug", "name": "Debug"},
 			{"action": "hide", "name": "Ocultarte"},
 			{"action": "help", "name": "Ayuda de Eco"},

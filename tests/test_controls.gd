@@ -100,7 +100,7 @@ func _action(action: StringName) -> void:
 
 func test_remappable_actions_exclude_dev_and_ui_keys() -> void:
 	var actions: Array[StringName] = ControlBindings.actions()
-	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"debug", &"hide",
+	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"gesture_swipe", &"debug", &"hide",
 		&"help", &"pause"] as Array[StringName])
 	for action: StringName in actions:
 		assert_false(String(action).begins_with("ui_"))
@@ -116,6 +116,8 @@ func test_default_labels_and_glyphs() -> void:
 	assert_eq(ControlBindings.binding_label(&"run", font), "Mayús / gatillo derecho")
 	assert_eq(ControlBindings.binding_label(&"pause", font), "Esc / Start")
 	assert_eq(ControlBindings.binding_label(&"hide", font), "H / L3", "Ocultarte (Pulso 4): H / L3")
+	assert_eq(ControlBindings.binding_label(&"gesture_swipe", font), "L / B", "Deslizar (dash): L / B")
+	assert_eq(ControlBindings.action_name(&"gesture_swipe"), "Deslizar")
 	assert_eq(ControlBindings.binding_label(&"move_left", font), "A / stick a la izquierda")
 	for action: StringName in ControlBindings.actions():
 		var text: String = ControlBindings.binding_label(action, font)
@@ -285,6 +287,20 @@ func test_prompts_and_notices_follow_the_new_keys() -> void:
 	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: V / gatillo izquierdo")
 
 
+func test_dash_is_remappable_and_its_notice_follows() -> void:
+	var notices: Dictionary = AbilityNotices.load_data()
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L / B (mando)")
+	assert_eq(ControlBindings.assign(&"jump", _key(KEY_L)), ControlBindings.Result.CONFLICT, "L es de Deslizar")
+	assert_eq(ControlBindings.assign(&"gesture_swipe", _key(KEY_E)), ControlBindings.Result.OK)
+	assert_true(_is_action(_key(KEY_E), &"gesture_swipe"))
+	assert_false(_is_action(_key(KEY_L), &"gesture_swipe"))
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / B (mando)", "El aviso se actualiza")
+	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_RIGHT_SHOULDER)), ControlBindings.Result.OK)
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / RB (mando)")
+	ControlBindings.restore_defaults()
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L / B (mando)")
+
+
 func test_hub_station_prompt_follows_the_pulse_key() -> void:
 	EcoProgress_meet_notas()
 	var hub := HUB_SCENE.instantiate() as HubRoom
@@ -310,6 +326,7 @@ func test_menu_lists_actions_with_key_and_pad() -> void:
 	assert_eq(lines[0], "Controles")
 	assert_true(lines.has("– Mover a la izquierda: A / stick a la izquierda"), "%s" % lines)
 	assert_true(lines.has("  Saltar: Espacio / A"))
+	assert_true(lines.has("  Deslizar: L / B"), "Deslizar (dash, 2026-10-19) reasignable")
 	assert_true(lines.has("  Restablecer valores"))
 	assert_eq(_menu.get_selected_action(), &"move_left")
 
@@ -400,6 +417,10 @@ func test_menu_navigation_back_and_gamepad() -> void:
 	_tap(_button(JOY_BUTTON_A))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CAPTURE, "A acepta")
 	_tap(_button(JOY_BUTTON_B))
+	# B es de Deslizar (gesture_swipe, 2026-10-19): en la captura se captura (no
+	# vuelve atras) y sale el conflicto.
+	assert_eq(_menu.get_page(), PauseMenu.Page.CONFLICT, "En la captura, B no vuelve: conflicto con Deslizar")
+	_menu.activate(PauseMenu.Option.SWAP)
 	assert_true(_is_action(_button(JOY_BUTTON_B), &"move_right"), "En la captura, B se puede asignar")
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS)
 	ControlBindings.restore_defaults()

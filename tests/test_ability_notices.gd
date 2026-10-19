@@ -9,7 +9,7 @@ extends GutTest
 
 const PATH: String = "user://test_ability_notices_save.json"
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
-const ABILITIES: Array[StringName] = [&"pulse", &"laser", &"debug"]
+const ABILITIES: Array[StringName] = [&"pulse", &"laser", &"debug", &"dash"]
 
 var _saved_path: String
 var _saved_unlocked: Dictionary = {}
@@ -71,7 +71,9 @@ func test_texts_from_the_default_input_map() -> void:
 			"Mismo formato con la entrada notice de data/eco_encounter.json")
 	assert_eq(AbilityNotices.notice_text(&"laser", _data), "Láser: F / gatillo izquierdo")
 	assert_eq(AbilityNotices.notice_text(&"debug", _data), "Debug: mantén K / Y (mando)")
-	assert_eq(AbilityNotices.notice_text(&"dash", _data), "", "Sin entrada, sin aviso")
+	assert_eq(AbilityNotices.notice_text(&"dash", _data), "Deslizar: L / B (mando)",
+			"Gesto Deslizar (2026-10-19, docs/propuesta-1-3.md §2.4)")
+	assert_eq(AbilityNotices.notice_text(&"ground_pound", _data), "", "Sin entrada, sin aviso")
 
 
 func test_text_changes_when_an_action_is_remapped() -> void:
@@ -147,6 +149,34 @@ func test_unlocks_before_arming_wait_and_stop_disarms() -> void:
 	_notices.begin_level()
 	_notices.advance(10.0)
 	assert_eq(_lines, ["Debug: mantén K / Y (mando)"] as Array[String])
+
+
+func test_obtaining_the_dash_shows_its_notice_once() -> void:
+	_arm()
+	assert_true(GameState.obtain_ability(&"dash"))
+	assert_eq(_lines, ["Deslizar: L / B (mando)"] as Array[String])
+	assert_eq(_important, [true] as Array[bool], "Linea importante (pausa)")
+	assert_true(GameState.is_notice_seen(&"dash"))
+	_notices.begin_level()
+	_notices.advance(10.0)
+	assert_eq(_lines.size(), 1, "Una vez por partida guardada")
+
+
+func test_dash_notice_follows_a_remapped_gesture_swipe() -> void:
+	var original: Array[InputEvent] = InputMap.action_get_events(&"gesture_swipe")
+	InputMap.action_erase_events(&"gesture_swipe")
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_E
+	InputMap.action_add_event(&"gesture_swipe", key)
+	var pad := InputEventJoypadButton.new()
+	pad.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	InputMap.action_add_event(&"gesture_swipe", pad)
+	var text: String = AbilityNotices.notice_text(&"dash", _data)
+	InputMap.action_erase_events(&"gesture_swipe")
+	for event: InputEvent in original:
+		InputMap.action_add_event(&"gesture_swipe", event)
+	assert_eq(text, "Deslizar: E / RB (mando)", "Leido del Input Map")
+	assert_eq(AbilityNotices.notice_text(&"dash", _data), "Deslizar: L / B (mando)")
 
 
 # --- Guardado ---

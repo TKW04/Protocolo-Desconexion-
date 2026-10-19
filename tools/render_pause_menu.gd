@@ -20,6 +20,9 @@
 ##   12_captura.png       «Pulsa una tecla o boton…» para Saltar
 ##   13_conflicto.png     G ya es de Pulso: Intercambiar / Cancelar
 ##   14_intercambio.png   tras intercambiar: Saltar con G, Pulso con Espacio
+##   15_deslizar.png      Controles con «Deslizar: L / B» elegido (gesto del
+##                         dash, 2026-10-19, docs/propuesta-1-3.md §2.4)
+##   16_deslizar_e.png    tras reasignar Deslizar a E (sin conflicto)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_pause_menu.gd [-- carpeta_salida]
 extends SceneTree
@@ -154,6 +157,20 @@ func _run() -> void:
 	await create_timer(0.1).timeout
 	_check(InputMap.event_is_action(_key_event(KEY_G), &"jump", true), "Saltar con G tras intercambiar")
 	await _save(out_dir, "14_intercambio.png")
+	# Deslizar (gesto del dash, 2026-10-19): fila propia y reasignable.
+	_check(int(hub_menu.call(&"get_page")) == 4, "vuelve a Controles tras intercambiar")
+	hub_menu.call(&"select_action", &"gesture_swipe")
+	await create_timer(0.1).timeout
+	var lines: PackedStringArray = hub_menu.call(&"get_lines")
+	_check(lines.has("– Deslizar: L / B"), "fila Deslizar: L / B elegida (%s)" % [lines])
+	await _save(out_dir, "15_deslizar.png")
+	_press(&"ui_accept")
+	await create_timer(0.4).timeout
+	_check(int(hub_menu.call(&"get_page")) == 5, "captura de Deslizar abierta")
+	_key(KEY_E)
+	await create_timer(0.1).timeout
+	_check(InputMap.event_is_action(_key_event(KEY_E), &"gesture_swipe", true), "Deslizar con E")
+	await _save(out_dir, "16_deslizar_e.png")
 	load("res://scripts/autoload/control_bindings.gd").call(&"restore_defaults")
 	hub_menu.call(&"close")
 	hub.queue_free()
