@@ -83,7 +83,7 @@ func test_obtained_memories_show_title_and_sender_and_are_new() -> void:
 	GameState.obtain_memory(&"msg_1_2")
 	_open_memories()
 	assert_eq(_album.get_memory_rows(), PackedStringArray(["Jefe", "Caché: Fragmento de concentración - Nuevo",
-		"Mensajes", "???", "Mamá: ¿Cenas con nosotros? - Nuevo", "???"]))
+		"Mensajes", "???", "Mamá · ¿Cenas con nosotros? - Nuevo", "???"]))
 	assert_eq(_album.get_counter_text(), "Recuerdos: 2/4")
 	_assert_no_leak()
 

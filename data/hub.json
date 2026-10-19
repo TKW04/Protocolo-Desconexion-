@@ -311,7 +311,7 @@
 			{"category": "object", "text": "Objetos"},
 			{"category": "memory", "text": "Recuerdos"}
 		],
-		"memory_notes": "Pestana Recuerdos (2026-10-19, paso 3 de docs/propuesta-recuerdos.md §7; §3): category memory, datos de data/memories.json (MemoryCatalog). Lista con dos secciones, section_boss («Jefe», arriba: una fila por capa del recuerdo de jefe cuyo acceso ya se alcanzo, layer_row con el nombre del acceso de access_levels; las capas de un acceso no alcanzado NO aparecen) y section_messages («Mensajes»: una fila por mensaje de secreto con first_lap alcanzado, message_row con remitente y asunto). Lo no obtenido sale con unknown («???»; en los mensajes, sin remitente). Lo obtenido sin leer lleva row_new. counter_memories cuenta solo lo visible. Ficha abierta (sin ilustracion todavia): titulo, card_layer (jefe) o card_sender y card_subject (mensajes) y el texto; abrirla lo marca leido (GameState.mark_memory_read). Lo no obtenido no se abre (message_memory_missing). Filas de memory_row_px de alto.",
+		"memory_notes": "Pestana Recuerdos (2026-10-19, paso 3 de docs/propuesta-recuerdos.md §7; §3): category memory, datos de data/memories.json (MemoryCatalog). Lista con dos secciones, section_boss («Jefe», arriba: una fila por capa del recuerdo de jefe cuyo acceso ya se alcanzo, layer_row con el nombre del acceso de access_levels; las capas de un acceso no alcanzado NO aparecen) y section_messages («Mensajes»: una fila por mensaje de secreto con first_lap alcanzado, message_row con remitente y asunto separados por un punto medio desde el 2026-10-19). Lo no obtenido sale con unknown («???»; en los mensajes, sin remitente). Lo obtenido sin leer lleva row_new. counter_memories cuenta solo lo visible. Ficha abierta (sin ilustracion todavia): titulo, card_layer (jefe) o card_sender y card_subject (mensajes) y el texto; abrirla lo marca leido (GameState.mark_memory_read). Lo no obtenido no se abre (message_memory_missing). Filas de memory_row_px de alto.",
 		"memory_row_px": 16,
 		"texts": {
 			"title": "Notas - Álbum",
@@ -329,7 +329,7 @@
 			"section_boss": "Jefe",
 			"section_messages": "Mensajes",
 			"layer_row": "%s: %s",
-			"message_row": "%s: %s",
+			"message_row": "%s · %s",
 			"row_new": "%s - Nuevo",
 			"card_layer": "Capa: %s",
 			"card_sender": "De: %s",

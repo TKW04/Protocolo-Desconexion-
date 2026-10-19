@@ -1,5 +1,5 @@
 {
-  "_notes": "Recuerdos (docs/propuesta-recuerdos.md §7 paso 1 y §10; 2026-10-19). Una entrada por recuerdo. kind boss: recuerdo de jefe, una capa por acceso (layer 1 Caché, 2 Kernel, 3 Raíz); 6 jefes x 3 capas = 18 (el del Mundo 6 lo entrega Isak Optimizado). kind secret: mensaje de secreto (correo o mensaje de familiares y amigos) con sender y subject, el nivel (level) y el secreto que lo ofrece (secret, id del array secrets del nivel) y first_lap (acceso en que aparece, 1 = Caché): REAPARECE SI NO SE OBTUVO, es decir, se ofrece en first_lap y en todos los accesos siguientes mientras su id no esté en el registro (GameState.memories). order: orden dentro del mundo (jefe: la capa; mensajes: el subnivel). TEXTOS PROVISIONALES: el esbozo del Mundo 1 (§5) y los mensajes del 1-1, 1-2 y 1-3 (§10.4) son borradores de tono; el resto, «(por escribir)»: son historia y se escriben mundo a mundo con el usuario (paso 6). Los títulos de jefe de los Mundos 1-5 son los fragmentos del diseño (mundo-N, Recompensa); el del Mundo 6 está por escribir. Los demás mensajes de Caché (3 por mundo, §8.4) se añaden al construir cada mundo. El mensaje del 1-3 aún no tiene nivel ni secreto en datos (sala «Excepciones», solo concepto). Solo glifos de la fuente de textos (sin comillas angulares ni punto medio). Validador: tools/validate_memories.py.",
+  "_notes": "Recuerdos (docs/propuesta-recuerdos.md §7 paso 1 y §10; 2026-10-19). Una entrada por recuerdo. kind boss: recuerdo de jefe, una capa por acceso (layer 1 Caché, 2 Kernel, 3 Raíz); 6 jefes x 3 capas = 18 (el del Mundo 6 lo entrega Isak Optimizado). kind secret: mensaje de secreto (correo o mensaje de familiares y amigos) con sender y subject, el nivel (level) y el secreto que lo ofrece (secret, id del array secrets del nivel) y first_lap (acceso en que aparece, 1 = Caché): REAPARECE SI NO SE OBTUVO, es decir, se ofrece en first_lap y en todos los accesos siguientes mientras su id no esté en el registro (GameState.memories). order: orden dentro del mundo (jefe: la capa; mensajes: el subnivel). TEXTOS PROVISIONALES: el esbozo del Mundo 1 (§5) y los mensajes del 1-1, 1-2 y 1-3 (§10.4) son borradores de tono; el resto, «(por escribir)»: son historia y se escriben mundo a mundo con el usuario (paso 6). Los títulos de jefe de los Mundos 1-5 son los fragmentos del diseño (mundo-N, Recompensa); el del Mundo 6 está por escribir. Los demás mensajes de Caché (3 por mundo, §8.4) se añaden al construir cada mundo. El mensaje del 1-3 aún no tiene nivel ni secreto en datos (sala «Excepciones», solo concepto). Solo glifos de la fuente de textos; desde el 2026-10-19 (paso 4) las citas van entre comillas angulares (la fuente las tiene desde el commit af91e8b) y el punto medio separa remitente y asunto en la lista de Notas (message_row de data/hub.json). Cada mensaje lo ofrece un objeto memory_pickup de su nivel (recompensa memory con su memory_id en el secreto `secret`; cuando el nivel ya tiene JSON lo comprueba el validador). Validador: tools/validate_memories.py.",
   "memories": [
     {
       "id": "boss_w1_l1",
@@ -8,7 +8,7 @@
       "layer": 1,
       "order": 1,
       "title": "Fragmento de concentración",
-      "text": "El circuito sobre la mesa de la cocina. Se ven las manos de Isak, el soldador y un LED que no enciende. Al lado, unas manos viejas sostienen una lupa.\nEco: \"Archivado\"."
+      "text": "El circuito sobre la mesa de la cocina. Se ven las manos de Isak, el soldador y un LED que no enciende. Al lado, unas manos viejas sostienen una lupa.\nEco: «Archivado»."
     },
     {
       "id": "boss_w1_l2",
@@ -26,7 +26,7 @@
       "layer": 3,
       "order": 3,
       "title": "Fragmento de concentración",
-      "text": "El celular vibra tres veces sobre la mesa; Isak no lo mira, el Abuelito tampoco. Eco lo guardó como \"sesión improductiva: 3 h sin interacción\" y recortó la sonrisa.\nEco: \"No era un recuerdo útil\"."
+      "text": "El celular vibra tres veces sobre la mesa; Isak no lo mira, el Abuelito tampoco. Eco lo guardó como «sesión improductiva: 3 h sin interacción» y recortó la sonrisa.\nEco: «No era un recuerdo útil»."
     },
     {"id": "boss_w2_l1", "world": 2, "kind": "boss", "layer": 1, "order": 1, "title": "Fragmento de tiempo", "text": "(por escribir)"},
     {"id": "boss_w2_l2", "world": 2, "kind": "boss", "layer": 2, "order": 2, "title": "Fragmento de tiempo", "text": "(por escribir)"},
@@ -54,7 +54,7 @@
       "sender": "Mamá",
       "subject": "Recado del Abuelito",
       "title": "Recado del Abuelito",
-      "text": "Isak, el Abuelito dice que el circuito de ayer \"solo necesita paciencia y un poquito de estaño\". Te dejó la lupa en la mesa. Yo no entiendo nada, pero me pidió que te avisara.\nMamá (te escribo desde la cocina)"
+      "text": "Isak, el Abuelito dice que el circuito de ayer «solo necesita paciencia y un poquito de estaño». Te dejó la lupa en la mesa. Yo no entiendo nada, pero me pidió que te avisara.\nMamá (te escribo desde la cocina)"
     },
     {
       "id": "msg_1_2",
@@ -67,7 +67,7 @@
       "sender": "Mamá",
       "subject": "¿Cenas con nosotros?",
       "title": "¿Cenas con nosotros?",
-      "text": "Isak, el Abuelito hizo sopa y dice que no empieza hasta que bajes. Ya se enfrió una vez. Avísame si te toca otra vez \"solo cinco minutitos\".\nMamá (sí, otra vez)"
+      "text": "Isak, el Abuelito hizo sopa y dice que no empieza hasta que bajes. Ya se enfrió una vez. Avísame si te toca otra vez «solo cinco minutitos».\nMamá (sí, otra vez)"
     },
     {
       "id": "msg_1_3",
