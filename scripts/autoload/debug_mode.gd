@@ -176,6 +176,12 @@ func is_active() -> bool:
 	return _state == State.ACTIVE
 
 
+## Activo o cargando (pulsacion larga en curso). Con el Debug asi no sale el dash
+## (2026-10-19, docs/propuesta-1-3.md §2.2: no se combinan; chispa gris).
+func is_engaged() -> bool:
+	return _state == State.ACTIVE or _state == State.CHARGING
+
+
 func get_state() -> State:
 	return _state
 

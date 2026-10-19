@@ -24,6 +24,9 @@ const REQUIRED_KEYS: PackedStringArray = [
 
 ## Claves numericas opcionales (0 si faltan): efectos de las mejoras de Calc.
 const OPTIONAL_KEYS: PackedStringArray = ["laser_pierce", "pulse_energy_on_stun"]
+## Claves numericas de la seccion opcional dash (propiedad dash_<clave>).
+const DASH_KEYS: PackedStringArray = ["distance_px", "duration_s", "invulnerable_s", "energy_cost",
+	"cooldown_s", "end_speed_px_s", "air_dashes"]
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -53,6 +56,19 @@ var laser_visual: Dictionary = {}
 ## Laser 5 atraviesa enemigos (1 = si) y Pulso 5 da energia al aturdir (4).
 var laser_pierce: float = 0.0
 var pulse_energy_on_stun: float = 0.0
+## Dash, gesto Deslizar (seccion dash, opcional; 2026-10-19, docs/propuesta-1-3.md
+## §2.1, valores provisionales): distancia, duracion, invulnerabilidad desde el
+## inicio, coste de energia, enfriamiento desde el final, velocidad al terminar y
+## dashes por estancia en el aire. Sin la seccion valen estos valores por defecto.
+var dash_distance_px: float = 192.0
+var dash_duration_s: float = 0.2
+var dash_invulnerable_s: float = 0.3
+var dash_energy_cost: float = 10.0
+var dash_cooldown_s: float = 0.5
+var dash_end_speed_px_s: float = 360.0
+var dash_air_dashes: int = 1
+## Aspecto provisional del dash (dash.visual).
+var dash_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -91,6 +107,22 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var visual: Variant = data.get("laser_visual", {})
 	if visual is Dictionary:
 		abilities.laser_visual = visual
+	var dash: Variant = data.get("dash", {})
+	if not dash is Dictionary:
+		return _fail("PlayerAbilities: la clave 'dash' en '%s' debe ser un objeto." % source)
+	for key: String in DASH_KEYS:
+		if not (dash as Dictionary).has(key):
+			continue
+		var value: Variant = dash[key]
+		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+			return _fail("PlayerAbilities: la clave 'dash.%s' en '%s' debe ser numerica." % [key, source])
+		if key == "air_dashes":
+			abilities.dash_air_dashes = maxi(int(value), 0)
+		else:
+			abilities.set("dash_" + key, float(value))
+	var dash_visual: Variant = (dash as Dictionary).get("visual", {})
+	if dash_visual is Dictionary:
+		abilities.dash_visual = dash_visual
 	return abilities
 
 

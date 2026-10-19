@@ -129,6 +129,13 @@ signal laser_fired(projectile: Node2D)
 ## Isak intenta disparar el laser sin energia suficiente (no sale el disparo).
 @warning_ignore("unused_signal")
 signal laser_denied
+## Isak empieza un dash (gesto Deslizar, 2026-10-19) hacia `direction` (-1/1).
+@warning_ignore("unused_signal")
+signal dash_started(direction: float)
+## Intento de dash sin energia suficiente o con el Debug activo o cargando
+## (Isak.DASH_DENIED_ENERGY / DASH_DENIED_DEBUG): chispa gris, no sale.
+@warning_ignore("unused_signal")
+signal dash_denied(reason: StringName)
 
 ## Un cargador (charger) repone `amount` de energia de Debug.
 @warning_ignore("unused_signal")

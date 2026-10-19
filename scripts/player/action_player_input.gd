@@ -9,6 +9,8 @@ const ACTION_RUN: StringName = &"run"
 const ACTION_PULSE: StringName = &"pulse"
 const ACTION_LASER: StringName = &"laser"
 const ACTION_HIDE: StringName = &"hide"
+## Gesto Deslizar (dash; 2026-10-19).
+const ACTION_DASH: StringName = &"gesture_swipe"
 
 
 func poll() -> void:
@@ -19,3 +21,4 @@ func poll() -> void:
 	pulse_pressed = Input.is_action_just_pressed(ACTION_PULSE)
 	laser_pressed = Input.is_action_just_pressed(ACTION_LASER)
 	hide_pressed = InputMap.has_action(ACTION_HIDE) and Input.is_action_just_pressed(ACTION_HIDE)
+	dash_pressed = InputMap.has_action(ACTION_DASH) and Input.is_action_just_pressed(ACTION_DASH)

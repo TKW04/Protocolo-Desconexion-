@@ -10,6 +10,9 @@ func enter() -> void:
 
 
 func get_transition() -> StringName:
+	# Dash aereo (uno por estancia en el aire; Isak.wants_dash lo comprueba).
+	if isak.wants_dash():
+		return DASH
 	if isak.velocity.y >= 0.0:
 		return FALL
 	return NONE

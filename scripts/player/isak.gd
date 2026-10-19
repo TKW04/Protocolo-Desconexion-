@@ -25,6 +25,13 @@ signal warp_revealed
 ## Empieza una llegada (`hidden`: Isak aun no se ve) o una salida (WarpVortex;
 ## EcoCompanion entra y sale con el).
 signal warp_began(hidden: bool)
+## Empieza un dash (gesto Deslizar) hacia `direction` (-1/1).
+signal dash_started(direction: float)
+## Termina el dash (recorrido completo, contra una pared o cortado).
+signal dash_ended
+## Intento de dash que no sale con chispa gris: `reason` DASH_DENIED_ENERGY o
+## DASH_DENIED_DEBUG (los demas casos se ignoran sin aviso).
+signal dash_denied(reason: StringName)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -68,6 +75,14 @@ const PULSE_EFFECT_SCENE: PackedScene = preload("res://scenes/player/pulse_effec
 const LASER_PROJECTILE_SCENE: PackedScene = preload("res://scenes/player/laser_projectile.tscn")
 ## Tolerancia al comparar la energia con el coste del laser.
 const LASER_ENERGY_EPS: float = 0.0001
+## Dash (2026-10-19): motivos por los que no sale. Solo los dos primeros dan
+## chispa gris y dash_denied; el resto se ignora sin aviso (como el pulso en el aire).
+const DASH_DENIED_ENERGY: StringName = &"energy"
+const DASH_DENIED_DEBUG: StringName = &"debug"
+const DASH_DENIED_LOCKED: StringName = &"locked"
+const DASH_DENIED_BUSY: StringName = &"busy"
+const DASH_DENIED_COOLDOWN: StringName = &"cooldown"
+const DASH_DENIED_AIR: StringName = &"air"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 
@@ -151,6 +166,17 @@ var _tower_camera: TowerCamera
 var _regen: PassiveRegen
 ## Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2; accion hide).
 var _hide: HideMode
+## Dash (gesto Deslizar, 2026-10-19; DashState, seccion dash de
+## data/isak_abilities.json). Tiempo real. _dash_requested: pulsacion valida en
+## este paso (la consumen los estados). Enfriamiento desde el final, invulnerable
+## desde el inicio, dashes aereos que quedan en esta estancia en el aire.
+var _dash_requested: bool = false
+var _dash_cooldown_left: float = 0.0
+var _dash_invulnerable_left: float = 0.0
+var _air_dashes_left: int = 0
+var _dash_started_on_floor: bool = false
+var _dash_flash_time: float = 0.0
+var _dash_effect: DashEffect
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -185,7 +211,15 @@ func _ready() -> void:
 		PlayerState.PULSE: PulseState.new(self),
 		PlayerState.HURT: HurtState.new(self),
 		PlayerState.DEAD: DeadState.new(self),
+		PlayerState.DASH: DashState.new(self),
 	}
+	_air_dashes_left = abilities.dash_air_dashes
+	_dash_effect = DashEffect.new()
+	_dash_effect.name = "DashEffect"
+	_dash_effect.configure(abilities.dash_visual)
+	add_child(_dash_effect)
+	# La estela va detras del sprite.
+	move_child(_dash_effect, 0)
 	EventBus.sync_rate_changed.connect(_on_sync_rate_changed)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	_regen = PassiveRegen.new()
@@ -209,6 +243,7 @@ func step(delta: float) -> void:
 	if _warping or _facing_back:
 		input = _warp_input
 	_update_timers(delta)
+	_update_dash_request()
 	for i: int in MAX_TRANSITIONS_PER_STEP:
 		var next: StringName = _state.get_transition()
 		if next == PlayerState.NONE:
@@ -217,10 +252,12 @@ func step(delta: float) -> void:
 	_state.physics_update(delta)
 	move_and_slide()
 	_update_coyote(delta)
+	_update_dash(delta)
 	_update_laser(delta)
 	_update_hide(delta)
 	_update_regen(delta)
 	_update_blink()
+	_dash_requested = false
 	if _tower_camera != null:
 		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
 	if input == _warp_input:
@@ -239,6 +276,11 @@ func change_state(state_name: StringName) -> void:
 		_hide.end(HideMode.REASON_PULSE)
 	elif _hide != null and state_name == PlayerState.DEAD:
 		_hide.end(HideMode.REASON_DEAD)
+	elif _hide != null and state_name == PlayerState.DASH:
+		# El dash apaga el Ocultarte (como el pulso y el laser).
+		_hide.end(HideMode.REASON_DASH)
+	if state_name == PlayerState.DASH:
+		_dash_requested = false
 	if _state != null:
 		_state.exit()
 	_state = _states[state_name]
@@ -284,7 +326,7 @@ func can_laser() -> bool:
 ## antes tambien en el aire). En el aire la accion se ignora sin aviso, igual
 ## que el pulso (ni chispa ni enfriamiento).
 func can_start_laser() -> bool:
-	return is_on_floor() and can_laser()
+	return is_on_floor() and can_laser() and _state_name != PlayerState.DASH
 
 
 func get_laser_cooldown_left() -> float:
@@ -326,8 +368,9 @@ func is_dead() -> bool:
 	return _state_name == PlayerState.DEAD
 
 
+## Invulnerable tras un golpe o durante el dash (dash_invulnerable_s desde su inicio).
 func is_invulnerable() -> bool:
-	return _invulnerable_left > 0.0
+	return _invulnerable_left > 0.0 or _dash_invulnerable_left > 0.0
 
 
 ## Verdadero si se acaba de entrar en Idle aterrizando (lo usa IdleState).
@@ -422,6 +465,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	if _hide != null:
 		_hide.reset()
 	change_state(PlayerState.IDLE)
+	_reset_dash()
 	play_animation(ANIM_IDLE)
 	_camera.reset_smoothing()
 	snap_camera()
@@ -738,6 +782,141 @@ func _cancel_laser() -> void:
 		_laser_muzzle.clear()
 
 
+# --- Dash (gesto Deslizar, 2026-10-19; docs/propuesta-1-3.md §2) ---
+
+## Un estado ha pedido el dash en este paso (pulsacion de gesture_swipe que
+## cumple dash_denial()). Lo consumen los estados (suelo y aire).
+func wants_dash() -> bool:
+	return _dash_requested
+
+
+## Motivo por el que un dash no saldria ahora (&"" = sale). Ver DASH_DENIED_*.
+## Orden: sin la habilidad o en el hub, ocupado (muerto, golpe, pulso, laser,
+## dash, vortice, de espaldas), enfriamiento, sin dash aereo, Debug activo o
+## cargando y energia insuficiente.
+func dash_denial() -> StringName:
+	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_DASH):
+		return DASH_DENIED_LOCKED
+	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH]:
+		return DASH_DENIED_BUSY
+	if _dash_cooldown_left > 0.0:
+		return DASH_DENIED_COOLDOWN
+	if not is_on_floor() and _air_dashes_left <= 0:
+		return DASH_DENIED_AIR
+	if DebugMode.is_engaged():
+		return DASH_DENIED_DEBUG
+	if GameState.debug_energy + LASER_ENERGY_EPS < abilities.dash_energy_cost:
+		return DASH_DENIED_ENERGY
+	return &""
+
+
+func is_dashing() -> bool:
+	return _state_name == PlayerState.DASH
+
+
+func get_dash_cooldown_left() -> float:
+	return _dash_cooldown_left
+
+
+func get_air_dashes_left() -> int:
+	return _air_dashes_left
+
+
+## Efecto del dash (estela y anillo de enfriamiento; pruebas y capturas).
+func get_dash_effect() -> DashEffect:
+	return _dash_effect
+
+
+## Lo llama DashState al entrar: elige la direccion (la mantenida o hacia donde
+## mira), cobra la energia, gasta el dash aereo si no esta en el suelo y empieza
+## la invulnerabilidad. Devuelve la direccion (-1/1).
+func begin_dash() -> float:
+	var direction: float = signf(input.move_axis) if not is_zero_approx(input.move_axis) else facing
+	if is_zero_approx(direction):
+		direction = 1.0
+	facing = direction
+	_sprite.flip_h = facing < 0.0
+	_dash_started_on_floor = is_on_floor()
+	if not _dash_started_on_floor:
+		_air_dashes_left = maxi(_air_dashes_left - 1, 0)
+	GameState.debug_energy -= abilities.dash_energy_cost
+	_dash_invulnerable_left = abilities.dash_invulnerable_s
+	_dash_flash_time = 0.0
+	_jump_buffer_left = 0.0
+	reset_idle_time()
+	update_dash_pose()
+	_dash_effect.begin(direction)
+	dash_started.emit(direction)
+	EventBus.dash_started.emit(direction)
+	return direction
+
+
+## Lo llama DashState al salir: con `keep_speed` conserva dash_end_speed_px_s en
+## su direccion; contra una pared o cortado, se para en horizontal. Empieza el
+## enfriamiento. Un dash que empezo en el suelo y sale de un borde da el coyote.
+func end_dash(direction: float, keep_speed: bool, _blocked: bool) -> void:
+	velocity.x = direction * abilities.dash_end_speed_px_s if keep_speed else 0.0
+	velocity.y = 0.0
+	_dash_cooldown_left = abilities.dash_cooldown_s
+	if _dash_started_on_floor and not is_on_floor() and not is_dead():
+		_coyote_left = physics.coyote_time_s
+	_sprite.rotation = 0.0
+	_dash_effect.end()
+	dash_ended.emit()
+
+
+## Pose provisional del dash (sin hoja propia): cuadro run_frame de correr,
+## inclinado lean_deg hacia delante.
+func update_dash_pose() -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	var visual: Dictionary = abilities.dash_visual
+	if frames != null and frames.has_animation(ANIM_RUN):
+		if _sprite.animation != ANIM_RUN:
+			_sprite.animation = ANIM_RUN
+		_sprite.pause()
+		_sprite.frame = clampi(int(visual.get("run_frame", 2)), 0, frames.get_frame_count(ANIM_RUN) - 1)
+	_sprite.rotation = deg_to_rad(float(visual.get("lean_deg", 8.0))) * facing
+
+
+## Pulsacion del dash en este paso: valida -> _dash_requested; sin energia o con
+## el Debug, chispa gris (la del laser) y dash_denied; el resto, sin aviso.
+func _update_dash_request() -> void:
+	_dash_requested = false
+	if input == null or not input.dash_pressed:
+		return
+	var denial: StringName = dash_denial()
+	if denial == &"":
+		_dash_requested = true
+	elif denial == DASH_DENIED_ENERGY or denial == DASH_DENIED_DEBUG:
+		_laser_muzzle.show_fizzle(facing)
+		dash_denied.emit(denial)
+		EventBus.dash_denied.emit(denial)
+
+
+## Enfriamiento, dash aereo repuesto en el suelo y efecto (tiempo real).
+func _update_dash(delta: float) -> void:
+	if not is_dashing():
+		_dash_cooldown_left = maxf(_dash_cooldown_left - delta, 0.0)
+	if is_on_floor():
+		_air_dashes_left = abilities.dash_air_dashes
+	if _dash_effect != null:
+		_dash_effect.advance(delta, self)
+
+
+## Reaparecer: sin dash, sin enfriamiento ni invulnerabilidad del dash y con el
+## dash aereo repuesto.
+func _reset_dash() -> void:
+	_dash_requested = false
+	_dash_cooldown_left = 0.0
+	_dash_invulnerable_left = 0.0
+	_air_dashes_left = abilities.dash_air_dashes
+	_sprite.rotation = 0.0
+	_sprite.self_modulate = Color.WHITE
+	if _dash_effect != null:
+		_dash_effect.clear()
+
+
 # --- Ocultarte (Pulso 4, tanda M2; HideMode, data/hide_mode.json) ---
 
 ## Corre de verdad: run mantenido y sin el Ocultarte (oculto solo camina).
@@ -910,13 +1089,20 @@ func _update_timers(delta: float) -> void:
 	else:
 		_jump_buffer_left = maxf(_jump_buffer_left - delta, 0.0)
 	_invulnerable_left = maxf(_invulnerable_left - delta, 0.0)
+	_dash_invulnerable_left = maxf(_dash_invulnerable_left - delta, 0.0)
+	_dash_flash_time += delta
 
 
 ## Parpadeo mientras dura la invulnerabilidad tras un golpe (no al morir).
+## Durante la invulnerabilidad del dash, parpadeo blanco suave (se aclara).
 func _update_blink() -> void:
-	var dim: bool = is_invulnerable() and not is_dead() \
+	var dim: bool = _invulnerable_left > 0.0 and not is_dead() \
 			and fmod(_invulnerable_left, BLINK_PERIOD_S) < BLINK_PERIOD_S * 0.5
 	_sprite.modulate.a = BLINK_ALPHA if dim else 1.0
+	var flash: bool = _dash_invulnerable_left > 0.0 and not is_dead() \
+			and fmod(_dash_flash_time * float(abilities.dash_visual.get("flash_hz", 16.0)), 1.0) < 0.5
+	var gain: float = 1.0 + float(abilities.dash_visual.get("flash_gain", 0.35))
+	_sprite.self_modulate = Color(gain, gain, gain) if flash else Color.WHITE
 
 
 func _on_animation_finished() -> void:

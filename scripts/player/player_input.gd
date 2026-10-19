@@ -19,6 +19,8 @@ var pulse_pressed: bool = false
 var laser_pressed: bool = false
 ## Ocultarte pulsado en este cuadro (flanco; accion hide, Pulso 4).
 var hide_pressed: bool = false
+## Dash pulsado en este cuadro (flanco; gesto Deslizar, accion gesture_swipe).
+var dash_pressed: bool = false
 
 
 ## Actualiza las intenciones. Se llama una vez por paso de fisica.
@@ -32,8 +34,9 @@ func clear_just_pressed() -> void:
 	pulse_pressed = false
 	laser_pressed = false
 	hide_pressed = false
+	dash_pressed = false
 
 
 ## Verdadero si hay cualquier intencion activa (corta la animacion de terminal).
 func has_any_intent() -> bool:
-	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed or hide_pressed
+	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed or hide_pressed or dash_pressed

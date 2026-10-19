@@ -3,6 +3,7 @@
 ## tiles), escalones de 1, 2 y
 ## 2,5 tiles, hueco de 2 tiles (caminando), hueco de 3 tiles (corriendo),
 ## plataforma de una via y pared. Caer por un hueco devuelve a Isak al inicio.
+## Pulso (G) y dash (L / B, gesto Deslizar; 2026-10-19) desbloqueados.
 ## Solo para jugar y ajustar valores; no es un nivel del juego.
 extends Node2D
 
@@ -26,6 +27,9 @@ const JUMP_BUFFER: String = "buffer"
 ## Desbloquea el pulso al cargar esta escena (en tiempo de ejecucion; el valor
 ## por defecto de GameState sigue bloqueado).
 @export var unlock_pulse: bool = true
+## Desbloquea el dash (gesto Deslizar: L / B; 2026-10-19) al cargar esta escena,
+## igual que el pulso (solo en tiempo de ejecucion).
+@export var unlock_dash: bool = true
 ## Si Isak cae por debajo de esta Y vuelve al punto de inicio.
 @export var fall_limit_y: float = 960.0
 
@@ -41,6 +45,8 @@ func _ready() -> void:
 	_spawn_position = _isak.global_position
 	if unlock_pulse:
 		GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
+	if unlock_dash:
+		GameState.set_ability_unlocked(GameState.ABILITY_DASH, true)
 	_debug_signs.visible = DEBUG_OVERLAY
 	if DEBUG_OVERLAY:
 		_setup_debug_overlay()

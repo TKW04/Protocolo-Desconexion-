@@ -8,7 +8,8 @@
 ## - Gasta 5 de energia y 1,5 de Sync Rate por segundo real; se corta solo cuando
 ##   el Sync Rate o la energia llegan al 10 % del maximo efectivo (el primero que
 ##   llegue; el gasto se para ahi, nunca mata).
-## - Lo apagan el pulso y el laser (al empezar la pose), recibir dano, activar el
+## - Lo apagan el pulso, el laser (al empezar la pose) y el dash (al empezar;
+##   tampoco se activa durante un dash; 2026-10-19), recibir dano, activar el
 ##   Debug (y activarlo apaga el Debug: no se combinan), morir, los vortices, la
 ##   pose de espaldas y reaparecer. No se corre mientras dura.
 ## - GameState.set_player_hidden avisa a los enemigos (EventBus.hide_changed);
@@ -28,6 +29,8 @@ const REASON_TOGGLE: StringName = &"toggle"
 const REASON_CUT: StringName = &"cut"
 const REASON_PULSE: StringName = &"pulse"
 const REASON_LASER: StringName = &"laser"
+## El dash (gesto Deslizar, 2026-10-19) lo apaga como el pulso y el laser.
+const REASON_DASH: StringName = &"dash"
 const REASON_HURT: StringName = &"hurt"
 const REASON_DEBUG: StringName = &"debug"
 const REASON_DEAD: StringName = &"dead"
@@ -195,7 +198,7 @@ func _check(isak: Isak) -> Denied:
 	if not isak.is_on_floor():
 		return Denied.NOT_ON_FLOOR
 	if isak.is_dead() or isak.is_warping() or isak.is_facing_back() or isak.is_laser_posing() \
-			or isak.is_laser_charging() or isak.get_state_name() in [PlayerState.PULSE, PlayerState.HURT]:
+			or isak.is_laser_charging() or isak.get_state_name() in [PlayerState.PULSE, PlayerState.HURT, PlayerState.DASH]:
 		return Denied.BUSY
 	var minimum: float = enter_min_fraction
 	if GameState.sync_rate <= GameState.get_sync_rate_max() * minimum + EPS:
