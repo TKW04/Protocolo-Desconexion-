@@ -90,7 +90,7 @@ BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_p
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
-                    "laser_switch", "charge_dock", "calc_actor"}
+                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch"}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
 # interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
 SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")
@@ -405,7 +405,7 @@ class LevelValidator:
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
         if kind == "charge_dock":
             return [(x, y), (x + 1, y)]
-        if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide"):
+        if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch"):
             return [(x, y)]
         w, h = get("width_tiles", 1), get("height_tiles", 1)
         if not (_is_int(w) and _is_int(h)) or w < 1 or h < 1:

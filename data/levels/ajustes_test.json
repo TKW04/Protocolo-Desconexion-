@@ -1,0 +1,62 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 3 del plan de docs/propuesta-1-3.md §7, 2026-10-19): sala «Ajustes» reducida de 26x12 tiles para probar el INTERRUPTOR «No molestar» (dnd_switch) y el gesto Deslizar (dash). Isak llega por la izquierda (P, de pie en la fila 10) con el pulso y sin el dash. El interruptor dnd_ajustes (columna 7, en la pared del fondo) se enciende con UN pulso de espaldas: da el dash para siempre (se guarda), Eco dice su linea de historia (importante; texto PROPUESTO, por decidir) y despues sale el aviso «Deslizar: L / B (mando)». Con el dash ya obtenido arranca encendido e inerte. A la derecha, un pasillo de techo bajo (columnas 12-17, 2 filas libres, filas 9-10: sin salto) para probar el dash; se cruza tambien andando. Terminal de salida en (23, 9). La ruta no exige el dash (su modelado en el validador es el paso 9). El bot no la recorre. Escena: scenes/levels/ajustes_test.tscn (python3 tools/build_level.py data/levels/ajustes_test.json).",
+	"id": "ajustes_test",
+	"name": "Ajustes (prueba)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": false
+	},
+	"sections": [
+		{
+			"name": "Ajustes",
+			"x_from": 0,
+			"x_to": 25,
+			"patterns": [
+				"no_molestar"
+			]
+		}
+	],
+	"grid": [
+		"##########################",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#...........######.......#",
+		"#........................#",
+		"#.P....................G.#",
+		"##########################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "dnd_switch",
+			"x": 7,
+			"y": 10,
+			"params": {
+				"id": "dnd_ajustes",
+				"ability": "dash",
+				"story_line": "dnd_1_3"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 23,
+			"y": 9,
+			"params": {
+				"id": "terminal_ajustes",
+				"text": "Ajustes guardados"
+			}
+		}
+	],
+	"unlocks": []
+}

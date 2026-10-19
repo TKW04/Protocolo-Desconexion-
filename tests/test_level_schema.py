@@ -483,6 +483,27 @@ class LevelSchemaTest(unittest.TestCase):
         obj(level, "eco_encounter")["params"]["eco_offset_tiles"] = [2.5, 7]
         self.assert_fails(level, "eco_offset_tiles debe ser [columna, fila]")
 
+    # --- Interruptor «No molestar» (2026-10-19, paso 3 de docs/propuesta-1-3.md §7) ---
+
+    def test_dnd_switch_is_valid_and_only_gives_dash(self):
+        self._add("dnd_switch", {"id": "dnd_test", "ability": "dash", "story_line": "dnd_1_3"})
+        self._add("eco_line", {"id": "eco_dash", "text": "Hola.", "unless_ability": "dash"})
+        self.assertEqual(vls.validate_level(self.level), [])
+        self.level = load_level()
+        self._add("dnd_switch", {"id": "dnd_test", "ability": "laser"})
+        self.assert_fails(self.level, "ability 'laser' no admitido")
+        self.level = load_level()
+        self._add("dnd_switch", {"id": "dnd_test"})
+        self.assert_fails(self.level, "falta el param obligatorio 'ability'")
+        self.level = load_level()
+        self._add("dnd_switch", {"id": "dnd_test", "ability": "dash", "story_line": "otra"})
+        self.assert_fails(self.level, "story_line 'otra' no admitido")
+
+    def test_dnd_switch_inside_terrain(self):
+        entry = self._add("dnd_switch", {"id": "dnd_test", "ability": "dash"})
+        set_cell(self.level, entry["x"], entry["y"], "#")
+        self.assert_fails(self.level, "fila %d, columna %d: objects" % (entry["y"], entry["x"]))
+
     def test_ability_pickup_requires_ability(self):
         self._add("ability_pickup", {"id": "laser_1"})
         self.assert_fails(self.level, "falta el param obligatorio 'ability'")

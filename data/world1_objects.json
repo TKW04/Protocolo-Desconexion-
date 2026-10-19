@@ -129,7 +129,7 @@
 			},
 			"allowed": {
 				"trigger_event": ["laser_fired"],
-				"unless_ability": ["pulse", "debug", "laser"]
+				"unless_ability": ["pulse", "debug", "laser", "dash"]
 			},
 			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}
 		},
@@ -397,6 +397,15 @@
 					"done_if_ally": "calc"
 				}
 			}
+		},
+		"dnd_switch": {
+			"scene": "res://scenes/levels/dnd_switch.tscn",
+			"description": "Interruptor «No molestar» de la sala «Ajustes» del 1-3 (2026-10-19, paso 3 del plan de docs/propuesta-1-3.md §7, §5.1). Panel en la pared del fondo (no solido): un pulso que alcanza su zona (hit_rect de la seccion dnd_switch, como el power_switch con un solo pulso) lo enciende (luna) con Isak de espaldas pose_s y da para siempre la habilidad `ability` (GameState.obtain_ability, como el ability_pickup: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice la linea de historia story_line (story_lines de la seccion dnd_switch; linea importante, texto PROPUESTO, por decidir) y despues sale el aviso de control de la habilidad (data/ability_notices.json). Un solo uso (misma regla que unless_ability): con la habilidad ya obtenida o desbloqueada al cargar arranca encendido e inerte, sin linea ni aviso; tras un rollback sin ella vuelve a estar apagado. Sin ayuda con Q ni ficha del album todavia (paso 8 del plan; arte provisional: el panel del power_switch y una luna dibujada por codigo).",
+			"required": ["id", "ability"],
+			"fields": {"id": "object_id", "ability": "ability", "story_line": "story_line"},
+			"defaults": {},
+			"allowed": {"ability": ["dash"], "story_line": ["dnd_1_3"]},
+			"example": {"type": "dnd_switch", "x": 14, "y": 9, "params": {"id": "dnd_1_3", "ability": "dash", "story_line": "dnd_1_3"}}
 		},
 		"debug_switch": {
 			"scene": "res://scenes/levels/debug_switch.tscn",
@@ -899,6 +908,23 @@
 		"pose_s": 0.45,
 		"reveal_radius_px": 256.0,
 		"marked_alpha": 0.55
+	},
+	"dnd_switch": {
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.1). Interruptor «No molestar» (DndSwitch). Arte PROVISIONAL (sin hoja nueva; el definitivo es el paso 8): frames y animaciones off / hit / on del power_switch (tools/gen_calc_encounter.py) y, encendido, una luna creciente dibujada por codigo en moon_color (borde_luz de mundo1.gpl) sobre moon_center_px con moon_radius_px. sprite_center_px, hit_rect y pose_s como el power_switch (un solo pulso). story_lines: id -> linea importante de Eco al encenderlo la primera vez (admite {apodo}). TEXTO PROPUESTO, POR DECIDIR con el usuario (idea de tono de la propuesta: Eco se presenta como la unica excepcion al No molestar).",
+		"frames": "res://assets/sprites/calc_encounter_frames.tres",
+		"anim_off": "power_switch_off",
+		"anim_hit": "power_switch_hit",
+		"anim_on": "power_switch_on",
+		"sprite_center_px": [32, 4],
+		"hit_rect": [8, -14, 48, 48],
+		"pose_s": 0.45,
+		"moon_center_px": [32, -22],
+		"moon_radius_px": 6.0,
+		"moon_color": "#9bb0e8",
+		"story_duration_s": 4.0,
+		"story_lines": {
+			"dnd_1_3": "«No molestar» activado. Tranquilo, {apodo}: yo no cuento. Soy tu única excepción."
+		}
 	},
 	"laser_switch": {
 		"_notes": "PROPUESTA (2026-10-17). Interruptor laser (LaserSwitch): misma colocacion que laser_receiver (hit_rect y sprite_center_px); frames laser_switch_idle/hit/on de tools/gen_calc_encounter.py.",
