@@ -175,3 +175,21 @@ class CorreoTestSceneTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RhythmSceneTest(unittest.TestCase):
+    """Metronomo del 1-3 (2026-10-19, paso 5 de docs/propuesta-1-3.md): tempo_steps_s se escribe como
+    lista aunque tenga dos numeros (no como Vector2) y la sala vibracion_test esta al dia."""
+
+    def test_tempo_steps_stay_a_list(self):
+        path = os.path.join(ROOT, "data", "levels", "vibracion_test.json")
+        with open(path, encoding="utf-8") as handle:
+            level = json.load(handle)
+        text = bl.build_scene(level)
+        with open(bl.output_path(level), encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), text)
+        self.assertIn("tempo_steps_s = [3.2, 2.6, 2.0]", text)
+        rhythm = next(o for o in level["objects"] if o["type"] == "rhythm_zone")
+        rhythm["params"]["tempo_steps_s"] = [2.0, 1.5]
+        self.assertIn("tempo_steps_s = [2.0, 1.5]", bl.build_scene(level))
+        self.assertIn("zone = [6, 1, 25, 10]", text)

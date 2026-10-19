@@ -69,6 +69,9 @@ HAZARDS_JSON = "data/hazards.json"
 STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id", "unless_ability",
                           "done_if_ally", "door_when", "power_source", "switch_id", "dock_id", "guide_id",
                           "memory_id"}
+# Propiedades que son listas aunque tengan dos numeros (no un Vector2): los ciclos del metronomo
+# (rhythm_zone, 2026-10-19, paso 5 de docs/propuesta-1-3.md).
+ARRAY_PROPERTIES = {"tempo_steps_s"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 
@@ -439,6 +442,9 @@ def build_scene(level, root=ROOT, warnings=None):
             prop = entry["fields"].get(field)
             if prop is None:
                 raise ValueError("%s: param '%s' sin propiedad en el catalogo" % (obj["type"], field))
+            if prop in ARRAY_PROPERTIES and isinstance(params[field], list):
+                props.append((prop, "[" + ", ".join(fmt_value(v) for v in params[field]) + "]"))
+                continue
             props.append((prop, fmt_value(params[field], prop in STRING_NAME_PROPERTIES)))
         if obj["type"] in ("exit_door", "exit_terminal"):
             props.append(("level_id", fmt_string(level["id"])))

@@ -168,6 +168,15 @@ class RoomsTest(unittest.TestCase):
         self.assertEqual(set(sync["banner_cycle_s"]), {"banner_1b"})
         self.assert_export_shape(exported)
 
+    def test_vibracion_test_treats_blink_platforms_as_fixed_with_a_warning(self):
+        """Paso 5 de docs/propuesta-1-3.md (2026-10-19): sin modelar el ritmo (paso 9), las plataformas
+        que parpadean son tablas fijas y sale un aviso."""
+        result, exported = checked("vibracion_test")
+        self.assertTrue(result["ok"], messages(result))
+        self.assertTrue(any("plataformas que parpadean (5, blink_platform)" in w
+                            for w in messages(result, "warnings")), messages(result, "warnings"))
+        self.assertEqual(exported["steps"][-1]["action"], "goal")
+
     def test_tower_test_exports_the_climb(self):
         result, exported = checked("tower_test")
         self.assertTrue(result["ok"], messages(result))

@@ -468,6 +468,8 @@ class LevelModel:
         # Recordatorios (2026-10-16, paso 6 de docs/propuesta-1-2.md §10): PROVISIONAL, tabla
         # solida fina siempre presente (sin su cuenta, su caida ni el Posponer: paso 10).
         self.reminders = {}
+        # Plataformas que parpadean (blink_platform, 1-3): tablas fijas hasta el paso 9 de propuesta-1-3.
+        self.blinks = {}
         # Paso 10 (2026-10-16, docs/propuesta-1-2.md §10): objetos con tiempo, laser y Debug que usa
         # el plan del camino (tools/level_plan.py). Los recordatorios siguen siendo tablas en el grafo;
         # su cuenta, su caida y el Posponer se comprueban en el plan.
@@ -587,6 +589,12 @@ class LevelModel:
                     self.reminders[(obj["x"] + dx, obj["y"])] = thickness
                     info["cells"].add((obj["x"] + dx, obj["y"]))
                     self.reminder_group_of[(obj["x"] + dx, obj["y"])] = group
+            elif obj["type"] == "blink_platform":
+                # Plataforma que parpadea (1-3, 2026-10-19, paso 5 de docs/propuesta-1-3.md): PROVISIONAL,
+                # tabla fija siempre presente; su ritmo (rhythm_zone) se modela en el paso 9.
+                thickness = float(self.catalog.get("blink_platform", {}).get("card_height_px", T))
+                for dx in range(int(p.get("width_tiles", 2))):
+                    self.blinks[(obj["x"] + dx, obj["y"])] = thickness
             elif obj["type"] == "glitch_wall":
                 cells = []
                 for dy in range(int(p.get("height_tiles", 1))):
@@ -1144,7 +1152,7 @@ class World:
                 elif ch == "-":
                     self.support[r][c] = True
         self.hazards = list(model.spike_rects)
-        for (c, r), thickness in model.reminders.items():
+        for (c, r), thickness in list(model.reminders.items()) + list(model.blinks.items()):
             if 0 <= r < rows and 0 <= c < cols:
                 self.support[r][c] = True
                 if thickness < model.T - EPS:
@@ -1712,6 +1720,7 @@ class Validator:
         self.goal_cells = goal_cells
         self._check_power_sources()
         self._check_bubbles()
+        self._note_unmodeled()
         # Regla 5 (P) y nodo de inicio.
         start, why = self.spawn_node(starts[0])
         self._check_spawn_spikes(starts[0], start, "P")
@@ -1751,6 +1760,14 @@ class Validator:
             if self.is_advanced() or self.export_requested:
                 self._check_plan()
         return self.finish()
+
+    def _note_unmodeled(self):
+        """Objetos del 1-3 que el validador aun no modela (paso 9 de docs/propuesta-1-3.md §7): aviso, sin
+        error. Las plataformas que parpadean cuentan como fijas. Sin ellos la salida no cambia."""
+        blinks = [o for o in self.level.get("objects", []) if o.get("type") == "blink_platform"]
+        if blinks:
+            self.report.warning("plataformas que parpadean (%d, blink_platform): el ritmo no se modela todavia "
+                                "(paso 9 de docs/propuesta-1-3.md); se tratan como plataformas fijas" % len(blinks))
 
     def enemy_data(self, kind):
         """Datos de data/enemies/<kind>.json (cacheados)."""

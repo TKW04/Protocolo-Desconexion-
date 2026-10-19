@@ -920,6 +920,67 @@ class DashBannerSchemaTest(unittest.TestCase):
         self.assert_fails("abilities_available.dash debe ser true o false")
 
 
+class RhythmSchemaTest(unittest.TestCase):
+    """Metronomo y plataformas que parpadean (2026-10-19, paso 5 de docs/propuesta-1-3.md §5.3): zona
+    dentro del grid, ciclos validos, start de los admitidos, plataforma con su metronomo, dentro de su
+    zona, con grupo y con la parte encendida >= aviso + 0,25 s. Sala vibracion_test."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "levels", "vibracion_test.json"), encoding="utf-8") as fh:
+            self.level = json.load(fh)
+
+    def obj(self, oid):
+        return next(o for o in self.level["objects"] if o["params"].get("id") == oid)
+
+    def assert_fails(self, fragment):
+        errors = vls.validate_level(self.level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_test_room_is_valid(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+
+    def test_zone_inside_grid(self):
+        self.obj("ritmo_v")["params"]["zone"] = [6, 1, 40, 10]
+        self.assert_fails("se sale del grid")
+        self.obj("ritmo_v")["params"]["zone"] = [6, 1, 25]
+        self.assert_fails("zone debe ser [columna, fila, ancho, alto]")
+
+    def test_tempo_steps_and_start(self):
+        self.obj("ritmo_v")["params"]["tempo_steps_s"] = []
+        self.assert_fails("tempo_steps_s debe ser una lista no vacia")
+        self.obj("ritmo_v")["params"]["tempo_steps_s"] = [3.2, 0.2]
+        self.assert_fails("tempo_steps_s debe ser una lista no vacia de segundos entre 0.5 y 12")
+        self.setUp()
+        self.obj("ritmo_v")["params"]["start"] = "nunca"
+        self.assert_fails("start 'nunca' no admitido")
+        self.setUp()
+        self.obj("ritmo_v")["params"]["loop"] = "si"
+        self.assert_fails("loop debe ser true o false")
+
+    def test_platform_needs_its_rhythm_and_group(self):
+        self.obj("blink_2a_a")["params"]["rhythm"] = "otro"
+        self.assert_fails("rhythm 'otro' no es el id de ningun rhythm_zone")
+        self.setUp()
+        self.obj("blink_2a_a")["params"]["group"] = " "
+        self.assert_fails("group debe ser un texto no vacio")
+
+    def test_platform_inside_its_zone(self):
+        self.obj("ritmo_v")["params"]["zone"] = [10, 1, 20, 10]
+        self.assert_fails("la plataforma se sale de la zona de su metronomo ritmo_v")
+
+    def test_on_time_fits_the_warning(self):
+        self.obj("blink_2b_a")["params"]["on_fraction"] = 0.4
+        self.assert_fails("menos que el aviso (0.75 s) + 0.25 s")
+        self.setUp()
+        self.obj("ritmo_v")["params"]["tempo_steps_s"] = [3.2, 2.6, 1.6]
+        self.assert_fails("encendida 0.80 s con el ciclo mas corto (1.60 s)")
+
+    def test_platform_cells_must_be_empty(self):
+        line = self.level["grid"][8]
+        self.level["grid"][8] = line[:18] + "#" + line[19:]
+        self.assert_fails("ocupa una celda que el grid debe dejar vacia")
+
+
 class TowerObjectsSchemaTest(unittest.TestCase):
     """Recordatorio, Posponer, pop-up translucido y barra del 99 % del 1-2 (pasos 6, 7 y 8,
     2026-10-16): params con su rango (level_params del catalogo), enlaces Posponer -> grupos

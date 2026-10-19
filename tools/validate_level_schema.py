@@ -95,7 +95,8 @@ CAMERA_LIMITS = ("grid",)
 # Nivel de prueba (no es del juego, no se enlaza desde el hub): <nombre>_test.
 TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
-BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar"}
+BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
+                  "blink_platform"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
@@ -115,6 +116,10 @@ DOOR_MAX_LAMPS = 3
 # (memory_pickup; docs/propuesta-recuerdos.md §7 paso 4), con memory_id.
 SECRET_REWARDS = ("attention_points", "power_bank", "extra_life", "memory")
 MEMORIES_JSON = os.path.join("data", "memories.json")
+# Metronomos (2026-10-19, pasos 5 y 6 de docs/propuesta-1-3.md): rhythm_zone y alarm_tunnel; ciclo
+# admitido (s).
+RHYTHM_TYPES = ("rhythm_zone", "alarm_tunnel")
+RHYTHM_CYCLE_S = (0.5, 12.0)
 # Barra del 99 % (2026-10-16): puerta de 1 x 3 tiles; aviso de cada caida = 9 cuadros a 12 fps.
 UPDATE_BAR_HEIGHT = 3
 UPDATE_BAR_WARN_S = 9 / 12.0
@@ -435,7 +440,7 @@ class LevelValidator:
             return [(x + step * i, y) for i in range(length)]
         if kind in ("receiver", "snooze_button"):
             return [(x, y)]
-        if kind == "reminder_platform":
+        if kind in ("reminder_platform", "blink_platform"):
             w = get("width_tiles", 1)
             if not _is_int(w) or w < 1:
                 return None
@@ -579,6 +584,7 @@ class LevelValidator:
                 encounters.append((what, x, y))
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
         self._check_calc_room()
+        self._check_rhythm()
         for (what, x, y) in extra_lives[1:]:
             self.error("%s: solo puede haber una vida extra por nivel" % what, y, x)
         if len(encounters) > 1:
@@ -680,6 +686,76 @@ class LevelValidator:
                 if guides is None:
                     guides = (self._load_json("data/eco_guides.json") or {}).get("guides", {})
                 self._check_guide(what, x, y, params.get("guide"), guides, ids)
+
+    def _rhythms(self):
+        """{id: (tipo, zona, ciclo mas corto)} de los metronomos del nivel (rhythm_zone y, desde el paso
+        6, alarm_tunnel); zona = (columna, fila, ancho, alto) o None si no es valida."""
+        out = {}
+        for obj in self.level["objects"]:
+            if not isinstance(obj, dict) or obj.get("type") not in RHYTHM_TYPES or not isinstance(obj.get("params"), dict):
+                continue
+            p = obj["params"]
+            zone = p.get("zone")
+            ok = isinstance(zone, list) and len(zone) == 4 and all(_is_int(v) for v in zone) and zone[2] >= 1 \
+                and zone[3] >= 1
+            out[p.get("id")] = (obj["type"], tuple(zone) if ok else None, self._shortest_cycle(obj["type"], p))
+        return out
+
+    def _shortest_cycle(self, kind, p):
+        if kind == "alarm_tunnel":
+            cycles = [s.get("cycle_s") for s in p.get("stages", []) if isinstance(s, dict)]
+        else:
+            cycles = p.get("tempo_steps_s", [])
+        cycles = [c for c in cycles if _is_number(c)] if isinstance(cycles, list) else []
+        return min(cycles) if cycles else None
+
+    def _check_rhythm(self):
+        """Metronomo y plataformas que parpadean (2026-10-19, paso 5 de docs/propuesta-1-3.md §5.3):
+        rhythm_zone con zona dentro del grid, ciclos de RHYTHM_CYCLE_S y loop booleano; blink_platform
+        con rhythm existente, dentro de su zona, group no vacio y on_fraction x el ciclo mas corto >=
+        aviso (warn_frames / anim_fps) + min_on_extra_s."""
+        rhythms = self._rhythms()
+        catalog = self._load_json("data/world%d_objects.json" % self.level["world"]) or {}
+        cfg = catalog.get("blink_platform", {})
+        defaults = catalog.get("types", {}).get("blink_platform", {}).get("defaults", {})
+        warn = float(cfg.get("warn_frames", 9)) / float(cfg.get("anim_fps", 12.0))
+        extra = float(cfg.get("min_on_extra_s", 0.25))
+        lo, hi = RHYTHM_CYCLE_S
+        for i, obj in enumerate(self.level["objects"]):
+            if not (isinstance(obj, dict) and isinstance(obj.get("params"), dict)):
+                continue
+            kind, x, y, p = obj.get("type"), obj.get("x"), obj.get("y"), obj["params"]
+            what = "objects[%d] (%s)" % (i, kind)
+            if kind in RHYTHM_TYPES:
+                zone = rhythms.get(p.get("id"), (None, None, None))[1]
+                if zone is None:
+                    self.error("%s: zone debe ser [columna, fila, ancho, alto] (enteros, ancho y alto >= 1)" % what, y, x)
+                elif not (self.in_bounds(zone[0], zone[1]) and self.in_bounds(zone[0] + zone[2] - 1, zone[1] + zone[3] - 1)):
+                    self.error("%s: zone %s se sale del grid" % (what, list(zone)), y, x)
+                if "loop" in p and not isinstance(p["loop"], bool):
+                    self.error("%s: loop debe ser true o false" % what, y, x)
+                if kind == "rhythm_zone":
+                    steps = p.get("tempo_steps_s")
+                    if not (isinstance(steps, list) and steps and all(_is_number(v) and lo <= v <= hi for v in steps)):
+                        self.error("%s: tempo_steps_s debe ser una lista no vacia de segundos entre %g y %g"
+                                   % (what, lo, hi), y, x)
+            elif kind == "blink_platform":
+                group = p.get("group")
+                if not isinstance(group, str) or not group.strip():
+                    self.error("%s: group debe ser un texto no vacio" % what, y, x)
+                rid = p.get("rhythm")
+                if rid not in rhythms:
+                    self.error("%s: rhythm '%s' no es el id de ningun %s" % (what, rid, " ni ".join(RHYTHM_TYPES)), y, x)
+                    continue
+                _, zone, shortest = rhythms[rid]
+                w = p.get("width_tiles", defaults.get("width_tiles", 2))
+                if zone is not None and _is_int(x) and _is_int(y) and _is_int(w):
+                    if not (zone[0] <= x and x + w <= zone[0] + zone[2] and zone[1] <= y < zone[1] + zone[3]):
+                        self.error("%s: la plataforma se sale de la zona de su metronomo %s" % (what, rid), y, x)
+                on = p.get("on_fraction", defaults.get("on_fraction", 0.5))
+                if shortest is not None and _is_number(on) and on * shortest < warn + extra - 1e-9:
+                    self.error("%s: encendida %.2f s con el ciclo mas corto (%.2f s): menos que el aviso (%.2f s) + "
+                               "%.2f s" % (what, on * shortest, shortest, warn, extra), y, x)
 
     def _check_guide(self, what, x, y, guide_id, guides, ids):
         guide = guides.get(guide_id) if isinstance(guide_id, str) else None
