@@ -86,6 +86,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 8 de docs/propuesta-1-3.md (2026-10-20): el arte del 1-3 (tools/validate_world1_dnd.py).
 # Desde el paso 9 (2026-10-20): el validador con el dash, el ritmo, el tunel y las campanas (tests/test_level_plan.py,
 # DashAndRhythmTest; las salas del 1-3 se validan y exportan como las demas).
+# Desde el 2026-10-20 (docs/lista-sonidos.md, «Integracion»): el catalogo de audio
+# (data/audio.json; tools/validate_audio.py y tests/test_audio_catalog.py).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -127,6 +129,7 @@ if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_upgrade_economy.py tests/test_memories.py \
+		tests/test_audio_catalog.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
@@ -140,7 +143,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_calc_encounter.py >/dev/null && python3 -I tools/validate_calc_chips.py >/dev/null \
 		&& python3 -I tools/validate_upgrade_fx.py >/dev/null && python3 -I tools/validate_memories.py >/dev/null \
 		&& python3 -I tools/validate_memory_pickup.py >/dev/null \
-		&& python3 -I tools/validate_world1_dnd.py >/dev/null \
+		&& python3 -I tools/validate_world1_dnd.py >/dev/null && python3 -I tools/validate_audio.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2

@@ -502,7 +502,13 @@ func _on_node_signal(...args: Array) -> void:
 	var signal_name: String = String(args.pop_back())
 	if not is_instance_valid(node):
 		return
-	var bindings: Dictionary = _script_bindings.get((node as Node).get_script(), {})
+	var script: Script = (node as Node).get_script() as Script
+	if script == null:
+		return
+	if not _script_bindings.has(script):
+		# Catalogo recargado (pruebas): las conexiones siguen, los enlaces se rehacen.
+		_script_bindings[script] = _bindings_for(script)
+	var bindings: Dictionary = _script_bindings[script]
 	for index: int in bindings.get("nodes", []):
 		var item: Dictionary = (_data.get("nodes", []) as Array)[index]
 		if String(item.get("signal", "")) != signal_name or not _matches(item, args):
