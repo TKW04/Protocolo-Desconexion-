@@ -54,8 +54,10 @@ def climbs(level, root=ROOT):
     model = validator.model
     # Acertijo de Calc (tanda H2 del paso 14, 2026-10-17): con sus piezas hechas la pared con glitch es
     # una puerta y el cuarto de la azotea se recorre sin el Debug.
+    # 1-3 (paso 10, 2026-10-20): con el interruptor No molestar activado (el dash), como el jugador tras la
+    # sala «Ajustes»; sin el, el pasillo del banner obligatorio cierra el paso en el grafo.
     state = frozenset(g.gid for g in model.gates if g.kind in ("bridge", "popup", "bar", "pickup", "switch",
-                                                                "lswitch", "dock"))
+                                                                "lswitch", "dock", "dnd"))
     start_cell = validator.find("P")[0]
     start, why = validator.spawn_node(start_cell, state)
     if start is None:

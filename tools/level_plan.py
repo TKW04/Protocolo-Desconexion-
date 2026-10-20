@@ -51,6 +51,12 @@ FORMAT = "isak-path/1"
 MAX_SNOOZE_SHOTS = 3
 # Celdas de margen alrededor de la zona de un banner para la busqueda por tiempo.
 HAZARD_PAD = 4
+# Celdas que una muestra de un movimiento puede alejarse de las celdas de pie de la zona de la busqueda por
+# tiempo, en x (cuerpo de Isak; saltos, caidas y dashes van de una celda de la zona a otra) y en y (cumbre
+# del salto de 3 tiles + el cuerpo): el periodo de la fase se calcula con las amenazas del reloj del nivel
+# de esa caja (paso 10 del 1-3; si un movimiento toca otra, la busqueda se repite con el periodo general).
+SEARCH_REACH_X_TILES = 2
+SEARCH_REACH_Y_TILES = 6
 # Paso de fase de la busqueda de banners (s).
 PHASE_BIN = 1.0 / 30.0
 # Iteraciones maximas de la simulacion de puntos rojos (cada aturdimiento reinicia).
@@ -1400,7 +1406,7 @@ class Planner:
                 free = not any(st[0] for st in zs.values())
                 tw0 = self.timeline(prefix)[1] if prefix else 0.0
                 ctx = {"free": free, "tw0": tw0, "zones": zs, "cd": self.dash_cooldown_after(prefix),
-                       "dash": True, "walk_speed": None, "bounds": inv_h,
+                       "dash": True, "walk_speed": None, "bounds": inv_h, "local_period": True,
                        "level": any(not h["rhythm"] for h in inv_h if h["kind"] != "blink")}
                 # Del arranque del metronomo a la entrada no se interrumpe (desvios a un cargador).
                 for zid in zids:
@@ -1432,6 +1438,12 @@ class Planner:
                 out.extend(steps[first:exit_idx + 1])
                 cursor = exit_idx + 1
                 continue
+            if not hz["legacy"]:
+                # Periodo de la fase de esta busqueda (el de sus amenazas del reloj del nivel; paso 10 del 1-3).
+                rp = plan.get("period", period)
+                item["period_s"] = round(rp, 3)
+            else:
+                rp = period
             item.update({"crossing_s": round(plan["time"], 2),
                          "waits": sum(1 for st in plan["steps"] if st["action"] in ("wait", "wait_beat")),
                          "hops": sum(1 for st in plan["steps"] if st["action"] == "hop")})
@@ -1449,7 +1461,7 @@ class Planner:
                     st["timed"] = "hazard"
             if hz["legacy"] or (ctx["free"] and ctx["level"]):
                 level_h = banners if hz["legacy"] else [h for h in hz["level"] if h["id"] in involved]
-                sync = {"action": "wait_phase", "at": entry, "state": state, "period_s": period,
+                sync = {"action": "wait_phase", "at": entry, "state": state, "period_s": rp,
                         "phase_s": plan["phase"], "hazards": [bn["id"] for bn in level_h],
                         "banner_cycle_s": {bn["id"]: round((plan["phase"] + bn["phase"]) % bn["interval"], 3)
                                            for bn in level_h if bn["kind"] == "banner"}}
@@ -1462,7 +1474,7 @@ class Planner:
                 out.append(sync)
             out.extend(plan["steps"])
             if not hz["legacy"]:
-                self.check_dash_required(required, involved, plan, entry, exit_node, state, hz, period, dwell, ctx,
+                self.check_dash_required(required, involved, plan, entry, exit_node, state, hz, rp, dwell, ctx,
                                          item)
             # Lo que no es movimiento dentro del tramo (recogidas, cargadores) se conserva al final.
             out.extend(st for st in steps[first:exit_idx + 1] if st["action"] in ("pickup", "charge"))
@@ -1670,7 +1682,6 @@ class Planner:
             ctx = {"free": True, "tw0": 0.0, "zones": {}, "cd": 0.0, "dash": False, "walk_speed": None,
                    "bounds": hz["banners"], "level": True}
         level = ctx["level"]
-        bins = max(1, int(round(period / PHASE_BIN))) if level else 1
         bounds = ctx["bounds"]
         cols = [int(b["band"][0] // T) for b in bounds] + [int(b["band"][2] // T) for b in bounds]
         rows = [int(b["bottom"] // T) for b in bounds]
@@ -1679,6 +1690,42 @@ class Planner:
         r_lo = min(rows + [entry[1], exit_node[1]]) - HAZARD_PAD
         r_hi = max(rows + [entry[1], exit_node[1]]) + 1
         region = lambda n: c_lo <= n[0] <= c_hi and r_lo <= n[1] <= r_hi
+        # Paso 10 del 1-3 (2026-10-20). (1) Cada movimiento, espera o salto en el sitio solo mira las amenazas
+        # cuya franja toca la caja de sus muestras (`local`): las demas no pueden darle, asi que el resultado no
+        # cambia (el 1-3 tiene 16 amenazas con tiempo en 260 columnas y cada muestra las recorria todas).
+        # (2) Con ctx["local_period"], el periodo de la fase sale de las amenazas del reloj del nivel cercanas
+        # a la zona (SEARCH_REACH_*), no de todas las del nivel: con un solo intervalo es exacto y hay muchas
+        # menos fases (1-3: banners de 3 s y de 2,5 s en pasillos distintos; con el de todo el nivel, 12 s).
+        # Si algun movimiento llegara a tocar otra amenaza del reloj del nivel, la busqueda se repite con el
+        # periodo de siempre (nunca se acepta un cruce con una fase mal calculada).
+        period_in = period
+        period_ids = None
+        if ctx.get("local_period") and level:
+            rx, ry = SEARCH_REACH_X_TILES * T, SEARCH_REACH_Y_TILES * T
+            near_box = (c_lo * T - rx, r_lo * T - ry, (c_hi + 1) * T + rx, (r_hi + 1) * T + ry)
+            lvl = [h for h in hz["timed"] if not h["rhythm"] and rects_overlap(h["band"], near_box)]
+            if lvl:
+                period = lvl[0]["interval"]
+                if any(abs(h["interval"] - period) > EPS for h in lvl):
+                    period = min(12.0, max(h["interval"] for h in lvl) * len(lvl))
+                period_ids = {h["id"] for h in lvl}
+        outside = [False]
+        hw, hh = self.m.hw, self.m.hh
+
+        def local(samples):
+            """Amenazas que pueden tocar alguna de estas muestras (la misma prueba que sample_unsafe)."""
+            if not samples:
+                return {"timed": [], "blinks": []}
+            xs = [smp[0] for smp in samples]
+            fs = [smp[1] for smp in samples]
+            box = (min(xs) - hw - 1.0, min(fs) - hh - 1.0, max(xs) + hw + 1.0, max(fs) + 1.0)
+            near = (box[0] - 1.0, box[1] - 1.0, box[2] + 1.0, box[3] + 1.0)
+            timed = [h for h in hz["timed"] if rects_overlap(h["band"], box)]
+            if period_ids is not None and any(not h["rhythm"] and h["id"] not in period_ids for h in timed):
+                outside[0] = True
+            return {"timed": timed, "blinks": [bl for bl in hz["blinks"] if rects_overlap(bl["rect"], near)]}
+
+        bins = max(1, int(round(period / PHASE_BIN))) if level else 1
         zids = sorted(ctx["zones"])
         zones = [self.m.zones[zid] for zid in zids]
         cool = self.rules.dash_cooldown_s
@@ -1690,16 +1737,18 @@ class Planner:
         def cd_bin(cd):
             return int(math.ceil(cd / DASH_COOLDOWN_BIN - EPS)) if cd > EPS else 0
 
-        def run(samples, phase_t, zs, step=DT, inv=(0, 0), zstep=None):
+        def run(samples, phase_t, zs, step=DT, inv=(0, 0), zstep=None, hl=None):
             """Recorre las muestras; devuelve el estado de los metronomos al final o None si algo le da."""
             zstep = step if zstep is None else zstep
+            hl = local(samples) if hl is None else hl
+            check = bool(hl["timed"] or hl["blinks"])
             for k, (x, f, _) in enumerate(samples):
                 tw = phase_t + (k + 1) * step
                 if zids:
                     zs = dict(zs)
                     for zid, z in zip(zids, zones):
                         zs[zid] = self.zone_step(z, zs[zid], x, f, zstep)
-                if self.sample_unsafe(x, f, inv[0] <= k < inv[1], tw, zs, hz):
+                if check and self.sample_unsafe(x, f, inv[0] <= k < inv[1], tw, zs, hl):
                     return None
             return zs
 
@@ -1713,11 +1762,13 @@ class Planner:
                 mv = self.move(u, e, state)
                 if walk_speed is not None:
                     mv["walk_speed"] = walk_speed
-                sample_cache[key] = (self.samples(mv), self.duration(mv), self.invulnerable_range(mv),
-                                     self.dash_frames(mv))
+                smp = self.samples(mv)
+                sample_cache[key] = (smp, self.duration(mv), self.invulnerable_range(mv), self.dash_frames(mv),
+                                     local(smp) if smp else {"timed": [], "blinks": []})
             return sample_cache[key]
 
         hop_cache = {}
+        hop_local = {}
         heap = []
         best = {}
         parent = {}
@@ -1741,7 +1792,8 @@ class Planner:
         def standing(node):
             if node not in static_cache:
                 x, f = self.feet(node)
-                static_cache[node] = [(x, f, False)] * max(1, int(round(PHASE_BIN / DT)))
+                smp = [(x, f, False)] * max(1, int(round(PHASE_BIN / DT)))
+                static_cache[node] = (smp, local(smp))
             return static_cache[node]
 
         goal = None
@@ -1763,15 +1815,16 @@ class Planner:
                     break
             # Esperar un paso de fase.
             cand = []
-            smp = standing(node)
-            nzs = run(smp, phase_t, zs, zstep=PHASE_BIN / len(smp))
+            smp, shl = standing(node)
+            nzs = run(smp, phase_t, zs, zstep=PHASE_BIN / len(smp), hl=shl)
             if nzs is not None:
                 cand.append((node, PHASE_BIN, {"action": "wait"}, nzs, None))
             if node not in hop_cache:
                 hop_cache[node] = self.hop(node, state)
+                hop_local[node] = local(hop_cache[node]["traj"]) if hop_cache[node] is not None else None
             hp = hop_cache[node]
             if hp is not None:
-                nzs = run(hp["traj"], phase_t, zs, zstep=hp["time"] / max(len(hp["traj"]), 1))
+                nzs = run(hp["traj"], phase_t, zs, zstep=hp["time"] / max(len(hp["traj"]), 1), hl=hop_local[node])
                 if nzs is not None:
                     cand.append((node, hp["time"], {"action": "hop"}, nzs, None))
             for e in self.m.edges(node, state, "auto"):
@@ -1779,11 +1832,11 @@ class Planner:
                     continue
                 if e.get("dash") and not ctx["dash"]:
                     continue
-                smp, d, inv, dfr = edge_samples(node, e)
+                smp, d, inv, dfr, ehl = edge_samples(node, e)
                 step = d / max(len(smp), 1)
                 if e.get("dash") and cd - dfr[0] * step > EPS:
                     continue  # aun en enfriamiento
-                nzs = run(smp, phase_t, zs, step, inv)
+                nzs = run(smp, phase_t, zs, step, inv, hl=ehl)
                 if nzs is not None:
                     cand.append((e["to"], d, {"action": "move", "e": e}, nzs, (dfr, step) if e.get("dash") else None))
             for to, d, act, nzs, dash in cand:
@@ -1804,6 +1857,8 @@ class Planner:
                     parent[nkey] = (key, act)
                     data[nkey] = (nt, phase0, nzs, ncd, nd)
                     heapq.heappush(heap, (ncost, nph, to, nkey[2], nkey[3]))
+        if outside[0]:
+            return self.hazard_search(entry, exit_node, state, hz, period_in, dwell, dict(ctx, local_period=False))
         if goal is None:
             return None
         seq = []
@@ -1842,7 +1897,7 @@ class Planner:
                 if walk_speed is not None:
                     mv["walk_speed"] = walk_speed
                 out.append(mv)
-        return {"phase": start_phase, "time": data[goal][0], "steps": out, "dashes": data[goal][4]}
+        return {"phase": start_phase, "time": data[goal][0], "steps": out, "dashes": data[goal][4], "period": period}
 
     # --- Energia ---
 

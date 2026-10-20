@@ -187,13 +187,19 @@ def banner_walk_hits(level, exported, hitbox, walk_speed, sample_dt=1.0 / 120.0)
     return hits
 
 
-def dash_corridor(niches=(), open_ceiling=False, start_energy=None, charger=True):
+def dash_corridor(niches=(), open_ceiling=False, start_energy=None, charger=True, switch=False):
     """Sala «Silenciados» (data/levels/silenciados_test.json, paso 9 de docs/propuesta-1-3.md) con el
     pasillo obligatorio del banner banner_dash (columnas 6-17, techo bajo) cambiado: `niches` abre nichos
     de una via en el techo (columnas de cada nicho, filas 7-8 libres y la repisa en la 9), `open_ceiling`
     deja 3 filas libres en todo el pasillo (se salta el banner) y `start_energy` / `charger` quitan
-    energia. No pasan el esquema (knockback_to_entry exige techo bajo): check_schema=False."""
+    energia. No pasan el esquema (knockback_to_entry exige techo bajo): check_schema=False. Con `switch`
+    (paso 10, 2026-10-20) Isak empieza sin el dash y lo da un interruptor No molestar en (3, 10), como la
+    sala «Ajustes» del 1-3 antes de su banner obligatorio (esta variante si pasa el esquema)."""
     level = load_room("silenciados_test")
+    if switch:
+        level["abilities_available"]["dash"] = False
+        level["objects"].append({"type": "dnd_switch", "x": 3, "y": 10,
+                                 "params": {"id": "dnd_prueba", "ability": "dash", "story_line": "dnd_1_3"}})
     for cols in niches:
         # El hueco del techo es un tile mas ancho por cada lado: desde la repisa se baja andando.
         for x in range(min(cols) - 1, max(cols) + 2):

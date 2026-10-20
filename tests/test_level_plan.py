@@ -579,6 +579,20 @@ class DashAndRhythmTest(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("no hay camino de P a G" in m for m in messages(result)), messages(result))
 
+    def test_dnd_switch_is_mandatory_through_dash_required(self):
+        """Paso 10 (2026-10-20): sin el dash, el pasillo de un banner de validation.dash_required es un peligro
+        del grafo (como una Burbuja sin aturdir; el plan demuestra ademas que no se cruza ni andando ni
+        corriendo): el camino pasa por el interruptor No molestar, que es obligatorio, y no hay aviso. Sin
+        dash_required, el pasillo se cruza en el grafo y sale el aviso de siempre."""
+        result = vl.validate(pz.dash_corridor(switch=True))
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["warnings"], [])
+        level = pz.dash_corridor(switch=True)
+        level["validation"].pop("dash_required")
+        result = vl.validate(level)
+        self.assertTrue(any("interruptor No molestar dnd_prueba no es obligatorio" in w["message"]
+                            for w in result["warnings"]), result["warnings"])
+
     def test_dash_required_banner_must_exist(self):
         level = room("silenciados_test")
         level["validation"]["dash_required"] = ["banner_x"]

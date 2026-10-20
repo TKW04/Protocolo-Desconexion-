@@ -547,6 +547,10 @@ class LevelModel:
         self.pulse_possible = self.pulse or any(g.kind == "pickup" and g.ability == "pulse" for g in self.gates)
         # Hay dash en el nivel (abilities_available.dash o el interruptor No molestar; paso 9 del 1-3).
         self.dash_possible = self.dash_base or any(g.kind == "dnd" for g in self.gates)
+        # Pasillos de los banners de validation.dash_required (paso 10 del 1-3, 2026-10-20): sin el dash son un
+        # peligro del grafo (como una Burbuja sin aturdir): el golpe devuelve a la entrada y el plan demuestra
+        # que ni andando ni corriendo se cruzan; con el dash, el plan busca el cruce al compas.
+        self.dash_corridors = self._dash_corridors()
 
     # Objetos.
     def _params(self, obj):
@@ -922,7 +926,7 @@ class LevelModel:
 
     # Mundo en un estado (puertas abiertas + Debug).
     def world(self, state, debug=False):
-        key = (state, debug)
+        key = (state, debug, self.dash_blocked(state))
         if key not in self._worlds:
             self._worlds[key] = World(self, state, debug)
         return self._worlds[key]
@@ -945,6 +949,8 @@ class LevelModel:
         dash = debug is False and self.has_dash(state)
         key = (node, self.local_key(node, state), debug) if not dash else (
             node, self.local_key(node, state), debug, "dash")
+        if self.dash_blocked(state):
+            key = key + ("nodash",)
         if key not in self._edges:
             out = self.world(state, debug).compute_edges(node)
             if dash:
@@ -960,6 +966,8 @@ class LevelModel:
         key = (node, self.local_key(node, state), "union")
         if self.has_dash(state):
             key = key + ("dash",)
+        elif self.dash_blocked(state):
+            key = key + ("nodash",)
         if key not in self._edges:
             normal = self.edges(node, state, False)
             seen = {e["to"] for e in normal}
@@ -993,6 +1001,37 @@ class LevelModel:
             return False
         return self.laser_base or any(g.kind == "pickup" and g.ability == "laser" and g.gid in state
                                       for g in self.gates)
+
+    def _dash_corridors(self):
+        """[(id, rect px)] de la franja de dano de cada banner de validation.dash_required (la misma que la
+        busqueda por tiempo de tools/level_plan.py: todo el pasillo, a la altura de su zona de dano)."""
+        ids = {str(b) for b in (self.validation.get("dash_required") or [])}
+        if not ids:
+            return []
+        data = load_json(os.path.join(self.rules.root, "data", "enemies", "spam_banner.json"))
+        T = self.T
+        out = []
+        for enemy in self.level.get("enemies", []):
+            if enemy.get("type") != "spam_banner" or str(enemy.get("id")) not in ids:
+                continue
+            p = dict(data)
+            p.update(enemy.get("params", {}))
+            direction = int(p["direction"])
+            entry = (enemy["x"] + 0.5) * T - T * 0.5 * direction
+            end = entry + direction * float(p["corridor_tiles"]) * T
+            bottom = (enemy["y"] + 1) * T - float(p["damage_bottom_px"])
+            out.append((str(enemy["id"]), (min(entry, end), bottom - float(p["damage_size"][1]),
+                                           max(entry, end), bottom)))
+        return out
+
+    def dash_blocked(self, state):
+        """Los pasillos de validation.dash_required cierran el paso: Isak aun no tiene el dash en este estado.
+        No mira forbid_abilities: un secreto con forbid_abilities ["dash"] exige que SU ruta no use el dash,
+        no que Isak no lo tenga (para llegar hasta alli ya cruzo el pasillo obligatorio con el)."""
+        if not self.dash_corridors:
+            return False
+        return not (self.dash_base or any(g.kind == "dnd" and g.ability == "dash" and g.gid in state
+                                          for g in self.gates))
 
     def has_dash(self, state):
         """El dash (gesto Deslizar) esta disponible: lo da el nivel (abilities_available.dash) o ya se
@@ -1293,6 +1332,9 @@ class World:
                         self.support[r][c] = True
             elif g.kind == "bubble" and not opened and not g.bypassable:
                 self.hazards.append(g.rect + ("Burbuja %s" % g.obj_id,))
+        if model.dash_blocked(state):
+            for bid, rect in model.dash_corridors:
+                self.hazards.append(rect + ("banner %s (sin el dash)" % bid,))
 
     def is_solid(self, c, r):
         if c < 0 or c >= self.m.cols:
