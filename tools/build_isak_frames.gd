@@ -62,10 +62,10 @@ const RUN_FPS: float = 14.0
 ##   (isak_back_idle_00.png, de AutoSprite via tools/import_isak_back_idle.py).
 ##   Isak.face_back()/face_side() entran y salen de ella (terminal de salida;
 ##   pensada tambien para el hub).
-## dash (2026-10-20, paso 8 de docs/propuesta-1-3.md): pose PROVISIONAL del gesto
-##   Deslizar, 3 cuadros a 15 fps (0,2 s = duracion del dash) sin bucle: los
-##   cuadros 01-03 de correr inclinados hacia delante por cizalla de pixeles
-##   (tools/gen_world1_dnd.py, sin colores nuevos) hasta que llegue la hoja.
+## dash (2026-10-20): pose del gesto Deslizar, 3 cuadros a 15 fps (0,2 s =
+##   duracion del dash) sin bucle: deslizamiento bajo e inclinado hacia delante,
+##   celdas 9, 13 y 18 de hojas/dash_right/spritesheet.png (AutoSprite; comando
+##   en docs/guia-sprites-ia.md). Sustituye a la pose provisional por cizalla.
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
 	"walk": [WALK_FPS, true, false],

@@ -55,7 +55,7 @@ const ANIM_LASER: StringName = &"laser"
 ## fondo (p. ej. al monitor de la terminal de salida). La ponen face_back() y
 ## face_side().
 const ANIM_BACK_IDLE: StringName = &"back_idle"
-## Pose del gesto Deslizar (dash; provisional, tools/gen_world1_dnd.py).
+## Pose del gesto Deslizar (dash; hoja de AutoSprite, tools/build_isak_frames.gd).
 const ANIM_DASH: StringName = &"dash"
 ## Estados en los que la pose del laser se corta (tienen animacion propia).
 const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
@@ -870,8 +870,8 @@ func end_dash(direction: float, keep_speed: bool, _blocked: bool) -> void:
 	dash_ended.emit()
 
 
-## Pose del dash: la animacion `dash` (PROVISIONAL desde el paso 8, 2026-10-20:
-## cuadros de correr inclinados por cizalla, tools/gen_world1_dnd.py) desde su
+## Pose del dash: la animacion `dash` (2026-10-20: hoja de AutoSprite, Isak
+## bajo e inclinado hacia delante; tools/build_isak_frames.gd) desde su
 ## cuadro 0, sin rotar. Sin ella (hoja sin `dash`), el cuadro run_frame de
 ## correr inclinado lean_deg hacia delante. La llama DashState en cada paso.
 func update_dash_pose() -> void:

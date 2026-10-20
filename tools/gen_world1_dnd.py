@@ -28,11 +28,6 @@ Salidas (rutas relativas a assets/sprites/):
   enemies/alarm_bell/alarm_bell_ring_00..01.png  64x64  suena (arcos de sonido)
   enemies/alarm_bell/alarm_wave_00..01.png       48x64  onda (se repite en y; las flechas bajan)
   enemies/alarm_bell/alarm_warn_line_00.png      64x8   linea discontinua roja del suelo
-  isak/isak_dash_00..02.png              128x128  pose PROVISIONAL del dash: cuadros de correr
-                                         (run 01, 02, 03) inclinados por cizalla de pixeles
-                                         (sin colores nuevos), hasta que llegue la hoja del
-                                         usuario; tools/build_isak_frames.gd crea la animacion
-                                         `dash`. No se valida contra una .gpl (arte de Isak).
   dnd_objects_frames.tres                SpriteFrames del interruptor (dnd_switch_off/hit/on)
 
 Uso (desde la raiz del repo):
@@ -83,7 +78,6 @@ PAD = (32, 38)
 BLINK_WIDTHS = (1, 2, 3)
 BLINK_H = 32
 SEG_COUNT = 4
-ISAK_DASH = [("isak/isak_run_01.png", 6), ("isak/isak_run_02.png", 10), ("isak/isak_run_03.png", 8)]
 BANNER_SRC = "enemies/banner_sweep_00.png"
 
 
@@ -424,22 +418,6 @@ def dash_trail(f):
     return cv.img
 
 
-def isak_dash(src, lean):
-    """Cuadro de correr inclinado hacia delante por cizalla (sin colores nuevos):
-    la fila de los pies queda fija y la de arriba se desplaza `lean` px."""
-    img = Image.open(os.path.join(REPO, "assets/sprites", src)).convert("RGBA")
-    out = Image.new("RGBA", img.size, CLEAR)
-    w, h = img.size
-    sp, dp = img.load(), out.load()
-    for y in range(h):
-        shift = int(round((h - 1 - y) * lean / (h - 1)))
-        for x in range(w):
-            nx = x + shift
-            if 0 <= nx < w and sp[x, y][3] > 0:
-                dp[nx, y] = sp[x, y]
-    return out
-
-
 def banner_dash_card():
     base = Image.open(os.path.join(REPO, "assets/sprites", BANNER_SRC)).convert("RGBA")
     cv = Canvas(128, 64)
@@ -489,8 +467,6 @@ def outputs():
         out[f"enemies/alarm_bell/alarm_bell_ring_{f:02d}.png"] = bell_ring(f)
         out[f"enemies/alarm_bell/alarm_wave_{f:02d}.png"] = alarm_wave(f)
     out["enemies/alarm_bell/alarm_warn_line_00.png"] = alarm_warn_line()
-    for i, (src, lean) in enumerate(ISAK_DASH):
-        out[f"isak/isak_dash_{i:02d}.png"] = isak_dash(src, lean)
     return out
 
 
