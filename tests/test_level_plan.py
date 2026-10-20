@@ -602,6 +602,70 @@ class DashAndRhythmTest(unittest.TestCase):
                             for m in messages(result)), messages(result))
 
 
+class HazardMarginTest(unittest.TestCase):
+    """Bot del 1-3 (2026-10-20, docs/propuesta-1-3.md §7, paso 11): la busqueda por tiempo simula los saltos
+    con el arco real del juego (bajo un techo bajo aterriza antes que el conservador) y, con
+    validation.hazard_margin_s, exige holgura de tiempo frente a banners, campanas y ritmo y espera solo
+    fuera de sus franjas."""
+
+    def test_real_arc_lands_earlier_under_a_low_ceiling(self):
+        """Pasillo de 4 filas (256 px) de silenciados_test, salto andando: el arco real (unos 184 px) choca
+        con el techo y aterriza en unos 0,65 s (Isak real medido: 38 cuadros); el conservador (176,6 px) roza
+        el techo en la cumbre y aterriza ~0,07 s mas tarde. Sin techo, el real sube lo de real_jump_height."""
+        rules = vl.Rules()
+        model = vl.LevelModel(room("silenciados_test"), rules)
+        w = model.world(frozenset())
+        x, feet = 24.5 * 64, 11 * 64
+        cons, real = {}, {}
+        to_c, _ = w.simulate(x, feet, -rules.jump_v0, rules.walk_speed, x + 1e6, head_lag=True, info=cons)
+        to_r, _ = w.simulate(x, feet, -rules.jump_v0_game, rules.walk_speed, x + 1e6, info=real, game=True)
+        self.assertEqual((to_c[1], to_r[1]), (10, 10))
+        self.assertTrue(real["head_hit"])
+        self.assertAlmostEqual(real["time"], 38 / 60.0, delta=2 / 60.0)
+        self.assertGreater(cons["time"] - real["time"], 0.05)
+        top = {"want_traj": True}
+        x_open = 36.5 * 64
+        w.simulate(x_open, feet, -rules.jump_v0_game, 0.0, x_open, info=top, game=True)
+        rise = feet - min(y for _, y in top["traj"])
+        self.assertAlmostEqual(rise, rules.real_jump_height, delta=1.0)
+
+    def test_margin_needs_slack_in_the_crossing(self):
+        """silenciados_test valida con 0,1 s de holgura; con 0,3 s no hay cruce sin dano."""
+        ok = room("silenciados_test")
+        ok["validation"]["hazard_margin_s"] = 0.1
+        self.assertTrue(vl.validate(ok)["ok"])
+        tight = room("silenciados_test")
+        tight["validation"]["hazard_margin_s"] = 0.3
+        result = vl.validate(tight)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("no hay forma de cruzar su tramo sin dano" in m for m in messages(result)), messages(result))
+
+    def test_waits_with_margin_stay_out_of_the_bands(self):
+        """alarmas_test: sin holgura espera al compas dentro de franjas del tunel; con 0,1 s, solo fuera de toda
+        franja de banner y onda (si el bot llega tarde, espera otro ciclo sin que le den)."""
+        def waits(margin):
+            level = room("alarmas_test")
+            if margin:
+                level.setdefault("validation", {})["hazard_margin_s"] = margin
+            validator = vl.Validator(level, vl.Rules())
+            result = validator.run()
+            self.assertTrue(result["ok"], messages(result))
+            planner = validator.planner
+            hz = planner.hazards()
+            nodes = [tuple(s["at"]) for s in planner.steps if s["action"] in ("wait", "wait_beat", "hop")
+                     and s.get("timed") == "hazard"]
+            return [n for n in nodes if planner.exposed_ids(*planner.feet(n), {"timed": hz["timed"], "blinks": []})]
+        self.assertTrue(waits(0.0), "Sin holgura hay esperas dentro de alguna franja")
+        self.assertEqual(waits(0.1), [])
+
+    def test_schema_range(self):
+        level = room("silenciados_test")
+        level["validation"]["hazard_margin_s"] = 0.8
+        result = vl.validate(level)
+        self.assertTrue(any("validation.hazard_margin_s debe ser un numero entre 0 y 0.5" in m
+                            for m in messages(result)), messages(result))
+
+
 class CliTest(unittest.TestCase):
     def test_export_path_writes_the_json(self):
         with tempfile.TemporaryDirectory() as tmp:

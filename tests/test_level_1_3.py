@@ -107,6 +107,8 @@ class Level13Test(unittest.TestCase):
         for col in range(27, 39):
             self.assertEqual((grid[7][col], grid[8][col], grid[9][col] in ".E"), ("#", ".", True), "columna %d" % col)
         self.assertEqual(self.level["validation"]["dash_required"], ["banner_dash"])
+        # Holgura de tiempo del bot frente a banners, campanas y ritmo (2026-10-20, paso 11).
+        self.assertEqual(self.level["validation"]["hazard_margin_s"], 0.1)
         item = next(b for b in self.result["plan"]["banners"] if "banner_dash" in b["banners"])
         req = item["dash_required"]["banner_dash"]
         self.assertEqual((req["without_dash_walking"], req["without_dash_running"], req["with_dash"]),

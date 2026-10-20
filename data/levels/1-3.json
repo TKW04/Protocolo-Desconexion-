@@ -23,6 +23,7 @@
 		],
 		"time_margin_s": 1.5,
 		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
 		"start_energy": 100,
 		"sync_damage_budget": 0
 	},

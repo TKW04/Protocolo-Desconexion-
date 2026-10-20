@@ -6,6 +6,7 @@ plataformas ocultas, energia, banners) sin tocar data/levels/.
 
 import copy
 import json
+import math
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -127,7 +128,11 @@ def banner_walk_hits(level, exported, hitbox, walk_speed, sample_dt=1.0 / 120.0)
     exportado (isak-path/1) a su velocidad real y devuelve los golpes de banner [(paso, x)]. El reloj
     de cada banner se ancla en la espera de fase anterior (`banner_cycle_s` al terminarla, como hace
     el bot) y avanza con el tiempo del mundo de los pasos. Comprueba ademas que cada `walk` dura lo
-    que se tarda andando (walk_speed)."""
+    que se tarda andando (walk_speed) o, si arranca parado (arco real del 2026-10-20), lo mismo mas lo que
+    tarda en acelerar (ground_acceleration), y lo recorre con esa aceleracion."""
+    with open(os.path.join(ROOT, "data", "isak_physics.json"), encoding="utf-8") as handle:
+        accel = float(json.load(handle)["ground_acceleration"])
+    lag = walk_speed / (2.0 * accel)
     with open(os.path.join(ROOT, "data", "enemies", "spam_banner.json"), encoding="utf-8") as handle:
         base = json.load(handle)
     tile = level["tile_size"]
@@ -168,17 +173,26 @@ def banner_walk_hits(level, exported, hitbox, walk_speed, sample_dt=1.0 / 120.0)
         if anchor is None or s["action"] not in ("walk", "wait") or k + 1 >= len(steps):
             continue
         t0, t1 = s["t_world"], steps[k + 1]["t_world"]
+        rest = False
         if s["action"] == "walk":
             x0, feet = s["from"]["feet_px"]
             x1 = s["to"]["feet_px"][0]
-            assert abs(s["duration_s"] - abs(x1 - x0) / walk_speed) < 0.02, s
+            plain = abs(x1 - x0) / walk_speed
+            rest = abs(s["duration_s"] - plain - lag) < 0.02
+            assert rest or abs(s["duration_s"] - plain) < 0.02, s
         else:
             x0, feet = s["at"]["feet_px"]
             x1 = x0
         n = max(1, int((t1 - t0) / sample_dt))
+        ta = walk_speed / accel
         for j in range(n + 1):
             tw = t0 + (t1 - t0) * j / n
-            x = x0 + (x1 - x0) * j / n
+            if rest:
+                dt = tw - t0
+                d = 0.5 * accel * dt * dt if dt < ta else 0.5 * accel * ta * ta + walk_speed * (dt - ta)
+                x = x0 + math.copysign(min(d, abs(x1 - x0)), x1 - x0)
+            else:
+                x = x0 + (x1 - x0) * j / n
             for bid, (a_t, a_c) in anchor.items():
                 r = rect(banners[bid], a_c + tw - a_t)
                 if r and r[0] < x + hw and r[2] > x - hw and r[1] < feet and r[3] > feet - hh:

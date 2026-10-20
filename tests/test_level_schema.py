@@ -1246,7 +1246,8 @@ class ValidationBlockSchemaTest(unittest.TestCase):
     def test_all_fields(self):
         level = self.load("recordatorios_test")
         level["validation"] = {"time_margin_s": 1.0, "snooze_required": ["posponer_1"], "laser_required": True,
-                               "debug_required": False, "start_energy": 50, "sync_damage_budget": 10}
+                               "debug_required": False, "start_energy": 50, "sync_damage_budget": 10,
+                               "hazard_margin_s": 0.1}
         self.assertEqual(vls.validate_level(level), [])
 
     def test_bad_values(self):
@@ -1255,6 +1256,8 @@ class ValidationBlockSchemaTest(unittest.TestCase):
         self.assert_fails(level, "validation: campo desconocido 'tiempo'")
         level["validation"] = {"time_margin_s": -1}
         self.assert_fails(level, "validation.time_margin_s debe ser un numero entre 0 y 30")
+        level["validation"] = {"hazard_margin_s": 0.8}
+        self.assert_fails(level, "validation.hazard_margin_s debe ser un numero entre 0 y 0.5")
         level["validation"] = {"start_energy": 150}
         self.assert_fails(level, "validation.start_energy debe ser un numero entre 0 y 100")
         level["validation"] = {"laser_required": "si"}

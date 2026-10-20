@@ -76,6 +76,11 @@ DASH_WINDOW_MIN_S = 0.3
 DASH_WINDOW_SCAN_S = 1.0
 # Celda (s) del enfriamiento del dash en el estado de la busqueda por tiempo.
 DASH_COOLDOWN_BIN = 0.1
+# Arranque desde parado tras un salto (s; el START_S de tools/validate_level.py, edge_time).
+START_S = 0.06
+# Pasos que dejan a Isak parado (el siguiente movimiento arranca acelerando con el arco real; tambien los
+# saltos, caidas y dashes: el bot frena en el centro de la celda de llegada).
+REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "debug_on", "debug_off")
 
 
 def path_to(parent, target):
@@ -107,6 +112,10 @@ class Planner:
         self.T = self.m.T
         self.val = self.m.validation
         self.margin = self.m.time_margin()
+        # Holgura de tiempo frente a banners, campanas y plataformas que parpadean (validation.hazard_margin_s;
+        # 0 por defecto): cada muestra de la busqueda por tiempo tiene que ser segura con las amenazas
+        # adelantadas o retrasadas hasta ese margen (2026-10-20, bot del 1-3).
+        self.hazard_margin = float(self.val.get("hazard_margin_s", 0.0))
         self.errors = []
         self.warnings = []
         self.info = {}
@@ -286,7 +295,15 @@ class Planner:
         a = s["action"]
         r = self.rules
         if a == "move":
-            return self.m.edge_time(s["from"], s["edge"], s.get("walk_speed"))
+            real = self.real_arc(s)
+            if real is not None:
+                speed = r.walk_speed
+                cv = self.feet(s["to"])
+                base = (abs(s["edge"]["x0"] - self.feet(s["from"])[0]) / speed + real[0]
+                        + abs(real[2] - cv[0]) / speed + START_S)
+            else:
+                base = self.m.edge_time(s["from"], s["edge"], s.get("walk_speed"))
+            return base + self.rest_lag(s) if s.get("from_rest") else base
         if a == "hop":
             return s["time"]
         if a == "laser":
@@ -306,6 +323,84 @@ class Planner:
     def node_of(self, s):
         return s.get("at") or s.get("to")
 
+    def real_arc(self, s):
+        """Arco real del juego de un salto marcado con arc="real" (lo marca la busqueda por tiempo con
+        ctx["real_arc"]): (s en el aire, trayectoria [(x, pies)], x de aterrizaje) o None (no es un salto
+        o el arco real no acaba en la fila de llegada con suelo hasta su celda: se usa el conservador).
+
+        Bot del 1-3 (2026-10-20): el arco del grafo usa la altura conservadora (jump_height, 176,6 px) y
+        bajo un techo bajo roza el techo casi en la cumbre; el Isak real (unos 184 px) choca antes y
+        aterriza ~0,15 s antes (salto 46 -> 49 del 1b), asi que la linea de tiempo de las amenazas iba
+        retrasada. Aterrizando antes de la celda de llegada, Isak anda por la fila hasta su centro."""
+        if s["action"] != "move" or s.get("arc") != "real":
+            return None
+        e = s["edge"]
+        if e["kind"] == "walk" or e.get("dash") or e.get("vy0", 0.0) >= 0.0:
+            return None
+        if "_real" in s:
+            return s["_real"]
+        out = None
+        cu = self.feet(s["from"])
+        w = self.m.world(s["state"], bool(s.get("debug")))
+        info = {"want_traj": True}
+        speed = self.rules.walk_speed if e["speed"] == "walk" else self.rules.run_speed
+        # Desde parado donde esta (tras una espera): acelera en el aire (air_acceleration) desde 0.
+        accel = self.rules.air_accel if self.standing_jump(s) and self.rules.air_accel > 0.0 else None
+        to, _ = w.simulate(e["x0"], cu[1], -self.rules.jump_v0_game, speed, e["xt"], info=info, game=True,
+                           accel=accel)
+        if to is not None and info.get("traj") and to[1] == e["to"][1]:
+            lo, hi = sorted((to[0], e["to"][0]))
+            if all(w.is_node(c, to[1]) for c in range(lo, hi + 1)):
+                out = (info["time"], list(info["traj"]), info.get("land_x", info["traj"][-1][0]))
+        s["_real"] = out
+        return out
+
+    def rest_walk(self, dist, speed):
+        """Andar `dist` px desde parado (ground_acceleration hasta `speed`): segundos y funcion t -> px."""
+        a = self.rules.ground_accel
+        if a <= 0.0:
+            return dist / speed, lambda t: min(speed * t, dist)
+        ta = speed / a
+        da = 0.5 * a * ta * ta
+        dur = math.sqrt(2.0 * dist / a) if dist <= da else ta + (dist - da) / speed
+
+        def at(t):
+            d = 0.5 * a * t * t if t < ta else da + speed * (t - ta)
+            return min(d, dist)
+        return dur, at
+
+    def rest_lag(self, s):
+        """Segundos de mas de un movimiento que empieza con Isak parado (from_rest; tras una espera o un salto
+        en el sitio, en la busqueda por tiempo con el arco real): andar hasta el despegue acelerando
+        (ground_acceleration) o, si despega donde esta, el salto acelerando en el aire (air_acceleration), que
+        aterriza mas atras y anda mas. El bot del 1-3 iba ~0,1 s por detras del camino en cada arranque."""
+        e = s["edge"]
+        speed = self.rules.walk_speed
+        if e["kind"] == "walk":
+            sp = s.get("walk_speed") or speed
+            return self.rest_walk(self.T, sp)[0] - self.T / sp
+        d = abs(e["x0"] - self.feet(s["from"])[0])
+        if d > EPS:
+            return self.rest_walk(d, speed)[0] - d / speed
+        return 0.0  # salto desde parado: el arco real ya acelera en el aire (real_arc)
+
+    def standing_jump(self, s):
+        """Salto (no dash) que despega parado donde esta (from_rest y sin andar hasta el despegue)."""
+        e = s["edge"]
+        return bool(s.get("from_rest")) and abs(e["x0"] - self.feet(s["from"])[0]) <= EPS
+
+    def rest_jump_fails(self, s):
+        """Con el arco real, un salto desde parado que no llega a la fila de llegada (p. ej. pegado al lado de
+        una plataforma: la pared frena a Isak): la busqueda por tiempo no lo usa."""
+        e = s["edge"]
+        return (s.get("arc") == "real" and e["kind"] != "walk" and not e.get("dash") and e.get("vy0", 0.0) < 0.0
+                and self.standing_jump(s) and self.real_arc(s) is None)
+
+    def air_time(self, s):
+        """Segundos en el aire de un movimiento (el arco real si lo lleva)."""
+        real = self.real_arc(s)
+        return real[0] if real is not None else s["edge"].get("time", 0.0)
+
     def samples(self, s):
         """Posiciones de los pies de Isak (x, pies, en_el_aire) cuadro a cuadro durante el paso."""
         cached = s.get("_samples")
@@ -323,20 +418,29 @@ class Planner:
             cu, cv = self.feet(u), self.feet(v)
             speed = self.rules.walk_speed
             if e["kind"] == "walk":
+                if s.get("from_rest"):
+                    return self.rest_walk_samples(cu, cv[0], s.get("walk_speed") or speed)
                 n = max(1, int(round(T / (s.get("walk_speed") or speed) / DT)))
                 return [(cu[0] + (cv[0] - cu[0]) * (i + 1) / n, cu[1], False) for i in range(n)]
             if e.get("dash"):
                 return self._dash_samples(s, e, cu, cv)
             out = []
             x0 = e["x0"]
-            n = int(round(abs(x0 - cu[0]) / speed / DT))
-            out += [(cu[0] + (x0 - cu[0]) * (i + 1) / max(n, 1), cu[1], False) for i in range(n)]
+            if s.get("from_rest") and abs(x0 - cu[0]) > EPS:
+                out += self.rest_walk_samples(cu, x0, speed)
+            else:
+                n = int(round(abs(x0 - cu[0]) / speed / DT))
+                out += [(cu[0] + (x0 - cu[0]) * (i + 1) / max(n, 1), cu[1], False) for i in range(n)]
             out += [(x0, cu[1], False)] * int(round(0.06 / DT))
-            info = {"want_traj": True}
-            w = self.m.world(s["state"], bool(s.get("debug")))
-            w.simulate(x0, cu[1], e.get("vy0", 0.0), speed if e["speed"] == "walk" else self.rules.run_speed,
-                       e["xt"], head_lag=e["kind"] != "fall", info=info)
-            out += [(x, y, True) for x, y in (info.get("traj") or [])]
+            real = self.real_arc(s)
+            if real is not None:
+                out += [(x, y, True) for x, y in real[1]]
+            else:
+                info = {"want_traj": True}
+                w = self.m.world(s["state"], bool(s.get("debug")))
+                w.simulate(x0, cu[1], e.get("vy0", 0.0), speed if e["speed"] == "walk" else self.rules.run_speed,
+                           e["xt"], head_lag=e["kind"] != "fall", info=info)
+                out += [(x, y, True) for x, y in (info.get("traj") or [])]
             land = out[-1][0] if out else cv[0]
             n = int(round(abs(land - cv[0]) / speed / DT))
             out += [(land + (cv[0] - land) * (i + 1) / max(n, 1), cv[1], False) for i in range(n)]
@@ -347,6 +451,14 @@ class Planner:
         x, feet = (s["shot"]["x"], (node[1] + 1) * T) if s.get("shot") else self.feet(node)
         return [(x, feet, False)] * int(round(self.duration(s) / DT))
 
+    def rest_walk_samples(self, cu, x_to, speed):
+        """Muestras de andar desde parado de cu hasta x_to (rest_walk)."""
+        dist = abs(x_to - cu[0])
+        dur, at = self.rest_walk(dist, speed)
+        n = max(1, int(round(dur / DT)))
+        sgn = 1.0 if x_to >= cu[0] else -1.0
+        return [(cu[0] + sgn * at(dur * (i + 1) / n), cu[1], False) for i in range(n)]
+
     def _dash_samples(self, s, e, cu, cv):
         """Muestras de un movimiento con dash (paso 9): andar hasta donde sale, arranque, el arco del salto
         hasta el dash (si es aereo), el dash (invulnerable dash_invulnerable_s desde su primer cuadro:
@@ -355,8 +467,11 @@ class Planner:
         dash = e["dash"]
         out = []
         x0 = e["x0"]
-        n = int(round(abs(x0 - cu[0]) / speed / DT))
-        out += [(cu[0] + (x0 - cu[0]) * (i + 1) / max(n, 1), cu[1], False) for i in range(n)]
+        if s.get("from_rest") and abs(x0 - cu[0]) > EPS:
+            out += self.rest_walk_samples(cu, x0, speed)
+        else:
+            n = int(round(abs(x0 - cu[0]) / speed / DT))
+            out += [(cu[0] + (x0 - cu[0]) * (i + 1) / max(n, 1), cu[1], False) for i in range(n)]
         out += [(x0, cu[1], False)] * int(round(0.06 / DT))
         out += [(x, y, True) for x, y in dash["pre"]]
         k_inv = len(out)
@@ -1259,24 +1374,95 @@ class Planner:
         z = self.m.zones[bl["rhythm"]]
         return ((self.zone_phase(z, st) - bl["offset"]) % 1.0) < bl["on_fraction"]
 
-    def sample_unsafe(self, x, feet, inv, tw, zs, hz):
+    def sample_unsafe(self, x, feet, inv, tw, zs, hz, margin=0.0):
         """Id de la amenaza que alcanza a Isak en este cuadro (None si nada): banners y ondas (salvo
-        invulnerable por el dash) y plataformas que parpadean apagadas que pisa o toca."""
+        invulnerable por el dash) y plataformas que parpadean apagadas que pisa o toca. Con `margin` (s,
+        validation.hazard_margin_s) tambien con las amenazas adelantadas o retrasadas hasta ese margen y con la
+        caja de Isak ensanchada en x lo que anda en ese tiempo frente a banners y ondas (margin * walk_speed: el
+        bot no esta en el mismo sitio al mismo tiempo que el camino, p. ej. sigue andando los cuadros del
+        despegue); las plataformas que parpadean solo con el margen de tiempo (son apoyo, no dano)."""
         hr = self.hurt_rect(x, feet)
         if not inv:
+            hp = hr
+            if margin > 0.0:
+                pad = margin * self.rules.walk_speed
+                hp = (hr[0] - pad, hr[1], hr[2] + pad, hr[3])
             for h in hz["timed"]:
                 band = h["band"]
-                if not (hr[0] < band[2] and hr[2] > band[0] and hr[1] < band[3] and hr[3] > band[1]):
+                if not (hp[0] < band[2] and hp[2] > band[0] and hp[1] < band[3] and hp[3] > band[1]):
                     continue  # la zona de dano nunca sale de su franja
+                if margin > 0.0:
+                    if self.hazard_hits_window(h, tw, zs, hp, margin):
+                        return h["id"]
+                    continue
                 rect = self.hazard_rect(h, tw, zs)
                 if rect is not None and rects_overlap(hr, rect):
                     return h["id"]
         if hz["blinks"]:
             near = (hr[0] - 1.0, hr[1] - 1.0, hr[2] + 1.0, hr[3] + 1.0)
             for bl in hz["blinks"]:
-                if rects_overlap(near, bl["rect"]) and not self.blink_on(bl, zs):
+                if not rects_overlap(near, bl["rect"]):
+                    continue
+                if margin > 0.0:
+                    if not self.blink_on_window(bl, zs, margin):
+                        return bl["id"]
+                elif not self.blink_on(bl, zs):
                     return bl["id"]
         return None
+
+    def margin_offsets(self, margin):
+        n = int(round(margin / DT))
+        return [k * DT for k in range(-n, n + 1)]
+
+    def hazard_clock(self, h, tw, zs):
+        """Reloj propio de un banner o una campana: (segundos de su ciclo, ciclo) o None si no esta en marcha.
+        Con ritmo, el ciclo del metronomo en su estado actual (el margen no cambia de etapa)."""
+        if h["rhythm"]:
+            st = zs.get(h["rhythm"])
+            if st is None or (h["kind"] != "banner" and not st[0]):
+                return None
+            z = self.m.zones[h["rhythm"]]
+            cycle = self.zone_cycle(z, st)
+            off = h["rhythm_offset"] if h["kind"] == "banner" else h["offset"]
+            return ((self.zone_phase(z, st) - off) % 1.0) * cycle, cycle
+        return (tw + h["phase"]) % h["interval"], h["interval"]
+
+    def hazard_rect_at(self, h, t, cycle):
+        """Zona de dano de `h` a los `t` s de su ciclo (hazard_rect con el reloj ya calculado)."""
+        if h["kind"] == "banner":
+            interval = max(cycle, h["warn"] + h["sweep"] + 0.01) if h["rhythm"] else h["interval"]
+            rest = interval - h["warn"] - h["sweep"]
+            if t < rest + h["warn"]:
+                return None
+            progress = min(max((t - rest - h["warn"]) * h["speed"], 0.0), max(h["corridor"] - h["bw"], 0.0))
+            cx = h["entry"] + h["dir"] * (h["bw"] * 0.5 + progress)
+            return (cx - h["dw"] * 0.5, h["bottom"] - h["dh"], cx + h["dw"] * 0.5, h["bottom"])
+        if h["warn"] <= t < h["warn"] + h["wave"]:
+            return h["band"]
+        return None
+
+    def hazard_hits_window(self, h, tw, zs, hr, margin):
+        """La zona de dano de `h` toca la caja `hr` en algun momento de [tw - margin, tw + margin] (cuadro a
+        cuadro, con el reloj de la amenaza desplazado)."""
+        clock = self.hazard_clock(h, tw, zs)
+        if clock is None:
+            return False
+        t, cycle = clock
+        for d in self.margin_offsets(margin):
+            rect = self.hazard_rect_at(h, (t + d) % cycle, cycle)
+            if rect is not None and rects_overlap(hr, rect):
+                return True
+        return False
+
+    def blink_on_window(self, bl, zs, margin):
+        """La plataforma esta encendida en todo [t - margin, t + margin] (fuera de la busqueda, siempre)."""
+        st = zs.get(bl["rhythm"])
+        if st is None:
+            return True
+        z = self.m.zones[bl["rhythm"]]
+        cycle = self.zone_cycle(z, st)
+        ph = self.zone_phase(z, st) - bl["offset"]
+        return all(((ph + d / cycle) % 1.0) < bl["on_fraction"] for d in self.margin_offsets(margin))
 
     def exposed(self, x, feet, hz):
         return bool(self.exposed_ids(x, feet, hz))
@@ -1388,7 +1574,7 @@ class Planner:
             state = steps[exit_idx]["state"]
             if hz["legacy"]:
                 ctx = {"free": True, "tw0": 0.0, "zones": {}, "cd": 0.0, "dash": False, "walk_speed": None,
-                       "bounds": banners, "level": bool(banners)}
+                       "bounds": banners, "level": bool(banners), "margin": self.hazard_margin}
                 involved = [bn["id"] for bn in banners]
             else:
                 ids = set()
@@ -1407,7 +1593,12 @@ class Planner:
                 tw0 = self.timeline(prefix)[1] if prefix else 0.0
                 ctx = {"free": free, "tw0": tw0, "zones": zs, "cd": self.dash_cooldown_after(prefix),
                        "dash": True, "walk_speed": None, "bounds": inv_h, "local_period": True,
-                       "level": any(not h["rhythm"] for h in inv_h if h["kind"] != "blink")}
+                       "level": any(not h["rhythm"] for h in inv_h if h["kind"] != "blink"),
+                       "margin": self.hazard_margin, "real_arc": True,
+                       # Isak llega parado a la entrada (espera de fase o un paso que lo deja quieto).
+                       "rest": (free and any(not h["rhythm"] for h in inv_h if h["kind"] != "blink"))
+                       or (bool(prefix) and (prefix[-1]["action"] in REST_ACTIONS
+                                             or (prefix[-1]["action"] == "move" and prefix[-1]["kind"] != "walk")))}
                 # Del arranque del metronomo a la entrada no se interrumpe (desvios a un cargador).
                 for zid in zids:
                     if started_at.get(zid) is not None:
@@ -1527,11 +1718,12 @@ class Planner:
             return
         self._dash_required_seen.update(mine)
         report = {}
-        walk = self.hazard_search(entry, exit_node, state, hz, period, dwell, dict(ctx, dash=False))
+        # Sin el dash, sin holgura de tiempo: el pasillo no se cruza ni con la sincronizacion exacta.
+        walk = self.hazard_search(entry, exit_node, state, hz, period, dwell, dict(ctx, dash=False, margin=0.0))
         run = None
         if walk is None:
             run = self.hazard_search(entry, exit_node, state, hz, period, dwell,
-                                     dict(ctx, dash=False, walk_speed=self.rules.run_speed))
+                                     dict(ctx, dash=False, margin=0.0, walk_speed=self.rules.run_speed))
         window = None
         if plan is not None:
             window = self.dash_window(plan, ctx, hz, period, mine)
@@ -1638,12 +1830,15 @@ class Planner:
                 s["seconds"] = (s["phase_s"] - s["tw"]) % s["period_s"]
                 self.timeline(steps)
 
-    def hop(self, node, state):
-        """Salto en el sitio (para dejar pasar un banner por debajo)."""
+    def hop(self, node, state, real=False):
+        """Salto en el sitio (para dejar pasar un banner por debajo); `real`: con el arco real del juego."""
         x, feet = self.feet(node)
         info = {"want_traj": True}
         w = self.m.world(state, False)
-        to, _ = w.simulate(x, feet, -self.rules.jump_v0, 0.0, x, info=info)
+        if real:
+            to, _ = w.simulate(x, feet, -self.rules.jump_v0_game, 0.0, x, info=info, game=True)
+        else:
+            to, _ = w.simulate(x, feet, -self.rules.jump_v0, 0.0, x, info=info)
         if to != node:
             return None
         traj = [(px, py, True) for px, py in info["traj"]]
@@ -1683,6 +1878,11 @@ class Planner:
                    "bounds": hz["banners"], "level": True}
         level = ctx["level"]
         bounds = ctx["bounds"]
+        # 2026-10-20 (bot del 1-3): holgura de tiempo frente a las amenazas (validation.hazard_margin_s) y
+        # saltos con el arco real del juego (ctx["real_arc"]; los banners del 1-2 siguen con el conservador).
+        margin = float(ctx.get("margin", 0.0))
+        pad = margin * self.rules.walk_speed
+        real_arc = bool(ctx.get("real_arc"))
         cols = [int(b["band"][0] // T) for b in bounds] + [int(b["band"][2] // T) for b in bounds]
         rows = [int(b["bottom"] // T) for b in bounds]
         c_lo = min(cols + [entry[0], exit_node[0]]) - HAZARD_PAD
@@ -1720,7 +1920,9 @@ class Planner:
             fs = [smp[1] for smp in samples]
             box = (min(xs) - hw - 1.0, min(fs) - hh - 1.0, max(xs) + hw + 1.0, max(fs) + 1.0)
             near = (box[0] - 1.0, box[1] - 1.0, box[2] + 1.0, box[3] + 1.0)
-            timed = [h for h in hz["timed"] if rects_overlap(h["band"], box)]
+            # Con la holgura, la caja ensanchada de sample_unsafe (margin * walk_speed en x).
+            wide = (box[0] - pad, box[1], box[2] + pad, box[3]) if pad > 0.0 else box
+            timed = [h for h in hz["timed"] if rects_overlap(h["band"], wide)]
             if period_ids is not None and any(not h["rhythm"] and h["id"] not in period_ids for h in timed):
                 outside[0] = True
             return {"timed": timed, "blinks": [bl for bl in hz["blinks"] if rects_overlap(bl["rect"], near)]}
@@ -1748,20 +1950,27 @@ class Planner:
                     zs = dict(zs)
                     for zid, z in zip(zids, zones):
                         zs[zid] = self.zone_step(z, zs[zid], x, f, zstep)
-                if check and self.sample_unsafe(x, f, inv[0] <= k < inv[1], tw, zs, hl):
+                if check and self.sample_unsafe(x, f, inv[0] <= k < inv[1], tw, zs, hl, margin):
                     return None
             return zs
 
         sample_cache = {}
 
-        def edge_samples(u, e):
+        def edge_samples(u, e, rest=False):
             """Muestras del movimiento, su duracion real (la de la linea de tiempo), cuadros invulnerables y
-            cuadros del dash."""
-            key = (u, e["to"], e["kind"], e["x0"], e.get("xt"), id(e) if e.get("dash") else None)
+            cuadros del dash. `rest`: Isak empieza parado (con el arco real)."""
+            key = (u, e["to"], e["kind"], e["x0"], e.get("xt"), id(e) if e.get("dash") else None, rest)
             if key not in sample_cache:
                 mv = self.move(u, e, state)
                 if walk_speed is not None:
                     mv["walk_speed"] = walk_speed
+                if real_arc:
+                    mv["arc"] = "real"
+                    if rest:
+                        mv["from_rest"] = True
+                if self.rest_jump_fails(mv):
+                    sample_cache[key] = (None, 0.0, (0, 0), (0, 0), None)
+                    return sample_cache[key]
                 smp = self.samples(mv)
                 sample_cache[key] = (smp, self.duration(mv), self.invulnerable_range(mv), self.dash_frames(mv),
                                      local(smp) if smp else {"timed": [], "blinks": []})
@@ -1775,17 +1984,20 @@ class Planner:
         data = {}  # clave -> (t, fase de entrada, metronomos, enfriamiento, dashes)
         zs0 = dict(ctx["zones"])
         cd0 = float(ctx.get("cd", 0.0))
+        # Con el arco real, el estado lleva si Isak esta parado (tras una espera o un salto en el sitio): el
+        # siguiente movimiento arranca acelerando (rest_lag). Sin el, siempre False (como antes).
+        rest0 = bool(real_arc and ctx.get("rest"))
         if ctx["free"] or not level:
             seeds = [(ph, ph * PHASE_BIN) for ph in range(bins)]
         else:
             phase0 = ctx["tw0"] % period
             seeds = [(int(round(phase0 / PHASE_BIN)) % bins, phase0)]
         for ph, phase0 in seeds:
-            key = (entry, ph, zkey(zs0), cd_bin(cd0))
+            key = (entry, ph, zkey(zs0), cd_bin(cd0), rest0)
             best[key] = 0.0
             parent[key] = None
             data[key] = (0.0, phase0, zs0, cd0, 0)
-            heap.append((0.0, ph, entry, key[2], key[3]))
+            heap.append((0.0, ph, entry, key[2], key[3], key[4]))
         heapq.heapify(heap)
         static_cache = {}
 
@@ -1799,8 +2011,8 @@ class Planner:
         goal = None
         expansions = 0
         while heap:
-            cost, ph, node, zk, cdb = heapq.heappop(heap)
-            key = (node, ph, zk, cdb)
+            cost, ph, node, zk, cdb, rest = heapq.heappop(heap)
+            key = (node, ph, zk, cdb, rest)
             if cost > best.get(key, INF) + EPS:
                 continue
             expansions += 1
@@ -1813,16 +2025,20 @@ class Planner:
                 if dwell <= 0.0 or run([(x, f, False)] * int(round(dwell / DT)), phase_t, zs) is not None:
                     goal = key
                     break
-            # Esperar un paso de fase.
+            # Esperar un paso de fase. Con la holgura (validation.hazard_margin_s), solo fuera de la franja de
+            # todo banner y onda: si el bot llega tarde a la espera, espera otro ciclo alli sin que le den.
             cand = []
             smp, shl = standing(node)
-            nzs = run(smp, phase_t, zs, zstep=PHASE_BIN / len(smp), hl=shl)
+            can_wait = margin <= 0.0 or not shl["timed"]
+            nzs = run(smp, phase_t, zs, zstep=PHASE_BIN / len(smp), hl=shl) if can_wait else None
             if nzs is not None:
                 cand.append((node, PHASE_BIN, {"action": "wait"}, nzs, None))
-            if node not in hop_cache:
-                hop_cache[node] = self.hop(node, state)
+            if not can_wait:
+                pass
+            elif node not in hop_cache:
+                hop_cache[node] = self.hop(node, state, real_arc)
                 hop_local[node] = local(hop_cache[node]["traj"]) if hop_cache[node] is not None else None
-            hp = hop_cache[node]
+            hp = hop_cache.get(node) if can_wait else None
             if hp is not None:
                 nzs = run(hp["traj"], phase_t, zs, zstep=hp["time"] / max(len(hp["traj"]), 1), hl=hop_local[node])
                 if nzs is not None:
@@ -1832,7 +2048,9 @@ class Planner:
                     continue
                 if e.get("dash") and not ctx["dash"]:
                     continue
-                smp, d, inv, dfr, ehl = edge_samples(node, e)
+                smp, d, inv, dfr, ehl = edge_samples(node, e, rest)
+                if smp is None:
+                    continue  # salto desde parado que no llega con el arco real
                 step = d / max(len(smp), 1)
                 if e.get("dash") and cd - dfr[0] * step > EPS:
                     continue  # aun en enfriamiento
@@ -1851,12 +2069,14 @@ class Planner:
                     ncost = cost + d
                     nd = ndash
                 nph = int(round(((phase0 + nt) % period) / PHASE_BIN)) % bins if level else 0
-                nkey = (to, nph, zkey(nzs), cd_bin(ncd))
+                # El bot frena en el centro de la celda al aterrizar de un salto, una caida o un dash.
+                nrest = bool(real_arc and (act["action"] != "move" or act["e"]["kind"] != "walk"))
+                nkey = (to, nph, zkey(nzs), cd_bin(ncd), nrest)
                 if ncost < best.get(nkey, INF) - EPS:
                     best[nkey] = ncost
                     parent[nkey] = (key, act)
                     data[nkey] = (nt, phase0, nzs, ncd, nd)
-                    heapq.heappush(heap, (ncost, nph, to, nkey[2], nkey[3]))
+                    heapq.heappush(heap, (ncost, nph, to, nkey[2], nkey[3], nrest))
         if outside[0]:
             return self.hazard_search(entry, exit_node, state, hz, period_in, dwell, dict(ctx, local_period=False))
         if goal is None:
@@ -1896,6 +2116,10 @@ class Planner:
                 mv = self.move(node, act["e"], state)
                 if walk_speed is not None:
                     mv["walk_speed"] = walk_speed
+                if real_arc:
+                    mv["arc"] = "real"
+                    if prev[4]:
+                        mv["from_rest"] = True
                 out.append(mv)
         return {"phase": start_phase, "time": data[goal][0], "steps": out, "dashes": data[goal][4], "period": period}
 
@@ -2047,6 +2271,7 @@ class Planner:
             if (s["action"] == "move" and s["kind"] == "walk" and merged and merged[-1]["action"] == "move"
                     and merged[-1]["kind"] == "walk" and merged[-1].get("debug") == s.get("debug")
                     and merged[-1]["to"] == s["from"] and merged[-1]["to"][1] == s["to"][1]
+                    and (s["to"][0] - s["from"][0]) * (merged[-1]["to"][0] - merged[-1]["from"][0]) > 0
                     and not s.get("timed") == "x"):
                 merged[-1] = dict(merged[-1], to=s["to"], dur=merged[-1]["dur"] + self.duration(s))
                 continue
@@ -2085,7 +2310,7 @@ class Planner:
                     item["target_x_px"] = None if e.get("xt") is None or abs(e["xt"]) > 1e5 else round(e["xt"], 1)
                     item["direction"] = 1 if (e.get("xt") or 0) >= e["x0"] else -1
                     item["speed"] = e["speed"]
-                    item["air_s"] = round(e.get("time", 0.0), 3)
+                    item["air_s"] = round(self.air_time(s), 3)
                 if s.get("debug"):
                     item["debug"] = True
             else:

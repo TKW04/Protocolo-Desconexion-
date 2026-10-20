@@ -53,7 +53,8 @@ Reglas:
     (minimo ceil(720 / tile_size) filas; la torre del 1-2 tiene 62);
   - camara (camera, opcional): {vertical: "simple" | "tower", limits: "grid"};
   - parametros de validacion (validation, opcional, paso 10): {time_margin_s, snooze_required,
-    laser_required, debug_required, start_energy, sync_damage_budget, ceiling_margin_px} (ver
+    laser_required, debug_required, start_energy, sync_damage_budget, ceiling_margin_px,
+    dash_required, hazard_margin_s} (ver
     _check_validation);
   - id: <mundo>-<nivel> o, para un nivel de prueba que no es del juego, <nombre>_test
     (p. ej. tower_test; su escena es scenes/levels/<nombre>_test.tscn);
@@ -1260,7 +1261,9 @@ class LevelValidator:
         (>= 0, Sync Rate que pueden quitar los enemigos en el camino; 0 por defecto) y, desde el
         2026-10-17, ceiling_margin_px (0-64: holgura de techo calibrada con el Isak real; sin el campo,
         el modelo de techo del paso 10) y, desde el paso 9 de docs/propuesta-1-3.md, dash_required (ids
-        de banners cuyo pasillo SOLO se cruza con el dash)."""
+        de banners cuyo pasillo SOLO se cruza con el dash) y, desde el 2026-10-20 (bot del 1-3),
+        hazard_margin_s (0-0,5: holgura de tiempo frente a banners, campanas y plataformas que parpadean
+        en la busqueda por tiempo; 0 por defecto)."""
         if "validation" not in self.level:
             return
         val = self.level["validation"]
@@ -1268,7 +1271,7 @@ class LevelValidator:
             self.error("'validation' debe ser un objeto")
             return
         numbers = {"time_margin_s": (0.0, 30.0), "start_energy": (0.0, 100.0), "sync_damage_budget": (0.0, 100.0),
-                   "ceiling_margin_px": (0.0, 64.0)}
+                   "ceiling_margin_px": (0.0, 64.0), "hazard_margin_s": (0.0, 0.5)}
         for key, value in val.items():
             if key in numbers:
                 lo, hi = numbers[key]

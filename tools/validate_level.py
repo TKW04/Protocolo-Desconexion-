@@ -268,6 +268,9 @@ class Rules:
         # Altura real del salto en el juego (Isak.step a 60 Hz: la gravedad cambia la velocidad antes
         # de mover; unos 184 px): la usa la holgura de techo calibrada (ceiling_margin_px).
         self.real_jump_height = real_jump_height(-jump_velocity, self.gravity)
+        # Velocidad inicial real del salto (px/s, > 0 hacia arriba): la usa el arco real de la busqueda por
+        # tiempo (World.simulate con game=True; 2026-10-20, bot del 1-3).
+        self.jump_v0_game = -jump_velocity
         self.limit = float(limit)
         self.allow_run = bool(allow_run)
         self.hitbox_w, self.hitbox_h = _export_vector2(isak_source, "hitbox_size")
@@ -1422,7 +1425,7 @@ class World:
     def nodes(self):
         return [(c, r) for r in range(self.m.rows) for c in range(self.m.cols) if self.is_node(c, r)]
 
-    def simulate(self, x, y, vy, speed, x_target, head_lag=False, info=None):
+    def simulate(self, x, y, vy, speed, x_target, head_lag=False, info=None, game=False, accel=None, vx0=0.0):
         """Trayectoria con velocidad horizontal `speed` hacia x_target. Devuelve
         (nodo_de_llegada, None) o (None, motivo).
 
@@ -1431,7 +1434,15 @@ class World:
         air_acceleration); si esa cabeza retrasada choca con un solido que la del modelo no toca
         (la esquina de una losa), cuenta como golpe de techo. Bajo un techo plano no cambia nada
         (las dos chocan a la vez). info (dict): recibe time (s en el aire), head_hit y traj
-        (lista de (x, y) por paso, para el plan del camino)."""
+        (lista de (x, y) por paso, para el plan del camino).
+
+        game (2026-10-20, bot del 1-3): integra como Isak.step a 60 Hz (la gravedad cambia la velocidad
+        antes de mover y la de caida empieza con vy >= 0, Isak.apply_gravity); con vy = -jump_v0_game es
+        el arco real del juego (unos 184 px), que bajo un techo choca antes y aterriza antes que el
+        conservador. Solo lo usa la linea de tiempo de las amenazas (tools/level_plan.py); el alcance
+        sigue con el conservador. accel (px/s^2): la velocidad horizontal empieza en vx0 (0 por defecto) y sube
+        hasta `speed` (salto desde parado con air_acceleration); al chocar con una pared vuelve a 0, como en
+        Godot (la caida tras un dash que topa con un escalon del techo baja en vertical)."""
         m = self.m
         T = m.T
         g = m.rules.gravity
@@ -1455,6 +1466,7 @@ class World:
             info["traj_vy"] = traj_vy
             info["time"] = 0.0
             info["head_hit"] = False
+        cur = float(vx0)
         for _ in range(int(SIM_MAX_S / dt)):
             steps += 1
             if info is not None:
@@ -1464,24 +1476,34 @@ class World:
                 traj_vy.append(vy)
             # Horizontal.
             if abs(x_target - x) > EPS:
-                step = speed * dt
+                if accel is None:
+                    step = speed * dt
+                else:
+                    cur = min(speed, cur + accel * dt)
+                    step = cur * dt
                 nx = x_target if abs(x_target - x) <= step else x + math.copysign(step, x_target - x)
                 if not self.collides(nx, y):
                     x = nx
                 elif nx > x:
+                    cur = 0.0
                     wall = math.floor((nx + m.hw - EPS) / T) * T
                     cand = wall - m.hw
                     if cand > x and not self.collides(cand, y):
                         x = cand
                 else:
+                    cur = 0.0
                     wall = (math.floor((nx - m.hw) / T) + 1) * T
                     cand = wall + m.hw
                     if cand < x and not self.collides(cand, y):
                         x = cand
             # Vertical.
             acc = g if vy < 0.0 else gm
-            ny = y + vy * dt + 0.5 * acc * dt * dt
-            nvy = vy + acc * dt
+            if game:
+                nvy = vy + acc * dt
+                ny = y + nvy * dt
+            else:
+                ny = y + vy * dt + 0.5 * acc * dt * dt
+                nvy = vy + acc * dt
             if ny < y:
                 if calibrated:
                     lag_x = x
@@ -1787,7 +1809,10 @@ class World:
             out = []
             for xt in targets:
                 sim = {"want_traj": True}
-                to, _ = self.simulate(x1 + d * EPS * 10, y1, 0.0, speed, x1 + d * 1e6 if xt is None else xt, info=sim)
+                # Tras el dash Isak sigue a walk_speed; si topa con una pared se para y vuelve a acelerar en el
+                # aire (2026-10-20: el bot del 1-3 caia una celda antes bajo el escalon del techo del tunel).
+                to, _ = self.simulate(x1 + d * EPS * 10, y1, 0.0, speed, x1 + d * 1e6 if xt is None else xt, info=sim,
+                                      accel=rules.air_accel if rules.air_accel > 0.0 else None, vx0=speed)
                 if to is None or to == node:
                     continue
                 out.append((to, xt, sim))
