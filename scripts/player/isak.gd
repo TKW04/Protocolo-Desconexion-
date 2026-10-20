@@ -55,6 +55,8 @@ const ANIM_LASER: StringName = &"laser"
 ## fondo (p. ej. al monitor de la terminal de salida). La ponen face_back() y
 ## face_side().
 const ANIM_BACK_IDLE: StringName = &"back_idle"
+## Pose del gesto Deslizar (dash; provisional, tools/gen_world1_dnd.py).
+const ANIM_DASH: StringName = &"dash"
 ## Estados en los que la pose del laser se corta (tienen animacion propia).
 const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
 ## Margen al pasar del tiempo de anticipacion al cuadro de la pose.
@@ -845,6 +847,8 @@ func begin_dash() -> float:
 	_dash_flash_time = 0.0
 	_jump_buffer_left = 0.0
 	reset_idle_time()
+	if _sprite.sprite_frames != null and _sprite.sprite_frames.has_animation(ANIM_DASH):
+		restart_animation(ANIM_DASH)
 	update_dash_pose()
 	_dash_effect.begin(direction)
 	dash_started.emit(direction)
@@ -866,11 +870,18 @@ func end_dash(direction: float, keep_speed: bool, _blocked: bool) -> void:
 	dash_ended.emit()
 
 
-## Pose provisional del dash (sin hoja propia): cuadro run_frame de correr,
-## inclinado lean_deg hacia delante.
+## Pose del dash: la animacion `dash` (PROVISIONAL desde el paso 8, 2026-10-20:
+## cuadros de correr inclinados por cizalla, tools/gen_world1_dnd.py) desde su
+## cuadro 0, sin rotar. Sin ella (hoja sin `dash`), el cuadro run_frame de
+## correr inclinado lean_deg hacia delante. La llama DashState en cada paso.
 func update_dash_pose() -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
 	var visual: Dictionary = abilities.dash_visual
+	if frames != null and frames.has_animation(ANIM_DASH):
+		_sprite.rotation = 0.0
+		if _sprite.animation != ANIM_DASH:
+			_sprite.play(ANIM_DASH)
+		return
 	if frames != null and frames.has_animation(ANIM_RUN):
 		if _sprite.animation != ANIM_RUN:
 			_sprite.animation = ANIM_RUN

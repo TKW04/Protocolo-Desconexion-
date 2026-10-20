@@ -201,24 +201,22 @@ func _on_player_respawned(_at: Vector2, _after_death: bool) -> void:
 	reset()
 
 
-## Icono de vibracion (provisional por codigo): un celular con arcos que se
-## encienden al principio de cada ciclo; mas rapido = arcos mas cortos.
+## Icono de vibracion (arte por script, paso 8: tools/gen_world1_dnd.py): el
+## celular con los arcos apagados; la primera arc_lit_fraction de cada ciclo,
+## encendido y desplazado lit_shake_px a un lado y a otro (vibra).
+func is_icon_lit() -> bool:
+	return _started and get_beat_phase() < float(_config.get("arc_lit_fraction", 0.25))
+
+
 func _draw() -> void:
+	var lit: bool = is_icon_lit()
+	var key: String = "icon_lit" if lit else "icon_dim"
+	var texture := load(String(_config.get(key, ""))) as Texture2D
+	if texture == null:
+		return
 	var t: float = World1ObjectsConfig.tile_size()
-	var body := Color(String(_config.get("icon_color", "#aeb8d2")))
-	var dim := Color(String(_config.get("arc_dim_color", "#2e4688")))
-	var lit := Color(String(_config.get("arc_lit_color", "#9bb0e8")))
-	var lit_fraction: float = float(_config.get("arc_lit_fraction", 0.25))
-	var center := Vector2(t * 0.5, t * 0.5)
-	var phone := Rect2(center - Vector2(10.0, 18.0), Vector2(20.0, 36.0))
-	draw_rect(phone, body, false, 3.0)
-	draw_rect(Rect2(center + Vector2(-4.0, 11.0), Vector2(8.0, 3.0)), body)
-	var on: bool = _started and get_beat_phase() < lit_fraction
-	var color: Color = lit if on else dim
-	var shake: float = 2.0 if on else 0.0
-	for side: float in [-1.0, 1.0]:
-		for k: int in 2:
-			var r: float = 18.0 + 8.0 * k
-			var c: Vector2 = center + Vector2(side * shake, 0.0)
-			var from_angle: float = -0.6 if side > 0.0 else PI - 0.6
-			draw_arc(c + Vector2(side * 4.0, 0.0), r, from_angle, from_angle + 1.2, 6, color, 3.0)
+	var shake: float = 0.0
+	if lit:
+		var shake_px: float = float(_config.get("lit_shake_px", 2.0))
+		shake = shake_px if get_cycle_count() % 2 == 0 else -shake_px
+	draw_texture(texture, (Vector2(t, t) - texture.get_size()) * 0.5 + Vector2(shake, 0.0))

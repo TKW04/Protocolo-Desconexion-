@@ -420,8 +420,9 @@ func test_death_during_dash_and_respawn_resets() -> void:
 
 func test_provisional_pose_and_trail() -> void:
 	_press_dash()
-	assert_eq(_isak.get_animation(), Isak.ANIM_RUN, "Pose provisional: cuadro de correr")
-	assert_ne(_isak.get_sprite().rotation, 0.0, "Inclinado hacia delante")
+	assert_eq(_isak.get_animation(), Isak.ANIM_DASH, "Pose provisional: animacion dash (correr inclinado)")
+	assert_eq(_isak.get_sprite().frame, 0, "Desde su primer cuadro")
+	assert_eq(_isak.get_sprite().rotation, 0.0, "La inclinacion va en los cuadros, sin rotar el sprite")
 	_sim.step(3)
 	assert_true(_isak.get_dash_effect().is_trail_visible(), "Estela de datos")
 	_sim.step_until(func() -> bool: return not _isak.is_dashing(), 30)

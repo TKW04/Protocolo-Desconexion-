@@ -456,12 +456,48 @@ func test_collected_memory_pickup_gives_no_help() -> void:
 	await _assert_inert_drops_help(pickup, func() -> void: pickup.collect(), "mensaje recogido")
 
 
+## Interruptor «No molestar» (1-3, paso 8 de propuesta-1-3.md): encendido no ayuda.
+func test_switched_on_dnd_switch_gives_no_help() -> void:
+	var sw := _scene("dnd_switch") as DndSwitch
+	_place(sw, &"dnd_switch")
+	await _assert_inert_drops_help(sw, func() -> void: sw.switch_on(), "interruptor No molestar encendido")
+	_assert_no_reread(sw, &"dnd_switch", "interruptor No molestar encendido")
+
+
+## Plataforma que vibra (1-3): nunca se destruye; sin metronomo, siempre encendida.
+func test_blink_platform_always_helps() -> void:
+	var platform := _scene("blink_platform") as BlinkPlatform
+	_place(platform, &"blink_platform")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(platform), "Plataforma que vibra: ayuda")
+	assert_eq(_help.get_target(), platform, "Plataforma que vibra: candidato")
+
+
+## Campana de alarma (1-3): indestructible, ayuda en todas sus fases.
+func test_alarm_bell_helps_in_every_phase() -> void:
+	var bell := (load("res://scenes/enemies/alarm_bell.tscn") as PackedScene).instantiate() as AlarmBell
+	_place(bell, &"alarm_bell")
+	bell.set_physics_process(false)
+	await wait_process_frames(1)
+	for state: StringName in [AlarmBell.STATE_WARN, AlarmBell.STATE_WAVE, AlarmBell.STATE_REST]:
+		for i: int in 400:
+			if bell.get_state() == state:
+				break
+			bell.step(STEP)
+		assert_eq(bell.get_state(), state)
+		_run(STEP * 2.0)
+		assert_true(HelpCatalog.is_help_live(bell), "Campana en %s: ayuda" % state)
+		assert_eq(_help.get_target(), bell, "Campana en %s: candidato" % state)
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
 		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
 		&"notification_badge", &"spam_banner", &"spam_banner_dash", &"reminder_platform", &"snooze_button", &"overlay_popup",
-		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup"]
+		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
+		&"dnd_switch", &"blink_platform", &"alarm_bell"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

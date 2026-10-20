@@ -13,7 +13,8 @@
 ## Un solo uso (regla de unless_ability de los objetos de historia): con la
 ## habilidad ya obtenida o desbloqueada al cargar arranca encendido e inerte,
 ## sin linea ni aviso. Encendido no ayuda ni responde.
-## Arte PROVISIONAL: panel del power_switch y una luna dibujada por codigo.
+## Arte por script (paso 8, 2026-10-20): dnd_objects_frames.tres de
+## tools/gen_world1_dnd.py (apagado, golpeado y encendido con la luna).
 ## El origen es la esquina superior izquierda de su celda (Isak de pie en ella).
 class_name DndSwitch
 extends Node2D
@@ -151,15 +152,13 @@ func advance(dt: float) -> void:
 # --- Interno ---
 
 func _build() -> void:
-	var frames := load(String(_config.get("frames", "res://assets/sprites/calc_encounter_frames.tres"))) as SpriteFrames
+	var frames := load(String(_config.get("frames", "res://assets/sprites/dnd_objects_frames.tres"))) as SpriteFrames
 	_sprite = AnimatedSprite2D.new()
 	_sprite.name = "Panel"
 	_sprite.sprite_frames = frames
 	_sprite.centered = true
 	_sprite.position = LaserReceiver._vec(_config.get("sprite_center_px", [32, 4]))
-	_sprite.animation = _anim("anim_off", "power_switch_off")
-	# La luna (_draw del interruptor) se dibuja encima del panel.
-	_sprite.show_behind_parent = true
+	_sprite.animation = _anim("anim_off", "dnd_switch_off")
 	add_child(_sprite)
 
 
@@ -171,8 +170,8 @@ func _update_sprite() -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
 	if frames == null:
 		return
-	var hit: StringName = _anim("anim_hit", "power_switch_hit")
-	var anim: StringName = _anim("anim_on", "power_switch_on") if _on else _anim("anim_off", "power_switch_off")
+	var hit: StringName = _anim("anim_hit", "dnd_switch_hit")
+	var anim: StringName = _anim("anim_on", "dnd_switch_on") if _on else _anim("anim_off", "dnd_switch_off")
 	var t: float = _time
 	if _hit_time >= 0.0 and frames.has_animation(hit):
 		var hit_len: float = frames.get_frame_count(hit) / maxf(frames.get_animation_speed(hit), 0.001)
@@ -188,19 +187,3 @@ func _update_sprite() -> void:
 	var count: int = frames.get_frame_count(anim)
 	var index: int = floori(t * frames.get_animation_speed(anim))
 	_sprite.frame = index % count if frames.get_animation_loop(anim) else mini(index, count - 1)
-
-
-## Luna creciente provisional (encendido): disco con un mordisco, en pasos de px.
-func _draw() -> void:
-	if not _on:
-		return
-	var center: Vector2 = LaserReceiver._vec(_config.get("moon_center_px", [32, -22]))
-	var radius: float = float(_config.get("moon_radius_px", 6.0))
-	var color := Color(String(_config.get("moon_color", "#9bb0e8")))
-	var r: int = int(radius)
-	for y: int in range(-r, r + 1):
-		for x: int in range(-r, r + 1):
-			var inside: bool = x * x + y * y <= r * r
-			var bite: bool = (x - r * 0.5) * (x - r * 0.5) + (y + r * 0.3) * (y + r * 0.3) <= r * r * 0.7
-			if inside and not bite:
-				draw_rect(Rect2(center + Vector2(x, y), Vector2.ONE), color)

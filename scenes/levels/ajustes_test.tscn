@@ -39,11 +39,12 @@ tile_set = ExtResource("3_mundo1")
 
 [node name="Objects" type="Node2D" parent="."]
 
-[node name="dnd_ajustes" parent="Objects" instance=ExtResource("4_dnd_switch")]
+[node name="dnd_ajustes" parent="Objects" instance=ExtResource("4_dnd_switch") groups=["help_target"]]
 position = Vector2(448, 640)
 ability = &"dash"
 object_id = &"dnd_ajustes"
 story_line = "dnd_1_3"
+metadata/help_id = "dnd_switch"
 
 [node name="terminal_ajustes" parent="Objects" instance=ExtResource("5_exit_terminal") groups=["help_target"]]
 position = Vector2(1472, 576)

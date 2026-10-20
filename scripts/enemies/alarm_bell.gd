@@ -14,7 +14,7 @@
 ## Familia del banner: indestructible y no es un cuerpo (el laser la atraviesa,
 ## el pulso no le afecta); el dash la atraviesa (invulnerable). Tiempo del
 ## mundo (el Debug la ralentiza). Al reaparecer vuelve a su estado inicial (su
-## metronomo tambien). Arte PROVISIONAL por codigo (paso 8: arte por script).
+## metronomo tambien). Arte por script (paso 8, 2026-10-20): tools/gen_world1_dnd.py.
 class_name AlarmBell
 extends Node2D
 
@@ -45,7 +45,8 @@ var anticipation_frames: int = 9
 var contact_damage: float = 10.0
 var push_direction: int = -1
 var damage_width_px: float = 48.0
-var colors: Dictionary = {}
+## Carpeta de los cuadros (tools/gen_world1_dnd.py).
+var sprite_dir: String = "res://assets/sprites/enemies/alarm_bell/"
 
 ## Isak al que dana (si es null se busca en el nivel).
 var target: Isak
@@ -62,6 +63,8 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 	add_to_group(GROUP)
+	# La onda repite su textura en vertical (draw_texture_rect con tile).
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	_ready_ok = true
 	reset_patrol()
 
@@ -204,42 +207,40 @@ func _check_hit(isak: Isak) -> void:
 	hit_player.emit(contact_damage)
 
 
-func _color(key: String, fallback: String) -> Color:
-	return Color(String(colors.get(key, fallback)))
+## Cuadro de la campana del estado actual (tools/gen_world1_dnd.py):
+## rest, warn_00/01 (tiembla, alterna a anim_fps) o ring_00/01 (suena).
+func get_bell_frame() -> String:
+	var f: int = int(floor(get_cycle_time() * anim_fps)) % 2
+	if _state == STATE_WARN:
+		return "alarm_bell_warn_%02d" % f
+	if _state == STATE_WAVE:
+		return "alarm_bell_ring_%02d" % f
+	return "alarm_bell_rest_00"
+
+
+func _tex(name: String) -> Texture2D:
+	return load(sprite_dir + name + ".png") as Texture2D
 
 
 func _draw() -> void:
-	var body: Color = _color("body", "#aeb8d2")
-	var edge: Color = _color("edge", "#f2f4f8")
-	var shake: float = 0.0
-	if _state == STATE_WARN:
-		shake = 2.0 if int(floor(get_cycle_time() * anim_fps)) % 2 == 0 else -2.0
-	# Campana: soporte, cuerpo y badajo (arriba de la celda).
 	var top: float = -TILE
-	draw_rect(Rect2(Vector2(-4.0 + shake, top), Vector2(8.0, 6.0)), body)
-	var bell := PackedVector2Array([
-		Vector2(-10.0 + shake, top + 6.0), Vector2(10.0 + shake, top + 6.0),
-		Vector2(18.0 + shake, top + 30.0), Vector2(-18.0 + shake, top + 30.0)])
-	draw_colored_polygon(bell, body)
-	draw_polyline(bell + PackedVector2Array([bell[0]]), edge, 2.0)
-	draw_rect(Rect2(Vector2(-4.0 + shake, top + 30.0), Vector2(8.0, 6.0)), _color("alert", "#ff4a2a"))
+	var bell: Texture2D = _tex(get_bell_frame())
+	if bell != null:
+		draw_texture(bell, Vector2(-TILE * 0.5, top))
 	if _state == STATE_WARN:
 		# Linea discontinua roja en el suelo de su columna (parpadea).
-		if int(floor(get_cycle_time() * anim_fps / 1.5)) % 2 == 0:
-			var floor_y: float = top + float(wave_tiles) * TILE - 4.0
-			var x: float = -TILE * 0.5
-			while x < TILE * 0.5:
-				draw_rect(Rect2(Vector2(x, floor_y - 2.0), Vector2(8.0, 4.0)), _color("warn_line", "#a3221c"))
-				x += 16.0
+		var line: Texture2D = _tex("alarm_warn_line_00")
+		if line != null and int(floor(get_cycle_time() * anim_fps / 1.5)) % 2 == 0:
+			var floor_y: float = top + float(wave_tiles) * TILE - line.get_size().y
+			draw_texture(line, Vector2(-TILE * 0.5, floor_y))
 	elif _state == STATE_WAVE:
-		var h: float = float(wave_tiles) * TILE - 36.0
-		var w: float = damage_width_px
-		draw_rect(Rect2(Vector2(-w * 0.5, top + 36.0), Vector2(w, h)), _color("alert", "#ff4a2a"))
-		draw_rect(Rect2(Vector2(-w * 0.5 + 8.0, top + 36.0), Vector2(w - 16.0, h)), _color("alert_shadow", "#a3221c"))
-		var y: float = top + 44.0
-		while y < top + 36.0 + h:
-			draw_rect(Rect2(Vector2(-w * 0.5, y), Vector2(w, 4.0)), edge)
-			y += 24.0
+		# Onda: textura de 48x64 repetida en vertical; las flechas bajan.
+		var f: int = int(floor(get_cycle_time() * anim_fps)) % 2
+		var wave: Texture2D = _tex("alarm_wave_%02d" % f)
+		if wave != null:
+			var h: float = float(wave_tiles) * TILE - 36.0
+			var w: float = damage_width_px
+			draw_texture_rect(wave, Rect2(Vector2(-w * 0.5, top + 36.0), Vector2(w, h)), true)
 
 
 func _load_data() -> bool:
@@ -259,6 +260,5 @@ func _load_data() -> bool:
 	contact_damage = float(d["contact_damage"])
 	push_direction = int(d.get("push_direction", -1))
 	damage_width_px = float(d.get("damage_width_px", 48.0))
-	var c: Variant = d.get("colors", {})
-	colors = c if c is Dictionary else {}
+	sprite_dir = String(d.get("sprite_dir", sprite_dir))
 	return true

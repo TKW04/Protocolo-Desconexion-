@@ -58,9 +58,9 @@ SOURCES = {
     # Enemigos del 1-2 (tools/gen_world1_enemies.py): punto rojo despierto y el banner barriendo.
     "notification_badge": ("assets/sprites/enemies/badge_chase_00.png", None, 1),
     "spam_banner": ("assets/sprites/enemies/banner_sweep_00.png", None, 1),
-    # Banner obligatorio con el dash del 1-3 (paso 4 de docs/propuesta-1-3.md): PROVISIONAL, el mismo
-    # dibujo del banner hasta el arte propio (paso 8).
-    "spam_banner_dash": ("assets/sprites/enemies/banner_sweep_00.png", None, 1),
+    # Banner obligatorio con el dash del 1-3 (paso 4 de docs/propuesta-1-3.md): desde el paso 8, su
+    # dibujo propio (el banner con el techo bajo y la estela del dash; tools/gen_world1_dnd.py).
+    "spam_banner_dash": ("assets/sprites/props/dnd/banner_dash_card_00.png", None, 1),
     # Pisos 3 y 4 del 1-2 (tools/gen_world1_tower.py): recordatorio, Posponer listo, pop-up
     # translucido (ventana en miniatura) y la barra trabada en el 99 %.
     "reminder_platform": ("assets/sprites/props/tower/reminder_w1_idle_00.png", None, 1),
@@ -74,6 +74,10 @@ SOURCES = {
     "charge_dock": ("assets/sprites/props/calc_room/charge_dock_ready_00.png", None, 1),
     # Mensaje de secreto (tools/gen_memory_pickup.py; paso 4 de docs/propuesta-recuerdos.md).
     "memory_pickup": ("assets/sprites/pickups/memory_pickup_idle_00.png", None, 2),
+    # 1-3 «No molestar» (tools/gen_world1_dnd.py; paso 8 de docs/propuesta-1-3.md).
+    "dnd_switch": ("assets/sprites/props/dnd/dnd_switch_on_00.png", None, 1),
+    "blink_platform": ("assets/sprites/props/dnd/blink_w1_on_04.png", None, 1),
+    "alarm_bell": ("assets/sprites/enemies/alarm_bell/alarm_bell_ring_00.png", None, 1),
 }
 
 

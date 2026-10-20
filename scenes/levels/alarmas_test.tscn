@@ -73,29 +73,35 @@ metadata/help_id = "exit_terminal"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="bell_4a_1" parent="Enemies" instance=ExtResource("8_alarm_bell")]
+[node name="bell_4a_1" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
 position = Vector2(608, 576)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 3}
+metadata/help_id = "alarm_bell"
 
-[node name="bell_4a_2" parent="Enemies" instance=ExtResource("8_alarm_bell")]
+[node name="bell_4a_2" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
 position = Vector2(800, 576)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 3}
+metadata/help_id = "alarm_bell"
 
-[node name="bell_4b_1" parent="Enemies" instance=ExtResource("8_alarm_bell")]
+[node name="bell_4b_1" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
 position = Vector2(1120, 576)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 3}
+metadata/help_id = "alarm_bell"
 
-[node name="bell_4b_2" parent="Enemies" instance=ExtResource("8_alarm_bell")]
+[node name="bell_4b_2" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
 position = Vector2(1376, 640)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 2}
+metadata/help_id = "alarm_bell"
 
-[node name="bell_4c_1" parent="Enemies" instance=ExtResource("8_alarm_bell")]
+[node name="bell_4c_1" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
 position = Vector2(1696, 640)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 2}
+metadata/help_id = "alarm_bell"
 
-[node name="bell_4c_2" parent="Enemies" instance=ExtResource("8_alarm_bell")]
+[node name="bell_4c_2" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
 position = Vector2(1952, 640)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 2}
+metadata/help_id = "alarm_bell"
 
 [node name="banner_4a" parent="Enemies" instance=ExtResource("9_spam_banner") groups=["help_target"]]
 position = Vector2(928, 704)

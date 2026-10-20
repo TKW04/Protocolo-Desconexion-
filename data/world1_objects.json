@@ -413,7 +413,8 @@
 		},
 		"dnd_switch": {
 			"scene": "res://scenes/levels/dnd_switch.tscn",
-			"description": "Interruptor «No molestar» de la sala «Ajustes» del 1-3 (2026-10-19, paso 3 del plan de docs/propuesta-1-3.md §7, §5.1). Panel en la pared del fondo (no solido): un pulso que alcanza su zona (hit_rect de la seccion dnd_switch, como el power_switch con un solo pulso) lo enciende (luna) con Isak de espaldas pose_s y da para siempre la habilidad `ability` (GameState.obtain_ability, como el ability_pickup: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice la linea de historia story_line (story_lines de la seccion dnd_switch; linea importante, texto PROPUESTO, por decidir) y despues sale el aviso de control de la habilidad (data/ability_notices.json). Un solo uso (misma regla que unless_ability): con la habilidad ya obtenida o desbloqueada al cargar arranca encendido e inerte, sin linea ni aviso; tras un rollback sin ella vuelve a estar apagado. Sin ayuda con Q ni ficha del album todavia (paso 8 del plan; arte provisional: el panel del power_switch y una luna dibujada por codigo).",
+			"help_id": "dnd_switch",
+			"description": "Interruptor «No molestar» de la sala «Ajustes» del 1-3 (2026-10-19, paso 3 del plan de docs/propuesta-1-3.md §7, §5.1). Panel en la pared del fondo (no solido): un pulso que alcanza su zona (hit_rect de la seccion dnd_switch, como el power_switch con un solo pulso) lo enciende (luna) con Isak de espaldas pose_s y da para siempre la habilidad `ability` (GameState.obtain_ability, como el ability_pickup: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice la linea de historia story_line (story_lines de la seccion dnd_switch; linea importante, texto PROPUESTO, por decidir) y despues sale el aviso de control de la habilidad (data/ability_notices.json). Un solo uso (misma regla que unless_ability): con la habilidad ya obtenida o desbloqueada al cargar arranca encendido e inerte, sin linea ni aviso; tras un rollback sin ella vuelve a estar apagado. Ayuda con Q dnd_switch y ficha del album (paso 8, 2026-10-20); encendido o inerte no ayuda. Arte por script: tools/gen_world1_dnd.py (dnd_objects_frames.tres: apagado, golpeado y encendido con la luna).",
 			"required": ["id", "ability"],
 			"fields": {"id": "object_id", "ability": "ability", "story_line": "story_line"},
 			"defaults": {},
@@ -488,7 +489,8 @@
 		},
 		"blink_platform": {
 			"scene": "res://scenes/levels/blink_platform.tscn",
-			"description": "Plataforma que parpadea al ritmo (2026-10-19, paso 5 de docs/propuesta-1-3.md §7, §5.3). Plataforma SOLIDA (capa world, no de una via) de width_tiles x 1 (1-3 tiles; la tarjeta y su colision ocupan los card_height_px de arriba de la celda; el grid deja sus celdas en '.'). Sigue su metronomo rhythm (id de un rhythm_zone o alarm_tunnel): encendida la parte on_fraction de cada ciclo, desplazada offset (fraccion del ciclo); group es su etiqueta (A, B, C...). Encendida: solida, 4 segmentos que se vacian; los ultimos warn_frames cuadros a anim_fps (9 a 12 fps: 0,75 s) parpadea; apagada: contorno punteado sin colision (Isak cae sin dano). Con Isak dentro no se materializa hasta que salga. Esquema: rhythm existente, la plataforma dentro de su zona y on_fraction x el ciclo mas corto >= aviso + 0,25 s. Sin ayuda con Q todavia (paso 8). Arte PROVISIONAL por codigo.",
+			"help_id": "blink_platform",
+			"description": "Plataforma que parpadea al ritmo (2026-10-19, paso 5 de docs/propuesta-1-3.md §7, §5.3). Plataforma SOLIDA (capa world, no de una via) de width_tiles x 1 (1-3 tiles; la tarjeta y su colision ocupan los card_height_px de arriba de la celda; el grid deja sus celdas en '.'). Sigue su metronomo rhythm (id de un rhythm_zone o alarm_tunnel): encendida la parte on_fraction de cada ciclo, desplazada offset (fraccion del ciclo); group es su etiqueta (A, B, C...). Encendida: solida, 4 segmentos que se vacian; los ultimos warn_frames cuadros a anim_fps (9 a 12 fps: 0,75 s) parpadea; apagada: contorno punteado sin colision (Isak cae sin dano). Con Isak dentro no se materializa hasta que salga. Esquema: rhythm existente, la plataforma dentro de su zona y on_fraction x el ciclo mas corto >= aviso + 0,25 s. Ayuda con Q blink_platform y ficha del album (paso 8, 2026-10-20). Arte por script: tools/gen_world1_dnd.py (seccion blink_platform).",
 			"required": ["rhythm", "group"],
 			"fields": {
 				"id": "object_id",
@@ -530,7 +532,7 @@
 		},
 		"exceptions_panel": {
 			"scene": "res://scenes/levels/exceptions_panel.tscn",
-			"description": "Decorado de la sala secreta «Excepciones» del 1-3 (2026-10-20, paso 7 de docs/propuesta-1-3.md §7, §5.4): la lista de contactos que pueden saltarse el No molestar. Panel de width_tiles x height_tiles (detras de Isak) con title arriba y una fila por nombre de contacts (icono generico de persona y estrella de favorito; nombres genericos, ninguna marca). SOLO DECORADO: sin colision, sin Q ni ficha del album y sin estado. Textos con la fuente de textos (title y contacts: textos definitivos desde el 2026-10-20). Arte provisional dibujado por codigo (paleta del Mundo 1, seccion exceptions_panel); el definitivo, en el paso 8.",
+			"description": "Decorado de la sala secreta «Excepciones» del 1-3 (2026-10-20, paso 7 de docs/propuesta-1-3.md §7, §5.4): la lista de contactos que pueden saltarse el No molestar. Panel de width_tiles x height_tiles (detras de Isak) con title arriba y una fila por nombre de contacts (icono generico de persona y estrella de favorito; nombres genericos, ninguna marca). SOLO DECORADO: sin colision, sin Q ni ficha del album y sin estado. Textos con la fuente de textos (title y contacts: textos definitivos desde el 2026-10-20). Arte por script desde el paso 8 (2026-10-20): marco nine-patch, persona y estrella de tools/gen_world1_dnd.py (seccion exceptions_panel); el texto, con la fuente de textos.",
 			"required": [],
 			"fields": {
 				"id": "object_id",
@@ -904,7 +906,7 @@
 		"stays_active": true
 	},
 	"exceptions_panel": {
-		"_notes": "PROPUESTA (2026-10-20, paso 7 de docs/propuesta-1-3.md; arte provisional por codigo hasta el paso 8). Colores de mundo1.gpl: panel tile_base, borde y lineas tile_luz, icono banner_gris, estrella borde_luz (no ambar: el ambar es de los puntos). Texto con la fuente de textos (banner_blanco). z_index -1: detras de Isak.",
+		"_notes": "2026-10-20 (paso 7 de docs/propuesta-1-3.md; arte por script desde el paso 8: tools/gen_world1_dnd.py). frame: marco nine-patch de 24x24 con frame_margin_px (borde tile_luz con brillo borde_luz y fondo tile_base); contact: persona generica (banner_gris); star: estrella de favorito (borde_luz, no ambar: el ambar es de los puntos); line_color: raya bajo el titulo (tile_luz). Texto con la fuente de textos (banner_blanco). z_index -1: detras de Isak.",
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 12,
 		"z_index": -1,
@@ -913,11 +915,11 @@
 		"row_height_px": 28,
 		"icon_size_px": 16,
 		"border_px": 2,
-		"panel_color": "#1a2138",
-		"border_color": "#343f66",
-		"line_color": "#343f66",
-		"icon_color": "#aeb8d2",
-		"star_color": "#9bb0e8"
+		"frame": "res://assets/sprites/props/dnd/exceptions_frame_00.png",
+		"frame_margin_px": 8,
+		"contact": "res://assets/sprites/props/dnd/exceptions_contact_00.png",
+		"star": "res://assets/sprites/props/dnd/exceptions_star_00.png",
+		"line_color": "#343f66"
 	},
 	"glitch_wall": {
 		"_notes": "PROPUESTA. Cuadro 0 = pared limpia. Tras una pausa aleatoria entre idle_min_s e idle_max_s (tiempo del mundo, semilla fija por celda) hace una rafaga de los cuadros 1..3 a burst_fps.",
@@ -1051,45 +1053,34 @@
 		"marked_alpha": 0.55
 	},
 	"dnd_switch": {
-		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.1). Interruptor «No molestar» (DndSwitch). Arte PROVISIONAL (sin hoja nueva; el definitivo es el paso 8): frames y animaciones off / hit / on del power_switch (tools/gen_calc_encounter.py) y, encendido, una luna creciente dibujada por codigo en moon_color (borde_luz de mundo1.gpl) sobre moon_center_px con moon_radius_px. sprite_center_px, hit_rect y pose_s como el power_switch (un solo pulso). story_lines: id -> linea importante de Eco al encenderlo la primera vez (admite {apodo}). TEXTO PROPUESTO, POR DECIDIR con el usuario (idea de tono de la propuesta: Eco se presenta como la unica excepcion al No molestar).",
-		"frames": "res://assets/sprites/calc_encounter_frames.tres",
-		"anim_off": "power_switch_off",
-		"anim_hit": "power_switch_hit",
-		"anim_on": "power_switch_on",
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.1). Interruptor «No molestar» (DndSwitch). Arte por script desde el paso 8 (2026-10-20): frames dnd_switch_off / hit / on de tools/gen_world1_dnd.py (panel como el power_switch con una luna creciente: apagada, destello al golpe y encendida en borde_luz con el borde cian). sprite_center_px, hit_rect y pose_s como el power_switch (un solo pulso). story_lines: id -> linea importante de Eco al encenderlo la primera vez (admite {apodo}). TEXTO PROPUESTO, POR DECIDIR con el usuario (idea de tono de la propuesta: Eco se presenta como la unica excepcion al No molestar).",
+		"frames": "res://assets/sprites/dnd_objects_frames.tres",
+		"anim_off": "dnd_switch_off",
+		"anim_hit": "dnd_switch_hit",
+		"anim_on": "dnd_switch_on",
 		"sprite_center_px": [32, 4],
 		"hit_rect": [8, -14, 48, 48],
 		"pose_s": 0.45,
-		"moon_center_px": [32, -22],
-		"moon_radius_px": 6.0,
-		"moon_color": "#9bb0e8",
 		"story_duration_s": 4.0,
 		"story_lines": {
 			"dnd_1_3": "«No molestar» activado. Tranquilo, {apodo}: yo no cuento. Soy tu única excepción."
 		}
 	},
 	"rhythm_zone": {
-		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). Icono de vibracion del metronomo, dibujado por codigo (PROVISIONAL, paso 8): celular en icon_color (banner_gris) y arcos en arc_dim_color (fondo_medio) que se encienden en arc_lit_color (borde_luz) la primera arc_lit_fraction de cada ciclo; icon_z_index: detras de los objetos.",
-		"icon_color": "#aeb8d2",
-		"arc_dim_color": "#2e4688",
-		"arc_lit_color": "#9bb0e8",
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). Icono de vibracion del metronomo (arte por script desde el paso 8, 2026-10-20: tools/gen_world1_dnd.py): icon_dim (celular con arcos apagados) e icon_lit (pantalla encendida y arcos en borde_luz) la primera arc_lit_fraction de cada ciclo, desplazado lit_shake_px; centrado en su celda; icon_z_index: detras de los objetos.",
+		"icon_dim": "res://assets/sprites/props/dnd/rhythm_icon_dim_00.png",
+		"icon_lit": "res://assets/sprites/props/dnd/rhythm_icon_lit_00.png",
 		"arc_lit_fraction": 0.25,
+		"lit_shake_px": 2.0,
 		"icon_z_index": -1
 	},
 	"blink_platform": {
-		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). card_height_px: alto de la tarjeta y de su colision (arriba de la celda, como el recordatorio). warn_frames / anim_fps: parpadeo de aviso antes de apagarse (9 a 12 fps = 0,75 s; regla de 6-12 cuadros). min_on_extra_s: lo que debe sobrar de la parte encendida tras el aviso (esquema). Colores de mundo1.gpl, dibujo PROVISIONAL por codigo (paso 8): body_color tile_luz, edge_color y segment_lit_color borde_luz, segment_unlit_color tile_base, off_color resplandor (contorno punteado apagada).",
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). card_height_px: alto de la tarjeta y de su colision (arriba de la celda, como el recordatorio). warn_frames / anim_fps: parpadeo de aviso antes de apagarse (9 a 12 fps = 0,75 s; regla de 6-12 cuadros): un cuadro de cada dos es el de aviso (solo el contorno). min_on_extra_s: lo que debe sobrar de la parte encendida tras el aviso (esquema). Arte por script desde el paso 8 (2026-10-20, tools/gen_world1_dnd.py): texture_dir + blink_w<ancho>_on_<segmentos llenos 00-04>.png, _warn_00.png y _off_00.png (contorno punteado apagada).",
 		"card_height_px": 32,
 		"warn_frames": 9,
 		"anim_fps": 12.0,
 		"min_on_extra_s": 0.25,
-		"body_color": "#343f66",
-		"edge_color": "#9bb0e8",
-		"segment_lit_color": "#9bb0e8",
-		"segment_unlit_color": "#1a2138",
-		"off_color": "#4f71c4",
-		"off_dash_px": 8.0,
-		"segment_w_px": 10.0,
-		"segment_h_px": 8.0,
-		"segment_gap_px": 4.0
+		"texture_dir": "res://assets/sprites/props/dnd/"
 	},
 	"laser_switch": {
 		"_notes": "PROPUESTA (2026-10-17). Interruptor laser (LaserSwitch): misma colocacion que laser_receiver (hit_rect y sprite_center_px); frames laser_switch_idle/hit/on de tools/gen_calc_encounter.py.",

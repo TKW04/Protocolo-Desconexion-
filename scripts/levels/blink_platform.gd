@@ -17,7 +17,7 @@
 ##   salga.
 ## - Tiempo del mundo: lo marca su metronomo (el Debug lo ralentiza).
 ## El origen del nodo es la esquina superior izquierda de su primera celda.
-## Arte PROVISIONAL por codigo (paso 8: arte por script).
+## Arte por script (paso 8, 2026-10-20): tools/gen_world1_dnd.py.
 class_name BlinkPlatform
 extends StaticBody2D
 
@@ -128,7 +128,7 @@ func get_card_rect() -> Rect2:
 	return Rect2(global_position, get_card_size())
 
 
-## Ayuda de Eco (cuando la tenga, paso 8): siempre (no se destruye).
+## Ayuda de Eco (tipo blink_platform): siempre (no se destruye).
 func is_help_available() -> bool:
 	return true
 
@@ -176,40 +176,21 @@ func _isak_overlaps() -> bool:
 	return LevelLookup.isak_body_rect(_isak).intersects(get_card_rect())
 
 
-func _draw() -> void:
-	var size: Vector2 = get_card_size()
-	var edge := Color(String(_config.get("edge_color", "#9bb0e8")))
+## Textura del estado actual (tools/gen_world1_dnd.py): on con los segmentos
+## llenos, warn (un cuadro de cada dos del aviso) u off (contorno punteado).
+func get_texture_name() -> String:
+	var base: String = "blink_w%d_" % clampi(width_tiles, 1, 3)
 	if not _solid:
-		var dots := Color(String(_config.get("off_color", "#4f71c4")))
-		var dash: float = float(_config.get("off_dash_px", 8.0))
-		var x: float = 0.0
-		while x < size.x:
-			var w: float = minf(dash, size.x - x)
-			draw_rect(Rect2(Vector2(x, 0.0), Vector2(w, 3.0)), dots)
-			draw_rect(Rect2(Vector2(x, size.y - 3.0), Vector2(w, 3.0)), dots)
-			x += dash * 2.0
-		var y: float = 0.0
-		while y < size.y:
-			var h: float = minf(dash, size.y - y)
-			draw_rect(Rect2(Vector2(0.0, y), Vector2(3.0, h)), dots)
-			draw_rect(Rect2(Vector2(size.x - 3.0, y), Vector2(3.0, h)), dots)
-			y += dash * 2.0
-		return
+		return base + "off_00.png"
 	if is_warning():
 		var fps: float = maxf(float(_config.get("anim_fps", 12.0)), 1.0)
-		# Parpadeo: un cuadro de cada dos (a anim_fps) se dibuja solo el contorno.
 		if int(floor(get_time_to_off() * fps)) % 2 == 1:
-			draw_rect(Rect2(Vector2.ZERO, size), edge, false, 2.0)
-			return
-	draw_rect(Rect2(Vector2.ZERO, size), Color(String(_config.get("body_color", "#343f66"))))
-	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, 4.0)), edge)
-	var lit := Color(String(_config.get("segment_lit_color", "#9bb0e8")))
-	var unlit := Color(String(_config.get("segment_unlit_color", "#1a2138")))
-	var seg := Vector2(float(_config.get("segment_w_px", 10.0)), float(_config.get("segment_h_px", 8.0)))
-	var gap: float = float(_config.get("segment_gap_px", 4.0))
-	var total: float = SEG_COUNT * seg.x + (SEG_COUNT - 1) * gap
-	var x0: float = (size.x - total) * 0.5
-	var lit_count: int = get_lit_segments()
-	for i: int in SEG_COUNT:
-		var r := Rect2(Vector2(x0 + i * (seg.x + gap), (size.y - seg.y) * 0.5 + 2.0), seg)
-		draw_rect(r, lit if i < lit_count else unlit)
+			return base + "warn_00.png"
+	return base + "on_%02d.png" % get_lit_segments()
+
+
+func _draw() -> void:
+	var dir: String = String(_config.get("texture_dir", "res://assets/sprites/props/dnd/"))
+	var texture := load(dir + get_texture_name()) as Texture2D
+	if texture != null:
+		draw_texture(texture, Vector2.ZERO)

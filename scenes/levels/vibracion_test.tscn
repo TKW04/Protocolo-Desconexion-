@@ -58,7 +58,7 @@ start_mode = "on_enter"
 tempo_steps_s = [3.2, 2.6, 2.0]
 zone = [6, 1, 25, 10]
 
-[node name="blink_2a_a" parent="Objects" instance=ExtResource("6_blink_platform")]
+[node name="blink_2a_a" parent="Objects" instance=ExtResource("6_blink_platform") groups=["help_target"]]
 position = Vector2(576, 640)
 group_id = "A"
 object_id = &"blink_2a_a"
@@ -66,8 +66,9 @@ offset = 0.0
 on_fraction = 0.6
 rhythm_id = "ritmo_v"
 width_tiles = 2
+metadata/help_id = "blink_platform"
 
-[node name="blink_2a_b" parent="Objects" instance=ExtResource("6_blink_platform")]
+[node name="blink_2a_b" parent="Objects" instance=ExtResource("6_blink_platform") groups=["help_target"]]
 position = Vector2(768, 640)
 group_id = "B"
 object_id = &"blink_2a_b"
@@ -75,8 +76,9 @@ offset = 0.5
 on_fraction = 0.6
 rhythm_id = "ritmo_v"
 width_tiles = 2
+metadata/help_id = "blink_platform"
 
-[node name="blink_2b_a" parent="Objects" instance=ExtResource("6_blink_platform")]
+[node name="blink_2b_a" parent="Objects" instance=ExtResource("6_blink_platform") groups=["help_target"]]
 position = Vector2(1152, 512)
 group_id = "A"
 object_id = &"blink_2b_a"
@@ -84,8 +86,9 @@ offset = 0.0
 on_fraction = 0.5
 rhythm_id = "ritmo_v"
 width_tiles = 2
+metadata/help_id = "blink_platform"
 
-[node name="blink_2b_b" parent="Objects" instance=ExtResource("6_blink_platform")]
+[node name="blink_2b_b" parent="Objects" instance=ExtResource("6_blink_platform") groups=["help_target"]]
 position = Vector2(1344, 384)
 group_id = "B"
 object_id = &"blink_2b_b"
@@ -93,8 +96,9 @@ offset = 0.3333
 on_fraction = 0.5
 rhythm_id = "ritmo_v"
 width_tiles = 2
+metadata/help_id = "blink_platform"
 
-[node name="blink_2b_c" parent="Objects" instance=ExtResource("6_blink_platform")]
+[node name="blink_2b_c" parent="Objects" instance=ExtResource("6_blink_platform") groups=["help_target"]]
 position = Vector2(1536, 256)
 group_id = "C"
 object_id = &"blink_2b_c"
@@ -102,6 +106,7 @@ offset = 0.6667
 on_fraction = 0.5
 rhythm_id = "ritmo_v"
 width_tiles = 2
+metadata/help_id = "blink_platform"
 
 [node name="terminal_vibracion" parent="Objects" instance=ExtResource("7_exit_terminal") groups=["help_target"]]
 position = Vector2(2112, 512)

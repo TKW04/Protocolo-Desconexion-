@@ -6,9 +6,10 @@
 ## Solo decorado: sin colision, sin Q (no esta en el grupo de ayuda) y sin
 ## estado. Panel de width_tiles x height_tiles con el titulo arriba y una fila
 ## por contacto (icono generico de persona, nombre y una estrella de favorito).
-## Nombres genericos («Mamá», «Abuelito»), ninguna marca. ARTE PROVISIONAL
-## dibujado por codigo con la paleta del Mundo 1 (el definitivo, en el paso 8);
-## textos con la fuente de textos. Va detras de Isak (z_index de la seccion).
+## Nombres genericos («Mamá», «Abuelito»), ninguna marca; textos definitivos
+## desde el 2026-10-20. Arte por script (paso 8): marco nine-patch, persona y
+## estrella (borde_luz) de tools/gen_world1_dnd.py; textos con la fuente de
+## textos. Va detras de Isak (z_index de la seccion).
 ## El origen del nodo es la esquina superior izquierda de la primera celda.
 class_name ExceptionsPanel
 extends Node2D
@@ -19,7 +20,7 @@ const GROUP: StringName = &"exceptions_panel"
 @export_range(1, 8) var height_tiles: int = 3
 ## Id propio (opcional).
 @export var object_id: StringName = &""
-## Titulo del panel (PROPUESTA de §5.4).
+## Titulo del panel (definitivo desde el 2026-10-20).
 @export var title: String = "Permitir llamadas de: Favoritos"
 ## Nombres de las filas, de arriba abajo (genericos, sin marcas).
 @export var contacts: Array = ["Mamá", "Abuelito"]
@@ -31,6 +32,7 @@ var _labels: Array[Label] = []
 func _ready() -> void:
 	add_to_group(GROUP)
 	z_index = int(_config.get("z_index", -1))
+	_build_frame()
 	_build_labels()
 	queue_redraw()
 
@@ -98,32 +100,44 @@ func _make_label(font: Font, size: int, text: String, pos: Vector2, box: Vector2
 	return label
 
 
+func _texture(key: String) -> Texture2D:
+	return load(String(_config.get(key, ""))) as Texture2D if _config.has(key) else null
+
+
+## Marco nine-patch detras de los textos (hijo show_behind_parent: queda detras
+## de lo que dibuja _draw y de las etiquetas).
+func _build_frame() -> void:
+	var texture: Texture2D = _texture("frame")
+	if texture == null:
+		return
+	var margin: int = int(_config.get("frame_margin_px", 8))
+	var frame := NinePatchRect.new()
+	frame.name = "Frame"
+	frame.texture = texture
+	frame.patch_margin_left = margin
+	frame.patch_margin_top = margin
+	frame.patch_margin_right = margin
+	frame.patch_margin_bottom = margin
+	frame.size = get_size_px()
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.show_behind_parent = true
+	add_child(frame)
+	move_child(frame, 0)
+
+
 func _draw() -> void:
 	var size: Vector2 = get_size_px()
 	var border: float = float(_config.get("border_px", 2))
-	draw_rect(Rect2(Vector2.ZERO, size), _color("border_color", "#343f66"))
-	draw_rect(Rect2(Vector2.ONE * border, size - Vector2.ONE * border * 2.0), _color("panel_color", "#1a2138"))
 	var pad: float = float(_config.get("padding_px", 8))
 	var title_h: float = float(_config.get("title_height_px", 24))
 	var row_h: float = float(_config.get("row_height_px", 28))
 	var icon: float = float(_config.get("icon_size_px", 16))
-	var line: Color = _color("line_color", "#343f66")
-	var icon_color: Color = _color("icon_color", "#aeb8d2")
-	var star_color: Color = _color("star_color", "#9bb0e8")
-	draw_rect(Rect2(pad, pad + title_h - border, size.x - pad * 2.0, border), line)
+	draw_rect(Rect2(pad, pad + title_h - border, size.x - pad * 2.0, border), _color("line_color", "#343f66"))
+	var contact: Texture2D = _texture("contact")
+	var star: Texture2D = _texture("star")
 	for i: int in _rows().size():
-		var top: float = pad + title_h + i * row_h
-		var mid: float = top + row_h * 0.5
-		# Persona generica: cabeza y hombros.
-		draw_rect(Rect2(pad + icon * 0.3, mid - icon * 0.5, icon * 0.4, icon * 0.4), icon_color)
-		draw_rect(Rect2(pad, mid, icon, icon * 0.5), icon_color)
-		_draw_star(Vector2(size.x - pad - icon * 0.5, mid), icon * 0.5, star_color)
-
-
-func _draw_star(center: Vector2, radius: float, color: Color) -> void:
-	var points := PackedVector2Array()
-	for k: int in 10:
-		var r: float = radius if k % 2 == 0 else radius * 0.45
-		var a: float = -PI * 0.5 + k * PI / 5.0
-		points.append((center + Vector2(cos(a), sin(a)) * r).round())
-	draw_colored_polygon(points, color)
+		var mid: float = pad + title_h + i * row_h + row_h * 0.5
+		if contact != null:
+			draw_texture(contact, Vector2(pad, roundf(mid - icon * 0.5)))
+		if star != null:
+			draw_texture(star, Vector2(size.x - pad - icon, roundf(mid - icon * 0.5)))
