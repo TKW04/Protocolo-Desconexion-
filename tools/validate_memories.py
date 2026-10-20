@@ -17,7 +17,8 @@ Comprueba:
     el nivel del mensaje ya tiene JSON, su secreto `secret` lo ofrece (recompensa memory con su
     memory_id) y el nivel tiene un objeto memory_pickup con ese memory_id; y al reves, toda
     recompensa memory y todo memory_pickup de data/levels/*.json apunta a un mensaje (kind secret)
-    de ese nivel y de ese secreto.
+    de ese nivel y de ese secreto (una sala de prueba con stands_for «W-N», de ese subnivel;
+    2026-10-20, paso 7 de docs/propuesta-1-3.md: la sala «Excepciones» con msg_1_3).
 
 Uso (desde la raiz del repo): python3 tools/validate_memories.py [data/memories.json]
 Sale con 1 si hay errores.
@@ -94,7 +95,8 @@ def level_links(repo=REPO):
             secrets[str(s.get("id", ""))] = s.get("memory_id") if "memory" in rewards else None
         pickups = {str(o.get("params", {}).get("memory_id", "")) for o in level.get("objects", [])
                    if o.get("type") == "memory_pickup"}
-        out[str(level.get("id", name[:-5]))] = {"secrets": secrets, "pickups": pickups}
+        out[str(level.get("id", name[:-5]))] = {"secrets": secrets, "pickups": pickups,
+                                                "stands_for": level.get("stands_for")}
     return out
 
 
@@ -240,7 +242,7 @@ def _check_level_links(items, links, errors):
             if m is None or m.get("kind") != "secret":
                 errors.append("nivel %s, secreto %s: la recompensa memory apunta a %s, que no es un mensaje "
                               "de data/memories.json" % (level_id, secret, mid))
-            elif m.get("level") != level_id or m.get("secret") != secret:
+            elif m.get("level") != (info.get("stands_for") or level_id) or m.get("secret") != secret:
                 errors.append("nivel %s, secreto %s: el mensaje %s es del nivel %s y del secreto %s"
                               % (level_id, secret, mid, m.get("level"), m.get("secret")))
         for mid in sorted(info["pickups"]):
@@ -248,7 +250,7 @@ def _check_level_links(items, links, errors):
             if m is None or m.get("kind") != "secret":
                 errors.append("nivel %s: memory_pickup con memory_id %s, que no es un mensaje de "
                               "data/memories.json" % (level_id, mid))
-            elif m.get("level") != level_id:
+            elif m.get("level") != (info.get("stands_for") or level_id):
                 errors.append("nivel %s: memory_pickup del mensaje %s, que es del nivel %s"
                               % (level_id, mid, m.get("level")))
 

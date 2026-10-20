@@ -32,7 +32,7 @@
 		"glitch_wall": {
 			"scene": "res://scenes/levels/glitch_wall.tscn",
 			"help_id": "glitch_wall",
-			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json). PUERTA (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc; opcional, sin defaults: el 1-1 no cambia): con door_when (id de un power_switch) la pared, abierta o no, se TRANSFORMA en una puerta (abertura de 1x2, no solida) cuando ese interruptor se activa; lamps (ids, max 3) son las luces del dintel, una por pieza hecha (is_activated). done_if_ally: con ese asistente conocido al cargar, ya es puerta con todas las luces. Solo para bloques de 1x2 (esquema).",
+			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json). PUERTA (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc; opcional, sin defaults: el 1-1 no cambia): con door_when (id de un power_switch) la pared, abierta o no, se TRANSFORMA en una puerta (abertura de 1x2, no solida) cuando ese interruptor se activa; lamps (ids, max 3) son las luces del dintel, una por pieza hecha (is_activated). done_if_ally: con ese asistente conocido al cargar, ya es puerta con todas las luces. Solo para bloques de 1x2 (esquema). SOLO CON EL DEBUG (2026-10-20, paso 7 de docs/propuesta-1-3.md §5.4, sala «Excepciones» del 1-3; opcional, sin default en el nivel): con visible_only_with_debug true no hace rafagas de glitch mientras el Debug no revela nada (DebugMode.is_revealing): parece terreno normal; con el Debug, glitch y disolucion como siempre. La Q la sigue marcando.",
 			"required": [],
 			"fields": {
 				"width_tiles": "width_tiles",
@@ -41,7 +41,8 @@
 				"id": "object_id",
 				"door_when": "door_when",
 				"lamps": "door_lamps",
-				"done_if_ally": "done_if_ally"
+				"done_if_ally": "done_if_ally",
+				"visible_only_with_debug": "visible_only_with_debug"
 			},
 			"defaults": {
 				"width_tiles": 1,
@@ -527,6 +528,27 @@
 			},
 			"example": {"type": "alarm_tunnel", "x": 190, "y": 3, "params": {"id": "tunel_4", "zone": [192, 6, 45, 5], "stages": [{"x_from": 192, "x_to": 206, "cycle_s": 2.0}, {"x_from": 207, "x_to": 221, "cycle_s": 1.6}, {"x_from": 222, "x_to": 236, "cycle_s": 1.4}]}}
 		},
+		"exceptions_panel": {
+			"scene": "res://scenes/levels/exceptions_panel.tscn",
+			"description": "Decorado de la sala secreta «Excepciones» del 1-3 (2026-10-20, paso 7 de docs/propuesta-1-3.md §7, §5.4): la lista de contactos que pueden saltarse el No molestar. Panel de width_tiles x height_tiles (detras de Isak) con title arriba y una fila por nombre de contacts (icono generico de persona y estrella de favorito; nombres genericos, ninguna marca). SOLO DECORADO: sin colision, sin Q ni ficha del album y sin estado. Textos con la fuente de textos (title y contacts son PROPUESTA). Arte provisional dibujado por codigo (paleta del Mundo 1, seccion exceptions_panel); el definitivo, en el paso 8.",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"title": "title",
+				"contacts": "contacts"
+			},
+			"defaults": {
+				"width_tiles": 4,
+				"height_tiles": 3
+			},
+			"level_params": {
+				"width_tiles": {"min": 2, "max": 16, "int": true},
+				"height_tiles": {"min": 2, "max": 8, "int": true}
+			},
+			"example": {"type": "exceptions_panel", "x": 123, "y": 2, "params": {"width_tiles": 5, "height_tiles": 3, "title": "Permitir llamadas de: Favoritos", "contacts": ["Mamá", "Abuelito"]}}
+		},
 		"laser_switch": {
 			"scene": "res://scenes/levels/laser_switch.tscn",
 			"help_id": "laser_switch",
@@ -880,6 +902,22 @@
 		"hit_rect": [12, 0, 40, 64],
 		"blink_s": 0.5,
 		"stays_active": true
+	},
+	"exceptions_panel": {
+		"_notes": "PROPUESTA (2026-10-20, paso 7 de docs/propuesta-1-3.md; arte provisional por codigo hasta el paso 8). Colores de mundo1.gpl: panel tile_base, borde y lineas tile_luz, icono banner_gris, estrella borde_luz (no ambar: el ambar es de los puntos). Texto con la fuente de textos (banner_blanco). z_index -1: detras de Isak.",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"z_index": -1,
+		"padding_px": 8,
+		"title_height_px": 24,
+		"row_height_px": 28,
+		"icon_size_px": 16,
+		"border_px": 2,
+		"panel_color": "#1a2138",
+		"border_color": "#343f66",
+		"line_color": "#343f66",
+		"icon_color": "#aeb8d2",
+		"star_color": "#9bb0e8"
 	},
 	"glitch_wall": {
 		"_notes": "PROPUESTA. Cuadro 0 = pared limpia. Tras una pausa aleatoria entre idle_min_s e idle_max_s (tiempo del mundo, semilla fija por celda) hace una rafaga de los cuadros 1..3 a burst_fps.",

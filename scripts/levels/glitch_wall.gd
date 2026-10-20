@@ -28,6 +28,14 @@
 ## da Q (is_help_available) e is_activated() es verdadero. Con done_if_ally ya
 ## conocido al cargar, es puerta desde el principio con las luces que toquen.
 ## Sin door_when (el 1-1) nada de esto cambia.
+##
+## SOLO CON EL DEBUG (2026-10-20, paso 7 de docs/propuesta-1-3.md §5.4, sala
+## «Excepciones» del 1-3): con visible_only_with_debug la pared no hace rafagas
+## mientras no haya nada revelado (DebugMode.is_revealing: Debug activo o su
+## persistencia): se ve como terreno normal (cuadro 0 del borde que toque). Con el
+## Debug muestra el glitch y se disuelve igual que siempre. La ayuda con Q no
+## cambia (decision 8 de la propuesta: la Q la marca). Sin el param (1-1, 1-2),
+## como antes.
 ## El origen del nodo es la esquina superior izquierda de la primera celda.
 class_name GlitchWall
 extends StaticBody2D
@@ -66,6 +74,8 @@ const ISAK_LAYER: int = 2
 @export var door_lamps: Array = []
 ## Con este asistente conocido al cargar, ya es puerta ("" = nunca).
 @export var done_if_ally: StringName = &""
+## Sin el Debug parece terreno normal (sin rafagas de glitch).
+@export var visible_only_with_debug: bool = false
 
 ## Se ha transformado en puerta.
 signal became_door
@@ -178,6 +188,11 @@ func become_door(instant: bool = false) -> bool:
 	return true
 
 
+## Se ve el glitch: siempre, salvo con visible_only_with_debug sin nada revelado.
+func is_glitch_shown() -> bool:
+	return not visible_only_with_debug or DebugMode.is_revealing()
+
+
 func is_open() -> bool:
 	return _open
 
@@ -259,6 +274,11 @@ func advance(delta: float) -> void:
 		return
 	if _dissolve_time >= 0.0:
 		_advance_dissolve(delta)
+		return
+	if not is_glitch_shown():
+		for i: int in _cells.size():
+			_burst_time[i] = -1.0
+			_cells[i].frame_coords = Vector2i(0, _cells[i].frame_coords.y)
 		return
 	var frames: int = int(_config.get("frames", 4))
 	var fps: float = float(_config.get("burst_fps", 12.0))

@@ -191,6 +191,23 @@ class LevelLinks(unittest.TestCase):
                             for e in errors), errors)
         self.assertTrue(any("memory_pickup con memory_id msg_x, que no es un mensaje" in e for e in errors), errors)
 
+    def test_test_room_standing_for_the_level(self):
+        """Una sala de prueba con stands_for (2026-10-20, paso 7 de docs/propuesta-1-3.md) ofrece
+        el mensaje de ese subnivel; sin stands_for, no."""
+        links = self._links()
+        links["excepciones_test"] = {"secrets": {"secreto_a": "msg_1_1"}, "pickups": {"msg_1_1"},
+                                     "stands_for": "1-1"}
+        self.assertEqual(self._validate(links), [])
+        links["excepciones_test"]["stands_for"] = None
+        errors = self._validate(links)
+        self.assertTrue(any("nivel excepciones_test, secreto secreto_a: el mensaje msg_1_1 es del nivel 1-1" in e
+                            for e in errors), errors)
+
+    def test_real_excepciones_room_offers_msg_1_3(self):
+        links = vm.level_links()
+        self.assertEqual(links["excepciones_test"]["secrets"]["secreto_excepciones"], "msg_1_3")
+        self.assertEqual(links["excepciones_test"]["stands_for"], "1-3")
+
 
 if __name__ == "__main__":
     unittest.main()

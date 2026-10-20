@@ -11,6 +11,7 @@ Reglas:
   - checkpoints <-> celdas C del grid (uno a uno), enemigos <-> celdas E (uno a uno),
     secretos <-> celdas S, o {object: <tipo>} con un objeto de ese tipo en su x, y;
     requires_upgrade (si esta) es una mejora de data/upgrades.json ("pista:nivel" o legacy_id) y needs_debug un booleano;
+    forbid_abilities (2026-10-20, paso 7 de docs/propuesta-1-3.md) una lista no vacia de habilidades conocidas;
     reward (opcional) es una recompensa conocida o una lista de ellas (attention_points, power_bank,
     extra_life, memory); la recompensa memory (mensaje de secreto, 2026-10-19, paso 4 de
     docs/propuesta-recuerdos.md) lleva memory_id: un mensaje (kind secret) de data/memories.json de
@@ -56,6 +57,8 @@ Reglas:
     _check_validation);
   - id: <mundo>-<nivel> o, para un nivel de prueba que no es del juego, <nombre>_test
     (p. ej. tower_test; su escena es scenes/levels/<nombre>_test.tscn);
+    un nivel de prueba puede llevar stands_for «W-N» (2026-10-20): hace las veces de ese subnivel
+    para los mensajes de secreto (el memory_id de su recompensa memory es de ese nivel);
   - ayuda de Eco con Q: todo help_id (del tipo en el catalogo, del enemigo en
     data/enemies/<type>.json o propio de un objeto, enemigo o checkpoint del
     nivel; "" = sin Q) existe en data/help.json.
@@ -103,7 +106,7 @@ BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_p
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
-                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch"}
+                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel"}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
 # interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
 SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")
@@ -253,6 +256,16 @@ class LevelValidator:
                     self.error("habilidad desconocida en abilities_available: '%s'" % name)
                 elif not isinstance(value, bool):
                     self.error("abilities_available.%s debe ser true o false" % name)
+        if "stands_for" in self.level:
+            # Sala de prueba que hace las veces de un subnivel (2026-10-20, paso 7 de
+            # docs/propuesta-1-3.md: la sala «Excepciones» ofrece msg_1_3 del 1-3).
+            target = self.level["stands_for"]
+            if not TEST_LEVEL_ID.fullmatch(self.level["id"]):
+                self.error("'stands_for' solo vale en un nivel de prueba (<nombre>_test)")
+            elif not (isinstance(target, str) and re.fullmatch(r"\d+-\d+", target)):
+                self.error("'stands_for' debe ser un subnivel <mundo>-<nivel> (p. ej. 1-3)")
+            elif int(target.split("-")[0]) != self.level["world"]:
+                self.error("'stands_for' (%s) no es del mundo %d" % (target, self.level["world"]))
 
     def _check_grid(self):
         grid = self.level["grid"]
@@ -576,6 +589,10 @@ class LevelValidator:
                                % (what, field, params[field], ", ".join(allowed)), y, x)
             if kind == "charger":
                 self._check_charger(what, x, y, params)
+            if kind == "glitch_wall" and not isinstance(params.get("visible_only_with_debug", False), bool):
+                self.error("%s: visible_only_with_debug debe ser true o false" % what, y, x)
+            if kind == "exceptions_panel":
+                self._check_exceptions_panel(what, x, y, params)
             if isinstance(entry.get("level_params"), dict):
                 self._check_object_params(what, x, y, params, entry["level_params"])
             self.object_anchors.add((kind, (x, y)))
@@ -874,6 +891,16 @@ class LevelValidator:
                    and isinstance(o.get("params"), dict) and o["params"].get("id") == ident
                    for o in self.level.get("objects", []))
 
+    def _check_exceptions_panel(self, what, x, y, params):
+        """Decorado de la sala «Excepciones» (2026-10-20): title texto no vacio y contacts lista de
+        nombres no vacios."""
+        if "title" in params and not (isinstance(params["title"], str) and params["title"].strip()):
+            self.error("%s: title debe ser un texto no vacio" % what, y, x)
+        contacts = params.get("contacts")
+        if contacts is not None and not (isinstance(contacts, list) and contacts
+                                         and all(isinstance(c, str) and c.strip() for c in contacts)):
+            self.error("%s: contacts debe ser una lista no vacia de nombres" % what, y, x)
+
     def _check_object_params(self, what, x, y, params, spec):
         """Params numericos de un objeto con level_params en el catalogo (2026-10-16: recordatorio,
         Posponer, pop-up translucido y barra del 99 %): numericos, en [min, max] y enteros si int."""
@@ -1073,7 +1100,8 @@ class LevelValidator:
         elif memory.get("kind") != "secret":
             self.error("%s '%s': memory_id '%s' no es un mensaje de secreto (kind secret)"
                        % (what, entry.get("id"), mid), pos[1], pos[0])
-        elif memory.get("level") != self.level.get("id") or memory.get("secret") != entry.get("id"):
+        elif memory.get("level") != (self.level.get("stands_for") or self.level.get("id")) \
+                or memory.get("secret") != entry.get("id"):
             self.error("%s '%s': el mensaje %s es del nivel %s y del secreto %s en data/memories.json"
                        % (what, entry.get("id"), mid, memory.get("level"), memory.get("secret")), pos[1], pos[0])
         if mid in claimed:
@@ -1104,6 +1132,19 @@ class LevelValidator:
                                % (what, entry.get("id"), entry["requires_upgrade"]), pos[1], pos[0])
             if "needs_debug" in entry and not isinstance(entry["needs_debug"], bool):
                 self.error("%s '%s': needs_debug debe ser booleano" % (what, entry.get("id")), pos[1], pos[0])
+            if "forbid_abilities" in entry:
+                # Ruta del secreto sin esas habilidades (2026-10-20, paso 7 de docs/propuesta-1-3.md §5.4:
+                # «Excepciones» sin el dash). El validador de alcanzabilidad la exige en el paso 9.
+                forbid = entry["forbid_abilities"]
+                if not (isinstance(forbid, list) and forbid and all(isinstance(a, str) for a in forbid)) \
+                        or len(set(forbid)) != len(forbid):
+                    self.error("%s '%s': forbid_abilities debe ser una lista no vacia de habilidades sin repetir"
+                               % (what, entry.get("id")), pos[1], pos[0])
+                else:
+                    for name in forbid:
+                        if name not in KNOWN_ABILITIES:
+                            self.error("%s '%s': habilidad desconocida en forbid_abilities: '%s'"
+                                       % (what, entry.get("id"), name), pos[1], pos[0])
             if "object" in entry:
                 if (entry["object"], pos) not in self.object_anchors:
                     self.error("%s '%s': no hay ningun objeto '%s' en esa celda"

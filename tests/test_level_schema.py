@@ -543,6 +543,63 @@ class LevelSchemaTest(unittest.TestCase):
         obj(level, "eco_encounter")["params"]["eco_offset_tiles"] = [2.5, 7]
         self.assert_fails(level, "eco_offset_tiles debe ser [columna, fila]")
 
+    # --- Secreto «Excepciones» (2026-10-20, paso 7 de docs/propuesta-1-3.md §7 y §5.4) ---
+
+    def _excepciones(self):
+        with open(os.path.join(ROOT, "data", "levels", "excepciones_test.json"), encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def test_excepciones_room_is_valid(self):
+        level = self._excepciones()
+        self.assertEqual(vls.validate_level(level), [])
+        self.assertEqual(level["stands_for"], "1-3")
+        wall = obj(level, "glitch_wall")
+        self.assertIs(wall["params"]["visible_only_with_debug"], True)
+        sec = level["secrets"][0]
+        self.assertEqual((sec["id"], sec["memory_id"], sec["needs_debug"], sec["forbid_abilities"]),
+                         ("secreto_excepciones", "msg_1_3", True, ["dash"]))
+        self.assertEqual(obj(level, "memory_pickup")["params"]["memory_id"], "msg_1_3")
+
+    def test_glitch_wall_visible_only_with_debug_is_boolean(self):
+        obj(self.level, "glitch_wall")["params"]["visible_only_with_debug"] = True
+        self.assertEqual(vls.validate_level(self.level), [])
+        obj(self.level, "glitch_wall")["params"]["visible_only_with_debug"] = "si"
+        self.assert_fails(self.level, "visible_only_with_debug debe ser true o false")
+
+    def test_exceptions_panel_rules(self):
+        entry = self._add("exceptions_panel", {"id": "panel_test", "width_tiles": 3, "height_tiles": 2,
+                                               "contacts": ["Mamá"]})
+        entry["y"] -= 2  # en la pared del fondo, por encima del suelo
+        self.assertEqual(vls.validate_level(self.level), [])
+        self.level["objects"][-1]["params"]["contacts"] = []
+        self.assert_fails(self.level, "contacts debe ser una lista no vacia de nombres")
+        self.level["objects"][-1]["params"]["contacts"] = ["Mamá"]
+        self.level["objects"][-1]["params"]["title"] = " "
+        self.assert_fails(self.level, "title debe ser un texto no vacio")
+        self.level["objects"][-1]["params"]["title"] = "Favoritos"
+        self.level["objects"][-1]["params"]["height_tiles"] = 1
+        self.assert_fails(self.level, "height_tiles = 1 fuera de [2, 8]")
+
+    def test_forbid_abilities(self):
+        level = self._excepciones()
+        level["secrets"][0]["forbid_abilities"] = ["volar"]
+        self.assert_fails(level, "habilidad desconocida en forbid_abilities: 'volar'")
+        level["secrets"][0]["forbid_abilities"] = []
+        self.assert_fails(level, "forbid_abilities debe ser una lista no vacia")
+        level["secrets"][0]["forbid_abilities"] = ["dash", "dash"]
+        self.assert_fails(level, "forbid_abilities debe ser una lista no vacia")
+
+    def test_stands_for_rules(self):
+        level = self._excepciones()
+        del level["stands_for"]
+        self.assert_fails(level, "el mensaje msg_1_3 es del nivel 1-3")
+        level["stands_for"] = "2-1"
+        self.assert_fails(level, "'stands_for' (2-1) no es del mundo 1")
+        level["stands_for"] = "uno"
+        self.assert_fails(level, "'stands_for' debe ser un subnivel")
+        self.level["stands_for"] = "1-3"
+        self.assert_fails(self.level, "'stands_for' solo vale en un nivel de prueba")
+
     # --- Interruptor «No molestar» (2026-10-19, paso 3 de docs/propuesta-1-3.md §7) ---
 
     def test_dnd_switch_is_valid_and_only_gives_dash(self):
