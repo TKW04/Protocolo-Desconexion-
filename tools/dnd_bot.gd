@@ -245,6 +245,10 @@ func _dash_step(s: Dictionary) -> bool:
 			if not get_tree().paused:
 				held += 1
 	_set_axis(dir)
+	var cooling: int = 60
+	while cooling > 0 and _isak.get_dash_cooldown_left() > 0.0:
+		await _tick()
+		cooling -= 1
 	_tap(A_DASH)
 	var started: bool = await _wait_until(func() -> bool: return _isak.is_dashing(), 0.1)
 	_release_jump()
@@ -299,7 +303,9 @@ func _wait_dash_ready() -> bool:
 	while limit > 0:
 		if _has_control() and _isak.is_on_floor():
 			var reason: StringName = _isak.dash_denial()
-			if reason == &"":
+			# El enfriamiento se espera justo antes de pulsar gesture_swipe: esperarlo aqui, con la inercia del paso
+			# anterior, pasaba el despegue y obligaba a volver atras (tunel del 1-3, 2026-10-20).
+			if reason == &"" or reason == Isak.DASH_DENIED_COOLDOWN:
 				return true
 			if reason == Isak.DASH_DENIED_LOCKED or reason == Isak.DASH_DENIED_ENERGY:
 				return false
