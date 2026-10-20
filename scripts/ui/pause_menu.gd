@@ -20,6 +20,13 @@
 ##   Las entradas reservadas (Esc / Start de la pausa, R / Select, F9, F1-F4) se
 ##   rechazan con un aviso en el detalle. «Restablecer valores» pide
 ##   confirmacion. Todo se guarda al instante en settings.cfg.
+## - Sonido (2026-10-20; docs/lista-sonidos.md, «Integracion»): «Senales
+##   sonoras de ritmo: Si / No» en Ajustes (accesibilidad; por defecto Si) y la
+##   subpagina «Sonido» con el volumen de cada bus («Musica: 80 %»;
+##   izquierda/derecha bajan o suben un paso; aceptar sube y de 100 % pasa a
+##   0 %). GameSettings los guarda al instante y los aplica al AudioServer.
+##   La senal ui_feedback (move / confirm / back) solo avisa al AudioManager
+##   para los sonidos de la UI; no cambia nada del menu.
 ## - NAVEGACION (2026-10-16): pause (Esc / Start) y back_actions (B) vuelven UNA
 ##   pagina atras (de una subpagina a la anterior; en la principal, reanudan).
 ## - «Cerrar el juego» pasa por QuitGuard: con cambios sin guardar sale el mismo
@@ -56,18 +63,22 @@ const GROUP: StringName = &"pause_menu"
 ## Grupo de los nodos que pueden impedir abrirlo (blocks_pause_menu()).
 const BLOCKER_GROUP: StringName = &"pause_menu_blocker"
 
-enum Page { MAIN, SETTINGS, CONFIRM_HUB, DISPLAY, CONTROLS, CAPTURE, CONFLICT, CONFIRM_RESET }
+enum Page { MAIN, SETTINGS, CONFIRM_HUB, DISPLAY, CONTROLS, CAPTURE, CONFLICT, CONFIRM_RESET, SOUND }
 enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT, LOW_SYNC, DEBUG_OUTLINE, DISPLAY, WINDOW_MODE,
-	WINDOW_SIZE, CONTROLS, BINDING, RESET_CONTROLS, CONFIRM_RESET, SWAP, CANCEL }
+	WINDOW_SIZE, CONTROLS, BINDING, RESET_CONTROLS, CONFIRM_RESET, SWAP, CANCEL, RHYTHM_CUES, SOUND, VOLUME }
 
 ## Interruptores Si / No de Ajustes: opcion -> [clave de GameSettings, clave de texto].
 const SWITCHES: Dictionary = {
 	Option.LOW_SYNC: [&"reduce_low_sync_effects", "low_sync"],
 	Option.DEBUG_OUTLINE: [&"debug_high_contrast_outline", "debug_outline"],
+	Option.RHYTHM_CUES: [&"rhythm_sound_cues", "rhythm_cues"],
 }
 
 signal opened
 signal closed
+## Navegacion para los sonidos de la UI (AudioManager): &"move", &"confirm" o
+## &"back". Solo informa.
+signal ui_feedback(kind: StringName)
 
 ## Aviso al salir que usa «Cerrar el juego» (pruebas). Si es null se usa el de
 ## GameState (juego normal) y, si no hay ninguno (GUT, scripts), quit_handler o
@@ -89,6 +100,8 @@ var _page: Page = Page.MAIN
 var _options: Array[Option] = []
 ## Accion de cada opcion BINDING (paralela a _options).
 var _option_actions: Array[StringName] = []
+## Bus de cada opcion VOLUME (paralela a _options).
+var _option_buses: Array[StringName] = []
 ## Accion que se esta reasignando (captura y conflicto).
 var _capture_action: StringName = &""
 var _capture_started_ms: int = 0
@@ -159,6 +172,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var step: int = -1 if _matches(event, "left_actions") else 1
 		if get_selected_option() == Option.WINDOW_SIZE:
 			cycle_window_size(step)
+		elif get_selected_option() == Option.VOLUME:
+			change_volume(step)
 		elif is_switch(get_selected_option()):
 			activate(get_selected_option())
 	elif _matches(event, "confirm_actions"):
@@ -259,12 +274,15 @@ func move_selection(step: int) -> void:
 	_selected = posmod(_selected + step, _options.size())
 	_notice = ""
 	_refresh()
+	ui_feedback.emit(&"move")
 
 
 ## Acepta `option` (de la pagina actual).
 func activate(option: Option) -> void:
 	if not _open:
 		return
+	if option != Option.BACK and option != Option.CANCEL:
+		ui_feedback.emit(&"confirm")
 	match option:
 		Option.RESUME:
 			close()
@@ -275,10 +293,20 @@ func activate(option: Option) -> void:
 		Option.ECO_HELP:
 			GameSettings.set_eco_help_shown(not GameSettings.is_eco_help_shown())
 			_refresh()
-		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
+		Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.RHYTHM_CUES:
 			var key: StringName = SWITCHES[option][0]
 			GameSettings.set_bool(key, not GameSettings.get_bool(key))
 			_refresh()
+		Option.SOUND:
+			_show_page(Page.SOUND)
+		Option.VOLUME:
+			# Aceptar sube un paso; desde el maximo vuelve a 0.
+			var bus: StringName = get_selected_bus()
+			if GameSettings.get_volume(bus) >= 1.0:
+				GameSettings.set_volume(bus, 0.0)
+				_refresh()
+			else:
+				change_volume(1)
 		Option.BACK:
 			go_back()
 		Option.DISPLAY:
@@ -311,6 +339,30 @@ func activate(option: Option) -> void:
 			confirm_exit_to_hub()
 
 
+## Bus de la fila elegida en Sonido (&"" si no es una fila de volumen).
+func get_selected_bus() -> StringName:
+	return _option_buses[_selected] if _selected < _option_buses.size() else &""
+
+
+## Elige la fila del volumen de `bus` en Sonido.
+func select_bus(bus: StringName) -> bool:
+	var index: int = _option_buses.find(bus)
+	if index < 0 or _options[index] != Option.VOLUME:
+		return false
+	_selected = index
+	_refresh()
+	return true
+
+
+## Baja (`step` -1) o sube (1) un paso el volumen de la fila elegida.
+func change_volume(step: int) -> void:
+	var bus: StringName = get_selected_bus()
+	if bus == &"":
+		return
+	GameSettings.set_volume(bus, GameSettings.get_volume(bus) + GameSettings.volume_step() * step)
+	_refresh()
+
+
 ## La opcion es un ajuste que se cambia con izquierda/derecha o aceptar.
 func is_switch(option: Option) -> bool:
 	return option == Option.ECO_HELP or option == Option.WINDOW_MODE or SWITCHES.has(option)
@@ -331,6 +383,7 @@ func cycle_window_size(step: int) -> void:
 ## Atras: una pagina (de Ajustes o de la confirmacion a la principal); en la
 ## principal, reanuda.
 func go_back() -> void:
+	ui_feedback.emit(&"back")
 	match _page:
 		Page.SETTINGS:
 			_show_page(Page.MAIN)
@@ -344,6 +397,9 @@ func go_back() -> void:
 		Page.CONTROLS:
 			_show_page(Page.SETTINGS)
 			select(Option.CONTROLS)
+		Page.SOUND:
+			_show_page(Page.SETTINGS)
+			select(Option.SOUND)
 		Page.CAPTURE, Page.CONFLICT:
 			_back_to_controls(_capture_action, _text("capture_cancelled"))
 		Page.CONFIRM_RESET:
@@ -500,9 +556,11 @@ func option_text(option: Option) -> String:
 		Option.ECO_HELP:
 			var value: String = _text("eco_help_shown" if GameSettings.is_eco_help_shown() else "eco_help_hidden")
 			return _text("eco_help").replace("{value}", value)
-		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
+		Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.RHYTHM_CUES:
 			var on: bool = GameSettings.get_bool(SWITCHES[option][0])
 			return _text(String(SWITCHES[option][1])).replace("{value}", _text("yes" if on else "no"))
+		Option.SOUND:
+			return _text("sound")
 		Option.DISPLAY:
 			return _text("display")
 		Option.CONTROLS:
@@ -561,6 +619,7 @@ func _show_page(page: Page) -> void:
 	_page = page
 	_selected = 0
 	_option_actions.clear()
+	_option_buses.clear()
 	_notice = ""
 	match page:
 		Page.MAIN:
@@ -570,6 +629,12 @@ func _show_page(page: Page) -> void:
 			_options.append(Option.QUIT)
 		Page.DISPLAY:
 			_options = [Option.WINDOW_MODE, Option.WINDOW_SIZE, Option.BACK]
+		Page.SOUND:
+			_options = []
+			for bus: StringName in GameSettings.AUDIO_BUSES:
+				_options.append(Option.VOLUME)
+				_option_buses.append(bus)
+			_options.append(Option.BACK)
 		Page.CONTROLS:
 			_options = []
 			for action: StringName in ControlBindings.actions():
@@ -589,8 +654,8 @@ func _show_page(page: Page) -> void:
 			# Por seguridad empieza en «Volver».
 			_selected = 1
 		_:
-			_options = [Option.ECO_HELP, Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.DISPLAY,
-				Option.CONTROLS, Option.BACK]
+			_options = [Option.ECO_HELP, Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.RHYTHM_CUES,
+				Option.SOUND, Option.DISPLAY, Option.CONTROLS, Option.BACK]
 	_refresh()
 
 
@@ -628,7 +693,7 @@ func _refresh() -> void:
 		label.text = prefix + _option_text_at(i)
 		_set_color(label, _color("option_selected" if i == _selected else "option"))
 	match _page:
-		Page.SETTINGS, Page.DISPLAY:
+		Page.SETTINGS, Page.DISPLAY, Page.SOUND:
 			_detail.text = _option_detail(get_selected_option())
 		Page.CONTROLS:
 			if not _notice.is_empty():
@@ -656,8 +721,12 @@ func _refresh() -> void:
 
 
 ## Texto de la opcion `index` de la pagina actual (las filas de Controles:
-## «Saltar: Espacio / A»).
+## «Saltar: Espacio / A»; las de Sonido: «Musica: 80 %»).
 func _option_text_at(index: int) -> String:
+	if _options[index] == Option.VOLUME and index < _option_buses.size():
+		var bus: StringName = _option_buses[index]
+		return _text("volume").replace("{bus}", GameSettings.volume_label(bus)).replace("{value}",
+			str(roundi(GameSettings.get_volume(bus) * 100.0)))
 	if _options[index] == Option.BINDING and index < _option_actions.size():
 		var action: StringName = _option_actions[index]
 		return _text("binding").replace("{action}", ControlBindings.action_name(action)).replace("{inputs}",
@@ -670,9 +739,13 @@ func _option_detail(option: Option) -> String:
 	match option:
 		Option.ECO_HELP:
 			return _text("eco_help_detail_shown" if GameSettings.is_eco_help_shown() else "eco_help_detail_hidden")
-		Option.LOW_SYNC, Option.DEBUG_OUTLINE:
+		Option.LOW_SYNC, Option.DEBUG_OUTLINE, Option.RHYTHM_CUES:
 			var on: bool = GameSettings.get_bool(SWITCHES[option][0])
 			return _text("%s_detail_%s" % [SWITCHES[option][1], "yes" if on else "no"])
+		Option.SOUND:
+			return _text("sound_detail")
+		Option.VOLUME:
+			return _text("volume_detail")
 		Option.DISPLAY:
 			return _text("display_detail")
 		Option.CONTROLS:
@@ -714,6 +787,8 @@ func _page_title_key() -> String:
 			return "title_display"
 		Page.CONTROLS:
 			return "title_controls"
+		Page.SOUND:
+			return "title_sound"
 		Page.CAPTURE:
 			return "title_capture"
 		Page.CONFLICT:
@@ -725,7 +800,7 @@ func _page_title_key() -> String:
 
 func _page_help_key() -> String:
 	match _page:
-		Page.SETTINGS, Page.DISPLAY:
+		Page.SETTINGS, Page.DISPLAY, Page.SOUND:
 			return "help_settings"
 		Page.CONFIRM_HUB, Page.CONFLICT, Page.CONFIRM_RESET:
 			return "help_confirm"

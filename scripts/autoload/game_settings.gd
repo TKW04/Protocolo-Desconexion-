@@ -34,6 +34,13 @@
 ##   Ajustes > Controles (ControlBindings) se guardan como eventos serializados
 ##   (tecla fisica, boton o eje) solo si difieren de project.godot y se aplican
 ##   al cargar sobre el Input Map. Sin la seccion: los de project.godot.
+## - Sonido (2026-10-20, seccion audio; docs/lista-sonidos.md, «Integracion»):
+##   volumen de cada bus de default_bus_layout.tres (Master, Music, World,
+##   Ambience, Voice, UI) de 0 a 1 en pasos de data/settings.json (audio);
+##   se aplica al AudioServer al cargar y al cambiarlo (0 = bus en silencio).
+##   «Senales sonoras de ritmo» (rhythm_sound_cues, seccion accessibility, por
+##   defecto Si, decision 2026-10-20): el tic del metronomo y el aviso de las
+##   plataformas que parpadean (entradas cue de data/audio.json).
 ## Clase estatica (sin autoload): la carga la primera consulta o GameState al
 ## arrancar (use_path). Cambios: EventBus.settings_changed(key, value).
 class_name GameSettings
@@ -51,6 +58,13 @@ const SECTION_HELP: String = "help"
 const SECTION_ACCESSIBILITY: String = "accessibility"
 const SECTION_DISPLAY: String = "display"
 const SECTION_CONTROLS: String = "controls"
+const SECTION_AUDIO: String = "audio"
+## Buses de audio con volumen ajustable (default_bus_layout.tres).
+const AUDIO_BUSES: Array[StringName] = [&"Master", &"Music", &"World", &"Ambience", &"Voice", &"UI"]
+const VOLUME_DEFAULT: float = 1.0
+const VOLUME_STEP_DEFAULT: float = 0.1
+## Senales sonoras de ritmo (metronomo y plataformas que parpadean).
+const KEY_RHYTHM_CUES: StringName = &"rhythm_sound_cues"
 const DATA_PATH: String = "res://data/settings.json"
 const KEY_WINDOW_MODE: StringName = &"window_mode"
 const KEY_WINDOW_SIZE: StringName = &"window_size"
@@ -69,6 +83,7 @@ const BOOLS: Dictionary = {
 	&"show_eco_help": [SECTION_HELP, SHOW_ECO_HELP_DEFAULT],
 	&"reduce_low_sync_effects": [SECTION_ACCESSIBILITY, false],
 	&"debug_high_contrast_outline": [SECTION_ACCESSIBILITY, false],
+	&"rhythm_sound_cues": [SECTION_ACCESSIBILITY, true],
 }
 ## Ajustes que se aplican a una propiedad de GameState del mismo nombre.
 const GAME_STATE_KEYS: Array[StringName] = [&"reduce_low_sync_effects", &"debug_high_contrast_outline"]
@@ -79,6 +94,8 @@ static var _bools: Dictionary = {}
 static var _window_mode: String = WINDOW_MODE_WINDOWED
 static var _window_size: Vector2i = Vector2i.ZERO
 static var _data: Dictionary = {}
+## Volumen lineal (0-1) por bus de AUDIO_BUSES.
+static var _volumes: Dictionary = {}
 
 
 ## Ruta segun los argumentos de Godot y ISAK_SETTINGS_PATH (como el guardado).
@@ -134,6 +151,11 @@ static func load_from_disk() -> void:
 		for key: String in config.get_section_keys(SECTION_CONTROLS):
 			controls[key] = config.get_value(SECTION_CONTROLS, key)
 	ControlBindings.apply_overrides(controls)
+	for bus: StringName in AUDIO_BUSES:
+		var stored_volume: Variant = config.get_value(SECTION_AUDIO, volume_key(bus), volume_default(bus)) if loaded \
+			else volume_default(bus)
+		_volumes[bus] = _clean_volume(stored_volume, volume_default(bus))
+	apply_audio()
 	if not is_display_default():
 		apply_display()
 
@@ -148,6 +170,9 @@ static func reset_defaults() -> void:
 	_window_size = base_size()
 	ControlBindings.restore_defaults(false)
 	EventBus.controls_changed.emit()
+	for bus: StringName in AUDIO_BUSES:
+		_volumes[bus] = volume_default(bus)
+	apply_audio()
 
 
 ## Escribe todos los ajustes en su archivo. Falso si no se pudo.
@@ -158,6 +183,8 @@ static func save() -> bool:
 		config.set_value(String(BOOLS[key][0]), String(key), _bools.get(key, BOOLS[key][1]))
 	config.set_value(SECTION_DISPLAY, String(KEY_WINDOW_MODE), _window_mode)
 	config.set_value(SECTION_DISPLAY, String(KEY_WINDOW_SIZE), _window_size)
+	for bus: StringName in AUDIO_BUSES:
+		config.set_value(SECTION_AUDIO, volume_key(bus), get_volume(bus))
 	var controls: Dictionary = ControlBindings.overrides()
 	for action: Variant in controls:
 		config.set_value(SECTION_CONTROLS, String(action), controls[action])
@@ -213,6 +240,87 @@ static func set_bool(key: StringName, value: bool) -> bool:
 	_apply_game_state()
 	EventBus.settings_changed.emit(key, value)
 	return true
+
+
+# --- Sonido ---
+
+## «Senales sonoras de ritmo: Si» (por defecto).
+static func are_rhythm_cues_enabled() -> bool:
+	return get_bool(KEY_RHYTHM_CUES)
+
+
+static func set_rhythm_cues_enabled(value: bool) -> bool:
+	return set_bool(KEY_RHYTHM_CUES, value)
+
+
+## Clave del volumen de `bus` en la seccion audio («volume_music»).
+static func volume_key(bus: StringName) -> String:
+	return "volume_%s" % String(bus).to_lower()
+
+
+## Volumen por defecto de `bus` (data/settings.json, audio.defaults; si no, 1).
+static func volume_default(bus: StringName) -> float:
+	var defaults: Variant = _settings_data().get("audio", {}).get("defaults", {})
+	var value: Variant = (defaults as Dictionary).get(String(bus), VOLUME_DEFAULT) if defaults is Dictionary else VOLUME_DEFAULT
+	return _clean_volume(value, VOLUME_DEFAULT)
+
+
+## Paso de los volumenes en Ajustes > Sonido (data/settings.json, audio.step).
+static func volume_step() -> float:
+	var step: float = float(_settings_data().get("audio", {}).get("step", VOLUME_STEP_DEFAULT))
+	return step if step > 0.0 and step <= 1.0 else VOLUME_STEP_DEFAULT
+
+
+## Nombre de `bus` en la UI (data/settings.json, audio.buses; si no, el del bus).
+static func volume_label(bus: StringName) -> String:
+	var buses: Variant = _settings_data().get("audio", {}).get("buses", [])
+	if buses is Array:
+		for item: Variant in buses:
+			if item is Dictionary and String((item as Dictionary).get("bus", "")) == String(bus):
+				return String((item as Dictionary).get("name", bus))
+	return String(bus)
+
+
+## Volumen lineal (0-1) de `bus` (uno de AUDIO_BUSES).
+static func get_volume(bus: StringName) -> float:
+	_ensure_loaded()
+	return float(_volumes.get(bus, volume_default(bus)))
+
+
+## Cambia el volumen de `bus` (se ajusta a 0-1 y al paso), lo guarda al instante
+## y lo aplica al AudioServer. Verdadero si cambio.
+static func set_volume(bus: StringName, value: float) -> bool:
+	_ensure_loaded()
+	if not AUDIO_BUSES.has(bus):
+		return false
+	var clean: float = _clean_volume(value, get_volume(bus))
+	if is_equal_approx(clean, get_volume(bus)):
+		return false
+	_volumes[bus] = clean
+	save()
+	apply_audio()
+	EventBus.settings_changed.emit(StringName(volume_key(bus)), clean)
+	return true
+
+
+## Lleva los volumenes al AudioServer (los buses que no existan se ignoran).
+static func apply_audio() -> void:
+	_ensure_loaded()
+	for bus: StringName in AUDIO_BUSES:
+		var index: int = AudioServer.get_bus_index(bus)
+		if index < 0:
+			continue
+		var volume: float = float(_volumes.get(bus, VOLUME_DEFAULT))
+		AudioServer.set_bus_mute(index, volume <= 0.0)
+		AudioServer.set_bus_volume_db(index, linear_to_db(maxf(volume, 0.0001)))
+
+
+## Numero entre 0 y 1 redondeado al paso; `fallback` si no es un numero.
+static func _clean_volume(value: Variant, fallback: float) -> float:
+	if not (value is float or value is int):
+		return fallback
+	var step: float = volume_step()
+	return clampf(snappedf(float(value), step), 0.0, 1.0)
 
 
 # --- Pantalla ---

@@ -3,6 +3,19 @@
 	"display": {
 		"window_presets": [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440], [3840, 2160]]
 	},
+	"audio": {
+		"_notes": "Sonido (2026-10-20; docs/lista-sonidos.md, «Integracion del sistema de audio»): volumen lineal 0-1 de cada bus de default_bus_layout.tres, guardado en la seccion audio de settings.cfg (volume_master, volume_music...) y aplicado al AudioServer al cargar y al cambiarlo; 0 silencia el bus. step: paso de izquierda/derecha en Ajustes > Sonido. defaults: valor de una partida sin ajustes. buses: nombre de cada bus en la UI (Ajustes > Sonido), en este orden.",
+		"step": 0.1,
+		"defaults": {"Master": 1.0, "Music": 1.0, "World": 1.0, "Ambience": 1.0, "Voice": 1.0, "UI": 1.0},
+		"buses": [
+			{"bus": "Master", "name": "General"},
+			{"bus": "Music", "name": "Música"},
+			{"bus": "World", "name": "Efectos"},
+			{"bus": "Ambience", "name": "Ambiente"},
+			{"bus": "Voice", "name": "Voces"},
+			{"bus": "UI", "name": "Interfaz"}
+		]
+	},
 	"controls": {
 		"_notes": "Reasignar controles (ControlBindings, scripts/autoload/control_bindings.gd; 2026-10-16, decision del usuario). actions: acciones del Input Map que se pueden reasignar en Ajustes > Controles, en este orden, con su nombre en la UI (las teclas de depuracion y de pruebas, la R de reiniciar y las ui_* no se reasignan). Cada fila tiene una entrada principal de teclado (la primera tecla de la accion) y otra de mando (el primer boton o eje); reasignar sustituye esa entrada y conserva las demas (p. ej. las flechas o la cruceta de mover). Si la nueva entrada ya es de otra accion (conflicto) se ofrece intercambiar (la otra recibe la entrada anterior) o cancelar: nunca queda una accion sin entrada de su dispositivo. reserved: entradas fijas de la pausa (Esc y Start): siempre abren el menu de pausa aunque se reasigne su fila, no se pueden dar a otra accion y cancelan la captura. reserved_actions: sus entradas no se pueden asignar (R / Select de reiniciar, F9 y F1-F4 de depuracion). ignored_buttons: botones que no se capturan (5 = Guia). axis_threshold: inclinacion minima de un eje para capturarlo (se guarda como +1 o -1). capture_arm_s: segundos reales tras abrir la captura en que se ignora la entrada (la pulsacion que la abrio o un stick aun inclinado). Se guardan en la seccion controls de settings.cfg como eventos serializados (tecla fisica, boton o eje) solo para las acciones que cambian; se aplican al arrancar sobre el Input Map. Nombres de teclas y botones: tablas de data/ability_notices.json (key_names, pad_buttons, pad_axes); si un nombre usa un glifo que no esta en la fuente de textos se muestra «Tecla <codigo>».",
 		"actions": [
