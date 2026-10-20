@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 EventBus="*res://scripts/autoload/event_bus.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 DebugMode="*res://scripts/autoload/debug_mode.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
 
 [display]
 
