@@ -15,6 +15,10 @@
 ## sin linea ni aviso. Encendido no ayuda ni responde.
 ## Arte por script (paso 8, 2026-10-20): dnd_objects_frames.tres de
 ## tools/gen_world1_dnd.py (apagado, golpeado y encendido con la luna).
+## Tinte del nivel (paso 10 del plan, 2026-10-20; decision del usuario): al
+## encenderse, un CanvasModulate (RoomTint, hijo del interruptor) tine todo el
+## lienzo del mundo (no el HUD) hacia room_tint en room_tint_fade_s; si arranca
+## encendido (inerte), el tinte esta puesto desde el principio.
 ## El origen es la esquina superior izquierda de su celda (Isak de pie en ella).
 class_name DndSwitch
 extends Node2D
@@ -40,6 +44,9 @@ var _time: float = 0.0
 var _hit_time: float = -1.0
 var _pose_left: float = 0.0
 var _posed: Isak
+var _tint: CanvasModulate
+## Segundos de tiempo del mundo desde que empezo el tinte (-1 = sin tinte).
+var _tint_time: float = -1.0
 
 
 func _ready() -> void:
@@ -49,6 +56,7 @@ func _ready() -> void:
 		_on = true
 		_inert = true
 		HelpCatalog.tag(self, &"")
+		_start_tint(true)
 	EventBus.pulse_fired.connect(receive_pulse)
 	_update_sprite()
 	queue_redraw()
@@ -82,6 +90,22 @@ func is_posing() -> bool:
 ## Ayuda de Eco (HelpCatalog.is_help_live): encendido no ayuda.
 func is_help_available() -> bool:
 	return not _on
+
+
+## Color del tinte del nivel ahora mismo (blanco sin tinte).
+func get_room_tint() -> Color:
+	return _tint.color if _tint != null else Color.WHITE
+
+
+## Color final del tinte (seccion dnd_switch, room_tint).
+func get_room_tint_target() -> Color:
+	var c: Array = _config.get("room_tint", [1.0, 1.0, 1.0, 1.0])
+	return Color(float(c[0]), float(c[1]), float(c[2]), float(c[3]) if c.size() > 3 else 1.0)
+
+
+## El tinte del nivel esta puesto (o empezando).
+func is_room_tinted() -> bool:
+	return _tint != null
 
 
 func get_animation() -> StringName:
@@ -128,6 +152,7 @@ func switch_on() -> bool:
 			EventBus.eco_line_requested.emit(story, float(_config.get("story_duration_s", 4.0)), true)
 	if ability != &"":
 		GameState.obtain_ability(ability)
+	_start_tint(false)
 	switched_on.emit(object_id, first)
 	_update_sprite()
 	queue_redraw()
@@ -146,10 +171,28 @@ func advance(dt: float) -> void:
 			_posed = null
 	if _hit_time >= 0.0:
 		_hit_time += dt
+	if _tint != null and _tint_time >= 0.0:
+		_tint_time += dt
+		_update_tint()
 	_update_sprite()
 
 
 # --- Interno ---
+
+func _start_tint(instant: bool) -> void:
+	if _tint == null:
+		_tint = CanvasModulate.new()
+		_tint.name = "RoomTint"
+		add_child(_tint)
+	_tint_time = INF if instant else 0.0
+	_update_tint()
+
+
+func _update_tint() -> void:
+	var fade: float = maxf(float(_config.get("room_tint_fade_s", 0.8)), 0.001)
+	var k: float = clampf(_tint_time / fade, 0.0, 1.0)
+	_tint.color = Color.WHITE.lerp(get_room_tint_target(), k)
+
 
 func _build() -> void:
 	var frames := load(String(_config.get("frames", "res://assets/sprites/dnd_objects_frames.tres"))) as SpriteFrames

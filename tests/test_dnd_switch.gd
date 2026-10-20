@@ -158,6 +158,41 @@ func test_with_the_dash_already_obtained_it_starts_on_and_inert() -> void:
 	assert_eq(_lines.size(), 0, "Ni historia ni aviso")
 
 
+# --- Tinte del nivel (paso 10 del plan, 2026-10-20) ---
+
+func test_switching_on_tints_the_whole_level() -> void:
+	var sw := _switch()
+	await wait_process_frames(1)
+	assert_false(sw.is_room_tinted(), "Apagado: sin tinte")
+	assert_eq(sw.get_room_tint(), Color.WHITE)
+	var target: Color = sw.get_room_tint_target()
+	assert_true(target.r < 1.0 and target.g < 1.0 and target.b < 1.0, "El tinte baja un punto (oscurece)")
+	assert_eq(target.a, 1.0)
+	_isak_at(4, 9)
+	_fire_pulse()
+	assert_true(sw.is_room_tinted(), "Al encenderse empieza el tinte")
+	var modulate := sw.get_node(^"RoomTint") as CanvasModulate
+	assert_not_null(modulate, "Un CanvasModulate: tine todo el lienzo del mundo, no el HUD (CanvasLayer)")
+	assert_eq(modulate.color, Color.WHITE, "Empieza en blanco (fundido)")
+	sw.advance(0.4)
+	assert_true(modulate.color.r < 1.0 and modulate.color.r > target.r, "A medio fundido")
+	sw.advance(1.0)
+	assert_true(modulate.color.is_equal_approx(target), "Termina en room_tint")
+	assert_true(sw.get_room_tint().is_equal_approx(target))
+	sw.advance(5.0)
+	assert_true(modulate.color.is_equal_approx(target), "Se queda puesto")
+
+
+func test_already_on_switch_tints_from_the_start() -> void:
+	GameState.obtain_ability(GameState.ABILITY_DASH)
+	GameState.mark_notice_seen(GameState.ABILITY_DASH)
+	var sw := _switch()
+	await wait_process_frames(1)
+	assert_true(sw.is_inert())
+	assert_true(sw.is_room_tinted(), "Con el dash ya obtenido el nivel empieza con el tinte")
+	assert_true(sw.get_room_tint().is_equal_approx(sw.get_room_tint_target()), "Sin fundido")
+
+
 # --- Guardado, game over y Papelera ---
 
 func test_saved_and_reloaded() -> void:
