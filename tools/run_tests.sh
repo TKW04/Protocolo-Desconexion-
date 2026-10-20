@@ -77,6 +77,9 @@ rm -f "$IMPORT_LOG"
 # Desde el 2026-10-18 (paso 15 del 1-2) GUT lanza ademas el bot vertical en ambos casos
 # (tests/test_tower_bot.gd: tools/play_tower_bot.gd --headless --fixed-fps 60 en un proceso aparte,
 # ~20-30 s de pared por caso; usa user://bot_save.json).
+# Desde el 2026-10-20 (paso 11 de docs/propuesta-1-3.md) GUT lanza tambien el bot del 1-3
+# (tests/test_dnd_bot.gd: tools/play_dnd_bot.gd en un proceso aparte, unos 2 min de pared con la
+# exportacion del camino; usa user://bot_save.json).
 # Desde el 2026-10-19 (paso 1 de docs/propuesta-recuerdos.md): el esquema de los recuerdos
 # (data/memories.json; tools/validate_memories.py y tests/test_memories.py).
 # Desde el paso 4 (2026-10-19): el arte del mensaje de secreto (tools/validate_memory_pickup.py).

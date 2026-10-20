@@ -22,6 +22,9 @@
 ## Al final compara la duracion de juego y la energia minima con las del camino.
 ## Usa su propio guardado (BOT_SAVE_PATH, borrado al empezar; o ISAK_SAVE_PATH).
 ## Lo lanza tools/play_tower_bot.gd (uso y argumentos alli).
+## Tambien es la base del bot del 1-3 (tools/dnd_bot.gd, paso 11 de
+## docs/propuesta-1-3.md), que sobrescribe los metodos virtuales marcados
+## «Virtual» (nivel, progreso, comprobaciones, hub y pasos nuevos).
 extends Node
 
 const MAIN_SCENE: String = "res://scenes/main.tscn"
@@ -123,10 +126,55 @@ func _run(path_file: String) -> void:
 		ok = _fail("el menu de pausa se abrio %d veces (el bot no pulsa pause)" % _pause_menu_opens)
 	if ok and not GameState.learned_help.is_empty():
 		ok = _fail("el bot no pide ayuda (Q) y hay tipos aprendidos: %s" % [GameState.learned_help.keys()])
-	print("play_tower_bot (%s): %s" % ["Calc conocida" if _known else "Calc desconocida", "OK" if ok else "FALLO"])
+	print("%s: %s" % [_bot_label(), "OK" if ok else "FALLO"])
 	for line: String in _log:
 		print("  " + line)
 	finished.emit(0 if ok else 1)
+
+
+# --- Virtuales (los sobrescribe tools/dnd_bot.gd) ---
+
+## Virtual: id del nivel que recorre el bot.
+func _level_id() -> String:
+	return LEVEL_ID
+
+
+## Virtual: etiqueta de la linea de resultado («<etiqueta>: OK»).
+func _bot_label() -> String:
+	return "play_tower_bot (%s)" % ("Calc conocida" if _known else "Calc desconocida")
+
+
+## Virtual: argumentos de tools/validate_level.py para exportar el camino a `path_file`.
+func _export_args(path_file: String) -> PackedStringArray:
+	var args: PackedStringArray = [ProjectSettings.globalize_path("res://tools/validate_level.py")]
+	if _known:
+		args.append_array(["--allies", "calc"])
+	args.append_array(["--export-path", path_file, ProjectSettings.globalize_path("res://data/levels/%s.json" % _level_id())])
+	return args
+
+
+## Virtual: archivo (user://) donde se exporta el camino.
+func _path_cache_file() -> String:
+	return "user://tower_bot_path_%s.json" % ("known" if _known else "unknown")
+
+
+## Virtual: comprobacion del nivel recien cargado (el 1-2, con la camara de torre).
+func _check_level_loaded() -> bool:
+	if _isak == null or _isak.camera_mode != Isak.CAMERA_TOWER:
+		return _fail("el 1-2 no carga con la camara de torre")
+	return true
+
+
+## Virtual: progreso tras volver al hub (el 1-2 completado y el 1-3 desbloqueado).
+func _check_completed() -> bool:
+	if not GameState.is_level_completed(&"1-2") or not GameState.is_level_unlocked(&"1-3"):
+		return _fail("el 1-2 no queda completado o el 1-3 no se desbloquea")
+	return true
+
+
+## Virtual: pasos del camino que el bot del 1-2 no conoce (dash, wait_beat…).
+func _do_extra_step(_s: Dictionary, action: String) -> bool:
+	return _fail("accion desconocida en el camino: %s" % action)
 
 
 # --- Camino ---
@@ -134,11 +182,8 @@ func _run(path_file: String) -> void:
 ## Lee el camino de `path_file` o lo exporta con el validador (caso del bot).
 func _load_path(path_file: String) -> bool:
 	if path_file.is_empty():
-		path_file = ProjectSettings.globalize_path("user://tower_bot_path_%s.json" % ("known" if _known else "unknown"))
-		var args: PackedStringArray = [ProjectSettings.globalize_path("res://tools/validate_level.py")]
-		if _known:
-			args.append_array(["--allies", "calc"])
-		args.append_array(["--export-path", path_file, ProjectSettings.globalize_path("res://data/levels/1-2.json")])
+		path_file = ProjectSettings.globalize_path(_path_cache_file())
+		var args: PackedStringArray = _export_args(path_file)
 		var output: Array = []
 		var code: int = OS.execute("python3", args, output, true)
 		if code != 0:
@@ -148,8 +193,8 @@ func _load_path(path_file: String) -> bool:
 		return _fail("camino ilegible o de otro formato: %s" % path_file)
 	_path = parsed
 	_steps = _path.get("steps", [])
-	if String(_path.get("level", "")) != LEVEL_ID or _steps.is_empty():
-		return _fail("el camino no es del 1-2 o no tiene pasos")
+	if String(_path.get("level", "")) != _level_id() or _steps.is_empty():
+		return _fail("el camino no es del %s o no tiene pasos" % _level_id())
 	_note("camino %s: %d pasos, %.1f s, energia minima %.1f" % [path_file.get_file(), _steps.size(),
 		float(_path.get("duration_s", 0.0)), float(_path.get("energy", {}).get("min", 0.0))])
 	return true
@@ -177,13 +222,13 @@ func _setup_progress() -> void:
 
 func _play_level() -> bool:
 	var main: Node = (load(MAIN_SCENE) as PackedScene).instantiate()
-	(main as LevelRunner).start_level_id = LEVEL_ID
+	(main as LevelRunner).start_level_id = _level_id()
 	get_tree().root.add_child(main)
 	_runner = main as LevelRunner
 	await get_tree().physics_frame
 	_refresh()
-	if _isak == null or _isak.camera_mode != Isak.CAMERA_TOWER:
-		return _fail("el 1-2 no carga con la camara de torre")
+	if not _check_level_loaded():
+		return false
 	# Llegada por el vortice: el control esta bloqueado hasta que se cierra.
 	var limit: int = _frame + 60 * 10
 	var blocked_seen: bool = false
@@ -226,9 +271,7 @@ func _play_level() -> bool:
 		_guard_pulses, _important_lines, _help_frames])
 	if absf(game_s - path_s) > DURATION_TOLERANCE_S:
 		return _fail("la duracion se aleja mas de %.0f s de la del camino" % DURATION_TOLERANCE_S)
-	if not GameState.is_level_completed(&"1-2") or not GameState.is_level_unlocked(&"1-3"):
-		return _fail("el 1-2 no queda completado o el 1-3 no se desbloquea")
-	return true
+	return _check_completed()
 
 
 func _wait_hub() -> bool:
@@ -237,7 +280,7 @@ func _wait_hub() -> bool:
 		await _tick()
 	if not _runner.is_in_hub():
 		return _fail("la terminal no lleva al hub: %s" % _state())
-	_note("hub cargado tras completar el 1-2")
+	_note("hub cargado tras completar el %s" % _level_id())
 	return true
 
 
@@ -329,7 +372,7 @@ func _do_step(s: Dictionary) -> bool:
 			return await _debug_off()
 		"goal":
 			return true
-	return _fail("accion desconocida en el camino: %s" % action)
+	return await _do_extra_step(s, action)
 
 
 ## El paso `index` sigue andando o saltando en la direccion `dir` sin pararse
@@ -595,6 +638,8 @@ func _pulse_done(kind: String, node: Node, s: Dictionary) -> bool:
 			return node.call(&"is_activated") or int(node.call(&"get_count")) >= int(s.get("count", 1))
 		"exit_terminal":
 			return (node as ExitTerminal).get_state() >= ExitTerminal.State.BOOT
+		"dnd_switch":
+			return node.call(&"is_on")
 	return true
 
 
@@ -1222,17 +1267,28 @@ func _enemy(id: String) -> Node:
 	return _level.get_node_or_null(NodePath("Enemies/" + id))
 
 
-## Piso del 1-2 segun la fila de los pies (sections del nivel).
+## Piso (1-2) o tramo (1-3) segun la celda de los pies (sections del nivel:
+## y_from/y_to en la torre, x_from/x_to en los horizontales).
 func _floor_name() -> String:
 	if _isak == null:
 		return "?"
 	var row: int = roundi(_isak.global_position.y / TILE) - 1
-	var level_data: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/1-2.json"))
-	if level_data is Dictionary:
-		for sec: Variant in (level_data as Dictionary).get("sections", []):
-			if sec is Dictionary and row >= int(sec.get("y_from", -1)) and row <= int(sec.get("y_to", -1)):
-				return String(sec.get("name", sec.get("id", "?")))
+	var col: int = int(_isak.global_position.x / TILE)
+	if _sections.is_empty():
+		var level_data: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/%s.json" % _level_id()))
+		_sections = (level_data as Dictionary).get("sections", []) if level_data is Dictionary else []
+	for sec: Variant in _sections:
+		if not sec is Dictionary:
+			continue
+		var d: Dictionary = sec
+		var inside: bool = (row >= int(d.get("y_from", -1)) and row <= int(d.get("y_to", -1))) if d.has("y_from") \
+			else (col >= int(d.get("x_from", -1)) and col <= int(d.get("x_to", -1)))
+		if inside:
+			return String(d.get("name", d.get("id", "?")))
 	return "fila %d" % row
+
+
+var _sections: Array = []
 
 
 func _where() -> String:
