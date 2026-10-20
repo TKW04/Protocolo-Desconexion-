@@ -107,7 +107,7 @@ func test_worlds_registry_has_world_1_with_three_sublevels_and_locked_2_and_3() 
 	assert_eq(levels, ["1-1", "1-2", "1-3"] as Array[String])
 	assert_true(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[0]), "1-1 jugable")
 	assert_true(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[1]), "1-2 jugable (paso 13 del 1-2)")
-	assert_false(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[2]), "1-3 aun no existe")
+	assert_true(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[2]), "1-3 jugable (paso 10 del 1-3)")
 	assert_eq(HubWorlds.level_points_total("1-2"), 9, "9 puntos de atencion en el 1-2")
 	assert_eq(HubWorlds.level_points_total("1-1"), 9, "9 puntos de atencion en el 1-1")
 
@@ -137,10 +137,20 @@ func test_sublevel_states_follow_completed_and_unlocked_levels() -> void:
 	assert_false(HubWorlds.is_coming_soon(l[1]))
 	assert_true(HubWorlds.can_enter(&"1-1"), "Un completado se puede rejugar en la vuelta actual")
 	assert_true(HubWorlds.can_enter(&"1-2"))
-	GameState.unlock_level(&"1-3")
-	assert_eq(HubWorlds.level_state(m1, l[2]), HubWorlds.STATE_LOCKED, "1-3 desbloqueado pero aun no existe")
-	assert_true(HubWorlds.is_coming_soon(l[2]), "Proximamente")
+	assert_eq(HubWorlds.level_state(m1, l[2]), HubWorlds.STATE_LOCKED, "1-3 bloqueado hasta desbloquearlo")
 	assert_false(HubWorlds.can_enter(&"1-3"))
+	GameState.unlock_level(&"1-3")
+	assert_eq(HubWorlds.level_state(m1, l[2]), HubWorlds.STATE_AVAILABLE, "1-3 desbloqueado y jugable (paso 10 del 1-3)")
+	assert_false(HubWorlds.is_coming_soon(l[2]))
+	assert_true(HubWorlds.can_enter(&"1-3"))
+	# «Proximamente»: un subnivel sin nivel jugable (hoy ninguno del Mundo 1; uno sintetico).
+	var soon := {"id": "y", "world": 9, "unlocked": true, "levels": [
+		{"id": "1-1", "laps": [1], "playable": true},
+		{"id": "9-2", "laps": [1], "playable": false}]}
+	GameState.unlock_level(&"9-2")
+	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(soon)[1]), "Proximamente")
+	assert_eq(HubWorlds.level_state(soon, HubWorlds.levels(soon)[1]), HubWorlds.STATE_LOCKED)
+	assert_false(HubWorlds.can_enter(&"9-2"))
 	# Un subnivel jugable que no es el primero solo se abre con unlocked_levels.
 	var synthetic := {"id": "x", "world": 9, "unlocked": true, "levels": [
 		{"id": "9-1", "laps": [1], "playable": false},
@@ -287,7 +297,8 @@ func test_pulse_on_the_shelf_opens_the_sublevel_panel() -> void:
 	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[0]), "1-1 Bandeja de entrada - Completado 2/9")
 	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[1]), "1-2 Centro de notificaciones - Nuevo",
 		"El 1-2 disponible tras completar el 1-1 (paso 13 del 1-2)")
-	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[2]), "1-3 No molestar - Próximamente")
+	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[2]), "1-3 No molestar - Bloqueado",
+		"El 1-3 existe (paso 10 del 1-3): bloqueado hasta completar el 1-2")
 	assert_eq(panel.get_level_state(&"1-1"), HubWorlds.STATE_COMPLETED)
 	assert_eq(panel.get_level_state(&"1-2"), HubWorlds.STATE_AVAILABLE)
 	# Un subnivel bloqueado no se elige: solo un mensaje.
@@ -296,7 +307,7 @@ func test_pulse_on_the_shelf_opens_the_sublevel_panel() -> void:
 	panel.skip_input_delay()
 	panel.select_option(&"1-3")
 	panel.confirm()
-	assert_eq(panel.get_message(), "Próximamente")
+	assert_eq(panel.get_message(), "Bloqueado: completa el anterior")
 	assert_eq(chosen.size(), 0)
 	assert_true(folder.is_panel_open())
 	# Volver cierra y devuelve el control.

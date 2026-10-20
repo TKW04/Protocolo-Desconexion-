@@ -23,9 +23,14 @@
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
-const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/1-2.tscn")
+const LEVEL_SCENE: String = "res://scenes/levels/1-2.tscn"
 const LEVEL_PATH: String = "res://data/levels/1-2.json"
 const CLIMBS_PATH: String = "res://tests/fixtures/climbs_1-2.json"
+## 1-3 «No molestar» (paso 10 de docs/propuesta-1-3.md, 2026-10-20): mismas medidas, con las plataformas
+## que parpadean quietas y encendidas (solidas) y el metronomo parado.
+const LEVEL_SCENE_1_3: String = "res://scenes/levels/1-3.tscn"
+const LEVEL_PATH_1_3: String = "res://data/levels/1-3.json"
+const CLIMBS_PATH_1_3: String = "res://tests/fixtures/climbs_1-3.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -50,8 +55,8 @@ var _solids_debug: Array[Rect2] = []
 var _solids_plain: Array[Rect2] = []
 
 
-func before_all() -> void:
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_PATH))
+func _read_grid(level_path: String) -> void:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(level_path))
 	_grid = data["grid"]
 
 
@@ -70,8 +75,9 @@ func after_each() -> void:
 
 # --- Escena ---
 
-func _load() -> void:
-	_level = LEVEL_SCENE.instantiate() as GeneratedLevel
+func _load(scene_path: String = LEVEL_SCENE, level_path: String = LEVEL_PATH) -> void:
+	_read_grid(level_path)
+	_level = (load(scene_path) as PackedScene).instantiate() as GeneratedLevel
 	# Sin enemigos ni puertas que se abren por el camino (pop-up solido, barra del 99 %).
 	for child: Node in _level.get_node(^"Enemies").get_children():
 		child.free()
@@ -91,6 +97,12 @@ func _load() -> void:
 			child.activate()
 			for i: int in 200:
 				child.advance(0.1)
+		elif child is RhythmZone:
+			child.set_process(false)
+			child.set_physics_process(false)
+		elif child is BlinkPlatform:
+			child.set_physics_process(false)
+			child.call(&"_set_solid", true)
 	_hidden.clear()
 	for child: Node in _level.get_node(^"HiddenPlatforms").get_children():
 		_hidden.append(child)
@@ -339,6 +351,26 @@ func test_every_climb_of_1_2_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 20, "Subidas del 1-2 en %s" % CLIMBS_PATH)
 	await _load()
+	await _measure_all(climbs)
+
+
+## Las subidas del 1-3 (escalon de vuelta del foso del 2a, ola del 2b, escalera de repisas del 2c hasta la
+## pared de «Excepciones», repisa del 3b, pilar del secreto C) con el Isak real.
+func test_every_climb_of_1_3_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_1_3))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 8, "Subidas del 1-3 en %s" % CLIMBS_PATH_1_3)
+	await _load(LEVEL_SCENE_1_3, LEVEL_PATH_1_3)
+	var blinks: int = 0
+	for child: Node in _level.get_node(^"Objects").get_children():
+		if child is BlinkPlatform:
+			assert_true((child as BlinkPlatform).is_solid(), "%s encendida para medir" % child.name)
+			blinks += 1
+	assert_eq(blinks, 5, "Las cinco plataformas que parpadean del Tramo 2")
+	await _measure_all(climbs)
+
+
+func _measure_all(climbs: Array) -> void:
 	var report: Array = []
 	var failures: Array[String] = []
 	for climb: Dictionary in climbs:

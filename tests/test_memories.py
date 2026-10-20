@@ -159,7 +159,9 @@ class LevelLinks(unittest.TestCase):
         self.assertEqual(links["1-2"]["secrets"]["secreto_spam"], "msg_1_2")
         self.assertEqual(links["1-1"]["pickups"], {"msg_1_1"})
         self.assertEqual(links["1-2"]["pickups"], {"msg_1_2"})
-        self.assertNotIn("1-3", links, "El 1-3 aun no existe")
+        # El 1-3 real (paso 10 de docs/propuesta-1-3.md, 2026-10-20) ofrece msg_1_3 en la sala «Excepciones».
+        self.assertEqual(links["1-3"]["secrets"]["secreto_excepciones"], "msg_1_3")
+        self.assertEqual(links["1-3"]["pickups"], {"msg_1_3"})
         with open(DATA, encoding="utf-8") as fh:
             self.assertEqual(vm.validate(json.load(fh)), [])
 

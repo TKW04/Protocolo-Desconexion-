@@ -88,7 +88,8 @@ PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
 _export_test_rooms() {
 	local room
-	for room in "$PROJECT_DIR"/data/levels/*_test.json "$PROJECT_DIR"/data/levels/1-2.json; do
+	for room in "$PROJECT_DIR"/data/levels/*_test.json "$PROJECT_DIR"/data/levels/1-2.json \
+		"$PROJECT_DIR"/data/levels/1-3.json; do
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
@@ -101,19 +102,33 @@ _export_test_rooms() {
 		--export-path "$EXPORT_DIR/1-2_max.json" "$PROJECT_DIR/data/levels/1-2.json" >/dev/null || return 1
 	[[ -s "$EXPORT_DIR/1-2_max.json" ]] || return 1
 }
+# Pasadas del validador de alcanzabilidad sobre todos los niveles (sin mejoras, con mejoras, al maximo,
+# con el tope del acceso) y caminos exportados: son independientes, asi que se lanzan a la vez y se espera
+# a todas (paso 10 del 1-3, 2026-10-20: el 1-3 tarda unos 40 s por pasada). Falla si falla cualquiera.
+_validate_levels() {
+	local pids=() pid status=0
+	python3 tools/validate_level.py data/levels/*.json >/dev/null & pids+=($!)
+	python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null & pids+=($!)
+	python3 tools/validate_level.py --upgrades pulso:3,laser:4,debug:2,sync:4,energia:4 data/levels/*.json >/dev/null \
+		& pids+=($!)
+	python3 tools/validate_level.py --upgrades pulso:5,laser:5,debug:5,sync:5,energia:5 data/levels/*.json >/dev/null \
+		& pids+=($!)
+	python3 tools/validate_level.py --access-cap data/levels/*.json >/dev/null & pids+=($!)
+	_export_test_rooms & pids+=($!)
+	for pid in "${pids[@]}"; do
+		wait "$pid" || status=1
+	done
+	return $status
+}
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
-		tests/test_level_1_2.py tests/test_upgrade_economy.py tests/test_memories.py \
+		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_upgrade_economy.py tests/test_memories.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
-		&& python3 tools/validate_level.py data/levels/*.json >/dev/null \
-		&& python3 tools/validate_level.py --upgrades wide_pulse data/levels/*.json >/dev/null \
-		&& python3 tools/validate_level.py --upgrades pulso:3,laser:4,debug:2,sync:4,energia:4 data/levels/*.json >/dev/null \
-		&& python3 tools/validate_level.py --upgrades pulso:5,laser:5,debug:5,sync:5,energia:5 data/levels/*.json >/dev/null \
-		&& python3 tools/validate_level.py --access-cap data/levels/*.json >/dev/null \
-		&& _export_test_rooms \
+		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
 		&& python3 tools/level_climbs.py --check data/levels/1-2.json \
+		&& python3 tools/level_climbs.py --check data/levels/1-3.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \

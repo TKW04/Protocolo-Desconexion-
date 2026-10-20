@@ -268,8 +268,8 @@ func test_resume_level_id_rule() -> void:
 	GameState.unlock_level(&"1-2")
 	assert_eq(_main.resume_level_id(), "1-2", "El 1-2 desbloqueado y jugable es el mas avanzado (paso 13)")
 	GameState.unlock_level(&"1-3")
-	assert_eq(_main.resume_level_id(), "1-2", "El 1-3 aun no es jugable")
+	assert_eq(_main.resume_level_id(), "1-3", "El 1-3 desbloqueado y jugable (paso 10 del 1-3)")
 	GameState.current_level = &"tower_test"
 	assert_eq(_main.resume_level_id(), "tower_test", "El ultimo nivel jugado en la sesion manda")
 	GameState.current_level = &"9-9"
-	assert_eq(_main.resume_level_id(), "1-2", "Sin escena: el mas avanzado")
+	assert_eq(_main.resume_level_id(), "1-3", "Sin escena: el mas avanzado")

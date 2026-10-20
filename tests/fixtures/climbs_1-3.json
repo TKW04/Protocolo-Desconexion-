@@ -1,0 +1,424 @@
+{
+ "format": "isak-climbs/1",
+ "level": "1-3",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "82,12->81,11",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     82,
+     12
+    ],
+    "ledge": [
+     82,
+     88
+    ],
+    "row": 12
+   },
+   "to": {
+    "cell": [
+     81,
+     11
+    ],
+    "ledge": [
+     81,
+     81
+    ],
+    "row": 11
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 5264.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "81,11->80,9",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     81,
+     11
+    ],
+    "ledge": [
+     81,
+     81
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     80,
+     9
+    ],
+    "ledge": [
+     1,
+     80
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 5200.0,
+   "target_x_px": 5184.0,
+   "debug": false
+  },
+  {
+   "id": "81,11->83,9",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     81,
+     11
+    ],
+    "ledge": [
+     81,
+     81
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     83,
+     9
+    ],
+    "ledge": [
+     83,
+     84
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 5248.0,
+   "target_x_px": 5312.0,
+   "debug": false
+  },
+  {
+   "id": "59,9->59,7",
+   "section": "Tramo 1: Silenciados",
+   "from": {
+    "cell": [
+     59,
+     9
+    ],
+    "ledge": [
+     1,
+     80
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     59,
+     7
+    ],
+    "ledge": [
+     59,
+     60
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3840.0,
+   "target_x_px": 3840.0,
+   "debug": false
+  },
+  {
+   "id": "71,9->71,7",
+   "section": "Tramo 1: Silenciados",
+   "from": {
+    "cell": [
+     71,
+     9
+    ],
+    "ledge": [
+     1,
+     80
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     71,
+     7
+    ],
+    "ledge": [
+     71,
+     72
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 4608.0,
+   "target_x_px": 4608.0,
+   "debug": false
+  },
+  {
+   "id": "100,9->98,7",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     100,
+     9
+    ],
+    "ledge": [
+     89,
+     105
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     98,
+     7
+    ],
+    "ledge": [
+     97,
+     98
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 6400.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "113,9->113,7",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     113,
+     9
+    ],
+    "ledge": [
+     110,
+     135
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     113,
+     7
+    ],
+    "ledge": [
+     113,
+     114
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 7296.0,
+   "target_x_px": 7296.0,
+   "debug": false
+  },
+  {
+   "id": "98,7->100,5",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     98,
+     7
+    ],
+    "ledge": [
+     97,
+     98
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     100,
+     5
+    ],
+    "ledge": [
+     100,
+     101
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6336.0,
+   "target_x_px": 6400.0,
+   "debug": false
+  },
+  {
+   "id": "114,7->116,5",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     114,
+     7
+    ],
+    "ledge": [
+     113,
+     114
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     116,
+     5
+    ],
+    "ledge": [
+     116,
+     117
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 7360.0,
+   "target_x_px": 7424.0,
+   "debug": false
+  },
+  {
+   "id": "101,5->103,3",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     101,
+     5
+    ],
+    "ledge": [
+     100,
+     101
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     103,
+     3
+    ],
+    "ledge": [
+     103,
+     104
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6528.0,
+   "target_x_px": 6592.0,
+   "debug": false
+  },
+  {
+   "id": "117,5->118,4",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     117,
+     5
+    ],
+    "ledge": [
+     116,
+     117
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     118,
+     4
+    ],
+    "ledge": [
+     118,
+     119
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 7536.0,
+   "target_x_px": 7552.0,
+   "debug": false
+  },
+  {
+   "id": "117,5->120,4",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     117,
+     5
+    ],
+    "ledge": [
+     116,
+     117
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     120,
+     4
+    ],
+    "ledge": [
+     118,
+     129
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 7536.0,
+   "target_x_px": null,
+   "debug": true
+  },
+  {
+   "id": "106,4->104,3",
+   "section": "Tramo 2: Vibración",
+   "from": {
+    "cell": [
+     106,
+     4
+    ],
+    "ledge": [
+     106,
+     109
+    ],
+    "row": 4
+   },
+   "to": {
+    "cell": [
+     104,
+     3
+    ],
+    "ledge": [
+     103,
+     104
+    ],
+    "row": 3
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 6784.0,
+   "target_x_px": 6720.0,
+   "debug": false
+  }
+ ]
+}
