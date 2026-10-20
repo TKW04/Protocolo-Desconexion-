@@ -154,41 +154,95 @@ class RoomsTest(unittest.TestCase):
         self.assertFalse(any(s["action"] == "laser" for s in exported["steps"]))
         self.assert_export_shape(exported)
 
-    def test_silenciados_test_skips_the_dash_banner_with_a_warning(self):
-        """Paso 4 de docs/propuesta-1-3.md (2026-10-19): el banner obligatorio con el dash
-        (knockback_to_entry) se omite del plan con un aviso hasta el paso 9; el del nicho, si."""
+    def test_silenciados_test_crosses_the_mandatory_banner_with_the_dash(self):
+        """Paso 9 de docs/propuesta-1-3.md (2026-10-20): el banner obligatorio (knockback_to_entry,
+        validation.dash_required) entra en el plan: sin el dash no se cruza (ni andando ni corriendo), con el
+        dash si, con una ventana para lanzarlo de al menos 0,3 s; sin avisos de «no se modela»."""
         result, exported = checked("silenciados_test")
         self.assertTrue(result["ok"], messages(result))
-        warnings = messages(result, "warnings")
-        self.assertTrue(any("banner banner_dash: su pasillo solo se cruza con el dash" in w for w in warnings),
-                        warnings)
-        banners = result["plan"]["banners"]
-        self.assertEqual([b["banners"] for b in banners], [["banner_1b"]])
+        self.assertEqual(result["warnings"], [])
+        crossing = result["plan"]["banners"][0]
+        self.assertEqual(set(crossing["banners"]), {"banner_dash", "banner_1b"})
+        req = crossing["dash_required"]["banner_dash"]
+        self.assertFalse(req["without_dash_walking"])
+        self.assertFalse(req["without_dash_running"])
+        self.assertTrue(req["with_dash"])
+        self.assertGreaterEqual(req["dash_window_s"], 0.3)
+        self.assertGreaterEqual(crossing["dashes"], 1)
+        dashes = [s for s in exported["steps"] if s["action"] == "dash"]
+        self.assertTrue(dashes)
+        first = dashes[0]
+        self.assertTrue(6 <= first["to"]["cell"][0] <= 18, "el dash cruza el pasillo obligatorio")
+        self.assertEqual(first["energy_before"] - first["energy_after"], 10.0, "cada dash gasta 10")
+        self.assertIn(first["dir"], (1, -1))
+        self.assertIn("from_px", first)
+        self.assertIn("to_px", first)
+        self.assertEqual(result["plan"]["energy"]["dashes"], len(dashes))
         sync = next(s for s in exported["steps"] if s["action"] == "wait_phase")
-        self.assertEqual(set(sync["banner_cycle_s"]), {"banner_1b"})
+        self.assertEqual(set(sync["banner_cycle_s"]), {"banner_dash", "banner_1b"})
         self.assert_export_shape(exported)
+        # El camino exportado no toca ningun barrido andando (los dashes son invulnerables).
+        rules = vl.Rules()
+        hits = pz.banner_walk_hits(room("silenciados_test"), exported, (rules.hitbox_w, rules.hitbox_h),
+                                   rules.walk_speed)
+        self.assertEqual(hits, [])
 
-    def test_vibracion_test_treats_blink_platforms_as_fixed_with_a_warning(self):
-        """Paso 5 de docs/propuesta-1-3.md (2026-10-19): sin modelar el ritmo (paso 9), las plataformas
-        que parpadean son tablas fijas y sale un aviso."""
+    def test_vibracion_test_steps_on_blink_platforms_only_while_on(self):
+        """Paso 9: las plataformas que parpadean siguen su metronomo (arranca al entrar en su zona) y el plan
+        solo las pisa encendidas; sin avisos."""
         result, exported = checked("vibracion_test")
         self.assertTrue(result["ok"], messages(result))
-        self.assertTrue(any("plataformas que parpadean (5, blink_platform)" in w
-                            for w in messages(result, "warnings")), messages(result, "warnings"))
-        self.assertEqual(exported["steps"][-1]["action"], "goal")
+        self.assertEqual(result["warnings"], [])
+        crossing = result["plan"]["banners"][0]
+        self.assertEqual(crossing["rhythm"], ["ritmo_v"])
+        self.assertTrue(set(crossing["blinks"]) & {"blink_2a_a", "blink_2a_b"})
+        self.assertNotIn("start_phase_s", crossing, "el metronomo arranca al entrar: no hay fase libre")
+        self.assertFalse(any(s["action"] == "wait_phase" for s in exported["steps"]))
+        self.assertEqual(pz.blink_standing_problems(room("vibracion_test"), exported, "ritmo_v"), [])
+        self.assert_export_shape(exported)
 
-    def test_alarmas_test_skips_bells_and_rhythm_banners_with_warnings(self):
-        """Paso 6 de docs/propuesta-1-3.md (2026-10-19): sin modelar el ritmo ni las campanas (paso 9),
-        los banners con rhythm se omiten del plan y las campanas no se esquivan, con avisos."""
+    def test_alarmas_test_crosses_the_tunnel_with_dashes(self):
+        """Paso 9: el tunel de alarmas (compas por la columna mas avanzada), sus campanas y sus banners con
+        rhythm entran en el plan; con techo de 2 filas en el 4b y el 4c, el dash; sin avisos."""
         result, exported = checked("alarmas_test")
         self.assertTrue(result["ok"], messages(result))
-        warnings = messages(result, "warnings")
-        self.assertTrue(any("campanas de alarma (6, alarm_bell)" in w for w in warnings), warnings)
-        for bid in ("banner_4a", "banner_4c"):
-            self.assertTrue(any("banner %s: su ciclo lo marca el metronomo tunel_alarmas" % bid in w
-                                for w in warnings), warnings)
-        self.assertFalse(any(s["action"] == "wait_phase" for s in exported["steps"]))
+        self.assertEqual(result["warnings"], [])
+        crossing = result["plan"]["banners"][0]
+        self.assertEqual(crossing["rhythm"], ["tunel_alarmas"])
+        self.assertEqual(set(crossing["banners"]), {"banner_4a", "banner_4c"})
+        self.assertEqual(len(crossing["bells"]), 6)
+        self.assertGreaterEqual(crossing["dashes"], 1)
+        self.assertFalse(any(s["action"] == "wait_phase" for s in exported["steps"]),
+                         "el tunel arranca al entrar: no hay fase libre")
+        for s in exported["steps"]:
+            if s["action"] == "wait_beat":
+                self.assertEqual(s["rhythm"], "tunel_alarmas")
+                self.assertIn(s["beat"]["stage"], (0, 1, 2))
+        self.assertGreaterEqual(result["plan"]["energy"]["used"], 10.0 * crossing["dashes"])
         self.assert_export_shape(exported)
+
+    def test_excepciones_test_reaches_the_message_without_the_dash(self):
+        """Paso 9: forbid_abilities ["dash"] del secreto «Excepciones»: su mensaje se alcanza con el Debug y
+        sin el dash."""
+        result, _ = checked("excepciones_test")
+        self.assertTrue(result["ok"], messages(result))
+        item = result["memories"][0]
+        self.assertEqual(item["forbid_abilities"], ["dash"])
+        self.assertFalse(item["reachable_without_debug"])
+        self.assertTrue(item["reachable_with_debug"])
+        secret = next(i for i in result["secrets"]["items"] if i["id"] == "secreto_excepciones")
+        self.assertEqual(secret["forbid_abilities"], ["dash"])
+        self.assertTrue(secret["with_debug"])
+
+    def test_ajustes_test_gets_the_dash_from_the_switch(self):
+        """Paso 9: el interruptor «No molestar» es una puerta (pulso de espaldas) que da el dash; en la sala no
+        hace falta (aviso, como un ability_pickup opcional)."""
+        result, _ = checked("ajustes_test")
+        self.assertTrue(result["ok"], messages(result))
+        gate = next(g for g in result["gates"] if g["kind"] == "dnd")
+        self.assertEqual((gate["id"], gate["ability"]), ("dnd_ajustes", "dash"))
+        self.assertTrue(any("interruptor No molestar dnd_ajustes no es obligatorio" in w
+                            for w in messages(result, "warnings")), messages(result, "warnings"))
 
     def test_tower_test_exports_the_climb(self):
         result, exported = checked("tower_test")
@@ -366,6 +420,172 @@ class NegativeTest(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("exige el laser (validation.laser_required)" in m for m in messages(result)),
                         messages(result))
+
+
+class DashAndRhythmTest(unittest.TestCase):
+    """Paso 9 de docs/propuesta-1-3.md (2026-10-20): dash, banner obligatorio, ritmo, tunel, campanas,
+    forbid_abilities e interruptor No molestar; casos negativos sinteticos (tests/support/puzzle_levels.py)."""
+
+    def test_mandatory_banner_with_a_niche_fails(self):
+        """Pasillo obligatorio con nichos en el techo: se cruza sin el dash (esperando en un nicho)."""
+        result = vl.validate(pz.dash_corridor(niches=[(9, 10), (14, 15)]), check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("banner banner_dash: su pasillo se cruza SIN el dash" in m
+                            and "validation.dash_required" in m for m in messages(result)), messages(result))
+
+    def test_mandatory_banner_under_a_three_row_ceiling_fails(self):
+        """Con 3 filas libres el banner se salta: el dash no es obligatorio."""
+        result = vl.validate(pz.dash_corridor(open_ceiling=True), check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("banner banner_dash: su pasillo se cruza SIN el dash" in m for m in messages(result)),
+                        messages(result))
+
+    def test_banner_too_fast_for_the_invulnerability_fails(self):
+        """Con una invulnerabilidad de 0,05 s el banner (148 px de solape a 1280 px/s relativos: 0,12 s) no se
+        atraviesa: no hay cruce."""
+        rules = vl.Rules()
+        rules.dash_invulnerable_s = 0.05
+        validator = vl.Validator(room("silenciados_test"), rules)
+        result = validator.run()
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("no hay forma de cruzar su tramo sin dano" in m and "banner_dash" in m
+                            for m in messages(result)), messages(result))
+
+    def test_dash_without_energy_fails(self):
+        result = vl.validate(pz.dash_corridor(start_energy=0, charger=False), check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any(m.startswith("sin energia en el paso") and "dash" in m and "quedan 0 y hacen falta 10" in m
+                            for m in messages(result)), messages(result))
+
+    def test_dash_with_low_energy_detours_to_the_charger(self):
+        export = []
+        result = vl.validate(pz.dash_corridor(start_energy=5), check_schema=False, export=export)
+        self.assertTrue(result["ok"], messages(result))
+        steps = export[0]["steps"]
+        charge = next(i for i, s in enumerate(steps) if s["action"] == "charge")
+        first_dash = next(i for i, s in enumerate(steps) if s["action"] == "dash")
+        self.assertLess(charge, first_dash, "carga antes del primer dash")
+
+    def test_dash_cooldown_between_two_dashes(self):
+        """Dos dashes seguidos: entre el final de uno y el principio del siguiente pasa el enfriamiento."""
+        result, exported = checked("alarmas_test")
+        cool = vl.Rules().dash_cooldown_s
+        walk = vl.Rules().walk_speed
+
+        def start(s):
+            return s["t"] + abs(s["takeoff_x_px"] - s["from"]["feet_px"][0]) / walk + 0.06 + s.get("dash_after_s", 0.0)
+
+        dashes = [s for s in exported["steps"] if s["action"] == "dash"]
+        self.assertGreaterEqual(len(dashes), 2)
+        for a, b in zip(dashes, dashes[1:]):
+            self.assertGreaterEqual(start(b) - (start(a) + a["dash_s"]), cool - 0.02, (a, b))
+
+    def test_blink_pit_needs_the_rhythm(self):
+        """Pozo sin fondo que solo se cruza por las plataformas que parpadean: encendidas el 60 % con medio
+        ciclo de desfase se cruza al compas; con el 20 % y 0,6 de desfase nunca hay donde caer."""
+        export = []
+        result = vl.validate(pz.blink_pit(), export=export)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(pz.blink_standing_problems(pz.blink_pit(), export[0], "ritmo_v"), [])
+        result = vl.validate(pz.blink_pit(on_fraction=0.2, offsets=(0.0, 0.6)), check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("blink_2a_a, blink_2a_b: no hay forma de cruzar su tramo sin dano" in m
+                            for m in messages(result)), messages(result))
+
+    def test_tunnel_without_dash_fails(self):
+        """El 4c (techo de 2 filas, banner a 640 px/s en un compas de 1,4 s) no se cruza sin el dash."""
+        level = room("alarmas_test")
+        level["abilities_available"]["dash"] = False
+        result = vl.validate(level)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("no hay forma de cruzar su tramo sin dano" in m and "banner_4c" in m
+                            for m in messages(result)), messages(result))
+
+    def test_bells_are_dodged(self):
+        """El plan nunca esta en la columna de una campana mientras suena (salvo en el dash): comprobacion con
+        las muestras del propio plan y el reloj del tunel."""
+        result, exported = checked("alarmas_test")
+        level = room("alarmas_test")
+        rules = vl.Rules()
+        validator = vl.Validator(level, rules)
+        validator.export_requested = True
+        validator.run()
+        planner = validator.planner
+        hz = planner.hazards()
+        bells_only = dict(hz, timed=hz["bells"], blinks=[])
+        zs = {zid: planner.zone_init(planner.m.zones[zid]) for zid in planner.m.zones}
+        planner.timeline(planner.steps)
+        hits = []
+        for s in planner.steps:
+            smp = planner.samples(s)
+            d = planner.duration(s)
+            inv = planner.invulnerable_range(s)
+            for k, (x, f, _) in enumerate(smp):
+                for zid in zs:
+                    zs[zid] = planner.zone_step(planner.m.zones[zid], zs[zid], x, f, d / len(smp))
+                if planner.sample_unsafe(x, f, inv[0] <= k < inv[1], 0.0, zs, bells_only):
+                    hits.append((s["action"], round(x)))
+        self.assertEqual(hits, [])
+
+    def test_zone_clock_tempo_steps_and_tunnel_stages(self):
+        """Reloj de los metronomos como RhythmZone / AlarmTunnel: tempo_steps_s cada cycles_per_step ciclos con
+        bucle; el tunel por la columna mas avanzada (no retrocede); antes de entrar, quieto."""
+        validator = vl.Validator(room("vibracion_test"), vl.Rules())
+        planner = __import__("level_plan").Planner(validator)
+        z = validator.model.zones["ritmo_v"]
+        st = planner.zone_init(z)
+        self.assertEqual(planner.zone_step(z, st, 64.0 * 2, 640.0, 1.0), st, "fuera de la zona no arranca")
+        inside = (64.0 * 10, 640.0)
+        cycles = []
+        for _ in range(int(32.0 / 0.05)):
+            st = planner.zone_step(z, st, inside[0], inside[1], 0.05)
+            cycles.append(planner.zone_cycle(z, st))
+        self.assertEqual(cycles[0], 3.2)
+        self.assertIn(2.6, cycles)
+        self.assertIn(2.0, cycles)
+        self.assertEqual(cycles[-1], 3.2, "vuelve al lento tras 4 x (3,2 + 2,6 + 2,0) = 31,2 s")
+        validator = vl.Validator(room("alarmas_test"), vl.Rules())
+        planner = __import__("level_plan").Planner(validator)
+        z = validator.model.zones["tunel_alarmas"]
+        st = planner.zone_init(z)
+        st = planner.zone_step(z, st, 64.0 * 25 + 32, 704.0, 0.1)
+        self.assertEqual(planner.zone_cycle(z, st), 1.4)
+        st = planner.zone_step(z, st, 64.0 * 7 + 32, 704.0, 0.1)
+        self.assertEqual(planner.zone_cycle(z, st), 1.4, "volver atras no lo hace mas lento")
+
+    def test_forbidden_dash_hides_a_secret_behind_a_pit(self):
+        """Secreto tras la pared con glitch y un pozo de 4 tiles: con el dash (salto y dash aereo, tras apagar
+        el Debug) se alcanza; con forbid_abilities ["dash"], no."""
+        result = vl.validate(pz.secret_behind_pit(forbid=False))
+        self.assertTrue(result["ok"], messages(result))
+        result = vl.validate(pz.secret_behind_pit(forbid=True))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("el mensaje msg_1_3 (mensaje_1_3) no se alcanza ni con el Debug" in m
+                            for m in messages(result)), messages(result))
+
+    def test_dnd_switch_gives_the_dash(self):
+        """Pozo de 4 tiles que solo se cruza con el dash: el camino pulsa antes el interruptor No molestar (de
+        espaldas); sin el interruptor no hay camino."""
+        export = []
+        result = vl.validate(pz.dnd_gap(), export=export)
+        self.assertTrue(result["ok"], messages(result))
+        steps = export[0]["steps"]
+        switch = next(i for i, s in enumerate(steps) if s.get("target", {}).get("type") == "dnd_switch")
+        self.assertTrue(steps[switch]["face_back"])
+        self.assertEqual(steps[switch]["target"]["ability"], "dash")
+        dash = next(i for i, s in enumerate(steps) if s["action"] == "dash")
+        self.assertLess(switch, dash)
+        result = vl.validate(pz.dnd_gap(switch=False))
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("no hay camino de P a G" in m for m in messages(result)), messages(result))
+
+    def test_dash_required_banner_must_exist(self):
+        level = room("silenciados_test")
+        level["validation"]["dash_required"] = ["banner_x"]
+        result = vl.validate(level)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("validation.dash_required: el banner 'banner_x' no existe" in m
+                            for m in messages(result)), messages(result))
 
 
 class CliTest(unittest.TestCase):

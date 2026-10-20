@@ -187,5 +187,128 @@ def banner_walk_hits(level, exported, hitbox, walk_speed, sample_dt=1.0 / 120.0)
     return hits
 
 
+def dash_corridor(niches=(), open_ceiling=False, start_energy=None, charger=True):
+    """Sala «Silenciados» (data/levels/silenciados_test.json, paso 9 de docs/propuesta-1-3.md) con el
+    pasillo obligatorio del banner banner_dash (columnas 6-17, techo bajo) cambiado: `niches` abre nichos
+    de una via en el techo (columnas de cada nicho, filas 7-8 libres y la repisa en la 9), `open_ceiling`
+    deja 3 filas libres en todo el pasillo (se salta el banner) y `start_energy` / `charger` quitan
+    energia. No pasan el esquema (knockback_to_entry exige techo bajo): check_schema=False."""
+    level = load_room("silenciados_test")
+    for cols in niches:
+        # El hueco del techo es un tile mas ancho por cada lado: desde la repisa se baja andando.
+        for x in range(min(cols) - 1, max(cols) + 2):
+            for y in (7, 8):
+                set_cell(level, x, y, ".")
+        for x in cols:
+            set_cell(level, x, 9, "-")
+    if open_ceiling:
+        for x in range(6, 18):
+            set_cell(level, x, 8, ".")
+    if start_energy is not None:
+        level["validation"]["start_energy"] = start_energy
+    if not charger:
+        level["objects"] = [o for o in level["objects"] if o["type"] != "charger"]
+    return level
+
+
+def blink_pit(on_fraction=0.6, offsets=(0.0, 0.5)):
+    """Sala «Vibracion» (data/levels/vibracion_test.json) con el foso del 2a (columnas 9-14) convertido en
+    un pozo sin fondo: solo se cruza por las dos plataformas que parpadean (A en 9-10 y B en 12-13), al
+    compas. `on_fraction` y `offsets` (A, B) cambian cuando estan encendidas (con 0,3 y medio ciclo de
+    desfase nunca coinciden: no hay cruce)."""
+    level = load_room("vibracion_test")
+    for x in range(9, 15):
+        set_cell(level, x, 11, ".")
+    for oid, off in zip(("blink_2a_a", "blink_2a_b"), offsets):
+        obj = obj_by_id(level, oid)
+        obj["params"]["on_fraction"] = on_fraction
+        obj["params"]["offset"] = off
+    return level
+
+
+def secret_behind_pit(forbid=True):
+    """Sala «Excepciones» (data/levels/excepciones_test.json) con un pozo sin fondo de 4 tiles (columnas
+    20-23) entre la pared con glitch y el secreto: andando no se salta; con el dash (salto y dash aereo)
+    si. Con `forbid` el secreto lleva forbid_abilities ["dash"] (como en la sala): su ruta no se encuentra."""
+    level = load_room("excepciones_test")
+    for x in range(20, 24):
+        set_cell(level, x, 11, ".")
+    secret = level["secrets"][0]
+    if not forbid:
+        secret.pop("forbid_abilities", None)
+    return level
+
+
+def dnd_gap(switch=True):
+    """Sala «Ajustes» (data/levels/ajustes_test.json) con un pozo sin fondo de 4 tiles (columnas 15-18)
+    antes de la terminal: solo se cruza con el dash, que da el interruptor «No molestar» (columna 7) con un
+    pulso de espaldas. Sin `switch`, no hay dash."""
+    level = load_room("ajustes_test")
+    for x in range(15, 19):
+        set_cell(level, x, 11, ".")
+    if not switch:
+        level["objects"] = [o for o in level["objects"] if o["type"] != "dnd_switch"]
+    return level
+
+
+def blink_standing_problems(level, exported, zone_id, tile=64):
+    """Comprobacion independiente del plan (paso 9): con el camino exportado (isak-path/1), el metronomo
+    `zone_id` (arranca cuando los pies de Isak entran en su zona) y sus ciclos (tempo_steps_s, cycles_per_step,
+    loop), devuelve los pasos que empiezan o acaban de pie sobre una plataforma que parpadea apagada
+    [(paso, id)]. Mira solo los extremos de cada paso walk / wait / wait_beat (no el arco de los saltos)."""
+    zone = next(o for o in level["objects"] if o["type"] == "rhythm_zone" and o["params"]["id"] == zone_id)["params"]
+    zx, zy, zw, zh = zone["zone"]
+    tempo = zone["tempo_steps_s"]
+    per_step = zone.get("cycles_per_step", 4)
+    blinks = [o for o in level["objects"] if o["type"] == "blink_platform" and o["params"]["rhythm"] == zone_id]
+
+    def inside(cell):
+        return zx <= cell[0] < zx + zw and zy <= cell[1] < zy + zh
+
+    start = None
+    for s in exported["steps"]:
+        if start is not None:
+            break
+        a = (s.get("from") or s.get("at") or {}).get("cell")
+        b = (s.get("to") or {}).get("cell")
+        if a is not None and inside(a):
+            start = s["t_world"]
+        elif b is not None and inside(b):
+            start = s["t_world"] + s["duration_s"]
+            if s["action"] == "walk" and b[1] == a[1]:
+                # Andando: entra cuando los pies cruzan el borde de la zona.
+                x0, x1 = s["from"]["feet_px"][0], s["to"]["feet_px"][0]
+                edge = zx * tile if x1 > x0 else (zx + zw) * tile
+                start = s["t_world"] + s["duration_s"] * (edge - x0) / (x1 - x0)
+    if start is None:
+        return []
+
+    def phase(t):
+        t -= start
+        if t < 0:
+            return 0.0
+        cycles = 0
+        while True:
+            cycle = tempo[(cycles // per_step) % len(tempo)]
+            if t < cycle:
+                return t / cycle
+            t -= cycle
+            cycles += 1
+
+    problems = []
+    for s in exported["steps"]:
+        if s["action"] not in ("walk", "wait", "wait_beat"):
+            continue
+        ends = [(s.get("from") or s.get("at"))["cell"], (s.get("to") or s.get("at"))["cell"]]
+        for cell, t in zip(ends, (s["t_world"], s["t_world"] + s["duration_s"])):
+            for b in blinks:
+                p = b["params"]
+                if b["y"] == cell[1] + 1 and b["x"] <= cell[0] < b["x"] + p.get("width_tiles", 2):
+                    local = (phase(t) - p.get("offset", 0.0)) % 1.0
+                    if local >= p.get("on_fraction", 0.5) + 0.02 and local <= 0.98:
+                        problems.append((s["i"], p["id"]))
+    return problems
+
+
 def deep(level):
     return copy.deepcopy(level)

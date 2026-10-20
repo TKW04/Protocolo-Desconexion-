@@ -81,6 +81,8 @@ rm -f "$IMPORT_LOG"
 # (data/memories.json; tools/validate_memories.py y tests/test_memories.py).
 # Desde el paso 4 (2026-10-19): el arte del mensaje de secreto (tools/validate_memory_pickup.py).
 # Desde el paso 8 de docs/propuesta-1-3.md (2026-10-20): el arte del 1-3 (tools/validate_world1_dnd.py).
+# Desde el paso 9 (2026-10-20): el validador con el dash, el ritmo, el tunel y las campanas (tests/test_level_plan.py,
+# DashAndRhythmTest; las salas del 1-3 se validan y exportan como las demas).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

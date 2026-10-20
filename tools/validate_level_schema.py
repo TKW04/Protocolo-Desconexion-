@@ -1259,7 +1259,8 @@ class LevelValidator:
         el Debug), start_energy (0-100, energia al empezar; 100 por defecto) y sync_damage_budget
         (>= 0, Sync Rate que pueden quitar los enemigos en el camino; 0 por defecto) y, desde el
         2026-10-17, ceiling_margin_px (0-64: holgura de techo calibrada con el Isak real; sin el campo,
-        el modelo de techo del paso 10)."""
+        el modelo de techo del paso 10) y, desde el paso 9 de docs/propuesta-1-3.md, dash_required (ids
+        de banners cuyo pasillo SOLO se cruza con el dash)."""
         if "validation" not in self.level:
             return
         val = self.level["validation"]
@@ -1285,6 +1286,17 @@ class LevelValidator:
                     for g in value:
                         if g not in groups:
                             self.error("validation.snooze_required: el grupo de recordatorios '%s' no existe" % g)
+            elif key == "dash_required":
+                # Paso 9 de docs/propuesta-1-3.md §6.1: banners cuyo pasillo SOLO se cruza con el dash.
+                banners = {str(e.get("id")) for e in self.level.get("enemies", [])
+                           if isinstance(e, dict) and e.get("type") == "spam_banner"}
+                if not isinstance(value, list) or not value or not all(isinstance(b, str) for b in value) \
+                        or len(set(value)) != len(value):
+                    self.error("validation.dash_required debe ser una lista no vacia de ids de banners, sin repetir")
+                else:
+                    for b in value:
+                        if b not in banners:
+                            self.error("validation.dash_required: el banner '%s' no existe" % b)
             else:
                 self.error("validation: campo desconocido '%s'" % key)
 

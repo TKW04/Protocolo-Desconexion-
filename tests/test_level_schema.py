@@ -976,6 +976,17 @@ class DashBannerSchemaTest(unittest.TestCase):
         self.level["abilities_available"]["dash"] = "si"
         self.assert_fails("abilities_available.dash debe ser true o false")
 
+    def test_dash_required_lists_existing_banners(self):
+        """validation.dash_required (paso 9 de docs/propuesta-1-3.md §6.1): ids de banners del nivel, sin
+        repetir."""
+        self.assertEqual(self.level["validation"]["dash_required"], ["banner_dash"])
+        self.level["validation"]["dash_required"] = ["banner_otro"]
+        self.assert_fails("validation.dash_required: el banner 'banner_otro' no existe")
+        self.level["validation"]["dash_required"] = []
+        self.assert_fails("validation.dash_required debe ser una lista no vacia de ids de banners")
+        self.level["validation"]["dash_required"] = ["banner_dash", "banner_dash"]
+        self.assert_fails("validation.dash_required debe ser una lista no vacia de ids de banners")
+
 
 class RhythmSchemaTest(unittest.TestCase):
     """Metronomo y plataformas que parpadean (2026-10-19, paso 5 de docs/propuesta-1-3.md §5.3): zona

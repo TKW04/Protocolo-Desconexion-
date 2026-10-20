@@ -95,6 +95,12 @@ movimiento por celdas:
      translucidos, tramos con Debug, banners, puntos rojos y energia, y exporta el
      camino (--export-path, formato isak-path/1). Solo los niveles del paso 10
      (Validator.is_advanced) llevan el plan en la salida: la del 1-1 no cambia.
+  10. Dash, ritmo, tunel y campanas del 1-3 (paso 9 de docs/propuesta-1-3.md, 2026-10-20): el dash es
+     estado del grafo (abilities_available.dash o el interruptor No molestar, dnd_switch) con movimientos
+     en el suelo y en el aire (World.compute_dash_edges; nunca con el Debug); el plan cuenta su energia,
+     su enfriamiento y su invulnerabilidad frente a banners y campanas, sigue los metronomos y las
+     plataformas que parpadean, comprueba validation.dash_required y exporta pasos dash y wait_beat.
+     forbid_abilities de un secreto: su ruta se busca sin esas habilidades (LevelModel.forbidding).
 
 Modelo de movimiento:
   - Isak es una caja de hitbox_size (32x80) con los pies en el origen. Esta de
@@ -165,6 +171,12 @@ DEFAULT_TIME_MARGIN_S = 1.5
 START_S = 0.06
 PULSE_DELAY_S = 1.0 / 60.0
 INF = float("inf")
+# Dash (paso 9 de docs/propuesta-1-3.md §6.1): instantes del arco de un salto en los que se prueba el
+# dash aereo (cada DASH_SAMPLE_S desde el despegue hasta la cumbre + DASH_AFTER_APEX_S) y coste extra
+# de un movimiento con dash en la busqueda del camino (gasta energia: solo se usa si hace falta).
+DASH_SAMPLE_S = 0.05
+DASH_AFTER_APEX_S = 0.15
+DASH_SEARCH_COST = 0.2
 
 
 # --- Datos ---
@@ -284,6 +296,18 @@ class Rules:
         sync = re.search(r"const SYNC_RATE_MAX\s*:\s*float\s*=\s*([\d.]+)", open(
             os.path.join(root, "scripts", "autoload", "game_state.gd"), encoding="utf-8").read())
         self.sync_max = float(sync.group(1)) if sync else 100.0
+        # Dash (gesto Deslizar, 1-3; paso 9 de docs/propuesta-1-3.md §6.1): seccion dash de
+        # data/isak_abilities.json. Tramo horizontal de dash_distance en dash_duration (gravedad 0),
+        # invulnerable dash_invulnerable_s desde su inicio, dash_cost de energia al salir y
+        # dash_cooldown_s desde el final; un dash aereo por salto. Tiempo real (no lo ralentiza el Debug).
+        dash = abilities.get("dash", {}) if isinstance(abilities.get("dash"), dict) else {}
+        self.dash_distance = float(dash.get("distance_px", 192.0))
+        self.dash_duration = float(dash.get("duration_s", 0.2))
+        self.dash_invulnerable_s = float(dash.get("invulnerable_s", 0.3))
+        self.dash_cost = float(dash.get("energy_cost", 10.0))
+        self.dash_cooldown_s = float(dash.get("cooldown_s", 0.5))
+        self.dash_end_speed = float(dash.get("end_speed_px_s", 360.0))
+        self.air_dashes = int(dash.get("air_dashes", 1))
         self.time_margin = None  # --time-margin (si no, validation.time_margin_s del nivel o 1,5 s)
         self.physics_path = physics_path
         # Mejoras de Calc (tanda M1, 2026-10-17): --upgrades acepta "pista:nivel" (p. ej. laser:3) y los
@@ -438,7 +462,8 @@ class Gate:
     def label(self):
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
                  "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %",
-                 "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga"}
+                 "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga",
+                 "dnd": "interruptor No molestar"}
         if getattr(self, "encounter", False):
             return "encuentro con Eco %s" % self.obj_id
         if self.kind == "switch" and getattr(self, "hidden", False):
@@ -468,8 +493,17 @@ class LevelModel:
         # Recordatorios (2026-10-16, paso 6 de docs/propuesta-1-2.md §10): PROVISIONAL, tabla
         # solida fina siempre presente (sin su cuenta, su caida ni el Posponer: paso 10).
         self.reminders = {}
-        # Plataformas que parpadean (blink_platform, 1-3): tablas fijas hasta el paso 9 de propuesta-1-3.
+        # Plataformas que parpadean (blink_platform, 1-3): en el grafo son tablas siempre presentes; el plan
+        # del camino (tools/level_plan.py, paso 9 de docs/propuesta-1-3.md) solo deja pisarlas (o tocarlas)
+        # mientras su metronomo las tiene encendidas. blink_items: {"id", "rhythm", "on_fraction", "offset",
+        # "rect" (tarjeta en px), "cells"}.
         self.blinks = {}
+        self.blink_items = []
+        # Metronomos (rhythm_zone) y tuneles de alarmas (alarm_tunnel) por id (paso 9).
+        self.zones = {}
+        # Habilidades que una comprobacion prohibe (forbid_abilities de un secreto, paso 9): mientras
+        # esten aqui, has_dash / has_laser / has_debug / has_pulse las dan por no disponibles.
+        self.forbidden = frozenset()
         # Paso 10 (2026-10-16, docs/propuesta-1-2.md §10): objetos con tiempo, laser y Debug que usa
         # el plan del camino (tools/level_plan.py). Los recordatorios siguen siendo tablas en el grafo;
         # su cuenta, su caida y el Posponer se comprueban en el plan.
@@ -481,6 +515,7 @@ class LevelModel:
         self.chargers = []  # cargadores: {"id", "cell", "rect", "amount", "reusable", "cooldown"}
         abilities = level.get("abilities_available", {})
         self.debug_base = bool(abilities.get("debug", False))
+        self.dash_base = bool(abilities.get("dash", False))
         self.validation = level.get("validation", {}) if isinstance(level.get("validation"), dict) else {}
         # Holgura de techo calibrada (2026-10-17): None = modelo del paso 10 (HEAD_MARGIN_PX).
         margin = self.validation.get("ceiling_margin_px")
@@ -510,6 +545,8 @@ class LevelModel:
             g.kind == "pickup" and g.ability == "laser" for g in self.gates)
         # Hay pulso en el nivel (desde el inicio, o lo da un encuentro con Eco o un ability_pickup).
         self.pulse_possible = self.pulse or any(g.kind == "pickup" and g.ability == "pulse" for g in self.gates)
+        # Hay dash en el nivel (abilities_available.dash o el interruptor No molestar; paso 9 del 1-3).
+        self.dash_possible = self.dash_base or any(g.kind == "dnd" for g in self.gates)
 
     # Objetos.
     def _params(self, obj):
@@ -590,11 +627,32 @@ class LevelModel:
                     info["cells"].add((obj["x"] + dx, obj["y"]))
                     self.reminder_group_of[(obj["x"] + dx, obj["y"])] = group
             elif obj["type"] == "blink_platform":
-                # Plataforma que parpadea (1-3, 2026-10-19, paso 5 de docs/propuesta-1-3.md): PROVISIONAL,
-                # tabla fija siempre presente; su ritmo (rhythm_zone) se modela en el paso 9.
+                # Plataforma que parpadea (1-3, paso 5 de docs/propuesta-1-3.md): tabla siempre presente en
+                # el grafo; el plan (paso 9) solo la deja pisar encendida (su metronomo, on_fraction, offset).
                 thickness = float(self.catalog.get("blink_platform", {}).get("card_height_px", T))
-                for dx in range(int(p.get("width_tiles", 2))):
+                width = int(p.get("width_tiles", 2))
+                cells = []
+                for dx in range(width):
                     self.blinks[(obj["x"] + dx, obj["y"])] = thickness
+                    cells.append((obj["x"] + dx, obj["y"]))
+                self.blink_items.append({
+                    "id": str(p.get("id", "blink_%d_%d" % (obj["x"], obj["y"]))), "rhythm": str(p.get("rhythm", "") or ""),
+                    "on_fraction": float(p.get("on_fraction", 0.5)), "offset": float(p.get("offset", 0.0)),
+                    "rect": (obj["x"] * T, obj["y"] * T, (obj["x"] + width) * T, obj["y"] * T + thickness),
+                    "cells": cells, "cell": (obj["x"], obj["y"])})
+            elif obj["type"] in ("rhythm_zone", "alarm_tunnel"):
+                # Metronomo / tunel de alarmas (paso 9): lo usan los banners y campanas con rhythm y las
+                # plataformas que parpadean (RhythmZone / AlarmTunnel).
+                zid = str(p.get("id", "%s_%d_%d" % (obj["type"], obj["x"], obj["y"])))
+                zone = [int(v) for v in p.get("zone", [obj["x"], obj["y"], 1, 1])]
+                self.zones[zid] = {
+                    "id": zid, "type": obj["type"], "cell": (obj["x"], obj["y"]), "cells": zone,
+                    "rect": (zone[0] * T, zone[1] * T, (zone[0] + zone[2]) * T, (zone[1] + zone[3]) * T),
+                    "start": str(p.get("start", "on_enter")),
+                    "tempo": [float(v) for v in p.get("tempo_steps_s", [])] or [1.0],
+                    "cycles_per_step": max(int(p.get("cycles_per_step", 4)), 1),
+                    "loop": bool(p.get("loop", True)),
+                    "stages": [dict(s) for s in p.get("stages", [])] if obj["type"] == "alarm_tunnel" else []}
             elif obj["type"] == "glitch_wall":
                 cells = []
                 for dy in range(int(p.get("height_tiles", 1))):
@@ -680,6 +738,18 @@ class LevelModel:
                 gate.hidden = obj["type"] == "debug_switch"
                 gate.reveal_radius = float(cfg.get("reveal_radius_px", 256.0))
                 gate.done_if_ally = str(p.get("done_if_ally", "") or "")
+                self.gates.append(gate)
+            elif obj["type"] == "dnd_switch":
+                # Interruptor «No molestar» (1-3, paso 3; modelado en el paso 9): un pulso que alcanza su
+                # hit_rect, con Isak de espaldas pose_s, da para siempre la habilidad `ability` (el dash).
+                cfg = self.catalog.get("dnd_switch", {})
+                sid = str(p.get("id", "dnd_%d_%d" % (obj["x"], obj["y"])))
+                gate = Gate("dnd:" + sid, "dnd", sid, openers=[cell_rect(obj, cfg.get("hit_rect", [8, -14, 48, 48]),
+                                                                          "interruptor No molestar %s" % sid)],
+                            col=obj["x"], row=obj["y"], tile=T)
+                gate.ability = str(p.get("ability", "dash"))
+                gate.pulses = 1
+                gate.pose_s = float(cfg.get("pose_s", 0.45))
                 self.gates.append(gate)
             elif obj["type"] == "laser_switch":
                 # Interruptor laser: un impacto lo activa para siempre (sin ventana).
@@ -863,16 +933,23 @@ class LevelModel:
         # Solo las puertas que cambian el terreno (tanda H2: el interruptor laser, el punto de carga, el
         # anuncio y las habilidades no; el interruptor de pulso, si abre una puerta con glitch).
         return tuple(sorted(g.gid for g in self.gates
-                            if g.gid in state and g.kind not in ("lswitch", "dock")
+                            if g.gid in state and g.kind not in ("lswitch", "dock", "dnd")
                             and not (g.kind == "switch" and ("switch:" + g.obj_id) not in self._door_gids)
                             and not (g.col_span[1] < lo or g.col_span[0] > hi)))
 
     def edges(self, node, state, debug=False):
         if debug == "auto":
             return self.union_edges(node, state) if self.has_debug(state) else self.edges(node, state, False)
-        key = (node, self.local_key(node, state), debug)
+        # Dash (paso 9 de docs/propuesta-1-3.md): sus movimientos se suman a los normales cuando la
+        # habilidad esta disponible y nunca con el Debug activo (no se combinan).
+        dash = debug is False and self.has_dash(state)
+        key = (node, self.local_key(node, state), debug) if not dash else (
+            node, self.local_key(node, state), debug, "dash")
         if key not in self._edges:
-            self._edges[key] = self.world(state, debug).compute_edges(node)
+            out = self.world(state, debug).compute_edges(node)
+            if dash:
+                out = out + self.world(state, False).compute_dash_edges(node)
+            self._edges[key] = out
         return self._edges[key]
 
     def union_edges(self, node, state):
@@ -881,6 +958,8 @@ class LevelModel:
         marcados con "debug": True. Encenderlo y apagarlo entre movimientos es libre en el grafo; la
         energia y la carga de activation_hold_s las cuenta el plan (tools/level_plan.py)."""
         key = (node, self.local_key(node, state), "union")
+        if self.has_dash(state):
+            key = key + ("dash",)
         if key not in self._edges:
             normal = self.edges(node, state, False)
             seen = {e["to"] for e in normal}
@@ -895,19 +974,47 @@ class LevelModel:
 
     def has_debug(self, state):
         """El Debug se puede usar: lo da el nivel (abilities_available.debug) o ya se recogio su chip."""
+        if "debug" in self.forbidden:
+            return False
         return self.debug_base or any(g.kind == "pickup" and g.ability == "debug" and g.gid in state
                                       for g in self.gates)
 
     def has_pulse(self, state):
         """El pulso esta disponible: lo da el nivel desde el inicio o ya se paso por el encuentro con Eco
         (o se recogio un ability_pickup de pulso)."""
+        if "pulse" in self.forbidden:
+            return False
         return self.pulse or any(g.kind == "pickup" and g.ability == "pulse" and g.gid in state
                                  for g in self.gates)
 
     def has_laser(self, state):
         """El laser esta disponible: lo da el nivel o ya se recogio su ability_pickup."""
+        if "laser" in self.forbidden:
+            return False
         return self.laser_base or any(g.kind == "pickup" and g.ability == "laser" and g.gid in state
                                       for g in self.gates)
+
+    def has_dash(self, state):
+        """El dash (gesto Deslizar) esta disponible: lo da el nivel (abilities_available.dash) o ya se
+        activo el interruptor No molestar (paso 9 de docs/propuesta-1-3.md)."""
+        if not self.dash_possible or "dash" in self.forbidden:
+            return False
+        return self.dash_base or any(g.kind == "dnd" and g.ability == "dash" and g.gid in state for g in self.gates)
+
+    def forbidding(self, abilities):
+        """Contexto (with) en el que esas habilidades no existen (forbid_abilities de un secreto)."""
+        model = self
+
+        class _Forbid:
+            def __enter__(self):
+                self.saved = model.forbidden
+                model.forbidden = frozenset(model.forbidden | set(abilities))
+                return model
+
+            def __exit__(self, *exc):
+                model.forbidden = self.saved
+                return False
+        return _Forbid()
 
     def can_open(self, gate, node, state, debug=False, use_laser=True):
         """Verdadero si desde `node` (de pie) se abre la puerta: el pulso toca algun rectangulo de
@@ -915,6 +1022,9 @@ class LevelModel:
         Isak toca su celda."""
         if gate.kind == "pickup":
             return bool(body_cells(node) & set(gate.cells))
+        if gate.kind == "dnd":
+            # Interruptor No molestar: un pulso de espaldas (paso 9).
+            return self.has_pulse(state) and self.pulse_hits(gate.openers, node, state, debug)
         if gate.kind == "bar":
             c0, r0, w, h = gate.zone
             return c0 <= node[0] < c0 + w and r0 <= node[1] < r0 + h
@@ -1042,14 +1152,16 @@ class LevelModel:
             value = self.validation.get("time_margin_s", DEFAULT_TIME_MARGIN_S)
         return float(value)
 
-    def edge_time(self, node, e):
+    def edge_time(self, node, e, walk_speed=None):
         """Segundos de un movimiento del grafo: andar una celda a walk_speed; saltar o caer, el tiempo en
         el aire mas lo que se anda dentro de las celdas de salida y llegada (del centro al despegue y
-        del aterrizaje al centro) y el arranque desde parado (START_S)."""
+        del aterrizaje al centro) y el arranque desde parado (START_S). Un dash (paso 9) cuenta igual: su
+        `time` es el tramo del dash (y del salto y de la caida que lo rodean). `walk_speed` (paso 9):
+        andar a otra velocidad (p. ej. corriendo por un pasillo, en la comprobacion de dash_required)."""
         T = self.T
         speed = self.rules.walk_speed
         if e["kind"] == "walk":
-            return T / speed
+            return T / (speed if walk_speed is None else walk_speed)
         x_from = (node[0] + 0.5) * T
         to = e["to"]
         land = e.get("land_x")
@@ -1058,9 +1170,10 @@ class LevelModel:
         extra = abs(e["x0"] - x_from) / speed + abs(land - (to[0] + 0.5) * T) / speed
         return e.get("time", 0.0) + extra + START_S
 
-    def time_search(self, sources, state, debug="auto", limit=None, region=None):
+    def time_search(self, sources, state, debug="auto", limit=None, region=None, dash=False):
         """Dijkstra por tiempo desde varias fuentes {nodo: segundos}: devuelve (t, parent). Respeta el
-        limite de exigencia de los saltos; `region` (conjunto de nodos) restringe la busqueda."""
+        limite de exigencia de los saltos; `region` (conjunto de nodos) restringe la busqueda. Sin `dash`
+        no usa los movimientos con dash (gastan energia: los desvios y acertijos van sin el)."""
         limit = self.rules.limit if limit is None else limit
         best = dict(sources)
         parent = {n: None for n in sources}
@@ -1072,6 +1185,8 @@ class LevelModel:
                 continue
             for e in self.edges(node, state, debug):
                 if max(e["h"], e["v"]) > limit + EPS:
+                    continue
+                if not dash and e.get("dash"):
                     continue
                 to = e["to"]
                 if region is not None and to not in region:
@@ -1091,6 +1206,8 @@ class LevelModel:
         {...} o None, "window": s, "shots": [celdas desde donde se dispara]}: `ok` son las celdas en
         las que el tiempo cabe en la ventana (el margen lo comprueba el plan)."""
         key = (gate.gid, state, debug, None if sources is None else id(sources))
+        if self.forbidden:
+            key = key + (self.forbidden,)
         if sources is None and key in self._relay_cache:
             return self._relay_cache[key]
         lector = gate.relay.get("lector") if gate.relay else None
@@ -1290,8 +1407,10 @@ class World:
         v_margin = 0.0 if not calibrated else m.ceiling_margin + max(0.0, m.rules.real_jump_height - m.rules.jump_height)
         tight = set()
         traj = [] if info is not None and info.get("want_traj") else None
+        traj_vy = [] if traj is not None else None
         if info is not None:
             info["traj"] = traj
+            info["traj_vy"] = traj_vy
             info["time"] = 0.0
             info["head_hit"] = False
         for _ in range(int(SIM_MAX_S / dt)):
@@ -1300,6 +1419,7 @@ class World:
                 info["time"] = steps * dt
             if traj is not None:
                 traj.append((x, y))
+                traj_vy.append(vy)
             # Horizontal.
             if abs(x_target - x) > EPS:
                 step = speed * dt
@@ -1559,6 +1679,151 @@ class World:
         near = to[0] * T if d > 0 else (to[0] + 1) * T
         return max(0.0, (near - x0) * d)
 
+    # --- Dash (paso 9 de docs/propuesta-1-3.md §6.1) ---
+
+    def dash_run(self, x, y, d, air=False):
+        """Tramo del dash desde los pies en (x, y) hacia d: dash_distance en dash_duration (un cuadro de
+        SIM_DT cada vez, gravedad 0). El terreno y los objetos solidos lo paran (Isak se queda pegado a
+        la pared y el dash acaba antes); las plataformas de una via no frenan en horizontal. Devuelve la
+        lista de x de cada cuadro (la ultima es el final) o None si toca pinchos o una Burbuja (la
+        invulnerabilidad no se da por buena contra ellos: margen) o, con la holgura de techo calibrada y
+        en el aire, si la cabeza pasa a menos de ceiling_margin_px de un solido."""
+        m = self.m
+        T = m.T
+        frames = max(1, int(round(m.rules.dash_duration / SIM_DT)))
+        step = m.rules.dash_distance / frames
+        xs = []
+        for _ in range(frames):
+            nx = x + d * step
+            if self.collides(nx, y):
+                if d > 0:
+                    cand = math.floor((nx + m.hw - EPS) / T) * T - m.hw
+                else:
+                    cand = (math.floor((nx - m.hw) / T) + 1) * T + m.hw
+                if (cand - x) * d > EPS and not self.collides(cand, y):
+                    xs.append(cand)
+                break
+            x = nx
+            if self.in_hazard(x, y):
+                return None
+            if air and m.ceiling_margin is not None and self.collides(x, y - m.ceiling_margin):
+                return None
+            xs.append(x)
+        return xs
+
+    def stand_cell(self, x, r, d):
+        """Celda de pie de la fila r bajo la x de los pies (en el borde, la de atras segun d), o None."""
+        c = int(math.floor((x - d * EPS) / self.m.T))
+        return (c, r) if self.is_node(c, r) else None
+
+    def compute_dash_edges(self, node):
+        """Movimientos con dash desde un nodo (paso 9): en el suelo (desde el centro de la celda o sus
+        bordes, un tramo de dash_distance en la misma fila y, si acaba sin suelo, una caida) y en el aire
+        (salto andando o en el sitio, dash desde el arco cada DASH_SAMPLE_S hasta la cumbre +
+        DASH_AFTER_APEX_S y caida). Tras el dash Isak sigue a walk_speed (o se para y cae en vertical). Cada
+        movimiento lleva "dash" (dir, air, xs, y, cuadros del salto antes del dash) y gasta dash_cost en el
+        plan. Exigencia: vertical como un salto; horizontal, la distancia en el aire frente al alcance del
+        salto mas dash_distance (0 en el suelo)."""
+        m = self.m
+        rules = m.rules
+        if not self.is_node(*node):
+            return []
+        c, r = node
+        T = m.T
+        feet = (r + 1) * T
+        best = {}
+        speed = rules.walk_speed
+
+        def add(e):
+            key = (e["to"], e["kind"])
+            old = best.get(key)
+            if old is None or (round(max(e["h"], e["v"]), 6), round(e["time"], 6)) < (
+                    round(max(old["h"], old["v"]), 6), round(old["time"], 6)):
+                best[key] = e
+
+        def fall_from(x1, y1, d, targets):
+            out = []
+            for xt in targets:
+                sim = {"want_traj": True}
+                to, _ = self.simulate(x1 + d * EPS * 10, y1, 0.0, speed, x1 + d * 1e6 if xt is None else xt, info=sim)
+                if to is None or to == node:
+                    continue
+                out.append((to, xt, sim))
+            return out
+
+        for d in (1, -1):
+            edge_x = (c + 1) * T if d > 0 else c * T
+            x_edge = edge_x if not self.collides(edge_x, feet) else edge_x - d * m.hw
+            back_x = c * T if d > 0 else (c + 1) * T
+            x_back = back_x if not self.collides(back_x, feet) else back_x + d * m.hw
+            center = (c + 0.5) * T
+            starts = [center] + [x for x in (x_edge, x_back) if abs(x - center) > EPS]
+            cols = [(c + d * k) * T if d > 0 else (c + d * k + 1) * T for k in range(1, m.K + 4)]
+            # En el suelo.
+            for x0 in starts:
+                xs = self.dash_run(x0, feet, d)
+                if not xs:
+                    continue
+                x1 = xs[-1]
+                info = {"dir": d, "air": False, "xs": xs, "y": feet, "pre": [], "x_start": x0}
+                land = self.stand_cell(x1, r, d)
+                if land is not None:
+                    if land != node:
+                        add({"to": land, "kind": "dash", "h": 0.0, "v": 0.0, "x0": x0,
+                             "travel": abs(x1 - x0), "rise": 0.0, "speed": "walk", "xt": x1, "vy0": 0.0,
+                             "time": len(xs) * SIM_DT, "land_x": x1, "dash": dict(info, fall=[], fall_xt=x1)})
+                    continue
+                for to, xt, sim in fall_from(x1, feet, d, [None, x1] + cols):
+                    drop = (to[1] + 1) * T - feet
+                    add({"to": to, "kind": "dash", "h": 0.0, "v": 0.0, "x0": x0,
+                         "travel": self._travel(x0, to, d), "rise": -drop, "speed": "walk", "xt": x1, "vy0": 0.0,
+                         "time": len(xs) * SIM_DT + sim.get("time", 0.0), "land_x": sim.get("land_x"),
+                         "dash": dict(info, fall=list(sim.get("traj") or []), fall_xt=xt)})
+            # En el aire (un dash por salto).
+            if rules.air_dashes < 1:
+                continue
+            t_apex = rules.jump_v0 / rules.gravity
+            ks = []
+            t = DASH_SAMPLE_S
+            while t <= t_apex + DASH_AFTER_APEX_S + EPS:
+                ks.append(int(round(t / SIM_DT)))
+                t += DASH_SAMPLE_S
+            jump_speeds = [("walk", speed), ("stand", 0.0)]
+            if rules.allow_run:
+                jump_speeds.insert(1, ("run", rules.run_speed))
+            for speed_name, jspeed in jump_speeds:
+                for x0 in [x_edge, center] if jspeed > 0.0 else [center]:
+                    arc = {"want_traj": True}
+                    xt_jump = x0 + d * 1e6 if jspeed > 0.0 else x0
+                    self.simulate(x0, feet, -rules.jump_v0, jspeed, xt_jump, head_lag=True, info=arc)
+                    traj = arc.get("traj") or []
+                    for k in ks:
+                        if k >= len(traj):
+                            break
+                        xa, ya = traj[k]
+                        if ya >= feet - EPS:
+                            continue
+                        xs = self.dash_run(xa, ya, d, air=True)
+                        if not xs:
+                            continue
+                        x1 = xs[-1]
+                        for to, xt, sim in fall_from(x1, ya, d, [None, x1]):
+                            rise = feet - (to[1] + 1) * T
+                            travel = self._travel(x0, to, d)
+                            reach = rules.reach(rise, jspeed) + rules.dash_distance
+                            h = travel / reach if travel > EPS else 0.0
+                            v = max(0.0, rise) / rules.jump_height
+                            if rise > rules.jump_height + EPS:
+                                continue
+                            add({"to": to, "kind": "jump_dash", "h": h, "v": v, "x0": x0, "travel": travel,
+                                 "rise": rise, "speed": speed_name, "xt": xt_jump, "vy0": -rules.jump_v0,
+                                 "time": k * SIM_DT + len(xs) * SIM_DT + sim.get("time", 0.0),
+                                 "land_x": sim.get("land_x"),
+                                 "dash": {"dir": d, "air": True, "xs": xs, "y": ya, "pre": list(traj[:k]),
+                                          "x_start": xa, "after_s": k * SIM_DT, "jump_speed": jspeed,
+                                          "fall": list(sim.get("traj") or []), "fall_xt": xt}})
+        return list(best.values())
+
 
 # --- Busqueda ---
 
@@ -1582,7 +1847,8 @@ def search(model, source, state, limit, debug="auto", avoid=None):
             dval = max(e["h"], e["v"])
             if dval > limit + EPS:
                 continue
-            key = (round(max(c_max, dval), 9), round(c_sum + e["h"] + e["v"] + STEP_COST, 9))
+            cost = STEP_COST + (DASH_SEARCH_COST if e.get("dash") else 0.0)
+            key = (round(max(c_max, dval), 9), round(c_sum + e["h"] + e["v"] + cost, 9))
             to = e["to"]
             if avoid and body_cells(to) & avoid:
                 continue
@@ -1720,7 +1986,6 @@ class Validator:
         self.goal_cells = goal_cells
         self._check_power_sources()
         self._check_bubbles()
-        self._note_unmodeled()
         # Regla 5 (P) y nodo de inicio.
         start, why = self.spawn_node(starts[0])
         self._check_spawn_spikes(starts[0], start, "P")
@@ -1761,19 +2026,6 @@ class Validator:
                 self._check_plan()
         return self.finish()
 
-    def _note_unmodeled(self):
-        """Objetos del 1-3 que el validador aun no modela (paso 9 de docs/propuesta-1-3.md §7): aviso, sin
-        error. Las plataformas que parpadean cuentan como fijas y las campanas no se esquivan. Sin ellos la
-        salida no cambia."""
-        blinks = [o for o in self.level.get("objects", []) if o.get("type") == "blink_platform"]
-        if blinks:
-            self.report.warning("plataformas que parpadean (%d, blink_platform): el ritmo no se modela todavia "
-                                "(paso 9 de docs/propuesta-1-3.md); se tratan como plataformas fijas" % len(blinks))
-        bells = [e for e in self.level.get("enemies", []) if e.get("type") == "alarm_bell"]
-        if bells:
-            self.report.warning("campanas de alarma (%d, alarm_bell): sus ondas no se modelan todavia (paso 9 de "
-                                "docs/propuesta-1-3.md); el camino no las esquiva" % len(bells))
-
     def enemy_data(self, kind):
         """Datos de data/enemies/<kind>.json (cacheados)."""
         cache = self.__dict__.setdefault("_enemy_cache", {})
@@ -1786,10 +2038,14 @@ class Validator:
         punto rojo, banner, chip del Debug, plataformas 'h' o bloque validation): se le hace el plan
         del camino (tools/level_plan.py) y se informa de el. El 1-1 no lo es (su salida no cambia)."""
         kinds = {"laser_receiver", "relay_receiver", "ad_cover", "reminder_platform", "snooze_button",
-                 "overlay_popup", "update_bar", "power_switch", "debug_switch", "laser_switch", "charge_dock"}
+                 "overlay_popup", "update_bar", "power_switch", "debug_switch", "laser_switch", "charge_dock",
+                 "dnd_switch", "blink_platform", "rhythm_zone", "alarm_tunnel"}
         if any(o["type"] in kinds for o in self.level.get("objects", [])):
             return True
-        if any(e["type"] in ("notification_badge", "spam_banner") for e in self.level.get("enemies", [])):
+        if any(e["type"] in ("notification_badge", "spam_banner", "alarm_bell") for e in self.level.get("enemies", [])):
+            return True
+        if self.model.dash_possible:
+            # Paso 9 de docs/propuesta-1-3.md: el dash gasta energia y tiene enfriamiento (plan del camino).
             return True
         if any(g.kind == "pickup" and g.ability == "debug" for g in self.model.gates):
             return True
@@ -1953,7 +2209,7 @@ class Validator:
                 continue
             if g.kind == "bubble" and g.bypassable:
                 continue
-            if g.kind in ("bridge", "popup") or g.kind == "bubble":
+            if g.kind in ("bridge", "popup", "dnd") or g.kind == "bubble":
                 self.report.error("%s exige el pulso y esta antes de %s (columna %d): el pulso aun no existe"
                                   % (g.label(), names, first), g.row, g.col, g.label())
         for obj in self.level.get("objects", []):
@@ -2205,6 +2461,13 @@ class Validator:
                                             % ("Debug para descubrirlo y " if g.hidden else "", g.pulses, n[1], n[0],
                                                g.label())})
                     continue
+                if g.kind == "dnd":
+                    # Paso 9 del 1-3: un pulso de espaldas da el dash.
+                    actions.append({"action": "pulse", "from": [n[1], n[0]], "object": g.label(), "pulses": 1,
+                                    "face_back": True,
+                                    "text": "pulso de espaldas desde (fila %d, columna %d) -> %s (da el %s)"
+                                            % (n[1], n[0], g.label(), g.ability)})
+                    continue
                 if g.kind == "lswitch":
                     actions.append({"action": "laser", "from": [n[1], n[0]], "object": g.label(),
                                     "text": "laser desde (fila %d, columna %d) -> %s (se queda activado)"
@@ -2264,7 +2527,8 @@ class Validator:
 
     def _move_action(self, prev, e):
         to = e["to"]
-        names = {"jump": "saltar", "jump_run": "saltar corriendo", "fall": "caer"}
+        names = {"jump": "saltar", "jump_run": "saltar corriendo", "fall": "caer", "dash": "deslizar (dash)",
+                 "jump_dash": "saltar y deslizar en el aire (dash)"}
         rise = e["rise"]
         text = "%s de (fila %d, columna %d) a (fila %d, columna %d): %.0f px en el aire, %s %.0f px " \
                "-> %.0f %% horizontal, %.0f %% vertical%s%s" % (
@@ -2342,9 +2606,14 @@ class Validator:
             # Con la holgura calibrada (2026-10-17) el Debug se enciende donde hace falta (union de
             # movimientos, como en el camino): con el Debug siempre encendido una plataforma oculta
             # seria un techo en sitios donde nadie lo usa.
-            mode = "auto" if self.model.ceiling_margin is not None else True
-            with_debug = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=mode)
+            mode = self._debug_mode()
+            # forbid_abilities (paso 9 de docs/propuesta-1-3.md): la ruta del secreto no usa esas habilidades
+            # (p. ej. el dash); «sin Debug no se alcanza» se comprueba con todas.
+            with self.model.forbidding(self._forbidden_of(s)):
+                with_debug = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=mode)
             info.append({"id": s["id"], "without_debug": without["ok"], "with_debug": with_debug["ok"]})
+            if self._forbidden_of(s):
+                info[-1]["forbid_abilities"] = list(self._forbidden_of(s))
             if without["ok"]:
                 self.report.error("el secreto %s se alcanza sin pasar por plataformas ocultas" % s["id"],
                                   s["y"], s["x"], s["id"])
@@ -2360,6 +2629,19 @@ class Validator:
         for s in self.level.get("secrets", []):
             ids.update(str(i) for i in s.get("gates", []))
         return frozenset(g.gid for g in self.model.gates if g.obj_id in ids)
+
+    def _debug_mode(self, calibrated=True):
+        """Modo del Debug para «se alcanza con el Debug»: siempre encendido (True) o encendido donde hace falta
+        ("auto", union de movimientos) con la holgura de techo calibrada (2026-10-17) o con el dash en el nivel
+        (paso 9: el dash no se combina con el Debug; se apaga para deslizar)."""
+        if (calibrated and self.model.ceiling_margin is not None) or self.model.dash_possible:
+            return "auto"
+        return True
+
+    @staticmethod
+    def _forbidden_of(secret):
+        """Habilidades que la ruta del secreto no puede usar (forbid_abilities; paso 9 del 1-3)."""
+        return tuple(str(a) for a in secret.get("forbid_abilities", []) or [])
 
     def _check_reachable_secrets(self, start):
         """Secretos que se recogen sin Debug: los que son un objeto recogible (no la pared con
@@ -2378,7 +2660,15 @@ class Validator:
                 item = {"id": s["id"], "object": obj}
                 info.append(item)
             required = s.get("requires_upgrade")
-            run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
+            forbid = self._forbidden_of(s)
+            if forbid:
+                item["forbid_abilities"] = list(forbid)
+            if not required or self.rules.has_upgrade(required):
+                # Se tiene que alcanzar: sin las habilidades de forbid_abilities (paso 9).
+                with self.model.forbidding(forbid):
+                    run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
+            else:
+                run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
             item.update({"reachable": run["ok"],
                          "secret_gates_opened": sorted(g for g in run["state"] if g in self.secret_gates())})
             if not required or self.rules.has_upgrade(required):
@@ -2398,7 +2688,8 @@ class Validator:
                                   s["y"], s["x"], s["id"])
                 continue
             up_start, _ = upgraded.spawn_node(self.find("P")[0])
-            up_run = upgraded.progression(up_start, frozenset(), upgraded.rules.limit, targets=cell)
+            with upgraded.model.forbidding(forbid):
+                up_run = upgraded.progression(up_start, frozenset(), upgraded.rules.limit, targets=cell)
             item["reachable_with_upgrade"] = up_run["ok"]
             item["pulse_radius_with_upgrade_px"] = upgraded.rules.pulse_radius
             if not up_run["ok"]:
@@ -2420,7 +2711,8 @@ class Validator:
             item = {"id": oid, "cell": list(cell), "behind_glitch_wall": hidden,
                     "reachable_without_debug": without["ok"]}
             if hidden:
-                with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=True)
+                with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell},
+                                              debug=self._debug_mode(calibrated=False))
                 item["reachable_with_debug"] = with_debug["ok"]
                 if without["ok"]:
                     self.report.error("la vida extra %s se alcanza sin Debug (la tapa una pared con glitch)" % oid,
@@ -2469,11 +2761,18 @@ class Validator:
                 continue
             needs_debug = bool(secret.get("needs_debug"))
             item["needs_debug"] = needs_debug
-            without = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=False)
+            forbid = self._forbidden_of(secret)
+            if forbid:
+                item["forbid_abilities"] = list(forbid)
+            # forbid_abilities (paso 9): lo que el secreto exige alcanzar se comprueba sin esas habilidades; lo
+            # que NO debe alcanzarse (sin Debug, si lo exige), con todas.
+            with self.model.forbidding(() if needs_debug else forbid):
+                without = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=False)
             item["reachable_without_debug"] = without["ok"]
             if needs_debug:
-                mode = "auto" if self.model.ceiling_margin is not None else True
-                with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=mode)
+                mode = self._debug_mode()
+                with self.model.forbidding(forbid):
+                    with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=mode)
                 item["reachable_with_debug"] = with_debug["ok"]
                 if without["ok"]:
                     self.report.error("el mensaje %s se alcanza sin Debug (su secreto %s lo exige)"
@@ -2497,8 +2796,9 @@ class Validator:
                 try:
                     upgraded = Validator(self.level, self.rules.with_upgrades([required]))
                     up_start, _ = upgraded.spawn_node(self.find("P")[0])
-                    up_run = upgraded.progression(up_start, frozenset(), upgraded.rules.limit, targets={cell},
-                                                  debug="auto" if needs_debug else False)
+                    with upgraded.model.forbidding(forbid):
+                        up_run = upgraded.progression(up_start, frozenset(), upgraded.rules.limit, targets={cell},
+                                                      debug="auto" if needs_debug else False)
                     item["reachable_with_upgrade"] = up_run["ok"]
                     if not up_run["ok"]:
                         self.report.error("el mensaje %s no se alcanza ni con la mejora %s" % (what, required),
@@ -2532,7 +2832,8 @@ class Validator:
                 what = {"bridge": "activar el receptor", "popup": "cerrar el pop-up",
                         "bubble": "aturdir la Burbuja", "ad": "romper el anuncio",
                         "bar": "esperar la barra", "switch": "activar el interruptor",
-                        "lswitch": "disparar al interruptor", "dock": "cargar a Calc"}[g.kind]
+                        "lswitch": "disparar al interruptor", "dock": "cargar a Calc",
+                        "dnd": "activar el interruptor No molestar (el dash)"}[g.kind]
                 self.report.warning("%s no es obligatorio: se llega a la meta sin %s" % (g.label(), what),
                                     g.row, g.col, g.label())
 
@@ -2709,6 +3010,8 @@ class Validator:
                 entry.update({"pulses": g.pulses, "hidden": g.hidden, "pose_s": g.pose_s})
             elif g.kind == "dock":
                 entry.update({"requires": list(g.requires), "wait_s": round(g.wait_s, 2)})
+            elif g.kind == "dnd":
+                entry["ability"] = g.ability
             if g.kind in ("switch", "lswitch", "dock"):
                 entry["done_at_start"] = g.gid in self.model.initial
             gates.append(entry)
@@ -2825,6 +3128,8 @@ def format_text(path, result):
         if item.get("requires_upgrade"):
             reach += "; con %s %s" % (item["requires_upgrade"],
                                      "se alcanza" if item.get("reachable_with_upgrade") else "no se alcanza")
+        if item.get("forbid_abilities"):
+            reach += " (ruta sin %s)" % ", ".join(item["forbid_abilities"])
         out.append("  mensaje %s (%s, fila %d, columna %d) del secreto %s: %s; %s" % (
             item["memory_id"], item["id"], item["cell"][1], item["cell"][0], item["secret"], reach,
             "obligatorio" if item["mandatory"] else "opcional"))
@@ -2944,9 +3249,23 @@ def format_plan(plan):
     for b in plan.get("banners", []):
         if "start_phase_s" in b:
             out.append("    banners %s: cruce de %.1f s desde (fila %d, columna %d) en la fase %.2f s de %.1f s "
-                       "(%d espera(s), %d salto(s) en el sitio)" % (
+                       "(%d espera(s), %d salto(s) en el sitio%s)" % (
                            ", ".join(b["banners"]), b["crossing_s"], b["entry"][0], b["entry"][1], b["start_phase_s"],
-                           b["period_s"], b["waits"], b["hops"]))
+                           b["period_s"], b["waits"], b["hops"],
+                           ", %d dash(es)" % b["dashes"] if b.get("dashes") else ""))
+        elif "crossing_s" in b:
+            # Paso 9 de docs/propuesta-1-3.md: cruce al compas de un metronomo (sin fase libre).
+            parts = [("banners", b.get("banners")), ("campanas", b.get("bells")), ("plataformas", b.get("blinks"))]
+            what = "; ".join("%s %s" % (k, ", ".join(v)) for k, v in parts if v)
+            out.append("    al compas de %s (%s): cruce de %.1f s desde (fila %d, columna %d) (%d espera(s), %d salto(s) "
+                       "en el sitio, %d dash(es))" % (", ".join(b.get("rhythm") or []) or "-", what, b["crossing_s"],
+                                                     b["entry"][0], b["entry"][1], b["waits"], b["hops"],
+                                                     b.get("dashes", 0)))
+        for bid, req in sorted((b.get("dash_required") or {}).items()):
+            out.append("      banner %s (dash_required): sin dash %s; con dash %s; ventana del dash %s" % (
+                bid, "se cruza" if req["without_dash_walking"] or req["without_dash_running"] else "no se cruza",
+                "se cruza" if req["with_dash"] else "no se cruza",
+                "-" if req["dash_window_s"] is None else "%.2f s" % req["dash_window_s"]))
     for b in plan.get("bars", []):
         out.append("    barra del 99 %% %s: espera de %.1f s en (fila %d, columna %d); %d enemigo(s) en oleadas, que no se "
                    "modelan (se esquivan o se aturden; no hace falta derrotarlos)" % (
@@ -2955,9 +3274,10 @@ def format_plan(plan):
         out.append("    punto rojo %s: %d golpe(s), %d aturdido(s) con el pulso" % (b["id"], b["hits"], b["stuns"]))
     energy = plan.get("energy")
     if energy:
-        out.append("    energia: empieza en %.0f, gasta %.0f, recupera %.0f, minimo %.0f, termina en %.0f%s" % (
+        out.append("    energia: empieza en %.0f, gasta %.0f, recupera %.0f, minimo %.0f, termina en %.0f%s%s" % (
             energy["start"], energy["used"], energy["gained"], energy["min"], energy["end"],
-            "; %d desvio(s) a un cargador" % energy["charger_detours"] if energy["charger_detours"] else ""))
+            "; %d desvio(s) a un cargador" % energy["charger_detours"] if energy["charger_detours"] else "",
+            "; %d dash(es)" % energy["dashes"] if energy.get("dashes") else ""))
     return out
 
 
