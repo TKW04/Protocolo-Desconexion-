@@ -530,7 +530,7 @@
 		},
 		"exceptions_panel": {
 			"scene": "res://scenes/levels/exceptions_panel.tscn",
-			"description": "Decorado de la sala secreta «Excepciones» del 1-3 (2026-10-20, paso 7 de docs/propuesta-1-3.md §7, §5.4): la lista de contactos que pueden saltarse el No molestar. Panel de width_tiles x height_tiles (detras de Isak) con title arriba y una fila por nombre de contacts (icono generico de persona y estrella de favorito; nombres genericos, ninguna marca). SOLO DECORADO: sin colision, sin Q ni ficha del album y sin estado. Textos con la fuente de textos (title y contacts son PROPUESTA). Arte provisional dibujado por codigo (paleta del Mundo 1, seccion exceptions_panel); el definitivo, en el paso 8.",
+			"description": "Decorado de la sala secreta «Excepciones» del 1-3 (2026-10-20, paso 7 de docs/propuesta-1-3.md §7, §5.4): la lista de contactos que pueden saltarse el No molestar. Panel de width_tiles x height_tiles (detras de Isak) con title arriba y una fila por nombre de contacts (icono generico de persona y estrella de favorito; nombres genericos, ninguna marca). SOLO DECORADO: sin colision, sin Q ni ficha del album y sin estado. Textos con la fuente de textos (title y contacts: textos definitivos desde el 2026-10-20). Arte provisional dibujado por codigo (paleta del Mundo 1, seccion exceptions_panel); el definitivo, en el paso 8.",
 			"required": [],
 			"fields": {
 				"id": "object_id",
