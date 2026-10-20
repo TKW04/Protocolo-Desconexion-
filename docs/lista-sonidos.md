@@ -1,6 +1,6 @@
 # Lista de sonidos: SFX, ambientes, música, voces y UI
 
-**Estado:** propuesta (2026-10-20). Inventario completo de los sonidos que necesita el juego, para cuando se aborde la decisión abierta «Música y efectos de sonido» (`08-pendientes.md`: se trata al terminar el 1-1, el 1-2 y el 1-3). No se ha generado ni comprado ningún audio. Los IDs, duraciones y prioridades son propuestas.
+**Estado:** propuesta (2026-10-20). Inventario completo de los sonidos que necesita el juego, para cuando se aborde la decisión abierta «Música y efectos de sonido» (`08-pendientes.md`: se trata al terminar el 1-1, el 1-2 y el 1-3). Los IDs, duraciones y prioridades son propuestas. **Desde el 2026-10-20 el sistema de audio está montado** (`AudioManager`, `data/audio.json`, seis buses, ajustes de volumen) con 24 sonidos **provisionales** generados por script; ver «Integración del sistema de audio (2026-10-20)» al final.
 
 **Fuentes:** `01-ficha-reglas.md`, `02-isak-habilidades.md`, `05-hub.md`, `06-finales.md`, `mundo-1` a `mundo-6`, `propuesta-1-2.md`, `propuesta-1-3.md`, `propuesta-recuerdos.md`, `propuesta-asistentes-y-vidas.md`, `propuesta-mejoras.md`, `preguntas.md`, y el código (`scripts/autoload/event_bus.gd`, `scripts/player/`, `scripts/levels/`, `scripts/enemies/`, `scripts/hub/`, `scripts/ui/`).
 
@@ -312,7 +312,9 @@ Hoy los ajustes de accesibilidad (`data/pause_menu.json`, `scripts/autoload/game
 
 ## 13. Sistema de audio: qué hay hoy y qué falta
 
-**Hoy no existe nada de audio:** `assets/audio/` solo tiene `.gitkeep`; no hay `default_bus_layout.tres`, ni `AudioStreamPlayer` en escenas o scripts, ni `AudioServer`, ni autoload de audio (los autoloads son `EventBus`, `GameState` y `DebugMode`). `rhythm_zone.gd` y `data/eco_text_box.json` dicen explícitamente «solo visual / sin audio», y `event_bus.gd` deja «la música deformada» como pendiente.
+**Actualización (2026-10-20):** lo que sigue describe el estado ANTERIOR a la integración; el sistema ya existe (ver «Integración del sistema de audio (2026-10-20)», al final).
+
+**Antes no existía nada de audio:** `assets/audio/` solo tenía `.gitkeep`; no hay `default_bus_layout.tres`, ni `AudioStreamPlayer` en escenas o scripts, ni `AudioServer`, ni autoload de audio (los autoloads son `EventBus`, `GameState` y `DebugMode`). `rhythm_zone.gd` y `data/eco_text_box.json` dicen explícitamente «solo visual / sin audio», y `event_bus.gd` deja «la música deformada» como pendiente.
 
 **Lo que sí está listo:** casi todos los momentos ya emiten una señal en `EventBus` (≈50 señales: `pulse_fired`, `laser_fired`, `laser_denied`, `dash_started`, `dash_denied`, `debug_mode_changed`, `debug_activation_progress_changed`, `world_time_scale_changed`, `player_died`, `life_lost`, `player_respawned`, `checkpoint_activated`, `level_completed`, `ability_obtained`, `recharge_collected`, `charger_used`, `power_bank_no_room`, `extra_life_collected`, `memory_obtained`, `memory_read`, `game_saved`, `upgrade_purchased`, `trash_recovered`, `rollback_applied`, `eco_line_started`, `help_prompt_shown`, `help_learned`, `ally_met`, `ally_teleported`, `pause_menu_opened/closed`, `controls_changed`, `low_sync_changed`, `hide_changed`, `hide_ended`, `enemy_defeated`, `pulse_energy_returned`…), y los objetos con ritmo tienen señales locales (`rhythm_zone.beat/tempo_changed/started`, `blink_platform.warning_started/switched_on/switched_off`, `reminder_platform.countdown_started/snoozed/warning_started/fell/respawned`) y los enemigos `state_changed`, `stunned`, `popped`, `damaged`, `hit_player`, `deflected`. Esto permite conectar casi todo el audio **sin tocar la lógica del juego**.
 
@@ -382,3 +384,43 @@ Una fila de tabla = una entrada (las filas con «/» agrupan 2-3 variantes del m
 7. **Pasos de Isak:** se oyen, con variantes por superficie si procede.
 8. **Créditos:** sí, al final de los finales. **Pantalla de título:** sin decidir (sigue abierta en la pregunta 9).
 9. **Sistema de audio:** aprobado montar `AudioManager`, `data/audio.json` y los seis buses, con 15-20 sonidos provisionales. Se hará cuando termine el paso 10 del 1-3.
+
+## Integración del sistema de audio (2026-10-20)
+
+Montado según la propuesta de §13 y las decisiones de arriba. **Ningún script de juego cambió de lógica**: el audio escucha señales que ya existían (la única señal nueva es `PauseMenu.ui_feedback`, que solo informa de mover / aceptar / volver).
+
+### Piezas
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Autoload `AudioManager` | `scripts/autoload/audio_manager.gd` (registrado en `project.godot`, tras `DebugMode`) | Lee el catálogo, reproduce por ID (`AudioManager.play(&"sfx_isak_jump")`, `play(id, posición)` para sonido posicional) con un grupo de reproductores, bucles (`play_loop` / `stop_loop`), variantes sin repetir la anterior, tono aleatorio, enfriamiento anti-saturación y tono más grave con el Debug (`time: world`). Conecta las señales del catálogo. |
+| Catálogo | `data/audio.json` | **Fuente única**: ID → archivos, bus, volumen, variantes, bucle, tiempo, señal de accesibilidad; y qué señal dispara cada sonido. Sus `_notes` explican cada campo. |
+| Buses | `default_bus_layout.tres` (raíz del proyecto; Godot lo carga solo) | `Master` (con limitador) y `Music`, `World`, `Ambience`, `Voice`, `UI`, que envían a `Master`. |
+| Ajustes | `GameSettings` (`scripts/autoload/game_settings.gd`), sección `audio` de `settings.cfg`; datos en `data/settings.json` (`audio`) | Volumen de cada bus (0-100 % en pasos de 10 %, 0 % = silencio), guardado al instante y aplicado al `AudioServer`. «Señales sonoras de ritmo: Sí / No» (`rhythm_sound_cues`, sección `accessibility`, **Sí por defecto**). |
+| Menú | Pausa > Ajustes (`scripts/ui/pause_menu.gd`, textos en `data/pause_menu.json`) | «Señales sonoras de ritmo» junto a los demás ajustes de accesibilidad y la subpágina **«Sonido»**: «General / Música / Efectos / Ambiente / Voces / Interfaz: 80 %» (izquierda/derecha bajan o suben; Intro sube y de 100 % pasa a 0 %). |
+| Sonidos provisionales | `assets/audio/*.wav`, generados por `tools/gen_audio_placeholders.py` (numpy + wave, síntesis simple, sin IA) | 24 IDs P1 (27 archivos con las 4 variantes de pasos). |
+| Validador | `tools/validate_audio.py` (en `tools/run_tests.sh`; `--missing` lista los IDs sin archivo) | Buses, campos, señales de `EventBus`, clases y señales de los nodos, sonidos referenciados. Pruebas: `tests/test_audio_catalog.py` (Python) y `tests/test_audio_manager.gd` (GUT). |
+
+### Cómo se conecta (sin tocar la lógica)
+
+- **`event_bus`:** señal de `EventBus` → sonido (pulso, láser, dash, Debug, muerte, vidas, punto de sincronización, recogidas, recuerdos, guardado, compras, pausa…). `when` filtra por argumentos (p. ej. `debug_mode_changed` con `true` → `sfx_debug_on`).
+- **`nodes`:** al entrar en el árbol un nodo de la clase indicada (o de una que herede de ella: `AlarmTunnel` hereda el tic de `RhythmZone`), se conecta su señal: salto y aterrizaje (`Isak.state_changed`), daño (`Isak.hurt`), punto de atención, chip de habilidad, terminal, interruptor «No molestar», metrónomo (`RhythmZone.beat`), plataformas que parpadean (`BlinkPlatform.warning_started`), enemigos y campanas (posicionales) y la UI del menú de pausa.
+- **`ambience`:** bucle mientras un nodo de la clase está en el árbol. El **hub lleva solo ambiente** (`amb_hub` con `HubRoom`; sin música, decisión 6).
+- **`steps`:** pasos de Isak en los cuadros de contacto de `walk` y `run` (solo en el suelo; 4 variantes).
+- **`text_blips`:** un blip cada 2 caracteres escritos (sin espacios) en los cuadros de texto (`EcoTextBox`): Eco, Notas y Calc tienen el suyo; **el de Eco cambia con el acceso** (`vox_eco_blip_cache` / `_kernel` / `_raiz`, según `GameState.lap`; la UI nunca dice vuelta, Easy, Normal ni Hard). Los recuerdos no llevan blip.
+- **Señales de accesibilidad** (`"cue": true`): `sfx_metronome_tick`, `sfx_metronome_speedup` y `sfx_blink_warn`. El tic del metrónomo es **propio e independiente de la música** (decisión 3) y suena por `World` en tiempo del mundo. Con «Señales sonoras de ritmo: No» no suenan; el parpadeo visual no cambia.
+
+### Cómo sustituir un sonido provisional por el definitivo
+
+1. **Nombre = ID** del catálogo: `sfx_isak_jump.wav` u `sfx_isak_jump.ogg` en `assets/audio/`. Las variantes llevan sufijo (`sfx_isak_step_1` … `_4`) y se listan en `files` de su entrada.
+2. **Formatos:** `.ogg` (Vorbis) para música y ambientes en bucle; `.wav` (16 bits) u `.ogg` para efectos cortos; 44,1 kHz, mono salvo música. Si en `files` no se pone extensión, el `AudioManager` prueba en orden `ogg`, `wav`, `mp3` (`extensions`): **basta con dejar un `.ogg` con el mismo nombre y borrar el `.wav` provisional**, sin tocar el JSON.
+3. Abrir el proyecto en Godot (o `$GODOT --headless --path . --import`) para que importe el archivo (crea el `.import`, que se sube junto al audio). Los bucles los gestiona el `AudioManager` (vuelve a empezar al terminar): no hace falta marcar «loop» al importar.
+4. **`data/audio.json` es la fuente**: ahí se ajusta el volumen (`volume_db`), el bus, la variación de tono, el enfriamiento o se añaden IDs nuevos (con su conexión en `event_bus`, `nodes`, `ambience`…). Después: `python3 tools/validate_audio.py --missing` (dice qué IDs siguen sin archivo).
+5. **Archivo ausente = silencio**: una entrada sin archivo no suena ni da error. El catálogo ya trae huecos con su conexión hecha (p. ej. `sfx_isak_death`, `sfx_debug_on`, `sfx_banner_warn`, `stg_level_complete`): basta con añadir el archivo.
+6. No volver a ejecutar `tools/gen_audio_placeholders.py` sobre los definitivos (reescribe los `.wav` con el mismo nombre); `--only <id>` regenera solo uno.
+
+### Pendiente
+
+- Música (`mus_*`) y la mayoría de los stingers: sin archivo; el hub no lleva música.
+- Efectos de bus del §13 (paso bajo en pausa, bitcrush con Sync bajo, ducking): no montados; el Debug solo baja el tono de los sonidos `time: world` (hasta ×0,75).
+- Blips: sin ajuste «Blips de texto: Sí / No» (§12.4); hoy se bajan con el volumen de Voces.
