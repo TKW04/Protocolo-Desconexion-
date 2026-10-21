@@ -293,7 +293,7 @@ func test_hub_lists_1_2_after_1_1_and_the_folder_loads_it() -> void:
 	var folder: FolderStation = hub.get_folder(&"m1")
 	assert_true(folder.open(hub.get_isak()))
 	var panel: FolderPanel = folder.get_folder_panel()
-	assert_eq(panel.get_option_ids(), [&"1-1", &"1-2", &"1-3", FolderPanel.OPTION_BACK] as Array[StringName])
+	assert_eq(panel.get_option_ids(), [&"1-1", &"1-2", &"1-3", &"1-boss", FolderPanel.OPTION_BACK] as Array[StringName])
 	assert_eq(panel.level_text(HubWorlds.levels(_m1())[1]), "1-2 Centro de notificaciones - Nuevo")
 	assert_eq(panel.level_text(HubWorlds.levels(_m1())[2]), "1-3 No molestar - Bloqueado")
 	panel.skip_input_delay()
