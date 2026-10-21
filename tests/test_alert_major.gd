@@ -717,3 +717,223 @@ func test_respawn_in_phase_2_clears_popups_and_shots() -> void:
 	assert_eq(_boss.get_shots().size(), 0)
 	assert_eq(_boss.get_counter_text(), "66", "Vuelve al principio de la fase 2")
 	assert_almost_eq(GameState.debug_energy, 50.0, EPS)
+
+
+# --- Paso 8: fase 3 «33» ---
+
+## Fase 3 recien empezada; metronomo, campanas y plataformas sin proceso propio.
+func _phase3(lap: int = 1, sim: bool = false) -> void:
+	await _arena(lap, false, sim)
+	_boss.start()
+	_to_phase(3)
+	assert_eq(_boss.get_phase(), 3)
+	for node: Node in BossBase.phase_nodes(_level):
+		node.set_physics_process(false)
+		node.set_process(false)
+
+
+## Avanza la fase 3 a mano (jefe, marca, metronomo, campanas, plataformas, copias).
+func _advance3(seconds: float, isak: bool = false) -> void:
+	var rhythm := _obj("ritmo_jefe") as RhythmZone
+	for i: int in ceili(seconds / DT - 0.001):
+		rhythm.advance(DT)
+		for node: Node in BossBase.phase_nodes(_level):
+			if node is AlarmBell:
+				(node as AlarmBell).step(DT)
+			elif node is BlinkPlatform:
+				(node as BlinkPlatform).refresh()
+		_boss.advance(DT)
+		_boss.get_core().advance_mark(DT)
+		if isak and _sim != null:
+			_sim.step()
+
+
+## Hasta que la ronda llega a `state` (o se agota el tiempo).
+func _until_round(state: StringName, max_s: float = 20.0, isak: bool = false) -> void:
+	for i: int in ceili(max_s / DT):
+		if _boss.get_round_state() == state:
+			return
+		_advance3(DT, isak)
+
+
+func test_phase3_splits_into_three_copies_that_land_on_a_beat() -> void:
+	await _phase3()
+	watch_signals(_boss)
+	assert_eq(_boss.get_round_state(), &"split", "Se infla antes de dividirse")
+	_advance3(9.0 / 12.0 - 0.05)
+	assert_eq(_boss.get_clones().size(), 0, "Aviso de 9 cuadros")
+	_advance3(0.1)
+	assert_signal_emitted_with_parameters(_boss, "attack_started", [&"clones"])
+	assert_eq(_boss.get_clones().size(), 2, "La real y dos copias")
+	var spots: Array[StringName] = _boss.get_copy_spots()
+	var sorted_spots: Array = spots.map(func(x: StringName) -> String: return String(x))
+	sorted_spots.sort()
+	assert_eq(sorted_spots, ["floor_center", "platform_left", "platform_right"])
+	assert_true(spots.has(_boss.get_real_spot()))
+	_until_round(&"land", 2.0)
+	assert_eq(_boss.get_round_state(), &"land")
+	for clone: AlertMajorClone in _boss.get_clones():
+		var home: bool = false
+		for spot: StringName in spots:
+			if clone.global_position.distance_to(_boss.get_spot_center(spot)) < 1.0:
+				home = true
+		assert_true(home, "Cada copia en su sitio")
+	assert_almost_eq(_boss.get_body_center(), _boss.get_spot_center(_boss.get_real_spot()), Vector2.ONE,
+		"La real tambien")
+	var rhythm := _obj("ritmo_jefe") as RhythmZone
+	var beats: int = rhythm.get_cycle_count()
+	_until_round(&"launch", 3.0)
+	assert_eq(rhythm.get_cycle_count(), beats + 1, "El primer lanzamiento empieza con el compas")
+
+
+func test_launches_one_per_beat_then_window_with_only_the_real_core() -> void:
+	await _phase3()
+	_place_isak(12, 9)
+	var rhythm := _obj("ritmo_jefe") as RhythmZone
+	var launches: Array[int] = []
+	_boss.attack_started.connect(func(a: StringName) -> void:
+		if a == &"launch": launches.append(rhythm.get_cycle_count()))
+	_until_round(&"window", 20.0)
+	assert_eq(launches.size(), 3, "Tres lanzamientos por ronda en Caché")
+	assert_true(launches[1] > launches[0] and launches[2] > launches[1], "Uno por compas")
+	assert_true(_boss.is_window_open())
+	assert_almost_eq(_boss.get_window_time_left(), 5.0, 0.05, "5 s del mundo")
+	assert_true(_boss.get_core().is_enabled())
+	assert_almost_eq(_boss.get_core_target(),
+		_boss.get_spot_center(_boss.get_real_spot()) + Vector2(0.0, 64.0 - 56.0), Vector2.ONE,
+		"El nucleo solo en la real")
+	for clone: AlertMajorClone in _boss.get_clones():
+		assert_eq(clone.find_children("*", "WeakPoint", true, false).size(), 0, "Las copias no tienen nucleo")
+	_debug_on()
+	await wait_process_frames(1)
+	assert_true(_boss.get_core().is_revealed(), "El Debug revela el nucleo de la real")
+	DebugMode.reset()
+
+
+func test_launch_hits_the_real_isak_and_the_dash_goes_through() -> void:
+	await _phase3(1, true)
+	_place_isak(12, 9)
+	var hits: Array = []
+	_boss.player_hit.connect(func(a: float) -> void: hits.append(a))
+	# Cada lanzamiento: quieto, le alcanza (si llega); con dash al empezar el lanzamiento, no.
+	var sync: float = GameState.sync_rate
+	_until_round(&"launch", 5.0, true)
+	var dashed: int = 0
+	for i: int in ceili(10.0 / DT):
+		if _boss.get_round_state() == &"window":
+			break
+		_advance3(DT, true)
+	assert_true(hits.size() >= 1, "Algun lanzamiento alcanza a Isak quieto en el centro")
+	assert_lt(GameState.sync_rate, sync, "Le quita Sync Rate")
+	# Siguiente ronda: dash en cuanto empieza cada embestida.
+	_boss.close_window()
+	hits.clear()
+	GameState.sync_rate = GameState.get_sync_rate_max()
+	_until_round(&"launch", 10.0, true)
+	var last: StringName = &""
+	for i: int in ceili(10.0 / DT):
+		if _boss.get_round_state() == &"window":
+			break
+		var phase: StringName = _boss.get(&"_launch_phase")
+		if phase == &"lunge" and last != &"lunge":
+			_sim.input.move_axis = -1.0 if _level.get_isak().global_position.x > 12.0 * TILE else 1.0
+			_sim.input.dash_pressed = true
+			dashed += 1
+		last = phase
+		_advance3(DT, true)
+		_sim.input.move_axis = 0.0
+		_place_isak_keep_x()
+	assert_eq(dashed, 3, "Un dash por embestida")
+	assert_eq(hits.size(), 0, "El dash atraviesa los lanzamientos")
+
+
+## Devuelve a Isak al suelo del centro tras un dash (sin pasar por las ondas).
+func _place_isak_keep_x() -> void:
+	var isak: Isak = _level.get_isak()
+	if not isak.is_dashing() and absf(isak.global_position.x - 12.5 * TILE) > 2.0 * TILE:
+		isak.global_position.x = 12.5 * TILE
+
+
+func test_hitting_a_copy_discards_it_and_drops_a_bubble() -> void:
+	await _phase3()
+	_until_round(&"land", 3.0)
+	var clones: Array[AlertMajorClone] = _boss.get_clones()
+	assert_eq(clones.size(), 2)
+	var bubbles: int = _boss.get_bubbles().size()
+	assert_true(clones[0].receive_pulse(_pulse_area(clones[0].global_position)), "El pulso la alcanza")
+	assert_true(clones[0].is_popped(), "Se descarta con un pop")
+	assert_eq(_boss.get_bubbles().size(), bubbles + 1, "Suelta una Burbuja")
+	clones[1].on_laser_hit(1.0, null)
+	assert_true(clones[1].is_popped(), "El laser tambien la descarta")
+	assert_eq(_boss.get_bubbles().size(), bubbles + 2)
+	assert_eq(_boss.get_counter_text(), "33", "Golpear copias no quita contador")
+
+
+func test_bells_never_ring_together_and_platforms_alternate() -> void:
+	await _phase3()
+	var bells: Array[AlarmBell] = []
+	for id: String in ["campana_1", "campana_2", "campana_3"]:
+		bells.append(_enemy(id) as AlarmBell)
+	var a := _obj("parpadeo_a1") as BlinkPlatform
+	var b := _obj("parpadeo_b1") as BlinkPlatform
+	var waves_seen: int = 0
+	var none_on: bool = false
+	for i: int in ceili(8.0 / DT):
+		_advance3(DT)
+		var waving: int = 0
+		for bell: AlarmBell in bells:
+			if bell.is_wave():
+				waving += 1
+		assert_true(waving <= 1, "Nunca dos ondas a la vez")
+		waves_seen += waving
+		none_on = none_on or (not a.wants_on() and not b.wants_on())
+	assert_gt(waves_seen, 0, "Las campanas suenan")
+	for bell: AlarmBell in bells:
+		assert_gt(bell.get_wave_count(), 2, "%s suena cada compas" % bell.name)
+	assert_false(none_on, "Siempre hay una lateral encendida (A y B alternas)")
+
+
+func test_final_blow_in_phase3_pops_copies_without_bubbles() -> void:
+	await _phase3()
+	watch_signals(_boss)
+	_until_round(&"window", 20.0)
+	var bubbles: int = _boss.get_bubbles().size()
+	var clones: Array[AlertMajorClone] = _boss.get_clones()
+	_mark_core()
+	for i: int in 3:
+		_boss.get_core().on_laser_hit(1.0, null)
+	assert_true(_boss.is_defeated(), "El noveno golpe es el golpe final")
+	assert_signal_emitted(_boss, "final_blow")
+	for clone: AlertMajorClone in clones:
+		assert_true(clone.is_popped(), "Las copias se descartan")
+	assert_eq(_boss.get_bubbles().size(), bubbles, "Sin Burbujas")
+	assert_true((_obj("parpadeo_b2") as BlinkPlatform).is_held_on(), "Plataformas encendidas")
+	assert_false(BossBase.is_phase_node_active(_enemy("campana_1")), "Campanas calladas")
+
+
+func test_raiz_has_four_copies_and_three_launches() -> void:
+	await _phase3(3)
+	var launches: Array[int] = []
+	_boss.attack_started.connect(func(a: StringName) -> void:
+		if a == &"launch": launches.append(1))
+	_until_round(&"window", 25.0)
+	assert_eq(_boss.get_copy_spots().size(), 4, "Cuatro copias en Raíz")
+	assert_eq(_boss.get_clones().size(), 3)
+	assert_eq(launches.size(), 3, "Tres lanzamientos por ronda (decision del 2026-10-21)")
+	assert_eq(_boss.get_total_hits(), 12)
+
+
+# --- Pelea completa (humo, sin bot) ---
+
+## La pelea entera en el flujo real (--start-level=1-boss, tools/smoke_boss_arena.gd en un proceso aparte):
+## con un jugador minimo que aturde las Burbujas, cierra el escudo y golpea solo en las ventanas, las tres
+## fases abren sus ventanas en el bucle real y se llega al golpe final sin errores de script.
+func test_full_fight_reaches_the_final_blow_in_the_real_flow() -> void:
+	var output: Array = []
+	var args := PackedStringArray(["--headless", "--fixed-fps", "60", "--path", ProjectSettings.globalize_path("res://"),
+		"-s", "res://tools/smoke_boss_arena.gd"])
+	var code: int = OS.execute(OS.get_executable_path(), args, output, true)
+	var text: String = "".join(output)
+	assert_eq(code, 0, "Golpe final:\n%s" % text.substr(maxi(text.find("smoke_boss_arena"), 0)))
+	assert_string_contains(text, "{ 1: 3, 2: 3, 3: 3 }", "Tres golpes en ventana por fase")
+	assert_false(text.contains("SCRIPT ERROR"), "Sin errores de script")

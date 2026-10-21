@@ -30,6 +30,8 @@ extends BossBase
 signal attack_started(attack: StringName)
 ## El cuerpo cambia de movimiento (hover, descend, down, ascend...).
 signal move_changed(move: StringName)
+## Un lanzamiento de la fase 3 ha golpeado a Isak.
+signal player_hit(amount: float)
 ## Golpe final (contador a 0): gancho del paso 10 (congelacion, desarme y
 ## recompensa con BossReward).
 signal final_blow
@@ -44,6 +46,8 @@ const MOVE_DESCEND: StringName = &"descend"
 const MOVE_DOWN: StringName = &"down"
 const MOVE_ASCEND: StringName = &"ascend"
 const MOVE_GONE: StringName = &"gone"
+## Fase 3: el cuerpo lo mueven las rondas de copias (get_round_state).
+const MOVE_CLONES: StringName = &"clones"
 
 const ART_REST: String = "alert_major_rest_placeholder.png"
 const ART_INFLATE: String = "alert_major_inflate_placeholder.png"
@@ -106,6 +110,17 @@ var _window_t: float = 0.0
 var _perch_t: float = 0.0
 var _perch_spot: StringName = &""
 var _shield: OverlayPopup
+# Fase 3.
+var _rng3 := RandomNumberGenerator.new()
+## Copias de la ronda en orden de lanzamiento: {spot, home, from, node} (node
+## null = la real, que es el propio cuerpo del jefe).
+var _copies: Array[Dictionary] = []
+var _round: StringName = &""
+var _round_t: float = 0.0
+var _beats_seen: int = 0
+var _launch_index: int = -1
+var _launch_phase: StringName = &""
+var _launch_target: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -136,7 +151,7 @@ func get_move() -> StringName:
 
 
 func get_attack_state() -> StringName:
-	return _move
+	return _round if get_phase() == 3 and is_fighting() else _move
 
 
 func get_body_center() -> Vector2:
@@ -224,6 +239,9 @@ func _on_phase_started(phase_index: int) -> void:
 			_phase1_start()
 		2:
 			_phase2_start()
+		3:
+			_set_move(MOVE_CLONES)
+			_phase3_start()
 	if phase_index > 1:
 		var line: String = String((_texts.get("phase_lines", {}) as Dictionary).get(str(phase_index), ""))
 		if not line.is_empty():
@@ -246,6 +264,8 @@ func _on_advance(dt: float) -> void:
 			_phase1_advance(dt)
 		2:
 			_phase2_advance(dt)
+		3:
+			_phase3_advance(dt)
 	if not _warnings.is_empty():
 		_warn_layer.queue_redraw()
 
@@ -256,6 +276,8 @@ func _on_window_closed() -> void:
 			_phase1_window_closed()
 		2:
 			_phase2_window_closed()
+		3:
+			_phase3_window_closed()
 
 
 func _on_core_hit(_remaining_hits: int) -> void:
@@ -263,7 +285,10 @@ func _on_core_hit(_remaining_hits: int) -> void:
 
 
 func _on_defeated() -> void:
-	_clear_attacks()
+	# Las copias que quedan se descartan con su «pop», sin Burbujas.
+	_free_copies(false)
+	_clear_attacks(true)
+	_round = &""
 	for node: Node in BossBase.phase_nodes(_level_root()):
 		if node is BlinkPlatform:
 			(node as BlinkPlatform).hold_on()
@@ -512,8 +537,11 @@ func _update_label() -> void:
 
 
 ## Borra todos los ataques en curso (cambio de fase, reaparicion, golpe final).
-func _clear_attacks() -> void:
+func _clear_attacks(keep_clones: bool = false) -> void:
 	_inflate(false)
+	if not keep_clones:
+		_copies.clear()
+	_round = &""
 	_clear_warnings()
 	_bubbles.clear()
 	_banners.clear()
@@ -523,6 +551,8 @@ func _clear_attacks() -> void:
 	if _attacks == null:
 		return
 	for child: Node in _attacks.get_children():
+		if keep_clones and child is AlertMajorClone:
+			continue
 		_attacks.remove_child(child)
 		child.queue_free()
 
@@ -1107,3 +1137,283 @@ func _far_perch_spot() -> StringName:
 func _phone_y() -> float:
 	var off: Array = _arena.get("core_offset_px", [0, -56])
 	return float(off[1])
+
+
+# --- Fase 3 «33»: copias al compas (paso 8, §2.7) ---
+
+## Copias vivas (sin la real ni las descartadas).
+func get_clones() -> Array[AlertMajorClone]:
+	var out: Array[AlertMajorClone] = []
+	for c: Dictionary in _copies:
+		var node: Variant = c.get("node")
+		if node != null and is_instance_valid(node) and not (node as AlertMajorClone).is_popped():
+			out.append(node as AlertMajorClone)
+	return out
+
+
+## Sitio de la real en esta ronda (&"" fuera de la fase 3).
+func get_real_spot() -> StringName:
+	for c: Dictionary in _copies:
+		if c.get("node") == null:
+			return StringName(c["spot"])
+	return &""
+
+
+## Sitios de las copias de la ronda, en el orden en que se lanzan.
+func get_copy_spots() -> Array[StringName]:
+	var out: Array[StringName] = []
+	for c: Dictionary in _copies:
+		out.append(StringName(c["spot"]))
+	return out
+
+
+## Estado de la ronda: split (se infla), descend, land (espera el compas),
+## launch, window, ascend; &"" fuera de la fase 3.
+func get_round_state() -> StringName:
+	return _round
+
+
+## Copia que se lanza ahora (indice en get_copy_spots) o -1.
+func get_launching_index() -> int:
+	return _launch_index if _round == &"launch" else -1
+
+
+func _phase3_start() -> void:
+	_rng3.seed = int(phase_data(3).get("seed", 3021))
+	_copies.clear()
+	_begin_split()
+
+
+func _begin_split() -> void:
+	_free_copies(false)
+	_round = &"split"
+	_round_t = 0.0
+	_inflate(true)
+	attack_started.emit(&"split")
+
+
+func _phase3_advance(dt: float) -> void:
+	var p3: Dictionary = phase_data(3)
+	_round_t += dt
+	match _round:
+		&"split":
+			if _round_t >= frames_s(p3.get("split_warn_frames", 9)):
+				_split_now()
+		&"descend":
+			var f: float = clampf(_round_t / maxf(_move_s(), 0.001), 0.0, 1.0)
+			for c: Dictionary in _copies:
+				_place_copy(c, (c["from"] as Vector2).lerp(c["home"], f))
+			if f >= 1.0:
+				_round = &"land"
+				_round_t = 0.0
+				_beats_seen = _beat_count()
+		&"land":
+			# Aterrizan al empezar un compas; despues, un lanzamiento por compas.
+			if _beat_count() > _beats_seen or _rhythm() == null and _round_t >= 0.5:
+				_launch_index = -1
+				_next_launch()
+		&"launch":
+			_advance_launch(dt, p3)
+		&"window":
+			pass
+		&"ascend":
+			var f: float = clampf(_round_t / maxf(_move_s(), 0.001), 0.0, 1.0)
+			var top: Vector2 = get_hover_center(12.0)
+			for c: Dictionary in _copies:
+				_place_copy(c, (c["home"] as Vector2).lerp(top, f))
+			if f >= 1.0:
+				_center = top
+				_down = false
+				_place()
+				_begin_split()
+
+
+func _split_now() -> void:
+	_inflate(false)
+	var p3: Dictionary = phase_data(3)
+	var n: int = int(lap_value("copies", 3, "phase3"))
+	var spots: Array = (p3.get("copy_spots", []) as Array).slice(0, n)
+	# Orden de lanzamiento y real: de la semilla (el bot es determinista).
+	var order: Array = spots.duplicate()
+	for i: int in range(order.size() - 1, 0, -1):
+		var j: int = _rng3.randi_range(0, i)
+		var tmp: Variant = order[i]
+		order[i] = order[j]
+		order[j] = tmp
+	var real_i: int = _rng3.randi_range(0, order.size() - 1)
+	_copies.clear()
+	for i: int in order.size():
+		var spot := StringName(String(order[i]))
+		var c: Dictionary = {"spot": spot, "home": get_spot_center(spot), "from": _center, "node": null}
+		if i != real_i:
+			var clone := AlertMajorClone.new()
+			clone.body_size = _down_size()
+			clone.draw_scale = float(_arena.get("draw_scale", 2.0))
+			_attacks.add_child(clone)
+			clone.global_position = _center
+			clone.discarded.connect(_on_clone_discarded)
+			c["node"] = clone
+		_copies.append(c)
+	_down = true
+	_update_body()
+	_round = &"descend"
+	_round_t = 0.0
+	attack_started.emit(&"clones")
+
+
+func _place_copy(c: Dictionary, at: Vector2) -> void:
+	var node: Variant = c.get("node")
+	if node == null:
+		_center = at
+		_place()
+	elif is_instance_valid(node):
+		(node as Node2D).global_position = at
+
+
+func _copy_pos(c: Dictionary) -> Vector2:
+	var node: Variant = c.get("node")
+	if node == null:
+		return _center
+	return (node as Node2D).global_position if is_instance_valid(node) else c["home"]
+
+
+func _next_launch() -> void:
+	var launches: int = int(lap_value("launches_per_round", 3, "phase3"))
+	_launch_index += 1
+	while _launch_index < _copies.size() and _launch_index < launches and _copy_gone(_launch_index):
+		_launch_index += 1
+	if _launch_index >= _copies.size() or _launch_index >= launches:
+		_open_round_window()
+		return
+	_round = &"launch"
+	_launch_phase = &"warn"
+	_round_t = 0.0
+	var isak: Isak = find_isak()
+	_launch_target = isak.global_position + Vector2(0.0, -48.0) if isak != null else _copy_pos(_copies[_launch_index])
+	_warnings.append({"kind": "line", "id": "launch", "from": _copy_pos(_copies[_launch_index]), "to": _launch_target})
+	_warn_layer.queue_redraw()
+	attack_started.emit(&"launch")
+
+
+func _copy_gone(i: int) -> bool:
+	var node: Variant = _copies[i].get("node")
+	return node != null and (not is_instance_valid(node) or (node as AlertMajorClone).is_popped())
+
+
+func _advance_launch(_dt: float, p3: Dictionary) -> void:
+	var c: Dictionary = _copies[_launch_index]
+	var warn: float = frames_s(p3.get("launch_warn_frames", 9))
+	var lunge_s: float = float(p3.get("lunge_s", 0.3))
+	var ret_s: float = float(p3.get("return_s", 0.6))
+	if _copy_gone(_launch_index):
+		_remove_warning("launch")
+		_launch_wait_beat()
+		return
+	match _launch_phase:
+		&"warn":
+			# La linea sigue a Isak hasta el final del aviso (como el punto rojo).
+			var isak: Isak = find_isak()
+			if isak != null:
+				_launch_target = isak.global_position + Vector2(0.0, -48.0)
+				_set_warning_line("launch", _copy_pos(c), _launch_target)
+			if _round_t >= warn:
+				_remove_warning("launch")
+				var from: Vector2 = c["home"]
+				var dir: Vector2 = (_launch_target - from)
+				var dist: float = minf(dir.length(), minf(float(p3.get("lunge_max_px", 384.0)),
+					float(p3.get("lunge_speed_px_s", 1280.0)) * lunge_s))
+				c["lunge_to"] = from + (dir.normalized() * dist if dir.length() > 0.01 else Vector2.ZERO)
+				_launch_phase = &"lunge"
+				_round_t = 0.0
+				_set_copy_lunging(c, true)
+		&"lunge":
+			var f: float = clampf(_round_t / maxf(lunge_s, 0.001), 0.0, 1.0)
+			_place_copy(c, (c["home"] as Vector2).lerp(c["lunge_to"], f))
+			_check_copy_hit(c, p3)
+			if f >= 1.0:
+				_launch_phase = &"return"
+				_round_t = 0.0
+				_set_copy_lunging(c, false)
+		&"return":
+			var f: float = clampf(_round_t / maxf(ret_s, 0.001), 0.0, 1.0)
+			_place_copy(c, (c["lunge_to"] as Vector2).lerp(c["home"], f))
+			if f >= 1.0:
+				_launch_wait_beat()
+		&"wait_beat":
+			if _beat_count() > _beats_seen or _rhythm() == null:
+				_next_launch()
+
+
+func _launch_wait_beat() -> void:
+	_launch_phase = &"wait_beat"
+	_beats_seen = _beat_count()
+
+
+func _set_copy_lunging(c: Dictionary, on: bool) -> void:
+	var node: Variant = c.get("node")
+	if node != null and is_instance_valid(node):
+		(node as AlertMajorClone).set_lunging(on)
+	elif node == null:
+		_inflate(on)
+
+
+func _check_copy_hit(c: Dictionary, p3: Dictionary) -> void:
+	var isak: Isak = find_isak()
+	if isak == null:
+		return
+	var s: Array = p3.get("body_damage_px", [96, 96])
+	var size := Vector2(float(s[0]), float(s[1]))
+	var rect := Rect2(_copy_pos(c) - size * 0.5, size)
+	if not LevelLookup.isak_body_rect(isak).intersects(rect):
+		return
+	if isak.take_hit(signf(isak.global_position.x - _copy_pos(c).x)):
+		GameState.apply_sync_damage(float(p3.get("contact_damage", 10.0)))
+		player_hit.emit(float(p3.get("contact_damage", 10.0)))
+
+
+func _open_round_window() -> void:
+	_round = &"window"
+	_round_t = 0.0
+	_set_core_enabled(true)
+	open_window(float(phase_data(3).get("window_s", 5.0)))
+
+
+func _phase3_window_closed() -> void:
+	_set_core_enabled(false)
+	_round = &"ascend"
+	_round_t = 0.0
+	for c: Dictionary in _copies:
+		c["home"] = _copy_pos(c)
+
+
+## Copia golpeada: se descarta y suelta una Burbuja en su sitio (decision 6).
+func _on_clone_discarded(clone: AlertMajorClone) -> void:
+	if not bool(phase_data(3).get("bubble_on_pop", true)) or not is_fighting():
+		return
+	var bubble := BUBBLE_SCENE.instantiate() as AlertBubble
+	bubble.patrol_range_px = float(phase_data(1).get("bubble_patrol_range_px", 256.0))
+	bubble.position = clone.global_position + Vector2(0.0, _down_size().y * 0.5 - 2.0)
+	bubble.add_to_group(&"help_target")
+	bubble.set_meta(&"help_id", "alert_bubble")
+	_attacks.add_child(bubble)
+	_bubbles.append(bubble)
+
+
+func _free_copies(notify: bool) -> void:
+	for c: Dictionary in _copies:
+		var node: Variant = c.get("node")
+		if node != null and is_instance_valid(node):
+			(node as AlertMajorClone).discard(notify)
+	_copies.clear()
+
+
+func _rhythm() -> RhythmZone:
+	for node: Node in BossBase.phase_nodes(_level_root()):
+		if node is RhythmZone and BossBase.is_phase_node_active(node):
+			return node as RhythmZone
+	return null
+
+
+func _beat_count() -> int:
+	var r: RhythmZone = _rhythm()
+	return r.get_cycle_count() if r != null else 0

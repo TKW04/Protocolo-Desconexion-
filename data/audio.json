@@ -36,6 +36,17 @@
 		"sfx_pulse_hit_enemy": {"bus": "World", "volume_db": -6.0, "cooldown_s": 0.05, "time": "world"},
 		"sfx_enemy_popped": {"bus": "World", "volume_db": -5.0, "pitch_random": 0.05, "cooldown_s": 0.05, "time": "world"},
 		"sfx_banner_warn": {"bus": "World", "volume_db": -8.0, "cooldown_s": 0.2, "time": "world"},
+		"sfx_boss1_intro": {"bus": "World", "volume_db": -4.0, "time": "world"},
+		"sfx_boss1_launch": {"bus": "World", "volume_db": -6.0, "cooldown_s": 0.2, "time": "world"},
+		"sfx_boss1_popup_storm": {"bus": "World", "volume_db": -8.0, "cooldown_s": 0.3, "time": "world"},
+		"sfx_boss1_clones": {"bus": "World", "volume_db": -6.0, "time": "world"},
+		"sfx_boss_phase_change": {"bus": "World", "volume_db": -4.0, "time": "real"},
+		"sfx_boss_defeat": {"bus": "World", "volume_db": -4.0, "time": "real"},
+		"sfx_weak_point_hit": {"bus": "World", "volume_db": -4.0, "cooldown_s": 0.05, "time": "world"},
+		"sfx_weak_point_mark": {"bus": "World", "volume_db": -6.0, "cooldown_s": 0.1, "time": "world"},
+		"sfx_weak_point_mark_warn": {"bus": "World", "volume_db": -8.0, "time": "world"},
+		"sfx_weak_point_mark_end": {"bus": "World", "volume_db": -8.0, "time": "world"},
+		"amb_boss1_lockscreen": {"bus": "Ambience", "volume_db": -10.0, "loop": true, "time": "real"},
 		"sfx_alarm_bell_warn": {"bus": "World", "volume_db": -8.0, "cooldown_s": 0.1, "time": "world"},
 		"sfx_alarm_bell_wave": {"bus": "World", "volume_db": -6.0, "pitch_random": 0.04, "cooldown_s": 0.1, "time": "world"},
 		"sfx_eco_line": {"bus": "Voice", "volume_db": -8.0, "cooldown_s": 0.3, "time": "real"},
@@ -81,7 +92,11 @@
 		{"signal": "trash_recovered", "sound": "sfx_trash_recover"},
 		{"signal": "rollback_applied", "sound": "sfx_rollback"},
 		{"signal": "pause_menu_opened", "sound": "ui_confirm"},
-		{"signal": "pause_menu_closed", "sound": "ui_back"}
+		{"signal": "pause_menu_closed", "sound": "ui_back"},
+		{"signal": "boss_started", "sound": "sfx_boss1_intro"},
+		{"signal": "boss_phase_changed", "sound": "sfx_boss_phase_change"},
+		{"signal": "boss_weak_point_hit", "sound": "sfx_weak_point_hit"},
+		{"signal": "boss_defeated", "sound": "sfx_boss_defeat"}
 	],
 	"nodes": [
 		{"class": "Isak", "signal": "state_changed", "when": {"1": "jump"}, "sound": "sfx_isak_jump"},
@@ -101,12 +116,20 @@
 		{"class": "SpamBanner", "signal": "state_changed", "when": {"1": "warn"}, "sound": "sfx_banner_warn", "positional": true},
 		{"class": "AlarmBell", "signal": "state_changed", "when": {"1": "warn"}, "sound": "sfx_alarm_bell_warn", "positional": true},
 		{"class": "AlarmBell", "signal": "state_changed", "when": {"1": "wave"}, "sound": "sfx_alarm_bell_wave", "positional": true},
+		{"class": "AlertMajor", "signal": "attack_started", "when": {"0": "spit"}, "sound": "sfx_boss1_launch"},
+		{"class": "AlertMajor", "signal": "attack_started", "when": {"0": "sweep"}, "sound": "sfx_boss1_launch"},
+		{"class": "AlertMajor", "signal": "attack_started", "when": {"0": "popup"}, "sound": "sfx_boss1_popup_storm"},
+		{"class": "AlertMajor", "signal": "attack_started", "when": {"0": "clones"}, "sound": "sfx_boss1_clones"},
+		{"class": "WeakPoint", "signal": "marked", "sound": "sfx_weak_point_mark"},
+		{"class": "WeakPoint", "signal": "mark_warning", "sound": "sfx_weak_point_mark_warn"},
+		{"class": "WeakPoint", "signal": "mark_expired", "sound": "sfx_weak_point_mark_end"},
 		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "move"}, "sound": "ui_move"},
 		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "confirm"}, "sound": "ui_confirm"},
 		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "back"}, "sound": "ui_back"}
 	],
 	"ambience": [
-		{"class": "HubRoom", "sound": "amb_hub"}
+		{"class": "HubRoom", "sound": "amb_hub"},
+		{"class": "AlertMajor", "sound": "amb_boss1_lockscreen"}
 	],
 	"steps": {
 		"class": "Isak",
