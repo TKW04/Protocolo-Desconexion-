@@ -68,7 +68,7 @@
 | `sfx_recharge_pickup` | Recoger drop de energía o Sync | `EventBus.recharge_collected(kind)` / `recharge_pickup.gd` | Todos | P1 | E | 0,2 s; 2 variantes por `kind` (energía / Sync) |
 | `sfx_power_bank_pickup` | Recoger power bank | `power_bank_pickup.gd` / `EventBus.power_banks_changed` | Todos | P2 | E | 0,3 s |
 | `sfx_power_bank_no_room` | Power bank sin hueco | `EventBus.power_bank_no_room` | Todos | P2 | E | 0,15 s; familia «denegado» |
-| `sfx_charger` | Cargador de energía: carga mientras se toca | `EventBus.charger_used` / `charger.gd` | Todos + hub | P2 | E | Bucle corto con subida + «lleno» al acabar |
+| `sfx_charger` | Cargador de energía: carga mientras se toca | `EventBus.charger_used` / `charger.gd` | Todos + hub | P2 | E | Bucle corto con subida + «lleno» al acabar. En la arena de Alerta Mayor hay 4 cargadores con 4 s de enfriamiento (`propuesta-jefe-alerta-mayor.md` §2.4): suena a menudo, así que debe ser breve y no cansar |
 | `sfx_ability_pickup` | Recoger el chip de una habilidad | `ability_pickup.gd` / `EventBus.ability_obtained` | 1-1 (láser), 1-2 (Debug), 1-3 (Deslizar) | P1 | E | 0,3 s; lo sigue `sfx_ability_install` y `stg_ability_obtained` |
 | `sfx_ability_install` | Instalación: anillo cian que se expande + destello | `install_effect.gd` (0,5 s, tiempo real) | Ídem | P1 | E | 0,5 s, sincronizado con el anillo |
 | `sfx_extra_life_pickup` | Vida extra (secreto D del 1-1) | `EventBus.extra_life_collected` / `extra_life_pickup.gd` | 1-1 y secretos | P1 | E | 0,6 s; especial, emparentado con `sfx_life_lost` en positivo |
@@ -126,7 +126,7 @@
 | `sfx_boss1_clones` | Copias falsas del jefe (fase 3) | Ídem | Jefe M1 | P2 | F | Las copias suenan «huecas»; la real, con cuerpo (pista sonora opcional) |
 | `sfx_boss_phase_change` | Cambio de fase de un jefe | Común a jefes | Jefes | P1 | F | 1 s |
 | `sfx_boss_defeat` | Jefe vencido: se desarma en píxeles | Común a jefes | Jefes | P1 | F | 2-3 s; enlaza con `stg_boss_defeated` y el recuerdo |
-| `sfx_boss_rollback_easy` | Rollback de Easy del jefe (Eco desecha todo) | Jefe M1 en Caché | Jefe M1 | P2 | F | Reutiliza `sfx_rollback` en versión larga |
+| `sfx_boss_rollback_easy` | **Retirado del jefe M1 (2026-10-20).** Alerta Mayor no hace ningún rollback (`propuesta-jefe-alerta-mayor.md` §1.2). Queda reservado para el rollback del **jefe final** al terminar Caché (Isak Optimizado escapa y Eco desecha todo) | Jefe final (por diseñar) | M6 | P3 | F | Reutiliza `sfx_rollback` en versión larga. Renombrar el ID al diseñar el jefe final (p. ej. `sfx_final_boss_rollback`); no conectarlo en el jefe M1 |
 
 ## 5. SFX de Eco y ayudas
 
