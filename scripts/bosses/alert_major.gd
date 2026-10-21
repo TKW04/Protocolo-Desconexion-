@@ -649,6 +649,8 @@ func _build() -> void:
 	_warn_layer.z_index = 40
 	_warn_layer.boss = self
 	add_child(_warn_layer)
+	# Rendimiento: la hoja de los pop-ups (fase 2) se carga con la arena, no en la pelea.
+	OverlayPopup.preload_frames()
 
 
 func _update_body() -> void:

@@ -72,14 +72,33 @@ var _covers: Array[Node] = []
 var _closed_time: float = 0.0
 var _icon: Sprite2D
 
+## SpriteFrames ya cargados por ruta (rendimiento, 2026-10-21). La hoja de los
+## objetos de la torre es grande: cargarla en el _ready de cada pop-up costaba un
+## tiron de 75-140 ms cada vez que no quedaba ninguno vivo (la cache de recursos la
+## suelta al liberarse el ultimo). Se guarda aqui y se puede precargar (preload_frames).
+static var _frames_cache: Dictionary = {}
+
 
 func _ready() -> void:
 	add_to_group(GROUP)
-	_frames = load(String(_config.get("frames", ""))) as SpriteFrames
+	_frames = frames_for(String(_config.get("frames", "")))
 	_build()
 	EventBus.pulse_fired.connect(receive_pulse)
 	_button.area_entered.connect(_on_button_area_entered)
 	_update_visual()
+
+
+## SpriteFrames de `path` (cargado una vez y guardado en la cache estatica).
+static func frames_for(path: String) -> SpriteFrames:
+	if not _frames_cache.has(path):
+		_frames_cache[path] = load(path) as SpriteFrames if ResourceLoader.exists(path) else null
+	return _frames_cache[path]
+
+
+## Carga ya la hoja de los pop-ups (p. ej. al montar la arena del jefe, que los
+## crea en plena pelea), para que el primero no de un tiron.
+static func preload_frames() -> void:
+	frames_for(String(World1ObjectsConfig.section("overlay_popup").get("frames", "")))
 
 
 func _process(delta: float) -> void:
