@@ -536,3 +536,35 @@ En ningún caso el Debug se corta por falta de energía dentro de una ventana ni
 **Tandas en paralelo:** (A) pasos 1, 2 y 4 a la vez, y el 3 en cuanto exista `BossBase`; (B) el 5 tras el 2 y el 4, con el 11 (arte) empezando en paralelo; (C) las fases 6 → 7 → 8 van en serie (comparten `AlertMajor`), con el 9 (HUD) y el 11 (arte) al lado; (D) el 10 tras la fase 3, con el 12 (textos, ayudas y sonidos) en paralelo; (E) el 13 y después el 14 y el 15 a la vez; (F) el 16 al final.
 
 **Tamaño total estimado:** del orden del 1-3 (unos 10-14 días de trabajo de agente, en tandas). Lo más caro son la fase 3, el validador de arenas y el bot.
+
+### 6.3 Rendimiento y ritmo tras la primera prueba (2026-10-21)
+
+El usuario jugó la pelea y la sintió «muy torpe y lenta… un poco lenta y pesada». Se midió primero el rendimiento y después se reafinó el ritmo, sin tocar el diseño (3 fases, golpes 3/3/3 y 4/4/4, marca de 4 / 3 / 2,5 s, energía).
+
+**Rendimiento (medido con ventana, monitor de 120 Hz, pelea completa del humo con y sin el Debug mantenido):** la pelea va a 118-120 FPS en todas las fases y ventanas (p95 del cuadro 8,3 ms), con y sin Debug; no hay costes por cuadro como el del 1-3 (`load()` en `_draw`). Solo había **un tirón de 75-142 ms al salir el primer pop-up de la fase 2** (o el escudo): `OverlayPopup` cargaba `tower_objects_frames.tres` (toda la hoja de los objetos de la torre) en su `_ready`, y la caché de recursos la soltaba al liberarse el último pop-up. Arreglo: caché estática de las SpriteFrames en `OverlayPopup` (`frames_for`, `preload_frames`) y `AlertMajor` la precarga al montar la arena. Después: máximo de la fase 2 16,5 ms (sin Debug) y 8,3 ms (con Debug), 0 cuadros de más de 34 ms. El rendimiento no explicaba la sensación de lentitud: era ritmo.
+
+**Ritmo: valores cambiados (antes → después), todos en `data/bosses/alert_major.json`:**
+
+| Valor | Antes | Después | Por qué |
+|---|---|---|---|
+| `arena.hover.speed_tiles_s` | 1,5 | **2,5** | El vuelo de lado a lado (16 tiles) tardaba 10,7 s: se veía flotar a cámara lenta. Ahora 6,4 s. |
+| `arena.move_s` (bajar y subir, lineal) | 0,6 s | **`descend_s` 0,4 s con `descend_ease` `out_cubic`; `ascend_s` 0,45 s con `ascend_ease` `in_out_cubic`** | La bajada lineal se sentía pesada; ahora cae rápido y frena al llegar (como un golpe) y sube con arranque y frenada suaves. También las copias de la fase 3. |
+| `phase1.spit_warn_frames` | 9 | **7** (0,58 s) | Escupir no daña: aviso nítido pero más corto (dentro de 6-12). |
+| `phase1.spit_cooldown_s` | 1,0 s | **0,4 s** | Tiempo muerto tras subir antes de escupir otra vez. |
+| `phase1.hold_sweeps_for_window` (nuevo) | — (no existía) | **`true`** | Antes, con las dos Burbujas neutralizadas, el jefe solo bajaba en el hueco de 0,25 s entre dos barridos (cada barrido ocupa 2,75 s de cada 3 s) y el aturdimiento de 3 s podía caducar. Ahora no empieza barridos nuevos y baja en cuanto acaba el que está en curso. |
+| `phase2.popup_first_s` | 1,5 s | **1,0 s** | Arranque de la fase menos vacío. |
+| `phase2.popup_warn_frames` | 9 | **7** (0,58 s) | El pop-up no daña. |
+| `phase2.burst_first_s` | 3,0 s | **2,0 s** | Arranque de la fase menos vacío. |
+| `phase2.window_every_s` | 12 s | **9 s** | Era el mayor tiempo muerto de la pelea (12 s flotando entre ventanas). Con 7-8 s el bot torpe acababa recibiendo golpes o con la energía en 13 (menos tiempo para recargar entre ventanas); 9 s mantiene su energía mínima. |
+| `phase3.split_warn_frames` | 9 | **7** (0,58 s) | Dividirse no daña. |
+| `phase3.return_s` | 0,6 s | **0,4 s** | La vuelta de la copia tras el lanzamiento. |
+
+**Sin cambiar:** los avisos de lo que daña (ráfaga 9, lanzamiento 9; barrido, campana y plataforma que parpadea son objetos compartidos con el 1-2 y el 1-3 y siguen en 9), las ventanas (fase 1 5 s, fase 2 4 s, fase 3 5 s: el validador pide 4,23 / 2,63 / 4,86 s con k = 2), `perch_s` 7 s (pide 6,36 s), los intervalos de barridos (3 s) y ráfagas (4,5 s), el compás y el parpadeo de la fase 3 (2,0 / 1,6 / 1,4 s; 0,55 / 0,65 / 0,72: los fijan las campanas y la regla «encendida ≥ aviso + 0,25 s») y la energía. **Márgenes del validador sin cambios:** Caché 32,5 (≥ 25), Kernel 22,5 (≥ 20), Raíz 20 (≥ 20). Los avisos acortados siguen dentro de 6-12 cuadros.
+
+**Duración medida (antes → después):** humo `tools/smoke_boss_arena.gd` (jugador instantáneo) 36,3 → 29,5 s de pelea (`--full` de vuelta en el hub a los 35,9 s). Bot del jefe (`tools/play_boss_bot.gd`, barra base): ideal Caché 57,5 → **52,8 s**, Kernel 63,8 → 54,2 s, Raíz 44,1 → 39,4 s; torpe Caché 196 → **169 s**, Kernel 217 → 179 s, Raíz 229 → 207 s; 0 golpes y 0 muertes; energía mínima del torpe igual (32 / 32 / 43). La fase 3 del ideal no cambia (25,2 s): va al compás y lo ahorrado se lo come la espera al siguiente tiempo.
+
+**Para decidir con el usuario:**
+
+1. **Duración frente al objetivo.** La pelea limpia ya estaba por debajo de los 90-120 s (y de los 100-130 s de §2.12): el bot ideal es casi perfecto, y quitar tiempo muerto la acorta más. Para alargarla sin tiempo muerto, las palancas son las del bot (§6.2): marca más corta, más golpes por fase o ventanas que se cierran al caducar la marca.
+2. **El Debug pone el mundo a ×0,5.** Con el Debug activo todo el jefe va a la mitad (ataques, vuelo, ventanas y compás), y cargarlo pide 1 s quieto (`activation_hold_s`). Con la marca basta mantenerlo ≈ 1 s y soltarlo tras el pulso; quien lo deja puesto siente la pelea lenta. Son valores globales del Debug (afectan al 1-2 y al 1-3, cuyos validadores y bots no deben cambiar), así que no se han tocado. Opciones: dejarlo (el Debug es «ver y marcar»), o una escala propia de la arena (p. ej. ×0,7) como el `debug_drain_scale` del nivel.
+3. **«Peso» que depende del arte (paso 16, sin tocar):** el cuerpo solo tiene tres poses fijas (`rest`, `inflate`, `down`) que cambian de golpe; faltan cuadros de anticipación y aplastamiento al bajar y al aterrizar, de estiramiento al subir, un leve balanceo al flotar y una estela en el lanzamiento de las copias (hoy una sola imagen `lunge`). Con esos cuadros el movimiento se leerá más ágil sin cambiar los tiempos.

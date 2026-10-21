@@ -118,6 +118,11 @@ func _tiles() -> TileMapLayer:
 
 ## Avanza el jefe, la marca y sus banners (sin proceso propio) `seconds` del mundo;
 ## con `isak`, tambien el Isak manual.
+## Lo que tarda en bajar (arena.descend_s; ritmo del 2026-10-21, antes move_s 0,6).
+func _descend_s() -> float:
+	return float((_boss.get_config().get("arena", {}) as Dictionary).get("descend_s", 0.6))
+
+
 func _advance(seconds: float, isak: bool = false) -> void:
 	for i: int in ceili(seconds / DT - 0.001):
 		_boss.advance(DT)
@@ -352,6 +357,49 @@ func test_debug_shortcut_and_intro_after_arrival() -> void:
 	assert_not_null(boss.get_music(), "mus_boss1 durante la pelea (BossMusic)")
 
 
+# --- Ritmo (2026-10-21) ---
+
+func test_neutralized_bubbles_hold_new_sweeps_so_the_window_opens_after_the_current_one() -> void:
+	await _arena()
+	_boss.start()
+	await _spit_and_land()
+	assert_true(bool(_boss.phase_data(1).get("hold_sweeps_for_window", false)))
+	for b: AlertBubble in _boss.get_bubbles():
+		b.stun()
+	var sweeps: Array[int] = [0]
+	_boss.attack_started.connect(func(kind: StringName) -> void:
+		if kind == &"sweep":
+			sweeps[0] += 1)
+	var waited: float = 0.0
+	while _boss.get_move() == AlertMajor.MOVE_HOVER and waited < 4.0:
+		_advance(DT)
+		waited += DT
+	assert_eq(sweeps[0], 0, "Ningun barrido nuevo")
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DESCEND, "Baja en cuanto acaba el barrido en curso")
+	var banner_s: float = 3.0
+	assert_lt(waited, banner_s, "Sin esperar al hueco entre dos barridos")
+
+
+func test_descend_and_ascend_use_their_own_time_and_curve() -> void:
+	await _arena()
+	var arena: Dictionary = _boss.get_config().get("arena", {})
+	assert_almost_eq(float(arena.get("descend_s", 0.0)), 0.4, EPS)
+	assert_almost_eq(float(arena.get("ascend_s", 0.0)), 0.45, EPS)
+	assert_almost_eq(AlertMajor.ease_named("out_cubic", 0.5), 0.875, EPS, "Llega frenando")
+	assert_almost_eq(AlertMajor.ease_named("in_out_cubic", 0.5), 0.5, EPS)
+	assert_almost_eq(AlertMajor.ease_named("in_out_cubic", 0.25), 0.0625, EPS)
+	assert_almost_eq(AlertMajor.ease_named("linear", 0.3), 0.3, EPS)
+	_boss.start()
+	var from: Vector2 = _boss.get_body_center()
+	var to: Vector2 = _boss.get_spot_center(&"floor_center")
+	_boss.move_body_to(to, true)
+	_advance(float(arena["descend_s"]) * 0.5)
+	var f: float = (_boss.get_body_center() - from).length() / (to - from).length()
+	assert_gt(f, 0.8, "A mitad de tiempo ya ha hecho mas del 80 % del recorrido (out_cubic)")
+	_advance(float(arena["descend_s"]) * 0.5 + DT)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
+
+
 # --- Paso 6: fase 1 «99+» ---
 
 func test_phase1_spits_two_bubbles_after_a_9_frame_warning() -> void:
@@ -360,11 +408,14 @@ func test_phase1_spits_two_bubbles_after_a_9_frame_warning() -> void:
 	_boss.start()
 	_advance(DT)
 	assert_signal_emitted_with_parameters(_boss, "attack_started", [&"spit"])
-	assert_almost_eq(_boss.get_spit_left(), 9.0 / 12.0 - DT, 0.02, "Aviso de 9 cuadros a 12 fps (0,75 s)")
+	# Ritmo del 2026-10-21: aviso de spit_warn_frames (7) cuadros a 12 fps (antes 9, 0,75 s).
+	var warn: float = _boss.frames_s(_boss.phase_data(1).get("spit_warn_frames", 9))
+	assert_almost_eq(warn, 7.0 / 12.0, 0.001, "Aviso de 7 cuadros a 12 fps")
+	assert_almost_eq(_boss.get_spit_left(), warn - DT, 0.02, "Aviso de spit_warn_frames cuadros a 12 fps")
 	var arrows: Array = _boss.get_warnings().filter(func(w: Dictionary) -> bool: return w["kind"] == "arrow_down")
 	assert_eq(arrows.size(), 2, "Una flecha sobre cada plataforma")
 	assert_eq(_boss.get_bubbles().size(), 0, "Sin Burbujas durante el aviso")
-	_advance(0.6)
+	_advance(warn - 0.15)
 	assert_eq(_boss.get_bubbles().size(), 0)
 	_advance(0.2)
 	var bubbles: Array[AlertBubble] = _boss.get_bubbles()
@@ -460,7 +511,7 @@ func test_window_opens_only_with_both_bubbles_neutralized() -> void:
 	assert_eq(_boss.get_move(), AlertMajor.MOVE_DESCEND, "Aturdida + derrotada a la vez: se desinfla y baja")
 	assert_false(_boss.get_banners()["floor"].is_busy() or _boss.get_banners()["high"].is_busy(),
 		"Sin barridos mientras baja")
-	_advance(0.6 + DT)
+	_advance(_descend_s() + DT)
 	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
 	assert_true(_boss.is_window_open())
 	assert_almost_eq(_boss.get_window_time_left(), 5.0, 0.05, "Ventana de 5 s del mundo")
@@ -582,7 +633,8 @@ func test_phase2_popups_cover_a_quarter_away_from_isak_at_most_two() -> void:
 func test_popup_closes_itself_after_its_life() -> void:
 	await _phase2()
 	_place_isak(2, 9)
-	_advance2(1.5 + 0.75 + DT)
+	var p2: Dictionary = _boss.phase_data(2)
+	_advance2(float(p2.get("popup_first_s", 1.5)) + _boss.frames_s(p2.get("popup_warn_frames", 9)) + DT)
 	var p: OverlayPopup = _boss.get_popups()[0]
 	_advance2(7.5)
 	assert_true(is_instance_valid(p) and p.is_open(), "Dura 8 s")
@@ -655,13 +707,15 @@ func test_shield_window_on_the_far_platform_opened_by_the_real_pulse() -> void:
 	await _phase2(true)
 	_place_isak(18, 9)
 	watch_signals(_boss)
-	_advance2(12.0 + DT, true)
+	# Ritmo del 2026-10-21: cada window_every_s (9 s; antes 12) baja, al acabar la rafaga en curso.
+	assert_almost_eq(float(_boss.phase_data(2).get("window_every_s", 12.0)), 9.0, 0.001)
+	_advance2(float(_boss.phase_data(2).get("window_every_s", 12.0)) + DT, true)
 	for i: int in 300:
 		if _boss.get_move() != AlertMajor.MOVE_HOVER:
 			break
 		_advance2(DT, true)
-	assert_eq(_boss.get_move(), AlertMajor.MOVE_DESCEND, "Cada 12 s baja")
-	_advance2(0.6 + DT, true)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DESCEND, "Cada window_every_s baja")
+	_advance2(_descend_s() + DT, true)
 	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
 	assert_almost_eq(_boss.get_body_center(), Vector2(5.0 * TILE, 8.0 * TILE - 64.0), Vector2.ONE,
 		"En la plataforma lejana de Isak (la izquierda)")
@@ -770,8 +824,8 @@ func test_phase3_splits_into_three_copies_that_land_on_a_beat() -> void:
 	await _phase3()
 	watch_signals(_boss)
 	assert_eq(_boss.get_round_state(), &"split", "Se infla antes de dividirse")
-	_advance3(9.0 / 12.0 - 0.05)
-	assert_eq(_boss.get_clones().size(), 0, "Aviso de 9 cuadros")
+	_advance3(_boss.frames_s(_boss.phase_data(3).get("split_warn_frames", 9)) - 0.05)
+	assert_eq(_boss.get_clones().size(), 0, "Aviso de split_warn_frames cuadros")
 	_advance3(0.1)
 	assert_signal_emitted_with_parameters(_boss, "attack_started", [&"clones"])
 	assert_eq(_boss.get_clones().size(), 2, "La real y dos copias")

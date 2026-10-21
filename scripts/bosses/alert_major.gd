@@ -452,7 +452,7 @@ func get_music() -> BossMusic:
 
 # --- Movimiento del cuerpo ---
 
-## Empieza a moverse del centro actual a `to` (global) en move_s; down: llega
+## Empieza a moverse del centro actual a `to` (global) en descend_s / ascend_s; down: llega
 ## desinflado.
 func move_body_to(to: Vector2, down: bool) -> void:
 	_move_from = _center
@@ -476,8 +476,9 @@ func _advance_move(dt: float) -> void:
 				_hover_dir = 1.0
 			_center = _to_global(Vector2(x, _from_global(get_hover_center(0.0)).y))
 		MOVE_DESCEND, MOVE_ASCEND:
-			var f: float = clampf(_move_time / maxf(_move_s(), 0.001), 0.0, 1.0)
-			_center = _move_from.lerp(_move_to, f)
+			var down: bool = _move == MOVE_DESCEND
+			var f: float = clampf(_move_time / maxf(_move_s(down), 0.001), 0.0, 1.0)
+			_center = _move_from.lerp(_move_to, _move_ease(down, f))
 			if f >= 1.0:
 				_on_move_finished(_move)
 	_place()
@@ -515,8 +516,26 @@ func _set_move(move: StringName) -> void:
 	move_changed.emit(move)
 
 
-func _move_s() -> float:
-	return float(_arena.get("move_s", 0.6))
+## Lo que tarda en bajar (`down`) o subir: arena.descend_s / arena.ascend_s
+## (ritmo, 2026-10-21; antes un solo move_s de 0,6 s lineal).
+func _move_s(down: bool) -> float:
+	return float(_arena.get("descend_s" if down else "ascend_s", _arena.get("move_s", 0.6)))
+
+
+## Fraccion del recorrido con la curva de arena.descend_ease / ascend_ease
+## ("linear", "out_cubic": llega frenando; "in_out_cubic": arranca y frena suave).
+func _move_ease(down: bool, f: float) -> float:
+	return ease_named(String(_arena.get("descend_ease" if down else "ascend_ease", "linear")), f)
+
+
+static func ease_named(curve: String, f: float) -> float:
+	f = clampf(f, 0.0, 1.0)
+	match curve:
+		"out_cubic":
+			return 1.0 - pow(1.0 - f, 3.0)
+		"in_out_cubic":
+			return 4.0 * f * f * f if f < 0.5 else 1.0 - pow(-2.0 * f + 2.0, 3.0) * 0.5
+	return f
 
 
 func _hover_x_min() -> float:
@@ -903,10 +922,13 @@ func _phase1_advance(dt: float) -> void:
 			_set_warnings_spit(targets)
 			attack_started.emit(&"spit")
 			return
-	# Barridos alternos (uno cada sweep_interval_s).
+	# Barridos alternos (uno cada sweep_interval_s). Con hold_sweeps_for_window (ritmo,
+	# 2026-10-21) no empieza uno nuevo con las Burbujas neutralizadas: la ventana se abre
+	# en cuanto acaba el que este en curso, sin esperar al hueco entre dos barridos.
 	_sweep_t += dt
 	var interval: float = float(p1.get("sweep_interval_s", 3.0))
-	if _sweep_t >= interval:
+	var hold: bool = bool(p1.get("hold_sweeps_for_window", false)) and are_bubbles_neutralized()
+	if _sweep_t >= interval and not hold:
 		var sweeps: Array = p1.get("sweeps", [])
 		if not sweeps.is_empty():
 			var lane: String = String((sweeps[_sweep_index % sweeps.size()] as Dictionary).get("lane", ""))
@@ -1355,9 +1377,9 @@ func _phase3_advance(dt: float) -> void:
 			if _round_t >= frames_s(p3.get("split_warn_frames", 9)):
 				_split_now()
 		&"descend":
-			var f: float = clampf(_round_t / maxf(_move_s(), 0.001), 0.0, 1.0)
+			var f: float = clampf(_round_t / maxf(_move_s(true), 0.001), 0.0, 1.0)
 			for c: Dictionary in _copies:
-				_place_copy(c, (c["from"] as Vector2).lerp(c["home"], f))
+				_place_copy(c, (c["from"] as Vector2).lerp(c["home"], _move_ease(true, f)))
 			if f >= 1.0:
 				_round = &"land"
 				_round_t = 0.0
@@ -1372,10 +1394,10 @@ func _phase3_advance(dt: float) -> void:
 		&"window":
 			pass
 		&"ascend":
-			var f: float = clampf(_round_t / maxf(_move_s(), 0.001), 0.0, 1.0)
+			var f: float = clampf(_round_t / maxf(_move_s(false), 0.001), 0.0, 1.0)
 			var top: Vector2 = get_hover_center(12.0)
 			for c: Dictionary in _copies:
-				_place_copy(c, (c["home"] as Vector2).lerp(top, f))
+				_place_copy(c, (c["home"] as Vector2).lerp(top, _move_ease(false, f)))
 			if f >= 1.0:
 				_center = top
 				_down = false
