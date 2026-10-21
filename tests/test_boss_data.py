@@ -93,7 +93,8 @@ class BossTestRoomTest(unittest.TestCase):
         self.assertEqual((dummy["x"], dummy["y"], dummy["params"]["id"]), (9, 9, "saco"))
         charger = next(o for o in self.level["objects"] if o["type"] == "charger")
         self.assertEqual(charger["params"]["cooldown_s"], 4.0, "Cargador de arena: 4 s")
-        self.assertNotIn("debug_drain_scale", self.level, "La sala de prueba gasta el Debug normal")
+        self.assertEqual(self.level["debug_drain_scale"], 0.25,
+                         "Debug a un cuarto de gasto, como la arena con la marca (§2.4.7)")
 
     def test_dummy_needs_floor_and_free_cells(self):
         level = copy.deepcopy(self.level)

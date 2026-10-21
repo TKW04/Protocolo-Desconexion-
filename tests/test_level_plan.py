@@ -735,11 +735,18 @@ class DebugDrainScaleTest(unittest.TestCase):
             self.assertTrue(any("debug_drain_scale" in e for e in vls.validate_level(level)), value)
 
     def test_existing_levels_do_not_use_it(self):
-        for name in ("1-1", "1-2", "1-3", "boss_test"):
+        for name in ("1-1", "1-2", "1-3"):
             with open(os.path.join(ROOT, "data", "levels", "%s.json" % name), encoding="utf-8") as handle:
                 self.assertNotIn("debug_drain_scale", json.load(handle), name)
             with open(os.path.join(ROOT, "scenes", "levels", "%s.tscn" % name), encoding="utf-8") as handle:
                 self.assertNotIn("debug_drain_scale", handle.read(), name)
+
+    def test_boss_test_room_uses_a_quarter(self):
+        # La marca (2026-10-21, docs/propuesta-jefe-alerta-mayor.md §2.4.7): la sala del saco gasta como la arena.
+        with open(os.path.join(ROOT, "data", "levels", "boss_test.json"), encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)["debug_drain_scale"], 0.25)
+        with open(os.path.join(ROOT, "scenes", "levels", "boss_test.tscn"), encoding="utf-8") as handle:
+            self.assertIn("debug_drain_scale = 0.25", handle.read())
 
 
 if __name__ == "__main__":

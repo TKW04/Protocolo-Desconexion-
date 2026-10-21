@@ -96,7 +96,7 @@ func test_generated_level_applies_and_restores_the_scale() -> void:
 
 
 func test_existing_levels_keep_20_per_second() -> void:
-	for id: String in ["1-1", "1-2", "1-3", "boss_test"]:
+	for id: String in ["1-1", "1-2", "1-3"]:
 		DebugMode.set_level_drain_scale(0.5)
 		var level := (load("res://scenes/levels/%s.tscn" % id) as PackedScene).instantiate() as GeneratedLevel
 		assert_eq(level.debug_drain_scale, 1.0, "%s sin debug_drain_scale" % id)
@@ -104,6 +104,18 @@ func test_existing_levels_keep_20_per_second() -> void:
 		assert_almost_eq(DebugMode.get_drain_per_second(), 20.0, EPS, "%s: 20/s" % id)
 		remove_child(level)
 		level.free()
+
+
+## La sala del saco lleva el Debug a un cuarto, como la arena con la marca
+## (2026-10-21, docs/propuesta-jefe-alerta-mayor.md §2.4.7): 20 -> 5/s.
+func test_boss_test_room_drains_a_quarter() -> void:
+	var level := (load("res://scenes/levels/boss_test.tscn") as PackedScene).instantiate() as GeneratedLevel
+	assert_almost_eq(level.debug_drain_scale, 0.25, EPS)
+	add_child(level)
+	assert_almost_eq(DebugMode.get_drain_per_second(), 5.0, EPS, "boss_test: 5/s")
+	remove_child(level)
+	level.free()
+	assert_almost_eq(DebugMode.get_drain_per_second(), 20.0, EPS, "Al salir, 20/s")
 
 
 func test_charger_cooldown_is_per_instance() -> void:

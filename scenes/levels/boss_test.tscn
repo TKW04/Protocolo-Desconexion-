@@ -20,6 +20,7 @@ tile_size = 64
 size_tiles = Vector2i(20, 12)
 debug_color = "cyan"
 abilities_available = {"dash": true, "debug": true, "laser": true, "pulse": true}
+debug_drain_scale = 0.25
 source_path = "res://data/levels/boss_test.json"
 
 [node name="Background" parent="." instance=ExtResource("2_world1_background")]

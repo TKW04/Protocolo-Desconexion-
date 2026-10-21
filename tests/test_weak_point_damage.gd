@@ -8,7 +8,7 @@
 # desactivarse el nucleo, al cambiar de fase y al reaparecer. Con el Isak real
 # (IsakSim): pulso, laser, Laser 4 y dash. Con el jefe «saco» (BossDummy): baja,
 # se marca y se golpea; duracion por acceso (Caché / Kernel / Raíz). Sala
-# boss_test generada.
+# boss_test generada con el Debug a un cuarto.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -585,4 +585,5 @@ func test_boss_test_room_is_generated() -> void:
 	assert_true(dummy.is_fighting(), "Empieza solo")
 	var charger := level.find_child("cargador_saco", true, false)
 	assert_almost_eq(float(charger.get(&"cooldown_s")), 4.0, 0.001, "Cargador de 4 s")
+	assert_almost_eq(DebugMode.get_level_drain_scale(), 0.25, EPS, "Debug a un cuarto, como la arena")
 	assert_eq(LevelRunner.debug_start_arg(PackedStringArray(["--start-level=boss_test"])), "boss_test")
