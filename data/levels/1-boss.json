@@ -1,5 +1,5 @@
 {
-	"_notes": "ARENA DEL JEFE DEL MUNDO 1 «Pantalla de bloqueo» (Alerta Mayor; paso 5 de docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21; diseño en §2.2). kind boss: no hay meta G ni terminal (la pelea termina con el golpe final y la recompensa del paso 10 saca a Isak por un vortice); el jefe es el objeto alert_major (AlertMajor, datos de la pelea en data/bosses/alert_major.json: posiciones de la arena en celdas, ataques por fase y por acceso, modelo de energia del validador). 24 x 12 tiles: muros en las columnas 0 y 23, techo en la fila 0 y suelo en las filas 10-11 (Isak de pie en la 9). Plataformas de una via: laterales en las columnas 3-6 y 17-20 (superficie en la fila 8, Isak de pie en la 7: el CARRIL ALTO) y central en las 9-14 (superficie en la fila 6). Dos carriles: el suelo (fila 9) y el alto (fila 7); ningun ataque barre los dos a la vez. CARGADORES de arena (§2.4): cargador_1 (1, 9), cargador_2 (8, 9), cargador_3 (15, 9) y cargador_4 (22, 9): +50, reutilizables, 4 s de enfriamiento en Caché (AlertMajor los pone a 5 s en Kernel y 6 s en Raíz: laps.<n>.charger_cooldown_s). Debug a un cuarto de gasto (debug_drain_scale 0.25, §2.4.7) y con el mundo a x0,7 en vez del x0,5 global (debug_world_scale 0.7, §6.4: el jefe no se arrastra con el Debug; el 1-1, el 1-2 y el 1-3 siguen a x0,5). Vortice de llegada (P) en (2, 9). FASE 3 (objetos con active_in_phase [3]: inactivos, invisibles y sin colision hasta la fase 3): metronomo ritmo_jefe (toda la arena, 2,0 s en Caché; AlertMajor fija tempo_steps_s por acceso), las laterales pasan a ser plataformas que parpadean (grupo A a la izquierda, B a la derecha, alternas; al activarse, AlertMajor borra las celdas '-' que reemplazan) y tres campanas en el techo (columnas 5, 11 y 18, desfases 0, 1/3 y 2/3 del compas: nunca dos ondas a la vez). Sin puntos de atencion, power banks, vida extra ni checkpoints. No se enlaza todavia desde el hub (paso 13: data/hub.json playable false); se abre con $GODOT --path . -- --start-level=1-boss (build de depuracion). Validar: python3 tools/validate_level.py data/levels/1-boss.json (modo arena: tools/validate_boss.py).",
+	"_notes": "ARENA DEL JEFE DEL MUNDO 1 «Pantalla de bloqueo» (Alerta Mayor; paso 5 de docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21; diseño en §2.2). kind boss: no hay meta G ni terminal (la pelea termina con el golpe final y la recompensa del paso 10 saca a Isak por un vortice); el jefe es el objeto alert_major (AlertMajor, datos de la pelea en data/bosses/alert_major.json: posiciones de la arena en celdas, ataques por fase y por acceso, modelo de energia del validador). 24 x 12 tiles: muros en las columnas 0 y 23, techo en la fila 0 y suelo en las filas 10-11 (Isak de pie en la 9). Plataformas de una via: laterales en las columnas 3-6 y 17-20 (superficie en la fila 8, Isak de pie en la 7: el CARRIL ALTO) y central en las 9-14 (superficie en la fila 6). Dos carriles: el suelo (fila 9) y el alto (fila 7); ningun ataque barre los dos a la vez. CARGADORES de arena (§2.4): cargador_1 (1, 9), cargador_2 (8, 9), cargador_3 (15, 9) y cargador_4 (22, 9): +50, reutilizables, 4 s de enfriamiento en Caché (AlertMajor los pone a 5 s en Kernel y 6 s en Raíz: laps.<n>.charger_cooldown_s). Debug a un cuarto de gasto (debug_drain_scale 0.25, §2.4.7) y con el mundo a x0,7 en vez del x0,5 global (debug_world_scale 0.7, §6.4: el jefe no se arrastra con el Debug; el 1-1, el 1-2 y el 1-3 siguen a x0,5). Vortice de llegada (P) en (2, 9). FASE 3 (objetos con active_in_phase [3]: inactivos, invisibles y sin colision hasta la fase 3): metronomo ritmo_jefe (toda la arena, 2,0 s en Caché; AlertMajor fija tempo_steps_s por acceso), las laterales pasan a ser plataformas que parpadean (grupo A a la izquierda, B a la derecha, alternas; al activarse, AlertMajor borra las celdas '-' que reemplazan; de una via, one_way, como las '-' de las fases 1 y 2: §6.4) y tres campanas en el techo (columnas 2, 11 y 21 desde el 2026-10-21, §6.4: antes 5 y 18, que caian encima de las laterales; desfases 0, 1/3 y 2/3 del compas: nunca dos ondas a la vez). Sin puntos de atencion, power banks, vida extra ni checkpoints. No se enlaza todavia desde el hub (paso 13: data/hub.json playable false); se abre con $GODOT --path . -- --start-level=1-boss (build de depuracion). Validar: python3 tools/validate_level.py data/levels/1-boss.json (modo arena: tools/validate_boss.py).",
 	"id": "1-boss",
 	"name": "Pantalla de bloqueo",
 	"world": 1,
@@ -36,7 +36,7 @@
 	],
 	"grid": [
 		"########################",
-		"#....E.....E......E....#",
+		"#.E........E.........E.#",
 		"#......................#",
 		"#......................#",
 		"#......................#",
@@ -54,7 +54,7 @@
 		{
 			"id": "campana_1",
 			"type": "alarm_bell",
-			"x": 5,
+			"x": 2,
 			"y": 1,
 			"active_in_phase": [3],
 			"params": {
@@ -78,7 +78,7 @@
 		{
 			"id": "campana_3",
 			"type": "alarm_bell",
-			"x": 18,
+			"x": 21,
 			"y": 1,
 			"active_in_phase": [3],
 			"params": {
@@ -132,28 +132,28 @@
 			"x": 3,
 			"y": 8,
 			"active_in_phase": [3],
-			"params": {"id": "parpadeo_a1", "rhythm": "ritmo_jefe", "group": "A", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.0}
+			"params": {"id": "parpadeo_a1", "rhythm": "ritmo_jefe", "group": "A", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.0, "one_way": true}
 		},
 		{
 			"type": "blink_platform",
 			"x": 5,
 			"y": 8,
 			"active_in_phase": [3],
-			"params": {"id": "parpadeo_a2", "rhythm": "ritmo_jefe", "group": "A", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.0}
+			"params": {"id": "parpadeo_a2", "rhythm": "ritmo_jefe", "group": "A", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.0, "one_way": true}
 		},
 		{
 			"type": "blink_platform",
 			"x": 17,
 			"y": 8,
 			"active_in_phase": [3],
-			"params": {"id": "parpadeo_b1", "rhythm": "ritmo_jefe", "group": "B", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.5}
+			"params": {"id": "parpadeo_b1", "rhythm": "ritmo_jefe", "group": "B", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.5, "one_way": true}
 		},
 		{
 			"type": "blink_platform",
 			"x": 19,
 			"y": 8,
 			"active_in_phase": [3],
-			"params": {"id": "parpadeo_b2", "rhythm": "ritmo_jefe", "group": "B", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.5}
+			"params": {"id": "parpadeo_b2", "rhythm": "ritmo_jefe", "group": "B", "width_tiles": 2, "on_fraction": 0.55, "offset": 0.5, "one_way": true}
 		},
 		{
 			"type": "alert_major",

@@ -18,6 +18,10 @@
 ## - Tiempo del mundo: lo marca su metronomo (el Debug lo ralentiza).
 ## El origen del nodo es la esquina superior izquierda de su primera celda.
 ## Arte por script (paso 8, 2026-10-20): tools/gen_world1_dnd.py.
+## - `one_way` (2026-10-21, docs/propuesta-jefe-alerta-mayor.md §6.4): de una
+##   via, como las plataformas '-' (se sube saltando desde debajo). Por defecto
+##   false (solida: el 1-3 no cambia); la arena de Alerta Mayor la usa en las
+##   laterales de la fase 3, que en las fases 1 y 2 son '-'.
 class_name BlinkPlatform
 extends StaticBody2D
 
@@ -41,6 +45,8 @@ signal warning_started
 @export var on_fraction: float = 0.5
 ## Desplazamiento en el ciclo (fraccion, 0-1).
 @export var offset: float = 0.0
+## De una via (como las '-'); false = solida.
+@export var one_way: bool = false
 
 var _config: Dictionary = World1ObjectsConfig.section("blink_platform")
 var _rhythm: RhythmZone
@@ -64,6 +70,7 @@ func _ready() -> void:
 	rect.size = size
 	_shape.shape = rect
 	_shape.position = size * 0.5
+	_shape.one_way_collision = one_way
 	add_child(_shape)
 	refresh()
 

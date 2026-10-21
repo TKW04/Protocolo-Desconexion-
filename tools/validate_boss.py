@@ -506,6 +506,18 @@ def check_phase3(arena, boss, root, errors, report):
                          "aviso (%.2f s) + %.2f s" % (lap, on * shortest, shortest, bwarn, extra))
         out[lap] = {"tempo_steps_s": steps, "copies": copies, "launches_per_round": launches, "blink_on_fraction": on}
     report["phase3"] = out
+    # Campanas fuera de las plataformas que parpadean (§6.4): su onda no cae encima de las laterales, que son el
+    # sitio para subir y disparar al nucleo.
+    T = arena.T
+    half = float(bell_data.get("damage_width_px", 48.0)) / 2.0
+    for b in bells:
+        cx = (int(b["x"]) + 0.5) * T
+        for o in blinks:
+            w = int(o.get("params", {}).get("width_tiles", 2))
+            if cx + half > int(o["x"]) * T + EPS and cx - half < (int(o["x"]) + w) * T - EPS:
+                _err(errors, "la onda de la campana %s cae encima de la plataforma que parpadea %s"
+                     % (b["id"], o.get("params", {}).get("id")), int(b["y"]), int(b["x"]))
+    report["bell_cols"] = sorted(int(b["x"]) for b in bells)
 
 
 def mark_shots(rules, seconds):

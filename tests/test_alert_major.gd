@@ -254,6 +254,33 @@ func test_phase3_activation_replaces_the_side_platforms() -> void:
 		assert_ne(_tiles().get_cell_source_id(Vector2i(c, 8)), -1, "Desactivadas: vuelve la de una via")
 
 
+## Laterales de la fase 3 de una via (2026-10-21, §6.4): como las '-' de las
+## fases 1 y 2, se suben saltando desde debajo (antes, cabezazo); y las campanas
+## (columnas 2, 11 y 21; antes 5 y 18) ya no caen encima de ellas.
+func test_phase3_side_platforms_are_one_way_and_bells_fall_beside_them() -> void:
+	await _arena(1, false, true)
+	_boss.start()
+	_to_phase(3)
+	for id: String in ["parpadeo_a1", "parpadeo_a2", "parpadeo_b1", "parpadeo_b2"]:
+		var p := _obj(id) as BlinkPlatform
+		assert_true(p.one_way, "%s de una via" % id)
+		assert_true((p.get_node(^"Shape") as CollisionShape2D).one_way_collision, "%s: colision de una via" % id)
+		p.hold_on()
+	for id: String in ["campana_1", "campana_2", "campana_3"]:
+		var col: int = int(floor((_enemy(id) as Node2D).global_position.x / TILE))
+		assert_false(col in [3, 4, 5, 6, 17, 18, 19, 20], "%s (columna %d) fuera de las laterales" % [id, col])
+	_place_isak(4, 9)
+	var isak: Isak = _level.get_isak()
+	_sim.input.jump_pressed = true
+	_sim.input.jump_held = true
+	_sim.step()
+	_sim.input.jump_pressed = false
+	for i: int in 90:
+		_sim.step()
+	assert_true(isak.is_on_floor(), "En el suelo de algo")
+	assert_almost_eq(isak.global_position.y, 8.0 * TILE, 2.0, "De pie en la lateral (fila 8) tras saltar desde debajo")
+
+
 func test_lap_settings_per_access() -> void:
 	var expected: Dictionary = {1: [4.0, [2.0], 0.55], 2: [5.0, [2.0, 1.6], 0.65], 3: [6.0, [2.0, 1.6, 1.4], 0.72]}
 	for lap: int in expected:

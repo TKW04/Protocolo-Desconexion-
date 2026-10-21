@@ -92,6 +92,7 @@ group_id = "A"
 object_id = &"parpadeo_a1"
 offset = 0.0
 on_fraction = 0.55
+one_way = true
 rhythm_id = "ritmo_jefe"
 width_tiles = 2
 metadata/help_id = "blink_platform"
@@ -103,6 +104,7 @@ group_id = "A"
 object_id = &"parpadeo_a2"
 offset = 0.0
 on_fraction = 0.55
+one_way = true
 rhythm_id = "ritmo_jefe"
 width_tiles = 2
 metadata/help_id = "blink_platform"
@@ -114,6 +116,7 @@ group_id = "B"
 object_id = &"parpadeo_b1"
 offset = 0.5
 on_fraction = 0.55
+one_way = true
 rhythm_id = "ritmo_jefe"
 width_tiles = 2
 metadata/help_id = "blink_platform"
@@ -125,6 +128,7 @@ group_id = "B"
 object_id = &"parpadeo_b2"
 offset = 0.5
 on_fraction = 0.55
+one_way = true
 rhythm_id = "ritmo_jefe"
 width_tiles = 2
 metadata/help_id = "blink_platform"
@@ -137,7 +141,7 @@ object_id = &"alerta_mayor"
 [node name="Enemies" type="Node2D" parent="."]
 
 [node name="campana_1" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
-position = Vector2(352, 128)
+position = Vector2(160, 128)
 metadata/params = {"offset": 0.0, "rhythm": "ritmo_jefe", "wave_tiles": 9}
 metadata/help_id = "alarm_bell"
 metadata/active_in_phase = [3]
@@ -149,7 +153,7 @@ metadata/help_id = "alarm_bell"
 metadata/active_in_phase = [3]
 
 [node name="campana_3" parent="Enemies" instance=ExtResource("8_alarm_bell") groups=["help_target"]]
-position = Vector2(1184, 128)
+position = Vector2(1376, 128)
 metadata/params = {"offset": 0.667, "rhythm": "ritmo_jefe", "wave_tiles": 9}
 metadata/help_id = "alarm_bell"
 metadata/active_in_phase = [3]

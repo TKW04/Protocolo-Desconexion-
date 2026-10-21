@@ -173,5 +173,52 @@ class BurstSpacingTest(unittest.TestCase):
         self.assertIn("cambia de altura", text)
 
 
+class SidePlatformsTest(unittest.TestCase):
+    """3) Laterales de la fase 3 de una via (blink_platform one_way) y campanas fuera de ellas (2, 11 y 21)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.level = load(LEVEL)
+        cls.boss = load(BOSS)
+
+    def blinks(self, level):
+        return [o for o in level["objects"] if o["type"] == "blink_platform"]
+
+    def test_arena_blinks_are_one_way_and_bells_moved(self):
+        self.assertEqual([o["params"].get("one_way") for o in self.blinks(self.level)], [True] * 4)
+        bells = sorted(e["x"] for e in self.level["enemies"] if e["type"] == "alarm_bell")
+        self.assertEqual(bells, [2, 11, 21])
+        result = vb.validate_arena(self.level, boss=self.boss)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(result["boss"]["bell_cols"], [2, 11, 21])
+        with open(os.path.join(ROOT, "scenes", "levels", "1-boss.tscn"), encoding="utf-8") as handle:
+            self.assertEqual(handle.read().count("one_way = true"), 4)
+
+    def test_bells_over_the_side_platforms_are_an_error(self):
+        level = copy.deepcopy(self.level)
+        grid = [list(row) for row in level["grid"]]
+        for e in level["enemies"]:
+            if e["id"] in ("campana_1", "campana_3"):
+                grid[e["y"]][e["x"]] = "."
+                e["x"] = 5 if e["id"] == "campana_1" else 18
+                grid[e["y"]][e["x"]] = "E"
+        level["grid"] = ["".join(r) for r in grid]
+        self.assertEqual(vls.validate_level(level, ROOT), [])
+        msgs = messages(vb.validate_arena(level, boss=self.boss))
+        self.assertTrue(any("campana campana_1 cae encima" in m for m in msgs), msgs)
+        self.assertTrue(any("campana campana_3 cae encima" in m for m in msgs), msgs)
+
+    def test_schema_one_way_is_boolean(self):
+        level = copy.deepcopy(self.level)
+        self.blinks(level)[0]["params"]["one_way"] = "si"
+        self.assertTrue(any("one_way debe ser true o false" in e for e in vls.validate_level(level, ROOT)))
+
+    def test_1_3_keeps_solid_blinks(self):
+        level = load(os.path.join(ROOT, "data", "levels", "1-3.json"))
+        self.assertFalse(any("one_way" in o.get("params", {}) for o in self.blinks(level)))
+        with open(os.path.join(ROOT, "scenes", "levels", "1-3.tscn"), encoding="utf-8") as handle:
+            self.assertNotIn("one_way = true", handle.read())
+
+
 if __name__ == "__main__":
     unittest.main()

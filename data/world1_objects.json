@@ -490,7 +490,7 @@
 		"blink_platform": {
 			"scene": "res://scenes/levels/blink_platform.tscn",
 			"help_id": "blink_platform",
-			"description": "Plataforma que parpadea al ritmo (2026-10-19, paso 5 de docs/propuesta-1-3.md §7, §5.3). Plataforma SOLIDA (capa world, no de una via) de width_tiles x 1 (1-3 tiles; la tarjeta y su colision ocupan los card_height_px de arriba de la celda; el grid deja sus celdas en '.'). Sigue su metronomo rhythm (id de un rhythm_zone o alarm_tunnel): encendida la parte on_fraction de cada ciclo, desplazada offset (fraccion del ciclo); group es su etiqueta (A, B, C...). Encendida: solida, 4 segmentos que se vacian; los ultimos warn_frames cuadros a anim_fps (9 a 12 fps: 0,75 s) parpadea; apagada: contorno punteado sin colision (Isak cae sin dano). Con Isak dentro no se materializa hasta que salga. Esquema: rhythm existente, la plataforma dentro de su zona y on_fraction x el ciclo mas corto >= aviso + 0,25 s. Ayuda con Q blink_platform y ficha del album (paso 8, 2026-10-20). Arte por script: tools/gen_world1_dnd.py (seccion blink_platform).",
+			"description": "Plataforma que parpadea al ritmo (2026-10-19, paso 5 de docs/propuesta-1-3.md §7, §5.3). Plataforma SOLIDA (capa world, no de una via) de width_tiles x 1 (1-3 tiles; la tarjeta y su colision ocupan los card_height_px de arriba de la celda; el grid deja sus celdas en '.'). Sigue su metronomo rhythm (id de un rhythm_zone o alarm_tunnel): encendida la parte on_fraction de cada ciclo, desplazada offset (fraccion del ciclo); group es su etiqueta (A, B, C...). Encendida: solida, 4 segmentos que se vacian; los ultimos warn_frames cuadros a anim_fps (9 a 12 fps: 0,75 s) parpadea; apagada: contorno punteado sin colision (Isak cae sin dano). Con Isak dentro no se materializa hasta que salga. Esquema: rhythm existente, la plataforma dentro de su zona y on_fraction x el ciclo mas corto >= aviso + 0,25 s. Ayuda con Q blink_platform y ficha del album (paso 8, 2026-10-20). Arte por script: tools/gen_world1_dnd.py (seccion blink_platform). one_way (opcional, booleano; por defecto false: solida, como en el 1-3): true = de una via (se sube saltando desde debajo y se baja con abajo + salto como las '-'); la usa la arena de Alerta Mayor en la fase 3 (2026-10-21, docs/propuesta-jefe-alerta-mayor.md §6.4).",
 			"required": ["rhythm", "group"],
 			"fields": {
 				"id": "object_id",
@@ -498,7 +498,8 @@
 				"group": "group_id",
 				"width_tiles": "width_tiles",
 				"on_fraction": "on_fraction",
-				"offset": "offset"
+				"offset": "offset",
+				"one_way": "one_way"
 			},
 			"defaults": {
 				"width_tiles": 2,

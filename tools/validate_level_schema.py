@@ -923,6 +923,8 @@ class LevelValidator:
                         self.error("%s: tempo_steps_s debe ser una lista no vacia de segundos entre %g y %g"
                                    % (what, lo, hi), y, x)
             elif kind == "blink_platform":
+                if not isinstance(p.get("one_way", False), bool):
+                    self.error("%s: one_way debe ser true o false" % what, y, x)
                 group = p.get("group")
                 if not isinstance(group, str) or not group.strip():
                     self.error("%s: group debe ser un texto no vacio" % what, y, x)
