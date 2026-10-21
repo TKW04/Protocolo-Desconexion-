@@ -10,8 +10,10 @@
 ##   Los ajustes se guardan al instante (GameSettings, settings.cfg), aparte del
 ##   guardado de la partida, y se aplican al momento. El detalle explica el
 ##   ajuste elegido. «Pantalla» abre su subpagina: «Modo: Ventana / Pantalla
-##   completa» y «Tamano de ventana» (presets de data/settings.json que caben en
-##   el monitor), con el factor de escala entero y si quedan bordes negros en el
+##   completa», «Tamano de ventana» (presets de data/settings.json que caben en
+##   el monitor) y «Escalado: Llenar ventana / Nitido» (2026-10-20; por defecto
+##   Llenar ventana: el juego crece con la ventana; Nitido: escala entera), con
+##   el tamano dibujado o el factor entero y si quedan bordes negros en el
 ##   detalle (GameSettings.apply_display; no se aplica en pruebas ni scripts).
 ##   «Controles» abre la lista de acciones reasignables (ControlBindings,
 ##   data/settings.json) con su tecla y su boton de mando; elegir una abre «Pulsa
@@ -65,7 +67,7 @@ const BLOCKER_GROUP: StringName = &"pause_menu_blocker"
 
 enum Page { MAIN, SETTINGS, CONFIRM_HUB, DISPLAY, CONTROLS, CAPTURE, CONFLICT, CONFIRM_RESET, SOUND }
 enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT, LOW_SYNC, DEBUG_OUTLINE, DISPLAY, WINDOW_MODE,
-	WINDOW_SIZE, CONTROLS, BINDING, RESET_CONTROLS, CONFIRM_RESET, SWAP, CANCEL, RHYTHM_CUES, SOUND, VOLUME }
+	WINDOW_SIZE, CONTROLS, BINDING, RESET_CONTROLS, CONFIRM_RESET, SWAP, CANCEL, RHYTHM_CUES, SOUND, VOLUME, SCALE_MODE }
 
 ## Interruptores Si / No de Ajustes: opcion -> [clave de GameSettings, clave de texto].
 const SWITCHES: Dictionary = {
@@ -316,6 +318,10 @@ func activate(option: Option) -> void:
 			_refresh()
 		Option.WINDOW_SIZE:
 			cycle_window_size(1)
+		Option.SCALE_MODE:
+			GameSettings.set_scale_mode(GameSettings.SCALE_MODE_FILL if GameSettings.is_crisp_scale()
+				else GameSettings.SCALE_MODE_CRISP)
+			_refresh()
 		Option.CONTROLS:
 			_show_page(Page.CONTROLS)
 		Option.BINDING:
@@ -365,7 +371,8 @@ func change_volume(step: int) -> void:
 
 ## La opcion es un ajuste que se cambia con izquierda/derecha o aceptar.
 func is_switch(option: Option) -> bool:
-	return option == Option.ECO_HELP or option == Option.WINDOW_MODE or SWITCHES.has(option)
+	return option == Option.ECO_HELP or option == Option.WINDOW_MODE or option == Option.SCALE_MODE \
+		or SWITCHES.has(option)
 
 
 ## Pasa al tamano de ventana siguiente (`step` 1) o anterior (-1) de los que
@@ -578,6 +585,9 @@ func option_text(option: Option) -> String:
 				_text("window_mode_fullscreen" if GameSettings.is_fullscreen() else "window_mode_windowed"))
 		Option.WINDOW_SIZE:
 			return _text("window_size").replace("{value}", size_text(GameSettings.get_window_size()))
+		Option.SCALE_MODE:
+			return _text("scale_mode").replace("{value}",
+				_text("scale_mode_crisp" if GameSettings.is_crisp_scale() else "scale_mode_fill"))
 	return _text("back")
 
 
@@ -628,7 +638,7 @@ func _show_page(page: Page) -> void:
 				_options.append(Option.EXIT_TO_HUB)
 			_options.append(Option.QUIT)
 		Page.DISPLAY:
-			_options = [Option.WINDOW_MODE, Option.WINDOW_SIZE, Option.BACK]
+			_options = [Option.WINDOW_MODE, Option.WINDOW_SIZE, Option.SCALE_MODE, Option.BACK]
 		Page.SOUND:
 			_options = []
 			for bus: StringName in GameSettings.AUDIO_BUSES:
@@ -754,6 +764,9 @@ func _option_detail(option: Option) -> String:
 			if option == Option.WINDOW_SIZE and GameSettings.is_fullscreen():
 				return _text("window_size_detail_fullscreen")
 			return scale_text(display_area())
+		Option.SCALE_MODE:
+			var key: String = "scale_mode_detail_crisp" if GameSettings.is_crisp_scale() else "scale_mode_detail_fill"
+			return _size_placeholders(_text(key), GameSettings.drawn_size(display_area()))
 	return ""
 
 
@@ -771,10 +784,21 @@ func size_text(size: Vector2i) -> String:
 	return _text("size_format").replace("{w}", str(size.x)).replace("{h}", str(size.y))
 
 
-## Factor entero y bordes del juego en `area` («Pixeles a x1, con bordes negros.»).
+## Como se ve el juego en `area` con el escalado actual: en Nitido, factor
+## entero y bordes («Pixeles a x1, con bordes negros.»); en Llenar ventana,
+## tamano dibujado y bordes («Juego a 1600x900, sin bordes.»).
 func scale_text(area: Vector2i) -> String:
-	var key: String = "scale_detail_letterbox" if GameSettings.has_letterbox(area) else "scale_detail_exact"
-	return _text(key).replace("{scale}", str(GameSettings.integer_scale(area)))
+	var bordered: bool = GameSettings.has_letterbox(area)
+	if GameSettings.is_crisp_scale():
+		var key: String = "scale_detail_letterbox" if bordered else "scale_detail_exact"
+		return _text(key).replace("{scale}", str(GameSettings.integer_scale(area)))
+	var fill_key: String = "fill_detail_letterbox" if bordered else "fill_detail_exact"
+	return _size_placeholders(_text(fill_key), GameSettings.drawn_size(area))
+
+
+## Sustituye {w} y {h} por las medidas de `size`.
+func _size_placeholders(text: String, size: Vector2i) -> String:
+	return text.replace("{w}", str(size.x)).replace("{h}", str(size.y))
 
 
 func _page_title_key() -> String:

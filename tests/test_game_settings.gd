@@ -258,11 +258,9 @@ func test_window_area_leaves_room_for_the_title_bar() -> void:
 ## entera del diseno, no un fallo de aplicar el ajuste.
 func test_window_size_effect_matches_the_announced_integer_scale() -> void:
 	var probe := Window.new()
-	probe.content_scale_size = GameSettings.base_size()
-	probe.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
-	probe.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
-	probe.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	GameSettings.configure_content_scale(probe, GameSettings.SCALE_MODE_CRISP)
 	add_child_autofree(probe)
+	assert_eq(probe.content_scale_stretch, Window.CONTENT_SCALE_STRETCH_INTEGER, "Nitido: estirado entero")
 	assert_eq(String(ProjectSettings.get_setting("display/window/stretch/mode")), "viewport",
 		"project.godot: stretch viewport")
 	assert_eq(String(ProjectSettings.get_setting("display/window/stretch/scale_mode")), "integer",
@@ -275,9 +273,75 @@ func test_window_size_effect_matches_the_announced_integer_scale() -> void:
 			"%s: el juego se dibuja a x%d" % [size, expected])
 		assert_eq(probe.get_visible_rect().size, Vector2(GameSettings.base_size()),
 			"%s: resolucion interna siempre 1280x720" % size)
+		assert_eq(Vector2i(shown.round()), GameSettings.drawn_size(size, GameSettings.SCALE_MODE_CRISP),
+			"%s: drawn_size anuncia lo que se ve" % size)
+
+
+## «Escalado: Llenar ventana» (2026-10-20, por defecto): el tamano de la ventana
+## SE NOTA. Con 1600x900 el juego se dibuja a 1600x900 y con 1920x1080 a
+## 1920x1080 (sin bordes, 16:9); la resolucion interna sigue en 1280x720. En
+## un area con otro aspecto (16:10) llena el ancho y deja bordes arriba y abajo.
+func test_fill_scale_effect_grows_with_the_window() -> void:
+	var probe := Window.new()
+	GameSettings.configure_content_scale(probe, GameSettings.SCALE_MODE_FILL)
+	add_child_autofree(probe)
+	assert_eq(probe.content_scale_stretch, Window.CONTENT_SCALE_STRETCH_FRACTIONAL, "Llenar: estirado fraccional")
+	var crisp_1600: Vector2i = GameSettings.drawn_size(Vector2i(1600, 900), GameSettings.SCALE_MODE_CRISP)
+	for size: Vector2i in GameSettings.window_presets() + ([Vector2i(1680, 1050)] as Array[Vector2i]):
+		probe.size = size
+		var shown: Vector2 = probe.get_final_transform().get_scale() * Vector2(probe.get_visible_rect().size)
+		assert_eq(Vector2i(shown.round()), GameSettings.drawn_size(size, GameSettings.SCALE_MODE_FILL),
+			"%s: se dibuja a lo que anuncia el menu" % size)
+		assert_eq(probe.get_visible_rect().size, Vector2(GameSettings.base_size()),
+			"%s: resolucion interna siempre 1280x720" % size)
+	probe.size = Vector2i(1600, 900)
+	var shown_1600: Vector2 = probe.get_final_transform().get_scale() * Vector2(probe.get_visible_rect().size)
+	assert_eq(Vector2i(shown_1600.round()), Vector2i(1600, 900), "1600x900 llena la ventana")
+	assert_ne(Vector2i(shown_1600.round()), crisp_1600, "Distinto de Nitido (1280x720 con bordes)")
+	probe.size = Vector2i(1920, 1080)
+	var shown_1080: Vector2 = probe.get_final_transform().get_scale() * Vector2(probe.get_visible_rect().size)
+	assert_eq(Vector2i(shown_1080.round()), Vector2i(1920, 1080), "1920x1080 llena la ventana")
+
+
+func test_scale_mode_drawn_size_and_letterbox() -> void:
+	var fill: String = GameSettings.SCALE_MODE_FILL
+	assert_almost_eq(GameSettings.display_scale(Vector2i(1600, 900), fill), 1.25, 0.001)
+	assert_eq(GameSettings.drawn_size(Vector2i(1600, 900), fill), Vector2i(1600, 900))
+	assert_false(GameSettings.has_letterbox(Vector2i(1600, 900), fill), "16:9: sin bordes")
+	assert_eq(GameSettings.drawn_size(Vector2i(1680, 1050), fill), Vector2i(1680, 945), "16:10: llena el ancho")
+	assert_true(GameSettings.has_letterbox(Vector2i(1680, 1050), fill), "16:10: bordes arriba y abajo")
+	assert_eq(GameSettings.drawn_size(Vector2i(1600, 900), GameSettings.SCALE_MODE_CRISP), Vector2i(1280, 720))
+	assert_eq(GameSettings.get_scale_mode(), fill, "Por defecto, Llenar ventana")
+
+
+func test_scale_mode_saves_loads_and_never_touches_the_window_in_tests() -> void:
+	var root: Window = get_tree().root
+	var stretch: Window.ContentScaleStretch = root.content_scale_stretch
+	assert_false(GameSettings.apply_scale_mode(), "En GUT no se toca la ventana")
+	assert_true(GameSettings.set_scale_mode(GameSettings.SCALE_MODE_CRISP))
+	assert_false(GameSettings.set_scale_mode(GameSettings.SCALE_MODE_CRISP), "Sin cambio")
+	assert_false(GameSettings.set_scale_mode("borroso"), "Solo modos conocidos")
+	assert_true(GameSettings.is_crisp_scale())
+	assert_eq(root.content_scale_stretch, stretch, "La ventana raiz no cambia en GUT")
+	var config := ConfigFile.new()
+	assert_eq(config.load(GameSettings.settings_path()), OK, "Guardado al instante")
+	assert_eq(config.get_value(GameSettings.SECTION_DISPLAY, "scale_mode"), "crisp")
+	GameSettings.reset_defaults()
+	assert_eq(GameSettings.get_scale_mode(), GameSettings.SCALE_MODE_FILL)
+	GameSettings.load_from_disk()
+	assert_true(GameSettings.is_crisp_scale(), "Se carga al arrancar")
+	assert_eq(root.content_scale_stretch, stretch, "Cargar tampoco toca la ventana en GUT")
+	assert_false(GameState.has_unsaved_changes(), "No es progreso")
+	# Archivo anterior sin la clave o con un valor desconocido: Llenar ventana.
+	config.set_value(GameSettings.SECTION_DISPLAY, "scale_mode", "estirado")
+	config.save(GameSettings.settings_path())
+	GameSettings.load_from_disk()
+	assert_eq(GameSettings.get_scale_mode(), GameSettings.SCALE_MODE_FILL, "Valor desconocido: por defecto")
+	assert_eq(GameSettings.get_window_size(), Vector2i(1280, 720), "Sin perder los demas")
 
 
 func test_integer_scale_and_letterbox() -> void:
+	GameSettings.set_scale_mode(GameSettings.SCALE_MODE_CRISP)
 	assert_eq(GameSettings.integer_scale(Vector2i(1280, 720)), 1)
 	assert_false(GameSettings.has_letterbox(Vector2i(1280, 720)))
 	assert_eq(GameSettings.integer_scale(Vector2i(1600, 900)), 1, "1600x900: x1")

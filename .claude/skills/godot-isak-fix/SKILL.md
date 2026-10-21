@@ -7,7 +7,7 @@ description: Convenciones de arquitectura, física y configuración de Godot 4 p
 
 ## Configuración del proyecto
 
-- Display, ventana: ancho 1280, alto 720. Stretch mode `viewport`, scale mode `integer` (decisión del 2026-10-14; antes 640x360).
+- Display, ventana: ancho 1280, alto 720. Stretch mode `viewport`, scale mode `integer` (decisión del 2026-10-14; antes 640x360). Desde el 2026-10-20 el jugador elige «Escalado: Llenar ventana» (por defecto, fraccional) o «Nítido» (entera); `GameSettings.apply_scale_mode` lo aplica en tiempo de ejecución sin tocar `project.godot`.
 - Rendering, texturas: default texture filter en `Nearest`.
 - Activa el ajuste de transformaciones 2D a píxel (`snap_2d_transforms_to_pixel`) para evitar temblor.
 - Usa `TileMapLayer` para los niveles. Tiles de 64x64. El sprite de Isak usa un canvas de 128x128 con unos 96 px visibles y los pies abajo-centro.

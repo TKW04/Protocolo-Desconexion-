@@ -23,13 +23,19 @@
 ## - Pantalla (2026-10-16, seccion display; datos en data/settings.json):
 ##   modo de ventana («Ventana» / «Pantalla completa», window_mode) y tamano de
 ##   la ventana (window_size, uno de window_presets que quepa en el monitor).
-##   El juego se dibuja siempre a 1280x720 y se escala por un factor ENTERO
-##   (project.godot: stretch viewport, scale_mode integer): si el tamano no es
-##   multiplo exacto, queda centrado con bordes negros (letterbox). Por defecto,
-##   ventana de 1280x720 (el comportamiento anterior: con los valores por
-##   defecto no se toca la ventana al arrancar). Se aplica al cambiarlo y al
-##   arrancar (apply_display); NUNCA en GUT, con scripts -s (bots, capturas) ni
-##   sin ventana (headless): can_change_window().
+##   El juego se dibuja siempre a 1280x720 (stretch viewport) y se escala segun
+##   «Escalado» (scale_mode, 2026-10-20: «cambio la resolucion y se queda
+##   igual»): «Llenar ventana» (fill, POR DEFECTO) escala por un factor
+##   fraccional que llena la ventana manteniendo 16:9 (bordes negros solo si el
+##   aspecto difiere; el pixel art puede verse algo irregular) y «Nitido»
+##   (crisp) por un factor ENTERO (lo de project.godot: scale_mode integer;
+##   si el tamano no es multiplo exacto, queda centrado con bordes negros). Se
+##   aplica en tiempo de ejecucion a la ventana raiz (content_scale_stretch;
+##   project.godot no cambia). Por defecto, ventana de 1280x720 (con esos
+##   valores no se toca el tamano al arrancar, solo el escalado). Se aplica al
+##   cambiarlo y al arrancar (apply_display / apply_scale_mode); NUNCA en GUT,
+##   con scripts -s (bots, capturas) ni sin ventana (headless):
+##   can_change_window() (alli sigue la escala entera de project.godot).
 ## - Controles (2026-10-16, seccion controls): las acciones reasignadas en
 ##   Ajustes > Controles (ControlBindings) se guardan como eventos serializados
 ##   (tecla fisica, boton o eje) solo si difieren de project.godot y se aplican
@@ -71,6 +77,12 @@ const KEY_WINDOW_SIZE: StringName = &"window_size"
 const WINDOW_MODE_WINDOWED: String = "windowed"
 const WINDOW_MODE_FULLSCREEN: String = "fullscreen"
 const WINDOW_MODES: Array[String] = [WINDOW_MODE_WINDOWED, WINDOW_MODE_FULLSCREEN]
+## «Escalado: Llenar ventana / Nitido» (seccion display).
+const KEY_SCALE_MODE: StringName = &"scale_mode"
+const SCALE_MODE_FILL: String = "fill"
+const SCALE_MODE_CRISP: String = "crisp"
+const SCALE_MODES: Array[String] = [SCALE_MODE_FILL, SCALE_MODE_CRISP]
+const SCALE_MODE_DEFAULT: String = SCALE_MODE_FILL
 ## Mostrar las Q de la ayuda de Eco.
 const KEY_SHOW_ECO_HELP: StringName = &"show_eco_help"
 const SHOW_ECO_HELP_DEFAULT: bool = true
@@ -93,6 +105,7 @@ static var _loaded: bool = false
 static var _bools: Dictionary = {}
 static var _window_mode: String = WINDOW_MODE_WINDOWED
 static var _window_size: Vector2i = Vector2i.ZERO
+static var _scale_mode: String = SCALE_MODE_DEFAULT
 static var _data: Dictionary = {}
 ## Volumen lineal (0-1) por bus de AUDIO_BUSES.
 static var _volumes: Dictionary = {}
@@ -139,10 +152,14 @@ static func load_from_disk() -> void:
 	_apply_game_state()
 	_window_mode = WINDOW_MODE_WINDOWED
 	_window_size = base_size()
+	_scale_mode = SCALE_MODE_DEFAULT
 	if loaded:
 		var mode: Variant = config.get_value(SECTION_DISPLAY, String(KEY_WINDOW_MODE), WINDOW_MODE_WINDOWED)
 		if mode is String and WINDOW_MODES.has(mode as String):
 			_window_mode = mode as String
+		var scale_mode: Variant = config.get_value(SECTION_DISPLAY, String(KEY_SCALE_MODE), SCALE_MODE_DEFAULT)
+		if scale_mode is String and SCALE_MODES.has(scale_mode as String):
+			_scale_mode = scale_mode as String
 		var stored: Variant = config.get_value(SECTION_DISPLAY, String(KEY_WINDOW_SIZE), base_size())
 		if stored is Vector2i and window_presets().has(stored as Vector2i):
 			_window_size = stored as Vector2i
@@ -156,6 +173,9 @@ static func load_from_disk() -> void:
 			else volume_default(bus)
 		_volumes[bus] = _clean_volume(stored_volume, volume_default(bus))
 	apply_audio()
+	# El escalado siempre (el de por defecto, Llenar ventana, no es el de
+	# project.godot); el tamano solo si no es el de siempre.
+	apply_scale_mode()
 	if not is_display_default():
 		apply_display()
 
@@ -168,6 +188,7 @@ static func reset_defaults() -> void:
 	_apply_game_state()
 	_window_mode = WINDOW_MODE_WINDOWED
 	_window_size = base_size()
+	_scale_mode = SCALE_MODE_DEFAULT
 	ControlBindings.restore_defaults(false)
 	EventBus.controls_changed.emit()
 	for bus: StringName in AUDIO_BUSES:
@@ -183,6 +204,7 @@ static func save() -> bool:
 		config.set_value(String(BOOLS[key][0]), String(key), _bools.get(key, BOOLS[key][1]))
 	config.set_value(SECTION_DISPLAY, String(KEY_WINDOW_MODE), _window_mode)
 	config.set_value(SECTION_DISPLAY, String(KEY_WINDOW_SIZE), _window_size)
+	config.set_value(SECTION_DISPLAY, String(KEY_SCALE_MODE), _scale_mode)
 	for bus: StringName in AUDIO_BUSES:
 		config.set_value(SECTION_AUDIO, volume_key(bus), get_volume(bus))
 	var controls: Dictionary = ControlBindings.overrides()
@@ -392,10 +414,69 @@ static func integer_scale(area: Vector2i) -> int:
 	return maxi(1, mini(area.x / base.x, area.y / base.y))
 
 
-## Con el factor entero, el juego no llena `area` (quedan bordes negros).
-static func has_letterbox(area: Vector2i) -> bool:
-	var scale_factor: int = integer_scale(area)
-	return area != base_size() * scale_factor
+## Factor con que se ve el juego en `area` px con el escalado `mode`
+## (SCALE_MODES; vacio = el actual): entero en Nitido, fraccional que llena
+## manteniendo el aspecto en Llenar ventana.
+static func display_scale(area: Vector2i, mode: String = "") -> float:
+	var used: String = mode if not mode.is_empty() else get_scale_mode()
+	if used == SCALE_MODE_CRISP:
+		return float(integer_scale(area))
+	var base: Vector2i = base_size()
+	if area.x <= 0 or area.y <= 0:
+		return 1.0
+	return minf(float(area.x) / base.x, float(area.y) / base.y)
+
+
+## Tamano en px en que se dibuja el juego dentro de `area` (sin los bordes).
+static func drawn_size(area: Vector2i, mode: String = "") -> Vector2i:
+	return Vector2i((Vector2(base_size()) * display_scale(area, mode)).round())
+
+
+## El juego no llena `area` con el escalado `mode` (quedan bordes negros).
+static func has_letterbox(area: Vector2i, mode: String = "") -> bool:
+	return area != drawn_size(area, mode)
+
+
+static func get_scale_mode() -> String:
+	_ensure_loaded()
+	return _scale_mode
+
+
+static func is_crisp_scale() -> bool:
+	return get_scale_mode() == SCALE_MODE_CRISP
+
+
+## Cambia el escalado (SCALE_MODES), lo guarda y lo aplica. Verdadero si cambio.
+static func set_scale_mode(mode: String) -> bool:
+	_ensure_loaded()
+	if not SCALE_MODES.has(mode) or mode == _scale_mode:
+		return false
+	_scale_mode = mode
+	save()
+	apply_scale_mode()
+	EventBus.settings_changed.emit(KEY_SCALE_MODE, mode)
+	return true
+
+
+## Lleva el escalado `mode` a `window` (stretch viewport con 1280x720 y aspecto
+## fijo; estirado entero o fraccional). Lo usan la ventana raiz y las pruebas.
+static func configure_content_scale(window: Window, mode: String) -> void:
+	window.content_scale_size = base_size()
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER if mode == SCALE_MODE_CRISP \
+		else Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+
+
+## Aplica el escalado a la ventana raiz. Falso si no se puede (can_change_window).
+static func apply_scale_mode() -> bool:
+	if not can_change_window():
+		return false
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return false
+	configure_content_scale(tree.root, _scale_mode)
+	return true
 
 
 static func get_window_mode() -> String:
@@ -457,6 +538,7 @@ static func can_change_window() -> bool:
 static func apply_display() -> bool:
 	if not can_change_window():
 		return false
+	apply_scale_mode()
 	if _window_mode == WINDOW_MODE_FULLSCREEN:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 		return true
