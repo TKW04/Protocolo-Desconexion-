@@ -13,7 +13,7 @@ const MISSING_COLOR: Color = Color.MAGENTA
 const PERCENT: float = 100.0
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
 const SPECIAL_KEYS: Array[String] = ["colors", "debug_colors", "assets", "signal_thresholds",
-	"battery_thresholds", "font", "font_glyphs", "key_swap_shader", "lives", "hide"]
+	"battery_thresholds", "font", "font_glyphs", "key_swap_shader", "lives", "hide", "boss_bar"]
 
 var low_sync_threshold: float = 20.0
 ## Pixeles de pantalla por pixel de arte (entero).

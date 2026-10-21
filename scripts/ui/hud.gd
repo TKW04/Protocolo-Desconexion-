@@ -43,6 +43,9 @@
 ## (HideMode.remaining_fraction); por debajo del 20 % de Sync Rate o energia el
 ## icono y la barra parpadean (aviso de que se va a apagar). Seccion hide de
 ## data/hud.json; se crea por codigo (no toca hud.tscn).
+## Barra del jefe (2026-10-21, paso 9 de docs/propuesta-jefe-alerta-mayor.md):
+## BossBar (hija "BossBar", seccion boss_bar de data/hud.json), arriba en el
+## centro; aparece sola con EventBus.boss_started. Se crea por codigo.
 class_name Hud
 extends CanvasLayer
 
@@ -125,6 +128,7 @@ var _lives_active: bool = false
 var _lost_icon: Control
 
 ## Ocultarte: caja bajo la barra con el icono y la barra de lo que queda.
+var _boss_bar: BossBar
 var _hide_box: HBoxContainer
 var _hide_icon: TextureRect
 var _hide_bar: HideBar
@@ -169,6 +173,8 @@ func _ready() -> void:
 	EventBus.lives_changed.connect(_on_lives_changed)
 	EventBus.hide_changed.connect(_on_hide_changed)
 	EventBus.hide_ended.connect(_on_hide_ended)
+	_boss_bar = BossBar.new()
+	add_child(_boss_bar)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -185,6 +191,11 @@ func _process(delta: float) -> void:
 
 
 # --- Consultas (pruebas y depuracion) ---
+
+## Barra del jefe (oculta fuera de una pelea).
+func get_boss_bar() -> BossBar:
+	return _boss_bar
+
 
 func get_sync_ratio() -> float:
 	return _signal.value

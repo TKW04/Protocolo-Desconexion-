@@ -15,6 +15,8 @@ textos. Estados (se dibujan a draw_scale x2 de data/bosses/alert_major.json):
   alert_major_pop_placeholder.png       64x64   «pop» de una copia descartada / desarme en pixeles
   notification_shot_placeholder.png     64x32   notificacion de la rafaga (fase 2)
   alert_major_shield_placeholder.png    32x32   icono del pop-up escudo (candado sobre la campana)
+  boss_bar_icon_placeholder.png         16x16   icono de la barra del jefe en el HUD (paso 9; BossBar)
+  boss_bar_frame_placeholder.png        16x16   marco nine-patch (4 px) de la barra del jefe
 Solo colores de assets/palettes/mundo1.gpl y SIN carmin ni carmin_brillo: el carmin es solo del nucleo
 (WeakPoint, que se dibuja aparte). Fondo transparente, alfa 0 o 255.
 
@@ -131,8 +133,29 @@ def shield_icon():
     return cv.img
 
 
+def bar_icon():
+    """Icono de la barra del jefe en el HUD (paso 9): el badge en miniatura con una campana."""
+    cv = Canvas(16, 16)
+    disk(cv, 8, 8, 7, A)
+    cv.rect(7, 4, 8, 4, W)
+    cv.rect(6, 5, 9, 9, W)
+    cv.rect(5, 10, 10, 10, W)
+    cv.rect(7, 11, 8, 11, W)
+    return cv.img
+
+
+def bar_frame():
+    """Marco nine-patch (4 px de margen) de la barra del jefe: fondo noche_profunda, borde banner_gris."""
+    cv = Canvas(16, 16)
+    cv.box(0, 0, 15, 15, N, outline=G)
+    cv.hline(2, 13, 1, AS)
+    return cv.img
+
+
 def outputs():
     return {
+        DIR + "boss_bar_icon_placeholder.png": bar_icon(),
+        DIR + "boss_bar_frame_placeholder.png": bar_frame(),
         DIR + "alert_major_rest_placeholder.png": badge(128, 58, bell_scale=3),
         DIR + "alert_major_inflate_placeholder.png": badge(128, 62, outline=W, bell_scale=3),
         DIR + "alert_major_down_placeholder.png": badge(64, 28, bell_scale=1),
