@@ -1070,7 +1070,7 @@
 		"room_tint_fade_s": 0.8
 	},
 	"rhythm_zone": {
-		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). Icono de vibracion del metronomo (arte por script desde el paso 8, 2026-10-20: tools/gen_world1_dnd.py): icon_dim (celular con arcos apagados) e icon_lit (pantalla encendida y arcos en borde_luz) la primera arc_lit_fraction de cada ciclo, desplazado lit_shake_px; centrado en su celda; icon_z_index: detras de los objetos.",
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). Icono de vibracion del metronomo (arte por script desde el paso 8, 2026-10-20: tools/gen_world1_dnd.py): icon_dim (celular con arcos apagados) e icon_lit (pantalla encendida y arcos en borde_luz); desde el 2026-10-20 con el estilo de los rotulos del fondo (relleno fondo_medio, contorno resplandor, sin el cuerpo metalico ni el contorno oscuro de los objetos) para que no parezca recogible la primera arc_lit_fraction de cada ciclo, desplazado lit_shake_px; centrado en su celda; icon_z_index: detras de los objetos.",
 		"icon_dim": "res://assets/sprites/props/dnd/rhythm_icon_dim_00.png",
 		"icon_lit": "res://assets/sprites/props/dnd/rhythm_icon_lit_00.png",
 		"arc_lit_fraction": 0.25,

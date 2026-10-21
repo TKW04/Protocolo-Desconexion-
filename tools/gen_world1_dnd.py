@@ -235,16 +235,23 @@ def blink_off(n):
 
 # ------------------------------------------------------------- icono del metronomo
 def rhythm_icon(lit):
+    """Icono del metronomo como parte del FONDO (2026-10-20): el celular se dibuja
+    como los rotulos del fondo (relleno fondo_medio, contorno resplandor, pantalla
+    en cielo), sin el cuerpo metalico banner_gris ni el contorno noche_profunda de
+    los objetos, para que no parezca algo que se recoge. Encendido, solo el
+    contorno, la pantalla y los arcos se iluminan."""
     cv = Canvas(64, 64)
     cx, cy = 32, 32
-    # celular 20x36
-    cv.box(cx - 10, cy - 18, cx + 9, cy + 17, G)
-    cv.rect(cx - 7, cy - 14, cx + 6, cy + 9, TB if not lit else R)
+    edge = BL if lit else R
+    # celular 20x36: cuerpo plano con contorno de 1 px, sin sombra
+    cv.rect(cx - 10, cy - 18, cx + 9, cy + 17, edge)
+    cv.rect(cx - 9, cy - 17, cx + 8, cy + 16, FM)
+    cv.rect(cx - 7, cy - 14, cx + 6, cy + 9, R if lit else PAL["cielo"])
     if lit:
         cv.hline(cx - 5, cx + 4, cy - 8, BL)
         cv.hline(cx - 5, cx + 1, cy - 5, BL)
-    cv.hline(cx - 4, cx + 3, cy + 13, TL)
-    cv.hline(cx - 3, cx + 2, cy - 16, TL)
+    cv.hline(cx - 4, cx + 3, cy + 13, edge)
+    cv.hline(cx - 3, cx + 2, cy - 16, edge)
     color = BL if lit else FM
     for side in (-1, 1):
         ox = cx + side * (6 if lit else 4)

@@ -255,10 +255,10 @@
 			"prompt_px": [32, -30]
 		},
 		"blink_platform": {
-			"_notes": "Plataforma que parpadea al ritmo del 1-3 (paso 8 de docs/propuesta-1-3.md §7 y §2.4). Texto PROPUESTO, por decidir (adaptado de la propuesta sin la palabra «vueltas»).",
+			"_notes": "Plataforma que parpadea al ritmo del 1-3 (paso 8 de docs/propuesta-1-3.md §7 y §2.4). Texto PROPUESTO, por decidir (adaptado de la propuesta sin la palabra «vueltas»). 2026-10-20: menciona el icono del metrónomo (rhythm_zone, «el celular del fondo»), que un jugador intentó coger.",
 			"category": "object",
 			"title": "Plataforma que vibra",
-			"text": "Vibra a su ritmo: se apaga y se vuelve a encender. Antes de apagarse parpadea; si estás encima, caes. A veces el ritmo se acelera.",
+			"text": "Vibra a su ritmo: se apaga y se vuelve a encender. Antes de apagarse parpadea; si estás encima, caes. El celular del fondo marca el compás: no se coge. A veces se acelera.",
 			"first_level": "1-3",
 			"world": 1,
 			"order": 32,
@@ -266,10 +266,10 @@
 			"prompt_px": [32, -8]
 		},
 		"alarm_bell": {
-			"_notes": "Campana de alarma del túnel del 1-3 (paso 8 de docs/propuesta-1-3.md §7 y §2.4). Texto PROPUESTO, por decidir.",
+			"_notes": "Campana de alarma del túnel del 1-3 (paso 8 de docs/propuesta-1-3.md §7 y §2.4). Texto PROPUESTO, por decidir. 2026-10-20: menciona el icono del túnel (alarm_tunnel, «el celular del fondo»).",
 			"category": "enemy",
 			"title": "Alarma",
-			"text": "Una alarma colgada del techo. Tiembla, marca el suelo en rojo y suelta una onda hacia abajo. Espera a que pase o atraviésala deslizándote.",
+			"text": "Una alarma colgada del techo. Tiembla, marca el suelo en rojo y suelta una onda hacia abajo al compás del celular del fondo. Espera a que pase o atraviésala deslizándote.",
 			"first_level": "1-3",
 			"world": 1,
 			"order": 33,
