@@ -80,6 +80,9 @@ rm -f "$IMPORT_LOG"
 # Desde el 2026-10-20 (paso 11 de docs/propuesta-1-3.md) GUT lanza tambien el bot del 1-3
 # (tests/test_dnd_bot.gd: tools/play_dnd_bot.gd en un proceso aparte, unos 2 min de pared con la
 # exportacion del camino; usa user://bot_save.json).
+# Desde el 2026-10-21 (paso 14 de docs/propuesta-jefe-alerta-mayor.md) GUT lanza tambien el bot del jefe
+# (tests/test_boss_bot.gd: tools/play_boss_bot.gd en procesos aparte, perfiles ideal y torpe en Caché,
+# Kernel y Raíz y el quieto que pierde; unos 50 s de pared en total; usa user://bot_save.json).
 # Desde el 2026-10-19 (paso 1 de docs/propuesta-recuerdos.md): el esquema de los recuerdos
 # (data/memories.json; tools/validate_memories.py y tests/test_memories.py).
 # Desde el paso 4 (2026-10-19): el arte del mensaje de secreto (tools/validate_memory_pickup.py).
