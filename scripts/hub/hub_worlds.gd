@@ -11,6 +11,9 @@
 ##   completed_levels; available si es jugable (playable y su escena existe) y
 ##   es el primero de un mundo desbloqueado o esta en unlocked_levels; si no,
 ##   locked. Un subnivel no jugable o de otra vuelta es «proximamente».
+## - unlocked_by (2026-10-21): el mundo se desbloquea al completar alguno de
+##   esos subniveles (Mundo 2 tras Alerta Mayor). Sin subniveles en la vuelta,
+##   su carpeta abre con «Próximamente» (FolderPanel).
 ## - Jefe (kind "boss", 2026-10-21; docs/propuesta-jefe-alerta-mayor.md §1.3):
 ##   cuenta como un subnivel mas de la vuelta. Mientras no este completado, la
 ##   carpeta no pasa a completed (ni se enciende la pieza del fondo del hub),
@@ -122,6 +125,11 @@ static func is_in_lap(level: Dictionary, lap: int = -1) -> bool:
 static func is_world_unlocked(world_entry: Dictionary) -> bool:
 	if bool(world_entry.get("unlocked", false)):
 		return true
+	# unlocked_by (2026-10-21): se desbloquea al completar alguno de esos
+	# subniveles (el Mundo 2 al vencer a Alerta Mayor; decision 8 del jefe).
+	for value: Variant in world_entry.get("unlocked_by", []):
+		if GameState.is_level_completed(StringName(String(value))):
+			return true
 	for level: Dictionary in levels(world_entry):
 		var id := StringName(String(level.get("id", "")))
 		if GameState.is_level_unlocked(id) or GameState.is_level_completed(id):

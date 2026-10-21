@@ -87,6 +87,8 @@ func _arena(lap: int = 1, auto: bool = false, sim: bool = false) -> GeneratedLev
 	_level = LEVEL_SCENE.instantiate() as GeneratedLevel
 	_boss = _level.get_node(^"Objects/alerta_mayor") as AlertMajor
 	_boss.intro_on_arrival = false
+	# La secuencia de derrota (paso 10) se prueba en tests/test_boss_reward.gd.
+	_boss.defeat_sequence = false
 	_boss.auto_process = auto
 	_boss.lap_override = lap
 	_sim = null

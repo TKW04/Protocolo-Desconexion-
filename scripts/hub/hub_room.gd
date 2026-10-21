@@ -74,6 +74,9 @@ const TEXT_BOX_SCENE: String = "res://scenes/ui/eco_text_box.tscn"
 
 ## Isak termino de llegar (tiene el control).
 signal arrived
+## La pieza del fondo del mundo `world` se recompone y se ilumina (tras vencer
+## al jefe que completa la carpeta; audio: sfx_hub_wallpaper_piece).
+signal wallpaper_piece_lit(world: int)
 ## Se va a cargar el subnivel `level_id` (Isak ya se fue por el vortice).
 signal level_requested(level_id: StringName)
 
@@ -90,6 +93,11 @@ var hold_arrival: bool = false
 ## Informe del rollback del game over (GameState.apply_rollback) con el que se
 ## llega (lo da LevelRunner antes de entrar al arbol); vacio = llegada normal.
 var rollback_report: Dictionary = {}
+## Se llega tras completar por primera vez el nivel que enciende la pieza del
+## fondo (el jefe del mundo; lo da LevelRunner antes de entrar al arbol): la
+## pieza espera apagada a que termine la llegada y entonces se enciende con un
+## destello (piece_light_s, piece_flashes de la seccion room).
+var light_piece_on_arrival: bool = false
 
 var _room: Dictionary = HubData.section("room")
 var _isak: Isak
@@ -110,6 +118,8 @@ var _papelera: Papelera
 var _charger: Charger
 var _game_over_intro: GameOverIntro
 var _calc_intro: CalcIntro
+var _piece_pending: bool = false
+var _piece_lighting: bool = false
 
 
 func _enter_tree() -> void:
@@ -381,6 +391,8 @@ func _start_arrival() -> void:
 func _on_arrival_finished() -> void:
 	_arrived = true
 	arrived.emit()
+	if _piece_pending:
+		_light_piece()
 	var game_over: GameOverIntro = get_game_over_intro()
 	if game_over != null:
 		game_over.start()
@@ -445,6 +457,40 @@ func _build_room() -> void:
 	_add_box(bodies, "Ceiling", Rect2(0.0, -thick, size.x, thick))
 
 
+## La pieza del fondo se esta encendiendo (destello tras vencer al jefe).
+func is_piece_lighting() -> bool:
+	return _piece_lighting
+
+
+## La pieza espera a que termine la llegada para encenderse.
+func is_piece_pending() -> bool:
+	return _piece_pending
+
+
+## Enciende la pieza con un destello: piece_flashes parpadeos en piece_light_s
+## (tiempo real) y despues la animacion on; emite wallpaper_piece_lit.
+func _light_piece() -> void:
+	_piece_pending = false
+	_piece_lighting = true
+	var flashes: int = maxi(int(_room.get("piece_flashes", 3)), 1)
+	var total: float = maxf(float(_room.get("piece_light_s", 0.9)), 0.05)
+	var step: float = total / float(flashes * 2)
+	var tween: Tween = create_tween()
+	for i: int in flashes:
+		tween.tween_callback(func() -> void:
+			if _background != null and _background.sprite_frames.has_animation(&"on"):
+				_background.play(&"on"))
+		tween.tween_interval(step)
+		tween.tween_callback(func() -> void:
+			if _background != null and _background.sprite_frames.has_animation(&"off"):
+				_background.play(&"off"))
+		tween.tween_interval(step)
+	tween.tween_callback(func() -> void:
+		_piece_lighting = false
+		refresh_background()
+		wallpaper_piece_lit.emit(int(_room.get("background_on_world", 1))))
+
+
 ## Fondo: pieza 1 encendida si la carpeta de background_on_world esta completada.
 func refresh_background() -> void:
 	if _background == null or _background.sprite_frames == null:
@@ -454,6 +500,9 @@ func refresh_background() -> void:
 	for entry: Dictionary in HubWorlds.worlds():
 		if int(entry.get("world", 0)) == on_world:
 			lit = HubWorlds.folder_state(entry) == HubWorlds.STATE_COMPLETED
+	if lit and light_piece_on_arrival and not _arrived and not _piece_lighting:
+		_piece_pending = true
+		lit = false
 	var anim: StringName = &"on" if lit else &"off"
 	if _background.sprite_frames.has_animation(anim) and (_background.animation != anim or not _background.is_playing()):
 		_background.play(anim)

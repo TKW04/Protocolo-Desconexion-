@@ -24,6 +24,10 @@
 ##   cero castigo); la Burbuja viva vuelve a su sitio patrullando.
 ## - Red de seguridad: si Isak cae por debajo del nivel (fall_limit_margin_px)
 ##   reaparece igual, quitando fall_sync_penalty (PROPUESTA 0).
+## - Jefe (2026-10-21, paso 10 de docs/propuesta-jefe-alerta-mayor.md): la arena
+##   no tiene terminal; su BossDefeat emite level_completed tras la recompensa y
+##   el vortice. Si con ello la carpeta del mundo queda completada por primera
+##   vez, el hub enciende la pieza del fondo al llegar (light_piece_on_arrival).
 ## - Final: EventBus.level_completed -> registra el nivel como completado y
 ##   desbloquea sus `unlocks` (GameState), funde y carga el hub real
 ##   (hub_scene de data/flow.json, HubRoom; paso 9 de
@@ -148,6 +152,8 @@ var _notices: AbilityNotices
 var _arrival: WarpVortex
 var _companion: EcoCompanion
 var _pause_menu: PauseMenu
+## El hub siguiente enciende la pieza del fondo al llegar (carpeta recien completada).
+var _light_piece_next: bool = false
 
 
 func _ready() -> void:
@@ -584,6 +590,8 @@ func _show_hub(level_id: String, attention_points: int, rollback_report: Diction
 	_hub = (load(String(_data.get("hub_scene", "res://scenes/hub/hub.tscn"))) as PackedScene).instantiate() as HubRoom
 	_hub.hold_arrival = true
 	_hub.rollback_report = rollback_report
+	_hub.light_piece_on_arrival = _light_piece_next
+	_light_piece_next = false
 	_hub.level_handler = _on_hub_level_requested
 	_holder.add_child(_hub)
 	hub_shown.emit(level_id, attention_points)
@@ -777,7 +785,14 @@ func _on_isak_died() -> void:
 func _on_level_completed(level_id: String) -> void:
 	if _level == null or _hub != null or level_id != _level_id:
 		return
+	# Primera vez que se completa la carpeta de un mundo (el jefe): la pieza del
+	# fondo del hub se enciende al llegar (HubRoom.light_piece_on_arrival).
+	var world_entry: Dictionary = HubWorlds.world_of_level(StringName(level_id))
+	var was_completed: bool = not world_entry.is_empty() \
+			and HubWorlds.folder_state(world_entry) == HubWorlds.STATE_COMPLETED
 	_record_completion(level_id)
+	_light_piece_next = not world_entry.is_empty() and not was_completed \
+			and HubWorlds.folder_state(world_entry) == HubWorlds.STATE_COMPLETED
 	_fade_out_then(_show_hub.bind(level_id, GameState.attention_points))
 
 

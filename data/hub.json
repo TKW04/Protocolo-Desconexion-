@@ -20,7 +20,7 @@
 		"ambar_sombra": "#a85f00"
 	},
 	"room": {
-		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo): Notas (guardar y album; antes copia local; seccion notas) y Calc (tienda de mejoras, paso 8; seccion calc). requires_ally (2026-10-16, docs/propuesta-asistentes-y-vidas.md §2.2-§2.3): la estacion esta APAGADA (sin prompt ni panel, arte powered_off) hasta que GameState.allies_met tiene ese asistente: Notas hasta su presentacion en el primer hub (seccion notas_intro) y Calc hasta su encuentro en el hub tras teletransportarse desde la azotea del 1-2 (2026-10-17, tanda H3: CalcIntro, data/calc_intro.json; tambien GameState.meet_ally, -- --meet-ally=calc en depuracion o el helper de pruebas). dormant: huecos apagados del dock sin logica (Linterna; el hueco de Notas de la columna 10 se quito al pasar Notas a ser la estacion de guardado y la papelera, seccion papelera, ocupa ahora esa columna), de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
+		"_notes": "HubRoom (scenes/hub/hub.tscn; propuesta §2.2). Pagina 1 del Mundo 1: size_tiles 20x11 (1280x704; la camara fija ve camera_rect_px 1280x720, el resto es dock). floor_row: fila del borde superior del dock (suelo por el que se camina; filas 9 y 10). spawn_cell: P (col, fila; pies en el borde inferior de la celda: (5, 8) = sobre el dock). Paredes y techo: colisiones fuera de la pantalla. page_dot_row: fila del indicador de pagina (1 punto). refill_on_enter: energia de Debug y Sync Rate llenos al entrar (propuesta §3.4). abilities_available: habilidades del hub (pulso para las estaciones; Debug no); las obtenidas (laser) no se tocan. stations: estaciones (escena HubStation, celda superior izquierda; 1x2 tiles apoyada en el suelo): Notas (guardar y album; antes copia local; seccion notas) y Calc (tienda de mejoras, paso 8; seccion calc). requires_ally (2026-10-16, docs/propuesta-asistentes-y-vidas.md §2.2-§2.3): la estacion esta APAGADA (sin prompt ni panel, arte powered_off) hasta que GameState.allies_met tiene ese asistente: Notas hasta su presentacion en el primer hub (seccion notas_intro) y Calc hasta su encuentro en el hub tras teletransportarse desde la azotea del 1-2 (2026-10-17, tanda H3: CalcIntro, data/calc_intro.json; tambien GameState.meet_ally, -- --meet-ally=calc en depuracion o el helper de pruebas). dormant: huecos apagados del dock sin logica (Linterna; el hueco de Notas de la columna 10 se quito al pasar Notas a ser la estacion de guardado y la papelera, seccion papelera, ocupa ahora esa columna), de pie sobre el suelo en su columna (col) con su tamano (size_px) y su arte. Arte final (2026-10-15, assets/sprites/hub/ de tools/gen_hub_objects.py): background (SpriteFrames; animacion off = pieza 1 con contorno cian que parpadea, on = pieza 1 encendida cuando la carpeta del mundo background_on_world esta completada); al llegar tras completar por primera vez el jefe de ese mundo, la pieza espera apagada a que termine la llegada y se enciende con piece_flashes destellos en piece_light_s s reales (HubRoom.wallpaper_piece_lit, sonido sfx_hub_wallpaper_piece; 2026-10-21), dock (tiles: fila del suelo top_left/top_center/top_right y relleno fill/fill_alt debajo, fill_alt cada fill_alt_every columnas desde fill_alt_offset) y page_dot (indicador de pagina, centrado en page_dot_row). Las estaciones con frames usan su SpriteFrames (off/prompt/active); los huecos con frames + animation o con texture. Carpetas y repisas: seccion folders.",
 		"world": 1,
 		"size_tiles": [20, 11],
 		"camera_rect_px": [0, 0, 1280, 720],
@@ -30,6 +30,8 @@
 		"page_dot_row": 10,
 		"background": "res://assets/sprites/hub/hub_bg_frames.tres",
 		"background_on_world": 1,
+		"piece_light_s": 0.9,
+		"piece_flashes": 3,
 		"dock": {
 			"top_left": "res://assets/sprites/hub/tiles/dock_top_left_00.png",
 			"top_center": "res://assets/sprites/hub/tiles/dock_top_center_00.png",
@@ -116,6 +118,7 @@
 			"state_coming_soon": "Próximamente",
 			"message_locked": "Bloqueado: completa el anterior",
 			"message_coming_soon": "Próximamente",
+			"empty_world": "Próximamente",
 			"option_back": "Volver",
 			"help": "Arriba/abajo: elegir. Pulso: entrar. Salto: volver",
 			"confirm_unsaved_title": "¿Seguro? Aún no has guardado.",
@@ -138,7 +141,7 @@
 		"label": "Acceso: %s",
 		"names": ["Caché", "Kernel", "Raíz"]
 	},
-	"worlds_notes": "Registro de mundos y subniveles (HubWorlds): world, name, col (columna de su carpeta), unlocked (desbloqueado desde el inicio) y levels (id, name, laps: vueltas en las que existe, playable: tiene nivel jugable; kind: boss para el jefe del mundo, docs/propuesta-jefe-alerta-mayor.md §1.3: fila «Jefe: <name>» sin id ni puntos, folders.texts.boss_level). La pieza 1 del fondo se enciende cuando todos los subniveles del Mundo 1 de la vuelta actual estan completados, jefe incluido (2026-10-21, paso 1 de §6 de la propuesta del jefe: la fila 1-boss, aunque no sea jugable aun, impide que la carpeta pase a completed y que se encienda la pieza al completar el 1-3; la terminal del 1-3 la desbloquea con unlocks).",
+	"worlds_notes": "unlocked_by (2026-10-21, paso 10 de docs/propuesta-jefe-alerta-mayor.md; decision 8): lista de subniveles; el mundo queda desbloqueado cuando alguno esta en completed_levels (el Mundo 2 al vencer a Alerta Mayor, 1-boss): sale del progreso guardado, asi que un game over sin guardar lo vuelve a bloquear como al jefe; un mundo sin subniveles en la vuelta actual abre su carpeta con la linea folders.texts.empty_world («Próximamente»). Registro de mundos y subniveles (HubWorlds): world, name, col (columna de su carpeta), unlocked (desbloqueado desde el inicio) y levels (id, name, laps: vueltas en las que existe, playable: tiene nivel jugable; kind: boss para el jefe del mundo, docs/propuesta-jefe-alerta-mayor.md §1.3: fila «Jefe: <name>» sin id ni puntos, folders.texts.boss_level). La pieza 1 del fondo se enciende cuando todos los subniveles del Mundo 1 de la vuelta actual estan completados, jefe incluido (2026-10-21, paso 1 de §6 de la propuesta del jefe: la fila 1-boss, aunque no sea jugable aun, impide que la carpeta pase a completed y que se encienda la pieza al completar el 1-3; la terminal del 1-3 la desbloquea con unlocks).",
 	"worlds": [
 		{"id": "m1", "world": 1, "name": "Notificaciones", "col": 4, "unlocked": true, "miniature": "res://assets/sprites/hub/icons/world_icon_m1_00.png", "levels": [
 			{"id": "1-1", "name": "Bandeja de entrada", "laps": [1], "playable": true},
@@ -146,7 +149,7 @@
 			{"id": "1-3", "name": "No molestar", "laps": [1], "playable": true},
 			{"id": "1-boss", "name": "Alerta Mayor", "kind": "boss", "laps": [1], "playable": false}
 		]},
-		{"id": "m2", "world": 2, "name": "El Feed", "col": 10, "unlocked": false, "levels": []},
+		{"id": "m2", "world": 2, "name": "El Feed", "col": 10, "unlocked": false, "unlocked_by": ["1-boss"], "levels": []},
 		{"id": "m3", "world": 3, "name": "La Vitrina", "col": 16, "unlocked": false, "levels": []},
 		{"id": "m4", "world": 4, "name": "El Chat", "unlocked": false, "levels": []},
 		{"id": "m5", "world": 5, "name": "La Tienda", "unlocked": false, "levels": []},

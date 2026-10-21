@@ -17,8 +17,11 @@
 ## - Reaparicion por fase (BossBase.restart_phase): se borran sus ataques, los
 ##   cargadores vuelven a estar listos y la fase empieza de nuevo.
 ## - Golpe final: se borran los ataques, se paran el metronomo y las campanas,
-##   las plataformas que parpadean quedan encendidas y se emite final_blow (la
-##   congelacion, el desarme y la recompensa son del paso 10).
+##   las plataformas que parpadean quedan encendidas y se emite final_blow;
+##   despues (defeat_sequence, paso 10) BossDefeat: congelacion, desarme en
+##   pixeles (play_disarm, PixelBurst), recompensa (BossReward: capa Caché del
+##   recuerdo, sin guardar), linea de derrota (say_line) y vortice al hub. Sin
+##   rollback.
 ## Todo en tiempo del mundo (advance). Arte PROVISIONAL (_placeholder) de
 ## tools/gen_boss_alert_major.py. Ataques de cada fase: _phase1_* (paso 6),
 ## _phase2_* (paso 7) y _phase3_* (paso 8).
@@ -33,8 +36,10 @@ signal move_changed(move: StringName)
 ## Un lanzamiento de la fase 3 ha golpeado a Isak.
 signal player_hit(amount: float)
 ## Golpe final (contador a 0): gancho del paso 10 (congelacion, desarme y
-## recompensa con BossReward).
+## recompensa con BossReward: BossDefeat).
 signal final_blow
+## El cuerpo se ha desarmado en pixeles (fase DISARM de BossDefeat).
+signal disarmed
 
 const WEAK_POINT_SCENE: PackedScene = preload("res://scenes/bosses/weak_point.tscn")
 const BUBBLE_SCENE: PackedScene = preload("res://scenes/enemies/alert_bubble.tscn")
@@ -58,6 +63,9 @@ const ART_SHIELD: String = "alert_major_shield_placeholder.png"
 @export var object_id: StringName = &""
 ## Con Isak llegando por el vortice, espera a que termine y dice la intro.
 @export var intro_on_arrival: bool = true
+## Tras el golpe final empieza la secuencia de derrota (BossDefeat: congelacion,
+## desarme en pixeles, recompensa, linea de derrota y vortice al hub; paso 10).
+@export var defeat_sequence: bool = true
 
 var _arena: Dictionary = {}
 var _texts: Dictionary = {}
@@ -78,6 +86,8 @@ var _core: WeakPoint
 ## Contenedor de los ataques (top_level: coordenadas globales).
 var _attacks: Node2D
 var _intro_state: int = 0
+var _defeat_seq: BossDefeat
+var _burst: PixelBurst
 var _textures: Dictionary = {}
 ## Avisos dibujados (flechas, lineas, contornos): {kind, id?, ...} en globales.
 var _warnings: Array[Dictionary] = []
@@ -297,6 +307,52 @@ func _on_defeated() -> void:
 	_set_core_enabled(false)
 	_update_label()
 	final_blow.emit()
+	if defeat_sequence:
+		_begin_defeat.call_deferred()
+
+
+## Secuencia de derrota (paso 10): BossDefeat bajo el nivel.
+func _begin_defeat() -> void:
+	if _defeat_seq != null or not is_inside_tree():
+		return
+	var root: Node = _level_root()
+	var id: String = (root as GeneratedLevel).level_id if root is GeneratedLevel else ""
+	if id.is_empty():
+		id = String(GameState.current_level)
+	_defeat_seq = BossDefeat.begin(self, root, id)
+
+
+## Secuencia de derrota en curso (null antes del golpe final o sin ella).
+func get_defeat() -> BossDefeat:
+	return _defeat_seq if _defeat_seq != null and is_instance_valid(_defeat_seq) else null
+
+
+## Desarme en pixeles (BossDefeat, fase DISARM): el cuerpo y el contador se
+## apagan y sus pixeles se sueltan (PixelBurst, defeat.pixels del JSON).
+func play_disarm() -> PixelBurst:
+	var tex: Texture2D = _body.texture if _body != null else null
+	var cfg: Dictionary = (get_config().get("defeat", {}) as Dictionary).get("pixels", {})
+	_set_move(MOVE_GONE)
+	_core.set_enabled(false)
+	var root: Node = _level_root()
+	_burst = PixelBurst.spawn(tex, _center, float(_arena.get("draw_scale", 2.0)), root if root != null else self, cfg)
+	disarmed.emit()
+	return _burst
+
+
+## Desarme en curso (null si no hay).
+func get_pixel_burst() -> PixelBurst:
+	return _burst if _burst != null and is_instance_valid(_burst) else null
+
+
+## Dice una linea del jefe (Eco hablando por el; importante = pausa) y llama a
+## `on_done` al cerrarse (las no importantes, enseguida).
+func say_line(text: String, important: bool, on_done: Callable = Callable()) -> void:
+	if important and on_done.is_valid():
+		EventBus.eco_line_finished.connect(on_done, CONNECT_ONE_SHOT)
+	EventBus.eco_line_requested.emit(text, -1.0, important)
+	if not important and on_done.is_valid():
+		on_done.call()
 
 
 # --- Movimiento del cuerpo ---

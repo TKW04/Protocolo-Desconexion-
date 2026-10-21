@@ -2,6 +2,7 @@
 	"_notes": "Jefe del Mundo 1 «Alerta Mayor» (docs/propuesta-jefe-alerta-mayor.md, aprobada el 2026-10-20). Datos comunes de BossBase (scripts/bosses/boss_base.gd; paso 2 de §6): id (el de las señales de EventBus boss_*), counter (el contador hace de vida: max 99, full_label «99+» con la vida entera; el valor es round(max x golpes que quedan / golpes totales): 9 golpes en Caché = 99+ -> 88 -> 77 -> 66 | 55 -> 44 -> 33 | 22 -> 11 -> 0), phase_change_refill (lo que suelta el jefe al cambiar de fase: +25 de energia y +25 de Sync Rate, §2.4.1), respawn_min_energy (al reaparecer tras morir, la energia es max(la que tenia, 50): decision 3, §2.9) y laps (por vuelta interna 1-3, que la UI llama Caché / Kernel / Raíz: hits_per_phase, golpes al nucleo de cada fase, 3/3/3 en Caché y 4/4/4 en Kernel y Raíz, §2.12). Un golpe que sobra al acabar una fase no pasa a la siguiente (Laser 4 = 2 golpes en el ultimo de la fase cuenta 1). Tiempo del mundo. Marca (2026-10-21, §2.3): mark_duration_s de cada vuelta es lo que dura en segundos del mundo la marca que el pulso pone en el nucleo revelado por el Debug (Caché 4, Kernel 3, Raíz 2,5); mientras dura, el laser dana sin Debug. PELEA (pasos 5-8 de §6, 2026-10-21; AlertMajor, scripts/bosses/alert_major.gd): ver _arena_notes, _phase1_notes, _phase2_notes, _phase3_notes y _laps_notes. Todos los valores son PROPUESTA (ajustar jugando y con el validador de arenas, tools/validate_boss.py).",
 	"id": "alert_major",
 	"name": "Alerta Mayor",
+	"world": 1,
 	"counter": {
 		"max": 99,
 		"full_label": "99+"
@@ -61,6 +62,13 @@
 		"warn_color": "#ff4a2a",
 		"warn_shadow": "#a3221c",
 		"outline_color": "#f2f4f8"
+	},
+	"_defeat_notes": "GOLPE FINAL Y RECOMPENSA (paso 10 de §6, 2026-10-21; BossDefeat, scripts/bosses/boss_defeat.gd; §2.8 y §3.3). SIN ROLLBACK. freeze_s: congelacion breve (s reales; pausa el arbol). disarm_s: el desarme en pixeles (pixels: PixelBurst toma un pixel de cada step_px de la textura del cuerpo y los suelta a speed_px_s [min, max] desde el centro con gravity_px_s2; se apagan en fade_steps escalones; semilla fija seed; duration_s en s del mundo). Despues BossReward (data/boss_reward.json): la capa del recuerdo del mundo `world` del acceso actual (boss_w1_l1 en Caché) y las inferiores que falten, SIN GUARDAR, con la linea texts.final_system arriba (texto del sistema); en una revancha no sale. Luego la linea texts.defeat (importante: pausa). Por ultimo, con Isak en el suelo (o tras exit_wait_max_s), el vortice de salida y EventBus.level_completed: LevelRunner apunta 1-boss en completed_levels (la carpeta del Mundo 1 queda completada, se enciende la pieza cian del hub y el Mundo 2 se desbloquea: unlocked_by de data/hub.json) y vuelve al hub.",
+	"defeat": {
+		"freeze_s": 0.3,
+		"disarm_s": 1.6,
+		"exit_wait_max_s": 2.0,
+		"pixels": {"step_px": 2, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 821}
 	},
 	"_texts_notes": "TEXTOS PROPUESTOS, por escribir con el usuario (decision 7; §2.1). intro: linea importante (pausa) al terminar la llegada; al cerrarla empieza la fase 1. phase_lines: una por fase, sin pausa (no importantes). La derrota y la recompensa son del paso 10. Solo glifos de la fuente. Nunca dicen vuelta, Easy, Normal ni Hard.",
 	"texts": {

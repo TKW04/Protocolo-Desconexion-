@@ -4,6 +4,8 @@
 ## - Titulo: «Mundo N - Nombre»; linea con el nivel de acceso de la vuelta actual
 ##   («Acceso: Caché», HubWorlds.access_label(); no se elige: solo cambia con el
 ##   rollback; la UI nunca dice vuelta ni Easy/Normal/Hard).
+## - Mundo sin subniveles en la vuelta (2026-10-21, Mundo 2 tras el jefe del
+##   Mundo 1): una linea «Próximamente» (folders.texts.empty_world) y Volver.
 ## - Una opcion por subnivel de la vuelta actual con su estado: Completado (y
 ##   puntos capturados/total), Nuevo, Bloqueado o Proximamente; y Volver.
 ## - Pulso sobre un subnivel disponible o completado: emite level_chosen (la
@@ -76,8 +78,11 @@ func refresh() -> void:
 		super.refresh()
 		return
 	set_title(HubWorlds.world_title(world_entry))
-	set_lines([{"text": HubWorlds.access_label(),
-		"color": String(colors.get("summary", "texto_tenue"))}])
+	var lines: Array = [{"text": HubWorlds.access_label(), "color": String(colors.get("summary", "texto_tenue"))}]
+	# Mundo sin subniveles en la vuelta (Mundo 2 recien desbloqueado): «Próximamente».
+	if HubWorlds.levels_for_lap(world_entry).is_empty():
+		lines.append({"text": String(texts.get("empty_world", "")), "color": String(colors.get("message", "texto_claro"))})
+	set_lines(lines)
 	var options: Array = []
 	for level: Dictionary in HubWorlds.levels_for_lap(world_entry):
 		options.append({"id": StringName(String(level.get("id", ""))), "text": level_text(level)})

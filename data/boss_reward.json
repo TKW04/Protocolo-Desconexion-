@@ -1,0 +1,28 @@
+{
+	"_notes": "Recompensa de un jefe vencido (BossReward, scripts/bosses/boss_reward.gd; paso 10 de docs/propuesta-jefe-alerta-mayor.md §6 y paso 5 de docs/propuesta-recuerdos.md §7, 2026-10-21). Panel centrado en una capa CanvasLayer (layer, entre el HUD 10 y el fundido 50), en pixeles de arte x pixel_scale: ancho width_px, margen padding_px, lineas separadas line_gap_px, fuente de textos (font, font_size; solo glifos de la fuente). Marco nine-patch panel (panel_margin_px; arte PROVISIONAL de tools/gen_boss_alert_major.py). Lineas: system (linea del sistema del jefe, texts.final_system de data/bosses/<id>.json), header, title (titulo del recuerdo, data/memories.json), layer (texts.layer con el nombre del acceso: Caché / Kernel / Raíz; nunca vuelta), text (el recuerdo), notice (aviso del sistema: texts.save_notice) y hint (▼ parpadeando a hint_blink_hz cuando ya se puede cerrar). Se cierra con saltar / aceptar tras min_show_s (s reales). Colores de mundo1.gpl: body/title/system banner_blanco, header borde_luz, dim banner_gris, notice debug_cian (el aviso del sistema, como el de los mensajes de secretos; sin rojos). TEXTOS: propuesta del orquestador (2026-10-21), revisar al jugar.",
+	"layer": 30,
+	"pixel_scale": 2,
+	"width_px": 300,
+	"padding_px": 10,
+	"line_gap_px": 3,
+	"font": "res://assets/sprites/ui/text_font.fnt",
+	"font_size": 12,
+	"panel": "res://assets/sprites/bosses/boss_reward_panel_placeholder.png",
+	"panel_margin_px": 4,
+	"min_show_s": 0.6,
+	"hint_blink_hz": 2.0,
+	"colors": {
+		"system": "#f2f4f8",
+		"header": "#9bb0e8",
+		"title": "#f2f4f8",
+		"body": "#f2f4f8",
+		"dim": "#aeb8d2",
+		"notice": "#3dfff5"
+	},
+	"texts": {
+		"header": "Recuerdo recuperado",
+		"layer": "Capa: %s",
+		"save_notice": "Guarda en Notas para conservarlo.",
+		"confirm_hint": "▼"
+	}
+}
