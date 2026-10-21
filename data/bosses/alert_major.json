@@ -1,0 +1,19 @@
+{
+	"_notes": "Jefe del Mundo 1 «Alerta Mayor» (docs/propuesta-jefe-alerta-mayor.md, aprobada el 2026-10-20). Datos comunes de BossBase (scripts/bosses/boss_base.gd; paso 2 de §6): id (el de las señales de EventBus boss_*), counter (el contador hace de vida: max 99, full_label «99+» con la vida entera; el valor es round(max x golpes que quedan / golpes totales): 9 golpes en Caché = 99+ -> 88 -> 77 -> 66 | 55 -> 44 -> 33 | 22 -> 11 -> 0), phase_change_refill (lo que suelta el jefe al cambiar de fase: +25 de energia y +25 de Sync Rate, §2.4.1), respawn_min_energy (al reaparecer tras morir, la energia es max(la que tenia, 50): decision 3, §2.9) y laps (por vuelta interna 1-3, que la UI llama Caché / Kernel / Raíz: hits_per_phase, golpes al nucleo de cada fase, 3/3/3 en Caché y 4/4/4 en Kernel y Raíz, §2.12). Un golpe que sobra al acabar una fase no pasa a la siguiente (Laser 4 = 2 golpes en el ultimo de la fase cuenta 1). Los ataques, ventanas y textos de cada fase llegan en los pasos 6-12. Tiempo del mundo.",
+	"id": "alert_major",
+	"name": "Alerta Mayor",
+	"counter": {
+		"max": 99,
+		"full_label": "99+"
+	},
+	"phase_change_refill": {
+		"energy": 25.0,
+		"sync": 25.0
+	},
+	"respawn_min_energy": 50.0,
+	"laps": {
+		"1": {"hits_per_phase": [3, 3, 3]},
+		"2": {"hits_per_phase": [4, 4, 4]},
+		"3": {"hits_per_phase": [4, 4, 4]}
+	}
+}

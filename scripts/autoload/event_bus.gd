@@ -256,3 +256,22 @@ signal memory_obtained(memory_id: StringName)
 ## de Notas del hub deja de marcarlo como nuevo.
 @warning_ignore("unused_signal")
 signal memory_read(memory_id: StringName)
+
+## Jefes (2026-10-21, paso 2 de docs/propuesta-jefe-alerta-mayor.md §6; BossBase).
+## El audio, el HUD y el bot se enganchan aqui. No hay senal de rollback: ningun
+## jefe salvo el final hace rollback (decision 1 de la propuesta).
+## Empieza la pelea (fase 1).
+@warning_ignore("unused_signal")
+signal boss_started(boss_id: StringName)
+
+## Cambia la fase (1, 2, 3...) al vaciar la anterior; no se emite al empezar.
+@warning_ignore("unused_signal")
+signal boss_phase_changed(boss_id: StringName, phase: int)
+
+## Un golpe al nucleo cuenta; `remaining` = golpes que le quedan al jefe.
+@warning_ignore("unused_signal")
+signal boss_weak_point_hit(boss_id: StringName, remaining: int)
+
+## Golpe final: el contador llega a 0.
+@warning_ignore("unused_signal")
+signal boss_defeated(boss_id: StringName)
