@@ -72,8 +72,9 @@ func test_every_help_type_has_a_world() -> void:
 func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	var enemies: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_ENEMY)
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
-	assert_eq(enemies, [&"alert_bubble", &"notification_badge", &"spam_banner", &"spam_banner_dash", &"alarm_bell"] as Array[StringName],
-		"Burbuja (1-1), punto rojo y banner (1-2), banner obligatorio con el dash y campana (1-3), en orden")
+	assert_eq(enemies, [&"alert_bubble", &"notification_badge", &"spam_banner", &"spam_banner_dash", &"alarm_bell",
+		&"alert_major", &"alert_major_bubble", &"notification_shot", &"alert_major_clone"] as Array[StringName],
+		"Burbuja (1-1), punto rojo y banner (1-2), banner obligatorio con el dash y campana (1-3) y Alerta Mayor, sus Burbujas, la rafaga y las copias (1-boss), en orden")
 	assert_eq(enemies.size() + objects.size(), HelpCatalog.shared().ids().size(), "Todos los tipos del 1-1")
 	assert_eq(objects[0], &"attention_point", "Orden de help.json")
 	for i: int in range(1, objects.size()):
@@ -238,8 +239,9 @@ func test_open_folder_shows_cards_and_silhouettes() -> void:
 	assert_eq(_album.get_world(), 1)
 	assert_eq(_album.get_title_text(), "Notificaciones")
 	assert_eq(_album.get_tab(), "enemy", "Primera seccion: Enemigos")
-	assert_eq(_album.get_counter_text(), "Fichas: 1/5")
-	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta", "???", "???", "???", "???"]),
+	assert_eq(_album.get_counter_text(), "Fichas: 1/9")
+	assert_eq(_album.get_cell_texts(), PackedStringArray(["Burbuja de alerta", "???", "???", "???", "???", "???", "???",
+		"???", "???"]),
 		"Punto rojo y banners sin aprender: «???»")
 	assert_false(_album.is_cell_silhouette(0))
 	assert_true(_album.is_cell_silhouette(1))
@@ -275,8 +277,9 @@ func test_red_dot_and_banner_cards_in_the_enemies_tab() -> void:
 	_album.open()
 	_album.confirm()
 	assert_eq(_album.get_tab(), "enemy")
-	assert_eq(_album.get_counter_text(), "Fichas: 2/5")
-	assert_eq(_album.get_cell_texts(), PackedStringArray(["???", "Punto rojo", "Banner", "???", "???"]))
+	assert_eq(_album.get_counter_text(), "Fichas: 2/9")
+	assert_eq(_album.get_cell_texts(), PackedStringArray(["???", "Punto rojo", "Banner", "???", "???", "???", "???", "???",
+		"???"]))
 	assert_true(_album.is_cell_silhouette(0), "La Burbuja sin aprender: silueta")
 	assert_eq(_album.get_cell_texture(1).resource_path, "res://assets/sprites/ui/album/album_card_notification_badge.png")
 	assert_eq(_album.get_cell_texture(2).resource_path, "res://assets/sprites/ui/album/album_card_spam_banner.png")
@@ -403,8 +406,10 @@ func test_calc_room_cards_in_the_objects_tab() -> void:
 	var objects: Array[StringName] = NotasAlbum.album_ids(1, HelpCatalog.CATEGORY_OBJECT)
 	# Despues van el mensaje de secreto (memory_pickup, paso 4 de propuesta-recuerdos.md, 2026-10-19)
 	# y los objetos del 1-3 (interruptor «No molestar» y plataforma que vibra, paso 8 de propuesta-1-3.md).
-	assert_eq(objects.slice(objects.size() - 3), [&"memory_pickup", &"dnd_switch", &"blink_platform"] as Array[StringName])
-	var tail: Array[StringName] = objects.slice(objects.size() - 7, objects.size() - 3)
+	# Y al final, los del jefe Alerta Mayor (nucleo, pop-up insistente y escudo; paso 12 del jefe, 2026-10-21).
+	assert_eq(objects.slice(objects.size() - 3), [&"alert_major_core", &"alert_major_popup", &"boss_popup_shield"] as Array[StringName])
+	assert_eq(objects.slice(objects.size() - 6, objects.size() - 3), [&"memory_pickup", &"dnd_switch", &"blink_platform"] as Array[StringName])
+	var tail: Array[StringName] = objects.slice(objects.size() - 10, objects.size() - 6)
 	assert_eq(tail, [&"power_switch", &"laser_switch", &"debug_switch", &"charge_dock"] as Array[StringName])
 	for id: StringName in tail:
 		assert_eq(String(HelpCatalog.shared().entry(id).get("first_level", "")), "1-2")

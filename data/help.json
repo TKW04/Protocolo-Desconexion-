@@ -366,6 +366,80 @@
 			"order": 29,
 			"center_px": [32, 4],
 			"prompt_px": [32, -20]
+		},
+		"alert_major": {
+			"category": "enemy",
+			"title": "Alerta Mayor",
+			"text": "La alerta de todas las alertas. Mientras tenga algo que enviarte no baja. Cuando se queda sin nada, se posa un momento y deja el núcleo a tiro.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 34,
+			"radius_tiles": 7.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -150]
+		},
+		"alert_major_core": {
+			"category": "object",
+			"title": "Núcleo",
+			"text": "Su núcleo. Solo se ve con el Debug. Con el Debug activo, un pulso lo marca; mientras brille el halo, el láser le hace daño aunque sueltes el Debug. El pulso no le quita nada.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 35,
+			"radius_tiles": 4.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -40]
+		},
+		"alert_major_bubble": {
+			"category": "enemy",
+			"title": "Burbuja de la alerta",
+			"text": "Burbujas que escupe la alerta. Mientras alguna patrulle, no bajará. Déjalas en pausa a la vez con el pulso, o ciérralas con el láser.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 36,
+			"center_px": [0, -32],
+			"prompt_px": [0, -76]
+		},
+		"alert_major_popup": {
+			"category": "object",
+			"title": "Pop-up insistente",
+			"text": "Tapa un trozo de pantalla, pero no hace daño. Un pulso a su botón lo cierra; si no, se va solo al rato. Con el Debug se ve a través.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 37,
+			"radius_tiles": 4.0,
+			"center_px": [176, 224],
+			"prompt_px": [176, -6]
+		},
+		"boss_popup_shield": {
+			"category": "object",
+			"title": "Pop-up escudo",
+			"text": "Se tapa con un pop-up que no deja ver nada, ni con el Debug. Un pulso a su botón lo cierra y tendrás unos segundos con el núcleo al aire.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 38,
+			"center_px": [64, 64],
+			"prompt_px": [64, -12]
+		},
+		"notification_shot": {
+			"category": "enemy",
+			"title": "Ráfaga",
+			"text": "Notificaciones en ráfaga por tu carril. El láser y el pulso no las paran: deslízate a través o cambia de altura.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 39,
+			"radius_tiles": 6.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -30]
+		},
+		"alert_major_clone": {
+			"category": "enemy",
+			"title": "Copia",
+			"text": "Copias. Solo una tiene núcleo: mira con el Debug antes de marcar. Si golpeas una copia, se rompe y suelta una Burbuja.",
+			"first_level": "1-boss",
+			"world": 1,
+			"order": 40,
+			"center_px": [0, 0],
+			"prompt_px": [0, -80]
 		}
 	}
 }

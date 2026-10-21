@@ -60,6 +60,11 @@ func _process(delta: float) -> void:
 			queue_free()
 
 
+## Ayuda de Eco (alert_major_clone, paso 12): mientras no se ha descartado.
+func is_help_available() -> bool:
+	return not _popped
+
+
 func is_popped() -> bool:
 	return _popped
 

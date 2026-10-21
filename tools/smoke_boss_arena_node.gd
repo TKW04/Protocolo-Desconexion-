@@ -43,8 +43,12 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_t += delta
 	if not _intro_closed and _t > 6.0:
-		_intro_closed = true
-		EventBus.eco_line_finished.emit()
+		# La intro la dice Eco por el jefe en el cuadro del nivel (paso 12): se cierra a mano.
+		var box := _main.get_level().get_node_or_null(^"EcoTextBox") as EcoTextBox
+		if box != null and box.is_showing():
+			box.finish_typing()
+			box.advance(30.0)
+		_intro_closed = _boss.is_fighting()
 	if _boss.is_fighting():
 		# Jugador minimo (sin bot): aturde las Burbujas de la fase 1, cierra el escudo de la fase 2 y,
 		# con la ventana abierta, golpea el nucleo cada 0,5 s. Asi las ventanas salen del bucle real.

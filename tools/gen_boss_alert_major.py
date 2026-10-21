@@ -19,6 +19,7 @@ textos. Estados (se dibujan a draw_scale x2 de data/bosses/alert_major.json):
   boss_bar_frame_placeholder.png        16x16   marco nine-patch (4 px) de la barra del jefe
   boss_reward_panel_placeholder.png     16x16   marco nine-patch (4 px) del panel de la recompensa (BossReward)
   alert_major_core_card_placeholder.png 64x64   ficha del album del nucleo marcado (UNICA con carmin)
+  eco_boss_icon_placeholder.png         16x16   icono de Eco hablando por el jefe (eco_icon con interferencia)
 El desarme en pixeles no tiene arte propio: PixelBurst suelta los pixeles de la textura del cuerpo.
 Solo colores de assets/palettes/mundo1.gpl y SIN carmin ni carmin_brillo: el carmin es solo del nucleo
 (WeakPoint, que se dibuja aparte; y su ficha del album, CARMIN_OK). Fondo transparente, alfa 0 o 255.
@@ -188,6 +189,21 @@ def core_card():
     return cv.img
 
 
+def eco_boss_icon():
+    """Icono de Eco hablando por el jefe (paso 12; interlocutor eco_boss del cuadro de texto): el icono de
+    Eco (assets/sprites/ui/eco_icon.png) con dos franjas desplazadas como interferencia."""
+    src = Image.open(os.path.join(REPO, "assets", "sprites", "ui", "eco_icon.png")).convert("RGBA")
+    out = src.copy()
+    for rows, dx in (((4, 5), 2), ((10, 11), -2)):
+        for y in rows:
+            for x in range(16):
+                out.putpixel((x, y), src.getpixel(((x - dx) % 16, y)) if 0 <= x - dx < 16 else CLEAR)
+    for x in range(3, 13, 3):
+        if out.getpixel((x, 8))[3] == 255:
+            out.putpixel((x, 8), G + (255,) if len(G) == 3 else G)
+    return out
+
+
 # Piezas que pueden llevar carmin (solo el nucleo).
 CARMIN_OK = (DIR + "alert_major_core_card_placeholder.png",)
 
@@ -195,6 +211,7 @@ CARMIN_OK = (DIR + "alert_major_core_card_placeholder.png",)
 def outputs():
     return {
         DIR + "boss_reward_panel_placeholder.png": reward_panel(),
+        DIR + "eco_boss_icon_placeholder.png": eco_boss_icon(),
         DIR + "alert_major_core_card_placeholder.png": core_card(),
         DIR + "boss_bar_icon_placeholder.png": bar_icon(),
         DIR + "boss_bar_frame_placeholder.png": bar_frame(),

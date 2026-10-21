@@ -334,14 +334,22 @@ func test_debug_shortcut_and_intro_after_arrival() -> void:
 			break
 		vortex.advance(DT)
 	await wait_physics_frames(3)
-	assert_eq(_lines.size(), 1, "Linea de intro al terminar la llegada")
-	if _lines.size() == 1:
-		assert_true(bool(_lines[0][1]), "Importante: pausa")
-		assert_string_contains(String(_lines[0][0]), "PROPUESTA")
+	# Paso 12 (2026-10-21): Eco habla por el jefe en el cuadro del nivel (interlocutor eco_boss).
+	var box := _main.get_level().get_node(^"EcoTextBox") as EcoTextBox
+	assert_true(box.is_showing(), "Linea de intro al terminar la llegada")
+	assert_eq(box.get_speaker_id(), AlertMajor.SPEAKER, "Eco hablando por el jefe")
+	var intro: String = String((boss.get_config().get("texts", {}) as Dictionary).get("intro", ""))
+	assert_eq(box.get_text(), GameState.apply_nickname(intro), "Texto de data/bosses/alert_major.json con el apodo")
+	assert_true(_lines.is_empty(), "No sale por EventBus como Eco")
 	assert_false(boss.is_fighting(), "La pelea empieza al cerrar la linea")
-	EventBus.eco_line_finished.emit()
+	box.finish_typing()
+	for i: int in 60:
+		if not box.is_showing():
+			break
+		box.advance(0.5)
 	assert_true(boss.is_fighting())
 	assert_eq(boss.get_phase(), 1)
+	assert_not_null(boss.get_music(), "mus_boss1 durante la pelea (BossMusic)")
 
 
 # --- Paso 6: fase 1 «99+» ---

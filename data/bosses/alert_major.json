@@ -70,19 +70,24 @@
 		"exit_wait_max_s": 2.0,
 		"pixels": {"step_px": 2, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 821}
 	},
-	"_texts_notes": "TEXTOS PROPUESTOS, por escribir con el usuario (decision 7; §2.1). intro: linea importante (pausa) al terminar la llegada; al cerrarla empieza la fase 1. phase_lines: una por fase, sin pausa (no importantes). La derrota y la recompensa son del paso 10. Solo glifos de la fuente. Nunca dicen vuelta, Easy, Normal ni Hard.",
+	"_help_notes": "AYUDAS DE ECO CON Q (paso 12 de §6, 2026-10-21; §2.10): help_id de data/help.json que AlertMajor pone a cada pieza (HelpCatalog.tag): body (el cuerpo, alert_major), core (el nucleo: solo con ayuda mientras se ve, revelado o marcado), bubble (las Burbujas que escupe y las de las copias rotas), popup (los pop-ups de la fase 2), shield (el pop-up escudo), shot (las notificaciones de la rafaga) y clone (las copias de la fase 3). Textos de Eco en data/help.json (propuesta del orquestador, revisar al jugar).",
+	"help": {"body": "alert_major", "core": "alert_major_core", "bubble": "alert_major_bubble", "popup": "alert_major_popup", "shield": "boss_popup_shield", "shot": "notification_shot", "clone": "alert_major_clone"},
+	"_texts_notes": "TEXTOS (paso 12 de §6, 2026-10-21): PROPUESTA DEL ORQUESTADOR, REVISAR AL JUGAR (el usuario delego la redaccion; decision 7: intro y derrota pausan, los cambios de fase no). Tono sobrio y calido, coherente con los mensajes del Mundo 1 (msg_1_1, msg_1_2, msg_1_3) y con el Abuelito: Eco habla a traves del jefe (interlocutor eco_boss del cuadro de texto: icono con interferencia y blip vox_boss_eco_filter), amable al principio y ya sin tanta amabilidad en la derrota (mundo-1 §6.6); no habla de copias ni de restaurar nada (sin rollback). intro: al terminar la llegada (importante: pausa); al cerrarla empieza la fase 1. phase_lines: al empezar las fases 2 y 3 (sin pausa). popups: textos de los pop-ups de la fase 2. final_system: linea del SISTEMA (no Eco) arriba del panel de la recompensa tras el golpe final. defeat: Eco tras la recompensa (importante: pausa). {apodo} = el apodo de Isak. Solo glifos de la fuente de textos. Nunca dicen vuelta, Easy, Normal ni Hard.",
+	"texts_status": "propuesta del orquestador, revisar al jugar",
 	"texts": {
-		"intro": "(PROPUESTA) Isak, deja de apagarlo todo. Solo quiero que no te pierdas nada.",
+		"intro": "{apodo}, otra vez lo estás silenciando todo. Yo solo quiero que no te pierdas nada.",
 		"phase_lines": {
-			"2": "(PROPUESTA) Tienes 66 cosas pendientes.",
-			"3": "(PROPUESTA) ¿Seguro que quieres seguir concentrado?"
+			"2": "Tienes 66 cosas pendientes. Déjame enseñártelas.",
+			"3": "¿Seguro que quieres seguir concentrado? Afuera todo sigue pasando."
 		},
 		"popups": [
-			"(PROPUESTA) 66 mensajes sin leer",
-			"(PROPUESTA) ¿Sigues ahí?",
-			"(PROPUESTA) Te estás perdiendo algo",
-			"(PROPUESTA) Recordatorio: mira esto"
-		]
+			"66 mensajes sin leer",
+			"¿Sigues ahí?",
+			"Te estás perdiendo algo",
+			"Recordatorio: mira esto"
+		],
+		"final_system": "0 notificaciones pendientes.",
+		"defeat": "Como quieras, {apodo}. Lo dejo todo para luego. Siempre hay un luego."
 	},
 	"_phase1_notes": "FASE 1 «99+» (§2.5): bubbles: el jefe escupe hasta bubble_max Burbujas (alert_bubble) a las plataformas de spit_spots (una en cada una), tras inflarse spit_warn_frames cuadros a anim_fps (aviso con una flecha alerta sobre donde caeran); nunca hay mas de bubble_max vivas; patrullan bubble_patrol_range_px. sweeps: un banner (spam_banner en modo disparo, sin ciclo propio) barre un carril cada sweep_interval_s, alternando lanes (entrada y direccion de cada uno); cada barrido avisa con el aviso del banner (9 cuadros). VENTANA: cuando el escupitajo de la ronda ha terminado y ninguna Burbuja viva patrulla (todas aturdidas o derrotadas a la vez), se desinfla y baja al suelo del centro (window_spot) window_s s del mundo; sin barridos nuevos mientras baja, esta abajo y sube. Al subir escupe las que falten hasta bubble_max.",
 	"phase1": {

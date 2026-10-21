@@ -78,6 +78,16 @@ SOURCES = {
     "dnd_switch": ("assets/sprites/props/dnd/dnd_switch_on_00.png", None, 1),
     "blink_platform": ("assets/sprites/props/dnd/blink_w1_on_04.png", None, 1),
     "alarm_bell": ("assets/sprites/enemies/alarm_bell/alarm_bell_ring_00.png", None, 1),
+    # Jefe Alerta Mayor (arte PROVISIONAL de tools/gen_boss_alert_major.py; paso 12 de
+    # docs/propuesta-jefe-alerta-mayor.md): el badge, el nucleo marcado, sus Burbujas (las de siempre),
+    # el pop-up (la ventana en miniatura), el escudo, la notificacion de la rafaga y la copia.
+    "alert_major": ("assets/sprites/bosses/alert_major_rest_placeholder.png", None, 1),
+    "alert_major_core": ("assets/sprites/bosses/alert_major_core_card_placeholder.png", None, 1),
+    "alert_major_bubble": ("assets/sprites/enemies/bubble_idle_00.png", None, 1),
+    "alert_major_popup": ("assets/sprites/props/tower/overlay_sample_00.png", None, 1),
+    "boss_popup_shield": ("assets/sprites/bosses/alert_major_shield_placeholder.png", None, 2),
+    "notification_shot": ("assets/sprites/bosses/notification_shot_placeholder.png", None, 1),
+    "alert_major_clone": ("assets/sprites/bosses/alert_major_clone_placeholder.png", None, 1),
 }
 
 

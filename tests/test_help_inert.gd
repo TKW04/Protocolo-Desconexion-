@@ -491,13 +491,79 @@ func test_alarm_bell_helps_in_every_phase() -> void:
 		assert_eq(_help.get_target(), bell, "Campana en %s: candidato" % state)
 
 
+# --- Alerta Mayor (paso 12 de docs/propuesta-jefe-alerta-mayor.md, 2026-10-21) ---
+
+## El cuerpo del jefe (el Sprite2D que AlertMajor marca con alert_major): al
+## desarmarse en pixeles se oculta y deja de ayudar.
+func test_disarmed_boss_body_gives_no_help() -> void:
+	var body := Sprite2D.new()
+	body.texture = load("res://assets/sprites/bosses/alert_major_rest_placeholder.png") as Texture2D
+	_place(body, &"alert_major")
+	await _assert_inert_drops_help(body, func() -> void: body.visible = false, "jefe desarmado")
+
+
+## El nucleo solo ayuda mientras se ve (marcado o revelado); al apagarse, no.
+func test_hidden_core_gives_no_help() -> void:
+	var core := (load("res://scenes/bosses/weak_point.tscn") as PackedScene).instantiate() as WeakPoint
+	_place(core, &"alert_major_core")
+	await wait_process_frames(1)
+	core.set_enabled(true)
+	core.set_mark_duration(30.0)
+	core.call(&"_mark")
+	await _assert_inert_drops_help(core, func() -> void: core.set_enabled(false), "nucleo apagado")
+
+
+func test_popped_boss_bubble_gives_no_help() -> void:
+	var bubble := BUBBLE_SCENE.instantiate() as AlertBubble
+	bubble.set_physics_process(false)
+	_place(bubble, &"alert_major_bubble")
+	await wait_process_frames(1)
+	bubble.drops = {}
+	await _assert_inert_drops_help(bubble, func() -> void: bubble.pop(), "Burbuja de la alerta reventada")
+
+
+func test_closed_boss_popup_gives_no_help() -> void:
+	var overlay := _scene("overlay_popup") as OverlayPopup
+	overlay.text = "¿Sigues ahí?"
+	_place(overlay, &"alert_major_popup")
+	await _assert_inert_drops_help(overlay, func() -> void: overlay.close(), "pop-up insistente cerrado")
+
+
+func test_opened_shield_gives_no_help() -> void:
+	var shield := _scene("overlay_popup") as OverlayPopup
+	shield.text = ""
+	shield.opaque = true
+	shield.width_tiles = 2
+	shield.height_tiles = 2
+	_place(shield, &"boss_popup_shield")
+	await _assert_inert_drops_help(shield, func() -> void: shield.close(), "pop-up escudo abierto")
+
+
+func test_finished_shot_gives_no_help() -> void:
+	_freeze_isak()
+	var shot := NotificationShot.new()
+	shot.auto_process = false
+	shot.contact_damage = 0.0
+	_place(shot, &"notification_shot")
+	await _assert_inert_drops_help(shot, func() -> void:
+		shot.travel_px = 0.0
+		shot.step(STEP), "rafaga terminada")
+
+
+func test_discarded_clone_gives_no_help() -> void:
+	var clone := AlertMajorClone.new()
+	_place(clone, &"alert_major_clone")
+	await _assert_inert_drops_help(clone, func() -> void: clone.discard(false), "copia descartada")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
 		&"extra_life", &"charger", &"sync_point", &"laser_receiver", &"relay_receiver", &"ad_cover", &"debug_chip",
 		&"notification_badge", &"spam_banner", &"spam_banner_dash", &"reminder_platform", &"snooze_button", &"overlay_popup",
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
-		&"dnd_switch", &"blink_platform", &"alarm_bell"]
+		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
+		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

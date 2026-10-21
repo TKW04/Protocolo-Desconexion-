@@ -93,12 +93,31 @@ class AlertMajorFightDataTest(unittest.TestCase):
         self.assertEqual([laps[k]["phase3"]["launches_per_round"] for k in ("1", "2", "3")], [3, 3, 3])
 
     def test_texts_are_marked_as_proposals(self):
+        # Paso 12 (2026-10-21): textos redactados por el orquestador por delegacion del usuario, marcados
+        # como propuesta para revisar al jugar (texts_status y _texts_notes); sin nombres de vueltas.
+        self.assertEqual(self.data["texts_status"], "propuesta del orquestador, revisar al jugar")
+        self.assertIn("PROPUESTA DEL ORQUESTADOR", self.data["_texts_notes"])
         texts = self.data["texts"]
-        lines = [texts["intro"]] + list(texts["phase_lines"].values()) + list(texts["popups"])
+        lines = [texts["intro"], texts["final_system"], texts["defeat"]] + list(texts["phase_lines"].values()) \
+            + list(texts["popups"])
         for line in lines:
-            self.assertIn("PROPUESTA", line)
-            for banned in ("vuelta", "Easy", "Normal", "Hard"):
-                self.assertNotIn(banned, line, "La UI nunca dice vuelta ni Easy/Normal/Hard")
+            self.assertTrue(line.strip())
+            for banned in ("vuelta", "Vuelta", "Easy", "Normal", "Hard", "rollback", "copia anterior", "Restaurando"):
+                self.assertNotIn(banned, line, "La UI nunca dice vuelta ni Easy/Normal/Hard; sin rollback")
+        self.assertEqual(sorted(texts["phase_lines"]), ["2", "3"], "Una linea por cambio de fase")
+
+    def test_texts_use_only_font_glyphs(self):
+        import re
+        with open(os.path.join(ROOT, "assets", "sprites", "ui", "text_font.fnt"), encoding="utf-8") as fh:
+            glyphs = {chr(int(m)) for m in re.findall(r"char id=(\d+)", fh.read())}
+        texts = self.data["texts"]
+        with open(os.path.join(ROOT, "data", "boss_reward.json"), encoding="utf-8") as fh:
+            reward = json.load(fh)["texts"]
+        lines = [texts["intro"], texts["final_system"], texts["defeat"]] + list(texts["phase_lines"].values()) \
+            + list(texts["popups"]) + [v for v in reward.values()]
+        for line in lines:
+            missing = {c for c in line.replace("{apodo}", "").replace("%s", "") if c not in glyphs}
+            self.assertFalse(missing, "%r: %s" % (line, missing))
 
     def test_alert_major_placeholder_art_is_up_to_date(self):
         done = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_boss_alert_major.py"), "--check"],

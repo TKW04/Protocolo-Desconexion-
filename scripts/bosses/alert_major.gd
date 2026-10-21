@@ -40,6 +40,22 @@ signal player_hit(amount: float)
 signal final_blow
 ## El cuerpo se ha desarmado en pixeles (fase DISARM de BossDefeat).
 signal disarmed
+## Eco dice una linea por el jefe (kind: intro, phase, defeat; audio:
+## mus_eco_motif en la intro y la derrota).
+signal line_said(kind: StringName)
+
+## Interlocutor del cuadro de texto: Eco hablando por el jefe (icono con
+## interferencia, blip vox_boss_eco_filter; speakers de data/eco_text_box.json).
+const SPEAKER: StringName = &"eco_boss"
+## Ayudas de Eco con Q (paso 12; data/help.json): por defecto de help_id (la
+## seccion help de data/bosses/alert_major.json manda).
+const HELP_BODY: StringName = &"alert_major"
+const HELP_CORE: StringName = &"alert_major_core"
+const HELP_BUBBLE: StringName = &"alert_major_bubble"
+const HELP_POPUP: StringName = &"alert_major_popup"
+const HELP_SHIELD: StringName = &"boss_popup_shield"
+const HELP_SHOT: StringName = &"notification_shot"
+const HELP_CLONE: StringName = &"alert_major_clone"
 
 const WEAK_POINT_SCENE: PackedScene = preload("res://scenes/bosses/weak_point.tscn")
 const BUBBLE_SCENE: PackedScene = preload("res://scenes/enemies/alert_bubble.tscn")
@@ -87,6 +103,8 @@ var _core: WeakPoint
 var _attacks: Node2D
 var _intro_state: int = 0
 var _defeat_seq: BossDefeat
+var _music: BossMusic
+var _line_watches: Array[RefCounted] = []
 var _burst: PixelBurst
 var _textures: Dictionary = {}
 ## Avisos dibujados (flechas, lineas, contornos): {kind, id?, ...} en globales.
@@ -233,11 +251,11 @@ func begin_intro() -> void:
 		return
 	_intro_state = 1
 	_inflate(true)
-	EventBus.eco_line_finished.connect(_on_intro_finished, CONNECT_ONE_SHOT)
-	EventBus.eco_line_requested.emit(text, -1.0, true)
+	say_line(text, true, _on_intro_finished, &"intro")
 
 
 func _on_phase_started(phase_index: int) -> void:
+	_start_music()
 	_clear_attacks()
 	_apply_lap_settings()
 	BossBase.apply_phase_nodes(_level_root(), phase_index)
@@ -255,7 +273,7 @@ func _on_phase_started(phase_index: int) -> void:
 	if phase_index > 1:
 		var line: String = String((_texts.get("phase_lines", {}) as Dictionary).get(str(phase_index), ""))
 		if not line.is_empty():
-			EventBus.eco_line_requested.emit(line, -1.0, false)
+			say_line(line, false, Callable(), &"phase")
 	_update_label()
 
 
@@ -295,6 +313,7 @@ func _on_core_hit(_remaining_hits: int) -> void:
 
 
 func _on_defeated() -> void:
+	_stop_music()
 	# Las copias que quedan se descartan con su «pop», sin Burbujas.
 	_free_copies(false)
 	_clear_attacks(true)
@@ -345,14 +364,90 @@ func get_pixel_burst() -> PixelBurst:
 	return _burst if _burst != null and is_instance_valid(_burst) else null
 
 
-## Dice una linea del jefe (Eco hablando por el; importante = pausa) y llama a
-## `on_done` al cerrarse (las no importantes, enseguida).
-func say_line(text: String, important: bool, on_done: Callable = Callable()) -> void:
+## Dice una linea del jefe: Eco hablando por el (interlocutor SPEAKER en el
+## cuadro de texto del nivel: icono con interferencia y su blip; importante =
+## pausa). Llama a `on_done` cuando esa linea se cierra (las no importantes,
+## enseguida). Sin cuadro de texto en el nivel, por EventBus como Eco.
+func say_line(text: String, important: bool, on_done: Callable = Callable(), kind: StringName = &"") -> void:
+	line_said.emit(kind)
+	var box: EcoTextBox = _text_box()
+	if box == null:
+		if important and on_done.is_valid():
+			EventBus.eco_line_finished.connect(on_done, CONNECT_ONE_SHOT)
+		EventBus.eco_line_requested.emit(text, -1.0, important)
+		if not important and on_done.is_valid():
+			on_done.call()
+		return
 	if important and on_done.is_valid():
-		EventBus.eco_line_finished.connect(on_done, CONNECT_ONE_SHOT)
-	EventBus.eco_line_requested.emit(text, -1.0, important)
+		# El vigilante se guarda hasta que termina (RefCounted: sin referencia se liberaria).
+		var watch := _LineWatch.new(box, GameState.apply_nickname(text), Callable())
+		watch.done = func() -> void:
+			_line_watches.erase(watch)
+			on_done.call()
+		_line_watches.append(watch)
+	box.show_line(text, -1.0, important, SPEAKER)
 	if not important and on_done.is_valid():
 		on_done.call()
+
+
+## help_id de la pieza `key` (body, core, bubble, popup, shield, shot, clone):
+## seccion help de data/bosses/alert_major.json.
+func help_id(key: String) -> StringName:
+	var defaults: Dictionary = {"body": HELP_BODY, "core": HELP_CORE, "bubble": HELP_BUBBLE, "popup": HELP_POPUP,
+		"shield": HELP_SHIELD, "shot": HELP_SHOT, "clone": HELP_CLONE}
+	return StringName(String((get_config().get("help", {}) as Dictionary).get(key, defaults.get(key, ""))))
+
+
+## Cuadro de texto del nivel (hijo EcoTextBox de la escena generada) o null.
+func _text_box() -> EcoTextBox:
+	var root: Node = _level_root()
+	return root.get_node_or_null(^"EcoTextBox") as EcoTextBox if root != null else null
+
+
+## Espera a que la linea `text` del jefe empiece y despues se cierre (una normal
+## del jefe que se quita para dejarle paso no cuenta) y llama a `done`.
+class _LineWatch extends RefCounted:
+	var box: EcoTextBox
+	var text: String
+	var done: Callable
+	var started: bool = false
+
+	func _init(b: EcoTextBox, t: String, d: Callable) -> void:
+		box = b
+		text = t
+		done = d
+		box.line_started.connect(_on_started)
+		box.line_finished.connect(_on_finished)
+
+	func _on_started(t: String, speaker: StringName) -> void:
+		if speaker == AlertMajor.SPEAKER and t == text:
+			started = true
+
+	func _on_finished(speaker: StringName) -> void:
+		if not started or speaker != AlertMajor.SPEAKER:
+			return
+		box.line_started.disconnect(_on_started)
+		box.line_finished.disconnect(_on_finished)
+		done.call()
+
+
+# --- Musica (mus_boss1 mientras dura la pelea: BossMusic, ambience de audio) ---
+
+func _start_music() -> void:
+	if _music == null or not is_instance_valid(_music):
+		_music = BossMusic.new()
+		_music.name = "BossMusic"
+		add_child(_music)
+
+
+func _stop_music() -> void:
+	if _music != null and is_instance_valid(_music):
+		_music.queue_free()
+	_music = null
+
+
+func get_music() -> BossMusic:
+	return _music if _music != null and is_instance_valid(_music) else null
 
 
 # --- Movimiento del cuerpo ---
@@ -520,6 +615,7 @@ func _build() -> void:
 	_body.name = "Body"
 	_body.top_level = true
 	add_child(_body)
+	HelpCatalog.tag(_body, help_id("body"))
 	_label = Label.new()
 	_label.name = "Counter"
 	_label.top_level = true
@@ -540,6 +636,7 @@ func _build() -> void:
 	var off: Array = _arena.get("core_offset_px", [0, -56])
 	var core_from_center := Vector2(float(off[0]), float(off[1]) + size.y * 0.5)
 	_core.set_shell_rect(Rect2(-core_from_center - size * 0.5, size))
+	HelpCatalog.tag(_core, help_id("core"))
 	set_weak_point(_core)
 	_core.set_enabled(false)
 	_attacks = Node2D.new()
@@ -864,8 +961,7 @@ func _spit_now() -> void:
 		bubble.patrol_range_px = float(p1.get("bubble_patrol_range_px", 256.0))
 		var spot_center: Vector2 = get_spot_center(spot)
 		bubble.position = Vector2(spot_center.x, minf(bottom, spot_center.y))
-		bubble.add_to_group(&"help_target")
-		bubble.set_meta(&"help_id", "alert_bubble")
+		HelpCatalog.tag(bubble, help_id("bubble"))
 		_attacks.add_child(bubble)
 		_track_bubble(bubble)
 	_spit_targets.clear()
@@ -1049,6 +1145,7 @@ func _build_shield() -> void:
 	_attacks.add_child(_shield)
 	_shield.follow_target = _body
 	_shield.closing_started.connect(_on_shield_closing)
+	HelpCatalog.tag(_shield, help_id("shield"))
 	_shield.visible = false
 
 
@@ -1123,8 +1220,7 @@ func _open_popup(p: Dictionary, p2: Dictionary) -> void:
 	var phone_y: float = float((lanes.get(lane, {}) as Dictionary).get("surface_row", 10)) * _tile + _phone_y()
 	var size: int = popup.close_button_size
 	popup.close_button_position = Vector2(rect.size.x * 0.5 - size * 0.5, phone_y - rect.position.y - size * 0.5)
-	popup.add_to_group(&"help_target")
-	popup.set_meta(&"help_id", "overlay_popup")
+	HelpCatalog.tag(popup, help_id("popup"))
 	_attacks.add_child(popup)
 	popup.global_position = rect.position
 	p["node"] = popup
@@ -1170,6 +1266,7 @@ func _fire_shot(p2: Dictionary, late_s: float) -> void:
 	shot.travel_px = (x1 - x0) - shot.size_px.x
 	var y: float = float(lane.get("surface_row", 10)) * _tile + _phone_y()
 	var start_x: float = (x0 + shot.size_px.x * 0.5) if _burst_dir > 0 else (x1 - shot.size_px.x * 0.5)
+	HelpCatalog.tag(shot, help_id("shot"))
 	_attacks.add_child(shot)
 	shot.global_position = _to_global(Vector2(start_x, y))
 	if late_s > 0.0:
@@ -1308,6 +1405,7 @@ func _split_now() -> void:
 			_attacks.add_child(clone)
 			clone.global_position = _center
 			clone.discarded.connect(_on_clone_discarded)
+			HelpCatalog.tag(clone, help_id("clone"))
 			c["node"] = clone
 		_copies.append(c)
 	_down = true
@@ -1449,8 +1547,7 @@ func _on_clone_discarded(clone: AlertMajorClone) -> void:
 	var bubble := BUBBLE_SCENE.instantiate() as AlertBubble
 	bubble.patrol_range_px = float(phase_data(1).get("bubble_patrol_range_px", 256.0))
 	bubble.position = clone.global_position + Vector2(0.0, _down_size().y * 0.5 - 2.0)
-	bubble.add_to_group(&"help_target")
-	bubble.set_meta(&"help_id", "alert_bubble")
+	HelpCatalog.tag(bubble, help_id("bubble"))
 	_attacks.add_child(bubble)
 	_bubbles.append(bubble)
 

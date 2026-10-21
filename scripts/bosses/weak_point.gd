@@ -190,6 +190,12 @@ func can_take_damage() -> bool:
 
 # --- Marca ---
 
+## Ayuda de Eco (alert_major_core, paso 12 del jefe): solo cuando el nucleo se
+## ve (revelado por el Debug o marcado); oculto no da pistas de donde esta.
+func is_help_available() -> bool:
+	return is_enabled() and (is_revealed() or is_marked())
+
+
 func is_marked() -> bool:
 	return _enabled and _mark_left > 0.0
 

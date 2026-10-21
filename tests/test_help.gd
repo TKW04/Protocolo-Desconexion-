@@ -303,6 +303,13 @@ func _data_help_ids() -> Dictionary:
 			var enemy: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/enemies/" + file))
 			if enemy.has("help_id"):
 				used[String(enemy["help_id"])] = "enemies/" + file
+	# Jefes (2026-10-21): seccion help de data/bosses/<id>.json (piezas -> help_id).
+	for file: String in DirAccess.get_files_at("res://data/bosses"):
+		if file.ends_with(".json"):
+			var boss: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/bosses/" + file))
+			var help: Dictionary = boss.get("help", {})
+			for key: String in help:
+				used[String(help[key])] = "bosses/%s help.%s" % [file, key]
 	var recharge: Dictionary = RechargePickup.data()
 	for kind: String in recharge["kinds"]:
 		used[String(recharge["kinds"][kind]["help_id"])] = "recharge_pickup.kinds.%s" % kind
