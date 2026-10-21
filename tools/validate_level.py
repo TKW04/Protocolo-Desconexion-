@@ -3345,6 +3345,8 @@ def format_plan(plan):
             energy["start"], energy["used"], energy["gained"], energy["min"], energy["end"],
             "; %d desvio(s) a un cargador" % energy["charger_detours"] if energy["charger_detours"] else "",
             "; %d dash(es)" % energy["dashes"] if energy.get("dashes") else ""))
+        if "debug_drain_per_s" in energy:
+            out.append("    gasto del Debug en este nivel: %.1f/s (debug_drain_scale)" % energy["debug_drain_per_s"])
     return out
 
 

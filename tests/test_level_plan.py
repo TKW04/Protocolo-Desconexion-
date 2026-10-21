@@ -702,5 +702,45 @@ class CliTest(unittest.TestCase):
         self.assertEqual(relaxed.returncode, 0, relaxed.stdout)
 
 
+
+class DebugDrainScaleTest(unittest.TestCase):
+    """debug_drain_scale del nivel (2026-10-21, paso 4 de docs/propuesta-jefe-alerta-mayor.md §6): el plan
+    gasta el Debug por ese factor (arena del jefe: 0,5) y sin el campo no cambia nada."""
+
+    def test_half_scale_halves_the_debug_energy(self):
+        level = pz.hidden_gap(chip=True)
+        base = vl.validate(copy.deepcopy(level))
+        self.assertTrue(base["ok"], messages(base))
+        self.assertNotIn("debug_drain_per_s", base["plan"]["energy"])
+        level["debug_drain_scale"] = 0.5
+        half = vl.validate(level)
+        self.assertTrue(half["ok"], messages(half))
+        seg_base = base["plan"]["debug"]["segments"][0]
+        seg_half = half["plan"]["debug"]["segments"][0]
+        self.assertEqual(seg_half["active_s"], seg_base["active_s"], "el mismo tiempo con el Debug")
+        self.assertAlmostEqual(seg_half["energy"], seg_base["energy"] / 2.0, places=1)
+        self.assertAlmostEqual(half["plan"]["energy"]["used"], base["plan"]["energy"]["used"] / 2.0, places=1)
+        self.assertEqual(half["plan"]["energy"]["debug_drain_per_s"], 10.0)
+        self.assertIn("    gasto del Debug en este nivel: 10.0/s (debug_drain_scale)", vl.format_plan(half["plan"]))
+        self.assertFalse(any("gasto del Debug en este nivel" in line for line in vl.format_plan(base["plan"])))
+
+    def test_schema_accepts_0_to_1(self):
+        import validate_level_schema as vls
+        level = room("boss_test")
+        for value in (0, 0.5, 1):
+            level["debug_drain_scale"] = value
+            self.assertEqual(vls.validate_level(level), [], value)
+        for value in (1.5, -0.1, "0.5", True):
+            level["debug_drain_scale"] = value
+            self.assertTrue(any("debug_drain_scale" in e for e in vls.validate_level(level)), value)
+
+    def test_existing_levels_do_not_use_it(self):
+        for name in ("1-1", "1-2", "1-3", "boss_test"):
+            with open(os.path.join(ROOT, "data", "levels", "%s.json" % name), encoding="utf-8") as handle:
+                self.assertNotIn("debug_drain_scale", json.load(handle), name)
+            with open(os.path.join(ROOT, "scenes", "levels", "%s.tscn" % name), encoding="utf-8") as handle:
+                self.assertNotIn("debug_drain_scale", handle.read(), name)
+
+
 if __name__ == "__main__":
     unittest.main()

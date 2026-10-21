@@ -347,6 +347,8 @@ def build_scene(level, root=ROOT, warnings=None):
         ("size_tiles", "Vector2i(%d, %d)" % (cols, rows)),
         ("debug_color", fmt_string(level.get("debug_color", ""))),
         ("abilities_available", fmt_value(abilities)),
+    ] + ([("debug_drain_scale", fmt_number(level["debug_drain_scale"]))]
+         if "debug_drain_scale" in level else []) + [
         ("source_path", fmt_string("res://data/levels/%s.json" % level["id"])),
     ])
 

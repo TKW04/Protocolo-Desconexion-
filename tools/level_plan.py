@@ -109,6 +109,9 @@ class Planner:
         self.m = validator.model
         self.rules = validator.rules
         self.level = validator.level
+        # Gasto del Debug en este nivel (2026-10-21, paso 4 de docs/propuesta-jefe-alerta-mayor.md §6): el de las
+        # reglas (con mejoras) por debug_drain_scale del nivel (1 sin el campo: los demas niveles no cambian).
+        self.debug_drain = self.rules.debug_drain * float(self.level.get("debug_drain_scale", 1.0))
         self.T = self.m.T
         self.val = self.m.validation
         self.margin = self.m.time_margin()
@@ -920,7 +923,7 @@ class Planner:
                 seconds += self.m.glitch_dissolve_s / max(self.rules.debug_world_scale, 0.001)
             self.info["debug"]["segments"].append({"from": [at[1], at[0]], "to": [steps[b]["to"][1], steps[b]["to"][0]],
                                                    "active_s": round(seconds, 2),
-                                                   "energy": round(seconds * self.rules.debug_drain, 1)})
+                                                   "energy": round(seconds * self.debug_drain, 1)})
         out.extend(steps[cursor:])
         self.info["debug"]["required"] = any(steps[i].get("debug") for i in need)
         return out
@@ -2153,7 +2156,7 @@ class Planner:
                 while k < len(steps) and steps[k]["action"] != "debug_off":
                     active += self.duration(steps[k])
                     k += 1
-                need = active * r.debug_drain
+                need = active * self.debug_drain
                 s["active_s"] = round(active, 2)
             if need > 0.0 and energy + EPS < need:
                 fixed = self.charger_detour(steps, i, need, energy, ready_at) if detours < 8 else None
@@ -2191,6 +2194,8 @@ class Planner:
         dashes = sum(1 for s in steps if s["action"] == "move" and s["edge"].get("dash"))
         if dashes:
             self.info["energy"]["dashes"] = dashes
+        if "debug_drain_scale" in self.level:
+            self.info["energy"]["debug_drain_per_s"] = round(self.debug_drain, 2)
         return steps
 
     def charger_detour(self, steps, i, need, energy, ready_at):

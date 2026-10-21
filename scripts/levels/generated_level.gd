@@ -27,6 +27,10 @@ const ENEMY_PARAMS_META: StringName = &"params"
 @export var debug_color: String = ""
 ## Habilidades del nivel ({"pulse": true, "debug": false}).
 @export var abilities_available: Dictionary = {}
+## Multiplicador del gasto del Debug en este nivel (debug_drain_scale del JSON;
+## 1 = normal; la arena de Alerta Mayor, 0,5). Se aplica al entrar y vuelve a 1
+## al salir (paso 4 de docs/propuesta-jefe-alerta-mayor.md §6).
+@export var debug_drain_scale: float = 1.0
 ## JSON de origen.
 @export var source_path: String = ""
 
@@ -46,6 +50,7 @@ func _enter_tree() -> void:
 		GameState.set_ability_unlocked(ability, bool(abilities_available[key]))
 	if not is_ability_available(GameState.ABILITY_DEBUG):
 		DebugMode.reset()
+	DebugMode.set_level_drain_scale(debug_drain_scale)
 
 
 func _ready() -> void:
@@ -55,6 +60,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if not is_ability_available(GameState.ABILITY_DEBUG):
 		DebugMode.reset()
+	DebugMode.set_level_drain_scale(1.0)
 	for ability: StringName in _previous_abilities:
 		if GameState.is_ability_obtained(ability):
 			continue

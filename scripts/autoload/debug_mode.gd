@@ -28,6 +28,12 @@
 #   combina con el Ocultarte (Pulso 4): activar el Debug apaga el Ocultarte
 #   (HideMode escucha debug_mode_changed) y activar el Ocultarte apaga el Debug
 #   (cancel).
+# - Gasto por nivel (2026-10-21, paso 4 de docs/propuesta-jefe-alerta-mayor.md
+#   §6, §2.4.5): el nivel puede pedir que el Debug gaste menos con
+#   `debug_drain_scale` (0-1; la arena de Alerta Mayor, 0,5: 20 -> 10/s y 15 ->
+#   7,5/s con Debug 2). Lo fija GeneratedLevel al entrar (set_level_drain_scale)
+#   y lo devuelve a 1 al salir; el hub y los demas niveles van a 1. Ni la carga
+#   ni la regla «Debug y dash no se combinan» cambian. reset() no lo toca.
 # Los valores salen de data/debug_mode.json (DebugModeConfig). El estado
 # global (energia, escala de tiempo) vive en GameState; los avisos van por
 # EventBus (debug_mode_changed, debug_activation_progress_changed,
@@ -63,6 +69,8 @@ var _overlay: DebugOverlay
 var _linger_left: float = 0.0
 var _reveal_intensity: float = INTENSITY_OFF
 var _revealing: bool = false
+## Multiplicador del gasto del nivel actual (debug_drain_scale; 1 por defecto).
+var _level_drain_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -110,9 +118,19 @@ func step(real_delta: float, held: bool) -> void:
 
 
 ## Gasto de energia por segundo real: data/debug_mode.json con las mejoras
-## compradas ("Debug eficiente"). config no se modifica.
+## compradas ("Debug eficiente") por el debug_drain_scale del nivel actual.
+## config no se modifica.
 func get_drain_per_second() -> float:
-	return GameState.effective_value(&"debug_mode.drain_per_second", config.drain_per_second)
+	return GameState.effective_value(&"debug_mode.drain_per_second", config.drain_per_second) * _level_drain_scale
+
+
+## Multiplicador del gasto del nivel actual (0-1; lo fija GeneratedLevel).
+func set_level_drain_scale(scale: float) -> void:
+	_level_drain_scale = clampf(scale, 0.0, 1.0)
+
+
+func get_level_drain_scale() -> float:
+	return _level_drain_scale
 
 
 ## Segundos de pulsacion larga para activar, con mejoras ("Arranque rapido").
