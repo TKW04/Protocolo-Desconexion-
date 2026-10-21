@@ -162,10 +162,10 @@ func test_room_uses_final_background_dock_and_page_dot() -> void:
 
 
 func test_background_lights_piece_one_when_world_1_is_completed() -> void:
-	for id: StringName in [&"1-1", &"1-2", &"1-3"]:
+	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss"]:
 		GameState.mark_level_completed(id)
 	_spawn()
-	assert_eq(_hub.get_background_state(), &"on", "Mundo 1 completo: pieza 1 encendida")
+	assert_eq(_hub.get_background_state(), &"on", "Mundo 1 completo (jefe incluido): pieza 1 encendida")
 
 
 func test_hub_unlocks_the_pulse_and_restores_abilities_on_exit() -> void:

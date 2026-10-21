@@ -11,12 +11,17 @@
 ##   completed_levels; available si es jugable (playable y su escena existe) y
 ##   es el primero de un mundo desbloqueado o esta en unlocked_levels; si no,
 ##   locked. Un subnivel no jugable o de otra vuelta es «proximamente».
+## - Jefe (kind "boss", 2026-10-21; docs/propuesta-jefe-alerta-mayor.md §1.3):
+##   cuenta como un subnivel mas de la vuelta. Mientras no este completado, la
+##   carpeta no pasa a completed (ni se enciende la pieza del fondo del hub),
+##   aunque aun no sea jugable.
 class_name HubWorlds
 extends RefCounted
 
 const STATE_LOCKED: StringName = &"locked"
 const STATE_AVAILABLE: StringName = &"available"
 const STATE_COMPLETED: StringName = &"completed"
+const KIND_BOSS: String = "boss"
 
 
 ## Nombre de cara al jugador de la vuelta `lap` (access_levels.names de
@@ -135,6 +140,11 @@ static func folder_state(world_entry: Dictionary) -> StringName:
 		if not GameState.is_level_completed(StringName(String(level.get("id", "")))):
 			return STATE_AVAILABLE
 	return STATE_COMPLETED
+
+
+## El subnivel es el jefe del mundo (kind "boss").
+static func is_boss(level: Dictionary) -> bool:
+	return String(level.get("kind", "")) == KIND_BOSS
 
 
 ## El subnivel tiene escena y se marca como jugable.

@@ -259,10 +259,13 @@ func test_lock_screen_terminal_completes_the_level_and_returns_to_the_hub() -> v
 	terminal.advance(LONG_STEP_S)
 	terminal.get_vortex().advance(LONG_STEP_S)
 	_main.advance(LONG_STEP_S)
-	assert_true(_main.is_in_hub(), "Vuelve al hub (Alerta Mayor aun no existe)")
+	assert_true(_main.is_in_hub(), "Vuelve al hub (decision 2 del jefe: la terminal no lleva a la arena)")
 	assert_true(GameState.is_level_completed(&"1-3"), "1-3 en completed_levels")
+	assert_true(GameState.is_level_unlocked(&"1-boss"), "La terminal desbloquea la fila del jefe")
 	var m1: Dictionary = HubWorlds.world(&"m1")
-	assert_eq(HubWorlds.folder_state(m1), HubWorlds.STATE_COMPLETED, "La carpeta del Mundo 1 completa")
+	assert_eq(HubWorlds.folder_state(m1), HubWorlds.STATE_AVAILABLE,
+		"La carpeta del Mundo 1 no se completa sin el jefe (paso 1 de la propuesta del jefe)")
+	assert_eq(_main.get_hub().get_background_state(), &"off", "Pieza cian apagada sin el jefe")
 	var panel: FolderPanel = _main.get_hub().get_folder(&"m1").get_folder_panel()
 	assert_eq(panel.get_level_state(&"1-3"), HubWorlds.STATE_COMPLETED)
 

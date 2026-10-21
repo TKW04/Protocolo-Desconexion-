@@ -70,7 +70,8 @@ class Level13Test(unittest.TestCase):
         self.assertEqual(section_of(lvl, goal[0]), "Cierre: Pantalla de bloqueo")
         terminal = obj(lvl, "terminal_bloqueo")
         self.assertEqual((terminal["type"], terminal["x"], terminal["y"]), ("exit_terminal", goal[0], goal[1] - 1))
-        self.assertEqual(lvl["unlocks"], [], "Alerta Mayor aun no existe: la terminal vuelve al hub")
+        self.assertEqual(lvl["unlocks"], [{"type": "level", "id": "1-boss"}],
+                         "La terminal vuelve al hub y desbloquea la fila del jefe (paso 1 del jefe)")
         cps = {c["id"]: (c["x"], c["y"]) for c in lvl["checkpoints"]}
         self.assertEqual(cps, {"sync_1": (75, 9), "sync_2": (187, 9)}, "Al entrar a los Tramos 2 y 4")
 

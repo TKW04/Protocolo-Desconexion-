@@ -94,12 +94,16 @@ func get_level_state(level_id: StringName) -> StringName:
 
 
 ## Texto del subnivel: «1-1 Bandeja de entrada - Completado 9/9», «... - Nuevo».
+## El jefe (kind "boss") sale como «Jefe: Alerta Mayor - Nuevo», sin id ni
+## puntos (la arena no tiene puntos de atencion).
 func level_text(level: Dictionary) -> String:
 	var texts: Dictionary = _folders.get("texts", {})
 	var id: String = String(level.get("id", ""))
 	var name: String = String(level.get("name", id))
 	var state: StringName = HubWorlds.level_state(world_entry, level)
 	var label: String = state_text(level)
+	if HubWorlds.is_boss(level):
+		return String(texts.get("boss_level", "%s - %s")) % [name, label]
 	if state == HubWorlds.STATE_COMPLETED:
 		return String(texts.get("level_points", "%s %s %s %d/%d")) % [id, name, label,
 			GameState.get_captured_points(StringName(id)).size(), HubWorlds.level_points_total(id)]

@@ -104,7 +104,7 @@ func test_worlds_registry_has_world_1_with_three_sublevels_and_locked_2_and_3() 
 	var levels: Array[String] = []
 	for level: Dictionary in HubWorlds.levels(_world(&"m1")):
 		levels.append(String(level["id"]))
-	assert_eq(levels, ["1-1", "1-2", "1-3"] as Array[String])
+	assert_eq(levels, ["1-1", "1-2", "1-3", "1-boss"] as Array[String])
 	assert_true(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[0]), "1-1 jugable")
 	assert_true(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[1]), "1-2 jugable (paso 13 del 1-2)")
 	assert_true(HubWorlds.is_playable(HubWorlds.levels(_world(&"m1"))[2]), "1-3 jugable (paso 10 del 1-3)")
@@ -121,7 +121,9 @@ func test_folder_states_follow_progress() -> void:
 	assert_eq(HubWorlds.folder_state(_world(&"m1")), HubWorlds.STATE_AVAILABLE, "Faltan 1-2 y 1-3")
 	GameState.mark_level_completed(&"1-2")
 	GameState.mark_level_completed(&"1-3")
-	assert_eq(HubWorlds.folder_state(_world(&"m1")), HubWorlds.STATE_COMPLETED, "Todos los de la vuelta")
+	assert_eq(HubWorlds.folder_state(_world(&"m1")), HubWorlds.STATE_AVAILABLE, "Falta el jefe")
+	GameState.mark_level_completed(&"1-boss")
+	assert_eq(HubWorlds.folder_state(_world(&"m1")), HubWorlds.STATE_COMPLETED, "Todos los de la vuelta, jefe incluido")
 
 
 func test_sublevel_states_follow_completed_and_unlocked_levels() -> void:
@@ -173,7 +175,7 @@ func test_locked_world_unlocks_through_its_levels() -> void:
 
 func test_only_the_current_lap_is_listed() -> void:
 	var m1: Dictionary = _world(&"m1")
-	assert_eq(HubWorlds.levels_for_lap(m1).size(), 3, "Vuelta 1 (Easy): 1-1, 1-2 y 1-3")
+	assert_eq(HubWorlds.levels_for_lap(m1).size(), 4, "Vuelta 1 (Easy): 1-1, 1-2, 1-3 y el jefe")
 	GameState.mark_level_completed(&"1-1")
 	GameState.lap = GameState.LAP_NORMAL
 	assert_eq(HubWorlds.levels_for_lap(m1).size(), 0, "No se rejuegan subniveles de vueltas anteriores")
@@ -218,14 +220,14 @@ func test_world_1_folder_shows_its_bell_miniature_and_locked_ones_do_not() -> vo
 		assert_false(locked.is_miniature_visible(), "%s bloqueada: sin miniatura" % id)
 		var r: Array = HubData.section("folders")["number_rect_px"]
 		assert_eq(locked.get_node(^"Number").position, Vector2(float(r[0]), float(r[1])), "Numero centrado")
-	for id: StringName in [&"1-1", &"1-2", &"1-3"]:
+	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss"]:
 		GameState.mark_level_completed(id)
 	m1.refresh_state()
 	assert_true(m1.is_miniature_visible(), "Tambien completada")
 
 
 func test_completed_world_shows_the_completed_folder() -> void:
-	for id: StringName in [&"1-1", &"1-2", &"1-3"]:
+	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss"]:
 		GameState.mark_level_completed(id)
 	_spawn()
 	assert_eq(_hub.get_folder(&"m1").get_folder_animation(), &"completed")
@@ -293,7 +295,7 @@ func test_pulse_on_the_shelf_opens_the_sublevel_panel() -> void:
 	for line: String in panel.get_lines():
 		for word: String in ["Vuelta", "vuelta", "Easy", "Normal", "Hard"]:
 			assert_false(line.contains(word), "«%s» no dice «%s»" % [line, word])
-	assert_eq(panel.get_option_ids(), [&"1-1", &"1-2", &"1-3", FolderPanel.OPTION_BACK] as Array[StringName])
+	assert_eq(panel.get_option_ids(), [&"1-1", &"1-2", &"1-3", &"1-boss", FolderPanel.OPTION_BACK] as Array[StringName])
 	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[0]), "1-1 Bandeja de entrada - Completado 2/9")
 	assert_eq(panel.level_text(HubWorlds.levels(_world(&"m1"))[1]), "1-2 Centro de notificaciones - Nuevo",
 		"El 1-2 disponible tras completar el 1-1 (paso 13 del 1-2)")
