@@ -31,6 +31,11 @@ const ENEMY_PARAMS_META: StringName = &"params"
 ## 1 = normal; la arena de Alerta Mayor, 0,5). Se aplica al entrar y vuelve a 1
 ## al salir (paso 4 de docs/propuesta-jefe-alerta-mayor.md §6).
 @export var debug_drain_scale: float = 1.0
+## Escala del mundo con el Debug en este nivel (debug_world_scale del JSON, 0-1;
+## la arena de Alerta Mayor, 0,7). Negativa = sin escala propia (la global, 0,5;
+## todos los demas niveles). Se aplica al entrar y se quita al salir
+## (docs/propuesta-jefe-alerta-mayor.md §6.4).
+@export var debug_world_scale: float = -1.0
 ## JSON de origen.
 @export var source_path: String = ""
 
@@ -51,6 +56,7 @@ func _enter_tree() -> void:
 	if not is_ability_available(GameState.ABILITY_DEBUG):
 		DebugMode.reset()
 	DebugMode.set_level_drain_scale(debug_drain_scale)
+	DebugMode.set_level_world_scale(debug_world_scale)
 
 
 func _ready() -> void:
@@ -64,6 +70,7 @@ func _exit_tree() -> void:
 	if not is_ability_available(GameState.ABILITY_DEBUG):
 		DebugMode.reset()
 	DebugMode.set_level_drain_scale(1.0)
+	DebugMode.set_level_world_scale(DebugMode.LEVEL_WORLD_SCALE_NONE)
 	for ability: StringName in _previous_abilities:
 		if GameState.is_ability_obtained(ability):
 			continue

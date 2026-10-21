@@ -54,6 +54,8 @@ Reglas:
   - camara (camera, opcional): {vertical: "simple" | "tower", limits: "grid"};
   - gasto del Debug del nivel (debug_drain_scale, opcional, 2026-10-21): numero entre 0 y 1 que
     multiplica el gasto del Debug en ese nivel (por defecto 1; la arena de Alerta Mayor, 0,5);
+  - escala del mundo con el Debug del nivel (debug_world_scale, opcional, 2026-10-21): numero entre 0 y 1
+    que sustituye a la global (0,5) en ese nivel (la arena de Alerta Mayor, 0,7); sin el campo, la global;
   - parametros de validacion (validation, opcional, paso 10): {time_margin_s, snooze_required,
     laser_required, debug_required, start_energy, sync_damage_budget, ceiling_margin_px,
     dash_required, hazard_margin_s} (ver
@@ -290,6 +292,12 @@ class LevelValidator:
             scale = self.level["debug_drain_scale"]
             if not _is_number(scale) or not 0.0 <= scale <= 1.0:
                 self.error("'debug_drain_scale' debe ser un numero entre 0 y 1 (1 = gasto normal)")
+        if "debug_world_scale" in self.level:
+            # Escala del mundo con el Debug por nivel (2026-10-21, docs/propuesta-jefe-alerta-mayor.md §6.4):
+            # sustituye a world_time_scale de data/debug_mode.json en este nivel (arena del jefe: 0,7).
+            scale = self.level["debug_world_scale"]
+            if not _is_number(scale) or not 0.0 < scale <= 1.0:
+                self.error("'debug_world_scale' debe ser un numero mayor que 0 y como mucho 1 (1 = sin ralentizar)")
         if "stands_for" in self.level:
             # Sala de prueba que hace las veces de un subnivel (2026-10-20, paso 7 de
             # docs/propuesta-1-3.md: la sala «Excepciones» ofrece msg_1_3 del 1-3).

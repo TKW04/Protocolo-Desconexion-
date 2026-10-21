@@ -34,6 +34,13 @@
 #   7,5/s con Debug 2). Lo fija GeneratedLevel al entrar (set_level_drain_scale)
 #   y lo devuelve a 1 al salir; el hub y los demas niveles van a 1. Ni la carga
 #   ni la regla «Debug y dash no se combinan» cambian. reset() no lo toca.
+# - Escala del mundo por nivel (2026-10-21, docs/propuesta-jefe-alerta-mayor.md
+#   §6.4): el nivel puede fijar la escala del mundo con el Debug activo con
+#   `debug_world_scale` (0-1; la arena de Alerta Mayor, 0,7: el jefe no se
+#   arrastra a la mitad). Sustituye a la base (0,5) y conserva la proporcion del
+#   Debug 4 (0,4 / 0,5 = x0,8: 0,7 -> 0,56). Lo fija GeneratedLevel al entrar
+#   (set_level_world_scale) y lo quita al salir (-1 = sin escala propia: la
+#   global, que no cambia en el 1-1, el 1-2, el 1-3 ni el hub). reset() no lo toca.
 # Los valores salen de data/debug_mode.json (DebugModeConfig). El estado
 # global (energia, escala de tiempo) vive en GameState; los avisos van por
 # EventBus (debug_mode_changed, debug_activation_progress_changed,
@@ -49,6 +56,8 @@ const PROGRESS_NONE: float = 0.0
 const PROGRESS_FULL: float = 1.0
 ## Tolerancia al sumar deltas de coma flotante (60 x 1/60 puede dar 0,9999...).
 const HOLD_EPSILON_S: float = 0.000001
+## Sin escala del mundo propia del nivel (se usa la global).
+const LEVEL_WORLD_SCALE_NONE: float = -1.0
 const OVERLAY_SCENE: PackedScene = preload("res://scenes/effects/debug_overlay.tscn")
 
 ## Si es false, _physics_process no lee el Input Map (pruebas: llaman a step()).
@@ -71,6 +80,9 @@ var _reveal_intensity: float = INTENSITY_OFF
 var _revealing: bool = false
 ## Multiplicador del gasto del nivel actual (debug_drain_scale; 1 por defecto).
 var _level_drain_scale: float = 1.0
+## Escala del mundo con el Debug del nivel actual (debug_world_scale; negativo =
+## sin escala propia: la de data/debug_mode.json con mejoras).
+var _level_world_scale: float = LEVEL_WORLD_SCALE_NONE
 
 
 func _ready() -> void:
@@ -138,9 +150,27 @@ func get_activation_hold_s() -> float:
 	return GameState.effective_value(&"debug_mode.activation_hold_s", config.activation_hold_s)
 
 
-## Escala del mundo con el Debug activo, con mejoras (Debug 4: 0,5 a 0,4).
+## Escala del mundo con el Debug activo, con mejoras (Debug 4: 0,5 a 0,4) y,
+## si el nivel la fija (debug_world_scale), la del nivel con la misma proporcion
+## de la mejora (0,7 con Debug 4: 0,56).
 func get_world_time_scale() -> float:
-	return GameState.effective_value(&"debug_mode.world_time_scale", config.world_time_scale)
+	var upgraded: float = GameState.effective_value(&"debug_mode.world_time_scale", config.world_time_scale)
+	if _level_world_scale < 0.0 or config.world_time_scale <= 0.0:
+		return upgraded
+	return clampf(_level_world_scale * upgraded / config.world_time_scale, 0.0, 1.0)
+
+
+## Escala del mundo con el Debug del nivel actual (0-1; un valor negativo la
+## quita y vuelve la global). Lo fija GeneratedLevel; si el Debug esta activo,
+## el mundo pasa a la nueva escala al instante.
+func set_level_world_scale(scale: float) -> void:
+	_level_world_scale = LEVEL_WORLD_SCALE_NONE if scale < 0.0 else clampf(scale, 0.0, 1.0)
+	GameState.world_time_scale = time_scale_for(_intensity)
+
+
+## Escala propia del nivel actual (negativa si no tiene: se usa la global).
+func get_level_world_scale() -> float:
+	return _level_world_scale
 
 
 ## Revelado persistente tras apagar el Debug, con mejoras (Debug 3: 0 a 1,5 s).

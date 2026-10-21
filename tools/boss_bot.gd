@@ -460,6 +460,16 @@ func _fight() -> void:
 	if _reflexes() or _dodge_burst():
 		# Esquivar no cambia lo que se hacia con el Debug.
 		_debug_want = _last_debug_want
+		# Torpe, fase 2: el Debug de mas para ver a traves de los pop-ups sigue
+		# contando mientras esquiva una rafaga (2026-10-21, §6.4: la rafaga a 0,75 s
+		# dura mas y el Debug se quedaba encendido toda la espera).
+		if phase == 2 and _profile == "clumsy" and _debug_want and not _win_popup_debug \
+				and not _boss.is_window_open() and DebugMode.is_active():
+			_win_debug_s += get_physics_process_delta_time()
+			if _win_debug_s >= _model_phase_value("extra_debug_s", 0.0):
+				_win_popup_debug = true
+				_win_debug_s = 0.0
+				_debug_want = false
 		return
 	if _boss.is_window_open():
 		_was_window = true
@@ -942,8 +952,10 @@ func _dodge_burst() -> bool:
 	if not pending:
 		return false
 	if (lane == "floor") != on_floor_lane:
-		# Ya en el otro carril: quieto hasta que pasen (en el aire, sigue).
-		if surf == &"left" or surf == &"right":
+		# Ya en el otro carril: quieto hasta que pasen (en el aire, sigue). Tambien
+		# en el suelo (2026-10-21, §6.4: con la rafaga a 0,75 s y el Debug, dura mas
+		# y el bot volvia a subir al escudo en medio de las notificaciones).
+		if surf == &"left" or surf == &"right" or surf == &"floor":
 			_axis = 0.0
 			return true
 		return surf == &"air"

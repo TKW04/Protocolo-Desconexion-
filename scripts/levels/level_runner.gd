@@ -587,6 +587,7 @@ func _show_hub(level_id: String, attention_points: int, rollback_report: Diction
 	_clear_level()
 	# En el hub el Debug gasta lo normal (debug_drain_scale es de cada nivel).
 	DebugMode.set_level_drain_scale(1.0)
+	DebugMode.set_level_world_scale(DebugMode.LEVEL_WORLD_SCALE_NONE)
 	_hub = (load(String(_data.get("hub_scene", "res://scenes/hub/hub.tscn"))) as PackedScene).instantiate() as HubRoom
 	_hub.hold_arrival = true
 	_hub.rollback_report = rollback_report

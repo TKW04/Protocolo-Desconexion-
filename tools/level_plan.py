@@ -2196,6 +2196,8 @@ class Planner:
             self.info["energy"]["dashes"] = dashes
         if "debug_drain_scale" in self.level:
             self.info["energy"]["debug_drain_per_s"] = round(self.debug_drain, 2)
+        if "debug_world_scale" in self.level:
+            self.info["energy"]["debug_world_scale"] = round(self.rules.debug_world_scale, 3)
         return steps
 
     def charger_detour(self, steps, i, need, energy, ready_at):

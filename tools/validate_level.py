@@ -344,6 +344,21 @@ class Rules:
         # (Sync 5, Energia 5) se ignoran (el presupuesto de energia no cuenta con recarga pasiva).
         self.debug_world_scale = effective_value(catalog, levels, "debug_mode.world_time_scale", self.debug_world_scale)
         self.debug_hold_s = effective_value(catalog, levels, "debug_mode.activation_hold_s", self.debug_hold_s)
+        # Escala del mundo con el Debug propia del nivel (debug_world_scale; 2026-10-21,
+        # docs/propuesta-jefe-alerta-mayor.md §6.4): None = la global; si no, set_level_debug_world_scale.
+        self.config_debug_world_scale = self.base_debug_world_scale
+        self.level_debug_world_scale = None
+
+    def set_level_debug_world_scale(self, scale):
+        """Escala del mundo con el Debug del nivel (debug_world_scale; None = la global). Sustituye a la base
+        (0,5) y conserva la proporcion de las mejoras (Debug 4: 0,4 / 0,5), como DebugMode.get_world_time_scale."""
+        if scale is None:
+            return
+        scale = float(scale)
+        ratio = self.debug_world_scale / self.config_debug_world_scale if self.config_debug_world_scale > 0 else 1.0
+        self.level_debug_world_scale = scale
+        self.base_debug_world_scale = scale
+        self.debug_world_scale = min(max(scale * ratio, 0.0), 1.0)
 
     def has_upgrade(self, upgrade_id):
         """Con las mejoras de --upgrades se tiene `upgrade_id` ("pista:nivel" o legacy_id)."""
@@ -369,6 +384,7 @@ class Rules:
         rules = Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, ups,
                       self.allies)
         rules.time_margin = self.time_margin
+        rules.set_level_debug_world_scale(self.level_debug_world_scale)
         return rules
 
     def with_allies(self, allies):
@@ -376,6 +392,7 @@ class Rules:
         rules = Rules(self.root, self.physics_path, self.jump_efficiency, self.limit, self.allow_run, self.upgrades,
                       tuple(allies))
         rules.time_margin = self.time_margin
+        rules.set_level_debug_world_scale(self.level_debug_world_scale)
         return rules
 
     def speeds(self):
@@ -3110,6 +3127,7 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
     validator = Validator(level, rules)
     validator.export_requested = export is not None
     result = validator.run()
@@ -3357,6 +3375,8 @@ def format_plan(plan):
             "; %d dash(es)" % energy["dashes"] if energy.get("dashes") else ""))
         if "debug_drain_per_s" in energy:
             out.append("    gasto del Debug en este nivel: %.1f/s (debug_drain_scale)" % energy["debug_drain_per_s"])
+        if "debug_world_scale" in energy:
+            out.append("    mundo con el Debug en este nivel: x%g (debug_world_scale)" % energy["debug_world_scale"])
     return out
 
 

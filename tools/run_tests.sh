@@ -137,7 +137,7 @@ if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_upgrade_economy.py tests/test_memories.py \
-		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py \
+		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \

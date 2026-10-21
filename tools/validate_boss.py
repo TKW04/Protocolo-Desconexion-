@@ -16,19 +16,24 @@ Debug, dash, energia y mejoras de data/upgrades.json):
   3. Cargadores: desde cada celda del suelo hay uno a charger_max_tiles como mucho y otro a
      charger_second_max_tiles (por si el primero se enfria); ninguno bajo una plataforma ni donde aterriza
      el jefe en la fase 1.
-  4. Avisos: todo ataque se anticipa de 6 a 12 cuadros (regla fija del diseño).
+  4. Avisos: todo ataque se anticipa de 6 a 12 cuadros (regla fija del diseño), contados en tiempo del mundo;
+     con el Debug (debug_world_scale del nivel, 0,7 en la arena) duran 1 / escala veces mas en tiempo real,
+     nunca menos que sin el (escala <= 1).
   5. Alcance del nucleo en cada sitio de ventana (fase 1: suelo del centro; fase 2: las plataformas del
      escudo, con su boton al alcance del pulso; fase 3: los sitios de las copias de cada acceso): pulso desde
      una celda de pie alcanzable (circulo del pulso contra el del nucleo) y laser desde una celda de pie de su
      carril (el haz a la altura del celular, sin terreno en medio).
   6. Ventanas con k = window_k (propuesta-1-2.md §0.1): ventana (s del mundo) >= k x (recorrido desde la
      peor celda de window_from + carga del Debug + pose del pulso que marca + pose del primer laser), con la
-     estrategia mas favorable (Debug al llegar, o Debug primero: con el Debug activo el mundo va a
-     world_time_scale y el recorrido cuenta menos en tiempo del mundo). En la fase 2 la ventana empieza al
+     estrategia mas favorable (Debug al llegar, Debug primero o Debug cargado en marcha —la carga no para a
+     Isak—: con el Debug activo el mundo va a la escala del nivel, debug_world_scale, o a la global, y el
+     recorrido cuenta menos en tiempo del mundo). En la fase 2 la ventana empieza al
      cerrar el escudo (recorrido 0) y el escudo debe esperar perch_s >= k x (recorrido + pose del pulso).
   7. Fase 3 por acceso: nunca dos ondas de campana a la vez en ningun paso del compas (hueco seguro), cada
      campana cabe en el compas mas corto (aviso + onda + reposo), las plataformas que parpadean encendidas
      >= aviso + 0,25 s con el compas mas corto, copias <= sitios y lanzamientos <= copias.
+  7b. Marca (§6.4): en la marca de cada acceso (mark_duration_s, tiempo del mundo; el caso peor es sin el
+     Debug, a x1) caben los laseres de la peor ventana de la pelea torpe (golpes / dano + fallados).
   8. ENERGIA (§2.4.7): la pelea torpe de validation_model (por acceso y fase: ventanas con sus golpes,
      Debug por ventana con debug_drain_scale del nivel, dashes, laseres fallados) con la barra base (100),
      con el tope del acceso y con todo al maximo: el pico por ventana <= energia maxima - min_margin. Informa
@@ -285,14 +290,19 @@ def check_chargers(arena, boss, errors, report):
     report["charger_second_worst_tiles"] = worst2
 
 
-def check_telegraphs(boss, root, errors, report):
+def check_telegraphs(boss, root, errors, report, world_scale=1.0):
+    """Avisos en cuadros del mundo (6-12). Con el Debug el mundo va a `world_scale` (<= 1): en tiempo real
+    duran 1 / world_scale veces mas, nunca menos que sin el Debug (accesibilidad, §6.4)."""
     lo, hi = TELEGRAPH_FRAMES
     items = []
     for name, frames in _telegraphs(boss, root):
         if not isinstance(frames, (int, float)) or not lo <= frames <= hi:
             _err(errors, "aviso de '%s': %s cuadros (deben ser de %d a %d)" % (name, frames, lo, hi))
         items.append((name, frames))
+    if not 0.0 < world_scale <= 1.0 + EPS:
+        _err(errors, "con el Debug el mundo va a x%g: los avisos durarian menos que sin el Debug" % world_scale)
     report["telegraphs"] = items
+    report["debug_world_scale"] = round(world_scale, 3)
 
 
 def _reach_cells(arena, spot):
@@ -323,7 +333,10 @@ def _window_need(arena, travel):
     poses = r.pulse_pose_s + r.laser_pose_s
     after = travel + r.debug_hold_s + r.debug_world_scale * poses
     first = r.debug_hold_s + r.debug_world_scale * (travel + poses)
-    return min(after, first)
+    # Debug cargado en marcha (§6.4): la carga no para a Isak (solo impide el dash); corre mientras carga y el
+    # resto del recorrido va ya con el mundo lento.
+    running = r.debug_hold_s + r.debug_world_scale * (max(travel - r.debug_hold_s, 0.0) + poses)
+    return min(after, first, running)
 
 
 def check_windows(arena, boss, errors, report):
@@ -472,6 +485,36 @@ def check_phase3(arena, boss, root, errors, report):
     report["phase3"] = out
 
 
+def mark_shots(rules, seconds):
+    """Laseres que caben en `seconds` reales desde la marca: el primero tras su pose y cada uno de los siguientes
+    tras la pose y el enfriamiento (cuenta conservadora)."""
+    if seconds + EPS < rules.laser_pose_s:
+        return 0
+    return 1 + int(math.floor((seconds - rules.laser_pose_s) / (rules.laser_pose_s + rules.laser_cooldown_s) + EPS))
+
+
+def check_mark(arena, boss, errors, report):
+    """La marca (mark_duration_s, tiempo del mundo) en el caso peor (sin el Debug, el mundo a x1) da para los
+    laseres de la peor ventana de la pelea torpe; informa de lo que dura en tiempo real con el Debug."""
+    rules = arena.rules
+    model = boss.get("validation_model", {})
+    misses = int(model.get("misses_per_window", 1))
+    out = {}
+    for lap, entry in sorted(boss.get("laps", {}).items()):
+        mark = float(entry.get("mark_duration_s", 0.0))
+        lm = model.get("laps", {}).get(str(lap), {})
+        worst = max((h for windows in lm.get("windows", []) for h in windows), default=0)
+        need = int(math.ceil(worst)) + misses
+        shots = mark_shots(rules, mark)
+        if shots < need:
+            _err(errors, "vuelta %s: en la marca de %.2f s caben %d laser(es) y la peor ventana torpe pide %d "
+                         "(%d golpe(s) + %d fallado(s))" % (lap, mark, shots, need, worst, misses))
+        scale = max(rules.debug_world_scale, EPS)
+        out[lap] = {"mark_s": mark, "real_with_debug_s": round(mark / scale, 3), "shots": shots,
+                    "shots_with_debug": mark_shots(rules, mark / scale), "need": need}
+    report["mark"] = out
+
+
 # --- Energia ---
 
 def energy_rules(base_rules, upgrades):
@@ -570,13 +613,16 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
     if boss is None:
         boss = load_json(os.path.join(root, "data", "bosses", "%s.json" % level["boss"]))
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
+    # Escala del mundo con el Debug propia de la arena (debug_world_scale, §6.4); sin el campo, la global.
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
     arena = Arena(level, boss, rules)
     report = {"boss": boss.get("id"), "reachable_cells": len(arena.reachable)}
     check_lanes(arena, boss, root, errors, report)
     check_chargers(arena, boss, errors, report)
-    check_telegraphs(boss, root, errors, report)
+    check_telegraphs(boss, root, errors, report, rules.debug_world_scale)
     check_windows(arena, boss, errors, report)
     check_phase3(arena, boss, root, errors, report)
+    check_mark(arena, boss, errors, report)
     check_energy(arena, boss, rules, list(upgrades), errors, report, root)
     return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
 
@@ -597,6 +643,9 @@ def format_text(path, result):
                        % (rep["charger_worst_tiles"], rep["charger_second_worst_tiles"]))
         if rep.get("telegraphs"):
             out.append("  avisos: " + "; ".join("%s %s" % (n, f) for n, f in rep["telegraphs"]))
+        if "debug_world_scale" in rep:
+            out.append("  mundo con el Debug: x%g (los avisos duran x%.2f en tiempo real con el Debug)"
+                       % (rep["debug_world_scale"], 1.0 / max(rep["debug_world_scale"], EPS)))
         for w in rep.get("windows", []):
             out.append("  ventana fase %d en %s: %.2f s (hacen falta %.2f; recorrido %.2f s; pulso desde %d celdas, "
                        "laser desde %d)" % (w["phase"], w["spot"], w["window_s"], w["need_s"], w["travel_s"],
@@ -605,6 +654,10 @@ def format_text(path, result):
             out.append("  fase 3, vuelta %s: compas %s s, %d copias, %d lanzamientos por ronda, parpadeo %.2f"
                        % (lap, "/".join("%g" % v for v in p3["tempo_steps_s"]), p3["copies"],
                           p3["launches_per_round"], p3["blink_on_fraction"]))
+        for lap, m in sorted((rep.get("mark") or {}).items()):
+            out.append("  marca, vuelta %s: %g s del mundo (%g s reales con el Debug); caben %d laser(es) sin el Debug "
+                       "y %d con el; la peor ventana torpe pide %d" % (lap, m["mark_s"], m["real_with_debug_s"],
+                                                                      m["shots"], m["shots_with_debug"], m["need"]))
         for lap, scen in sorted((rep.get("energy") or {}).items()):
             for name, e in scen.items():
                 peaks = " / ".join("%g (%g)" % (ph["peak"], ph["margin"]) for ph in e["phases"])
