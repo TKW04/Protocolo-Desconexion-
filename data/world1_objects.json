@@ -759,7 +759,70 @@
 					"done_if_ally": "calc"
 				}
 			}
+		},
+		"boss_dummy": {
+			"scene": "res://scenes/bosses/boss_dummy.tscn",
+			"description": "Jefe «saco» de prueba (2026-10-21, paso 3 de docs/propuesta-jefe-alerta-mayor.md §6): un BossBase minimo (BossDummy) que flota arriba up_s, baja en move_s, se queda abajo window_s con el nucleo (WeakPoint) a la altura del pecho de Isak y sube. Solo se le hace dano en el nucleo con el Debug activo (pulso o laser); el dash nunca. Contador 99+ -> 0 (data/bosses/boss_dummy.json). No ataca ni hace dano; con el golpe final desaparece. Ocupa 2 x 2 tiles apoyado en (x, y) (columnas x y x+1, filas y-1 e y) con suelo solido debajo; arriba sube drop_tiles. Tiempo del mundo. Solo para salas de prueba (boss_test). Arte PROVISIONAL (_placeholder, seccion boss_dummy).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"up_s": "up_s",
+				"move_s": "move_s",
+				"window_s": "window_s",
+				"drop_tiles": "drop_tiles"
+			},
+			"defaults": {
+				"up_s": 2.0,
+				"move_s": 0.6,
+				"window_s": 5.0,
+				"drop_tiles": 5.0
+			},
+			"level_params": {
+				"up_s": {
+					"min": 0.5,
+					"max": 20.0
+				},
+				"move_s": {
+					"min": 0.1,
+					"max": 5.0
+				},
+				"window_s": {
+					"min": 1.0,
+					"max": 30.0
+				},
+				"drop_tiles": {
+					"min": 2.0,
+					"max": 10.0
+				}
+			},
+			"example": {
+				"type": "boss_dummy",
+				"x": 9,
+				"y": 9,
+				"params": {
+					"id": "saco",
+					"up_s": 2.0,
+					"move_s": 0.6,
+					"window_s": 5.0,
+					"drop_tiles": 5.0
+				}
+			}
 		}
+	},
+	"boss_dummy": {
+		"_notes": "BossDummy (paso 3 de docs/propuesta-jefe-alerta-mayor.md §6): arte PROVISIONAL de tools/gen_boss_dummy_placeholder.py (texture_up inflado arriba, texture_down desinflado abajo; 64 x 64 a draw_scale), nucleo a core_offset_px del centro del cuerpo (px de pantalla; abajo queda a la altura del celular de Isak) y contador encima con la fuente de textos.",
+		"texture_up": "res://assets/sprites/bosses/boss_dummy_up_placeholder.png",
+		"texture_down": "res://assets/sprites/bosses/boss_dummy_down_placeholder.png",
+		"draw_scale": 2.0,
+		"core_offset_px": [
+			0,
+			20
+		],
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"label_color": "#f2f4f8"
 	},
 	"ability_pickup": {
 		"_notes": "PROPUESTA (2026-10-15). Dibujo provisional sin sprite: rombo escalonado de size_px centrado en la celda, contorno outline (noche_profunda), cuerpo body (banner_blanco) y nucleo core (debug_cian, admitido por ser interactivo). Flota bob_px a bob_hz (tiempo del mundo). message_s: segundos del texto extra `message` (param del nivel) en el cuadro de Eco. El aviso del control de cada habilidad esta en data/ability_notices.json.",

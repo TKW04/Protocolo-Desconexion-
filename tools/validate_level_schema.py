@@ -107,7 +107,7 @@ BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_p
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
-                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel"}
+                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy"}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
 # interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
 SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")
@@ -523,6 +523,10 @@ class LevelValidator:
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
         if kind == "charge_dock":
             return [(x, y), (x + 1, y)]
+        if kind == "boss_dummy":
+            # Jefe «saco» de boss_test (paso 3 de docs/propuesta-jefe-alerta-mayor.md): 2 x 2 tiles
+            # apoyado en (x, y): columnas x y x+1, filas y-1 e y.
+            return [(x + i, y - j) for j in range(2) for i in range(2)]
         if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch"):
             return [(x, y)]
         w, h = get("width_tiles", 1), get("height_tiles", 1)
@@ -594,6 +598,10 @@ class LevelValidator:
                 self.error("%s: visible_only_with_debug debe ser true o false" % what, y, x)
             if kind == "exceptions_panel":
                 self._check_exceptions_panel(what, x, y, params)
+            if kind == "boss_dummy":
+                for cx in (x, x + 1):
+                    if not self.in_bounds(cx, y + 1) or self.cell(cx, y + 1) != "#":
+                        self.error("%s: necesita suelo solido bajo sus dos columnas (fila %d)" % (what, y + 1), y + 1, cx)
             if isinstance(entry.get("level_params"), dict):
                 self._check_object_params(what, x, y, params, entry["level_params"])
             self.object_anchors.add((kind, (x, y)))

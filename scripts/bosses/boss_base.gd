@@ -63,6 +63,7 @@ var _phase: int = 0
 var _remaining: int = 0
 var _window_left: float = 0.0
 var _window_open: bool = false
+var _weak_point: WeakPoint
 
 
 func _ready() -> void:
@@ -265,10 +266,28 @@ func get_attack_state() -> StringName:
 	return ATTACK_NONE
 
 
-## Posicion global del nucleo si se puede golpear ahora; Vector2.INF si no (sin
-## punto debil todavia: lo anade el paso 3).
+## Punto debil de este jefe (null si no tiene).
+func get_weak_point() -> WeakPoint:
+	return _weak_point
+
+
+## Asigna el punto debil: sus golpes (solo con el Debug activo) cuentan como
+## take_core_hit. Paso 3 de la propuesta (2026-10-21).
+func set_weak_point(weak_point: WeakPoint) -> void:
+	if _weak_point != null and is_instance_valid(_weak_point) and _weak_point.hit.is_connected(_on_weak_point_hit):
+		_weak_point.hit.disconnect(_on_weak_point_hit)
+	_weak_point = weak_point
+	if _weak_point != null:
+		_weak_point.hit.connect(_on_weak_point_hit)
+
+
+## Posicion global del nucleo si se puede golpear ahora (punto debil activo y
+## pelea en curso); Vector2.INF si no.
 func get_core_target() -> Vector2:
-	return Vector2.INF
+	if _state != STATE_FIGHTING or _weak_point == null or not is_instance_valid(_weak_point) \
+			or not _weak_point.is_enabled():
+		return Vector2.INF
+	return _weak_point.global_position
 
 
 # --- Virtuales del jefe concreto ---
@@ -339,6 +358,10 @@ func _defeat() -> void:
 func _set_window_closed() -> void:
 	_window_open = false
 	_window_left = 0.0
+
+
+func _on_weak_point_hit(damage: int, _source: Node) -> void:
+	take_core_hit(damage)
 
 
 func _on_player_respawned(_position: Vector2, after_death: bool) -> void:

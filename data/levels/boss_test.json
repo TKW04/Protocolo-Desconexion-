@@ -1,0 +1,76 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 3 de docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21): sala de 20 x 12 tiles para probar el PUNTO DEBIL danable con un jefe «saco» (boss_dummy, BossDummy). Isak llega por la izquierda (P en (2, 9)) con pulso, laser, Debug y dash. El saco flota arriba (fuera de alcance), baja a las columnas 9-10 (filas 8-9) y se queda abajo 5 s del mundo con el nucleo carmin a la altura del pecho de Isak; solo con el Debug activo (mantener K) el pulso (G, de cerca) o el laser (F) lo golpean: el contador baja 99+ -> 88 -> ... -> 0 (3 golpes por fase; al cambiar de fase sube y suelta +25 de energia y Sync). Sin el Debug, chispa gris y nada; el dash (L) nunca dana. Cargador en (4, 9) (+50, 4 s de enfriamiento). Terminal de salida en (17, 8). Jugar: $GODOT --path . -- --start-level=boss_test (build de depuracion).",
+	"id": "boss_test",
+	"name": "Saco de prueba (jefe)",
+	"world": 1,
+	"tile_size": 64,
+	"debug_color": "cyan",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true
+	},
+	"sections": [
+		{
+			"name": "Saco",
+			"x_from": 0,
+			"x_to": 19,
+			"patterns": [
+				"debug_y_golpe"
+			]
+		}
+	],
+	"grid": [
+		"####################",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#.P..............G.#",
+		"####################",
+		"####################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"id": "cargador_saco",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "boss_dummy",
+			"x": 9,
+			"y": 9,
+			"params": {
+				"id": "saco",
+				"up_s": 2.0,
+				"move_s": 0.6,
+				"window_s": 5.0,
+				"drop_tiles": 5.0
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 17,
+			"y": 8,
+			"params": {
+				"id": "terminal_saco",
+				"text": "Marcar como leído"
+			}
+		}
+	],
+	"unlocks": []
+}

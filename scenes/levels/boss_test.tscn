@@ -1,0 +1,82 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="4_charger"]
+[ext_resource type="PackedScene" path="res://scenes/bosses/boss_dummy.tscn" id="5_boss_dummy"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="6_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="7_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="8_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="9_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="10_help_system"]
+
+[node name="Level_boss_test" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "boss_test"
+level_name = "Saco de prueba (jefe)"
+world = 1
+tile_size = 64
+size_tiles = Vector2i(20, 12)
+debug_color = "cyan"
+abilities_available = {"dash": true, "debug": true, "laser": true, "pulse": true}
+source_path = "res://data/levels/boss_test.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 6, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 7, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 8, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 10, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 11, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 12, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 13, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 16, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 17, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="cargador_saco" parent="Objects" instance=ExtResource("4_charger") groups=["help_target"]]
+position = Vector2(256, 576)
+amount = 50.0
+cooldown_s = 4.0
+object_id = &"cargador_saco"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="saco" parent="Objects" instance=ExtResource("5_boss_dummy")]
+position = Vector2(576, 576)
+drop_tiles = 5.0
+object_id = &"saco"
+move_s = 0.6
+up_s = 2.0
+window_s = 5.0
+
+[node name="terminal_saco" parent="Objects" instance=ExtResource("6_exit_terminal") groups=["help_target"]]
+position = Vector2(1088, 512)
+height_tiles = 2
+object_id = &"terminal_saco"
+text = "Marcar como leído"
+width_tiles = 1
+level_id = "boss_test"
+metadata/help_id = "exit_terminal"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Goal" type="Marker2D" parent="." groups=["goal"]]
+position = Vector2(1120, 640)
+
+[node name="Isak" parent="." instance=ExtResource("7_isak")]
+position = Vector2(160, 640)
+camera_limits = Rect2i(0, 0, 1280, 768)
+
+[node name="Hud" parent="." instance=ExtResource("8_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("9_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("10_help_system")

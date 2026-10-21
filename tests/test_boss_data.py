@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """Datos de los jefes (data/bosses/*.json; paso 2 de docs/propuesta-jefe-alerta-mayor.md §6).
 
+Sala de prueba boss_test (paso 3): el jefe «saco» (boss_dummy) de 2 x 2 tiles necesita suelo
+solido debajo y celdas libres; su arte es provisional (_placeholder) y esta al dia, sin carmin.
+
 Alerta Mayor: 9 golpes en la vuelta 1 (Caché, 3/3/3) y 12 en las vueltas 2 y 3 (Kernel y Raíz,
 4/4/4); el contador baja de 99 a 0 y marca 66 y 33 al cambiar de fase (la misma cuenta que
 BossBase.counter_for); recargas de cambio de fase +25/+25 y reaparicion con energia >= 50.
 """
 
+import copy
 import json
 import os
+import subprocess
+import sys
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import validate_level_schema as vls  # noqa: E402
 
 
 def counter_for(top, remaining, total):
@@ -51,6 +59,48 @@ class AlertMajorDataTest(unittest.TestCase):
             self.assertEqual(thresholds, [66, 33, 0], "vuelta %s" % lap)
         caches = [counter_for(top, r, 9) for r in range(9, -1, -1)]
         self.assertEqual(caches, [99, 88, 77, 66, 55, 44, 33, 22, 11, 0])
+
+
+
+class BossTestRoomTest(unittest.TestCase):
+    """Sala boss_test y objeto boss_dummy (paso 3)."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "levels", "boss_test.json"), encoding="utf-8") as handle:
+            self.level = json.load(handle)
+
+    def dummy(self, level):
+        return next(o for o in level["objects"] if o["type"] == "boss_dummy")
+
+    def test_room_is_valid_with_dummy_charger_and_terminal(self):
+        self.assertEqual(vls.validate_level(self.level), [])
+        self.assertEqual(self.level["abilities_available"],
+                         {"pulse": True, "laser": True, "debug": True, "dash": True})
+        dummy = self.dummy(self.level)
+        self.assertEqual((dummy["x"], dummy["y"], dummy["params"]["id"]), (9, 9, "saco"))
+        charger = next(o for o in self.level["objects"] if o["type"] == "charger")
+        self.assertEqual(charger["params"]["cooldown_s"], 4.0, "Cargador de arena: 4 s")
+        self.assertNotIn("debug_drain_scale", self.level, "La sala de prueba gasta el Debug normal")
+
+    def test_dummy_needs_floor_and_free_cells(self):
+        level = copy.deepcopy(self.level)
+        self.dummy(level)["y"] = 7
+        errors = vls.validate_level(level)
+        self.assertTrue(any("necesita suelo solido" in e for e in errors), errors)
+        level = copy.deepcopy(self.level)
+        row = list(level["grid"][8])
+        row[10] = "#"
+        level["grid"][8] = "".join(row)
+        errors = vls.validate_level(level)
+        self.assertTrue(any("dentro de terreno" in e for e in errors), errors)
+
+    def test_placeholder_art_is_up_to_date(self):
+        done = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_boss_dummy_placeholder.py"),
+                               "--check"], capture_output=True, text=True)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        for state in ("up", "down"):
+            self.assertTrue(os.path.exists(os.path.join(
+                ROOT, "assets", "sprites", "bosses", "boss_dummy_%s_placeholder.png" % state)))
 
 
 if __name__ == "__main__":
