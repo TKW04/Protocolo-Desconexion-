@@ -25,6 +25,9 @@
 ## Ritmo (1-3, paso 6, §5.5): con `rhythm` (id de un RhythmZone / AlarmTunnel)
 ## su intervalo es el ciclo del metronomo y su ciclo va con el compas,
 ## desplazado rhythm_offset (fraccion del ciclo); sin el, interval_s.
+## Modo disparo (manual, 2026-10-21, fase 1 de Alerta Mayor,
+## docs/propuesta-jefe-alerta-mayor.md §2.5): sin ciclo propio; reposa hasta que
+## alguien llama a trigger(), que hace un aviso y un barrido y vuelve a reposar.
 class_name SpamBanner
 extends Node2D
 
@@ -71,6 +74,8 @@ var knockback_to_entry: bool = false
 ## Metronomo que sigue ("" = su propio interval_s) y desfase en su ciclo (0-1).
 var rhythm: String = ""
 var rhythm_offset: float = 0.0
+## Modo disparo: sin ciclo propio; solo avisa y barre tras trigger().
+var manual: bool = false
 
 ## Isak al que dana. Si es null se busca en la capa player sobre el pasillo.
 var target: Isak
@@ -82,6 +87,8 @@ var _warn_time: float = 0.0
 var _query: PhysicsShapeQueryParameters2D
 var _query_shape: RectangleShape2D
 var _rhythm_node: RhythmZone
+## Modo disparo: un aviso y un barrido en curso.
+var _armed: bool = false
 
 @onready var _slot: AnimatedSprite2D = $Slot
 @onready var _banner: AnimatedSprite2D = $Banner
@@ -115,7 +122,15 @@ func step(delta: float) -> void:
 	for s: AnimatedSprite2D in [_slot, _banner, _trail]:
 		s.speed_scale = WorldTime.scale()
 	var r: RhythmZone = get_rhythm()
-	if r != null:
+	if manual:
+		if _armed:
+			_t += dt
+			if _t >= get_interval_s():
+				_armed = false
+				_t = 0.0
+		else:
+			_t = 0.0
+	elif r != null:
 		_t = fposmod(r.get_beat_phase() - rhythm_offset, 1.0) * r.get_cycle_s()
 	else:
 		_t += dt
@@ -237,11 +252,28 @@ func get_damage_rect() -> Rect2:
 
 # --- Acciones ---
 
+## Modo disparo: empieza un aviso y un barrido (falso si ya hay uno en curso o
+## no esta en modo disparo).
+func trigger() -> bool:
+	if not manual or _armed or not _ready_ok:
+		return false
+	_armed = true
+	_t = get_rest_s()
+	_update_state()
+	return true
+
+
+## Modo disparo: avisando o barriendo.
+func is_busy() -> bool:
+	return manual and _armed
+
+
 ## Vuelve al estado inicial del ciclo (reaparicion de Isak, LevelRunner).
 func reset_patrol() -> void:
 	if not _ready_ok:
 		return
-	_t = fmod(phase_s, get_interval_s())
+	_armed = false
+	_t = 0.0 if manual else fmod(phase_s, get_interval_s())
 	_state = &""
 	_update_state()
 

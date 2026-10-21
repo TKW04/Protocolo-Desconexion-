@@ -25,6 +25,8 @@ var _main: LevelRunner
 var _level: GeneratedLevel
 var _boss: AlertMajor
 var _lines: Array = []
+var _sim: IsakSim
+var _config: DebugModeConfig = DebugModeConfig.shared()
 
 
 func before_all() -> void:
@@ -81,14 +83,22 @@ func _on_line(text: String, _duration: float, important: bool) -> void:
 # --- Utilidades ---
 
 ## La arena sin LevelRunner; el jefe sin intro ni proceso propio (advance a mano).
-func _arena(lap: int = 1, auto: bool = false) -> GeneratedLevel:
+func _arena(lap: int = 1, auto: bool = false, sim: bool = false) -> GeneratedLevel:
 	_level = LEVEL_SCENE.instantiate() as GeneratedLevel
 	_boss = _level.get_node(^"Objects/alerta_mayor") as AlertMajor
 	_boss.intro_on_arrival = false
 	_boss.auto_process = auto
 	_boss.lap_override = lap
+	_sim = null
+	if sim:
+		_sim = IsakSim.new(DT)
+		_sim.attach(_level.get_isak())
 	add_child_autofree(_level)
+	if sim:
+		_sim.take_manual_control()
 	await wait_physics_frames(2)
+	if sim:
+		_sim.settle()
 	return _level
 
 
@@ -104,10 +114,73 @@ func _tiles() -> TileMapLayer:
 	return _level.get_node(^"Tiles") as TileMapLayer
 
 
-func _advance(seconds: float) -> void:
-	for i: int in ceili(seconds / DT):
+## Avanza el jefe, la marca y sus banners (sin proceso propio) `seconds` del mundo;
+## con `isak`, tambien el Isak manual.
+func _advance(seconds: float, isak: bool = false) -> void:
+	for i: int in ceili(seconds / DT - 0.001):
 		_boss.advance(DT)
 		_boss.get_core().advance_mark(DT)
+		for banner: Variant in _boss.get_banners().values():
+			if is_instance_valid(banner):
+				(banner as SpamBanner).set_physics_process(false)
+				(banner as SpamBanner).step(DT)
+		if isak and _sim != null:
+			_sim.step()
+
+
+## Solo los banners y el Isak manual (el jefe quieto: sin barridos propios).
+func _step_lanes(seconds: float) -> void:
+	for i: int in ceili(seconds / DT - 0.001):
+		for banner: Variant in _boss.get_banners().values():
+			(banner as SpamBanner).set_physics_process(false)
+			(banner as SpamBanner).step(DT)
+		_sim.step()
+
+
+## Coloca a Isak de pie en la celda (col, fila).
+func _place_isak(col: int, row: int) -> void:
+	var isak: Isak = _level.get_isak()
+	isak.global_position = Vector2((col + 0.5) * TILE, (row + 1) * TILE)
+	isak.velocity = Vector2.ZERO
+	if _sim != null:
+		_sim.settle()
+
+
+func _debug_on() -> void:
+	if not DebugMode.is_active():
+		for i: int in roundi(_config.activation_hold_s / DT):
+			DebugMode.step(DT, true)
+		DebugMode.step(DT, false)
+	assert_true(DebugMode.is_active(), "Debug activo")
+
+
+## PulseArea falsa: un circulo de 96 px en `pos`.
+func _pulse_area(pos: Vector2) -> Area2D:
+	var area := Area2D.new()
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 96.0
+	shape.shape = circle
+	area.add_child(shape)
+	area.position = pos
+	add_child_autofree(area)
+	return area
+
+
+## Marca el nucleo (Debug + pulso encima) y apaga el Debug.
+func _mark_core() -> void:
+	_debug_on()
+	assert_true(_boss.get_core().receive_pulse(_pulse_area(_boss.get_core().global_position)), "El pulso alcanza el nucleo")
+	assert_true(_boss.get_core().is_marked(), "Marcado")
+	DebugMode.reset()
+
+
+## Lleva la fase 1 hasta que salen las Burbujas y caen a sus plataformas.
+func _spit_and_land() -> void:
+	_advance(DT)
+	_advance(_boss.frames_s(9) + DT)
+	assert_eq(_boss.get_bubbles().size(), 2, "Dos Burbujas")
+	await wait_physics_frames(60)
 
 
 func _to_phase(phase: int) -> void:
@@ -267,3 +340,171 @@ func test_debug_shortcut_and_intro_after_arrival() -> void:
 	EventBus.eco_line_finished.emit()
 	assert_true(boss.is_fighting())
 	assert_eq(boss.get_phase(), 1)
+
+
+# --- Paso 6: fase 1 «99+» ---
+
+func test_phase1_spits_two_bubbles_after_a_9_frame_warning() -> void:
+	await _arena()
+	watch_signals(_boss)
+	_boss.start()
+	_advance(DT)
+	assert_signal_emitted_with_parameters(_boss, "attack_started", [&"spit"])
+	assert_almost_eq(_boss.get_spit_left(), 9.0 / 12.0 - DT, 0.02, "Aviso de 9 cuadros a 12 fps (0,75 s)")
+	var arrows: Array = _boss.get_warnings().filter(func(w: Dictionary) -> bool: return w["kind"] == "arrow_down")
+	assert_eq(arrows.size(), 2, "Una flecha sobre cada plataforma")
+	assert_eq(_boss.get_bubbles().size(), 0, "Sin Burbujas durante el aviso")
+	_advance(0.6)
+	assert_eq(_boss.get_bubbles().size(), 0)
+	_advance(0.2)
+	var bubbles: Array[AlertBubble] = _boss.get_bubbles()
+	assert_eq(bubbles.size(), 2, "Escupe dos")
+	assert_true(_boss.get_warnings().is_empty(), "El aviso desaparece")
+	await wait_physics_frames(60)
+	var sides: Array = []
+	for b: AlertBubble in bubbles:
+		assert_almost_eq(b.global_position.y, 8.0 * TILE, 2.0, "Cae en una plataforma lateral (fila 8)")
+		var x: float = b.global_position.x / TILE
+		sides.append("izquierda" if x > 3.0 and x < 7.0 else ("derecha" if x > 17.0 and x < 21.0 else "fuera"))
+	sides.sort()
+	assert_eq(sides, ["derecha", "izquierda"], "Una en cada lateral")
+	_advance(12.0)
+	assert_eq(_boss.get_bubbles().size(), 2, "Nunca mas de 2 vivas")
+
+
+func test_phase1_sweeps_alternate_lanes_with_the_banner_warning() -> void:
+	await _arena()
+	_boss.start()
+	await _spit_and_land()
+	var floor_b := _boss.get_banners()["floor"] as SpamBanner
+	var high_b := _boss.get_banners()["high"] as SpamBanner
+	assert_eq(floor_b.get_corridor_rect(), Rect2(Vector2(64, 576), Vector2(22 * 64, 64)), "Carril del suelo")
+	assert_eq(high_b.get_corridor_rect(), Rect2(Vector2(64, 448), Vector2(22 * 64, 64)), "Carril alto")
+	var order: Array[String] = []
+	floor_b.state_changed.connect(func(_p: StringName, c: StringName) -> void:
+		if c == SpamBanner.STATE_WARN: order.append("floor"))
+	high_b.state_changed.connect(func(_p: StringName, c: StringName) -> void:
+		if c == SpamBanner.STATE_WARN: order.append("high"))
+	var both: bool = false
+	for i: int in ceili(10.0 / DT):
+		_advance(DT)
+		both = both or (floor_b.is_busy() and high_b.is_busy())
+	assert_false(both, "Nunca barren los dos carriles a la vez")
+	assert_eq(order.slice(0, 3), ["floor", "high", "floor"], "Alternan carril cada 3 s")
+	assert_almost_eq(floor_b.get_warn_s(), 0.75, EPS, "Aviso del banner de 9 cuadros")
+
+
+func test_sweep_hits_the_real_isak_in_its_lane_and_the_other_lane_is_safe() -> void:
+	await _arena(1, false, true)
+	_boss.start()
+	# En la plataforma lateral: el barrido del suelo no le alcanza; el alto si.
+	_place_isak(4, 7)
+	var sync: float = GameState.sync_rate
+	assert_true(_boss.trigger_sweep("floor"))
+	_step_lanes(3.0)
+	assert_almost_eq(GameState.sync_rate, sync, EPS, "El carril alto es refugio del barrido del suelo")
+	_place_isak(4, 7)
+	assert_true(_boss.trigger_sweep("high"))
+	_step_lanes(3.0)
+	assert_almost_eq(GameState.sync_rate, sync - 10.0, EPS, "El barrido alto quita 10")
+
+
+func test_dash_through_the_floor_sweep_takes_no_damage() -> void:
+	await _arena(1, false, true)
+	_boss.start()
+	_place_isak(12, 9)
+	var isak: Isak = _level.get_isak()
+	var sync: float = GameState.sync_rate
+	var banner := _boss.get_banners()["floor"] as SpamBanner
+	assert_true(_boss.trigger_sweep("floor"))
+	var dashed: bool = false
+	for i: int in ceili(3.0 / DT):
+		if not dashed and banner.is_sweeping() and banner.get_banner_center_x() > isak.global_position.x - 150.0:
+			_sim.input.move_axis = -1.0
+			_sim.input.dash_pressed = true
+			dashed = true
+		_step_lanes(DT)
+		_sim.input.move_axis = 0.0
+	assert_true(dashed, "Ha hecho el dash")
+	assert_almost_eq(GameState.sync_rate, sync, EPS, "El dash atraviesa el barrido sin dano")
+	assert_false(banner.is_busy(), "El barrido ha terminado")
+	assert_lt(isak.global_position.x, 12.0 * TILE, "Ha cruzado hacia el banner")
+
+
+func test_window_opens_only_with_both_bubbles_neutralized() -> void:
+	await _arena()
+	_boss.start()
+	await _spit_and_land()
+	var bubbles: Array[AlertBubble] = _boss.get_bubbles()
+	bubbles[0].stun()
+	_advance(0.5)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_HOVER, "Con una sola aturdida no baja")
+	assert_false(_boss.are_bubbles_neutralized())
+	bubbles[1].take_damage(10.0)
+	assert_eq(_boss.get_bubbles().size(), 1, "La otra, derrotada con el laser")
+	# Espera a que no haya barrido en curso y baja.
+	for i: int in ceili(4.0 / DT):
+		_advance(DT)
+		if _boss.get_move() != AlertMajor.MOVE_HOVER:
+			break
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DESCEND, "Aturdida + derrotada a la vez: se desinfla y baja")
+	assert_false(_boss.get_banners()["floor"].is_busy() or _boss.get_banners()["high"].is_busy(),
+		"Sin barridos mientras baja")
+	_advance(0.6 + DT)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
+	assert_true(_boss.is_window_open())
+	assert_almost_eq(_boss.get_window_time_left(), 5.0, 0.05, "Ventana de 5 s del mundo")
+	assert_true(_boss.get_core().is_enabled())
+	assert_almost_eq(_boss.get_core_target(), Vector2(12.0 * TILE, 10.0 * TILE - 56.0), Vector2.ONE,
+		"Nucleo en el suelo del centro, a la altura del celular de Isak")
+	# Sin barridos mientras esta abajo.
+	_advance(4.0)
+	assert_false(_boss.get_banners()["floor"].is_busy() or _boss.get_banners()["high"].is_busy())
+
+
+func test_three_hits_in_the_window_go_to_phase_2_with_refills() -> void:
+	await _arena()
+	_boss.start()
+	await _spit_and_land()
+	for b: AlertBubble in _boss.get_bubbles():
+		b.stun()
+	for i: int in ceili(4.0 / DT):
+		_advance(DT)
+		if _boss.is_window_open():
+			break
+	_advance(0.7)
+	assert_true(_boss.is_window_open())
+	_mark_core()
+	GameState.debug_energy = 40.0
+	GameState.sync_rate = 50.0
+	for i: int in 3:
+		_boss.get_core().on_laser_hit(1.0, null)
+	assert_eq(_boss.get_counter_text(), "66", "99+ -> 88 -> 77 -> 66")
+	assert_eq(_boss.get_phase(), 2)
+	assert_almost_eq(GameState.debug_energy, 65.0, EPS, "+25 de energia al cambiar de fase")
+	assert_almost_eq(GameState.sync_rate, 75.0, EPS, "+25 de Sync")
+	assert_eq(_boss.get_bubbles().size(), 0, "Las Burbujas de la fase 1 desaparecen")
+	assert_eq(_boss.get_banners().size(), 0, "Y los banners")
+
+
+func test_window_close_loses_the_mark_goes_up_and_needs_new_stuns() -> void:
+	await _arena()
+	_boss.start()
+	await _spit_and_land()
+	for b: AlertBubble in _boss.get_bubbles():
+		b.stun()
+	for i: int in ceili(4.0 / DT):
+		_advance(DT)
+		if _boss.is_window_open():
+			break
+	_advance(0.7)
+	_mark_core()
+	_advance(4.3 + DT)
+	assert_false(_boss.is_window_open())
+	assert_false(_boss.get_core().is_marked(), "Al subir se pierde la marca")
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_ASCEND)
+	_advance(0.6 + DT)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_HOVER)
+	_advance(2.0)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_HOVER, "Las aturdidas de la ronda anterior no cuentan")
+	assert_eq(_boss.get_bubbles().size(), 2, "Sigue con dos (no escupe mas)")
