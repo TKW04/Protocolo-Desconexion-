@@ -17,8 +17,11 @@ textos. Estados (se dibujan a draw_scale x2 de data/bosses/alert_major.json):
   alert_major_shield_placeholder.png    32x32   icono del pop-up escudo (candado sobre la campana)
   boss_bar_icon_placeholder.png         16x16   icono de la barra del jefe en el HUD (paso 9; BossBar)
   boss_bar_frame_placeholder.png        16x16   marco nine-patch (4 px) de la barra del jefe
+  boss_reward_panel_placeholder.png     16x16   marco nine-patch (4 px) del panel de la recompensa (BossReward)
+  alert_major_core_card_placeholder.png 64x64   ficha del album del nucleo marcado (UNICA con carmin)
+El desarme en pixeles no tiene arte propio: PixelBurst suelta los pixeles de la textura del cuerpo.
 Solo colores de assets/palettes/mundo1.gpl y SIN carmin ni carmin_brillo: el carmin es solo del nucleo
-(WeakPoint, que se dibuja aparte). Fondo transparente, alfa 0 o 255.
+(WeakPoint, que se dibuja aparte; y su ficha del album, CARMIN_OK). Fondo transparente, alfa 0 o 255.
 
 Uso (desde la raiz del repo):
   python3 tools/gen_boss_alert_major.py           escribe los PNG
@@ -152,8 +155,47 @@ def bar_frame():
     return cv.img
 
 
+def reward_panel():
+    """Marco nine-patch (4 px) del panel de la recompensa (paso 11; BossReward): noche_profunda con borde
+    borde_luz y un filete resplandor dentro; las esquinas de banner_blanco (sin rojos: es un recuerdo)."""
+    cv = Canvas(16, 16)
+    cv.box(0, 0, 15, 15, N, outline=B)
+    cv.rect(2, 2, 13, 2, PAL["resplandor"])
+    cv.rect(2, 13, 13, 13, PAL["resplandor"])
+    for x, y in ((1, 1), (14, 1), (1, 14), (14, 14)):
+        cv.p(x, y, W)
+    return cv.img
+
+
+def core_card():
+    """Ficha del album del nucleo marcado (paso 11; ayuda alert_major_core): el nucleo carmin con su brillo y
+    el halo de la marca en 8 segmentos banner_blanco. UNICA pieza de este script con carmin (es el nucleo)."""
+    import math
+    cv = Canvas(64, 64)
+    c = 32.0
+    for y in range(64):
+        for x in range(64):
+            d = ((x + 0.5 - c) ** 2 + (y + 0.5 - c) ** 2) ** 0.5
+            ang = math.degrees(math.atan2(y + 0.5 - c, x + 0.5 - c)) % 45.0
+            if 24 <= d <= 28 and 5.0 <= ang <= 40.0:
+                cv.p(x, y, W)
+            elif 20 < d <= 22:
+                cv.p(x, y, N)
+            elif d <= 20:
+                cv.p(x, y, PAL["carmin"] if d > 8 else PAL["carmin_brillo"])
+    for i in range(5):
+        cv.p(22 + i, 19 - i // 2, PAL["carmin_brillo"])
+    return cv.img
+
+
+# Piezas que pueden llevar carmin (solo el nucleo).
+CARMIN_OK = (DIR + "alert_major_core_card_placeholder.png",)
+
+
 def outputs():
     return {
+        DIR + "boss_reward_panel_placeholder.png": reward_panel(),
+        DIR + "alert_major_core_card_placeholder.png": core_card(),
         DIR + "boss_bar_icon_placeholder.png": bar_icon(),
         DIR + "boss_bar_frame_placeholder.png": bar_frame(),
         DIR + "alert_major_rest_placeholder.png": badge(128, 58, bell_scale=3),
@@ -167,8 +209,8 @@ def outputs():
     }
 
 
-def check_palette(img):
-    allowed = {tuple(v[:3]) for k, v in PAL.items() if k not in FORBIDDEN}
+def check_palette(img, carmin=False):
+    allowed = {tuple(v[:3]) for k, v in PAL.items() if carmin or k not in FORBIDDEN}
     for (r, g, b, a) in img.getdata():
         if a not in (0, 255):
             return "alfa %d" % a
@@ -182,7 +224,7 @@ def main(argv):
     status = 0
     for rel, img in outputs().items():
         path = os.path.join(REPO, "assets", "sprites", rel)
-        problem = check_palette(img)
+        problem = check_palette(img, rel in CARMIN_OK)
         if problem:
             print("%s: %s" % (rel, problem))
             status = 1

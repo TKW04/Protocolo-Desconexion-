@@ -106,6 +106,33 @@ class AlertMajorFightDataTest(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
 
 
+class BossUiArtTest(unittest.TestCase):
+    """Arte provisional del HUD, la recompensa y el album del jefe (pasos 9-11, 2026-10-21): cada textura
+    que citan data/hud.json (boss_bar) y data/boss_reward.json existe, es _placeholder y la genera
+    tools/gen_boss_alert_major.py (al dia: AlertMajorFightDataTest)."""
+
+    def _res(self, path):
+        self.assertTrue(path.startswith("res://"), path)
+        local = os.path.join(ROOT, path[len("res://"):])
+        self.assertTrue(os.path.exists(local), path)
+        self.assertIn("_placeholder", os.path.basename(path))
+
+    def test_boss_bar_and_reward_art_exist(self):
+        with open(os.path.join(ROOT, "data", "hud.json"), encoding="utf-8") as fh:
+            bar = json.load(fh)["boss_bar"]
+        with open(os.path.join(ROOT, "data", "boss_reward.json"), encoding="utf-8") as fh:
+            reward = json.load(fh)
+        for path in (bar["icon"], bar["frame"], reward["panel"]):
+            self._res(path)
+
+    def test_core_card_is_the_only_carmin_piece(self):
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import gen_boss_alert_major as gen  # noqa: E402
+        for rel, img in gen.outputs().items():
+            has_carmin = gen.check_palette(img, False) is not None
+            self.assertEqual(has_carmin, rel in gen.CARMIN_OK, rel)
+
+
 class BossTestRoomTest(unittest.TestCase):
     """Sala boss_test y objeto boss_dummy (paso 3)."""
 
