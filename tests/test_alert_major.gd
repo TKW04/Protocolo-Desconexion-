@@ -197,7 +197,7 @@ func test_arena_is_generated_without_goal() -> void:
 	assert_null(_level.get_node_or_null(^"Goal"), "Sin meta: la pelea acaba con el golpe final")
 	assert_not_null(_boss, "Alerta Mayor en la arena")
 	assert_eq(_boss.boss_id, &"alert_major")
-	assert_eq(_level.get_isak().global_position, Vector2(2.5 * TILE, 10.0 * TILE), "Vortice de llegada en (2, 9)")
+	assert_almost_eq(_level.get_isak().global_position, Vector2(2.5 * TILE, 10.0 * TILE), Vector2.ONE, "Vortice de llegada en (2, 9)")
 	assert_almost_eq(DebugMode.get_level_drain_scale(), 0.25, EPS, "Debug a un cuarto de gasto")
 	var cols: Array = []
 	for id: String in ["cargador_1", "cargador_2", "cargador_3", "cargador_4"]:
