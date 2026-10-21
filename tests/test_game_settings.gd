@@ -237,6 +237,46 @@ func test_presets_never_exceed_the_screen() -> void:
 		"Sin pantalla conocida (headless), todos")
 
 
+func test_window_area_leaves_room_for_the_title_bar() -> void:
+	# Fallo del 2026-10-20 (macOS, monitor 1920x1080): el area util es 1920x956
+	# (barra de menus y Dock) y la barra de titulo ocupa 32 px; una ventana de
+	# 1920x1080 se quedaba en 1920x924 aunque el menu dijera 1920x1080.
+	var area: Vector2i = GameSettings.fit_area(Vector2i(1920, 956), Vector2i(0, 32))
+	assert_eq(area, Vector2i(1920, 924))
+	var fits: Array[Vector2i] = GameSettings.available_presets(area)
+	assert_false(fits.has(Vector2i(1920, 1080)), "No se ofrece un tamano que el sistema recortaria")
+	assert_true(fits.has(Vector2i(1600, 900)), "1600x900 + 32 px de titulo cabe en 956")
+	assert_eq(GameSettings.fit_area(Vector2i(100, 100), Vector2i(0, 200)), Vector2i(100, 0), "Nunca negativa")
+	assert_eq(GameSettings.window_area(), Vector2i.ZERO, "Headless: area desconocida (todos los presets)")
+
+
+## EFECTO del tamano en lo que se ve, no solo el valor guardado: una ventana
+## con la configuracion de estirado de project.godot (headless no deja cambiar
+## la ventana real, asi que se usa una ventana incrustada) dibuja el juego al
+## factor entero que el menu anuncia (Pixeles a x<n>). Con 1600x900 y 1920x1080
+## el juego se ve IGUAL que con 1280x720 (x1, bordes negros): es la escala
+## entera del diseno, no un fallo de aplicar el ajuste.
+func test_window_size_effect_matches_the_announced_integer_scale() -> void:
+	var probe := Window.new()
+	probe.content_scale_size = GameSettings.base_size()
+	probe.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	probe.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	probe.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	add_child_autofree(probe)
+	assert_eq(String(ProjectSettings.get_setting("display/window/stretch/mode")), "viewport",
+		"project.godot: stretch viewport")
+	assert_eq(String(ProjectSettings.get_setting("display/window/stretch/scale_mode")), "integer",
+		"project.godot: escala entera")
+	for size: Vector2i in GameSettings.window_presets():
+		probe.size = size
+		var shown: Vector2 = probe.get_final_transform().get_scale() * Vector2(probe.get_visible_rect().size)
+		var expected: int = GameSettings.integer_scale(size)
+		assert_eq(Vector2i(shown.round()), GameSettings.base_size() * expected,
+			"%s: el juego se dibuja a x%d" % [size, expected])
+		assert_eq(probe.get_visible_rect().size, Vector2(GameSettings.base_size()),
+			"%s: resolucion interna siempre 1280x720" % size)
+
+
 func test_integer_scale_and_letterbox() -> void:
 	assert_eq(GameSettings.integer_scale(Vector2i(1280, 720)), 1)
 	assert_false(GameSettings.has_letterbox(Vector2i(1280, 720)))

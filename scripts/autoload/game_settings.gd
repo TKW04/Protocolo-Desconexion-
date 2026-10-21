@@ -361,6 +361,31 @@ static func screen_size() -> Vector2i:
 	return DisplayServer.screen_get_size(DisplayServer.window_get_current_screen())
 
 
+## Area que puede ocupar el CONTENIDO de una ventana sin que el sistema la
+## recorte: el area util de la pantalla (sin barra de menus ni Dock) menos los
+## bordes y la barra de titulo de la ventana (0x0 sin ventana). En macOS, una
+## ventana de 1920x1080 en un monitor de 1920x1080 se queda en 1920x924: no se
+## ofrece (2026-10-20, «cambio la resolucion y se queda igual»).
+static func window_area() -> Vector2i:
+	if DisplayServer.get_name() == "headless":
+		return Vector2i.ZERO
+	var usable: Vector2i = DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()).size
+	return fit_area(usable, window_decorations())
+
+
+## Tamano de los bordes y la barra de titulo de la ventana (0x0 en pantalla
+## completa o sin ventana).
+static func window_decorations() -> Vector2i:
+	if DisplayServer.get_name() == "headless":
+		return Vector2i.ZERO
+	return (DisplayServer.window_get_size_with_decorations() - DisplayServer.window_get_size()).max(Vector2i.ZERO)
+
+
+## Area util `usable` menos los bordes `decorations` (nunca negativa).
+static func fit_area(usable: Vector2i, decorations: Vector2i) -> Vector2i:
+	return (usable - decorations.max(Vector2i.ZERO)).max(Vector2i.ZERO)
+
+
 ## Factor de escala ENTERO con que se ve el juego en un area de `area` px.
 static func integer_scale(area: Vector2i) -> int:
 	var base: Vector2i = base_size()
@@ -439,11 +464,13 @@ static func apply_display() -> bool:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	var screen: int = DisplayServer.window_get_current_screen()
 	var size: Vector2i = _window_size
-	if not available_presets(screen_size()).has(size):
+	if not available_presets(window_area()).has(size):
 		size = base_size()
 	DisplayServer.window_set_size(size)
+	# Centrada con la barra de titulo dentro del area util (sin salirse por arriba).
 	var area: Rect2i = DisplayServer.screen_get_usable_rect(screen)
-	DisplayServer.window_set_position(area.position + (area.size - size) / 2)
+	var outer: Vector2i = size + window_decorations()
+	DisplayServer.window_set_position(area.position + ((area.size - outer) / 2).max(Vector2i.ZERO))
 	return true
 
 

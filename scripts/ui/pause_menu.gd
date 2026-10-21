@@ -371,7 +371,7 @@ func is_switch(option: Option) -> bool:
 ## Pasa al tamano de ventana siguiente (`step` 1) o anterior (-1) de los que
 ## caben en el monitor.
 func cycle_window_size(step: int) -> void:
-	var sizes: Array[Vector2i] = GameSettings.available_presets(GameSettings.screen_size())
+	var sizes: Array[Vector2i] = GameSettings.available_presets(GameSettings.window_area())
 	if sizes.is_empty():
 		return
 	var index: int = sizes.find(GameSettings.get_window_size())
