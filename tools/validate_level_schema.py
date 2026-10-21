@@ -58,6 +58,12 @@ Reglas:
     laser_required, debug_required, start_energy, sync_damage_budget, ceiling_margin_px,
     dash_required, hazard_margin_s} (ver
     _check_validation);
+  - arena de jefe (kind "boss", 2026-10-21, paso 5 de docs/propuesta-jefe-alerta-mayor.md §6): id
+    <mundo>-boss, boss = id de data/bosses/<boss>.json con un objeto de ese tipo en el nivel, SIN meta G
+    (la pelea termina con el golpe final); objetos y enemigos pueden llevar active_in_phase (lista de
+    fases 1..n del jefe: inactivos hasta esas fases) y una plataforma que parpadea con active_in_phase
+    puede reemplazar celdas '-' del grid (el jefe las borra al activarla); fuera de una arena,
+    active_in_phase es un error;
   - id: <mundo>-<nivel> o, para un nivel de prueba que no es del juego, <nombre>_test
     (p. ej. tower_test; su escena es scenes/levels/<nombre>_test.tscn);
     un nivel de prueba puede llevar stands_for «W-N» (2026-10-20): hace las veces de ese subnivel
@@ -109,7 +115,13 @@ BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_p
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
-                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy"}
+                    "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
+                    "alert_major"}
+# Arena de jefe (kind "boss", 2026-10-21): id <mundo>-boss y tamano del jefe Alerta Mayor en tiles
+# (cuerpo inflado arriba, 4 x 4 desde su celda).
+LEVEL_KINDS = ("level", "boss")
+BOSS_LEVEL_ID = re.compile(r"\d+-boss")
+BOSS_FOOTPRINT_TILES = {"alert_major": (4, 4)}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
 # interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
 SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")
@@ -240,8 +252,21 @@ class LevelValidator:
                 self.error("'%s' debe ser de tipo %s" % (key, kind.__name__))
         if self.errors:
             return
+        kind = self.level.get("kind", "level")
+        if kind not in LEVEL_KINDS:
+            self.error("'kind' debe ser uno de %s" % ", ".join(LEVEL_KINDS))
+            return
+        if kind == "boss":
+            self._check_boss_fields()
+        elif "boss" in self.level:
+            self.error("'boss' solo vale en una arena de jefe (kind \"boss\")")
         if TEST_LEVEL_ID.fullmatch(self.level["id"]):
             pass  # nivel de prueba: el mundo sale de 'world'
+        elif kind == "boss" and BOSS_LEVEL_ID.fullmatch(self.level["id"]):
+            if int(self.level["id"].split("-")[0]) != self.level["world"]:
+                self.error("'id' (%s) no coincide con 'world' (%d)" % (self.level["id"], self.level["world"]))
+        elif kind == "boss":
+            self.error("'id' de una arena de jefe debe ser <mundo>-boss (p. ej. 1-boss) o <nombre>_test")
         elif not re.fullmatch(r"\d+-\d+", self.level["id"]):
             self.error("'id' debe tener la forma <mundo>-<nivel> (p. ej. 1-1) o <nombre>_test (nivel de prueba)")
         elif int(self.level["id"].split("-")[0]) != self.level["world"]:
@@ -276,6 +301,40 @@ class LevelValidator:
             elif int(target.split("-")[0]) != self.level["world"]:
                 self.error("'stands_for' (%s) no es del mundo %d" % (target, self.level["world"]))
 
+    def is_boss_arena(self):
+        return self.level.get("kind") == "boss"
+
+    def _check_boss_fields(self):
+        """Arena de jefe: boss es el id de data/bosses/<boss>.json."""
+        boss = self.level.get("boss")
+        if not isinstance(boss, str) or not boss:
+            self.error("una arena de jefe necesita 'boss' (id de data/bosses/<boss>.json)")
+        elif not os.path.isfile(os.path.join(self.root, "data", "bosses", "%s.json" % boss)):
+            self.error("'boss' '%s' sin data/bosses/%s.json" % (boss, boss))
+
+    def _boss_phase_count(self):
+        """Fases del jefe de la arena (las de la vuelta 1 de su JSON; 3 por defecto)."""
+        boss = self.level.get("boss")
+        data = None
+        if isinstance(boss, str) and os.path.isfile(os.path.join(self.root, "data", "bosses", "%s.json" % boss)):
+            data = self._load_json("data/bosses/%s.json" % boss)
+        laps = (data or {}).get("laps", {})
+        counts = [len(e.get("hits_per_phase", [])) for e in laps.values() if isinstance(e, dict)]
+        return max(counts) if counts else 3
+
+    def _check_active_in_phase(self, entry, what, x=None, y=None):
+        """active_in_phase (arena de jefe): lista no vacia de fases 1..n sin repetir."""
+        if "active_in_phase" not in entry:
+            return
+        if not self.is_boss_arena():
+            self.error("%s: active_in_phase solo vale en una arena de jefe (kind \"boss\")" % what, y, x)
+            return
+        phases = entry["active_in_phase"]
+        n = self._boss_phase_count()
+        if not (isinstance(phases, list) and phases and all(_is_int(p) and 1 <= p <= n for p in phases)
+                and len(set(phases)) == len(phases)):
+            self.error("%s: active_in_phase debe ser una lista de fases distintas entre 1 y %d" % (what, n), y, x)
+
     def _check_grid(self):
         grid = self.level["grid"]
         if not grid or not all(isinstance(row, str) for row in grid):
@@ -300,7 +359,13 @@ class LevelValidator:
         return [(x, y) for y, row in enumerate(self.grid) for x, c in enumerate(row) if c == char]
 
     def _check_markers(self):
+        if self.is_boss_arena():
+            # La pelea termina con el golpe final: la arena no tiene meta.
+            for (x, y) in self._cells_with("G"):
+                self.error("una arena de jefe no tiene meta G (la pelea acaba con el golpe final)", y, x)
         for char, name in (("P", "inicio (P)"), ("G", "meta (G)")):
+            if char == "G" and self.is_boss_arena():
+                continue
             cells = self._cells_with(char)
             if len(cells) != 1:
                 where = ", ".join("fila %d columna %d" % (y, x) for x, y in cells) or "ninguno"
@@ -359,6 +424,7 @@ class LevelValidator:
                            % (entry.get("id"), kind, kind))
             if "open" in entry and not isinstance(entry["open"], bool):
                 self.error("enemigo '%s': open debe ser booleano" % entry.get("id"))
+            self._check_active_in_phase(entry, "enemigo '%s'" % entry.get("id"), entry.get("x"), entry.get("y"))
             params = entry.get("params", {})
             if not isinstance(params, dict):
                 self.error("enemigo '%s': 'params' debe ser un objeto" % entry.get("id"))
@@ -531,6 +597,9 @@ class LevelValidator:
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
         if kind == "charge_dock":
             return [(x, y), (x + 1, y)]
+        if kind in BOSS_FOOTPRINT_TILES:
+            w, h = BOSS_FOOTPRINT_TILES[kind]
+            return [(x + i, y + j) for j in range(h) for i in range(w)]
         if kind == "boss_dummy":
             # Jefe «saco» de boss_test (paso 3 de docs/propuesta-jefe-alerta-mayor.md): 2 x 2 tiles
             # apoyado en (x, y): columnas x y x+1, filas y-1 e y.
@@ -612,6 +681,9 @@ class LevelValidator:
                         self.error("%s: necesita suelo solido bajo sus dos columnas (fila %d)" % (what, y + 1), y + 1, cx)
             if isinstance(entry.get("level_params"), dict):
                 self._check_object_params(what, x, y, params, entry["level_params"])
+            self._check_active_in_phase(obj, what, x, y)
+            if kind in BOSS_FOOTPRINT_TILES and (not self.is_boss_arena() or self.level.get("boss") != kind):
+                self.error("%s: el jefe solo va en su arena (kind \"boss\" con boss \"%s\")" % (what, kind), y, x)
             self.object_anchors.add((kind, (x, y)))
             if "id" in params:
                 self._register_id(params["id"], what)
@@ -624,7 +696,9 @@ class LevelValidator:
                     self.error("%s: se sale del grid" % what, cy, cx)
                     break
                 char = self.cell(cx, cy)
-                if kind in BLOCKING_TYPES and char != ".":
+                replaces = kind == "blink_platform" and char == "-" and "active_in_phase" in obj \
+                    and self.is_boss_arena()
+                if kind in BLOCKING_TYPES and char != "." and not replaces:
                     self.error("%s ocupa una celda que el grid debe dejar vacia ('.'), hay '%s'"
                                % (what, char), cy, cx)
                 elif kind in NON_SOLID_PLACED and char in "#^":
@@ -679,6 +753,11 @@ class LevelValidator:
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
         self._check_calc_room()
         self._check_rhythm()
+        if self.is_boss_arena() and isinstance(self.level.get("boss"), str):
+            bosses = [o for o in self.level["objects"] if isinstance(o, dict) and o.get("type") == self.level["boss"]]
+            if len(bosses) != 1:
+                self.error("la arena debe tener exactamente un objeto '%s' (el jefe) y tiene %d"
+                           % (self.level["boss"], len(bosses)))
         for (what, x, y) in extra_lives[1:]:
             self.error("%s: solo puede haber una vida extra por nivel" % what, y, x)
         if len(encounters) > 1:

@@ -760,6 +760,25 @@
 				}
 			}
 		},
+		"alert_major": {
+			"scene": "res://scenes/bosses/alert_major.tscn",
+			"description": "Jefe del Mundo 1 «Alerta Mayor» (2026-10-21, pasos 5-8 de docs/propuesta-jefe-alerta-mayor.md §6): AlertMajor (BossBase) con sus tres fases (Burbujas y barridos; pop-ups, rafagas y escudo; copias al compas). Solo en su arena (kind boss, boss alert_major). (x, y) es la celda de arriba a la izquierda de su cuerpo inflado de 4 x 4 tiles al empezar; las posiciones de la pelea (sitios, carriles, vuelo) estan en arena de data/bosses/alert_major.json. Empieza al terminar la llegada de Isak con la linea de intro (pausa). Tiempo del mundo. Arte PROVISIONAL (_placeholder, tools/gen_boss_alert_major.py).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "alert_major",
+				"x": 10,
+				"y": 1,
+				"params": {
+					"id": "alerta_mayor"
+				}
+			}
+		},
 		"boss_dummy": {
 			"scene": "res://scenes/bosses/boss_dummy.tscn",
 			"description": "Jefe «saco» de prueba (2026-10-21, paso 3 de docs/propuesta-jefe-alerta-mayor.md §6): un BossBase minimo (BossDummy) que flota arriba up_s, baja en move_s, se queda abajo window_s con el nucleo (WeakPoint) a la altura del pecho de Isak y sube. Solo se le hace dano en el nucleo con el Debug activo (pulso o laser); el dash nunca. Contador 99+ -> 0 (data/bosses/boss_dummy.json). No ataca ni hace dano; con el golpe final desaparece. Ocupa 2 x 2 tiles apoyado en (x, y) (columnas x y x+1, filas y-1 e y) con suelo solido debajo; arriba sube drop_tiles. Tiempo del mundo. Solo para salas de prueba (boss_test). Arte PROVISIONAL (_placeholder, seccion boss_dummy).",

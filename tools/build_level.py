@@ -26,7 +26,11 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
     `params` va como metadata "params" y GeneratedLevel lo aplica tras _ready
     (patrol_range_px tambien como propiedad; params.health -> max_health, la vida
     de esa instancia, 2026-10-15).
-  - Goal: Marker2D (grupo "goal") en la G (la puerta de salida la contiene).
+  - Goal: Marker2D (grupo "goal") en la G (la puerta de salida la contiene). Una arena de jefe (kind
+    "boss", 2026-10-21) no tiene G ni Goal.
+  - Arena de jefe: objetos y enemigos con active_in_phase llevan metadata/active_in_phase (Array de
+    fases); GeneratedLevel los deja inactivos al empezar y el jefe (BossBase.apply_phase_nodes) los
+    activa en sus fases.
   - Isak (P, pies abajo-centro de la celda) con camera_limits = tamano del grid,
     Hud y EcoTextBox.
   - Niveles verticales (camera.vertical "tower", 2026-10-16, paso 2 de
@@ -312,6 +316,14 @@ def help_tag(own, default):
     return [HELP_GROUP], [("metadata/help_id", fmt_string(help_id))]
 
 
+def phase_meta(entry):
+    """metadata/active_in_phase (arena de jefe, 2026-10-21): las fases en las que el nodo esta activo."""
+    phases = entry.get("active_in_phase") if isinstance(entry, dict) else None
+    if not phases:
+        return []
+    return [("metadata/active_in_phase", "[" + ", ".join(str(int(p)) for p in phases) + "]")]
+
+
 def enemy_help_id(enemy_type, root=ROOT):
     path = os.path.join(root, "data", "enemies", "%s.json" % enemy_type)
     if not os.path.exists(path):
@@ -452,7 +464,7 @@ def build_scene(level, root=ROOT, warnings=None):
             props.append(("level_id", fmt_string(level["id"])))
         obj_groups, obj_meta = help_tag(obj, entry.get("help_id"))
         scene.node(name, parent="Objects", instance=scene.ext_resource("PackedScene", entry["scene"]),
-                   props=props + obj_meta, groups=obj_groups)
+                   props=props + obj_meta + phase_meta(obj), groups=obj_groups)
 
     scene.node("Enemies", "Node2D", parent=".")
     for enemy in level.get("enemies", []):
@@ -466,10 +478,11 @@ def build_scene(level, root=ROOT, warnings=None):
         props.append(("metadata/params", fmt_value(params)))
         enemy_groups, enemy_meta = help_tag(enemy, enemy_help_id(enemy["type"], root))
         scene.node(enemy["id"], parent="Enemies", instance=scene.ext_resource("PackedScene", path),
-                   props=props + enemy_meta, groups=enemy_groups)
+                   props=props + enemy_meta + phase_meta(enemy), groups=enemy_groups)
 
-    goal = find_cells(grid, "G")[0]
-    scene.node("Goal", "Marker2D", parent=".", groups=["goal"], props=[("position", feet(*goal))])
+    goals = find_cells(grid, "G")
+    if goals:
+        scene.node("Goal", "Marker2D", parent=".", groups=["goal"], props=[("position", feet(*goals[0]))])
 
     start = find_cells(grid, "P")[0]
     isak_props = [

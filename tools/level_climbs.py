@@ -16,6 +16,7 @@ horizontal que le queda.
 
 Uso:
   python3 tools/level_climbs.py data/levels/1-2.json [--out tests/fixtures/climbs_1-2.json] [--check]
+Arenas de jefe (kind boss, 2026-10-21): la geometria de las fases 1-2 (tools/validate_boss.geometry_level).
 --check sale con 1 si el archivo no esta al dia (lo usa tools/run_tests.sh).
 """
 
@@ -50,6 +51,12 @@ def ledge_of(world, node):
 def climbs(level, root=ROOT):
     # Con carrera: el jugador corre aunque el camino del validador vaya andando.
     rules = vl.Rules(root, None, vl.DEFAULT_JUMP_EFFICIENCY, vl.DEFAULT_LIMIT, allow_run=True)
+    level_id = level["id"]
+    if level.get("kind") == "boss":
+        # Arena de jefe (2026-10-21, paso 5 de docs/propuesta-jefe-alerta-mayor.md §6): la geometria de las
+        # fases 1-2 (plataformas de una via, sin el jefe ni sus ataques; tools/validate_boss.py).
+        import validate_boss
+        level = validate_boss.geometry_level(level)
     validator = vl.Validator(level, rules)
     model = validator.model
     # Acertijo de Calc (tanda H2 del paso 14, 2026-10-17): con sus piezas hechas la pared con glitch es
@@ -106,7 +113,7 @@ def climbs(level, root=ROOT):
             "target_x_px": None if xt is None else round(xt, 3),
             "debug": bool(e.get("debug")),
         })
-    return {"format": FORMAT, "level": level["id"], "tile_size": T,
+    return {"format": FORMAT, "level": level_id, "tile_size": T,
             "note": "Generado por tools/level_climbs.py; no editar a mano.", "climbs": out}
 
 

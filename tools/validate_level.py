@@ -3100,6 +3100,13 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
         if schema_errors:
             return {"ok": False, "errors": [{"message": "esquema: " + e, "row": None, "col": None, "object": None}
                                             for e in schema_errors], "warnings": [], "path": []}
+    if level.get("kind") == "boss":
+        # Arena de jefe (2026-10-21, paso 5 de docs/propuesta-jefe-alerta-mayor.md §6): no hay camino de P a G
+        # sino una pelea; la valida tools/validate_boss.py (carriles, cargadores, avisos, alcance del nucleo,
+        # ventanas, compas de la fase 3 y energia de la pelea torpe). Sin camino que exportar.
+        import validate_boss
+        return validate_boss.validate_arena(level, root, upgrades=tuple(upgrades), physics_path=physics_path,
+                                            jump_efficiency=jump_efficiency, limit=limit)
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin
@@ -3146,6 +3153,9 @@ def _num(value):
 
 
 def format_text(path, result):
+    if "boss" in result:
+        import validate_boss
+        return validate_boss.format_text(path, result)
     out = []
     status = "OK" if result["ok"] else "FALLA"
     out.append("%s: %s (%d error(es), %d aviso(s))" % (path, status, len(result["errors"]), len(result["warnings"])))
@@ -3355,6 +3365,9 @@ def access_cap_upgrades(level, lap=None, root=ROOT):
     nivel, 1 = Cache): ["pulso:3", "laser:3", ...]. La meta debe seguir alcanzandose con todo lo que el
     jugador puede tener comprado en esa vuelta (paso 9 de docs/propuesta-mejoras.md)."""
     catalog = load_upgrades(root)
+    if level.get("kind") == "boss":
+        # Las arenas de jefe validan cada acceso con su propio tope (tools/validate_boss.py).
+        return []
     lap = int(lap if lap is not None else level.get("lap", 1))
     return ["%s:%d" % (t["id"], upgrade_catalog.access_cap(catalog, t["id"], lap)) for t in upgrade_catalog.tracks(catalog)]
 

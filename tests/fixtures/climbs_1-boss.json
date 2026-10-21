@@ -1,0 +1,136 @@
+{
+ "format": "isak-climbs/1",
+ "level": "1-boss",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "3,9->3,7",
+   "section": "Pantalla de bloqueo",
+   "from": {
+    "cell": [
+     3,
+     9
+    ],
+    "ledge": [
+     1,
+     22
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     3,
+     7
+    ],
+    "ledge": [
+     3,
+     6
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "17,9->17,7",
+   "section": "Pantalla de bloqueo",
+   "from": {
+    "cell": [
+     17,
+     9
+    ],
+    "ledge": [
+     1,
+     22
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     17,
+     7
+    ],
+    "ledge": [
+     17,
+     20
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "6,7->9,5",
+   "section": "Pantalla de bloqueo",
+   "from": {
+    "cell": [
+     6,
+     7
+    ],
+    "ledge": [
+     3,
+     6
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     9,
+     5
+    ],
+    "ledge": [
+     9,
+     14
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 448.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "17,7->14,5",
+   "section": "Pantalla de bloqueo",
+   "from": {
+    "cell": [
+     17,
+     7
+    ],
+    "ledge": [
+     17,
+     20
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     14,
+     5
+    ],
+    "ledge": [
+     9,
+     14
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 960.0,
+   "debug": false
+  }
+ ]
+}

@@ -1,5 +1,5 @@
 {
-	"_notes": "Jefe del Mundo 1 «Alerta Mayor» (docs/propuesta-jefe-alerta-mayor.md, aprobada el 2026-10-20). Datos comunes de BossBase (scripts/bosses/boss_base.gd; paso 2 de §6): id (el de las señales de EventBus boss_*), counter (el contador hace de vida: max 99, full_label «99+» con la vida entera; el valor es round(max x golpes que quedan / golpes totales): 9 golpes en Caché = 99+ -> 88 -> 77 -> 66 | 55 -> 44 -> 33 | 22 -> 11 -> 0), phase_change_refill (lo que suelta el jefe al cambiar de fase: +25 de energia y +25 de Sync Rate, §2.4.1), respawn_min_energy (al reaparecer tras morir, la energia es max(la que tenia, 50): decision 3, §2.9) y laps (por vuelta interna 1-3, que la UI llama Caché / Kernel / Raíz: hits_per_phase, golpes al nucleo de cada fase, 3/3/3 en Caché y 4/4/4 en Kernel y Raíz, §2.12). Un golpe que sobra al acabar una fase no pasa a la siguiente (Laser 4 = 2 golpes en el ultimo de la fase cuenta 1). Los ataques, ventanas y textos de cada fase llegan en los pasos 6-12. Tiempo del mundo. Marca (2026-10-21, §2.3): mark_duration_s de cada vuelta es lo que dura en segundos del mundo la marca que el pulso pone en el nucleo revelado por el Debug (Caché 4, Kernel 3, Raíz 2,5); mientras dura, el laser dana sin Debug.",
+	"_notes": "Jefe del Mundo 1 «Alerta Mayor» (docs/propuesta-jefe-alerta-mayor.md, aprobada el 2026-10-20). Datos comunes de BossBase (scripts/bosses/boss_base.gd; paso 2 de §6): id (el de las señales de EventBus boss_*), counter (el contador hace de vida: max 99, full_label «99+» con la vida entera; el valor es round(max x golpes que quedan / golpes totales): 9 golpes en Caché = 99+ -> 88 -> 77 -> 66 | 55 -> 44 -> 33 | 22 -> 11 -> 0), phase_change_refill (lo que suelta el jefe al cambiar de fase: +25 de energia y +25 de Sync Rate, §2.4.1), respawn_min_energy (al reaparecer tras morir, la energia es max(la que tenia, 50): decision 3, §2.9) y laps (por vuelta interna 1-3, que la UI llama Caché / Kernel / Raíz: hits_per_phase, golpes al nucleo de cada fase, 3/3/3 en Caché y 4/4/4 en Kernel y Raíz, §2.12). Un golpe que sobra al acabar una fase no pasa a la siguiente (Laser 4 = 2 golpes en el ultimo de la fase cuenta 1). Tiempo del mundo. Marca (2026-10-21, §2.3): mark_duration_s de cada vuelta es lo que dura en segundos del mundo la marca que el pulso pone en el nucleo revelado por el Debug (Caché 4, Kernel 3, Raíz 2,5); mientras dura, el laser dana sin Debug. PELEA (pasos 5-8 de §6, 2026-10-21; AlertMajor, scripts/bosses/alert_major.gd): ver _arena_notes, _phase1_notes, _phase2_notes, _phase3_notes y _laps_notes. Todos los valores son PROPUESTA (ajustar jugando y con el validador de arenas, tools/validate_boss.py).",
 	"id": "alert_major",
 	"name": "Alerta Mayor",
 	"counter": {
@@ -12,8 +12,146 @@
 	},
 	"respawn_min_energy": 50.0,
 	"laps": {
-		"1": {"hits_per_phase": [3, 3, 3], "mark_duration_s": 4.0},
-		"2": {"hits_per_phase": [4, 4, 4], "mark_duration_s": 3.0},
-		"3": {"hits_per_phase": [4, 4, 4], "mark_duration_s": 2.5}
+		"1": {
+			"hits_per_phase": [3, 3, 3],
+			"mark_duration_s": 4.0,
+			"charger_cooldown_s": 4.0,
+			"phase2": {"popup_max": 2},
+			"phase3": {"tempo_steps_s": [2.0], "copies": 3, "launches_per_round": 3, "blink_on_fraction": 0.55}
+		},
+		"2": {
+			"hits_per_phase": [4, 4, 4],
+			"mark_duration_s": 3.0,
+			"charger_cooldown_s": 5.0,
+			"phase2": {"popup_max": 3},
+			"phase3": {"tempo_steps_s": [2.0, 1.6], "copies": 3, "launches_per_round": 3, "blink_on_fraction": 0.65}
+		},
+		"3": {
+			"hits_per_phase": [4, 4, 4],
+			"mark_duration_s": 2.5,
+			"charger_cooldown_s": 6.0,
+			"phase2": {"popup_max": 3},
+			"phase3": {"tempo_steps_s": [2.0, 1.6, 1.4], "copies": 4, "launches_per_round": 3, "blink_on_fraction": 0.72}
+		}
+	},
+	"_laps_notes": "Por acceso (§2.12): charger_cooldown_s (AlertMajor lo pone en los cargadores de la arena al empezar: 4 / 5 / 6 s), phase2.popup_max (pop-ups a la vez: 2 / 3 / 3), phase3.tempo_steps_s (el metronomo de la fase 3: 2,0 fijo en Caché, 2,0 -> 1,6 en Kernel y 2,0 -> 1,6 -> 1,4 en Raíz, cada cycles_per_step ciclos del rhythm_zone del nivel), phase3.copies (badges que bajan: 3, y 4 en Raíz con la plataforma central como cuarto sitio), phase3.launches_per_round (lanzamientos por ronda; Raíz 3 en vez de 4 por decision del usuario del 2026-10-21 para respetar el margen de energia con debug_drain_scale 0,25: §2.4.7) y phase3.blink_on_fraction (parte encendida de las plataformas que parpadean, para que el compas mas corto cumpla «encendida >= aviso + 0,25 s»). Lo propio de Kernel (nucleo detras) y Raíz (el nucleo cambia de copia al activar el Debug) y los puntos rojos de la fase 1 de esos accesos se implementan al diseñar esas vueltas.",
+	"_arena_notes": "Posiciones en la arena (celdas de data/levels/1-boss.json). spots: sitio = [x del centro en tiles, fila de la superficie sobre la que se apoya] (la superficie es el borde de arriba de esa fila): suelo del centro (columnas 11-12 sobre la fila 10), plataformas laterales (columnas 4-5 y 18-19 sobre la fila 8) y la central (columnas 11-12 sobre la 6). hover: el jefe flota con el centro del cuerpo en la fila hover.y_tiles (tiles) y se mueve de x_min a x_max (centros, tiles) a speed_tiles_s, ida y vuelta. body_up_px / body_down_px: cuerpo inflado (arriba, 4 x 4 tiles) y desinflado (abajo, 2 x 2 tiles: el que se golpea). core_offset_px: nucleo desde el centro del borde de abajo del cuerpo desinflado (a la altura del celular de Isak de pie en esa superficie: 56 px). lanes: los dos carriles (fila de la superficie, columnas que cubren): el suelo y el alto (las laterales). move_s: lo que tarda en bajar o subir. draw_scale: escala del arte provisional. Arte PROVISIONAL (_placeholder) de tools/gen_boss_alert_major.py.",
+	"arena": {
+		"spots": {
+			"floor_center": [12.0, 10],
+			"platform_left": [5.0, 8],
+			"platform_right": [19.0, 8],
+			"platform_center": [12.0, 6]
+		},
+		"hover": {"y_tiles": 3.0, "x_min": 4.0, "x_max": 20.0, "speed_tiles_s": 1.5},
+		"body_up_px": [256, 256],
+		"body_down_px": [128, 128],
+		"core_offset_px": [0, -56],
+		"lanes": {
+			"floor": {"surface_row": 10, "from_col": 1, "to_col": 22},
+			"high": {"surface_row": 8, "from_col": 1, "to_col": 22}
+		},
+		"move_s": 0.6,
+		"anim_fps": 12.0,
+		"draw_scale": 2.0,
+		"art_dir": "res://assets/sprites/bosses/",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 12,
+		"label_color": "#f2f4f8",
+		"warn_color": "#ff4a2a",
+		"warn_shadow": "#a3221c",
+		"outline_color": "#f2f4f8"
+	},
+	"_texts_notes": "TEXTOS PROPUESTOS, por escribir con el usuario (decision 7; §2.1). intro: linea importante (pausa) al terminar la llegada; al cerrarla empieza la fase 1. phase_lines: una por fase, sin pausa (no importantes). La derrota y la recompensa son del paso 10. Solo glifos de la fuente. Nunca dicen vuelta, Easy, Normal ni Hard.",
+	"texts": {
+		"intro": "(PROPUESTA) Isak, deja de apagarlo todo. Solo quiero que no te pierdas nada.",
+		"phase_lines": {
+			"2": "(PROPUESTA) Tienes 66 cosas pendientes.",
+			"3": "(PROPUESTA) ¿Seguro que quieres seguir concentrado?"
+		},
+		"popups": [
+			"(PROPUESTA) 66 mensajes sin leer",
+			"(PROPUESTA) ¿Sigues ahí?",
+			"(PROPUESTA) Te estás perdiendo algo",
+			"(PROPUESTA) Recordatorio: mira esto"
+		]
+	},
+	"_phase1_notes": "FASE 1 «99+» (§2.5): bubbles: el jefe escupe hasta bubble_max Burbujas (alert_bubble) a las plataformas de spit_spots (una en cada una), tras inflarse spit_warn_frames cuadros a anim_fps (aviso con una flecha alerta sobre donde caeran); nunca hay mas de bubble_max vivas; patrullan bubble_patrol_range_px. sweeps: un banner (spam_banner en modo disparo, sin ciclo propio) barre un carril cada sweep_interval_s, alternando lanes (entrada y direccion de cada uno); cada barrido avisa con el aviso del banner (9 cuadros). VENTANA: cuando el escupitajo de la ronda ha terminado y ninguna Burbuja viva patrulla (todas aturdidas o derrotadas a la vez), se desinfla y baja al suelo del centro (window_spot) window_s s del mundo; sin barridos nuevos mientras baja, esta abajo y sube. Al subir escupe las que falten hasta bubble_max.",
+	"phase1": {
+		"bubble_max": 2,
+		"spit_spots": ["platform_left", "platform_right"],
+		"spit_warn_frames": 9,
+		"spit_cooldown_s": 1.0,
+		"bubble_patrol_range_px": 256.0,
+		"sweep_interval_s": 3.0,
+		"sweep_first_s": 2.0,
+		"sweeps": [
+			{"lane": "floor", "entry_col": 1, "direction": 1},
+			{"lane": "high", "entry_col": 22, "direction": -1}
+		],
+		"window_spot": "floor_center",
+		"window_s": 5.0
+	},
+	"_phase2_notes": "FASE 2 «66» (§2.6): lluvia de pop-ups translucidos (overlay_popup): cada popup_every_s aparece uno (como mucho popup_max a la vez, por acceso) que tapa un cuarto de la arena (popup_quarters: [columna, fila, ancho, alto]) durante popup_life_s; nunca en el cuarto de Isak ni en uno ya tapado; contorno punteado banner_blanco popup_warn_frames cuadros antes; su boton (24 px) a la altura de un carril (alterna: suelo / alto). Rafaga (notification_shot): cada burst_every_s, aviso de burst_warn_frames cuadros (flecha alerta en el muro de entrada y linea discontinua por el carril) y burst_shots notificaciones de shot_size_px cruzan el carril de Isak desde el muro mas lejano, a shot_speed_px_s, separadas burst_spacing_s; contact_damage cada una; el dash las atraviesa; el laser y el pulso no les afectan. Sin rafagas nuevas con la ventana abierta. VENTANA: cada window_every_s baja a la plataforma lateral (perch_spots) mas lejana de Isak tapado por un pop-up ESCUDO (overlay_popup opaco que le sigue: shield) y espera perch_s; un pulso a su boton lo cierra y abre la ventana de window_s s del mundo (nucleo activo); al acabar, el escudo vuelve, sube y la marca se pierde. Sin abrirlo en perch_s, sube. Semilla fija (seed) para los cuartos y el orden: el bot es determinista.",
+	"phase2": {
+		"seed": 1021,
+		"popup_every_s": 6.0,
+		"popup_first_s": 1.5,
+		"popup_life_s": 8.0,
+		"popup_warn_frames": 9,
+		"popup_quarters": [[1, 3, 6, 7], [7, 3, 5, 7], [12, 3, 6, 7], [18, 3, 5, 7]],
+		"popup_opacity": 0.7,
+		"popup_debug_opacity": 0.15,
+		"burst_every_s": 4.5,
+		"burst_first_s": 3.0,
+		"burst_warn_frames": 9,
+		"burst_shots": 3,
+		"burst_spacing_s": 0.5,
+		"shot_speed_px_s": 640.0,
+		"shot_size_px": [64, 32],
+		"contact_damage": 10.0,
+		"window_every_s": 12.0,
+		"perch_spots": ["platform_left", "platform_right"],
+		"perch_s": 7.0,
+		"window_s": 4.0,
+		"shield": {"width_tiles": 2, "height_tiles": 2, "close_button_px": [52, 96], "close_button_size_px": 24}
+	},
+	"_phase3_notes": "FASE 3 «33» (§2.7): se activan los objetos del nivel con active_in_phase 3 (metronomo, plataformas que parpadean, campanas). Ronda: el jefe se infla split_warn_frames cuadros, se divide en copies badges (la real y copias, AlertMajorClone) que bajan a copy_spots (el orden de los sitios y cual es la real salen de la semilla) y aterrizan al empezar un compas; cada compas siguiente una se lanza contra Isak (launches_per_round por ronda): se infla launch_warn_frames cuadros con una linea alerta hacia Isak y se lanza lunge_s a lunge_speed_px_s hacia donde estaba (como mucho lunge_max_px), dana contact_damage al tocarlo (cuerpo body_damage_px) y vuelve a su sitio en return_s. Tras el ultimo lanzamiento (y su vuelta) se quedan quietas window_s s del mundo: solo la real tiene nucleo (el Debug lo revela). Una copia golpeada (pulso o laser) se descarta con un «pop» y suelta una Burbuja (decision 6). Despues suben y se mezclan (la marca se pierde) y empieza otra ronda. El noveno golpe es el golpe final (§2.8): se descartan las copias sin Burbujas, se paran el metronomo y las campanas, las plataformas quedan encendidas y se borran los ataques (la recompensa es del paso 10).",
+	"phase3": {
+		"seed": 3021,
+		"split_warn_frames": 9,
+		"copy_spots": ["platform_left", "floor_center", "platform_right", "platform_center"],
+		"launch_warn_frames": 9,
+		"lunge_s": 0.3,
+		"lunge_speed_px_s": 1280.0,
+		"lunge_max_px": 384.0,
+		"return_s": 0.6,
+		"contact_damage": 10.0,
+		"body_damage_px": [96, 96],
+		"window_s": 5.0,
+		"bubble_on_pop": true
+	},
+	"_validation_notes": "Modelo de la pelea TORPE del validador de arenas (tools/validate_boss.py; §2.4.7 y §4.2): por acceso (laps del modelo) y fase, windows: golpes al nucleo de cada ventana (0 = ventana perdida: la marca caduca, el Debug antes de tiempo o la copia equivocada); debug_s: segundos reales de Debug por ventana (por fase); extra_debug_s: Debug de mas en cada ventana de la fase (3 s para ver a traves de los pop-ups en la fase 2); early_debug_s: Debug gastado antes de tiempo en la ventana perdida; dashes_per_window: dashes antes de cada ventana (fases 1 y 2; en la 3, los lanzamientos de la ronda, launches_per_round); misses_per_window: laseres fallados por ventana; bubble_kills: Burbujas rematadas en la fase (2 laseres, +25 de drop). El pico por ventana (lo gastado seguido entre dos ocasiones de recargar) debe quedar <= energia maxima - min_margin con la barra base (100), con el tope del acceso y con todo al maximo. charger_max_tiles / charger_second_max_tiles: desde cada celda del suelo, un cargador a esa distancia como mucho (y otro, si ese se enfria). detour_s_per_charge: tiempo de ir y volver a un cargador del suelo. window_k: margen de las ventanas (k = 2, propuesta-1-2.md §0.1); window_from: donde puede estar Isak al abrirse cada ventana (fase 1: todo el suelo; fase 2: la plataforma del escudo, y el escudo perch_s desde todo el suelo; fase 3: el suelo del centro, columnas 7-16, donde se esquivan los lanzamientos).",
+	"validation_model": {
+		"min_margin": 20.0,
+		"charger_max_tiles": 4,
+		"charger_second_max_tiles": 7,
+		"detour_s_per_charge": 1.3,
+		"window_k": 2.0,
+		"window_from": {
+			"1": {"lane": "floor", "cols": [1, 22]},
+			"2": {"lane": "floor", "cols": [1, 22]},
+			"3": {"lane": "floor", "cols": [7, 16]}
+		},
+		"misses_per_window": 1,
+		"dashes_per_window": [1, 1, 0],
+		"extra_debug_s": [0.0, 3.0, 0.0],
+		"early_debug_s": [2.0, 0.0, 0.0],
+		"bubble_kills": [1, 0, 1],
+		"laps": {
+			"1": {"debug_s": [3.0, 3.0, 3.5], "windows": [[0, 2, 1], [0, 1, 1, 1], [0, 1, 1, 1]]},
+			"2": {"debug_s": [3.0, 3.0, 3.5], "windows": [[0, 2, 1, 1], [0, 2, 1, 1], [0, 2, 1, 1]]},
+			"3": {"debug_s": [3.0, 3.0, 4.0], "windows": [[0, 2, 1, 1], [0, 2, 1, 1], [0, 2, 1, 1]]}
+		}
 	}
 }

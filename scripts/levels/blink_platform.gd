@@ -49,6 +49,8 @@ var _wants_on: bool = true
 var _warned: bool = false
 var _shape: CollisionShape2D
 var _isak: Isak
+## Encendida para siempre (golpe final del jefe: las plataformas quedan encendidas).
+var _held_on: bool = false
 
 
 func _ready() -> void:
@@ -84,7 +86,7 @@ func wants_on() -> bool:
 
 ## En los ultimos cuadros de aviso antes de apagarse.
 func is_warning() -> bool:
-	return _solid and _wants_on and get_time_to_off() <= get_warn_s()
+	return not _held_on and _solid and _wants_on and get_time_to_off() <= get_warn_s()
 
 
 ## Aviso: warn_frames cuadros a anim_fps (s de tiempo del mundo).
@@ -108,7 +110,7 @@ func get_lit_segments() -> int:
 	if not _solid:
 		return 0
 	var rhythm: RhythmZone = get_rhythm()
-	if rhythm == null:
+	if rhythm == null or _held_on:
 		return SEG_COUNT
 	var left: float = clampf((on_fraction - _local_phase(rhythm)) / maxf(on_fraction, 0.001), 0.0, 1.0)
 	return clampi(ceili(SEG_COUNT * left - 0.0001), 0, SEG_COUNT)
@@ -139,7 +141,7 @@ func is_help_available() -> bool:
 ## para las pruebas, que avanzan el metronomo a mano).
 func refresh() -> void:
 	var rhythm: RhythmZone = get_rhythm()
-	_wants_on = rhythm == null or _local_phase(rhythm) < on_fraction
+	_wants_on = _held_on or rhythm == null or _local_phase(rhythm) < on_fraction
 	if _wants_on and not _solid:
 		if not _isak_overlaps():
 			_set_solid(true)
@@ -149,6 +151,17 @@ func refresh() -> void:
 		_warned = true
 		warning_started.emit()
 	queue_redraw()
+
+
+## Se queda encendida y solida para siempre, sin parpadeo (golpe final de
+## Alerta Mayor, docs/propuesta-jefe-alerta-mayor.md §2.8).
+func hold_on() -> void:
+	_held_on = true
+	refresh()
+
+
+func is_held_on() -> bool:
+	return _held_on
 
 
 # --- Interno ---

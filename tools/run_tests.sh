@@ -89,7 +89,10 @@ rm -f "$IMPORT_LOG"
 # Desde el 2026-10-20 (docs/lista-sonidos.md, «Integracion»): el catalogo de audio
 # (data/audio.json; tools/validate_audio.py y tests/test_audio_catalog.py).
 # Desde el 2026-10-21 (paso 2 de docs/propuesta-jefe-alerta-mayor.md §6): los datos de los jefes
-# (data/bosses/*.json; tests/test_boss_data.py).
+# (data/bosses/*.json; tests/test_boss_data.py). Desde el paso 5 (2026-10-21): la arena 1-boss y el validador de
+# arenas (tools/validate_boss.py, al que delega tools/validate_level.py con kind boss; tests/test_boss_validator.py,
+# con sus casos negativos), sus subidas con el Isak real (tests/fixtures/climbs_1-boss.json) y el arte provisional
+# del jefe (tools/gen_boss_alert_major.py --check, en tests/test_boss_data.py).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -131,12 +134,13 @@ if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_upgrade_economy.py tests/test_memories.py \
-		tests/test_audio_catalog.py tests/test_boss_data.py \
+		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
 		&& python3 tools/level_climbs.py --check data/levels/1-2.json \
 		&& python3 tools/level_climbs.py --check data/levels/1-3.json \
+		&& python3 tools/level_climbs.py --check data/levels/1-boss.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \

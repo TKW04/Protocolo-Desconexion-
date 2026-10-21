@@ -75,6 +75,37 @@ class AlertMajorDataTest(unittest.TestCase):
 
 
 
+class AlertMajorFightDataTest(unittest.TestCase):
+    """Pelea de Alerta Mayor (pasos 5-8, 2026-10-21): datos por acceso y arte provisional."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "bosses", "alert_major.json"), encoding="utf-8") as handle:
+            self.data = json.load(handle)
+
+    def test_laps_fight_settings(self):
+        laps = self.data["laps"]
+        self.assertEqual([laps[k]["charger_cooldown_s"] for k in ("1", "2", "3")], [4.0, 5.0, 6.0])
+        self.assertEqual([laps[k]["phase2"]["popup_max"] for k in ("1", "2", "3")], [2, 3, 3])
+        self.assertEqual([laps[k]["phase3"]["tempo_steps_s"] for k in ("1", "2", "3")],
+                         [[2.0], [2.0, 1.6], [2.0, 1.6, 1.4]])
+        self.assertEqual([laps[k]["phase3"]["copies"] for k in ("1", "2", "3")], [3, 3, 4])
+        # Decision del usuario (2026-10-21): en Raíz, 3 lanzamientos por ronda en vez de 4.
+        self.assertEqual([laps[k]["phase3"]["launches_per_round"] for k in ("1", "2", "3")], [3, 3, 3])
+
+    def test_texts_are_marked_as_proposals(self):
+        texts = self.data["texts"]
+        lines = [texts["intro"]] + list(texts["phase_lines"].values()) + list(texts["popups"])
+        for line in lines:
+            self.assertIn("PROPUESTA", line)
+            for banned in ("vuelta", "Easy", "Normal", "Hard"):
+                self.assertNotIn(banned, line, "La UI nunca dice vuelta ni Easy/Normal/Hard")
+
+    def test_alert_major_placeholder_art_is_up_to_date(self):
+        done = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_boss_alert_major.py"), "--check"],
+                              capture_output=True, text=True)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+
+
 class BossTestRoomTest(unittest.TestCase):
     """Sala boss_test y objeto boss_dummy (paso 3)."""
 

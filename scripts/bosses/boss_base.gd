@@ -306,6 +306,108 @@ func get_core_target() -> Vector2:
 	return _weak_point.global_position
 
 
+# --- Objetos por fase (arena de jefe, paso 5 de la propuesta, 2026-10-21) ---
+
+## Metadata de los nodos de una arena que solo existen en ciertas fases
+## (active_in_phase del JSON del nivel; tools/build_level.py).
+const PHASE_META: StringName = &"active_in_phase"
+const META_LAYER: StringName = &"_phase_saved_layer"
+const META_TILES: StringName = &"_phase_replaced_tiles"
+
+
+## Activa los nodos de `root` con active_in_phase que incluyen `phase` y
+## desactiva los demas (phase 0 = antes de empezar: todos inactivos). Lo llama
+## GeneratedLevel al empezar y el jefe al empezar cada fase.
+static func apply_phase_nodes(root: Node, phase: int) -> void:
+	if root == null:
+		return
+	for node: Node in phase_nodes(root):
+		var phases: Array = node.get_meta(PHASE_META, [])
+		set_phase_node_active(node, phases.has(phase))
+
+
+## Nodos de `root` (y descendientes) con active_in_phase.
+static func phase_nodes(root: Node) -> Array[Node]:
+	var out: Array[Node] = []
+	if root == null:
+		return out
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node.has_meta(PHASE_META):
+			out.append(node)
+		for child: Node in node.get_children():
+			stack.append(child)
+	return out
+
+
+## Verdadero si el nodo de fase esta activo.
+static func is_phase_node_active(node: Node) -> bool:
+	return node.process_mode != Node.PROCESS_MODE_DISABLED
+
+
+## Activa o desactiva un nodo de fase: sin proceso, invisible y sin capa de
+## colision (se guarda la suya). Al activarse vuelve a su estado inicial
+## (reset_patrol / reset / refresh). Una plataforma que parpadea activa borra
+## las celdas del TileMapLayer «Tiles» del nivel que ocupa (las '-' que
+## reemplaza) y las devuelve al desactivarse.
+static func set_phase_node_active(node: Node, active: bool) -> void:
+	var was_active: bool = is_phase_node_active(node)
+	node.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+	if node is CanvasItem:
+		(node as CanvasItem).visible = active
+	var body := node as CollisionObject2D
+	if body != null:
+		if not body.has_meta(META_LAYER):
+			body.set_meta(META_LAYER, body.collision_layer)
+		body.collision_layer = int(body.get_meta(META_LAYER)) if active else 0
+	if node is BlinkPlatform:
+		_replace_tiles(node as BlinkPlatform, active)
+	if active and not was_active:
+		if node.has_method(&"reset_patrol"):
+			node.call(&"reset_patrol")
+		elif node is RhythmZone:
+			(node as RhythmZone).reset()
+		if node is BlinkPlatform:
+			(node as BlinkPlatform).refresh()
+
+
+static func _replace_tiles(platform: BlinkPlatform, active: bool) -> void:
+	var tiles: TileMapLayer = _level_tiles(platform)
+	if tiles == null:
+		return
+	if active:
+		if platform.has_meta(META_TILES):
+			return
+		var saved: Array = []
+		var size: float = float(World1ObjectsConfig.tile_size())
+		var origin: Vector2 = tiles.to_local(platform.global_position)
+		var row: int = floori(origin.y / size + 0.001)
+		var col: int = floori(origin.x / size + 0.001)
+		for i: int in platform.width_tiles:
+			var cell := Vector2i(col + i, row)
+			var source: int = tiles.get_cell_source_id(cell)
+			if source < 0:
+				continue
+			saved.append([cell, source, tiles.get_cell_atlas_coords(cell), tiles.get_cell_alternative_tile(cell)])
+			tiles.erase_cell(cell)
+		platform.set_meta(META_TILES, saved)
+	elif platform.has_meta(META_TILES):
+		for entry: Array in platform.get_meta(META_TILES):
+			tiles.set_cell(entry[0], entry[1], entry[2], entry[3])
+		platform.remove_meta(META_TILES)
+
+
+static func _level_tiles(from: Node) -> TileMapLayer:
+	var node: Node = from.get_parent()
+	while node != null:
+		var tiles := node.get_node_or_null(^"Tiles") as TileMapLayer
+		if tiles != null:
+			return tiles
+		node = node.get_parent()
+	return null
+
+
 # --- Virtuales del jefe concreto ---
 
 ## Empieza la fase `phase` (tambien la 1 al empezar).

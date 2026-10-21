@@ -124,6 +124,13 @@ func try_use(body: Node) -> float:
 	return gained
 
 
+## Vuelve a estar listo ya (sin enfriamiento; uno gastado sigue gastado). Lo usa
+## la arena del jefe al reaparecer Isak (docs/propuesta-jefe-alerta-mayor.md §2.9).
+func make_ready() -> void:
+	_cooldown_left = 0.0
+	_update_sprite(0.0)
+
+
 ## Progreso del enfriamiento: 0 recien usado, 1 listo.
 func get_cooldown_progress() -> float:
 	if _cooldown_left <= 0.0:

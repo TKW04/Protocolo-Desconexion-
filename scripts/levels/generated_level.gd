@@ -55,6 +55,9 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_apply_enemy_params()
+	# Arena de jefe (2026-10-21): los objetos y enemigos con active_in_phase
+	# empiezan inactivos; el jefe los activa en sus fases.
+	BossBase.apply_phase_nodes(self, 0)
 
 
 func _exit_tree() -> void:

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/bosses/alert_major.gd" id="1_alert_major"]
+
+[node name="AlertMajor" type="Node2D" groups=["boss"]]
+script = ExtResource("1_alert_major")
+boss_id = &"alert_major"
