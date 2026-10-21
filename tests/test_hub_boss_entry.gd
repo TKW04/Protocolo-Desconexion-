@@ -1,9 +1,13 @@
-# Fila del jefe «Alerta Mayor» en la carpeta del Mundo 1 (paso 1 de
+# Fila del jefe «Alerta Mayor» en la carpeta del Mundo 1 (pasos 1 y 13 de
 # docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21): entrada 1-boss de
-# data/hub.json (kind boss, no jugable aun: «Próximamente»), texto «Jefe: »
-# sin id ni puntos, desbloqueo por la terminal del 1-3 (unlocks), y la carpeta
-# no pasa a completed ni se enciende la pieza cian del hub hasta vencer al
-# jefe. Los 1-1 a 1-3 siguen igual. Usa su propia ruta de guardado.
+# data/hub.json (kind boss, JUGABLE desde el paso 13), texto «Jefe: » sin id ni
+# puntos, Bloqueado hasta completar el 1-3 y Nuevo despues (desbloqueo por la
+# terminal del 1-3, unlocks), y la carpeta no pasa a completed ni se enciende la
+# pieza cian del hub hasta vencer al jefe. Paso 13: desde el hub se entra a la
+# arena (confirmacion sin guardar, 3 vidas), morir reaparece al principio de la
+# fase con energia >= 50, el game over es el rollback a la ultima copia y,
+# vencido, se repite desde la carpeta. Los 1-1 a 1-3 siguen igual. Usa su
+# propia ruta de guardado.
 extends GutTest
 
 const EcoProgress = preload("res://tests/support/eco_progress.gd")
@@ -60,7 +64,7 @@ func _panel() -> FolderPanel:
 	return panel
 
 
-func test_entry_is_the_last_row_of_m1_and_a_boss_not_yet_playable() -> void:
+func test_entry_is_the_last_row_of_m1_and_a_playable_boss() -> void:
 	var boss: Dictionary = _boss()
 	assert_false(boss.is_empty(), "1-boss registrado en m1")
 	var levels: Array[Dictionary] = HubWorlds.levels(_m1())
@@ -68,8 +72,8 @@ func test_entry_is_the_last_row_of_m1_and_a_boss_not_yet_playable() -> void:
 	assert_eq(String(boss.get("name", "")), "Alerta Mayor")
 	assert_true(HubWorlds.is_boss(boss))
 	assert_eq(boss.get("laps", []), [1.0], "Solo en Caché por ahora")
-	assert_false(HubWorlds.is_playable(boss), "playable: false hasta el paso 13")
-	assert_true(HubWorlds.is_coming_soon(boss))
+	assert_true(HubWorlds.is_playable(boss), "playable: true desde el paso 13")
+	assert_false(HubWorlds.is_coming_soon(boss))
 	for level: Dictionary in levels:
 		if String(level.get("id", "")) != "1-boss":
 			assert_false(HubWorlds.is_boss(level), "%s no es jefe" % level.get("id", ""))
@@ -80,23 +84,23 @@ func test_terminal_of_1_3_unlocks_the_boss_row() -> void:
 	assert_false(GameState.is_level_unlocked(&"1-boss"))
 	_complete_1_3_like_the_terminal()
 	assert_true(GameState.is_level_unlocked(&"1-boss"), "unlocks del 1-3")
-	# No jugable: sigue «Próximamente» y no se entra.
-	assert_eq(HubWorlds.level_state(_m1(), _boss()), HubWorlds.STATE_LOCKED)
-	assert_false(HubWorlds.can_enter(&"1-boss"))
-	assert_ne(HubWorlds.most_advanced_level(), &"1-boss", "R no reanuda un jefe no jugable")
+	assert_eq(HubWorlds.level_state(_m1(), _boss()), HubWorlds.STATE_AVAILABLE, "Jugable tras el 1-3")
+	assert_true(HubWorlds.can_enter(&"1-boss"))
+	assert_eq(HubWorlds.most_advanced_level(), &"1-boss", "R en el hub reanuda el jefe")
 
 
 func test_panel_text_has_boss_prefix_and_no_points() -> void:
 	var panel: FolderPanel = _panel()
-	assert_eq(panel.level_text(_boss()), "Jefe: Alerta Mayor - Próximamente", "Partida nueva")
+	assert_eq(panel.level_text(_boss()), "Jefe: Alerta Mayor - Bloqueado", "Partida nueva")
+	assert_false(HubWorlds.can_enter(&"1-boss"), "Sin el 1-3 no se entra")
 	_complete_1_3_like_the_terminal()
-	assert_eq(panel.level_text(_boss()), "Jefe: Alerta Mayor - Próximamente", "Tras el 1-3, aun sin arena")
+	assert_eq(panel.level_text(_boss()), "Jefe: Alerta Mayor - Nuevo", "Tras el 1-3")
 	assert_eq(HubWorlds.level_points_total("1-boss"), 0, "La arena no tiene puntos")
 	GameState.mark_level_completed(&"1-boss")
-	# Con el jefe completado (y jugable, en el futuro) el texto no lleva puntos.
-	var playable_boss: Dictionary = _boss().duplicate()
-	playable_boss["playable"] = true
-	var text: String = panel.level_text(playable_boss)
+	# Con el jefe completado el texto no lleva puntos y se puede repetir.
+	var text: String = panel.level_text(_boss())
+	assert_eq(text, "Jefe: Alerta Mayor - Completado")
+	assert_true(HubWorlds.can_enter(&"1-boss"), "Revancha desde la carpeta")
 	assert_true(text.begins_with("Jefe: Alerta Mayor - "), text)
 	assert_false(text.contains("/"), "Sin puntos: %s" % text)
 	assert_false(text.contains("1-boss"), "Sin id: %s" % text)
@@ -125,3 +129,119 @@ func test_folder_and_cyan_piece_wait_for_the_boss() -> void:
 	_hub = HUB_SCENE.instantiate() as HubRoom
 	add_child(_hub)
 	assert_eq(_hub.get_background_state(), &"on", "Pieza cian encendida con el jefe vencido")
+
+
+# --- Paso 13: jugable desde el hub ---
+
+const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const LONG_STEP_S: float = 5.0
+
+
+func _start_main(level_id: String) -> LevelRunner:
+	var main := MAIN_SCENE.instantiate() as LevelRunner
+	main.auto_advance = false
+	main.start_level_id = level_id
+	add_child_autofree(main)
+	main.advance(LONG_STEP_S)
+	return main
+
+
+func _arena_boss(main: LevelRunner) -> AlertMajor:
+	var boss := main.get_level().get_node(^"Objects/alerta_mayor") as AlertMajor
+	boss.intro_on_arrival = false
+	return boss
+
+
+## Muere Isak y el flujo avanza hasta despues del fundido (como test_lives.gd).
+func _die(main: LevelRunner) -> void:
+	GameState.sync_rate = GameState.SYNC_RATE_MIN
+	main.advance(main.get_death_wait_s() + 0.01)
+	main.advance(LONG_STEP_S)
+	main.advance(LONG_STEP_S)
+
+
+func test_enter_the_arena_from_the_hub_with_the_unsaved_confirmation_and_three_lives() -> void:
+	EcoProgress.meet_eco_with_pulse()
+	_complete_1_3_like_the_terminal()
+	GameState.request_save()
+	var main: LevelRunner = _start_main("hub")
+	var hub: HubRoom = main.get_hub()
+	var arrival: WarpVortex = hub.get_arrival_vortex()
+	if arrival != null:
+		arrival.advance(LONG_STEP_S)
+	assert_true(hub.has_arrived())
+	var folder: FolderStation = hub.get_folder(&"m1")
+	assert_true(folder.open(hub.get_isak()), "La carpeta del Mundo 1 se abre")
+	var panel: FolderPanel = folder.get_folder_panel()
+	panel.skip_input_delay()
+	assert_true(panel.select_option(&"1-boss"), "Fila del jefe elegible")
+	panel.confirm()
+	assert_true(panel.is_confirming_unsaved(), "Con cambios sin guardar pide confirmacion")
+	assert_true(panel.select_option(FolderPanel.OPTION_ENTER_UNSAVED))
+	panel.confirm()
+	var departure: WarpVortex = hub.get_departure_vortex()
+	assert_not_null(departure, "Vortice de salida")
+	departure.advance(LONG_STEP_S)
+	await wait_process_frames(2)
+	main.advance(LONG_STEP_S)
+	main.advance(LONG_STEP_S)
+	assert_false(main.is_in_hub(), "Sale del hub")
+	assert_eq(main.get_level_id(), "1-boss", "Entra a la arena")
+	assert_eq(GameState.lives, GameState.lives_max, "Tres vidas por intento")
+	assert_eq(GameState.lives_max, 3)
+
+
+func test_death_restarts_the_phase_with_at_least_50_energy() -> void:
+	EcoProgress.meet_eco_with_pulse()
+	_complete_1_3_like_the_terminal()
+	var main: LevelRunner = _start_main("1-boss")
+	var boss: AlertMajor = _arena_boss(main)
+	await wait_physics_frames(3)
+	boss.start()
+	for i: int in 4:
+		boss.take_core_hit(1)
+	assert_eq(boss.get_phase(), 2)
+	assert_eq(boss.get_counter_label(), "55")
+	GameState.debug_energy = 10.0
+	await wait_physics_frames(2)
+	_die(main)
+	assert_false(main.is_in_hub(), "Con vidas no hay game over")
+	assert_eq(GameState.lives, 2, "Se pierde una vida")
+	assert_eq(boss.get_phase(), 2, "Sigue en la fase 2")
+	assert_eq(boss.get_counter_label(), "66", "Al principio de la fase")
+	assert_gte(GameState.debug_energy, 50.0, "Energia al menos 50")
+
+
+func test_game_over_in_the_arena_rolls_back_to_the_last_copy() -> void:
+	EcoProgress.meet_eco_with_pulse()
+	_complete_1_3_like_the_terminal()
+	assert_true(GameState.save_game(), "Copia con el 1-3 completado")
+	var main: LevelRunner = _start_main("1-boss")
+	var boss: AlertMajor = _arena_boss(main)
+	await wait_physics_frames(3)
+	boss.start()
+	var reports: Array = []
+	main.game_over.connect(func(report: Dictionary) -> void: reports.append(report))
+	for i: int in 3:
+		await wait_physics_frames(2)
+		_die(main)
+	assert_true(main.is_in_hub(), "Game over: al hub")
+	assert_eq(reports.size(), 1, "Un game over")
+	assert_true(GameState.is_level_completed(&"1-3"), "Lo guardado se conserva")
+	assert_false(GameState.is_level_completed(&"1-boss"), "El jefe sigue sin vencer")
+	assert_true(HubWorlds.can_enter(&"1-boss") or GameState.has_trash_pending(),
+		"Se vuelve a entrar (tras recuperar la papelera si la hay)")
+
+
+## Terminado cuando (paso 13): desde el hub, tras el 1-3, se entra a «Jefe: Alerta Mayor», se juega la pelea
+## completa con la barra del jefe, se vence, se recibe el recuerdo y se vuelve al hub con el Mundo 2
+## desbloqueado y la pieza cian encendida. Flujo real en un proceso aparte (tools/smoke_boss_arena.gd --full).
+func test_full_flow_from_the_hub_and_back() -> void:
+	var output: Array = []
+	var args := PackedStringArray(["--headless", "--fixed-fps", "60", "--path", ProjectSettings.globalize_path("res://"),
+		"-s", "res://tools/smoke_boss_arena.gd", "--", "--full"])
+	var code: int = OS.execute(OS.get_executable_path(), args, output, true)
+	var text: String = "".join(output)
+	assert_eq(code, 0, "Vuelta al hub:\n%s" % text.substr(maxi(text.find("smoke_boss_arena"), 0)))
+	assert_string_contains(text, "barra true, 1-boss true, recuerdo true, Mundo 2 true, pieza on")
+	assert_false(text.contains("SCRIPT ERROR"), "Sin errores de script")
