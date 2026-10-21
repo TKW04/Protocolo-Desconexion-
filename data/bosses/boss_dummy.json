@@ -1,5 +1,5 @@
 {
-	"_notes": "Jefe «saco» de la sala de prueba boss_test (BossDummy; paso 3 de docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21). Mismo formato que data/bosses/alert_major.json (BossBase): contador 99+ -> 66 -> 33 -> 0 con 3 golpes por fase en todas las vueltas, recargas de cambio de fase y energia minima al reaparecer como Alerta Mayor.",
+	"_notes": "Jefe «saco» de la sala de prueba boss_test (BossDummy; paso 3 de docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21). Mismo formato que data/bosses/alert_major.json (BossBase): contador 99+ -> 66 -> 33 -> 0 con 3 golpes por fase en todas las vueltas, recargas de cambio de fase y energia minima al reaparecer como Alerta Mayor. Marca (2026-10-21, §2.3): mark_duration_s de cada vuelta es lo que dura en segundos del mundo la marca que el pulso pone en el nucleo revelado por el Debug (Caché 4, Kernel 3, Raíz 2,5); mientras dura, el laser dana sin Debug.",
 	"id": "boss_dummy",
 	"name": "Saco de prueba",
 	"counter": {
@@ -12,8 +12,8 @@
 	},
 	"respawn_min_energy": 50.0,
 	"laps": {
-		"1": {"hits_per_phase": [3, 3, 3]},
-		"2": {"hits_per_phase": [3, 3, 3]},
-		"3": {"hits_per_phase": [3, 3, 3]}
+		"1": {"hits_per_phase": [3, 3, 3], "mark_duration_s": 4.0},
+		"2": {"hits_per_phase": [3, 3, 3], "mark_duration_s": 3.0},
+		"3": {"hits_per_phase": [3, 3, 3], "mark_duration_s": 2.5}
 	}
 }

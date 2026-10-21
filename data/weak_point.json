@@ -1,5 +1,5 @@
 {
-	"_notes": "Punto debil de los jefes (regla fija: rojo = dano y puntos debiles; en el Mundo 1 carmin puro y pulsante). Decision 2026-10-14: solo visible con el Debug y dibujado POR ENCIMA del tinte del Debug, en un CanvasLayer propio (layer) entre el efecto del Debug (DebugOverlay.OVERLAY_LAYER = 5) y el HUD (10), asi el tinte no lo apaga. Pulsa de color a pulse_color (carmin -> carmin_brillo de assets/palettes/mundo1.gpl) a pulse_hz en tiempo real. outline_color: halo oscuro (noche_profunda) que lo separa del fondo. Componente de los jefes (scenes/bosses/weak_point.tscn; BossBase.set_weak_point). Dano (2026-10-21, paso 3 de docs/propuesta-jefe-alerta-mayor.md §6): solo con el Debug activo, por el pulso (pulse_damage golpes) o el laser (su dano); sin el Debug, chispa gris (animacion gray_spark de spark_frames, z_index spark_z_index) y nada; el dash nunca. Unidades: px, Hz.",
+	"_notes": "Punto debil de los jefes (regla fija: rojo = dano y puntos debiles; en el Mundo 1 carmin puro y pulsante). Decision 2026-10-14: solo visible con el Debug (o marcado) y dibujado POR ENCIMA del tinte del Debug, en un CanvasLayer propio (layer) entre el efecto del Debug (DebugOverlay.OVERLAY_LAYER = 5) y el HUD (10), asi el tinte no lo apaga. Pulsa de color a pulse_color (carmin -> carmin_brillo de assets/palettes/mundo1.gpl) a pulse_hz en tiempo real. outline_color: halo oscuro (noche_profunda) que lo separa del fondo. Componente de los jefes (scenes/bosses/weak_point.tscn; BossBase.set_weak_point). LA MARCA (2026-10-21, docs/propuesta-jefe-alerta-mayor.md §2.3; sustituye al dano solo con el Debug del paso 3): el Debug REVELA el nucleo; un PULSO con el Debug activo lo MARCA mark_duration_s segundos del MUNDO (por defecto; cada jefe la fija por vuelta en laps.<n>.mark_duration_s de data/bosses/<id>.json: Alerta Mayor 4 / 3 / 2,5 s); marcado se ve sin Debug y cada LASER es un golpe de su dano (1; 2 con el Laser 4), todos los que quepan; el pulso no dana y solo refresca la marca con el Debug activo; el dash nunca. Sin marca ni Debug el nucleo no es objetivo: la chispa gris (animacion gray_spark de spark_frames, z_index spark_z_index) sale en el borde del cuerpo del jefe (WeakPoint.set_shell_rect), sin delatar el nucleo; expuesto sin marca, en el nucleo. Halo de la marca (arte provisional por script): anillo de mark_halo_segments segmentos (separados mark_halo_segment_gap_deg grados) de mark_halo_width_px en mark_halo_color (banner_blanco) a mark_halo_gap_px por fuera del contorno; se apagan uno a uno en sentido horario segun el tiempo que queda (cuenta atras legible por la forma); en los ultimos mark_warning_s parpadea a mark_blink_hz (tiempo del mundo); al marcar, destello de mark_flash_s (s reales) con mark_flash_extra_px mas de grosor. pulse_damage: golpes del pulso antes de la marca (ya no se usa para dano). Unidades: px, Hz, s.",
 	"layer": 6,
 	"radius_px": 24.0,
 	"ring_width_px": 4.0,
@@ -11,5 +11,15 @@
 	"outline_color": "#0b0e1a",
 	"pulse_damage": 1,
 	"spark_frames": "res://assets/sprites/puzzle_objects_frames.tres",
-	"spark_z_index": 5
+	"spark_z_index": 5,
+	"mark_duration_s": 4.0,
+	"mark_warning_s": 1.0,
+	"mark_blink_hz": 6.0,
+	"mark_halo_color": "#f2f4f8",
+	"mark_halo_segments": 8,
+	"mark_halo_segment_gap_deg": 10.0,
+	"mark_halo_width_px": 4.0,
+	"mark_halo_gap_px": 4.0,
+	"mark_flash_s": 0.15,
+	"mark_flash_extra_px": 3.0
 }

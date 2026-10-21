@@ -812,7 +812,7 @@
 		}
 	},
 	"boss_dummy": {
-		"_notes": "BossDummy (paso 3 de docs/propuesta-jefe-alerta-mayor.md §6): arte PROVISIONAL de tools/gen_boss_dummy_placeholder.py (texture_up inflado arriba, texture_down desinflado abajo; 64 x 64 a draw_scale), nucleo a core_offset_px del centro del cuerpo (px de pantalla; abajo queda a la altura del celular de Isak) y contador encima con la fuente de textos.",
+		"_notes": "BossDummy (paso 3 de docs/propuesta-jefe-alerta-mayor.md §6): arte PROVISIONAL de tools/gen_boss_dummy_placeholder.py (texture_up inflado arriba, texture_down desinflado abajo; 64 x 64 a draw_scale), nucleo a core_offset_px del centro del cuerpo (px de pantalla; abajo queda a la altura del celular de Isak) y contador encima con la fuente de textos. El cuerpo (64 x 64 a draw_scale) es tambien el cuerpo del WeakPoint (set_shell_rect, 2026-10-21): sin Debug ni marca el laser se para en el y la chispa gris sale en su borde.",
 		"texture_up": "res://assets/sprites/bosses/boss_dummy_up_placeholder.png",
 		"texture_down": "res://assets/sprites/bosses/boss_dummy_down_placeholder.png",
 		"draw_scale": 2.0,

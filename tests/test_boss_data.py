@@ -60,6 +60,19 @@ class AlertMajorDataTest(unittest.TestCase):
         caches = [counter_for(top, r, 9) for r in range(9, -1, -1)]
         self.assertEqual(caches, [99, 88, 77, 66, 55, 44, 33, 22, 11, 0])
 
+    def test_mark_duration_per_lap(self):
+        # La marca (2026-10-21, §2.3): Caché 4 s, Kernel 3 s, Raíz 2,5 s (tiempo del mundo).
+        marks = {lap: entry["mark_duration_s"] for lap, entry in self.data["laps"].items()}
+        self.assertEqual(marks, {"1": 4.0, "2": 3.0, "3": 2.5})
+        with open(os.path.join(ROOT, "data", "bosses", "boss_dummy.json"), encoding="utf-8") as handle:
+            dummy = json.load(handle)
+        self.assertEqual({lap: e["mark_duration_s"] for lap, e in dummy["laps"].items()}, marks)
+        with open(os.path.join(ROOT, "data", "weak_point.json"), encoding="utf-8") as handle:
+            weak = json.load(handle)
+        self.assertEqual(weak["mark_duration_s"], 4.0)
+        # Cabe al menos el pulso que marca (0,33 s) y dos laseres (~0,7 s cada uno).
+        self.assertGreaterEqual(min(marks.values()), 0.33 + 2 * 0.7)
+
 
 
 class BossTestRoomTest(unittest.TestCase):

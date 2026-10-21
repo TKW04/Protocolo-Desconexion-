@@ -2,8 +2,11 @@
 ## docs/propuesta-jefe-alerta-mayor.md §6, 2026-10-21). Un BossBase minimo para
 ## probar el WeakPoint danable con la fisica y los controles reales: flota arriba
 ## (fuera de alcance) up_s, baja en move_s, se queda abajo window_s (ventana: el
-## nucleo carmin se activa a la altura del pecho de Isak; solo con el Debug
-## activo el pulso o el laser lo golpean) y sube. Al cambiar de fase o al
+## nucleo carmin se activa a la altura del pecho de Isak; el Debug lo revela, el
+## pulso lo marca y el laser lo golpea mientras dura la marca, 2026-10-21) y
+## sube (la marca se pierde). Su cuerpo de 2 x 2 tiles es el del WeakPoint
+## (set_shell_rect): sin Debug ni marca, el laser se para en el y la chispa gris
+## sale en su borde, no en el nucleo. Al cambiar de fase o al
 ## reaparecer Isak vuelve arriba; con el golpe final desaparece. No ataca ni
 ## hace dano. Tiempo del mundo (el Debug lo ralentiza).
 ##
@@ -143,6 +146,9 @@ func _build() -> void:
 	_core.scale = Vector2(1.0 / scale_px, 1.0 / scale_px)
 	var offset: Array = _cfg.get("core_offset_px", [0, 20])
 	_core.position = Vector2(float(offset[0]), float(offset[1])) / scale_px
+	var body_size: Vector2 = (_tex_up.get_size() if _tex_up != null else Vector2(_tile(), _tile())) * scale_px
+	# Cuerpo en coordenadas del nucleo (escala global 1): centrado en el cuerpo.
+	_core.set_shell_rect(Rect2(-Vector2(float(offset[0]), float(offset[1])) - body_size * 0.5, body_size))
 	set_weak_point(_core)
 	_label = Label.new()
 	_label.name = "Counter"

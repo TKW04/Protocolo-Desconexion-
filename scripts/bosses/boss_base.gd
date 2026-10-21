@@ -7,8 +7,11 @@
 ##   Al vaciar una fase empieza la siguiente (EventBus.boss_phase_changed) y el
 ##   jefe suelta phase_change_refill (+25 de energia y +25 de Sync Rate). Un golpe
 ##   que sobra al acabar una fase no pasa a la siguiente.
-## - Golpes: take_core_hit(damage) (lo llama su WeakPoint, que solo recibe dano con
-##   el Debug activo; el dash nunca). EventBus.boss_weak_point_hit.
+## - Golpes: take_core_hit(damage) (lo llama su WeakPoint: el Debug lo revela, el
+##   pulso lo marca y el laser lo dana mientras dura la marca, 2026-10-21; el dash
+##   nunca). EventBus.boss_weak_point_hit. La duracion de la marca es
+##   laps.<vuelta>.mark_duration_s (s del mundo; Alerta Mayor 4 / 3 / 2,5) y la
+##   marca se pierde al cambiar de fase, en el golpe final y al reaparecer.
 ## - Ventanas: open_window(s) / close_window() con su cuenta en tiempo del mundo
 ##   (el Debug la alarga en tiempo real). El jefe concreto decide cuando se abren.
 ## - Reaparicion por fase (decision 3, §2.9): al reaparecer Isak tras morir
@@ -64,6 +67,8 @@ var _remaining: int = 0
 var _window_left: float = 0.0
 var _window_open: bool = false
 var _weak_point: WeakPoint
+## Marca del nucleo de la vuelta actual (s del mundo; <= 0 = la del WeakPoint).
+var _mark_duration_s: float = 0.0
 
 
 func _ready() -> void:
@@ -97,9 +102,12 @@ func load_config(data: Dictionary = {}) -> bool:
 	var laps: Dictionary = _config.get("laps", {})
 	var entry: Variant = laps.get(str(lap), laps.get("1", {}))
 	_hits_per_phase.clear()
+	_mark_duration_s = 0.0
 	if entry is Dictionary:
 		for value: Variant in (entry as Dictionary).get("hits_per_phase", []):
 			_hits_per_phase.append(maxi(int(value), 1))
+		_mark_duration_s = float((entry as Dictionary).get("mark_duration_s", 0.0))
+	_apply_mark_duration()
 	if _hits_per_phase.is_empty():
 		_hits_per_phase.append(1)
 	_remaining = get_total_hits()
@@ -177,6 +185,7 @@ func restart_phase() -> void:
 	if _state != STATE_FIGHTING:
 		return
 	_remaining = _phase_floor(_phase - 1)
+	_clear_mark()
 	if _window_open:
 		_set_window_closed()
 		window_closed.emit()
@@ -266,19 +275,26 @@ func get_attack_state() -> StringName:
 	return ATTACK_NONE
 
 
+## Duracion de la marca de la vuelta actual (s del mundo; 0 = la del WeakPoint).
+func get_mark_duration() -> float:
+	return _mark_duration_s
+
+
 ## Punto debil de este jefe (null si no tiene).
 func get_weak_point() -> WeakPoint:
 	return _weak_point
 
 
-## Asigna el punto debil: sus golpes (solo con el Debug activo) cuentan como
-## take_core_hit. Paso 3 de la propuesta (2026-10-21).
+## Asigna el punto debil: sus golpes (laser con la marca) cuentan como
+## take_core_hit; le pasa la duracion de la marca de la vuelta. Paso 3 de la
+## propuesta (2026-10-21).
 func set_weak_point(weak_point: WeakPoint) -> void:
 	if _weak_point != null and is_instance_valid(_weak_point) and _weak_point.hit.is_connected(_on_weak_point_hit):
 		_weak_point.hit.disconnect(_on_weak_point_hit)
 	_weak_point = weak_point
 	if _weak_point != null:
 		_weak_point.hit.connect(_on_weak_point_hit)
+	_apply_mark_duration()
 
 
 ## Posicion global del nucleo si se puede golpear ahora (punto debil activo y
@@ -333,6 +349,7 @@ func _phase_floor(phase_index: int) -> int:
 
 
 func _next_phase() -> void:
+	_clear_mark()
 	if _window_open:
 		_set_window_closed()
 		window_closed.emit()
@@ -346,6 +363,7 @@ func _next_phase() -> void:
 
 
 func _defeat() -> void:
+	_clear_mark()
 	if _window_open:
 		_set_window_closed()
 		window_closed.emit()
@@ -353,6 +371,16 @@ func _defeat() -> void:
 	defeated.emit()
 	EventBus.boss_defeated.emit(boss_id)
 	_on_defeated()
+
+
+func _apply_mark_duration() -> void:
+	if _weak_point != null and is_instance_valid(_weak_point) and _mark_duration_s > 0.0:
+		_weak_point.set_mark_duration(_mark_duration_s)
+
+
+func _clear_mark() -> void:
+	if _weak_point != null and is_instance_valid(_weak_point):
+		_weak_point.clear_mark()
 
 
 func _set_window_closed() -> void:
