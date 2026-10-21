@@ -508,3 +508,212 @@ func test_window_close_loses_the_mark_goes_up_and_needs_new_stuns() -> void:
 	_advance(2.0)
 	assert_eq(_boss.get_move(), AlertMajor.MOVE_HOVER, "Las aturdidas de la ronda anterior no cuentan")
 	assert_eq(_boss.get_bubbles().size(), 2, "Sigue con dos (no escupe mas)")
+
+
+# --- Paso 7: fase 2 «66» ---
+
+## Fase 2 recien empezada (sin ataques todavia).
+func _phase2(sim: bool = false) -> void:
+	await _arena(1, false, sim)
+	_boss.start()
+	_to_phase(2)
+	assert_eq(_boss.get_phase(), 2)
+
+
+## Avanza la fase 2 con los pop-ups y las notificaciones sin proceso propio.
+func _advance2(seconds: float, isak: bool = false) -> void:
+	for i: int in ceili(seconds / DT - 0.001):
+		_boss.advance(DT)
+		_boss.get_core().advance_mark(DT)
+		for child: Node in _boss.get_attacks_root().get_children():
+			if child is OverlayPopup:
+				(child as OverlayPopup).set_process(false)
+				(child as OverlayPopup).advance(DT)
+				var p := child as OverlayPopup
+				if p.follow_target != null:
+					p.global_position = p.follow_target.global_position + p.follow_offset
+			elif child is NotificationShot:
+				(child as NotificationShot).auto_process = false
+				(child as NotificationShot).step(DT)
+		if isak and _sim != null:
+			_sim.step()
+
+
+func test_phase2_popups_cover_a_quarter_away_from_isak_at_most_two() -> void:
+	await _phase2()
+	_place_isak(2, 9)
+	watch_signals(_boss)
+	_advance2(1.5 + DT)
+	assert_signal_emitted_with_parameters(_boss, "attack_started", [&"popup"])
+	var outlines: Array = _boss.get_warnings().filter(func(w: Dictionary) -> bool: return w["kind"] == "outline")
+	assert_eq(outlines.size(), 1, "Contorno punteado antes del pop-up")
+	assert_eq(_boss.get_popups().size(), 0, "Aun no tapa")
+	_advance2(0.75)
+	var popups: Array[OverlayPopup] = _boss.get_popups()
+	assert_eq(popups.size(), 1, "Sale tras el aviso de 9 cuadros")
+	var p: OverlayPopup = popups[0]
+	assert_ne(_boss.quarter_of(p.get_window_rect().get_center()), 0, "Nunca en el cuarto de Isak")
+	assert_almost_eq(p.get_current_opacity(), 0.7, 0.01, "Translucido al 70 %")
+	var button_y: float = p.get_button_rect().get_center().y
+	assert_true(absf(button_y - (10.0 * TILE - 56.0)) < 1.0 or absf(button_y - (8.0 * TILE - 56.0)) < 1.0,
+		"Boton a la altura del celular en un carril")
+	var most: int = 0
+	for i: int in 40:
+		_advance2(0.5)
+		most = maxi(most, _boss.get_popups().size())
+	assert_eq(most, 2, "Como mucho 2 a la vez en Caché")
+	# Un pulso a su boton lo cierra.
+	var open: OverlayPopup = _boss.get_popups()[0]
+	open.receive_pulse(_pulse_area(open.get_button_rect().get_center()))
+	_advance2(0.5)
+	assert_true(open.is_closed() or not is_instance_valid(open), "El pulso a su boton lo cierra")
+
+
+func test_popup_closes_itself_after_its_life() -> void:
+	await _phase2()
+	_place_isak(2, 9)
+	_advance2(1.5 + 0.75 + DT)
+	var p: OverlayPopup = _boss.get_popups()[0]
+	_advance2(7.5)
+	assert_true(is_instance_valid(p) and p.is_open(), "Dura 8 s")
+	_advance2(1.0)
+	assert_false(is_instance_valid(p) and p.is_open(), "Y se cierra solo")
+
+
+func test_burst_warns_then_three_shots_hit_the_real_isak_in_its_lane() -> void:
+	await _phase2(true)
+	_place_isak(4, 9)
+	var sync: float = GameState.sync_rate
+	watch_signals(_boss)
+	assert_true(_boss.start_burst())
+	assert_eq(_boss.get_burst_lane(), "floor", "El carril de Isak")
+	assert_eq(_boss.get_burst_state(), &"warn")
+	var lane: Array = _boss.get_warnings().filter(func(w: Dictionary) -> bool: return w["kind"] == "lane")
+	assert_eq(lane.size(), 1, "Flecha en el muro y linea por el carril")
+	assert_eq(int(lane[0]["dir"]), -1, "Entra por el muro mas lejano (el derecho)")
+	_advance2(0.7, true)
+	assert_eq(_boss.get_shots().size(), 0, "Nada durante el aviso de 9 cuadros")
+	_advance2(0.1, true)
+	assert_eq(_boss.get_shots().size(), 1, "Primera notificacion")
+	_advance2(1.0, true)
+	assert_eq(_boss.get_shots().size() + 0, 3, "Tres, separadas 0,5 s")
+	_advance2(3.0, true)
+	assert_lt(GameState.sync_rate, sync - 5.0, "La rafaga le quita Sync Rate")
+	assert_eq(_boss.get_burst_state(), &"", "Rafaga terminada")
+
+
+func test_the_other_lane_is_safe_from_a_burst_and_dash_goes_through_a_shot() -> void:
+	await _phase2(true)
+	_place_isak(4, 9)
+	assert_true(_boss.start_burst())
+	_place_isak(4, 7)
+	var sync: float = GameState.sync_rate
+	_advance2(5.0, true)
+	assert_almost_eq(GameState.sync_rate, sync, EPS, "En la plataforma, la rafaga del suelo no alcanza")
+	# Dash a traves de una notificacion.
+	_place_isak(12, 9)
+	var isak: Isak = _level.get_isak()
+	var shot := NotificationShot.new()
+	shot.direction = -1
+	shot.travel_px = 1200.0
+	shot.auto_process = false
+	_boss.get_attacks_root().add_child(shot)
+	shot.global_position = Vector2(20.0 * TILE, 10.0 * TILE - 56.0)
+	var dashed: bool = false
+	for i: int in 150:
+		if not dashed and shot.global_position.x - isak.global_position.x < 110.0:
+			_sim.input.move_axis = 1.0
+			_sim.input.dash_pressed = true
+			dashed = true
+		if is_instance_valid(shot):
+			shot.step(DT)
+		_sim.step()
+		_sim.input.move_axis = 0.0
+	assert_true(dashed)
+	assert_almost_eq(GameState.sync_rate, sync, EPS, "El dash atraviesa la notificacion")
+
+
+func test_laser_and_pulse_do_not_stop_a_shot() -> void:
+	await _phase2()
+	var shot := NotificationShot.new()
+	_boss.get_attacks_root().add_child(shot)
+	assert_false(shot.has_method(&"on_laser_hit"), "El laser lo atraviesa")
+	assert_false(shot.has_method(&"receive_pulse"), "El pulso no le afecta")
+
+
+func test_shield_window_on_the_far_platform_opened_by_the_real_pulse() -> void:
+	await _phase2(true)
+	_place_isak(18, 9)
+	watch_signals(_boss)
+	_advance2(12.0 + DT, true)
+	for i: int in 300:
+		if _boss.get_move() != AlertMajor.MOVE_HOVER:
+			break
+		_advance2(DT, true)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DESCEND, "Cada 12 s baja")
+	_advance2(0.6 + DT, true)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
+	assert_almost_eq(_boss.get_body_center(), Vector2(5.0 * TILE, 8.0 * TILE - 64.0), Vector2.ONE,
+		"En la plataforma lejana de Isak (la izquierda)")
+	assert_signal_emitted_with_parameters(_boss, "attack_started", [&"shield"])
+	var shield: OverlayPopup = _boss.get_shield()
+	assert_true(shield.is_open() and shield.visible, "Tapado por el escudo")
+	assert_true(shield.get_window_rect().has_point(_boss.get_core().global_position), "El escudo tapa el nucleo")
+	_debug_on()
+	_advance2(0.2, true)
+	assert_almost_eq(shield.get_current_opacity(), 1.0, EPS, "Opaco: el Debug no ve a traves")
+	DebugMode.reset()
+	assert_false(_boss.get_core().is_enabled(), "Con el escudo no hay nucleo")
+	assert_false(_boss.is_window_open())
+	# Isak sube a la plataforma y lanza un pulso de verdad al boton.
+	_place_isak(3, 7)
+	_level.get_isak().facing = 1.0
+	_sim.input.pulse_pressed = true
+	_advance2(DT, true)
+	_advance2(0.5, true)
+	assert_false(shield.is_open(), "El pulso al boton cierra el escudo")
+	assert_true(_boss.is_window_open(), "Ventana abierta")
+	assert_almost_eq(_boss.get_window_time_left(), 4.0 - 0.5, 0.1, "4 s del mundo")
+	assert_true(_boss.get_core().is_enabled())
+	assert_almost_eq(_boss.get_core_target(), Vector2(5.0 * TILE, 8.0 * TILE - 56.0), Vector2.ONE,
+		"Nucleo a la altura del celular en la plataforma")
+	_mark_core()
+	_boss.get_core().on_laser_hit(1.0, null)
+	_boss.get_core().on_laser_hit(1.0, null)
+	assert_eq(_boss.get_counter_text(), "44", "Dos golpes en la ventana del escudo")
+	_advance2(3.6, true)
+	assert_false(_boss.is_window_open())
+	assert_true(shield.is_open(), "El escudo vuelve")
+	assert_false(_boss.get_core().is_marked(), "La marca se pierde")
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_ASCEND, "Y sube")
+
+
+func test_shield_never_opened_goes_up_after_perch() -> void:
+	await _phase2()
+	_place_isak(4, 9)
+	for i: int in ceili(18.0 / DT):
+		_advance2(DT)
+		if _boss.get_move() == AlertMajor.MOVE_DOWN:
+			break
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
+	assert_almost_eq(_boss.get_body_center().x, 19.0 * TILE, 1.0, "Lejos de Isak: la derecha")
+	_advance2(6.9)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_DOWN)
+	_advance2(0.2)
+	assert_eq(_boss.get_move(), AlertMajor.MOVE_ASCEND, "Sin abrir el escudo en 7 s, sube")
+
+
+func test_respawn_in_phase_2_clears_popups_and_shots() -> void:
+	await _phase2()
+	_place_isak(2, 9)
+	_advance2(3.0)
+	assert_true(_boss.start_burst() or _boss.get_burst_state() != &"")
+	_advance2(1.0)
+	assert_gt(_boss.get_attacks_root().get_child_count(), 1)
+	GameState.debug_energy = 10.0
+	EventBus.player_respawned.emit(Vector2.ZERO, true)
+	await wait_process_frames(1)
+	assert_eq(_boss.get_popups().size(), 0)
+	assert_eq(_boss.get_shots().size(), 0)
+	assert_eq(_boss.get_counter_text(), "66", "Vuelve al principio de la fase 2")
+	assert_almost_eq(GameState.debug_energy, 50.0, EPS)

@@ -37,6 +37,7 @@ signal final_blow
 const WEAK_POINT_SCENE: PackedScene = preload("res://scenes/bosses/weak_point.tscn")
 const BUBBLE_SCENE: PackedScene = preload("res://scenes/enemies/alert_bubble.tscn")
 const BANNER_SCENE: PackedScene = preload("res://scenes/enemies/spam_banner.tscn")
+const POPUP_SCENE: PackedScene = preload("res://scenes/levels/overlay_popup.tscn")
 
 const MOVE_HOVER: StringName = &"hover"
 const MOVE_DESCEND: StringName = &"descend"
@@ -47,6 +48,7 @@ const MOVE_GONE: StringName = &"gone"
 const ART_REST: String = "alert_major_rest_placeholder.png"
 const ART_INFLATE: String = "alert_major_inflate_placeholder.png"
 const ART_DOWN: String = "alert_major_down_placeholder.png"
+const ART_SHIELD: String = "alert_major_shield_placeholder.png"
 
 ## Id del objeto en el nivel (params.id).
 @export var object_id: StringName = &""
@@ -88,6 +90,22 @@ var _sweep_index: int = 0
 ## Ronda de la fase 1 (cada bajada empieza otra): una Burbuja cuenta como
 ## neutralizada si se aturdio en esta ronda (meta stun_round) o esta derrotada.
 var _round_id: int = 0
+# Fase 2.
+var _rng := RandomNumberGenerator.new()
+## Pop-ups de la lluvia: {quarter, t, node} (node null mientras avisa).
+var _popups: Array[Dictionary] = []
+var _popup_t: float = 0.0
+var _popup_button_lane: int = 0
+var _burst_state: StringName = &""
+var _burst_t: float = 0.0
+var _burst_t_next: float = 0.0
+var _burst_fired: int = 0
+var _burst_dir: int = 1
+var _burst_lane: String = "floor"
+var _window_t: float = 0.0
+var _perch_t: float = 0.0
+var _perch_spot: StringName = &""
+var _shield: OverlayPopup
 
 
 func _ready() -> void:
@@ -204,6 +222,8 @@ func _on_phase_started(phase_index: int) -> void:
 	match phase_index:
 		1:
 			_phase1_start()
+		2:
+			_phase2_start()
 	if phase_index > 1:
 		var line: String = String((_texts.get("phase_lines", {}) as Dictionary).get(str(phase_index), ""))
 		if not line.is_empty():
@@ -224,6 +244,8 @@ func _on_advance(dt: float) -> void:
 	match get_phase():
 		1:
 			_phase1_advance(dt)
+		2:
+			_phase2_advance(dt)
 	if not _warnings.is_empty():
 		_warn_layer.queue_redraw()
 
@@ -232,6 +254,8 @@ func _on_window_closed() -> void:
 	match get_phase():
 		1:
 			_phase1_window_closed()
+		2:
+			_phase2_window_closed()
 
 
 func _on_core_hit(_remaining_hits: int) -> void:
@@ -300,6 +324,8 @@ func _on_arrived(move_done: StringName) -> void:
 	match get_phase():
 		1:
 			_phase1_arrived(move_done)
+		2:
+			_phase2_arrived(move_done)
 
 
 func _set_move(move: StringName) -> void:
@@ -491,6 +517,9 @@ func _clear_attacks() -> void:
 	_clear_warnings()
 	_bubbles.clear()
 	_banners.clear()
+	_popups.clear()
+	_burst_state = &""
+	_shield = null
 	if _attacks == null:
 		return
 	for child: Node in _attacks.get_children():
@@ -776,3 +805,305 @@ func _set_warnings_spit(targets: Array[StringName]) -> void:
 		var c: Vector2 = get_spot_center(spot)
 		_warnings.append({"kind": "arrow_down", "at": c + Vector2(0.0, -_tile * 0.25)})
 	_warn_layer.queue_redraw()
+
+
+# --- Fase 2 «66»: pop-ups, rafagas y escudo (paso 7, §2.6) ---
+
+## Pop-ups de la lluvia abiertos (sin el escudo).
+func get_popups() -> Array[OverlayPopup]:
+	var out: Array[OverlayPopup] = []
+	for p: Dictionary in _popups:
+		var node: Variant = p.get("node")
+		if node != null and is_instance_valid(node) and (node as OverlayPopup).is_open():
+			out.append(node as OverlayPopup)
+	return out
+
+
+## Notificaciones de la rafaga en vuelo.
+func get_shots() -> Array[NotificationShot]:
+	var out: Array[NotificationShot] = []
+	for child: Node in _attacks.get_children():
+		if child is NotificationShot and not (child as NotificationShot).is_done():
+			out.append(child as NotificationShot)
+	return out
+
+
+## Pop-up escudo (null fuera de la fase 2).
+func get_shield() -> OverlayPopup:
+	return _shield if _shield != null and is_instance_valid(_shield) else null
+
+
+## Rafaga en curso: aviso (warn) o disparando (fire); &"" si no hay.
+func get_burst_state() -> StringName:
+	return _burst_state
+
+
+## Carril de la rafaga en curso (o la ultima).
+func get_burst_lane() -> String:
+	return _burst_lane
+
+
+## Cuarto de la arena (indice de phase2.popup_quarters) que contiene `point` o -1.
+func quarter_of(point: Vector2) -> int:
+	var quarters: Array = phase_data(2).get("popup_quarters", [])
+	for i: int in quarters.size():
+		if _quarter_rect(i).grow(0.5).has_point(point):
+			return i
+	return -1
+
+
+## Fuerza una rafaga ya (pruebas y bot). Falso si hay una en curso.
+func start_burst() -> bool:
+	if _burst_state != &"":
+		return false
+	var isak: Isak = find_isak()
+	var lanes: Dictionary = _arena.get("lanes", {})
+	_burst_lane = "floor"
+	if isak != null:
+		var floor_feet: float = float((lanes.get("floor", {}) as Dictionary).get("surface_row", 10)) * _tile
+		_burst_lane = "floor" if isak.global_position.y > floor_feet - _tile * 1.5 else "high"
+	var lane: Dictionary = lanes.get(_burst_lane, {})
+	var x0: float = float(lane.get("from_col", 1)) * _tile
+	var x1: float = (float(lane.get("to_col", 22)) + 1.0) * _tile
+	var ix: float = isak.global_position.x if isak != null else (x0 + x1) * 0.5
+	# Entra por el muro mas lejano de Isak (le da tiempo a reaccionar).
+	_burst_dir = 1 if ix - x0 > x1 - ix else -1
+	_burst_state = &"warn"
+	_burst_t = 0.0
+	_burst_fired = 0
+	var y: float = float(lane.get("surface_row", 10)) * _tile + _phone_y()
+	var entry_x: float = x0 if _burst_dir > 0 else x1
+	_warnings.append({"kind": "lane", "id": "burst", "x0": x0, "x1": x1, "y": y, "dir": _burst_dir,
+		"entry": entry_x})
+	_warn_layer.queue_redraw()
+	attack_started.emit(&"burst")
+	return true
+
+
+func _phase2_start() -> void:
+	var p2: Dictionary = phase_data(2)
+	_rng.seed = int(p2.get("seed", 1021))
+	_popups.clear()
+	_popup_t = float(p2.get("popup_every_s", 6.0)) - float(p2.get("popup_first_s", 1.5))
+	_burst_t_next = float(p2.get("burst_every_s", 4.5)) - float(p2.get("burst_first_s", 3.0))
+	_burst_state = &""
+	_window_t = 0.0
+	_perch_t = 0.0
+	_perch_spot = &""
+	_popup_button_lane = 0
+	_build_shield()
+
+
+func _phase2_advance(dt: float) -> void:
+	var p2: Dictionary = phase_data(2)
+	_advance_popups(dt, p2)
+	_advance_burst(dt, p2)
+	match _move:
+		MOVE_HOVER:
+			_window_t += dt
+			if _window_t >= float(p2.get("window_every_s", 12.0)) and _burst_state == &"":
+				_perch_spot = _far_perch_spot()
+				_shield.reopen()
+				_shield.visible = true
+				move_body_to(get_spot_center(_perch_spot), true)
+		MOVE_DOWN:
+			if not is_window_open():
+				_perch_t += dt
+				if _perch_t >= float(p2.get("perch_s", 7.0)):
+					_phase2_leave()
+
+
+func _phase2_arrived(move_done: StringName) -> void:
+	if move_done == MOVE_DESCEND:
+		_perch_t = 0.0
+		attack_started.emit(&"shield")
+		if not _shield.is_open():
+			_on_shield_closing()
+	else:
+		_window_t = 0.0
+		_shield.visible = false
+
+
+func _phase2_window_closed() -> void:
+	_phase2_leave()
+
+
+func _phase2_leave() -> void:
+	_set_core_enabled(false)
+	_shield.reopen()
+	move_body_to(get_hover_center(_from_global(_center).x / _tile), false)
+
+
+## El escudo se cierra con el pulso: abre la ventana.
+func _on_shield_closing() -> void:
+	if get_phase() != 2 or _move != MOVE_DOWN or is_window_open():
+		return
+	_set_core_enabled(true)
+	open_window(float(phase_data(2).get("window_s", 4.0)))
+
+
+func _build_shield() -> void:
+	if _shield != null and is_instance_valid(_shield):
+		return
+	var p2: Dictionary = phase_data(2)
+	var sh: Dictionary = p2.get("shield", {})
+	_shield = POPUP_SCENE.instantiate() as OverlayPopup
+	_shield.name = "Shield"
+	_shield.object_id = &"escudo"
+	_shield.text = ""
+	_shield.width_tiles = int(sh.get("width_tiles", 2))
+	_shield.height_tiles = int(sh.get("height_tiles", 2))
+	var b: Array = sh.get("close_button_px", [52, 96])
+	_shield.close_button_position = Vector2(float(b[0]), float(b[1]))
+	_shield.close_button_size = int(sh.get("close_button_size_px", 24))
+	_shield.opaque = true
+	_shield.icon_texture = _texture(ART_SHIELD)
+	var size: Vector2 = Vector2(_shield.width_tiles, _shield.height_tiles) * _tile
+	_shield.follow_offset = -size * 0.5
+	_attacks.add_child(_shield)
+	_shield.follow_target = _body
+	_shield.closing_started.connect(_on_shield_closing)
+	_shield.visible = false
+
+
+func _advance_popups(dt: float, p2: Dictionary) -> void:
+	# Caducan (popup_life_s) y avisos que se convierten en pop-up.
+	for p: Dictionary in _popups:
+		p["t"] = float(p["t"]) + dt
+		var node: Variant = p.get("node")
+		if node == null:
+			if float(p["t"]) >= frames_s(p2.get("popup_warn_frames", 9)):
+				_open_popup(p, p2)
+		elif is_instance_valid(node) and float(p["t"]) >= frames_s(p2.get("popup_warn_frames", 9)) \
+				+ float(p2.get("popup_life_s", 8.0)):
+			(node as OverlayPopup).close()
+	_popups = _popups.filter(func(p: Dictionary) -> bool:
+		var node: Variant = p.get("node")
+		return node == null or (is_instance_valid(node) and not (node as OverlayPopup).is_closed()))
+	_popup_t += dt
+	if _popup_t < float(p2.get("popup_every_s", 6.0)):
+		return
+	var max_n: int = int(lap_value("popup_max", 2, "phase2"))
+	if _popups.size() >= max_n:
+		return
+	var q: int = _pick_quarter()
+	if q < 0:
+		return
+	_popup_t = 0.0
+	_popups.append({"quarter": q, "t": 0.0, "node": null})
+	_warnings.append({"kind": "outline", "id": "popup_%d" % q, "rect": _quarter_rect(q)})
+	_warn_layer.queue_redraw()
+	attack_started.emit(&"popup")
+
+
+func _pick_quarter() -> int:
+	var quarters: Array = phase_data(2).get("popup_quarters", [])
+	var isak: Isak = find_isak()
+	var isak_q: int = quarter_of(isak.global_position - Vector2(0.0, 40.0)) if isak != null else -1
+	var free: Array[int] = []
+	for i: int in quarters.size():
+		if i == isak_q:
+			continue
+		var used: bool = false
+		for p: Dictionary in _popups:
+			if int(p["quarter"]) == i:
+				used = true
+		if not used:
+			free.append(i)
+	if free.is_empty():
+		return -1
+	return free[_rng.randi_range(0, free.size() - 1)]
+
+
+func _quarter_rect(i: int) -> Rect2:
+	var q: Array = phase_data(2).get("popup_quarters", [])[i]
+	return Rect2(_to_global(Vector2(float(q[0]), float(q[1])) * _tile), Vector2(float(q[2]), float(q[3])) * _tile)
+
+
+func _open_popup(p: Dictionary, p2: Dictionary) -> void:
+	_remove_warning("popup_%d" % int(p["quarter"]))
+	var rect: Rect2 = _quarter_rect(int(p["quarter"]))
+	var popup := POPUP_SCENE.instantiate() as OverlayPopup
+	var texts: Array = _texts.get("popups", [])
+	popup.text = String(texts[_rng.randi_range(0, texts.size() - 1)]) if not texts.is_empty() else "99+"
+	popup.width_tiles = roundi(rect.size.x / _tile)
+	popup.height_tiles = roundi(rect.size.y / _tile)
+	popup.opacity = float(p2.get("popup_opacity", 0.7))
+	popup.debug_opacity = float(p2.get("popup_debug_opacity", 0.15))
+	# Boton de 24 px a la altura del celular de Isak en un carril (alterna suelo / alto).
+	var lanes: Dictionary = _arena.get("lanes", {})
+	var lane: String = "floor" if _popup_button_lane % 2 == 0 else "high"
+	_popup_button_lane += 1
+	var phone_y: float = float((lanes.get(lane, {}) as Dictionary).get("surface_row", 10)) * _tile + _phone_y()
+	var size: int = popup.close_button_size
+	popup.close_button_position = Vector2(rect.size.x * 0.5 - size * 0.5, phone_y - rect.position.y - size * 0.5)
+	popup.add_to_group(&"help_target")
+	popup.set_meta(&"help_id", "overlay_popup")
+	_attacks.add_child(popup)
+	popup.global_position = rect.position
+	p["node"] = popup
+
+
+func _advance_burst(dt: float, p2: Dictionary) -> void:
+	if _burst_state == &"":
+		if is_window_open():
+			return
+		_burst_t_next += dt
+		if _burst_t_next >= float(p2.get("burst_every_s", 4.5)):
+			_burst_t_next = 0.0
+			start_burst()
+		return
+	_burst_t += dt
+	var warn: float = frames_s(p2.get("burst_warn_frames", 9))
+	if _burst_state == &"warn":
+		if _burst_t >= warn:
+			_burst_state = &"fire"
+			_burst_t = 0.0
+			_remove_warning("burst")
+		return
+	var shots: int = int(p2.get("burst_shots", 3))
+	var spacing: float = float(p2.get("burst_spacing_s", 0.5))
+	while _burst_fired < shots and _burst_t >= float(_burst_fired) * spacing:
+		_fire_shot(p2, _burst_t - float(_burst_fired) * spacing)
+		_burst_fired += 1
+	if _burst_fired >= shots and get_shots().is_empty():
+		_burst_state = &""
+
+
+func _fire_shot(p2: Dictionary, late_s: float) -> void:
+	var lanes: Dictionary = _arena.get("lanes", {})
+	var lane: Dictionary = lanes.get(_burst_lane, {})
+	var x0: float = float(lane.get("from_col", 1)) * _tile
+	var x1: float = (float(lane.get("to_col", 22)) + 1.0) * _tile
+	var s: Array = p2.get("shot_size_px", [64, 32])
+	var shot := NotificationShot.new()
+	shot.direction = _burst_dir
+	shot.speed_px_s = float(p2.get("shot_speed_px_s", 640.0))
+	shot.size_px = Vector2(float(s[0]), float(s[1]))
+	shot.contact_damage = float(p2.get("contact_damage", 10.0))
+	shot.travel_px = (x1 - x0) - shot.size_px.x
+	var y: float = float(lane.get("surface_row", 10)) * _tile + _phone_y()
+	var start_x: float = (x0 + shot.size_px.x * 0.5) if _burst_dir > 0 else (x1 - shot.size_px.x * 0.5)
+	_attacks.add_child(shot)
+	shot.global_position = _to_global(Vector2(start_x, y))
+	if late_s > 0.0:
+		shot.step(late_s)
+
+
+## Plataforma de phase2.perch_spots mas lejana de Isak.
+func _far_perch_spot() -> StringName:
+	var spots: Array = phase_data(2).get("perch_spots", ["platform_left", "platform_right"])
+	var isak: Isak = find_isak()
+	var best: StringName = StringName(String(spots[0]))
+	var best_d: float = -1.0
+	for spot: Variant in spots:
+		var d: float = absf(get_spot_center(StringName(String(spot))).x - (isak.global_position.x if isak != null else 0.0))
+		if d > best_d:
+			best_d = d
+			best = StringName(String(spot))
+	return best
+
+
+func _phone_y() -> float:
+	var off: Array = _arena.get("core_offset_px", [0, -56])
+	return float(off[1])

@@ -18,6 +18,12 @@
 ##   mientras este entero el pulso al boton no lo cierra.
 ## - El cierre (unos cuadros en que se pliega) va en tiempo del mundo.
 ## El origen del nodo es la esquina superior izquierda de su primera celda.
+## Pop-up escudo de Alerta Mayor (2026-10-21, paso 7 de
+## docs/propuesta-jefe-alerta-mayor.md §6, §2.6): `opaque` (opaco del todo; el
+## Debug tampoco ve a traves), `follow_target` + `follow_offset` (sigue a un nodo:
+## el cuerpo del jefe), `icon_texture` (icono en el centro), `respawn_s` (cerrado,
+## vuelve a abrirse tras esos s del mundo; 0 = nunca) y reopen(). Por defecto, el
+## pop-up translucido del 1-2 de siempre.
 class_name OverlayPopup
 extends Node2D
 
@@ -41,6 +47,15 @@ signal closed
 @export var opacity: float = 0.7
 ## Opacidad con el Debug activo del todo.
 @export var debug_opacity: float = 0.15
+## Opaco del todo y sin ver a traves con el Debug (escudo del jefe).
+@export var opaque: bool = false
+## Cerrado, vuelve a abrirse tras respawn_s segundos del mundo (0 = nunca).
+@export var respawn_s: float = 0.0
+## Nodo al que sigue (su esquina superior izquierda = su posicion + follow_offset).
+var follow_target: Node2D
+var follow_offset: Vector2 = Vector2.ZERO
+## Icono centrado sobre la ventana (null = ninguno).
+var icon_texture: Texture2D
 
 var _config: Dictionary = World1ObjectsConfig.section("overlay_popup")
 var _state: State = State.OPEN
@@ -54,6 +69,8 @@ var _label: Label
 var _button: Area2D
 var _button_sprite: AnimatedSprite2D
 var _covers: Array[Node] = []
+var _closed_time: float = 0.0
+var _icon: Sprite2D
 
 
 func _ready() -> void:
@@ -66,6 +83,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if follow_target != null and is_instance_valid(follow_target):
+		global_position = follow_target.global_position + follow_offset
 	advance(WorldTime.scaled_delta(delta))
 
 
@@ -155,6 +174,18 @@ func receive_pulse(area: Area2D) -> bool:
 	return true
 
 
+## Vuelve a abrirse (cerrado o cerrandose): el escudo del jefe.
+func reopen() -> void:
+	if _state == State.OPEN:
+		return
+	_state = State.OPEN
+	_closed_time = 0.0
+	_window.scale = Vector2.ONE
+	_window.position = Vector2.ZERO
+	_button.set_deferred(&"monitoring", true)
+	_update_visual()
+
+
 func close() -> void:
 	if _state != State.OPEN:
 		return
@@ -172,7 +203,12 @@ func advance(dt: float) -> void:
 		_close_time += dt
 		if _close_time >= float(_config.get("close_s", 0.33)):
 			_state = State.CLOSED
+			_closed_time = 0.0
 			closed.emit()
+	elif _state == State.CLOSED and respawn_s > 0.0:
+		_closed_time += dt
+		if _closed_time >= respawn_s:
+			reopen()
 	_update_visual()
 
 
@@ -182,8 +218,8 @@ func _update_visual() -> void:
 	if _window == null:
 		return
 	# Revelado persistente (Debug 3): tras apagar el Debug se sigue viendo a traves.
-	var intensity: float = DebugMode.get_reveal_intensity()
-	var alpha: float = lerpf(opacity, debug_opacity, intensity)
+	var intensity: float = 0.0 if opaque else DebugMode.get_reveal_intensity()
+	var alpha: float = 1.0 if opaque else lerpf(opacity, debug_opacity, intensity)
 	_body.modulate.a = alpha
 	_label.modulate.a = alpha
 	_debug_frame.visible = intensity > 0.0
@@ -229,6 +265,12 @@ func _build() -> void:
 	bell.position = Vector2(3.0, 2.0)
 	_body.add_child(bell)
 	_build_text(size)
+	if icon_texture != null:
+		_icon = Sprite2D.new()
+		_icon.name = "Icon"
+		_icon.texture = icon_texture
+		_icon.position = size * 0.5
+		_window.add_child(_icon)
 	_button = Area2D.new()
 	_button.name = "CloseButton"
 	_button.collision_layer = 0
