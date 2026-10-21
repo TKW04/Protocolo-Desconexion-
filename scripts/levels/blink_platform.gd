@@ -191,6 +191,17 @@ func get_texture_name() -> String:
 
 func _draw() -> void:
 	var dir: String = String(_config.get("texture_dir", "res://assets/sprites/props/dnd/"))
-	var texture := load(dir + get_texture_name()) as Texture2D
+	var texture: Texture2D = _cached_texture(dir + get_texture_name())
 	if texture != null:
 		draw_texture(texture, Vector2.ZERO)
+
+## Texturas ya cargadas por ruta. _draw se llama cada cuadro y load() de un
+## recurso importado relee su .import en disco (~0,7 ms por llamada aunque este
+## en cache): con varias instancias hundia el 1-3 a menos de 10 FPS.
+static var _texture_cache: Dictionary = {}
+
+
+static func _cached_texture(path: String) -> Texture2D:
+	if not _texture_cache.has(path):
+		_texture_cache[path] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _texture_cache[path]

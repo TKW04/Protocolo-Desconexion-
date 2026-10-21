@@ -211,7 +211,7 @@ func is_icon_lit() -> bool:
 func _draw() -> void:
 	var lit: bool = is_icon_lit()
 	var key: String = "icon_lit" if lit else "icon_dim"
-	var texture := load(String(_config.get(key, ""))) as Texture2D
+	var texture: Texture2D = _cached_texture(String(_config.get(key, "")))
 	if texture == null:
 		return
 	var t: float = World1ObjectsConfig.tile_size()
@@ -220,3 +220,14 @@ func _draw() -> void:
 		var shake_px: float = float(_config.get("lit_shake_px", 2.0))
 		shake = shake_px if get_cycle_count() % 2 == 0 else -shake_px
 	draw_texture(texture, (Vector2(t, t) - texture.get_size()) * 0.5 + Vector2(shake, 0.0))
+
+## Texturas ya cargadas por ruta. _draw se llama cada cuadro y load() de un
+## recurso importado relee su .import en disco (~0,7 ms por llamada aunque este
+## en cache): con varias instancias hundia el 1-3 a menos de 10 FPS.
+static var _texture_cache: Dictionary = {}
+
+
+static func _cached_texture(path: String) -> Texture2D:
+	if not _texture_cache.has(path):
+		_texture_cache[path] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _texture_cache[path]
