@@ -281,6 +281,38 @@ func test_phase3_side_platforms_are_one_way_and_bells_fall_beside_them() -> void
 	assert_almost_eq(isak.global_position.y, 8.0 * TILE, 2.0, "De pie en la lateral (fila 8) tras saltar desde debajo")
 
 
+## Subida a la central en Raíz (2026-10-21, §6.4): desde el borde de una
+## lateral encendida, saltando corriendo, se llega a la plataforma central con el
+## Debug activo (el validador de arenas lo modela; el dash aereo, soltando el
+## Debug, es la alternativa).
+func test_raiz_center_is_reached_from_a_lateral_with_the_debug_on() -> void:
+	await _arena(3, false, true)
+	_boss.start()
+	_to_phase(3)
+	for id: String in ["parpadeo_a1", "parpadeo_a2"]:
+		(_obj(id) as BlinkPlatform).hold_on()
+	_place_isak(6, 7)
+	var isak: Isak = _level.get_isak()
+	assert_almost_eq(isak.global_position.y, 8.0 * TILE, 2.0, "En la lateral izquierda")
+	GameState.debug_energy = GameState.get_debug_energy_max()
+	_debug_on()
+	_sim.input.move_axis = 1.0
+	_sim.input.run_held = true
+	_sim.input.jump_pressed = true
+	_sim.input.jump_held = true
+	_sim.step()
+	_sim.input.jump_pressed = false
+	for i: int in 30:
+		_sim.step()
+	_sim.input.move_axis = 0.0
+	for i: int in 60:
+		_sim.step()
+	assert_true(DebugMode.is_active(), "El Debug sigue activo")
+	assert_true(isak.is_on_floor())
+	assert_almost_eq(isak.global_position.y, 6.0 * TILE, 2.0, "De pie en la central (fila 6)")
+	DebugMode.reset()
+
+
 func test_lap_settings_per_access() -> void:
 	var expected: Dictionary = {1: [4.0, [2.0], 0.55], 2: [5.0, [2.0, 1.6], 0.65], 3: [6.0, [2.0, 1.6, 1.4], 0.72]}
 	for lap: int in expected:

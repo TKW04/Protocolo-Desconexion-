@@ -220,5 +220,65 @@ class SidePlatformsTest(unittest.TestCase):
             self.assertNotIn("one_way = true", handle.read())
 
 
+class CenterClimbTest(unittest.TestCase):
+    """4) Subida a la plataforma central en Raíz: parpadeo de las laterales, una via, campanas y dash aereo."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.level = load(LEVEL)
+        cls.boss = load(BOSS)
+        cls.result = vb.validate_arena(cls.level, boss=cls.boss)
+
+    def test_raiz_center_is_reachable_through_a_lateral(self):
+        cc = self.result["boss"]["center_climb"]
+        self.assertTrue(self.result["ok"], messages(self.result))
+        self.assertEqual(list(cc["laps"]), ["3"], "Solo Raíz tiene cuarta copia")
+        self.assertTrue(cc["via_lateral"])
+        self.assertIn("sin dash", cc["paths"], "Saltando corriendo desde la lateral (el Debug puede seguir activo)")
+        self.assertIn("salto + dash aereo", cc["paths"], "Tambien soltando el Debug con el dash aereo")
+        self.assertGreater(cc["safe_pulse_cells"], 0)
+        lap = cc["laps"]["3"]
+        self.assertGreaterEqual(lap["margin_s"], 0.0)
+        self.assertLessEqual(lap["need_s"], lap["window_s"])
+        self.assertIn("subida a la central (fase 3)", vb.format_text("1-boss", self.result))
+
+    def test_solid_laterals_change_the_climb(self):
+        level = copy.deepcopy(self.level)
+        for o in level["objects"]:
+            if o["type"] == "blink_platform":
+                o["params"]["one_way"] = False
+        geo = vb.phase3_geometry(level)
+        self.assertEqual(geo["grid"][8][3:7], "####", "Macizas: no se suben desde debajo")
+        self.assertEqual(vb.phase3_geometry(self.level)["grid"][8][3:7], "----")
+
+    def test_short_lateral_blink_is_an_error(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["3"]["phase3"]["blink_on_fraction"] = 0.6
+        msgs = messages(vb.validate_arena(self.level, boss=boss))
+        self.assertTrue(any("vuelta 3: la lateral encendida" in m for m in msgs), msgs)
+
+    def test_bell_over_the_whole_center_is_an_error(self):
+        level = copy.deepcopy(self.level)
+        bell_data = load(os.path.join(ROOT, "data", "enemies", "alarm_bell.json"))
+        grid = [list(r) for r in level["grid"]]
+        enemies = []
+        for i, c in enumerate(range(9, 15)):
+            grid[1][c] = "E"
+            enemies.append({"id": "c%d" % i, "type": "alarm_bell", "x": c, "y": 1, "active_in_phase": [3],
+                            "params": {"rhythm": "ritmo_jefe", "offset": 0.0, "wave_tiles": 9}})
+        for e in level["enemies"]:
+            grid[e["y"]][e["x"]] = "."
+        level["grid"] = ["".join(r) for r in grid]
+        level["enemies"] = enemies
+        self.assertTrue(bell_data["damage_width_px"] > 0)
+        msgs = messages(vb.validate_arena(level, boss=self.boss))
+        self.assertTrue(any("no hay sitio fuera de la onda de las campanas" in m for m in msgs), msgs)
+
+    def test_clone_help_suggests_releasing_the_debug(self):
+        text = load(os.path.join(ROOT, "data", "help.json"))["types"]["alert_major_clone"]["text"]
+        self.assertIn("suelta el Debug", text)
+        self.assertIn("plataforma del centro", text)
+
+
 if __name__ == "__main__":
     unittest.main()

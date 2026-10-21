@@ -32,6 +32,13 @@ Debug, dash, energia y mejoras de data/upgrades.json):
   7. Fase 3 por acceso: nunca dos ondas de campana a la vez en ningun paso del compas (hueco seguro), cada
      campana cabe en el compas mas corto (aviso + onda + reposo), las plataformas que parpadean encendidas
      >= aviso + 0,25 s con el compas mas corto, copias <= sitios y lanzamientos <= copias.
+  7c. Subida a la plataforma central en la fase 3 (§6.4; Raíz, cuarta copia): con la geometria de la fase 3
+     (laterales que parpadean: de una via si one_way, si no macizas) hay camino desde el suelo de window_from
+     a la central pasando por una lateral, sin el dash (el Debug puede seguir activo) o con el salto + dash
+     aereo (soltando el Debug: no se combinan); la lateral encendida da tiempo a aterrizar y despegar antes de
+     su aviso (compas mas corto, sin el Debug: a x1); la ventana cubre ademas la espera a que la lateral se
+     encienda; y hay celdas de la central fuera de la onda de las campanas desde las que el pulso llega al
+     nucleo (y la de llegada tampoco esta bajo una campana).
   7b. Marca (§6.4): en la marca de cada acceso (mark_duration_s, tiempo del mundo; el caso peor es sin el
      Debug, a x1) caben los laseres de la peor ventana de la pelea torpe (golpes / dano + fallados).
   8. ENERGIA (§2.4.7): la pelea torpe de validation_model (por acceso y fase: ventanas con sus golpes,
@@ -61,6 +68,9 @@ TELEGRAPH_FRAMES = (6, 12)
 # Tiempo de una subida de 2 tiles (un salto hasta la repisa; aproximado).
 CLIMB_S = 0.45
 MAX_TRACK = "max"
+# Reaccion en una lateral que parpadea: de aterrizar a despegar otra vez (s; §6.4, subida a la central).
+LATERAL_REACT_S = 0.2
+CENTER_SPOT = "platform_center"
 # Parte del enfriamiento del dash en que Isak puede volver corriendo hacia atras (§6.4, rafaga).
 DASH_RETREAT_FRACTION = 0.5
 
@@ -520,6 +530,143 @@ def check_phase3(arena, boss, root, errors, report):
     report["bell_cols"] = sorted(int(b["x"]) for b in bells)
 
 
+def phase3_geometry(level):
+    """Nivel de la fase 3 para el modelo de movimiento: las celdas de las plataformas que parpadean son '-' si
+    son de una via (one_way) y '#' si no (cajas macizas: no se suben desde debajo)."""
+    geo = geometry_level(level)
+    grid = [list(row) for row in geo["grid"]]
+    for o in level.get("objects", []):
+        if o.get("type") != "blink_platform" or 3 not in o.get("active_in_phase", []):
+            continue
+        p = o.get("params", {})
+        for c in range(int(o["x"]), int(o["x"]) + int(p.get("width_tiles", 2))):
+            grid[int(o["y"])][c] = "-" if p.get("one_way") else "#"
+    geo["grid"] = ["".join(r) for r in grid]
+    return geo
+
+
+def _climb_path(model, sources, targets, limit):
+    """Mejor camino (lista de (desde, hasta, tipo, dash)) desde alguna celda de `sources` a una de `targets`."""
+    best = None
+    for src in sources:
+        cost, parent = vl.search(model, src, model.initial, limit, debug=False)
+        for t in targets:
+            if t not in cost:
+                continue
+            path, n = [], t
+            while parent.get(n):
+                p, e = parent[n]
+                path.append((p, e["to"], e.get("kind"), bool(e.get("dash"))))
+                n = p
+            path.reverse()
+            key = (cost[t], len(path))
+            if best is None or key < best[0]:
+                best = (key, path)
+    return best[1] if best else None
+
+
+def check_center_climb(arena, boss, root, errors, report):
+    """Regla 7c: subida a la plataforma central en la fase 3 (accesos con copia en CENTER_SPOT)."""
+    spots = boss.get("phase3", {}).get("copy_spots", [])
+    if CENTER_SPOT not in spots or CENTER_SPOT not in arena.spots:
+        return
+    idx = spots.index(CENTER_SPOT)
+    laps = [lap for lap, e in sorted(boss.get("laps", {}).items())
+            if int(e.get("phase3", {}).get("copies", 3)) > idx]
+    if not laps:
+        return
+    rules, T = arena.rules, arena.T
+    level = arena.level
+    _, surface = arena.spots[CENTER_SPOT]
+    row = surface - 1
+    center_cells = [(c, row) for c in range(arena.cols) if arena.world.is_node(c, row)]
+    blinks = [o for o in level.get("objects", []) if o.get("type") == "blink_platform"
+              and 3 in o.get("active_in_phase", [])]
+    lateral_rows = {int(o["y"]) - 1 for o in blinks}
+    lateral_cols = {c for o in blinks for c in range(int(o["x"]), int(o["x"]) + int(o.get("params", {}).get("width_tiles", 2)))}
+    spec = boss.get("validation_model", {}).get("window_from", {}).get("3", {"lane": "floor", "cols": [0, arena.cols]})
+    sources = [n for n in arena.lane_cells(spec.get("lane", "floor")) if spec["cols"][0] <= n[0] <= spec["cols"][1]]
+    out = {"cells": len(center_cells)}
+    paths = {}
+    for name, dash in (("sin dash", False), ("salto + dash aereo", True)):
+        geo = phase3_geometry(level)
+        geo["abilities_available"] = dict(geo.get("abilities_available", {}), dash=dash)
+        model = vl.Validator(geo, rules).model
+        path = _climb_path(model, sources, center_cells, rules.limit)
+        if path is not None:
+            paths[name] = path
+    if not paths:
+        _err(errors, "fase 3: la plataforma central no se alcanza desde el suelo (ni con el salto + dash aereo) con "
+                     "las laterales de la fase 3")
+        report["center_climb"] = out
+        return
+    # Con el Debug activo no hay dash: si el camino sin dash existe, el Debug puede seguir encendido.
+    name = "sin dash" if "sin dash" in paths else "salto + dash aereo"
+    path = paths[name]
+    out["path"] = name
+    out["paths"] = sorted(paths)
+    out["moves"] = ["%s %s->%s" % (k + (" (dash)" if d else ""), a, b) for a, b, k, d in path]
+    # Tiempo de pie en la lateral: de aterrizar a despegar (reaccion + lo que ande por ella).
+    stand = LATERAL_REACT_S
+    used_lateral = False
+    for a, b, kind, dash in path:
+        if b[1] in lateral_rows and b[0] in lateral_cols:
+            used_lateral = True
+        if a[1] in lateral_rows and b[1] == a[1] and a[0] in lateral_cols:
+            stand += abs(b[0] - a[0]) * T / rules.run_speed
+    out["via_lateral"] = used_lateral
+    catalog = load_json(os.path.join(root, "data", "world1_objects.json"))
+    cfg = catalog.get("blink_platform", {})
+    warn = float(cfg.get("warn_frames", 9)) / float(cfg.get("anim_fps", 12.0))
+    bell_data = load_json(os.path.join(root, "data", "enemies", "alarm_bell.json"))
+    half = float(bell_data.get("damage_width_px", 48.0)) / 2.0 + rules.hitbox_w / 2.0
+    bells = [(e, (int(e["x"]) + 0.5) * T) for e in level.get("enemies", [])
+             if e.get("type") == "alarm_bell" and 3 in e.get("active_in_phase", [])]
+
+    def under_bell(node):
+        x = (node[0] + 0.5) * T
+        return [e["id"] for e, cx in bells if abs(x - cx) < half - EPS]
+
+    landing = path[-1][1]
+    if under_bell(landing):
+        _err(errors, "fase 3: se llega a la plataforma central bajo la campana %s" % under_bell(landing)[0],
+             landing[1], landing[0])
+    pulse, _ = _reach_cells(arena, CENTER_SPOT)
+    safe = sorted({n for n, _ in pulse if n[1] == row and not under_bell(n)})
+    if not safe:
+        _err(errors, "fase 3: en la plataforma central no hay sitio fuera de la onda de las campanas desde el que el "
+                     "pulso llegue al nucleo")
+    out["safe_pulse_cells"] = len(safe)
+    out["landing"] = landing
+    out["stand_s"] = round(stand, 3)
+    k = float(boss.get("validation_model", {}).get("window_k", 2.0))
+    window = float(boss.get("phase3", {}).get("window_s", 0.0))
+    travel = max(min(arena.travel_s(a, b) for b in center_cells) for a in sources if a in arena.reachable)
+    laps_out = {}
+    for lap in laps:
+        p3 = boss["laps"][lap].get("phase3", {})
+        cycle = min(float(v) for v in p3.get("tempo_steps_s", [2.0]))
+        on = float(p3.get("blink_on_fraction", 0.5)) * cycle
+        wait = cycle - on
+        if used_lateral and on + EPS < warn + stand:
+            _err(errors, "vuelta %s: la lateral encendida %.2f s con el compas de %.2f s no da para aterrizar y "
+                         "despegar (%.2f s) antes de su aviso (%.2f s)" % (lap, on, cycle, stand, warn))
+        if name == "sin dash":
+            base = _window_need(arena, travel)
+        else:
+            # Soltando el Debug para el dash: recorrido a x1 y despues la carga.
+            base = travel + rules.debug_hold_s + rules.debug_world_scale * (rules.pulse_pose_s + rules.laser_pose_s)
+        need = k * (base + (wait if used_lateral else 0.0))
+        if window + EPS < need:
+            _err(errors, "vuelta %s: la ventana en la central dura %.2f s del mundo y hacen falta %.2f (k = %g x "
+                         "(recorrido %.2f s + espera a la lateral %.2f s + Debug + poses))"
+                 % (lap, window, need, k, travel, wait))
+        laps_out[lap] = {"on_s": round(on, 3), "margin_s": round(on - warn - stand, 3), "wait_s": round(wait, 3),
+                         "need_s": round(need, 3), "window_s": window}
+    out["laps"] = laps_out
+    report["center_climb"] = out
+
+
 def mark_shots(rules, seconds):
     """Laseres que caben en `seconds` reales desde la marca: el primero tras su pose y cada uno de los siguientes
     tras la pose y el enfriamiento (cuenta conservadora)."""
@@ -658,6 +805,7 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
     check_windows(arena, boss, errors, report)
     check_phase3(arena, boss, root, errors, report)
     check_mark(arena, boss, errors, report)
+    check_center_climb(arena, boss, root, errors, report)
     check_energy(arena, boss, rules, list(upgrades), errors, report, root)
     return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
 
@@ -694,6 +842,15 @@ def format_text(path, result):
             out.append("  fase 3, vuelta %s: compas %s s, %d copias, %d lanzamientos por ronda, parpadeo %.2f"
                        % (lap, "/".join("%g" % v for v in p3["tempo_steps_s"]), p3["copies"],
                           p3["launches_per_round"], p3["blink_on_fraction"]))
+        cc = rep.get("center_climb")
+        if cc and cc.get("path"):
+            out.append("  subida a la central (fase 3): %s (caminos: %s); %s; llega a %s; %d celda(s) para el pulso "
+                       "fuera de las campanas" % (cc["path"], ", ".join(cc["paths"]), "; ".join(cc["moves"][-2:]),
+                                                  list(cc["landing"]), cc["safe_pulse_cells"]))
+            for lap, c in sorted(cc["laps"].items()):
+                out.append("    vuelta %s: lateral encendida %.2f s (margen %.2f s tras aterrizar y despegar antes del "
+                           "aviso), espera %.2f s; ventana %.2f s (hacen falta %.2f)"
+                           % (lap, c["on_s"], c["margin_s"], c["wait_s"], c["window_s"], c["need_s"]))
         for lap, m in sorted((rep.get("mark") or {}).items()):
             out.append("  marca, vuelta %s: %g s del mundo (%g s reales con el Debug); caben %d laser(es) sin el Debug "
                        "y %d con el; la peor ventana torpe pide %d" % (lap, m["mark_s"], m["real_with_debug_s"],

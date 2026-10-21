@@ -434,7 +434,7 @@
 		"alert_major_clone": {
 			"category": "enemy",
 			"title": "Copia",
-			"text": "Copias. Solo una tiene núcleo: mira con el Debug antes de marcar. Si golpeas una copia, se rompe y suelta una Burbuja.",
+			"text": "Copias. Solo una tiene núcleo: mira con el Debug antes de marcar. Si golpeas una copia, se rompe y suelta una Burbuja. Si una se posa en la plataforma del centro y no llegas, suelta el Debug: en el aire podrás deslizarte.",
 			"first_level": "1-boss",
 			"world": 1,
 			"order": 40,
