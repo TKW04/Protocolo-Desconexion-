@@ -120,6 +120,9 @@
 | `sfx_alarm_bell_warn` | Campana de alarma a punto de sonar | `alarm_bell.gd` estado `warn` | 1-3 Tramo 4 | P1 | E | 0,3 s; temblor metálico suave |
 | `sfx_alarm_bell_wave` | Onda de la campana (golpea) | `alarm_bell.gd` estado `wave` | 1-3 Tramo 4 | P1 | E | 0,5 s; campana amortiguada, no estridente; variación de tono por campana |
 | `sfx_weak_point_hit` | Golpe al punto débil del jefe | `weak_point.gd` | Jefes | P1 | E | 0,3 s; satisfactorio; común a todos los jefes con capa propia por mundo |
+| `sfx_weak_point_mark` | El pulso marca el núcleo (o refresca la marca) | `weak_point.gd` señal `marked` (2026-10-21, `propuesta-jefe-alerta-mayor.md` §2.3.1) | Jefes | P1 | F | 0,3 s; «fijado» brillante y corto, distinto del golpe; versión algo más suave al refrescar (`refreshed`) |
+| `sfx_weak_point_mark_warn` | La marca está a punto de caducar (último segundo del mundo) | `weak_point.gd` señal `mark_warning` | Jefes | P1 | F | Tic doble o 3 pitidos descendentes muy suaves durante 1 s; **accesibilidad** (§12): avisa sin mirar el halo; en tiempo del mundo (con el Debug va a la mitad) |
+| `sfx_weak_point_mark_end` | La marca caduca: el núcleo vuelve a ocultarse | `weak_point.gd` señal `mark_expired` | Jefes | P2 | F | 0,2 s; apagado sordo; no suena si la marca se pierde por subir el jefe, cambiar de fase o reaparecer |
 | `sfx_boss1_intro` | Alerta Mayor aparece («99+» que se infla) | Jefe del Mundo 1 (por construir) | Jefe M1 | P1 | F | 1,5 s |
 | `sfx_boss1_launch` | Lanza burbujas y banners (fase 1) | Ídem | Jefe M1 | P1 | F | Reutiliza familias de §4 con más cuerpo |
 | `sfx_boss1_popup_storm` | Lluvia de pop-ups (fase 2) | Ídem | Jefe M1 | P2 | F | Ráfaga de `sfx_popup_appear` en cascada |
