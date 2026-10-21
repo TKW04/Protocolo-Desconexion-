@@ -109,7 +109,7 @@
 		"window_spot": "floor_center",
 		"window_s": 5.0
 	},
-	"_phase2_notes": "FASE 2 «66» (§2.6): lluvia de pop-ups translucidos (overlay_popup): cada popup_every_s aparece uno (como mucho popup_max a la vez, por acceso) que tapa un cuarto de la arena (popup_quarters: [columna, fila, ancho, alto]) durante popup_life_s; nunca en el cuarto de Isak ni en uno ya tapado; contorno punteado banner_blanco popup_warn_frames cuadros antes; su boton (24 px) a la altura de un carril (alterna: suelo / alto). Rafaga (notification_shot): cada burst_every_s, aviso de burst_warn_frames cuadros (flecha alerta en el muro de entrada y linea discontinua por el carril) y burst_shots notificaciones de shot_size_px cruzan el carril de Isak desde el muro mas lejano, a shot_speed_px_s, separadas burst_spacing_s; contact_damage cada una; el dash las atraviesa; el laser y el pulso no les afectan. Sin rafagas nuevas con la ventana abierta. VENTANA: cada window_every_s baja a la plataforma lateral (perch_spots) mas lejana de Isak tapado por un pop-up ESCUDO (overlay_popup opaco que le sigue: shield) y espera perch_s; un pulso a su boton lo cierra y abre la ventana de window_s s del mundo (nucleo activo); al acabar, el escudo vuelve, sube y la marca se pierde. Sin abrirlo en perch_s, sube. Semilla fija (seed) para los cuartos y el orden: el bot es determinista.",
+	"_phase2_notes": "FASE 2 «66» (§2.6): lluvia de pop-ups translucidos (overlay_popup): cada popup_every_s aparece uno (como mucho popup_max a la vez, por acceso) que tapa un cuarto de la arena (popup_quarters: [columna, fila, ancho, alto]) durante popup_life_s; nunca en el cuarto de Isak ni en uno ya tapado; contorno punteado banner_blanco popup_warn_frames cuadros antes; su boton (24 px) a la altura de un carril (alterna: suelo / alto). Rafaga (notification_shot): cada burst_every_s, aviso de burst_warn_frames cuadros (flecha alerta en el muro de entrada y linea discontinua por el carril) y burst_shots notificaciones de shot_size_px cruzan el carril de Isak desde el muro mas lejano, a shot_speed_px_s, separadas burst_spacing_s (0,9 s desde el 2026-10-21, §6.4: antes 0,5; el dash tarda 0,7 s en volver y acerca a Isak 192 px, 0,3 s, a la siguiente: con 0,75 no basta; con 0,9 se atraviesan una a una con el dash volviendo un paso entre dash y dash; burst_every_s 4,5 -> 4,75 para que la rafaga, ahora de 4,75 s, quepa en su intervalo); contact_damage cada una; el dash las atraviesa; el laser y el pulso no les afectan. Sin rafagas nuevas con la ventana abierta. VENTANA: cada window_every_s baja a la plataforma lateral (perch_spots) mas lejana de Isak tapado por un pop-up ESCUDO (overlay_popup opaco que le sigue: shield) y espera perch_s; un pulso a su boton lo cierra y abre la ventana de window_s s del mundo (nucleo activo); al acabar, el escudo vuelve, sube y la marca se pierde. Sin abrirlo en perch_s, sube. Semilla fija (seed) para los cuartos y el orden: el bot es determinista.",
 	"phase2": {
 		"seed": 1021,
 		"popup_every_s": 6.0,
@@ -119,11 +119,11 @@
 		"popup_quarters": [[1, 3, 6, 7], [7, 3, 5, 7], [12, 3, 6, 7], [18, 3, 5, 7]],
 		"popup_opacity": 0.7,
 		"popup_debug_opacity": 0.15,
-		"burst_every_s": 4.5,
+		"burst_every_s": 4.75,
 		"burst_first_s": 2.0,
 		"burst_warn_frames": 9,
 		"burst_shots": 3,
-		"burst_spacing_s": 0.5,
+		"burst_spacing_s": 0.9,
 		"shot_speed_px_s": 640.0,
 		"shot_size_px": [64, 32],
 		"contact_damage": 10.0,

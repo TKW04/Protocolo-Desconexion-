@@ -657,8 +657,10 @@ func test_burst_warns_then_three_shots_hit_the_real_isak_in_its_lane() -> void:
 	assert_eq(_boss.get_shots().size(), 0, "Nada durante el aviso de 9 cuadros")
 	_advance2(0.1, true)
 	assert_eq(_boss.get_shots().size(), 1, "Primera notificacion")
-	_advance2(1.0, true)
-	assert_eq(_boss.get_shots().size() + 0, 3, "Tres, separadas 0,5 s")
+	_advance2(0.6, true)
+	assert_eq(_boss.get_shots().size(), 1, "La segunda sale 0,9 s despues (§6.4; antes 0,5 s)")
+	_advance2(1.3, true)
+	assert_eq(_boss.get_shots().size() + 0, 3, "Tres, separadas 0,9 s")
 	_advance2(3.0, true)
 	assert_lt(GameState.sync_rate, sync - 5.0, "La rafaga le quita Sync Rate")
 	assert_eq(_boss.get_burst_state(), &"", "Rafaga terminada")
@@ -693,6 +695,40 @@ func test_the_other_lane_is_safe_from_a_burst_and_dash_goes_through_a_shot() -> 
 		_sim.input.move_axis = 0.0
 	assert_true(dashed)
 	assert_almost_eq(GameState.sync_rate, sync, EPS, "El dash atraviesa la notificacion")
+
+
+## Rafaga a 0,9 s (2026-10-21, §6.4): el dash (0,2 s + 0,5 s de enfriamiento)
+## vuelve a tiempo para atravesar cada notificacion, una a una, sin dano, si
+## entre dash y dash Isak vuelve corriendo lo que el dash le acerco.
+func test_dash_goes_through_the_whole_burst() -> void:
+	await _phase2(true)
+	_place_isak(4, 9)
+	GameState.debug_energy = GameState.get_debug_energy_max()
+	var isak: Isak = _level.get_isak()
+	var sync: float = GameState.sync_rate
+	assert_true(_boss.start_burst())
+	var dashes: int = 0
+	var seen: Dictionary = {}
+	for i: int in roundi(5.0 / DT):
+		_sim.input.dash_pressed = false
+		# Entre dashes vuelve corriendo hacia atras (lo que el dash le acerco).
+		var cooling: bool = dashes > 0 and not isak.is_dashing() and isak.get_dash_cooldown_left() > 0.0
+		_sim.input.move_axis = -1.0 if cooling else 0.0
+		_sim.input.run_held = cooling
+		for shot: NotificationShot in _boss.get_shots():
+			seen[shot.get_instance_id()] = true
+			var dx: float = shot.global_position.x - isak.global_position.x
+			if dx > 0.0 and dx < 110.0 and not isak.is_dashing() and isak.get_dash_cooldown_left() <= 0.0:
+				_sim.input.move_axis = 1.0
+				_sim.input.dash_pressed = true
+				dashes += 1
+				break
+		_advance2(DT, true)
+		if _boss.get_burst_state() == &"" and i > 10:
+			break
+	assert_eq(seen.size(), 3, "Tres notificaciones")
+	assert_eq(dashes, 3, "Un dash por notificacion")
+	assert_almost_eq(GameState.sync_rate, sync, EPS, "El dash atraviesa la rafaga entera")
 
 
 func test_laser_and_pulse_do_not_stop_a_shot() -> void:

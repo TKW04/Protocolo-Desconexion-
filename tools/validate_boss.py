@@ -61,6 +61,8 @@ TELEGRAPH_FRAMES = (6, 12)
 # Tiempo de una subida de 2 tiles (un salto hasta la repisa; aproximado).
 CLIMB_S = 0.45
 MAX_TRACK = "max"
+# Parte del enfriamiento del dash en que Isak puede volver corriendo hacia atras (§6.4, rafaga).
+DASH_RETREAT_FRACTION = 0.5
 
 
 def load_json(path):
@@ -249,6 +251,27 @@ def check_lanes(arena, boss, root, errors, report):
                      "(y dos carriles) a la vez" % (burst, every))
     report["burst_busy_s"] = round(burst, 3)
     report["burst_every_s"] = every
+    # Rafaga atravesable con el dash (§6.4): entre dos notificaciones (tiempo del mundo; el caso peor es sin el
+    # Debug, a x1) el dash vuelve a estar listo (duracion + enfriamiento, tiempo real) y cada notificacion
+    # pasa por Isak dentro de la invulnerabilidad del dash. El dash acerca a Isak dash_distance a la siguiente
+    # (dash_distance / velocidad de la notificacion antes); en el enfriamiento vuelve corriendo hacia atras,
+    # aprox. la mitad del enfriamiento a run_speed (la otra mitad frena la velocidad de salida del dash).
+    # Calibrado con el Isak real en tests/test_alert_major.gd (0,85 s no basta; 0,9 s si).
+    r = arena.rules
+    spacing = float(p2.get("burst_spacing_s", 0.0))
+    retreat = min(r.dash_distance, r.run_speed * r.dash_cooldown_s * DASH_RETREAT_FRACTION)
+    cycle = r.dash_duration + r.dash_cooldown_s \
+        + (r.dash_distance - retreat) / max(float(p2.get("shot_speed_px_s", 1.0)), 1.0)
+    shot_w = float(p2.get("shot_size_px", [64, 32])[0])
+    passing = (shot_w + r.hitbox_w) / max(float(p2.get("shot_speed_px_s", 1.0)), 1.0)
+    if int(p2.get("burst_shots", 1)) > 1 and spacing + EPS < cycle:
+        _err(errors, "fase 2: las notificaciones de la rafaga salen cada %.2f s y el dash tarda %.2f s en volver: "
+                     "no se atraviesa con el dash" % (spacing, cycle))
+    if passing > r.dash_invulnerable_s + EPS:
+        _err(errors, "fase 2: una notificacion tarda %.2f s en pasar por Isak y el dash es invulnerable %.2f s"
+                     % (passing, r.dash_invulnerable_s))
+    report["burst_dash"] = {"spacing_s": spacing, "dash_cycle_s": round(cycle, 3), "pass_s": round(passing, 3),
+                            "invulnerable_s": r.dash_invulnerable_s}
 
 
 def check_chargers(arena, boss, errors, report):
@@ -638,6 +661,11 @@ def format_text(path, result):
         if "sweep_busy_s" in rep:
             out.append("  carriles: barrido %.2f s cada %.2f s; rafaga %.2f s cada %.2f s; nunca los dos a la vez"
                        % (rep["sweep_busy_s"], rep["sweep_interval_s"], rep["burst_busy_s"], rep["burst_every_s"]))
+        if "burst_dash" in rep:
+            bd = rep["burst_dash"]
+            out.append("  rafaga con el dash: notificaciones cada %.2f s, el dash vuelve en %.2f s; cada una pasa en "
+                       "%.2f s (invulnerable %.2f s)" % (bd["spacing_s"], bd["dash_cycle_s"], bd["pass_s"],
+                                                       bd["invulnerable_s"]))
         if "charger_worst_tiles" in rep:
             out.append("  cargadores: el mas cercano a %g tiles como mucho; el segundo, a %g"
                        % (rep["charger_worst_tiles"], rep["charger_second_worst_tiles"]))

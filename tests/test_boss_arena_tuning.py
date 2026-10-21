@@ -134,5 +134,44 @@ class WorldScaleTest(unittest.TestCase):
         self.assertIn("mundo con el Debug: x0.7 (los avisos duran x1.43 en tiempo real con el Debug)", text)
 
 
+class BurstSpacingTest(unittest.TestCase):
+    """2) Rafaga: notificaciones cada 0,9 s (antes 0,5; 0,75 no bastaba: el dash acerca a Isak a la siguiente) y
+    burst_every_s 4,75 (antes 4,5): el dash las atraviesa una a una."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.level = load(LEVEL)
+        cls.boss = load(BOSS)
+
+    def test_spacing_is_0_9_and_fits_the_burst_interval(self):
+        self.assertEqual(self.boss["phase2"]["burst_spacing_s"], 0.9)
+        self.assertEqual(self.boss["phase2"]["burst_every_s"], 4.75)
+        result = vb.validate_arena(self.level, boss=self.boss)
+        self.assertTrue(result["ok"], messages(result))
+        rep = result["boss"]
+        self.assertLessEqual(rep["burst_busy_s"], rep["burst_every_s"])
+        self.assertGreaterEqual(rep["burst_dash"]["spacing_s"], rep["burst_dash"]["dash_cycle_s"])
+        self.assertLessEqual(rep["burst_dash"]["pass_s"], rep["burst_dash"]["invulnerable_s"])
+
+    def test_old_and_0_75_spacing_cannot_be_dashed(self):
+        for value in (0.5, 0.75):
+            boss = copy.deepcopy(self.boss)
+            boss["phase2"]["burst_spacing_s"] = value
+            msgs = messages(vb.validate_arena(self.level, boss=boss))
+            self.assertTrue(any("no se atraviesa con el dash" in m for m in msgs), (value, msgs))
+
+    def test_longer_burst_needs_its_interval(self):
+        boss = copy.deepcopy(self.boss)
+        boss["phase2"]["burst_every_s"] = 4.5
+        msgs = messages(vb.validate_arena(self.level, boss=boss))
+        self.assertTrue(any("dos rafagas" in m for m in msgs), msgs)
+
+    def test_help_text_still_matches(self):
+        text = load(os.path.join(ROOT, "data", "help.json"))["types"]["notification_shot"]["text"]
+        self.assertIn("deslízate a través de cada una", text)
+        self.assertIn("retrocediendo un paso", text)
+        self.assertIn("cambia de altura", text)
+
+
 if __name__ == "__main__":
     unittest.main()

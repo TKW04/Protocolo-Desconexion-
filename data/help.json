@@ -423,7 +423,7 @@
 		"notification_shot": {
 			"category": "enemy",
 			"title": "Ráfaga",
-			"text": "Notificaciones en ráfaga por tu carril. El láser y el pulso no las paran: deslízate a través o cambia de altura.",
+			"text": "Notificaciones en ráfaga por tu carril. El láser y el pulso no las paran: deslízate a través de cada una, retrocediendo un paso entre una y otra, o cambia de altura.",
 			"first_level": "1-boss",
 			"world": 1,
 			"order": 39,
