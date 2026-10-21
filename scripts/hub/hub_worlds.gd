@@ -9,8 +9,9 @@
 ## - Subnivel: solo cuentan los de la vuelta actual (laps contiene
 ##   GameState.lap; no se rejuegan vueltas anteriores). completed si esta en
 ##   completed_levels; available si es jugable (playable y su escena existe) y
-##   es el primero de un mundo desbloqueado o esta en unlocked_levels; si no,
-##   locked. Un subnivel no jugable o de otra vuelta es «proximamente».
+##   es el primero de un mundo desbloqueado o esta desbloqueado (en
+##   unlocked_levels o en los `unlocks` del JSON de un subnivel completado:
+##   is_level_unlocked_by_progress); si no, locked. Un subnivel no jugable o de otra vuelta es «proximamente».
 ## - unlocked_by (2026-10-21): el mundo se desbloquea al completar alguno de
 ##   esos subniveles (Mundo 2 tras Alerta Mayor). Sin subniveles en la vuelta,
 ##   su carpeta abre con «Próximamente» (FolderPanel).
@@ -132,7 +133,44 @@ static func is_world_unlocked(world_entry: Dictionary) -> bool:
 			return true
 	for level: Dictionary in levels(world_entry):
 		var id := StringName(String(level.get("id", "")))
-		if GameState.is_level_unlocked(id) or GameState.is_level_completed(id):
+		if is_level_unlocked_by_progress(id) or GameState.is_level_completed(id):
+			return true
+	return false
+
+
+## `unlocks` de nivel ({"type": "level", "id": ...}) del JSON del subnivel
+## `level_id` (level_data_pattern de folders), en cache por id.
+static var _unlocks_cache: Dictionary = {}
+
+
+static func level_unlocks(level_id: StringName) -> Array[StringName]:
+	if _unlocks_cache.has(level_id):
+		return _unlocks_cache[level_id]
+	var out: Array[StringName] = []
+	var pattern: String = String(HubData.section("folders").get("level_data_pattern", "res://data/levels/%s.json"))
+	var path: String = pattern % String(level_id)
+	if FileAccess.file_exists(path):
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if data is Dictionary:
+			for unlock: Variant in (data as Dictionary).get("unlocks", []):
+				if unlock is Dictionary and String(unlock.get("type", "")) == "level":
+					out.append(StringName(String(unlock.get("id", ""))))
+	_unlocks_cache[level_id] = out
+	return out
+
+
+## El subnivel `level_id` esta desbloqueado: en unlocked_levels o en los
+## `unlocks` de algun subnivel completado (2026-10-21: derivado del progreso,
+## sin migracion; una partida guardada antes de existir el jefe con el 1-3 ya
+## completado tiene la fila del jefe disponible). Como sale de completed_levels,
+## un game over sin guardar lo vuelve a bloquear igual que antes.
+static func is_level_unlocked_by_progress(level_id: StringName) -> bool:
+	if GameState.is_level_unlocked(level_id):
+		return true
+	for done: StringName in GameState.completed_levels:
+		if not GameState.is_level_completed(done):
+			continue
+		if level_id in level_unlocks(done):
 			return true
 	return false
 
@@ -177,7 +215,7 @@ static func level_state(world_entry: Dictionary, level: Dictionary) -> StringNam
 		return STATE_COMPLETED
 	var current: Array[Dictionary] = levels_for_lap(world_entry)
 	var first: bool = not current.is_empty() and String(current[0].get("id", "")) == String(id)
-	if first or GameState.is_level_unlocked(id):
+	if first or is_level_unlocked_by_progress(id):
 		return STATE_AVAILABLE
 	return STATE_LOCKED
 
