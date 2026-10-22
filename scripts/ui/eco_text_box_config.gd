@@ -14,6 +14,9 @@ var layer: int = 11
 ## Pixeles de pantalla por pixel de arte (entero).
 var pixel_scale: int = 2
 var top_px: int = 22
+## Con un jefe activo (2026-10-22: las lineas por el jefe tapaban su barra y el
+## badge) el cuadro va abajo, a boss_bottom_px del borde inferior (px de arte).
+var boss_bottom_px: int = 8
 ## Ancho maximo del panel; el panel se ajusta al texto sin bajar de min_width_px.
 var width_px: int = 280
 var min_width_px: int = 160

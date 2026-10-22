@@ -146,6 +146,12 @@ func reread_config() -> Dictionary:
 	return value if value is Dictionary else {}
 
 
+## Pelea con jefe (seccion boss_calm, 2026-10-22): highlight_s, blink_hz, blink_on.
+func boss_calm_config() -> Dictionary:
+	var value: Variant = _data.get("boss_calm", {})
+	return value if value is Dictionary else {}
+
+
 ## Aspecto de la Q apagada: la seccion prompt con los campos de reread.prompt.
 func reread_prompt_config() -> Dictionary:
 	var out: Dictionary = prompt_config().duplicate()

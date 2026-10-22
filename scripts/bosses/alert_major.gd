@@ -194,6 +194,15 @@ func get_body_center() -> Vector2:
 	return _center
 
 
+## Encuadre de la arena (BossCamera, 2026-10-22): el cuerpo y, en la fase 3, las
+## copias que siguen en pie.
+func get_camera_focus_xs() -> PackedFloat32Array:
+	var xs := PackedFloat32Array([_center.x])
+	for clone: AlertMajorClone in get_clones():
+		xs.append(clone.global_position.x)
+	return xs
+
+
 func is_down() -> bool:
 	return _down
 
@@ -773,19 +782,34 @@ func _place() -> void:
 	if _body == null:
 		return
 	_body.global_position = _center
-	var size: Vector2 = _down_size() if _down else _up_size()
 	# Arriba el contador va sobre la pastilla en blanco del badge (texto oscuro);
 	# abajo, encima del cuerpo (claro).
+	# Durante la bajada y la subida el cuerpo pasa de un tamano a otro: el contador
+	# acompana a la pastilla con la misma fraccion (2026-10-22: al empezar a bajar
+	# saltaba encima del badge y tocaba su borde superior).
 	var up_off: Array = _arena.get("label_up_offset_px", [0, 0])
-	_label.global_position = _center + Vector2(-_tile * 2.0, -size.y * 0.5 - 52.0) if _down \
-		else _center + Vector2(-_tile * 2.0 + float(up_off[0]), float(up_off[1]) - 24.0)
-	var dark: int = 0 if _down else 1
+	var down_pos: Vector2 = _center + Vector2(-_tile * 2.0, -_down_size().y * 0.5 - 52.0)
+	var up_pos: Vector2 = _center + Vector2(-_tile * 2.0 + float(up_off[0]), float(up_off[1]) - 24.0)
+	var k: float = get_label_up_weight()
+	_label.global_position = down_pos.lerp(up_pos, k).round()
+	var dark: int = 1 if k >= 0.5 else 0
 	if dark != _label_dark:
 		_label_dark = dark
 		_label.add_theme_color_override(&"font_color", Color.html(String(_arena.get(
-			"label_color" if _down else "label_up_color", "#f2f4f8"))))
+			"label_up_color" if dark == 1 else "label_color", "#f2f4f8"))))
 	var off: Array = _arena.get("core_offset_px", [0, -56])
 	_core.global_position = _center + Vector2(float(off[0]), _down_size().y * 0.5 + float(off[1]))
+
+
+## 1 = el contador va en la pastilla de arriba, 0 = encima del cuerpo abajo; en
+## medio durante la bajada y la subida (fraccion del movimiento, con su curva).
+func get_label_up_weight() -> float:
+	match _move:
+		MOVE_DESCEND:
+			return 1.0 - _move_ease(true, clampf(_move_time / maxf(_move_s(true), 0.001), 0.0, 1.0))
+		MOVE_ASCEND:
+			return _move_ease(false, clampf(_move_time / maxf(_move_s(false), 0.001), 0.0, 1.0))
+	return 0.0 if _down else 1.0
 
 
 func _inflate(on: bool) -> void:

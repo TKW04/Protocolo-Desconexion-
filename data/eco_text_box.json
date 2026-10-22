@@ -3,6 +3,8 @@
 	"layer": 11,
 	"pixel_scale": 2,
 	"top_px": 22,
+	"_boss_bottom_notes": "Con un jefe activo (grupo boss, sin vencer; 2026-10-22: las lineas de Eco por el jefe tapaban su barra y el badge) el cuadro va abajo, a boss_bottom_px (px de arte) del borde inferior. El contenido no cambia.",
+	"boss_bottom_px": 8,
 	"width_px": 280,
 	"min_width_px": 160,
 	"padding_px": 6,

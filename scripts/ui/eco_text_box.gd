@@ -315,6 +315,12 @@ func get_type_steps() -> int:
 	return _step_count()
 
 
+## Hay un jefe en el nivel sin vencer (grupo BossBase.GROUP): el cuadro va abajo
+## para no tapar la barra del jefe ni su cuerpo (2026-10-22). Mismo contenido.
+func is_boss_layout() -> bool:
+	return is_inside_tree() and BossBase.is_any_active(get_tree())
+
+
 func get_panel_rect() -> Rect2:
 	return Rect2(_panel.position * _frame.scale, _panel.size * _frame.scale)
 
@@ -638,7 +644,10 @@ func _layout() -> void:
 	if _important:
 		width = clampi(maxi(width, _text_left() + hint_w + c.padding_px), c.min_width_px, c.width_px)
 	_panel.size = Vector2(width, height)
-	_panel.position = Vector2(floorf((_frame.size.x - width) * 0.5), c.top_px)
+	var top: float = c.top_px
+	if is_boss_layout():
+		top = _frame.size.y - height - c.boss_bottom_px
+	_panel.position = Vector2(floorf((_frame.size.x - width) * 0.5), top)
 	var left: int = _text_left()
 	var inner: float = width - left - c.padding_px
 	_speaker.position = Vector2(left, c.padding_px)

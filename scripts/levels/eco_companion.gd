@@ -89,6 +89,8 @@ var _has_help_target: bool = false
 var _help_id: StringName = &""
 var _help_point: Vector2 = Vector2.ZERO
 var _explaining: bool = false
+## Q calmada en la pelea con jefe (set_help_calm).
+var _help_calm: bool = false
 var _explain_wait: float = 0.0
 ## Vuelve de un objeto: seguimiento mas suave y sin recolocarse con destello.
 var _returning: bool = false
@@ -199,7 +201,7 @@ func get_target_position() -> Vector2:
 	if _state == State.DEPARTING:
 		var center: Array = _data.get("depart_center_offset_px", [0, -48])
 		return feet + Vector2(float(center[0]), float(center[1]))
-	if is_helping():
+	if is_helping() and (_explaining or not _help_calm):
 		return _help_point
 	if _guiding:
 		return _guide_point
@@ -280,6 +282,26 @@ func get_prompt_position() -> Vector2:
 
 ## HelpSystem le pasa el objeto con Q (null: ninguno). Mientras explica una
 ## ayuda no cambia. Falso si no lo acepta (oculto, hub o explicando).
+## Pelea con jefe (HelpSystem, boss_calm de data/help.json; 2026-10-22): con la Q
+## ya destacada, Eco se queda junto a Isak con ella encima, sin volar al objeto ni
+## brillar. Al explicar (begin_help_explanation) vuela y brilla como siempre.
+func set_help_calm(calm: bool) -> void:
+	if calm == _help_calm:
+		return
+	_help_calm = calm
+	if _explaining:
+		return
+	if calm and (_glow == Glow.ON or _glow == Glow.IN):
+		_glow = Glow.OUT
+		_glow_time = 0.0
+	elif not calm and get_help_target() != null:
+		_glow_on()
+
+
+func is_help_calm() -> bool:
+	return _help_calm
+
+
 func set_help_target(target: Node2D, help_id: StringName = &"") -> bool:
 	if _explaining:
 		return false
@@ -299,7 +321,8 @@ func set_help_target(target: Node2D, help_id: StringName = &"") -> bool:
 	_help_id = help_id if help_id != &"" else HelpCatalog.help_id_of(target)
 	_returning = false
 	_help_point = _compute_help_point()
-	_glow_on()
+	if not _help_calm:
+		_glow_on()
 	help_target_changed.emit(target)
 	return true
 

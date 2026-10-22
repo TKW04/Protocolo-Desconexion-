@@ -16,6 +16,8 @@ const PLATE_NAME: String = "KeyHint"
 const KEY_SWAP_SHADER: String = "res://assets/shaders/hud_key_swap.gdshader"
 
 var style: Style = Style.NORMAL
+## Quieta, sin bote (pelea con jefe tras destacarse, 2026-10-22; HelpSystem).
+var calm: bool = false
 
 var _config: Dictionary = {}
 var _font: Font
@@ -60,6 +62,9 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	_time += delta
+	if calm:
+		_plate.position.y = _base_y
+		return
 	_plate.position.y = PulsePrompt.bob_y(_base_y, _time, float(_config.get("key_bob_s", 0.35)),
 		float(_config.get("key_bob_px", 2)))
 

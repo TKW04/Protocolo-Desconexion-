@@ -7,6 +7,7 @@
 ##   05_ascend.png      subiendo (a mitad: se estira)
 ##   06_split.png       fase 3: inflado antes de dividirse
 ##   07_clones_land.png fase 3: la real y las copias abajo (identicas)
+##   07b_encuadre_centro.png fase 3 con Isak en medio: camara centrada entre Isak y las copias (2026-10-22)
 ##   08_launch_warn.png fase 3: aviso del lanzamiento (se encoge hacia atras)
 ##   09_lunge.png       fase 3: lanzamiento con la estela
 ##   10_disarm.png      golpe final: desarme en pixeles del cuadro actual

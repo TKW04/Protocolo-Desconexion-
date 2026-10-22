@@ -3,6 +3,8 @@
 	"id": "alert_major",
 	"name": "Alerta Mayor",
 	"world": 1,
+	"_camera_notes": "Encuadre de la arena (BossCamera, 2026-10-22; la arena de 1536 px no cabe en 1280 y el jefe o las copias quedaban cortados): la camara de Isak se centra en horizontal entre Isak y el cuerpo / las copias (isak_weight: 1 = solo Isak, 0 = solo el jefe), sin dejar a Isak a menos de isak_margin_px del borde; limites de la arena y suavizado propio de la camara. Solo encuadre: escala del arte, pelea, bot y validador sin cambios.",
+	"camera": {"follow": true, "isak_weight": 0.5, "isak_margin_px": 128},
 	"counter": {
 		"max": 99,
 		"full_label": "99+"

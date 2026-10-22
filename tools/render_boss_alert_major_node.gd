@@ -55,6 +55,14 @@ func _run() -> void:
 	await _until(func() -> bool: return _boss.get_round_state() == &"land", 3.0)
 	await _steps(0.1)
 	await _save("07_clones_land.png")
+	# Encuadre (BossCamera, 2026-10-22): con Isak en medio de la arena la camara se
+	# centra entre Isak y las copias (limites de la arena).
+	var isak: Isak = LevelLookup.find_isak(_boss)
+	isak.global_position = Vector2(9.5 * 64.0, 10.0 * 64.0)
+	isak.velocity = Vector2.ZERO
+	for i: int in 45:
+		await get_tree().physics_frame
+	await _save("07b_encuadre_centro.png")
 	await _until(func() -> bool: return _boss.get_round_state() == &"launch", 4.0)
 	await _steps(0.5)
 	await _save("08_launch_warn.png")

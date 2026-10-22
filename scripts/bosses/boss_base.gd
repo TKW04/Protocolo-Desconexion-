@@ -74,6 +74,9 @@ var _mark_duration_s: float = 0.0
 func _ready() -> void:
 	add_to_group(GROUP)
 	load_config()
+	# Encuadre de la arena (2026-10-22): camera.follow del JSON del jefe.
+	if bool((_config.get("camera", {}) as Dictionary).get("follow", false)):
+		BossCamera.attach(self)
 	EventBus.player_respawned.connect(_on_player_respawned)
 	if auto_start:
 		start.call_deferred()
@@ -212,6 +215,23 @@ func is_defeated() -> bool:
 ## En combate (PassiveRegen: la regeneracion de Sync 5 se para).
 func is_combat_active() -> bool:
 	return _state == STATE_FIGHTING
+
+
+## Hay un jefe en el arbol sin vencer (2026-10-22: el cuadro de Eco va abajo y la
+## Q de Eco se calma mientras dura la pelea).
+static func is_any_active(tree: SceneTree) -> bool:
+	if tree == null:
+		return false
+	for node: Node in tree.get_nodes_in_group(GROUP):
+		if node is BossBase and not (node as BossBase).is_defeated():
+			return true
+	return false
+
+
+## X globales que la camara de la arena encuadra junto a Isak (BossCamera). El
+## jefe concreto anade lo suyo (Alerta Mayor: cuerpo y copias).
+func get_camera_focus_xs() -> PackedFloat32Array:
+	return PackedFloat32Array([global_position.x])
 
 
 ## Fase actual (1..n; 0 antes de empezar).

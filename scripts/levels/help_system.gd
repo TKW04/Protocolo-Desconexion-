@@ -75,6 +75,10 @@ var _reread_target: Node2D
 ## Segundos de juego que Isak lleva quieto (relectura).
 var _still_s: float = 0.0
 var _eco: EcoCompanion
+## Pelea con jefe (boss_calm de data/help.json, 2026-10-22): segundos reales que
+## cada tipo lleva destacado como candidato; pasado highlight_s la Q se calma.
+var _boss_shown_s: Dictionary = {}
+var _calm: bool = false
 
 
 func _ready() -> void:
@@ -103,6 +107,7 @@ func _exit_tree() -> void:
 
 func _process(delta: float) -> void:
 	update_still(delta)
+	_count_boss_highlight(delta)
 	refresh()
 
 
@@ -122,10 +127,14 @@ func refresh() -> void:
 	_target = null if get_tree().paused else find_target()
 	if _target != null and _target != previous:
 		EventBus.help_prompt_shown.emit(_target)
+	_calm = is_boss_calm_for(_target)
 	var eco: EcoCompanion = get_eco()
 	if eco != null:
+		eco.set_help_calm(_calm)
 		eco.set_help_target(_target, HelpCatalog.help_id_of(_target) if _target != null else &"")
 	_prompt.visible = _target != null
+	_prompt.calm = _calm
+	_prompt.modulate.a = _boss_blink_alpha(_target)
 	if _target != null:
 		if is_prompt_on_eco():
 			_prompt.global_position = eco.get_prompt_position().round()
@@ -232,6 +241,45 @@ func is_reread_visible() -> bool:
 
 func get_reread_prompt() -> HelpPrompt:
 	return _reread_prompt
+
+
+## Pelea con jefe: el tipo de `target` ya se destaco highlight_s segundos (la Q
+## queda fija sobre Eco junto a Isak, sin brillo). Falso sin jefe activo.
+func is_boss_calm_for(target: Node2D) -> bool:
+	if target == null or not BossBase.is_any_active(get_tree()):
+		return false
+	var limit: float = float(_catalog.boss_calm_config().get("highlight_s", 3.0))
+	return float(_boss_shown_s.get(HelpCatalog.help_id_of(target), 0.0)) >= limit
+
+
+## La Q de ahora esta calmada (pelea con jefe).
+func is_help_calm() -> bool:
+	return _calm
+
+
+## Segundos reales que el tipo `help_id` lleva destacado en la pelea.
+func get_boss_highlight_s(help_id: StringName) -> float:
+	return float(_boss_shown_s.get(help_id, 0.0))
+
+
+func _count_boss_highlight(delta: float) -> void:
+	if _target == null or not is_instance_valid(_target) or get_tree().paused \
+			or not BossBase.is_any_active(get_tree()):
+		return
+	var id: StringName = HelpCatalog.help_id_of(_target)
+	_boss_shown_s[id] = float(_boss_shown_s.get(id, 0.0)) + maxf(delta, 0.0)
+
+
+## Opacidad de la Q: parpadea mientras se destaca en la pelea con jefe; 1 si no.
+func _boss_blink_alpha(target: Node2D) -> float:
+	if target == null or _calm or not BossBase.is_any_active(get_tree()):
+		return 1.0
+	var cfg: Dictionary = _catalog.boss_calm_config()
+	var hz: float = float(cfg.get("blink_hz", 4.0))
+	if hz <= 0.0:
+		return 1.0
+	var phase: float = fposmod(get_boss_highlight_s(HelpCatalog.help_id_of(target)) * hz, 1.0)
+	return 1.0 if phase < float(cfg.get("blink_on", 0.6)) else 0.0
 
 
 ## Objeto con Q visible ahora (null si no hay).
