@@ -16,6 +16,8 @@ const HURT: StringName = &"hurt"
 const DEAD: StringName = &"dead"
 ## Dash (gesto Deslizar, 2026-10-19; DashState).
 const DASH: StringName = &"dash"
+## Golpe al suelo (gesto Mantener presionado, 2026-10-22; GroundPoundState).
+const GROUND_POUND: StringName = &"ground_pound"
 
 var isak: Isak
 
@@ -41,7 +43,7 @@ func physics_update(_delta: float) -> void:
 
 
 ## Transiciones comunes a los estados en el suelo (Idle y Run).
-## Prioridad: caer > pulso > dash > salto > movimiento.
+## Prioridad: caer > pulso > dash > golpe al suelo > salto > movimiento.
 func ground_transition() -> StringName:
 	if not isak.is_on_floor():
 		return FALL
@@ -49,6 +51,8 @@ func ground_transition() -> StringName:
 		return PULSE
 	if isak.wants_dash():
 		return DASH
+	if isak.wants_ground_pound():
+		return GROUND_POUND
 	if isak.wants_jump() and isak.can_jump():
 		return JUMP
 	return NONE

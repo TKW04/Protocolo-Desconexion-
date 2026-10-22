@@ -30,6 +30,9 @@ const JUMP_BUFFER: String = "buffer"
 ## Desbloquea el dash (gesto Deslizar: L / B; 2026-10-19) al cargar esta escena,
 ## igual que el pulso (solo en tiempo de ejecucion).
 @export var unlock_dash: bool = true
+## Desbloquea el golpe al suelo (gesto Mantener presionado: mantener S / flecha
+## abajo / abajo del mando; 2026-10-22) al cargar esta escena.
+@export var unlock_ground_pound: bool = true
 ## Si Isak cae por debajo de esta Y vuelve al punto de inicio.
 @export var fall_limit_y: float = 960.0
 
@@ -47,6 +50,8 @@ func _ready() -> void:
 		GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
 	if unlock_dash:
 		GameState.set_ability_unlocked(GameState.ABILITY_DASH, true)
+	if unlock_ground_pound:
+		GameState.set_ability_unlocked(GameState.ABILITY_GROUND_POUND, true)
 	_debug_signs.visible = DEBUG_OVERLAY
 	if DEBUG_OVERLAY:
 		_setup_debug_overlay()

@@ -45,6 +45,32 @@
 			"ring_color": "#9bb0e8"
 		}
 	},
+	"_ground_pound_notes": "GOLPE AL SUELO, gesto Mantener presionado (habilidad GameState.ABILITY_GROUND_POUND; docs/propuesta-mundo-2.md §3.3, decisiones del usuario 2026-10-22: valores PROVISIONALES, ajustar jugando). CONTROL: mantener los eventos de move_down (S / flecha abajo / cruceta o stick abajo; sin tecla nueva) o los de gesture_hold si se le asignan; el stick cuenta desde la mitad de su inclinacion (ActionPlayerInput.HOLD_AXIS_THRESHOLD). EN EL AIRE: mantener air_hold_s -> Isak se para anticipation_s en el aire y cae en vertical a drop_speed_px_s. EN EL SUELO: mantener ground_hold_s (carga visible: el celular se ilumina en 3 pasos) -> saltito de ground_hop_px y la misma caida. AL ATERRIZAR: onda a ras de suelo de wave_half_width_px a cada lado de los pies y wave_height_px de alto (mas wave_below_px por debajo de los pies, para alcanzar lo que se pisa): EventBus.ground_pound_landed(rect, isak); a los enemigos del grupo enemy que alcanza los aturde (su aturdimiento propio, 3 s) y les hace damage (los que tienen receive_ground_pound deciden ellos). Si lo que se pisa se rompe con el golpe (una tarjeta fragil del Mundo 2), sigue cayendo. Luego pose de land_pose_s sin moverse ni saltar y enfriamiento de cooldown_s; hay que soltar para volver a golpear. energy_cost 0 (gratis). Sin invulnerabilidad. Funciona con el Debug; no durante el dash (tras un dash aereo es un golpe normal); apaga el Ocultarte. No sale: sin la habilidad, en el hub (Isak.level_mode), en Hurt, muerto, de espaldas, en un vortice ni durante la pose del pulso o del laser. Tiempo real (como el resto de Isak). visual: aspecto PROVISIONAL por codigo (GroundPoundEffect: carga en el celular, estela de la caida y onda; colores de la paleta provisional del Mundo 2) y la pose por escala del sprite (aplastado) sobre cuadros existentes. Unidades: px, s, px/s, energia.",
+	"ground_pound": {
+		"air_hold_s": 0.12,
+		"ground_hold_s": 0.35,
+		"anticipation_s": 0.1,
+		"drop_speed_px_s": 960.0,
+		"ground_hop_px": 32.0,
+		"wave_half_width_px": 96.0,
+		"wave_height_px": 64.0,
+		"wave_below_px": 8.0,
+		"damage": 1.0,
+		"land_pose_s": 0.35,
+		"cooldown_s": 0.4,
+		"energy_cost": 0.0,
+		"visual": {
+			"charge_color": "#ff9318",
+			"charge_radius_px": 4.0,
+			"charge_steps": 3,
+			"streak_color": "#b7a3f0",
+			"wave_color": "#f4f0fa",
+			"wave_edge": "#b7a3f0",
+			"wave_s": 0.3,
+			"drop_scale": [0.9, 1.1],
+			"land_scale": [1.15, 0.85]
+		}
+	},
 	"laser_visual": {
 		"core": "#f2f4f8",
 		"glow": "#3dfff5",

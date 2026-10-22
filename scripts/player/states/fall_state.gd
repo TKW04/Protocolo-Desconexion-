@@ -12,6 +12,9 @@ func get_transition() -> StringName:
 	# Dash aereo (uno por estancia en el aire; Isak.wants_dash lo comprueba).
 	if isak.wants_dash():
 		return DASH
+	# Golpe al suelo en el aire (tambien tras un dash aereo: golpe normal).
+	if isak.wants_ground_pound():
+		return GROUND_POUND
 	if isak.is_on_floor():
 		if isak.wants_jump() and isak.can_jump():
 			return JUMP

@@ -32,6 +32,11 @@ signal dash_ended
 ## Intento de dash que no sale con chispa gris: `reason` DASH_DENIED_ENERGY o
 ## DASH_DENIED_DEBUG (los demas casos se ignoran sin aviso).
 signal dash_denied(reason: StringName)
+## Empieza un golpe al suelo (gesto Mantener presionado; `from_ground`: desde el
+## suelo con la carga, si no, en el aire).
+signal ground_pound_started(from_ground: bool)
+## El golpe al suelo aterriza: nace la onda en `rect` (px globales).
+signal ground_pound_landed(rect: Rect2)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -85,6 +90,12 @@ const DASH_DENIED_LOCKED: StringName = &"locked"
 const DASH_DENIED_BUSY: StringName = &"busy"
 const DASH_DENIED_COOLDOWN: StringName = &"cooldown"
 const DASH_DENIED_AIR: StringName = &"air"
+## Golpe al suelo (2026-10-22): motivos por los que no sale (todos sin aviso).
+const POUND_DENIED_LOCKED: StringName = &"locked"
+const POUND_DENIED_BUSY: StringName = &"busy"
+const POUND_DENIED_COOLDOWN: StringName = &"cooldown"
+const POUND_DENIED_LATCHED: StringName = &"latched"
+const POUND_DENIED_ENERGY: StringName = &"energy"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 
@@ -179,6 +190,19 @@ var _air_dashes_left: int = 0
 var _dash_started_on_floor: bool = false
 var _dash_flash_time: float = 0.0
 var _dash_effect: DashEffect
+## Golpe al suelo (gesto Mantener presionado, 2026-10-22; GroundPoundState,
+## seccion ground_pound de data/isak_abilities.json). Tiempo real. Segundos
+## mantenidos en el aire y en el suelo, peticion valida en este paso, hay que
+## soltar antes de otro (latch), enfriamiento desde el final.
+var _pound_air_hold: float = 0.0
+var _pound_ground_hold: float = 0.0
+var _pound_requested: bool = false
+var _pound_latched: bool = false
+var _pound_cooldown_left: float = 0.0
+var _pound_effect: GroundPoundEffect
+## Posicion y escala del sprite sin la pose del golpe (aplastado provisional).
+var _sprite_base_position := Vector2.ZERO
+var _sprite_base_scale := Vector2.ONE
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _hitbox: CollisionShape2D = $Hitbox
@@ -214,7 +238,14 @@ func _ready() -> void:
 		PlayerState.HURT: HurtState.new(self),
 		PlayerState.DEAD: DeadState.new(self),
 		PlayerState.DASH: DashState.new(self),
+		PlayerState.GROUND_POUND: GroundPoundState.new(self),
 	}
+	_sprite_base_position = _sprite.position
+	_sprite_base_scale = _sprite.scale
+	_pound_effect = GroundPoundEffect.new()
+	_pound_effect.name = "GroundPoundEffect"
+	_pound_effect.configure(abilities.pound_visual)
+	add_child(_pound_effect)
 	_air_dashes_left = abilities.dash_air_dashes
 	_dash_effect = DashEffect.new()
 	_dash_effect.name = "DashEffect"
@@ -246,6 +277,7 @@ func step(delta: float) -> void:
 		input = _warp_input
 	_update_timers(delta)
 	_update_dash_request()
+	_update_pound_request(delta)
 	for i: int in MAX_TRANSITIONS_PER_STEP:
 		var next: StringName = _state.get_transition()
 		if next == PlayerState.NONE:
@@ -255,11 +287,13 @@ func step(delta: float) -> void:
 	move_and_slide()
 	_update_coyote(delta)
 	_update_dash(delta)
+	_update_pound_effect(delta)
 	_update_laser(delta)
 	_update_hide(delta)
 	_update_regen(delta)
 	_update_blink()
 	_dash_requested = false
+	_pound_requested = false
 	if _tower_camera != null:
 		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
 	if input == _warp_input:
@@ -281,6 +315,9 @@ func change_state(state_name: StringName) -> void:
 	elif _hide != null and state_name == PlayerState.DASH:
 		# El dash apaga el Ocultarte (como el pulso y el laser).
 		_hide.end(HideMode.REASON_DASH)
+	elif _hide != null and state_name == PlayerState.GROUND_POUND:
+		# El golpe al suelo apaga el Ocultarte (como el pulso y el laser).
+		_hide.end(HideMode.REASON_POUND)
 	if state_name == PlayerState.DASH:
 		_dash_requested = false
 	if _state != null:
@@ -328,7 +365,8 @@ func can_laser() -> bool:
 ## antes tambien en el aire). En el aire la accion se ignora sin aviso, igual
 ## que el pulso (ni chispa ni enfriamiento).
 func can_start_laser() -> bool:
-	return is_on_floor() and can_laser() and _state_name != PlayerState.DASH
+	return is_on_floor() and can_laser() and _state_name != PlayerState.DASH \
+			and _state_name != PlayerState.GROUND_POUND
 
 
 func get_laser_cooldown_left() -> float:
@@ -468,6 +506,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 		_hide.reset()
 	change_state(PlayerState.IDLE)
 	_reset_dash()
+	_reset_pound()
 	play_animation(ANIM_IDLE)
 	_camera.reset_smoothing()
 	snap_camera()
@@ -800,7 +839,7 @@ func dash_denial() -> StringName:
 	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_DASH):
 		return DASH_DENIED_LOCKED
 	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
-			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH]:
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
 		return DASH_DENIED_BUSY
 	if _dash_cooldown_left > 0.0:
 		return DASH_DENIED_COOLDOWN
@@ -926,6 +965,173 @@ func _reset_dash() -> void:
 	_sprite.self_modulate = Color.WHITE
 	if _dash_effect != null:
 		_dash_effect.clear()
+
+
+# --- Golpe al suelo (gesto Mantener presionado, 2026-10-22; docs/propuesta-mundo-2.md §3.3) ---
+
+## Un estado ha pedido el golpe en este paso (gesto mantenido lo bastante y
+## ground_pound_denial() vacio). Lo consumen los estados (suelo y aire).
+func wants_ground_pound() -> bool:
+	return _pound_requested
+
+
+## Motivo por el que un golpe no saldria ahora (&"" = sale). Ver POUND_DENIED_*.
+## Orden: sin la habilidad o en el hub, ocupado (muerto, golpe, pulso, laser,
+## dash, otro golpe, vortice, de espaldas), enfriamiento, sin soltar desde el
+## anterior y energia (el golpe es gratis: energy_cost 0).
+func ground_pound_denial() -> StringName:
+	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND):
+		return POUND_DENIED_LOCKED
+	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
+		return POUND_DENIED_BUSY
+	if _pound_cooldown_left > 0.0:
+		return POUND_DENIED_COOLDOWN
+	if _pound_latched:
+		return POUND_DENIED_LATCHED
+	if abilities.pound_energy_cost > 0.0 and GameState.debug_energy + LASER_ENERGY_EPS < abilities.pound_energy_cost:
+		return POUND_DENIED_ENERGY
+	return &""
+
+
+func is_ground_pounding() -> bool:
+	return _state_name == PlayerState.GROUND_POUND
+
+
+## Fase del golpe en curso (GroundPoundState.Phase) o -1 si no hay golpe.
+func get_ground_pound_phase() -> int:
+	if not is_ground_pounding():
+		return -1
+	return int((_state as GroundPoundState).get_phase())
+
+
+func get_ground_pound_cooldown_left() -> float:
+	return _pound_cooldown_left
+
+
+## Segundos que lleva mantenido el gesto en el suelo (carga; 0 si no).
+func get_ground_pound_charge_s() -> float:
+	return _pound_ground_hold
+
+
+func get_ground_pound_effect() -> GroundPoundEffect:
+	return _pound_effect
+
+
+## Lo llama GroundPoundState al entrar: hay que soltar antes de otro golpe,
+## cobra la energia (si costara) y quita la carga.
+func begin_ground_pound(from_ground: bool) -> void:
+	_pound_latched = true
+	_pound_requested = false
+	_pound_air_hold = 0.0
+	_pound_ground_hold = 0.0
+	if abilities.pound_energy_cost > 0.0:
+		GameState.debug_energy -= abilities.pound_energy_cost
+	reset_idle_time()
+	_pound_effect.set_charge(0.0, get_pulse_origin())
+	ground_pound_started.emit(from_ground)
+
+
+## Empieza la caida vertical (estela).
+func begin_ground_pound_drop() -> void:
+	update_ground_pound_pose(false)
+	_pound_effect.begin_drop(global_position)
+
+
+## Aterriza el golpe: nace la onda (EventBus.ground_pound_landed: tarjetas y
+## muros; GroundPoundWave: enemigos). Verdadero si lo que pisa se rompio con
+## ella (Isak sigue cayendo).
+func land_ground_pound() -> bool:
+	var rect: Rect2 = GroundPoundWave.rect_at(global_position, abilities)
+	_pound_effect.end_drop()
+	_pound_effect.show_wave(global_position, abilities.pound_wave_half_width_px)
+	if _regen != null:
+		_regen.note_combat()
+	ground_pound_landed.emit(rect)
+	EventBus.ground_pound_landed.emit(rect, self)
+	GroundPoundWave.apply_to_enemies(get_tree(), rect, abilities.pound_damage)
+	for i: int in get_slide_collision_count():
+		var collision: KinematicCollision2D = get_slide_collision(i)
+		if collision.get_normal().y < -0.5 and GroundPoundWave.is_broken(collision.get_collider()):
+			_pound_effect.begin_drop(global_position)
+			return true
+	return false
+
+
+## Lo llama GroundPoundState al salir: enfriamiento y sprite sin la pose.
+func end_ground_pound() -> void:
+	_pound_cooldown_left = abilities.pound_cooldown_s
+	_pound_effect.end_drop()
+	_restore_sprite_shape()
+
+
+## Pose PROVISIONAL del golpe (sin hoja propia): en el aire, el ultimo cuadro de
+## caida estirado (drop_scale); al aterrizar, el primer cuadro de aterrizaje
+## aplastado (land_scale). Los pies no se mueven.
+func update_ground_pound_pose(landed: bool) -> void:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	var anim: StringName = ANIM_JUMP_LAND if landed else ANIM_JUMP_FALL
+	if frames != null and frames.has_animation(anim):
+		_sprite.animation = anim
+		_sprite.pause()
+		_sprite.frame = 0 if landed else frames.get_frame_count(anim) - 1
+	var raw: Variant = abilities.pound_visual.get("land_scale" if landed else "drop_scale", [1.0, 1.0])
+	var squash := Vector2.ONE
+	if raw is Array and (raw as Array).size() == 2:
+		squash = Vector2(float(raw[0]), float(raw[1]))
+	_sprite.scale = _sprite_base_scale * squash
+	_sprite.position = Vector2(_sprite_base_position.x, _sprite_base_position.y * squash.y)
+
+
+func _restore_sprite_shape() -> void:
+	_sprite.scale = _sprite_base_scale
+	_sprite.position = _sprite_base_position
+
+
+## Gesto mantenido: cuenta en el aire (air_hold_s) o en el suelo (ground_hold_s,
+## con la carga visible) y pide el golpe. Soltar quita la carga y el latch.
+func _update_pound_request(delta: float) -> void:
+	_pound_requested = false
+	if not is_ground_pounding():
+		_pound_cooldown_left = maxf(_pound_cooldown_left - delta, 0.0)
+	var held: bool = input != null and input.hold_held
+	if not held:
+		_pound_latched = false
+	if not held or ground_pound_denial() != &"":
+		_pound_air_hold = 0.0
+		_pound_ground_hold = 0.0
+		if _pound_effect != null:
+			_pound_effect.set_charge(0.0, get_pulse_origin())
+		return
+	if is_on_floor():
+		_pound_air_hold = 0.0
+		_pound_ground_hold += delta
+		_pound_effect.set_charge(_pound_ground_hold / maxf(abilities.pound_ground_hold_s, 0.001), get_pulse_origin())
+		if _pound_ground_hold + 0.0001 >= abilities.pound_ground_hold_s:
+			_pound_requested = true
+	else:
+		_pound_ground_hold = 0.0
+		_pound_effect.set_charge(0.0, get_pulse_origin())
+		_pound_air_hold += delta
+		if _pound_air_hold + 0.0001 >= abilities.pound_air_hold_s:
+			_pound_requested = true
+
+
+func _update_pound_effect(delta: float) -> void:
+	if _pound_effect != null:
+		_pound_effect.advance(delta, self)
+
+
+## Reaparecer: sin golpe, carga, latch ni enfriamiento.
+func _reset_pound() -> void:
+	_pound_requested = false
+	_pound_latched = false
+	_pound_air_hold = 0.0
+	_pound_ground_hold = 0.0
+	_pound_cooldown_left = 0.0
+	_restore_sprite_shape()
+	if _pound_effect != null:
+		_pound_effect.clear()
 
 
 # --- Ocultarte (Pulso 4, tanda M2; HideMode, data/hide_mode.json) ---

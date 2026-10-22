@@ -21,6 +21,9 @@ var laser_pressed: bool = false
 var hide_pressed: bool = false
 ## Dash pulsado en este cuadro (flanco; gesto Deslizar, accion gesture_swipe).
 var dash_pressed: bool = false
+## Gesto Mantener presionado mantenido (golpe al suelo; 2026-10-22: los eventos
+## de move_down —S / flecha abajo / abajo del mando— o los de gesture_hold).
+var hold_held: bool = false
 
 
 ## Actualiza las intenciones. Se llama una vez por paso de fisica.
@@ -39,4 +42,5 @@ func clear_just_pressed() -> void:
 
 ## Verdadero si hay cualquier intencion activa (corta la animacion de terminal).
 func has_any_intent() -> bool:
-	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed or hide_pressed or dash_pressed
+	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed or hide_pressed or dash_pressed \
+			or hold_held

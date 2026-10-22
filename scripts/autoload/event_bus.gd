@@ -136,6 +136,11 @@ signal dash_started(direction: float)
 ## (Isak.DASH_DENIED_ENERGY / DASH_DENIED_DEBUG): chispa gris, no sale.
 @warning_ignore("unused_signal")
 signal dash_denied(reason: StringName)
+## Golpe al suelo (gesto Mantener presionado, 2026-10-22): Isak aterriza y nace la
+## onda en `rect` (px globales, a ras de suelo; incluye unos px bajo los pies).
+## Las tarjetas fragiles, los muros y los enemigos que reaccionan se enganchan aqui.
+@warning_ignore("unused_signal")
+signal ground_pound_landed(rect: Rect2, source: Node2D)
 
 ## Un cargador (charger) repone `amount` de energia de Debug.
 @warning_ignore("unused_signal")

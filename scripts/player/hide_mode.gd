@@ -31,6 +31,8 @@ const REASON_PULSE: StringName = &"pulse"
 const REASON_LASER: StringName = &"laser"
 ## El dash (gesto Deslizar, 2026-10-19) lo apaga como el pulso y el laser.
 const REASON_DASH: StringName = &"dash"
+## Golpe al suelo (2026-10-22): lo apaga como el pulso y el laser.
+const REASON_POUND: StringName = &"ground_pound"
 const REASON_HURT: StringName = &"hurt"
 const REASON_DEBUG: StringName = &"debug"
 const REASON_DEAD: StringName = &"dead"

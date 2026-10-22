@@ -27,6 +27,11 @@ const OPTIONAL_KEYS: PackedStringArray = ["laser_pierce", "pulse_energy_on_stun"
 ## Claves numericas de la seccion opcional dash (propiedad dash_<clave>).
 const DASH_KEYS: PackedStringArray = ["distance_px", "duration_s", "invulnerable_s", "energy_cost",
 	"cooldown_s", "end_speed_px_s", "air_dashes"]
+## Claves numericas de la seccion opcional ground_pound (propiedad pound_<clave>;
+## golpe al suelo, docs/propuesta-mundo-2.md §3.3).
+const POUND_KEYS: PackedStringArray = ["air_hold_s", "ground_hold_s", "anticipation_s", "drop_speed_px_s",
+	"ground_hop_px", "wave_half_width_px", "wave_height_px", "wave_below_px", "damage", "land_pose_s",
+	"cooldown_s", "energy_cost"]
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -69,6 +74,25 @@ var dash_end_speed_px_s: float = 360.0
 var dash_air_dashes: int = 1
 ## Aspecto provisional del dash (dash.visual).
 var dash_visual: Dictionary = {}
+## Golpe al suelo, gesto Mantener presionado (seccion ground_pound, opcional;
+## 2026-10-22, docs/propuesta-mundo-2.md §3.3, valores provisionales): tiempo
+## mantenido en el aire y en el suelo, anticipacion en el aire, velocidad de
+## caida, saltito del golpe desde el suelo, onda (medio ancho, alto y margen bajo
+## los pies), dano, pose al aterrizar, enfriamiento y energia.
+var pound_air_hold_s: float = 0.12
+var pound_ground_hold_s: float = 0.35
+var pound_anticipation_s: float = 0.1
+var pound_drop_speed_px_s: float = 960.0
+var pound_ground_hop_px: float = 32.0
+var pound_wave_half_width_px: float = 96.0
+var pound_wave_height_px: float = 64.0
+var pound_wave_below_px: float = 8.0
+var pound_damage: float = 1.0
+var pound_land_pose_s: float = 0.35
+var pound_cooldown_s: float = 0.4
+var pound_energy_cost: float = 0.0
+## Aspecto provisional del golpe (ground_pound.visual).
+var pound_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -123,6 +147,19 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var dash_visual: Variant = (dash as Dictionary).get("visual", {})
 	if dash_visual is Dictionary:
 		abilities.dash_visual = dash_visual
+	var pound: Variant = data.get("ground_pound", {})
+	if not pound is Dictionary:
+		return _fail("PlayerAbilities: la clave 'ground_pound' en '%s' debe ser un objeto." % source)
+	for key: String in POUND_KEYS:
+		if not (pound as Dictionary).has(key):
+			continue
+		var value: Variant = pound[key]
+		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+			return _fail("PlayerAbilities: la clave 'ground_pound.%s' en '%s' debe ser numerica." % [key, source])
+		abilities.set("pound_" + key, float(value))
+	var pound_visual: Variant = (pound as Dictionary).get("visual", {})
+	if pound_visual is Dictionary:
+		abilities.pound_visual = pound_visual
 	return abilities
 
 
