@@ -37,6 +37,11 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
     docs/propuesta-1-2.md §10): Isak con camera_mode = &"tower" y camera_bands
     (bandas de los tramos con y_from/y_to, en px: arriba, abajo) y el fondo con
     vertical = true. Con camera.vertical "simple" (1-1) la escena no cambia.
+  - Scroll forzado (camera.vertical "autoscroll", 2026-10-22, paso 2 de
+    docs/propuesta-mundo-2.md §8): Isak con camera_mode = &"autoscroll" y
+    scroll_config = la seccion scroll del nivel tal cual; el fondo con vertical = true.
+  - Mundo 2 y siguientes: catalogo con los tipos del Mundo 1 debajo y, mientras no
+    exista el arte del mundo, el tileset y el fondo del Mundo 1 (tools/level_catalog.py).
   - Help: HelpSystem (scripts/levels/help_system.gd), la ayuda de Eco con Q
     (2026-10-15 (3)). Los objetos, puntos de atencion, checkpoints y enemigos con
     tipo de ayuda van en el grupo "help_target" con metadata/help_id: el help_id
@@ -57,6 +62,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import level_catalog  # noqa: E402
 
 LEVEL_SCRIPT = "res://scripts/levels/generated_level.gd"
 SPIKE_SCRIPT = "res://scripts/levels/spike_hazard.gd"
@@ -373,8 +380,8 @@ def build_scene(level, root=ROOT, warnings=None):
     t = int(level["tile_size"])
     grid = level["grid"]
     rows, cols = len(grid), len(grid[0])
-    catalog = load_json(os.path.join(root, "data", "world%d_objects.json" % world))
-    tilemap = load_json(os.path.join(root, "data", "tileset_mundo%d.json" % world))
+    catalog = level_catalog.load_catalog(root, world)
+    tilemap = load_json(level_catalog.tileset_json(root, world))
     hazards = load_json(os.path.join(root, HAZARDS_JSON))
     if int(tilemap["tile_size"]) != t or int(catalog["tile_size"]) != t:
         raise ValueError("tile_size del nivel (%d) distinto del tileset o del catalogo" % t)
@@ -402,8 +409,11 @@ def build_scene(level, root=ROOT, warnings=None):
     ])
 
     tower = level.get("camera", {}).get("vertical") == "tower"
-    background = "res://scenes/levels/world%d_background.tscn" % world
+    autoscroll = level.get("camera", {}).get("vertical") == "autoscroll"
+    background = level_catalog.background_res(root, world)
     bg_props = None
+    if autoscroll:
+        bg_props = [("vertical", "true")]
     if tower:
         bg_props = [("vertical", "true")]
         tabs = tower_tabs(level, t)
@@ -539,6 +549,9 @@ def build_scene(level, root=ROOT, warnings=None):
     if tower:
         isak_props.append(("camera_mode", '&"tower"'))
         isak_props.append(("camera_bands", camera_bands(level, t)))
+    if autoscroll:
+        isak_props.append(("camera_mode", '&"autoscroll"'))
+        isak_props.append(("scroll_config", fmt_value(level.get("scroll", {}))))
     scene.node("Isak", parent=".", instance=scene.ext_resource("PackedScene", ISAK_SCENE), props=isak_props)
     scene.node("Hud", parent=".", instance=scene.ext_resource("PackedScene", HUD_SCENE))
     scene.node("EcoTextBox", parent=".", instance=scene.ext_resource("PackedScene", ECO_SCENE))

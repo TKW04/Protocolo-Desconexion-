@@ -673,8 +673,8 @@ class LevelSchemaTest(unittest.TestCase):
         self.assert_fails(self.level, "needs_debug debe ser booleano")
 
     def test_unknown_ability(self):
-        # dash es conocida desde el 2026-10-19 (salas del 1-3).
-        self.level["abilities_available"]["ground_pound"] = True
+        # dash es conocida desde el 2026-10-19 (salas del 1-3) y ground_pound desde el 2026-10-22 (Mundo 2).
+        self.level["abilities_available"]["compress"] = True
         self.assert_fails(self.level, "habilidad desconocida")
 
     def test_sections_out_of_order(self):

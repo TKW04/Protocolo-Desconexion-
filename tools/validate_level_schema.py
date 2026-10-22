@@ -51,7 +51,10 @@ Reglas:
     (lenguaje de combinaciones de docs/propuesta-1-2.md §0). Niveles verticales
     (2026-10-16, paso 1 de docs/propuesta-1-2.md §10): el grid admite cualquier alto
     (minimo ceil(720 / tile_size) filas; la torre del 1-2 tiene 62);
-  - camara (camera, opcional): {vertical: "simple" | "tower", limits: "grid"};
+  - camara (camera, opcional): {vertical: "simple" | "tower" | "autoscroll", limits: "grid"};
+  - scroll forzado (scroll, solo con camera.vertical "autoscroll", 2026-10-22, paso 2 de
+    docs/propuesta-mundo-2.md §8): ancho 20, arranque, tramos de velocidad, paradas, inversiones y
+    tarjetas seguras (ver _check_scroll);
   - gasto del Debug del nivel (debug_drain_scale, opcional, 2026-10-21): numero entre 0 y 1 que
     multiplica el gasto del Debug en ese nivel (por defecto 1; la arena de Alerta Mayor, 0,5);
   - escala del mundo con el Debug del nivel (debug_world_scale, opcional, 2026-10-21): numero entre 0 y 1
@@ -86,6 +89,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import upgrade_catalog  # noqa: E402
+import level_catalog  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRID_CHARS = set("#.^-hPGCoES")
@@ -103,10 +107,19 @@ REQUIRED_FIELDS = {
     "objects": list,
     "unlocks": list,
 }
-KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash"}
+KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound"}
 # Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);
 # tower = camara de torre (scripts/player/tower_camera.gd, data/camera_tower.json).
-CAMERA_VERTICAL_MODES = ("simple", "tower")
+# autoscroll = scroll forzado del Mundo 2 (2026-10-22; scripts/player/scroll_camera.gd,
+# data/camera_scroll.json y la seccion scroll del nivel; ver _check_scroll).
+CAMERA_VERTICAL_MODES = ("simple", "tower", "autoscroll")
+# Scroll forzado: ancho del nivel (la camara no se mueve en horizontal), velocidades y
+# distancia maxima en filas entre tarjetas seguras (docs/propuesta-mundo-2.md §3.1-§3.2).
+AUTOSCROLL_WIDTH_TILES = 20
+SCROLL_SPEED_RANGE = (0.2, 1.5)
+SCROLL_SAFE_GAP_ROWS = 6
+SCROLL_KEYS = ("start_resume_row", "start_bottom_row", "default_speed_tiles_s", "stages", "stops", "reverses",
+               "safe_respawn")
 CAMERA_LIMITS = ("grid",)
 # Nivel de prueba (no es del juego, no se enlaza desde el hub): <nombre>_test.
 TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
@@ -188,6 +201,14 @@ class LevelValidator:
             self.error("no se pudo leer %s (%s)" % (rel_path, exc))
             return None
 
+    def _load_catalog(self):
+        """Catalogo del mundo del nivel (desde el Mundo 2, con los tipos del Mundo 1; tools/level_catalog.py)."""
+        try:
+            return level_catalog.load_catalog(self.root, self.level["world"])
+        except (OSError, ValueError) as exc:
+            self.error("no se pudo leer el catalogo de objetos del mundo %s (%s)" % (self.level.get("world"), exc))
+            return None
+
     # --- Reglas ---
 
     def validate(self):
@@ -209,6 +230,7 @@ class LevelValidator:
         self._check_unlocks()
         self._check_sections()
         self._check_camera()
+        self._check_scroll()
         self._check_validation()
         self._check_help()
         return self.errors
@@ -218,7 +240,7 @@ class LevelValidator:
         if not os.path.exists(help_path):
             return
         known = set((self._load_json("data/help.json") or {}).get("types", {}))
-        catalog = self._load_json("data/world%d_objects.json" % self.level["world"]) or {}
+        catalog = self._load_catalog() or {}
         used = []
         types = catalog.get("types", {})
         for i, obj in enumerate(self.level["objects"]):
@@ -620,8 +642,7 @@ class LevelValidator:
         return [(x + i, y + j) for j in range(h) for i in range(w)]
 
     def _check_objects(self):
-        catalog_path = "data/world%d_objects.json" % self.level["world"]
-        catalog = self._load_json(catalog_path)
+        catalog = self._load_catalog()
         if catalog is None:
             return
         types = catalog.get("types", {})
@@ -651,7 +672,7 @@ class LevelValidator:
                 continue
             kind, x, y, params = obj["type"], obj["x"], obj["y"], obj["params"]
             if kind not in types:
-                self.error("%s: tipo '%s' no esta en %s" % (what, kind, catalog_path))
+                self.error("%s: tipo '%s' no esta en data/world%d_objects.json" % (what, kind, self.level["world"]))
                 continue
             what = "%s (%s)" % (what, kind)
             if not (_is_int(x) and _is_int(y)):
@@ -898,7 +919,7 @@ class LevelValidator:
         con rhythm existente, dentro de su zona, group no vacio y on_fraction x el ciclo mas corto >=
         aviso (warn_frames / anim_fps) + min_on_extra_s."""
         rhythms = self._rhythms()
-        catalog = self._load_json("data/world%d_objects.json" % self.level["world"]) or {}
+        catalog = self._load_catalog() or {}
         cfg = catalog.get("blink_platform", {})
         defaults = catalog.get("types", {}).get("blink_platform", {}).get("defaults", {})
         warn = float(cfg.get("warn_frames", 9)) / float(cfg.get("anim_fps", 12.0))
@@ -1357,6 +1378,124 @@ class LevelValidator:
                        % (i, name, self.height - 1))
             return None
         return (x0, x1, y0, y1)
+
+    def _check_scroll(self):
+        """Scroll forzado (2026-10-22, paso 2 de docs/propuesta-mundo-2.md §8): con camera.vertical
+        "autoscroll" el nivel mide AUTOSCROLL_WIDTH_TILES de ancho y lleva scroll {start_resume_row,
+        start_bottom_row?, default_speed_tiles_s?, stages?, stops?, reverses?, safe_respawn}: filas
+        dentro del grid, velocidades en SCROLL_SPEED_RANGE, tramos sin solaparse, paradas con id unico y
+        resume_row por encima de su at_row y a la vista (o dos tiles por encima), inversiones con
+        duracion de 0 a 10 s, y tarjetas seguras [x, y] en celdas libres con suelo ('#' o '-') debajo,
+        a SCROLL_SAFE_GAP_ROWS filas o menos entre si desde el inicio hasta arriba. Sin autoscroll no
+        hay seccion scroll."""
+        mode = self.level.get("camera", {}).get("vertical") if isinstance(self.level.get("camera"), dict) else None
+        if mode != "autoscroll":
+            if "scroll" in self.level:
+                self.error("'scroll' solo vale con camera.vertical \"autoscroll\"")
+            return
+        if self.width != AUTOSCROLL_WIDTH_TILES:
+            self.error("un nivel con scroll forzado mide %d tiles de ancho (tiene %d)" % (AUTOSCROLL_WIDTH_TILES,
+                                                                                        self.width))
+        scroll = self.level.get("scroll")
+        if not isinstance(scroll, dict):
+            self.error("camera.vertical \"autoscroll\" exige la seccion 'scroll' (objeto)")
+            return
+        for key in scroll:
+            if key not in SCROLL_KEYS:
+                self.error("scroll: campo desconocido '%s'" % key)
+        rows = self.height
+        view_rows = SCREEN_HEIGHT_PX / float(self.level["tile_size"])
+
+        def row_ok(value, what):
+            if not _is_int(value) or not 0 <= value < rows:
+                self.error("scroll.%s debe ser una fila del grid (0-%d)" % (what, rows - 1))
+                return False
+            return True
+
+        def speed_ok(value, what):
+            lo, hi = SCROLL_SPEED_RANGE
+            if not _is_number(value) or not lo <= value <= hi:
+                self.error("scroll.%s debe estar entre %g y %g tiles/s" % (what, lo, hi))
+
+        if "start_resume_row" not in scroll:
+            self.error("scroll: falta start_resume_row (fila que arranca el scroll al subir por encima)")
+        else:
+            row_ok(scroll["start_resume_row"], "start_resume_row")
+        if "start_bottom_row" in scroll:
+            row_ok(scroll["start_bottom_row"], "start_bottom_row")
+        if "default_speed_tiles_s" in scroll:
+            speed_ok(scroll["default_speed_tiles_s"], "default_speed_tiles_s")
+        bands = []
+        for i, stage in enumerate(scroll.get("stages", [])):
+            tag = "stages[%d]" % i
+            if not isinstance(stage, dict) or set(stage) - {"y_from", "y_to", "speed_tiles_s"}:
+                self.error("scroll.%s debe ser {y_from, y_to, speed_tiles_s}" % tag)
+                continue
+            if row_ok(stage.get("y_from"), tag + ".y_from") and row_ok(stage.get("y_to"), tag + ".y_to"):
+                if stage["y_from"] > stage["y_to"]:
+                    self.error("scroll.%s: y_from debe ser <= y_to" % tag)
+                else:
+                    for other in bands:
+                        if not (stage["y_to"] < other[0] or stage["y_from"] > other[1]):
+                            self.error("scroll.%s se solapa con otro tramo" % tag)
+                    bands.append((stage["y_from"], stage["y_to"]))
+            speed_ok(stage.get("speed_tiles_s"), tag + ".speed_tiles_s")
+        ids = set()
+        for i, stop in enumerate(scroll.get("stops", [])):
+            tag = "stops[%d]" % i
+            if not isinstance(stop, dict) or set(stop) - {"id", "at_row", "resume_row"}:
+                self.error("scroll.%s debe ser {id, at_row, resume_row}" % tag)
+                continue
+            if not isinstance(stop.get("id"), str) or not stop["id"] or stop["id"] in ids:
+                self.error("scroll.%s: id debe ser un texto no vacio y unico" % tag)
+            ids.add(stop.get("id"))
+            if row_ok(stop.get("at_row"), tag + ".at_row") and row_ok(stop.get("resume_row"), tag + ".resume_row"):
+                line = stop["at_row"] + 1
+                if not line - view_rows - 2 <= stop["resume_row"] < line:
+                    self.error("scroll.%s: resume_row debe quedar a la vista de la parada (o hasta 2 filas por "
+                               "encima)" % tag)
+        for i, rev in enumerate(scroll.get("reverses", [])):
+            tag = "reverses[%d]" % i
+            if not isinstance(rev, dict) or set(rev) - {"at_row", "duration_s", "speed_tiles_s"}:
+                self.error("scroll.%s debe ser {at_row, duration_s, speed_tiles_s}" % tag)
+                continue
+            row_ok(rev.get("at_row"), tag + ".at_row")
+            if not _is_number(rev.get("duration_s")) or not 0.0 < rev["duration_s"] <= 10.0:
+                self.error("scroll.%s.duration_s debe estar entre 0 y 10 s" % tag)
+            speed_ok(rev.get("speed_tiles_s"), tag + ".speed_tiles_s")
+        safe_rows = []
+        safe = scroll.get("safe_respawn")
+        if not isinstance(safe, list) or not safe:
+            self.error("scroll.safe_respawn debe ser una lista no vacia de celdas [x, y]")
+            return
+        for i, cell in enumerate(safe):
+            if not (isinstance(cell, list) and len(cell) == 2 and all(_is_int(v) for v in cell)):
+                self.error("scroll.safe_respawn[%d] debe ser [x, y]" % i)
+                continue
+            x, y = cell
+            if not self.in_bounds(x, y) or not self.in_bounds(x, y + 1):
+                self.error("scroll.safe_respawn[%d] fuera del grid" % i)
+                continue
+            if self.cell(x, y) in "#^" or self.cell(x, y + 1) not in "#-":
+                self.error("scroll.safe_respawn[%d]: la celda debe estar libre y con suelo ('#' o '-') debajo"
+                           % i, y, x)
+                continue
+            safe_rows.append(y)
+        if not safe_rows:
+            return
+        safe_rows.sort()
+        start_row = scroll.get("start_bottom_row", rows - 1)
+        top_row = int(math.ceil(view_rows)) - 1
+        if _is_int(start_row) and safe_rows[-1] < start_row - SCROLL_SAFE_GAP_ROWS:
+            self.error("scroll.safe_respawn: ninguna tarjeta segura a %d filas o menos del inicio (fila %d)"
+                       % (SCROLL_SAFE_GAP_ROWS, start_row))
+        if safe_rows[0] > top_row + SCROLL_SAFE_GAP_ROWS:
+            self.error("scroll.safe_respawn: ninguna tarjeta segura a %d filas o menos de lo alto (fila %d)"
+                       % (SCROLL_SAFE_GAP_ROWS, top_row))
+        for a, b in zip(safe_rows, safe_rows[1:]):
+            if b - a > SCROLL_SAFE_GAP_ROWS:
+                self.error("scroll.safe_respawn: entre las filas %d y %d no hay tarjeta segura (maximo %d filas)"
+                           % (a, b, SCROLL_SAFE_GAP_ROWS))
 
     def _check_camera(self):
         """'camera' (opcional): {vertical: simple | tower, limits: grid}."""

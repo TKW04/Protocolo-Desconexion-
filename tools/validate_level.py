@@ -143,6 +143,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level_schema  # noqa: E402
 import upgrade_catalog  # noqa: E402
+import level_catalog  # noqa: E402
 
 DEFAULT_LIMIT = 0.85
 DEFAULT_JUMP_EFFICIENCY = 0.92
@@ -504,7 +505,7 @@ class LevelModel:
         self.hw = rules.hitbox_w * 0.5
         self.hh = rules.hitbox_h
         world = int(level.get("world", 1))
-        self.catalog = load_json(os.path.join(rules.root, "data", "world%d_objects.json" % world))
+        self.catalog = level_catalog.load_catalog(rules.root, world)
         self.hazard_data = load_json(os.path.join(rules.root, "data", "hazards.json"))
         self.pulse = bool(level.get("abilities_available", {}).get("pulse", False))
         self.laser_base = bool(level.get("abilities_available", {}).get("laser", False))
@@ -940,8 +941,8 @@ class LevelModel:
         return ""
 
     def is_vertical(self):
-        """Nivel vertical (torre): camara de torre o tramos con y_from/y_to."""
-        return self.level.get("camera", {}).get("vertical") == "tower" or any(
+        """Nivel vertical (torre): camara de torre o de scroll forzado (Mundo 2) o tramos con y_from/y_to."""
+        return self.level.get("camera", {}).get("vertical") in ("tower", "autoscroll") or any(
             "y_from" in s or "y_to" in s for s in self.sections)
 
     # Mundo en un estado (puertas abiertas + Debug).

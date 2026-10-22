@@ -37,6 +37,9 @@ signal dash_denied(reason: StringName)
 signal ground_pound_started(from_ground: bool)
 ## El golpe al suelo aterriza: nace la onda en `rect` (px globales).
 signal ground_pound_landed(rect: Rect2)
+## Isak toca el borde que dana del scroll forzado (Mundo 2): `damaged` = le
+## quito Sync Rate (un segundo contacto dentro de la invulnerabilidad no cuenta).
+signal scroll_edge_hit(damaged: bool)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -98,6 +101,8 @@ const POUND_DENIED_LATCHED: StringName = &"latched"
 const POUND_DENIED_ENERGY: StringName = &"energy"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
+## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
+const CAMERA_AUTOSCROLL: StringName = &"autoscroll"
 
 @export_file("*.json") var physics_path: String = PlayerPhysics.DEFAULT_PATH
 @export_file("*.json") var abilities_path: String = PlayerAbilities.DEFAULT_PATH
@@ -130,6 +135,9 @@ const CAMERA_TOWER: StringName = &"tower"
 ## Camara de torre: bandas de los pisos en px (x = borde de arriba, y = de abajo),
 ## de los tramos con y_from/y_to del nivel (las pone tools/build_level.py).
 @export var camera_bands: PackedVector2Array = PackedVector2Array()
+## Scroll forzado (camera_mode autoscroll): la seccion scroll del nivel tal cual
+## (filas y tiles/s; la pone tools/build_level.py).
+@export var scroll_config: Dictionary = {}
 ## Isak esta en un nivel (no en el hub): solo aqui funcionan la regeneracion
 ## pasiva de Sync 5 y Energia 5 (PassiveRegen) y el Ocultarte (Pulso 4). HubRoom
 ## lo apaga (el hub ya llena las barras y tiene cargador). Tanda M2.
@@ -175,6 +183,9 @@ var _warp_input := PlayerInput.new()
 var _facing_back: bool = false
 ## Camara de torre (camera_mode tower); null en el resto.
 var _tower_camera: TowerCamera
+## Camara de scroll forzado (camera_mode autoscroll) y su aviso; null en el resto.
+var _scroll_camera: ScrollCamera
+var _scroll_overlay: ScrollEdgeOverlay
 ## Regeneracion pasiva de las mejoras Sync 5 y Energia 5 (tanda M2).
 var _regen: PassiveRegen
 ## Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2; accion hide).
@@ -296,6 +307,8 @@ func step(delta: float) -> void:
 	_pound_requested = false
 	if _tower_camera != null:
 		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
+	if _scroll_camera != null:
+		_update_scroll(delta)
 	if input == _warp_input:
 		input = source
 
@@ -508,6 +521,9 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_reset_dash()
 	_reset_pound()
 	play_animation(ANIM_IDLE)
+	if _scroll_camera != null:
+		# Muerte: el scroll de la seccion vuelve a su parada.
+		_scroll_camera.reset_for(at)
 	_camera.reset_smoothing()
 	snap_camera()
 	_update_blink()
@@ -1270,6 +1286,9 @@ func _setup_camera() -> void:
 		_camera.limit_top = camera_limits.position.y
 		_camera.limit_right = camera_limits.end.x
 		_camera.limit_bottom = camera_limits.end.y
+	if camera_mode == CAMERA_AUTOSCROLL:
+		_setup_scroll_camera()
+		return
 	if camera_mode != CAMERA_TOWER:
 		return
 	_tower_camera = TowerCamera.load_from_file()
@@ -1291,9 +1310,81 @@ func get_tower_camera() -> TowerCamera:
 	return _tower_camera
 
 
+## Camara de scroll forzado (null si el nivel no la usa).
+func get_scroll_camera() -> ScrollCamera:
+	return _scroll_camera
+
+
+func get_scroll_overlay() -> ScrollEdgeOverlay:
+	return _scroll_overlay
+
+
+func _setup_scroll_camera() -> void:
+	_scroll_camera = ScrollCamera.load_from_file()
+	var view := Vector2(float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)),
+			float(ProjectSettings.get_setting("display/window/size/viewport_height", 720)))
+	_scroll_camera.configure(view / _camera.zoom, Rect2(camera_limits), scroll_config, physics.tile_size)
+	_camera.top_level = true
+	_camera.position_smoothing_enabled = false
+	_scroll_overlay = ScrollEdgeOverlay.new()
+	_scroll_overlay.name = "ScrollEdgeOverlay"
+	_scroll_overlay.configure(_scroll_camera, Rect2(camera_limits))
+	add_child(_scroll_overlay)
+	snap_camera()
+
+
+## Scroll forzado: avanza la camara (tiempo del mundo), aplica el techo de carga
+## y el borde que dana, y el aviso.
+func _update_scroll(delta: float) -> void:
+	_camera.global_position = _scroll_camera.update(global_position, WorldTime.scaled_delta(delta))
+	var head: float = global_position.y - hitbox_size.y
+	if not _warping:
+		var ceiling: float = _scroll_camera.ceiling_y()
+		if head < ceiling:
+			global_position.y += ceiling - head
+			velocity.y = maxf(velocity.y, 0.0)
+			head = ceiling
+		if not is_dead() and not _facing_back and _scroll_camera.touches_edge(global_position, head):
+			_hit_scroll_edge()
+	_scroll_overlay.advance(delta, global_position, global_position.y - hitbox_size.y)
+
+
+## Borde que dana (docs/propuesta-mundo-2.md §3.2): -edge_damage de Sync Rate
+## (si no esta en la invulnerabilidad de un golpe), sin retroceso; reaparece en la
+## tarjeta segura mas baja a la vista con edge_invulnerability_s. Si el golpe lo
+## mata, muere como siempre (LevelRunner reaparece con el scroll de la seccion).
+func _hit_scroll_edge() -> void:
+	var damaged: bool = _invulnerable_left <= 0.0
+	if damaged:
+		GameState.apply_sync_damage(_scroll_camera.edge_damage)
+		if is_dead():
+			scroll_edge_hit.emit(true)
+			EventBus.scroll_edge_hit.emit(true)
+			return
+	var at: Vector2 = _scroll_camera.safe_point(global_position)
+	global_position = at
+	velocity = Vector2.ZERO
+	_jump_buffer_left = 0.0
+	_coyote_left = 0.0
+	_cancel_laser()
+	_end_laser_pose(false)
+	stop_pulse_effect()
+	set_pulse_area_active(false)
+	if _state_name in [PlayerState.DASH, PlayerState.GROUND_POUND, PlayerState.PULSE, PlayerState.HURT]:
+		change_state(PlayerState.IDLE)
+	_invulnerable_left = maxf(_invulnerable_left, _scroll_camera.edge_invulnerability_s)
+	reset_idle_time()
+	scroll_edge_hit.emit(damaged)
+	EventBus.scroll_edge_hit.emit(damaged)
+
+
 ## Con la camara de torre, la coloca sin suavizado sobre Isak (al aparecer o
 ## tras moverlo a mano). Con la simple no hace nada (reset_smoothing basta).
 func snap_camera() -> void:
+	if _scroll_camera != null:
+		_camera.global_position = _scroll_camera.snap(global_position)
+		_camera.reset_smoothing()
+		return
 	if _tower_camera == null:
 		return
 	_camera.global_position = _tower_camera.snap(global_position)
