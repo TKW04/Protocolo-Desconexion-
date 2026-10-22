@@ -18,6 +18,8 @@ func before_each() -> void:
 	_settings_path = GameSettings.settings_path()
 	GameSettings.use_path(_settings_path, true)
 	_lap = GameState.lap
+	# Sin audio externo (user://audio_override del desarrollador no influye).
+	AudioManager.set_external_dir("")
 	AudioManager.load_catalog(AudioManager.DATA_PATH)
 	AudioManager.history.clear()
 
@@ -29,6 +31,7 @@ func after_each() -> void:
 	_nodes.clear()
 	get_tree().paused = false
 	GameState.lap = _lap
+	AudioManager.set_external_dir(null)
 	AudioManager.load_catalog(AudioManager.DATA_PATH)
 	GameSettings.use_path(_settings_path, true)
 

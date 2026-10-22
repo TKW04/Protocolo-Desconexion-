@@ -16,6 +16,14 @@
 ## Volumenes por bus y «Senales sonoras de ritmo»: GameSettings (settings.cfg),
 ## que aplica los volumenes al AudioServer; aqui solo se consulta cue_enabled.
 ## Procesa siempre (la UI suena con el arbol en pausa).
+## AUDIO EXTERNO (2026-10-21, para probar sonidos sin reexportar): un archivo
+## <nombre>.ogg / .wav / .mp3 (en ese orden; mayusculas indiferentes) en la
+## carpeta de override_dir() gana al empaquetado. <nombre> es cada nombre de
+## files (una variante) o el propio ID (sustituye a todas sus variantes). Se
+## carga en tiempo de ejecucion (load_from_buffer) sin bucle propio: el bucle y
+## el bus siguen siendo los del catalogo. Archivo invalido: aviso una vez por ID
+## en el log y suena el empaquetado (o nada). La carpeta se vuelve a leer al
+## volver a la ventana del juego si cambio (o con reload_external_audio()).
 extends Node
 
 const DATA_PATH: String = "res://data/audio.json"
@@ -51,11 +59,29 @@ const HISTORY_MAX: int = 32
 const EXIT_FLUSH_MS: int = 60
 var _last_stop_ms: int = -100000
 
+## Audio externo: carpeta del juego exportado (junto al ejecutable), la de
+## desarrollo (editor) y la variable de entorno que las sustituye.
+const EXTERNAL_DIR_NAME: String = "audio"
+const EXTERNAL_DEV_DIR: String = "user://audio_override"
+const EXTERNAL_DIR_ENV: String = "ISAK_AUDIO_DIR"
+const EXTERNAL_EXTENSIONS: PackedStringArray = ["ogg", "wav", "mp3"]
+## Carpeta fijada a mano (pruebas); null = la de por defecto, "" = desactivado.
+var _external_dir_override: Variant = null
+## Archivos de la carpeta: nombre en minusculas -> ruta completa.
+var _external_files: Dictionary = {}
+var _external_signature: String = ""
+## id -> rutas de las que salen sus streams (externas o empaquetadas).
+var _sources: Dictionary = {}
+## ids ya avisados (un aviso por ID).
+var _external_warned: Dictionary = {}
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
+	_scan_external()
 	load_catalog(DATA_PATH)
+	_report_external()
 	GameSettings.apply_audio()
 	get_tree().node_added.connect(_on_node_added)
 	_scan(get_tree().root)
@@ -73,6 +99,14 @@ func _exit_tree() -> void:
 	stop_all()
 	if was_playing or _stopped_recently():
 		OS.delay_msec(EXIT_FLUSH_MS)
+
+
+## Al volver a la ventana del juego, si la carpeta de audio externo cambio, se
+## vuelve a leer (sin reiniciar: basta soltar el archivo y volver al juego).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN and is_node_ready():
+		if _external_signature_now() != _external_signature:
+			reload_external_audio()
 
 
 func _process(_delta: float) -> void:
@@ -100,6 +134,7 @@ func set_catalog(data: Dictionary) -> void:
 	var sounds: Variant = data.get("sounds", {})
 	_sounds = sounds if sounds is Dictionary else {}
 	_streams.clear()
+	_sources.clear()
 	_last_variant.clear()
 	_last_play_ms.clear()
 	_script_bindings.clear()
@@ -135,16 +170,219 @@ func bus_for(id: StringName) -> StringName:
 ## Rutas de los archivos que existen para `id` (en el orden de files).
 func resolve_paths(id: StringName) -> PackedStringArray:
 	var out: PackedStringArray = []
-	var entry: Dictionary = get_entry(id)
-	var files: Variant = entry.get("files", [String(id)])
-	if not files is Array or (files as Array).is_empty():
-		files = [String(id)]
 	var dir: String = String(_data.get("audio_dir", "res://assets/audio"))
-	for file: Variant in files:
-		var path: String = _find_file(dir, String(file))
+	for file: String in _file_names(id):
+		var path: String = _find_file(dir, file)
 		if not path.is_empty():
 			out.append(path)
 	return out
+
+
+## Nombres de archivo (sin carpeta) de `id`: su files o, sin files, el ID.
+func _file_names(id: StringName) -> PackedStringArray:
+	var files: Variant = get_entry(id).get("files", [String(id)])
+	if not files is Array or (files as Array).is_empty():
+		files = [String(id)]
+	var out: PackedStringArray = []
+	for file: Variant in files:
+		out.append(String(file))
+	return out
+
+
+# --- Audio externo ---
+
+## Carpeta de audio externo: la variable de entorno ISAK_AUDIO_DIR si existe; en
+## el juego exportado, `audio` junto al ejecutable; en el editor,
+## user://audio_override. "" = desactivado.
+func external_dir() -> String:
+	if _external_dir_override != null:
+		return String(_external_dir_override)
+	var env: String = OS.get_environment(EXTERNAL_DIR_ENV)
+	if not env.is_empty():
+		return env
+	if OS.has_feature("template"):
+		return OS.get_executable_path().get_base_dir().path_join(EXTERNAL_DIR_NAME)
+	return EXTERNAL_DEV_DIR
+
+
+## Fija la carpeta de audio externo (pruebas; null = la de por defecto, "" =
+## sin audio externo) y la vuelve a leer.
+func set_external_dir(dir: Variant) -> void:
+	_external_dir_override = dir
+	reload_external_audio()
+
+
+## Vuelve a leer la carpeta de audio externo y olvida los streams ya cargados
+## (los bucles en curso siguen con el suyo hasta que vuelvan a empezar).
+func reload_external_audio() -> void:
+	_external_warned.clear()
+	_streams.clear()
+	_sources.clear()
+	_last_variant.clear()
+	_scan_external()
+	_report_external()
+
+
+## Rutas de las que sale el sonido `id` (externas o empaquetadas; pruebas y log).
+func stream_sources(id: StringName) -> PackedStringArray:
+	_resolve(id)
+	return _sources.get(id, PackedStringArray())
+
+
+## Archivos de audio de la carpeta externa (nombre en minusculas -> ruta).
+func external_files() -> Dictionary:
+	return _external_files
+
+
+func _scan_external() -> void:
+	_external_files.clear()
+	_external_signature = _external_signature_now()
+	var dir: String = external_dir()
+	if dir.is_empty() or not DirAccess.dir_exists_absolute(dir):
+		return
+	for file: String in DirAccess.get_files_at(dir):
+		if EXTERNAL_EXTENSIONS.has(file.get_extension().to_lower()):
+			_external_files[file.to_lower()] = dir.path_join(file)
+
+
+## Huella de la carpeta (nombres, tamanos y fechas) para saber si cambio.
+func _external_signature_now() -> String:
+	var dir: String = external_dir()
+	if dir.is_empty() or not DirAccess.dir_exists_absolute(dir):
+		return dir + "|-"
+	var parts: PackedStringArray = [dir]
+	for file: String in DirAccess.get_files_at(dir):
+		var path: String = dir.path_join(file)
+		parts.append("%s:%d:%d" % [file, FileAccess.get_size(path), FileAccess.get_modified_time(path)])
+	return "|".join(parts)
+
+
+## Linea en el log: donde se busca el audio externo y que se encontro (y los
+## archivos que no corresponden a ningun sonido del catalogo).
+func _report_external() -> void:
+	var dir: String = external_dir()
+	if dir.is_empty():
+		return
+	var shown: String = ProjectSettings.globalize_path(dir) if dir.contains("://") else dir
+	if not DirAccess.dir_exists_absolute(dir):
+		print("AudioManager: audio externo: la carpeta %s no existe (se usan los sonidos del juego)." % shown)
+		return
+	print("AudioManager: audio externo: %d archivo(s) en %s" % [_external_files.size(), shown])
+	var known: Dictionary = {}
+	for id: Variant in _sounds:
+		known[String(id).to_lower()] = true
+		for file: String in _file_names(StringName(String(id))):
+			known[file.get_basename().to_lower() if not file.get_extension().is_empty() else file.to_lower()] = true
+	for key: Variant in _external_files:
+		if not known.has(String(key).get_basename()):
+			push_warning("AudioManager: audio externo: '%s' no corresponde a ningun ID de data/audio.json (se ignora)." % String(_external_files[key]).get_file())
+
+
+## Rutas externas de `name` (sin extension) en orden de prioridad: ogg, wav, mp3.
+func _external_candidates(name: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var base: String = name.get_basename() if not name.get_extension().is_empty() else name
+	for ext: String in EXTERNAL_EXTENSIONS:
+		var key: String = ("%s.%s" % [base, ext]).to_lower()
+		if _external_files.has(key):
+			out.append(String(_external_files[key]))
+	return out
+
+
+## [stream, ruta] externos de `name` para `id`: el primer candidato que se
+## carga; [] si no hay o ninguno vale (avisa una vez por ID).
+func _load_external(id: StringName, name: String) -> Array:
+	for path: String in _external_candidates(name):
+		var problem: String = ""
+		var stream: AudioStream = null
+		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path)
+		if bytes.is_empty():
+			problem = "no se pudo leer o esta vacio"
+		else:
+			problem = _check_audio_bytes(bytes, path.get_extension().to_lower())
+		if problem.is_empty():
+			stream = _decode_audio(bytes, path.get_extension().to_lower())
+			if stream == null:
+				problem = "no se pudo decodificar"
+		if stream != null:
+			return [stream, path]
+		if not _external_warned.has(id):
+			_external_warned[id] = true
+			push_warning("AudioManager: audio externo '%s' para %s no vale (%s); suena el del juego." % [path, id, problem])
+	return []
+
+
+## Comprueba la cabecera antes de decodificar (asi un archivo que no es audio
+## no llega al decodificador de Godot, que lo daria como error). "" = valido.
+static func _check_audio_bytes(bytes: PackedByteArray, ext: String) -> String:
+	match ext:
+		"ogg":
+			if bytes.size() < 36 or bytes.slice(0, 4).get_string_from_ascii() != "OggS":
+				return "no es un archivo Ogg"
+			if bytes[28] != 1 or bytes.slice(29, 35).get_string_from_ascii() != "vorbis":
+				return "no es Ogg Vorbis (Opus u otro codec no se admiten)"
+		"wav":
+			if bytes.size() < 12 or bytes.slice(0, 4).get_string_from_ascii() != "RIFF" \
+					or bytes.slice(8, 12).get_string_from_ascii() != "WAVE":
+				return "no es un archivo WAV (RIFF/WAVE)"
+			return _check_wav_format(bytes)
+		"mp3":
+			if bytes.size() < 4:
+				return "demasiado corto"
+			var id3: bool = bytes.slice(0, 3).get_string_from_ascii() == "ID3"
+			if not id3 and not (bytes[0] == 0xFF and (bytes[1] & 0xE0) == 0xE0):
+				return "no es un archivo MP3"
+		_:
+			return "extension no admitida"
+	return ""
+
+
+## Formato del bloque fmt de un WAV: PCM de 8, 16, 24 o 32 bits o coma
+## flotante de 32 o 64 bits (lo que decodifica Godot). "" = valido.
+static func _check_wav_format(bytes: PackedByteArray) -> String:
+	var pos: int = 12
+	while pos + 8 <= bytes.size():
+		var chunk: String = bytes.slice(pos, pos + 4).get_string_from_ascii()
+		var size: int = bytes.decode_u32(pos + 4)
+		if chunk == "fmt ":
+			if pos + 24 > bytes.size():
+				return "bloque fmt incompleto"
+			var tag: int = bytes.decode_u16(pos + 8)
+			var channels: int = bytes.decode_u16(pos + 10)
+			var bits: int = bytes.decode_u16(pos + 22)
+			if channels < 1 or channels > 2:
+				return "%d canales (solo mono o estereo)" % channels
+			if tag == 0xFFFE and pos + 34 <= bytes.size():
+				tag = bytes.decode_u16(pos + 32)
+			if tag == 1 and bits in [8, 16, 24, 32]:
+				return ""
+			if tag == 3 and bits in [32, 64]:
+				return ""
+			return "formato WAV no admitido (codigo %d, %d bits): usa PCM de 16 bits" % [tag, bits]
+		pos += 8 + size + (size & 1)
+	return "sin bloque fmt"
+
+
+## Decodifica `bytes` sin bucle propio (el bucle lo lleva el catalogo).
+static func _decode_audio(bytes: PackedByteArray, ext: String) -> AudioStream:
+	match ext:
+		"ogg":
+			var ogg: AudioStreamOggVorbis = AudioStreamOggVorbis.load_from_buffer(bytes)
+			if ogg != null:
+				ogg.loop = false
+			return ogg
+		"wav":
+			# edit/loop_mode 1 = desactivado (ignora los bucles guardados en el WAV).
+			var wav: AudioStreamWAV = AudioStreamWAV.load_from_buffer(bytes, {"edit/loop_mode": 1})
+			if wav != null:
+				wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
+			return wav
+		"mp3":
+			var mp3: AudioStreamMP3 = AudioStreamMP3.load_from_buffer(bytes)
+			if mp3 != null:
+				mp3.loop = false
+			return mp3
+	return null
 
 
 ## Errores del catalogo `data` (vacio = valido). `bus_names`: buses que existen.
@@ -366,15 +604,38 @@ func _remember(id: StringName) -> void:
 		history.remove_at(0)
 
 
+## Streams de `id`: por cada nombre de files, el externo si lo hay y vale; si
+## no, el empaquetado. Un externo con el nombre del ID (que no sea uno de files)
+## sustituye a todas las variantes cuando ninguna tiene externo propio.
 func _resolve(id: StringName) -> Array:
 	if _streams.has(id):
 		return _streams[id]
 	var streams: Array = []
-	for path: String in resolve_paths(id):
+	var sources: PackedStringArray = []
+	var names: PackedStringArray = _file_names(id)
+	var any_external: bool = false
+	var dir: String = String(_data.get("audio_dir", "res://assets/audio"))
+	for name: String in names:
+		var external: Array = _load_external(id, name) if not _external_files.is_empty() else []
+		if not external.is_empty():
+			streams.append(external[0])
+			sources.append(String(external[1]))
+			any_external = true
+			continue
+		var path: String = _find_file(dir, name)
+		if path.is_empty():
+			continue
 		var stream: Variant = load(path)
 		if stream is AudioStream:
 			streams.append(stream)
+			sources.append(path)
+	if not any_external and not names.has(String(id)) and not _external_files.is_empty():
+		var whole: Array = _load_external(id, String(id))
+		if not whole.is_empty():
+			streams = [whole[0]]
+			sources = PackedStringArray([String(whole[1])])
 	_streams[id] = streams
+	_sources[id] = sources
 	return streams
 
 
