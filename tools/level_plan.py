@@ -80,7 +80,12 @@ DASH_COOLDOWN_BIN = 0.1
 START_S = 0.06
 # Pasos que dejan a Isak parado (el siguiente movimiento arranca acelerando con el arco real; tambien los
 # saltos, caidas y dashes: el bot frena en el centro de la celda de llegada).
-REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "debug_on", "debug_off")
+REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "debug_on", "debug_off", "ground_pound",
+                "wait_scroll")
+# Scroll forzado (Mundo 2, paso 9 de docs/propuesta-mundo-2.md §7.1): espera maxima por el techo de carga (s) y
+# margen frente al borde que dana por defecto (tiles; 3 en dificultad 2-3 y 2 en dificultad 4).
+SCROLL_MAX_WAIT_S = 120.0
+SCROLL_HEAD_MARGIN_PX = 8.0
 
 
 def path_to(parent, target):
@@ -172,6 +177,19 @@ class Planner:
                               "target": {"type": "relay_receiver", "id": g.relay["id"], "opens": g.label()},
                               "relay": {"gate": g.obj_id, "lector": lector["id"], "window_s": lector["window"],
                                         "time_s": relay["time"]}})
+                continue
+            if g.kind == "pound":
+                # Golpe al suelo (Mundo 2, paso 9): desde la celda de pie la onda alcanza la tarjeta fragil; la
+                # oculta solo con el Debug activo (se enciende antes y se apaga despues). Rota, Isak cae por ella.
+                x = self.m.pound_x(g, n, state, g.hidden)
+                if g.hidden:
+                    steps.append({"action": "debug_on", "at": n, "state": state, "reason": "ver la grieta de %s" % g.obj_id,
+                                  "target": {"type": "fragile_card", "id": g.obj_id}})
+                steps.append({"action": "ground_pound", "at": n, "shot": {"x": x, "facing": 1}, "state": state,
+                              "air": False, "breaks": [g.obj_id], "debug": g.hidden,
+                              "target": {"type": "fragile_card", "id": g.obj_id}})
+                if g.hidden:
+                    steps.append({"action": "debug_off", "at": n, "state": state})
                 continue
             if g.kind == "bar":
                 steps.append({"action": "wait", "at": n, "seconds": g.wait_s, "state": state,
@@ -317,8 +335,10 @@ class Planner:
                 # Isak vuelve de perfil) y un cuadro.
                 return max(r.pulse_pose_s, s.get("pose_s", 0.0)) + DT
             return r.pulse_pose_s
-        if a in ("wait", "wait_phase", "wait_beat"):
+        if a in ("wait", "wait_phase", "wait_beat", "wait_scroll"):
             return s.get("seconds", 0.0)
+        if a == "ground_pound":
+            return r.pound_s
         if a == "debug_on":
             return r.debug_hold_s + r.debug_fade_s
         return 0.0
@@ -535,6 +555,7 @@ class Planner:
         steps = self.add_debug_segments(steps)
         steps = self.check_badges(steps)
         steps = self.check_banners(steps)
+        steps = self.check_scroll(steps)
         steps = self.check_energy(steps)
         self.info["bars"] = []
         for st in steps:
@@ -548,6 +569,136 @@ class Planner:
         self.info["duration_world_s"] = round(total_world, 2)
         self.steps = steps
         return steps
+
+    # --- Scroll forzado (Mundo 2, paso 9 de docs/propuesta-mundo-2.md §7.1) ---
+
+    def check_scroll(self, steps):
+        """Con camera.vertical "autoscroll": el borde de abajo de la vista sube solo (tools/scroll_model.py,
+        tiempo del mundo). Avanza el scroll con los pies de Isak cuadro a cuadro por todo el camino y comprueba
+        que, mientras el scroll se mueve, Isak nunca queda a menos de validation.scroll_margin_tiles (3 en
+        dificultad 2-3, 2 en dificultad 4) del borde que dana (parado, basta con no tocarlo). Antes de un
+        movimiento que el techo de carga impediria (Isak no puede adelantarse a la vista: el techo corta el arco
+        y hace falta que los pies aun suban por encima del sitio de llegada) inserta una espera wait_scroll
+        hasta que el scroll suba lo bastante; si el movimiento va con el Debug
+        activo, la espera se hace antes de encenderlo (asi no gasta energia). Las esperas cuentan para el
+        margen. Secciones en bucle: el camino tiene que llegar a la salida antes de que el borde de arriba de
+        la vista llegue a la banda (si no, se repetiria)."""
+        if self.level.get("camera", {}).get("vertical") != "autoscroll":
+            return steps
+        self.timeline(steps)
+        prewaits = {}
+        result = None
+        for _attempt in range(40):
+            result = self._scroll_pass(steps, prewaits)
+            if result[0] == "ok":
+                break
+            _, index, seconds = result
+            prewaits[index] = prewaits.get(index, 0.0) + seconds
+        if result is None or result[0] != "ok":
+            result = self._scroll_pass(steps, prewaits, allow_debug_waits=True)
+        _, out, info, errors = result
+        for message, node in errors:
+            self.error(message, node)
+        self.info["scroll"] = info
+        return out
+
+    def _scroll_pass(self, steps, prewaits, allow_debug_waits=False):
+        """Una pasada del scroll por el camino con las esperas previas `prewaits` ({indice del debug_on: s}).
+        ("ok", pasos, info, errores) o ("prewait", indice del debug_on, s) si un movimiento con el Debug
+        activo necesitaria esperar al scroll."""
+        import scroll_model
+        T = self.T
+        sim = scroll_model.ScrollSim(self.level, self.rules.root, T)
+        difficulty = self.level.get("difficulty", 3)
+        default_req = 3.0 if not isinstance(difficulty, (int, float)) or difficulty <= 3 else 2.0
+        req = float(self.val.get("scroll_margin_tiles", default_req))
+        hh = self.m.hh
+        loops = [dict(lp, solved=False, reported=False) for lp in self.level.get("_loops", [])]
+        info = {"required_tiles": req, "margin_min_tiles": None, "at": None, "waits": 0, "wait_s": 0.0,
+                "start_s": None, "loops": [lp["id"] for lp in loops]}
+        errors = []
+        worst = [INF, None, None]
+        touched = [False]
+
+        def watch(x, feet, idx, node):
+            margin = sim.margin(feet, feet - hh)
+            if margin < 0.0 and not touched[0]:
+                touched[0] = True
+                errors.append(("el borde del scroll alcanza a Isak en el paso %d (el camino va mas despacio que el "
+                               "feed)" % idx, node))
+            if not sim.is_parked() and margin < worst[0]:
+                worst[0], worst[1], worst[2] = margin, node, idx
+            for lp in loops:
+                if lp["solved"] or lp["reported"]:
+                    continue
+                ex = lp["exit"]
+                if ex[0] * T <= x < (ex[0] + ex[2]) * T and ex[1] * T <= feet - 1.0 < (ex[1] + ex[3]) * T:
+                    lp["solved"] = True
+                elif sim.top <= lp["band"][0] * T + EPS and feet >= lp["band"][0] * T:
+                    lp["reported"] = True
+                    errors.append(("seccion en bucle %s: el borde de arriba de la vista llega a la banda antes de "
+                                   "que el camino alcance la salida (se repetiria)" % lp["id"], node))
+
+        def wait_at(node, seconds, scale, idx):
+            x, feet = self.feet(node)
+            for _ in range(int(round(seconds / DT))):
+                sim.step(feet, DT * scale)
+                watch(x, feet, idx, node)
+
+        out = []
+        last_debug_on = None
+        for idx, s in enumerate(steps):
+            scale = self.rules.debug_world_scale if s.get("debug_active") else 1.0
+            node = self.node_of(s) or s.get("from")
+            if s["action"] == "debug_on":
+                last_debug_on = idx
+                if prewaits.get(idx):
+                    wait_at(node, prewaits[idx], 1.0, idx)
+                    out.append({"action": "wait_scroll", "at": node, "seconds": prewaits[idx], "state": s["state"],
+                                "reason": "el scroll sube (antes del Debug)"})
+                    info["waits"] += 1
+                    info["wait_s"] += prewaits[idx]
+            samples = self.samples(s) if self.duration(s) > 0.0 else []
+            if s["action"] == "move" and samples:
+                # El techo de carga corta el arco (la cabeza no sube mas), pero el salto vale si con el arco
+                # cortado los pies aun suben por encima del sitio donde aterriza (HEAD_MARGIN_PX de holgura).
+                head_min = min(self.feet(s["from"])[1], self.feet(s["to"])[1]) - hh - SCROLL_HEAD_MARGIN_PX
+                if head_min < sim.ceiling() - EPS:
+                    fx, ffeet = self.feet(s["from"])
+                    saved = sim.copy_state()
+                    waited = 0.0
+                    while head_min < sim.ceiling() - EPS and waited < SCROLL_MAX_WAIT_S:
+                        sim.step(ffeet, DT * scale)
+                        waited += DT
+                    if s.get("debug_active") and last_debug_on is not None and not allow_debug_waits:
+                        return ("prewait", last_debug_on, max(waited * scale, DT))
+                    sim.restore(saved)
+                    wait_at(s["from"], waited, scale, idx)
+                    if head_min < sim.ceiling() - EPS:
+                        errors.append(("el camino sube por encima del techo de carga y el scroll no avanza (paso %d)"
+                                       % idx, s["from"]))
+                    else:
+                        out.append({"action": "wait_scroll", "at": s["from"], "seconds": waited, "state": s["state"],
+                                    "reason": "el scroll sube (techo de carga)"})
+                        info["waits"] += 1
+                        info["wait_s"] += waited
+            if samples:
+                dt = self.duration(s) / len(samples)
+                for x, feet, _air in samples:
+                    sim.step(feet, dt * scale)
+                    watch(x, feet, idx, node)
+            if sim.started_at is not None and info["start_s"] is None:
+                info["start_s"] = round(sim.started_at, 2)
+            out.append(s)
+        if worst[1] is not None:
+            margin_tiles = worst[0] / T
+            info["margin_min_tiles"] = round(margin_tiles, 2)
+            info["at"] = [worst[1][1], worst[1][0]]
+            if 0.0 <= margin_tiles < req - EPS:
+                errors.append(("el camino queda a %.1f tiles del borde del scroll (minimo %g; paso %d)"
+                               % (margin_tiles, req, worst[2]), worst[1]))
+        info["wait_s"] = round(info["wait_s"], 2)
+        return ("ok", out, info, errors)
 
     # --- Acertijo de Calc (tanda H2 del paso 14 del 1-2) ---
 
@@ -2333,7 +2484,7 @@ class Planner:
                     if "rect" in s["target"]:
                         tgt["rect_px"] = [round(v, 1) for v in s["target"]["rect"]]
                     item["target"] = tgt
-                if a in ("wait", "wait_phase", "wait_beat"):
+                if a in ("wait", "wait_phase", "wait_beat", "wait_scroll"):
                     item["seconds"] = round(s.get("seconds", 0.0), 3)
                     if s.get("reason"):
                         item["reason"] = s["reason"]
@@ -2369,6 +2520,13 @@ class Planner:
                     item["of"] = s.get("of")
                 if a == "hop":
                     item["air_s"] = round(s["time"], 3)
+                if a == "ground_pound":
+                    # Golpe al suelo (Mundo 2): mantener el gesto hold_s en el suelo; rompe `breaks` (ids).
+                    item["air"] = bool(s.get("air", False))
+                    item["hold_s"] = self.rules.pound_hold_s
+                    item["breaks"] = list(s.get("breaks", []))
+                    if s.get("debug"):
+                        item["debug"] = True
                 if s.get("final"):
                     item["final"] = True
             if "energy_before" in s:

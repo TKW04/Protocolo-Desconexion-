@@ -17,10 +17,12 @@ const EPS: float = 0.01
 
 var _root: Node2D
 var _saved_pound: bool
+var _saved_debug: bool
 
 
 func before_each() -> void:
 	_saved_pound = GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND)
+	_saved_debug = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
 	_root = Node2D.new()
 	add_child_autofree(_root)
 	DebugMode.input_enabled = false
@@ -31,6 +33,7 @@ func after_each() -> void:
 	DebugMode.reset()
 	DebugMode.input_enabled = true
 	GameState.set_ability_unlocked(GameState.ABILITY_GROUND_POUND, _saved_pound)
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _saved_debug)
 
 
 func _fragile(params: Dictionary = {}, at: Vector2 = Vector2(0.0, 0.0)) -> FragileCard:
@@ -130,6 +133,14 @@ func test_one_way_and_hidden_variants() -> void:
 	assert_true(_shape(thin).one_way_collision, "De una via")
 	var hidden := _fragile({"hidden_card": true, "trigger_mode": FragileCard.TRIGGER_POUND_ONLY}, Vector2(256.0, 0.0))
 	assert_false(hidden.is_help_available(), "Oculta: sin Debug no hay Q")
+	var wave := Rect2(Vector2(160.0, -64.0), Vector2(192.0, 72.0))
+	EventBus.ground_pound_landed.emit(wave, null)
+	assert_true(hidden.is_solid(), "Oculta: sin el Debug la onda no la rompe (no se ve la grieta)")
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
+	for i: int in ceili(DebugMode.get_activation_hold_s() / DT) + 30:
+		DebugMode.step(DT, true)
+	EventBus.ground_pound_landed.emit(wave, null)
+	assert_false(hidden.is_solid(), "Con el Debug activo, si")
 
 
 func test_isak_pounding_a_real_card_falls_through_it() -> void:

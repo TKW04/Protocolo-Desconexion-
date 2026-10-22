@@ -61,7 +61,7 @@ Tras unos segundos quieto, Isak reproduce la animación de la terminal holográf
 - Debug Mode: ralentiza el tiempo, muestra plataformas ocultas y puntos débiles. Gasta energía. Su color depende del mundo.
 - Láser (2026-10-15): acción `laser` (F / gatillo izquierdo), proyectil horizontal (`LaserProjectile`) que gasta la misma energía que el Debug; desbloqueable con `ability_pickup`. A quien alcanza le llama `on_laser_hit(damage, source)`; los objetos del entorno que reaccionen en el futuro implementan ese método (y, si son Area2D, van en el grupo `laser_activatable`).
 - Enemigos y jefes: vida con `EnemyHealth` (`health` en el JSON del enemigo, `params.health` del nivel la sobrescribe) y `drops` al morir.
-- Gestos por mundo: dash, golpe al suelo, compresión, onda de aturdimiento y combos. El mapeo a controles es una decisión abierta: pregunta antes de fijarlo.
+- Gestos por mundo: dash, golpe al suelo, compresión, onda de aturdimiento y combos. El mapeo a controles es una decisión abierta: pregunta antes de fijarlo. Decididos: Deslizar (dash) = `gesture_swipe` (L / B); Mantener presionado (golpe al suelo, 2026-10-22) = mantener los eventos de `move_down` (S / flecha abajo / abajo del mando; `ActionPlayerInput.hold_held`), sin tecla nueva; estado `GroundPound` y sección `ground_pound` de `data/isak_abilities.json`.
 
 ## Efectos
 

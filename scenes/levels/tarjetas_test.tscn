@@ -120,7 +120,7 @@ width_tiles = 1
 metadata/help_id = "fragile_card"
 
 [node name="terminal_tarjetas" parent="Objects" instance=ExtResource("7_exit_terminal") groups=["help_target"]]
-position = Vector2(1600, 448)
+position = Vector2(1856, 448)
 height_tiles = 2
 object_id = &"terminal_tarjetas"
 text = "Siguiente video"
@@ -131,7 +131,7 @@ metadata/help_id = "exit_terminal"
 [node name="Enemies" type="Node2D" parent="."]
 
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
-position = Vector2(1632, 576)
+position = Vector2(1888, 576)
 
 [node name="Isak" parent="." instance=ExtResource("8_isak")]
 position = Vector2(160, 576)

@@ -12,7 +12,7 @@
 ##   "upright" (de pie: pared de width_tiles x 2 que bloquea un paso, no cuenta al
 ##   pisarla, solo la rompe la onda y no vuelve hasta que Isak reaparece).
 ## - `hidden` (propiedad hidden_card): sin el Debug parece una tarjeta normal (sin grieta ni segmentos); con
-##   el Debug se ve la grieta (la salida oculta de un bucle).
+##   el Debug se ve la grieta y solo entonces la rompe la onda (la salida oculta de un bucle).
 ## - Al reaparecer Isak (EventBus.player_respawned) vuelve a su estado inicial.
 ## Aspecto PROVISIONAL por codigo con la paleta provisional del Mundo 2 (seccion
 ## fragile_card de data/world2_objects.json). El origen del nodo es la esquina
@@ -143,6 +143,9 @@ func advance(dt: float) -> void:
 # --- Interno ---
 
 func _on_ground_pound_landed(rect: Rect2, _source: Node2D) -> void:
+	# La oculta solo se rompe vista: con el Debug activo (se ve la grieta).
+	if hidden_card and DebugMode.get_intensity() <= 0.0:
+		return
 	if is_solid() and rect.intersects(get_card_rect()):
 		break_now()
 

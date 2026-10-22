@@ -153,7 +153,11 @@ class CardsAndLoopTest(unittest.TestCase):
         self.assertEqual(kinds.count("reminder_platform"), 2, "las dos fragiles que cuentan al pisarlas")
         self.assertEqual(kinds.count("blink_platform"), 2, "las dos Historias")
         self.assertEqual(kinds.count("rhythm_zone"), 2, "con su reloj propio")
-        self.assertEqual(lowered["grid"][9][3], "#", "la oculta, terreno hasta el paso 9")
+        pound = [o for o in lowered["objects"] if o["type"] == "_pound_card"]
+        self.assertEqual(sorted(o["params"]["id"] for o in pound), ["fragil_de_pie", "fragil_oculta"],
+                         "las que solo rompe el golpe: puertas del golpe al suelo (paso 9)")
+        self.assertTrue(next(o for o in pound if o["params"]["id"] == "fragil_oculta")["params"]["hidden"])
+        self.assertEqual(next(o for o in pound if o["params"]["id"] == "fragil_de_pie")["params"]["rows"], 2)
         self.assertIs(world2_model.lower(load(os.path.join(ROOT, "data", "levels", "1-1.json")),
                                          level_catalog.load_catalog(ROOT, 1)).__class__, dict)
 
@@ -185,6 +189,79 @@ class CardsAndLoopTest(unittest.TestCase):
         level["validation"] = {}
         result = validate_level.validate(level, ROOT)
         self.assertFalse(result["ok"], "sin el Debug no se sale del bucle")
+
+
+
+class ScrollValidatorTest(unittest.TestCase):
+    """Paso 9 (parte del scroll, el golpe y los bucles): el scroll como amenaza que se mueve, el techo de carga
+    (esperas wait_scroll), el golpe al suelo como puerta y los casos negativos."""
+
+    def run_level(self, level, export=None):
+        return validate_level.validate(level, ROOT, export=export)
+
+    def messages(self, result):
+        return [e["message"] for e in result["errors"]]
+
+    def test_scroll_room_exports_waits(self):
+        export = []
+        result = self.run_level(load(SCROLL_TEST), export)
+        self.assertTrue(result["ok"], self.messages(result))
+        scroll = result["plan"]["scroll"]
+        self.assertGreaterEqual(scroll["margin_min_tiles"], 3.0)
+        self.assertGreater(scroll["waits"], 0, "el camino espera al scroll (techo de carga)")
+        actions = [st["action"] for st in export[0]["steps"]]
+        self.assertIn("wait_scroll", actions)
+
+    def test_scroll_too_fast_fails(self):
+        # Mas rapido de lo que el esquema admite (1,5 tiles/s), para ver que el plan lo detecta.
+        level = load(SCROLL_TEST)
+        level["scroll"]["stages"] = [{"y_from": 0, "y_to": 58, "speed_tiles_s": 4.0}]
+        level["scroll"]["default_speed_tiles_s"] = 4.0
+        result = validate_level.validate(level, ROOT, check_schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("borde del scroll" in m for m in self.messages(result)), self.messages(result))
+
+    def test_required_margin(self):
+        level = load(SCROLL_TEST)
+        level["validation"] = {"scroll_margin_tiles": 6.0}
+        result = self.run_level(level)
+        self.assertTrue(any("tiles del borde del scroll (minimo 6" in m for m in self.messages(result)),
+                        self.messages(result))
+
+    def test_loop_must_be_solved_before_the_band_top(self):
+        level = load(BUCLE_TEST)
+        level["scroll"]["default_speed_tiles_s"] = 1.5
+        result = self.run_level(level)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("bucle" in m or "borde del scroll" in m for m in self.messages(result)),
+                        self.messages(result))
+
+    def test_pound_gate_is_used_and_exported(self):
+        export = []
+        result = self.run_level(load(TARJETAS_TEST), export)
+        self.assertTrue(result["ok"], self.messages(result))
+        pounds = [st for st in export[0]["steps"] if st["action"] == "ground_pound"]
+        self.assertIn(["fragil_de_pie"], [st["breaks"] for st in pounds], "rompe la tarjeta de pie")
+        hidden = next(st for st in pounds if st["breaks"] == ["fragil_oculta"])
+        self.assertTrue(hidden.get("debug"), "la oculta, con el Debug")
+        self.assertAlmostEqual(pounds[0]["hold_s"], 0.35)
+
+    def test_without_ground_pound_the_wall_blocks(self):
+        level = load(TARJETAS_TEST)
+        level["abilities_available"]["ground_pound"] = False
+        result = self.run_level(level)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("golpe al suelo" in m for m in self.messages(result)), self.messages(result))
+
+    def test_fragile_without_margin_fails(self):
+        level = load(TARJETAS_TEST)
+        for o in level["objects"]:
+            if o["type"] == "fragile_card" and o["params"].get("id") in ("fragil_1", "fragil_2"):
+                o["params"]["timer_s"] = 0.3
+                o["params"]["warn_s"] = 0.25
+        level["validation"]["time_margin_s"] = 0.3
+        result = self.run_level(level)
+        self.assertFalse(result["ok"], "0,3 s de cuenta con 0,3 s de margen: no da tiempo")
 
 
 if __name__ == "__main__":

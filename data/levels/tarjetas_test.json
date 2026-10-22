@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 4 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 32x12 con las tarjetas del Mundo 2. Foso 1: dos tarjetas fragiles de 1 tile (cuentan 0,6 s al pisarlas): se cruzan saltando sin pararse. Foso 2: dos Historias con su propio reloj (3,2 s; encendidas 1,6 s; la segunda desplazada un cuarto de ciclo). En el suelo del inicio, una tarjeta fragil oculta (con el Debug se ve la grieta; el golpe al suelo la rompe) y, junto a la terminal, una tarjeta fragil de pie que cierra un nicho (solo la rompe la onda). Los fosos tienen pinchos: se cruzan por las tarjetas. Tileset y fondo del Mundo 1 (provisional).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 4 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 32x12 con las tarjetas del Mundo 2. Foso 1: dos tarjetas fragiles de 1 tile (cuentan 0,6 s al pisarlas): se cruzan saltando sin pararse. Foso 2: dos Historias con su propio reloj (3,2 s; encendidas 1,6 s; la segunda desplazada un cuarto de ciclo). En el suelo del inicio, una tarjeta fragil oculta (con el Debug se ve la grieta; el golpe al suelo la rompe) y una tarjeta fragil de pie que cierra el nicho de la terminal: solo la rompe la onda del golpe al suelo (mantener S / flecha abajo), asi que el golpe es obligatorio. Los fosos tienen pinchos: se cruzan por las tarjetas. Tileset y fondo del Mundo 1 (provisional).",
 	"id": "tarjetas_test",
 	"name": "Tarjetas de prueba",
 	"world": 2,
@@ -77,7 +77,7 @@
 		},
 		{
 			"type": "exit_terminal",
-			"x": 25,
+			"x": 29,
 			"y": 7,
 			"params": {
 				"id": "terminal_tarjetas",
@@ -97,7 +97,7 @@
 		"#.........................######",
 		"#.........................######",
 		"#..............................#",
-		"#.P......................G.....#",
+		"#.P..........................G.#",
 		"###.##.......#####.......#######",
 		"######^^^^^^^#####^^^^^^^#######",
 		"################################"

@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 5 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 20x72 con scroll forzado para probar la seccion en bucle (loop_section). La banda va de la fila 20 a la 44 (periodo 24): el zigzag de tarjetas se repite cada 8 filas, asi que al llegar arriba sin la salida todo baja 24 filas y se ve lo mismo; el cartel «Solo uno más (llevas N)» cuenta las veces. La salida son plataformas ocultas (h) en las columnas 16-18 que solo se ven y se pisan con el Debug (mantener K) y suben por encima de la banda; en la segunda repeticion parpadean con glitch. Arriba, la terminal. Tileset y fondo del Mundo 1 (provisional).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 5 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 20x72 con scroll forzado para probar la seccion en bucle (loop_section). La banda va de la fila 20 a la 44 (periodo 24): el zigzag de tarjetas se repite cada 8 filas, asi que al llegar arriba sin la salida todo baja 24 filas y se ve lo mismo; el cartel «Solo uno más (llevas N)» cuenta las veces. La salida es una plataforma oculta (h, columna 16, fila 23) que solo se ve y se pisa con el Debug (mantener K): desde ella se salta a la repisa de la columna 18 (fila 21), donde el bucle queda resuelto, y de ahi a la tarjeta de la fila 19, ya por encima de la banda (la repisa se repite en la fila 45 para que el bucle no se note); en la segunda repeticion la salida parpadea con glitch. Arriba, la terminal. Tileset y fondo del Mundo 1 (provisional).",
 	"id": "bucle_test",
 	"name": "Bucle de prueba",
 	"world": 2,
@@ -145,6 +145,14 @@
 			[
 				14,
 				16
+			],
+			[
+				17,
+				18
+			],
+			[
+				18,
+				20
 			]
 		]
 	},
@@ -191,7 +199,7 @@
 					16,
 					14,
 					3,
-					6
+					8
 				],
 				"hint": [
 					16,
@@ -234,9 +242,9 @@
 		"#..................#",
 		"#............-----.#",
 		"#..................#",
-		"#.................h#",
+		"#...............---#",
 		"#..................#",
-		"#.------.........h.#",
+		"#.------..........-#",
 		"#..................#",
 		"#.....------....h..#",
 		"#..................#",
@@ -260,7 +268,7 @@
 		"#..................#",
 		"#.....------.......#",
 		"#..................#",
-		"#.------...........#",
+		"#.------..........-#",
 		"#..................#",
 		"#.....------.......#",
 		"#..................#",

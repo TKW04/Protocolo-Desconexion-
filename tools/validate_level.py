@@ -313,6 +313,20 @@ class Rules:
         self.dash_cooldown_s = float(dash.get("cooldown_s", 0.5))
         self.dash_end_speed = float(dash.get("end_speed_px_s", 360.0))
         self.air_dashes = int(dash.get("air_dashes", 1))
+        # Golpe al suelo (gesto Mantener presionado, Mundo 2; paso 9 de docs/propuesta-mundo-2.md §7.1):
+        # seccion ground_pound de data/isak_abilities.json. Onda a ras de suelo (medio ancho, alto y margen
+        # bajo los pies) y tiempos: carga en el suelo, saltito, caida y pose al aterrizar (tiempo real).
+        pound = abilities.get("ground_pound", {}) if isinstance(abilities.get("ground_pound"), dict) else {}
+        self.pound_hold_s = float(pound.get("ground_hold_s", 0.35))
+        self.pound_hop_px = float(pound.get("ground_hop_px", 32.0))
+        self.pound_drop_speed = float(pound.get("drop_speed_px_s", 960.0))
+        self.pound_half_width = float(pound.get("wave_half_width_px", 96.0))
+        self.pound_height = float(pound.get("wave_height_px", 64.0))
+        self.pound_below = float(pound.get("wave_below_px", 8.0))
+        self.pound_pose_s = float(pound.get("land_pose_s", 0.35))
+        hop_up = math.sqrt(2.0 * max(self.pound_hop_px, 0.0) / self.gravity) if self.gravity > 0 else 0.0
+        self.pound_s = self.pound_hold_s + hop_up + self.pound_hop_px / max(self.pound_drop_speed, 1.0) \
+            + self.pound_pose_s
         self.time_margin = None  # --time-margin (si no, validation.time_margin_s del nivel o 1,5 s)
         self.physics_path = physics_path
         # Mejoras de Calc (tanda M1, 2026-10-17): --upgrades acepta "pista:nivel" (p. ej. laser:3) y los
@@ -485,7 +499,7 @@ class Gate:
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
                  "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %",
                  "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga",
-                 "dnd": "interruptor No molestar"}
+                 "dnd": "interruptor No molestar", "pound": "tarjeta fragil"}
         if getattr(self, "encounter", False):
             return "encuentro con Eco %s" % self.obj_id
         if self.kind == "switch" and getattr(self, "hidden", False):
@@ -538,6 +552,8 @@ class LevelModel:
         abilities = level.get("abilities_available", {})
         self.debug_base = bool(abilities.get("debug", False))
         self.dash_base = bool(abilities.get("dash", False))
+        # Golpe al suelo (Mundo 2, paso 9 de docs/propuesta-mundo-2.md): abilities_available.ground_pound.
+        self.pound_base = bool(abilities.get("ground_pound", False))
         self.validation = level.get("validation", {}) if isinstance(level.get("validation"), dict) else {}
         # Holgura de techo calibrada (2026-10-17): None = modelo del paso 10 (HEAD_MARGIN_PX).
         margin = self.validation.get("ceiling_margin_px")
@@ -552,6 +568,7 @@ class LevelModel:
         self.terminal_power = []  # {"id", "source", "cell"}
         self._build_objects()
         self._door_gids = set(self.glitch_doors.values())
+        self.has_pound_gates = any(g.kind == "pound" for g in self.gates)
         allies = set(rules.allies)
         self.initial = frozenset(g.gid for g in self.gates if g.done_if_ally and g.done_if_ally in allies)
         # Las piezas con done_if_ally (para validar tambien el caso «asistente conocido»).
@@ -764,6 +781,21 @@ class LevelModel:
                 gate.hidden = obj["type"] == "debug_switch"
                 gate.reveal_radius = float(cfg.get("reveal_radius_px", 256.0))
                 gate.done_if_ally = str(p.get("done_if_ally", "") or "")
+                self.gates.append(gate)
+            elif obj["type"] == "_pound_card":
+                # Tarjeta fragil que solo rompe el golpe al suelo (Mundo 2; tools/world2_model.py): solida
+                # (o de una via) hasta que la onda de un golpe desde una celda de pie la alcanza; las ocultas,
+                # solo con el Debug activo (se ve la grieta). Rota, Isak cae por ella.
+                pid = str(p.get("id", "pound_%d_%d" % (obj["x"], obj["y"])))
+                w, rows_n = int(p.get("width_tiles", 1)), int(p.get("rows", 1))
+                cells = [(obj["x"] + dx, obj["y"] + dy) for dy in range(rows_n) for dx in range(w)]
+                height = float(p.get("card_height_px", T))
+                rect = (obj["x"] * T, obj["y"] * T, (obj["x"] + w) * T, obj["y"] * T + height,
+                        "tarjeta fragil %s" % pid)
+                gate = Gate("pound:" + pid, "pound", pid, cells=cells, openers=[rect], col=obj["x"], row=obj["y"],
+                            tile=T)
+                gate.hidden = bool(p.get("hidden", False))
+                gate.one_way = bool(p.get("one_way", False))
                 self.gates.append(gate)
             elif obj["type"] == "dnd_switch":
                 # Interruptor «No molestar» (1-3, paso 3; modelado en el paso 9): un pulso que alcanza su
@@ -1055,6 +1087,35 @@ class LevelModel:
         return not (self.dash_base or any(g.kind == "dnd" and g.ability == "dash" and g.gid in state
                                           for g in self.gates))
 
+    def has_pound(self, state):
+        """El golpe al suelo esta disponible (abilities_available.ground_pound; Mundo 2)."""
+        return self.pound_base and "ground_pound" not in self.forbidden
+
+    def pound_hits(self, gate, node, state, debug=False):
+        """Verdadero si la onda de un golpe al suelo con Isak de pie en `node` alcanza la tarjeta `gate`
+        (GroundPoundWave.rect_at: wave_half_width_px a cada lado de los pies, wave_height_px por encima
+        y wave_below_px por debajo)."""
+        return self.pound_x(gate, node, state, debug) is not None
+
+    def pound_x(self, gate, node, state, debug=False):
+        """x de los pies (dentro de la celda de pie) desde la que la onda alcanza la tarjeta, o None."""
+        rules = self.rules
+        w = self.world(state, debug if debug in (True, False) else False)
+        c, r = node
+        feet = (r + 1) * self.T
+        rect = gate.openers[0]
+        x = c * self.T
+        best = None
+        while x <= (c + 1) * self.T + EPS:
+            if not w.collides(x, feet) and not w.in_hazard(x, feet):
+                wave = (x - rules.pound_half_width, feet - rules.pound_height, x + rules.pound_half_width,
+                        feet + rules.pound_below)
+                if wave[0] < rect[2] and rect[0] < wave[2] and wave[1] < rect[3] and rect[1] < wave[3]:
+                    if best is None or abs(x - (c + 0.5) * self.T) < abs(best - (c + 0.5) * self.T):
+                        best = x
+            x += PULSE_SAMPLE_PX
+        return best
+
     def has_dash(self, state):
         """El dash (gesto Deslizar) esta disponible: lo da el nivel (abilities_available.dash) o ya se
         activo el interruptor No molestar (paso 9 de docs/propuesta-1-3.md)."""
@@ -1083,6 +1144,13 @@ class LevelModel:
         Isak toca su celda."""
         if gate.kind == "pickup":
             return bool(body_cells(node) & set(gate.cells))
+        if gate.kind == "pound":
+            # Golpe al suelo (Mundo 2): la onda alcanza la tarjeta; la oculta, solo con el Debug activo.
+            if not self.has_pound(state):
+                return False
+            if gate.hidden and not (debug is True or (debug == "auto" and self.has_debug(state))):
+                return False
+            return self.pound_hits(gate, node, state, debug if debug in (True, False) else gate.hidden)
         if gate.kind == "dnd":
             # Interruptor No molestar: un pulso de espaldas (paso 9).
             return self.has_pulse(state) and self.pulse_hits(gate.openers, node, state, debug)
@@ -1352,6 +1420,13 @@ class World:
                     if 0 <= r < rows and 0 <= c < cols:
                         self.solid[r][c] = True
                         self.support[r][c] = True
+            elif g.kind == "pound" and not opened:
+                # Tarjeta fragil entera (Mundo 2): solida, o solo apoyo si es de una via.
+                for c, r in g.cells:
+                    if 0 <= r < rows and 0 <= c < cols:
+                        self.support[r][c] = True
+                        if not g.one_way:
+                            self.solid[r][c] = True
             elif g.kind == "bubble" and not opened and not g.bypassable:
                 self.hazards.append(g.rect + ("Burbuja %s" % g.obj_id,))
         if model.dash_blocked(state):
@@ -1678,6 +1753,25 @@ class World:
                     return (c, r - 1)
         return None
 
+    def unsupported_fall(self, node):
+        """Golpe al suelo que rompe lo que se pisa (Mundo 2): el nodo se queda sin apoyo e Isak cae en
+        vertical hasta el siguiente suelo. [] si el nodo no es un sitio libre."""
+        c, r = node
+        T = self.m.T
+        if not (0 <= c < self.m.cols and 0 <= r < self.m.rows) or self.is_support(c, r + 1):
+            return []
+        x, feet = (c + 0.5) * T, (r + 1) * T
+        if self.collides(x, feet) or self.in_hazard(x, feet):
+            return []
+        sim = {}
+        to, _ = self.simulate(x, feet, 0.0, self.m.rules.walk_speed, x, info=sim)
+        if to is None or to == node:
+            return []
+        drop = (to[1] + 1) * T - feet
+        return [{"to": to, "kind": "fall", "h": 0.0, "v": 0.0, "x0": x, "travel": 0.0, "rise": -drop,
+                 "speed": "walk", "xt": x, "vy0": 0.0, "time": sim.get("time", 0.0), "land_x": sim.get("land_x"),
+                 "pound_fall": True}]
+
     def is_node_cell(self, c, r, x):
         """Celda de pie donde aterriza (puede estar en el borde: x en la linea entre dos celdas)."""
         return 0 <= c < self.m.cols and 0 <= r < self.m.rows and self.is_node(c, r)
@@ -1686,7 +1780,8 @@ class World:
         """Movimientos desde un nodo: lista de dicts {to, kind, h, v, x0, x1, rise, travel, speed}."""
         m = self.m
         if not self.is_node(*node):
-            return []
+            # Solo con tarjetas que rompe el golpe al suelo (Mundo 2): el nodo se queda sin apoyo y se cae.
+            return self.unsupported_fall(node) if m.has_pound_gates else []
         c, r = node
         T = m.T
         feet = (r + 1) * T
@@ -2433,6 +2528,16 @@ class Validator:
         """Explicacion de una puerta del paso 10 que no se abre (anuncio, barra, lector -> receptor
         enlazado). None: la puerta es de las de siempre; "": nada que decir (lejos)."""
         m = self.model
+        if g.kind == "pound":
+            # Golpe al suelo (Mundo 2, paso 9 de docs/propuesta-mundo-2.md).
+            if not is_near:
+                return ""
+            if not m.pound_base:
+                return "%s solo la rompe el golpe al suelo y el nivel no lo tiene (abilities_available.ground_pound)" \
+                    % g.label()
+            if g.hidden and not m.debug_base:
+                return "%s esta oculta: solo se ve (y se rompe) con el Debug y el nivel no lo tiene" % g.label()
+            return "%s: la onda del golpe al suelo no la alcanza desde ninguna celda alcanzable" % g.label()
         if g.kind == "dock":
             missing = [r for r, gid in zip(g.requires, g.requires_gids) if gid not in state]
             return "%s: Calc no se carga; faltan sin hacer: %s" % (g.label(), ", ".join(missing)) if missing else ""
@@ -2553,6 +2658,12 @@ class Validator:
                                     "face_back": True,
                                     "text": "pulso de espaldas desde (fila %d, columna %d) -> %s (da el %s)"
                                             % (n[1], n[0], g.label(), g.ability)})
+                    continue
+                if g.kind == "pound":
+                    # Mundo 2 (paso 9): golpe al suelo cuya onda rompe la tarjeta fragil.
+                    actions.append({"action": "ground_pound", "from": [n[1], n[0]], "object": g.label(),
+                                    "text": "%sgolpe al suelo en (fila %d, columna %d) -> rompe %s"
+                                            % ("Debug para ver la grieta y " if g.hidden else "", n[1], n[0], g.label())})
                     continue
                 if g.kind == "lswitch":
                     actions.append({"action": "laser", "from": [n[1], n[0]], "object": g.label(),
@@ -2906,7 +3017,8 @@ class Validator:
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
         for g in self.model.gates:
-            if g.bypassable or g.kind == "pickup" or g.gid in self.model.initial:
+            if g.bypassable or g.kind in ("pickup", "pound") or g.gid in self.model.initial:
+                # Las tarjetas fragiles (Mundo 2) son atajos a proposito: no se exige que hagan falta.
                 continue
             run = self.progression(start, frozenset(), INF, forbid=frozenset({g.gid}), targets=goal_cells)
             if g.gid in secret:
@@ -3372,6 +3484,15 @@ def format_plan(plan):
                        b["id"], b["wait_s"], b["at"][0], b["at"][1], b["wave_enemies"]))
     for b in plan.get("badges", []):
         out.append("    punto rojo %s: %d golpe(s), %d aturdido(s) con el pulso" % (b["id"], b["hits"], b["stuns"]))
+    scroll = plan.get("scroll")
+    if scroll:
+        out.append("    scroll forzado: arranca a los %s; margen minimo %s tiles del borde%s (exigido %g); %d espera(s) por el "
+                   "techo de carga (%.1f s)%s" % (
+                       "-" if scroll["start_s"] is None else "%.1f s" % scroll["start_s"],
+                       "-" if scroll["margin_min_tiles"] is None else "%.1f" % scroll["margin_min_tiles"],
+                       "" if not scroll.get("at") else " en (fila %d, columna %d)" % tuple(scroll["at"]),
+                       scroll["required_tiles"], scroll["waits"], scroll["wait_s"],
+                       "; bucles: %s" % ", ".join(scroll["loops"]) if scroll.get("loops") else ""))
     energy = plan.get("energy")
     if energy:
         out.append("    energia: empieza en %.0f, gasta %.0f, recupera %.0f, minimo %.0f, termina en %.0f%s%s" % (

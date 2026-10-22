@@ -1637,7 +1637,8 @@ class LevelValidator:
             self.error("'validation' debe ser un objeto")
             return
         numbers = {"time_margin_s": (0.0, 30.0), "start_energy": (0.0, 100.0), "sync_damage_budget": (0.0, 100.0),
-                   "ceiling_margin_px": (0.0, 64.0), "hazard_margin_s": (0.0, 0.5)}
+                   "ceiling_margin_px": (0.0, 64.0), "hazard_margin_s": (0.0, 0.5),
+                   "scroll_margin_tiles": (0.0, 6.0)}
         for key, value in val.items():
             if key in numbers:
                 lo, hi = numbers[key]

@@ -10,7 +10,8 @@ lower(level, catalog) devuelve una copia del nivel en la que:
     start always, ciclo cycle_s; StoryCard reutiliza BlinkPlatform y RhythmZone en el juego) con
     on_fraction = on_s / cycle_s;
   - las tarjetas fragiles que solo rompe el golpe al suelo (trigger pound_only, de pie u ocultas) son
-    terreno solido ('#'; las de una via, '-'): el golpe que las rompe lo modela el paso 9;
+    piezas internas `_pound_card` (puerta «pound» del validador desde el paso 9: solidas hasta que la onda
+    de un golpe al suelo las alcanza; las ocultas, solo con el Debug activo);
   - cada seccion en bucle (loop_section, paso 5) pone un techo en la fila de encima de su banda salvo en
     las columnas de su salida: en el juego, al llegar arriba sin la salida todo baja H filas (se vuelve a
     ver lo mismo), asi que desde la banda solo se sale por la salida.
@@ -48,6 +49,8 @@ def lower(level, catalog):
         oid = str(p.get("id", "%s_%d_%d" % (kind, x, y)))
         if kind == "loop_section":
             band, exit_rect = p.get("band", [0, 0]), p.get("exit", [0, 0, 0, 0])
+            out.setdefault("_loops", []).append({"id": oid, "band": [int(band[0]), int(band[1])],
+                                                 "exit": [int(v) for v in exit_rect]})
             row = int(band[0]) - 1
             exit_cols = range(int(exit_rect[0]), int(exit_rect[0]) + int(exit_rect[2]))
             if row >= 0:
@@ -63,10 +66,11 @@ def lower(level, catalog):
                     "timer_s": float(p.get("timer_s", 0.6)), "warn_s": float(p.get("warn_s", 0.5)),
                     "respawn_s": float(p.get("respawn_s", 3.0))}})
                 continue
-            char = "-" if p.get("one_way", False) and not upright else "#"
-            for dy in range(2 if upright else 1):
-                for dx in range(width):
-                    grid[y + dy][x + dx] = char
+            objects.append({"type": "_pound_card", "x": x, "y": y, "params": {
+                "id": oid, "width_tiles": width, "rows": 2 if upright else 1,
+                "one_way": bool(p.get("one_way", False)) and not upright, "hidden": bool(p.get("hidden", False)),
+                "card_height_px": 2 * 64.0 if upright else float(catalog.get("fragile_card", {}).get(
+                    "card_height_px", 32))}})
             continue
         rhythm = str(p.get("rhythm", "") or "")
         on_fraction = float(p.get("on_fraction", 0.5))
