@@ -100,8 +100,8 @@ func _action(action: StringName) -> void:
 
 func test_remappable_actions_exclude_dev_and_ui_keys() -> void:
 	var actions: Array[StringName] = ControlBindings.actions()
-	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"gesture_swipe", &"debug", &"hide",
-		&"help", &"pause"] as Array[StringName])
+	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"gesture_swipe", &"move_down",
+		&"debug", &"hide", &"help", &"pause"] as Array[StringName])
 	for action: StringName in actions:
 		assert_false(String(action).begins_with("ui_"))
 		assert_false([&"restart_level", &"debug_wipe_save"].has(action), "Sin teclas de pruebas")
@@ -118,6 +118,9 @@ func test_default_labels_and_glyphs() -> void:
 	assert_eq(ControlBindings.binding_label(&"hide", font), "H / L3", "Ocultarte (Pulso 4): H / L3")
 	assert_eq(ControlBindings.binding_label(&"gesture_swipe", font), "L / B", "Deslizar (dash): L / B")
 	assert_eq(ControlBindings.action_name(&"gesture_swipe"), "Deslizar")
+	assert_eq(ControlBindings.binding_label(&"move_down", font), "S / stick abajo",
+			"Mantener presionado (golpe al suelo, 2026-10-22): los eventos de move_down")
+	assert_eq(ControlBindings.action_name(&"move_down"), "Mantener presionado")
 	assert_eq(ControlBindings.binding_label(&"move_left", font), "A / stick a la izquierda")
 	for action: StringName in ControlBindings.actions():
 		var text: String = ControlBindings.binding_label(action, font)

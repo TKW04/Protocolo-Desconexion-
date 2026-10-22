@@ -73,7 +73,9 @@ func test_texts_from_the_default_input_map() -> void:
 	assert_eq(AbilityNotices.notice_text(&"debug", _data), "Debug: mantén K / Y (mando)")
 	assert_eq(AbilityNotices.notice_text(&"dash", _data), "Deslizar: L / B (mando)",
 			"Gesto Deslizar (2026-10-19, docs/propuesta-1-3.md §2.4)")
-	assert_eq(AbilityNotices.notice_text(&"ground_pound", _data), "", "Sin entrada, sin aviso")
+	assert_eq(AbilityNotices.notice_text(&"ground_pound", _data), "Mantener presionado: mantén S / stick abajo",
+			"Golpe al suelo (2026-10-22, docs/propuesta-mundo-2.md §3.3.3): los eventos de move_down")
+	assert_eq(AbilityNotices.notice_text(&"compress", _data), "", "Sin entrada, sin aviso")
 
 
 func test_text_changes_when_an_action_is_remapped() -> void:
