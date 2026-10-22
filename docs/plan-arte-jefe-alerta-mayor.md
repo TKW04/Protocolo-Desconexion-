@@ -1,6 +1,6 @@
 # Plan y presupuesto: arte final de Alerta Mayor con AutoSprite (paso 16)
 
-> **PENDIENTE DE APROBACIÓN DEL USUARIO.** Este documento es solo un plan. No se ha generado nada ni se ha gastado ningún crédito. Para prepararlo solo se usaron consultas de lectura de AutoSprite (`get_account`, `list_characters`, `list_jobs` y `list_assets`) y las descripciones de las herramientas. No se llama a ninguna herramienta que cueste créditos hasta que el usuario apruebe la lista y el total de la §3.
+> **EJECUTADO el 2026-10-22** (aprobación del usuario del 2026-10-22: los 43 créditos de la pasada, reintentos solo en piezas que salieran mal y tope total de 86). **Gastados: 42 créditos** (saldo 484 → 442). Ninguna pieza quedó provisional en el cuerpo; detalle, desvíos y comandos en la **§7**. Lo que sigue (§1-§6) es el plan tal como se aprobó.
 
 Fecha: 2026-10-21. Diseño de referencia: `docs/propuesta-jefe-alerta-mayor.md` (§2.1, §2.2, §4.1 y §6.3, punto 3, sobre el «peso»). Reglas del arte: `.claude/skills/pixel-art-pipeline/SKILL.md`, `docs/guia-sprites-ia.md` y `assets/palettes/mundo1.gpl`.
 
@@ -249,3 +249,60 @@ La variante quita `ascend`, que se sustituye por `descend` al revés más un est
 3. **Confirmar `pixelArt: true`** para el base, o `pro` sin pixel art.
 4. **Aprobar el cambio a ×1** (lienzos de 256 y 128) y los dos cambios de herramientas: reducción de paleta y validador sin pies en la base.
 5. **Decidir si las piezas que siguen por script** pierden el sufijo `_placeholder`.
+
+---
+
+## 7. Ejecución (2026-10-22)
+
+### 7.1 Créditos
+
+Saldo al empezar (`get_account`): **484** (no 471: +13 sin gasto que lo explique; la memoria decía 465). No se volvió a consultar el saldo: el último dato es el que devolvió AutoSprite tras la última llamada.
+
+| # | Llamada | Pieza | Créditos | Saldo tras la llamada |
+|---|---|---|---|---|
+| 1 | `create_character` (`pixelArt`) | Base «Alerta Mayor» | 3 | 481 |
+| — | `upload_character` (badge recortado, ver 7.2) | Base «Alerta Mayor (badge)» | 0 | 481 |
+| — | `pad_character` | **No se usó** (margen hecho por script, ver 7.2) | 0 | 481 |
+| 2 | `generate_pose` | `Inflated` | 3 | 478 |
+| 3 | `generate_pose` | `Deflated` | 3 | 475 |
+| 4 | `generate_pose` | `Lunge` | 3 | 472 |
+| 5 | `generate_spritesheet` turbo (una llamada, 6 animaciones × 5) | `hover`, `inflate`, `descend`, `ascend`, `window`, `lunge` | 30 | **442** |
+| | | **Total** | **42** (de 43 previstos; tope 86) | |
+
+Sin reintentos: todas las piezas se aceptaron a la primera.
+
+### 7.2 Desvíos
+
+- **Base:** el modo `pixelArt` dibuja siempre un personaje chibi de frente y puso un chico debajo del badge. El badge en sí era el del diseño (disco `alerta`, sombra ladrillo, contorno oscuro, brillo, pastilla en blanco y campana), así que no se reintentó: se recortó, se pasó a su rejilla nativa (57 × 55 píxeles de arte) y se reescaló ×12 en un lienzo blanco de 1024 con el badge al 67 % (el margen que daba `pad_character` 70, gratis) y se subió con `upload_character` (0 créditos) como «Alerta Mayor (badge)». Las poses y animaciones se hicieron sobre ese personaje. Original y recorte en `hojas/alert_major/base*.png`.
+- **Ascend:** los cuadros 6-12 del vídeo se salen del lienzo (estiramiento extremo); se usan los que caben (0, 3, 5, 13, 14, 16, 24): agacharse, óvalo alto y redondo.
+- **Inflated:** el contorno blanco de la pose se lo come la quita de fondo; se añade por script (3 px `banner_blanco`) en los cuatro últimos cuadros de `inflate`.
+- **Lunge:** la animación se reparte en dos: `lunge_warn` (celdas 0-8: se encoge hacia atrás, durante el aviso de 9 cuadros) y `lunge` (celdas 12-23: se estira en óvalo). Hacia la izquierda, el cuadro se voltea.
+- **Escala:** dos factores, no uno. El badge desinflado de la IA es más ancho que alto (203 × 89 frente a 172 × 164 del reposo), así que con un solo factor no caben a la vez el reposo de 4 × 4 tiles y el desinflado de 2 × 2. Arriba ×4/3 (reposo ~229 px), abajo ×0,9 (desinflado ~183 × 80, el núcleo a la altura del celular queda dentro); `descend` y `ascend` se importan con el de arriba y el juego los encoge a ×0,675 con la fracción del movimiento. El desinflado visible (183 px) es más ancho que su caja (128): **las cajas no cambian** (más permisivo, nunca más duro).
+- **Contador:** arriba va sobre la pastilla en blanco con texto `noche_profunda` (`label_up_offset_px`, `label_up_color`); abajo sigue encima del cuerpo en blanco. **En la fase 3 se oculta mientras hay copias abajo**: antes salía solo sobre la real y la delataba (la barra del jefe del HUD sigue mostrándolo).
+- **La real al lanzarse:** antes se veía igual que en reposo mientras las copias usaban la imagen `lunge`; ahora la real y las copias usan exactamente los mismos cuadros (`AlertMajor._refresh_art`).
+- **Fondo de pantalla de bloqueo:** se queda el del Mundo 1 por script (`mundo1_bg_cielo.png` y `mundo1_bg_fondo_medio.png` con relojes, de `tools/gen_world1_objects.py`), como decía el plan; la arena ya lo usa.
+- **`import_sheet.py`** no necesitó opciones nuevas (`--align sheet` con `--baseline` y `--canvas` por animación). `validate_sprites.py` no se usa para el jefe: lo valida `tools/import_boss_alert_major.py --check` (al día, paleta sin carmín, esquinas transparentes) y `tests/test_boss_data.py`.
+
+### 7.3 Integración
+
+- **Cuadros:** `python3 tools/import_boss_alert_major.py` (80 PNG en `assets/sprites/bosses/alert_major_<anim>_NN.png`; `--check` en la suite).
+
+| Animación | Hoja y celdas | Factor / lienzo | Cuadros | Cómo avanza |
+|---|---|---|---|---|
+| `hover` | hover 0-23 | 4/3 · 256 | 24 | 12 fps en bucle (tiempo del mundo) |
+| `inflate` | inflate 0, 3, 5, 7, 8, 9, 12 | 4/3 · 320 | 7 | 12 fps, se queda inflado (0,58 s = aviso de escupir y de dividirse) |
+| `descend` | descend 0, 8, 10, 12, 15, 24 | 4/3 · 320 | 6 | fracción de `descend_s` (con su curva) |
+| `ascend` | ascend 0, 3, 5, 13, 14, 16, 24 | 4/3 · 384 | 7 | fracción de `ascend_s` |
+| `window` | window 0-23 | 0,9 · 224 | 24 | 12 fps en bucle (ventana y copias) |
+| `lunge_warn` | lunge 0, 3, 5, 6, 7, 8 | 0,9 · 256 | 6 | fracción de `launch_warn_frames` |
+| `lunge` | lunge 12, 15, 17, 19, 21, 23 | 0,9 · 256 | 6 | fracción de `lunge_s` (estela `banner_gris` por código) |
+
+- **Paleta:** `tools/reduce_palette.py` (nuevo, con `tests/test_reduce_palette.py`): vecino más cercano en `mundo1.gpl` limitado a `noche_profunda`, `alerta`, `alerta_sombra`, `banner_blanco` y `banner_gris`; ningún rojo puede caer en `carmin` ni `carmin_brillo`.
+- **Código:** `AlertMajorBody` (`scripts/bosses/alert_major_body.gd`), `alert_major.gd`, `alert_major_clone.gd` (el «pop» sigue provisional), `PixelBurst` recibe el cuadro actual (`defeat.pixels.step_px` 2 → 4: los mismos píxeles que antes a ×2). `arena.draw_scale` 2 → 1. Tiempos, avisos, cajas de daño y núcleo **sin cambios**.
+- **Validador:** `tools/validate_boss.py` comprueba que `inflate` no dura más que los avisos de escupir y dividirse ni menos de 6 cuadros, y que están las 7 animaciones.
+- **Retirados:** `alert_major_{rest,inflate,down,clone,lunge}_placeholder.png` (y sus salidas en `tools/gen_boss_alert_major.py`). Siguen provisionales por script: notificación, escudo, barra del jefe, marco de la recompensa, ficha del núcleo, icono de Eco filtrado y «pop».
+- **Capturas** (con ventana; el juego se renderiza en su viewport, sin permiso de grabación): `$GODOT --path . -s tools/render_boss_alert_major.gd -- <carpeta>` (flotando, inflado, bajando, ventana, subiendo, división, copias abajo, aviso del lanzamiento, lanzamiento y desarme).
+
+### 7.4 Resultados tras integrar
+
+Iguales a los de antes del arte (§6.4 de la propuesta): validador de arenas OK; humo 29,5 s y `--full` en el hub a los 35,9 s; bot del jefe ideal 67,5 / 67,3 / 53,8 s y torpe 183,3 / 174,5 / 202,5 s (Caché / Kernel / Raíz), 0 golpes y 0 muertes, energía mínima ideal 66 / 57 / 50 y torpe 53 / 32 / 51. Bot del 1-3: 86,3 s, 0 golpes, 0 muertes. `tools/run_tests.sh`: verde (1323 pruebas GUT, código 0).
