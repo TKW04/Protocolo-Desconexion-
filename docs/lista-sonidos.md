@@ -423,6 +423,20 @@ Montado según la propuesta de §13 y las decisiones de arriba. **Ningún script
 5. **Archivo ausente = silencio**: una entrada sin archivo no suena ni da error. El catálogo ya trae huecos con su conexión hecha (p. ej. `sfx_isak_death`, `sfx_debug_on`, `sfx_banner_warn`, `stg_level_complete`): basta con añadir el archivo.
 6. No volver a ejecutar `tools/gen_audio_placeholders.py` sobre los definitivos (reescribe los `.wav` con el mismo nombre); `--only <id>` regenera solo uno.
 
+### Probar sonidos sin reexportar: carpeta de audio externo (2026-10-21)
+
+Para que quien hace los sonidos los pruebe en la build de Windows sin reexportar, el `AudioManager` carga además audio **suelto** de una carpeta externa, que **gana** al empaquetado en el `.pck`. No cambia ningún ID, ruta empaquetada ni conexión.
+
+- **Dónde se busca** (`AudioManager.external_dir()`): en el juego exportado, la carpeta **`audio/` junto al ejecutable** (`OS.get_executable_path().get_base_dir() + "/audio"`; el zip de Windows ya la trae vacía con `LEEME-audio.txt`); en el editor / desarrollo, **`user://audio_override/`** (en macOS, `~/Library/Application Support/Godot/app_userdata/Isak Fix/audio_override/`); la variable de entorno **`ISAK_AUDIO_DIR`** sustituye a las dos. Al arrancar el log dice la carpeta y cuántos archivos tiene («AudioManager: audio externo: …»).
+- **Nombres:** `<nombre>.ogg`, `.wav` o `.mp3` (mayúsculas indiferentes). `<nombre>` es el **ID** (sustituye al sonido, y a todas sus variantes si las tiene) o el nombre de **una variante** de `files` (`sfx_isak_step_2.wav` sustituye solo esa). Si hay varios formatos del mismo nombre, **prioridad ogg > wav > mp3**; si el primero no vale, se prueba el siguiente. Un archivo cuyo nombre no es ningún ID ni variante sale como aviso en el log y se ignora. Un ID sin archivo empaquetado (hoy 41 de 65) también suena si hay archivo externo.
+- **Formatos admitidos:** Ogg **Vorbis** (no Opus), WAV PCM 8/16/24/32 bits o coma flotante 32/64 bits, mono o estéreo, cualquier frecuencia; MP3. Se cargan en tiempo de ejecución con `AudioStreamOggVorbis.load_from_buffer`, `AudioStreamWAV.load_from_buffer` (bucle del WAV desactivado) y `AudioStreamMP3.load_from_buffer` tras comprobar la cabecera (lo que no parece audio no llega al decodificador).
+- **Bucle, bus, volumen, variación y enfriamiento** siguen siendo los de `data/audio.json`: el archivo externo se carga sin bucle propio y el `AudioManager` repite los `loop: true` como siempre.
+- **Archivo inválido o ilegible:** un aviso por ID en el log («AudioManager: audio externo '…' para <ID> no vale (…); suena el del juego.») y suena el empaquetado (o nada si no lo hay). Nunca falla.
+- **Recargar:** se lee al arrancar y, **al volver a la ventana del juego** (foco), se vuelve a leer si la carpeta cambió (nombres, tamaños o fechas): basta con guardar el archivo y volver al juego. Los bucles que ya suenan siguen con el anterior hasta que se vuelvan a crear (salir y entrar del hub o del nivel); si algo no cambia, reiniciar el juego. Sin tecla dedicada (los controles solo usan acciones del Input Map). `AudioManager.reload_external_audio()` lo hace a mano.
+- **Log del juego:** en Windows `%APPDATA%\Godot\app_userdata\Isak Fix\logs\godot.log`; en macOS `~/Library/Application Support/Godot/app_userdata/Isak Fix/logs/godot.log`.
+- **Para pasarlo al juego:** cuando un sonido esté bien, se copia a `assets/audio/` con el mismo nombre y se importa (pasos de arriba); la carpeta externa es solo para probar.
+- Pruebas: `tests/test_audio_external.gd` (WAV y MP3 generados en la prueba; el OGG real se toma de `ISAK_TEST_OGG` o del SDK de Android si existe, si no esa prueba queda pendiente).
+
 ### Pendiente
 
 - Música (`mus_*`) y la mayoría de los stingers: sin archivo; el hub no lleva música.
