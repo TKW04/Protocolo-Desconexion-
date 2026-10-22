@@ -10,12 +10,15 @@ lower(level, catalog) devuelve una copia del nivel en la que:
     start always, ciclo cycle_s; StoryCard reutiliza BlinkPlatform y RhythmZone en el juego) con
     on_fraction = on_s / cycle_s;
   - las tarjetas fragiles que solo rompe el golpe al suelo (trigger pound_only, de pie u ocultas) son
-    terreno solido ('#'; las de una via, '-'): el golpe que las rompe lo modela el paso 9.
+    terreno solido ('#'; las de una via, '-'): el golpe que las rompe lo modela el paso 9;
+  - cada seccion en bucle (loop_section, paso 5) pone un techo en la fila de encima de su banda salvo en
+    las columnas de su salida: en el juego, al llegar arriba sin la salida todo baja H filas (se vuelve a
+    ver lo mismo), asi que desde la banda solo se sale por la salida.
 Un nivel sin objetos del Mundo 2 se devuelve tal cual (la salida del Mundo 1 no cambia).
 """
 import copy
 
-WORLD2_TYPES = ("fragile_card", "story_card")
+WORLD2_TYPES = ("fragile_card", "story_card", "loop_section")
 
 
 def _params(catalog, obj):
@@ -43,6 +46,15 @@ def lower(level, catalog):
         x, y = int(obj["x"]), int(obj["y"])
         width = int(p.get("width_tiles", 2))
         oid = str(p.get("id", "%s_%d_%d" % (kind, x, y)))
+        if kind == "loop_section":
+            band, exit_rect = p.get("band", [0, 0]), p.get("exit", [0, 0, 0, 0])
+            row = int(band[0]) - 1
+            exit_cols = range(int(exit_rect[0]), int(exit_rect[0]) + int(exit_rect[2]))
+            if row >= 0:
+                for c in range(1, len(grid[row]) - 1):
+                    if c not in exit_cols and grid[row][c] in ".h-o":
+                        grid[row][c] = "#"
+            continue
         if kind == "fragile_card":
             upright = p.get("variant", "floor") == "upright"
             if p.get("trigger", "on_step") == "on_step" and not upright and not p.get("hidden", False):

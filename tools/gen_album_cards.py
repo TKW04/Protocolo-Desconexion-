@@ -93,6 +93,7 @@ SOURCES = {
     # (paleta provisional del Mundo 2) hasta el arte del mundo.
     "fragile_card": ("assets/sprites/props/world2/fragile_card_00.png", None, 1),
     "story_card": ("assets/sprites/props/world2/story_card_00.png", None, 1),
+    "loop_section": ("assets/sprites/props/world2/loop_sign_00.png", None, 1),
 }
 
 

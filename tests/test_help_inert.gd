@@ -497,6 +497,18 @@ func test_story_card_always_helps() -> void:
 	assert_eq(_help.get_target(), card, "Historia: candidato")
 
 
+## Seccion en bucle (Mundo 2, paso 5): resuelta no ayuda.
+func test_solved_loop_section_gives_no_help() -> void:
+	_freeze_isak()
+	var loop := (load("res://scenes/levels/loop_section.tscn") as PackedScene).instantiate() as LoopSection
+	loop.set_physics_process(false)
+	_place(loop, &"loop_section")
+	await _assert_inert_drops_help(loop, func() -> void:
+		loop.exit_rect = [-1000, -1000, 2000, 2000]
+		loop.step(STEP), "bucle resuelto")
+	_assert_no_reread(loop, &"loop_section", "bucle resuelto")
+
+
 ## Campana de alarma (1-3): indestructible, ayuda en todas sus fases.
 func test_alarm_bell_helps_in_every_phase() -> void:
 	var bell := (load("res://scenes/enemies/alarm_bell.tscn") as PackedScene).instantiate() as AlarmBell
@@ -587,7 +599,7 @@ func test_every_help_type_is_covered() -> void:
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
-		&"story_card"]
+		&"story_card", &"loop_section"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

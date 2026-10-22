@@ -787,6 +787,7 @@ class LevelValidator:
         self._check_calc_room()
         self._check_rhythm()
         self._check_world2_cards()
+        self._check_loops()
         if self.is_boss_arena() and isinstance(self.level.get("boss"), str):
             bosses = [o for o in self.level["objects"] if isinstance(o, dict) and o.get("type") == self.level["boss"]]
             if len(bosses) != 1:
@@ -963,6 +964,57 @@ class LevelValidator:
                 self.error("%s: on_s %.2f s es menos que el aviso (%.2f s) + %.2f s" % (what, on_s, warn, extra), y, x)
             if _is_number(on_s) and _is_number(cycle) and on_s >= cycle:
                 self.error("%s: on_s debe ser menor que cycle_s" % what, y, x)
+
+    def _check_loops(self):
+        """Secciones en bucle (2026-10-22, paso 5 de docs/propuesta-mundo-2.md §8, §3.5): solo con scroll
+        forzado; band = [fila de arriba, fila de abajo] dentro del grid con periodo H = abajo - arriba de al
+        menos la vista + 1 filas; el nivel repite su contenido con periodo H justo debajo de la banda (cada una
+        de las filas [arriba, arriba + vista) igual a la fila H mas abajo, con '.', 'h', 'o' y 'S' como
+        iguales); exit (y hint, opcional) = [columna, fila, ancho, alto] dentro del grid; el cartel (x, y)
+        dentro de la banda y su copia (y + H) dentro del grid."""
+        loops = [(i, o) for i, o in enumerate(self.level["objects"])
+                 if isinstance(o, dict) and o.get("type") == "loop_section" and isinstance(o.get("params"), dict)]
+        if not loops:
+            return
+        mode = self.level.get("camera", {}).get("vertical") if isinstance(self.level.get("camera"), dict) else None
+        view_rows = int(math.ceil(SCREEN_HEIGHT_PX / float(self.level["tile_size"])))
+        same = str.maketrans({"h": ".", "o": ".", "S": "."})
+        for i, obj in loops:
+            what = "objects[%d] (loop_section)" % i
+            x, y, p = obj.get("x"), obj.get("y"), obj["params"]
+            if mode != "autoscroll":
+                self.error("%s: una seccion en bucle solo vale con camera.vertical \"autoscroll\"" % what, y, x)
+            band = p.get("band")
+            if not (isinstance(band, list) and len(band) == 2 and all(_is_int(v) for v in band)
+                    and 0 <= band[0] < band[1] < self.height):
+                self.error("%s: band debe ser [fila de arriba, fila de abajo] dentro del grid" % what, y, x)
+                continue
+            period = band[1] - band[0]
+            if period < view_rows + 1:
+                self.error("%s: la banda mide %d filas; hacen falta al menos %d (la vista + 1)"
+                           % (what, period, view_rows + 1), y, x)
+                continue
+            for r in range(band[0], band[0] + view_rows):
+                if r + period >= self.height:
+                    self.error("%s: debajo de la banda no caben las %d filas que la repiten" % (what, view_rows),
+                               y, x)
+                    break
+                if self.grid[r].translate(same) != self.grid[r + period].translate(same):
+                    self.error("%s: la fila %d no repite la %d (periodo %d): el bucle se notaria"
+                               % (what, r + period, r, period), r + period, 0)
+                    break
+            for key, optional in (("exit", False), ("hint", True)):
+                rect = p.get(key)
+                if rect is None and optional:
+                    continue
+                if not (isinstance(rect, list) and len(rect) == 4 and all(_is_int(v) for v in rect)
+                        and rect[2] >= 1 and rect[3] >= 1 and self.in_bounds(rect[0], rect[1])
+                        and self.in_bounds(rect[0] + rect[2] - 1, rect[1] + rect[3] - 1)):
+                    self.error("%s: %s debe ser [columna, fila, ancho, alto] dentro del grid" % (what, key), y, x)
+            if _is_int(y) and not band[0] <= y <= band[1]:
+                self.error("%s: el cartel va dentro de la banda" % what, y, x)
+            elif _is_int(y) and y + period >= self.height:
+                self.error("%s: la copia del cartel (fila %d) se sale del grid" % (what, y + period), y, x)
 
     def _check_rhythm(self):
         """Metronomo y plataformas que parpadean (2026-10-19, paso 5 de docs/propuesta-1-3.md §5.3):

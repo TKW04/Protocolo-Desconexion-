@@ -8,6 +8,7 @@ este script dibuja lo mismo, con la paleta PROVISIONAL del Mundo 2
 (tools/palette_mundo2_provisional.py: hex sin cerrar), en assets/sprites/props/world2/:
   fragile_card_00.png   tarjeta de 1 tile (64 x 32) con la grieta a medias y 4 segmentos
   story_card_00.png     Historia de 1 tile (64 x 32) con la barra de progreso llena
+  loop_sign_00.png      cartel «Solo uno mas» de la seccion en bucle (paso 5)
 El arte final del mundo (paso 10) los sustituira.
 
 Uso: python3 -I tools/gen_world2_cards.py [--check]   (--check: 1 si algun PNG no esta al dia)
@@ -64,8 +65,19 @@ def story():
     return img
 
 
+def loop_sign():
+    """Cartel «Solo uno mas» (seccion en bucle) en miniatura: tarjeta con dos lineas de texto y una flecha
+    circular."""
+    img, d = card()
+    d.rectangle((8, 12, 40, 14), fill=COLORS["blanco"])
+    d.rectangle((8, 18, 30, 20), fill=COLORS["gris"])
+    d.arc((44, 9, 56, 21), 30, 330, fill=COLORS["blanco"], width=2)
+    d.polygon([(55, 9), (59, 13), (53, 14)], fill=COLORS["blanco"])
+    return img
+
+
 def outputs():
-    return {"fragile_card_00.png": fragile(), "story_card_00.png": story()}
+    return {"fragile_card_00.png": fragile(), "story_card_00.png": story(), "loop_sign_00.png": loop_sign()}
 
 
 def main(argv):

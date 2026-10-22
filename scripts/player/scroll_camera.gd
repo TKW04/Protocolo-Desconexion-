@@ -148,6 +148,12 @@ func reset_for(feet: Vector2) -> void:
 		rev["done"] = float(rev["line"]) >= _bottom
 
 
+## Desplaza el scroll `dy` px (una seccion en bucle lo baja con Isak): las
+## paradas, tramos e inversiones siguen siendo por posicion.
+func shift(dy: float) -> void:
+	_bottom = clampf(_bottom + dy, _top_limit(), _bottom_limit())
+
+
 ## Centro de la vista sin avanzar (al empezar y al reaparecer).
 func snap(_feet: Vector2) -> Vector2:
 	return get_center()

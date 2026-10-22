@@ -82,7 +82,7 @@ STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", 
                           "memory_id", "art", "skin"}
 # Propiedades que son listas aunque tengan dos numeros (no un Vector2): los ciclos del metronomo
 # (rhythm_zone, 2026-10-19, paso 5 de docs/propuesta-1-3.md).
-ARRAY_PROPERTIES = {"tempo_steps_s", "contacts", "cover_tiles"}
+ARRAY_PROPERTIES = {"tempo_steps_s", "contacts", "cover_tiles", "band_rows"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 

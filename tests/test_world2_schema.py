@@ -17,8 +17,12 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level_schema as vls  # noqa: E402
 import level_catalog  # noqa: E402
 import build_level  # noqa: E402
+import validate_level  # noqa: E402
+import world2_model  # noqa: E402
 
 SCROLL_TEST = os.path.join(ROOT, "data", "levels", "scroll_test.json")
+BUCLE_TEST = os.path.join(ROOT, "data", "levels", "bucle_test.json")
+TARJETAS_TEST = os.path.join(ROOT, "data", "levels", "tarjetas_test.json")
 
 
 def load(path):
@@ -110,6 +114,77 @@ class ScrollSchemaTest(unittest.TestCase):
         level = copy.deepcopy(self.level)
         level["scroll"]["loops"] = []
         self.assert_fails(level, "campo desconocido 'loops'")
+
+
+
+class CardsAndLoopTest(unittest.TestCase):
+    """Tarjetas (paso 4) y bucles (paso 5) en el esquema y en el modelo del validador."""
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def test_rooms_are_valid(self):
+        for path in (TARJETAS_TEST, BUCLE_TEST):
+            self.assertEqual(vls.validate_level(load(path)), [], path)
+
+    def test_fragile_warn_shorter_than_timer(self):
+        level = load(TARJETAS_TEST)
+        card = next(o for o in level["objects"] if o["params"].get("id") == "fragil_1")
+        card["params"]["warn_s"] = 0.7
+        self.assert_fails(level, "warn_s (0.7) debe ser menor que timer_s")
+
+    def test_upright_card_needs_two_free_cells(self):
+        level = load(TARJETAS_TEST)
+        wall = next(o for o in level["objects"] if o["params"].get("id") == "fragil_de_pie")
+        wall["y"] = 8
+        self.assert_fails(level, "ocupa una celda que el grid debe dejar vacia")
+
+    def test_story_too_short(self):
+        level = load(TARJETAS_TEST)
+        story = next(o for o in level["objects"] if o["type"] == "story_card")
+        story["params"]["on_s"] = 0.6
+        self.assert_fails(level, "on_s 0.60 s es menos que el aviso")
+
+    def test_lowering_maps_cards_to_world1_pieces(self):
+        level = load(TARJETAS_TEST)
+        lowered = world2_model.lower(level, level_catalog.load_catalog(ROOT, 2))
+        kinds = [o["type"] for o in lowered["objects"]]
+        self.assertEqual(kinds.count("reminder_platform"), 2, "las dos fragiles que cuentan al pisarlas")
+        self.assertEqual(kinds.count("blink_platform"), 2, "las dos Historias")
+        self.assertEqual(kinds.count("rhythm_zone"), 2, "con su reloj propio")
+        self.assertEqual(lowered["grid"][9][3], "#", "la oculta, terreno hasta el paso 9")
+        self.assertIs(world2_model.lower(load(os.path.join(ROOT, "data", "levels", "1-1.json")),
+                                         level_catalog.load_catalog(ROOT, 1)).__class__, dict)
+
+    def test_world1_levels_are_not_lowered(self):
+        level = load(os.path.join(ROOT, "data", "levels", "1-3.json"))
+        self.assertIs(world2_model.lower(level, level_catalog.load_catalog(ROOT, 1)), level)
+
+    def test_loop_must_repeat_below_the_band(self):
+        level = load(BUCLE_TEST)
+        row = level["grid"][50]
+        level["grid"][50] = row[:12] + "#" + row[13:]
+        self.assert_fails(level, "no repite la")
+
+    def test_loop_band_too_short_and_needs_autoscroll(self):
+        level = load(BUCLE_TEST)
+        loop = next(o for o in level["objects"] if o["type"] == "loop_section")
+        loop["params"]["band"] = [20, 30]
+        self.assert_fails(level, "hacen falta al menos 13")
+        level = load(BUCLE_TEST)
+        level["camera"]["vertical"] = "tower"
+        del level["scroll"]
+        self.assert_fails(level, "solo vale con camera.vertical")
+
+    def test_loop_exit_needs_the_debug(self):
+        level = load(BUCLE_TEST)
+        result = validate_level.validate(copy.deepcopy(level), ROOT)
+        self.assertTrue(result["ok"], result["errors"])
+        level["abilities_available"]["debug"] = False
+        level["validation"] = {}
+        result = validate_level.validate(level, ROOT)
+        self.assertFalse(result["ok"], "sin el Debug no se sale del bucle")
 
 
 if __name__ == "__main__":

@@ -209,6 +209,13 @@ func get_target_position() -> Vector2:
 
 
 ## Su sitio junto a Isak (detras y encima), sin contar la ayuda.
+## Desplaza a Eco con Isak (una seccion en bucle del Mundo 2 los baja juntos):
+## sigue en el mismo sitio respecto a Isak, sin volar ni reaparecer.
+func shift_by(offset: Vector2) -> void:
+	_anchor += offset
+	global_position += offset
+
+
 func get_follow_position() -> Vector2:
 	if not _valid_isak():
 		return _anchor
