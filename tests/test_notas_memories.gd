@@ -2,8 +2,9 @@
 # §7; §3): por carpeta de mundo, secciones «Jefe» y «Mensajes»; las capas de un
 # acceso no alcanzado no aparecen (ni su nombre); lo alcanzado y no obtenido sale
 # «???» (los mensajes, sin remitente); contador «Recuerdos: n/N» solo con lo
-# visible; ficha con titulo, capa o remitente y asunto y el texto (sin
-# ilustracion), que marca el recuerdo leido; y la placa de recuerdo nuevo en el
+# visible; ficha con titulo, capa o remitente y asunto y el texto (con la
+# ilustracion de tools/gen_memory_art.py en las capas Caché —borrosa— y Kernel
+# desde el 2026-10-22, paso 7; Raíz y mensajes sin ella), que marca el recuerdo leido; y la placa de recuerdo nuevo en el
 # icono (estacion) de Notas del hub. Usa su propia ruta de guardado.
 extends GutTest
 
@@ -115,6 +116,50 @@ func test_boss_card_shows_layer_and_text_and_marks_read() -> void:
 	_album.cancel()
 	assert_eq(_album.get_mode(), NotasAlbum.Mode.GRID)
 	assert_eq(_album.get_memory_rows()[1], "Caché: Fragmento de concentración", "Ya no es nuevo")
+
+
+## Paso 7 (§11.3): Caché, la imagen borrosa; Kernel, la nitida; Raíz y mensajes, solo texto.
+func test_boss_cards_show_the_illustration_by_layer() -> void:
+	GameState.lap = GameState.LAP_HARD
+	for id: StringName in [&"boss_w1_l1", &"boss_w1_l2", &"boss_w1_l3", &"msg_1_1"]:
+		GameState.obtain_memory(id)
+	_open_memories()
+	var expected: Array = [
+		load("res://assets/sprites/ui/memories/memory_art_w1_cache.png"),
+		load("res://assets/sprites/ui/memories/memory_art_w1.png"),
+		null]
+	for i: int in 3:
+		_album.select_cell(i)
+		_album.confirm()
+		assert_eq(_album.get_mode(), NotasAlbum.Mode.CARD)
+		assert_eq(_album.get_card_art(), expected[i], "Capa %d" % (i + 1))
+		_album.cancel()
+	_album.select_cell(3)
+	_album.confirm()
+	assert_eq(_album.get_mode(), NotasAlbum.Mode.CARD)
+	assert_null(_album.get_card_art(), "Los mensajes, solo texto")
+	_album.cancel()
+	assert_null(_album.get_card_art(), "Sin ficha no hay ilustracion")
+
+
+## Las 6 ilustraciones existen y toda ficha de jefe (texto definitivo + ilustracion)
+## cabe en la pantalla.
+func test_every_boss_card_fits_the_screen() -> void:
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	for world: int in range(1, 7):
+		assert_not_null(NotasAlbum.memory_art(catalog.boss_id(world, 1)), "Caché del mundo %d" % world)
+		assert_not_null(NotasAlbum.memory_art(catalog.boss_id(world, 2)), "Kernel del mundo %d" % world)
+		assert_null(NotasAlbum.memory_art(catalog.boss_id(world, 3)), "Raíz del mundo %d" % world)
+	GameState.obtain_memory(&"boss_w1_l1")
+	_open_memories()
+	_album.select_cell(0)
+	_album.confirm()
+	var screen_h: float = get_viewport().get_visible_rect().size.y
+	for id: StringName in catalog.ids():
+		_album._fill_memory_card(id)
+		_album._layout()
+		var rect: Rect2 = _album.get_panel_rect()
+		assert_true(rect.end.y <= screen_h, "%s cabe (%.0f de %.0f px)" % [id, rect.end.y, screen_h])
 
 
 func test_message_card_shows_sender_and_subject() -> void:

@@ -66,6 +66,8 @@ var _memory_rows: Array[Label] = []
 ## Filas visibles ahora: {text, role, entry} (entry -1 en las cabeceras).
 var _rows: Array[Dictionary] = []
 var _card_big: TextureRect
+## Ilustracion de la ficha de un recuerdo de jefe (capas Caché y Kernel; §8.3).
+var _memory_art: TextureRect
 var _body_label: Label
 var _open: bool = false
 var _open_time: float = 0.0
@@ -414,6 +416,11 @@ func get_card_text() -> String:
 	return _body_label.text if _mode == Mode.CARD else ""
 
 
+## Ilustracion de la ficha abierta (null sin ficha de recuerdo o sin ilustracion).
+func get_card_art() -> Texture2D:
+	return _memory_art.texture if _mode == Mode.CARD and _memory_art.visible else null
+
+
 func get_message() -> String:
 	return _labels[&"message"].text
 
@@ -571,6 +578,7 @@ func refresh() -> void:
 	_labels[&"name"].text = sel_name
 	_labels[&"name"].visible = grid_visible and not (memory_tab and not _entries.is_empty())
 	_card_big.visible = card_mode and not memory_tab
+	_memory_art.visible = false
 	_body_label.visible = card_mode
 	_labels[&"card_title"].visible = card_mode
 	if card_mode and memory_tab and not _entries.is_empty():
@@ -637,6 +645,8 @@ func _fill_memory_card(id: StringName) -> void:
 	var texts: Dictionary = _cfg.get("texts", {})
 	var catalog: MemoryCatalog = MemoryCatalog.shared()
 	_labels[&"card_title"].text = catalog.title(id)
+	_memory_art.texture = memory_art(id)
+	_memory_art.visible = _memory_art.texture != null
 	var paragraphs := PackedStringArray()
 	if catalog.is_boss(id):
 		paragraphs.append(String(texts.get("card_layer", "%s")) % HubWorlds.access_name(catalog.layer(id)))
@@ -684,6 +694,24 @@ func _cell_text(e: Dictionary) -> String:
 	if bool(e.get("learned", false)):
 		return HelpCatalog.shared().title(e["id"])
 	return String(_cfg.get("texts", {}).get("unknown", "???"))
+
+
+## Ilustracion de la ficha del recuerdo `id` (paso 7 de docs/propuesta-recuerdos.md,
+## §11.3): solo los recuerdos de jefe cuya capa tiene ruta en memory_art de la
+## seccion album de data/hub.json (Caché, la imagen borrosa; Kernel, la nitida;
+## tools/gen_memory_art.py). Raíz y los mensajes: null (solo texto).
+static func memory_art(id: StringName) -> Texture2D:
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	if not catalog.is_boss(id):
+		return null
+	var patterns: Variant = HubData.section("album").get("memory_art", {})
+	if not patterns is Dictionary:
+		return null
+	var pattern: String = String((patterns as Dictionary).get(str(catalog.layer(id)), ""))
+	if pattern.is_empty():
+		return null
+	var path: String = pattern % catalog.world(id)
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
 ## Fila de un recuerdo: «Caché: <titulo>» (jefe) o «<remitente>: <asunto>»
@@ -854,6 +882,11 @@ func _build() -> void:
 	_card_big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_card_big.visible = false
 	_panel.add_child(_card_big)
+	_memory_art = TextureRect.new()
+	_memory_art.name = "MemoryArt"
+	_memory_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_memory_art.visible = false
+	_panel.add_child(_memory_art)
 	_body_label = _new_label(_panel, "CardText", String(colors.get("card_text", "texto_claro")))
 	_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_body_label.visible = false
@@ -967,7 +1000,13 @@ func _layout() -> void:
 		y = _place(_labels[&"counter"], pad, y, inner, line_h, gap)
 		y += gap
 	if _mode == Mode.CARD and _is_memory_tab():
-		# Ficha de un recuerdo: sin ilustracion todavia (§8.3), texto a todo el ancho.
+		# Ficha de un recuerdo: la ilustracion (capas Caché y Kernel de jefe; §8.3)
+		# centrada arriba, a x1 de los pixeles del panel; despues, el texto a todo el ancho.
+		if _memory_art.visible:
+			var art_size: Vector2 = _memory_art.texture.get_size()
+			_memory_art.size = art_size
+			_memory_art.position = Vector2(floorf((width - art_size.x) * 0.5), y)
+			y += art_size.y + gap * 2.0
 		_labels[&"card_title"].position = Vector2(pad, y)
 		_labels[&"card_title"].size = Vector2(inner, line_h)
 		_labels[&"card_title"].horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
