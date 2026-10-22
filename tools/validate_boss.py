@@ -334,8 +334,36 @@ def check_telegraphs(boss, root, errors, report, world_scale=1.0):
         items.append((name, frames))
     if not 0.0 < world_scale <= 1.0 + EPS:
         _err(errors, "con el Debug el mundo va a x%g: los avisos durarian menos que sin el Debug" % world_scale)
+    check_art_telegraphs(boss, errors, report)
     report["telegraphs"] = items
     report["debug_world_scale"] = round(world_scale, 3)
+
+
+def check_art_telegraphs(boss, errors, report):
+    """Arte final (paso 16, 2026-10-22): la animacion de inflarse (aviso de escupir y de dividirse) va por
+    tiempo y no puede durar mas que esos avisos (si no, el ataque saldria con el cuerpo a medio inflar) ni
+    menos de 6 cuadros del mundo; el aviso del lanzamiento (lunge_warn) y el lanzamiento (lunge) van por la
+    fraccion de su tiempo en el codigo, asi que duran exactamente launch_warn_frames y lunge_s. Los tiempos
+    los manda el codigo: el arte nunca acorta un aviso."""
+    art = boss.get("art")
+    if not art:
+        return
+    anims = art.get("anims", {})
+    fps = anim_fps(boss)
+    lo = TELEGRAPH_FRAMES[0] / fps
+    inflate = anims.get("inflate")
+    if inflate:
+        dur = float(inflate.get("frames", 0)) / float(inflate.get("fps", 12.0))
+        for name, frames in (("escupir", boss.get("phase1", {}).get("spit_warn_frames")),
+                             ("dividirse", boss.get("phase3", {}).get("split_warn_frames"))):
+            if isinstance(frames, (int, float)) and dur > frames / fps + EPS:
+                _err(errors, "arte: inflate dura %.2f s, mas que el aviso de %s (%.2f s)" % (dur, name, frames / fps))
+        if dur < lo - EPS:
+            _err(errors, "arte: inflate dura %.2f s (< %d cuadros del mundo)" % (dur, TELEGRAPH_FRAMES[0]))
+        report["art_inflate_s"] = round(dur, 3)
+    for name in ("hover", "inflate", "descend", "ascend", "window", "lunge_warn", "lunge"):
+        if name not in anims:
+            _err(errors, "arte: falta la animacion '%s' en art.anims" % name)
 
 
 def _reach_cells(arena, spot):

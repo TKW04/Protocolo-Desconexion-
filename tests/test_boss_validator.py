@@ -141,6 +141,19 @@ class ArenaTest(unittest.TestCase):
         msgs = self.messages(self.run_arena(boss=boss))
         self.assertTrue(any("escupir Burbujas" in m and "de 6 a 12" in m for m in msgs), msgs)
 
+    def test_art_inflate_never_outlasts_its_warning(self):
+        # Arte final (paso 16, 2026-10-22): la animacion de inflarse no puede durar mas que el aviso.
+        self.assertIn("art_inflate_s", self.result["boss"])
+        self.assertLessEqual(self.result["boss"]["art_inflate_s"], 7 / 12.0 + 1e-6)
+        boss = copy.deepcopy(self.boss)
+        boss["art"]["anims"]["inflate"]["frames"] = 12
+        msgs = self.messages(self.run_arena(boss=boss))
+        self.assertTrue(any("inflate dura" in m and "escupir" in m for m in msgs), msgs)
+        boss = copy.deepcopy(self.boss)
+        del boss["art"]["anims"]["window"]
+        msgs = self.messages(self.run_arena(boss=boss))
+        self.assertTrue(any("falta la animacion 'window'" in m for m in msgs), msgs)
+
     def test_two_bells_at_once(self):
         level = copy.deepcopy(self.level)
         for e in level["enemies"]:

@@ -125,6 +125,38 @@ class AlertMajorFightDataTest(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
 
 
+class AlertMajorFinalArtTest(unittest.TestCase):
+    """Arte final del cuerpo de Alerta Mayor (paso 16, 2026-10-22; docs/plan-arte-jefe-alerta-mayor.md): los
+    cuadros de tools/import_boss_alert_major.py estan al dia, en mundo1.gpl SIN carmin, cada animacion de
+    art.anims tiene sus cuadros y ya no quedan los provisionales sustituidos."""
+
+    def setUp(self):
+        with open(os.path.join(ROOT, "data", "bosses", "alert_major.json"), encoding="utf-8") as fh:
+            self.boss = json.load(fh)
+
+    def test_frames_exist_for_every_animation(self):
+        art = self.boss["art"]
+        base = os.path.join(ROOT, art["dir"][len("res://"):])
+        for anim, cfg in art["anims"].items():
+            for i in range(cfg["frames"]):
+                self.assertTrue(os.path.exists(os.path.join(base, "%s_%s_%02d.png" % (art["prefix"], anim, i))),
+                                (anim, i))
+            self.assertFalse(os.path.exists(os.path.join(base, "%s_%s_%02d.png" % (art["prefix"], anim, cfg["frames"]))),
+                             "%s: sobran cuadros" % anim)
+        self.assertEqual(self.boss["arena"]["draw_scale"], 1.0)
+        for old in ("rest", "inflate", "down", "clone", "lunge"):
+            self.assertFalse(os.path.exists(os.path.join(base, "alert_major_%s_placeholder.png" % old)), old)
+
+    def test_final_art_is_up_to_date_and_without_carmin(self):
+        done = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "import_boss_alert_major.py"), "--check"],
+                              capture_output=True, text=True)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import import_boss_alert_major as imp  # noqa: E402
+        self.assertNotIn("carmin", imp.PALETTE_ONLY)
+        self.assertNotIn("carmin_brillo", imp.PALETTE_ONLY)
+
+
 class BossUiArtTest(unittest.TestCase):
     """Arte provisional del HUD, la recompensa y el album del jefe (pasos 9-11, 2026-10-21): cada textura
     que citan data/hud.json (boss_bar) y data/boss_reward.json existe, es _placeholder y la genera
