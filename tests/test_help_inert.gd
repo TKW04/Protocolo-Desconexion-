@@ -497,7 +497,7 @@ func test_alarm_bell_helps_in_every_phase() -> void:
 ## desarmarse en pixeles se oculta y deja de ayudar.
 func test_disarmed_boss_body_gives_no_help() -> void:
 	var body := Sprite2D.new()
-	body.texture = load("res://assets/sprites/bosses/alert_major_rest_placeholder.png") as Texture2D
+	body.texture = load("res://assets/sprites/bosses/alert_major_hover_00.png") as Texture2D
 	_place(body, &"alert_major")
 	await _assert_inert_drops_help(body, func() -> void: body.visible = false, "jefe desarmado")
 

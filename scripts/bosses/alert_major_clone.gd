@@ -5,8 +5,10 @@
 ## de sus lanzamientos; aqui solo esta el cuerpo y su descarte: un pulso que
 ## alcanza su cuerpo o un laser que lo toca la DESCARTA con un «pop» (señal
 ## discarded; el jefe suelta una Burbuja en su sitio, decision 6). Sin
-## colision fisica (el dash la atraviesa). Arte PROVISIONAL (_placeholder) de
-## tools/gen_boss_alert_major.py.
+## colision fisica (el dash la atraviesa). Cuerpo con el arte FINAL
+## (AlertMajorBody, paso 16, 2026-10-22): el jefe le pone el MISMO cuadro que a
+## la real (AlertMajor._refresh_art). El «pop» sigue provisional
+## (alert_major_pop_placeholder.png de tools/gen_boss_alert_major.py).
 class_name AlertMajorClone
 extends Node2D
 
@@ -17,12 +19,15 @@ const GROUP_LASER_ACTIVATABLE: StringName = &"laser_activatable"
 const LAYER_ENEMY: int = 4
 const ART_DIR: String = "res://assets/sprites/bosses/"
 const POP_S: float = 0.3
+## Escala del «pop» provisional (64 px, dibujado a x2 como antes).
+const POP_SCALE: float = 2.0
 
 ## Tamano del cuerpo (px, el del jefe desinflado).
 var body_size: Vector2 = Vector2(128.0, 128.0)
-var draw_scale: float = 2.0
+var draw_scale: float = 1.0
 
-var _sprite: Sprite2D
+var _body: AlertMajorBody
+var _pop: Sprite2D
 var _hurt: Area2D
 var _shape: CollisionShape2D
 var _popped: bool = false
@@ -31,11 +36,11 @@ var _lunging: bool = false
 
 
 func _ready() -> void:
-	_sprite = Sprite2D.new()
-	_sprite.name = "Body"
-	_sprite.texture = load(ART_DIR + "alert_major_clone_placeholder.png") as Texture2D
-	_sprite.scale = Vector2(draw_scale, draw_scale)
-	add_child(_sprite)
+	_body = AlertMajorBody.new()
+	_body.name = "Body"
+	_body.scale = Vector2(draw_scale, draw_scale)
+	add_child(_body)
+	_body.show_frame(&"descend", 0)
 	_hurt = _HurtRelay.new()
 	_hurt.name = "Hurt"
 	_hurt.collision_layer = LAYER_ENEMY
@@ -73,12 +78,18 @@ func get_body_rect() -> Rect2:
 	return Rect2(global_position - body_size * 0.5, body_size)
 
 
-## Aspecto de lanzamiento (estirada) o de reposo.
+## Cuerpo dibujado (el jefe elige su animacion y su cuadro).
+func get_body() -> AlertMajorBody:
+	return _body
+
+
+## Se esta lanzando (el aspecto lo pone el jefe en el cuerpo: lunge con estela).
 func set_lunging(on: bool) -> void:
 	_lunging = on
-	if _sprite != null and not _popped:
-		_sprite.texture = load(ART_DIR + ("alert_major_lunge_placeholder.png" if on
-			else "alert_major_clone_placeholder.png")) as Texture2D
+
+
+func is_lunging() -> bool:
+	return _lunging
 
 
 ## Interfaz del laser (LaserProjectile, por el Area2D Hurt): se descarta.
@@ -103,7 +114,12 @@ func discard(notify: bool) -> void:
 	_pop_left = POP_S
 	_shape.set_deferred(&"disabled", true)
 	_hurt.collision_layer = 0
-	_sprite.texture = load(ART_DIR + "alert_major_pop_placeholder.png") as Texture2D
+	_body.visible = false
+	_pop = Sprite2D.new()
+	_pop.name = "Pop"
+	_pop.texture = load(ART_DIR + "alert_major_pop_placeholder.png") as Texture2D
+	_pop.scale = Vector2(POP_SCALE, POP_SCALE)
+	add_child(_pop)
 	if EventBus.pulse_fired.is_connected(receive_pulse):
 		EventBus.pulse_fired.disconnect(receive_pulse)
 	if notify:

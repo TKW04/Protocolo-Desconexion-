@@ -22,9 +22,13 @@
 ##   pixeles (play_disarm, PixelBurst), recompensa (BossReward: capa Caché del
 ##   recuerdo, sin guardar), linea de derrota (say_line) y vortice al hub. Sin
 ##   rollback.
-## Todo en tiempo del mundo (advance). Arte PROVISIONAL (_placeholder) de
-## tools/gen_boss_alert_major.py. Ataques de cada fase: _phase1_* (paso 6),
-## _phase2_* (paso 7) y _phase3_* (paso 8).
+## Todo en tiempo del mundo (advance). Arte FINAL del cuerpo (paso 16,
+## 2026-10-22): AlertMajorBody con las animaciones de AutoSprite (hover,
+## inflate, descend, ascend, window, lunge_warn, lunge; seccion art del JSON);
+## _refresh_art elige la animacion por estado y aplica el MISMO cuadro a la real
+## y a las copias. El resto del arte (escudo, notificacion, «pop»...) sigue
+## provisional (_placeholder) de tools/gen_boss_alert_major.py. Ataques de cada
+## fase: _phase1_* (paso 6), _phase2_* (paso 7) y _phase3_* (paso 8).
 class_name AlertMajor
 extends BossBase
 
@@ -70,9 +74,6 @@ const MOVE_GONE: StringName = &"gone"
 ## Fase 3: el cuerpo lo mueven las rondas de copias (get_round_state).
 const MOVE_CLONES: StringName = &"clones"
 
-const ART_REST: String = "alert_major_rest_placeholder.png"
-const ART_INFLATE: String = "alert_major_inflate_placeholder.png"
-const ART_DOWN: String = "alert_major_down_placeholder.png"
 const ART_SHIELD: String = "alert_major_shield_placeholder.png"
 
 ## Id del objeto en el nivel (params.id).
@@ -96,7 +97,12 @@ var _center: Vector2 = Vector2.ZERO
 var _down: bool = false
 var _inflated: bool = false
 var _hover_dir: float = 1.0
-var _body: Sprite2D
+var _body: AlertMajorBody
+## Animacion del cuerpo que va por tiempo (hover, inflate, window) y su reloj
+## (s del mundo): la comparten la real y las copias.
+var _art_anim: StringName = &""
+var _art_t: float = 0.0
+var _label_dark: int = -1
 var _label: Label
 var _core: WeakPoint
 ## Contenedor de los ataques (top_level: coordenadas globales).
@@ -170,6 +176,8 @@ func _physics_process(delta: float) -> void:
 	if _intro_state == 0 and intro_on_arrival and not is_fighting() and not is_defeated():
 		_poll_arrival()
 	super._physics_process(delta)
+	_art_t += WorldTime.scaled_delta(delta)
+	_refresh_art()
 
 
 # --- Consultas (HUD, bot y pruebas) ---
@@ -349,12 +357,15 @@ func get_defeat() -> BossDefeat:
 ## Desarme en pixeles (BossDefeat, fase DISARM): el cuerpo y el contador se
 ## apagan y sus pixeles se sueltan (PixelBurst, defeat.pixels del JSON).
 func play_disarm() -> PixelBurst:
-	var tex: Texture2D = _body.texture if _body != null else null
+	# El cuadro que se ve ahora (arte final: AlertMajorBody) se suelta en pixeles.
+	var tex: Texture2D = _body.get_texture() if _body != null else null
+	var at: Vector2 = _body.get_texture_center() if _body != null else _center
+	var scale_px: float = _body.get_draw_scale() * float(_arena.get("draw_scale", 1.0)) if _body != null else 1.0
 	var cfg: Dictionary = (get_config().get("defeat", {}) as Dictionary).get("pixels", {})
 	_set_move(MOVE_GONE)
 	_core.set_enabled(false)
 	var root: Node = _level_root()
-	_burst = PixelBurst.spawn(tex, _center, float(_arena.get("draw_scale", 2.0)), root if root != null else self, cfg)
+	_burst = PixelBurst.spawn(tex, at, scale_px, root if root != null else self, cfg)
 	disarmed.emit()
 	return _burst
 
@@ -630,7 +641,7 @@ func _texture(file_name: String) -> Texture2D:
 
 
 func _build() -> void:
-	_body = Sprite2D.new()
+	_body = AlertMajorBody.new()
 	_body.name = "Body"
 	_body.top_level = true
 	add_child(_body)
@@ -675,18 +686,87 @@ func _build() -> void:
 func _update_body() -> void:
 	if _body == null:
 		return
-	var scale_px: float = float(_arena.get("draw_scale", 2.0))
+	var scale_px: float = float(_arena.get("draw_scale", 1.0))
 	if _move == MOVE_GONE:
 		_body.visible = false
 		_label.visible = false
 		return
 	_body.visible = true
-	_label.visible = true
-	if _down:
-		_body.texture = _texture(ART_DOWN)
-	else:
-		_body.texture = _texture(ART_INFLATE if _inflated else ART_REST)
 	_body.scale = Vector2(scale_px, scale_px)
+	_refresh_art()
+
+
+## Animacion del cuerpo segun el estado: [anim, fraccion (movimientos), por tiempo].
+func _group_visual() -> Array:
+	if get_phase() == 3 and is_fighting() and _round != &"":
+		match _round:
+			&"split":
+				return [&"inflate", 0.0, true]
+			&"descend":
+				return [&"descend", _move_ease(true, clampf(_round_t / maxf(_move_s(true), 0.001), 0.0, 1.0)), false]
+			&"ascend":
+				return [&"ascend", _move_ease(false, clampf(_round_t / maxf(_move_s(false), 0.001), 0.0, 1.0)), false]
+			_:
+				return [&"window", 0.0, true]
+	match _move:
+		MOVE_DESCEND:
+			return [&"descend", _move_ease(true, clampf(_move_time / maxf(_move_s(true), 0.001), 0.0, 1.0)), false]
+		MOVE_ASCEND:
+			return [&"ascend", _move_ease(false, clampf(_move_time / maxf(_move_s(false), 0.001), 0.0, 1.0)), false]
+		MOVE_DOWN:
+			return [&"window", 0.0, true]
+	return [&"inflate" if _inflated else &"hover", 0.0, true]
+
+
+## Aplica la animacion al cuerpo real y a las copias (el mismo cuadro: la copia
+## es identica a la real). La que se lanza en la fase 3 (real o copia) muestra
+## lunge_warn durante el aviso y lunge durante el lanzamiento, con su estela.
+func _refresh_art() -> void:
+	if _body == null or _move == MOVE_GONE:
+		return
+	# Fase 3 con las copias fuera: sin contador (delataria a la real; la barra
+	# del jefe del HUD lo sigue enseñando).
+	_label.visible = not (get_phase() == 3 and is_fighting() and _round != &"" and _round != &"split")
+	var v: Array = _group_visual()
+	var anim: StringName = v[0]
+	if anim != _art_anim:
+		_art_anim = anim
+		_art_t = 0.0
+	var frame: int = AlertMajorBody.frame_at_time(anim, _art_t) if bool(v[2]) \
+		else AlertMajorBody.frame_at_fraction(anim, float(v[1]))
+	var launching: int = _launch_index if _round == &"launch" and get_phase() == 3 else -1
+	if _copies.is_empty() or get_phase() != 3:
+		_body.show_frame(anim, frame, float(v[1]))
+		return
+	for i: int in _copies.size():
+		var c: Dictionary = _copies[i]
+		var node: Variant = c.get("node")
+		var target: AlertMajorBody = _body if node == null else null
+		if node != null and is_instance_valid(node):
+			target = (node as AlertMajorClone).get_body()
+		if target == null:
+			continue
+		if i == launching:
+			_show_launch_frame(target, c)
+		else:
+			target.show_frame(anim, frame, float(v[1]))
+
+
+func _show_launch_frame(target: AlertMajorBody, c: Dictionary) -> void:
+	var p3: Dictionary = phase_data(3)
+	var home: Vector2 = c.get("home", _center)
+	match _launch_phase:
+		&"warn":
+			var f: float = clampf(_round_t / maxf(frames_s(p3.get("launch_warn_frames", 9)), 0.001), 0.0, 1.0)
+			target.show_frame(&"lunge_warn", AlertMajorBody.frame_at_fraction(&"lunge_warn", f), f,
+				_launch_target.x < home.x)
+		&"lunge":
+			var f: float = clampf(_round_t / maxf(float(p3.get("lunge_s", 0.3)), 0.001), 0.0, 1.0)
+			var to: Vector2 = c.get("lunge_to", home)
+			var dir: float = -1.0 if to.x < home.x else 1.0
+			target.show_frame(&"lunge", AlertMajorBody.frame_at_fraction(&"lunge", f), f, dir < 0.0, dir)
+		_:
+			target.show_frame(&"window", AlertMajorBody.frame_at_time(&"window", _art_t))
 
 
 func _place() -> void:
@@ -694,8 +774,16 @@ func _place() -> void:
 		return
 	_body.global_position = _center
 	var size: Vector2 = _down_size() if _down else _up_size()
+	# Arriba el contador va sobre la pastilla en blanco del badge (texto oscuro);
+	# abajo, encima del cuerpo (claro).
+	var up_off: Array = _arena.get("label_up_offset_px", [0, 0])
 	_label.global_position = _center + Vector2(-_tile * 2.0, -size.y * 0.5 - 52.0) if _down \
-		else _center + Vector2(-_tile * 2.0, -24.0)
+		else _center + Vector2(-_tile * 2.0 + float(up_off[0]), float(up_off[1]) - 24.0)
+	var dark: int = 0 if _down else 1
+	if dark != _label_dark:
+		_label_dark = dark
+		_label.add_theme_color_override(&"font_color", Color.html(String(_arena.get(
+			"label_color" if _down else "label_up_color", "#f2f4f8"))))
 	var off: Array = _arena.get("core_offset_px", [0, -56])
 	_core.global_position = _center + Vector2(float(off[0]), _down_size().y * 0.5 + float(off[1]))
 
@@ -1425,7 +1513,7 @@ func _split_now() -> void:
 		if i != real_i:
 			var clone := AlertMajorClone.new()
 			clone.body_size = _down_size()
-			clone.draw_scale = float(_arena.get("draw_scale", 2.0))
+			clone.draw_scale = float(_arena.get("draw_scale", 1.0))
 			_attacks.add_child(clone)
 			clone.global_position = _center
 			clone.discarded.connect(_on_clone_discarded)

@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """Arte PROVISIONAL de Alerta Mayor, el jefe del Mundo 1 (pasos 5-8 de docs/propuesta-jefe-alerta-mayor.md
-§6, 2026-10-21). Sufijo _placeholder (regla 3 de CLAUDE.md): el arte final llega en el paso 16 con
-AutoSprite y su coste aprobado por el usuario. Aqui no se gasta nada: es un dibujo por script.
+§6, 2026-10-21). Sufijo _placeholder (regla 3 de CLAUDE.md). Aqui no se gasta nada: es un dibujo por script.
 
-Un badge redondo rojo anaranjado (alerta, sombra alerta_sombra, contorno noche_profunda y brillo
-banner_blanco) con una campana; el contador («99+», «66»...) lo escribe el juego encima con la fuente de
-textos. Estados (se dibujan a draw_scale x2 de data/bosses/alert_major.json):
-  alert_major_rest_placeholder.png     128x128  inflado, flotando (4 x 4 tiles en pantalla)
-  alert_major_inflate_placeholder.png  128x128  inflandose: aviso de escupir, dividirse (contorno blanco)
-  alert_major_down_placeholder.png      64x64   desinflado, abajo (ventana; 2 x 2 tiles); tambien cada copia
-  alert_major_clone_placeholder.png     64x64   copia de la fase 3: IGUAL que el desinflado a proposito
-                                                (solo el Debug distingue la real por su nucleo)
-  alert_major_lunge_placeholder.png     64x64   copia lanzandose (estirada, con estela)
-  alert_major_pop_placeholder.png       64x64   «pop» de una copia descartada / desarme en pixeles
+El CUERPO del jefe (reposo, inflado, bajada, subida, ventana, copias y lanzamiento) tiene arte FINAL desde
+el paso 16 (2026-10-22, AutoSprite): tools/import_boss_alert_major.py y AlertMajorBody. Aqui quedan las
+piezas que siguen por script (interfaz y efectos; docs/plan-arte-jefe-alerta-mayor.md §2.1):
+  alert_major_pop_placeholder.png       64x64   «pop» de una copia descartada (dibujado a x2)
   notification_shot_placeholder.png     64x32   notificacion de la rafaga (fase 2)
   alert_major_shield_placeholder.png    32x32   icono del pop-up escudo (candado sobre la campana)
   boss_bar_icon_placeholder.png         16x16   icono de la barra del jefe en el HUD (paso 9; BossBar)
@@ -88,24 +81,6 @@ def stamp(cv, ox, oy, rows, color, scale=1):
         for i, ch in enumerate(row):
             if ch == "#":
                 cv.rect(ox + i * scale, oy + j * scale, ox + i * scale + scale - 1, oy + j * scale + scale - 1, color)
-
-
-def badge(size, r, outline=N, bell_scale=2):
-    cv = Canvas(size, size)
-    c = size / 2.0
-    disk(cv, c, c, r, A, outline=outline)
-    w = len(BELL[0]) * bell_scale
-    stamp(cv, int(c - w / 2), int(c + r * 0.3), BELL, W, bell_scale)
-    return cv.img
-
-
-def lunge():
-    cv = Canvas(64, 64)
-    for i, x in enumerate((6, 12, 18)):
-        cv.rect(x, 30 - i, x + 3, 33 + i, G)
-    disk(cv, 38, 32, 22, A)
-    stamp(cv, 28, 36, BELL, W, 2)
-    return cv.img
 
 
 def pop():
@@ -215,11 +190,6 @@ def outputs():
         DIR + "alert_major_core_card_placeholder.png": core_card(),
         DIR + "boss_bar_icon_placeholder.png": bar_icon(),
         DIR + "boss_bar_frame_placeholder.png": bar_frame(),
-        DIR + "alert_major_rest_placeholder.png": badge(128, 58, bell_scale=3),
-        DIR + "alert_major_inflate_placeholder.png": badge(128, 62, outline=W, bell_scale=3),
-        DIR + "alert_major_down_placeholder.png": badge(64, 28, bell_scale=1),
-        DIR + "alert_major_clone_placeholder.png": badge(64, 28, bell_scale=1),
-        DIR + "alert_major_lunge_placeholder.png": lunge(),
         DIR + "alert_major_pop_placeholder.png": pop(),
         DIR + "notification_shot_placeholder.png": shot(),
         DIR + "alert_major_shield_placeholder.png": shield_icon(),

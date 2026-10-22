@@ -36,7 +36,7 @@
 		}
 	},
 	"_laps_notes": "Por acceso (§2.12): charger_cooldown_s (AlertMajor lo pone en los cargadores de la arena al empezar: 4 / 5 / 6 s), phase2.popup_max (pop-ups a la vez: 2 / 3 / 3), phase3.tempo_steps_s (el metronomo de la fase 3: 2,0 fijo en Caché, 2,0 -> 1,6 en Kernel y 2,0 -> 1,6 -> 1,4 en Raíz, cada cycles_per_step ciclos del rhythm_zone del nivel), phase3.copies (badges que bajan: 3, y 4 en Raíz con la plataforma central como cuarto sitio), phase3.launches_per_round (lanzamientos por ronda; Raíz 3 en vez de 4 por decision del usuario del 2026-10-21 para respetar el margen de energia con debug_drain_scale 0,25: §2.4.7) y phase3.blink_on_fraction (parte encendida de las plataformas que parpadean, para que el compas mas corto cumpla «encendida >= aviso + 0,25 s»). Lo propio de Kernel (nucleo detras) y Raíz (el nucleo cambia de copia al activar el Debug) y los puntos rojos de la fase 1 de esos accesos se implementan al diseñar esas vueltas.",
-	"_arena_notes": "Posiciones en la arena (celdas de data/levels/1-boss.json). spots: sitio = [x del centro en tiles, fila de la superficie sobre la que se apoya] (la superficie es el borde de arriba de esa fila): suelo del centro (columnas 11-12 sobre la fila 10), plataformas laterales (columnas 4-5 y 18-19 sobre la fila 8) y la central (columnas 11-12 sobre la 6). hover: el jefe flota con el centro del cuerpo en la fila hover.y_tiles (tiles) y se mueve de x_min a x_max (centros, tiles) a speed_tiles_s, ida y vuelta. body_up_px / body_down_px: cuerpo inflado (arriba, 4 x 4 tiles) y desinflado (abajo, 2 x 2 tiles: el que se golpea). core_offset_px: nucleo desde el centro del borde de abajo del cuerpo desinflado (a la altura del celular de Isak de pie en esa superficie: 56 px). lanes: los dos carriles (fila de la superficie, columnas que cubren): el suelo y el alto (las laterales). descend_s / ascend_s: lo que tarda en bajar y en subir (el cuerpo y las copias de la fase 3), con la curva descend_ease / ascend_ease (linear, out_cubic: llega frenando, como un golpe; in_out_cubic: arranca y frena suave); ritmo del 2026-10-21, antes un solo move_s de 0,6 s lineal. draw_scale: escala del arte provisional. Arte PROVISIONAL (_placeholder) de tools/gen_boss_alert_major.py.",
+	"_arena_notes": "Posiciones en la arena (celdas de data/levels/1-boss.json). spots: sitio = [x del centro en tiles, fila de la superficie sobre la que se apoya] (la superficie es el borde de arriba de esa fila): suelo del centro (columnas 11-12 sobre la fila 10), plataformas laterales (columnas 4-5 y 18-19 sobre la fila 8) y la central (columnas 11-12 sobre la 6). hover: el jefe flota con el centro del cuerpo en la fila hover.y_tiles (tiles) y se mueve de x_min a x_max (centros, tiles) a speed_tiles_s, ida y vuelta. body_up_px / body_down_px: cuerpo inflado (arriba, 4 x 4 tiles) y desinflado (abajo, 2 x 2 tiles: el que se golpea). core_offset_px: nucleo desde el centro del borde de abajo del cuerpo desinflado (a la altura del celular de Isak de pie en esa superficie: 56 px). lanes: los dos carriles (fila de la superficie, columnas que cubren): el suelo y el alto (las laterales). descend_s / ascend_s: lo que tarda en bajar y en subir (el cuerpo y las copias de la fase 3), con la curva descend_ease / ascend_ease (linear, out_cubic: llega frenando, como un golpe; in_out_cubic: arranca y frena suave); ritmo del 2026-10-21, antes un solo move_s de 0,6 s lineal. draw_scale: escala del cuerpo (1: el arte final ya esta a su tamano; antes 2 con el provisional). Arte final del cuerpo: _art_notes.",
 	"arena": {
 		"spots": {
 			"floor_center": [12.0, 10],
@@ -57,21 +57,44 @@
 		"descend_ease": "out_cubic",
 		"ascend_ease": "in_out_cubic",
 		"anim_fps": 12.0,
-		"draw_scale": 2.0,
+		"draw_scale": 1.0,
 		"art_dir": "res://assets/sprites/bosses/",
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 12,
 		"label_color": "#f2f4f8",
+		"label_up_offset_px": [0, -29],
+		"label_up_color": "#0b0e1a",
 		"warn_color": "#ff4a2a",
 		"warn_shadow": "#a3221c",
 		"outline_color": "#f2f4f8"
+	},
+	"_art_notes": "ARTE FINAL DEL CUERPO (paso 16, 2026-10-22; docs/plan-arte-jefe-alerta-mayor.md): hojas de AutoSprite (personaje «Alerta Mayor (badge)», 6 animaciones turbo de 25 cuadros a 256 px en hojas/alert_major/) importadas con tools/import_boss_alert_major.py (import_sheet.py + reduce_palette.py a mundo1.gpl sin carmin) en assets/sprites/bosses/alert_major_<anim>_NN.png. Lo dibuja AlertMajorBody (scripts/bosses/alert_major_body.gd) para el jefe y para cada copia (las copias muestran SIEMPRE el mismo cuadro que la real). anims: frames (cuadros), fps y loop (las que van por tiempo del mundo: hover, inflate, window) y foot_px (px bajo el centro del lienzo donde esta la planta del cuadro de referencia). descend, ascend, lunge_warn y lunge van por la fraccion de su movimiento o aviso (descend_s, ascend_s, launch_warn_frames, lunge_s), asi duran exactamente lo que el codigo (los avisos no se acortan; inflate dura frames/fps <= el aviso de escupir y de dividirse: lo comprueba tools/validate_boss.py). up_bottom_px / down_bottom_px: la planta bajo el centro del cuerpo arriba (inflado: badge de ~229 px) y abajo (desinflado ~183 x 80, sobre la superficie: body_down_px / 2). down_scale: descend y ascend se importan con el factor de arriba (4/3) y se encogen hasta el de abajo (0,9): 0,9 / (4/3). La estela del lanzamiento (trail_*, banner_gris) se dibuja por codigo. El contador va sobre la pastilla en blanco arriba (arena.label_up_offset_px, label_up_color) y encima del cuerpo abajo (label_color). Las cajas de dano y del nucleo no cambian (body_up_px, body_down_px, core_offset_px, phase3.body_damage_px).",
+	"art": {
+		"dir": "res://assets/sprites/bosses/",
+		"prefix": "alert_major",
+		"up_bottom_px": 110.0,
+		"down_bottom_px": 64.0,
+		"down_scale": 0.675,
+		"trail_color": "#aeb8d2",
+		"trail_y_px": -14.0,
+		"trail_start_px": 24.0,
+		"trail_lines": [[-10, 56], [0, 80], [10, 64]],
+		"anims": {
+			"hover": {"frames": 24, "fps": 12.0, "loop": true, "foot_px": 110.0},
+			"inflate": {"frames": 7, "fps": 12.0, "loop": false, "foot_px": 110.0},
+			"descend": {"frames": 6, "fps": 12.0, "loop": false, "foot_px": 110.0},
+			"ascend": {"frames": 7, "fps": 12.0, "loop": false, "foot_px": 110.0},
+			"window": {"frames": 24, "fps": 12.0, "loop": true, "foot_px": 112.0},
+			"lunge_warn": {"frames": 6, "fps": 12.0, "loop": false, "foot_px": 128.0},
+			"lunge": {"frames": 6, "fps": 12.0, "loop": false, "foot_px": 128.0}
+		}
 	},
 	"_defeat_notes": "GOLPE FINAL Y RECOMPENSA (paso 10 de §6, 2026-10-21; BossDefeat, scripts/bosses/boss_defeat.gd; §2.8 y §3.3). SIN ROLLBACK. freeze_s: congelacion breve (s reales; pausa el arbol). disarm_s: el desarme en pixeles (pixels: PixelBurst toma un pixel de cada step_px de la textura del cuerpo y los suelta a speed_px_s [min, max] desde el centro con gravity_px_s2; se apagan en fade_steps escalones; semilla fija seed; duration_s en s del mundo). Despues BossReward (data/boss_reward.json): la capa del recuerdo del mundo `world` del acceso actual (boss_w1_l1 en Caché) y las inferiores que falten, SIN GUARDAR, con la linea texts.final_system arriba (texto del sistema); en una revancha no sale. Luego la linea texts.defeat (importante: pausa). Por ultimo, con Isak en el suelo (o tras exit_wait_max_s), el vortice de salida y EventBus.level_completed: LevelRunner apunta 1-boss en completed_levels (la carpeta del Mundo 1 queda completada, se enciende la pieza cian del hub y el Mundo 2 se desbloquea: unlocked_by de data/hub.json) y vuelve al hub.",
 	"defeat": {
 		"freeze_s": 0.3,
 		"disarm_s": 1.6,
 		"exit_wait_max_s": 2.0,
-		"pixels": {"step_px": 2, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 821}
+		"pixels": {"step_px": 4, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 821}
 	},
 	"_help_notes": "AYUDAS DE ECO CON Q (paso 12 de §6, 2026-10-21; §2.10): help_id de data/help.json que AlertMajor pone a cada pieza (HelpCatalog.tag): body (el cuerpo, alert_major), core (el nucleo: solo con ayuda mientras se ve, revelado o marcado), bubble (las Burbujas que escupe y las de las copias rotas), popup (los pop-ups de la fase 2), shield (el pop-up escudo), shot (las notificaciones de la rafaga) y clone (las copias de la fase 3). Textos de Eco en data/help.json (propuesta del orquestador, revisar al jugar).",
 	"help": {"body": "alert_major", "core": "alert_major_core", "bubble": "alert_major_bubble", "popup": "alert_major_popup", "shield": "boss_popup_shield", "shot": "notification_shot", "clone": "alert_major_clone"},
