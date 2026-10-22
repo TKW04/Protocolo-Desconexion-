@@ -306,3 +306,8 @@ Sin reintentos: todas las piezas se aceptaron a la primera.
 ### 7.4 Resultados tras integrar
 
 Iguales a los de antes del arte (§6.4 de la propuesta): validador de arenas OK; humo 29,5 s y `--full` en el hub a los 35,9 s; bot del jefe ideal 67,5 / 67,3 / 53,8 s y torpe 183,3 / 174,5 / 202,5 s (Caché / Kernel / Raíz), 0 golpes y 0 muertes, energía mínima ideal 66 / 57 / 50 y torpe 53 / 32 / 51. Bot del 1-3: 86,3 s, 0 golpes, 0 muertes. `tools/run_tests.sh`: verde (1323 pruebas GUT, código 0).
+
+### 7.5 Capturas de la pelea completa, mapa y sufijo (2026-10-22)
+
+- **Capturas:** `$GODOT --fixed-fps 60 --path . -s tools/smoke_boss_arena.gd -- --full --shots <carpeta>` (con ventana; el humo gana `--shots`): intro, fases 1-3 y su ventana, golpe final, desarme, recompensa, hub con la pieza cian encendida y carpeta del Mundo 2 «Próximamente». Copia en `assets/levels_preview/1-boss/`; mapa de la arena en `assets/levels_preview/1-boss_mapa.png`.
+- **Defectos visuales vistos:** (1) las líneas de Eco por el jefe (intro y cambios de fase) tapan la barra del jefe y, con el jefe arriba, parte del badge (capturas 01, 04 y 06); (2) la arena (24 tiles, 1536 px) no cabe en pantalla: con Isak a un lado, el jefe o las copias del otro quedan cortados (04, 07); (3) el contador «99+» toca el borde superior del badge (02); (4) en una partida sin las ayudas aprendidas Eco lleva la Q dorada durante toda la pelea (01-09), lo que distrae; (5) el panel de la carpeta del Mundo 2 dice «Pulso: entrar» aunque no hay nada que entrar (12).

@@ -9,6 +9,9 @@
 ## barra del jefe en el HUD, vence, cierra la recompensa y la linea de derrota y vuelve al hub: comprueba
 ## 1-boss completado, la capa boss_w1_l1 sin guardar, el Mundo 2 desbloqueado y la pieza cian encendida.
 ## Usa user://tool_save.json. No es el bot de jefe (paso 14).
+## --shots <carpeta> (2026-10-22, paso 16; con ventana: quita --headless): capturas de la pelea completa
+## (intro, cada fase y su ventana, golpe final y desarme, recompensa, hub con la pieza cian encendida y la
+## carpeta del Mundo 2 con «Proximamente»). Renderiza en su propio viewport.
 extends Node
 
 signal finished(code: int)
@@ -31,6 +34,13 @@ var _hooked: bool = false
 var _entered: bool = false
 var _bar_seen: bool = false
 var _defeated_at: float = -1.0
+## --shots: carpeta de las capturas ("" = sin capturas), capturas pedidas y ya escritas.
+var _shots_dir: String = ""
+var _taken: Dictionary = {}
+var _saved: Dictionary = {}
+## Inicio (s) de cada fase, para las capturas.
+var _phase_start: Dictionary = {}
+var _m2_opened_at: float = -1.0
 
 
 func _ready() -> void:
@@ -43,6 +53,10 @@ func _ready() -> void:
 	GameSettings.use_path("user://tool_settings.cfg")
 	EcoTextBox.pause_important = false
 	_full = args.has("--full")
+	var shots_i: int = args.find("--shots")
+	if shots_i >= 0 and shots_i + 1 < args.size():
+		_shots_dir = args[shots_i + 1]
+		DirAccess.make_dir_recursive_absolute(_shots_dir)
 	print("smoke_boss_arena: modo %s" % ("completo desde el hub" if _full else "arena"))
 	# Sigue con el arbol en pausa (congelacion y recompensa del golpe final).
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -76,13 +90,28 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	if _full and _full_flow(delta):
 		return
-	if not _intro_closed and _t > 6.0:
+	if not _intro_closed and _t > 4.5:
+		var intro_box := _main.get_level().get_node_or_null(^"EcoTextBox") as EcoTextBox
+		if intro_box != null and intro_box.is_showing():
+			_shot("01_intro.png")
+	if not _intro_closed and _t > 6.0 and (_shots_dir.is_empty() or _saved.has("01_intro.png") or _t > 8.0):
 		# La intro la dice Eco por el jefe en el cuadro del nivel (paso 12): se cierra a mano.
 		var box := _main.get_level().get_node_or_null(^"EcoTextBox") as EcoTextBox
 		if box != null and box.is_showing():
 			box.finish_typing()
 			box.advance(30.0)
 		_intro_closed = _boss.is_fighting()
+	if _boss.is_fighting() and not _shots_dir.is_empty():
+		var phase: int = _boss.get_phase()
+		if not _phase_start.has(phase):
+			_phase_start[phase] = _t
+		var names: Array = ["", "02_fase1", "04_fase2", "06_fase3"]
+		var vent: Array = ["", "03_fase1_ventana", "05_fase2_ventana", "07_fase3_ventana"]
+		if phase >= 1 and phase <= 3:
+			if _t - float(_phase_start[phase]) > (1.0 if phase == 1 else 3.5):
+				_shot(names[phase] + ".png")
+			if _boss.is_window_open() and _hit_t > 0.3:
+				_shot(vent[phase] + ".png")
 	if _boss.is_fighting():
 		# Jugador minimo (sin bot): aturde las Burbujas de la fase 1, cierra el escudo de la fase 2 y,
 		# con la ventana abierta, golpea el nucleo cada 0,5 s. Asi las ventanas salen del bucle real.
@@ -151,16 +180,38 @@ func _full_flow(_delta: float) -> bool:
 		_defeated_at = _t
 		print("smoke_boss_arena: golpe final a los %.1f s (golpes en ventana por fase %s)" % [_t, _windows])
 	var defeat: BossDefeat = _boss.get_defeat() if is_instance_valid(_boss) else null
+	if _t - _defeated_at > 0.2:
+		_shot("08_golpe_final.png")
+	if _t - _defeated_at > 0.9:
+		_shot("09_desarme.png")
 	if defeat != null:
 		var reward: BossReward = defeat.get_reward()
 		if reward != null and reward.can_close():
-			reward.confirm()
+			_shot("10_recompensa.png")
+			if _shots_dir.is_empty() or _saved.has("10_recompensa.png"):
+				reward.confirm()
 		var box := _main.get_level().get_node_or_null(^"EcoTextBox") as EcoTextBox if _main.get_level() != null else null
 		if box != null and box.is_showing():
 			box.finish_typing()
 			box.advance(30.0)
 	if _main.is_in_hub():
 		var hub: HubRoom = _main.get_hub()
+		if not _shots_dir.is_empty() and hub.has_arrived() and not hub.is_piece_pending() \
+				and not hub.is_piece_lighting() and not _saved.has("12_mundo2_proximamente.png"):
+			# Capturas del hub antes de terminar: pieza encendida y carpeta del Mundo 2 «Proximamente».
+			_shot("11_hub_pieza_encendida.png")
+			if _saved.has("11_hub_pieza_encendida.png"):
+				if _m2_opened_at < 0.0:
+					var m2: FolderStation = hub.get_folder(&"m2")
+					var isak: Isak = hub.get_isak()
+					isak.global_position = Vector2(m2.position.x + 96.0, hub.get_shelf_top_y())
+					isak.velocity = Vector2.ZERO
+					_m2_opened_at = _t
+				elif _t - _m2_opened_at > 0.6 and _t - _m2_opened_at < 0.7:
+					hub.get_folder(&"m2").open(hub.get_isak())
+				elif _t - _m2_opened_at > 1.4:
+					_shot("12_mundo2_proximamente.png")
+			return true
 		if hub.has_arrived() and not hub.is_piece_pending() and not hub.is_piece_lighting():
 			var ok: bool = _bar_seen and GameState.is_level_completed(&"1-boss") \
 					and GameState.has_memory(&"boss_w1_l1") and GameState.has_unsaved_changes() \
@@ -180,3 +231,16 @@ func _full_flow(_delta: float) -> bool:
 		finished.emit(1)
 		set_physics_process(false)
 	return true
+
+
+## Captura (una vez por nombre) si hay --shots. Asincrona: _saved la marca al escribirla.
+func _shot(file_name: String) -> void:
+	if _shots_dir.is_empty() or _taken.has(file_name):
+		return
+	_taken[file_name] = true
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var path: String = _shots_dir.path_join(file_name)
+	var err: Error = get_tree().root.get_texture().get_image().save_png(path)
+	print("smoke_boss_arena: %s (%s) t=%.1f" % [path, error_string(err), _t])
+	_saved[file_name] = true
