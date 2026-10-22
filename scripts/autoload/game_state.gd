@@ -63,6 +63,9 @@ const SAVE_VERSION: int = 5
 const LAP_EASY: int = 1
 const LAP_NORMAL: int = 2
 const LAP_HARD: int = 3
+## Mundo del jefe final (Isak Optimizado, La Nube): su capa Raíz la entrega la
+## propia pelea justo antes del momento de decision (real_ending_missing).
+const REAL_ENDING_FINAL_WORLD: int = 6
 ## Nivel cuyo final lleva al primer hub: al migrar un guardado v1/v2 con este
 ## nivel completado, Eco y Notas cuentan como conocidos (propuesta §6).
 const HUB_TUTORIAL_LEVEL: StringName = &"1-1"
@@ -1334,6 +1337,31 @@ func has_all_memories() -> bool:
 		if not memories.has(id):
 			return false
 	return true
+
+
+## Recuerdos que faltan para el final real (paso 8 de docs/propuesta-recuerdos.md,
+## §11.4), en el orden de data/memories.json: todo id del catalogo que no esta en
+## memories (las capas de jefe y los mensajes de secretos; cuenta lo obtenido aunque
+## no se haya guardado, porque Isak Optimizado entrega su capa Raíz justo antes de
+## la comprobacion). `before_final_boss`: sin la capa Raíz del Mundo 6 (la entrega
+## la propia pelea), para avisar en el hub de lo que aun hay que buscar.
+func real_ending_missing(before_final_boss: bool = false) -> Array[StringName]:
+	var out: Array[StringName] = []
+	var final_layer: StringName = MemoryCatalog.shared().boss_id(REAL_ENDING_FINAL_WORLD, LAP_HARD)
+	for id: StringName in MemoryCatalog.shared().ids():
+		if memories.has(id) or (before_final_boss and id == final_layer):
+			continue
+		out.append(id)
+	return out
+
+
+## Gancho del final real (docs/06-finales.md §14.1; propuesta-recuerdos.md §8.2,
+## §10 y §11.4): en Raíz (LAP_HARD) y con TODOS los recuerdos de data/memories.json
+## (las 18 capas de jefe y todos los mensajes de secretos; has_all_memories). Lo
+## consultara el momento de decision tras la entrega de Isak Optimizado (el final
+## aun no existe).
+func real_ending_unlocked() -> bool:
+	return lap == LAP_HARD and has_all_memories()
 
 
 ## Apunta el recuerdo obtenido `id` como leido (al abrir su ficha en Notas). No
