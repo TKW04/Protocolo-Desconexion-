@@ -513,7 +513,8 @@
 				"id": "pared_excepciones",
 				"width_tiles": 1,
 				"height_tiles": 2,
-				"visible_only_with_debug": true
+				"visible_only_with_debug": true,
+				"cover": [121, 1, 9, 4]
 			}
 		},
 		{
@@ -522,7 +523,7 @@
 			"y": 1,
 			"params": {
 				"id": "panel_excepciones",
-				"width_tiles": 5,
+				"width_tiles": 7,
 				"height_tiles": 3,
 				"title": "Permitir llamadas de: Favoritos",
 				"contacts": [
@@ -598,8 +599,39 @@
 				"id": "terminal_bloqueo",
 				"text": "Deslizar para desbloquear",
 				"width_tiles": 1,
-				"height_tiles": 2
+				"height_tiles": 2,
+				"skin": "lock_screen"
 			}
+		},
+		{
+			"type": "decor",
+			"x": 3,
+			"y": 5,
+			"params": {"id": "panel_wifi", "art": "settings_wifi"}
+		},
+		{
+			"type": "decor",
+			"x": 7,
+			"y": 5,
+			"params": {"id": "panel_brillo", "art": "settings_brightness"}
+		},
+		{
+			"type": "decor",
+			"x": 18,
+			"y": 5,
+			"params": {"id": "panel_rotacion", "art": "settings_rotation"}
+		},
+		{
+			"type": "decor",
+			"x": 27,
+			"y": 7,
+			"params": {"id": "rotulo_banner_dash", "art": "banner_slot"}
+		},
+		{
+			"type": "decor",
+			"x": 254,
+			"y": 4,
+			"params": {"id": "reloj_bloqueo", "art": "lock_clock"}
 		}
 	],
 	"unlocks": [

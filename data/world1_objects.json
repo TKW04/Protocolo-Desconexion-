@@ -32,7 +32,7 @@
 		"glitch_wall": {
 			"scene": "res://scenes/levels/glitch_wall.tscn",
 			"help_id": "glitch_wall",
-			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json). PUERTA (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc; opcional, sin defaults: el 1-1 no cambia): con door_when (id de un power_switch) la pared, abierta o no, se TRANSFORMA en una puerta (abertura de 1x2, no solida) cuando ese interruptor se activa; lamps (ids, max 3) son las luces del dintel, una por pieza hecha (is_activated). done_if_ally: con ese asistente conocido al cargar, ya es puerta con todas las luces. Solo para bloques de 1x2 (esquema). SOLO CON EL DEBUG (2026-10-20, paso 7 de docs/propuesta-1-3.md §5.4, sala «Excepciones» del 1-3; opcional, sin default en el nivel): con visible_only_with_debug true no hace rafagas de glitch mientras el Debug no revela nada (DebugMode.is_revealing): parece terreno normal; con el Debug, glitch y disolucion como siempre. La Q la sigue marcando.",
+			"description": "Secreto del 1-1 (secreto D): pared solida con un leve glitch que SOLO se abre con el Debug (paso 14 de docs/propuesta-asistentes-y-vidas.md, 2026-10-16): con el Debug activo e Isak a menos de reveal_radius_px (seccion glitch_wall) se disuelve, deja de ser solida y emite opened (grupo debug_secret, senal debug_revealed). Lo que hay en sus celdas (extra_life_pickup) aparece entonces. Sin Debug sigue solida. El validador la trata como solida sin Debug y libre con Debug (regla 4b). solid_neighbors: bits N=1 E=2 S=4 W=8 de los lados del bloque con terreno solido al lado (el generador los calcula del grid; elige el dibujo de borde igual que solid.by_mask de data/tileset_mundo1.json). PUERTA (2026-10-17, tanda H1 del paso 14 del 1-2, encuentro con Calc; opcional, sin defaults: el 1-1 no cambia): con door_when (id de un power_switch) la pared, abierta o no, se TRANSFORMA en una puerta (abertura de 1x2, no solida) cuando ese interruptor se activa; lamps (ids, max 3) son las luces del dintel, una por pieza hecha (is_activated). done_if_ally: con ese asistente conocido al cargar, ya es puerta con todas las luces. Solo para bloques de 1x2 (esquema). SOLO CON EL DEBUG (2026-10-20, paso 7 de docs/propuesta-1-3.md §5.4, sala «Excepciones» del 1-3; opcional, sin default en el nivel): con visible_only_with_debug true no hace rafagas de glitch mientras el Debug no revela nada (DebugMode.is_revealing): parece terreno normal; con el Debug, glitch y disolucion como siempre. La Q la sigue marcando. TERRENO FALSO (2026-10-22, defecto de las capturas del 1-3: el interior de «Excepciones» se veia desde fuera; opcional, sin default): cover = [x, y, ancho, alto] en celdas del grid; esas celdas (que el grid deja libres) se dibujan como terreno solido (bloque interior del tileset) por encima de lo que hay dentro, SIN colision, hasta que la pared se abre: se disuelven con ella (mismo parpadeo y capa de disolucion) y desaparecen al abrirse. No cambia la ruta del validador ni visible_only_with_debug.",
 			"required": [],
 			"fields": {
 				"width_tiles": "width_tiles",
@@ -42,7 +42,8 @@
 				"door_when": "door_when",
 				"lamps": "door_lamps",
 				"done_if_ally": "done_if_ally",
-				"visible_only_with_debug": "visible_only_with_debug"
+				"visible_only_with_debug": "visible_only_with_debug",
+				"cover": "cover_tiles"
 			},
 			"defaults": {
 				"width_tiles": 1,
@@ -90,7 +91,7 @@
 		"exit_terminal": {
 			"scene": "res://scenes/levels/exit_terminal.tscn",
 			"help_id": "exit_terminal",
-			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador. CORRIENTE (2026-10-17, tanda H1 del paso 14 del 1-2; opcional, sin defaults: el 1-1 no cambia): con requires_power true esta APAGADA (sin prompt, sin Q y el pulso no hace nada) hasta que la pieza power_source (p. ej. el charge_dock, al irse Calc) tiene corriente (is_power_on()).",
+			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador. CORRIENTE (2026-10-17, tanda H1 del paso 14 del 1-2; opcional, sin defaults: el 1-1 no cambia): con requires_power true esta APAGADA (sin prompt, sin Q y el pulso no hace nada) hasta que la pieza power_source (p. ej. el charge_dock, al irse Calc) tiene corriente (is_power_on()). ASPECTO (2026-10-22; opcional): skin lock_screen = arte de pantalla de bloqueo (cierre del 1-3, §3.6 de docs/propuesta-1-3.md: hora grande, campana tachada, candado y barra de deslizar; seccion exit_terminal.skins), mismos estados, tiempos y tamano; el comportamiento y el texto no cambian.",
 			"required": [],
 			"fields": {
 				"id": "object_id",
@@ -98,7 +99,11 @@
 				"width_tiles": "width_tiles",
 				"height_tiles": "height_tiles",
 				"requires_power": "requires_power",
-				"power_source": "power_source"
+				"power_source": "power_source",
+				"skin": "skin"
+			},
+			"allowed": {
+				"skin": ["lock_screen"]
 			},
 			"defaults": {
 				"width_tiles": 1,
@@ -552,6 +557,19 @@
 			},
 			"example": {"type": "exceptions_panel", "x": 123, "y": 2, "params": {"width_tiles": 5, "height_tiles": 3, "title": "Permitir llamadas de: Favoritos", "contacts": ["Mamá", "Abuelito"]}}
 		},
+		"decor": {
+			"scene": "res://scenes/levels/decor.tscn",
+			"description": "Decorado por script (2026-10-22, defectos visuales de las capturas del 1-3): un dibujo fijo de tools/gen_world1_dnd.py (assets/sprites/props/dnd/decor_<art>_00.png; seccion decor) con su esquina superior izquierda en la celda. SOLO DECORADO: sin colision, sin Q ni ficha del album, sin estado y sin efecto en el validador; puede ir sobre terreno (rotulos en la cara de un bloque) o sobre el fondo. art: settings_wifi / settings_brightness / settings_rotation (paneles de ajustes rapidos de la sala «Ajustes», §3.1 de docs/propuesta-1-3.md; 2 x 2 tiles), banner_slot (rotulo de la ranura del banner obligatorio en la boca de su pasillo; 2 x 1) y lock_clock (reloj de la pantalla de bloqueo del cierre, §3.6; 3 x 2). z_index de la seccion (detras de Isak, de Eco y de los objetos).",
+			"required": ["art"],
+			"fields": {
+				"id": "object_id",
+				"art": "art"
+			},
+			"allowed": {
+				"art": ["settings_wifi", "settings_brightness", "settings_rotation", "banner_slot", "lock_clock"]
+			},
+			"example": {"type": "decor", "x": 3, "y": 5, "params": {"art": "settings_wifi"}}
+		},
 		"laser_switch": {
 			"scene": "res://scenes/levels/laser_switch.tscn",
 			"help_id": "laser_switch",
@@ -989,20 +1007,29 @@
 		"stays_active": true
 	},
 	"exceptions_panel": {
-		"_notes": "2026-10-20 (paso 7 de docs/propuesta-1-3.md; arte por script desde el paso 8: tools/gen_world1_dnd.py). frame: marco nine-patch de 24x24 con frame_margin_px (borde tile_luz con brillo borde_luz y fondo tile_base); contact: persona generica (banner_gris); star: estrella de favorito (borde_luz, no ambar: el ambar es de los puntos); line_color: raya bajo el titulo (tile_luz). Texto con la fuente de textos (banner_blanco). z_index -1: detras de Isak.",
+		"_notes": "2026-10-20 (paso 7 de docs/propuesta-1-3.md; arte por script desde el paso 8: tools/gen_world1_dnd.py). frame: marco nine-patch de 24x24 con frame_margin_px (borde tile_luz con brillo borde_luz y fondo tile_base); contact: avatar redondo con la persona (banner_blanco sobre resplandor, 32 px); star: estrella de favorito (borde_luz, no ambar: el ambar es de los puntos); line_color: raya bajo el titulo (tile_luz). Texto con la fuente de textos (banner_blanco). z_index -1: detras de Isak.",
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 12,
+		"_font_scale_notes": "2026-10-22 (defecto de las capturas del paso 12: texto muy pequeno e iconos de 16 px que se leian como cuadrados): texto a escala entera font_scale (pixeles dobles, como la etiqueta de la terminal) e iconos de 32 px.",
+		"font_scale": 2,
 		"z_index": -1,
-		"padding_px": 8,
-		"title_height_px": 24,
-		"row_height_px": 28,
-		"icon_size_px": 16,
+		"padding_px": 12,
+		"title_height_px": 34,
+		"row_height_px": 44,
+		"icon_size_px": 32,
 		"border_px": 2,
 		"frame": "res://assets/sprites/props/dnd/exceptions_frame_00.png",
 		"frame_margin_px": 8,
 		"contact": "res://assets/sprites/props/dnd/exceptions_contact_00.png",
 		"star": "res://assets/sprites/props/dnd/exceptions_star_00.png",
 		"line_color": "#343f66"
+	},
+	"decor": {
+		"_notes": "Decorado por script (tipo decor, 2026-10-22): texture_dir + decor_<art>_00.png de tools/gen_world1_dnd.py; z_index -2: detras de los objetos (0), del panel «Excepciones» (-1), de Isak y de Eco.",
+		"texture_dir": "res://assets/sprites/props/dnd/",
+		"z_index": -2,
+		"_z_index_by_art_notes": "El rotulo de la ranura va sobre la cara de un bloque: por encima del terreno (0, como los objetos).",
+		"z_index_by_art": {"banner_slot": 0}
 	},
 	"glitch_wall": {
 		"_notes": "PROPUESTA. Cuadro 0 = pared limpia. Tras una pausa aleatoria entre idle_min_s e idle_max_s (tiempo del mundo, semilla fija por celda) hace una rafaga de los cuadros 1..3 a burst_fps.",
@@ -1014,7 +1041,9 @@
 		"_notes_debug": "Apertura con el Debug (paso 14, 2026-10-16; AJUSTABLE jugando): con el Debug activo e Isak a menos de reveal_radius_px del bloque (3 tiles), cada celda parpadea (dissolve_blink: 1 = se ve, por cuadro) con la capa glitch_dissolve de assets/sprites/extra_life_frames.tres a dissolve_fps (tiempo del mundo) y despues la pared deja de ser solida y se oculta.",
 		"reveal_radius_px": 192.0,
 		"dissolve_fps": 12.0,
-		"dissolve_blink": [1, 0, 1, 0, 0, 0]
+		"dissolve_blink": [1, 0, 1, 0, 0, 0],
+		"_cover_notes": "Terreno falso de la pared (param cover, 2026-10-22): z_index de su TileMapLayer (sin colision, hija de la pared; la genera tools/build_level.py): por encima de lo que tapa (panel, sobre, punto).",
+		"cover_z_index": 1
 	},
 	"extra_life_pickup": {
 		"_notes": "PROPUESTA (2026-10-16, ajustable jugando). size_px: zona de recogida centrada en la celda. Flota bob_px a bob_hz (tiempo del mundo). Al recogerla, la animacion extra_life_collect sube collect_rise_px mientras dura. Al aparecer (pared abierta) da un bote de appear_pop_scale en appear_s. draw_scale: escala entera del arte de 32x32 (x2: 64 px, una celda).",
@@ -1087,6 +1116,8 @@
 	"exit_terminal": {
 		"_notes": "PROPUESTA (2026-10-15). Terminal de 64x128 (frames: SpriteFrames de tools/gen_warp_objects.py; animaciones terminal_off, terminal_prompt, terminal_boot y terminal_on con sus fps), dibujada desde la esquina superior izquierda de su primera celda y apoyada en el suelo. prompt_zone_px: zona [x, y, ancho, alto] relativa a ese origen en la que Isak 'esta cerca' (prompt e icono de la tecla). hit_rect_px: zona que el pulso debe tocar (monitor, cuello y pedestal). Icono de la tecla: la primera tecla de pulse_action en el Input Map (G), con la fuente de textos a font_scale sobre una placa key_plate_color con borde key_border_color, centrado sobre el monitor a key_gap_px por encima de su borde (monitor_top_px), con un bote de key_bob_px cada key_bob_s. Etiqueta (text, opcional): como la de la puerta, a label_gap_px por encima del monitor. Giro (2026-10-15): al acabar terminal_boot, turn_ticks pasos de turn_tick_s (3 x 1/12 s = 0,25 s): durante los turn_flash_ticks primeros la pantalla se queda en el ultimo cuadro del encendido (llena de cian) e Isak se tine con turn_flash_modulate (destello cian; modulate RGB, sin arte nuevo); en el paso turn_back_tick Isak se pone de espaldas (Isak.face_back, mirando al monitor). Al acabar el giro se abre el vortice de salida (WarpVortex.depart, centrado en la pose de espaldas). Tiempo del mundo (Debug x0,5).",
 		"frames": "res://assets/sprites/warp_objects_frames.tres",
+		"_skins_notes": "Aspectos de la terminal (param skin, 2026-10-22): SpriteFrames con las mismas animaciones (terminal_off / _prompt / _boot / _on) y el mismo tamano de cuadro que frames.",
+		"skins": {"lock_screen": "res://assets/sprites/lock_terminal_frames.tres"},
 		"_unpowered_notes": "requires_power (2026-10-17): sin corriente, primer cuadro de terminal_off tenido con unpowered_modulate (pantalla negra, sin cursor ni prompt).",
 		"unpowered_modulate": [0.45, 0.45, 0.6],
 		"frame_size": [64, 128],
@@ -1148,9 +1179,9 @@
 		"story_lines": {
 			"dnd_1_3": "«No molestar» activado. Tranquilo, {apodo}: yo no cuento. Soy tu única excepción."
 		},
-		"_room_tint_notes": "Tinte del nivel al encender el interruptor (§3.1 «el tinte de la sala baja un punto»; decision del usuario 2026-10-20: se aplica a TODO el nivel desde que se enciende). Un CanvasModulate (RoomTint, hijo del interruptor) multiplica el lienzo del mundo (terreno, fondo, objetos, enemigos, Isak y Eco; no el HUD ni los cuadros de texto, que van en CanvasLayer) y pasa de blanco a room_tint en room_tint_fade_s segundos (tiempo del mundo); si el interruptor arranca encendido (dash ya obtenido) el tinte esta puesto desde el principio. Valor PROPUESTO, ajustable jugando.",
-		"room_tint": [0.86, 0.88, 0.95, 1.0],
-		"room_tint_fade_s": 0.8
+		"_room_tint_notes": "Tinte del nivel al encender el interruptor (§3.1 «el tinte de la sala baja un punto»; decision del usuario 2026-10-20: se aplica a TODO el nivel desde que se enciende). Un CanvasModulate (RoomTint, hijo del interruptor) multiplica el lienzo del mundo (terreno, fondo, objetos, enemigos, Isak y Eco; no el HUD ni los cuadros de texto, que van en CanvasLayer) y pasa de blanco a room_tint en room_tint_fade_s segundos (tiempo del mundo); si el interruptor arranca encendido (dash ya obtenido) el tinte esta puesto desde el principio. Valor PROPUESTO, ajustable jugando. 2026-10-22 (defecto de las capturas del paso 12: 0,86 / 0,88 / 0,95 en 0,8 s apenas se notaba): 0,68 / 0,72 / 0,90 en 1,0 s, un «modo noche» que baja el brillo y lo enfria sin tocar el HUD ni los cuadros de texto (van en CanvasLayer) y deja legible el ambar de los puntos y el rojo de los avisos.",
+		"room_tint": [0.68, 0.72, 0.9, 1.0],
+		"room_tint_fade_s": 1.0
 	},
 	"rhythm_zone": {
 		"_notes": "PROPUESTA (2026-10-19, ajustable jugando; docs/propuesta-1-3.md §5.3). Icono de vibracion del metronomo (arte por script desde el paso 8, 2026-10-20: tools/gen_world1_dnd.py): icon_dim (celular con arcos apagados) e icon_lit (pantalla encendida y arcos en borde_luz); desde el 2026-10-20 con el estilo de los rotulos del fondo (relleno fondo_medio, contorno resplandor, sin el cuerpo metalico ni el contorno oscuro de los objetos) para que no parezca recogible la primera arc_lit_fraction de cada ciclo, desplazado lit_shake_px; centrado en su celda; icon_z_index: detras de los objetos.",

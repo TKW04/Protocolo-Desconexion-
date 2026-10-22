@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
@@ -15,14 +15,15 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/alarm_tunnel.tscn" id="13_alarm_tunnel"]
 [ext_resource type="PackedScene" path="res://scenes/levels/power_bank_pickup.tscn" id="14_power_bank_pickup"]
 [ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="15_exit_terminal"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/spam_banner.tscn" id="16_spam_banner"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/alert_bubble.tscn" id="17_alert_bubble"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/notification_badge.tscn" id="18_notification_badge"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/alarm_bell.tscn" id="19_alarm_bell"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="20_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="21_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="22_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="23_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/decor.tscn" id="16_decor"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/spam_banner.tscn" id="17_spam_banner"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/alert_bubble.tscn" id="18_alert_bubble"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/notification_badge.tscn" id="19_notification_badge"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/alarm_bell.tscn" id="20_alarm_bell"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="21_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="22_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="23_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="24_help_system"]
 
 [node name="Level_1_3" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -193,12 +194,20 @@ metadata/help_id = "blink_platform"
 
 [node name="pared_excepciones" parent="Objects" instance=ExtResource("10_glitch_wall") groups=["help_target"]]
 position = Vector2(7680, 192)
+cover_tiles = [121, 1, 9, 4]
 height_tiles = 2
 object_id = &"pared_excepciones"
-solid_neighbors = 5
+solid_neighbors = 7
 visible_only_with_debug = true
 width_tiles = 1
 metadata/help_id = "glitch_wall"
+
+[node name="Cover" type="TileMapLayer" parent="Objects/pared_excepciones"]
+position = Vector2(-7680, -192)
+z_index = 1
+tile_map_data = PackedByteArray(0, 0, 120, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 122, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 123, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 124, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 125, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 126, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 127, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 128, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 129, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 130, 0, 0, 0, 0, 0, 5, 0, 1, 0, 0, 0, 120, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 121, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 122, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 123, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 124, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 125, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 126, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 127, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 128, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 129, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 130, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 120, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 121, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 122, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 123, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 124, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 125, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 126, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 127, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 128, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 129, 0, 2, 0, 0, 0, 7, 0, 1, 0, 0, 0, 130, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 120, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 121, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 122, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 123, 0, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 124, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 125, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 126, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 127, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 128, 0, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 129, 0, 3, 0, 0, 0, 7, 0, 1, 0, 0, 0, 130, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 120, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 121, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 122, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 123, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 124, 0, 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 125, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 126, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 127, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 128, 0, 4, 0, 0, 0, 7, 0, 1, 0, 0, 0, 129, 0, 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 130, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 120, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 121, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 122, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 123, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 124, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 125, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 126, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 127, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 128, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 129, 0, 5, 0, 0, 0, 3, 0, 1, 0, 0, 0, 130, 0, 5, 0, 0, 0, 1, 0, 1, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+collision_enabled = false
 
 [node name="panel_excepciones" parent="Objects" instance=ExtResource("11_exceptions_panel")]
 position = Vector2(7808, 64)
@@ -206,7 +215,7 @@ contacts = ["Mamá", "Abuelito"]
 height_tiles = 3
 object_id = &"panel_excepciones"
 title = "Permitir llamadas de: Favoritos"
-width_tiles = 5
+width_tiles = 7
 
 [node name="mensaje_1_3" parent="Objects" instance=ExtResource("12_memory_pickup") groups=["help_target"]]
 position = Vector2(8000, 256)
@@ -238,116 +247,142 @@ metadata/help_id = "power_bank_pickup"
 position = Vector2(16320, 512)
 height_tiles = 2
 object_id = &"terminal_bloqueo"
+skin = &"lock_screen"
 text = "Deslizar para desbloquear"
 width_tiles = 1
 level_id = "1-3"
 metadata/help_id = "exit_terminal"
 
+[node name="panel_wifi" parent="Objects" instance=ExtResource("16_decor")]
+position = Vector2(192, 320)
+art = &"settings_wifi"
+object_id = &"panel_wifi"
+
+[node name="panel_brillo" parent="Objects" instance=ExtResource("16_decor")]
+position = Vector2(448, 320)
+art = &"settings_brightness"
+object_id = &"panel_brillo"
+
+[node name="panel_rotacion" parent="Objects" instance=ExtResource("16_decor")]
+position = Vector2(1152, 320)
+art = &"settings_rotation"
+object_id = &"panel_rotacion"
+
+[node name="rotulo_banner_dash" parent="Objects" instance=ExtResource("16_decor")]
+position = Vector2(1728, 448)
+art = &"banner_slot"
+object_id = &"rotulo_banner_dash"
+
+[node name="reloj_bloqueo" parent="Objects" instance=ExtResource("16_decor")]
+position = Vector2(16256, 256)
+art = &"lock_clock"
+object_id = &"reloj_bloqueo"
+
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="banner_dash" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_dash" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(2464, 640)
 metadata/params = {"corridor_tiles": 12, "direction": -1, "interval_s": 3.0, "knockback_to_entry": true, "sweep_speed_px_s": 320.0}
 metadata/help_id = "spam_banner_dash"
 
-[node name="banner_1b" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_1b" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(2656, 640)
 metadata/params = {"corridor_tiles": 10, "direction": 1, "interval_s": 3.0, "sweep_speed_px_s": 640.0}
 metadata/help_id = "spam_banner"
 
-[node name="banner_1c_a" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_1c_a" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(3808, 640)
 metadata/params = {"corridor_tiles": 7, "direction": 1, "interval_s": 2.5, "phase_s": 0.0, "sweep_speed_px_s": 640.0}
 metadata/help_id = "spam_banner"
 
-[node name="banner_1c_b" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_1c_b" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(4256, 640)
 metadata/params = {"corridor_tiles": 7, "direction": 1, "interval_s": 2.5, "phase_s": 1.25, "sweep_speed_px_s": 640.0}
 metadata/help_id = "spam_banner"
 
-[node name="burbuja_3a" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
+[node name="burbuja_3a" parent="Enemies" instance=ExtResource("18_alert_bubble") groups=["help_target"]]
 position = Vector2(8800, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 60.0}
 metadata/help_id = "alert_bubble"
 
-[node name="banner_3a" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_3a" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(9440, 640)
 metadata/params = {"corridor_tiles": 7, "direction": -1, "interval_s": 3.0, "sweep_speed_px_s": 640.0}
 metadata/help_id = "spam_banner"
 
-[node name="badge_3b_a" parent="Enemies" instance=ExtResource("18_notification_badge") groups=["help_target"]]
+[node name="badge_3b_a" parent="Enemies" instance=ExtResource("19_notification_badge") groups=["help_target"]]
 position = Vector2(9952, 448)
 metadata/params = {"leash_height_px": 448.0, "leash_width_px": 1024.0}
 metadata/help_id = "notification_badge"
 
-[node name="badge_3b_b" parent="Enemies" instance=ExtResource("18_notification_badge") groups=["help_target"]]
+[node name="badge_3b_b" parent="Enemies" instance=ExtResource("19_notification_badge") groups=["help_target"]]
 position = Vector2(10528, 384)
 metadata/params = {"leash_height_px": 448.0, "leash_width_px": 1024.0}
 metadata/help_id = "notification_badge"
 
-[node name="burbuja_3c" parent="Enemies" instance=ExtResource("17_alert_bubble") groups=["help_target"]]
+[node name="burbuja_3c" parent="Enemies" instance=ExtResource("18_alert_bubble") groups=["help_target"]]
 position = Vector2(11424, 640)
 patrol_range_px = 128.0
 metadata/params = {"patrol_range_px": 128.0, "patrol_speed_px_s": 60.0}
 metadata/help_id = "alert_bubble"
 
-[node name="bell_4a_1" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4a_1" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(12576, 512)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 3}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4a_2" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4a_2" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(12832, 512)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 3}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4a_3" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4a_3" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(13088, 512)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 3}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4b_1" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4b_1" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(13408, 512)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 3}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4b_2" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4b_2" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(13664, 512)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 3}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4b_3" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4b_3" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(13984, 576)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 2}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4c_1" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4c_1" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(14368, 576)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 2}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4c_2" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4c_2" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(14624, 576)
 metadata/params = {"offset": 0.0, "rhythm": "tunel_alarmas", "wave_tiles": 2}
 metadata/help_id = "alarm_bell"
 
-[node name="bell_4c_3" parent="Enemies" instance=ExtResource("19_alarm_bell") groups=["help_target"]]
+[node name="bell_4c_3" parent="Enemies" instance=ExtResource("20_alarm_bell") groups=["help_target"]]
 position = Vector2(14880, 576)
 metadata/params = {"offset": 0.5, "rhythm": "tunel_alarmas", "wave_tiles": 2}
 metadata/help_id = "alarm_bell"
 
-[node name="banner_4a" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_4a" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(13216, 640)
 metadata/params = {"corridor_tiles": 6, "direction": -1, "rhythm": "tunel_alarmas", "rhythm_offset": 0.25}
 metadata/help_id = "spam_banner"
 
-[node name="banner_4b" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_4b" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(14176, 640)
 metadata/params = {"corridor_tiles": 6, "direction": -1, "rhythm": "tunel_alarmas", "rhythm_offset": 0.25}
 metadata/help_id = "spam_banner"
 
-[node name="banner_4c" parent="Enemies" instance=ExtResource("16_spam_banner") groups=["help_target"]]
+[node name="banner_4c" parent="Enemies" instance=ExtResource("17_spam_banner") groups=["help_target"]]
 position = Vector2(15136, 640)
 metadata/params = {"corridor_tiles": 6, "direction": -1, "rhythm": "tunel_alarmas", "rhythm_offset": 0.25}
 metadata/help_id = "spam_banner"
@@ -355,13 +390,13 @@ metadata/help_id = "spam_banner"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(16352, 640)
 
-[node name="Isak" parent="." instance=ExtResource("20_isak")]
+[node name="Isak" parent="." instance=ExtResource("21_isak")]
 position = Vector2(288, 640)
 camera_limits = Rect2i(0, 0, 16640, 896)
 
-[node name="Hud" parent="." instance=ExtResource("21_hud")]
+[node name="Hud" parent="." instance=ExtResource("22_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("22_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("23_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("23_help_system")
+script = ExtResource("24_help_system")

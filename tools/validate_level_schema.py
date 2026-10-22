@@ -681,6 +681,8 @@ class LevelValidator:
                 self._check_charger(what, x, y, params)
             if kind == "glitch_wall" and not isinstance(params.get("visible_only_with_debug", False), bool):
                 self.error("%s: visible_only_with_debug debe ser true o false" % what, y, x)
+            if kind == "glitch_wall" and "cover" in params:
+                self._check_glitch_cover(what, x, y, params["cover"])
             if kind == "exceptions_panel":
                 self._check_exceptions_panel(what, x, y, params)
             if kind == "boss_dummy":
@@ -996,6 +998,23 @@ class LevelValidator:
         return any(isinstance(o, dict) and o.get("type") == "overlay_popup"
                    and isinstance(o.get("params"), dict) and o["params"].get("id") == ident
                    for o in self.level.get("objects", []))
+
+    def _check_glitch_cover(self, what, x, y, cover):
+        """Terreno falso de una pared con glitch (2026-10-22): [x, y, ancho, alto] en celdas,
+        enteros, tamano >= 1, dentro del grid, sin terreno ('#') dentro (tapa una sala libre)."""
+        if not (isinstance(cover, list) and len(cover) == 4 and all(_is_int(v) for v in cover)) \
+                or cover[2] < 1 or cover[3] < 1:
+            self.error("%s: cover debe ser [x, y, ancho, alto] (enteros, tamano >= 1)" % what, y, x)
+            return
+        cx, cy, w, h = cover
+        for j in range(h):
+            for i in range(w):
+                if not self.in_bounds(cx + i, cy + j):
+                    self.error("%s: cover se sale del grid" % what, cy + j, cx + i)
+                    return
+                if self.cell(cx + i, cy + j) == "#":
+                    self.error("%s: cover tapa terreno ('#'): solo celdas libres" % what, cy + j, cx + i)
+                    return
 
     def _check_exceptions_panel(self, what, x, y, params):
         """Decorado de la sala «Excepciones» (2026-10-20): title texto no vacio y contacts lista de

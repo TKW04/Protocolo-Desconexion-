@@ -9,7 +9,8 @@
 ## Nombres genericos («Mamá», «Abuelito»), ninguna marca; textos definitivos
 ## desde el 2026-10-20. Arte por script (paso 8): marco nine-patch, persona y
 ## estrella (borde_luz) de tools/gen_world1_dnd.py; textos con la fuente de
-## textos. Va detras de Isak (z_index de la seccion).
+## textos. Va detras de Isak (z_index de la seccion). 2026-10-22: texto a escala
+## font_scale e iconos de 32 px (antes ilegibles en las capturas).
 ## El origen del nodo es la esquina superior izquierda de la primera celda.
 class_name ExceptionsPanel
 extends Node2D
@@ -27,6 +28,7 @@ const GROUP: StringName = &"exceptions_panel"
 
 var _config: Dictionary = World1ObjectsConfig.section("exceptions_panel")
 var _labels: Array[Label] = []
+var _icons: Array[TextureRect] = []
 
 
 func _ready() -> void:
@@ -78,15 +80,27 @@ func _build_labels() -> void:
 	var width: float = get_size_px().x - pad * 2.0
 	_labels.append(_make_label(font, size, title, Vector2(pad, pad), Vector2(width, title_h)))
 	var rows: Array = _rows()
+	var contact: Texture2D = _texture("contact")
+	var star: Texture2D = _texture("star")
 	for i: int in rows.size():
 		var y: float = pad + title_h + i * row_h
 		var x: float = pad + icon + pad
 		_labels.append(_make_label(font, size, String(rows[i]), Vector2(x, y),
 			Vector2(width - icon * 2.0 - pad * 2.0, row_h)))
+		# Iconos como nodos (2026-10-22: dibujados con draw_texture en _draw salian
+		# como cuadrados blancos en el juego).
+		var mid: float = roundf(y + row_h * 0.5 - icon * 0.5)
+		_make_icon("Contact%d" % i, contact, Vector2(pad, mid))
+		_make_icon("Star%d" % i, star, Vector2(get_size_px().x - pad - icon, mid))
 
 
 func _make_label(font: Font, size: int, text: String, pos: Vector2, box: Vector2) -> Label:
+	# Texto a escala entera (font_scale, 2026-10-22): la caja se mide en pixeles de
+	# la fuente y el nodo se escala (pixeles dobles nitidos).
+	var k: float = maxf(float(_config.get("font_scale", 1)), 1.0)
 	var label := Label.new()
+	label.scale = Vector2(k, k)
+	box /= k
 	label.add_theme_font_override(&"font", font)
 	label.add_theme_font_size_override(&"font_size", size)
 	label.add_theme_color_override(&"font_color", Color.WHITE)
@@ -98,6 +112,25 @@ func _make_label(font: Font, size: int, text: String, pos: Vector2, box: Vector2
 	label.text = text
 	add_child(label)
 	return label
+
+
+func _make_icon(node_name: String, texture: Texture2D, pos: Vector2) -> void:
+	if texture == null:
+		return
+	var rect := TextureRect.new()
+	rect.name = node_name
+	rect.texture = texture
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP
+	rect.position = pos
+	rect.size = texture.get_size()
+	add_child(rect)
+	_icons.append(rect)
+
+
+## Iconos de las filas (persona y estrella por fila).
+func get_icons() -> Array[TextureRect]:
+	return _icons
 
 
 func _texture(key: String) -> Texture2D:
@@ -130,14 +163,4 @@ func _draw() -> void:
 	var border: float = float(_config.get("border_px", 2))
 	var pad: float = float(_config.get("padding_px", 8))
 	var title_h: float = float(_config.get("title_height_px", 24))
-	var row_h: float = float(_config.get("row_height_px", 28))
-	var icon: float = float(_config.get("icon_size_px", 16))
 	draw_rect(Rect2(pad, pad + title_h - border, size.x - pad * 2.0, border), _color("line_color", "#343f66"))
-	var contact: Texture2D = _texture("contact")
-	var star: Texture2D = _texture("star")
-	for i: int in _rows().size():
-		var mid: float = pad + title_h + i * row_h + row_h * 0.5
-		if contact != null:
-			draw_texture(contact, Vector2(pad, roundf(mid - icon * 0.5)))
-		if star != null:
-			draw_texture(star, Vector2(size.x - pad - icon, roundf(mid - icon * 0.5)))

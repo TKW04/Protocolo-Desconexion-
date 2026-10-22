@@ -58,6 +58,9 @@ signal powered
 @export var requires_power: bool = false
 ## Id de la pieza que le da corriente (CalcRoom; is_power_on()).
 @export var power_source: StringName = &""
+## Aspecto (2026-10-22): vacio = monitor de siempre; lock_screen = pantalla de
+## bloqueo (cierre del 1-3). Mismas animaciones y tamano: solo cambia el dibujo.
+@export var skin: StringName = &""
 
 var _config: Dictionary = World1ObjectsConfig.section("exit_terminal")
 var _state: State = State.OFF
@@ -133,6 +136,12 @@ func get_key_hint_text() -> String:
 
 func get_animation() -> StringName:
 	return _sprite.animation
+
+
+## SpriteFrames del aspecto (skin; sin skin o desconocido, frames de la seccion).
+func get_frames_path() -> String:
+	var skins: Dictionary = _config.get("skins", {})
+	return String(skins.get(String(skin), _config["frames"]))
 
 
 func get_vortex() -> WarpVortex:
@@ -380,7 +389,7 @@ func _build() -> void:
 	add_child(shape)
 	_sprite = AnimatedSprite2D.new()
 	_sprite.name = "Terminal"
-	_sprite.sprite_frames = load(String(_config["frames"])) as SpriteFrames
+	_sprite.sprite_frames = load(get_frames_path()) as SpriteFrames
 	_sprite.centered = false
 	var frame_size: Array = _config.get("frame_size", [64, 128])
 	_sprite.scale = size / Vector2(float(frame_size[0]), float(frame_size[1]))

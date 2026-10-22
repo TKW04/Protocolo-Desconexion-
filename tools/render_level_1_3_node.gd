@@ -148,6 +148,9 @@ func _excepciones() -> void:
 	var wall: GlitchWall = _level.get_node(^"Objects/pared_excepciones") as GlitchWall
 	await _place(118.0, 4, 1.0)
 	_check(not wall.is_glitch_shown(), "la pared se ve sin el Debug")
+	# Sin el Debug la sala queda tapada por terreno falso (2026-10-22).
+	_check(wall.is_cover_shown(), "el interior de «Excepciones» se ve desde fuera")
+	await _save("10a_excepciones_tapada.png")
 	GameState.debug_energy = GameState.get_debug_energy_max()
 	DebugMode.input_enabled = false
 	for i: int in roundi(DebugMode.get_activation_hold_s() / DT) + 2:
@@ -160,6 +163,7 @@ func _excepciones() -> void:
 	await _wait(func() -> bool: return wall.is_open(), 5.0, "pared abierta")
 	DebugMode.reset()
 	DebugMode.input_enabled = true
+	_check(not wall.is_cover_shown(), "el terreno falso sigue tras abrir la pared")
 	await _place(123.0, 4, 1.0)
 	await _save("11_sala_excepciones.png")
 

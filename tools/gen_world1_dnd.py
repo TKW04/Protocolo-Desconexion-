@@ -66,7 +66,7 @@ CLEAR = (0, 0, 0, 0)
 FORBIDDEN = ("carmin", "carmin_brillo", "ambar", "ambar_sombra")
 # Ademas, sin rojos fuera de la campana (el rojo es dano y sus avisos).
 RED = ("alerta", "alerta_sombra")
-RED_OK_PREFIX = ("enemies/alarm_bell/", "props/dnd/banner_dash_card")
+RED_OK_PREFIX = ("enemies/alarm_bell/", "props/dnd/banner_dash_card", "props/dnd/decor_banner_slot")
 
 SWITCH_ANIMS = [
     ("dnd_switch_off", "props/dnd/dnd_switch_off", 2, 2.0, True),
@@ -219,17 +219,39 @@ def blink_warn(n):
 
 
 def blink_off(n):
+    """Apagada (2026-10-22, defecto de las capturas del paso 12: el contorno en
+    `resplandor` se perdia sobre la ciudad del fondo). Se distingue por la FORMA, no
+    solo por el color: contorno DISCONTINUO (trazos de 2 px en borde_luz con su sombra
+    noche_profunda por dentro, esquinas en L siempre enteras) y la fila de 4 segmentos
+    VACIA (solo sus cajas huecas); la encendida es una tarjeta llena. Hitbox y ritmo no
+    cambian (es solo el dibujo del estado sin colision)."""
     w = 64 * n
     cv = Canvas(w, BLINK_H)
-    on_len, period = 6, 10
-    for x in range(1, w - 1):
-        if (x - 1) % period < on_len:
-            cv.rect(x, 0, x, 1, R)
-            cv.rect(x, BLINK_H - 2, x, BLINK_H - 1, R)
-    for y in range(1, BLINK_H - 1):
-        if (y - 1) % period < on_len:
-            cv.rect(0, y, 1, y, R)
-            cv.rect(w - 2, y, w - 1, y, R)
+    on_len, period = 8, 12
+    corner = 6
+
+    def lit(i, length):
+        return i < corner or i >= length - corner or (i - corner) % period < on_len
+
+    for x in range(w):
+        if lit(x, w):
+            cv.rect(x, 0, x, 1, BL)
+            cv.p(x, 2, N)
+            cv.rect(x, BLINK_H - 2, x, BLINK_H - 1, BL)
+            cv.p(x, BLINK_H - 3, N)
+    for y in range(BLINK_H):
+        if lit(y, BLINK_H):
+            cv.rect(0, y, 1, y, BL)
+            cv.rect(w - 2, y, w - 1, y, BL)
+            if 2 <= y <= BLINK_H - 3:
+                cv.p(2, y, N)
+                cv.p(w - 3, y, N)
+    x0 = _seg_x0(w)
+    for i in range(SEG_COUNT):  # segmentos vacios: solo el hueco
+        sx = x0 + i * 14
+        cv.rect(sx - 1, 13, sx + 10, 22, N)
+        cv.rect(sx, 14, sx + 9, 21, CLEAR)
+        cv.hline(sx, sx + 9, 14, TL)
     return cv.img
 
 
@@ -370,38 +392,318 @@ def exceptions_frame():
     return cv.img
 
 
+ICON = 32  # iconos del panel (2026-10-22: 16 px se leian como cuadrados)
+
+
 def exceptions_contact():
-    cv = Canvas(16, 16)
-    disc(cv, 8, 5, 4, N)
-    disc(cv, 8, 5, 3, G)
-    cv.p(7, 3, W)
-    for y, half in ((10, 5), (11, 6), (12, 7), (13, 7), (14, 7)):
-        cv.hline(8 - half - 1, 8 + half, y, N)
-    for y, half in ((11, 5), (12, 6), (13, 6)):
-        cv.hline(8 - half, 8 + half - 1, y, G)
-    cv.hline(4, 6, 11, W)
-    cv.hline(1, 15, 15, CLEAR)
-    cv.hline(2, 14, 14, N)
+    """Avatar redondo de 32 px: disco resplandor con la silueta (cabeza y hombros) en
+    banner_blanco, recortada por el circulo, y contorno noche_profunda."""
+    cv = Canvas(ICON, ICON)
+    c = (ICON - 1) / 2.0
+    for y in range(ICON):
+        for x in range(ICON):
+            d = math.hypot(x - c, y - c)
+            if d <= 15.4:
+                cv.p(x, y, N)
+            if d <= 14.2:
+                cv.p(x, y, R)
+                head = math.hypot(x - c, y - 11.5) <= 5.6
+                body = (y - 26.5) ** 2 / 9.5 ** 2 + (x - c) ** 2 / 10.5 ** 2 <= 1.0 and y >= 18
+                if head or body:
+                    cv.p(x, y, W)
+    for y in range(ICON):  # sombra del lado derecho de la silueta
+        for x in range(ICON):
+            if cv.get(x, y)[:3] == W[:3] and x + 1 < ICON and cv.get(x + 1, y)[:3] == R[:3]:
+                cv.p(x, y, G)
+    for (x, y) in ((12, 9), (13, 8), (12, 10)):  # brillo de la cabeza
+        cv.p(x, y, BL)
     return cv.img
 
 
 def exceptions_star():
-    cv = Canvas(16, 16)
-    mask = Image.new("L", (16, 16), 0)
+    """Estrella de favorito de 32 px en borde_luz (no ambar) con contorno y brillo."""
+    cv = Canvas(ICON, ICON)
+    mask = Image.new("L", (ICON, ICON), 0)
     pts = []
     for k in range(10):
-        r = 7.2 if k % 2 == 0 else 3.0
+        r = 14.5 if k % 2 == 0 else 6.2
         a = -math.pi / 2 + k * math.pi / 5
-        pts.append((7.5 + math.cos(a) * r, 8.2 + math.sin(a) * r))
+        pts.append((15.5 + math.cos(a) * r, 17.0 + math.sin(a) * r))
     ImageDraw.Draw(mask).polygon(pts, fill=255)
-    for y in range(16):
-        for x in range(16):
+    for y in range(ICON):
+        for x in range(ICON):
             if mask.getpixel((x, y)):
                 cv.p(x, y, BL)
+    for y in range(ICON):  # sombra abajo a la derecha
+        for x in range(ICON):
+            if mask.getpixel((x, y)) and x > 15 and y > 17:
+                cv.p(x, y, G)
     cv.halo(N)
-    cv.p(7, 4, W)
-    cv.p(7, 5, W)
-    cv.p(6, 7, W)
+    for (x, y) in ((15, 6), (15, 7), (14, 9), (14, 10), (13, 12)):
+        cv.p(x, y, W)
+    return cv.img
+
+
+# ------------------------------------------------------------- texto con la fuente
+FONT_FNT = os.path.join(REPO, "assets/sprites/ui/text_font.fnt")
+_FONT = {}
+
+
+def _font():
+    if not _FONT:
+        import re
+        with open(FONT_FNT, encoding="utf-8") as fh:
+            src = fh.read()
+        page = re.search(r'file="([^"]+)"', src).group(1)
+        _FONT["img"] = Image.open(os.path.join(os.path.dirname(FONT_FNT), page)).convert("RGBA")
+        _FONT["chars"] = {}
+        for m in re.finditer(r"^char (.*)$", src, re.M):
+            kv = dict(t.split("=") for t in m.group(1).split())
+            _FONT["chars"][int(kv["id"])] = {k: int(v) for k, v in kv.items() if k != "page"}
+    return _FONT
+
+
+def text_width(s, scale=1):
+    f = _font()
+    return sum(f["chars"][ord(ch)]["xadvance"] for ch in s) * scale
+
+
+def draw_text(cv, x, y, s, color, scale=1):
+    """Texto con text_font.fnt (los mismos glifos que el juego), en un color de la paleta."""
+    f = _font()
+    for ch in s:
+        g = f["chars"][ord(ch)]
+        for gy in range(g["height"]):
+            for gx in range(g["width"]):
+                if f["img"].getpixel((g["x"] + gx, g["y"] + gy))[3] > 0:
+                    px, py = x + (g["xoffset"] + gx) * scale, y + (g["yoffset"] + gy) * scale
+                    cv.rect(px, py, px + scale - 1, py + scale - 1, color)
+        x += g["xadvance"] * scale
+
+
+# ------------------------------------------- decorado de la sala «Ajustes» (§3.1)
+SETTINGS = 128  # 2 x 2 tiles en la pared del fondo, filas 5-6 (por encima de Isak y de Eco)
+
+
+def _settings_tile(label, on):
+    """Mosaico de ajustes rapidos como parte del FONDO (como el icono del metronomo):
+    relleno cielo, contorno resplandor, sin el metal ni el contorno oscuro de los
+    objetos, para que no parezca algo que se usa. Rotulo con la fuente del juego y un
+    interruptor (on/off) abajo."""
+    cv = Canvas(SETTINGS, SETTINGS)
+    x0, y0, x1, y1 = 6, 6, SETTINGS - 7, SETTINGS - 7
+    cv.rect(x0, y0, x1, y1, R)
+    cv.rect(x0 + 2, y0 + 2, x1 - 2, y1 - 2, PAL["cielo"])
+    for (x, y) in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+        cv.p(x, y, CLEAR)
+    tw = text_width(label)
+    draw_text(cv, (SETTINGS - tw) // 2, y1 - 38, label, BL)
+    # interruptor: pastilla de 28 x 12 con la bola a un lado
+    px0, py0 = SETTINGS // 2 - 14, y1 - 20
+    cv.rect(px0, py0, px0 + 27, py0 + 11, R if on else FM)
+    cv.rect(px0 + 1, py0 + 1, px0 + 26, py0 + 10, BL if on else PAL["cielo"])
+    bx = px0 + 16 if on else px0 + 2
+    cv.rect(bx, py0 + 2, bx + 9, py0 + 9, W if on else R)
+    return cv, (SETTINGS // 2, 40)
+
+
+def settings_wifi():
+    cv, (cx, cy) = _settings_tile("Wi-Fi", True)
+    for r in (8, 15, 22):
+        for y in range(-r - 1, 1):
+            for x in range(-r - 1, r + 2):
+                d = math.hypot(x, y)
+                ang = math.atan2(-y, abs(x) + 0.001)
+                if r - 1.5 <= d < r + 1.5 and ang >= math.radians(40):
+                    cv.p(cx + x, cy + 10 + y, BL)
+    disc(cv, cx, cy + 10, 2, W)
+    return cv.img
+
+
+def settings_brightness():
+    cv, (cx, cy) = _settings_tile("Brillo", True)
+    disc(cv, cx, cy, 8, BL)
+    disc(cv, cx, cy, 5, W)
+    for k in range(8):
+        a = k * math.pi / 4
+        for t in range(12, 17):
+            cv.rect(int(round(cx + math.cos(a) * t)), int(round(cy + math.sin(a) * t)),
+                    int(round(cx + math.cos(a) * t)) + 1, int(round(cy + math.sin(a) * t)) + 1, BL)
+    return cv.img
+
+
+def settings_rotation():
+    cv, (cx, cy) = _settings_tile("Rotación", False)
+    # celular en vertical con dos flechas curvas alrededor (bloqueado: interruptor apagado)
+    cv.rect(cx - 7, cy - 12, cx + 6, cy + 11, BL)
+    cv.rect(cx - 5, cy - 9, cx + 4, cy + 7, PAL["cielo"])
+    cv.hline(cx - 2, cx + 1, cy + 9, PAL["cielo"])
+    for side in (-1, 1):
+        r = 19
+        for y in range(-r - 1, r + 2):
+            for x in range(-r - 1, r + 2):
+                d = math.hypot(x, y)
+                ang = math.degrees(math.atan2(y * side, x * side))
+                if r - 1 <= d < r + 1 and 200 <= (ang % 360) <= 290:
+                    cv.p(cx + x, cy + y, BL)
+        tip = (cx - side * 19, cy - side * 2)
+        for k in range(4):
+            cv.hline(tip[0] - k, tip[0] + k, tip[1] - side * (3 - k), BL)
+    return cv.img
+
+
+# --------------------------------------------- rotulo de la ranura del banner (1a)
+def banner_slot_sign():
+    """Rotulo en la boca del pasillo del banner obligatorio (2026-10-22, defecto del
+    paso 12: la ranura queda fuera de pantalla desde la entrada). Placa de la pared
+    (tile_luz, borde_luz) con la ranura del banner a la derecha, el banner saliendo
+    hacia la izquierda (hacia Isak) y flechas de su barrido. Rojo solo en el «!»
+    y la luz de la ranura (aviso de algo que dana)."""
+    cv = Canvas(128, 64)
+    cv.box(2, 6, 125, 57, TL)
+    cv.hline(3, 124, 7, BL)
+    cv.hline(3, 124, 56, TB)
+    for (x, y) in ((5, 9), (122, 9), (5, 54), (122, 54)):
+        cv.p(x, y, G)
+    # ranura (como banner_idle): barra oscura con la luz roja
+    cv.rect(106, 13, 115, 50, N)
+    cv.rect(108, 15, 113, 48, TS)
+    cv.rect(110, 18, 111, 22, A)
+    cv.rect(110, 23, 111, 24, AS)
+    # banner que sale de la ranura
+    cv.box(62, 20, 105, 43, W)
+    cv.rect(66, 24, 73, 39, A)
+    cv.rect(69, 26, 70, 33, W)
+    cv.rect(69, 36, 70, 37, W)
+    cv.hline(77, 100, 27, G)
+    cv.hline(77, 94, 32, G)
+    cv.hline(77, 98, 37, G)
+    # flechas del barrido hacia la izquierda
+    for ax in (14, 30, 46):
+        for k in range(7):
+            cv.rect(ax + k, 31 - k, ax + k + 1, 31 - k, W)
+            cv.rect(ax + k, 32 + k, ax + k + 1, 32 + k, W)
+    return cv.img
+
+
+# ----------------------------------------------- pantalla de bloqueo (cierre del 1-3)
+DIGITS = {  # 3 x 5
+    "0": ("###", "#.#", "#.#", "#.#", "###"), "1": (".#.", "##.", ".#.", ".#.", "###"),
+    "2": ("###", "..#", "###", "#..", "###"), "3": ("###", "..#", ".##", "..#", "###"),
+    "4": ("#.#", "#.#", "###", "..#", "..#"), "5": ("###", "#..", "###", "..#", "###"),
+    "6": ("###", "#..", "###", "#.#", "###"), "7": ("###", "..#", ".#.", ".#.", ".#."),
+    "8": ("###", "#.#", "###", "#.#", "###"), "9": ("###", "#.#", "###", "..#", "###"),
+    ":": (".", "#", ".", "#", "."),
+}
+LOCK_TIME = "11:58"  # hora del reloj (decorado; solo cifras)
+
+
+def clock_digits(cv, x, y, s, color, scale):
+    for ch in s:
+        rows = DIGITS[ch]
+        for j, row in enumerate(rows):
+            for i, c in enumerate(row):
+                if c == "#":
+                    cv.rect(x + i * scale, y + j * scale, x + i * scale + scale - 1, y + j * scale + scale - 1, color)
+        x += (len(rows[0]) + 1) * scale
+
+
+def clock_width(s, scale):
+    return sum(len(DIGITS[ch][0]) + 1 for ch in s) * scale - scale
+
+
+def muted_bell(cv, cx, cy, color, slash):
+    """Campana de 11 px tachada (notificaciones apagadas)."""
+    for y, half in ((0, 1), (1, 2), (2, 3), (3, 3), (4, 3), (5, 3), (6, 4), (7, 5)):
+        cv.hline(cx - half, cx + half, cy - 4 + y, color)
+    cv.hline(cx - 1, cx + 1, cy + 5, color)
+    for k in range(-5, 6):
+        cv.p(cx + k, cy + k, slash)
+        cv.p(cx + k + 1, cy + k, slash)
+
+
+def padlock(cv, cx, cy, color, open_=False):
+    cv.rect(cx - 4, cy, cx + 4, cy + 6, color)
+    cv.p(cx, cy + 2, PAL["cielo"])
+    cv.p(cx, cy + 3, PAL["cielo"])
+    lift = 2 if open_ else 0
+    cv.vline(cx - 3, cy - 4 - lift, cy - 1 - lift if open_ else cy - 1, color)
+    cv.vline(cx + 3, cy - 4 - lift, cy - 1, color)
+    cv.hline(cx - 2, cx + 2, cy - 5 - lift, color)
+
+
+def lock_terminal(state, f):
+    """Terminal de cierre con arte de pantalla de bloqueo (2026-10-22; §3.6): el mismo
+    monitor de tools/gen_warp_objects.py (mismo tamano, mismos estados y tiempos) con la
+    hora grande, la campana tachada y el candado; con Isak cerca, la barra «deslizar»
+    late; al arrancar, el candado se abre y la pantalla pasa a cian."""
+    import gen_warp_objects as warp
+    cv = Canvas(warp.TERMINAL_W, warp.TERMINAL_H)
+    sx0, sy0, sx1, sy1 = warp.SCREEN
+    led = {"off": TL, "prompt": CD, "boot": C, "on": C}[state]
+    warp.terminal_body(cv, led)
+    bg = PAL["cielo"] if state in ("off", "prompt") else (CD if state == "on" else PAL["cielo"])
+    cv.rect(sx0, sy0, sx1, sy1, bg)
+    ink = R if state == "off" else BL
+    if state == "on":
+        ink = CC
+    cw = clock_width(LOCK_TIME, 2)
+    clock_digits(cv, (sx0 + sx1 + 1 - cw) // 2, sy0 + 5, LOCK_TIME, W if state != "off" else BL, 2)
+    if state in ("off", "prompt"):
+        muted_bell(cv, sx0 + 8, sy0 + 23, ink, C if state == "prompt" else FM)
+        padlock(cv, sx1 - 8, sy0 + 21, ink)
+        # barra de deslizar abajo
+        bar_y = sy1 - 5
+        cv.hline(sx0 + 6, sx1 - 6, bar_y, FM if state == "off" else R)
+        if state == "prompt":
+            k = 6 + f * 8
+            cv.rect(sx0 + k, bar_y - 1, sx0 + k + 5, bar_y + 1, C)
+            for j in range(3):
+                cv.p(sx0 + k + 8 + j * 3, bar_y, CC)
+        else:
+            cv.rect(sx0 + 6, bar_y - 1, sx0 + 9, bar_y + 1, R)
+    elif state == "boot":
+        open_ = f >= 1
+        padlock(cv, (sx0 + sx1) // 2, sy0 + 22, C if open_ else BL, open_)
+        cy = (sy0 + sy1) // 2 + 6
+        half = [0, 2, 5, 9][f]
+        if half:
+            cv.rect(sx0, cy - half, sx1, min(sy1, cy + half), CD)
+            cv.hline(sx0, sx1, cy - half, C)
+    else:  # on: desbloqueada (cian), candado abierto
+        padlock(cv, (sx0 + sx1) // 2, sy0 + 22, CC, True)
+        cv.hline(sx0 + 6, sx1 - 6, sy1 - 5, C if f == 0 else CC)
+        if f == 0:
+            x0, y0, x1, y1 = warp.MON
+            cv.hline(x0 + 1, x1 - 1, y0 - 1, C)
+            cv.vline(x0 - 1, y0 + 1, y1 - 1, C)
+            cv.vline(x1 + 1, y0 + 1, y1 - 1, C)
+    return cv.img
+
+
+def lock_clock():
+    """Reloj grande de la pantalla de bloqueo en la pared del fondo del cierre (3 x 2
+    tiles, filas 6-7, encima de la terminal): decorado de fondo (relleno cielo, borde
+    resplandor), hora grande, linea de la fecha (rayas), campana tachada y «No
+    molestar» con la fuente del juego."""
+    cv = Canvas(192, 128)
+    x0, y0, x1, y1 = 4, 4, 187, 123
+    cv.rect(x0, y0, x1, y1, R)
+    cv.rect(x0 + 2, y0 + 2, x1 - 2, y1 - 2, PAL["cielo"])
+    for (x, y) in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+        cv.p(x, y, CLEAR)
+    cw = clock_width(LOCK_TIME, 8)
+    clock_digits(cv, (192 - cw) // 2, 14, LOCK_TIME, BL, 8)
+    cv.hline(60, 131, 62, R)
+    cv.hline(70, 121, 66, R)
+    label = "No molestar"
+    tw = text_width(label)
+    bx = (192 - (tw + 18)) // 2
+    muted_bell(cv, bx + 6, 88, BL, R)
+    draw_text(cv, bx + 18, 82, label, BL)
+    for i in range(3):  # tres notificaciones apagadas (tarjetas huecas)
+        yy = 102 + i * 6
+        cv.rect(56, yy, 135, yy + 3, FM)
     return cv.img
 
 
@@ -474,7 +776,35 @@ def outputs():
         out[f"enemies/alarm_bell/alarm_bell_ring_{f:02d}.png"] = bell_ring(f)
         out[f"enemies/alarm_bell/alarm_wave_{f:02d}.png"] = alarm_wave(f)
     out["enemies/alarm_bell/alarm_warn_line_00.png"] = alarm_warn_line()
+    # 2026-10-22: decorado (tipo `decor`) y terminal de pantalla de bloqueo del 1-3
+    for art, fn in DECOR_ARTS.items():
+        out[f"props/dnd/decor_{art}_00.png"] = fn()
+    for anim, n in LOCK_ANIMS:
+        for f in range(n):
+            out[f"props/dnd/lock_{anim}_{f:02d}.png"] = lock_terminal(anim.split("_", 1)[1], f)
     return out
+
+
+# Decorado sin colision (tipo `decor` de data/world1_objects.json): art -> dibujo.
+DECOR_ARTS = {
+    "settings_wifi": settings_wifi,
+    "settings_brightness": settings_brightness,
+    "settings_rotation": settings_rotation,
+    "banner_slot": banner_slot_sign,
+    "lock_clock": lock_clock,
+}
+# Terminal «pantalla de bloqueo» (skin lock_screen de exit_terminal): mismos nombres,
+# cuadros y fps que TERMINAL_ANIMS de tools/gen_warp_objects.py.
+LOCK_ANIMS = [("terminal_off", 2), ("terminal_prompt", 2), ("terminal_boot", 4), ("terminal_on", 2)]
+LOCK_FRAMES_TRES = "lock_terminal_frames.tres"
+
+
+def lock_frames_resource():
+    import gen_warp_objects as warp
+    fps = {name: (f, loop) for name, _n, f, loop in warp.TERMINAL_ANIMS}
+    return sprite_frames_tres([
+        (anim, ["res://assets/sprites/props/dnd/lock_%s_%02d.png" % (anim, i) for i in range(n)],
+         fps[anim][0], fps[anim][1]) for anim, n in LOCK_ANIMS])
 
 
 def frames_resource():
@@ -512,6 +842,8 @@ if __name__ == "__main__":
             im.save(p)
         with open(os.path.join(dest, FRAMES_TRES), "w", encoding="utf-8") as fh:
             fh.write(frames_resource())
+        with open(os.path.join(dest, LOCK_FRAMES_TRES), "w", encoding="utf-8") as fh:
+            fh.write(lock_frames_resource())
     if "--preview" in sys.argv:
         preview(imgs, sys.argv[sys.argv.index("--preview") + 1],
                 int(sys.argv[sys.argv.index("--scale") + 1]) if "--scale" in sys.argv else 4)

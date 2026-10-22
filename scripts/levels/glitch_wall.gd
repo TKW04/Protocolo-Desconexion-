@@ -36,6 +36,13 @@
 ## Debug muestra el glitch y se disuelve igual que siempre. La ayuda con Q no
 ## cambia (decision 8 de la propuesta: la Q la marca). Sin el param (1-1, 1-2),
 ## como antes.
+##
+## TERRENO FALSO (2026-10-22, defecto de las capturas del 1-3: el interior de
+## «Excepciones» se veia desde fuera): con cover ([x, y, ancho, alto] en celdas del
+## grid) tools/build_level.py le pone un hijo «Cover» (TileMapLayer SIN colision,
+## por encima de lo que tapa) que dibuja esas celdas y su borde como terreno
+## entero. Se ve mientras la pared esta cerrada, parpadea con ella al disolverse
+## y desaparece al abrirse (o al hacerse puerta). La ruta y la colision no cambian.
 ## El origen del nodo es la esquina superior izquierda de la primera celda.
 class_name GlitchWall
 extends StaticBody2D
@@ -76,6 +83,8 @@ const ISAK_LAYER: int = 2
 @export var done_if_ally: StringName = &""
 ## Sin el Debug parece terreno normal (sin rafagas de glitch).
 @export var visible_only_with_debug: bool = false
+## Terreno falso: [x, y, ancho, alto] en celdas del grid (vacio = ninguno).
+@export var cover_tiles: Array = []
 
 ## Se ha transformado en puerta.
 signal became_door
@@ -164,6 +173,8 @@ func become_door(instant: bool = false) -> bool:
 	_overlays.clear()
 	for cell: Sprite2D in _cells:
 		cell.visible = false
+	if get_cover() != null:
+		get_cover().visible = false
 	if _shape != null:
 		_shape.set_deferred(&"disabled", true)
 	visible = true
@@ -195,6 +206,17 @@ func is_glitch_shown() -> bool:
 
 func is_open() -> bool:
 	return _open
+
+
+## Capa del terreno falso (null sin cover).
+func get_cover() -> TileMapLayer:
+	return get_node_or_null(^"Cover") as TileMapLayer
+
+
+## El terreno falso tapa el interior ahora (false sin cover).
+func is_cover_shown() -> bool:
+	var cover: TileMapLayer = get_cover()
+	return cover != null and cover.is_visible_in_tree()
 
 
 func is_dissolving() -> bool:
@@ -346,6 +368,9 @@ func _advance_dissolve(delta: float) -> void:
 		return
 	var blink: Array = _config.get("dissolve_blink", [1, 0, 1, 0, 0, 0])
 	var shown: bool = frame < blink.size() and int(blink[frame]) == 1
+	var cover: TileMapLayer = get_cover()
+	if cover != null:
+		cover.visible = shown
 	for i: int in _cells.size():
 		_cells[i].visible = shown
 		_overlays[i].texture = _dissolve_frames.get_frame_texture(DISSOLVE_ANIM, frame)

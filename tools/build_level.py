@@ -72,10 +72,10 @@ HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
 STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id", "unless_ability",
                           "done_if_ally", "door_when", "power_source", "switch_id", "dock_id", "guide_id",
-                          "memory_id"}
+                          "memory_id", "art", "skin"}
 # Propiedades que son listas aunque tengan dos numeros (no un Vector2): los ciclos del metronomo
 # (rhythm_zone, 2026-10-19, paso 5 de docs/propuesta-1-3.md).
-ARRAY_PROPERTIES = {"tempo_steps_s", "contacts"}
+ARRAY_PROPERTIES = {"tempo_steps_s", "contacts", "cover_tiles"}
 # Bits de vecinos de data/tileset_mundo1.json (solid.cardinal_bits).
 N, E, S, W = 1, 2, 4, 8
 
@@ -236,10 +236,12 @@ def select_tile(grid, r, c, m):
     return None
 
 
-def tile_map_data(level, catalog, tilemap):
+def tile_map_data(level, catalog, tilemap, cells=None, grid=None):
     """PackedByteArray de TileMapLayer.tile_map_data: version 0 (uint16) y por celda
-    x, y (int16), source, atlas x, atlas y, alternativa (uint16), little endian."""
-    grid = solid_grid(level, catalog)
+    x, y (int16), source, atlas x, atlas y, alternativa (uint16), little endian.
+    `cells` / `grid` (terreno falso de una pared con glitch, 2026-10-22): solo esas
+    celdas, con los bordes del grid dado."""
+    grid = grid or solid_grid(level, catalog)
     original = level["grid"]
     source = int(tilemap["source_id"])
     data = [0, 0]
@@ -250,11 +252,42 @@ def tile_map_data(level, catalog, tilemap):
 
     for r in range(len(grid)):
         for c in range(len(grid[r])):
-            if original[r][c] not in ("#", "-", "^"):
+            if cells is not None:
+                if (c, r) not in cells:
+                    continue
+            elif original[r][c] not in ("#", "-", "^"):
                 continue
             atlas = select_tile(grid, r, c, tilemap)
             data += u16(c) + u16(r) + u16(source) + u16(int(atlas[0])) + u16(int(atlas[1])) + u16(0)
     return "PackedByteArray(%s)" % ", ".join(str(b) for b in data)
+
+
+def cover_cells(params):
+    """Celdas del terreno falso de una glitch_wall (param cover = [x, y, ancho, alto]) o set()."""
+    cover = params.get("cover")
+    if not cover:
+        return set()
+    x, y, w, h = (int(v) for v in cover)
+    return {(x + i, y + j) for j in range(h) for i in range(w)}
+
+
+def cover_layer_data(level, catalog, tilemap, params):
+    """Terreno falso (2026-10-22): tiles del interior tapado y de las celdas solidas que lo
+    rodean (8 vecinos), con los bordes como si el interior fuera solido; asi el bloque se
+    ve entero, sin la costura de la sala escondida."""
+    cells = cover_cells(params)
+    grid = [list(row) for row in solid_grid(level, catalog)]
+    for (c, r) in cells:
+        grid[r][c] = "#"
+    grid = ["".join(row) for row in grid]
+    ring = set()
+    for (c, r) in cells:
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                rr, cc = r + dr, c + dc
+                if 0 <= rr < len(grid) and 0 <= cc < len(grid[0]) and grid[rr][cc] == "#":
+                    ring.add((cc, rr))
+    return tile_map_data(level, catalog, tilemap, cells | ring, grid)
 
 
 def spike_runs(level, tilemap):
@@ -284,9 +317,11 @@ def glitch_neighbors(level, obj, params):
     x, y = obj["x"], obj["y"]
     w, h = int(params["width_tiles"]), int(params["height_tiles"])
 
+    covered = cover_cells(params)
+
     def solid(r, c):
         if 0 <= r < rows and 0 <= c < cols:
-            return grid[r][c] == "#"
+            return grid[r][c] == "#" or (c, r) in covered
         return True
 
     mask = 0
@@ -467,6 +502,16 @@ def build_scene(level, root=ROOT, warnings=None):
         obj_groups, obj_meta = help_tag(obj, entry.get("help_id"))
         scene.node(name, parent="Objects", instance=scene.ext_resource("PackedScene", entry["scene"]),
                    props=props + obj_meta + phase_meta(obj), groups=obj_groups)
+        if obj["type"] == "glitch_wall" and params.get("cover"):
+            # Terreno falso (2026-10-22): TileMapLayer sin colision hija de la pared (se
+            # oculta con ella); celdas en coordenadas del nivel.
+            scene.node("Cover", "TileMapLayer", parent="Objects/%s" % name, props=[
+                ("position", fmt_vector2(-obj["x"] * t, -obj["y"] * t)),
+                ("z_index", str(int(catalog.get("glitch_wall", {}).get("cover_z_index", 1)))),
+                ("tile_map_data", cover_layer_data(level, catalog, tilemap, params)),
+                ("tile_set", scene.ext_resource("TileSet", tilemap["tileset"])),
+                ("collision_enabled", "false"),
+            ])
 
     scene.node("Enemies", "Node2D", parent=".")
     for enemy in level.get("enemies", []):

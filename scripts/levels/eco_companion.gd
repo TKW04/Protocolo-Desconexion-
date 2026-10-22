@@ -218,7 +218,27 @@ func get_follow_position() -> Vector2:
 	if behind > 0.0:
 		var near: float = clampf(1.0 - absf(_anchor.x - feet.x) / behind, 0.0, 1.0)
 		target.y -= float(_data.get("cross_lift_px", 20)) * near
+	target.y = _below_ceiling(target, feet)
 	return target
+
+
+## Bajo un techo cercano (pasillos de 2 filas del 1-3, 2026-10-22: Eco flotaba
+## sobre el borde del techo) baja hasta quedar ceiling_clear_px por debajo de el:
+## un rayo vertical en la x de Eco desde ceiling_probe_from_px sobre los pies de
+## Isak hasta su sitio (capa del terreno). Nunca por debajo de los pies.
+func _below_ceiling(target: Vector2, feet: Vector2) -> float:
+	var clear: float = float(_data.get("ceiling_clear_px", 0))
+	if clear <= 0.0 or not is_inside_tree():
+		return target.y
+	var from := Vector2(target.x, feet.y - float(_data.get("ceiling_probe_from_px", 56)))
+	var to := Vector2(target.x, target.y - clear)
+	if to.y >= from.y:
+		return target.y
+	var query := PhysicsRayQueryParameters2D.create(from, to, int(_data.get("ceiling_mask", 1)))
+	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return target.y
+	return minf(maxf(target.y, (hit["position"] as Vector2).y + clear), feet.y - clear)
 
 
 ## Objeto con ayuda que senala ahora (null si sigue a Isak).

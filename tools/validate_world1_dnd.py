@@ -64,6 +64,13 @@ def main():
         with open(tres, encoding="utf-8") as fh:
             if fh.read() != gen.frames_resource():
                 errs.append(f"{gen.FRAMES_TRES}: no esta al dia (python3 tools/gen_world1_dnd.py)")
+    lock = os.path.join(REPO, "assets/sprites", gen.LOCK_FRAMES_TRES)
+    if not os.path.exists(lock):
+        errs.append(f"{gen.LOCK_FRAMES_TRES}: no existe")
+    else:
+        with open(lock, encoding="utf-8") as fh:
+            if fh.read() != gen.lock_frames_resource():
+                errs.append(f"{gen.LOCK_FRAMES_TRES}: no esta al dia (python3 tools/gen_world1_dnd.py)")
     print("\n".join(errs) if errs else f"OK ({len(expected)} PNG + {gen.FRAMES_TRES})")
     return 1 if errs else 0
 
