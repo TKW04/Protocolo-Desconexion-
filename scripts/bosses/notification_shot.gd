@@ -5,15 +5,15 @@
 ## no es un cuerpo (el laser lo atraviesa y el pulso no le afecta) y el dash lo
 ## atraviesa (Isak invulnerable: take_hit no hace nada). Tocarlo quita
 ## contact_damage de Sync Rate con el retroceso de siempre. Tiempo del mundo
-## (el Debug lo ralentiza). Lo crea y configura AlertMajor; arte PROVISIONAL
-## (_placeholder) de tools/gen_boss_alert_major.py.
+## (el Debug lo ralentiza). Lo crea y configura AlertMajor; arte por script
+## de tools/gen_boss_alert_major.py (definitivo desde el 2026-10-22).
 class_name NotificationShot
 extends Node2D
 
 signal hit_player(amount: float)
 signal finished
 
-const TEXTURE_PATH: String = "res://assets/sprites/bosses/notification_shot_placeholder.png"
+const TEXTURE_PATH: String = "res://assets/sprites/bosses/notification_shot.png"
 const HELP_ID: String = "notification_shot"
 
 ## Centro del proyectil en `position`; avanza hacia direction (-1 / 1).

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cnrgga5xh8ogv"
-path="res://.godot/imported/alert_major_core_card_placeholder.png-c188d12ee6cda07257e6e60f101cf734.ctex"
+uid="uid://w1g7acuaasn7"
+path="res://.godot/imported/notification_shot.png-f1d4c9630f058117b02b11746f4ee3d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/bosses/alert_major_core_card_placeholder.png"
-dest_files=["res://.godot/imported/alert_major_core_card_placeholder.png-c188d12ee6cda07257e6e60f101cf734.ctex"]
+source_file="res://assets/sprites/bosses/notification_shot.png"
+dest_files=["res://.godot/imported/notification_shot.png-f1d4c9630f058117b02b11746f4ee3d9.ctex"]
 
 [params]
 

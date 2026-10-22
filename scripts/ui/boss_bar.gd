@@ -11,8 +11,8 @@
 ## Se muestra con EventBus.boss_started (busca el jefe del grupo boss con ese
 ## id) y se oculta sola tras el golpe final (hide_after_defeat_s, desvanecida)
 ## o si el jefe sale del arbol. Todo en pixeles de arte x pixel_scale; aspecto
-## en la seccion boss_bar de data/hud.json; arte PROVISIONAL (_placeholder) de
-## tools/gen_boss_alert_major.py. Tiempo real.
+## en la seccion boss_bar de data/hud.json; arte por script de
+## tools/gen_boss_alert_major.py (definitivo desde el 2026-10-22). Tiempo real.
 class_name BossBar
 extends Control
 

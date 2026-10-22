@@ -8,7 +8,7 @@
 ## colision fisica (el dash la atraviesa). Cuerpo con el arte FINAL
 ## (AlertMajorBody, paso 16, 2026-10-22): el jefe le pone el MISMO cuadro que a
 ## la real (AlertMajor._refresh_art). El «pop» sigue provisional
-## (alert_major_pop_placeholder.png de tools/gen_boss_alert_major.py).
+## (alert_major_pop.png de tools/gen_boss_alert_major.py).
 class_name AlertMajorClone
 extends Node2D
 
@@ -117,7 +117,7 @@ func discard(notify: bool) -> void:
 	_body.visible = false
 	_pop = Sprite2D.new()
 	_pop.name = "Pop"
-	_pop.texture = load(ART_DIR + "alert_major_pop_placeholder.png") as Texture2D
+	_pop.texture = load(ART_DIR + "alert_major_pop.png") as Texture2D
 	_pop.scale = Vector2(POP_SCALE, POP_SCALE)
 	add_child(_pop)
 	if EventBus.pulse_fired.is_connected(receive_pulse):

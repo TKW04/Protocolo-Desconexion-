@@ -159,14 +159,15 @@ class AlertMajorFinalArtTest(unittest.TestCase):
 
 class BossUiArtTest(unittest.TestCase):
     """Arte provisional del HUD, la recompensa y el album del jefe (pasos 9-11, 2026-10-21): cada textura
-    que citan data/hud.json (boss_bar) y data/boss_reward.json existe, es _placeholder y la genera
+    que citan data/hud.json (boss_bar) y data/boss_reward.json existe, ya sin _placeholder (definitivas desde el
+    2026-10-22) y la genera
     tools/gen_boss_alert_major.py (al dia: AlertMajorFightDataTest)."""
 
     def _res(self, path):
         self.assertTrue(path.startswith("res://"), path)
         local = os.path.join(ROOT, path[len("res://"):])
         self.assertTrue(os.path.exists(local), path)
-        self.assertIn("_placeholder", os.path.basename(path))
+        self.assertNotIn("_placeholder", os.path.basename(path))
 
     def test_boss_bar_and_reward_art_exist(self):
         with open(os.path.join(ROOT, "data", "hud.json"), encoding="utf-8") as fh:

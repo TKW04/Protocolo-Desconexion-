@@ -7,7 +7,7 @@
 	"line_gap_px": 3,
 	"font": "res://assets/sprites/ui/text_font.fnt",
 	"font_size": 12,
-	"panel": "res://assets/sprites/bosses/boss_reward_panel_placeholder.png",
+	"panel": "res://assets/sprites/bosses/boss_reward_panel.png",
 	"panel_margin_px": 4,
 	"min_show_s": 0.6,
 	"hint_blink_hz": 2.0,

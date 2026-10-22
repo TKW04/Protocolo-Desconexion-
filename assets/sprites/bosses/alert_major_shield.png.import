@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dg6qklja1gmu7"
-path="res://.godot/imported/alert_major_shield_placeholder.png-cb91b92fd1de45d2cf92afad91d94fcb.ctex"
+path="res://.godot/imported/alert_major_shield.png-a618ec83a3b18e414981d0c6c17a2a87.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/bosses/alert_major_shield_placeholder.png"
-dest_files=["res://.godot/imported/alert_major_shield_placeholder.png-cb91b92fd1de45d2cf92afad91d94fcb.ctex"]
+source_file="res://assets/sprites/bosses/alert_major_shield.png"
+dest_files=["res://.godot/imported/alert_major_shield.png-a618ec83a3b18e414981d0c6c17a2a87.ctex"]
 
 [params]
 

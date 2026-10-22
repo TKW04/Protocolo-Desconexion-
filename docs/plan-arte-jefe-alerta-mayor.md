@@ -21,14 +21,14 @@ El cuerpo se dibuja a `draw_scale` 2 (`data/bosses/alert_major.json`, `arena.dra
 | `alert_major_down_placeholder.png` | 64 × 64 (×2 = 128) | Desinflado y abajo: la ventana en que se puede dañar (el jefe está «aturdido»). | `ART_DOWN` |
 | `alert_major_clone_placeholder.png` | 64 × 64 | Copia de la fase 3. **Igual que el desinflado a propósito**: solo el Debug distingue la real por su núcleo. | `alert_major_clone.gd` |
 | `alert_major_lunge_placeholder.png` | 64 × 64 | Copia lanzándose: estirada, con tres rayas grises de estela. Una sola imagen. | `alert_major_clone.gd` |
-| `alert_major_pop_placeholder.png` | 64 × 64 | «Pop» de una copia descartada. | `alert_major_clone.gd` |
-| `notification_shot_placeholder.png` | 64 × 32 | Notificación de la ráfaga (fase 2). | `notification_shot.gd` |
-| `alert_major_shield_placeholder.png` | 32 × 32 | Icono del pop-up escudo (candado). | `alert_major.gd` (`ART_SHIELD`) |
-| `boss_bar_icon_placeholder.png` | 16 × 16 | Icono de la barra del jefe en el HUD. | `boss_bar.gd` / `data/hud.json` |
-| `boss_bar_frame_placeholder.png` | 16 × 16 | Marco nine-patch (4 px) de la barra. | `data/hud.json` |
-| `boss_reward_panel_placeholder.png` | 16 × 16 | Marco nine-patch del panel de recompensa. | `boss_reward.gd` / `data/boss_reward.json` |
-| `alert_major_core_card_placeholder.png` | 64 × 64 | Ficha del álbum del núcleo marcado. **Única con carmín.** | `tools/gen_album_cards.py` |
-| `eco_boss_icon_placeholder.png` | 16 × 16 | Eco hablando por el jefe (icono con interferencia). | `data/eco_text_box.json` |
+| `alert_major_pop.png` | 64 × 64 | «Pop» de una copia descartada. | `alert_major_clone.gd` |
+| `notification_shot.png` | 64 × 32 | Notificación de la ráfaga (fase 2). | `notification_shot.gd` |
+| `alert_major_shield.png` | 32 × 32 | Icono del pop-up escudo (candado). | `alert_major.gd` (`ART_SHIELD`) |
+| `boss_bar_icon.png` | 16 × 16 | Icono de la barra del jefe en el HUD. | `boss_bar.gd` / `data/hud.json` |
+| `boss_bar_frame.png` | 16 × 16 | Marco nine-patch (4 px) de la barra. | `data/hud.json` |
+| `boss_reward_panel.png` | 16 × 16 | Marco nine-patch del panel de recompensa. | `boss_reward.gd` / `data/boss_reward.json` |
+| `alert_major_core_card.png` | 64 × 64 | Ficha del álbum del núcleo marcado. **Única con carmín.** | `tools/gen_album_cards.py` |
+| `eco_boss_icon.png` | 16 × 16 | Eco hablando por el jefe (icono con interferencia). | `data/eco_text_box.json` |
 
 Varias cosas no tienen arte propio:
 
@@ -248,7 +248,7 @@ La variante quita `ascend`, que se sustituye por `descend` al revés más un est
 2. **Confirmar el concepto:** badge con pastilla en blanco y campana, como en el documento aprobado, o cuerpo de «móvil con pantalla de bloqueo» (§2.3).
 3. **Confirmar `pixelArt: true`** para el base, o `pro` sin pixel art.
 4. **Aprobar el cambio a ×1** (lienzos de 256 y 128) y los dos cambios de herramientas: reducción de paleta y validador sin pies en la base.
-5. **Decidir si las piezas que siguen por script** pierden el sufijo `_placeholder`.
+5. ~~**Decidir si las piezas que siguen por script** pierden el sufijo `_placeholder`.~~ Hecho el 2026-10-22 (§7.5).
 
 ---
 
@@ -311,3 +311,4 @@ Iguales a los de antes del arte (§6.4 de la propuesta): validador de arenas OK;
 
 - **Capturas:** `$GODOT --fixed-fps 60 --path . -s tools/smoke_boss_arena.gd -- --full --shots <carpeta>` (con ventana; el humo gana `--shots`): intro, fases 1-3 y su ventana, golpe final, desarme, recompensa, hub con la pieza cian encendida y carpeta del Mundo 2 «Próximamente». Copia en `assets/levels_preview/1-boss/`; mapa de la arena en `assets/levels_preview/1-boss_mapa.png`.
 - **Defectos visuales vistos:** (1) las líneas de Eco por el jefe (intro y cambios de fase) tapan la barra del jefe y, con el jefe arriba, parte del badge (capturas 01, 04 y 06); (2) la arena (24 tiles, 1536 px) no cabe en pantalla: con Isak a un lado, el jefe o las copias del otro quedan cortados (04, 07); (3) el contador «99+» toca el borde superior del badge (02); (4) en una partida sin las ayudas aprendidas Eco lleva la Q dorada durante toda la pelea (01-09), lo que distrae; (5) el panel de la carpeta del Mundo 2 dice «Pulso: entrar» aunque no hay nada que entrar (12).
+- **Sin `_placeholder`:** las piezas que siguen por script (`notification_shot`, `alert_major_shield`, `boss_bar_icon`, `boss_bar_frame`, `boss_reward_panel`, `alert_major_core_card`, `eco_boss_icon`, `alert_major_pop`) pierden el sufijo: archivos y `.import` renombrados (mismos UID), rutas en `data/hud.json`, `data/boss_reward.json`, `data/eco_text_box.json`, `alert_major.gd`, `alert_major_clone.gd`, `notification_shot.gd`, `tools/gen_boss_alert_major.py` y `tools/gen_album_cards.py`; `tests/test_boss_data.py` exige ahora que no lleven el sufijo. Sin cambios de comportamiento. El saco de pruebas (`boss_dummy_*_placeholder`) sigue igual.

@@ -83,11 +83,11 @@ SOURCES = {
     # marcado, el escudo y la notificacion de la rafaga siguen PROVISIONALES
     # (tools/gen_boss_alert_major.py); sus Burbujas (las de siempre) y el pop-up (la ventana en miniatura).
     "alert_major": ("assets/sprites/bosses/alert_major_hover_00.png", None, 1),
-    "alert_major_core": ("assets/sprites/bosses/alert_major_core_card_placeholder.png", None, 1),
+    "alert_major_core": ("assets/sprites/bosses/alert_major_core_card.png", None, 1),
     "alert_major_bubble": ("assets/sprites/enemies/bubble_idle_00.png", None, 1),
     "alert_major_popup": ("assets/sprites/props/tower/overlay_sample_00.png", None, 1),
-    "boss_popup_shield": ("assets/sprites/bosses/alert_major_shield_placeholder.png", None, 2),
-    "notification_shot": ("assets/sprites/bosses/notification_shot_placeholder.png", None, 1),
+    "boss_popup_shield": ("assets/sprites/bosses/alert_major_shield.png", None, 2),
+    "notification_shot": ("assets/sprites/bosses/notification_shot.png", None, 1),
     "alert_major_clone": ("assets/sprites/bosses/alert_major_window_00.png", None, 1),
 }
 

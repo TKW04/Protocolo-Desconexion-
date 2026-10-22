@@ -763,7 +763,7 @@
 		},
 		"alert_major": {
 			"scene": "res://scenes/bosses/alert_major.tscn",
-			"description": "Jefe del Mundo 1 «Alerta Mayor» (2026-10-21, pasos 5-8 de docs/propuesta-jefe-alerta-mayor.md §6): AlertMajor (BossBase) con sus tres fases (Burbujas y barridos; pop-ups, rafagas y escudo; copias al compas). Solo en su arena (kind boss, boss alert_major). (x, y) es la celda de arriba a la izquierda de su cuerpo inflado de 4 x 4 tiles al empezar; las posiciones de la pelea (sitios, carriles, vuelo) estan en arena de data/bosses/alert_major.json. Empieza al terminar la llegada de Isak con la linea de intro (pausa). Tiempo del mundo. Arte PROVISIONAL (_placeholder, tools/gen_boss_alert_major.py).",
+			"description": "Jefe del Mundo 1 «Alerta Mayor» (2026-10-21, pasos 5-8 de docs/propuesta-jefe-alerta-mayor.md §6): AlertMajor (BossBase) con sus tres fases (Burbujas y barridos; pop-ups, rafagas y escudo; copias al compas). Solo en su arena (kind boss, boss alert_major). (x, y) es la celda de arriba a la izquierda de su cuerpo inflado de 4 x 4 tiles al empezar; las posiciones de la pelea (sitios, carriles, vuelo) estan en arena de data/bosses/alert_major.json. Empieza al terminar la llegada de Isak con la linea de intro (pausa). Tiempo del mundo. Arte final del cuerpo (AutoSprite, AlertMajorBody) y piezas por script de tools/gen_boss_alert_major.py (sin _placeholder desde el 2026-10-22).",
 			"required": [
 				"id"
 			],

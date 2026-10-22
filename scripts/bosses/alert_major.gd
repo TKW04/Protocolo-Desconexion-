@@ -26,8 +26,8 @@
 ## 2026-10-22): AlertMajorBody con las animaciones de AutoSprite (hover,
 ## inflate, descend, ascend, window, lunge_warn, lunge; seccion art del JSON);
 ## _refresh_art elige la animacion por estado y aplica el MISMO cuadro a la real
-## y a las copias. El resto del arte (escudo, notificacion, «pop»...) sigue
-## provisional (_placeholder) de tools/gen_boss_alert_major.py. Ataques de cada
+## y a las copias. El resto del arte (escudo, notificacion, «pop»...) es por
+## script (tools/gen_boss_alert_major.py; definitivo, sin _placeholder desde el 2026-10-22). Ataques de cada
 ## fase: _phase1_* (paso 6), _phase2_* (paso 7) y _phase3_* (paso 8).
 class_name AlertMajor
 extends BossBase
@@ -74,7 +74,7 @@ const MOVE_GONE: StringName = &"gone"
 ## Fase 3: el cuerpo lo mueven las rondas de copias (get_round_state).
 const MOVE_CLONES: StringName = &"clones"
 
-const ART_SHIELD: String = "alert_major_shield_placeholder.png"
+const ART_SHIELD: String = "alert_major_shield.png"
 
 ## Id del objeto en el nivel (params.id).
 @export var object_id: StringName = &""

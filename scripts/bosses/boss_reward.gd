@@ -13,8 +13,8 @@
 ##   arbol (si no lo estaba; solo quien pausa quita la pausa) y se cierra con
 ##   saltar / aceptar (como las lineas importantes) tras min_show_s. No es Eco:
 ##   es texto del sistema y del recuerdo (sin blip). Emite shown y closed.
-## Textos y aspecto en data/boss_reward.json; arte PROVISIONAL (_placeholder) de
-## tools/gen_boss_alert_major.py. Tiempo real.
+## Textos y aspecto en data/boss_reward.json; arte por script de
+## tools/gen_boss_alert_major.py (definitivo desde el 2026-10-22). Tiempo real.
 class_name BossReward
 extends CanvasLayer
 

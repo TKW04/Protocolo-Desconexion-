@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://w1g7acuaasn7"
-path="res://.godot/imported/notification_shot_placeholder.png-b3de0c3678cef0420496607e6ad9114b.ctex"
+uid="uid://ddipb13jncdpm"
+path="res://.godot/imported/boss_bar_frame.png-09938e78cb9b45ba5869d0b381030f10.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/bosses/notification_shot_placeholder.png"
-dest_files=["res://.godot/imported/notification_shot_placeholder.png-b3de0c3678cef0420496607e6ad9114b.ctex"]
+source_file="res://assets/sprites/bosses/boss_bar_frame.png"
+dest_files=["res://.godot/imported/boss_bar_frame.png-09938e78cb9b45ba5869d0b381030f10.ctex"]
 
 [params]
 

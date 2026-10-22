@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Arte PROVISIONAL de Alerta Mayor, el jefe del Mundo 1 (pasos 5-8 de docs/propuesta-jefe-alerta-mayor.md
-§6, 2026-10-21). Sufijo _placeholder (regla 3 de CLAUDE.md). Aqui no se gasta nada: es un dibujo por script.
+"""Arte por script de Alerta Mayor, el jefe del Mundo 1 (pasos 5-8 de docs/propuesta-jefe-alerta-mayor.md
+§6, 2026-10-21). Sin sufijo _placeholder desde el 2026-10-22 (piezas dadas por definitivas). Aqui no se gasta nada: es un dibujo por script.
 
 El CUERPO del jefe (reposo, inflado, bajada, subida, ventana, copias y lanzamiento) tiene arte FINAL desde
 el paso 16 (2026-10-22, AutoSprite): tools/import_boss_alert_major.py y AlertMajorBody. Aqui quedan las
 piezas que siguen por script (interfaz y efectos; docs/plan-arte-jefe-alerta-mayor.md §2.1):
-  alert_major_pop_placeholder.png       64x64   «pop» de una copia descartada (dibujado a x2)
-  notification_shot_placeholder.png     64x32   notificacion de la rafaga (fase 2)
-  alert_major_shield_placeholder.png    32x32   icono del pop-up escudo (candado sobre la campana)
-  boss_bar_icon_placeholder.png         16x16   icono de la barra del jefe en el HUD (paso 9; BossBar)
-  boss_bar_frame_placeholder.png        16x16   marco nine-patch (4 px) de la barra del jefe
-  boss_reward_panel_placeholder.png     16x16   marco nine-patch (4 px) del panel de la recompensa (BossReward)
-  alert_major_core_card_placeholder.png 64x64   ficha del album del nucleo marcado (UNICA con carmin)
-  eco_boss_icon_placeholder.png         16x16   icono de Eco hablando por el jefe (eco_icon con interferencia)
+  alert_major_pop.png       64x64   «pop» de una copia descartada (dibujado a x2)
+  notification_shot.png     64x32   notificacion de la rafaga (fase 2)
+  alert_major_shield.png    32x32   icono del pop-up escudo (candado sobre la campana)
+  boss_bar_icon.png         16x16   icono de la barra del jefe en el HUD (paso 9; BossBar)
+  boss_bar_frame.png        16x16   marco nine-patch (4 px) de la barra del jefe
+  boss_reward_panel.png     16x16   marco nine-patch (4 px) del panel de la recompensa (BossReward)
+  alert_major_core_card.png 64x64   ficha del album del nucleo marcado (UNICA con carmin)
+  eco_boss_icon.png         16x16   icono de Eco hablando por el jefe (eco_icon con interferencia)
 El desarme en pixeles no tiene arte propio: PixelBurst suelta los pixeles de la textura del cuerpo.
 Solo colores de assets/palettes/mundo1.gpl y SIN carmin ni carmin_brillo: el carmin es solo del nucleo
 (WeakPoint, que se dibuja aparte; y su ficha del album, CARMIN_OK). Fondo transparente, alfa 0 o 255.
@@ -180,19 +180,19 @@ def eco_boss_icon():
 
 
 # Piezas que pueden llevar carmin (solo el nucleo).
-CARMIN_OK = (DIR + "alert_major_core_card_placeholder.png",)
+CARMIN_OK = (DIR + "alert_major_core_card.png",)
 
 
 def outputs():
     return {
-        DIR + "boss_reward_panel_placeholder.png": reward_panel(),
-        DIR + "eco_boss_icon_placeholder.png": eco_boss_icon(),
-        DIR + "alert_major_core_card_placeholder.png": core_card(),
-        DIR + "boss_bar_icon_placeholder.png": bar_icon(),
-        DIR + "boss_bar_frame_placeholder.png": bar_frame(),
-        DIR + "alert_major_pop_placeholder.png": pop(),
-        DIR + "notification_shot_placeholder.png": shot(),
-        DIR + "alert_major_shield_placeholder.png": shield_icon(),
+        DIR + "boss_reward_panel.png": reward_panel(),
+        DIR + "eco_boss_icon.png": eco_boss_icon(),
+        DIR + "alert_major_core_card.png": core_card(),
+        DIR + "boss_bar_icon.png": bar_icon(),
+        DIR + "boss_bar_frame.png": bar_frame(),
+        DIR + "alert_major_pop.png": pop(),
+        DIR + "notification_shot.png": shot(),
+        DIR + "alert_major_shield.png": shield_icon(),
     }
 
 

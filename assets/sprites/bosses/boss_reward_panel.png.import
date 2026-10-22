@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cy3ur3ghfinjp"
-path="res://.godot/imported/boss_reward_panel_placeholder.png-1f9e5c174c5545c18e567ff7a496875f.ctex"
+path="res://.godot/imported/boss_reward_panel.png-eeda2327c5738f4f8b3a6b3e9a89ecd0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/bosses/boss_reward_panel_placeholder.png"
-dest_files=["res://.godot/imported/boss_reward_panel_placeholder.png-1f9e5c174c5545c18e567ff7a496875f.ctex"]
+source_file="res://assets/sprites/bosses/boss_reward_panel.png"
+dest_files=["res://.godot/imported/boss_reward_panel.png-eeda2327c5738f4f8b3a6b3e9a89ecd0.ctex"]
 
 [params]
 
