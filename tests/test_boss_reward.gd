@@ -156,6 +156,39 @@ func test_reward_panel_texts_and_close() -> void:
 			assert_false(reward.get_text(key).contains(word), "%s sin «%s»" % [key, word])
 
 
+## Paso 5 en Kernel y Raíz (docs/propuesta-recuerdos.md §11.1): la misma entrega
+## da la capa del acceso y el panel lo nombra; en Raíz la reaccion de Eco es la
+## ultima linea del texto.
+func test_reward_panel_in_kernel_and_root_names_the_access() -> void:
+	var names: Dictionary = {2: "Capa: Kernel", 3: "Capa: Raíz"}
+	for lap: int in [2, 3]:
+		GameState.reset_progress()
+		var got: Array[StringName] = BossReward.grant(1, lap)
+		assert_eq(got.size(), lap, "Capa del acceso y las inferiores que faltaban")
+		var id: StringName = BossReward.layer_id(1, lap)
+		var reward: BossReward = BossReward.show_for(id, self)
+		assert_eq(reward.get_text(&"layer"), names[lap])
+		assert_eq(reward.get_text(&"text"), MemoryCatalog.shared().text(id))
+		if lap == 3:
+			var lines: PackedStringArray = reward.get_text(&"text").split("\n")
+			assert_true(lines[lines.size() - 1].begins_with("Eco: «"), "Eco reacciona tras la capa Raíz")
+		reward.free()
+
+
+## Los textos definitivos (paso 6) caben en el panel de la recompensa.
+func test_every_boss_layer_fits_the_reward_panel() -> void:
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	var cfg: Dictionary = BossReward.load_config()
+	var scale_px: float = float(cfg.get("pixel_scale", 2))
+	for id: StringName in catalog.ids():
+		if not catalog.is_boss(id):
+			continue
+		var reward: BossReward = BossReward.show_for(id, self, "Sin notificaciones pendientes.")
+		var panel := reward.get_node(^"Frame/Panel") as NinePatchRect
+		assert_lt(panel.size.y * scale_px, 720.0, "%s cabe en pantalla (%.0f px)" % [id, panel.size.y * scale_px])
+		reward.free()
+
+
 # --- BossDefeat en la arena ---
 
 func test_final_blow_sequence_disarms_rewards_and_leaves_by_vortex() -> void:

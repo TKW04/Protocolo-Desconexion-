@@ -39,6 +39,9 @@ LEVEL_RE = re.compile(r"^(\d+)-(\d+)$")
 MESSAGE_FIELDS = ("sender", "subject", "level", "secret", "first_lap")
 TEXT_FIELDS = ("title", "text", "sender", "subject")
 LAP_WORDS = re.compile(r"\b(vuelta|vueltas|easy|normal|hard)\b", re.IGNORECASE)
+# Largo maximo del texto de un recuerdo (2026-10-22, paso 6): con la ilustracion de la
+# ficha de Notas y el panel de BossReward, unas 7 lineas de la fuente de textos.
+MAX_TEXT_CHARS = 280
 
 
 def _load(path):
@@ -177,6 +180,9 @@ def validate(data, repo=REPO, glyphs="auto", levels=None, secrets_of=None, links
                 missing = sorted({c for c in value if c not in glyphs and c != "\n"})
                 if missing:
                     errors.append("%s: %s usa glifos que no tiene la fuente: %s" % (where, field, " ".join(missing)))
+            if field == "text" and len(value) > MAX_TEXT_CHARS:
+                errors.append("%s: text demasiado largo (%d > %d caracteres; no cabe en la ficha)"
+                              % (where, len(value), MAX_TEXT_CHARS))
             if LAP_WORDS.search(value):
                 errors.append("%s: %s nombra las vueltas (usa Caché, Kernel o Raíz)" % (where, field))
     _check_level_links(items, links, errors)

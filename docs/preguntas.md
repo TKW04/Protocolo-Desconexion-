@@ -1014,7 +1014,7 @@ Efectos complejos de `propuesta-mejoras.md` implementados con las decisiones del
 4. **Esbozo del Mundo 1** nuevo (borrador de tono; `propuesta-recuerdos.md` §5): circuito en la mesa de la cocina con el Abuelito y su lupa; en Raíz, Eco recortó la sonrisa («No era un recuerdo útil»).
 5. **Mensajes del Mundo 1 (borradores):** 1-1 en el secreto A `secreto_puente_servicio` (x 96, junto a su punto, sin mejoras; «Recado del Abuelito»); 1-2 en la carpeta de Spam (`secreto_spam`, ancla (26, 37); «¿Cenas con nosotros?»); 1-3, concepto de la sala secreta **«Excepciones»** tras una pared visible solo con el Debug y ruta que exige solo el Debug (no Deslizar; C5 se resolvió después, el mismo día, y la ruta sigue sin exigir el dash: `propuesta-1-3.md` §3.3). Textos en `propuesta-recuerdos.md` §10.
 
-**Siguen abiertos:** mensajes propios de Kernel y Raíz; textos definitivos de los 18 recuerdos, de los mensajes (el del 1-3 y los de los demás mundos) y del ensamblaje del final real.
+**Siguen abiertos:** mensajes propios de Kernel y Raíz; los mensajes de los Mundos 2-6 y el texto del ensamblaje del final real. **2026-10-22:** los 18 recuerdos de jefe y los mensajes del Mundo 1 tienen texto definitivo en datos como **propuesta del orquestador, revisar al jugar** (el usuario delegó la redacción; `propuesta-recuerdos.md` §11.2).
 
 ## Dash (Deslizar) y diseño del 1-3 (2026-10-19)
 

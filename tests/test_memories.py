@@ -71,13 +71,33 @@ class RealData(unittest.TestCase):
             self.assertEqual(m["first_lap"], 1, "Los mensajes de Caché aparecen desde Caché")
             self.assertEqual(m["sender"], "Mamá")
 
-    def test_world_1_sketch_is_written(self):
-        w1 = [m for m in self.data["memories"] if m["kind"] == "boss" and m["world"] == 1]
-        for m in w1:
-            self.assertNotIn("por escribir", m["text"], "Esbozo del Mundo 1 (§5)")
-        others = [m for m in self.data["memories"] if m["kind"] == "boss" and m["world"] != 1]
-        for m in others:
-            self.assertEqual(m["text"], "(por escribir)", "Sin inventar historia")
+    def test_all_texts_are_written(self):
+        """Paso 6 (2026-10-22): textos definitivos en datos (propuesta del orquestador, revisar
+        al jugar). Caché e imagen con la frase de Eco; Kernel, la escena (sin Eco); Raíz, lo que
+        hizo Eco con su reacción como última línea."""
+        for m in self.data["memories"]:
+            for field in ("title", "text", "sender", "subject"):
+                if field in m:
+                    self.assertNotIn("por escribir", m[field], m["id"])
+        bosses = {m["id"]: m for m in self.data["memories"] if m["kind"] == "boss"}
+        for world in range(1, 7):
+            cache, kernel, root = (bosses["boss_w%d_l%d" % (world, layer)] for layer in (1, 2, 3))
+            self.assertEqual(cache["title"], kernel["title"])
+            self.assertEqual(kernel["title"], root["title"])
+            self.assertTrue(cache["text"].split("\n")[-1].startswith("Eco: «"), cache["id"])
+            self.assertNotIn("Eco: «", kernel["text"], kernel["id"])
+            self.assertTrue(root["text"].split("\n")[-1].startswith("Eco: «"), root["id"])
+        self.assertEqual(bosses["boss_w6_l1"]["title"], "Fragmento de pausa")
+
+    def test_family_is_the_abuelito_and_mama(self):
+        """Decisión del 2026-10-19: Mamá escribe los mensajes y el Abuelito sale en ellos."""
+        for m in self.data["memories"]:
+            if m["kind"] == "secret":
+                self.assertTrue(m["text"].startswith("Isak, "), m["id"])
+                self.assertTrue(m["text"].split("\n")[-1].startswith("Mamá ("), "Firma con humor")
+        kernels = [m for m in self.data["memories"] if m["kind"] == "boss" and m["layer"] == 2]
+        for m in kernels:
+            self.assertIn("Abuelito", m["text"], "La persona importante de los recuerdos (%s)" % m["id"])
 
 
 class Synthetic(unittest.TestCase):
@@ -137,6 +157,7 @@ class Synthetic(unittest.TestCase):
     def test_texts(self):
         self._assert_error(_boss_set() + [_message(text="Hola €")], "glifos")
         self._assert_error(_boss_set() + [_message(text="En la vuelta Normal")], "nombra las vueltas")
+        self._assert_error(_boss_set() + [_message(text="a" * (vm.MAX_TEXT_CHARS + 1))], "demasiado largo")
 
     def test_real_data_copy_with_unknown_secret_fails(self):
         with open(DATA, encoding="utf-8") as fh:

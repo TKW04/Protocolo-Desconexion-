@@ -81,4 +81,4 @@ La última frase del nivel 4-3 pertenece a Tomi. Es la que cierra el mensaje en 
 | **El Abuelito** | Así lo llama Isak. Repara radios y le enseñó a soldar; enlaza con el nombre «Isak Fix». **Vive con Isak**: la cocina de los recuerdos es la de casa. | La persona importante de los recuerdos (p. ej. el del Mundo 1: el circuito en la mesa de la cocina, con su lupa). |
 | **Mamá** | La madre de Isak; en el juego se llama «Mamá». | Escribe los **mensajes de secretos** (correos y mensajes) y firma con humor («Mamá (sí, otra vez)»). |
 
-Los textos del Mundo 2 (recuerdos de la familia) siguen sin escribir: se escriben al construir ese mundo.
+Los 18 recuerdos de jefe (también los del Mundo 2, la tarde de domingo en el patio) tienen texto desde el 2026-10-22 como **propuesta del orquestador, revisar al jugar** ([propuesta-recuerdos.md](propuesta-recuerdos.md) §11.2); el Abuelito está en cada escena Kernel. Los mensajes de secretos de los Mundos 2-6 se escriben al construir cada mundo.
