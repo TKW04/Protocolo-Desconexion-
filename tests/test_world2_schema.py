@@ -23,6 +23,7 @@ import world2_model  # noqa: E402
 SCROLL_TEST = os.path.join(ROOT, "data", "levels", "scroll_test.json")
 BUCLE_TEST = os.path.join(ROOT, "data", "levels", "bucle_test.json")
 TARJETAS_TEST = os.path.join(ROOT, "data", "levels", "tarjetas_test.json")
+AUTOPLAY_TEST = os.path.join(ROOT, "data", "levels", "autoplay_test.json")
 
 
 def load(path):
@@ -190,6 +191,51 @@ class CardsAndLoopTest(unittest.TestCase):
         result = validate_level.validate(level, ROOT)
         self.assertFalse(result["ok"], "sin el Debug no se sale del bucle")
 
+
+
+class AutoplayVideoSchemaTest(unittest.TestCase):
+    """Video en autoplay (paso 6): clip valido, tarjeta y ola sin celdas solidas y clip con reposo."""
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def video(self, level, vid):
+        return next(e for e in level["enemies"] if e["id"] == vid)
+
+    def set_cell(self, level, x, y, char):
+        row = level["grid"][y]
+        level["grid"][y] = row[:x] + char + row[x + 1:]
+
+    def test_room_is_valid(self):
+        self.assertEqual(vls.validate_level(load(AUTOPLAY_TEST)), [])
+
+    def test_unknown_clip(self):
+        level = load(AUTOPLAY_TEST)
+        self.video(level, "video_ola")["params"]["clip"] = "loop"
+        self.assert_fails(level, "clip debe ser wave, ray o count")
+
+    def test_card_cells_must_be_free(self):
+        level = load(AUTOPLAY_TEST)
+        self.set_cell(level, 29, 4, "#")
+        self.assert_fails(level, "celda solida dentro de la tarjeta")
+
+    def test_wave_corridor_must_be_free(self):
+        level = load(AUTOPLAY_TEST)
+        self.set_cell(level, 8, 9, "#")
+        self.assert_fails(level, "celda solida dentro de la ola")
+
+    def test_clip_needs_rest(self):
+        level = load(AUTOPLAY_TEST)
+        params = self.video(level, "video_ola")["params"]
+        params["wave_tiles"] = 14
+        params["clip_s"] = 2.0
+        self.assert_fails(level, "clip_s 2.00 menor que aviso + ataque + reposo minimo")
+
+    def test_params_out_of_range(self):
+        level = load(AUTOPLAY_TEST)
+        self.video(level, "video_cuenta")["params"]["clip_s"] = 4.0
+        self.assert_fails(level, "params.clip_s = 4.0 fuera de [2.0, 3.0]")
 
 
 class ScrollValidatorTest(unittest.TestCase):

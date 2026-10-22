@@ -15,6 +15,11 @@
 ## el pulso no le afecta); el dash la atraviesa (invulnerable). Tiempo del
 ## mundo (el Debug la ralentiza). Al reaparecer vuelve a su estado inicial (su
 ## metronomo tambien). Arte por script (paso 8, 2026-10-20): tools/gen_world1_dnd.py.
+## Modo disparo (`manual`, 2026-10-22, rayo del video en autoplay del Mundo 2,
+## docs/propuesta-mundo-2.md §3.4): sin ciclo propio; reposa hasta que alguien
+## llama a trigger(), que hace un aviso y una onda y vuelve a reposar (como el
+## modo disparo de SpamBanner). Con draw_bell = false solo se dibujan el aviso
+## del suelo y la onda (el rayo sale del video, no de una campana).
 class_name AlarmBell
 extends Node2D
 
@@ -47,6 +52,10 @@ var push_direction: int = -1
 var damage_width_px: float = 48.0
 ## Carpeta de los cuadros (tools/gen_world1_dnd.py).
 var sprite_dir: String = "res://assets/sprites/enemies/alarm_bell/"
+## Modo disparo: solo avisa y suelta la onda al llamar a trigger().
+var manual: bool = false
+## Falso: no dibuja la campana (rayo del video en autoplay).
+var draw_bell: bool = true
 
 ## Isak al que dana (si es null se busca en el nivel).
 var target: Isak
@@ -56,6 +65,7 @@ var _t: float = 0.0
 var _ready_ok: bool = false
 var _rhythm_node: RhythmZone
 var _waves: int = 0
+var _armed: bool = false
 
 
 func _ready() -> void:
@@ -77,7 +87,13 @@ func _physics_process(delta: float) -> void:
 func step(delta: float) -> void:
 	if not _ready_ok:
 		return
-	if get_rhythm() == null:
+	if manual:
+		if _armed:
+			_t += WorldTime.scaled_delta(delta)
+			if _t >= get_warn_s() + wave_s:
+				_armed = false
+				_t = get_warn_s() + wave_s
+	elif get_rhythm() == null:
 		_t = fposmod(_t + WorldTime.scaled_delta(delta), get_cycle_s())
 	_update_state()
 	if _state == STATE_WAVE:
@@ -129,6 +145,8 @@ func get_rhythm() -> RhythmZone:
 
 ## Ciclo actual (s de tiempo del mundo): el del metronomo o interval_s.
 func get_cycle_s() -> float:
+	if manual:
+		return get_warn_s() + wave_s + 0.01
 	var r: RhythmZone = get_rhythm()
 	if r != null:
 		return r.get_cycle_s()
@@ -137,7 +155,7 @@ func get_cycle_s() -> float:
 
 ## Segundos (tiempo del mundo) dentro de su propio ciclo (con su desfase).
 func get_cycle_time() -> float:
-	var r: RhythmZone = get_rhythm()
+	var r: RhythmZone = null if manual else get_rhythm()
 	if r != null:
 		return fposmod(r.get_beat_phase() - offset, 1.0) * r.get_cycle_s()
 	return _t
@@ -158,11 +176,27 @@ func get_wave_rect() -> Rect2:
 
 # --- Acciones ---
 
-## Vuelve al estado inicial (reaparicion de Isak, LevelRunner).
+## Modo disparo: empieza un aviso y una onda. Falso si no es manual o ya esta en marcha.
+func trigger() -> bool:
+	if not manual or _armed or not _ready_ok:
+		return false
+	_armed = true
+	_t = 0.0
+	_update_state()
+	return true
+
+
+## Modo disparo: avisando o con la onda.
+func is_busy() -> bool:
+	return manual and _armed
+
+
+## Vuelve al estado inicial (reaparicion de Isak, LevelRunner). En modo disparo, en reposo.
 func reset_patrol() -> void:
 	if not _ready_ok:
 		return
-	_t = fmod(phase_s, get_cycle_s())
+	_armed = false
+	_t = get_warn_s() + wave_s if manual else fmod(phase_s, get_cycle_s())
 	_state = &""
 	_waves = 0
 	_update_state()
@@ -179,7 +213,7 @@ func _phase_for(t: float) -> StringName:
 
 
 func _update_state() -> void:
-	var r: RhythmZone = get_rhythm()
+	var r: RhythmZone = null if manual else get_rhythm()
 	var next: StringName = STATE_REST
 	if r == null or r.is_started():
 		next = _phase_for(get_cycle_time())
@@ -235,7 +269,7 @@ static func _cached_texture(path: String) -> Texture2D:
 
 func _draw() -> void:
 	var top: float = -TILE
-	var bell: Texture2D = _tex(get_bell_frame())
+	var bell: Texture2D = _tex(get_bell_frame()) if draw_bell else null
 	if bell != null:
 		draw_texture(bell, Vector2(-TILE * 0.5, top))
 	if _state == STATE_WARN:

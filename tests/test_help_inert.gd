@@ -509,6 +509,21 @@ func test_solved_loop_section_gives_no_help() -> void:
 	_assert_no_reread(loop, &"loop_section", "bucle resuelto")
 
 
+## Video en autoplay (Mundo 2, paso 6): roto (laser aturdido) no ayuda; aturdido, si.
+func test_broken_autoplay_video_gives_no_help() -> void:
+	var video := (load("res://scenes/enemies/autoplay_video.tscn") as PackedScene).instantiate() as AutoplayVideo
+	video.set_physics_process(false)
+	_place(video, &"autoplay_video")
+	await wait_process_frames(1)
+	video.drops = {}
+	video.stun()
+	assert_true(HelpCatalog.is_help_live(video), "Video aturdido: sigue ayudando")
+	await _assert_inert_drops_help(video, func() -> void:
+		video.stun()
+		video.on_laser_hit(10.0, null), "video roto")
+	_assert_no_reread(video, &"autoplay_video", "video roto")
+
+
 ## Campana de alarma (1-3): indestructible, ayuda en todas sus fases.
 func test_alarm_bell_helps_in_every_phase() -> void:
 	var bell := (load("res://scenes/enemies/alarm_bell.tscn") as PackedScene).instantiate() as AlarmBell
@@ -599,7 +614,7 @@ func test_every_help_type_is_covered() -> void:
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
-		&"story_card", &"loop_section"]
+		&"story_card", &"loop_section", &"autoplay_video"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

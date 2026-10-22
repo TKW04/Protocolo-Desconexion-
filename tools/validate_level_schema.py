@@ -473,6 +473,71 @@ class LevelValidator:
                 self._check_banner(entry, params, data)
             if kind == "alarm_bell" and isinstance(data, dict):
                 self._check_bell(entry, params, data)
+            if kind == "autoplay_video" and isinstance(data, dict):
+                self._check_autoplay(entry, params, data)
+
+    def _check_autoplay(self, entry, params, data):
+        """Video en autoplay (autoplay_video, 2026-10-22, paso 6 de docs/propuesta-mundo-2.md §3.4): clip
+        wave / ray / count; la tarjeta (la E es su celda de abajo a la izquierda, card_tiles hacia la derecha
+        y hacia arriba) cabe en el grid sin celdas solidas; la ola (wave) cabe sin celdas solidas en su fila;
+        y el clip deja reposo: clip_s >= aviso + ataque + min_rest_s."""
+        eid = entry.get("id")
+        x, y = entry.get("x"), entry.get("y")
+        get = lambda k: params.get(k, data.get(k))  # noqa: E731
+        clip = get("clip")
+        if clip not in ("wave", "ray", "count"):
+            self.error("video '%s': clip debe ser wave, ray o count (es %r)" % (eid, clip))
+            return
+        if not (_is_int(x) and _is_int(y)):
+            return
+        try:
+            cw, ch = int(data["card_tiles"][0]), int(data["card_tiles"][1])
+            tile = float(self.level.get("tile_size", 64))
+            warn = float(data["anticipation_frames"]) / float(data["anim_fps"])
+            rest = float(data.get("min_rest_s", 0.0))
+        except (KeyError, TypeError, ValueError, IndexError, ZeroDivisionError):
+            self.error("video '%s': datos del video incompletos" % eid)
+            return
+        for j in range(ch):
+            for i in range(cw):
+                cx, cy = x + i, y - j
+                if not self.in_bounds(cx, cy):
+                    self.error("video '%s': la tarjeta (%d x %d) sale del grid" % (eid, cw, ch), cy, cx)
+                    return
+                if self.cell(cx, cy) == "#":
+                    self.error("video '%s': celda solida dentro de la tarjeta" % eid, cy, cx)
+                    return
+        facing = get("facing")
+        attack = 0.0
+        if clip == "wave":
+            tiles, row = get("wave_tiles"), get("wave_row_offset") or 0
+            if not (_is_int(tiles) and _is_int(row) and facing in (-1, 1)):
+                return
+            start = x + (cw - 1 if facing > 0 else 0)
+            for i in range(int(tiles)):
+                cx, cy = start + facing * i, y + int(row)
+                if not self.in_bounds(cx, cy):
+                    self.error("video '%s': la ola (%d celdas) sale del grid" % (eid, tiles), cy, cx)
+                    break
+                if self.cell(cx, cy) == "#":
+                    self.error("video '%s': celda solida dentro de la ola" % eid, cy, cx)
+                    break
+            banner = self._load_json("data/enemies/spam_banner.json") or {}
+            try:
+                attack = (int(tiles) * tile - float(banner["banner_size"][0])) / float(banner["sweep_speed_px_s"])
+            except (KeyError, TypeError, ValueError, ZeroDivisionError):
+                attack = 0.0
+            if attack <= 0:
+                self.error("video '%s': la ola debe ser mas ancha que el banner" % eid)
+        elif clip == "ray":
+            attack = float(data.get("ray_wave_s", 0.4))
+        else:
+            attack = float(data.get("count_attack_s", 0.5))
+        need = warn + attack + rest
+        clip_s = get("clip_s")
+        if _is_number(clip_s) and float(clip_s) < need - 1e-9:
+            self.error("video '%s': clip_s %.2f menor que aviso + ataque + reposo minimo (%.2f s)"
+                       % (eid, float(clip_s), need))
 
     def _check_enemy_params(self, entry, params, spec):
         """Params por instancia segun level_params del JSON del enemigo (2026-10-16: punto rojo y

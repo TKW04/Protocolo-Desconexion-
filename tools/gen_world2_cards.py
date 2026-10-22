@@ -9,6 +9,8 @@ este script dibuja lo mismo, con la paleta PROVISIONAL del Mundo 2
   fragile_card_00.png   tarjeta de 1 tile (64 x 32) con la grieta a medias y 4 segmentos
   story_card_00.png     Historia de 1 tile (64 x 32) con la barra de progreso llena
   loop_sign_00.png      cartel «Solo uno mas» de la seccion en bucle (paso 5)
+  autoplay_video_00.png video en autoplay (2 x 2 tiles a media escala, 64 x 64) con la miniatura de la ola
+                        y el marco rojo del aviso (paso 6)
 El arte final del mundo (paso 10) los sustituira.
 
 Uso: python3 -I tools/gen_world2_cards.py [--check]   (--check: 1 si algun PNG no esta al dia)
@@ -76,8 +78,31 @@ def loop_sign():
     return img
 
 
+def autoplay_video():
+    """Video en autoplay (paso 6) a media escala: tarjeta de 64 x 64 con la pantalla, la miniatura de la
+    ola (tres lineas en zigzag) con el marco rojo del aviso y la barra de progreso del clip."""
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    r = 2
+    d.rectangle((r, 0, 63 - r, 63), fill=COLORS["tarjeta_base"])
+    d.rectangle((0, r, 63, 63 - r), fill=COLORS["tarjeta_base"])
+    d.rectangle((r, 0, 63 - r, 0), fill=COLORS["tarjeta_borde"])
+    d.rectangle((1, 1, 62, 2), fill=COLORS["tarjeta_luz"])
+    d.rectangle((r, 63, 63 - r, 63), fill=COLORS["tarjeta_sombra"])
+    d.rectangle((4, 6, 59, 50), fill=COLORS["alerta"])
+    d.rectangle((6, 8, 57, 48), fill=COLORS["feed_noche"])
+    for i in range(3):
+        y = 16 + i * 10
+        pts = [(9 + k * 8, y + (2 if (k + i) % 2 == 0 else -2)) for k in range(7)]
+        d.line(pts, fill=COLORS["alerta"], width=2)
+    d.rectangle((6, 55, 57, 56), fill=COLORS["tarjeta_sombra"])
+    d.rectangle((6, 55, 34, 56), fill=COLORS["magenta"])
+    return img
+
+
 def outputs():
-    return {"fragile_card_00.png": fragile(), "story_card_00.png": story(), "loop_sign_00.png": loop_sign()}
+    return {"fragile_card_00.png": fragile(), "story_card_00.png": story(), "loop_sign_00.png": loop_sign(),
+            "autoplay_video_00.png": autoplay_video()}
 
 
 def main(argv):

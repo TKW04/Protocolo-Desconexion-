@@ -479,6 +479,17 @@
 			"order": 3,
 			"center_px": [160, 32],
 			"prompt_px": [160, -8]
+		},
+		"autoplay_video": {
+			"_notes": "Video en autoplay del Mundo 2 (paso 6 de docs/propuesta-mundo-2.md §8, §3.4): tarjeta de 2 x 2 con el origen en los pies de su celda de abajo a la izquierda. Texto PROPUESTO, por decidir.",
+			"category": "enemy",
+			"title": "Video en autoplay",
+			"text": "Se reproduce solo en cuanto lo ves entero. La miniatura te avisa de lo que viene: una ola, un rayo o una cuenta regresiva. Un pulso lo pausa; pausado, el láser lo apaga. O deslízate a través de lo que suelte.",
+			"first_level": "2-1",
+			"world": 2,
+			"order": 4,
+			"center_px": [32, -64],
+			"prompt_px": [32, -136]
 		}
 	}
 }

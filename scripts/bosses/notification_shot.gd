@@ -7,6 +7,10 @@
 ## contact_damage de Sync Rate con el retroceso de siempre. Tiempo del mundo
 ## (el Debug lo ralentiza). Lo crea y configura AlertMajor; arte por script
 ## de tools/gen_boss_alert_major.py (definitivo desde el 2026-10-22).
+## En diagonal (2026-10-22, cuenta del video en autoplay del Mundo 2,
+## docs/propuesta-mundo-2.md §3.4): con `heading` distinto de cero vuela en esa
+## direccion (normalizada) en vez de en horizontal; la zona de dano sigue siendo
+## size_px centrada (sin girar) y el dibujo se gira.
 class_name NotificationShot
 extends Node2D
 
@@ -18,6 +22,8 @@ const HELP_ID: String = "notification_shot"
 
 ## Centro del proyectil en `position`; avanza hacia direction (-1 / 1).
 var direction: int = 1
+## Direccion de vuelo (Vector2.ZERO = horizontal hacia `direction`).
+var heading: Vector2 = Vector2.ZERO
 var speed_px_s: float = 640.0
 var travel_px: float = 1408.0
 var size_px: Vector2 = Vector2(64.0, 32.0)
@@ -39,7 +45,9 @@ func _ready() -> void:
 		_texture = load(TEXTURE_PATH) as Texture2D
 	_sprite = Sprite2D.new()
 	_sprite.texture = _texture
-	_sprite.flip_h = direction < 0
+	_sprite.flip_h = direction < 0 and heading == Vector2.ZERO
+	if heading != Vector2.ZERO:
+		_sprite.rotation = heading.angle()
 	add_child(_sprite)
 
 
@@ -53,11 +61,15 @@ func step(dt: float) -> void:
 	if _done:
 		return
 	var move: float = minf(speed_px_s * dt, travel_px - _travelled)
-	position.x += float(direction) * move
+	if heading != Vector2.ZERO:
+		position += heading.normalized() * move
+	else:
+		position.x += float(direction) * move
 	_travelled += move
 	var isak: Isak = _find_player()
 	if isak != null and LevelLookup.isak_body_rect(isak).intersects(get_damage_rect()):
-		if isak.take_hit(float(direction)):
+		var push: float = float(direction) if heading == Vector2.ZERO else signf(heading.x)
+		if isak.take_hit(push):
 			GameState.apply_sync_damage(contact_damage)
 			hit_player.emit(contact_damage)
 	if _travelled >= travel_px - 0.001:
