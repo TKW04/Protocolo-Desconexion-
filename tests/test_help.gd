@@ -292,6 +292,12 @@ func _data_help_ids() -> Dictionary:
 			used[id] = "world1_objects.types.%s" % type
 	for section: String in ["attention_point", "checkpoint"]:
 		used[String(world[section]["help_id"])] = "world1_objects.%s" % section
+	# Mundo 2 (2026-10-22): tipos de data/world2_objects.json.
+	var world2: Dictionary = World2ObjectsConfig.data()
+	for type: String in world2.get("types", {}):
+		var id2: Variant = (world2["types"][type] as Dictionary).get("help_id")
+		if id2 is String and not (id2 as String).is_empty():
+			used[id2] = "world2_objects.types.%s" % type
 	# Chip de una habilidad con ayuda propia (2026-10-16: debug_chip).
 	var by_ability: Dictionary = (world["ability_pickup"] as Dictionary).get("by_ability", {})
 	for ability: String in by_ability:

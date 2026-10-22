@@ -125,7 +125,7 @@ CAMERA_LIMITS = ("grid",)
 TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
-                  "blink_platform"}
+                  "blink_platform", "fragile_card", "story_card"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
@@ -618,11 +618,13 @@ class LevelValidator:
             return [(x + step * i, y) for i in range(length)]
         if kind in ("receiver", "snooze_button"):
             return [(x, y)]
-        if kind in ("reminder_platform", "blink_platform"):
+        if kind in ("reminder_platform", "blink_platform", "fragile_card", "story_card"):
             w = get("width_tiles", 1)
             if not _is_int(w) or w < 1:
                 return None
-            return [(x + i, y) for i in range(w)]
+            # Tarjeta fragil de pie (Mundo 2, 2026-10-22): pared de w x 2 (su celda y la de debajo).
+            rows = 2 if kind == "fragile_card" and get("variant", "floor") == "upright" else 1
+            return [(x + i, y + j) for j in range(rows) for i in range(w)]
         if kind == "update_bar":
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
         if kind == "charge_dock":
@@ -784,6 +786,7 @@ class LevelValidator:
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
         self._check_calc_room()
         self._check_rhythm()
+        self._check_world2_cards()
         if self.is_boss_arena() and isinstance(self.level.get("boss"), str):
             bosses = [o for o in self.level["objects"] if isinstance(o, dict) and o.get("type") == self.level["boss"]]
             if len(bosses) != 1:
@@ -912,6 +915,54 @@ class LevelValidator:
             cycles = p.get("tempo_steps_s", [])
         cycles = [c for c in cycles if _is_number(c)] if isinstance(cycles, list) else []
         return min(cycles) if cycles else None
+
+    def _check_world2_cards(self):
+        """Tarjetas del Mundo 2 (2026-10-22, paso 4 de docs/propuesta-mundo-2.md §8): tarjeta fragil con
+        one_way y hidden booleanos y warn_s < timer_s (la de pie no es de una via); Historia con one_way
+        booleano y, con su propio reloj, on_s >= aviso (warn_frames / anim_fps) + min_on_extra_s y on_s <
+        cycle_s; con rhythm, un metronomo existente y on_fraction x su ciclo mas corto >= aviso + extra."""
+        catalog = self._load_catalog() or {}
+        types = catalog.get("types", {})
+        cfg = catalog.get("story_card", {})
+        warn = float(cfg.get("warn_frames", 9)) / float(cfg.get("anim_fps", 12.0))
+        extra = float(cfg.get("min_on_extra_s", 0.25))
+        rhythms = None
+        for i, obj in enumerate(self.level["objects"]):
+            if not (isinstance(obj, dict) and isinstance(obj.get("params"), dict)):
+                continue
+            kind, x, y, p = obj.get("type"), obj.get("x"), obj.get("y"), obj["params"]
+            if kind not in ("fragile_card", "story_card"):
+                continue
+            what = "objects[%d] (%s)" % (i, kind)
+            defaults = types.get(kind, {}).get("defaults", {})
+            for flag in ("one_way", "hidden") if kind == "fragile_card" else ("one_way",):
+                if not isinstance(p.get(flag, False), bool):
+                    self.error("%s: %s debe ser true o false" % (what, flag), y, x)
+            if kind == "fragile_card":
+                timer, warn_s = p.get("timer_s", defaults.get("timer_s")), p.get("warn_s", defaults.get("warn_s"))
+                if _is_number(timer) and _is_number(warn_s) and warn_s >= timer:
+                    self.error("%s: warn_s (%g) debe ser menor que timer_s (%g)" % (what, warn_s, timer), y, x)
+                if p.get("variant") == "upright" and p.get("one_way"):
+                    self.error("%s: la tarjeta de pie no puede ser de una via" % what, y, x)
+                continue
+            if "rhythm" in p:
+                if rhythms is None:
+                    rhythms = self._rhythms()
+                if p["rhythm"] not in rhythms:
+                    self.error("%s: rhythm '%s' no es el id de ningun %s" % (what, p["rhythm"], " ni ".join(RHYTHM_TYPES)),
+                               y, x)
+                    continue
+                shortest = rhythms[p["rhythm"]][2]
+                on = p.get("on_fraction", 0.5)
+                if shortest is not None and _is_number(on) and on * shortest < warn + extra - 1e-9:
+                    self.error("%s: encendida %.2f s con el ciclo mas corto (%.2f s): menos que el aviso (%.2f s) + "
+                               "%.2f s" % (what, on * shortest, shortest, warn, extra), y, x)
+                continue
+            on_s, cycle = p.get("on_s", defaults.get("on_s")), p.get("cycle_s", defaults.get("cycle_s"))
+            if _is_number(on_s) and on_s < warn + extra - 1e-9:
+                self.error("%s: on_s %.2f s es menos que el aviso (%.2f s) + %.2f s" % (what, on_s, warn, extra), y, x)
+            if _is_number(on_s) and _is_number(cycle) and on_s >= cycle:
+                self.error("%s: on_s debe ser menor que cycle_s" % what, y, x)
 
     def _check_rhythm(self):
         """Metronomo y plataformas que parpadean (2026-10-19, paso 5 de docs/propuesta-1-3.md §5.3):

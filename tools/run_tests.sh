@@ -101,6 +101,8 @@ rm -f "$IMPORT_LOG"
 # Desde el 2026-10-22 (paso 0 de docs/propuesta-mundo-2.md): la paleta provisional del Mundo 2 al dia
 # (tools/palette_mundo2_provisional.py --check). Desde el paso 2: el catalogo unido del Mundo 2 y la seccion
 # scroll del esquema (tests/test_world2_schema.py; la sala scroll_test se valida y exporta como las demas).
+# Desde el paso 4: los dibujos provisionales de las tarjetas del Mundo 2 para el album
+# (tools/gen_world2_cards.py --check) y la sala tarjetas_test.
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -160,7 +162,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_memory_pickup.py >/dev/null && python3 -I tools/validate_memory_art.py >/dev/null \
 		&& python3 -I tools/validate_world1_dnd.py >/dev/null && python3 -I tools/validate_audio.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
-		&& python3 -I tools/palette_mundo2_provisional.py --check); then
+		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
 		PY_STATUS=4

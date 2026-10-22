@@ -89,6 +89,10 @@ SOURCES = {
     "boss_popup_shield": ("assets/sprites/bosses/alert_major_shield.png", None, 2),
     "notification_shot": ("assets/sprites/bosses/notification_shot.png", None, 1),
     "alert_major_clone": ("assets/sprites/bosses/alert_major_window_00.png", None, 1),
+    # Mundo 2 (paso 4 de docs/propuesta-mundo-2.md §8): dibujos PROVISIONALES de tools/gen_world2_cards.py
+    # (paleta provisional del Mundo 2) hasta el arte del mundo.
+    "fragile_card": ("assets/sprites/props/world2/fragile_card_00.png", None, 1),
+    "story_card": ("assets/sprites/props/world2/story_card_00.png", None, 1),
 }
 
 

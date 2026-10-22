@@ -144,6 +144,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level_schema  # noqa: E402
 import upgrade_catalog  # noqa: E402
 import level_catalog  # noqa: E402
+import world2_model  # noqa: E402
 
 DEFAULT_LIMIT = 0.85
 DEFAULT_JUMP_EFFICIENCY = 0.92
@@ -3125,6 +3126,9 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
         import validate_boss
         return validate_boss.validate_arena(level, root, upgrades=tuple(upgrades), physics_path=physics_path,
                                             jump_efficiency=jump_efficiency, limit=limit)
+    # Mundo 2 (2026-10-22, paso 4 de docs/propuesta-mundo-2.md): tarjetas fragiles e Historias como las
+    # piezas del Mundo 1 que reutilizan (tools/world2_model.py); sin ellas el nivel no cambia.
+    level = world2_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin

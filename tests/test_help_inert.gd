@@ -474,6 +474,29 @@ func test_blink_platform_always_helps() -> void:
 	assert_eq(_help.get_target(), platform, "Plataforma que vibra: candidato")
 
 
+## Tarjeta fragil (Mundo 2, paso 4 de docs/propuesta-mundo-2.md): rota no ayuda; repuesta, si.
+func test_broken_fragile_card_gives_no_help() -> void:
+	_freeze_isak()
+	var card := (load("res://scenes/levels/fragile_card.tscn") as PackedScene).instantiate() as FragileCard
+	card.set_physics_process(false)
+	_place(card, &"fragile_card")
+	await _assert_inert_drops_help(card, func() -> void: card.break_now(), "tarjeta fragil rota")
+	_assert_no_reread(card, &"fragile_card", "tarjeta fragil rota")
+	for i: int in 300:
+		card.advance(STEP)
+	assert_true(HelpCatalog.is_help_live(card), "Repuesta vuelve a ayudar")
+
+
+## Historia (Mundo 2): nunca se destruye (apagada, sigue siendo una Historia).
+func test_story_card_always_helps() -> void:
+	var card := (load("res://scenes/levels/story_card.tscn") as PackedScene).instantiate() as StoryCard
+	_place(card, &"story_card")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(card), "Historia: ayuda")
+	assert_eq(_help.get_target(), card, "Historia: candidato")
+
+
 ## Campana de alarma (1-3): indestructible, ayuda en todas sus fases.
 func test_alarm_bell_helps_in_every_phase() -> void:
 	var bell := (load("res://scenes/enemies/alarm_bell.tscn") as PackedScene).instantiate() as AlarmBell
@@ -563,7 +586,8 @@ func test_every_help_type_is_covered() -> void:
 		&"notification_badge", &"spam_banner", &"spam_banner_dash", &"reminder_platform", &"snooze_button", &"overlay_popup",
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
-		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone"]
+		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
+		&"story_card"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

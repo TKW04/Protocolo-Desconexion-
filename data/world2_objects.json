@@ -1,7 +1,139 @@
 {
 	"_notes": "Catalogo de objetos del Mundo 2 «El Feed» (docs/propuesta-mundo-2.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 2 usa los tipos de data/world1_objects.json (genericos: cargador, punto de sincronizacion, pared con glitch, vortices, recogidas...) mas los de este archivo (tools/level_catalog.py los une; si un tipo esta en los dos, gana este). Colores: seccion palette (PROVISIONAL, tools/palette_mundo2_provisional.py).",
 	"tile_size": 64,
-	"types": {},
+	"types": {
+		"fragile_card": {
+			"scene": "res://scenes/levels/fragile_card.tscn",
+			"help_id": "fragile_card",
+			"description": "Tarjeta fragil (2026-10-22, paso 4 de docs/propuesta-mundo-2.md §8, §3.4; FragileCard, que reutiliza el recordatorio del Mundo 1). Plataforma SOLIDA de width_tiles x 1 (1-4 tiles; la tarjeta y su colision ocupan los card_height_px de arriba de la celda; el grid deja sus celdas en '.'). trigger on_step (por defecto): al pisarla cuenta SOLA timer_s (tiempo del mundo) con una grieta que crece y 4 segmentos; los ultimos warn_s parpadea y tiembla; al vencer cae sin dano y vuelve a los respawn_s si nadie ocupa su sitio. trigger pound_only: pisarla no hace nada. El GOLPE AL SUELO la rompe al instante si la onda la alcanza (bajo los pies o dentro de la onda) e Isak sigue cayendo a traves de ella. one_way: de una via. variant upright: de pie, pared de width_tiles x 2 (ocupa su celda y la de debajo) que bloquea un paso: solo la rompe la onda y no vuelve hasta que Isak reaparece. hidden: sin el Debug parece una tarjeta normal (sin grieta ni segmentos); con el Debug se ve la grieta. Al reaparecer Isak vuelve a su estado inicial. Aspecto PROVISIONAL por codigo (seccion fragile_card). level_params: rangos (tools/validate_level_schema.py).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"timer_s": "timer_s",
+				"warn_s": "warn_s",
+				"respawn_s": "respawn_s",
+				"variant": "variant",
+				"trigger": "trigger_mode",
+				"one_way": "one_way",
+				"hidden": "hidden_card"
+			},
+			"defaults": {
+				"width_tiles": 2,
+				"timer_s": 0.6,
+				"warn_s": 0.5,
+				"respawn_s": 3.0
+			},
+			"allowed": {
+				"variant": [
+					"floor",
+					"upright"
+				],
+				"trigger": [
+					"on_step",
+					"pound_only"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				},
+				"timer_s": {
+					"min": 0.3,
+					"max": 5.0
+				},
+				"warn_s": {
+					"min": 0.25,
+					"max": 1.0
+				},
+				"respawn_s": {
+					"min": 0.5,
+					"max": 20.0
+				}
+			},
+			"example": {
+				"type": "fragile_card",
+				"x": 6,
+				"y": 9,
+				"params": {
+					"width_tiles": 3
+				}
+			}
+		},
+		"story_card": {
+			"scene": "res://scenes/levels/story_card.tscn",
+			"help_id": "story_card",
+			"description": "Historia (2026-10-22, paso 4 de docs/propuesta-mundo-2.md §8, §3.4; StoryCard, que reutiliza la plataforma que parpadea del Mundo 1). Plataforma SOLIDA de width_tiles x 1 (1-4 tiles, arriba de su celda; el grid la deja en '.') que aparece, dura on_s y desaparece en un ciclo de cycle_s (su propio reloj, tiempo del mundo; desplazado offset, fraccion del ciclo) o, con rhythm, siguiendo un metronomo del nivel (rhythm_zone / alarm_tunnel) con on_fraction. Barra de progreso de las historias (4 segmentos); los ultimos warn_frames cuadros a anim_fps parpadea; apagada, contorno punteado sin colision (Isak cae sin dano); con Isak dentro no se materializa. one_way: de una via. Aspecto PROVISIONAL por codigo (seccion story_card). Esquema: on_s (o on_fraction x el ciclo mas corto del metronomo) >= aviso + 0,25 s.",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"rhythm": "rhythm_id",
+				"group": "group_id",
+				"width_tiles": "width_tiles",
+				"cycle_s": "cycle_s",
+				"on_s": "on_s",
+				"on_fraction": "on_fraction",
+				"offset": "offset",
+				"one_way": "one_way"
+			},
+			"defaults": {
+				"width_tiles": 2,
+				"cycle_s": 3.2,
+				"on_s": 1.6,
+				"offset": 0.0
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				},
+				"cycle_s": {
+					"min": 1.0,
+					"max": 12.0
+				},
+				"on_s": {
+					"min": 0.5,
+					"max": 10.0
+				},
+				"on_fraction": {
+					"min": 0.1,
+					"max": 0.9
+				},
+				"offset": {
+					"min": 0.0,
+					"max": 0.999
+				}
+			},
+			"example": {
+				"type": "story_card",
+				"x": 6,
+				"y": 9,
+				"params": {
+					"width_tiles": 2,
+					"offset": 0.5
+				}
+			}
+		}
+	},
+	"fragile_card": {
+		"_notes": "PROPUESTA (2026-10-22, ajustable jugando; docs/propuesta-mundo-2.md §3.4). card_height_px: alto de la tarjeta (suelo) y de su colision, arriba de la celda. fall_s: caida y reaparicion (visual). fall_drop_px: cuanto baja al caer. shake_px: temblor del aviso. idle_crack: grieta minima que se ve en reposo (que se lea fragil). Aspecto PROVISIONAL por codigo (FeedCardDraw) con la paleta provisional; la grieta en blanco (no es dano: el rojo solo para lo que dana) y, en las ocultas, en debug_ambar con el Debug.",
+		"card_height_px": 32,
+		"fall_s": 0.3,
+		"fall_drop_px": 48.0,
+		"shake_px": 2.0,
+		"idle_crack": 0.15
+	},
+	"story_card": {
+		"_notes": "PROPUESTA (2026-10-22, ajustable jugando; docs/propuesta-mundo-2.md §3.4). card_height_px: alto de la tarjeta y de su colision. warn_frames / anim_fps: parpadeo antes de apagarse (9 a 12 fps = 0,75 s; regla de 6-12 cuadros). min_on_extra_s: lo que debe sobrar de la parte encendida tras el aviso (esquema). fade_s: fundido al aparecer (visual). Aspecto PROVISIONAL por codigo (FeedCardDraw) con la paleta provisional: tarjeta magenta_sombra con el borde magenta.",
+		"card_height_px": 32,
+		"warn_frames": 9,
+		"anim_fps": 12.0,
+		"min_on_extra_s": 0.25,
+		"fade_s": 0.25
+	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario).",
 		"feed_noche": "#140a24",

@@ -1,0 +1,105 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 4 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 32x12 con las tarjetas del Mundo 2. Foso 1: dos tarjetas fragiles de 1 tile (cuentan 0,6 s al pisarlas): se cruzan saltando sin pararse. Foso 2: dos Historias con su propio reloj (3,2 s; encendidas 1,6 s; la segunda desplazada un cuarto de ciclo). En el suelo del inicio, una tarjeta fragil oculta (con el Debug se ve la grieta; el golpe al suelo la rompe) y, junto a la terminal, una tarjeta fragil de pie que cierra un nicho (solo la rompe la onda). Los fosos tienen pinchos: se cruzan por las tarjetas. Tileset y fondo del Mundo 1 (provisional).",
+	"id": "tarjetas_test",
+	"name": "Tarjetas de prueba",
+	"world": 2,
+	"tile_size": 64,
+	"debug_color": "amber",
+	"abilities_available": {
+		"pulse": true,
+		"debug": true,
+		"ground_pound": true
+	},
+	"validation": {
+		"time_margin_s": 0.2
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "fragile_card",
+			"x": 3,
+			"y": 9,
+			"params": {
+				"id": "fragil_oculta",
+				"width_tiles": 1,
+				"trigger": "pound_only",
+				"hidden": true
+			}
+		},
+		{
+			"type": "fragile_card",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "fragil_1",
+				"width_tiles": 1
+			}
+		},
+		{
+			"type": "fragile_card",
+			"x": 10,
+			"y": 9,
+			"params": {
+				"id": "fragil_2",
+				"width_tiles": 1
+			}
+		},
+		{
+			"type": "story_card",
+			"x": 19,
+			"y": 9,
+			"params": {
+				"id": "historia_1",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "story_card",
+			"x": 22,
+			"y": 9,
+			"params": {
+				"id": "historia_2",
+				"width_tiles": 2,
+				"offset": 0.25
+			}
+		},
+		{
+			"type": "fragile_card",
+			"x": 27,
+			"y": 7,
+			"params": {
+				"id": "fragil_de_pie",
+				"width_tiles": 1,
+				"variant": "upright"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 25,
+			"y": 7,
+			"params": {
+				"id": "terminal_tarjetas",
+				"text": "Siguiente video",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"################################",
+		"#.........................######",
+		"#.........................######",
+		"#.........................######",
+		"#.........................######",
+		"#.........................######",
+		"#.........................######",
+		"#..............................#",
+		"#.P......................G.....#",
+		"###.##.......#####.......#######",
+		"######^^^^^^^#####^^^^^^^#######",
+		"################################"
+	]
+}
