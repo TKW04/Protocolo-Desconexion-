@@ -121,6 +121,7 @@
 			"empty_world": "Próximamente",
 			"option_back": "Volver",
 			"help": "Arriba/abajo: elegir. Pulso: entrar. Salto: volver",
+			"help_empty_world": "Pulso o salto: volver",
 			"confirm_unsaved_title": "¿Seguro? Aún no has guardado.",
 			"confirm_unsaved_risk": "Si caes sin guardar, Eco te devolverá a tu última copia.",
 			"trash_blocked_text": "Recupera tus archivos de la papelera",

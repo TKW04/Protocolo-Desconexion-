@@ -88,7 +88,10 @@ func refresh() -> void:
 		options.append({"id": StringName(String(level.get("id", ""))), "text": level_text(level)})
 	options.append({"id": OPTION_BACK, "text": String(texts.get("option_back", "Volver"))})
 	set_options(options)
-	set_help(String(texts.get("help", "")))
+	# Sin subniveles solo queda Volver: nada que elegir ni que entrar (2026-10-22,
+	# la carpeta del Mundo 2 decia «Pulso: entrar»).
+	var empty: bool = HubWorlds.levels_for_lap(world_entry).is_empty()
+	set_help(String(texts.get("help_empty_world" if empty else "help", texts.get("help", ""))))
 	super.refresh()
 
 
