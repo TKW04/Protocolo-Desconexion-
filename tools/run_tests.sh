@@ -98,6 +98,8 @@ rm -f "$IMPORT_LOG"
 # arenas (tools/validate_boss.py, al que delega tools/validate_level.py con kind boss; tests/test_boss_validator.py,
 # con sus casos negativos), sus subidas con el Isak real (tests/fixtures/climbs_1-boss.json) y el arte provisional
 # del jefe (tools/gen_boss_alert_major.py --check, en tests/test_boss_data.py).
+# Desde el 2026-10-22 (paso 0 de docs/propuesta-mundo-2.md): la paleta provisional del Mundo 2 al dia
+# (tools/palette_mundo2_provisional.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -155,7 +157,8 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_upgrade_fx.py >/dev/null && python3 -I tools/validate_memories.py >/dev/null \
 		&& python3 -I tools/validate_memory_pickup.py >/dev/null && python3 -I tools/validate_memory_art.py >/dev/null \
 		&& python3 -I tools/validate_world1_dnd.py >/dev/null && python3 -I tools/validate_audio.py >/dev/null \
-		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null); then
+		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
+		&& python3 -I tools/palette_mundo2_provisional.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
 		PY_STATUS=4

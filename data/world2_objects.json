@@ -1,0 +1,25 @@
+{
+	"_notes": "Catalogo de objetos del Mundo 2 «El Feed» (docs/propuesta-mundo-2.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 2 usa los tipos de data/world1_objects.json (genericos: cargador, punto de sincronizacion, pared con glitch, vortices, recogidas...) mas los de este archivo (tools/level_catalog.py los une; si un tipo esta en los dos, gana este). Colores: seccion palette (PROVISIONAL, tools/palette_mundo2_provisional.py).",
+	"tile_size": 64,
+	"types": {},
+	"palette": {
+		"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario).",
+		"feed_noche": "#140a24",
+		"feed_fondo": "#2a1450",
+		"feed_medio": "#45207a",
+		"feed_resplandor": "#6a3cb0",
+		"tarjeta_sombra": "#120a20",
+		"tarjeta_base": "#2a1d45",
+		"tarjeta_luz": "#4a3a78",
+		"tarjeta_borde": "#b7a3f0",
+		"blanco": "#f4f0fa",
+		"gris": "#b8aecf",
+		"alerta": "#ff4a2a",
+		"alerta_sombra": "#a3221c",
+		"magenta": "#ff3cf0",
+		"magenta_sombra": "#8a1a8c",
+		"ambar": "#ffa000",
+		"ambar_sombra": "#a85f00",
+		"debug_ambar": "#ff9318"
+	}
+}
