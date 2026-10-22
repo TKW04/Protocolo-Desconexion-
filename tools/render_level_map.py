@@ -69,10 +69,12 @@ def render(level, palette):
     left = VERTICAL_LEFT if vertical else SIDE
     right = VERTICAL_RIGHT if vertical else SIDE
     width = cols * CELL + left + right
-    if vertical:
-        width = max(width, MIN_WIDTH)
+    # Ancho minimo tambien en horizontal (2026-10-22): la arena del jefe (24 tiles) cortaba
+    # el resumen y la leyenda. Los mapas de 1-1, 1-2 y 1-3 ya son mas anchos.
+    width = max(width, MIN_WIDTH)
     height = TOP + rows * CELL + BOTTOM + (48 if vertical else 0)
-    img = Image.new("RGB", (width, height), palette["noche_profunda"])
+    # Holgura para leyendas de varias lineas; se recorta al final (2026-10-22).
+    img = Image.new("RGB", (width, height + 80), palette["noche_profunda"])
     d = ImageDraw.Draw(img)
     small, normal = font(10), font(12)
 
@@ -233,12 +235,104 @@ def render(level, palette):
                 d.line((x1, yy, x1, min(yy + 2, y1)), fill=palette["resplandor"])
             label((x0 + x1) // 2, y0 + 8, "Eco", palette["banner_blanco"])
             label(x0 + 2, TOP + 10, 'Eco: "%s"' % p.get("text", ""), palette["banner_gris"], anchor="lm")
+        # Piezas del 1-3 y de la arena del jefe (2026-10-22, paso 12 de propuesta-1-3.md).
+        elif kind in ("rhythm_zone", "alarm_tunnel"):
+            zx, zy, zw, zh = p.get("zone", [x, y, 1, 1])
+            x0, y0, x1, y1 = box(zx, zy, zw, zh)
+            for xx in range(x0, x1, 10):
+                d.line((xx, y0, min(xx + 4, x1), y0), fill=palette["resplandor"])
+                d.line((xx, y1, min(xx + 4, x1), y1), fill=palette["resplandor"])
+            for yy in range(y0, y1, 10):
+                d.line((x0, yy, x0, min(yy + 4, y1)), fill=palette["resplandor"])
+                d.line((x1, yy, x1, min(yy + 4, y1)), fill=palette["resplandor"])
+            ix0, iy0, ix1, iy1 = box(x, y)
+            d.rectangle((ix0 + 5, iy0 + 2, ix1 - 5, iy1 - 2), outline=palette["borde_luz"])
+            if kind == "alarm_tunnel":
+                for stage in p.get("stages", []):
+                    sx0 = box(stage["x_from"], zy)[0]
+                    sx1 = box(stage["x_to"], zy)[2]
+                    d.line((sx0 + 1, y0 + 2, sx1 - 1, y0 + 2), fill=palette["resplandor"], width=2)
+                    label((sx0 + sx1) // 2, y0 - 7, "compas %.1f s" % stage["cycle_s"], palette["resplandor"])
+            else:
+                steps = "/".join("%.1f" % s for s in p.get("tempo_steps_s", []))
+                label(ix1 + 3, (iy0 + iy1) // 2, "metronomo %s s" % steps, palette["resplandor"], anchor="lm")
+        elif kind == "blink_platform":
+            w = p.get("width_tiles", 1)
+            x0, y0, x1, _ = box(x, y, w, 1)
+            for xx in range(x0, x1, 5):
+                d.line((xx, y0, min(xx + 2, x1), y0), fill=palette["resplandor"], width=4)
+            label((x0 + x1) // 2, y0 + 9, p.get("group", "?"), palette["resplandor"])
+        elif kind == "dnd_switch":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 3, y0 + 3, x1 - 3, y1 - 5), outline=palette["banner_blanco"], width=2)
+            d.ellipse((x0 + 5, y0 + 5, x1 - 6, y1 - 8), fill=palette["borde_luz"])
+            d.ellipse((x0 + 8, y0 + 4, x1 - 3, y1 - 9), fill=palette["tile_sombra"])
+            label((x0 + x1) // 2, y0 - 7, "No molestar (dash)", palette["banner_blanco"])
+        elif kind == "exceptions_panel":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 3), p.get("height_tiles", 2))
+            d.rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), outline=palette["banner_gris"])
+            label((x0 + x1) // 2, (y0 + y1) // 2, "Excepciones", palette["banner_gris"])
+        elif kind == "memory_pickup":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 3, y0 + 5, x1 - 3, y1 - 4), fill=palette["banner_blanco"])
+            d.line((x0 + 3, y0 + 5, (x0 + x1) // 2, y0 + 9, x1 - 3, y0 + 5), fill=palette["banner_gris"])
+        elif kind == "power_bank_pickup":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 5, y0 + 3, x1 - 5, y1 - 2), outline=palette["debug_cian"])
+            d.rectangle((x0 + 7, y0 + 1, x1 - 7, y0 + 3), fill=palette["debug_cian"])
+        elif kind == "alert_major":
+            # Jefe: caja de su badge de 256 px (4 x 4 tiles) centrada en su celda.
+            x0, y0, x1, y1 = box(x - 2, y, 4, 4)
+            d.rectangle((x0, y0, x1, y1), outline=palette["alerta"], width=2)
+            d.ellipse((x0 + 12, y0 + 12, x1 - 12, y1 - 12), outline=palette["alerta"], width=2)
+            label((x0 + x1) // 2, (y0 + y1) // 2, "Alerta Mayor", palette["banner_blanco"], normal)
 
     # Enemigos con su rango de patrulla.
     tile = level["tile_size"]
     for enemy in level.get("enemies", []):
         x0, y0, x1, y1 = box(enemy["x"], enemy["y"])
         cx = (x0 + x1) // 2
+        ep = enemy.get("params", {})
+        if enemy["type"] == "alarm_bell":
+            # Campana colgada del techo: onda discontinua hasta el suelo, sin patrulla.
+            d.polygon([(cx - 6, y1 - 2), (cx + 6, y1 - 2), (cx + 4, y0 + 4), (cx - 4, y0 + 4)],
+                      fill=palette["alerta"], outline=palette["alerta_sombra"])
+            yy = y1 + 1
+            while yy < TOP + rows * CELL and not solid(enemy["x"], (yy - TOP) // CELL):
+                d.line((cx, yy, cx, yy + 3), fill=palette["alerta"])
+                yy += 7
+            continue
+        if enemy["type"] == "spam_banner":
+            n = int(ep.get("corridor_tiles", 8))
+            step = int(ep.get("direction", -1))
+            xa = cx
+            xb = cx + step * n * CELL
+            d.line((min(xa, xb), y1 - 4, max(xa, xb), y1 - 4), fill=palette["alerta_sombra"], width=2)
+            head = xb
+            d.polygon([(head, y1 - 4), (head - step * 6, y1 - 8), (head - step * 6, y1)], fill=palette["alerta"])
+            d.rectangle((x0 + 3, y0 + 3, x1 - 3, y1 - 3), fill=palette["alerta"], outline=palette["alerta_sombra"])
+            tag = "banner"
+            if ep.get("knockback_to_entry"):
+                tag = "banner (solo dash)"
+            elif "rhythm" in ep:
+                tag = "banner al compas"
+            label(cx, y0 - 8, tag, palette["alerta"])
+            continue
+        if enemy["type"] == "notification_badge":
+            lw = ep.get("leash_width_px", 512.0) / tile * CELL
+            lh = ep.get("leash_height_px", 256.0) / tile * CELL
+            cy = (y0 + y1) // 2
+            lx0, lx1 = int(cx - lw / 2), int(cx + lw / 2)
+            ly0, ly1 = int(cy - lh / 2), int(cy + lh / 2)
+            for xx in range(lx0, lx1, 8):
+                d.line((xx, ly0, xx + 3, ly0), fill=palette["alerta_sombra"])
+                d.line((xx, ly1, xx + 3, ly1), fill=palette["alerta_sombra"])
+            for yy in range(ly0, ly1, 8):
+                d.line((lx0, yy, lx0, yy + 3), fill=palette["alerta_sombra"])
+                d.line((lx1, yy, lx1, yy + 3), fill=palette["alerta_sombra"])
+            d.ellipse((x0 + 3, y0 + 3, x1 - 3, y1 - 3), fill=palette["carmin"], outline=palette["alerta"])
+            label(cx, y0 - 8, "punto rojo", palette["alerta"])
+            continue
         half = enemy.get("params", {}).get("patrol_range_px", 256.0) / 2.0 / tile * CELL
         d.line((cx - half, y1 + 1, cx + half, y1 + 1), fill=palette["alerta_sombra"], width=2)
         d.line((cx - half, y1 - 3, cx - half, y1 + 1), fill=palette["alerta_sombra"], width=2)
@@ -332,6 +426,17 @@ def render(level, palette):
              ("e", "zona de Eco", palette["resplandor"]),
              ("I", "interruptor / panel oculto / laser / carga (acertijo de Calc)", palette["debug_cian"]),
              ("T", "techo colgado (cara de abajo)", palette["borde_luz"])]
+    present = {o["type"] for o in level.get("objects", []) + level.get("enemies", [])}
+    extra = [("blink_platform", "plataforma que parpadea (grupo)", palette["resplandor"]),
+             ("rhythm_zone", "zona del metronomo / tunel (compas)", palette["resplandor"]),
+             ("spam_banner", "banner y su barrido", palette["alerta"]),
+             ("notification_badge", "punto rojo y su correa", palette["carmin"]),
+             ("alarm_bell", "campana y su onda", palette["alerta"]),
+             ("memory_pickup", "mensaje (recuerdo)", palette["banner_blanco"]),
+             ("power_bank_pickup", "power bank", palette["debug_cian"]),
+             ("alert_major", "jefe", palette["alerta"])]
+    items += [(k, text, color) for k, text, color in extra
+              if k in present or (k == "rhythm_zone" and "alarm_tunnel" in present)]
     lx = SIDE
     for _, text, color in items:
         if lx + 24 + d.textlength(text, font=small) > width - SIDE:
@@ -339,7 +444,7 @@ def render(level, palette):
         d.rectangle((lx, ly - 5, lx + 10, ly + 5), fill=color)
         d.text((lx + 16, ly), text, fill=palette["banner_gris"], font=small, anchor="lm")
         lx += 24 + int(d.textlength(text, font=small)) + 14
-    return img
+    return img.crop((0, 0, width, max(height, ly + 16)))
 
 
 def main(argv):
