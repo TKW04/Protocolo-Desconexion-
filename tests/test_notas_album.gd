@@ -83,10 +83,11 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 		assert_true(int(HelpCatalog.shared().entry(objects[i - 1]).get("order", 0))
 			< int(HelpCatalog.shared().entry(objects[i]).get("order", 0)))
 	assert_eq(NotasAlbum.album_ids(2, HelpCatalog.CATEGORY_OBJECT),
-		[&"fragile_card", &"story_card", &"loop_section"] as Array[StringName],
-		"Mundo 2: tarjeta fragil, Historia (paso 4) y seccion en bucle (paso 5 de docs/propuesta-mundo-2.md)")
-	assert_eq(NotasAlbum.album_ids(2, HelpCatalog.CATEGORY_ENEMY), [&"autoplay_video"] as Array[StringName],
-		"Mundo 2: el video en autoplay (paso 6 de docs/propuesta-mundo-2.md)")
+		[&"fragile_card", &"story_card", &"loop_section", &"loading_wall"] as Array[StringName],
+		"Mundo 2: tarjeta fragil, Historia (paso 4), seccion en bucle (paso 5) y muro «Cargando mas…» (paso 7)")
+	assert_eq(NotasAlbum.album_ids(2, HelpCatalog.CATEGORY_ENEMY),
+		[&"autoplay_video", &"video_clone", &"commenter"] as Array[StringName],
+		"Mundo 2: el video en autoplay (paso 6), el clon y el Comentarista (paso 7 de docs/propuesta-mundo-2.md)")
 	for world: int in range(3, 7):
 		assert_eq(NotasAlbum.album_ids(world).size(), 0, "Mundo %d aun sin tipos" % world)
 

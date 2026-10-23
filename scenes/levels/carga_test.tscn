@@ -1,0 +1,80 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/loading_wall.tscn" id="4_loading_wall"]
+[ext_resource type="PackedScene" path="res://scenes/levels/clone_zone.tscn" id="5_clone_zone"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="6_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="7_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="8_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="9_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="10_help_system"]
+
+[node name="Level_carga_test" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "carga_test"
+level_name = "Cargando más (prueba)"
+world = 2
+tile_size = 64
+size_tiles = Vector2i(26, 12)
+debug_color = "amber"
+abilities_available = {"dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true}
+source_path = "res://data/levels/carga_test.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 6, 0, 2, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 14, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 14, 0, 2, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 14, 0, 3, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 14, 0, 4, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 14, 0, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 14, 0, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 25, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 25, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 25, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 25, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 24, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 6, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 7, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 8, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 10, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 11, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 12, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 13, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 16, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 17, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 22, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 24, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 25, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="muro_carga" parent="Objects" instance=ExtResource("4_loading_wall") groups=["help_target"]]
+position = Vector2(896, 448)
+height_tiles = 3
+object_id = &"muro_carga"
+pounds_needed = 3
+metadata/help_id = "loading_wall"
+
+[node name="zona_muro" parent="Objects" instance=ExtResource("5_clone_zone")]
+position = Vector2(512, 384)
+object_id = &"zona_muro"
+max_clones = 6
+spawn_s = 1.5
+zone = [8, 6, 12, 4]
+
+[node name="terminal_carga" parent="Objects" instance=ExtResource("6_exit_terminal") groups=["help_target"]]
+position = Vector2(1408, 512)
+height_tiles = 2
+object_id = &"terminal_carga"
+text = "Cargar más"
+width_tiles = 1
+level_id = "carga_test"
+metadata/help_id = "exit_terminal"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Goal" type="Marker2D" parent="." groups=["goal"]]
+position = Vector2(1440, 640)
+
+[node name="Isak" parent="." instance=ExtResource("7_isak")]
+position = Vector2(160, 640)
+camera_limits = Rect2i(0, 0, 1664, 768)
+
+[node name="Hud" parent="." instance=ExtResource("8_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("9_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("10_help_system")

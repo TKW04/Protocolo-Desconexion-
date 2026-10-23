@@ -1,0 +1,24 @@
+{
+	"_notes": "CLON de «UN VIDEO MAS» (video_clone), Mundo 2 «El Feed» (paso 7 de docs/propuesta-mundo-2.md §8; comportamiento en §3.4 y patron 12 «Limpiar y seguir» de §3.6). Script scripts/enemies/video_clone.gd (VideoClone), escena scenes/enemies/video_clone.tscn. NO se coloca en el nivel: lo crea una clone_zone (objeto, data/world2_objects.json) con Isak dentro, en un borde de la zona, tras el aviso de la zona (marco de video que se enciende, 9 cuadros a 12 fps). Tarjeta pequena que PATRULLA por el suelo dentro de las columnas de su zona (gira en paredes, bordes y el limite de la zona) y DANA AL CONTACTO (contact_damage, retroceso de siempre; el dash la atraviesa). VIDA 1 (health): el laser la elimina de un disparo; la ONDA DEL GOLPE AL SUELO la elimina (regla general: aturde y hace 1 de dano) y ademas un golpe dentro de la zona elimina a TODOS sus clones a la vez (lo hace la zona). PULSO: la aturde stun_s (x el multiplicador del Pulso 3); los ultimos anticipation_frames cuadros parpadea (aviso de que vuelve a danar, regla de 6-12 cuadros); aturdida es inofensiva y no es plataforma. SIN DROPS (si no, quedarse a pelear seria rentable, §3.4). Al reaparecer Isak (o al repetir un bucle) la zona los quita a todos. Tiempo del mundo (el Debug la ralentiza). Valores PROPUESTOS, se ajustan jugando: patrol_speed_px_s 100 (algo mas rapida que la Burbuja, 80, porque es pequena), body_size 48 x 40, damage_size 40 x 32. Aspecto PROVISIONAL por codigo (FeedCardDraw, paleta provisional del Mundo 2); el arte del mundo llega en el paso 10. pop_s: lo que dura el destello al eliminarla (visual, sin colision). level_params: por si una sala la coloca a mano (no hace falta).",
+	"patrol_speed_px_s": 100.0,
+	"patrol_range_px": 0.0,
+	"gravity": 2400.0,
+	"max_fall_speed_px_s": 1200.0,
+	"edge_probe_depth_px": 16.0,
+	"contact_damage": 10.0,
+	"body_size": [48.0, 40.0],
+	"damage_size": [40.0, 32.0],
+	"stun_s": 3.0,
+	"anim_fps": 12.0,
+	"anticipation_frames": 9,
+	"health": 1,
+	"pop_s": 0.25,
+	"drops": {},
+	"help_id": "video_clone",
+	"level_params": {
+		"_notes": "Params por instancia que acepta el esquema (enemies[].params) si se coloca a mano: rango de patrulla total en px (0 = sin limite) y direccion inicial.",
+		"patrol_range_px": {"min": 0.0, "max": 1280.0},
+		"start_direction": {"values": [-1, 1]},
+		"health": {"min": 1, "max": 3, "int": true}
+	}
+}

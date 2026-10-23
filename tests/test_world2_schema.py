@@ -24,6 +24,8 @@ SCROLL_TEST = os.path.join(ROOT, "data", "levels", "scroll_test.json")
 BUCLE_TEST = os.path.join(ROOT, "data", "levels", "bucle_test.json")
 TARJETAS_TEST = os.path.join(ROOT, "data", "levels", "tarjetas_test.json")
 AUTOPLAY_TEST = os.path.join(ROOT, "data", "levels", "autoplay_test.json")
+CLONES_TEST = os.path.join(ROOT, "data", "levels", "clones_test.json")
+CARGA_TEST = os.path.join(ROOT, "data", "levels", "carga_test.json")
 
 
 def load(path):
@@ -236,6 +238,69 @@ class AutoplayVideoSchemaTest(unittest.TestCase):
         level = load(AUTOPLAY_TEST)
         self.video(level, "video_cuenta")["params"]["clip_s"] = 4.0
         self.assert_fails(level, "params.clip_s = 4.0 fuera de [2.0, 3.0]")
+
+
+class FeedEnemiesSchemaTest(unittest.TestCase):
+    """Paso 7: zona de clones con zone valida y suelo en sus bordes, Comentarista con la columna del bocadillo
+    libre y ciclo con reposo, y muro «Cargando mas...» sobre el suelo (puerta del golpe en el validador)."""
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def obj(self, level, oid):
+        return next(o for o in level["objects"] if o.get("params", {}).get("id") == oid)
+
+    def set_cell(self, level, x, y, char):
+        row = level["grid"][y]
+        level["grid"][y] = row[:x] + char + row[x + 1:]
+
+    def test_rooms_are_valid(self):
+        self.assertEqual(vls.validate_level(load(CLONES_TEST)), [])
+        self.assertEqual(vls.validate_level(load(CARGA_TEST)), [])
+
+    def test_zone_must_be_a_rect_inside_the_grid(self):
+        level = load(CLONES_TEST)
+        self.obj(level, "zona_clones")["params"]["zone"] = [6, 5, 1, 5]
+        self.assert_fails(level, "zone debe ser [columna, fila, ancho, alto]")
+        level = load(CLONES_TEST)
+        self.obj(level, "zona_clones")["params"]["zone"] = [30, 5, 10, 5]
+        self.assert_fails(level, "se sale del grid")
+
+    def test_zone_edges_need_floor(self):
+        level = load(CLONES_TEST)
+        self.obj(level, "zona_clones")["params"]["zone"] = [6, 3, 14, 5]
+        self.assert_fails(level, "falta suelo '#' bajo")
+
+    def test_zone_param_ranges(self):
+        level = load(CLONES_TEST)
+        self.obj(level, "zona_clones")["params"]["max_clones"] = 9
+        self.assert_fails(level, "max_clones")
+
+    def test_commenter_needs_a_free_column(self):
+        level = load(CLONES_TEST)
+        self.set_cell(level, 33, 9, "#")
+        self.assert_fails(level, "columna del bocadillo")
+
+    def test_commenter_interval_needs_rest(self):
+        level = load(CLONES_TEST)
+        level["enemies"][0]["params"]["interval_s"] = 0.9
+        self.assert_fails(level, "params.interval_s = 0.9 fuera de")
+
+    def test_wall_cells_must_be_free_and_on_the_floor(self):
+        level = load(CARGA_TEST)
+        self.set_cell(level, 14, 8, "#")
+        errors = vls.validate_level(level)
+        self.assertTrue(errors, "celda del muro ocupada")
+        level = load(CARGA_TEST)
+        self.obj(level, "muro_carga")["params"]["height_tiles"] = 2
+        self.assert_fails(level, "el muro va sobre el suelo")
+
+    def test_validator_opens_the_wall_with_a_ground_pound(self):
+        level = world2_model.lower(load(CARGA_TEST), level_catalog.load_catalog(ROOT, 2))
+        cards = [o for o in level["objects"] if o["type"] == "_pound_card"]
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]["params"]["rows"], 3)
 
 
 class ScrollValidatorTest(unittest.TestCase):

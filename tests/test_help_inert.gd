@@ -524,6 +524,46 @@ func test_broken_autoplay_video_gives_no_help() -> void:
 	_assert_no_reread(video, &"autoplay_video", "video roto")
 
 
+## Clon de «Un video mas» (Mundo 2, paso 7): eliminado no ayuda; aturdido, si.
+func test_popped_video_clone_gives_no_help() -> void:
+	var clone := (load("res://scenes/enemies/video_clone.tscn") as PackedScene).instantiate() as VideoClone
+	clone.set_physics_process(false)
+	clone.free_on_pop = false
+	_place(clone, &"video_clone")
+	await wait_process_frames(1)
+	clone.stun()
+	assert_true(HelpCatalog.is_help_live(clone), "Clon aturdido: sigue ayudando")
+	await _assert_inert_drops_help(clone, func() -> void: clone.on_laser_hit(1.0, null), "clon eliminado")
+	_assert_no_reread(clone, &"video_clone", "clon eliminado")
+
+
+## Comentarista (Mundo 2, paso 7): derrotado (laser aturdido) no ayuda; aturdido, si.
+func test_defeated_commenter_gives_no_help() -> void:
+	var commenter := (load("res://scenes/enemies/commenter.tscn") as PackedScene).instantiate() as Commenter
+	commenter.set_physics_process(false)
+	_place(commenter, &"commenter")
+	await wait_process_frames(1)
+	commenter.drops = {}
+	commenter.stun()
+	assert_true(HelpCatalog.is_help_live(commenter), "Comentarista aturdido: sigue ayudando")
+	await _assert_inert_drops_help(commenter, func() -> void:
+		commenter.stun()
+		commenter.on_laser_hit(10.0, null), "comentarista derrotado")
+	_assert_no_reread(commenter, &"commenter", "comentarista derrotado")
+
+
+## Muro «Cargando mas…» (Mundo 2, paso 7): roto no ayuda.
+func test_broken_loading_wall_gives_no_help() -> void:
+	_freeze_isak()
+	var wall := (load("res://scenes/levels/loading_wall.tscn") as PackedScene).instantiate() as LoadingWall
+	wall.set_physics_process(false)
+	_place(wall, &"loading_wall")
+	await _assert_inert_drops_help(wall, func() -> void:
+		for i: int in wall.pounds_needed:
+			wall.register_pound(), "muro roto")
+	_assert_no_reread(wall, &"loading_wall", "muro roto")
+
+
 ## Campana de alarma (1-3): indestructible, ayuda en todas sus fases.
 func test_alarm_bell_helps_in_every_phase() -> void:
 	var bell := (load("res://scenes/enemies/alarm_bell.tscn") as PackedScene).instantiate() as AlarmBell
@@ -614,7 +654,7 @@ func test_every_help_type_is_covered() -> void:
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
-		&"story_card", &"loop_section", &"autoplay_video"]
+		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

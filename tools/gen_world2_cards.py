@@ -11,6 +11,11 @@ este script dibuja lo mismo, con la paleta PROVISIONAL del Mundo 2
   loop_sign_00.png      cartel «Solo uno mas» de la seccion en bucle (paso 5)
   autoplay_video_00.png video en autoplay (2 x 2 tiles a media escala, 64 x 64) con la miniatura de la ola
                         y el marco rojo del aviso (paso 6)
+  video_clone_00.png    clon de «Un video mas» (48 x 40) con el triangulo de reproducir (paso 7)
+  commenter_00.png      Comentarista (48 x 56) con su cara de texto «...» y un bocadillo inflandose (paso 7;
+                        solo texto, sin AutoSprite)
+  loading_wall_00.png   muro «Cargando mas...» (1 x 3 tiles a media escala, 32 x 96) con el circulo de carga
+                        a un tercio (paso 7)
 El arte final del mundo (paso 10) los sustituira.
 
 Uso: python3 -I tools/gen_world2_cards.py [--check]   (--check: 1 si algun PNG no esta al dia)
@@ -100,9 +105,52 @@ def autoplay_video():
     return img
 
 
+def small_card(w, h, fill="tarjeta_base"):
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    r = 3
+    d.rectangle((r, 0, w - 1 - r, h - 1), fill=COLORS[fill])
+    d.rectangle((0, r, w - 1, h - 1 - r), fill=COLORS[fill])
+    d.rectangle((r, 0, w - 1 - r, 1), fill=COLORS["tarjeta_borde"])
+    d.rectangle((2, 2, w - 3, 4), fill=COLORS["tarjeta_luz"])
+    d.rectangle((r, h - 2, w - 1 - r, h - 1), fill=COLORS["tarjeta_sombra"])
+    return img, d
+
+
+def video_clone():
+    """Clon (paso 7): tarjeta magenta oscura de 48 x 40 con su pantalla y el triangulo de reproducir."""
+    img, d = small_card(48, 40, "magenta_sombra")
+    d.rectangle((6, 8, 41, 31), fill=COLORS["feed_noche"])
+    d.polygon([(19, 13), (19, 27), (31, 20)], fill=COLORS["blanco"])
+    return img
+
+
+def commenter():
+    """Comentarista (paso 7, solo texto): tarjeta de 48 x 56 con «...» y un bocadillo blanco con borde rojo."""
+    img, d = small_card(48, 56)
+    for i in range(3):
+        d.rectangle((13 + i * 9, 34, 16 + i * 9, 37), fill=COLORS["blanco"])
+    d.rectangle((26, 10, 45, 21), fill=COLORS["alerta"])
+    d.rectangle((28, 12, 43, 19), fill=COLORS["blanco"])
+    d.polygon([(30, 21), (34, 21), (30, 25)], fill=COLORS["alerta"])
+    return img
+
+
+def loading_wall():
+    """Muro «Cargando mas...» (paso 7) a media escala: 32 x 96 con un circulo de 3 segmentos (1 lleno)."""
+    img, d = small_card(32, 96)
+    box = (6, 38, 25, 57)
+    d.arc(box, -90 + 7, 30 - 7, fill=COLORS["blanco"], width=3)
+    d.arc(box, 30 + 7, 150 - 7, fill=COLORS["tarjeta_sombra"], width=3)
+    d.arc(box, 150 + 7, 270 - 7, fill=COLORS["tarjeta_sombra"], width=3)
+    d.rectangle((8, 84, 23, 85), fill=COLORS["gris"])
+    return img
+
+
 def outputs():
     return {"fragile_card_00.png": fragile(), "story_card_00.png": story(), "loop_sign_00.png": loop_sign(),
-            "autoplay_video_00.png": autoplay_video()}
+            "autoplay_video_00.png": autoplay_video(), "video_clone_00.png": video_clone(),
+            "commenter_00.png": commenter(), "loading_wall_00.png": loading_wall()}
 
 
 def main(argv):

@@ -162,6 +162,84 @@
 					]
 				}
 			}
+		},
+		"clone_zone": {
+			"scene": "res://scenes/levels/clone_zone.tscn",
+			"help_id": "",
+			"description": "Zona de clones de «Un video más» (2026-10-22, paso 7 de docs/propuesta-mundo-2.md §8, §3.4 y patron 12 de §3.6; CloneZone). Objeto logico: zone = [columna, fila, ancho, alto] en celdas (dentro del grid, al menos 2 columnas). Con los pies de Isak dentro, cada spawn_s (1,5 s, tiempo del mundo) nace un clon (enemigo video_clone, data/enemies/video_clone.json) en el borde de la zona mas lejano a Isak, a ras de la fila de abajo de la zona, tras un aviso de 9 cuadros a 12 fps (un marco de video que se enciende); tope max_clones (6) entre vivos y avisando (con el tope lleno el reloj vuelve a cero); al salir de la zona el reloj vuelve a cero. Los clones patrullan dentro de las columnas de la zona, danan al contacto, vida 1, sin drops. Un GOLPE AL SUELO cuya onda toca la zona elimina a TODOS sus clones a la vez (y cancela el aviso). Al reaparecer Isak (o al repetir un bucle) se quitan todos. El objeto (x, y) es la celda del nodo (sin dibujo propio salvo las marcas de esquina de la zona); no ocupa celdas. Sin Q propia: la llevan sus clones (help_id del clon en la seccion clone_zone). Aspecto PROVISIONAL por codigo.",
+			"required": [
+				"zone"
+			],
+			"fields": {
+				"id": "object_id",
+				"zone": "zone",
+				"spawn_s": "spawn_s",
+				"max_clones": "max_clones"
+			},
+			"defaults": {
+				"spawn_s": 1.5,
+				"max_clones": 6
+			},
+			"level_params": {
+				"spawn_s": {
+					"min": 0.75,
+					"max": 6.0
+				},
+				"max_clones": {
+					"min": 1,
+					"max": 6,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "clone_zone",
+				"x": 3,
+				"y": 6,
+				"params": {
+					"id": "clones_1",
+					"zone": [
+						3,
+						6,
+						10,
+						4
+					]
+				}
+			}
+		},
+		"loading_wall": {
+			"scene": "res://scenes/levels/loading_wall.tscn",
+			"help_id": "loading_wall",
+			"description": "Muro «Cargando más…» (2026-10-22, paso 7 de docs/propuesta-mundo-2.md §8, §3.4; LoadingWall; nivel 2-3). Pared SOLIDA de 1 x height_tiles (3) celdas sobre el suelo (el grid deja sus celdas en '.' y la de debajo de la ultima es suelo '#'); el objeto (x, y) es su celda de ARRIBA. Circulo de carga de pounds_needed (3) segmentos. El pulso y el laser rebotan (chispa gris; el disparo se consume). Cada GOLPE AL SUELO cuya onda lo alcanza (a 1,5 tiles o menos) rellena un segmento; con todos se rompe para siempre (no vuelve al reaparecer). Al reaparecer Isak sin romperlo, los segmentos vuelven a cero. En el 2-3 el scroll esta parado delante (una parada de la seccion scroll) y dentro hay una clone_zone: cada golpe tambien limpia los clones. Validador (tools/world2_model.py): puerta del golpe al suelo como la tarjeta fragil de pie (los 3 golpes los modela el paso 9b). Aspecto PROVISIONAL por codigo (seccion loading_wall).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"height_tiles": "height_tiles",
+				"pounds_needed": "pounds_needed"
+			},
+			"defaults": {
+				"height_tiles": 3,
+				"pounds_needed": 3
+			},
+			"level_params": {
+				"height_tiles": {
+					"min": 2,
+					"max": 4,
+					"int": true
+				},
+				"pounds_needed": {
+					"min": 1,
+					"max": 5,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "loading_wall",
+				"x": 13,
+				"y": 7,
+				"params": {
+					"id": "muro_carga"
+				}
+			}
 		}
 	},
 	"fragile_card": {
@@ -187,6 +265,22 @@
 		"z_index": -1,
 		"hint_from_repeat": 2,
 		"hint_s": 0.5
+	},
+	"clone_zone": {
+		"_notes": "PROPUESTA (2026-10-22, paso 7 de docs/propuesta-mundo-2.md; ajustable jugando). warn_frames / anim_fps: aviso antes de que nazca un clon (9 a 12 fps = 0,75 s; regla de 6-12 cuadros), como las oleadas de la barra del 99 %. clone_help_id: ayuda con Q de los clones que nacen. z_index: las marcas de la zona van detras de Isak (los clones, al nivel de los enemigos). Aspecto PROVISIONAL por codigo.",
+		"warn_frames": 9,
+		"anim_fps": 12.0,
+		"clone_help_id": "video_clone",
+		"z_index": -1
+	},
+	"loading_wall": {
+		"_notes": "PROPUESTA (2026-10-22, paso 7 de docs/propuesta-mundo-2.md; ajustable jugando). ring_radius_px: radio del circulo de carga; spin_rad_s: giro del indicador «cargando»; flash_s: destello al rellenar un segmento; break_s: lo que dura el muro al romperse (visual, ya sin colision); deflect_s: chispa gris del pulso y del laser; label: rotulo. Aspecto PROVISIONAL por codigo (FeedCardDraw, paleta provisional).",
+		"ring_radius_px": 20.0,
+		"spin_rad_s": 1.5,
+		"flash_s": 0.2,
+		"break_s": 0.3,
+		"deflect_s": 0.25,
+		"label": "Cargando…"
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario).",

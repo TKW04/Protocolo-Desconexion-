@@ -14,12 +14,15 @@ lower(level, catalog) devuelve una copia del nivel en la que:
     de un golpe al suelo las alcanza; las ocultas, solo con el Debug activo);
   - cada seccion en bucle (loop_section, paso 5) pone un techo en la fila de encima de su banda salvo en
     las columnas de su salida: en el juego, al llegar arriba sin la salida todo baja H filas (se vuelve a
-    ver lo mismo), asi que desde la banda solo se sale por la salida.
+    ver lo mismo), asi que desde la banda solo se sale por la salida;
+  - cada muro «Cargando mas...» (loading_wall, paso 7) es una pieza `_pound_card` de 1 x height_tiles (pared
+    que abre el golpe al suelo, como la tarjeta fragil de pie). En el juego hacen falta pounds_needed golpes
+    (3); el validador abre la puerta con uno hasta que el paso 9b modele los demas.
 Un nivel sin objetos del Mundo 2 se devuelve tal cual (la salida del Mundo 1 no cambia).
 """
 import copy
 
-WORLD2_TYPES = ("fragile_card", "story_card", "loop_section")
+WORLD2_TYPES = ("fragile_card", "story_card", "loop_section", "loading_wall")
 
 
 def _params(catalog, obj):
@@ -57,6 +60,12 @@ def lower(level, catalog):
                 for c in range(1, len(grid[row]) - 1):
                     if c not in exit_cols and grid[row][c] in ".h-o":
                         grid[row][c] = "#"
+            continue
+        if kind == "loading_wall":
+            rows = int(p.get("height_tiles", 3))
+            objects.append({"type": "_pound_card", "x": x, "y": y, "params": {
+                "id": oid, "width_tiles": 1, "rows": rows, "one_way": False, "hidden": False,
+                "card_height_px": rows * 64.0}})
             continue
         if kind == "fragile_card":
             upright = p.get("variant", "floor") == "upright"

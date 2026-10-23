@@ -95,6 +95,9 @@ SOURCES = {
     "story_card": ("assets/sprites/props/world2/story_card_00.png", None, 1),
     "loop_section": ("assets/sprites/props/world2/loop_sign_00.png", None, 1),
     "autoplay_video": ("assets/sprites/props/world2/autoplay_video_00.png", None, 1),
+    "video_clone": ("assets/sprites/props/world2/video_clone_00.png", None, 1),
+    "commenter": ("assets/sprites/props/world2/commenter_00.png", None, 1),
+    "loading_wall": ("assets/sprites/props/world2/loading_wall_00.png", None, 1),
 }
 
 

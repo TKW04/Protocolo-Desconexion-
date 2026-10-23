@@ -125,7 +125,7 @@ CAMERA_LIMITS = ("grid",)
 TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
-                  "blink_platform", "fragile_card", "story_card"}
+                  "blink_platform", "fragile_card", "story_card", "loading_wall"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
@@ -475,6 +475,8 @@ class LevelValidator:
                 self._check_bell(entry, params, data)
             if kind == "autoplay_video" and isinstance(data, dict):
                 self._check_autoplay(entry, params, data)
+            if kind == "commenter" and isinstance(data, dict):
+                self._check_commenter(entry, params, data)
 
     def _check_autoplay(self, entry, params, data):
         """Video en autoplay (autoplay_video, 2026-10-22, paso 6 de docs/propuesta-mundo-2.md §3.4): clip
@@ -692,6 +694,12 @@ class LevelValidator:
             return [(x + i, y + j) for j in range(rows) for i in range(w)]
         if kind == "update_bar":
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
+        if kind == "loading_wall":
+            # Muro «Cargando mas...» (Mundo 2, paso 7): 1 x height_tiles desde su celda de arriba.
+            h = get("height_tiles", 3)
+            if not _is_int(h) or h < 1:
+                return None
+            return [(x, y + j) for j in range(h)]
         if kind == "charge_dock":
             return [(x, y), (x + 1, y)]
         if kind in BOSS_FOOTPRINT_TILES:
@@ -853,6 +861,7 @@ class LevelValidator:
         self._check_rhythm()
         self._check_world2_cards()
         self._check_loops()
+        self._check_feed_objects()
         if self.is_boss_arena() and isinstance(self.level.get("boss"), str):
             bosses = [o for o in self.level["objects"] if isinstance(o, dict) and o.get("type") == self.level["boss"]]
             if len(bosses) != 1:
@@ -1029,6 +1038,65 @@ class LevelValidator:
                 self.error("%s: on_s %.2f s es menos que el aviso (%.2f s) + %.2f s" % (what, on_s, warn, extra), y, x)
             if _is_number(on_s) and _is_number(cycle) and on_s >= cycle:
                 self.error("%s: on_s debe ser menor que cycle_s" % what, y, x)
+
+    def _check_feed_objects(self):
+        """Objetos del paso 7 del Mundo 2 (2026-10-22, docs/propuesta-mundo-2.md §3.4): clone_zone con zone =
+        [columna, fila, ancho, alto] (enteros, ancho >= 2 y alto >= 1) dentro del grid y con suelo solido bajo
+        su fila de abajo en las dos columnas de los bordes (donde nacen los clones); loading_wall con la celda
+        de debajo de la ultima solida (va sobre el suelo)."""
+        for i, obj in enumerate(self.level["objects"]):
+            if not isinstance(obj, dict) or obj.get("type") not in ("clone_zone", "loading_wall"):
+                continue
+            kind, x, y = obj.get("type"), obj.get("x"), obj.get("y")
+            p = obj.get("params") if isinstance(obj.get("params"), dict) else {}
+            what = "objects[%d] (%s)" % (i, kind)
+            if kind == "loading_wall":
+                h = p.get("height_tiles", 3)
+                if _is_int(x) and _is_int(y) and _is_int(h) and self.in_bounds(x, y + h) \
+                        and self.cell(x, y + h) != "#":
+                    self.error("%s: el muro va sobre el suelo: la celda de debajo (%d, %d) debe ser '#'"
+                               % (what, x, y + h), y + h, x)
+                continue
+            zone = p.get("zone")
+            if not (isinstance(zone, list) and len(zone) == 4 and all(_is_int(v) for v in zone)
+                    and zone[2] >= 2 and zone[3] >= 1):
+                self.error("%s: zone debe ser [columna, fila, ancho, alto] (enteros, ancho >= 2, alto >= 1)" % what,
+                           y, x)
+                continue
+            c0, r0, w, h = zone
+            if not (self.in_bounds(c0, r0) and self.in_bounds(c0 + w - 1, r0 + h - 1)):
+                self.error("%s: zone %s se sale del grid" % (what, zone), y, x)
+                continue
+            for c in (c0, c0 + w - 1):
+                below = r0 + h
+                if not self.in_bounds(c, below) or self.cell(c, below) != "#":
+                    self.error("%s: los clones nacen en los bordes de la zona: falta suelo '#' bajo (%d, %d)"
+                               % (what, c, r0 + h - 1), below, c)
+                elif self.cell(c, r0 + h - 1) == "#":
+                    self.error("%s: celda solida donde nace un clon (%d, %d)" % (what, c, r0 + h - 1), r0 + h - 1, c)
+
+    def _check_commenter(self, entry, params, data):
+        """Comentarista (commenter, paso 7 de docs/propuesta-mundo-2.md §3.4): la columna del bocadillo
+        (shot_col_offset celdas hacia facing) libre en la fila de su celda, y el ciclo deja reposo:
+        interval_s >= aviso + min_rest_s."""
+        eid = entry.get("id")
+        x, y = entry.get("x"), entry.get("y")
+        get = lambda k: params.get(k, data.get(k))  # noqa: E731
+        facing, off = get("facing"), get("shot_col_offset")
+        if _is_int(x) and _is_int(y) and facing in (-1, 1) and _is_int(off):
+            cx = x + facing * int(off)
+            if not self.in_bounds(cx, y) or self.cell(cx, y) == "#":
+                self.error("comentarista '%s': la columna del bocadillo (%d) esta ocupada o fuera del grid" % (eid, cx),
+                           y, cx)
+        try:
+            need = float(data["anticipation_frames"]) / float(data["anim_fps"]) + float(data.get("min_rest_s", 0.0))
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            self.error("comentarista '%s': datos incompletos" % eid)
+            return
+        interval = get("interval_s")
+        if _is_number(interval) and float(interval) < need - 1e-9:
+            self.error("comentarista '%s': interval_s %.2f menor que aviso + reposo minimo (%.2f s)"
+                       % (eid, float(interval), need))
 
     def _check_loops(self):
         """Secciones en bucle (2026-10-22, paso 5 de docs/propuesta-mundo-2.md §8, §3.5): solo con scroll

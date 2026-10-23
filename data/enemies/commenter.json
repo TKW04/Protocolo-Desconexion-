@@ -1,0 +1,29 @@
+{
+	"_notes": "COMENTARISTA (commenter), Mundo 2 «El Feed» (paso 7 de docs/propuesta-mundo-2.md §8; comportamiento en §3.4). Script scripts/enemies/commenter.gd (Commenter), escena scenes/enemies/commenter.tscn. Vive en un hueco de la pared lateral cerca del borde inferior: la celda E es la suya (origen en sus pies, abajo-centro) y mira hacia facing (fuera de la pared). Cada interval_s (tiempo del mundo, desde que empieza el nivel o reaparece Isak, desplazado offset_s) ESCUPE UN BOCADILLO DE TEXTO que sube en vertical: un NotificationShot con heading hacia arriba (shot_size_px 1 x 0,5 tiles, shot_speed_px_s 320) que sale de la columna de delante (shot_col_offset celdas hacia facing) a la altura de su celda y sube shot_range_tiles celdas; el terreno lo apaga. AVISO: anticipation_frames cuadros a anim_fps (9 a 12 fps = 0,75 s) el bocadillo se infla en la boca antes de salir (regla de 6-12 cuadros). Tocar el bocadillo quita contact_damage de Sync Rate con el retroceso de siempre; el DASH lo atraviesa. El cuerpo del Comentarista no dana (esta metido en la pared): lo que dana es su texto. PULSO: lo aturde stun_s (x el multiplicador del Pulso 3; Pulso de retorno con el Pulso 5): no escupe y el aviso en curso se cancela; los bocadillos ya en el aire siguen. LASER: despierto, chispa gris (el disparo se consume, como el video); aturdido le quita vida (health 2): a 0 queda derrotado para siempre (no vuelve al reaparecer) y suelta drops (+25 de energia, como el video; PROPUESTA). GOLPE AL SUELO: si la onda lo alcanza lo aturde y le hace su dano (regla general). Al reaparecer Isak vuelve a su estado inicial (reloj a cero, sin bocadillos). Solo texto (decision del usuario 2026-10-22: sin AutoSprite; aspecto PROVISIONAL por codigo con la paleta provisional del Mundo 2). level_params: params por instancia con su rango; el esquema comprueba ademas que la columna del bocadillo esta libre y que el ciclo deja reposo (interval_s >= aviso + min_rest_s).",
+	"facing": 1,
+	"interval_s": 2.5,
+	"offset_s": 0.0,
+	"min_rest_s": 0.25,
+	"anim_fps": 12.0,
+	"anticipation_frames": 9,
+	"contact_damage": 10.0,
+	"stun_s": 3.0,
+	"health": 2,
+	"drops": {"_notes": "+25 de energia al derrotarlo (PROPUESTA, como el video en autoplay).", "debug_energy": 25},
+	"body_size": [48.0, 56.0],
+	"shot_col_offset": 1,
+	"shot_speed_px_s": 320.0,
+	"shot_range_tiles": 12,
+	"shot_size_px": [64.0, 32.0],
+	"deflect_s": 0.25,
+	"help_id": "commenter",
+	"level_params": {
+		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max] o sus valores.",
+		"facing": {"values": [-1, 1]},
+		"interval_s": {"min": 1.5, "max": 6.0},
+		"offset_s": {"min": 0.0, "max": 6.0},
+		"shot_col_offset": {"min": 0, "max": 3, "int": true},
+		"shot_range_tiles": {"min": 2, "max": 24, "int": true},
+		"health": {"min": 1, "max": 6, "int": true}
+	}
+}

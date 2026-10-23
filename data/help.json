@@ -490,6 +490,39 @@
 			"order": 4,
 			"center_px": [32, -64],
 			"prompt_px": [32, -136]
+		},
+		"video_clone": {
+			"_notes": "Clon de «Un video más» del Mundo 2 (paso 7 de docs/propuesta-mundo-2.md §8, §3.4): nace en una clone_zone (sin Q propia) y lleva la Q de la zona; origen en sus pies. Texto PROPUESTO, por decidir: no menciona el golpe al suelo (en el 2-1 aún no se tiene).",
+			"category": "enemy",
+			"title": "Un video más",
+			"text": "Cuanto más te quedas aquí, más copias salen. Una sola cosa las para: no quedarte. Sigue subiendo.",
+			"first_level": "2-1",
+			"world": 2,
+			"order": 5,
+			"center_px": [0, -20],
+			"prompt_px": [0, -64]
+		},
+		"commenter": {
+			"_notes": "Comentarista del Mundo 2 (paso 7 de docs/propuesta-mundo-2.md §8, §3.4): en un hueco de la pared, origen en sus pies. Solo texto. Texto PROPUESTO, por decidir.",
+			"category": "enemy",
+			"title": "Comentarista",
+			"text": "Siempre tiene algo que decir, y lo escupe hacia arriba. Cuanto más abajo vas, más te alcanza. Un pulso lo calla un rato; callado, el láser lo apaga.",
+			"first_level": "2-2",
+			"world": 2,
+			"order": 6,
+			"center_px": [0, -28],
+			"prompt_px": [0, -72]
+		},
+		"loading_wall": {
+			"_notes": "Muro «Cargando más…» del Mundo 2 (paso 7 de docs/propuesta-mundo-2.md §8, §3.4; nivel 2-3): origen en la esquina de arriba a la izquierda de su celda de arriba (1 x 3). Texto PROPUESTO, por decidir.",
+			"category": "object",
+			"title": "Cargando más…",
+			"text": "No se abre con el pulso ni con el láser. Cada golpe al suelo a su lado le llena un trozo del círculo; con tres, se rompe. Y de paso limpia lo que se te acerque.",
+			"first_level": "2-3",
+			"world": 2,
+			"order": 4,
+			"center_px": [32, 96],
+			"prompt_px": [32, -24]
 		}
 	}
 }

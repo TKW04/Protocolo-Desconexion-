@@ -1,0 +1,73 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 7 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 36x12 con una ZONA DE CLONES de «Un video más» (clone_zone, §3.4) y un COMENTARISTA (commenter). zona_clones = columnas 6-19, filas 5-9: con Isak dentro, cada 1,5 s nace un clon (tope 6) en el borde más lejano tras un aviso de 0,75 s (marco de video que se enciende); quedarse los multiplica, avanzar los deja atrás y un golpe al suelo (mantén S) dentro de la zona los elimina a todos. comentarista (34, 9), en el rincón de la derecha mirando a la izquierda: cada 2,5 s escupe un bocadillo que sube por la columna 33 (aviso: el bocadillo se infla); el pulso lo calla 3 s y, callado, dos disparos del láser lo derrotan (+25 de energía). Pulso, láser, dash, Debug y golpe al suelo desbloqueados. Terminal en (31, 8). El validador aún no modela los clones ni el Comentarista (paso 9b). Tileset y fondo del Mundo 1 (provisional). Escena: scenes/levels/clones_test.tscn (python3 tools/build_level.py data/levels/clones_test.json).",
+	"id": "clones_test",
+	"name": "Un video más (prueba)",
+	"world": 2,
+	"tile_size": 64,
+	"debug_color": "amber",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true
+	},
+	"validation": {
+		"time_margin_s": 0.2
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "comentarista",
+			"type": "commenter",
+			"x": 34,
+			"y": 9,
+			"params": {
+				"facing": -1
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "clone_zone",
+			"x": 6,
+			"y": 5,
+			"params": {
+				"id": "zona_clones",
+				"zone": [
+					6,
+					5,
+					14,
+					5
+				]
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 31,
+			"y": 8,
+			"params": {
+				"id": "terminal_clones",
+				"text": "Siguiente video",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"####################################",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#.P............................G..E#",
+		"####################################",
+		"####################################"
+	]
+}
