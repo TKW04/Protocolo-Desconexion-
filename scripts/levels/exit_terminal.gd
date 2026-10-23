@@ -26,13 +26,21 @@
 ## terminal_off tenido con unpowered_modulate), sin prompt ni tecla, sin Q y el
 ## pulso no hace nada. Al llegar la corriente emite powered y funciona como
 ## siempre.
+## CUENTA AUTOMATICA (2026-10-22, paso 11 de docs/propuesta-mundo-2.md, cierre
+## del 2-1 «Quedan 3 segundos para el siguiente video. No puedes cancelar»;
+## decision 6 de su §9): con countdown_s > 0 el pulso no hace nada y no sale la
+## tecla; al entrar Isak en la zona de cercania empieza una cuenta de
+## countdown_s (tiempo del mundo) que se ve en la placa de encima («3», «2»,
+## «1»; senal countdown_started) y que NO se cancela al salir de la zona; al
+## acabar se activa sola (encendido, giro y vortice de salida, como con el
+## pulso). Por defecto 0: el 1-1 al 1-3 no cambian.
 ## No es solida (Area2D, mascara player: solo detecta la cercania de Isak).
 ## Tiempo del mundo (Debug x0,5; se para con la pausa). El origen del nodo es la
 ## esquina superior izquierda de su primera celda.
 class_name ExitTerminal
 extends Area2D
 
-enum State { OFF, PROMPT, BOOT, TURN, WARP, DONE }
+enum State { OFF, PROMPT, COUNTDOWN, BOOT, TURN, WARP, DONE }
 
 const GROUP: StringName = &"exit_terminal"
 const ANIM_OFF: StringName = &"terminal_off"
@@ -46,6 +54,8 @@ signal activated(level_id: String)
 signal completed(level_id: String)
 ## Le ha llegado la corriente (requires_power).
 signal powered
+## Empieza la cuenta automatica (countdown_s > 0).
+signal countdown_started(seconds: float)
 
 @export var object_id: StringName = &""
 ## Etiqueta opcional encima de la terminal (vacio = sin etiqueta).
@@ -61,6 +71,9 @@ signal powered
 ## Aspecto (2026-10-22): vacio = monitor de siempre; lock_screen = pantalla de
 ## bloqueo (cierre del 1-3). Mismas animaciones y tamano: solo cambia el dibujo.
 @export var skin: StringName = &""
+## Cuenta automatica en segundos (2026-10-22): > 0 = se activa sola al acabar la
+## cuenta, que empieza al entrar Isak en la zona; sin pulso. 0 = con el pulso.
+@export_range(0.0, 10.0) var countdown_s: float = 0.0
 
 var _config: Dictionary = World1ObjectsConfig.section("exit_terminal")
 var _state: State = State.OFF
@@ -99,6 +112,16 @@ func _process(delta: float) -> void:
 ## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; activada (encendiendose, girando, vortice), no.
 func is_help_available() -> bool:
 	return (_state == State.OFF or _state == State.PROMPT) and is_powered()
+
+
+## Se activa sola con la cuenta (countdown_s > 0), sin pulso.
+func is_automatic() -> bool:
+	return countdown_s > 0.0
+
+
+## Segundos que le quedan a la cuenta (-1 si no esta contando).
+func get_countdown_left() -> float:
+	return maxf(countdown_s - _time, 0.0) if _state == State.COUNTDOWN else -1.0
 
 
 ## Tiene corriente (sin requires_power, siempre).
@@ -169,6 +192,8 @@ func resolved_level_id() -> String:
 ## Comprueba si el pulso (`area`, con un CircleShape2D) alcanza la terminal y, si
 ## es asi, la activa. Verdadero si se ha activado ahora.
 func receive_pulse(area: Area2D) -> bool:
+	if is_automatic():
+		return false
 	if (_state != State.OFF and _state != State.PROMPT) or not is_powered():
 		return false
 	if not PulseReceiver.pulse_reaches(area, get_hit_rect()):
@@ -180,7 +205,7 @@ func receive_pulse(area: Area2D) -> bool:
 ## Activa la terminal (encendido y luego vortice de salida para `isak`). Falso
 ## si ya estaba activada.
 func activate(isak: Isak) -> bool:
-	if (_state != State.OFF and _state != State.PROMPT) or not is_powered():
+	if (_state != State.OFF and _state != State.PROMPT and _state != State.COUNTDOWN) or not is_powered():
 		return false
 	_state = State.BOOT
 	_time = 0.0
@@ -205,12 +230,24 @@ func advance(delta: float) -> void:
 					powered.emit()
 			if not power:
 				return
+			if is_automatic():
+				if is_player_near():
+					_start_countdown()
+				else:
+					_loop(ANIM_OFF)
+				return
 			_update_near_state()
 			_loop(ANIM_PROMPT if _state == State.PROMPT else ANIM_OFF)
 			_bob_key()
 			return
 		State.WARP, State.DONE:
 			_loop(ANIM_ON)
+			return
+		State.COUNTDOWN:
+			_loop(ANIM_PROMPT)
+			_set_countdown_text()
+			if _time >= countdown_s:
+				activate(_player if _valid(_player) else _near)
 			return
 	# Encendido y giro: un paso largo puede cruzar los dos (el tiempo sobrante
 	# pasa al giro).
@@ -244,6 +281,23 @@ func is_turn_flashing() -> bool:
 
 func _turn_tick_s() -> float:
 	return maxf(float(_config.get("turn_tick_s", 1.0 / 12.0)), 0.001)
+
+
+func _start_countdown() -> void:
+	_state = State.COUNTDOWN
+	_time = 0.0
+	_player = _near
+	_apply_visuals()
+	_set_countdown_text()
+	countdown_started.emit(countdown_s)
+
+
+## La placa de la tecla muestra los segundos que quedan («3», «2», «1»).
+func _set_countdown_text() -> void:
+	var text_now: String = str(maxi(ceili(countdown_s - _time - 0.0001), 1))
+	if _key_label != null and _key_label.text != text_now:
+		PulsePrompt.set_plate_text(_key_root, text_now, load(String(_config["font"])) as Font,
+			int(_config.get("font_size", 12)), float(_config.get("key_padding_px", 3)))
 
 
 func _start_turn() -> void:
@@ -327,13 +381,13 @@ func _apply_visuals() -> void:
 	match _state:
 		State.OFF:
 			_show(ANIM_OFF)
-		State.PROMPT:
+		State.PROMPT, State.COUNTDOWN:
 			_show(ANIM_PROMPT)
 		State.BOOT, State.TURN:
 			_show(ANIM_BOOT)
 		_:
 			_show(ANIM_ON)
-	_key_root.visible = _state == State.PROMPT
+	_key_root.visible = _state == State.PROMPT or _state == State.COUNTDOWN
 
 
 func _show(anim: StringName) -> void:
@@ -417,7 +471,7 @@ func _plate(node_name: String, label_text: String, font: Font, plate_color: Stri
 
 ## Vuelve a leer la tecla del pulso del Input Map (tras reasignar los controles).
 func refresh_key() -> void:
-	if _key_root == null:
+	if _key_root == null or is_automatic():
 		return
 	PulsePrompt.set_plate_text(_key_root, _pulse_key_text(), load(String(_config["font"])) as Font, int(_config.get("font_size", 12)),
 		float(_config.get("key_padding_px", 3)))

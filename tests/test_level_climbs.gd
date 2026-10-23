@@ -36,6 +36,11 @@ const CLIMBS_PATH_1_3: String = "res://tests/fixtures/climbs_1-3.json"
 const LEVEL_SCENE_BOSS: String = "res://scenes/levels/1-boss.tscn"
 const LEVEL_PATH_BOSS: String = "res://data/levels/1-boss.json"
 const CLIMBS_PATH_BOSS: String = "res://tests/fixtures/climbs_1-boss.json"
+## 2-1 «Para ti» (paso 11 de docs/propuesta-mundo-2.md, 2026-10-22): las subidas del feed (tarjetas de una
+## via cada 2 filas, suelo de la zona de clones y repisa del secreto B), sin el scroll forzado ni el bucle.
+const LEVEL_SCENE_2_1: String = "res://scenes/levels/2-1.tscn"
+const LEVEL_PATH_2_1: String = "res://data/levels/2-1.json"
+const CLIMBS_PATH_2_1: String = "res://tests/fixtures/climbs_2-1.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -87,7 +92,8 @@ func _load(scene_path: String = LEVEL_SCENE, level_path: String = LEVEL_PATH) ->
 	for child: Node in _level.get_node(^"Enemies").get_children():
 		child.free()
 	for child: Node in _level.get_node(^"Objects").get_children():
-		if child is PopupBlocker or child is UpdateBar or child is BossBase:
+		if child is PopupBlocker or child is UpdateBar or child is BossBase or child is LoopSection \
+				or child is CloneZone:
 			child.free()
 	_isak = _level.get_node(^"Isak") as Isak
 	_sim = IsakSim.new(DT)
@@ -386,6 +392,17 @@ func test_every_climb_of_the_boss_arena_lands_with_headroom_using_the_real_isak(
 	for climb: Dictionary in climbs:
 		assert_eq(int(climb["rise_tiles"]), 2, "%s: subida de 2 tiles" % climb["id"])
 	await _load(LEVEL_SCENE_BOSS, LEVEL_PATH_BOSS)
+	await _measure_all(climbs)
+
+
+## 2-1: el scroll forzado no se mueve (sin camara de scroll en Isak) y sin bucle ni zona de clones, para
+## medir cada subida en su sitio.
+func test_every_climb_of_2_1_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_2_1))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 40, "Subidas del 2-1 en %s" % CLIMBS_PATH_2_1)
+	await _load(LEVEL_SCENE_2_1, LEVEL_PATH_2_1)
+	_isak.set(&"_scroll_camera", null)
 	await _measure_all(climbs)
 
 

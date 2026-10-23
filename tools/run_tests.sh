@@ -106,13 +106,14 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 10 (fase A): las reglas de las variantes de paleta del Mundo 2 (tools/palette_mundo2_preview.py --check).
 # Desde el paso 9b: el validador con el video en autoplay, los clones, el Comentarista, el muro y el reproductor
 # (tests/test_world2_feed_validator.py).
+# Desde el paso 11 (2026-10-22): el 2-1 real (tests/test_level_2_1.py, camino exportado y subidas al dia).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
 _export_test_rooms() {
 	local room
 	for room in "$PROJECT_DIR"/data/levels/*_test.json "$PROJECT_DIR"/data/levels/1-2.json \
-		"$PROJECT_DIR"/data/levels/1-3.json; do
+		"$PROJECT_DIR"/data/levels/1-3.json "$PROJECT_DIR"/data/levels/2-1.json; do
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
@@ -146,7 +147,7 @@ _validate_levels() {
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
-		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
+		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
@@ -155,6 +156,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/level_climbs.py --check data/levels/1-2.json \
 		&& python3 tools/level_climbs.py --check data/levels/1-3.json \
 		&& python3 tools/level_climbs.py --check data/levels/1-boss.json \
+		&& python3 tools/level_climbs.py --check data/levels/2-1.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \

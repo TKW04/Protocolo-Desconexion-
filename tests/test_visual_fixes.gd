@@ -246,10 +246,12 @@ func test_arena_camera_frames_isak_and_the_boss() -> void:
 
 # --- Hub ---
 
-func test_world_2_folder_has_no_enter_hint() -> void:
-	GameState.mark_level_completed(&"1-boss")
+## Carpeta de un mundo sin subniveles (desde el paso 11 del Mundo 2, 2026-10-22, el Mundo 2 tiene el 2-1:
+## se comprueba con el Mundo 3, que se abre al vencer a Autoplay).
+func test_world_without_levels_folder_has_no_enter_hint() -> void:
+	GameState.mark_level_completed(&"2-boss")
 	var panel := FolderPanel.new()
-	panel.world_entry = HubWorlds.world(&"m2")
+	panel.world_entry = HubWorlds.world(&"m3")
 	add_child_autofree(panel)
 	panel.refresh()
 	assert_false(panel.get_help().contains("entrar"), "Sin nada que entrar")

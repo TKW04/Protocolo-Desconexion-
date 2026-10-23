@@ -1,0 +1,743 @@
+{
+  "_notes": "Nivel 2-1 «Para ti» (paso 11 de docs/propuesta-mundo-2.md §8; diseno en su §4.1 y §4.1.1, desvios en §8.1). Feed vertical de 20 x 130 con scroll forzado hacia arriba: Inicio parado con el cartel «Para ti» (Q de Eco sobre el reloj del HUD), Tramo 1 a 0,5 tiles/s (cartel «Desliza hacia arriba» con la Q del borde), Tramo 2 a 0,6 con el primer video en autoplay (ola) y el segundo (rayo), Pausa con sync_1 y cargador_1 (el scroll se para), Tramo 3 a 0,6 con el bucle «Solo uno más» (banda h 78-92; salida con tarjetas ocultas a la derecha, solo con el Debug) y el video de la cuenta, Tramo 4 a 0,7 con las primeras tarjetas fragiles y la primera zona de clones (se cruza sin pararse: aun no hay golpe al suelo) y el Cierre con la terminal que se activa sola tras la cuenta de 3 s y vuelve al hub. Secretos: A (video en negro, msg_2_1, Debug sin dash), B (vida extra tras la pared con glitch, salto + dash aereo y Debug) y C (repisa alta). Alturas h desde el suelo de la sala de inicio: fila = 129 - h. Tileset y fondo del Mundo 1 (provisional hasta el arte del paso 10). Escena: scenes/levels/2-1.tscn (python3 tools/build_level.py data/levels/2-1.json).",
+  "id": "2-1",
+  "name": "Para ti",
+  "world": 2,
+  "tile_size": 64,
+  "debug_color": "amber",
+  "target_duration_s": 300,
+  "difficulty": 2,
+  "abilities_available": {
+    "pulse": true,
+    "laser": true,
+    "debug": true,
+    "dash": true,
+    "ground_pound": false
+  },
+  "camera": {
+    "vertical": "autoscroll",
+    "limits": "grid"
+  },
+  "scroll": {
+    "start_resume_row": 121,
+    "default_speed_tiles_s": 0.5,
+    "stages": [
+      {
+        "y_from": 90,
+        "y_to": 129,
+        "speed_tiles_s": 0.5
+      },
+      {
+        "y_from": 67,
+        "y_to": 89,
+        "speed_tiles_s": 0.6
+      },
+      {
+        "y_from": 35,
+        "y_to": 66,
+        "speed_tiles_s": 0.6
+      },
+      {
+        "y_from": 0,
+        "y_to": 34,
+        "speed_tiles_s": 0.7
+      }
+    ],
+    "stops": [
+      {
+        "id": "sync_1",
+        "at_row": 69,
+        "resume_row": 66
+      }
+    ],
+    "safe_respawn": [
+      [
+        15,
+        126
+      ],
+      [
+        10,
+        124
+      ],
+      [
+        5,
+        122
+      ],
+      [
+        9,
+        120
+      ],
+      [
+        4,
+        118
+      ],
+      [
+        9,
+        116
+      ],
+      [
+        14,
+        114
+      ],
+      [
+        9,
+        112
+      ],
+      [
+        4,
+        110
+      ],
+      [
+        9,
+        108
+      ],
+      [
+        14,
+        106
+      ],
+      [
+        11,
+        104
+      ],
+      [
+        4,
+        102
+      ],
+      [
+        9,
+        100
+      ],
+      [
+        14,
+        98
+      ],
+      [
+        9,
+        96
+      ],
+      [
+        4,
+        94
+      ],
+      [
+        9,
+        92
+      ],
+      [
+        14,
+        90
+      ],
+      [
+        7,
+        88
+      ],
+      [
+        10,
+        86
+      ],
+      [
+        14,
+        84
+      ],
+      [
+        10,
+        82
+      ],
+      [
+        6,
+        80
+      ],
+      [
+        10,
+        78
+      ],
+      [
+        14,
+        76
+      ],
+      [
+        10,
+        74
+      ],
+      [
+        6,
+        72
+      ],
+      [
+        10,
+        70
+      ],
+      [
+        14,
+        68
+      ],
+      [
+        10,
+        66
+      ],
+      [
+        4,
+        64
+      ],
+      [
+        8,
+        62
+      ],
+      [
+        11,
+        60
+      ],
+      [
+        7,
+        58
+      ],
+      [
+        4,
+        56
+      ],
+      [
+        7,
+        54
+      ],
+      [
+        4,
+        52
+      ],
+      [
+        4,
+        50
+      ],
+      [
+        8,
+        48
+      ],
+      [
+        11,
+        46
+      ],
+      [
+        7,
+        44
+      ],
+      [
+        4,
+        42
+      ],
+      [
+        7,
+        40
+      ],
+      [
+        4,
+        38
+      ],
+      [
+        4,
+        36
+      ],
+      [
+        16,
+        34
+      ],
+      [
+        13,
+        32
+      ],
+      [
+        3,
+        26
+      ],
+      [
+        12,
+        24
+      ],
+      [
+        10,
+        22
+      ],
+      [
+        6,
+        20
+      ],
+      [
+        3,
+        18
+      ],
+      [
+        16,
+        16
+      ],
+      [
+        5,
+        14
+      ],
+      [
+        3,
+        12
+      ],
+      [
+        6,
+        10
+      ],
+      [
+        9,
+        8
+      ]
+    ]
+  },
+  "validation": {
+    "debug_required": true,
+    "time_margin_s": 0.2,
+    "ceiling_margin_px": 16,
+    "hazard_margin_s": 0.1,
+    "start_energy": 100,
+    "sync_damage_budget": 0
+  },
+  "sections": [
+    {
+      "name": "Inicio «Para ti»",
+      "y_from": 119,
+      "y_to": 129
+    },
+    {
+      "name": "Tramo 1 «Desliza hacia arriba»",
+      "y_from": 90,
+      "y_to": 118
+    },
+    {
+      "name": "Tramo 2 «Reproducción automática»",
+      "y_from": 68,
+      "y_to": 89
+    },
+    {
+      "name": "Pausa",
+      "y_from": 66,
+      "y_to": 67
+    },
+    {
+      "name": "Tramo 3 «Solo uno más»",
+      "y_from": 35,
+      "y_to": 65
+    },
+    {
+      "name": "Tramo 4 «Te podría gustar»",
+      "y_from": 10,
+      "y_to": 34
+    },
+    {
+      "name": "Cierre «Siguiente video»",
+      "y_from": 0,
+      "y_to": 9
+    }
+  ],
+  "checkpoints": [
+    {
+      "id": "sync_1",
+      "x": 9,
+      "y": 66
+    }
+  ],
+  "secrets": [
+    {
+      "id": "secreto_repisa_alta",
+      "x": 1,
+      "y": 88,
+      "reward": "attention_points",
+      "points": 1,
+      "note": "C (§4.1.1): repisa alta a la izquierda (columnas 1-2, h 40) que se sale de la ruta al final del Tramo 1: cuesta un rodeo con el scroll en marcha (anticiparse premia). 1 punto."
+    },
+    {
+      "id": "secreto_video_negro",
+      "x": 1,
+      "y": 48,
+      "reward": [
+        "attention_points",
+        "memory"
+      ],
+      "points": 1,
+      "memory_id": "msg_2_1",
+      "needs_debug": true,
+      "forbid_abilities": [
+        "dash"
+      ],
+      "note": "A «Video en negro» (§4.1.1): en la banda del bucle, una tarjeta en negro (columnas 1-3, h 80) que sin el Debug es un hueco del feed; con el Debug se pisa y deja, pegado a la pared, el mensaje msg_2_1 de Mamá (memory_pickup mensaje_2_1 en esta celda) y 1 punto. Ruta sin dash."
+    },
+    {
+      "id": "secreto_vida_extra",
+      "x": 18,
+      "y": 15,
+      "object": "glitch_wall",
+      "needs_debug": true,
+      "reward": "extra_life",
+      "note": "B «Vida extra» (§4.1.1): repisa a la derecha de la ultima fragil del Tramo 4 (salto + dash aereo) con una pared con glitch que solo se ve con el Debug (columna 18, h 113-114); al disolverla aparece la vida extra del Mundo 2 (vida_extra_2_1, registro 2-1 / B) en su celda. Opcional."
+    }
+  ],
+  "unlocks": [
+    {
+      "type": "level",
+      "id": "2-2"
+    }
+  ],
+  "enemies": [
+    {
+      "id": "video_ola",
+      "type": "autoplay_video",
+      "x": 1,
+      "y": 82,
+      "params": {
+        "clip": "wave",
+        "facing": 1,
+        "wave_tiles": 8
+      }
+    },
+    {
+      "id": "video_rayo",
+      "type": "autoplay_video",
+      "x": 17,
+      "y": 74,
+      "params": {
+        "clip": "ray",
+        "facing": -1,
+        "ray_tiles": 6
+      }
+    },
+    {
+      "id": "video_cuenta",
+      "type": "autoplay_video",
+      "x": 17,
+      "y": 50,
+      "params": {
+        "clip": "count",
+        "facing": -1
+      }
+    }
+  ],
+  "objects": [
+    {
+      "type": "feed_sign",
+      "x": 2,
+      "y": 125,
+      "help_id": "hud_clock",
+      "params": {
+        "id": "cartel_para_ti",
+        "text": "Para ti",
+        "width_tiles": 4
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 12,
+      "y": 117,
+      "help_id": "feed_edge",
+      "params": {
+        "id": "cartel_desliza",
+        "text": "Desliza hacia arriba",
+        "width_tiles": 6
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 12,
+      "y": 84,
+      "params": {
+        "id": "cartel_autoplay",
+        "text": "Reproducción automática:\nsiempre",
+        "width_tiles": 6,
+        "height_tiles": 2
+      }
+    },
+    {
+      "type": "charger",
+      "x": 13,
+      "y": 66,
+      "params": {
+        "id": "cargador_1",
+        "amount": 50.0,
+        "reusable": true,
+        "cooldown_s": 10.0
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 3,
+      "y": 64,
+      "params": {
+        "id": "cartel_pausa",
+        "text": "En pausa",
+        "width_tiles": 4,
+        "accent": "tarjeta_borde"
+      }
+    },
+    {
+      "type": "loop_section",
+      "x": 11,
+      "y": 41,
+      "params": {
+        "id": "bucle_para_ti",
+        "band": [
+          37,
+          51
+        ],
+        "exit": [
+          15,
+          31,
+          4,
+          8
+        ],
+        "hint": [
+          15,
+          41,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "type": "memory_pickup",
+      "x": 1,
+      "y": 48,
+      "params": {
+        "id": "mensaje_2_1",
+        "memory_id": "msg_2_1"
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 2,
+      "y": 32,
+      "params": {
+        "id": "cartel_te_podria",
+        "text": "Te podría gustar: esto",
+        "width_tiles": 7
+      }
+    },
+    {
+      "type": "charger",
+      "x": 11,
+      "y": 32,
+      "params": {
+        "id": "cargador_2",
+        "amount": 50.0,
+        "reusable": true,
+        "cooldown_s": 10.0
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 7,
+      "y": 31,
+      "params": {
+        "id": "fragil_1",
+        "width_tiles": 3
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 3,
+      "y": 29,
+      "params": {
+        "id": "fragil_2",
+        "width_tiles": 3
+      }
+    },
+    {
+      "type": "clone_zone",
+      "x": 6,
+      "y": 19,
+      "params": {
+        "id": "clones_te_podria",
+        "zone": [
+          6,
+          19,
+          12,
+          6
+        ]
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 7,
+      "y": 17,
+      "params": {
+        "id": "fragil_3",
+        "width_tiles": 3
+      }
+    },
+    {
+      "type": "glitch_wall",
+      "x": 18,
+      "y": 15,
+      "params": {
+        "id": "pared_vida_extra",
+        "width_tiles": 1,
+        "height_tiles": 2,
+        "visible_only_with_debug": true
+      }
+    },
+    {
+      "type": "extra_life_pickup",
+      "x": 18,
+      "y": 16,
+      "params": {
+        "id": "vida_extra_2_1",
+        "secret_id": "B"
+      }
+    },
+    {
+      "type": "exit_terminal",
+      "x": 14,
+      "y": 7,
+      "help_id": "",
+      "params": {
+        "id": "terminal_siguiente_video",
+        "width_tiles": 1,
+        "height_tiles": 2,
+        "countdown_s": 3.0
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 4,
+      "y": 3,
+      "params": {
+        "id": "cartel_siguiente_video",
+        "text": "Quedan 3 segundos para el siguiente video.\nNo puedes cancelar",
+        "width_tiles": 12,
+        "height_tiles": 2,
+        "accent": "ambar"
+      }
+    }
+  ],
+  "grid": [
+    "####################",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#......o......G....#",
+    "#------------------#",
+    "#..................#",
+    "#...-----..........#",
+    "#..................#",
+    "#-----.............#",
+    "#..................#",
+    "#..-----...........#",
+    "#..................#",
+    "#.............######",
+    "#..................#",
+    "#-----.............#",
+    "#..................#",
+    "#...-----..........#",
+    "#..................#",
+    "#.......-----......#",
+    "#..................#",
+    "#.....#----------#.#",
+    "#..................#",
+    "#.---..............#",
+    "#...o..............#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#.........------...#",
+    "#..................#",
+    "#.............-----#",
+    "#..................#",
+    "#------...........-#",
+    "#..................#",
+    "#------...........-#",
+    "#..................#",
+    "#...------........-#",
+    "#..................#",
+    "#------..........h.#",
+    "#.....o............#",
+    "#...------.....h...#",
+    "#..................#",
+    "#.......------.....#",
+    "#So................#",
+    "#hhh.------........#",
+    "#................E.#",
+    "#------...........-#",
+    "#..................#",
+    "#------...........-#",
+    "#..................#",
+    "#...------........-#",
+    "#..................#",
+    "#------............#",
+    "#..................#",
+    "#...------.........#",
+    "#..................#",
+    "#.......------.....#",
+    "#..................#",
+    "#....------........#",
+    "#..................#",
+    "#------...........-#",
+    "#........C.........#",
+    "#------------------#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#..------..........#",
+    "#................E.#",
+    "#......------......#",
+    "#...........o......#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#..------..........#",
+    "#E.................#",
+    "#......------......#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#So................#",
+    "#--..------........#",
+    "#..................#",
+    "#..........-------.#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#-------...........#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#..........-------.#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#-------...........#",
+    "#................o.#",
+    "#.....-------...---#",
+    "#..................#",
+    "#..........-------.#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#-------...........#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#..........-------.#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#-------...........#",
+    "#..................#",
+    "#.....-------......#",
+    "#..................#",
+    "#.-------..........#",
+    "#..................#",
+    "#......-------.....#",
+    "#..............o...#",
+    "#...........------.#",
+    "#..P...............#",
+    "####################"
+  ]
+}

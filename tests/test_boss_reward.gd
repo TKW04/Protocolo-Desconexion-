@@ -278,4 +278,7 @@ func test_victory_returns_to_hub_with_world_2_unlocked_and_cyan_piece() -> void:
 	panel.world_entry = m2
 	add_child_autofree(panel)
 	panel.refresh()
-	assert_true("Próximamente" in panel.get_lines(), "El Mundo 2 dice «Próximamente»")
+	# Desde el paso 11 del Mundo 2 (2026-10-22) el 2-1 es jugable; el resto sigue «Próximamente».
+	assert_eq(panel.get_level_state(&"2-1"), HubWorlds.STATE_AVAILABLE, "El 2-1, disponible")
+	assert_eq(panel.level_text(HubWorlds.levels(m2)[1]), "2-2 Un video más - Próximamente",
+		"El resto del Mundo 2 dice «Próximamente»")

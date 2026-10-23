@@ -273,6 +273,47 @@
 					"story_line": "pausa_2_2"
 				}
 			}
+		},
+		"feed_sign": {
+			"scene": "res://scenes/levels/feed_sign.tscn",
+			"description": "Cartel de interfaz del Mundo 2 (2026-10-22, paso 11 de docs/propuesta-mundo-2.md §8, el 2-1 real; FeedSign): tarjeta del feed con texto con la voz de una app de videos («Para ti», «Desliza hacia arriba», «Quedan 3 segundos para el siguiente video. No puedes cancelar»); nunca dice «vuelta». text: el texto («\\n» parte lineas, cada una centrada). width_tiles x height_tiles: tamano de la tarjeta desde su celda (esquina superior izquierda). accent: color de la franja de arriba (nombre de la paleta del Mundo 2). SOLO DECORADO: sin colision ni estado; el validador lo ignora; puede ir sobre el fondo o delante de la pared. Sin Q propia: un cartel del nivel puede llevar un help_id (el 2-1 apunta asi el reloj del HUD, hud_clock, y el borde del scroll, feed_edge). Aspecto por codigo (FeedCardDraw).",
+			"required": ["text"],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"accent": "accent"
+			},
+			"defaults": {
+				"width_tiles": 4,
+				"height_tiles": 1
+			},
+			"allowed": {
+				"accent": ["magenta", "tarjeta_borde", "ambar", "gris"]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 18,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "feed_sign",
+				"x": 3,
+				"y": 120,
+				"params": {
+					"id": "cartel_para_ti",
+					"text": "Para ti",
+					"width_tiles": 4
+				}
+			}
 		}
 	},
 	"fragile_card": {
@@ -328,6 +369,14 @@
 		"story_lines": {
 			"pausa_2_2": "Mira cuánto tiempo ahorramos juntos."
 		}
+	},
+	"feed_sign": {
+		"_notes": "PROPUESTA (2026-10-22, paso 11 de docs/propuesta-mundo-2.md). font / font_size / line_height_px: letra del cartel (la de los textos del juego). inset_px: margen de la tarjeta arriba y abajo dentro de sus celdas. z_index: detras de Isak y de los objetos. Aspecto por codigo (FeedCardDraw, paleta del Mundo 2).",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 16,
+		"line_height_px": 18,
+		"inset_px": 6,
+		"z_index": -1
 	},
 	"palette": {
 		"_notes": "Variante B (tools/palette_mundo2_variants.py, escrita por tools/palette_mundo2_provisional.py; no editar a mano): colores del Mundo 2 por nombre.",

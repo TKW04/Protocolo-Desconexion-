@@ -280,6 +280,39 @@ def render(level, palette):
             x0, y0, x1, y1 = box(x, y)
             d.rectangle((x0 + 5, y0 + 3, x1 - 5, y1 - 2), outline=palette["debug_cian"])
             d.rectangle((x0 + 7, y0 + 1, x1 - 7, y0 + 3), fill=palette["debug_cian"])
+        # Mundo 2 (paso 11 de docs/propuesta-mundo-2.md, el 2-1 real; 2026-10-22).
+        elif kind == "fragile_card":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 2), 1)
+            for xx in range(x0, x1, 6):
+                d.line((xx, y0, min(xx + 3, x1), y0 + 3), fill=palette["borde_luz"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "fragil", palette["borde_luz"])
+        elif kind == "loop_section":
+            top, bottom = p["band"]
+            x0, y0, _, _ = box(0, top)
+            _, _, x1, y1 = box(cols - 1, bottom)
+            for yy in (y0, y1):
+                for xx in range(x0, x1, 8):
+                    d.line((xx, yy, xx + 4, yy), fill=palette["resplandor"], width=2)
+            ex = p["exit"]
+            ex0, ey0, ex1, ey1 = box(ex[0], ex[1], ex[2], ex[3])
+            d.rectangle((ex0, ey0, ex1, ey1), outline=palette["debug_cian"])
+            label(x0 + 4, y0 + 8, "bucle (banda %d-%d)" % (top, bottom), palette["resplandor"], anchor="lm")
+            label((ex0 + ex1) // 2, ey0 - 7, "salida", palette["debug_cian"])
+        elif kind == "clone_zone":
+            zc, zr, zw, zh = p["zone"]
+            x0, y0, x1, y1 = box(zc, zr, zw, zh)
+            for xx in range(x0, x1, 8):
+                d.line((xx, y0, xx + 3, y0), fill=palette["alerta_sombra"])
+                d.line((xx, y1, xx + 3, y1), fill=palette["alerta_sombra"])
+            label((x0 + x1) // 2, y0 + 8, "zona de clones", palette["alerta"])
+        elif kind == "feed_sign":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 4), p.get("height_tiles", 1))
+            d.rectangle((x0 + 1, y0 + 2, x1 - 1, y1 - 2), outline=palette["banner_gris"])
+            label((x0 + x1) // 2, (y0 + y1) // 2, p.get("text", "").split("\n")[0][:28], palette["banner_gris"])
+        elif kind == "extra_life_pickup":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 4, y0 + 3, x1 - 4, y1 - 3), outline=palette["debug_cian"], width=2)
+            label((x0 + x1) // 2, y1 + 6, "vida extra", palette["debug_cian"])
         elif kind == "alert_major":
             # Jefe: caja de su badge de 256 px (4 x 4 tiles) centrada en su celda.
             x0, y0, x1, y1 = box(x - 2, y, 4, 4)
@@ -317,6 +350,13 @@ def render(level, palette):
             elif "rhythm" in ep:
                 tag = "banner al compas"
             label(cx, y0 - 8, tag, palette["alerta"])
+            continue
+        if enemy["type"] == "autoplay_video":
+            # Video en autoplay (Mundo 2): tarjeta de 2 x 2 desde su celda de abajo a la izquierda.
+            vx0, vy0, vx1, vy1 = box(enemy["x"], enemy["y"] - 1, 2, 2)
+            d.rectangle((vx0 + 1, vy0 + 1, vx1 - 1, vy1 - 1), outline=palette["alerta"], width=2)
+            d.polygon([(vx0 + 10, vy0 + 8), (vx0 + 10, vy1 - 8), (vx1 - 9, (vy0 + vy1) // 2)], fill=palette["alerta"])
+            label((vx0 + vx1) // 2, vy0 - 8, "video (%s)" % ep.get("clip", "?"), palette["alerta"])
             continue
         if enemy["type"] == "notification_badge":
             lw = ep.get("leash_width_px", 512.0) / tile * CELL
@@ -453,7 +493,9 @@ def main(argv):
         return 2
     with open(argv[1], encoding="utf-8") as handle:
         level = json.load(handle)
-    palette = load_palette(os.path.join(ROOT, "assets", "palettes", "mundo%d.gpl" % level["world"]))
+    # El Mundo 2 usa el tileset y el fondo del Mundo 1 hasta su arte (paso 10 de docs/propuesta-mundo-2.md):
+    # el mapa de revision, tambien su paleta.
+    palette = load_palette(os.path.join(ROOT, "assets", "palettes", "mundo1.gpl"))
     out = argv[2] if len(argv) > 2 else os.path.join(ROOT, "assets", "levels_preview", "%s_mapa.png" % level["id"])
     os.makedirs(os.path.dirname(out), exist_ok=True)
     render(level, palette).save(out)

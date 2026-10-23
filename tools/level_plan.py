@@ -268,6 +268,12 @@ class Planner:
         end = run["stages"][-1]["end"]
         # Terminal de salida: pulso desde la celda que encontro el validador (normalmente la meta).
         for item in self.v.result.get("exit_terminals", []):
+            if item.get("countdown_s"):
+                # Cuenta automatica (cierre del 2-1): Isak espera en la meta a que la terminal se active sola.
+                steps.append({"action": "wait", "at": end, "seconds": float(item["countdown_s"]), "state": last_state,
+                              "reason": "cuenta de la terminal %s" % item["id"], "final": True,
+                              "target": {"type": "exit_terminal", "id": item["id"]}})
+                break
             frm = item.get("pulse_from")
             if not frm:
                 continue
@@ -2235,6 +2241,21 @@ class Planner:
                 if not hz["legacy"]:
                     sync["timed"] = "hazard"
                 out.append(sync)
+            span = steps[first:exit_idx + 1]
+            if any(st["action"] == "debug_on" for st in span):
+                # El tramo con tiempo rehace los movimientos y el Debug se encendia dentro (2-1, 2026-10-22:
+                # la salida del bucle empieza al alcance de los proyectiles de la cuenta): se vuelve a encender
+                # justo antes del primer movimiento con el Debug de la busqueda (y se apaga tras el ultimo si
+                # el tramo tambien lo apagaba).
+                k0 = next((i for i, st in enumerate(plan["steps"]) if st.get("debug")), None)
+                if k0 is not None:
+                    on = next(st for st in span if st["action"] == "debug_on")
+                    plan["steps"].insert(k0, dict(on, at=plan["steps"][k0]["from"], state=state, timed="hazard"))
+                    if any(st["action"] == "debug_off" for st in span):
+                        k1 = max(i for i, st in enumerate(plan["steps"]) if st.get("debug"))
+                        off = next(st for st in span if st["action"] == "debug_off")
+                        plan["steps"].insert(k1 + 1, dict(off, at=plan["steps"][k1]["to"], state=state,
+                                                          timed="hazard"))
             out.extend(plan["steps"])
             if not hz["legacy"]:
                 self.check_dash_required(required, involved, plan, entry, exit_node, state, hz, rp, dwell, ctx,

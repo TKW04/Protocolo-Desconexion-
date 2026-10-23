@@ -655,6 +655,17 @@ func test_discarded_clone_gives_no_help() -> void:
 	await _assert_inert_drops_help(clone, func() -> void: clone.discard(false), "copia descartada")
 
 
+## Carteles del feed con la ayuda del reloj y del borde (paso 11 del Mundo 2): no se destruyen ni se
+## gastan, asi que siempre ayudan (la Q sale hasta aprender el tipo y luego la relectura).
+func test_feed_signs_always_help() -> void:
+	for help_id: StringName in [&"hud_clock", &"feed_edge"]:
+		var sign := (load("res://scenes/levels/feed_sign.tscn") as PackedScene).instantiate() as FeedSign
+		sign.text = "Para ti"
+		_place(sign, help_id)
+		assert_true(HelpCatalog.is_help_live(sign), "%s: el cartel siempre ayuda" % help_id)
+		sign.free()
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
@@ -664,7 +675,7 @@ func test_every_help_type_is_covered() -> void:
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
 		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall",
-		&"pause_player"]
+		&"pause_player", &"hud_clock", &"feed_edge"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

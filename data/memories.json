@@ -1,5 +1,5 @@
 {
-  "_notes": "Recuerdos (docs/propuesta-recuerdos.md §7 paso 1 y §10; 2026-10-19). Una entrada por recuerdo. kind boss: recuerdo de jefe, una capa por acceso (layer 1 Caché, 2 Kernel, 3 Raíz); 6 jefes x 3 capas = 18 (el del Mundo 6 lo entrega Isak Optimizado). kind secret: mensaje de secreto (correo o mensaje de familiares y amigos) con sender y subject, el nivel (level) y el secreto que lo ofrece (secret, id del array secrets del nivel) y first_lap (acceso en que aparece, 1 = Caché): REAPARECE SI NO SE OBTUVO, es decir, se ofrece en first_lap y en todos los accesos siguientes mientras su id no esté en el registro (GameState.memories). order: orden dentro del mundo (jefe: la capa; mensajes: el subnivel). TEXTOS (2026-10-22, paso 6 de docs/propuesta-recuerdos.md, §11.2): los 18 recuerdos de jefe y los mensajes del 1-1, 1-2 y 1-3 son DEFINITIVOS EN DATOS como PROPUESTA DEL ORQUESTADOR (el usuario delegó la redacción), a revisar al jugar. Regla de tono (§5, §9.6): Caché = imagen (con la frase de Eco del diseño de cada mundo), Kernel = contexto (escena completa; es la que lleva ilustración), Raíz = qué hizo Eco, con su reacción como última línea («Eco: «…»»). Familia: el Abuelito y Mamá (docs/04-personajes.md §12.5), tono cálido y cotidiano, sin pérdida ni duelo. El Mundo 6 (Isak Optimizado) es el «Fragmento de pausa» (la copia nunca se detiene; docs/mundo-6-nube.md §11.7, fase 3). Los demás mensajes de Caché (3 por mundo, §8.4) se añaden al construir cada mundo. Cada mensaje lo ofrece un objeto memory_pickup de su nivel (recompensa memory con su memory_id en el secreto `secret`; cuando el nivel ya tiene JSON lo comprueba el validador). msg_1_3 lo ofrece el 1-3 real (secreto_excepciones, celda 125, 4) y la sala de prueba excepciones_test (stands_for 1-3). Solo glifos de la fuente de textos: las citas van entre comillas angulares y el punto medio separa remitente y asunto en la lista de Notas (message_row de data/hub.json). Validador: tools/validate_memories.py.",
+  "_notes": "Recuerdos (docs/propuesta-recuerdos.md §7 paso 1 y §10; 2026-10-19). Una entrada por recuerdo. kind boss: recuerdo de jefe, una capa por acceso (layer 1 Caché, 2 Kernel, 3 Raíz); 6 jefes x 3 capas = 18 (el del Mundo 6 lo entrega Isak Optimizado). kind secret: mensaje de secreto (correo o mensaje de familiares y amigos) con sender y subject, el nivel (level) y el secreto que lo ofrece (secret, id del array secrets del nivel) y first_lap (acceso en que aparece, 1 = Caché): REAPARECE SI NO SE OBTUVO, es decir, se ofrece en first_lap y en todos los accesos siguientes mientras su id no esté en el registro (GameState.memories). order: orden dentro del mundo (jefe: la capa; mensajes: el subnivel). TEXTOS (2026-10-22, paso 6 de docs/propuesta-recuerdos.md, §11.2): los 18 recuerdos de jefe y los mensajes del 1-1, 1-2 y 1-3 son DEFINITIVOS EN DATOS como PROPUESTA DEL ORQUESTADOR (el usuario delegó la redacción), a revisar al jugar. Regla de tono (§5, §9.6): Caché = imagen (con la frase de Eco del diseño de cada mundo), Kernel = contexto (escena completa; es la que lleva ilustración), Raíz = qué hizo Eco, con su reacción como última línea («Eco: «…»»). Familia: el Abuelito y Mamá (docs/04-personajes.md §12.5), tono cálido y cotidiano, sin pérdida ni duelo. El Mundo 6 (Isak Optimizado) es el «Fragmento de pausa» (la copia nunca se detiene; docs/mundo-6-nube.md §11.7, fase 3). Los demás mensajes de Caché (3 por mundo, §8.4) se añaden al construir cada mundo. Cada mensaje lo ofrece un objeto memory_pickup de su nivel (recompensa memory con su memory_id en el secreto `secret`; cuando el nivel ya tiene JSON lo comprueba el validador). msg_1_3 lo ofrece el 1-3 real (secreto_excepciones, celda 125, 4) y la sala de prueba excepciones_test (stands_for 1-3). msg_2_1 (2026-10-22, paso 11 de docs/propuesta-mundo-2.md; borrador de §4.5 aprobado como PROPUESTA revisable) lo ofrece el 2-1 real (secreto_video_negro, la tarjeta en negro del bucle). Solo glifos de la fuente de textos: las citas van entre comillas angulares y el punto medio separa remitente y asunto en la lista de Notas (message_row de data/hub.json). Validador: tools/validate_memories.py.",
   "memories": [
     {
       "id": "boss_w1_l1",
@@ -201,6 +201,19 @@
       "subject": "Cuando quieras",
       "title": "Cuando quieras",
       "text": "Isak, vi que pusiste No molestar. Está bien, a veces hace falta: el Abuelito tampoco contesta cuando suelda. Estamos abajo, sin prisa. Y tú sí puedes interrumpirnos cuando quieras.\nMamá (no te molesto, prometido)"
+ },
+    {
+      "id": "msg_2_1",
+      "world": 2,
+      "kind": "secret",
+      "order": 1,
+      "level": "2-1",
+      "secret": "secreto_video_negro",
+      "first_lap": 1,
+      "sender": "Mamá",
+      "subject": "Domingo",
+      "title": "Domingo",
+      "text": "Isak, el vecino trajo su radio y el Abuelito dice que el domingo la abren entre los dos. Que no te comprometas con nadie. Yo solo aviso.\nMamá (la secretaria del taller)"
     }
   ]
 }

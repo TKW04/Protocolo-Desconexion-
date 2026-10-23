@@ -534,6 +534,28 @@
 			"order": 5,
 			"center_px": [32, -32],
 			"prompt_px": [32, -92]
+		},
+		"hud_clock": {
+			"_notes": "Reloj del HUD (paso 11 de docs/propuesta-mundo-2.md §8, §2.3 y §4.1: «Q de Eco sobre el reloj la primera vez»). El reloj es del HUD, así que la Q va sobre un objeto del mundo: el cartel «Para ti» de la sala de inicio del 2-1 (feed_sign de 4 x 1 con help_id hud_clock; origen en su esquina superior izquierda). Texto PROPUESTO, por decidir (idea de la propuesta).",
+			"category": "object",
+			"title": "La hora",
+			"text": "¿Ves el reloj de arriba? Es la hora de verdad. Aquí dentro se escapa: cada vez que te descuidas, salta.",
+			"first_level": "2-1",
+			"world": 2,
+			"order": 6,
+			"center_px": [128, 32],
+			"prompt_px": [128, -8]
+		},
+		"feed_edge": {
+			"_notes": "Borde del scroll (paso 11 de docs/propuesta-mundo-2.md §8, §3.2 y §4.1: Q feed_edge del Tramo 1). El borde es de la cámara, así que la Q va sobre el cartel «Desliza hacia arriba» del 2-1 (feed_sign de 6 x 1 con help_id feed_edge; origen en su esquina superior izquierda). Texto PROPUESTO, por decidir.",
+			"category": "object",
+			"title": "Borde del feed",
+			"text": "El feed sube solo y no espera. Si te quedas abajo, el borde te quita Sync y te sube a la tarjeta segura más baja. Tú sigue subiendo.",
+			"first_level": "2-1",
+			"world": 2,
+			"order": 7,
+			"center_px": [192, 32],
+			"prompt_px": [192, -8]
 		}
 	}
 }

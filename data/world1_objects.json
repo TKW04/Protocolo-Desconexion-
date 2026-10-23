@@ -91,7 +91,7 @@
 		"exit_terminal": {
 			"scene": "res://scenes/levels/exit_terminal.tscn",
 			"help_id": "exit_terminal",
-			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador. CORRIENTE (2026-10-17, tanda H1 del paso 14 del 1-2; opcional, sin defaults: el 1-1 no cambia): con requires_power true esta APAGADA (sin prompt, sin Q y el pulso no hace nada) hasta que la pieza power_source (p. ej. el charge_dock, al irse Calc) tiene corriente (is_power_on()). ASPECTO (2026-10-22; opcional): skin lock_screen = arte de pantalla de bloqueo (cierre del 1-3, §3.6 de docs/propuesta-1-3.md: hora grande, campana tachada, candado y barra de deslizar; seccion exit_terminal.skins), mismos estados, tiempos y tamano; el comportamiento y el texto no cambian.",
+			"description": "Terminal de salida del nivel (2026-10-15; sustituye a la puerta del Cierre del 1-1). Monitor sobre pedestal (1x2 tiles), contiene la celda G del grid y no es solida. Tocarla no basta: con Isak cerca (prompt_zone_px de la seccion exit_terminal) la pantalla muestra el prompt y encima aparece la tecla del pulso (leida del Input Map); al recibir el PULSO (EventBus.pulse_fired, misma prueba que el receptor sobre hit_rect_px) la pantalla se enciende en cian, Isak gira de espaldas (Isak.face_back, con un destello cian) y se abre un vortice de salida (WarpVortex) alrededor de el; queda sin control y es absorbido, y al cerrarse emite completed(level_id) y EventBus.level_completed(level_id) una sola vez. Necesita que el nivel tenga el pulso (abilities_available.pulse; lo comprueba tools/validate_level.py). text (opcional): etiqueta sobre la terminal, como la de la puerta. level_id: lo pone el generador. CORRIENTE (2026-10-17, tanda H1 del paso 14 del 1-2; opcional, sin defaults: el 1-1 no cambia): con requires_power true esta APAGADA (sin prompt, sin Q y el pulso no hace nada) hasta que la pieza power_source (p. ej. el charge_dock, al irse Calc) tiene corriente (is_power_on()). ASPECTO (2026-10-22; opcional): skin lock_screen = arte de pantalla de bloqueo (cierre del 1-3, §3.6 de docs/propuesta-1-3.md: hora grande, campana tachada, candado y barra de deslizar; seccion exit_terminal.skins), mismos estados, tiempos y tamano; el comportamiento y el texto no cambian. CUENTA AUTOMATICA (2026-10-22, paso 11 de docs/propuesta-mundo-2.md, cierre del 2-1; opcional, sin defaults: el 1-1 al 1-3 no cambian): con countdown_s (1-10 s) el pulso no hace nada y no sale la tecla; al entrar Isak en prompt_zone_px empieza una cuenta de countdown_s en tiempo del mundo, que se ve en la placa de encima (3, 2, 1) y no se cancela al salir; al acabar se activa sola (encendido, giro y vortice). El validador no exige el pulso: la meta es entrar en la zona y esperar la cuenta (paso wait del camino con target exit_terminal). Su ayuda Q dice que se lanza un pulso: en un nivel con cuenta el objeto lleva help_id vacio.",
 			"required": [],
 			"fields": {
 				"id": "object_id",
@@ -100,7 +100,8 @@
 				"height_tiles": "height_tiles",
 				"requires_power": "requires_power",
 				"power_source": "power_source",
-				"skin": "skin"
+				"skin": "skin",
+				"countdown_s": "countdown_s"
 			},
 			"allowed": {
 				"skin": ["lock_screen"]
@@ -108,6 +109,12 @@
 			"defaults": {
 				"width_tiles": 1,
 				"height_tiles": 2
+			},
+			"level_params": {
+				"countdown_s": {
+					"min": 1.0,
+					"max": 10.0
+				}
 			},
 			"example": {"type": "exit_terminal", "x": 40, "y": 8, "params": {"id": "terminal_1", "text": "Marcar como leído"}}
 		},

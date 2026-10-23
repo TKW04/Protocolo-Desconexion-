@@ -99,6 +99,9 @@ SOURCES = {
     "commenter": ("assets/sprites/props/world2/commenter_00.png", None, 1),
     "loading_wall": ("assets/sprites/props/world2/loading_wall_00.png", None, 1),
     "pause_player": ("assets/sprites/props/world2/pause_player_00.png", None, 1),
+    # Paso 11 (el 2-1 real): la hora (reloj del HUD) y el borde del feed, ayudas sobre carteles.
+    "hud_clock": ("assets/sprites/props/world2/hud_clock_00.png", None, 1),
+    "feed_edge": ("assets/sprites/props/world2/feed_edge_00.png", None, 1),
 }
 
 

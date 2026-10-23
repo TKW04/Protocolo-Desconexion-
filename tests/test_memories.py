@@ -64,9 +64,12 @@ class RealData(unittest.TestCase):
         bosses = [m for m in items if m["kind"] == "boss"]
         self.assertEqual(len(bosses), 18)
         messages = {m["level"]: m for m in items if m["kind"] == "secret"}
-        self.assertEqual(sorted(messages), ["1-1", "1-2", "1-3"])
+        self.assertEqual(sorted(messages), ["1-1", "1-2", "1-3", "2-1"], "Mundo 1 y, desde el paso 11 del Mundo 2, "
+                         "el del 2-1")
         self.assertEqual(messages["1-1"]["secret"], "secreto_puente_servicio")
         self.assertEqual(messages["1-2"]["secret"], "secreto_spam")
+        self.assertEqual((messages["2-1"]["id"], messages["2-1"]["secret"], messages["2-1"]["world"]),
+                         ("msg_2_1", "secreto_video_negro", 2))
         for m in messages.values():
             self.assertEqual(m["first_lap"], 1, "Los mensajes de Caché aparecen desde Caché")
             self.assertEqual(m["sender"], "Mamá")

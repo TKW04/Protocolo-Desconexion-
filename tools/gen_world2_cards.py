@@ -18,6 +18,9 @@ este script dibuja lo mismo, con la paleta PROVISIONAL del Mundo 2
                         a un tercio (paso 7)
   pause_player_00.png   reproductor con el boton de pausa (2 x 1,4 tiles a media escala, 64 x 44) con la pantalla,
                         el boton «||» y la barra de progreso con el cabezal (paso 8)
+  hud_clock_00.png      la hora (paso 11): cartel con «17:04» en cifras de 3 x 5 y la franja magenta
+  feed_edge_00.png      borde del feed (paso 11): tarjetas que suben sobre la franja roja del borde con sus muescas
+                        y la flecha hacia arriba
 El arte final del mundo (paso 10) los sustituira.
 
 Uso: python3 -I tools/gen_world2_cards.py [--check]   (--check: 1 si algun PNG no esta al dia)
@@ -162,11 +165,53 @@ def pause_player():
     return img
 
 
+DIGITS = {"0": ("111", "101", "101", "101", "111"), "1": ("010", "110", "010", "010", "111"),
+          "4": ("101", "101", "111", "001", "001"), "7": ("111", "001", "010", "010", "010")}
+
+
+def hud_clock():
+    """La hora (paso 11, Q del reloj del HUD en el 2-1): cartel de 64 x 32 con «17:04» en cifras de 3 x 5 a
+    escala 2 y la franja magenta de los carteles del feed."""
+    img, d = card(top="magenta")
+    x = 6
+    for ch in "17:04":
+        if ch == ":":
+            d.rectangle((x, 12, x + 1, 13), fill=COLORS["blanco"])
+            d.rectangle((x, 18, x + 1, 19), fill=COLORS["blanco"])
+            x += 5
+            continue
+        for r, line in enumerate(DIGITS[ch]):
+            for c, bit in enumerate(line):
+                if bit == "1":
+                    d.rectangle((x + c * 2, 10 + r * 2, x + c * 2 + 1, 11 + r * 2), fill=COLORS["blanco"])
+        x += 9
+    d.rectangle((6, 26, 57, 27), fill=COLORS["tarjeta_sombra"])
+    return img
+
+
+def feed_edge():
+    """Borde del feed (paso 11, Q del borde del scroll en el 2-1): 64 x 44 con dos tarjetas que suben, una
+    flecha hacia arriba y abajo la franja roja del borde (la barra de progreso que dana) con sus muescas."""
+    img = Image.new("RGBA", (64, 44), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    for x0, y0 in ((4, 14), (34, 4)):
+        d.rectangle((x0 + 2, y0, x0 + 23, y0 + 7), fill=COLORS["tarjeta_base"])
+        d.rectangle((x0, y0 + 2, x0 + 25, y0 + 5), fill=COLORS["tarjeta_base"])
+        d.rectangle((x0 + 2, y0, x0 + 23, y0), fill=COLORS["tarjeta_borde"])
+    d.polygon([(52, 20), (58, 27), (46, 27)], fill=COLORS["blanco"])
+    d.rectangle((50, 27, 53, 31), fill=COLORS["blanco"])
+    d.rectangle((0, 36, 63, 43), fill=COLORS["alerta"])
+    d.rectangle((0, 42, 63, 43), fill=COLORS["alerta_sombra"])
+    for x in range(4, 64, 12):
+        d.rectangle((x, 33, x + 3, 35), fill=COLORS["alerta"])
+    return img
+
+
 def outputs():
     return {"fragile_card_00.png": fragile(), "story_card_00.png": story(), "loop_sign_00.png": loop_sign(),
             "autoplay_video_00.png": autoplay_video(), "video_clone_00.png": video_clone(),
             "commenter_00.png": commenter(), "loading_wall_00.png": loading_wall(),
-            "pause_player_00.png": pause_player()}
+            "pause_player_00.png": pause_player(), "hud_clock_00.png": hud_clock(), "feed_edge_00.png": feed_edge()}
 
 
 def outputs_for(rows):

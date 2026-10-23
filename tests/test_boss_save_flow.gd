@@ -144,7 +144,10 @@ func test_saved_victory_survives_a_restart_in_the_hub() -> void:
 	panel.world_entry = m2
 	add_child_autofree(panel)
 	panel.refresh()
-	assert_true("Próximamente" in panel.get_lines(), "El Mundo 2 dice «Próximamente»")
+	# Desde el paso 11 del Mundo 2 (2026-10-22) el 2-1 es jugable; el resto sigue «Próximamente».
+	assert_eq(panel.get_level_state(&"2-1"), HubWorlds.STATE_AVAILABLE, "El 2-1, disponible")
+	assert_eq(panel.level_text(HubWorlds.levels(m2)[1]), "2-2 Un video más - Próximamente",
+		"El resto del Mundo 2 dice «Próximamente»")
 	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m1")), HubWorlds.STATE_COMPLETED, "Carpeta del Mundo 1")
 	assert_eq(hub2.get_background_state(), &"on", "La pieza sigue encendida")
 	assert_false(hub2.light_piece_on_arrival, "Sin volver a animarla")

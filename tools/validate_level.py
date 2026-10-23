@@ -67,7 +67,9 @@ movimiento por celdas:
      activarla con el pulso. El nivel debe tener el pulso
      (abilities_available.pulse, o un encuentro con Eco que lo da) y el pulso
      (radio base, sin mejoras ni laser) debe alcanzar su hit_rect_px desde
-     alguna celda de pie alcanzable en el camino principal hacia G.
+     alguna celda de pie alcanzable en el camino principal hacia G. Con
+     countdown_s (cuenta automatica, cierre del 2-1, 2026-10-22) no hace falta
+     el pulso: basta llegar a G; el plan espera la cuenta.
   6d. Encuentro con Eco (eco_encounter, 2026-10-16, paso 6 de
      docs/propuesta-asistentes-y-vidas.md): con abilities_available.pulse
      false el pulso NO existe al empezar; lo da el encuentro (una zona de toda
@@ -2344,6 +2346,12 @@ class Validator:
             if obj["type"] != "exit_terminal":
                 continue
             tid = str(obj.get("params", {}).get("id", "terminal_%d_%d" % (obj["x"], obj["y"])))
+            countdown = float(obj.get("params", {}).get("countdown_s", 0) or 0)
+            if countdown > 0:
+                # Cuenta automatica (2026-10-22, cierre del 2-1): sin pulso; la meta es llegar a la G
+                # (dentro de la zona de la terminal) y esperar la cuenta.
+                terminals.append({"id": tid, "pulse_from": None, "countdown_s": countdown})
+                continue
             x0, y0 = obj["x"] * T + hit[0], obj["y"] * T + hit[1]
             gate = Gate("terminal:" + tid, "terminal", tid, openers=[(x0, y0, x0 + hit[2], y0 + hit[3], "terminal")],
                         col=obj["x"], row=obj["y"], tile=T)
@@ -3427,6 +3435,10 @@ def format_text(path, result):
         out.append("  meta sin usar el laser: %s" % ("si" if abilities["goal_without_laser"] else "no"))
     for item in result.get("exit_terminals", []):
         frm = item["pulse_from"]
+        if item.get("countdown_s"):
+            out.append("  terminal de salida %s: se activa sola con la cuenta de %g s al llegar a la meta (sin pulso)"
+                       % (item["id"], item["countdown_s"]))
+            continue
         out.append("  terminal de salida %s: %s" % (
             item["id"], "se activa con el pulso desde (fila %d, columna %d)" % tuple(frm) if frm else "NO se activa"))
     for item in result.get("power") or []:
