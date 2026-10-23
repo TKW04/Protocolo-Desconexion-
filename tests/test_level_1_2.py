@@ -222,7 +222,10 @@ class Level12Test(unittest.TestCase):
                 found[shots] = (group, [e["message"] for e in result["errors"] if "olvidado" in e["message"]])
         finally:
             level_plan.MAX_SNOOZE_SHOTS = saved
-        self.assertEqual(found[1][0]["entry"], [31, 19], "Se entra por el primer recordatorio")
+        # Desde el paso 12 de docs/propuesta-mundo-2.md (2026-10-23) el plan comprueba tambien el cruce de un grupo
+        # al que se entra con el mismo salto que sale de otro: en esta variante se llega a «olvidado» desde el
+        # recordatorio anterior y la cuenta empieza al aterrizar en la columna 20 (antes se medía desde la 19).
+        self.assertEqual(found[1][0]["entry"], [31, 20], "Se entra por el recordatorio donde aterriza el salto")
         self.assertIsNone(found[1][0]["with_snooze"], "Con un Posponer no da tiempo")
         self.assertTrue(found[1][1])
         self.assertEqual(found[2][1], [], "Con dos, si")

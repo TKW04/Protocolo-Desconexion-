@@ -627,6 +627,28 @@ class Planner:
         self.info["scroll"] = info
         return out
 
+    def _group_entry(self, steps, idx):
+        """Indice del movimiento que entra en el grupo de recordatorios (o tarjeta fragil) sobre el que
+        empieza el paso `idx`; None si no empieza sobre uno. Si ese movimiento sale a su vez de otro grupo
+        (de una fragil a otra), el que entra en el primero de la cadena."""
+        if steps[idx]["action"] != "move":
+            return None
+        group = self.group_of_node(steps[idx]["from"])
+        entry = None
+        while group is not None:
+            found = None
+            for k in range(idx - 1, -1, -1):
+                st = steps[k]
+                if st["action"] == "move" and self.group_of_node(st["to"]) == group \
+                        and self.group_of_node(st["from"]) != group:
+                    found = k
+                    break
+            if found is None:
+                return entry
+            entry, idx = found, found
+            group = self.group_of_node(steps[found]["from"])
+        return entry
+
     def _scroll_pass(self, steps, prewaits, allow_debug_waits=False):
         """Una pasada del scroll por el camino con las esperas previas `prewaits` ({indice del debug_on: s}).
         ("ok", pasos, info, errores) o ("prewait", indice del debug_on, s) si un movimiento con el Debug
@@ -683,6 +705,12 @@ class Planner:
                                 "reason": "el scroll sube (antes del Debug)"})
                     info["waits"] += 1
                     info["wait_s"] += prewaits[idx]
+            elif prewaits.get(idx):
+                wait_at(s["from"], prewaits[idx], scale, idx)
+                out.append({"action": "wait_scroll", "at": s["from"], "seconds": prewaits[idx], "state": s["state"],
+                            "reason": "el scroll sube (antes de la tarjeta fragil)"})
+                info["waits"] += 1
+                info["wait_s"] += prewaits[idx]
             samples = self.samples(s) if self.duration(s) > 0.0 else []
             if s["action"] == "move" and samples:
                 # El techo de carga corta el arco (la cabeza no sube mas), pero el salto vale si con el arco
@@ -697,6 +725,11 @@ class Planner:
                         waited += DT
                     if s.get("debug_active") and last_debug_on is not None and not allow_debug_waits:
                         return ("prewait", last_debug_on, max(waited * scale, DT))
+                    # De pie sobre un recordatorio o una tarjeta fragil la cuenta corre: la espera va antes del
+                    # movimiento que entra en su grupo (paso 12 de docs/propuesta-mundo-2.md, 2-1).
+                    entry = self._group_entry(steps, idx)
+                    if entry is not None and not allow_debug_waits:
+                        return ("prewait", entry, max(waited * scale, DT))
                     sim.restore(saved)
                     wait_at(s["from"], waited, scale, idx)
                     if head_min < sim.ceiling() - EPS:
@@ -872,7 +905,9 @@ class Planner:
                 j = i + len(new)
             else:
                 item["planned_slack_s"] = None if original is None else round(original, 2)
-            i = j + 1
+            # El movimiento que sale del grupo puede aterrizar en otro (2-1: dash de una fragil a otra): ese
+            # cruce tambien se comprueba (antes se saltaba).
+            i = j if self.group_of_node(steps[j]["to"]) is not None else j + 1
         for g in required:
             if g not in groups:
                 self.error("validation.snooze_required: el grupo de recordatorios %s no existe" % g)

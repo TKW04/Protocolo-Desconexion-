@@ -121,7 +121,7 @@ width_tiles = 4
 metadata/help_id = "hud_clock"
 
 [node name="cartel_desliza" parent="Objects" instance=ExtResource("7_feed_sign") groups=["help_target"]]
-position = Vector2(768, 7488)
+position = Vector2(832, 7488)
 height_tiles = 1
 object_id = &"cartel_desliza"
 text = "Desliza hacia arriba"
@@ -129,7 +129,7 @@ width_tiles = 6
 metadata/help_id = "feed_edge"
 
 [node name="cartel_autoplay" parent="Objects" instance=ExtResource("7_feed_sign")]
-position = Vector2(768, 5376)
+position = Vector2(832, 5312)
 height_tiles = 2
 object_id = &"cartel_autoplay"
 text = "Reproducción automática:\nsiempre"

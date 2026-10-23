@@ -209,6 +209,22 @@ class Level21Test(unittest.TestCase):
         self.assertEqual(actions[-1], "goal")
         self.assertTrue(all(s.get("energy_after", 1.0) >= 0.0 for s in steps))
 
+    def test_no_scroll_wait_on_a_fragile_card(self):
+        """Paso 12 (bot del feed): de pie sobre una fragil la cuenta corre (0,6 s), asi que ninguna espera del
+        scroll va encima de una; la de antes de la cadena fragil_1 -> dash -> fragil_2 va en la fila 32. El cruce
+        de fragil_2 (se entra con el dash que sale de fragil_1) tambien se comprueba."""
+        cells = set()
+        for o in self.level["objects"]:
+            if o["type"] == "fragile_card":
+                cells.update((o["x"] + dx, o["y"]) for dx in range(o["params"]["width_tiles"]))
+        waits = [s for s in self.exported[0]["steps"] if s["action"] in ("wait_scroll", "wait", "wait_phase")]
+        on_card = [s["at"]["cell"] for s in waits if (s["at"]["cell"][0], s["at"]["cell"][1] + 1) in cells]
+        self.assertEqual(on_card, [], "Esperas encima de una fragil")
+        reasons = [s.get("reason") for s in waits]
+        self.assertIn("el scroll sube (antes de la tarjeta fragil)", reasons)
+        groups = [r["group"] for r in self.result["plan"]["reminders"]]
+        self.assertEqual(sorted(groups), ["_fragil_fragil_1", "_fragil_fragil_2", "_fragil_fragil_3"])
+
     def test_scene_and_climbs_are_up_to_date(self):
         for cmd in (["build_level.py", "--check", LEVEL_PATH], ["level_climbs.py", "--check", LEVEL_PATH]):
             done = subprocess.run([sys.executable, os.path.join(ROOT, "tools", cmd[0])] + cmd[1:],
