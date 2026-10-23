@@ -3,7 +3,7 @@
 # depuracion (--start-level=2-2) con llegada por el vortice en la sala de inicio
 # y el scroll forzado parado, el reproductor que da el golpe al suelo (una vez:
 # Eco dice «Mira cuánto tiempo ahorramos juntos.»), la puerta de pie de la sala,
-# objetos y economia (9 puntos, 3 cargadores, power bank, mensaje de Mamá),
+# objetos y economia (9 puntos, 4 cargadores con el del bucle, power bank, mensaje de Mamá),
 # secreto «Bajo el nivel», punto de sincronizacion, cierre con la cuenta
 # automatica -> hub con el 2-2 completado y el 2-3 desbloqueado, y la carpeta del
 # Mundo 2: el 2-2 «Siguiente video» tras el 2-1 y se entra en el. La ruta completa
@@ -162,7 +162,7 @@ func test_objects_enemies_and_economy() -> void:
 	_start()
 	await _arrive()
 	assert_eq(_count("AttentionPoints", AttentionPoint), 9, "9 puntos de atencion (6 + 3)")
-	assert_eq(_count("Objects", Charger), 3, "3 cargadores")
+	assert_eq(_count("Objects", Charger), 4, "4 cargadores (uno dentro del bucle)")
 	assert_eq(_count("Objects", PowerBankPickup), 1, "Un power bank (vacio)")
 	assert_eq(_count("Objects", ExtraLifePickup), 0, "Sin vida extra")
 	assert_eq(_count("Objects", MemoryPickup), 1, "El mensaje de Mamá (secreto A)")

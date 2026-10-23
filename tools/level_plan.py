@@ -582,6 +582,7 @@ class Planner:
         steps = self.check_clones(steps)
         steps = self.check_scroll(steps)
         steps = self.check_energy(steps)
+        self.check_loop_energy(steps)
         self.info["bars"] = []
         for st in steps:
             if st.get("target", {}).get("type") == "update_bar":
@@ -2897,6 +2898,9 @@ class Planner:
                 energy -= need
             uses += need
             s["energy_before"] = round(energy + need, 1)
+            if a == "drain":
+                # Peor caso de un bucle (check_loop_energy): Isak entra sin energia.
+                energy = 0.0
             if a == "charge":
                 ch = s["charger"]
                 if s["tw"] + EPS >= ready_at.get(ch["id"], 0.0) and energy < cap - EPS:
@@ -2976,6 +2980,162 @@ class Planner:
         if energy + ch["amount"] + EPS < need and need > self.rules.energy_max:
             return None
         return steps[:k] + insert + steps[k:]
+
+    # --- Soft-lock de energia en los bucles (Mundo 2; arreglo tras la primera prueba del usuario, 2026-10-23) ---
+
+    def _loop_repeat_s(self, band):
+        """Segundos (tiempo del mundo) que tarda una repeticion de la banda: periodo / la velocidad mas alta
+        del scroll con el borde de abajo en las filas que recorre durante la repeticion."""
+        scroll = self.level.get("scroll", {}) if isinstance(self.level.get("scroll"), dict) else {}
+        default = float(scroll.get("default_speed_tiles_s", 0.5))
+        view = int(math.ceil(720.0 / self.T))
+        rows = range(band[0] + view, band[1] + view + 1)
+        speeds = []
+        for r in rows:
+            speed = default
+            for st in scroll.get("stages", []):
+                if st["y_from"] <= r <= st["y_to"]:
+                    speed = float(st["speed_tiles_s"])
+                    break
+            speeds.append(abs(speed))
+        top = max(speeds) if speeds else default
+        return (band[1] - band[0]) / top if top > 0.0 else INF
+
+    def check_loop_energy(self, steps):
+        """Regla anti-atasco de los bucles (docs/propuesta-mundo-2.md §8.1, «arreglo tras la primera prueba del
+        usuario»): la seccion en bucle se repite sin fin y su salida pide el Debug, asi que quien entra sin
+        energia (la minima posible tras la parte previa es 0: nada impide gastarla antes, p. ej. en el secreto
+        de la banda) tiene que poder recargar DENTRO de cada repeticion sin tocar el borde, o se queda atrapado.
+        Exige, por cada bucle cuya salida gasta Debug en el camino: (1) un cargador dentro de la banda (sus
+        filas se recorren en cada repeticion, asi que el cargador se repite con ella) que reponga, solo, todo
+        lo que pide la salida, reutilizable y con un enfriamiento que no pase de una repeticion (peor caso de
+        gasto: se gasta la carga entera, se falla y en la repeticion siguiente hay que poder volver a cargar);
+        y (2) que el camino, entrando al bucle con 0 de energia y pasando por ese cargador, siga cumpliendo la
+        energia, el margen del borde del scroll y llegue a la salida sin repetir. Si no: «soft-lock de
+        energia»."""
+        loops = self.level.get("_loops", [])
+        if not loops or self.level.get("camera", {}).get("vertical") != "autoscroll":
+            return
+        T = self.T
+        cap = self.rules.energy_max
+        report = []
+        for lp in loops:
+            b0, b1 = lp["band"]
+            ex = lp["exit"]
+
+            def in_exit(node):
+                x, feet = self.feet(node)
+                return ex[0] * T <= x < (ex[0] + ex[2]) * T and ex[1] * T <= feet - 1.0 < (ex[1] + ex[3]) * T
+
+            # Entrada al bucle: el primer paso con Isak en la banda o en las filas que la repiten debajo.
+            view = int(math.ceil(720.0 / T))
+            exit_i = entry_i = None
+            for i, s in enumerate(steps):
+                node = self.node_of(s)
+                if node is None:
+                    continue
+                if entry_i is None and b0 <= node[1] < b1 + view:
+                    entry_i = i
+                if s["action"] == "move" and in_exit(s["to"]):
+                    exit_i = i
+                    break
+            if exit_i is None or entry_i is None:
+                continue
+            need = sum(float(s.get("active_s", 0.0)) * self.debug_drain
+                       for s in steps[entry_i:exit_i + 1] if s["action"] == "debug_on")
+            if need <= EPS:
+                continue
+            repeat_s = self._loop_repeat_s(lp["band"])
+            entry = {"id": lp["id"], "need": round(need, 1), "repeat_s": round(repeat_s, 1), "charger": None}
+            report.append(entry)
+            in_band = [ch for ch in self.m.chargers if b0 <= ch["cell"][1] <= b1]
+            where = "filas %d-%d" % (b0, b1)
+            if not in_band:
+                self.error("seccion en bucle %s: soft-lock de energia: la salida pide %.0f de energia con el Debug y "
+                           "dentro de la banda (%s) no hay ningun cargador; quien entre al bucle sin energia no puede "
+                           "recargar y se queda atrapado" % (lp["id"], need, where))
+                continue
+            good = [ch for ch in in_band if ch["reusable"] and min(ch["amount"], cap) + EPS >= need
+                    and ch["cooldown"] <= repeat_s + EPS]
+            if not good:
+                ch = in_band[0]
+                why = ("es de un solo uso" if not ch["reusable"] else
+                       "repone %.0f y la salida pide %.0f" % (min(ch["amount"], cap), need)
+                       if min(ch["amount"], cap) + EPS < need else
+                       "se enfria %.1f s y una repeticion dura %.1f s" % (ch["cooldown"], repeat_s))
+                self.error("seccion en bucle %s: soft-lock de energia: el cargador %s de la banda no basta (%s)"
+                           % (lp["id"], ch["id"], why), ch["cell"])
+                continue
+            failures = None
+            for ch in good:
+                errors = self._loop_worst_case(steps, entry_i, exit_i, ch)
+                if not errors:
+                    entry["charger"] = ch["id"]
+                    entry["amount"] = min(ch["amount"], cap)
+                    entry["cooldown_s"] = ch["cooldown"]
+                    failures = None
+                    break
+                if failures is None:
+                    failures = (ch, errors)
+            if failures is not None:
+                ch, errors = failures
+                message, node = errors[0][0], errors[0][1]
+                self.error("seccion en bucle %s: soft-lock de energia: entrando sin energia y recargando en %s, %s"
+                           % (lp["id"], ch["id"], message), node)
+        if report:
+            self.info["loop_energy"] = report
+
+    def _loop_worst_case(self, steps, entry_i, exit_i, ch):
+        """Camino del peor caso: energia a 0 al entrar al bucle y recarga en el cargador `ch` de la banda (si
+        el camino no pasa ya por el, con el desvio mas corto desde un movimiento antes del primer Debug).
+        Devuelve los errores de energia y de scroll de ese camino (lista vacia si vale)."""
+        first_debug = next((i for i in range(entry_i, exit_i + 1) if steps[i]["action"] == "debug_on"), exit_i)
+        variant = [dict(s) for s in steps if s["action"] != "wait_scroll"]
+        # Indices en `variant` (sin las esperas del scroll, que se recalculan).
+        keep = [i for i, s in enumerate(steps) if s["action"] != "wait_scroll"]
+        pos = {i: k for k, i in enumerate(keep)}
+        v_entry = pos.get(entry_i, next((pos[i] for i in keep if i >= entry_i), len(variant)))
+        v_debug = next((pos[i] for i in keep if i >= first_debug), len(variant))
+        passes = any(s["action"] == "charge" and s["charger"]["id"] == ch["id"] for s in variant[v_entry:v_debug])
+        if not passes:
+            best = None
+            for k in range(v_entry, v_debug):
+                s = variant[k]
+                if s["action"] != "move" or s.get("timed"):
+                    continue
+                node = tuple(s["to"])
+                state = s.get("state", frozenset())
+                times, parent = self.m.time_search({node: 0.0}, state, debug=False)
+                for n in times:
+                    x, f = self.feet(n)
+                    if not rects_overlap(self.hurt_rect(x, f), ch["rect"]):
+                        continue
+                    back_times, back_parent = self.m.time_search({n: 0.0}, state, debug=False)
+                    if node not in back_times:
+                        continue
+                    cost = times[n] + back_times[node]
+                    if best is None or cost < best[0]:
+                        best = (cost, k, node, n, parent, back_parent, state)
+            if best is None:
+                return [("el cargador %s no se alcanza sin el Debug desde el camino del bucle" % ch["id"], None)]
+            _, k, node, target, parent, back_parent, state = best
+            insert = [self.move(u, e, state) for u, e in path_to(parent, target)]
+            insert.append({"action": "charge", "at": target, "charger": ch, "state": state, "detour": True,
+                           "target": {"type": "charger", "id": ch["id"]}})
+            insert.extend(self.move(u, e, state) for u, e in path_to(back_parent, node))
+            variant = variant[:k + 1] + insert + variant[k + 1:]
+        drain_at = self.node_of(variant[v_entry]) if v_entry < len(variant) else None
+        variant.insert(v_entry, {"action": "drain", "at": drain_at, "state": variant[v_entry].get("state", frozenset())
+                                 if v_entry < len(variant) else frozenset()})
+        saved_errors, saved_info = self.errors, dict(self.info)
+        self.errors = []
+        try:
+            variant = self.check_energy_with(variant, 8)
+            self.check_scroll(variant)
+            found = [(m, n) for m, n, _obj in self.errors]
+        finally:
+            self.errors, self.info = saved_errors, saved_info
+        return found
 
     def describe(self, s):
         a = s["action"]

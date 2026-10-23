@@ -228,6 +228,16 @@ class Level22Test(unittest.TestCase):
         self.assertEqual(door["params"]["variant"], "upright")
         self.assertIn("pound:puerta_servicio", items["secreto_servicio"]["secret_gates_opened"])
 
+    def test_loop_has_a_charger_against_the_energy_soft_lock(self):
+        """Arreglo tras la primera prueba del usuario (2026-10-23): un cargador dentro de la banda del bucle;
+        el validador exige que quien entre sin energia pueda recargar y salir (peor caso)."""
+        loop = obj(self.level, "bucle_uno_mas")
+        charger = obj(self.level, "cargador_bucle")
+        self.assertTrue(loop["params"]["band"][0] <= charger["y"] <= loop["params"]["band"][1], "En la banda")
+        self.assertEqual(charger["params"]["amount"], 100.0, "Carga completa")
+        report = {lp["id"]: lp for lp in self.result["plan"]["loop_energy"]}
+        self.assertEqual(report["bucle_uno_mas"]["charger"], "cargador_bucle")
+
     def test_economy(self):
         lvl = self.level
         points = "".join(lvl["grid"]).count("o")
@@ -235,7 +245,7 @@ class Level22Test(unittest.TestCase):
         self.assertEqual((points, points - secret_points, secret_points), (9, 6, 3),
                          "9 puntos: 6 en la ruta + 3 en secretos (§4.2.1)")
         chargers = sorted(o["params"]["id"] for o in lvl["objects"] if o["type"] == "charger")
-        self.assertEqual(chargers, ["cargador_1", "cargador_2", "cargador_3"])
+        self.assertEqual(chargers, ["cargador_1", "cargador_2", "cargador_3", "cargador_bucle"])
         self.assertEqual(len([o for o in lvl["objects"] if o["type"] == "power_bank_pickup"]), 1, "1 power bank")
         self.assertFalse([o for o in lvl["objects"] if o["type"] == "extra_life_pickup"], "Sin vida extra")
         self.assertGreater(self.result["plan"]["energy"]["min"], 0.0)

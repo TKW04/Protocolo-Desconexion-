@@ -1,5 +1,5 @@
 {
-  "_notes": "Nivel 2-2 «Un video más» (paso 13 de docs/propuesta-mundo-2.md §8; diseno en su §4.2 y §4.2.1, desvios y decisiones en §8.1). Feed vertical de 20 x 156 con scroll forzado hacia arriba; alturas h desde el suelo de la sala de inicio: fila = 149 - h (h -6 a -1 bajo el nivel). Inicio «El reproductor» parado: vortice, reproductor con el boton de pausa (pulso de espaldas: da el golpe al suelo, Eco dice «Mira cuánto tiempo ahorramos juntos.» y sale el aviso de control) y la primera tarjeta fragil de pie (columna 12) que cierra la sala: solo la rompe la onda. El scroll arranca al subir a h 4. Tramo 1 «Romper para pasar» a 0,6 tiles/s: sala con una fragil de pie que abre el paso lateral y repisa sin salida con una fragil del suelo que solo rompe el golpe (se cae 3 tiles a un pasillo que sube por la derecha), y un video (ola). Tramo 2 «Enjambre» a 0,5: dos salas con zona de clones donde hay que esperar una Historia, cargador_1 y 1 punto entre ellas. Pausa (sync_1, cargador_2, el scroll se para). Tramo 3 «Uno más, otra vez» a 0,6: bucle (banda filas 51-71, periodo 20) con dos videos (rayos desfasados 1,25 s) y un Comentarista; salida: tarjeta fragil oculta en el suelo de la banda (columnas 8-10, h 86) que se ve con el Debug y rompe el golpe; se cae a un pasillo de servicio que sube por la izquierda (columnas 1-3) hasta h 99. Tramo 4 «Autoplay» a 0,7 / 0,8 / 0,9 (h 100, 115, 130) con dos parejas de videos que entran a la vez con 1,25 s de desfase (olas y rayos) y cargador_3. Cierre: tarjeta final y la terminal con la cuenta automatica de 3 s que vuelve al hub. Secretos: A «Bajo el nivel» (tarjeta con grieta del suelo de la sala de inicio, columna 17: golpe al suelo, 2 puntos y msg_2_2, escalera de una via de vuelta), B (power bank vacio en una repisa con zona de clones) y C (en el pasillo de servicio, fragil de pie y 1 punto). Tileset y fondo del Mundo 1 (provisional hasta el arte del paso 10). Escena: scenes/levels/2-2.tscn (python3 tools/build_level.py data/levels/2-2.json).",
+  "_notes": "Nivel 2-2 «Un video más» (paso 13 de docs/propuesta-mundo-2.md §8; diseno en su §4.2 y §4.2.1, desvios y decisiones en §8.1). Feed vertical de 20 x 156 con scroll forzado hacia arriba; alturas h desde el suelo de la sala de inicio: fila = 149 - h (h -6 a -1 bajo el nivel). Inicio «El reproductor» parado: vortice, reproductor con el boton de pausa (pulso de espaldas: da el golpe al suelo, Eco dice «Mira cuánto tiempo ahorramos juntos.» y sale el aviso de control) y la primera tarjeta fragil de pie (columna 12) que cierra la sala: solo la rompe la onda. El scroll arranca al subir a h 4. Tramo 1 «Romper para pasar» a 0,6 tiles/s: sala con una fragil de pie que abre el paso lateral y repisa sin salida con una fragil del suelo que solo rompe el golpe (se cae 3 tiles a un pasillo que sube por la derecha), y un video (ola). Tramo 2 «Enjambre» a 0,5: dos salas con zona de clones donde hay que esperar una Historia, cargador_1 y 1 punto entre ellas. Pausa (sync_1, cargador_2, el scroll se para). Tramo 3 «Uno más, otra vez» a 0,6: bucle (banda filas 51-71, periodo 20) con dos videos (rayos desfasados 1,25 s) y un Comentarista; salida: tarjeta fragil oculta en el suelo de la banda (columnas 8-10, h 86) que se ve con el Debug y rompe el golpe; se cae a un pasillo de servicio que sube por la izquierda (columnas 1-3) hasta h 99. Tramo 4 «Autoplay» a 0,7 / 0,8 / 0,9 (h 100, 115, 130) con dos parejas de videos que entran a la vez con 1,25 s de desfase (olas y rayos) y cargador_3. Cierre: tarjeta final y la terminal con la cuenta automatica de 3 s que vuelve al hub. Secretos: A «Bajo el nivel» (tarjeta con grieta del suelo de la sala de inicio, columna 17: golpe al suelo, 2 puntos y msg_2_2, escalera de una via de vuelta), B (power bank vacio en una repisa con zona de clones) y C (en el pasillo de servicio, fragil de pie y 1 punto). Tileset y fondo del Mundo 1 (provisional hasta el arte del paso 10). Escena: scenes/levels/2-2.tscn (python3 tools/build_level.py data/levels/2-2.json). Arreglo tras la primera prueba del usuario (2026-10-23): cargador_bucle (+100, 10 s) dentro de la banda del bucle (fila 66, columna 15), para que quien entre sin energia pueda recargar en cada repeticion (docs/propuesta-mundo-2.md §8.1).",
   "id": "2-2",
   "name": "Un video más",
   "world": 2,
@@ -733,6 +733,17 @@
           3,
           1
         ]
+      }
+    },
+    {
+      "type": "charger",
+      "x": 15,
+      "y": 66,
+      "params": {
+        "id": "cargador_bucle",
+        "amount": 100.0,
+        "reusable": true,
+        "cooldown_s": 10.0
       }
     },
     {

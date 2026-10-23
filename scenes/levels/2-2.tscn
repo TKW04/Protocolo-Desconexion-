@@ -240,6 +240,14 @@ sign_text = "Solo uno más (llevas {n})"
 sign_width_tiles = 5
 metadata/help_id = "loop_section"
 
+[node name="cargador_bucle" parent="Objects" instance=ExtResource("12_charger") groups=["help_target"]]
+position = Vector2(960, 4224)
+amount = 100.0
+cooldown_s = 10.0
+object_id = &"cargador_bucle"
+reusable = true
+metadata/help_id = "charger"
+
 [node name="salida_oculta" parent="Objects" instance=ExtResource("8_fragile_card") groups=["help_target"]]
 position = Vector2(512, 4032)
 hidden_card = true

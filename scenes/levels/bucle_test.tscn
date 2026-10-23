@@ -1,15 +1,16 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
 [ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
 [ext_resource type="PackedScene" path="res://scenes/levels/hidden_platform.tscn" id="4_hidden_platform"]
 [ext_resource type="PackedScene" path="res://scenes/levels/loop_section.tscn" id="5_loop_section"]
-[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="6_exit_terminal"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="7_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="8_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="9_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="10_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="6_charger"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="7_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="8_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="9_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="10_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="11_help_system"]
 
 [node name="Level_bucle_test" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -54,7 +55,15 @@ sign_text = "Solo uno más (llevas {n})"
 sign_width_tiles = 5
 metadata/help_id = "loop_section"
 
-[node name="terminal_bucle" parent="Objects" instance=ExtResource("6_exit_terminal") groups=["help_target"]]
+[node name="cargador_bucle" parent="Objects" instance=ExtResource("6_charger") groups=["help_target"]]
+position = Vector2(384, 2432)
+amount = 100.0
+cooldown_s = 10.0
+object_id = &"cargador_bucle"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="terminal_bucle" parent="Objects" instance=ExtResource("7_exit_terminal") groups=["help_target"]]
 position = Vector2(1024, 64)
 height_tiles = 2
 object_id = &"terminal_bucle"
@@ -68,15 +77,15 @@ metadata/help_id = "exit_terminal"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(1056, 192)
 
-[node name="Isak" parent="." instance=ExtResource("7_isak")]
+[node name="Isak" parent="." instance=ExtResource("8_isak")]
 position = Vector2(224, 4544)
 camera_limits = Rect2i(0, 0, 1280, 4608)
 camera_mode = &"autoscroll"
 scroll_config = {"default_speed_tiles_s": 0.5, "safe_respawn": [Vector2(4, 68), Vector2(8, 66), Vector2(12, 64), Vector2(8, 62), Vector2(4, 60), Vector2(8, 58), Vector2(12, 56), Vector2(8, 54), Vector2(4, 52), Vector2(8, 50), Vector2(12, 48), Vector2(8, 46), Vector2(4, 44), Vector2(8, 42), Vector2(12, 40), Vector2(8, 38), Vector2(4, 36), Vector2(8, 34), Vector2(12, 32), Vector2(8, 30), Vector2(4, 28), Vector2(8, 26), Vector2(12, 24), Vector2(8, 22), Vector2(4, 20), Vector2(14, 14), Vector2(10, 12), Vector2(6, 10), Vector2(10, 8), Vector2(14, 6), Vector2(15, 4), Vector2(14, 16), Vector2(17, 18), Vector2(18, 20)], "start_resume_row": 68}
 
-[node name="Hud" parent="." instance=ExtResource("8_hud")]
+[node name="Hud" parent="." instance=ExtResource("9_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("9_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("10_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("10_help_system")
+script = ExtResource("11_help_system")

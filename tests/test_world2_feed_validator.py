@@ -252,3 +252,47 @@ class FeedHazardModelTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LoopEnergySoftLockTest(unittest.TestCase):
+    """Regla anti-atasco de los bucles (2026-10-23, arreglo tras la primera prueba del usuario del 2-1): la
+    salida del bucle pide el Debug y el bucle se repite sin fin, asi que quien entra sin energia tiene que
+    poder recargar dentro de la banda; el validador modela ese peor caso."""
+
+    def test_loop_with_a_charger_in_the_band_validates(self):
+        result = run(load("bucle_test"))
+        self.assertTrue(result["ok"], messages(result))
+        report = {lp["id"]: lp for lp in result["plan"]["loop_energy"]}
+        self.assertEqual(report["bucle_1"]["charger"], "cargador_bucle")
+
+    def test_loop_without_a_charger_is_an_energy_soft_lock(self):
+        level = load("bucle_test")
+        level["objects"] = [o for o in level["objects"] if o["type"] != "charger"]
+        result = run(level)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("soft-lock de energia" in m and "bucle_1" in m for m in messages(result)),
+                        messages(result))
+
+    def test_charger_that_does_not_cover_the_exit_is_an_energy_soft_lock(self):
+        level = load("bucle_test")
+        charger = next(o for o in level["objects"] if o["type"] == "charger")
+        charger["params"]["amount"] = 20.0
+        result = run(level)
+        self.assertTrue(any("soft-lock de energia" in m and "repone 20" in m for m in messages(result)),
+                        messages(result))
+
+    def test_charger_that_cools_down_longer_than_a_repeat_is_an_energy_soft_lock(self):
+        level = load("bucle_test")
+        charger = next(o for o in level["objects"] if o["type"] == "charger")
+        charger["params"]["cooldown_s"] = 60.0
+        result = run(level)
+        self.assertTrue(any("soft-lock de energia" in m and "se enfria" in m for m in messages(result)),
+                        messages(result))
+
+    def test_charger_below_the_band_does_not_count(self):
+        level = load("bucle_test")
+        charger = next(o for o in level["objects"] if o["type"] == "charger")
+        charger["x"], charger["y"] = 8, 66
+        result = run(level)
+        self.assertTrue(any("soft-lock de energia" in m and "no hay ningun cargador" in m
+                            for m in messages(result)), messages(result))

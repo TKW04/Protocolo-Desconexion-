@@ -3553,6 +3553,12 @@ def format_plan(plan):
                        "" if not scroll.get("at") else " en (fila %d, columna %d)" % tuple(scroll["at"]),
                        scroll["required_tiles"], scroll["waits"], scroll["wait_s"],
                        "; bucles: %s" % ", ".join(scroll["loops"]) if scroll.get("loops") else ""))
+    for lp in plan.get("loop_energy", []):
+        # Regla anti-atasco de los bucles (2026-10-23, arreglo tras la primera prueba del usuario).
+        if lp.get("charger"):
+            out.append("    bucle %s: la salida pide %.0f de energia; peor caso (entra sin energia): recarga en %s "
+                       "(+%.0f, enfriamiento %.1f s; una repeticion dura %.1f s) y sale sin tocar el borde" % (
+                           lp["id"], lp["need"], lp["charger"], lp["amount"], lp["cooldown_s"], lp["repeat_s"]))
     energy = plan.get("energy")
     if energy:
         out.append("    energia: empieza en %.0f, gasta %.0f, recupera %.0f, minimo %.0f, termina en %.0f%s%s" % (

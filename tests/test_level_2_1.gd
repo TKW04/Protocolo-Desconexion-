@@ -2,7 +2,7 @@
 # 11 de docs/propuesta-mundo-2.md §8, 2026-10-22): carga por el atajo de
 # depuracion (--start-level=2-1) con llegada por el vortice en la sala de
 # inicio, scroll forzado, carteles con la Q del reloj y del borde, objetos y
-# economia (8 puntos, 2 cargadores, vida extra, mensaje de Mamá), secreto «Video
+# economia (8 puntos, 3 cargadores con el del bucle, vida extra, mensaje de Mamá), secreto «Video
 # en negro», punto de sincronizacion y vidas, cierre con la cuenta automatica de
 # 3 s (sin pulso) -> hub con el 2-1 completado, y entrada desde la carpeta del
 # Mundo 2 tras vencer a Alerta Mayor. La ruta completa la comprueba
@@ -159,7 +159,7 @@ func test_objects_enemies_and_economy() -> void:
 	_start()
 	await _arrive()
 	assert_eq(_count("AttentionPoints", AttentionPoint), 8, "8 puntos de atencion (6 + 2)")
-	assert_eq(_count("Objects", Charger), 2, "2 cargadores")
+	assert_eq(_count("Objects", Charger), 3, "3 cargadores (uno dentro del bucle)")
 	assert_eq(_count("Objects", PowerBankPickup), 0, "Sin power bank")
 	assert_eq(_count("Objects", ExtraLifePickup), 1, "La vida extra del Mundo 2 (secreto B)")
 	assert_eq(_count("Objects", MemoryPickup), 1, "El mensaje de Mamá (secreto A)")

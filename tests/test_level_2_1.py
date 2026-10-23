@@ -85,13 +85,30 @@ class Level21Test(unittest.TestCase):
         scroll = self.level["scroll"]
         self.assertEqual(scroll["start_resume_row"], row(8), "Arranca al subir a h 8")
         speeds = sorted((s["y_from"], s["speed_tiles_s"]) for s in scroll["stages"])
-        self.assertEqual([v for _, v in speeds], [0.7, 0.6, 0.6, 0.5], "0,5 / 0,6 / 0,6 / 0,7 de abajo arriba")
+        self.assertEqual([v for _, v in speeds], [0.9, 0.78, 0.78, 0.65],
+                         "0,65 / 0,78 / 0,78 / 0,9 de abajo arriba (un 30 % mas rapido tras la primera prueba del usuario)")
         self.assertEqual(scroll["stops"], [{"id": "sync_1", "at_row": row(62) + 2, "resume_row": row(63)}])
         info = self.result["plan"]["scroll"]
         self.assertGreaterEqual(info["margin_min_tiles"], 3.0, "Nunca a menos de 3 tiles del borde")
         self.assertEqual(info["loops"], ["bucle_para_ti"])
-        self.assertTrue(190.0 <= self.result["plan"]["duration_s"] <= 220.0,
-                        "Camino de unos 190-220 s (§4.1): %.1f" % self.result["plan"]["duration_s"])
+        self.assertTrue(145.0 <= self.result["plan"]["duration_s"] <= 180.0,
+                        "Camino de unos 160 s con el scroll mas rapido (antes 205 s): %.1f"
+                        % self.result["plan"]["duration_s"])
+
+    def test_loop_has_a_charger_against_the_energy_soft_lock(self):
+        """Arreglo tras la primera prueba del usuario (2026-10-23): quien llegaba al bucle sin energia se
+        quedaba atrapado. Cargador de carga completa dentro de la banda (se repite con ella), en el camino y
+        fuera de la vista en el momento de la repeticion; el validador modela el peor caso."""
+        loop = obj(self.level, "bucle_para_ti")
+        charger = obj(self.level, "cargador_bucle")
+        band = loop["params"]["band"]
+        self.assertTrue(band[0] + 12 <= charger["y"] <= band[1], "En la banda, fuera de la vista al repetirse")
+        self.assertEqual((charger["params"]["amount"], charger["params"]["reusable"]), (100.0, True))
+        report = {lp["id"]: lp for lp in self.result["plan"]["loop_energy"]}
+        entry = report["bucle_para_ti"]
+        self.assertEqual(entry["charger"], "cargador_bucle")
+        self.assertGreaterEqual(entry["amount"], entry["need"], "Una carga basta para la salida")
+        self.assertLessEqual(entry["cooldown_s"], entry["repeat_s"], "Se enfria antes de la repeticion siguiente")
 
     def test_autoplay_videos(self):
         ola, rayo, cuenta = (enemy(self.level, i) for i in ("video_ola", "video_rayo", "video_cuenta"))
@@ -173,7 +190,7 @@ class Level21Test(unittest.TestCase):
         self.assertEqual((points, points - secret_points, secret_points), (8, 6, 2),
                          "8 puntos: 6 en la ruta + 2 en secretos (§4.1.1)")
         chargers = sorted(o["params"]["id"] for o in lvl["objects"] if o["type"] == "charger")
-        self.assertEqual(chargers, ["cargador_1", "cargador_2"])
+        self.assertEqual(chargers, ["cargador_1", "cargador_2", "cargador_bucle"])
         self.assertFalse([o for o in lvl["objects"] if o["type"] == "power_bank_pickup"], "Sin power bank")
         self.assertGreater(self.result["plan"]["energy"]["min"], 0.0)
 
