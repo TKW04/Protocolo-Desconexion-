@@ -284,6 +284,59 @@ func test_ambience_loops_while_its_node_is_in_the_tree() -> void:
 	assert_eq(AudioManager.loop_count(), 1, "Vuelve al volver")
 
 
+# Arreglo 2026-10-23 (prueba del usuario del Mundo 2: «la musica del ambiente de
+# cada mapa se esta mezclando»): un nodo con dos ambientes paraba solo uno al
+# salir y la musica del feed se acumulaba nivel tras nivel.
+func test_node_with_two_ambiences_leaves_nothing_behind() -> void:
+	AudioManager.set_catalog(_catalog_with({
+			"amb_hub": {"bus": "Ambience", "loop": true},
+			"mus_w2_level": {"bus": "Music", "loop": true}},
+		{"ambience_fade_s": 0.0, "ambience": [
+			{"class": "PauseMenu", "sound": "amb_hub", "priority": 0},
+			{"class": "PauseMenu", "sound": "mus_w2_level", "priority": 10}]}))
+	for i: int in 3:
+		var menu := _add(PauseMenu.new())
+		assert_eq(AudioManager.loop_count(), 1, "Un solo bucle de fondo")
+		assert_eq(AudioManager.ambience_id(), &"mus_w2_level", "Gana la prioridad mas alta")
+		remove_child(menu)
+		assert_eq(AudioManager.loop_count(), 0, "Al salir no queda ninguno (vez %d)" % i)
+
+
+func test_one_background_loop_with_priority_and_fade() -> void:
+	AudioManager.set_catalog(_catalog_with({
+			"amb_hub": {"bus": "Ambience", "loop": true},
+			"mus_boss2": {"bus": "Music", "loop": true}},
+		{"ambience_fade_s": 0.2, "ambience": [
+			{"class": "PauseMenu", "sound": "amb_hub", "priority": 0},
+			{"class": "AutoplayMusic", "sound": "mus_boss2", "priority": 20}]}))
+	_add(PauseMenu.new())
+	assert_eq(AudioManager.ambience_id(), &"amb_hub")
+	assert_eq(AudioManager.fading_count(), 0, "El primero entra sin nada que fundir")
+	var music: Node = _add(AutoplayMusic.new())
+	assert_eq(AudioManager.loop_count(), 1, "La musica del jefe sustituye al ambiente")
+	assert_eq(AudioManager.ambience_id(), &"mus_boss2")
+	assert_eq(AudioManager.fading_count(), 1, "El ambiente se apaga con fundido")
+	await wait_seconds(0.4)
+	assert_eq(AudioManager.fading_count(), 0, "El fundido termina y libera el reproductor")
+	remove_child(music)
+	assert_eq(AudioManager.ambience_id(), &"amb_hub", "Vuelve el ambiente al quitar la musica")
+	assert_eq(AudioManager.loop_count(), 1)
+	music.free()
+
+
+func test_same_ambience_from_a_new_node_does_not_restart() -> void:
+	AudioManager.set_catalog(_catalog_with({"amb_hub": {"bus": "Ambience", "loop": true}},
+		{"ambience": [{"class": "PauseMenu", "sound": "amb_hub"}]}))
+	var first := _add(PauseMenu.new())
+	var second := _add(PauseMenu.new())
+	assert_eq(AudioManager.loop_count(), 1, "Dos nodos con el mismo ambiente: un bucle")
+	remove_child(first)
+	assert_eq(AudioManager.loop_count(), 1, "Sigue el del otro nodo")
+	assert_eq(AudioManager.fading_count(), 0, "Sin cortes ni fundidos")
+	remove_child(second)
+	assert_eq(AudioManager.loop_count(), 0)
+
+
 func test_text_blips_follow_speaker_and_access() -> void:
 	var box := ECO_SCENE.instantiate() as EcoTextBox
 	_add(box)

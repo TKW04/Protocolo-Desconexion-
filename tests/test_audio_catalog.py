@@ -47,6 +47,13 @@ class AudioCatalogTest(unittest.TestCase):
         errors = self.errors(data)
         self.assertEqual(len(errors), 4, errors)
 
+    def test_ambience_priority_and_fade_are_checked(self):
+        # Un solo ambiente de fondo a la vez (arreglo 2026-10-23): prioridad entera y fundido acotado.
+        data = self.mutated()
+        data["ambience"][0]["priority"] = "alta"
+        data["ambience_fade_s"] = 9
+        self.assertEqual(len(self.errors(data)), 2, self.errors(data))
+
     def test_inherited_signal_is_accepted(self):
         data = self.mutated()
         data["nodes"].append({"class": "AlarmTunnel", "signal": "beat", "sound": "sfx_metronome_tick"})

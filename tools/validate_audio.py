@@ -185,6 +185,12 @@ def validate(data, layout=None, bus_signals=None, classes=None):
                 check_when(where, item)
             if section == "ambience" and sounds.get(item.get("sound"), {}).get("loop") is not True:
                 errors.append("%s: el ambiente %r debe tener loop" % (where, item.get("sound")))
+            if section == "ambience" and (not isinstance(item.get("priority", 0), int)
+                                          or isinstance(item.get("priority", 0), bool)):
+                errors.append("%s: priority debe ser un entero" % where)
+    fade = data.get("ambience_fade_s", 0.8)
+    if isinstance(fade, bool) or not isinstance(fade, (int, float)) or not 0 <= fade <= 5:
+        errors.append("ambience_fade_s debe ser un numero entre 0 y 5")
     steps = data.get("steps")
     if steps is not None:
         if not isinstance(steps, dict) or steps.get("class") not in classes:

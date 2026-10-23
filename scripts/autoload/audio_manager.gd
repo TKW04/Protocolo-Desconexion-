@@ -7,6 +7,14 @@
 ## - nodes: senales de los nodos de una clase al entrar en el arbol
 ##   (SceneTree.node_added), con filtro por argumentos y sonido posicional.
 ## - ambience: bucle mientras un nodo de esa clase esta en el arbol (hub).
+##   UN SOLO ambiente de fondo a la vez (arreglo 2026-10-23 tras la prueba del
+##   usuario del Mundo 2: «la musica del ambiente de cada mapa se esta
+##   mezclando»): de todas las peticiones vivas suena la de mayor `priority`
+##   (empate: la mas reciente) y el cambio se hace con un fundido de
+##   `ambience_fade_s`. Antes, un nodo con dos ambientes (ScrollEdgeOverlay:
+##   amb_w2_feed + mus_w2_level) solo paraba el primero al salir (is_connected
+##   de un Callable con bind ignora los argumentos) y mus_w2_level se acumulaba
+##   nivel tras nivel.
 ## - steps: pasos de Isak en los cuadros de contacto de walk/run.
 ## - text_blips: blips de la maquina de escribir de los EcoTextBox por
 ##   interlocutor; el de Eco cambia con el acceso (GameState.lap).
@@ -47,6 +55,15 @@ var _next_player: int = 0
 var _next_player_2d: int = 0
 ## Bucles en curso: clave (id o id + nodo) -> reproductor dedicado.
 var _loops: Dictionary = {}
+## Ambiente de fondo: peticiones vivas (clave id#nodo -> {id, priority, order}),
+## claves por nodo (instance_id -> Array[String]), la clave que suena y los
+## reproductores que se estan apagando con fundido.
+var _amb_requests: Dictionary = {}
+var _amb_by_node: Dictionary = {}
+var _amb_key: String = ""
+var _amb_order: int = 0
+var _fading: Array[AudioStreamPlayer] = []
+const AMBIENCE_FADE_S: float = 0.8
 ## Script -> Array de enlaces (bindings) de nodes / ambience / steps, en cache.
 var _script_bindings: Dictionary = {}
 ## Cuadros de texto vigilados: instance_id -> [EcoTextBox, escritos, sin blip].
@@ -421,6 +438,8 @@ static func validate_catalog(data: Dictionary, bus_names: PackedStringArray) -> 
 		for item: Variant in list:
 			if not item is Dictionary or not (sounds as Dictionary).has(String((item as Dictionary).get("sound", ""))):
 				errors.append("%s: sonido desconocido en %s" % [section, item])
+			elif section == "ambience" and typeof((item as Dictionary).get("priority", 0)) not in [TYPE_INT, TYPE_FLOAT]:
+				errors.append("ambience: priority no es un numero en %s" % item)
 	return errors
 
 
@@ -457,7 +476,8 @@ func play(id: StringName, at: Variant = null) -> bool:
 
 
 ## Empieza el bucle `id` con la clave `key` (uno por clave). Falso si no hay archivo.
-func play_loop(id: StringName, key: String) -> bool:
+## Con `fade_in_s` > 0 entra con un fundido desde silencio.
+func play_loop(id: StringName, key: String, fade_in_s: float = 0.0) -> bool:
 	if _loops.has(key) and is_instance_valid(_loops[key]):
 		return true
 	var entry: Dictionary = get_entry(id)
@@ -468,6 +488,10 @@ func play_loop(id: StringName, key: String) -> bool:
 	player.name = "Loop_%s" % String(id)
 	add_child(player)
 	_configure(player, id, entry, stream)
+	if fade_in_s > 0.0 and is_inside_tree():
+		var target: float = player.volume_linear
+		player.volume_linear = 0.0
+		player.create_tween().tween_property(player, ^"volume_linear", target, fade_in_s)
 	# Bucle manual (vuelve a empezar al terminar) y no loop_mode del WAV: un WAV
 	# en bucle que suena al cerrar el juego deja una fuga en Godot 4.7, y asi
 	# sirve igual para .wav, .ogg y .mp3 sin tocar su importacion.
@@ -485,13 +509,11 @@ func _stopped_recently() -> bool:
 
 ## Para el bucle de clave `key`.
 func stop_loop(key: String) -> void:
-	_last_stop_ms = Time.get_ticks_msec()
 	var player: Variant = _loops.get(key)
 	_loops.erase(key)
-	if player != null and is_instance_valid(player):
-		(player as AudioStreamPlayer).finished.disconnect((player as AudioStreamPlayer).play)
-		(player as AudioStreamPlayer).stop()
-		(player as AudioStreamPlayer).queue_free()
+	if key == _amb_key:
+		_amb_key = ""
+	_free_loop_player(player as AudioStreamPlayer if player != null and is_instance_valid(player) else null)
 
 
 ## Bucles en curso (ambientes).
@@ -511,12 +533,126 @@ func is_loop_playing(key: String) -> bool:
 func stop_all() -> void:
 	for key: Variant in _loops.keys():
 		stop_loop(String(key))
+	_amb_requests.clear()
+	_amb_by_node.clear()
+	_amb_key = ""
+	for player: AudioStreamPlayer in _fading:
+		_free_loop_player(player)
+	_fading.clear()
 	for player: AudioStreamPlayer in _players:
 		player.stop()
 		player.stream = null
 	for player: AudioStreamPlayer2D in _players_2d:
 		player.stop()
 		player.stream = null
+
+
+## ID del ambiente de fondo que suena (&"" = ninguno).
+func ambience_id() -> StringName:
+	if _amb_key.is_empty() or not _loops.has(_amb_key) or not is_instance_valid(_loops[_amb_key]):
+		return &""
+	return StringName(String((_loops[_amb_key] as AudioStreamPlayer).get_meta(&"sound_id", &"")))
+
+
+## Reproductores de ambiente que se estan apagando con fundido.
+func fading_count() -> int:
+	var count: int = 0
+	for player: AudioStreamPlayer in _fading:
+		if is_instance_valid(player):
+			count += 1
+	return count
+
+
+## Duracion del fundido entre ambientes (catalogo: ambience_fade_s).
+func ambience_fade_s() -> float:
+	return maxf(0.0, float(_data.get("ambience_fade_s", AMBIENCE_FADE_S)))
+
+
+# --- Interno: ambiente de fondo (uno a la vez) ---
+
+func _request_ambience(node: Node, item: Dictionary) -> void:
+	var sound: String = String(item.get("sound", ""))
+	var nid: int = node.get_instance_id()
+	var key: String = "%s#%d" % [sound, nid]
+	if not _amb_requests.has(key):
+		_amb_order += 1
+		_amb_requests[key] = {"id": StringName(sound), "priority": int(item.get("priority", 0)), "order": _amb_order}
+	var keys: Array = _amb_by_node.get(nid, [])
+	if not keys.has(key):
+		keys.append(key)
+	_amb_by_node[nid] = keys
+	# Una sola conexion por nodo (el Callable con bind se compara sin sus
+	# argumentos: una conexion por clave dejaba sin parar el segundo ambiente).
+	var release: Callable = _release_node_ambience.bind(nid)
+	if not node.tree_exiting.is_connected(release):
+		node.tree_exiting.connect(release, CONNECT_ONE_SHOT)
+
+
+func _release_node_ambience(nid: int) -> void:
+	for key: Variant in _amb_by_node.get(nid, []):
+		_amb_requests.erase(key)
+	_amb_by_node.erase(nid)
+	_refresh_ambience()
+
+
+## Suena la peticion de mayor prioridad (empate: la mas reciente) que tenga
+## archivo; si es el mismo sonido que ya suena, sigue sin cortes.
+func _refresh_ambience() -> void:
+	var keys: Array = _amb_requests.keys()
+	keys.sort_custom(func(a: Variant, b: Variant) -> bool:
+		var ra: Dictionary = _amb_requests[a]
+		var rb: Dictionary = _amb_requests[b]
+		if int(ra["priority"]) != int(rb["priority"]):
+			return int(ra["priority"]) > int(rb["priority"])
+		return int(ra["order"]) > int(rb["order"]))
+	var best_key: String = ""
+	for key: Variant in keys:
+		if has_stream((_amb_requests[key] as Dictionary)["id"]):
+			best_key = String(key)
+			break
+	var current: AudioStreamPlayer = null
+	if not _amb_key.is_empty() and _loops.has(_amb_key) and is_instance_valid(_loops[_amb_key]):
+		current = _loops[_amb_key]
+	if best_key == _amb_key and current != null:
+		return
+	if current != null and not best_key.is_empty() \
+			and current.get_meta(&"sound_id", &"") == (_amb_requests[best_key] as Dictionary)["id"]:
+		_loops.erase(_amb_key)
+		_loops[best_key] = current
+		_amb_key = best_key
+		return
+	if current != null:
+		_loops.erase(_amb_key)
+		_fade_out(current)
+	_amb_key = ""
+	if best_key.is_empty():
+		return
+	var fade: float = ambience_fade_s() if current != null or fading_count() > 0 else 0.0
+	if play_loop((_amb_requests[best_key] as Dictionary)["id"], best_key, fade):
+		_amb_key = best_key
+
+
+func _fade_out(player: AudioStreamPlayer) -> void:
+	var fade: float = ambience_fade_s()
+	if fade <= 0.0 or not is_inside_tree():
+		_free_loop_player(player)
+		return
+	_fading.append(player)
+	var tween: Tween = player.create_tween()
+	tween.tween_property(player, ^"volume_linear", 0.0, fade)
+	tween.tween_callback(func() -> void:
+		_fading.erase(player)
+		_free_loop_player(player))
+
+
+func _free_loop_player(player: AudioStreamPlayer) -> void:
+	_last_stop_ms = Time.get_ticks_msec()
+	if player == null or not is_instance_valid(player):
+		return
+	if player.finished.is_connected(player.play):
+		player.finished.disconnect(player.play)
+	player.stop()
+	player.queue_free()
 
 
 ## Reproductores (no posicionales) que suenan ahora con `id`.
@@ -722,15 +858,12 @@ func _on_node_added(node: Node) -> void:
 		var signal_name := StringName(String(item.get("signal", "")))
 		if first_time and node.has_signal(signal_name) and not node.is_connected(signal_name, _on_node_signal):
 			node.connect(signal_name, _on_node_signal.bind(signal_name, node))
+	# El nodo puede llegar dos veces (p. ej. el ScrollEdgeOverlay que Isak crea en su
+	# _ready: node_added y el recorrido del nivel): las peticiones van por clave.
 	for index: int in bindings.get("ambience", []):
-		var item_amb: Dictionary = (_data.get("ambience", []) as Array)[index]
-		var key: String = "%s#%d" % [String(item_amb.get("sound", "")), node.get_instance_id()]
-		play_loop(StringName(String(item_amb.get("sound", ""))), key)
-		# El nodo puede llegar dos veces (p. ej. el ScrollEdgeOverlay que Isak crea en su
-		# _ready: node_added y el recorrido del nivel); una sola conexion por clave.
-		var stop: Callable = stop_loop.bind(key)
-		if not node.tree_exiting.is_connected(stop):
-			node.tree_exiting.connect(stop, CONNECT_ONE_SHOT)
+		_request_ambience(node, (_data.get("ambience", []) as Array)[index])
+	if not (bindings.get("ambience", []) as Array).is_empty():
+		_refresh_ambience()
 	if first_time and bindings.get("steps", false):
 		_connect_steps(node)
 
