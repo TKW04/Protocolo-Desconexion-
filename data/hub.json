@@ -153,7 +153,7 @@
 		{"id": "m2", "world": 2, "name": "El Feed", "col": 10, "unlocked": false, "unlocked_by": ["1-boss"], "levels": [
 			{"id": "2-1", "name": "Para ti", "laps": [1], "playable": true},
 			{"id": "2-2", "name": "Un video más", "laps": [1], "playable": true, "available_text": "Siguiente video"},
-			{"id": "2-3", "name": "Scroll infinito", "laps": [1], "playable": false},
+			{"id": "2-3", "name": "Scroll infinito", "laps": [1], "playable": true, "available_text": "Siguiente video"},
 			{"id": "2-boss", "name": "Autoplay", "kind": "boss", "laps": [1], "playable": false}
 		]},
 		{"id": "m3", "world": 3, "name": "La Vitrina", "col": 16, "unlocked": false, "unlocked_by": ["2-boss"], "levels": []},

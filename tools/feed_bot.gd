@@ -72,6 +72,9 @@ var _skip_index: int = -1
 var _jumping: bool = false
 var _head_waits: Dictionary = {}
 var _memory_before: Dictionary = {}
+## Inversiones del scroll vistas (2-3, paso 14): estado del cuadro anterior y cuantas.
+var _reversing_now: bool = false
+var _reverses: int = 0
 
 
 func _ready() -> void:
@@ -211,6 +214,14 @@ func _tick(guard: bool = true) -> void:
 	await super._tick(guard)
 	if _play_started and _runner != null and not get_tree().paused and not _runner.is_in_hub():
 		_world_clock += WorldTime.scaled_delta(1.0 / 60.0)
+		var camera: ScrollCamera = _isak.get_scroll_camera() if _isak != null else null
+		if camera != null and camera.is_reversing() != _reversing_now:
+			_reversing_now = camera.is_reversing()
+			if _reversing_now:
+				_reverses += 1
+			_note("inversion del scroll %s (%s; borde de arriba a %.1f tiles de la cabeza)" % [
+				"empieza" if _reversing_now else "termina", _where(),
+				(_isak.global_position.y - _isak.hitbox_size.y - camera.get_top()) / TILE])
 
 
 ## Saltos bajo una tarjeta solida (frágil o Historia, capa world): subiendo, la
@@ -218,6 +229,14 @@ func _tick(guard: bool = true) -> void:
 ## con su parte de abajo y cae a la fila de salida). El camino supone la subida
 ## sin roce; en el 2-1, el salto de la fila 32 a la frágil de la fila 31.
 func _jump(s: Dictionary, action: String) -> bool:
+	# 2-3 (paso 14): un golpe al suelo DE PIE sobre la frágil que solo rompe el golpe la rompe e Isak sigue
+	# cayendo; la caída del camino (`fall` desde la frágil) ya está hecha: basta con estar de pie en la fila de
+	# llegada (y, si hace falta, andar hasta su celda).
+	if action == "fall" and _isak.is_on_floor() and absf(_isak.global_position.y - _px(s["to"]).y) < 4.0 \
+			and absf(_px(s["from"]).y - _px(s["to"]).y) > 4.0:
+		if _verbose:
+			_note("paso %d: la caída ya la hizo el golpe al suelo (%s)" % [_step_index, _where()])
+		return await _walk_to(_px(s["to"]).x, _px(s["to"]).y)
 	_jumping = true
 	var ok: bool = await super._jump(s, action)
 	_jumping = false
@@ -326,6 +345,14 @@ func _wait_scroll(s: Dictionary) -> bool:
 	_set_axis(0.0)
 	var move: Dictionary = _next_move(_step_index + 1)
 	var need: float = _ceiling_needed_chain(move)
+	if String(s.get("reason", "")).contains("antes del tramo con tiempo"):
+		# 2-3 (paso 14): la espera de antes de un tramo con Historias es la que deja pasar TODO el tramo (dentro
+		# no se puede esperar al techo); el compas lo sincroniza despues su wait_beat.
+		var j: int = _step_index + 1
+		while j < _steps.size() and String(_steps[j].get("action", "")) not in ["wait_scroll", "goal"]:
+			if _steps[j].has("from") and _steps[j].has("to"):
+				need = minf(need, _ceiling_needed({"step": _steps[j], "index": j}))
+			j += 1
 	var seconds: float = float(s.get("seconds", 0.0))
 	var path_end: float = float(s.get("t_world", 0.0)) + seconds
 	var timed: bool = bool(move.get("debug", false)) and not is_nan(_path_offset)

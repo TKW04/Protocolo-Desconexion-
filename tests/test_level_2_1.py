@@ -238,7 +238,7 @@ class Level21Test(unittest.TestCase):
         self.assertEqual(m2["unlocked_by"], ["1-boss"], "Se abre al vencer a Alerta Mayor")
         rows = [(lv["id"], lv["name"], lv["playable"], lv.get("kind")) for lv in m2["levels"]]
         self.assertEqual(rows, [("2-1", "Para ti", True, None), ("2-2", "Un video más", True, None),
-                                ("2-3", "Scroll infinito", False, None), ("2-boss", "Autoplay", False, "boss")])
+                                ("2-3", "Scroll infinito", True, None), ("2-boss", "Autoplay", False, "boss")])
         self.assertTrue(all(lv["laps"] == [1] for lv in m2["levels"]))
         m3 = next(w for w in hub["worlds"] if w["id"] == "m3")
         self.assertEqual(m3["unlocked_by"], ["2-boss"])

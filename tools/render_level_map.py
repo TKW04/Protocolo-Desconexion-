@@ -315,6 +315,11 @@ def render(level, palette):
                 d.line((xx, y0, xx + 3, y0), fill=palette["alerta_sombra"])
                 d.line((xx, y1, xx + 3, y1), fill=palette["alerta_sombra"])
             label((x0 + x1) // 2, y0 + 8, "zona de clones", palette["alerta"])
+        # Mundo 2, el 2-3 real (paso 14 de docs/propuesta-mundo-2.md; 2026-10-23).
+        elif kind == "loading_wall":
+            x0, y0, x1, y1 = box(x, y, 1, int(p.get("height_tiles", 3)))
+            d.rectangle((x0 + 2, y0 + 1, x1 - 2, y1 - 1), outline=palette["alerta"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "muro (3 golpes)", palette["alerta"])
         elif kind == "feed_sign":
             x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 4), p.get("height_tiles", 1))
             d.rectangle((x0 + 1, y0 + 2, x1 - 1, y1 - 2), outline=palette["banner_gris"])
@@ -329,6 +334,14 @@ def render(level, palette):
             d.rectangle((x0, y0, x1, y1), outline=palette["alerta"], width=2)
             d.ellipse((x0 + 12, y0 + 12, x1 - 12, y1 - 12), outline=palette["alerta"], width=2)
             label((x0 + x1) // 2, (y0 + y1) // 2, "Alerta Mayor", palette["banner_blanco"], normal)
+
+    # Inversiones del scroll con zona que las arma (2-3, paso 14 de docs/propuesta-mundo-2.md).
+    for rev in level.get("scroll", {}).get("reverses", []):
+        if rev.get("trigger"):
+            zc, zr, zw, zh = rev["trigger"]
+            x0, y0, x1, y1 = box(zc, zr, zw, zh)
+            d.rectangle((x0, y0, x1, y1), outline=palette["resplandor"])
+            label((x0 + x1) // 2, y1 + 6, "inversion %g s" % rev["duration_s"], palette["resplandor"])
 
     # Enemigos con su rango de patrulla.
     tile = level["tile_size"]

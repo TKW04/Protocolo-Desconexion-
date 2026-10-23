@@ -142,6 +142,31 @@ func test_reverse_runs_down_and_switches_the_damaging_edge() -> void:
 	assert_eq(cam.damaging_edge(), ScrollCamera.EDGE_BOTTOM)
 
 
+## Paso 14 (2-3 «Scroll infinito»): una inversion con `trigger` la arma Isak al
+## entrar con los pies en la zona y empieza reverse_warn_s despues (con el aviso);
+## sin entrar, at_row sigue de respaldo.
+func test_reverse_armed_by_its_trigger_zone() -> void:
+	var config: Dictionary = CONFIG.duplicate(true)
+	config["reverses"] = [{"at_row": 12, "duration_s": 2.0, "speed_tiles_s": 0.8, "trigger": [10, 24, 4, 2]}]
+	var cam := ScrollCamera.load_from_file()
+	cam.configure(VIEW, Rect2(0.0, 0.0, 20.0 * T, 60.0 * T), config, T)
+	_run(cam, _feet(3, 40), 60.0)
+	_run(cam, _feet(5, 28), 0.5)
+	assert_false(cam.is_reversing())
+	_run(cam, _feet(5, 22), 2.0)
+	assert_false(cam.is_reversing(), "Fuera de la zona no se arma (at_row aun lejos)")
+	assert_false(cam.reverse_soon())
+	_run(cam, _feet(11, 25), 0.1)
+	assert_true(cam.reverse_soon(), "Armada: aviso de inversion")
+	assert_false(cam.is_reversing())
+	_run(cam, _feet(11, 25), cam.reverse_warn_s)
+	assert_true(cam.is_reversing(), "Empieza reverse_warn_s despues de entrar")
+	_run(cam, _feet(11, 25), 2.1)
+	assert_false(cam.is_reversing(), "Termina a los 2 s y no se repite")
+	_run(cam, _feet(11, 25), 2.0)
+	assert_false(cam.is_reversing())
+
+
 func test_warns_before_a_speed_change_and_a_reverse() -> void:
 	var cam := _camera()
 	_run(cam, _feet(3, 54), 0.1)

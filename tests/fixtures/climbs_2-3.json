@@ -1,0 +1,2248 @@
+{
+ "format": "isak-climbs/1",
+ "level": "2-3",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "11,168->11,166",
+   "section": "Inicio",
+   "from": {
+    "cell": [
+     11,
+     168
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 168
+   },
+   "to": {
+    "cell": [
+     11,
+     166
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 166
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,166->11,164",
+   "section": "Inicio",
+   "from": {
+    "cell": [
+     11,
+     166
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 166
+   },
+   "to": {
+    "cell": [
+     11,
+     164
+    ],
+    "ledge": [
+     6,
+     11
+    ],
+    "row": 164
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,164->11,162",
+   "section": "Inicio",
+   "from": {
+    "cell": [
+     11,
+     164
+    ],
+    "ledge": [
+     6,
+     11
+    ],
+    "row": 164
+   },
+   "to": {
+    "cell": [
+     11,
+     162
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 162
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,162->11,160",
+   "section": "Inicio",
+   "from": {
+    "cell": [
+     11,
+     162
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 162
+   },
+   "to": {
+    "cell": [
+     11,
+     160
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 160
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "8,160->8,158",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     160
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 160
+   },
+   "to": {
+    "cell": [
+     8,
+     158
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 158
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "8,158->8,156",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     158
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 158
+   },
+   "to": {
+    "cell": [
+     8,
+     156
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 156
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "11,156->11,154",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     11,
+     156
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 156
+   },
+   "to": {
+    "cell": [
+     11,
+     154
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 154
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "12,154->12,152",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     12,
+     154
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 154
+   },
+   "to": {
+    "cell": [
+     12,
+     152
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 152
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "14,152->14,150",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     14,
+     152
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 152
+   },
+   "to": {
+    "cell": [
+     14,
+     150
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 150
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 960.0,
+   "target_x_px": 960.0,
+   "debug": false
+  },
+  {
+   "id": "12,150->12,148",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     12,
+     150
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 150
+   },
+   "to": {
+    "cell": [
+     12,
+     148
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 148
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "8,148->8,146",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     148
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 148
+   },
+   "to": {
+    "cell": [
+     8,
+     146
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 146
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "8,146->8,144",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     146
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 146
+   },
+   "to": {
+    "cell": [
+     8,
+     144
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 144
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "10,144->10,142",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     10,
+     144
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 144
+   },
+   "to": {
+    "cell": [
+     10,
+     142
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 142
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 704.0,
+   "debug": false
+  },
+  {
+   "id": "12,142->12,140",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     12,
+     142
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 142
+   },
+   "to": {
+    "cell": [
+     12,
+     140
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 140
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "12,140->12,138",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     12,
+     140
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 140
+   },
+   "to": {
+    "cell": [
+     12,
+     138
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 138
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "8,138->8,136",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     138
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 138
+   },
+   "to": {
+    "cell": [
+     8,
+     136
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 136
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "8,136->8,134",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     136
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 136
+   },
+   "to": {
+    "cell": [
+     8,
+     134
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 134
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "8,134->8,132",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     134
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 134
+   },
+   "to": {
+    "cell": [
+     8,
+     132
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 132
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "8,132->8,130",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     8,
+     132
+    ],
+    "ledge": [
+     3,
+     8
+    ],
+    "row": 132
+   },
+   "to": {
+    "cell": [
+     8,
+     130
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 130
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "11,130->11,128",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     11,
+     130
+    ],
+    "ledge": [
+     7,
+     12
+    ],
+    "row": 130
+   },
+   "to": {
+    "cell": [
+     11,
+     128
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 128
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "12,128->12,126",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     12,
+     128
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 128
+   },
+   "to": {
+    "cell": [
+     12,
+     126
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 126
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "14,126->14,124",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     14,
+     126
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 126
+   },
+   "to": {
+    "cell": [
+     14,
+     124
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 124
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 960.0,
+   "target_x_px": 960.0,
+   "debug": false
+  },
+  {
+   "id": "16,124->16,122",
+   "section": "Tramo 1 «Ráfagas»",
+   "from": {
+    "cell": [
+     16,
+     124
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 124
+   },
+   "to": {
+    "cell": [
+     16,
+     122
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 122
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "16,122->16,120",
+   "section": "Pausa",
+   "from": {
+    "cell": [
+     16,
+     122
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 122
+   },
+   "to": {
+    "cell": [
+     16,
+     120
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 120
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "16,120->16,118",
+   "section": "Pausa",
+   "from": {
+    "cell": [
+     16,
+     120
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 120
+   },
+   "to": {
+    "cell": [
+     16,
+     118
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 118
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "16,118->16,116",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     118
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 118
+   },
+   "to": {
+    "cell": [
+     16,
+     116
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 116
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "16,116->16,114",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     116
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 116
+   },
+   "to": {
+    "cell": [
+     16,
+     114
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 114
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "16,114->16,112",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     114
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 114
+   },
+   "to": {
+    "cell": [
+     16,
+     112
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 112
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "3,112->3,110",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     3,
+     112
+    ],
+    "ledge": [
+     1,
+     11
+    ],
+    "row": 112
+   },
+   "to": {
+    "cell": [
+     3,
+     110
+    ],
+    "ledge": [
+     3,
+     4
+    ],
+    "row": 110
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "16,112->16,110",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     112
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 112
+   },
+   "to": {
+    "cell": [
+     16,
+     110
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 110
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "3,110->3,108",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     3,
+     110
+    ],
+    "ledge": [
+     3,
+     4
+    ],
+    "row": 110
+   },
+   "to": {
+    "cell": [
+     3,
+     108
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 108
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "16,110->16,108",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     110
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 110
+   },
+   "to": {
+    "cell": [
+     16,
+     108
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 108
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "1,109->1,108",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     1,
+     109
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 109
+   },
+   "to": {
+    "cell": [
+     1,
+     108
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 108
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "3,108->3,106",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     3,
+     108
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 108
+   },
+   "to": {
+    "cell": [
+     3,
+     106
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 106
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "16,108->16,106",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     108
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 108
+   },
+   "to": {
+    "cell": [
+     16,
+     106
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 106
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "3,106->3,104",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     3,
+     106
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 106
+   },
+   "to": {
+    "cell": [
+     3,
+     104
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 104
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 256.0,
+   "debug": false
+  },
+  {
+   "id": "16,106->16,104",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     106
+    ],
+    "ledge": [
+     15,
+     18
+    ],
+    "row": 106
+   },
+   "to": {
+    "cell": [
+     16,
+     104
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 104
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "2,104->2,102",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     104
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 104
+   },
+   "to": {
+    "cell": [
+     2,
+     102
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 102
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "16,104->16,102",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     16,
+     104
+    ],
+    "ledge": [
+     13,
+     16
+    ],
+    "row": 104
+   },
+   "to": {
+    "cell": [
+     16,
+     102
+    ],
+    "ledge": [
+     9,
+     18
+    ],
+    "row": 102
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  },
+  {
+   "id": "2,102->2,100",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     102
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 102
+   },
+   "to": {
+    "cell": [
+     2,
+     100
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 100
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "2,100->2,98",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     100
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 100
+   },
+   "to": {
+    "cell": [
+     2,
+     98
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 98
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "2,98->2,96",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     98
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 98
+   },
+   "to": {
+    "cell": [
+     2,
+     96
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 96
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "2,96->2,94",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     96
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 96
+   },
+   "to": {
+    "cell": [
+     2,
+     94
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 94
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "2,94->2,92",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     94
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 94
+   },
+   "to": {
+    "cell": [
+     2,
+     92
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 92
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "3,92->5,91",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     3,
+     92
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 92
+   },
+   "to": {
+    "cell": [
+     5,
+     91
+    ],
+    "ledge": [
+     5,
+     14
+    ],
+    "row": 91
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 256.0,
+   "target_x_px": 384.0,
+   "debug": false
+  },
+  {
+   "id": "2,92->2,90",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     2,
+     92
+    ],
+    "ledge": [
+     1,
+     3
+    ],
+    "row": 92
+   },
+   "to": {
+    "cell": [
+     2,
+     90
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 90
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 192.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "5,91->4,90",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     5,
+     91
+    ],
+    "ledge": [
+     5,
+     14
+    ],
+    "row": 91
+   },
+   "to": {
+    "cell": [
+     4,
+     90
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 90
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 320.0,
+   "target_x_px": 320.0,
+   "debug": false
+  },
+  {
+   "id": "4,90->4,88",
+   "section": "Tramo 2 «Al revés»",
+   "from": {
+    "cell": [
+     4,
+     90
+    ],
+    "ledge": [
+     2,
+     4
+    ],
+    "row": 90
+   },
+   "to": {
+    "cell": [
+     4,
+     88
+    ],
+    "ledge": [
+     2,
+     7
+    ],
+    "row": 88
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 320.0,
+   "target_x_px": 320.0,
+   "debug": false
+  },
+  {
+   "id": "6,88->6,86",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     6,
+     88
+    ],
+    "ledge": [
+     2,
+     7
+    ],
+    "row": 88
+   },
+   "to": {
+    "cell": [
+     6,
+     86
+    ],
+    "ledge": [
+     6,
+     11
+    ],
+    "row": 86
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 448.0,
+   "target_x_px": 448.0,
+   "debug": false
+  },
+  {
+   "id": "10,86->10,84",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     10,
+     86
+    ],
+    "ledge": [
+     6,
+     11
+    ],
+    "row": 86
+   },
+   "to": {
+    "cell": [
+     10,
+     84
+    ],
+    "ledge": [
+     10,
+     15
+    ],
+    "row": 84
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 704.0,
+   "debug": false
+  },
+  {
+   "id": "17,85->18,83",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     85
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 85
+   },
+   "to": {
+    "cell": [
+     18,
+     83
+    ],
+    "ledge": [
+     18,
+     18
+    ],
+    "row": 83
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 1136.0,
+   "target_x_px": null,
+   "debug": true
+  },
+  {
+   "id": "10,84->10,82",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     10,
+     84
+    ],
+    "ledge": [
+     10,
+     15
+    ],
+    "row": 84
+   },
+   "to": {
+    "cell": [
+     10,
+     82
+    ],
+    "ledge": [
+     7,
+     11
+    ],
+    "row": 82
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 704.0,
+   "debug": false
+  },
+  {
+   "id": "18,83->16,81",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     18,
+     83
+    ],
+    "ledge": [
+     18,
+     18
+    ],
+    "row": 83
+   },
+   "to": {
+    "cell": [
+     16,
+     81
+    ],
+    "ledge": [
+     16,
+     16
+    ],
+    "row": 81
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1088.0,
+   "debug": true
+  },
+  {
+   "id": "7,82->7,80",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     7,
+     82
+    ],
+    "ledge": [
+     7,
+     11
+    ],
+    "row": 82
+   },
+   "to": {
+    "cell": [
+     7,
+     80
+    ],
+    "ledge": [
+     3,
+     7
+    ],
+    "row": 80
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 512.0,
+   "target_x_px": 512.0,
+   "debug": false
+  },
+  {
+   "id": "16,81->16,79",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     16,
+     81
+    ],
+    "ledge": [
+     16,
+     16
+    ],
+    "row": 81
+   },
+   "to": {
+    "cell": [
+     16,
+     79
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 79
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": true
+  },
+  {
+   "id": "7,80->7,78",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     7,
+     80
+    ],
+    "ledge": [
+     3,
+     7
+    ],
+    "row": 80
+   },
+   "to": {
+    "cell": [
+     7,
+     78
+    ],
+    "ledge": [
+     4,
+     8
+    ],
+    "row": 78
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 512.0,
+   "target_x_px": 512.0,
+   "debug": false
+  },
+  {
+   "id": "17,79->17,77",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     79
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 79
+   },
+   "to": {
+    "cell": [
+     17,
+     77
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 77
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "8,78->8,76",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     8,
+     78
+    ],
+    "ledge": [
+     4,
+     8
+    ],
+    "row": 78
+   },
+   "to": {
+    "cell": [
+     8,
+     76
+    ],
+    "ledge": [
+     8,
+     12
+    ],
+    "row": 76
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  },
+  {
+   "id": "17,77->17,75",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     77
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 77
+   },
+   "to": {
+    "cell": [
+     17,
+     75
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 75
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "11,76->11,74",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     11,
+     76
+    ],
+    "ledge": [
+     8,
+     12
+    ],
+    "row": 76
+   },
+   "to": {
+    "cell": [
+     11,
+     74
+    ],
+    "ledge": [
+     11,
+     14
+    ],
+    "row": 74
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "17,75->17,73",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     75
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 75
+   },
+   "to": {
+    "cell": [
+     17,
+     73
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 73
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "11,74->11,72",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     11,
+     74
+    ],
+    "ledge": [
+     11,
+     14
+    ],
+    "row": 74
+   },
+   "to": {
+    "cell": [
+     11,
+     72
+    ],
+    "ledge": [
+     7,
+     11
+    ],
+    "row": 72
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "17,73->17,71",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     73
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 73
+   },
+   "to": {
+    "cell": [
+     17,
+     71
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 71
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,71->17,69",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     71
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 71
+   },
+   "to": {
+    "cell": [
+     17,
+     69
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 69
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,69->17,67",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     69
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 69
+   },
+   "to": {
+    "cell": [
+     17,
+     67
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 67
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,67->17,65",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     67
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 67
+   },
+   "to": {
+    "cell": [
+     17,
+     65
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 65
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,65->17,63",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     65
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 65
+   },
+   "to": {
+    "cell": [
+     17,
+     63
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 63
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,63->17,61",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     63
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 63
+   },
+   "to": {
+    "cell": [
+     17,
+     61
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 61
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,61->17,59",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     17,
+     61
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 61
+   },
+   "to": {
+    "cell": [
+     17,
+     59
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 59
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "16,59->16,57",
+   "section": "Tramo 3 «Historias»",
+   "from": {
+    "cell": [
+     16,
+     59
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 59
+   },
+   "to": {
+    "cell": [
+     16,
+     57
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 57
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1088.0,
+   "debug": false
+  }
+ ]
+}

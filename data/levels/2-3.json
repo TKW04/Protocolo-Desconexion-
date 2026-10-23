@@ -1,0 +1,1035 @@
+{
+  "_notes": "Nivel 2-3 «Scroll infinito» (paso 14 de docs/propuesta-mundo-2.md §8; diseno en su §4.3 y §4.3.1, desvios y decisiones en §8.1). Feed vertical de 20 x 170 con scroll forzado; alturas h desde el suelo de la sala de inicio: fila = 169 - h. Todo el kit (pulso, laser, Debug, dash y golpe al suelo). Inicio parado (cartel «Ya lo has visto todo. (Mentira.)»; el scroll arranca al subir a h 6). Tramo 1 «Ráfagas»: 0,4 tiles/s con cuatro rafagas de 1,2 tiles/s (unos 4 s) en las que la subida va en linea recta (tarjetas apiladas) y un video (ola) en un tramo lento. Pausa (sync_1, cargador_1, el scroll se para). Tramo 2 «Al revés» a 0,7: subida por la derecha (columnas 13-18) hasta el borde de la h 66 y bajada por tres pisos con tarjetas fragiles que solo rompe el golpe (columnas 6-11); al pisar el segundo piso la inversion se arma (scroll.reverses[0].trigger) y 1 s despues el scroll baja 6 s a 0,8 tiles/s con el borde de arriba como el que dana; abajo, un Comentarista, la puerta de pie de la subida de vuelta (columna 5) y el secreto B; subida por la izquierda (columnas 1-4). Tramo 3 «Historias» a 0,8: un video (ola), una Historia que hay que pisar (h 98), el patron 13 (tarjeta -> Historia -> fragil -> tarjeta, h 106-110), otra Historia (h 114), cargador_2 y, en el marco derecho grueso, el canal del secreto A; secreto C sobre una Historia alta. Tramo 4 «Cargando más…» a 0,7: un video (ola), cargador_3 y el pasillo con el muro «Cargando más…» (columna 13, h 145-147) y una zona de clones: 3 golpes al suelo que tambien limpian a los clones; el scroll se para ante el muro (parada muro_carga) y, roto, sigue despacio (0,6) hasta arriba. Cierre: tarjeta final y la terminal con la cuenta automatica de 3 s que vuelve al hub. Tileset y fondo del Mundo 1 (provisional hasta el arte del paso 10). Escena: scenes/levels/2-3.tscn (python3 tools/build_level.py data/levels/2-3.json).",
+  "id": "2-3",
+  "name": "Scroll infinito",
+  "world": 2,
+  "tile_size": 64,
+  "debug_color": "amber",
+  "target_duration_s": 420,
+  "difficulty": 4,
+  "abilities_available": {
+    "pulse": true,
+    "laser": true,
+    "debug": true,
+    "dash": true,
+    "ground_pound": true
+  },
+  "camera": {
+    "vertical": "autoscroll",
+    "limits": "grid"
+  },
+  "scroll": {
+    "start_resume_row": 164,
+    "default_speed_tiles_s": 0.4,
+    "stages": [
+      {
+        "y_from": 166,
+        "y_to": 169,
+        "speed_tiles_s": 0.4
+      },
+      {
+        "y_from": 161,
+        "y_to": 165,
+        "speed_tiles_s": 1.2
+      },
+      {
+        "y_from": 157,
+        "y_to": 160,
+        "speed_tiles_s": 0.4
+      },
+      {
+        "y_from": 152,
+        "y_to": 156,
+        "speed_tiles_s": 1.2
+      },
+      {
+        "y_from": 148,
+        "y_to": 151,
+        "speed_tiles_s": 0.4
+      },
+      {
+        "y_from": 143,
+        "y_to": 147,
+        "speed_tiles_s": 1.2
+      },
+      {
+        "y_from": 139,
+        "y_to": 142,
+        "speed_tiles_s": 0.4
+      },
+      {
+        "y_from": 134,
+        "y_to": 138,
+        "speed_tiles_s": 1.2
+      },
+      {
+        "y_from": 126,
+        "y_to": 133,
+        "speed_tiles_s": 0.4
+      },
+      {
+        "y_from": 100,
+        "y_to": 125,
+        "speed_tiles_s": 0.7
+      },
+      {
+        "y_from": 53,
+        "y_to": 99,
+        "speed_tiles_s": 0.8
+      },
+      {
+        "y_from": 28,
+        "y_to": 52,
+        "speed_tiles_s": 0.7
+      },
+      {
+        "y_from": 0,
+        "y_to": 27,
+        "speed_tiles_s": 0.6
+      }
+    ],
+    "stops": [
+      {
+        "id": "sync_1",
+        "at_row": 125,
+        "resume_row": 122
+      },
+      {
+        "id": "muro_carga",
+        "at_row": 27,
+        "resume_row": 20
+      }
+    ],
+    "reverses": [
+      {
+        "at_row": 110,
+        "duration_s": 6.0,
+        "speed_tiles_s": 0.8,
+        "trigger": [
+          6,
+          104,
+          6,
+          2
+        ]
+      }
+    ],
+    "safe_respawn": [
+      [
+        13,
+        166
+      ],
+      [
+        8,
+        164
+      ],
+      [
+        13,
+        162
+      ],
+      [
+        9,
+        160
+      ],
+      [
+        5,
+        158
+      ],
+      [
+        9,
+        156
+      ],
+      [
+        13,
+        154
+      ],
+      [
+        13,
+        152
+      ],
+      [
+        13,
+        150
+      ],
+      [
+        9,
+        148
+      ],
+      [
+        5,
+        146
+      ],
+      [
+        9,
+        144
+      ],
+      [
+        9,
+        142
+      ],
+      [
+        13,
+        140
+      ],
+      [
+        9,
+        138
+      ],
+      [
+        5,
+        136
+      ],
+      [
+        5,
+        134
+      ],
+      [
+        5,
+        132
+      ],
+      [
+        9,
+        130
+      ],
+      [
+        13,
+        128
+      ],
+      [
+        13,
+        126
+      ],
+      [
+        13,
+        124
+      ],
+      [
+        9,
+        122
+      ],
+      [
+        14,
+        120
+      ],
+      [
+        16,
+        118
+      ],
+      [
+        14,
+        116
+      ],
+      [
+        16,
+        114
+      ],
+      [
+        14,
+        112
+      ],
+      [
+        3,
+        112
+      ],
+      [
+        3,
+        110
+      ],
+      [
+        16,
+        110
+      ],
+      [
+        14,
+        108
+      ],
+      [
+        2,
+        108
+      ],
+      [
+        3,
+        106
+      ],
+      [
+        16,
+        106
+      ],
+      [
+        14,
+        104
+      ],
+      [
+        2,
+        104
+      ],
+      [
+        15,
+        102
+      ],
+      [
+        9,
+        102
+      ],
+      [
+        3,
+        102
+      ],
+      [
+        2,
+        100
+      ],
+      [
+        3,
+        98
+      ],
+      [
+        2,
+        96
+      ],
+      [
+        3,
+        94
+      ],
+      [
+        2,
+        92
+      ],
+      [
+        3,
+        90
+      ],
+      [
+        4,
+        88
+      ],
+      [
+        8,
+        86
+      ],
+      [
+        16,
+        85
+      ],
+      [
+        12,
+        84
+      ],
+      [
+        9,
+        82
+      ],
+      [
+        5,
+        80
+      ],
+      [
+        16,
+        79
+      ],
+      [
+        6,
+        78
+      ],
+      [
+        17,
+        77
+      ],
+      [
+        10,
+        76
+      ],
+      [
+        16,
+        75
+      ],
+      [
+        12,
+        74
+      ],
+      [
+        17,
+        73
+      ],
+      [
+        9,
+        72
+      ],
+      [
+        16,
+        71
+      ],
+      [
+        17,
+        69
+      ],
+      [
+        2,
+        68
+      ],
+      [
+        16,
+        67
+      ],
+      [
+        6,
+        66
+      ],
+      [
+        17,
+        65
+      ],
+      [
+        11,
+        64
+      ],
+      [
+        16,
+        63
+      ],
+      [
+        12,
+        62
+      ],
+      [
+        17,
+        61
+      ],
+      [
+        16,
+        59
+      ],
+      [
+        3,
+        58
+      ],
+      [
+        8,
+        56
+      ],
+      [
+        14,
+        52
+      ],
+      [
+        11,
+        50
+      ],
+      [
+        8,
+        48
+      ],
+      [
+        11,
+        46
+      ],
+      [
+        13,
+        44
+      ],
+      [
+        10,
+        42
+      ],
+      [
+        9,
+        40
+      ],
+      [
+        9,
+        38
+      ],
+      [
+        13,
+        36
+      ],
+      [
+        9,
+        34
+      ],
+      [
+        5,
+        32
+      ],
+      [
+        8,
+        30
+      ],
+      [
+        5,
+        28
+      ],
+      [
+        2,
+        26
+      ],
+      [
+        9,
+        24
+      ],
+      [
+        16,
+        22
+      ],
+      [
+        15,
+        20
+      ],
+      [
+        16,
+        18
+      ],
+      [
+        15,
+        16
+      ],
+      [
+        16,
+        14
+      ],
+      [
+        15,
+        12
+      ],
+      [
+        16,
+        10
+      ],
+      [
+        9,
+        8
+      ]
+    ]
+  },
+  "validation": {
+    "time_margin_s": 0.2,
+    "ceiling_margin_px": 16,
+    "hazard_margin_s": 0.1,
+    "start_energy": 100,
+    "sync_damage_budget": 0
+  },
+  "sections": [
+    {
+      "name": "Inicio",
+      "y_from": 162,
+      "y_to": 169
+    },
+    {
+      "name": "Tramo 1 «Ráfagas»",
+      "y_from": 124,
+      "y_to": 161
+    },
+    {
+      "name": "Pausa",
+      "y_from": 120,
+      "y_to": 123
+    },
+    {
+      "name": "Tramo 2 «Al revés»",
+      "y_from": 90,
+      "y_to": 119
+    },
+    {
+      "name": "Tramo 3 «Historias»",
+      "y_from": 42,
+      "y_to": 89
+    },
+    {
+      "name": "Tramo 4 «Cargando más…»",
+      "y_from": 10,
+      "y_to": 41
+    },
+    {
+      "name": "Cierre «Sin final»",
+      "y_from": 0,
+      "y_to": 9
+    }
+  ],
+  "checkpoints": [
+    {
+      "id": "sync_1",
+      "x": 8,
+      "y": 122
+    }
+  ],
+  "secrets": [
+    {
+      "id": "secreto_al_reves",
+      "x": 1,
+      "y": 112,
+      "object": "power_bank_pickup",
+      "reward": [
+        "power_bank",
+        "attention_points"
+      ],
+      "points": 1,
+      "gates": [
+        "puerta_power_bank"
+      ],
+      "note": "B (§4.3.1): al fondo del pasillo de la bajada del Tramo 2 (la que se hace durante la inversion), una fragil de pie (puerta_power_bank, columna 2, h 57-58) cierra un nicho con el power bank vacio del 2-3 y 1 punto; solo la rompe la onda del golpe al suelo."
+    },
+    {
+      "id": "secreto_fuera_del_feed",
+      "x": 16,
+      "y": 57,
+      "reward": [
+        "attention_points",
+        "memory"
+      ],
+      "points": 2,
+      "memory_id": "msg_2_3",
+      "needs_debug": true,
+      "forbid_abilities": [
+        "dash"
+      ],
+      "note": "A «Fuera del feed» (§4.3.1): en el Tramo 3 el marco derecho es grueso (columnas 15-18) y esconde un canal (columnas 16-18, h 84-114) al que se entra por un hueco de la columna 15 (h 85-86); dentro, dos tarjetas que no deberian existir (h, solo con el Debug) llevan a una escalera de tarjetas de una via y, arriba, a la sala con el mensaje msg_2_3 de Mamá (memory_pickup mensaje_2_3 en esta celda) y 2 puntos. Ruta sin dash; se vuelve bajando por el hueco de la columna 18."
+    },
+    {
+      "id": "secreto_historia_alta",
+      "x": 1,
+      "y": 48,
+      "reward": "attention_points",
+      "points": 1,
+      "note": "C (§4.3.1): 1 punto sobre una Historia alta (historia_alta, columnas 1-2, h 120) a la que solo se llega con salto + dash aereo desde la tarjeta de la h 120 (columnas 7-10; foso de 4 tiles)."
+    }
+  ],
+  "unlocks": [
+    {
+      "type": "level",
+      "id": "2-boss"
+    }
+  ],
+  "enemies": [
+    {
+      "id": "video_rafagas",
+      "type": "autoplay_video",
+      "x": 1,
+      "y": 148,
+      "params": {
+        "clip": "wave",
+        "facing": 1,
+        "wave_tiles": 8
+      }
+    },
+    {
+      "id": "comentarista",
+      "type": "commenter",
+      "x": 11,
+      "y": 112,
+      "params": {
+        "facing": -1
+      }
+    },
+    {
+      "id": "video_historias",
+      "type": "autoplay_video",
+      "x": 1,
+      "y": 82,
+      "params": {
+        "clip": "wave",
+        "facing": 1,
+        "wave_tiles": 8
+      }
+    },
+    {
+      "id": "video_carga",
+      "type": "autoplay_video",
+      "x": 1,
+      "y": 34,
+      "params": {
+        "clip": "wave",
+        "facing": 1,
+        "wave_tiles": 8
+      }
+    }
+  ],
+  "objects": [
+    {
+      "type": "feed_sign",
+      "x": 1,
+      "y": 163,
+      "params": {
+        "id": "cartel_visto_todo",
+        "text": "Ya lo has visto todo.\n(Mentira.)",
+        "width_tiles": 5,
+        "height_tiles": 2
+      }
+    },
+    {
+      "type": "charger",
+      "x": 4,
+      "y": 122,
+      "params": {
+        "id": "cargador_1",
+        "amount": 50.0,
+        "reusable": true,
+        "cooldown_s": 10.0
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 1,
+      "y": 120,
+      "params": {
+        "id": "cartel_pausa",
+        "text": "En pausa",
+        "width_tiles": 4,
+        "accent": "tarjeta_borde"
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 6,
+      "y": 103,
+      "params": {
+        "id": "bajada_1",
+        "width_tiles": 3,
+        "trigger": "pound_only"
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 9,
+      "y": 106,
+      "params": {
+        "id": "bajada_2",
+        "width_tiles": 3,
+        "trigger": "pound_only"
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 6,
+      "y": 109,
+      "params": {
+        "id": "bajada_3",
+        "width_tiles": 3,
+        "trigger": "pound_only"
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 5,
+      "y": 111,
+      "params": {
+        "id": "puerta_subida",
+        "width_tiles": 1,
+        "variant": "upright"
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 2,
+      "y": 111,
+      "params": {
+        "id": "puerta_power_bank",
+        "width_tiles": 1,
+        "variant": "upright"
+      }
+    },
+    {
+      "type": "power_bank_pickup",
+      "x": 1,
+      "y": 112,
+      "help_id": "power_bank_pickup",
+      "params": {
+        "id": "power_bank_2_3"
+      }
+    },
+    {
+      "type": "memory_pickup",
+      "x": 16,
+      "y": 57,
+      "params": {
+        "id": "mensaje_2_3",
+        "memory_id": "msg_2_3"
+      }
+    },
+    {
+      "type": "story_card",
+      "x": 4,
+      "y": 71,
+      "params": {
+        "id": "historia_1",
+        "width_tiles": 2
+      }
+    },
+    {
+      "type": "charger",
+      "x": 5,
+      "y": 66,
+      "params": {
+        "id": "cargador_2",
+        "amount": 50.0,
+        "reusable": true,
+        "cooldown_s": 10.0
+      }
+    },
+    {
+      "type": "story_card",
+      "x": 7,
+      "y": 63,
+      "params": {
+        "id": "historia_2",
+        "width_tiles": 3,
+        "offset": 0.5
+      }
+    },
+    {
+      "type": "fragile_card",
+      "x": 3,
+      "y": 61,
+      "params": {
+        "id": "fragil_1",
+        "width_tiles": 3
+      }
+    },
+    {
+      "type": "story_card",
+      "x": 11,
+      "y": 55,
+      "params": {
+        "id": "historia_3",
+        "width_tiles": 2
+      }
+    },
+    {
+      "type": "story_card",
+      "x": 1,
+      "y": 49,
+      "params": {
+        "id": "historia_alta",
+        "width_tiles": 2,
+        "offset": 0.25
+      }
+    },
+    {
+      "type": "charger",
+      "x": 6,
+      "y": 28,
+      "params": {
+        "id": "cargador_3",
+        "amount": 50.0,
+        "reusable": true,
+        "cooldown_s": 10.0
+      }
+    },
+    {
+      "type": "loading_wall",
+      "x": 13,
+      "y": 22,
+      "params": {
+        "id": "muro_carga"
+      }
+    },
+    {
+      "type": "clone_zone",
+      "x": 5,
+      "y": 22,
+      "params": {
+        "id": "enjambre_muro",
+        "zone": [
+          5,
+          22,
+          8,
+          3
+        ]
+      }
+    },
+    {
+      "type": "exit_terminal",
+      "x": 5,
+      "y": 7,
+      "help_id": "",
+      "params": {
+        "id": "terminal_scroll_infinito",
+        "width_tiles": 1,
+        "height_tiles": 2,
+        "countdown_s": 3.0
+      }
+    },
+    {
+      "type": "feed_sign",
+      "x": 4,
+      "y": 3,
+      "params": {
+        "id": "cartel_final",
+        "text": "Ya no queda nada nuevo.\nQuedan 3 segundos",
+        "width_tiles": 12,
+        "height_tiles": 2,
+        "accent": "ambar"
+      }
+    }
+  ],
+  "grid": [
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#....G....o........#",
+    "#------------------#",
+    "##############.....#",
+    "##############.----#",
+    "##############.....#",
+    "##############----.#",
+    "##############.....#",
+    "##############.----#",
+    "##############.....#",
+    "##############----.#",
+    "##############.....#",
+    "##############.----#",
+    "##############.....#",
+    "##############----.#",
+    "#..................#",
+    "#..............----#",
+    "#..................#",
+    "#---################",
+    "#..................#",
+    "#---...............#",
+    "#..................#",
+    "#..------..........#",
+    "#..................#",
+    "#.....------.......#",
+    "#..................#",
+    "#..------..........#",
+    "#E.................#",
+    "#......------......#",
+    "#..............o...#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#......-----.......#",
+    "#..............#####",
+    "#####...-----..#####",
+    "#####..........#####",
+    "#####.......---#####",
+    "#..............#####",
+    "#........-----.#####",
+    "#So............#####",
+    "#......----....#####",
+    "#..............#####",
+    "#........-----.#####",
+    "#............o.#####",
+    "#............--#####",
+    "#..............#####",
+    "#..............#...#",
+    "#..............#...#",
+    "#.....-----....#Soo#",
+    "#..............#--.#",
+    "#-----.........#...#",
+    "#..............#--.#",
+    "#..............#...#",
+    "#..............#.--#",
+    "#..........----#...#",
+    "#..............#--.#",
+    "#.........----.#...#",
+    "#..............#.--#",
+    "#...------.....#...#",
+    "#..............#--.#",
+    "#---...........#...#",
+    "#..............#.--#",
+    "#..............#...#",
+    "#..............#--.#",
+    "#......-----...#...#",
+    "#..............#.--#",
+    "#..........----#...#",
+    "#..............#--.#",
+    "#.......-----..#...#",
+    "#..............#.--#",
+    "#...-----......#...#",
+    "#..............#--.#",
+    "#..-----.......#...#",
+    "#E.............#h..#",
+    "#......-----.......#",
+    "#.................h#",
+    "#.........-----#...#",
+    "#..............#####",
+    "#.....------...#####",
+    "#..............#####",
+    "#.------.......#####",
+    "#..............#####",
+    "#.---..........#####",
+    "#....###############",
+    "#---.###############",
+    "#....###############",
+    "#.---###############",
+    "#....###############",
+    "#---.###############",
+    "#....###############",
+    "#.---#.............#",
+    "#....#.............#",
+    "#---.#.............#",
+    "#....#.............#",
+    "#.---#...####------#",
+    "#....#......#......#",
+    "#---.#......#----..#",
+    "#....####...#......#",
+    "#.---#......#..----#",
+    "#....#......#......#",
+    "#---.#...####----..#",
+    "###.........#....o.#",
+    "#o.--.......#..----#",
+    "#..........E#......#",
+    "#############----..#",
+    "#############......#",
+    "#############..----#",
+    "#############......#",
+    "#############----..#",
+    "#############......#",
+    "#############..----#",
+    "#..................#",
+    "#............----..#",
+    "#.......C..........#",
+    "#------------------#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#..------..........#",
+    "#..................#",
+    "#..------..........#",
+    "#..................#",
+    "#..------..........#",
+    "#..................#",
+    "#......------......#",
+    "#..............o...#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#..------..........#",
+    "#E.................#",
+    "#......------......#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#..------..........#",
+    "#..................#",
+    "#......------......#",
+    "#..................#",
+    "#..........------..#",
+    "#..................#",
+    "#.....------.......#",
+    "#..................#",
+    "#..........------..#",
+    "#..P.....o.........#",
+    "####################"
+  ]
+}

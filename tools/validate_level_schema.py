@@ -1622,7 +1622,8 @@ class LevelValidator:
         start_bottom_row?, default_speed_tiles_s?, stages?, stops?, reverses?, safe_respawn}: filas
         dentro del grid, velocidades en SCROLL_SPEED_RANGE, tramos sin solaparse, paradas con id unico y
         resume_row por encima de su at_row y a la vista (o dos tiles por encima), inversiones con
-        duracion de 0 a 10 s, y tarjetas seguras [x, y] en celdas libres con suelo ('#' o '-') debajo,
+        duracion de 0 a 10 s (y, opcional, la zona trigger que las arma), y tarjetas seguras [x, y] en
+        celdas libres con suelo ('#' o '-') debajo,
         a SCROLL_SAFE_GAP_ROWS filas o menos entre si desde el inicio hasta arriba. Sin autoscroll no
         hay seccion scroll."""
         mode = self.level.get("camera", {}).get("vertical") if isinstance(self.level.get("camera"), dict) else None
@@ -1693,10 +1694,18 @@ class LevelValidator:
                                "encima)" % tag)
         for i, rev in enumerate(scroll.get("reverses", [])):
             tag = "reverses[%d]" % i
-            if not isinstance(rev, dict) or set(rev) - {"at_row", "duration_s", "speed_tiles_s"}:
-                self.error("scroll.%s debe ser {at_row, duration_s, speed_tiles_s}" % tag)
+            if not isinstance(rev, dict) or set(rev) - {"at_row", "duration_s", "speed_tiles_s", "trigger"}:
+                self.error("scroll.%s debe ser {at_row, duration_s, speed_tiles_s, trigger?}" % tag)
                 continue
             row_ok(rev.get("at_row"), tag + ".at_row")
+            # trigger (2-3, paso 14 de docs/propuesta-mundo-2.md): zona [columna, fila, ancho, alto] que arma la
+            # inversion al entrar Isak con los pies (empieza reverse_warn_s despues); dentro del grid.
+            if "trigger" in rev:
+                trig = rev["trigger"]
+                if not (isinstance(trig, list) and len(trig) == 4 and all(_is_int(v) for v in trig)
+                        and trig[2] >= 1 and trig[3] >= 1 and trig[0] >= 0 and trig[1] >= 0
+                        and trig[0] + trig[2] <= self.width and trig[1] + trig[3] <= rows):
+                    self.error("scroll.%s.trigger debe ser [columna, fila, ancho, alto] dentro del grid" % tag)
             if not _is_number(rev.get("duration_s")) or not 0.0 < rev["duration_s"] <= 10.0:
                 self.error("scroll.%s.duration_s debe estar entre 0 y 10 s" % tag)
             speed_ok(rev.get("speed_tiles_s"), tag + ".speed_tiles_s")

@@ -627,13 +627,20 @@ class Planner:
         self.info["scroll"] = info
         return out
 
-    def _group_entry(self, steps, idx):
+    def _group_entry(self, steps, idx, any_action=False):
         """Indice del movimiento que entra en el grupo de recordatorios (o tarjeta fragil) sobre el que
         empieza el paso `idx`; None si no empieza sobre uno. Si ese movimiento sale a su vez de otro grupo
-        (de una fragil a otra), el que entra en el primero de la cadena."""
-        if steps[idx]["action"] != "move":
+        (de una fragil a otra), el que entra en el primero de la cadena. Con any_action (paso 14, 2-3) vale
+        tambien para un paso que no es un movimiento (una espera de fase en `at`)."""
+        if steps[idx]["action"] == "move":
+            node = steps[idx]["from"]
+        elif any_action:
+            node = steps[idx].get("at") or steps[idx].get("from")
+            if node is None:
+                return None
+        else:
             return None
-        group = self.group_of_node(steps[idx]["from"])
+        group = self.group_of_node(node)
         entry = None
         while group is not None:
             found = None
@@ -721,7 +728,7 @@ class Planner:
         def wait_at(node, seconds, scale, idx):
             x, feet = self.feet(node)
             for _ in range(int(round(seconds / DT))):
-                sim.step(feet, DT * scale)
+                sim.step(feet, DT * scale, x)
                 watch(x, feet, idx, node)
 
         out = []
@@ -756,16 +763,28 @@ class Planner:
                     saved = sim.copy_state()
                     waited = 0.0
                     while head_min < sim.ceiling() - EPS and waited < SCROLL_MAX_WAIT_S:
-                        sim.step(ffeet, DT * scale)
+                        sim.step(ffeet, DT * scale, fx)
                         waited += DT
                     if s.get("debug_active") and last_debug_on is not None and not allow_debug_waits:
                         return ("prewait", last_debug_on, max(waited * scale, DT))
                     # De pie sobre un recordatorio o una tarjeta fragil la cuenta corre: la espera va antes del
                     # movimiento que entra en su grupo (paso 12 de docs/propuesta-mundo-2.md, 2-1).
                     entry = self._group_entry(steps, idx)
+                    if entry is not None:
+                        # Si se entra en la fragil desde un tramo con tiempo con una Historia (de la Historia a la
+                        # fragil, 2-3), la espera va antes de ese tramo (de pie sobre la Historia se apagaria).
+                        timed = self._timed_entry(steps, entry)
+                        if timed is not None:
+                            entry = timed
+                            self._timed_entries.add(entry)
                     if entry is None:
                         entry = self._timed_entry(steps, idx)
-                        if entry is not None:
+                        # Si el tramo con tiempo empieza de pie sobre una tarjeta fragil, la espera va antes de
+                        # pisarla (paso 14 de docs/propuesta-mundo-2.md, 2-3).
+                        fragile = None if entry is None else self._group_entry(steps, entry, any_action=True)
+                        if fragile is not None:
+                            entry = fragile
+                        elif entry is not None:
                             self._timed_entries.add(entry)
                     if entry is not None and not allow_debug_waits:
                         return ("prewait", entry, max(waited * scale, DT))
@@ -782,7 +801,7 @@ class Planner:
             if samples:
                 dt = self.duration(s) / len(samples)
                 for x, feet, _air in samples:
-                    sim.step(feet, dt * scale)
+                    sim.step(feet, dt * scale, x)
                     watch(x, feet, idx, node)
             if sim.started_at is not None and info["start_s"] is None:
                 info["start_s"] = round(sim.started_at, 2)
@@ -1733,7 +1752,8 @@ class Planner:
                 for cell in g.cells:
                     walls[cell] = g.obj_id
         broken = set()
-        st = {z["id"]: {"inside": 0.0, "warn": -1.0, "at": 0.0, "clones": [], "spawned": 0, "max": 0, "inside_s": 0.0}
+        st = {z["id"]: {"inside": 0.0, "warn": -1.0, "at": 0.0, "clones": [], "spawned": 0, "max": 0, "inside_s": 0.0,
+                        "wave_pounds": 0, "removed": 0}
               for z in zones}
         land_k = int(round(rules.pound_land_s / DT))
         for i, s in enumerate(steps):
@@ -1796,6 +1816,9 @@ class Planner:
                     for z in zones:
                         if rects_overlap(wave, z["rect"]):
                             zs = st[z["id"]]
+                            # Paso 14 (2-3): cualquier golpe cuya onda toca la zona la limpia (tambien los del muro).
+                            zs["wave_pounds"] += 1
+                            zs["removed"] += len(zs["clones"]) + (1 if zs["warn"] >= 0.0 else 0)
                             zs["clones"] = []
                             zs["warn"] = -1.0
                             zs["inside"] = 0.0
@@ -1890,7 +1913,8 @@ class Planner:
                                          by_id[zid]["spawn_s"]), node, zid)
         stats = result["stats"]
         self.info["clones"] = [{"id": z["id"], "pounds": added[z["id"]], "spawned": stats[z["id"]]["spawned"],
-                                "max_alive": stats[z["id"]]["max"], "inside_s": round(stats[z["id"]]["inside_s"], 2)}
+                                "max_alive": stats[z["id"]]["max"], "inside_s": round(stats[z["id"]]["inside_s"], 2),
+                                "wave_pounds": stats[z["id"]]["wave_pounds"], "removed": stats[z["id"]]["removed"]}
                                for z in zones]
         return steps
 
@@ -2817,6 +2841,16 @@ class Planner:
                     if prev[4]:
                         mv["from_rest"] = True
                 out.append(mv)
+        # Paso 14 (2-3): un tramo al compas de una Historia sin ninguna espera al compas lleva una de 0 s al empezar,
+        # con el compas de su primera Historia, para que el bot sincronice su reloj propio antes de cruzar (si no,
+        # sale cuando el techo del scroll se lo permite y llega a la Historia apagada).
+        hist = [zid for zid in (zids or []) if str(zid).startswith("_historia_")]
+        if hist and seq and not any(st["action"] == "wait_beat" for st in out):
+            zs0 = data[seq[0][0]][2]
+            on = [zid for zid in hist if zs0[zid][0]]
+            if on:
+                out.insert(0, {"action": "wait_beat", "at": seq[0][0][0], "seconds": 0.0, "reason": "compas",
+                               "beat": self.zone_beat(on[0], zs0[on[0]])})
         return {"phase": start_phase, "time": data[goal][0], "steps": out, "dashes": data[goal][4], "period": period}
 
     # --- Energia ---

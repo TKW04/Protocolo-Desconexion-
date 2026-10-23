@@ -119,6 +119,46 @@ class ScrollSchemaTest(unittest.TestCase):
         level["scroll"]["loops"] = []
         self.assert_fails(level, "campo desconocido 'loops'")
 
+    def test_reverse_trigger_zone(self):
+        """Paso 14 (2-3): una inversion puede llevar la zona `trigger` que la arma; dentro del grid."""
+        level = copy.deepcopy(self.level)
+        level["scroll"]["reverses"] = [{"at_row": 20, "duration_s": 2.0, "speed_tiles_s": 0.8,
+                                        "trigger": [2, 30, 4, 2]}]
+        self.assertEqual(vls.validate_level(level), [])
+        for bad in ([2, 30, 4], [2, 30, 0, 2], [18, 30, 4, 2], [2, 59, 4, 2]):
+            level["scroll"]["reverses"][0]["trigger"] = bad
+            self.assert_fails(level, "trigger debe ser [columna, fila, ancho, alto]")
+
+
+class ScrollModelReverseTriggerTest(unittest.TestCase):
+    """tools/scroll_model.py copia ScrollCamera: la zona `trigger` arma la inversion al entrar Isak con los pies y
+    empieza reverse_warn_s despues (2-3, paso 14); sin x (o fuera) solo vale at_row."""
+
+    def test_trigger_arms_and_starts_after_the_warning(self):
+        import scroll_model
+        level = load(SCROLL_TEST)
+        level["scroll"]["reverses"] = [{"at_row": 1, "duration_s": 2.0, "speed_tiles_s": 0.8,
+                                        "trigger": [2, 30, 4, 2]}]
+        sim = scroll_model.ScrollSim(level, ROOT)
+        dt = 1.0 / 60.0
+        for _ in range(120):
+            sim.step(25 * 64.0, dt, 10 * 64.0)
+        self.assertFalse(sim.is_parked())
+        self.assertEqual(sim.damaging_edge(), "bottom")
+        inside = (3.5 * 64.0, 32 * 64.0)
+        sim.step(inside[1], dt, inside[0])
+        self.assertGreater(sim.reverses[0]["armed"], 0.0)
+        for _ in range(int(round(sim.reverse_warn_s / dt)) - 2):
+            sim.step(inside[1], dt, inside[0])
+        self.assertEqual(sim.damaging_edge(), "bottom", "Aun no: el aviso dura reverse_warn_s")
+        for _ in range(3):
+            sim.step(inside[1], dt, inside[0])
+        self.assertEqual(sim.damaging_edge(), "top", "Invierte tras el aviso")
+        for _ in range(int(2.1 / dt)):
+            sim.step(inside[1], dt, inside[0])
+        self.assertEqual(sim.damaging_edge(), "bottom")
+        self.assertTrue(sim.reverses[0]["done"])
+
 
 
 class CardsAndLoopTest(unittest.TestCase):

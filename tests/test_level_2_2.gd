@@ -246,7 +246,7 @@ func test_world_2_folder_shows_the_next_video_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m2"))
 	assert_eq(panel.get_level_state(&"2-2"), HubWorlds.STATE_AVAILABLE, "El 2-2, tras el 2-1")
 	assert_eq(panel.level_text(levels[1]), "2-2 Un video más - Siguiente video", "§4.6: «Siguiente video»")
-	assert_eq(panel.level_text(levels[2]), "2-3 Scroll infinito - Próximamente")
+	assert_eq(panel.level_text(levels[2]), "2-3 Scroll infinito - Bloqueado", "El 2-3, tras el 2-2")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"2-2"))
 	panel.confirm()

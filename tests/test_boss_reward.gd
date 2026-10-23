@@ -278,9 +278,10 @@ func test_victory_returns_to_hub_with_world_2_unlocked_and_cyan_piece() -> void:
 	panel.world_entry = m2
 	add_child_autofree(panel)
 	panel.refresh()
-	# Desde el paso 11 del Mundo 2 (2026-10-22) el 2-1 es jugable y desde el 13 el 2-2 (bloqueado hasta
-	# completar el 2-1); el resto sigue «Próximamente».
+	# Desde el paso 11 del Mundo 2 (2026-10-22) el 2-1 es jugable, desde el 13 el 2-2 (bloqueado hasta
+	# completar el 2-1) y desde el 14 el 2-3 (tras el 2-2); el jefe sigue «Próximamente».
 	assert_eq(panel.get_level_state(&"2-1"), HubWorlds.STATE_AVAILABLE, "El 2-1, disponible")
 	assert_eq(panel.level_text(HubWorlds.levels(m2)[1]), "2-2 Un video más - Bloqueado", "El 2-2, tras el 2-1")
-	assert_eq(panel.level_text(HubWorlds.levels(m2)[2]), "2-3 Scroll infinito - Próximamente",
-		"El resto del Mundo 2 dice «Próximamente»")
+	assert_eq(panel.level_text(HubWorlds.levels(m2)[2]), "2-3 Scroll infinito - Bloqueado", "El 2-3, tras el 2-2")
+	assert_eq(panel.level_text(HubWorlds.levels(m2)[3]), "Jefe: Autoplay - Próximamente",
+		"El jefe del Mundo 2 dice «Próximamente»")

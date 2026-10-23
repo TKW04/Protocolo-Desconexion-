@@ -13,7 +13,12 @@
 ##     hasta que los pies suben por encima de su resume_row;
 ##   - arriba del todo (la vista no sale del nivel).
 ## scroll.reverses: al llegar a su at_row, el scroll baja duration_s (tiempo del
-## mundo) a su velocidad y el borde que dana pasa a ser el de arriba.
+## mundo) a su velocidad y el borde que dana pasa a ser el de arriba. Con
+## `trigger` ([columna, fila, ancho, alto], 2-3 «Scroll infinito», paso 14 de
+## docs/propuesta-mundo-2.md) la inversion la arma Isak al entrar con los pies en
+## esa zona y empieza reverse_warn_s despues (el aviso); at_row queda como respaldo
+## si el borde de abajo llega antes. Asi nunca empieza con Isak junto al borde de
+## arriba (el techo de carga lo deja hasta 2 tiles por encima de la vista).
 ## La vista ocupa todo el ancho del nivel (20 tiles): x fija en el centro.
 class_name ScrollCamera
 extends RefCounted
@@ -40,7 +45,8 @@ var _default_speed: float = 32.0
 var _stages: Array[Dictionary] = []
 ## Paradas: {id, line (px del borde de abajo parado), resume (px), done}.
 var _stops: Array[Dictionary] = []
-## Inversiones: {line, duration, speed (px/s), done}.
+## Inversiones: {line, duration, speed (px/s), done, zone (Rect2 px; vacio = sin
+## zona), armed (s que faltan para empezar; < 0 = sin armar)}.
 var _reverses: Array[Dictionary] = []
 ## Tarjetas seguras: pies (px).
 var _safe: PackedVector2Array = PackedVector2Array()
@@ -95,9 +101,15 @@ func configure(view_size: Vector2, limits: Rect2, config: Dictionary, tile_px: f
 	_reverses.clear()
 	for raw: Variant in config.get("reverses", []):
 		if raw is Dictionary:
+			var zone := Rect2()
+			var trig: Variant = raw.get("trigger", null)
+			if trig is Array and (trig as Array).size() == 4:
+				zone = Rect2(float(trig[0]) * _tile, float(trig[1]) * _tile, float(trig[2]) * _tile,
+						float(trig[3]) * _tile)
 			_reverses.append({"line": (float(raw.get("at_row", 0)) + 1.0) * _tile,
 					"duration": float(raw.get("duration_s", 0.0)),
-					"speed": float(raw.get("speed_tiles_s", 0.5)) * _tile, "done": false})
+					"speed": float(raw.get("speed_tiles_s", 0.5)) * _tile, "done": false,
+					"zone": zone, "armed": -1.0})
 	_safe = PackedVector2Array()
 	for raw: Variant in config.get("safe_respawn", []):
 		var cell: Vector2 = Vector2.ZERO
@@ -121,6 +133,7 @@ func restart() -> void:
 		stop["done"] = false
 	for rev: Dictionary in _reverses:
 		rev["done"] = false
+		rev["armed"] = -1.0
 	_bottom = _start_line
 	_parked = -1
 	_reversing = -1
@@ -178,6 +191,18 @@ func update(feet: Vector2, world_delta: float) -> Vector2:
 		if _reverse_left <= 0.0:
 			_reversing = -1
 		return get_center()
+	# Inversion armada por su zona: empieza reverse_warn_s despues de entrar.
+	for i: int in _reverses.size():
+		var rev: Dictionary = _reverses[i]
+		if rev["done"] or not (rev["zone"] as Rect2).has_area():
+			continue
+		if float(rev["armed"]) < 0.0 and (rev["zone"] as Rect2).has_point(feet - Vector2(0.0, 1.0)):
+			rev["armed"] = reverse_warn_s
+		elif float(rev["armed"]) >= 0.0:
+			rev["armed"] = float(rev["armed"]) - world_delta
+			if float(rev["armed"]) <= 0.0:
+				_start_reverse(i)
+				return get_center()
 	var speed: float = speed_at(_bottom)
 	var next: float = maxf(_bottom - speed * world_delta, _top_limit())
 	# Paradas e inversiones que se cruzan en este paso.
@@ -191,14 +216,19 @@ func update(feet: Vector2, world_delta: float) -> Vector2:
 		var rev: Dictionary = _reverses[i]
 		if not rev["done"] and next <= float(rev["line"]) and _bottom >= float(rev["line"]):
 			next = float(rev["line"])
-			rev["done"] = true
-			_reversing = i
-			_reverse_left = float(rev["duration"])
-			_parked = -2
+			_start_reverse(i)
 			break
 	_speed_now = speed if next < _bottom else 0.0
 	_bottom = next
 	return get_center()
+
+
+func _start_reverse(i: int) -> void:
+	_reverses[i]["done"] = true
+	_reverses[i]["armed"] = -1.0
+	_reversing = i
+	_reverse_left = float(_reverses[i]["duration"])
+	_parked = -2
 
 
 ## Velocidad de subida (px/s, tiempo del mundo) con el borde de abajo en `bottom`.
@@ -228,6 +258,8 @@ func reverse_soon() -> bool:
 		return false
 	var reach: float = _bottom - speed_at(_bottom) * reverse_warn_s
 	for rev: Dictionary in _reverses:
+		if not rev["done"] and float(rev["armed"]) >= 0.0:
+			return true
 		if not rev["done"] and float(rev["line"]) >= reach and float(rev["line"]) <= _bottom:
 			return true
 	return false

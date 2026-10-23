@@ -4,7 +4,9 @@ ScrollSim reproduce scripts/player/scroll_camera.gd (ScrollCamera) con la seccio
 data/camera_scroll.json: el borde de abajo de la vista sube en tiempo del mundo con la velocidad del tramo
 (stages, por la fila del borde de abajo; default_speed_tiles_s fuera), se para en el inicio hasta que los
 pies de Isak suben por encima de start_resume_row, en cada parada (stops) hasta que suben por encima de su
-resume_row y arriba del todo; las inversiones (reverses) lo hacen bajar duration_s. El plan del camino
+resume_row y arriba del todo; las inversiones (reverses) lo hacen bajar duration_s (con `trigger`, zona de celdas
+[columna, fila, ancho, alto], las arma Isak al entrar con los pies y empiezan reverse_warn_s despues; at_row es el
+respaldo; 2-3, paso 14). El plan del camino
 (tools/level_plan.py, check_scroll) lo avanza con los pies de Isak cuadro a cuadro.
 """
 import json
@@ -35,8 +37,10 @@ class ScrollSim:
                               "resume": float(s["resume_row"]) * self.T, "done": False}
                              for s in scroll.get("stops", [])), key=lambda s: -s["line"])
         self.reverses = [{"line": (float(r["at_row"]) + 1.0) * self.T, "duration": float(r["duration_s"]),
-                          "speed": float(r["speed_tiles_s"]) * self.T, "done": False}
+                          "speed": float(r["speed_tiles_s"]) * self.T, "done": False, "armed": -1.0,
+                          "zone": tuple(float(v) * self.T for v in r["trigger"]) if r.get("trigger") else None}
                          for r in scroll.get("reverses", [])]
+        self.reverse_warn_s = float(cfg.get("reverse_warn_s", 1.0))
         self.start_line = min((float(scroll["start_bottom_row"]) + 1.0) * self.T, self.level_bottom) \
             if "start_bottom_row" in scroll else self.level_bottom
         self.start_resume = float(scroll.get("start_resume_row", 0)) * self.T
@@ -48,6 +52,7 @@ class ScrollSim:
             s["done"] = False
         for r in self.reverses:
             r["done"] = False
+            r["armed"] = -1.0
         self.bottom = self.start_line
         self.parked = -1
         self.reversing = -1
@@ -76,8 +81,17 @@ class ScrollSim:
         """y minima de la cabeza (techo de carga), -inf al invertir."""
         return -math.inf if self.reversing >= 0 else self.top - self.ceiling_px
 
-    def step(self, feet, dt):
-        """Avanza `dt` s del mundo con los pies de Isak en la y `feet`."""
+    def _start_reverse(self, i):
+        rev = self.reverses[i]
+        rev["done"] = True
+        rev["armed"] = -1.0
+        self.reversing = i
+        self.reverse_left = rev["duration"]
+        self.parked = -2
+
+    def step(self, feet, dt, x=None):
+        """Avanza `dt` s del mundo con los pies de Isak en la y `feet` (y la x `x`, para las zonas que arman una
+        inversion; sin x no se arman)."""
         self.time += dt
         if self.parked != -2:
             resume = self.start_resume if self.parked == -1 else self.stops[self.parked]["resume"]
@@ -96,6 +110,18 @@ class ScrollSim:
             if self.reverse_left <= 0.0:
                 self.reversing = -1
             return
+        for i, rev in enumerate(self.reverses):
+            if rev["done"] or rev["zone"] is None:
+                continue
+            if rev["armed"] < 0.0:
+                zx, zy, zw, zh = rev["zone"]
+                if x is not None and zx <= x < zx + zw and zy <= feet - 1.0 < zy + zh:
+                    rev["armed"] = self.reverse_warn_s
+            else:
+                rev["armed"] -= dt
+                if rev["armed"] <= 0.0:
+                    self._start_reverse(i)
+                    return
         speed = self.speed_at(self.bottom)
         nxt = max(self.bottom - speed * dt, self.top_limit())
         for i, stop in enumerate(self.stops):
@@ -106,10 +132,7 @@ class ScrollSim:
         for i, rev in enumerate(self.reverses):
             if not rev["done"] and nxt <= rev["line"] <= self.bottom:
                 nxt = rev["line"]
-                rev["done"] = True
-                self.reversing = i
-                self.reverse_left = rev["duration"]
-                self.parked = -2
+                self._start_reverse(i)
                 break
         self.bottom = nxt
 
@@ -124,12 +147,12 @@ class ScrollSim:
 
     def copy_state(self):
         return (self.bottom, self.parked, self.reversing, self.reverse_left, self.started_at, self.time,
-                tuple(s["done"] for s in self.stops), tuple(r["done"] for r in self.reverses))
+                tuple(s["done"] for s in self.stops), tuple((r["done"], r["armed"]) for r in self.reverses))
 
     def restore(self, st):
         (self.bottom, self.parked, self.reversing, self.reverse_left, self.started_at, self.time,
          stops, revs) = st
         for s, d in zip(self.stops, stops):
             s["done"] = d
-        for r, d in zip(self.reverses, revs):
-            r["done"] = d
+        for r, (d, a) in zip(self.reverses, revs):
+            r["done"], r["armed"] = d, a

@@ -46,6 +46,12 @@ const CLIMBS_PATH_2_1: String = "res://tests/fixtures/climbs_2-1.json"
 const LEVEL_SCENE_2_2: String = "res://scenes/levels/2-2.tscn"
 const LEVEL_PATH_2_2: String = "res://data/levels/2-2.json"
 const CLIMBS_PATH_2_2: String = "res://tests/fixtures/climbs_2-2.json"
+## 2-3 «Scroll infinito» (paso 14, 2026-10-23): tarjetas de una via (tambien las apiladas de las rafagas y el canal
+## del secreto A), subidas a las Historias y a la frágil del patron 13 y el pasillo del muro, sin el scroll forzado ni
+## la zona de clones.
+const LEVEL_SCENE_2_3: String = "res://scenes/levels/2-3.tscn"
+const LEVEL_PATH_2_3: String = "res://data/levels/2-3.json"
+const CLIMBS_PATH_2_3: String = "res://tests/fixtures/climbs_2-3.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -417,6 +423,15 @@ func test_every_climb_of_2_2_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 20, "Subidas del 2-2 en %s" % CLIMBS_PATH_2_2)
 	await _load(LEVEL_SCENE_2_2, LEVEL_PATH_2_2)
+	_isak.set(&"_scroll_camera", null)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_2_3_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_2_3))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 40, "Subidas del 2-3 en %s" % CLIMBS_PATH_2_3)
+	await _load(LEVEL_SCENE_2_3, LEVEL_PATH_2_3)
 	_isak.set(&"_scroll_camera", null)
 	await _measure_all(climbs)
 
