@@ -142,7 +142,9 @@ class TextFontTest(unittest.TestCase):
         self.assertIn("Bienvenido. He optimizado tu espacio.", texts)
         self.assertIn("Marcar como leído", texts)
         for text in texts:
-            missing = sorted({c for c in text if ord(c) not in chars})
+            # El salto de linea («\n», carteles del feed del Mundo 2: 2-1, 2-2 y 2-3) es un salto del Label, no
+            # un glifo de la fuente (2026-10-23).
+            missing = sorted({c for c in text if c != "\n" and ord(c) not in chars})
             self.assertEqual(missing, [], "Glifos que faltan en %r" % text)
 
     def test_metrics(self):

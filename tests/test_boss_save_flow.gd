@@ -145,12 +145,12 @@ func test_saved_victory_survives_a_restart_in_the_hub() -> void:
 	add_child_autofree(panel)
 	panel.refresh()
 	# Desde el paso 11 del Mundo 2 (2026-10-22) el 2-1 es jugable, desde el 13 el 2-2 (bloqueado hasta
-	# completar el 2-1) y desde el 14 el 2-3 (tras el 2-2); el jefe sigue «Próximamente».
+	# completar el 2-1), desde el 14 el 2-3 (tras el 2-2) y desde el 18 (2026-10-23) el jefe, tras el 2-3.
 	assert_eq(panel.get_level_state(&"2-1"), HubWorlds.STATE_AVAILABLE, "El 2-1, disponible")
 	assert_eq(panel.level_text(HubWorlds.levels(m2)[1]), "2-2 Un video más - Bloqueado", "El 2-2, tras el 2-1")
 	assert_eq(panel.level_text(HubWorlds.levels(m2)[2]), "2-3 Scroll infinito - Bloqueado", "El 2-3, tras el 2-2")
-	assert_eq(panel.level_text(HubWorlds.levels(m2)[3]), "Jefe: Autoplay - Próximamente",
-		"El jefe del Mundo 2 dice «Próximamente»")
+	assert_eq(panel.level_text(HubWorlds.levels(m2)[3]), "Jefe: Autoplay - Bloqueado",
+		"El jefe del Mundo 2, tras el 2-3")
 	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m1")), HubWorlds.STATE_COMPLETED, "Carpeta del Mundo 1")
 	assert_eq(hub2.get_background_state(), &"on", "La pieza sigue encendida")
 	assert_false(hub2.light_piece_on_arrival, "Sin volver a animarla")
@@ -185,3 +185,57 @@ func test_game_over_in_the_rematch_keeps_the_saved_victory() -> void:
 	assert_true(GameState.has_memory(&"boss_w1_l1"), "Y su recuerdo")
 	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m2")), "Y el Mundo 2")
 	assert_eq(GameState.lap, 1, "Sin cambio de vuelta")
+
+
+## Paso 18 de docs/propuesta-mundo-2.md (2026-10-23): la victoria sobre Autoplay
+## (capa boss_w2_l1 sin guardar) se guarda en Notas y al arrancar otra vez en el
+## hub siguen el 2-boss completado, la capa, la pieza ambar encendida (sin volver
+## a animarse) y el Mundo 3 desbloqueado.
+func test_saved_autoplay_victory_survives_a_restart_in_the_hub() -> void:
+	_after_1_3()
+	GameState.mark_level_completed(&"1-boss")
+	for id: StringName in [&"2-1", &"2-2", &"2-3"]:
+		GameState.mark_level_completed(id)
+	GameState.unlock_level(&"2-boss")
+	_main = MAIN_SCENE.instantiate() as LevelRunner
+	_main.start_level_id = "2-boss"
+	add_child(_main)
+	var boss := _main.get_level().get_node(^"Objects/autoplay") as Autoplay
+	boss.intro_on_arrival = false
+	await wait_physics_frames(3)
+	boss.start()
+	while not boss.is_defeated():
+		boss.take_core_hit(1)
+	await wait_physics_frames(2)
+	var defeat: BossDefeat = boss.get_defeat()
+	var t: float = 0.0
+	while t < 30.0 and not _main.is_in_hub():
+		if is_instance_valid(defeat) and defeat.get_reward() != null and defeat.get_reward().can_close():
+			defeat.get_reward().confirm()
+		await wait_physics_frames(1)
+		t += DT
+	assert_true(_main.is_in_hub(), "Vuelve al hub tras vencer a Autoplay")
+	var hub: HubRoom = _main.get_hub()
+	t = 0.0
+	while t < 10.0 and (not hub.has_arrived() or hub.is_piece_pending() or hub.is_piece_lighting()):
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(hub.get_piece_animation(2), &"on", "Pieza ambar encendida")
+	assert_true(GameState.has_memory(&"boss_w2_l1") and GameState.has_unsaved_changes(), "Recuerdo sin guardar")
+	_save_in_notas(hub)
+	_free_main()
+	GameState.reset_progress()
+	assert_true(GameState.load_game(), "Carga la partida")
+	GameState.started_from_save = true
+	_main = MAIN_SCENE.instantiate() as LevelRunner
+	add_child(_main)
+	t = 0.0
+	while t < 10.0 and not (_main.is_in_hub() and _main.get_hub().has_arrived()):
+		await wait_physics_frames(1)
+		t += DT
+	var hub2: HubRoom = _main.get_hub()
+	assert_true(GameState.is_level_completed(&"2-boss"), "2-boss completado")
+	assert_true(GameState.has_memory(&"boss_w2_l1"), "La capa Caché del Mundo 2 sigue")
+	assert_eq(hub2.get_piece_animation(2), &"on", "La pieza ambar sigue encendida")
+	assert_false(hub2.light_piece_on_arrival, "Sin volver a animarla")
+	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m3")), "Mundo 3 desbloqueado")

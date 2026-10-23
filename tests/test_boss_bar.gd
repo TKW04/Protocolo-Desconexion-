@@ -117,3 +117,50 @@ func test_text_never_names_laps() -> void:
 		assert_false(_bar.get_counter_text().contains(word))
 	assert_false(String(_boss.get_config().get("name", "")).contains("Raíz"), "Solo el nombre del jefe")
 	assert_true(notes.contains("Nunca dice vuelta"))
+
+
+# --- Paso 18 de docs/propuesta-mundo-2.md (2026-10-23): Autoplay ---
+
+## Autoplay usa el estilo «barra de reproduccion» (styles.autoplay de
+## data/hud.json): relleno = golpes que quedan / total, que baja con cada
+## golpe, sube con la cuenta que cura y llega a 0 en el golpe final; Alerta
+## Mayor sigue con sus segmentos.
+func test_autoplay_bar_is_a_playback_bar() -> void:
+	_boss = BossBase.new()
+	_boss.boss_id = &"autoplay"
+	_boss.auto_process = false
+	_boss.lap_override = 1
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_true(_bar.visible)
+	assert_eq(_bar.get_style(), "playback", "Barra de reproduccion")
+	assert_eq(_bar.get_segment_count(), 9, "Caché: 3 golpes por fase")
+	assert_almost_eq(_bar.get_playback_fraction(), 1.0, 0.001, "Llena al empezar")
+	assert_eq(_bar.get_counter_text(), "99+")
+	_boss.take_core_hit(1)
+	assert_almost_eq(_bar.get_playback_fraction(), 8.0 / 9.0, 0.001, "Baja con el golpe")
+	_boss.take_core_hit(1)
+	_boss.take_core_hit(1)
+	_boss.take_core_hit(1)
+	assert_eq(_boss.get_phase(), 2)
+	_boss.heal_hits(1)
+	assert_almost_eq(_bar.get_playback_fraction(), 6.0 / 9.0, 0.001, "La cuenta que cura la rellena")
+	assert_almost_eq(_bar.get_screen_rect().get_center().x, 640.0, 1.0, "Arriba en el centro")
+	for i: int in 6:
+		_boss.take_core_hit(1)
+	assert_almost_eq(_bar.get_playback_fraction(), 0.0, 0.001, "Vacia en el golpe final")
+	assert_true(_bar.is_hiding())
+
+
+func test_alert_major_keeps_the_segments_after_autoplay() -> void:
+	var other := BossBase.new()
+	other.boss_id = &"autoplay"
+	other.auto_process = false
+	add_child_autofree(other)
+	other.start()
+	assert_eq(_bar.get_style(), "playback")
+	other.queue_free()
+	await wait_frames(2)
+	_spawn()
+	_boss.start()
+	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda el estilo")

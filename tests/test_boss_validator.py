@@ -237,19 +237,119 @@ class ArenaSchemaTest(unittest.TestCase):
 
 
 class AutoplayArenaTest(unittest.TestCase):
-    """Arena 2-boss de Autoplay (pasos 15-16 de docs/propuesta-mundo-2.md, 2026-10-23): esquema y
-    comprobaciones basicas (su validador completo es el paso 17)."""
+    """Arena 2-boss de Autoplay (pasos 15-17 de docs/propuesta-mundo-2.md, 2026-10-23): esquema, comprobaciones
+    basicas y validador completo (§7.2: cinta, cabezal, laser a la pantalla, ventanas, avisos a x2, pausa y
+    energia torpe por acceso), con casos negativos sinteticos."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.boss = load(os.path.join(ROOT, "data", "bosses", "autoplay.json"))
 
     def setUp(self):
         self.level = load(os.path.join(ROOT, "data", "levels", "2-boss.json"))
+
+    def run_arena(self, boss=None, level=None):
+        return vb.validate_arena(level or self.level, ROOT, boss=boss or self.boss)
+
+    def messages(self, result):
+        return " | ".join(e["message"] for e in result["errors"])
 
     def test_schema_ok_and_fits_on_screen(self):
         self.assertEqual(vls.validate_level(self.level, ROOT), [])
         self.assertEqual((len(self.level["grid"][0]) * 64, len(self.level["grid"]) * 64), (1280, 704))
         result = vl.validate(self.level, ROOT)
         self.assertTrue(result["ok"], result["errors"])
-        self.assertEqual(len(result["warnings"]), 1, "solo el aviso del paso 17")
+        self.assertEqual(result["warnings"], [], "validador completo: sin el aviso de los pasos 15-16")
         self.assertLessEqual(result["boss"]["charger_worst_tiles"], 3.5)
+
+    def test_energy_margins_of_the_clumsy_fight_in_every_access(self):
+        result = self.run_arena()
+        energy = result["boss"]["energy"]
+        self.assertEqual(sorted(energy), ["1", "2", "3"])
+        for lap, scenarios in energy.items():
+            self.assertEqual(sorted(scenarios), ["base", "todo al maximo", "tope del acceso"])
+            for name, e in scenarios.items():
+                self.assertGreaterEqual(e["min_margin"], 20.0, (lap, name))
+        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [60.0, 60.0, 70.0])
+
+    def test_conveyor_reaches_the_bar_and_every_slot_is_hit(self):
+        rep = self.run_arena()["boss"]
+        self.assertEqual(rep["bar_cells"], [10, 10])
+        conv = rep["conveyor"]
+        self.assertLess(conv["lo_px"], conv["hi_px"])
+        self.assertLessEqual(conv["worst_wait_s"], 1.7)
+        self.assertEqual(rep["laser"]["slots"], {"left": True, "center": True, "right": True})
+        self.assertGreater(rep["laser"]["floor_cells"], 0)
+
+    def test_windows_from_the_bar_with_k_2_and_from_the_floor_in_cache(self):
+        rep = self.run_arena()["boss"]
+        self.assertEqual(len(rep["aw_windows"]), 9)
+        for w in rep["aw_windows"]:
+            self.assertLessEqual(w["need_bar_s"], w["window_s"] + 1e-6, w)
+            if w["lap"] == "1":
+                self.assertTrue(w["floor_required"])
+                self.assertLessEqual(w["need_floor_s"], w["window_s"] + 1e-6, w)
+        third = [w for w in rep["aw_windows"] if w["phase"] == 3]
+        self.assertTrue(all(abs(w["card_wait_s"] * 2 - rep["conveyor"]["worst_wait_s"]) < 0.01 for w in third),
+                        "la cinta va a x2 en la fase 3")
+
+    def test_telegraphs_also_at_x2(self):
+        rep = self.run_arena()["boss"]
+        third = [row for row in rep["clips"] if row["phase"] == 3][0]
+        self.assertEqual(third["speed_scale"], 2.0)
+        self.assertTrue(all(frames >= 6 for _, frames, _ in third["clips"]))
+        boss = copy.deepcopy(self.boss)
+        boss["clips"]["rays"]["anticipation_frames"] = 5
+        self.assertIn("fase 3 (x2): aviso de 'rays' de 5", self.messages(self.run_arena(boss)))
+
+    def test_fewer_cards_do_not_fit_the_window_from_the_floor(self):
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["conveyor"]["cards"] = 2
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 1, fase 1: desde el suelo", msg)
+        self.assertNotIn("vuelta 2, fase 1: desde el suelo", msg, "Kernel solo informa")
+
+    def test_bar_out_of_reach_of_the_cards(self):
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["bar"]["surface_row"] = 4
+        self.assertIn("cinta: no hay altura de tarjeta", self.messages(self.run_arena(boss)))
+
+    def test_fast_playhead_and_short_window(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["2"]["playhead_window_speed_tiles_s"] = 3.0
+        boss["phase3"]["window_s"] = 2.5
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 2: el cabezal en marcha avanza", msg)
+        self.assertIn("vuelta 1, fase 3: la ventana dura 2.50", msg)
+
+    def test_laser_rects_out_of_reach(self):
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["damage_rects"] = [[6, 1, 8, 1]]
+        self.assertIn("laser: desde el slot", self.messages(self.run_arena(boss)))
+
+    def test_slow_ray_dodge_and_sweep_too_slow_for_the_dash(self):
+        boss = copy.deepcopy(self.boss)
+        boss["clips"]["wave"]["speed_px_s"] = 300.0
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("fase 1: 'wave' a 300 px/s tarda", msg)
+
+    def test_short_pause_and_energy_peak(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["3"]["mark_duration_s"] = 0.9
+        boss["validation_model"]["laps"]["1"]["debug_s"] = [12.0, 4.0, 4.0]
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 3: en la marca de 0.90 s caben", msg)
+        self.assertIn("base, vuelta 1, fase 1: pico de la pelea torpe", msg)
+
+    def test_model_must_add_the_heals_of_phase_2(self):
+        boss = copy.deepcopy(self.boss)
+        boss["validation_model"]["heals"] = [0, 0, 0]
+        self.assertIn("las ventanas suman 4 golpes y la fase tiene 3", self.messages(self.run_arena(boss)))
+
+    def test_one_boss_output_does_not_use_the_autoplay_model(self):
+        result = vb.validate_arena(load(LEVEL), ROOT)
+        self.assertNotIn("aw_windows", result["boss"])
+        self.assertIn("windows", result["boss"])
 
     def test_taller_arena_does_not_fit(self):
         level = copy.deepcopy(self.level)

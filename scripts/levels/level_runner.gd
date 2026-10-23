@@ -154,6 +154,8 @@ var _companion: EcoCompanion
 var _pause_menu: PauseMenu
 ## El hub siguiente enciende la pieza del fondo al llegar (carpeta recien completada).
 var _light_piece_next: bool = false
+## Mundo de esa pieza (HubRoom.light_piece_world; 2026-10-23, pieza ambar).
+var _light_piece_world_next: int = 0
 
 
 func _ready() -> void:
@@ -592,7 +594,9 @@ func _show_hub(level_id: String, attention_points: int, rollback_report: Diction
 	_hub.hold_arrival = true
 	_hub.rollback_report = rollback_report
 	_hub.light_piece_on_arrival = _light_piece_next
+	_hub.light_piece_world = _light_piece_world_next if _light_piece_next else 0
 	_light_piece_next = false
+	_light_piece_world_next = 0
 	_hub.level_handler = _on_hub_level_requested
 	_holder.add_child(_hub)
 	hub_shown.emit(level_id, attention_points)
@@ -794,6 +798,7 @@ func _on_level_completed(level_id: String) -> void:
 	_record_completion(level_id)
 	_light_piece_next = not world_entry.is_empty() and not was_completed \
 			and HubWorlds.folder_state(world_entry) == HubWorlds.STATE_COMPLETED
+	_light_piece_world_next = int(world_entry.get("world", 0)) if _light_piece_next else 0
 	_fade_out_then(_show_hub.bind(level_id, GameState.attention_points))
 
 

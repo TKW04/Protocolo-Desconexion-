@@ -30,6 +30,10 @@
 		"page_dot_row": 10,
 		"background": "res://assets/sprites/hub/hub_bg_frames.tres",
 		"background_on_world": 1,
+		"_pieces_notes": "Piezas del fondo de otros mundos (2026-10-23, paso 18 de docs/propuesta-mundo-2.md): capa encima del fondo (AnimatedSprite2D en position_px) con las animaciones hidden (mundo bloqueado), off (desbloqueado sin completar: el contorno parpadea) y on (carpeta completada: la pieza en su sitio, encendida). Al llegar tras completar por primera vez su carpeta (el jefe), se enciende con el mismo destello que la pieza 1 (light_piece_world de HubRoom). Mundo 2: pieza ambar (arriba a la izquierda de la foto), arte PROVISIONAL por script de tools/gen_hub_piece_w2.py (paleta B).",
+		"pieces": [
+			{"world": 2, "frames": "res://assets/sprites/hub_w2/hub_piece_w2_frames.tres", "position_px": [0, 0]}
+		],
 		"piece_light_s": 0.9,
 		"piece_flashes": 3,
 		"dock": {
@@ -154,7 +158,7 @@
 			{"id": "2-1", "name": "Para ti", "laps": [1], "playable": true},
 			{"id": "2-2", "name": "Un video más", "laps": [1], "playable": true, "available_text": "Siguiente video"},
 			{"id": "2-3", "name": "Scroll infinito", "laps": [1], "playable": true, "available_text": "Siguiente video"},
-			{"id": "2-boss", "name": "Autoplay", "kind": "boss", "laps": [1], "playable": false}
+			{"id": "2-boss", "name": "Autoplay", "kind": "boss", "laps": [1], "playable": true}
 		]},
 		{"id": "m3", "world": 3, "name": "La Vitrina", "col": 16, "unlocked": false, "unlocked_by": ["2-boss"], "levels": []},
 		{"id": "m4", "world": 4, "name": "El Chat", "unlocked": false, "levels": []},

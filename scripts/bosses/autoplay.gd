@@ -567,12 +567,36 @@ func _fire_fan(shots: Dictionary, scale_x: float) -> void:
 		shot.speed_px_s = float(shots.get("speed_px_s", 480.0)) * scale_x
 		shot.size_px = Vector2(float(size[0]), float(size[1]))
 		shot.contact_damage = float(_clips_cfg.get("contact_damage", 10.0))
-		shot.travel_px = float(shots.get("travel_px", 1100.0))
+		shot.travel_px = minf(float(shots.get("travel_px", 1100.0)), _travel_to_terrain(origin, heading))
 		shot.target = isak
 		shot.auto_process = false
 		_attacks.add_child(shot)
 		shot.global_position = origin
 		_shots.append(shot)
+
+
+## Distancia (px) desde `origin` (global) en la direccion `heading` hasta el
+## terreno macizo de la arena (muros, techo y suelo: el interior es el carril del
+## suelo hasta la fila 1). Los proyectiles de la «Cuenta atras» atraviesan la
+## barra A PROPOSITO (es de una via, como para los rayos; si la pararan, la barra
+## taparia casi todo el abanico, que sale del pie de la pantalla justo encima)
+## y se apagan al llegar al terreno macizo (2026-10-23, paso 17).
+func _travel_to_terrain(origin: Vector2, heading: Vector2) -> float:
+	var floor_lane: Dictionary = (_arena.get("lanes", {}) as Dictionary).get("floor", {})
+	var lo: Vector2 = _to_global(Vector2(float(floor_lane.get("from_col", 1)) * _tile, _tile))
+	var hi: Vector2 = _to_global(Vector2(float(int(floor_lane.get("to_col", 18)) + 1) * _tile,
+			float(floor_lane.get("surface_row", 10)) * _tile))
+	var h: Vector2 = heading.normalized()
+	var best: float = INF
+	if h.x > 0.0001:
+		best = minf(best, (hi.x - origin.x) / h.x)
+	elif h.x < -0.0001:
+		best = minf(best, (lo.x - origin.x) / h.x)
+	if h.y > 0.0001:
+		best = minf(best, (hi.y - origin.y) / h.y)
+	elif h.y < -0.0001:
+		best = minf(best, (lo.y - origin.y) / h.y)
+	return maxf(best, 0.0)
 
 
 ## Avanza las olas, los rayos y los proyectiles `dt` s del mundo (no procesan

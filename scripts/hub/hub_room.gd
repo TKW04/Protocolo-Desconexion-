@@ -98,6 +98,10 @@ var rollback_report: Dictionary = {}
 ## pieza espera apagada a que termine la llegada y entonces se enciende con un
 ## destello (piece_light_s, piece_flashes de la seccion room).
 var light_piece_on_arrival: bool = false
+## Mundo de la pieza que se enciende al llegar (0 = la del fondo,
+## background_on_world). Lo da LevelRunner con light_piece_on_arrival
+## (2026-10-23, paso 18 de docs/propuesta-mundo-2.md: pieza ambar del Mundo 2).
+var light_piece_world: int = 0
 
 var _room: Dictionary = HubData.section("room")
 var _isak: Isak
@@ -120,6 +124,9 @@ var _game_over_intro: GameOverIntro
 var _calc_intro: CalcIntro
 var _piece_pending: bool = false
 var _piece_lighting: bool = false
+## Piezas del fondo de otros mundos (room.pieces): capas encima del fondo con
+## animaciones hidden (mundo bloqueado), off (desbloqueado, sin completar) y on.
+var _pieces: Dictionary[int, AnimatedSprite2D] = {}
 
 
 func _enter_tree() -> void:
@@ -434,6 +441,16 @@ func _build_room() -> void:
 	_background.centered = false
 	_background.sprite_frames = load(String(_room.get("background", ""))) as SpriteFrames
 	room.add_child(_background)
+	for entry: Dictionary in _room.get("pieces", []):
+		var piece := AnimatedSprite2D.new()
+		var world: int = int(entry.get("world", 0))
+		piece.name = "Piece%d" % world
+		piece.centered = false
+		piece.sprite_frames = load(String(entry.get("frames", ""))) as SpriteFrames
+		var at: Array = entry.get("position_px", [0, 0])
+		piece.position = Vector2(float(at[0]), float(at[1]))
+		room.add_child(piece)
+		_pieces[world] = piece
 	refresh_background()
 	_build_dock(room, screen, floor_y)
 	var dot_path: String = String(_room.get("page_dot", ""))
@@ -472,40 +489,70 @@ func is_piece_pending() -> bool:
 func _light_piece() -> void:
 	_piece_pending = false
 	_piece_lighting = true
+	var world: int = get_light_world()
+	var sprite: AnimatedSprite2D = get_piece_sprite(world)
 	var flashes: int = maxi(int(_room.get("piece_flashes", 3)), 1)
 	var total: float = maxf(float(_room.get("piece_light_s", 0.9)), 0.05)
 	var step: float = total / float(flashes * 2)
 	var tween: Tween = create_tween()
 	for i: int in flashes:
 		tween.tween_callback(func() -> void:
-			if _background != null and _background.sprite_frames.has_animation(&"on"):
-				_background.play(&"on"))
+			if sprite != null and sprite.sprite_frames.has_animation(&"on"):
+				sprite.play(&"on"))
 		tween.tween_interval(step)
 		tween.tween_callback(func() -> void:
-			if _background != null and _background.sprite_frames.has_animation(&"off"):
-				_background.play(&"off"))
+			if sprite != null and sprite.sprite_frames.has_animation(&"off"):
+				sprite.play(&"off"))
 		tween.tween_interval(step)
 	tween.tween_callback(func() -> void:
 		_piece_lighting = false
 		refresh_background()
-		wallpaper_piece_lit.emit(int(_room.get("background_on_world", 1))))
+		wallpaper_piece_lit.emit(world))
 
 
-## Fondo: pieza 1 encendida si la carpeta de background_on_world esta completada.
+## Mundo de la pieza que se enciende al llegar.
+func get_light_world() -> int:
+	return light_piece_world if light_piece_world > 0 else int(_room.get("background_on_world", 1))
+
+
+## Sprite de la pieza del mundo `world` (el fondo para background_on_world; la
+## capa de room.pieces para los demas; null si no hay).
+func get_piece_sprite(world: int) -> AnimatedSprite2D:
+	if world == int(_room.get("background_on_world", 1)):
+		return _background
+	return _pieces.get(world, null)
+
+
+## Animacion actual de la pieza del mundo `world` (pruebas).
+func get_piece_animation(world: int) -> StringName:
+	var sprite: AnimatedSprite2D = get_piece_sprite(world)
+	return sprite.animation if sprite != null else &""
+
+
+## Fondo: pieza 1 encendida si la carpeta de background_on_world esta completada;
+## las de room.pieces: on (carpeta completada), off (mundo desbloqueado: el
+## contorno parpadea) u hidden (bloqueado).
 func refresh_background() -> void:
 	if _background == null or _background.sprite_frames == null:
 		return
 	var on_world: int = int(_room.get("background_on_world", 1))
-	var lit: bool = false
+	var light_world: int = get_light_world()
 	for entry: Dictionary in HubWorlds.worlds():
-		if int(entry.get("world", 0)) == on_world:
-			lit = HubWorlds.folder_state(entry) == HubWorlds.STATE_COMPLETED
-	if lit and light_piece_on_arrival and not _arrived and not _piece_lighting:
-		_piece_pending = true
-		lit = false
-	var anim: StringName = &"on" if lit else &"off"
-	if _background.sprite_frames.has_animation(anim) and (_background.animation != anim or not _background.is_playing()):
-		_background.play(anim)
+		var world: int = int(entry.get("world", 0))
+		var sprite: AnimatedSprite2D = get_piece_sprite(world)
+		if sprite == null or sprite.sprite_frames == null:
+			continue
+		var lit: bool = HubWorlds.folder_state(entry) == HubWorlds.STATE_COMPLETED
+		if lit and light_piece_on_arrival and world == light_world and not _arrived and not _piece_lighting:
+			_piece_pending = true
+			lit = false
+		var anim: StringName = &"on" if lit else &"off"
+		if world != on_world and not lit and not HubWorlds.is_world_unlocked(entry):
+			anim = &"hidden"
+		if world == light_world and _piece_lighting:
+			continue
+		if sprite.sprite_frames.has_animation(anim) and (sprite.animation != anim or not sprite.is_playing()):
+			sprite.play(anim)
 
 
 ## Dock de tiles: fila del suelo (bordes y centro) y relleno hasta el borde de

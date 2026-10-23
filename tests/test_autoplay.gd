@@ -188,7 +188,7 @@ func test_bar_is_one_way_and_screen_is_not_solid() -> void:
 func test_conveyor_cards_rise_and_wrap_without_touching_the_ceiling() -> void:
 	await _arena()
 	var cards: Array[MovingPlatform] = _boss.get_conveyor_cards()
-	assert_eq(cards.size(), 4, "Dos tarjetas por columna")
+	assert_eq(cards.size(), 6, "Tres tarjetas por columna (paso 17: la espera a una tarjeta util cabe en la ventana)")
 	var card: MovingPlatform = cards[0]
 	# Con sync_to_physics la posicion del nodo va un paso por detras: origen + desplazamiento.
 	var y0: float = card.get_origin().y + card.get_offset().y
@@ -568,6 +568,40 @@ func test_countdown_clip_fires_a_fan_of_three_after_3_2_1() -> void:
 	assert_eq(shots.size(), 3, "Tres proyectiles")
 	for shot: NotificationShot in shots:
 		assert_lt(shot.heading.x, 0.0, "Hacia Isak (a la izquierda)")
+
+
+## Paso 17 (arreglo, 2026-10-23): los proyectiles atraviesan la barra (de una
+## via, a proposito) y se apagan al llegar al terreno macizo (aqui, el suelo o el
+## muro), no cruzan la arena entera.
+func test_countdown_shots_cross_the_bar_and_stop_at_the_terrain() -> void:
+	await _arena(1, true)
+	_place_isak(3, 9)
+	_boss.start()
+	_to_phase(2)
+	_boss.start_clip(Autoplay.CLIP_COUNTDOWN)
+	_advance(0.8)
+	var shots: Array[NotificationShot] = _boss.get_shots()
+	assert_eq(shots.size(), 3)
+	var screen: Rect2 = _boss.get_screen_rect()
+	var origin := Vector2(screen.get_center().x, screen.end.y)
+	var ends: Array[Vector2] = []
+	for shot: NotificationShot in shots:
+		assert_lt(shot.travel_px, 1100.0 - 1.0, "Recorrido recortado por el terreno")
+		ends.append(origin + shot.heading.normalized() * shot.travel_px)
+	var floor_y: float = _level.global_position.y + 10.0 * TILE
+	var wall_x: float = _level.global_position.x + 1.0 * TILE
+	for end: Vector2 in ends:
+		assert_gt(end.y, _boss.get_bar_surface_y(), "Pasa por debajo de la barra (la atraviesa)")
+		assert_true(absf(end.y - floor_y) < 1.0 or absf(end.x - wall_x) < 1.0, "Termina en el suelo o en el muro: %s" % end)
+	var seen_low: float = -INF
+	for i: int in 200:
+		_advance(DT)
+		for shot: NotificationShot in _boss.get_shots():
+			seen_low = maxf(seen_low, shot.global_position.y)
+		if _boss.get_shots().is_empty():
+			break
+	assert_true(_boss.get_shots().is_empty(), "Se apagan al llegar al terreno")
+	assert_lte(seen_low, floor_y + 1.0, "Nunca se hunden en el suelo")
 
 
 # --- Paso 16: fase 3 «x2» ---

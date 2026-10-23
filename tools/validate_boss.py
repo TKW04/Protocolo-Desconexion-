@@ -792,7 +792,8 @@ def energy_lap(arena, boss, lap, rules, laser_damage, errors, scenario, root):
             "total_detour_s": round(sum(ph["detour_s"] for ph in phases), 2)}
 
 
-def check_energy(arena, boss, base_rules, upgrades, errors, report, root):
+def check_energy(arena, boss, base_rules, upgrades, errors, report, root, lap_fn=None):
+    lap_fn = lap_fn or energy_lap
     catalog = base_rules.upgrade_catalog
     out = {}
     for lap in sorted(boss.get("laps", {}), key=int):
@@ -806,7 +807,7 @@ def check_energy(arena, boss, base_rules, upgrades, errors, report, root):
         lap_out = {}
         for name, ups in scenarios:
             rules, damage = energy_rules(base_rules, ups)
-            res = energy_lap(arena, boss, int(lap), rules, damage, errors, name, root)
+            res = lap_fn(arena, boss, int(lap), rules, damage, errors, name, root)
             if res is not None:
                 lap_out[name] = res
         out[lap] = lap_out
@@ -822,6 +823,8 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
     errors, warnings = [], []
     if boss is None:
         boss = load_json(os.path.join(root, "data", "bosses", "%s.json" % level["boss"]))
+    if boss.get("id") == "autoplay":
+        return validate_autoplay_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
     if boss.get("id") != "alert_major":
         return validate_basic_arena(level, boss, root, physics_path, jump_efficiency, limit)
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
@@ -846,16 +849,25 @@ SCREEN_PX = (1280, 720)
 
 def validate_basic_arena(level, boss, root=ROOT, physics_path=None,
                          jump_efficiency=vl.DEFAULT_JUMP_EFFICIENCY, limit=vl.DEFAULT_LIMIT):
-    """Comprobaciones basicas de la arena de un jefe sin modelo propio todavia (Autoplay, 2026-10-23, pasos
-    15-16 de docs/propuesta-mundo-2.md; su validador completo —cabezal, ventanas, cuenta y energia torpe por
-    acceso— es el paso 17): cabe entera en pantalla, desde P se alcanza el carril del suelo, cada celda del
-    suelo tiene un cargador a arena.charger_max_tiles (3,5) o menos y todos los avisos de sus clips duran de 6 a
-    12 cuadros. Deja un aviso de lo que falta."""
+    """Comprobaciones basicas de la arena de un jefe sin modelo propio (las de Autoplay hasta su validador
+    completo, paso 17 de docs/propuesta-mundo-2.md: validate_autoplay_arena las incluye): cabe entera en
+    pantalla, desde P se alcanza el carril del suelo, cada celda del suelo tiene un cargador a
+    arena.charger_max_tiles (3,5) o menos y todos los avisos de sus clips duran de 6 a 12 cuadros. Deja un aviso
+    de que falta el validador completo."""
     errors, warnings = [], []
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
     rules.set_level_debug_world_scale(level.get("debug_world_scale"))
     arena = Arena(level, boss, rules)
     report = {"boss": boss.get("id"), "reachable_cells": len(arena.reachable)}
+    _basic_checks(arena, boss, root, errors, report)
+    warnings.append({"message": "validador completo de %s (cabezal, ventanas, cuenta y energia torpe por acceso) "
+                                "pendiente" % boss.get("id"),
+                     "row": None, "col": None, "object": None})
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+
+
+def _basic_checks(arena, boss, root, errors, report):
+    """Pantalla, carril del suelo, cargadores a arena.charger_max_tiles y avisos de los clips (6-12 cuadros)."""
     w, h = arena.cols * arena.T, arena.rows * arena.T
     if w > SCREEN_PX[0] or h > SCREEN_PX[1]:
         _err(errors, "la arena mide %d x %d px y no cabe entera en %d x %d" % (w, h, SCREEN_PX[0], SCREEN_PX[1]))
@@ -891,10 +903,382 @@ def validate_basic_arena(level, boss, root=ROOT, physics_path=None,
         if not 6 <= frames <= 12:
             _err(errors, "aviso de %s de %d cuadros (regla: de 6 a 12)" % (name, frames))
     report["telegraphs"] = [(n, "%d cuadros" % f) for n, f in tele]
-    warnings.append({"message": "validador completo de %s (cabezal, ventanas, cuenta y energia torpe por acceso) "
-                                "pendiente: paso 17 de docs/propuesta-mundo-2.md" % boss.get("id"),
-                     "row": None, "col": None, "object": None})
+
+
+# --- Autoplay (Mundo 2; paso 17 de docs/propuesta-mundo-2.md, §7.2) ---
+#
+# Valores de juego: data/bosses/autoplay.json (arena, clips, fases, laps y validation_model), data/levels/2-boss.json
+# (geometria, cargadores, debug_drain_scale y debug_world_scale) y los de Rules (fisica, salto, golpe al suelo,
+# laser, Debug, dash y mejoras): nada se copia aqui. Reglas:
+#   A. Las basicas (_basic_checks): pantalla, carril del suelo, cargadores a <= 3,5 tiles y avisos de 6-12 cuadros.
+#   B. Carriles (suelo y barra): la ola del suelo no alcanza a Isak de pie en la barra ni el barrido alto al del
+#      suelo (refugio); un clip a la vez (el codigo los encadena). Olas, barridos y proyectiles se atraviesan con el
+#      dash a x1 y a la velocidad de cada fase (lo que tardan en pasar por Isak <= invulnerabilidad del dash); un
+#      rayo se esquiva dentro de su aviso; cada tanda de rayos deja columnas libres.
+#   C. Avisos por fase: los de los clips en cuadros del MUNDO tambien a la speed_scale de la fase 3 (x2): el codigo
+#      no los acelera; con el Debug duran 1 / debug_world_scale mas en tiempo real.
+#   D. Cinta de tarjetas (unica subida a la barra): con el salto del validador hay una altura de tarjeta desde la
+#      que se sube del suelo (altura <= salto) y se llega a la barra (subida restante <= salto); el modelo de
+#      movimiento con las tarjetas a esa altura alcanza la barra desde P; espera maxima a una tarjeta util
+#      (tiempo del mundo) en cada fase.
+#   E. Cabezal: cada slot y todo el recorrido de la ventana caen en la barra alcanzable, y los pies de Isak en la
+#      barra quedan dentro de la caja del golpe (playhead_box_px); con el cabezal en marcha (Kernel y Raíz), lo
+#      que avanza durante la caida del golpe (con el Debug, que lo exige) cabe en la caja (se puede adelantar).
+#   F. Laser a la pantalla extendida (arena.damage_rects): desde cada slot de la barra y desde alguna celda del
+#      suelo (el haz a la altura del celular, dentro del rectangulo o hacia el, a laser_range sin terreno).
+#   G. Ventanas con k = window_k desde la peor celda de la barra (Isak en la barra, la solucion de §5.4) hasta el
+#      slot de la fase (fase 1: window_slot; 2-3: el peor de seek_slots), por acceso: ventana (s del mundo; fase 2 =
+#      la cuenta laps.<n>.countdown_s) >= k x (recorrido + carga del Debug + golpe hasta aterrizar), con la mejor
+#      estrategia de _window_need. El primer laser va DENTRO de la pausa, que congela la ventana: lo cubre H.
+#   G2. Subida desde el suelo (climb_k, accesos de climb_required_laps): desde la peor celda del suelo, correr a la
+#      cinta mas conveniente + espera a la tarjeta + salto a la barra + recorrido por la barra + Debug + golpe cabe
+#      en la ventana. En los demas accesos solo se informa (hay que esperar la ventana en la barra).
+#   H. Pausa (mark_duration_s, sin el Debug: el caso peor) >= laseres de la peor ventana torpe (check_mark).
+#   I. Energia torpe por acceso (base, tope del acceso y todo al maximo): pico por ventana <= maximo - min_margin.
+
+def _rects_px(cells_rects, T):
+    return [(float(c) * T, float(r) * T, float(w) * T, float(h) * T) for c, r, w, h in cells_rects]
+
+
+def autoplay_conveyor(boss, rules, T):
+    """Alturas utiles de la cinta y espera maxima (s del mundo a x1) a una tarjeta util."""
+    arena = boss.get("arena", {})
+    conv = arena.get("conveyor", {})
+    bottom, top = float(conv.get("bottom_row", 10)), float(conv.get("top_row", 3))
+    length = (bottom - top) * T
+    cards = max(int(conv.get("cards", 2)), 1)
+    speed = float(conv.get("speed_tiles_s", 0.5)) * T
+    bar_rise = (bottom - float(arena.get("bar", {}).get("surface_row", 6))) * T
+    jump = rules.jump_height
+    lo, hi = bar_rise - jump, jump
+    spacing = length / cards
+    worst = 0.0
+    if lo <= hi + EPS and speed > 0:
+        steps = 400
+        for i in range(steps):
+            phase = spacing * i / steps
+            best = None
+            for k in range(cards):
+                h = (phase + k * spacing) % length
+                if lo - EPS <= h <= hi + EPS:
+                    t = 0.0
+                elif h < lo:
+                    t = (lo - h) / speed
+                else:
+                    t = (length - h + lo) / speed
+                best = t if best is None else min(best, t)
+            worst = max(worst, best)
+    mid = (max(lo, 0.0) + min(hi, length)) / 2.0
+    snap_row = int(round(bottom - mid / T))
+    return {"lo_px": lo, "hi_px": hi, "bar_rise_px": bar_rise, "length_px": length, "cards": cards,
+            "spacing_px": spacing, "speed_px_s": speed, "worst_wait_s": worst, "snapshot_row": snap_row,
+            "columns": [list(map(int, c)) for c in conv.get("columns", [])]}
+
+
+def conveyor_level(level, conveyor):
+    """Copia del nivel con las tarjetas de la cinta quietas en snapshot_row (plataformas de una via '-')."""
+    g = copy.deepcopy(level)
+    grid = [list(row) for row in g["grid"]]
+    r = conveyor["snapshot_row"]
+    for a, b in conveyor["columns"]:
+        for c in range(a, b + 1):
+            if grid[r][c] == ".":
+                grid[r][c] = "-"
+    g["grid"] = ["".join(row) for row in grid]
+    return g
+
+
+def _laser_hits(arena, node, facing, rects):
+    """El laser de Isak de pie en `node` mirando a `facing` da en alguno de `rects` (px: x, y, w, h)."""
+    px, py = arena.phone(node, facing)
+    for x, y, w, h in rects:
+        if x <= px <= x + w and y <= py <= y + h:
+            return True
+        if not y <= py <= y + h:
+            continue
+        edge = x if facing > 0 else x + w
+        dx = edge - px
+        if dx * facing < 0 or abs(dx) > arena.rules.laser_range + EPS:
+            continue
+        c0, c1 = sorted((int(px // arena.T), int(edge // arena.T)))
+        if not any(arena.solid(c, node[1]) for c in range(c0, c1 + 1)):
+            return True
+    return False
+
+
+def _clip_checks(arena, boss, root, errors, report):
+    """B y C: carriles, dash a traves de cada clip y avisos por fase."""
+    rules, T = arena.rules, arena.T
+    banner = load_json(os.path.join(root, "data", "enemies", "spam_banner.json"))
+    bell = load_json(os.path.join(root, "data", "enemies", "alarm_bell.json"))
+    clips = boss.get("clips", {})
+    lanes = boss.get("arena", {}).get("lanes", {})
+    feet = {k: float(v["surface_row"]) * T for k, v in lanes.items()}
+    dmg_w, dmg_h = (float(v) for v in banner["damage_size"])
+    dmg_bottom = float(banner["damage_bottom_px"])
+    for lane in ("floor", "bar"):
+        if lane not in feet:
+            _err(errors, "falta el carril '%s' en arena.lanes" % lane)
+            return
+    for lane, other in (("floor", "bar"), ("bar", "floor")):
+        top, bottom = feet[lane] - dmg_bottom - dmg_h, feet[lane] - dmg_bottom
+        if top < feet[other] and bottom > feet[other] - rules.hitbox_h:
+            _err(errors, "el %s del carril '%s' alcanza a Isak de pie en '%s' (no hay refugio)"
+                 % ("barrido" if lane == "bar" else "ola", lane, other))
+    fps = anim_fps(boss)
+    rays = clips.get("rays", {})
+    shots = clips.get("shots", {})
+    floor_cols = int(lanes["floor"]["to_col"]) - int(lanes["floor"]["from_col"]) + 1
+    if int(rays.get("count", 3)) >= floor_cols:
+        _err(errors, "rayos: %d por tanda y %d columnas en el suelo (sin hueco seguro)" % (rays.get("count", 3), floor_cols))
+    ray_half = float(bell.get("damage_width_px", 48.0)) / 2.0
+    escape = (ray_half + rules.hitbox_w / 2.0) / rules.run_speed
+    out = []
+    for p in (1, 2, 3):
+        phase = boss.get("phase%d" % p, {})
+        scale = float(phase.get("speed_scale", 1.0))
+        names = phase.get("clips", [])
+        tele = {"wave": int(banner.get("anticipation_frames", 9)), "sweep_high": int(banner.get("anticipation_frames", 9)),
+                "rays": int(rays.get("anticipation_frames", 9)), "countdown_shots": int(shots.get("warn_frames", 9))}
+        row = {"phase": p, "speed_scale": scale, "clips": []}
+        for name in names:
+            if name not in tele:
+                _err(errors, "fase %d: clip desconocido '%s'" % (p, name))
+                continue
+            frames = tele[name]
+            if not TELEGRAPH_FRAMES[0] <= frames <= TELEGRAPH_FRAMES[1]:
+                _err(errors, "fase %d (x%g): aviso de '%s' de %d cuadros del mundo (regla: de 6 a 12)" % (p, scale, name, frames))
+            warn_s = frames / fps
+            if name in ("wave", "sweep_high"):
+                speed = float(clips.get(name, {}).get("speed_px_s", banner["sweep_speed_px_s"])) * scale
+                pass_s = (dmg_w + rules.hitbox_w) / max(speed, 1.0)
+                if pass_s > rules.dash_invulnerable_s + EPS:
+                    _err(errors, "fase %d: '%s' a %g px/s tarda %.2f s en pasar por Isak y el dash es invulnerable %.2f s"
+                         % (p, name, speed, pass_s, rules.dash_invulnerable_s))
+                answer = "dash %.2f s" % pass_s
+            elif name == "countdown_shots":
+                speed = float(shots.get("speed_px_s", 480.0)) * scale
+                pass_s = (float(shots.get("size_px", [64, 32])[0]) + rules.hitbox_w) / max(speed, 1.0)
+                if pass_s > rules.dash_invulnerable_s + EPS:
+                    _err(errors, "fase %d: un proyectil de la cuenta tarda %.2f s en pasar por Isak (dash %.2f s)"
+                         % (p, pass_s, rules.dash_invulnerable_s))
+                answer = "dash %.2f s" % pass_s
+            else:
+                if escape > warn_s + EPS:
+                    _err(errors, "fase %d: salir de la columna de un rayo cuesta %.2f s y el aviso dura %.2f s" % (p, escape, warn_s))
+                answer = "salir de la columna %.2f s" % escape
+            row["clips"].append((name, frames, answer))
+        out.append(row)
+    report["clips"] = out
+    report["debug_world_scale"] = round(rules.debug_world_scale, 3)
+    if not 0.0 < rules.debug_world_scale <= 1.0 + EPS:
+        _err(errors, "con el Debug el mundo va a x%g: los avisos durarian menos que sin el Debug" % rules.debug_world_scale)
+
+
+def _phase_window(boss, lap_entry, p):
+    if p == 2:
+        return float(lap_entry.get("countdown_s", 5.0))
+    return float(boss.get("phase%d" % p, {}).get("window_s", 5.0))
+
+
+def _phase_slots(boss, p):
+    phase = boss.get("phase%d" % p, {})
+    if phase.get("seek"):
+        return list(phase.get("seek_slots", []))
+    return [phase.get("window_slot", "center")]
+
+
+def _bar_travel(rules, T, a_x, b_x, head_v_tiles):
+    """Recorrido (s reales) de x=a a x=b por la barra con el cabezal en marcha a head_v_tiles (tiles/s del
+    mundo; con el Debug activo va a la escala del mundo): en el caso peor se aleja de Isak."""
+    v = head_v_tiles * T * rules.debug_world_scale
+    return abs(a_x - b_x) * T / max(rules.run_speed - v, 1.0)
+
+
+def validate_autoplay_arena(level, boss, root=ROOT, upgrades=(), physics_path=None,
+                            jump_efficiency=vl.DEFAULT_JUMP_EFFICIENCY, limit=vl.DEFAULT_LIMIT):
+    errors, warnings = [], []
+    rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
+    plain = Arena(level, boss, rules)
+    T = plain.T
+    report = {"boss": boss.get("id"), "reachable_cells": len(plain.reachable)}
+    _basic_checks(plain, boss, root, errors, report)
+    _clip_checks(plain, boss, root, errors, report)
+    model = boss.get("validation_model", {})
+    ab = boss.get("arena", {})
+    # D. Cinta.
+    conv = autoplay_conveyor(boss, rules, T)
+    report["conveyor"] = {k: (round(v, 3) if isinstance(v, float) else v) for k, v in conv.items()}
+    if conv["lo_px"] > conv["hi_px"] + EPS:
+        _err(errors, "cinta: no hay altura de tarjeta desde la que subir del suelo (<= %.0f px) y llegar a la barra "
+                     "(%.0f px por encima del suelo)" % (conv["hi_px"], conv["bar_rise_px"]))
+        return {"ok": False, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+    arena = Arena(conveyor_level(level, conv), boss, rules)
+    bar = ab.get("bar", {})
+    bar_row = int(bar.get("surface_row", 6)) - 1
+    bar_cells = [(c, bar_row) for c in range(int(bar.get("from_col", 5)), int(bar.get("to_col", 14)) + 1)]
+    bar_reach = [n for n in bar_cells if n in arena.reachable]
+    report["bar_cells"] = [len(bar_reach), len(bar_cells)]
+    if not bar_reach:
+        _err(errors, "la barra no se alcanza desde P subiendo por la cinta (tarjetas en la fila %d)" % conv["snapshot_row"])
+    # E. Cabezal.
+    slots = {k: float(v) for k, v in ab.get("slots", {}).items()}
+    surface = float(bar.get("surface_row", 6)) * T
+    box = [float(v) for v in ab.get("playhead_box_px", [-32, -44, 64, 76])]
+    lift = float(ab.get("playhead_lift_px", 20.0))
+    if not (box[1] - EPS <= lift <= box[1] + box[3] + EPS and box[0] <= 0.0 <= box[0] + box[2]):
+        _err(errors, "cabezal: los pies de Isak en la barra (a %g px bajo su centro) quedan fuera de su caja %s"
+             % (lift, box))
+    used = sorted({s for p in (1, 2, 3) for s in _phase_slots(boss, p)})
+    for name in used:
+        if name not in slots:
+            _err(errors, "cabezal: slot '%s' no esta en arena.slots" % name)
+            continue
+        if (int(slots[name]), bar_row) not in bar_reach:
+            _err(errors, "cabezal: el slot '%s' (x %.1f) no cae en una celda alcanzable de la barra" % (name, slots[name]))
+    lo_x, hi_x = float(ab.get("playhead_from_x", 5.5)), float(ab.get("playhead_to_x", 14.5))
+    for x in (lo_x, hi_x):
+        if (int(x), bar_row) not in bar_reach:
+            _err(errors, "cabezal: su recorrido llega a x %.1f, fuera de la barra alcanzable" % x)
+    head = {}
+    for lap, entry in sorted(boss.get("laps", {}).items()):
+        v = float(entry.get("playhead_window_speed_tiles_s", 0.0))
+        worst_scale = max(float(boss.get("phase%d" % p, {}).get("speed_scale", 1.0)) for p in (1, 2, 3))
+        drift = v * worst_scale * T * rules.debug_world_scale * rules.pound_land_s
+        if drift > box[2] + EPS:
+            _err(errors, "vuelta %s: el cabezal en marcha avanza %.0f px durante el golpe (con el Debug) y su caja "
+                         "mide %.0f" % (lap, drift, box[2]))
+        head[lap] = round(drift, 1)
+    report["playhead_drift_px"] = head
+    # F. Laser.
+    rects = _rects_px(ab.get("damage_rects", []), T)
+    slot_laser = {}
+    for name in used:
+        if name not in slots:
+            continue
+        node = (int(slots[name]), bar_row)
+        ok = any(_laser_hits(arena, node, f, rects) for f in (1.0, -1.0))
+        slot_laser[name] = ok
+        if not ok:
+            _err(errors, "laser: desde el slot '%s' de la barra no se alcanza la pantalla" % name)
+    floor_cells = [n for n in plain.lane_cells("floor") if n in plain.reachable]
+    floor_laser = [n for n in floor_cells if any(_laser_hits(plain, n, f, rects) for f in (1.0, -1.0))]
+    if not floor_laser:
+        _err(errors, "laser: desde el suelo no se alcanza la pantalla ni su pie")
+    bar_laser = [n for n in bar_reach if any(_laser_hits(arena, n, f, rects) for f in (1.0, -1.0))]
+    report["laser"] = {"slots": slot_laser, "bar_cells": len(bar_laser), "floor_cells": len(floor_laser),
+                       "floor_total": len(floor_cells)}
+    # G y G2. Ventanas.
+    k = float(model.get("window_k", 2.0))
+    climb_k = float(model.get("climb_k", 1.0))
+    climb_laps = {str(v) for v in model.get("climb_required_laps", [1])}
+    columns = conv["columns"]
+    windows = []
+    for lap, entry in sorted(boss.get("laps", {}).items()):
+        v = float(entry.get("playhead_window_speed_tiles_s", 0.0))
+        for p in (1, 2, 3):
+            scale = float(boss.get("phase%d" % p, {}).get("speed_scale", 1.0))
+            window = _phase_window(boss, entry, p)
+            worst_bar = worst_floor = 0.0
+            for name in _phase_slots(boss, p):
+                if name not in slots:
+                    continue
+                sx = slots[name]
+                for n in bar_reach:
+                    worst_bar = max(worst_bar, _bar_travel(rules, T, n[0] + 0.5, sx, v * scale))
+                for n in floor_cells:
+                    best = None
+                    for a, b in columns:
+                        side = b if b < sx else a  # borde de la cinta hacia la barra
+                        edge = int(bar.get("from_col", 5)) + 0.5 if b < sx else int(bar.get("to_col", 14)) + 0.5
+                        run = (abs(n[0] - side) * T) / rules.run_speed
+                        t = run + CLIMB_S + _bar_travel(rules, T, edge, sx, v * scale)
+                        best = t if best is None else min(best, t)
+                    worst_floor = max(worst_floor, best or 0.0)
+            need = k * _window_need_pound(rules, worst_bar)
+            wait = conv["worst_wait_s"] / max(scale, EPS)
+            climb = climb_k * (_window_need_pound(rules, worst_floor) + wait)
+            if window + EPS < need:
+                _err(errors, "vuelta %s, fase %d: la ventana dura %.2f s del mundo y desde la barra hacen falta %.2f "
+                             "(k = %g x (recorrido %.2f s + Debug + golpe))" % (lap, p, window, need, k, worst_bar))
+            required = lap in climb_laps
+            if required and window + EPS < climb:
+                _err(errors, "vuelta %s, fase %d: desde el suelo (cinta: espera %.2f s) hacen falta %.2f s del mundo y la "
+                             "ventana dura %.2f" % (lap, p, wait, climb, window))
+            windows.append({"lap": lap, "phase": p, "window_s": window, "need_bar_s": round(need, 3),
+                            "travel_bar_s": round(worst_bar, 3), "need_floor_s": round(climb, 3),
+                            "card_wait_s": round(wait, 3), "floor_required": required})
+    report["aw_windows"] = windows
+    # H. Pausa.
+    check_mark(arena, boss, errors, report)
+    # I. Energia.
+    check_energy(arena, boss, rules, list(upgrades), errors, report, root, lap_fn=energy_lap_autoplay)
     return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+
+
+def _window_need_pound(rules, travel):
+    """Como _window_need, con el golpe al suelo hasta aterrizar (la pausa empieza ahi y congela la ventana) en
+    lugar de las poses del pulso y del laser."""
+    pose = rules.pound_land_s
+    after = travel + rules.debug_hold_s + rules.debug_world_scale * pose
+    first = rules.debug_hold_s + rules.debug_world_scale * (travel + pose)
+    running = rules.debug_hold_s + rules.debug_world_scale * (max(travel - rules.debug_hold_s, 0.0) + pose)
+    return min(after, first, running)
+
+
+def energy_lap_autoplay(arena, boss, lap, rules, laser_damage, errors, scenario, root):
+    """Pelea torpe de Autoplay por fase (validation_model): ventanas con sus golpes (la fase 2 suma los que
+    recupera la cuenta: heals), Debug por ventana (debug_s, mas early_debug_s en la ventana perdida) al gasto de
+    la arena, dashes por ventana y un laser fallado por ventana. Sin Burbujas: solo cargadores y el relleno del
+    cambio de fase."""
+    model = boss.get("validation_model", {})
+    lm = model.get("laps", {}).get(str(lap))
+    entry = boss.get("laps", {}).get(str(lap), {})
+    if lm is None:
+        _err(errors, "validation_model.laps sin la vuelta %s" % lap)
+        return None
+    drain = rules.debug_drain * float(arena.level.get("debug_drain_scale", 1.0))
+    margin = float(model.get("min_margin", 20.0))
+    emax = rules.energy_max
+    misses = int(model.get("misses_per_window", 1))
+    dashes = model.get("dashes_per_window", [1, 1, 1])
+    early = model.get("early_debug_s", [0, 0, 0])
+    heals = model.get("heals", [0, 0, 0])
+    hits = entry.get("hits_per_phase", [])
+    refill = float(boss.get("phase_change_refill", {}).get("energy", 0.0))
+    charge = max((float(p.get("amount", 50.0)) for _, _, p in arena.chargers), default=50.0)
+    detour = float(model.get("detour_s_per_charge", 1.3))
+    energy = emax
+    phases = []
+    for p, windows in enumerate(lm.get("windows", [])):
+        heal = int(heals[p] if p < len(heals) else 0)
+        if p < len(hits) and sum(windows) != hits[p] + heal:
+            _err(errors, "validation_model vuelta %s fase %d: las ventanas suman %d golpes y la fase tiene %d (+%d que "
+                         "recupera)" % (lap, p + 1, sum(windows), hits[p], heal))
+        peaks = []
+        for h in windows:
+            debug_s = float(lm["debug_s"][p]) + (float(early[p] if p < len(early) else 0.0) if h == 0 else 0.0)
+            lasers = math.ceil(h / laser_damage) + misses
+            peaks.append(debug_s * drain + int(dashes[p] if p < len(dashes) else 0) * rules.dash_cost
+                         + lasers * rules.laser_cost)
+        peak = max(peaks) if peaks else 0.0
+        spend = sum(peaks)
+        income = refill if p > 0 else 0.0
+        need = max(0.0, spend - energy - income)
+        charges = int(math.ceil(need / charge - EPS)) if need > 0 else 0
+        energy = min(emax, energy + income + charges * charge - spend)
+        if peak > emax - margin + EPS:
+            _err(errors, "%s, vuelta %s, fase %d: pico de la pelea torpe %.1f con %.0f de energia (margen %.1f < %.0f)"
+                 % (scenario, lap, p + 1, peak, emax, emax - peak, margin))
+        phases.append({"peak": round(peak, 2), "margin": round(emax - peak, 2), "spend": round(spend, 2),
+                       "charges": charges, "detour_s": round(charges * detour, 2), "end_energy": round(energy, 2)})
+    return {"energy_max": emax, "debug_drain_per_s": round(drain, 3), "laser_cost": rules.laser_cost,
+            "laser_damage": laser_damage, "dash_cost": rules.dash_cost, "phases": phases,
+            "min_margin": round(min((ph["margin"] for ph in phases), default=0.0), 2),
+            "total_spend": round(sum(ph["spend"] for ph in phases), 2),
+            "total_charges": sum(ph["charges"] for ph in phases),
+            "total_detour_s": round(sum(ph["detour_s"] for ph in phases), 2)}
 
 
 def format_text(path, result):
@@ -938,6 +1322,29 @@ def format_text(path, result):
                 out.append("    vuelta %s: lateral encendida %.2f s (margen %.2f s tras aterrizar y despegar antes del "
                            "aviso), espera %.2f s; ventana %.2f s (hacen falta %.2f)"
                            % (lap, c["on_s"], c["margin_s"], c["wait_s"], c["window_s"], c["need_s"]))
+        for row in rep.get("clips", []):
+            out.append("  fase %d (x%g): %s" % (row["phase"], row["speed_scale"], "; ".join(
+                "%s aviso %d cuadros del mundo, %s" % c for c in row["clips"])))
+        cv = rep.get("conveyor")
+        if cv:
+            out.append("  cinta: %d tarjetas por columna cada %.2f tiles a %g px/s; util de %.0f a %.0f px sobre el suelo "
+                       "(barra a %.0f); espera maxima %.2f s del mundo a x1; tarjetas del modelo en la fila %d"
+                       % (cv["cards"], cv["spacing_px"] / 64.0, cv["speed_px_s"], cv["lo_px"], cv["hi_px"],
+                          cv["bar_rise_px"], cv["worst_wait_s"], cv["snapshot_row"]))
+        if "bar_cells" in rep:
+            out.append("  barra: %d de %d celdas alcanzables por la cinta; cabezal en marcha durante el golpe: %s px"
+                       % (rep["bar_cells"][0], rep["bar_cells"][1],
+                          ", ".join("vuelta %s %g" % kv for kv in sorted(rep.get("playhead_drift_px", {}).items()))))
+        if rep.get("laser"):
+            la = rep["laser"]
+            out.append("  laser a la pantalla: slots %s; desde %d celdas de la barra y %d de %d del suelo"
+                       % (", ".join("%s %s" % (k, "si" if v else "NO") for k, v in sorted(la["slots"].items())),
+                          la["bar_cells"], la["floor_cells"], la["floor_total"]))
+        for w in rep.get("aw_windows", []):
+            out.append("  ventana vuelta %s fase %d: %.2f s; desde la barra hacen falta %.2f (recorrido %.2f s); desde el "
+                       "suelo %.2f (espera a la tarjeta %.2f s)%s" % (w["lap"], w["phase"], w["window_s"], w["need_bar_s"],
+                                                                     w["travel_bar_s"], w["need_floor_s"], w["card_wait_s"],
+                                                                     "" if w["floor_required"] else " [solo informa]"))
         for lap, m in sorted((rep.get("mark") or {}).items()):
             out.append("  marca, vuelta %s: %g s del mundo (%g s reales con el Debug); caben %d laser(es) sin el Debug "
                        "y %d con el; la peor ventana torpe pide %d" % (lap, m["mark_s"], m["real_with_debug_s"],

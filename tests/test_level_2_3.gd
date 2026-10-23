@@ -272,7 +272,7 @@ func test_world_2_folder_shows_the_next_video_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m2"))
 	assert_eq(panel.get_level_state(&"2-3"), HubWorlds.STATE_AVAILABLE, "El 2-3, tras el 2-2")
 	assert_eq(panel.level_text(levels[2]), "2-3 Scroll infinito - Siguiente video", "Como el 2-2: «Siguiente video»")
-	assert_eq(panel.level_text(levels[3]), "Jefe: Autoplay - Próximamente")
+	assert_eq(panel.level_text(levels[3]), "Jefe: Autoplay - Bloqueado", "Jugable desde el paso 18, tras el 2-3")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"2-3"))
 	panel.confirm()

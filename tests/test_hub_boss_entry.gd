@@ -245,3 +245,145 @@ func test_full_flow_from_the_hub_and_back() -> void:
 	assert_eq(code, 0, "Vuelta al hub:\n%s" % text.substr(maxi(text.find("smoke_boss_arena"), 0)))
 	assert_string_contains(text, "barra true, 1-boss true, recuerdo true, Mundo 2 true, pieza on")
 	assert_false(text.contains("SCRIPT ERROR"), "Sin errores de script")
+
+
+# --- Paso 18 de docs/propuesta-mundo-2.md (2026-10-23): «Jefe: Autoplay» ---
+
+const DT: float = 1.0 / 60.0
+
+
+func _m2() -> Dictionary:
+	return HubWorlds.world(&"m2")
+
+
+func _row(world_entry: Dictionary, id: String) -> Dictionary:
+	for level: Dictionary in HubWorlds.levels(world_entry):
+		if String(level.get("id", "")) == id:
+			return level
+	return {}
+
+
+## Mundo 1 completo (Alerta Mayor vencida) y el 2-1 a 2-3 como sus terminales.
+func _complete_world_1_and_2_3() -> void:
+	_complete_1_3_like_the_terminal()
+	GameState.mark_level_completed(&"1-boss")
+	for id: String in ["2-1", "2-2", "2-3"]:
+		GameState.mark_level_completed(StringName(id))
+		var level: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/%s.json" % id))
+		for unlock: Variant in (level as Dictionary).get("unlocks", []):
+			if String((unlock as Dictionary).get("type", "")) == "level":
+				GameState.unlock_level(StringName(String((unlock as Dictionary).get("id", ""))))
+
+
+func test_autoplay_row_is_playable_after_2_3() -> void:
+	var boss: Dictionary = _row(_m2(), "2-boss")
+	assert_true(HubWorlds.is_boss(boss))
+	assert_true(HubWorlds.is_playable(boss), "playable: true desde el paso 18")
+	var panel := FolderPanel.new()
+	panel.world_entry = _m2()
+	add_child_autofree(panel)
+	_complete_1_3_like_the_terminal()
+	GameState.mark_level_completed(&"1-boss")
+	assert_eq(panel.level_text(boss), "Jefe: Autoplay - Bloqueado", "Antes del 2-3")
+	assert_false(HubWorlds.can_enter(&"2-boss"))
+	_complete_world_1_and_2_3()
+	assert_eq(panel.level_text(boss), "Jefe: Autoplay - Nuevo", "Tras el 2-3")
+	assert_true(HubWorlds.can_enter(&"2-boss"))
+	assert_eq(HubWorlds.folder_state(_m2()), HubWorlds.STATE_AVAILABLE, "Sin el jefe la carpeta no se completa")
+	assert_false(HubWorlds.is_world_unlocked(HubWorlds.world(&"m3")), "Mundo 3 bloqueado antes del jefe")
+
+
+func test_amber_piece_hidden_then_blinking_then_lit() -> void:
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(2), &"hidden", "Mundo 2 bloqueado: pieza gris")
+	_hub.free()
+	_complete_1_3_like_the_terminal()
+	GameState.mark_level_completed(&"1-boss")
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_background_state(), &"on", "La cian sigue en el fondo")
+	assert_eq(_hub.get_piece_animation(2), &"off", "Mundo 2 desbloqueado: contorno ambar")
+	_hub.free()
+	_complete_world_1_and_2_3()
+	GameState.mark_level_completed(&"2-boss")
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(2), &"on", "Autoplay vencido: pieza ambar encendida")
+
+
+## Terminado cuando (paso 18): desde la carpeta M2 se entra a «Jefe: Autoplay», se vence, se recibe
+## boss_w2_l1 sin guardar y se vuelve al hub con la pieza ambar encendida y el Mundo 3 «Próximamente».
+func test_autoplay_from_the_m2_folder_and_back_with_the_amber_piece() -> void:
+	EcoTextBox.pause_important = false
+	BossReward.pause_tree = false
+	BossDefeat.freeze_tree = false
+	EcoProgress.meet_eco_with_pulse()
+	_complete_world_1_and_2_3()
+	GameState.request_save()
+	var main: LevelRunner = _start_main("hub")
+	var hub: HubRoom = main.get_hub()
+	var arrival: WarpVortex = hub.get_arrival_vortex()
+	if arrival != null:
+		arrival.advance(LONG_STEP_S)
+	var folder: FolderStation = hub.get_folder(&"m2")
+	assert_true(folder.open(hub.get_isak()), "La carpeta del Mundo 2 se abre")
+	var panel: FolderPanel = folder.get_folder_panel()
+	panel.skip_input_delay()
+	assert_true(panel.select_option(&"2-boss"), "Fila del jefe elegible")
+	panel.confirm()
+	assert_true(panel.is_confirming_unsaved())
+	assert_true(panel.select_option(FolderPanel.OPTION_ENTER_UNSAVED))
+	panel.confirm()
+	hub.get_departure_vortex().advance(LONG_STEP_S)
+	await wait_process_frames(2)
+	main.advance(LONG_STEP_S)
+	main.advance(LONG_STEP_S)
+	assert_eq(main.get_level_id(), "2-boss", "Entra a la arena de Autoplay")
+	main.auto_advance = true
+	var boss := main.get_level().get_node(^"Objects/autoplay") as Autoplay
+	boss.intro_on_arrival = false
+	await wait_physics_frames(3)
+	if not boss.is_fighting():
+		boss.start()
+	while not boss.is_defeated():
+		boss.take_core_hit(1)
+	await wait_physics_frames(2)
+	var defeat: BossDefeat = boss.get_defeat()
+	assert_not_null(defeat, "Secuencia de derrota")
+	var t: float = 0.0
+	while t < 25.0 and is_instance_valid(defeat) and defeat.get_stage() < BossDefeat.Stage.DONE:
+		var reward: BossReward = defeat.get_reward()
+		if reward != null and reward.can_close():
+			reward.confirm()
+		await wait_physics_frames(1)
+		t += DT
+	assert_true(GameState.has_memory(&"boss_w2_l1"), "Capa Caché del Mundo 2")
+	assert_true(GameState.has_unsaved_changes(), "Sin guardar: se guarda en Notas")
+	t = 0.0
+	while t < 8.0 and not main.is_in_hub():
+		await wait_physics_frames(1)
+		t += DT
+	assert_true(main.is_in_hub(), "Vuelve al hub")
+	assert_true(GameState.is_level_completed(&"2-boss"))
+	hub = main.get_hub()
+	assert_true(hub.light_piece_on_arrival)
+	assert_eq(hub.light_piece_world, 2, "Se enciende la pieza del Mundo 2")
+	watch_signals(hub)
+	t = 0.0
+	while t < 10.0 and (hub.get_piece_animation(2) != &"on" or hub.is_piece_lighting() or hub.is_piece_pending()):
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(hub.get_piece_animation(2), &"on", "Pieza ambar encendida")
+	assert_eq(hub.get_background_state(), &"on", "La cian sigue encendida")
+	assert_signal_emitted_with_parameters(hub, "wallpaper_piece_lit", [2])
+	var m3: Dictionary = HubWorlds.world(&"m3")
+	assert_true(HubWorlds.is_world_unlocked(m3), "Mundo 3 desbloqueado (unlocked_by 2-boss)")
+	var p3 := FolderPanel.new()
+	p3.world_entry = m3
+	add_child_autofree(p3)
+	p3.refresh()
+	assert_true(HubWorlds.levels_for_lap(m3).is_empty(), "Sin subniveles: la carpeta dice «Próximamente»")
+	EcoTextBox.pause_important = true
+	BossReward.pause_tree = true
+	BossDefeat.freeze_tree = true
