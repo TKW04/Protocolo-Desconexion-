@@ -21,6 +21,7 @@ Uso: python3 tools/palette_mundo2_provisional.py [--check]
 import colorsys
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -94,6 +95,18 @@ def palette_section():
     return out
 
 
+def write_objects(data, palette):
+    """Escribe la seccion palette sin reformatear el resto del archivo (solo sustituye su bloque)."""
+    block = json.dumps({"palette": palette}, ensure_ascii=False, indent="\t")[1:-1].strip("\n")
+    text = open(OBJECTS, encoding="utf-8").read() if os.path.exists(OBJECTS) else ""
+    new, n = re.subn(r'\t"palette": \{.*?\n\t\}', lambda _m: block, text, count=1, flags=re.S)
+    if n != 1:
+        data["palette"] = palette
+        new = json.dumps(data, ensure_ascii=False, indent="\t") + "\n"
+    with open(OBJECTS, "w", encoding="utf-8") as fh:
+        fh.write(new)
+
+
 def check_rules():
     errors = []
     magenta = dict((n, v) for n, v, _ in COLORS)["magenta"]
@@ -128,10 +141,7 @@ def main(argv):
     else:
         with open(GPL, "w", encoding="utf-8") as fh:
             fh.write(expected_gpl)
-        data["palette"] = expected_palette
-        with open(OBJECTS, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, ensure_ascii=False, indent="\t")
-            fh.write("\n")
+        write_objects(data, expected_palette)
     for error in errors:
         print("palette_mundo2_provisional: " + error, file=sys.stderr)
     return 1 if errors else 0

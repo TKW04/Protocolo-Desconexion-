@@ -1,39 +1,39 @@
 GIMP Palette
-Name: Mundo 2 El Feed - PROVISIONAL (solo desarrollo, hex sin cerrar)
+Name: Mundo 2 El Feed - variante B (Índigo frío y Debug miel)
 Columns: 4
-# PROVISIONAL: colores de desarrollo del Mundo 2, sin cerrar (el arte final compara variantes).
+# Variante B elegida por el usuario (tools/palette_mundo2_variants.py).
 # Generado por tools/palette_mundo2_provisional.py
 # feed_noche: Fondo profundo del feed, contorno oscuro
- 20  10  36	feed_noche
+ 13  11  36	feed_noche
 # feed_fondo: Fondo lejano (videos borrosos)
- 42  20  80	feed_fondo
+ 31  26  82	feed_fondo
 # feed_medio: Fondo medio
- 69  32 122	feed_medio
+ 51  40 122	feed_medio
 # feed_resplandor: Resplandor de pantalla
-106  60 176	feed_resplandor
+ 82  67 180	feed_resplandor
 # tarjeta_sombra: Tarjeta: sombra
- 18  10  32	tarjeta_sombra
+ 12  10  31	tarjeta_sombra
 # tarjeta_base: Tarjeta: base
- 42  29  69	tarjeta_base
+ 34  30  70	tarjeta_base
 # tarjeta_luz: Tarjeta: luz/bisel
- 74  58 120	tarjeta_luz
+ 63  58 122	tarjeta_luz
 # tarjeta_borde: Borde superior de las tarjetas
-183 163 240	tarjeta_borde
+169 166 242	tarjeta_borde
 # blanco: Texto, barras de progreso, brillo
-244 240 250	blanco
+242 242 250	blanco
 # gris: Sombra de lo blanco, chispa gris
-184 174 207	gris
+174 176 210	gris
 # alerta: Rojo de dano (el del Mundo 1): borde del scroll, grietas que avisan
 255  74  42	alerta
 # alerta_sombra: Sombra de lo rojo
 163  34  28	alerta_sombra
 # magenta: Magenta neon (tono >= 300): Historias, acentos
-255  60 240	magenta
+255  92 250	magenta
 # magenta_sombra: Sombra del magenta
-138  26 140	magenta_sombra
+122  34 144	magenta_sombra
 # ambar: Puntos de atencion (el del Mundo 1)
 255 160   0	ambar
 # ambar_sombra: Sombra de los puntos de atencion
 168  95   0	ambar_sombra
-# debug_ambar: Debug del Mundo 2 (provisional; mas anaranjado que los puntos)
-255 147  24	debug_ambar
+# debug_ambar: Debug del Mundo 2 (variante B)
+255 168  88	debug_ambar

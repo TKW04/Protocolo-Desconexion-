@@ -1,8 +1,8 @@
 """Variantes de paleta del Mundo 2 «El Feed» para el arte final (paso 10 de docs/propuesta-mundo-2.md, fase A).
 
-PROPUESTA, SIN ELEGIR (2026-10-22): el usuario compara las variantes en
-docs/arte/mundo2_paleta_variantes.png (tools/palette_mundo2_preview.py) y elige una. Mientras ACTIVE sea None,
-el juego sigue con la paleta PROVISIONAL de tools/palette_mundo2_provisional.py (nada cambia).
+ELEGIDA LA B (2026-10-22, fase B): el usuario comparo las variantes en docs/arte/mundo2_paleta_variantes.png
+(tools/palette_mundo2_preview.py) y eligio la B con el Debug algo mas oscuro (#ffa858 en lugar de #ffc070).
+Con ACTIVE = None el juego usaria la paleta PROVISIONAL de tools/palette_mundo2_provisional.py.
 
 Las tres usan los MISMOS nombres que la provisional (el juego lee los colores por nombre de la seccion palette de
 data/world2_objects.json) y reservan los del Mundo 1 que significan algo en todo el juego: alerta / alerta_sombra
@@ -18,7 +18,7 @@ de data/hud.json (debug_colors["2"]) y regenera los dibujos del Mundo 2 y las fi
 """
 
 ## Variante que usa el juego. None = la paleta PROVISIONAL de desarrollo. La escribe --apply; no editar a mano.
-ACTIVE = None
+ACTIVE = "B"
 
 # Por variante: titulo, como resuelve los choques (una linea) y los hex por nombre (16 + debug_ambar).
 VARIANTS = {
@@ -37,15 +37,15 @@ VARIANTS = {
     },
     "B": {
         "title": "Índigo frío y Debug miel",
-        "how": "Separa por LUZ Y SATURACIÓN: Debug miel claro frente al ámbar saturado de los puntos; "
-               "fondo índigo (opuesto al ámbar) y magenta claro a 302°, lejos del rojo.",
+        "how": "Separa por LUZ Y SATURACIÓN: Debug miel tostado (29°, más claro y menos saturado) frente al ámbar "
+               "saturado de los puntos; fondo índigo (opuesto al ámbar) y magenta claro a 302°, lejos del rojo.",
         "hex": {
             "feed_noche": "0d0b24", "feed_fondo": "1f1a52", "feed_medio": "33287a", "feed_resplandor": "5243b4",
             "tarjeta_sombra": "0c0a1f", "tarjeta_base": "221e46", "tarjeta_luz": "3f3a7a",
             "tarjeta_borde": "a9a6f2", "blanco": "f2f2fa", "gris": "aeb0d2",
             "alerta": "ff4a2a", "alerta_sombra": "a3221c", "magenta": "ff5cfa", "magenta_sombra": "7a2290",
             "ambar": "ffa000", "ambar_sombra": "a85f00",
-            "debug_ambar": "ffc070",
+            "debug_ambar": "ffa858",  # 2026-10-22: antes ffc070 (el usuario lo quiso algo mas oscuro)
         },
     },
     "C": {

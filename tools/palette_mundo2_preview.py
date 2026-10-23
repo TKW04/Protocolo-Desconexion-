@@ -66,12 +66,24 @@ def hud_debug_w2():
         return json.load(fh)["debug_colors"]["2"].lstrip("#").lower()
 
 
+## Debug del Mundo 2 en data/hud.json antes de la fase B (lo sustituyo --apply); referencia de la primera fila.
+PREVIOUS_HUD_DEBUG = "ffb02e"
+
+
 def options():
     """(id, titulo, como, filas, hex del Debug que se ve en el juego)."""
-    out = [("ACTUAL", "Provisional de desarrollo (referencia)",
-            "Hoy: el juego tiñe el Debug del Mundo 2 con #%s (data/hud.json), casi el mismo tono que los puntos; "
-            "la paleta provisional propone #%s." % (hud_debug_w2(), provisional_rows()[-1][1]),
-            provisional_rows(), hud_debug_w2())]
+    if variants.ACTIVE:
+        ref = ("ANTES", "Provisional de desarrollo (referencia, ya sustituida)",
+               "Antes de la fase B el juego teñía el Debug del Mundo 2 con #%s, casi el mismo tono que los puntos; "
+               "la paleta provisional proponía #%s. Hoy usa la variante %s (#%s)."
+               % (PREVIOUS_HUD_DEBUG, provisional_rows()[-1][1], variants.ACTIVE, hud_debug_w2()),
+               provisional_rows(), PREVIOUS_HUD_DEBUG)
+    else:
+        ref = ("ACTUAL", "Provisional de desarrollo (referencia)",
+               "Hoy: el juego tiñe el Debug del Mundo 2 con #%s (data/hud.json), casi el mismo tono que los puntos; "
+               "la paleta provisional propone #%s." % (hud_debug_w2(), provisional_rows()[-1][1]),
+               provisional_rows(), hud_debug_w2())
+    out = [ref]
     for vid, var in variants.VARIANTS.items():
         rows = variants.rows(vid, provisional_rows())
         out.append((vid, var["title"], var["how"], rows, var["hex"]["debug_ambar"]))
@@ -223,7 +235,8 @@ def build():
     head_h = 64
     sheet = Image.new("RGB", (width, head_h + row_h * len(opts)), (16, 14, 22))
     d = ImageDraw.Draw(sheet)
-    d.text((pad, 10), "Mundo 2 «El Feed»: variantes de paleta (PROPUESTA, sin elegir)", font=m1.font(20, True),
+    state = ("elegida la %s" % variants.ACTIVE) if variants.ACTIVE else "PROPUESTA, sin elegir"
+    d.text((pad, 10), "Mundo 2 «El Feed»: variantes de paleta (%s)" % state, font=m1.font(20, True),
            fill=(240, 236, 250))
     d.text((pad, 38), "Columnas: maqueta normal · con el Debug (tinte + tarjeta oculta revelada) · choques x2 "
            "(arriba: punto de atención junto al contorno del Debug; abajo: Historia magenta junto al rojo de daño).",
@@ -233,7 +246,7 @@ def build():
         y = head_h + i * row_h
         m = metrics(rows, debug_hex)
         report.append((vid, title, debug_hex, m))
-        d.text((pad, y), "%s · %s" % (vid if vid == "ACTUAL" else "Variante " + vid, title),
+        d.text((pad, y), "%s · %s" % (vid if vid in ("ACTUAL", "ANTES") else "Variante " + vid, title),
                font=m1.font(17, True), fill=(255, 255, 255))
         d.text((pad, y + 22), how, font=m1.font(12), fill=(200, 196, 215))
         d.text((pad, y + 38), metrics_line(m), font=m1.font(12), fill=(170, 230, 190))

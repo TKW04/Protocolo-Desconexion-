@@ -330,23 +330,23 @@
 		}
 	},
 	"palette": {
-		"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario).",
-		"feed_noche": "#140a24",
-		"feed_fondo": "#2a1450",
-		"feed_medio": "#45207a",
-		"feed_resplandor": "#6a3cb0",
-		"tarjeta_sombra": "#120a20",
-		"tarjeta_base": "#2a1d45",
-		"tarjeta_luz": "#4a3a78",
-		"tarjeta_borde": "#b7a3f0",
-		"blanco": "#f4f0fa",
-		"gris": "#b8aecf",
+		"_notes": "Variante B (tools/palette_mundo2_variants.py, escrita por tools/palette_mundo2_provisional.py; no editar a mano): colores del Mundo 2 por nombre.",
+		"feed_noche": "#0d0b24",
+		"feed_fondo": "#1f1a52",
+		"feed_medio": "#33287a",
+		"feed_resplandor": "#5243b4",
+		"tarjeta_sombra": "#0c0a1f",
+		"tarjeta_base": "#221e46",
+		"tarjeta_luz": "#3f3a7a",
+		"tarjeta_borde": "#a9a6f2",
+		"blanco": "#f2f2fa",
+		"gris": "#aeb0d2",
 		"alerta": "#ff4a2a",
 		"alerta_sombra": "#a3221c",
-		"magenta": "#ff3cf0",
-		"magenta_sombra": "#8a1a8c",
+		"magenta": "#ff5cfa",
+		"magenta_sombra": "#7a2290",
 		"ambar": "#ffa000",
 		"ambar_sombra": "#a85f00",
-		"debug_ambar": "#ff9318"
+		"debug_ambar": "#ffa858"
 	}
 }
