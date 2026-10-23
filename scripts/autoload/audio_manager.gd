@@ -726,7 +726,11 @@ func _on_node_added(node: Node) -> void:
 		var item_amb: Dictionary = (_data.get("ambience", []) as Array)[index]
 		var key: String = "%s#%d" % [String(item_amb.get("sound", "")), node.get_instance_id()]
 		play_loop(StringName(String(item_amb.get("sound", ""))), key)
-		node.tree_exiting.connect(stop_loop.bind(key), CONNECT_ONE_SHOT)
+		# El nodo puede llegar dos veces (p. ej. el ScrollEdgeOverlay que Isak crea en su
+		# _ready: node_added y el recorrido del nivel); una sola conexion por clave.
+		var stop: Callable = stop_loop.bind(key)
+		if not node.tree_exiting.is_connected(stop):
+			node.tree_exiting.connect(stop, CONNECT_ONE_SHOT)
 	if first_time and bindings.get("steps", false):
 		_connect_steps(node)
 
