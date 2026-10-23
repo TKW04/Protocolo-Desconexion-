@@ -29,6 +29,8 @@ func before_each() -> void:
 		"points": GameState.attention_points,
 		"debug": GameState.is_ability_unlocked(GameState.ABILITY_DEBUG),
 		"pulse": GameState.is_ability_unlocked(GameState.ABILITY_PULSE),
+		"dash": GameState.is_ability_unlocked(GameState.ABILITY_DASH),
+		"ground_pound": GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND),
 		"world": GameState.current_world,
 	}
 	DebugMode.input_enabled = false
@@ -44,6 +46,8 @@ func after_each() -> void:
 	GameState.attention_points = _saved.points
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _saved.debug)
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _saved.pulse)
+	GameState.set_ability_unlocked(GameState.ABILITY_DASH, _saved.dash)
+	GameState.set_ability_unlocked(GameState.ABILITY_GROUND_POUND, _saved.ground_pound)
 	GameState.current_world = _saved.world
 
 
@@ -94,6 +98,10 @@ func test_k_does_nothing_in_test_arena() -> void:
 	assert_almost_eq(GameState.debug_energy, energy, EPS, "Ni gasta energia")
 	assert_eq(GameState.world_time_scale, 1.0)
 	Input.action_release(ACTION_DEBUG)
+	# La arena (test_arena.gd) desbloquea pulso, Deslizar y el golpe al suelo al
+	# cargarse y no los devuelve: after_each los restaura (2026-10-23, paso 21 de
+	# docs/propuesta-mundo-2.md: quedaban desbloqueados para los scripts siguientes
+	# y test_dnd_switch, test_eco_encounter y test_help_inert veian avisos de mas).
 
 
 func test_k_activates_debug_in_sandbox() -> void:

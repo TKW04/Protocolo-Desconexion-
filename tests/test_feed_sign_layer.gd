@@ -28,10 +28,26 @@ func _world2_levels_with_signs() -> PackedStringArray:
 	return out
 
 
+## Un nivel por vez, liberado aqui y en after_each: cada GeneratedLevel desbloquea
+## sus habilidades al entrar y devuelve las anteriores al salir; con varios vivos a
+## la vez liberados por el autofree (despues de after_each) quedaban pulso, laser,
+## Debug y dash desbloqueados para los scripts siguientes (2026-10-23, paso 21 de
+## docs/propuesta-mundo-2.md: fallaba test_help_inert en la suite completa).
+var _level: Node2D
+
+
+func after_each() -> void:
+	if is_instance_valid(_level):
+		_level.free()
+	_level = null
+
+
 func _load_level(id: String) -> Node2D:
-	var level: Node2D = (load("res://scenes/levels/%s.tscn" % id) as PackedScene).instantiate()
-	add_child_autofree(level)
-	return level
+	if is_instance_valid(_level):
+		_level.free()
+	_level = (load("res://scenes/levels/%s.tscn" % id) as PackedScene).instantiate()
+	add_child(_level)
+	return _level
 
 
 func _signs(level: Node) -> Array[FeedSign]:
