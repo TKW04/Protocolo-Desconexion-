@@ -11,6 +11,7 @@ extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const SCROLL_SCENE: PackedScene = preload("res://scenes/levels/scroll_test.tscn")
+const LEVEL_2_1: PackedScene = preload("res://scenes/levels/2-1.tscn")
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 const VIEW: Vector2 = Vector2(1280.0, 720.0)
@@ -213,8 +214,8 @@ func test_reset_for_respawn_returns_to_the_section_stop() -> void:
 
 # --- Integracion: sala scroll_test con Isak ---
 
-func _load() -> void:
-	_level = SCROLL_SCENE.instantiate() as GeneratedLevel
+func _load(scene: PackedScene = SCROLL_SCENE) -> void:
+	_level = scene.instantiate() as GeneratedLevel
 	_isak = _level.get_node(^"Isak") as Isak
 	_sim = IsakSim.new(DT)
 	_sim.attach(_isak)
@@ -300,3 +301,32 @@ func test_respawn_after_death_resets_the_section() -> void:
 	_isak.respawn(_feet(3, 58), 1.0)
 	assert_eq(cam.get_parked_id(), &"start", "Vuelve a la parada del inicio")
 	assert_almost_eq(_isak.get_camera().global_position.y, cam.get_center().y, EPS)
+
+
+# --- Negativo (paso 21 de docs/propuesta-mundo-2.md §8): el que espera ---
+
+## En el 2-1 real, quedarse quieto tras arrancar el scroll no es seguro: el borde
+## lo alcanza una y otra vez (-10 de Sync por contacto, sin retroceso), lo
+## devuelve a una tarjeta segura por encima del borde y nunca mata de golpe.
+func test_waiting_in_the_2_1_is_punished_by_the_edge_without_killing() -> void:
+	await _load(LEVEL_2_1)
+	var cam: ScrollCamera = _isak.get_scroll_camera()
+	assert_not_null(cam, "El 2-1 usa el scroll forzado")
+	var hits: Array = []
+	_isak.scroll_edge_hit.connect(func(damaged: bool) -> void: hits.append(damaged))
+	# Sube a la tarjeta de la fila 119 (por encima de start_resume_row 121) y se queda quieto.
+	_isak.global_position = _feet(4, 118)
+	_isak.velocity = Vector2.ZERO
+	_sim.step(_sim.frames(1.0))
+	assert_false(cam.is_parked(), "El scroll arranca al subir")
+	assert_eq(hits.size(), 0, "Aun lejos del borde")
+	var below: int = 0
+	for i: int in _sim.frames(45.0):
+		_sim.step()
+		if _isak.global_position.y - _isak.hitbox_size.y >= cam.get_bottom():
+			below += 1
+	assert_eq(below, 0, "Nunca queda entero por debajo del borde")
+	var damaged: int = hits.count(true)
+	assert_gte(damaged, 2, "El borde castiga varias veces al que espera (%d)" % damaged)
+	assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX - 10.0 * damaged, EPS, "-10 por contacto")
+	assert_false(_isak.is_dead(), "El borde no mata de golpe")
