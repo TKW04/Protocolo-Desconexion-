@@ -169,6 +169,18 @@ def outputs():
             "pause_player_00.png": pause_player()}
 
 
+def outputs_for(rows):
+    """Los mismos dibujos con otra paleta (filas (nombre, hex, funcion)); para comparar variantes
+    (tools/palette_mundo2_preview.py). No escribe nada."""
+    global COLORS
+    saved = COLORS
+    COLORS = {name: tuple(int(value[i:i + 2], 16) for i in (0, 2, 4)) + (255,) for name, value, _ in rows}
+    try:
+        return outputs()
+    finally:
+        COLORS = saved
+
+
 def main(argv):
     check = "--check" in argv
     errors = []

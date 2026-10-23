@@ -49,6 +49,20 @@ COLORS = [
 ]
 DEBUG = ("debug_ambar", "ff9318", "Debug del Mundo 2 (provisional; mas anaranjado que los puntos)")
 
+## Arte final (paso 10): si tools/palette_mundo2_variants.py tiene una variante elegida (ACTIVE), sus hex sustituyen
+## a los provisionales con los mismos nombres y funciones, el .gpl pasa a assets/palettes/mundo2.gpl y el Debug del
+## Mundo 2 de data/hud.json (debug_colors["2"]) debe coincidir. Con ACTIVE = None no cambia nada.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import palette_mundo2_variants as variants  # noqa: E402
+
+PROVISIONAL_GPL = GPL
+HUD = os.path.join(ROOT, "data", "hud.json")
+if variants.ACTIVE:
+    _chosen = variants.rows(variants.ACTIVE, COLORS + [DEBUG])
+    COLORS, DEBUG = _chosen[:-1], (DEBUG[0], _chosen[-1][1], "Debug del Mundo 2 (variante %s)" % variants.ACTIVE)
+    TITLE = "Mundo 2 El Feed - variante %s (%s)" % (variants.ACTIVE, variants.VARIANTS[variants.ACTIVE]["title"])
+    GPL = os.path.join(ROOT, "assets", "palettes", "mundo2.gpl")
+
 
 def hue_deg(hex_value):
     r, g, b = (int(hex_value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
@@ -56,8 +70,10 @@ def hue_deg(hex_value):
 
 
 def gpl_text():
-    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4",
-             "# PROVISIONAL: colores de desarrollo del Mundo 2, sin cerrar (el arte final compara variantes).",
+    head = ("# Variante %s elegida por el usuario (tools/palette_mundo2_variants.py)." % variants.ACTIVE
+            if variants.ACTIVE else
+            "# PROVISIONAL: colores de desarrollo del Mundo 2, sin cerrar (el arte final compara variantes).")
+    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4", head,
              "# Generado por tools/palette_mundo2_provisional.py"]
     for name, value, role in COLORS + [DEBUG]:
         r, g, b = (int(value[i:i + 2], 16) for i in (0, 2, 4))
@@ -67,8 +83,12 @@ def gpl_text():
 
 
 def palette_section():
-    out = {"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo "
-                     "del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario)."}
+    if variants.ACTIVE:
+        out = {"_notes": "Variante %s (tools/palette_mundo2_variants.py, escrita por tools/palette_mundo2_provisional.py; "
+                         "no editar a mano): colores del Mundo 2 por nombre." % variants.ACTIVE}
+    else:
+        out = {"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo "
+                         "del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario)."}
     for name, value, _role in COLORS + [DEBUG]:
         out[name] = "#" + value
     return out
@@ -99,6 +119,12 @@ def main(argv):
             errors.append("%s no esta al dia" % os.path.relpath(GPL, ROOT))
         if data.get("palette") != expected_palette:
             errors.append("la seccion palette de %s no esta al dia" % os.path.relpath(OBJECTS, ROOT))
+        if variants.ACTIVE:
+            with open(HUD, encoding="utf-8") as fh:
+                hud_debug = json.load(fh).get("debug_colors", {}).get("2", "")
+            if hud_debug.lower() != "#" + DEBUG[1]:
+                errors.append("debug_colors[\"2\"] de data/hud.json (%s) no es el Debug de la variante (#%s)"
+                              % (hud_debug, DEBUG[1]))
     else:
         with open(GPL, "w", encoding="utf-8") as fh:
             fh.write(expected_gpl)
