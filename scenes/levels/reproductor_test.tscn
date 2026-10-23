@@ -1,15 +1,16 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
 [ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
 [ext_resource type="PackedScene" path="res://scenes/levels/pause_player.tscn" id="4_pause_player"]
 [ext_resource type="PackedScene" path="res://scenes/levels/fragile_card.tscn" id="5_fragile_card"]
-[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="6_exit_terminal"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="7_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="8_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="9_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="10_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/loading_wall.tscn" id="6_loading_wall"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="7_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="8_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="9_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="10_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="11_help_system"]
 
 [node name="Level_reproductor_test" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -57,7 +58,14 @@ warn_s = 0.5
 width_tiles = 2
 metadata/help_id = "fragile_card"
 
-[node name="terminal_reproductor" parent="Objects" instance=ExtResource("6_exit_terminal") groups=["help_target"]]
+[node name="muro_reproductor" parent="Objects" instance=ExtResource("6_loading_wall") groups=["help_target"]]
+position = Vector2(1216, 448)
+height_tiles = 3
+object_id = &"muro_reproductor"
+pounds_needed = 3
+metadata/help_id = "loading_wall"
+
+[node name="terminal_reproductor" parent="Objects" instance=ExtResource("7_exit_terminal") groups=["help_target"]]
 position = Vector2(1408, 512)
 height_tiles = 2
 object_id = &"terminal_reproductor"
@@ -71,13 +79,13 @@ metadata/help_id = "exit_terminal"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(1440, 640)
 
-[node name="Isak" parent="." instance=ExtResource("7_isak")]
+[node name="Isak" parent="." instance=ExtResource("8_isak")]
 position = Vector2(160, 640)
 camera_limits = Rect2i(0, 0, 1664, 768)
 
-[node name="Hud" parent="." instance=ExtResource("8_hud")]
+[node name="Hud" parent="." instance=ExtResource("9_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("9_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("10_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("10_help_system")
+script = ExtResource("11_help_system")

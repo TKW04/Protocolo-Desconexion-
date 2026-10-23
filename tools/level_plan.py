@@ -86,6 +86,15 @@ REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "deb
 # margen frente al borde que dana por defecto (tiles; 3 en dificultad 2-3 y 2 en dificultad 4).
 SCROLL_MAX_WAIT_S = 120.0
 SCROLL_HEAD_MARGIN_PX = 8.0
+# Mundo 2, paso 9b: tipos de amenaza con tiempo del feed (proyectiles de la cuenta y del Comentarista; rayo del
+# video, que cae en la columna de Isak al empezar el clip), vista de la camara (px; la tarjeta del video entera
+# a la vista activa sus clips), paso (px) con el que se busca el terreno que apaga un proyectil y golpes al suelo
+# que el plan puede anadir para limpiar zonas de clones.
+FEED_KINDS = ("shot", "ray")
+VIEW_W_PX = 1280.0
+VIEW_H_PX = 720.0
+SHOT_PROBE_PX = 4.0
+MAX_CLONE_POUNDS = 40
 
 
 def path_to(parent, target):
@@ -181,13 +190,20 @@ class Planner:
             if g.kind == "pound":
                 # Golpe al suelo (Mundo 2, paso 9): desde la celda de pie la onda alcanza la tarjeta fragil; la
                 # oculta solo con el Debug activo (se enciende antes y se apaga despues). Rota, Isak cae por ella.
+                # Muro «Cargando mas...» (paso 9b): g.pounds golpes seguidos desde la misma celda, con el
+                # enfriamiento del gesto entre ellos; se rompe con el ultimo.
                 x = self.m.pound_x(g, n, state, g.hidden)
                 if g.hidden:
                     steps.append({"action": "debug_on", "at": n, "state": state, "reason": "ver la grieta de %s" % g.obj_id,
                                   "target": {"type": "fragile_card", "id": g.obj_id}})
-                steps.append({"action": "ground_pound", "at": n, "shot": {"x": x, "facing": 1}, "state": state,
-                              "air": False, "breaks": [g.obj_id], "debug": g.hidden,
-                              "target": {"type": "fragile_card", "id": g.obj_id}})
+                kind = "loading_wall" if g.wall else "fragile_card"
+                for k in range(g.pounds):
+                    st = {"action": "ground_pound", "at": n, "shot": {"x": x, "facing": 1}, "state": state,
+                          "air": False, "breaks": [g.obj_id] if k == g.pounds - 1 else [], "debug": g.hidden,
+                          "target": {"type": kind, "id": g.obj_id}}
+                    if g.pounds > 1:
+                        st.update({"count": k + 1, "of": g.pounds, "cooldown_before": k > 0})
+                    steps.append(st)
                 if g.hidden:
                     steps.append({"action": "debug_off", "at": n, "state": state})
                 continue
@@ -215,11 +231,13 @@ class Planner:
                                   "target": {"type": kind, "id": g.obj_id}})
                 continue
             if g.kind == "dnd":
-                # Interruptor No molestar (1-3, paso 9): un pulso de espaldas da el dash.
+                # Interruptor No molestar (1-3, paso 9): un pulso de espaldas da el dash. El reproductor con el
+                # boton de pausa (Mundo 2, paso 9b) da asi el golpe al suelo.
                 shot = self.m.pulse_shot(g.openers, n, state)
                 steps.append({"action": "pulse", "at": n, "shot": shot, "state": state, "face_back": True,
                               "pose_s": g.pose_s, "count": 1, "of": 1,
-                              "target": {"type": "dnd_switch", "id": g.obj_id, "ability": g.ability}})
+                              "target": {"type": "pause_player" if getattr(g, "player", False) else "dnd_switch",
+                                         "id": g.obj_id, "ability": g.ability}})
                 continue
             if g.kind == "lswitch":
                 shot = self.m.laser_shot(g.openers[0], n, state)
@@ -338,7 +356,7 @@ class Planner:
         if a in ("wait", "wait_phase", "wait_beat", "wait_scroll"):
             return s.get("seconds", 0.0)
         if a == "ground_pound":
-            return r.pound_s
+            return r.pound_s + (r.pound_cooldown_s if s.get("cooldown_before") else 0.0)
         if a == "debug_on":
             return r.debug_hold_s + r.debug_fade_s
         return 0.0
@@ -555,6 +573,7 @@ class Planner:
         steps = self.add_debug_segments(steps)
         steps = self.check_badges(steps)
         steps = self.check_banners(steps)
+        steps = self.check_clones(steps)
         steps = self.check_scroll(steps)
         steps = self.check_energy(steps)
         self.info["bars"] = []
@@ -1388,16 +1407,404 @@ class Planner:
         if getattr(self, "_hazards", None) is None:
             banners = self.banner_data()
             bells = self.bell_data()
+            # Mundo 2 (paso 9b): videos en autoplay (ola, rayo y cuenta) y Comentaristas, con el reloj del nivel.
+            feed = self.feed_data()
             blinks = []
             for bl in self.m.blink_items:
                 if bl["rhythm"] in self.m.zones:
                     blinks.append(dict(bl, kind="blink", band=bl["rect"], bottom=bl["rect"][3]))
-            timed = banners + bells
-            self._hazards = {"banners": banners, "bells": bells, "blinks": blinks, "timed": timed,
+            timed = banners + bells + feed
+            self._hazards = {"banners": banners, "bells": bells, "blinks": blinks, "timed": timed, "feed": feed,
                              "level": [h for h in timed if not h["rhythm"]], "all": timed + blinks,
-                             "legacy": not (bells or blinks or self.m.dash_possible
+                             "legacy": not (bells or blinks or feed or self.m.dash_possible
                                             or any(b["rhythm"] for b in banners))}
         return self._hazards
+
+
+    # --- Mundo 2 (paso 9b de docs/propuesta-mundo-2.md): videos en autoplay y Comentaristas ---
+    # Amenazas con el reloj del nivel, como los banners (el bot espera en la entrada a la fase del plan):
+    #   - ola del video (clip wave): un SpamBanner en modo disparo por la fila de abajo de la tarjeta, como un
+    #     banner cuyo intervalo es el del clip (clip_s, o aviso + barrido + min_rest_s);
+    #   - rayo (clip ray): onda de 1 tile (damage_width_px de alarm_bell) desde la fila de arriba de la tarjeta
+    #     ray_tiles celdas hacia abajo, ray_wave_s tras el aviso, en la columna de Isak AL EMPEZAR EL CLIP: la
+    #     busqueda recuerda esa columna en su estado (si Isak no tenia la tarjeta entera a la vista, no cae);
+    #   - cuenta (clip count) y Comentarista: proyectiles (NotificationShot, size_px sin girar) que salen al
+    #     terminar el aviso y vuelan a shot_speed_px_s hasta shot_range_tiles o hasta el terreno ('#').
+    # La activacion por camara (el clip empieza al entrar la tarjeta entera en la vista) no fija la fase: como
+    # con los banners, la busqueda elige la fase y el camino exportado la sincroniza (wait_phase, clip_cycle_s).
+    # El pulso (pausa 3 s) y el laser no se usan en el plan: basta con esquivarlos.
+
+    def view_rect(self, card):
+        """Posiciones del centro del cuerpo de Isak con las que la tarjeta `card` (px) se ve entera, con la
+        camara centrada en Isak (VIEW_W_PX x VIEW_H_PX)."""
+        cx, cy = (card[0] + card[2]) * 0.5, (card[1] + card[3]) * 0.5
+        hx = max(VIEW_W_PX * 0.5 - (card[2] - card[0]) * 0.5, 0.0)
+        hy = max(VIEW_H_PX * 0.5 - (card[3] - card[1]) * 0.5, 0.0)
+        return (cx - hx, cy - hy, cx + hx, cy + hy)
+
+    def in_view(self, view, x, feet):
+        y = feet - self.m.hh * 0.5
+        return view[0] <= x <= view[2] and view[1] <= y <= view[3]
+
+    def shot_travel(self, origin, vel, size, probe_dy, range_px):
+        """Distancia (px) que vuela un proyectil desde `origin` con direccion `vel` (unitaria) hasta
+        range_px o hasta que el punto de prueba (centro + (0, probe_dy)) entra en terreno solido."""
+        grid = self.m.grid
+        d = 0.0
+        while d < range_px:
+            nd = min(d + SHOT_PROBE_PX, range_px)
+            px, py = origin[0] + vel[0] * nd, origin[1] + vel[1] * nd + probe_dy
+            c, r = int(math.floor(px / self.T)), int(math.floor(py / self.T))
+            if not (0 <= r < len(grid) and 0 <= c < len(grid[r])) or grid[r][c] == "#":
+                return nd
+            d = nd
+        return range_px
+
+    def shot_item(self, eid, kind_of, warn, interval, phase, origin, vel, speed, size, travel):
+        hw, hh = size[0] * 0.5, size[1] * 0.5
+        end = (origin[0] + vel[0] * travel, origin[1] + vel[1] * travel)
+        band = (min(origin[0], end[0]) - hw, min(origin[1], end[1]) - hh, max(origin[0], end[0]) + hw,
+                max(origin[1], end[1]) + hh)
+        return {"id": eid, "kind": "shot", "feed": kind_of, "warn": warn, "launch": warn, "interval": interval,
+                "phase": phase, "rhythm": "", "origin": origin, "vel": (vel[0] * speed, vel[1] * speed),
+                "half": (hw, hh), "travel_s": travel / max(speed, 1.0), "band": band, "bottom": band[3]}
+
+    def feed_data(self):
+        out = []
+        T = self.T
+        for enemy in self.level.get("enemies", []):
+            if enemy["type"] == "autoplay_video":
+                p = dict(self.v.enemy_data("autoplay_video"))
+                p.update(enemy.get("params", {}))
+                x, y = int(enemy["x"]), int(enemy["y"])
+                cw, ch = int(p["card_tiles"][0]), int(p["card_tiles"][1])
+                card = (x * T, (y + 1 - ch) * T, (x + cw) * T, (y + 1) * T)
+                facing = 1 if int(p["facing"]) >= 0 else -1
+                warn = float(p["anticipation_frames"]) / float(p["anim_fps"])
+                clip = str(p["clip"])
+                rest_min = float(p.get("min_rest_s", 0.25))
+                if clip == "wave":
+                    b = dict(self.v.enemy_data("spam_banner"))
+                    corridor = float(p["wave_tiles"]) * T
+                    bw = float(b["banner_size"][0])
+                    bwarn = float(b["anticipation_frames"]) / float(b["anim_fps"])
+                    sweep = max(corridor - bw, 0.0) / float(b["sweep_speed_px_s"])
+                    interval = max(float(p["clip_s"]), warn + sweep + rest_min)
+                    bx = x + (cw - 1 if facing > 0 else 0)
+                    by = y + int(p.get("wave_row_offset", 0))
+                    feet = (by + 1) * T
+                    entry = (bx + 0.5) * T - T * 0.5 * facing
+                    a, bnd = entry, entry + facing * corridor
+                    dw, dh = float(b["damage_size"][0]), float(b["damage_size"][1])
+                    bottom = feet - float(b["damage_bottom_px"])
+                    out.append({"id": enemy["id"], "dir": facing, "corridor": corridor, "bw": bw, "warn": bwarn,
+                                "sweep": sweep, "interval": interval, "rest": interval - bwarn - sweep, "phase": 0.0,
+                                "entry": entry, "speed": float(b["sweep_speed_px_s"]), "dw": dw, "dh": dh,
+                                "bottom": bottom, "cell": (bx, by),
+                                "band": (min(a, bnd), bottom - dh, max(a, bnd), bottom), "kind": "banner",
+                                "rhythm": "", "rhythm_offset": 0.0, "knockback": False, "feed": "autoplay_video",
+                                "clip_shift": interval - bwarn - sweep})
+                elif clip == "ray":
+                    wave = float(p["ray_wave_s"])
+                    interval = max(float(p["clip_s"]), warn + wave + rest_min)
+                    bell = self.v.enemy_data("alarm_bell")
+                    dw = float(bell.get("damage_width_px", 48.0))
+                    top = card[1] + int(p.get("ray_top_offset", 0)) * T
+                    bottom = top + int(p["ray_tiles"]) * T
+                    view = self.view_rect(card)
+                    c0, c1 = int(math.floor(view[0] / T)), int(math.floor(view[2] / T))
+                    out.append({"id": enemy["id"], "kind": "ray", "feed": "autoplay_video", "warn": warn,
+                                "wave": wave, "interval": interval, "phase": 0.0, "rhythm": "", "dw": dw,
+                                "top": top, "bottom_px": bottom, "view": view,
+                                "band": (c0 * T, top, (c1 + 1) * T, bottom), "bottom": bottom, "cell": (x, y)})
+                else:
+                    attack = float(p.get("count_attack_s", 0.5))
+                    interval = max(float(p["clip_s"]), warn + attack + rest_min)
+                    origin = ((card[0] + card[2]) * 0.5, (card[1] + card[3]) * 0.5)
+                    speed = float(p["shot_speed_px_s"])
+                    size = (float(p["shot_size_px"][0]), float(p["shot_size_px"][1]))
+                    degs = list(p.get("fan_deg", [0.0]))
+                    for i in range(int(p.get("fan_count", len(degs)))):
+                        ang = math.radians(float(degs[i]) if i < len(degs) else 0.0) * facing
+                        vel = (facing * math.cos(ang), facing * math.sin(ang))
+                        travel = self.shot_travel(origin, vel, size, 0.0, float(p["shot_range_tiles"]) * T)
+                        out.append(self.shot_item(enemy["id"], "autoplay_video", warn, interval, 0.0, origin, vel,
+                                                  speed, size, travel))
+            elif enemy["type"] == "commenter":
+                p = dict(self.v.enemy_data("commenter"))
+                p.update(enemy.get("params", {}))
+                x, y = int(enemy["x"]), int(enemy["y"])
+                facing = 1 if int(p["facing"]) >= 0 else -1
+                warn = float(p["anticipation_frames"]) / float(p["anim_fps"])
+                interval = max(float(p["interval_s"]), warn + float(p.get("min_rest_s", 0.25)))
+                origin = ((x + 0.5 + facing * int(p.get("shot_col_offset", 1))) * T, (y + 1) * T - T * 0.5)
+                speed = float(p["shot_speed_px_s"])
+                size = (float(p["shot_size_px"][0]), float(p["shot_size_px"][1]))
+                # Commenter._step_shots apaga el bocadillo cuando su borde de arriba toca terreno.
+                travel = self.shot_travel(origin, (0.0, -1.0), size, -size[1] * 0.5, float(p["shot_range_tiles"]) * T)
+                # Su reloj corre desde el inicio del nivel, desplazado offset_s (ciclo = tiempo - offset_s).
+                out.append(self.shot_item(enemy["id"], "commenter", warn, interval, -float(p.get("offset_s", 0.0)),
+                                          origin, (0.0, -1.0), speed, size, travel))
+        return out
+
+    def feed_rects(self, h, t, zs):
+        """Zonas de dano de un proyectil o un rayo del feed a los `t` s de su ciclo."""
+        if h["kind"] == "shot":
+            out = []
+            age = t - h["launch"]
+            while age < h["travel_s"]:
+                if age >= 0.0:
+                    cx, cy = h["origin"][0] + h["vel"][0] * age, h["origin"][1] + h["vel"][1] * age
+                    out.append((cx - h["half"][0], cy - h["half"][1], cx + h["half"][0], cy + h["half"][1]))
+                age += h["interval"]
+            return out
+        if not (h["warn"] <= t < h["warn"] + h["wave"]):
+            return []
+        col = zs.get(("ray", h["id"])) if zs is not None else None
+        if col is None:
+            return [h["band"]]  # sin saber donde estaba Isak al empezar el clip: toda su franja
+        if col < 0:
+            return []
+        cx = (col + 0.5) * self.T
+        return [(cx - h["dw"] * 0.5, h["top"], cx + h["dw"] * 0.5, h["bottom_px"])]
+
+    def feed_hits(self, h, tw, zs, box, margin):
+        t = (tw + h["phase"]) % h["interval"]
+        for d in (self.margin_offsets(margin) if margin > 0.0 else (0.0,)):
+            for rect in self.feed_rects(h, (t + d) % h["interval"], zs):
+                if rects_overlap(box, rect):
+                    return True
+        return False
+
+    def ray_note(self, rays, zs, t0, t1, x, feet):
+        """Al empezar un clip de un rayo entre t0 y t1 (reloj del nivel), la columna de Isak (o -1 si no tenia
+        la tarjeta entera a la vista y el clip no empieza)."""
+        for h in rays:
+            c0 = (t0 + h["phase"]) % h["interval"]
+            c1 = (t1 + h["phase"]) % h["interval"]
+            if c1 < c0 or t1 - t0 >= h["interval"]:
+                zs[("ray", h["id"])] = int(math.floor(x / self.T)) if self.in_view(h["view"], x, feet) else -1
+            elif c1 >= h["warn"] + h["wave"]:
+                # Pasado el rayo la columna ya no importa (menos estados en la busqueda).
+                zs[("ray", h["id"])] = -1
+
+    # --- Zonas de clones de «Un video mas» (Mundo 2, paso 9b) ---
+    # Simulacion a lo largo del camino (como los puntos rojos), con CloneZone y VideoClone: con los pies de Isak
+    # dentro de la zona, cada spawn_s (tiempo del mundo) un aviso de warn_frames a anim_fps y nace un clon en el
+    # borde de la zona mas lejano a Isak, a ras de su fila de abajo, que patrulla hacia el centro a
+    # patrol_speed_px_s y gira en los limites de la zona, en las paredes (y en el muro sin romper) y en los
+    # bordes; tope max_clones (vivos + avisando); al salir, el reloj a cero. Un golpe al suelo cuya onda toca la
+    # zona los elimina a todos, cancela el aviso y pone el reloj a cero. Si un clon alcanza a Isak (salvo en los
+    # cuadros invulnerables del dash), el plan anade un golpe al suelo antes (en una celda de pie dentro de la
+    # zona, o partiendo una espera) y vuelve a simular; si no hay golpe (o no llega a tiempo), error.
+
+    def clone_zones(self):
+        cfg = self.m.catalog.get("clone_zone", {})
+        types = self.m.catalog.get("types", {}).get("clone_zone", {})
+        data = None
+        out = []
+        T = self.T
+        for obj in self.level.get("objects", []):
+            if obj["type"] != "clone_zone":
+                continue
+            if data is None:
+                data = self.v.enemy_data("video_clone")
+            p = dict(types.get("defaults", {}))
+            p.update(obj.get("params", {}))
+            zc, zr, zw, zh = [int(v) for v in p["zone"]]
+            rect = (zc * T, zr * T, (zc + zw) * T, (zr + zh) * T)
+            out.append({"id": str(p.get("id", "clone_zone_%d_%d" % (obj["x"], obj["y"]))), "rect": rect,
+                        "spawn_s": float(p.get("spawn_s", 1.5)), "max": int(p.get("max_clones", 6)),
+                        "warn": float(cfg.get("warn_frames", 9)) / float(cfg.get("anim_fps", 12.0)),
+                        "left": rect[0] + T * 0.5, "right": rect[2] - T * 0.5, "feet": rect[3],
+                        "row": zr + zh - 1, "speed": float(data["patrol_speed_px_s"]),
+                        "body": (float(data["body_size"][0]), float(data["body_size"][1])),
+                        "damage": (float(data["damage_size"][0]), float(data["damage_size"][1]))})
+        return out
+
+    def clone_solid(self, c, r, walls):
+        grid = self.m.grid
+        if not (0 <= r < len(grid) and 0 <= c < len(grid[r])):
+            return True
+        return grid[r][c] == "#" or (c, r) in walls
+
+    def clone_support(self, c, r, walls):
+        grid = self.m.grid
+        if not (0 <= r < len(grid) and 0 <= c < len(grid[r])):
+            return False
+        return grid[r][c] in "#-" or (c, r) in walls
+
+    def simulate_clones(self, steps, zones):
+        """Recorre el camino; devuelve {"hit": (paso, cuadro, zona, nodo) o None, "stats": por zona}."""
+        T = self.T
+        rules = self.rules
+        self.timeline(steps)
+        walls = {}
+        for g in self.m.gates:
+            if g.kind == "pound":
+                for cell in g.cells:
+                    walls[cell] = g.obj_id
+        broken = set()
+        st = {z["id"]: {"inside": 0.0, "warn": -1.0, "at": 0.0, "clones": [], "spawned": 0, "max": 0, "inside_s": 0.0}
+              for z in zones}
+        land_k = int(round(rules.pound_land_s / DT))
+        for i, s in enumerate(steps):
+            smp = self.samples(s)
+            if not smp:
+                continue
+            scale = rules.debug_world_scale if s.get("debug_active") else 1.0
+            dt = self.duration(s) / len(smp) * scale
+            inv = self.invulnerable_range(s)
+            pound_at = None
+            if s["action"] == "ground_pound":
+                pound_at = min(len(smp) - 1, land_k + (int(round(rules.pound_cooldown_s / DT))
+                                                       if s.get("cooldown_before") else 0))
+            for k, (x, feet, _air) in enumerate(smp):
+                live = {cell for cell, gid in walls.items() if gid not in broken}
+                for z in zones:
+                    zs = st[z["id"]]
+                    if zs["warn"] >= 0.0:
+                        zs["warn"] -= dt
+                        if zs["warn"] <= 0.0:
+                            zs["warn"] = -1.0
+                            center = (z["rect"][0] + z["rect"][2]) * 0.5
+                            zs["clones"].append([zs["at"], 1.0 if zs["at"] < center else -1.0])
+                            zs["spawned"] += 1
+                    r = z["rect"]
+                    if r[0] <= x < r[2] and r[1] <= feet - 1.0 < r[3]:
+                        zs["inside"] += dt
+                        zs["inside_s"] += dt
+                        if zs["inside"] >= z["spawn_s"]:
+                            zs["inside"] -= z["spawn_s"]
+                            if len(zs["clones"]) + (1 if zs["warn"] >= 0.0 else 0) >= z["max"]:
+                                zs["inside"] = 0.0
+                            else:
+                                far_left = abs(x - z["left"]) >= abs(x - z["right"])
+                                zs["at"] = z["left"] if far_left else z["right"]
+                                zs["warn"] = z["warn"]
+                    else:
+                        zs["inside"] = 0.0
+                    half = z["body"][0] * 0.5
+                    for cl in zs["clones"]:
+                        nx = cl[0] + cl[1] * z["speed"] * dt
+                        lead = nx + cl[1] * half
+                        col = int(math.floor(lead / T))
+                        if (nx < z["left"] or nx > z["right"] or self.clone_solid(col, z["row"], live)
+                                or not self.clone_support(col, z["row"] + 1, live)):
+                            cl[1] = -cl[1]
+                            nx = min(max(cl[0], z["left"]), z["right"])
+                        cl[0] = nx
+                    zs["max"] = max(zs["max"], len(zs["clones"]))
+                    if not (inv[0] <= k < inv[1]) and zs["clones"]:
+                        hr = self.hurt_rect(x, feet)
+                        dw, dh = z["damage"]
+                        top = z["feet"] - z["body"][1] * 0.5 - dh * 0.5
+                        for cl in zs["clones"]:
+                            if rects_overlap(hr, (cl[0] - dw * 0.5, top, cl[0] + dw * 0.5, top + dh)):
+                                return {"hit": (i, k, z["id"], self.node_of(s) or s.get("to")), "stats": st}
+                if pound_at is not None and k == pound_at:
+                    wave = (x - rules.pound_half_width, feet - rules.pound_height, x + rules.pound_half_width,
+                            feet + rules.pound_below)
+                    for z in zones:
+                        if rects_overlap(wave, z["rect"]):
+                            zs = st[z["id"]]
+                            zs["clones"] = []
+                            zs["warn"] = -1.0
+                            zs["inside"] = 0.0
+                    broken.update(s.get("breaks", []))
+        return {"hit": None, "stats": st}
+
+    def hit_time(self, steps, hit):
+        i, k = hit[0], hit[1]
+        smp = self.samples(steps[i])
+        return steps[i]["t"] + self.duration(steps[i]) * (k + 1) / max(len(smp), 1)
+
+    def clone_pound(self, node, state, zid):
+        x, feet = self.feet(node)
+        return {"action": "ground_pound", "at": node, "shot": {"x": x, "facing": 1}, "state": state, "air": False,
+                "breaks": [], "clears": [zid], "target": {"type": "clone_zone", "id": zid}}
+
+    def pound_reaches(self, node, z):
+        rules = self.rules
+        x, feet = self.feet(node)
+        wave = (x - rules.pound_half_width, feet - rules.pound_height, x + rules.pound_half_width,
+                feet + rules.pound_below)
+        return rects_overlap(wave, z["rect"])
+
+    def clone_candidates(self, steps, hit, z):
+        """Variantes del camino con un golpe al suelo que limpie la zona antes del golpe del clon: partiendo la
+        espera en la que llega (si es una espera simple) o tras una celda de pie anterior dentro de la zona."""
+        i, k, zid, _node = hit
+        s = steps[i]
+        out = []
+        if s["action"] in ("wait", "wait_scroll") and not s.get("timed") and s.get("seconds", 0.0) > 0.0:
+            node = tuple(s["at"])
+            if self.m.has_pound(s["state"]) and self.pound_reaches(node, z):
+                local = self.duration(s) * (k + 1) / max(len(self.samples(s)), 1)
+                lead = self.rules.pound_land_s + 0.25
+                while local - lead > 0.0:
+                    first = dict(s, seconds=local - lead)
+                    first.pop("_samples", None)
+                    second = dict(s, seconds=s["seconds"] - (local - lead))
+                    second.pop("_samples", None)
+                    out.append(steps[:i] + [first, self.clone_pound(node, s["state"], zid), second] + steps[i + 1:])
+                    lead += 0.5
+        for j in range(i - 1, max(-1, i - 16), -1):
+            sj = steps[j]
+            if sj["action"] != "move":
+                continue
+            nxt = steps[j + 1]
+            if sj.get("timed") and nxt.get("timed") and nxt["action"] != "wait_phase":
+                continue  # dentro de un cruce con tiempo (banners, acertijos): no se interrumpe
+            node = tuple(sj["to"])
+            if not self.m.has_pound(sj["state"]) or not self.pound_reaches(node, z):
+                continue
+            if not self.m.world(sj["state"], False).is_node(*node):
+                continue
+            out.append(steps[:j + 1] + [self.clone_pound(node, sj["state"], zid)] + steps[j + 1:])
+        return out
+
+    def check_clones(self, steps):
+        zones = self.clone_zones()
+        if not zones:
+            return steps
+        by_id = {z["id"]: z for z in zones}
+        added = {z["id"]: 0 for z in zones}
+        result = self.simulate_clones(steps, zones)
+        failed = None
+        for _ in range(MAX_CLONE_POUNDS):
+            if result["hit"] is None:
+                break
+            hit = result["hit"]
+            t_hit = self.hit_time(steps, hit)
+            chosen = None
+            for cand in self.clone_candidates(steps, hit, by_id[hit[2]]):
+                self.resolve_phase_waits(cand, None)
+                res = self.simulate_clones(cand, zones)
+                if res["hit"] is None or self.hit_time(cand, res["hit"]) > t_hit + EPS:
+                    chosen = (cand, res)
+                    break
+            if chosen is None:
+                failed = hit
+                break
+            steps, result = chosen
+            added[hit[2]] += 1
+        else:
+            failed = result["hit"]
+        self.timeline(steps)
+        if failed is not None:
+            self.resolve_phase_waits(steps, None)
+            result = self.simulate_clones(steps, zones)
+            i, k, zid, node = failed
+            self.error("zona de clones %s: un clon alcanza a Isak en el paso %d%s y no hay golpe al suelo que la limpie "
+                       "a tiempo (el camino pasa mas de %.1f s dentro; abilities_available.ground_pound o un "
+                       "reproductor)" % (zid, i, "" if node is None else " (fila %d, columna %d)" % (node[1], node[0]),
+                                         by_id[zid]["spawn_s"]), node, zid)
+        stats = result["stats"]
+        self.info["clones"] = [{"id": z["id"], "pounds": added[z["id"]], "spawned": stats[z["id"]]["spawned"],
+                                "max_alive": stats[z["id"]]["max"], "inside_s": round(stats[z["id"]]["inside_s"], 2)}
+                               for z in zones]
+        return steps
 
     # Metronomos (rhythm_zone / alarm_tunnel): estado (arrancado, ciclos, segundos del ciclo, columna mas
     # avanzada), como RhythmZone.step / AlarmTunnel.
@@ -1545,6 +1952,10 @@ class Planner:
                 band = h["band"]
                 if not (hp[0] < band[2] and hp[2] > band[0] and hp[1] < band[3] and hp[3] > band[1]):
                     continue  # la zona de dano nunca sale de su franja
+                if h["kind"] in FEED_KINDS:
+                    if self.feed_hits(h, tw, zs, hp if margin > 0.0 else hr, margin):
+                        return h["id"]
+                    continue
                 if margin > 0.0:
                     if self.hazard_hits_window(h, tw, zs, hp, margin):
                         return h["id"]
@@ -1734,7 +2145,7 @@ class Planner:
                 ids = set()
                 for k in range(first, exit_idx + 1):
                     ids |= exposure[k]
-                involved = [h["id"] for h in hz["all"] if h["id"] in ids]
+                involved = list(dict.fromkeys(h["id"] for h in hz["all"] if h["id"] in ids))
                 inv_h = [h for h in hz["all"] if h["id"] in ids]
                 # Metronomos de las amenazas que caen en la zona de la busqueda (la de hazard_search).
                 box = self.search_box(entry, exit_node, inv_h)
@@ -1766,6 +2177,9 @@ class Planner:
                 item.update({"bells": [i for i in involved if any(h["id"] == i for h in hz["bells"])],
                              "blinks": [i for i in involved if any(h["id"] == i for h in hz["blinks"])],
                              "rhythm": sorted(ctx["zones"]), "phase_free": ctx["free"] and ctx["level"]})
+                if hz["feed"]:
+                    item["banners"] = [i for i in item["banners"] if not any(h["id"] == i for h in hz["feed"])]
+                    item["feed"] = [i for i in involved if any(h["id"] == i for h in hz["feed"])]
             self.info["banners"].append(item)
             out.extend(steps[cursor:first])
             if plan is None:
@@ -1807,9 +2221,13 @@ class Planner:
             if hz["legacy"] or (ctx["free"] and ctx["level"]):
                 level_h = banners if hz["legacy"] else [h for h in hz["level"] if h["id"] in involved]
                 sync = {"action": "wait_phase", "at": entry, "state": state, "period_s": rp,
-                        "phase_s": plan["phase"], "hazards": [bn["id"] for bn in level_h],
+                        "phase_s": plan["phase"], "hazards": list(dict.fromkeys(bn["id"] for bn in level_h)),
                         "banner_cycle_s": {bn["id"]: round((plan["phase"] + bn["phase"]) % bn["interval"], 3)
-                                           for bn in level_h if bn["kind"] == "banner"}}
+                                           for bn in level_h if bn["kind"] == "banner" and not bn.get("feed")}}
+                clips = {h["id"]: round(((plan["phase"] + h["phase"]) % h["interval"] - h.get("clip_shift", 0.0))
+                                        % h["interval"], 3) for h in level_h if h.get("feed")}
+                if clips:
+                    sync["clip_cycle_s"] = clips
                 bells = {bl["id"]: round((plan["phase"] + bl["phase"]) % bl["interval"], 3)
                          for bl in level_h if bl["kind"] == "bell"}
                 if bells:
@@ -2087,6 +2505,11 @@ class Planner:
         cool = self.rules.dash_cooldown_s
         walk_speed = ctx.get("walk_speed")
 
+        # Rayos de los videos (paso 9b): la columna de Isak al empezar el clip viaja con cada estado de la busqueda
+        # (en zs, sin formar parte de la clave: con ella los estados se multiplicaban por las columnas; asi gana
+        # el que llega antes, y lo que se acepta siempre se ha comprobado con su propia columna).
+        rays = [h for h in hz["timed"] if h["kind"] == "ray"]
+
         def zkey(zs):
             return tuple(self.zone_key(z, zs[zid]) for zid, z in zip(zids, zones))
 
@@ -2098,12 +2521,24 @@ class Planner:
             zstep = step if zstep is None else zstep
             hl = local(samples) if hl is None else hl
             check = bool(hl["timed"] or hl["blinks"])
+            if rays:
+                zs = dict(zs)
+                ray_clock = [(h, ("ray", h["id"]), (phase_t + h["phase"]) % h["interval"]) for h in rays]
             for k, (x, f, _) in enumerate(samples):
                 tw = phase_t + (k + 1) * step
                 if zids:
                     zs = dict(zs)
                     for zid, z in zip(zids, zones):
                         zs[zid] = self.zone_step(z, zs[zid], x, f, zstep)
+                if rays:
+                    # ray_note, en linea (es de lo que mas se repite en la busqueda).
+                    for h, rkey, c0 in ray_clock:
+                        iv = h["interval"]
+                        a = c0 + k * step
+                        if (a + step) // iv != a // iv:
+                            zs[rkey] = int(x // T) if self.in_view(h["view"], x, f) else -1
+                        elif zs.get(rkey) != -1 and (a + step) % iv >= h["warn"] + h["wave"]:
+                            zs[rkey] = -1
                 if check and self.sample_unsafe(x, f, inv[0] <= k < inv[1], tw, zs, hl, margin):
                     return None
             return zs
@@ -2137,6 +2572,10 @@ class Planner:
         parent = {}
         data = {}  # clave -> (t, fase de entrada, metronomos, enfriamiento, dashes)
         zs0 = dict(ctx["zones"])
+        if rays:
+            ex, ef = self.feet(entry)
+            for h in rays:
+                zs0[("ray", h["id"])] = int(math.floor(ex / T)) if self.in_view(h["view"], ex, ef) else -1
         cd0 = float(ctx.get("cd", 0.0))
         # Con el arco real, el estado lleva si Isak esta parado (tras una espera o un salto en el sitio): el
         # siguiente movimiento arranca acelerando (rest_lag). Sin el, siempre False (como antes).
@@ -2495,6 +2934,10 @@ class Planner:
                     item["banner_cycle_s"] = s["banner_cycle_s"]
                     if s.get("bell_cycle_s"):
                         item["bell_cycle_s"] = s["bell_cycle_s"]
+                    if s.get("clip_cycle_s"):
+                        # Paso 9b: segundos de su ciclo de cada video en autoplay y Comentarista (0 = empieza el
+                        # aviso del clip o se infla el bocadillo).
+                        item["clip_cycle_s"] = s["clip_cycle_s"]
                 if a == "wait_beat":
                     # Paso 9: esperar a que el metronomo llegue a esta fase (al terminar la espera).
                     item["rhythm"] = s["beat"]["rhythm"]
@@ -2527,6 +2970,15 @@ class Planner:
                     item["breaks"] = list(s.get("breaks", []))
                     if s.get("debug"):
                         item["debug"] = True
+                    # Paso 9b: golpe count de of (muro «Cargando mas...»), tras esperar el enfriamiento, y zonas de
+                    # clones que limpia la onda.
+                    if s.get("of"):
+                        item["count"] = s["count"]
+                        item["of"] = s["of"]
+                        if s.get("cooldown_before"):
+                            item["cooldown_before_s"] = self.rules.pound_cooldown_s
+                    if s.get("clears"):
+                        item["clears"] = list(s["clears"])
                 if s.get("final"):
                     item["final"] = True
             if "energy_before" in s:

@@ -327,6 +327,10 @@ class Rules:
         hop_up = math.sqrt(2.0 * max(self.pound_hop_px, 0.0) / self.gravity) if self.gravity > 0 else 0.0
         self.pound_s = self.pound_hold_s + hop_up + self.pound_hop_px / max(self.pound_drop_speed, 1.0) \
             + self.pound_pose_s
+        # Paso 9b: la onda sale al aterrizar (antes de la pose) y entre dos golpes seguidos (muro «Cargando
+        # mas...», 3 golpes) pasa el enfriamiento cooldown_s, que empieza al terminar la pose.
+        self.pound_land_s = self.pound_s - self.pound_pose_s
+        self.pound_cooldown_s = float(pound.get("cooldown_s", 0.4))
         self.time_margin = None  # --time-margin (si no, validation.time_margin_s del nivel o 1,5 s)
         self.physics_path = physics_path
         # Mejoras de Calc (tanda M1, 2026-10-17): --upgrades acepta "pista:nivel" (p. ej. laser:3) y los
@@ -504,6 +508,10 @@ class Gate:
             return "encuentro con Eco %s" % self.obj_id
         if self.kind == "switch" and getattr(self, "hidden", False):
             return "panel oculto %s" % self.obj_id
+        if self.kind == "pound" and getattr(self, "wall", False):
+            return "muro Cargando mas %s" % self.obj_id
+        if self.kind == "dnd" and getattr(self, "player", False):
+            return "reproductor %s" % self.obj_id
         return "%s %s" % (names[self.kind], self.obj_id)
 
 
@@ -585,7 +593,11 @@ class LevelModel:
         # Hay pulso en el nivel (desde el inicio, o lo da un encuentro con Eco o un ability_pickup).
         self.pulse_possible = self.pulse or any(g.kind == "pickup" and g.ability == "pulse" for g in self.gates)
         # Hay dash en el nivel (abilities_available.dash o el interruptor No molestar; paso 9 del 1-3).
-        self.dash_possible = self.dash_base or any(g.kind == "dnd" for g in self.gates)
+        self.dash_possible = self.dash_base or any(g.kind == "dnd" and g.ability == "dash" for g in self.gates)
+        # Hay golpe al suelo (abilities_available.ground_pound o un reproductor con el boton de pausa que lo da;
+        # paso 9b de docs/propuesta-mundo-2.md).
+        self.pound_possible = self.pound_base or any(g.kind == "dnd" and g.ability == "ground_pound"
+                                                     for g in self.gates)
         # Pasillos de los banners de validation.dash_required (paso 10 del 1-3, 2026-10-20): sin el dash son un
         # peligro del grafo (como una Burbuja sin aturdir): el golpe devuelve a la entrada y el plan demuestra
         # que ni andando ni corriendo se cruzan; con el dash, el plan busca el cruce al compas.
@@ -796,15 +808,23 @@ class LevelModel:
                             tile=T)
                 gate.hidden = bool(p.get("hidden", False))
                 gate.one_way = bool(p.get("one_way", False))
+                # Muro «Cargando mas...» (paso 9b): `pounds` golpes (3), cada uno desde una celda de pie.
+                gate.pounds = max(1, int(p.get("pounds", 1)))
+                gate.wall = bool(p.get("wall", False))
                 self.gates.append(gate)
             elif obj["type"] == "dnd_switch":
                 # Interruptor «No molestar» (1-3, paso 3; modelado en el paso 9): un pulso que alcanza su
                 # hit_rect, con Isak de espaldas pose_s, da para siempre la habilidad `ability` (el dash).
-                cfg = self.catalog.get("dnd_switch", {})
+                # El reproductor con el boton de pausa (Mundo 2, paso 9b; PausePlayer hereda de DndSwitch) llega
+                # como dnd_switch con `_config` = pause_player (tools/world2_model.py) y da el golpe al suelo.
+                config = str(p.get("_config", "") or "dnd_switch")
+                cfg = self.catalog.get(config, {})
                 sid = str(p.get("id", "dnd_%d_%d" % (obj["x"], obj["y"])))
+                what = "reproductor" if config == "pause_player" else "interruptor No molestar"
                 gate = Gate("dnd:" + sid, "dnd", sid, openers=[cell_rect(obj, cfg.get("hit_rect", [8, -14, 48, 48]),
-                                                                          "interruptor No molestar %s" % sid)],
+                                                                          "%s %s" % (what, sid))],
                             col=obj["x"], row=obj["y"], tile=T)
+                gate.player = config == "pause_player"
                 gate.ability = str(p.get("ability", "dash"))
                 gate.pulses = 1
                 gate.pose_s = float(cfg.get("pose_s", 0.45))
@@ -1088,8 +1108,12 @@ class LevelModel:
                                           for g in self.gates))
 
     def has_pound(self, state):
-        """El golpe al suelo esta disponible (abilities_available.ground_pound; Mundo 2)."""
-        return self.pound_base and "ground_pound" not in self.forbidden
+        """El golpe al suelo esta disponible (abilities_available.ground_pound o, desde el paso 9b, ya se pauso un
+        reproductor con el boton de pausa que lo da; Mundo 2)."""
+        if "ground_pound" in self.forbidden:
+            return False
+        return self.pound_base or any(g.kind == "dnd" and g.ability == "ground_pound" and g.gid in state
+                                      for g in self.gates)
 
     def pound_hits(self, gate, node, state, debug=False):
         """Verdadero si la onda de un golpe al suelo con Isak de pie en `node` alcanza la tarjeta `gate`
@@ -2220,10 +2244,11 @@ class Validator:
         del camino (tools/level_plan.py) y se informa de el. El 1-1 no lo es (su salida no cambia)."""
         kinds = {"laser_receiver", "relay_receiver", "ad_cover", "reminder_platform", "snooze_button",
                  "overlay_popup", "update_bar", "power_switch", "debug_switch", "laser_switch", "charge_dock",
-                 "dnd_switch", "blink_platform", "rhythm_zone", "alarm_tunnel"}
+                 "dnd_switch", "blink_platform", "rhythm_zone", "alarm_tunnel", "clone_zone"}
         if any(o["type"] in kinds for o in self.level.get("objects", [])):
             return True
-        if any(e["type"] in ("notification_badge", "spam_banner", "alarm_bell") for e in self.level.get("enemies", [])):
+        if any(e["type"] in ("notification_badge", "spam_banner", "alarm_bell", "autoplay_video", "commenter")
+               for e in self.level.get("enemies", [])):
             return True
         if self.model.dash_possible:
             # Paso 9 de docs/propuesta-1-3.md: el dash gasta energia y tiene enfriamiento (plan del camino).
@@ -2532,12 +2557,15 @@ class Validator:
             # Golpe al suelo (Mundo 2, paso 9 de docs/propuesta-mundo-2.md).
             if not is_near:
                 return ""
-            if not m.pound_base:
-                return "%s solo la rompe el golpe al suelo y el nivel no lo tiene (abilities_available.ground_pound)" \
-                    % g.label()
+            it = "lo" if getattr(g, "wall", False) else "la"
+            if not m.pound_possible:
+                return "%s solo %s rompe el golpe al suelo y el nivel no lo tiene (abilities_available.ground_pound " \
+                    "ni un reproductor con el boton de pausa)" % (g.label(), it)
+            if not m.has_pound(state):
+                return "%s solo %s rompe el golpe al suelo y el reproductor que lo da no se alcanza antes" % (g.label(), it)
             if g.hidden and not m.debug_base:
                 return "%s esta oculta: solo se ve (y se rompe) con el Debug y el nivel no lo tiene" % g.label()
-            return "%s: la onda del golpe al suelo no la alcanza desde ninguna celda alcanzable" % g.label()
+            return "%s: la onda del golpe al suelo no %s alcanza desde ninguna celda alcanzable" % (g.label(), it)
         if g.kind == "dock":
             missing = [r for r, gid in zip(g.requires, g.requires_gids) if gid not in state]
             return "%s: Calc no se carga; faltan sin hacer: %s" % (g.label(), ", ".join(missing)) if missing else ""
@@ -2660,10 +2688,15 @@ class Validator:
                                             % (n[1], n[0], g.label(), g.ability)})
                     continue
                 if g.kind == "pound":
-                    # Mundo 2 (paso 9): golpe al suelo cuya onda rompe la tarjeta fragil.
+                    # Mundo 2 (paso 9): golpe al suelo cuya onda rompe la tarjeta fragil (el muro «Cargando
+                    # mas...», paso 9b: pounds golpes).
+                    many = "%d golpes al suelo" % g.pounds if g.pounds > 1 else "golpe al suelo"
                     actions.append({"action": "ground_pound", "from": [n[1], n[0]], "object": g.label(),
-                                    "text": "%sgolpe al suelo en (fila %d, columna %d) -> rompe %s"
-                                            % ("Debug para ver la grieta y " if g.hidden else "", n[1], n[0], g.label())})
+                                    "text": "%s%s en (fila %d, columna %d) -> rompe %s"
+                                            % ("Debug para ver la grieta y " if g.hidden else "", many, n[1], n[0],
+                                               g.label())})
+                    if g.pounds > 1:
+                        actions[-1]["pounds"] = g.pounds
                     continue
                 if g.kind == "lswitch":
                     actions.append({"action": "laser", "from": [n[1], n[0]], "object": g.label(),
@@ -3032,6 +3065,8 @@ class Validator:
                         "bar": "esperar la barra", "switch": "activar el interruptor",
                         "lswitch": "disparar al interruptor", "dock": "cargar a Calc",
                         "dnd": "activar el interruptor No molestar (el dash)"}[g.kind]
+                if g.kind == "dnd" and g.ability != "dash":
+                    what = "activar %s (da el %s)" % (g.label(), g.ability)
                 self.report.warning("%s no es obligatorio: se llega a la meta sin %s" % (g.label(), what),
                                     g.row, g.col, g.label())
 
@@ -3210,6 +3245,8 @@ class Validator:
                 entry.update({"requires": list(g.requires), "wait_s": round(g.wait_s, 2)})
             elif g.kind == "dnd":
                 entry["ability"] = g.ability
+            elif g.kind == "pound" and g.pounds > 1:
+                entry["pounds"] = g.pounds
             if g.kind in ("switch", "lswitch", "dock"):
                 entry["done_at_start"] = g.gid in self.model.initial
             gates.append(entry)
@@ -3460,14 +3497,18 @@ def format_plan(plan):
                    % (seg["from"][0], seg["from"][1], seg["to"][0], seg["to"][1], seg["active_s"], seg["energy"]))
     for b in plan.get("banners", []):
         if "start_phase_s" in b:
-            out.append("    banners %s: cruce de %.1f s desde (fila %d, columna %d) en la fase %.2f s de %.1f s "
+            # Paso 9b: con videos en autoplay o Comentaristas, todas las amenazas del cruce.
+            what = "banners %s" % ", ".join(b["banners"]) if not b.get("feed") else "amenazas %s" % ", ".join(
+                b["banners"] + b.get("bells", []) + b["feed"])
+            out.append("    %s: cruce de %.1f s desde (fila %d, columna %d) en la fase %.2f s de %.1f s "
                        "(%d espera(s), %d salto(s) en el sitio%s)" % (
-                           ", ".join(b["banners"]), b["crossing_s"], b["entry"][0], b["entry"][1], b["start_phase_s"],
+                           what, b["crossing_s"], b["entry"][0], b["entry"][1], b["start_phase_s"],
                            b["period_s"], b["waits"], b["hops"],
                            ", %d dash(es)" % b["dashes"] if b.get("dashes") else ""))
         elif "crossing_s" in b:
             # Paso 9 de docs/propuesta-1-3.md: cruce al compas de un metronomo (sin fase libre).
-            parts = [("banners", b.get("banners")), ("campanas", b.get("bells")), ("plataformas", b.get("blinks"))]
+            parts = [("banners", b.get("banners")), ("campanas", b.get("bells")), ("plataformas", b.get("blinks")),
+                     ("videos y Comentaristas", b.get("feed"))]
             what = "; ".join("%s %s" % (k, ", ".join(v)) for k, v in parts if v)
             out.append("    al compas de %s (%s): cruce de %.1f s desde (fila %d, columna %d) (%d espera(s), %d salto(s) "
                        "en el sitio, %d dash(es))" % (", ".join(b.get("rhythm") or []) or "-", what, b["crossing_s"],
@@ -3482,6 +3523,10 @@ def format_plan(plan):
         out.append("    barra del 99 %% %s: espera de %.1f s en (fila %d, columna %d); %d enemigo(s) en oleadas, que no se "
                    "modelan (se esquivan o se aturden; no hace falta derrotarlos)" % (
                        b["id"], b["wait_s"], b["at"][0], b["at"][1], b["wave_enemies"]))
+    for z in plan.get("clones", []):
+        # Paso 9b: zona de clones de «Un video mas» simulada a lo largo del camino.
+        out.append("    zona de clones %s: %.1f s dentro, nacen %d clon(es) (como mucho %d a la vez); %d golpe(s) al suelo "
+                   "para limpiarla" % (z["id"], z["inside_s"], z["spawned"], z["max_alive"], z["pounds"]))
     for b in plan.get("badges", []):
         out.append("    punto rojo %s: %d golpe(s), %d aturdido(s) con el pulso" % (b["id"], b["hits"], b["stuns"]))
     scroll = plan.get("scroll")

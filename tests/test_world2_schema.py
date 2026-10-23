@@ -306,8 +306,8 @@ class FeedEnemiesSchemaTest(unittest.TestCase):
 
 class PausePlayerSchemaTest(unittest.TestCase):
     """Paso 8: el reproductor con el boton de pausa (pause_player) solo da el golpe al suelo, con la linea de
-    Eco del Mundo 2, fuera del terreno; la sala reproductor_test es valida y el validador la acepta (lo trata
-    como decorado hasta el paso 9b)."""
+    Eco del Mundo 2, fuera del terreno; la sala reproductor_test es valida y el validador la acepta (desde el paso
+    9b el reproductor da el golpe al suelo en el grafo: tests/test_world2_feed_validator.py)."""
 
     def assert_fails(self, level, fragment):
         errors = vls.validate_level(level)

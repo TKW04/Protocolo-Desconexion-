@@ -16,13 +16,19 @@ lower(level, catalog) devuelve una copia del nivel en la que:
     las columnas de su salida: en el juego, al llegar arriba sin la salida todo baja H filas (se vuelve a
     ver lo mismo), asi que desde la banda solo se sale por la salida;
   - cada muro «Cargando mas...» (loading_wall, paso 7) es una pieza `_pound_card` de 1 x height_tiles (pared
-    que abre el golpe al suelo, como la tarjeta fragil de pie). En el juego hacen falta pounds_needed golpes
-    (3); el validador abre la puerta con uno hasta que el paso 9b modele los demas.
+    que abre el golpe al suelo, como la tarjeta fragil de pie) con `pounds` = pounds_needed (3) y `wall`: desde
+    el paso 9b el plan da los 3 golpes (cada uno desde una celda de pie cuya onda, 1,5 tiles, lo alcanza) con
+    el enfriamiento del gesto entre ellos;
+  - cada reproductor con el boton de pausa (pause_player, paso 8; PausePlayer hereda de DndSwitch) es un
+    `dnd_switch` que da `ability` (ground_pound) con la configuracion de la seccion pause_player del catalogo
+    (`_config`): desde el paso 9b el golpe al suelo es una habilidad del grafo que se obtiene en el.
+Las zonas de clones (clone_zone), los videos en autoplay (autoplay_video) y los Comentaristas (commenter) se
+quedan como estan: los modela el plan del camino (tools/level_plan.py, paso 9b).
 Un nivel sin objetos del Mundo 2 se devuelve tal cual (la salida del Mundo 1 no cambia).
 """
 import copy
 
-WORLD2_TYPES = ("fragile_card", "story_card", "loop_section", "loading_wall")
+WORLD2_TYPES = ("fragile_card", "story_card", "loop_section", "loading_wall", "pause_player")
 
 
 def _params(catalog, obj):
@@ -65,7 +71,14 @@ def lower(level, catalog):
             rows = int(p.get("height_tiles", 3))
             objects.append({"type": "_pound_card", "x": x, "y": y, "params": {
                 "id": oid, "width_tiles": 1, "rows": rows, "one_way": False, "hidden": False,
-                "card_height_px": rows * 64.0}})
+                "card_height_px": rows * 64.0, "pounds": max(1, int(p.get("pounds_needed", 3))), "wall": True}})
+            continue
+        if kind == "pause_player":
+            params = dict(obj.get("params", {}))
+            params["id"] = oid
+            params["ability"] = str(p.get("ability", "ground_pound"))
+            params["_config"] = "pause_player"
+            objects.append({"type": "dnd_switch", "x": x, "y": y, "params": params})
             continue
         if kind == "fragile_card":
             upright = p.get("variant", "floor") == "upright"

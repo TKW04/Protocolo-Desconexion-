@@ -103,6 +103,8 @@ rm -f "$IMPORT_LOG"
 # scroll del esquema (tests/test_world2_schema.py; la sala scroll_test se valida y exporta como las demas).
 # Desde el paso 4: los dibujos provisionales de las tarjetas del Mundo 2 para el album
 # (tools/gen_world2_cards.py --check) y la sala tarjetas_test.
+# Desde el paso 9b: el validador con el video en autoplay, los clones, el Comentarista, el muro y el reproductor
+# (tests/test_world2_feed_validator.py).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -145,7 +147,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
-		tests/test_world2_schema.py \
+		tests/test_world2_schema.py tests/test_world2_feed_validator.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
