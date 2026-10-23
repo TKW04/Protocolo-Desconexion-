@@ -67,15 +67,18 @@
 	"phase2": {"first_delay_s": 1.5, "clips": ["countdown_shots", "wave", "rays", "sweep_high"], "clips_per_cycle": 2, "clip_gap_s": 0.5, "seek": true, "seek_slots": ["left", "center", "right"], "seed": 2023, "heal_hits": 1, "punish_clips": 3, "speed_scale": 1.0},
 	"phase3": {"first_delay_s": 1.0, "clips": ["wave", "rays", "sweep_high", "countdown_shots"], "clips_per_cycle": 2, "clip_gap_s": 0.5, "window_s": 4.0, "seek": true, "seek_slots": ["left", "center", "right"], "seed": 3023, "speed_scale": 2.0},
 	"defeat": {"freeze_s": 0.3, "disarm_s": 1.6, "exit_wait_max_s": 2.0, "memory_world": 2, "pixels": {"step_px": 4, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 1023}},
-	"texts_status": "PROPUESTA del orquestador (ideas de tono de §5.1), revisar al jugar; los cierra el paso 20",
+	"_help_notes": "AYUDAS DE ECO CON Q (paso 20 de docs/propuesta-mundo-2.md §8, §5.10, 2026-10-23): help_id de data/help.json que Autoplay pone a cada pieza (HelpCatalog.tag): screen (la pantalla, autoplay), playhead (el cabezal gris de la barra), pause (el boton de pausa: el WeakPoint del cabezal, solo con ayuda mientras se ve, revelado o en pausa), card (las tarjetas de la cinta), countdown (la cuenta de la pantalla: solo mientras se ve «Siguiente video en N» o el «3-2-1»), clip (la ola, el barrido y los rayos, solo mientras avisan o barren) y fan (los proyectiles de la «Cuenta atras»). Textos de Eco en data/help.json (propuesta del orquestador, revisar al jugar); fichas del album provisionales por script (tools/gen_boss_autoplay.py, paleta B).",
+	"help": {"screen": "autoplay", "playhead": "autoplay_playhead", "pause": "autoplay_pause_button", "card": "autoplay_card", "countdown": "autoplay_countdown", "clip": "autoplay_clip", "fan": "autoplay_fan"},
+	"texts_status": "PROPUESTA del orquestador (paso 20, 2026-10-23; ideas de tono de §5.1: Eco habla por el jefe, mas insistente, amable con prisa en Caché), revisar al jugar. intro (importante, pausa), phase_lines (sin pausa), heal_line (sin pausa: la cuenta de la fase 2 llega a 0 y el jefe recupera un golpe), final_system (texto del sistema en el golpe final) y defeat (importante, tras la recompensa). Sin linea de obtencion del gesto: el golpe al suelo se obtiene en el reproductor del 2-2 (PausePlayer, «Mira cuánto tiempo ahorramos juntos.»).",
 	"texts": {
 		"intro": "Te guardé lo mejor para el final, {apodo}. Bueno, para el siguiente.",
-		"phase_lines": {"2": "No te preocupes, empieza solo.", "3": "¿Para qué ir despacio?"},
+		"phase_lines": {"2": "No te preocupes, {apodo}: el siguiente empieza solo.", "3": "¿Para qué ir despacio? Así cabe más."},
+		"heal_line": "¿Ves? Ha empezado otro. No has tenido que hacer nada.",
 		"screen_next": "A continuación…",
 		"screen_countdown": "Siguiente video en %d",
 		"screen_paused": "En pausa",
 		"screen_x2": "x2",
 		"final_system": "Reproducción automática: desactivada.",
-		"defeat": "Vale, {apodo}. Lo dejo en pausa. Solo un momento."
+		"defeat": "Vale, {apodo}. Lo dejo en pausa. Solo un momento, ¿eh?"
 	}
 }

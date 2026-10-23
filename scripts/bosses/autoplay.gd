@@ -38,6 +38,16 @@ signal countdown_expired(healed: int)
 signal final_blow
 signal disarmed
 
+## Ayudas de Eco con Q (paso 20 de docs/propuesta-mundo-2.md; data/help.json): por
+## defecto de help_id (la seccion help de data/bosses/autoplay.json manda).
+const HELP_SCREEN: StringName = &"autoplay"
+const HELP_PLAYHEAD: StringName = &"autoplay_playhead"
+const HELP_PAUSE: StringName = &"autoplay_pause_button"
+const HELP_CARD: StringName = &"autoplay_card"
+const HELP_COUNTDOWN: StringName = &"autoplay_countdown"
+const HELP_CLIP: StringName = &"autoplay_clip"
+const HELP_FAN: StringName = &"autoplay_fan"
+
 const WEAK_POINT_SCENE: PackedScene = preload("res://scenes/bosses/weak_point.tscn")
 const BANNER_SCENE: PackedScene = preload("res://scenes/enemies/spam_banner.tscn")
 const BELL_SCENE: PackedScene = preload("res://scenes/enemies/alarm_bell.tscn")
@@ -83,6 +93,9 @@ var _banners: Dictionary = {}
 var _bells: Array[AlarmBell] = []
 var _shots: Array[NotificationShot] = []
 var _burst: PixelBurst
+var _music: AutoplayMusic
+## Marca de la ayuda de la cuenta (sobre el texto de la pantalla).
+var _countdown_help: CountdownHelp
 var _off: bool = false
 var _rng := RandomNumberGenerator.new()
 # Linea de tiempo de la fase.
@@ -252,6 +265,28 @@ func lap_value(key: String, fallback: Variant) -> Variant:
 	return _lap.get(key, fallback)
 
 
+## help_id de la pieza `key` (screen, playhead, pause, card, countdown, clip, fan):
+## seccion help de data/bosses/autoplay.json.
+func help_id(key: String) -> StringName:
+	var defaults: Dictionary = {"screen": HELP_SCREEN, "playhead": HELP_PLAYHEAD, "pause": HELP_PAUSE,
+		"card": HELP_CARD, "countdown": HELP_COUNTDOWN, "clip": HELP_CLIP, "fan": HELP_FAN}
+	return StringName(String((get_config().get("help", {}) as Dictionary).get(key, defaults.get(key, ""))))
+
+
+## La cuenta se ve en la pantalla: la de la fase 2 («Siguiente video en N», sin
+## pausa) o el «3-2-1» del clip de la «Cuenta atras» antes del abanico.
+func is_countdown_showing() -> bool:
+	if not is_fighting() or is_paused() or _off:
+		return false
+	if get_phase() == 2 and is_window_open():
+		return true
+	return _clip == CLIP_COUNTDOWN and not _shots_fired
+
+
+func get_music() -> AutoplayMusic:
+	return _music if _music != null and is_instance_valid(_music) else null
+
+
 ## Datos de una fase (phase1, phase2, phase3).
 func phase_data(phase_index: int) -> Dictionary:
 	return get_config().get("phase%d" % phase_index, {})
@@ -278,6 +313,7 @@ func begin_intro() -> void:
 
 
 func _on_phase_started(phase_index: int) -> void:
+	_start_music()
 	_clear_attacks()
 	_apply_lap_settings()
 	BossBase.apply_phase_nodes(_level_root(), phase_index)
@@ -355,6 +391,9 @@ func _on_window_closed() -> void:
 		var gained: int = heal_hits(int(p.get("heal_hits", 1)))
 		_update_label()
 		countdown_expired.emit(gained)
+		var heal_line: String = String(_texts.get("heal_line", ""))
+		if gained > 0 and not heal_line.is_empty():
+			say_line(heal_line, false, Callable(), &"heal")
 		clips = int(p.get("punish_clips", clips))
 	_clips_left = clips
 	_gap_left = 0.0
@@ -366,6 +405,7 @@ func _on_core_hit(_remaining_hits: int) -> void:
 
 
 func _on_defeated() -> void:
+	_stop_music()
 	_clear_attacks()
 	_clip = &""
 	_core.set_enabled(false)
@@ -414,6 +454,21 @@ func play_disarm() -> PixelBurst:
 
 func get_pixel_burst() -> PixelBurst:
 	return _burst if _burst != null and is_instance_valid(_burst) else null
+
+
+# --- Musica (mus_boss2 mientras dura la pelea: AutoplayMusic, ambience de audio) ---
+
+func _start_music() -> void:
+	if _music == null or not is_instance_valid(_music):
+		_music = AutoplayMusic.new()
+		_music.name = "AutoplayMusic"
+		add_child(_music)
+
+
+func _stop_music() -> void:
+	if _music != null and is_instance_valid(_music):
+		_music.queue_free()
+	_music = null
 
 
 # --- Linea de tiempo de los clips ---
@@ -483,6 +538,7 @@ func _advance_clip(dt: float, scale_x: float) -> void:
 					_shots_fired = true
 			done = _shots_fired and get_shots().is_empty()
 	if done:
+		_untag_clips()
 		_clip = ATTACK_GAP
 		_gap_left = float(phase_data(get_phase()).get("clip_gap_s", 0.5)) / maxf(scale_x, 0.01)
 
@@ -512,6 +568,7 @@ func _trigger_banner(lane: String, dir: int, speed: float, damage: float) -> voi
 	banner.target = find_isak()
 	banner.reset_patrol()
 	banner.trigger()
+	HelpCatalog.tag(banner, help_id("clip"))
 
 
 func _fire_ray(bell: AlarmBell, rays: Dictionary) -> void:
@@ -536,6 +593,7 @@ func _fire_ray(bell: AlarmBell, rays: Dictionary) -> void:
 	bell.target = isak
 	bell.reset_patrol()
 	bell.trigger()
+	HelpCatalog.tag(bell, help_id("clip"))
 
 
 ## La columna `col` si no ha caido ya un rayo en ella en esta tanda; si no, la
@@ -570,6 +628,7 @@ func _fire_fan(shots: Dictionary, scale_x: float) -> void:
 		shot.travel_px = minf(float(shots.get("travel_px", 1100.0)), _travel_to_terrain(origin, heading))
 		shot.target = isak
 		shot.auto_process = false
+		HelpCatalog.tag(shot, help_id("fan"))
 		_attacks.add_child(shot)
 		shot.global_position = origin
 		_shots.append(shot)
@@ -613,7 +672,17 @@ func _step_attacks(dt: float, _scale_x: float) -> void:
 	_shots = get_shots()
 
 
+## Las olas, barridos y rayos solo llevan su ayuda (autoplay_clip) mientras
+## avisan o barren: en reposo no estan en ningun sitio que mirar.
+func _untag_clips() -> void:
+	for banner: Variant in _banners.values():
+		HelpCatalog.tag(banner as Node, &"")
+	for bell: AlarmBell in _bells:
+		HelpCatalog.tag(bell, &"")
+
+
 func _clear_attacks() -> void:
+	_untag_clips()
 	for banner: Variant in _banners.values():
 		(banner as SpamBanner).reset_patrol()
 	for bell: AlarmBell in _bells:
@@ -690,6 +759,7 @@ func _build() -> void:
 	_screen.z_index = -1
 	_screen.texture = _texture(ART_SCREEN)
 	add_child(_screen)
+	HelpCatalog.tag(_screen, help_id("screen"))
 	_screen.global_position = get_screen_rect().position
 	_stand = Sprite2D.new()
 	_stand.name = "Stand"
@@ -705,6 +775,7 @@ func _build() -> void:
 	_playhead_sprite.top_level = true
 	_playhead_sprite.texture = _texture(ART_PLAYHEAD)
 	add_child(_playhead_sprite)
+	HelpCatalog.tag(_playhead_sprite, help_id("playhead"))
 	var font := load(String(_arena.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font
 	_label = _make_label("Counter", font)
 	_label.global_position = get_screen_rect().position + Vector2(20.0, 18.0)
@@ -712,6 +783,13 @@ func _build() -> void:
 	_screen_label.size = Vector2(get_screen_rect().size.x * 0.5, 24.0)
 	_screen_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_screen_label.global_position = Vector2(get_screen_rect().position.x, get_screen_rect().end.y - 80.0)
+	_countdown_help = CountdownHelp.new()
+	_countdown_help.name = "CountdownHelp"
+	_countdown_help.top_level = true
+	_countdown_help.available = is_countdown_showing
+	add_child(_countdown_help)
+	_countdown_help.global_position = _screen_label.global_position + Vector2(_screen_label.size.x, 24.0)
+	HelpCatalog.tag(_countdown_help, help_id("countdown"))
 	_fx = ScreenFx.new()
 	_fx.name = "ScreenFx"
 	_fx.top_level = true
@@ -722,6 +800,9 @@ func _build() -> void:
 	_core.top_level = true
 	_core.mark_trigger = WeakPoint.TRIGGER_GROUND_POUND
 	add_child(_core)
+	# Solo con ayuda mientras se ve (revelado por el Debug o en pausa): oculto no
+	# delata que el cabezal es el boton (WeakPoint.is_help_available).
+	HelpCatalog.tag(_core, help_id("pause"))
 	var box: Array = _arena.get("playhead_box_px", [-32, -44, 64, 76])
 	_core.set_pound_box(Rect2(float(box[0]), float(box[1]), float(box[2]), float(box[3])))
 	for cells: Variant in _arena.get("damage_rects", []):
@@ -799,6 +880,7 @@ func _build_conveyor() -> void:
 			host.add_child(card)
 			card.set_physics_process(false)
 			card.set_cycle_px(length * (0.25 + float(i) / float(per_column)))
+			HelpCatalog.tag(card, help_id("card"))
 			_cards.append(card)
 
 
@@ -924,3 +1006,13 @@ class ScreenFx extends Node2D:
 				draw_rect(Rect2(box.position, box.size), Color(warn, 0.35))
 		if boss.is_paused():
 			draw_rect(Rect2(r.position + Vector2(12.0, 12.0), r.size - Vector2(24.0, 24.0)), Color(0.0, 0.0, 0.0, 0.25))
+
+
+## Marca de la ayuda «Siguiente video en N» (autoplay_countdown): un punto sobre
+## el texto de la pantalla que solo ayuda mientras la cuenta se ve.
+## `available` dice si se ve (Autoplay.is_countdown_showing; las pruebas ponen otra).
+class CountdownHelp extends Node2D:
+	var available: Callable
+
+	func is_help_available() -> bool:
+		return available.is_valid() and bool(available.call())

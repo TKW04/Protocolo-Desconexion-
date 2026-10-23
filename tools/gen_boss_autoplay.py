@@ -12,6 +12,12 @@ _placeholder que pide CLAUDE.md para los jefes sin arte final. Las cajas y los t
   autoplay_stand_placeholder.png          pie de la pantalla (2 x 5 tiles, 128 x 320) hasta el suelo
   autoplay_playhead_placeholder.png       cabezal oculto: circulo gris (48 x 48) que se desliza por la barra
   autoplay_card_placeholder.png           tarjeta de la cinta (3 tiles, 192 x 24)
+Dibujos de las fichas del album de las ayudas del jefe (paso 20; tools/gen_album_cards.py los toma de origen):
+  autoplay_pause_card_placeholder.png     boton de pausa revelado (circulo rojo con dos barras, 48 x 48)
+  autoplay_conveyor_card_placeholder.png  tarjetas de la cinta subiendo con una flecha (64 x 64)
+  autoplay_countdown_card_placeholder.png pantalla en miniatura con el 5 de la cuenta (64 x 40)
+  autoplay_clip_card_placeholder.png      pantalla en miniatura con la miniatura de la ola (64 x 40)
+  autoplay_fan_card_placeholder.png       los tres proyectiles de la «Cuenta atras» en abanico (64 x 56)
 Los textos de la pantalla («A continuacion...», la cuenta, «x2») y las miniaturas de los clips los dibuja
 scripts/bosses/autoplay.gd por codigo.
 
@@ -100,6 +106,83 @@ def card():
     return img
 
 
+def pause_card():
+    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((0, 0, 47, 47), fill=C["feed_noche"])
+    d.ellipse((3, 3, 44, 44), fill=C["alerta"])
+    d.ellipse((3, 25, 44, 44), fill=C["alerta_sombra"])
+    d.ellipse((7, 7, 40, 38), fill=C["alerta"])
+    d.rectangle((15, 13, 20, 34), fill=C["blanco"])
+    d.rectangle((27, 13, 32, 34), fill=C["blanco"])
+    return img
+
+
+def conveyor_card():
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    for y in (8, 30, 52):
+        rounded(d, (0, y, 63, y + 9), 3, C["tarjeta_base"])
+        d.rectangle((3, y, 60, y + 1), fill=C["tarjeta_borde"])
+        d.rectangle((3, y + 8, 60, y + 9), fill=C["tarjeta_sombra"])
+        d.rectangle((6, y + 4, 22, y + 5), fill=C["magenta_sombra"])
+    # Flecha hacia arriba a la derecha (las tarjetas suben).
+    d.polygon([(50, 0), (42, 10), (58, 10)], fill=C["tarjeta_luz"])
+    d.rectangle((47, 10, 53, 26), fill=C["tarjeta_luz"])
+    return img
+
+
+def mini_screen():
+    img = Image.new("RGBA", (64, 40), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    rounded(d, (0, 0, 63, 39), 4, C["tarjeta_borde"])
+    rounded(d, (3, 3, 60, 36), 3, C["feed_fondo"])
+    d.rectangle((6, 32, 57, 33), fill=C["tarjeta_luz"])
+    d.rectangle((6, 32, 24, 33), fill=C["magenta"])
+    return img, d
+
+
+# Cifra 5 en una rejilla de 3 x 5 (bloques de 4 px).
+DIGIT_5 = ["###", "#..", "###", "..#", "###"]
+
+
+def countdown_card():
+    img, d = mini_screen()
+    for j, row in enumerate(DIGIT_5):
+        for i, ch in enumerate(row):
+            if ch == "#":
+                d.rectangle((26 + i * 4, 7 + j * 4, 29 + i * 4, 10 + j * 4), fill=C["blanco"])
+    return img
+
+
+def clip_card():
+    img, d = mini_screen()
+    import math
+    pts = [(8 + i * 3, 18 + round(7 * math.sin(i / 16 * math.pi * 3))) for i in range(17)]
+    d.line(pts, fill=C["magenta"], width=3)
+    return img
+
+
+def fan_card():
+    import math
+    img = Image.new("RGBA", (64, 56), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    ox, oy = 32, 0
+    # Pie de la pantalla de donde salen.
+    d.rectangle((26, 0, 37, 5), fill=C["tarjeta_base"])
+    for k in (-1, 0, 1):
+        a = math.radians(90 + 38 * k)
+        cx, cy = ox + math.cos(a) * 36, oy + math.sin(a) * 36
+        ux, uy = math.cos(a), math.sin(a)
+        vx, vy = -uy, ux
+        corners = [(cx + ux * hx + vx * hy, cy + uy * hx + vy * hy) for hx, hy in ((-9, -6), (9, -6), (9, 6), (-9, 6))]
+        d.polygon([(round(x), round(y)) for x, y in corners], fill=C["alerta_sombra"])
+        inner = [(cx + ux * hx + vx * hy, cy + uy * hx + vy * hy) for hx, hy in ((-7, -4), (7, -4), (7, 4), (-7, 4))]
+        d.polygon([(round(x), round(y)) for x, y in inner], fill=C["alerta"])
+        d.rectangle((round(cx) - 1, round(cy) - 1, round(cx) + 1, round(cy) + 1), fill=C["blanco"])
+    return img
+
+
 def outputs():
     return {
         "autoplay_screen_placeholder.png": screen("play"),
@@ -108,6 +191,11 @@ def outputs():
         "autoplay_stand_placeholder.png": stand(),
         "autoplay_playhead_placeholder.png": playhead(),
         "autoplay_card_placeholder.png": card(),
+        "autoplay_pause_card_placeholder.png": pause_card(),
+        "autoplay_conveyor_card_placeholder.png": conveyor_card(),
+        "autoplay_countdown_card_placeholder.png": countdown_card(),
+        "autoplay_clip_card_placeholder.png": clip_card(),
+        "autoplay_fan_card_placeholder.png": fan_card(),
     }
 
 

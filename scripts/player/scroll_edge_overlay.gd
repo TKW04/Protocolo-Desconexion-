@@ -10,6 +10,11 @@
 class_name ScrollEdgeOverlay
 extends Node2D
 
+## Aparece un aviso de cambio de velocidad (+1 mas rapido, -1 mas lento) o de
+## inversion (0): el sonido sfx_w2_scroll_speed (paso 20 de
+## docs/propuesta-mundo-2.md; senal de accesibilidad de ritmo).
+signal speed_warning(kind: int)
+
 var _camera: ScrollCamera
 var _width: float = 1280.0
 var _left: float = 0.0
@@ -59,8 +64,14 @@ func advance(delta: float, feet: Vector2, head_y: float) -> void:
 		_near_edge = head_y - _camera.get_top() < _near
 	else:
 		_near_edge = _camera.get_bottom() - feet.y < _near
-	_change = _camera.upcoming_change()
-	_reverse_soon = _camera.reverse_soon()
+	var change: int = _camera.upcoming_change()
+	var reverse_soon: bool = _camera.reverse_soon()
+	if change != 0 and change != _change:
+		speed_warning.emit(change)
+	if reverse_soon and not _reverse_soon:
+		speed_warning.emit(0)
+	_change = change
+	_reverse_soon = reverse_soon
 	queue_redraw()
 
 

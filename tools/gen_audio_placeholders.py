@@ -180,7 +180,93 @@ def build(rng: np.random.Generator) -> dict[str, np.ndarray]:
     hum = 0.25 * sine(60, len(t) / RATE) + 0.1 * sine(120, len(t) / RATE)
     swell = 1 + 0.15 * np.sin(2 * np.pi * t / (len(t) / RATE))
     s["amb_hub"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.8 * swell + hum, 10 ** (-18 / 20))
+    world2(s, rng)
     return s
+
+
+def loop_bars(notes: list[float], step: float, wave_fn, bass: list[float], beat: float) -> np.ndarray:
+    """Bucle de chiptune suave: arpegio `notes` cada `step` s sobre un bajo de una
+    nota por compas (`bass`, 4 tiempos de `beat` s). Sin costura: la duracion es
+    un numero entero de pasos y todo se apaga dentro de su paso."""
+    bars = len(bass)
+    dur = bars * 4 * beat
+    out = np.zeros(int(round(dur * RATE)))
+    n = int(round(dur / step))
+    for i in range(n):
+        out = mix_at(out, 0.5 * note(notes[i % len(notes)], step * 0.9, wave_fn, 1.6), i * step)
+    for b, f in enumerate(bass):
+        for k in range(4):
+            out = mix_at(out, 0.6 * note(f, beat * 0.8, tri, 1.0), (b * 4 + k) * beat)
+    return out
+
+
+def world2(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
+    """Mundo 2 «El Feed» (paso 20 de docs/propuesta-mundo-2.md, §6.4): provisionales con los IDs de
+    data/audio.json; los definitivos los hace el amigo del usuario con el mismo nombre."""
+    # Golpe al suelo: caida corta y golpe grave con polvo.
+    d = 0.32
+    thump = sine(sweep(140, 45, d), d) * env(len(t_axis(d)), 0.002, 0.15, 1.6)
+    dust = 0.35 * lowpass(noise(d, rng), 1200) * env(len(t_axis(d)), 0.001, 0.12, 2.5)
+    s["sfx_gesture_ground_pound"] = mix_at(np.zeros(int(0.36 * RATE)), thump + dust, 0.04)
+    # Video que arranca su clip: «tic» de play.
+    s["sfx_w2_autoplay_start"] = np.concatenate([note(660, 0.04, tri, 2), note(880, 0.08, soft_square, 1.4)])
+    # Tarjeta fragil: grieta (ruido agudo corto) y rotura (ruido + caida).
+    d = 0.12
+    s["sfx_w2_card_crack"] = lowpass(noise(d, rng), 4000) * env(len(t_axis(d)), 0.001, 0.05, 3)
+    d = 0.3
+    s["sfx_w2_card_break"] = (0.7 * lowpass(noise(d, rng), 2500) + 0.4 * tri(sweep(500, 180, d), d)) \
+        * env(len(t_axis(d)), 0.001, 0.12, 1.8)
+    # Historia: contador (accesibilidad): dos tics.
+    s["sfx_w2_story_timer"] = np.concatenate([note(1046, 0.05, tri, 2), np.zeros(int(0.06 * RATE)),
+        note(1046, 0.05, tri, 2)])
+    # Nace un clon: burbuja que sube.
+    d = 0.18
+    s["sfx_w2_clone_spawn"] = soft_square(sweep(330, 760, d), d, 2) * env(len(t_axis(d)), 0.005, 0.06, 1.2)
+    # Comentarista escupe: «ptu» corto.
+    d = 0.14
+    s["sfx_w2_commenter_spit"] = (tri(sweep(900, 400, d), d) + 0.3 * lowpass(noise(d, rng), 2000)) \
+        * env(len(t_axis(d)), 0.002, 0.06, 2)
+    # Cambio o inversion del scroll (accesibilidad): tres notas que suben.
+    s["sfx_w2_scroll_speed"] = np.concatenate([note(523, 0.06, tri, 2), note(659, 0.06, tri, 2),
+        note(784, 0.1, tri, 1.5)])
+    # El reloj salta una hora: dos campanadas suaves.
+    s["sfx_w2_clock_skip"] = np.concatenate([note(784, 0.12, sine, 1.2), note(587, 0.2, sine, 1.0)])
+    # Tocar el borde: zumbido grave de error.
+    d = 0.25
+    s["sfx_w2_edge_hit"] = soft_square(sweep(220, 150, d), d, 3) * env(len(t_axis(d)), 0.003, 0.1, 1.2)
+    # El bucle se repite (sutil): un «swish» bajo.
+    d = 0.35
+    s["sfx_w2_loop_wrap"] = 0.6 * lowpass(noise(d, rng), 700) * env(len(t_axis(d)), 0.1, 0.2, 0.8)
+    # Muro «Cargando mas...»: crujido.
+    d = 0.2
+    s["sfx_w2_loading_wall_crack"] = (lowpass(noise(d, rng), 1800) + 0.5 * sine(sweep(160, 90, d), d)) \
+        * env(len(t_axis(d)), 0.001, 0.08, 2)
+    # Reproductor: el gesto obtenido (pausa: dos notas que bajan y se quedan).
+    s["sfx_w2_pause_player"] = np.concatenate([note(784, 0.12, soft_square, 1.2), note(523, 0.3, tri, 0.8)])
+    # Ambiente del feed: aire con un pulso de «scroll» lento, en bucle sin costura (8 s).
+    d = 8.0
+    t = t_axis(d)
+    air = lowpass(noise(d, rng), 500)
+    fade = int(0.5 * RATE)
+    ramp = np.linspace(0, 1, fade)
+    air[:fade] = air[:fade] * ramp + air[-fade:] * (1 - ramp)
+    air = air[: len(t) - fade]
+    t = t[: len(air)]
+    hum = 0.2 * sine(90, len(t) / RATE)
+    swell = 1 + 0.2 * np.sin(2 * np.pi * 4 * t / (len(t) / RATE))
+    s["amb_w2_feed"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.8 * swell + hum, 10 ** (-18 / 20))
+    # Musica del nivel (bucle de 8 s) y del jefe (la misma mezcla, mas rapida y con pulso).
+    s["mus_w2_level"] = normalize(loop_bars([523, 659, 784, 659], 0.25, tri, [131, 175, 147, 196], 0.5),
+        10 ** (-14 / 20))
+    s["mus_boss2"] = normalize(loop_bars([523, 784, 659, 988, 784, 659], 0.125, soft_square, [131, 131, 175, 196], 0.375),
+        10 ** (-14 / 20))
+    # Jefe: intro (play que arranca), miniatura del clip, cuenta, pausa y reanudar.
+    s["sfx_boss2_intro"] = np.concatenate([note(392, 0.1, soft_square, 1.2), note(523, 0.1, soft_square, 1.2),
+        note(784, 0.3, soft_square, 0.8)])
+    s["sfx_boss2_clip_preview"] = np.concatenate([note(988, 0.04, tri, 2), note(1175, 0.06, tri, 2)])
+    s["sfx_boss2_countdown"] = note(880, 0.09, soft_square, 1.8)
+    s["sfx_boss2_pause"] = np.concatenate([note(659, 0.08, soft_square, 1.5), note(440, 0.18, tri, 1.0)])
+    s["sfx_boss2_resume"] = np.concatenate([note(440, 0.08, soft_square, 1.5), note(659, 0.12, tri, 1.2)])
 
 
 def write_wav(path: str, data: np.ndarray) -> None:
@@ -205,7 +291,7 @@ def main(argv: list[str]) -> int:
     for name, data in sounds.items():
         if args.only and not name.startswith(args.only):
             continue
-        quiet = name.startswith(("amb_", "sfx_isak_step"))
+        quiet = name.startswith(("amb_", "mus_", "sfx_isak_step"))
         write_wav(os.path.join(args.out, name + ".wav"), data if quiet else normalize(data))
         written += 1
     print(f"gen_audio_placeholders: {written} archivos en {os.path.relpath(args.out, ROOT)}")

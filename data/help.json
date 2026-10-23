@@ -556,6 +556,89 @@
 			"order": 7,
 			"center_px": [192, 32],
 			"prompt_px": [192, -8]
+		},
+		"autoplay": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: la pantalla (Sprite2D sin centrar: origen arriba a la izquierda, 512 x 256).",
+			"category": "enemy",
+			"title": "Autoplay",
+			"text": "Un reproductor que nunca para por su cuenta. Entre clip y clip carga el siguiente y se queda quieto. Su botón de pausa no se ve a simple vista: con el Debug sí.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 7,
+			"radius_tiles": 7.0,
+			"center_px": [256, 128],
+			"prompt_px": [256, -16]
+		},
+		"autoplay_clip": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Piezas: la ola del suelo, el barrido de la barra (SpamBanner; origen en su entrada) y los rayos (AlarmBell sin campana; origen arriba de la columna); solo mientras avisan o barren.",
+			"category": "enemy",
+			"title": "Clip",
+			"text": "Cada clip sale antes en la pantalla. La ola barre el suelo y el barrido, la barra: cambia de altura o deslízate a través. Los rayos caen donde estás: no te quedes quieto.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 8,
+			"radius_tiles": 5.0,
+			"center_px": [0, -24],
+			"prompt_px": [0, -70]
+		},
+		"autoplay_fan": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: cada proyectil de la «Cuenta atrás» (NotificationShot) mientras vuela.",
+			"category": "enemy",
+			"title": "Cuenta atrás",
+			"text": "Tres, dos, uno… y tres avisos en abanico hacia ti. No los para nada, pero puedes deslizarte a través. Mejor no estar justo debajo de la pantalla.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 9,
+			"radius_tiles": 6.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -30]
+		},
+		"autoplay_playhead": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el cabezal gris de la barra (Sprite2D centrado).",
+			"category": "object",
+			"title": "Cabezal",
+			"text": "El cabezal del video, deslizándose por la barra. Parece un círculo más. Con el Debug se ve qué es en realidad.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 8,
+			"radius_tiles": 4.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -40]
+		},
+		"autoplay_pause_button": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el WeakPoint del cabezal; solo ayuda mientras se ve (revelado por el Debug o en pausa).",
+			"category": "object",
+			"title": "Botón de pausa",
+			"text": "Ahí está: su botón de pausa. Con el Debug activo, cae encima con un golpe al suelo. Mientras esté en pausa, cada láser a la pantalla cuenta, aunque sueltes el Debug.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 9,
+			"radius_tiles": 4.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -44]
+		},
+		"autoplay_card": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: cada tarjeta de la cinta (MovingPlatform centrada, 192 x 24).",
+			"category": "object",
+			"title": "Tarjetas que suben",
+			"text": "El feed sigue subiendo por los lados. Súbete a una tarjeta y, desde arriba, salta a la barra. Al llegar al techo vuelven a salir por abajo.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 10,
+			"center_px": [0, 0],
+			"prompt_px": [0, -24]
+		},
+		"autoplay_countdown": {
+			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto sobre el texto de la pantalla; solo mientras se ve la cuenta («Siguiente video en N» o el «3-2-1»).",
+			"category": "object",
+			"title": "Siguiente video",
+			"text": "«Siguiente video en…». Si la cuenta llega a cero, empieza otro y el reproductor se recupera un poco. Pausarlo la para.",
+			"first_level": "2-boss",
+			"world": 2,
+			"order": 11,
+			"radius_tiles": 6.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -30]
 		}
 	}
 }

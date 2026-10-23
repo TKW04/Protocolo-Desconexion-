@@ -84,11 +84,12 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 			< int(HelpCatalog.shared().entry(objects[i]).get("order", 0)))
 	assert_eq(NotasAlbum.album_ids(2, HelpCatalog.CATEGORY_OBJECT),
 		[&"fragile_card", &"story_card", &"loop_section", &"loading_wall", &"pause_player", &"hud_clock",
-			&"feed_edge"] as Array[StringName],
-		"Mundo 2: tarjeta fragil, Historia (paso 4), seccion en bucle (paso 5), muro «Cargando mas…» (paso 7), reproductor (paso 8) y la hora y el borde del feed (paso 11)")
+			&"feed_edge", &"autoplay_playhead", &"autoplay_pause_button", &"autoplay_card",
+			&"autoplay_countdown"] as Array[StringName],
+		"Mundo 2: tarjeta fragil, Historia (paso 4), seccion en bucle (paso 5), muro «Cargando mas…» (paso 7), reproductor (paso 8), la hora y el borde del feed (paso 11) y el cabezal, el boton de pausa, la cinta y la cuenta de Autoplay (paso 20)")
 	assert_eq(NotasAlbum.album_ids(2, HelpCatalog.CATEGORY_ENEMY),
-		[&"autoplay_video", &"video_clone", &"commenter"] as Array[StringName],
-		"Mundo 2: el video en autoplay (paso 6), el clon y el Comentarista (paso 7 de docs/propuesta-mundo-2.md)")
+		[&"autoplay_video", &"video_clone", &"commenter", &"autoplay", &"autoplay_clip", &"autoplay_fan"] as Array[StringName],
+		"Mundo 2: el video en autoplay (paso 6), el clon y el Comentarista (paso 7 de docs/propuesta-mundo-2.md) y Autoplay, sus clips y el abanico (paso 20)")
 	for world: int in range(3, 7):
 		assert_eq(NotasAlbum.album_ids(world).size(), 0, "Mundo %d aun sin tipos" % world)
 

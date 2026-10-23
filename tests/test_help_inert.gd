@@ -666,6 +666,88 @@ func test_feed_signs_always_help() -> void:
 		sign.free()
 
 
+# --- Autoplay (paso 20 de docs/propuesta-mundo-2.md, 2026-10-23) ---
+
+## La pantalla y el cabezal gris: al desarmarse en pixeles se ocultan y dejan de ayudar.
+func test_disarmed_autoplay_screen_and_playhead_give_no_help() -> void:
+	var screen := Sprite2D.new()
+	screen.centered = false
+	screen.texture = load("res://assets/sprites/bosses/autoplay_screen_placeholder.png") as Texture2D
+	_place(screen, &"autoplay")
+	await _assert_inert_drops_help(screen, func() -> void: screen.visible = false, "pantalla desarmada")
+	screen.free()
+	var playhead := Sprite2D.new()
+	playhead.texture = load("res://assets/sprites/bosses/autoplay_playhead_placeholder.png") as Texture2D
+	_place(playhead, &"autoplay_playhead")
+	await _assert_inert_drops_help(playhead, func() -> void: playhead.visible = false, "cabezal desarmado")
+
+
+## El boton de pausa solo ayuda mientras se ve (en pausa o revelado); apagado, no.
+func test_hidden_pause_button_gives_no_help() -> void:
+	var core := (load("res://scenes/bosses/weak_point.tscn") as PackedScene).instantiate() as WeakPoint
+	core.mark_trigger = WeakPoint.TRIGGER_GROUND_POUND
+	_place(core, &"autoplay_pause_button")
+	await wait_process_frames(1)
+	core.set_enabled(true)
+	core.set_mark_duration(30.0)
+	core.call(&"_mark")
+	await _assert_inert_drops_help(core, func() -> void: core.set_enabled(false), "boton de pausa apagado")
+
+
+## Las tarjetas de la cinta no se destruyen: siempre ayudan.
+func test_conveyor_card_always_helps() -> void:
+	var card := MovingPlatform.new()
+	card.size = Vector2(192.0, 24.0)
+	card.travel = Vector2.ZERO
+	_place(card, &"autoplay_card")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(card), "Tarjeta: ayuda")
+	assert_eq(_help.get_target(), card, "Tarjeta: candidato")
+
+
+## La cuenta solo ayuda mientras se ve.
+func test_hidden_countdown_gives_no_help() -> void:
+	var state: Dictionary = {"showing": true}
+	var marker := Autoplay.CountdownHelp.new()
+	marker.available = func() -> bool: return bool(state["showing"])
+	_place(marker, &"autoplay_countdown")
+	await _assert_inert_drops_help(marker, func() -> void: state["showing"] = false, "cuenta que ya no se ve")
+
+
+## Un clip (ola, barrido o rayo) pierde la ayuda al acabar: Autoplay le quita la etiqueta.
+func test_finished_clip_gives_no_help() -> void:
+	_freeze_isak()
+	var banner := BANNER_SCENE.instantiate() as SpamBanner
+	banner.manual = true
+	banner.set_physics_process(false)
+	_place(banner, &"autoplay_clip")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_eq(_help.get_target(), banner, "Clip avisando: candidato con Q")
+	# El banner sigue en el arbol (es el mismo para la siguiente ola): solo pierde la etiqueta.
+	HelpCatalog.tag(banner, &"")
+	_run(STEP)
+	assert_null(_help.get_target(), "Clip acabado: sin Q")
+	assert_false(_help.is_prompt_visible(), "Clip acabado: la Q desaparece")
+	assert_false(_eco.is_helping(), "Clip acabado: Eco suelta el banner")
+	_help.update_still(5.0)
+	_help.refresh()
+	assert_false(_help.is_reread_visible(), "Clip acabado: sin relectura")
+
+
+## El abanico de la «Cuenta atras»: terminado, no ayuda.
+func test_finished_fan_shot_gives_no_help() -> void:
+	_freeze_isak()
+	var shot := NotificationShot.new()
+	shot.auto_process = false
+	shot.contact_damage = 0.0
+	_place(shot, &"autoplay_fan")
+	await _assert_inert_drops_help(shot, func() -> void:
+		shot.travel_px = 0.0
+		shot.step(STEP), "abanico terminado")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
@@ -675,7 +757,8 @@ func test_every_help_type_is_covered() -> void:
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
 		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall",
-		&"pause_player", &"hud_clock", &"feed_edge"]
+		&"pause_player", &"hud_clock", &"feed_edge", &"autoplay", &"autoplay_playhead", &"autoplay_pause_button",
+		&"autoplay_card", &"autoplay_countdown", &"autoplay_clip", &"autoplay_fan"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

@@ -102,6 +102,16 @@ SOURCES = {
     # Paso 11 (el 2-1 real): la hora (reloj del HUD) y el borde del feed, ayudas sobre carteles.
     "hud_clock": ("assets/sprites/props/world2/hud_clock_00.png", None, 1),
     "feed_edge": ("assets/sprites/props/world2/feed_edge_00.png", None, 1),
+    # Jefe Autoplay (paso 20): arte PROVISIONAL del jefe (tools/gen_boss_autoplay.py, paleta B) hasta el
+    # arte final (paso 23): la pantalla, el cabezal gris, el boton de pausa revelado, la cinta, la cuenta,
+    # la miniatura de un clip y el abanico de la «Cuenta atras».
+    "autoplay": ("assets/sprites/bosses/autoplay_screen_placeholder.png", None, 1),
+    "autoplay_playhead": ("assets/sprites/bosses/autoplay_playhead_placeholder.png", None, 1),
+    "autoplay_pause_button": ("assets/sprites/bosses/autoplay_pause_card_placeholder.png", None, 1),
+    "autoplay_card": ("assets/sprites/bosses/autoplay_conveyor_card_placeholder.png", None, 1),
+    "autoplay_countdown": ("assets/sprites/bosses/autoplay_countdown_card_placeholder.png", None, 1),
+    "autoplay_clip": ("assets/sprites/bosses/autoplay_clip_card_placeholder.png", None, 1),
+    "autoplay_fan": ("assets/sprites/bosses/autoplay_fan_card_placeholder.png", None, 1),
 }
 
 
