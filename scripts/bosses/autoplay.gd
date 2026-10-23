@@ -116,6 +116,9 @@ var _slot: String = ""
 var _playhead_dir: float = 1.0
 # Fase 2: la ventana de esta vez se pauso (la cuenta se para y no cura).
 var _countdown_stopped: bool = false
+var _pause_impacts: int = 0
+var _ray_volley: int = 0
+var _ray_volley_t: float = 0.0
 
 
 func _ready() -> void:
@@ -504,6 +507,8 @@ func start_clip(kind: StringName) -> void:
 		CLIP_RAYS:
 			_rays_fired = 0
 			_ray_cols.clear()
+			_ray_volley = 0
+			_ray_volley_t = 0.0
 		CLIP_COUNTDOWN:
 			_shots_fired = false
 	attack_started.emit(kind)
@@ -521,10 +526,20 @@ func _advance_clip(dt: float, scale_x: float) -> void:
 			var rays: Dictionary = _clips_cfg.get("rays", {})
 			var count: int = mini(int(rays.get("count", 3)), _bells.size())
 			var spacing: float = float(rays.get("spacing_s", 0.5)) / maxf(scale_x, 0.01)
-			while _rays_fired < count and _clip_t >= float(_rays_fired) * spacing - 0.0001:
+			var local_t: float = _clip_t - _ray_volley_t
+			while _rays_fired < count and local_t >= float(_rays_fired) * spacing - 0.0001:
 				_fire_ray(_bells[_rays_fired], rays)
 				_rays_fired += 1
-			done = _rays_fired >= count and _bells.all(func(b: AlarmBell) -> bool: return not b.is_busy())
+			var idle: bool = _rays_fired >= count and _bells.all(func(b: AlarmBell) -> bool: return not b.is_busy())
+			if idle and _ray_volley + 1 < get_ray_volleys():
+				# Tanda siguiente (Raiz, fase 3: §5.8): otra vez en la columna de
+				# Isak, tras un respiro de volley_gap_s (tambien a x2).
+				_ray_volley += 1
+				_rays_fired = 0
+				_ray_cols.clear()
+				_ray_volley_t = _clip_t + float(rays.get("volley_gap_s", 0.5)) / maxf(scale_x, 0.01)
+				idle = false
+			done = idle
 		CLIP_COUNTDOWN:
 			var shots: Dictionary = _clips_cfg.get("shots", {})
 			var warn: float = frames_s(shots.get("warn_frames", 9))
@@ -938,8 +953,45 @@ func _on_marked(_duration_s: float, refreshed: bool) -> void:
 	if get_phase() == 2 and is_window_open():
 		_countdown_stopped = true
 	if not refreshed:
+		_pause_impacts = 0
 		pause_changed.emit(true)
 	_refresh_screen()
+
+
+## Impactos de laser que da cada pausa (laps.<n>.pause_hits; 0 = sin tope, hasta
+## que caduque). Cada impacto cuenta su dano (2 con el Laser 4).
+func get_pause_hits() -> int:
+	return maxi(int(lap_value("pause_hits", 0)), 0)
+
+
+## Tandas de rayos por clip en la fase actual (laps.<n>.ray_volleys por fase;
+## 1 por defecto; Raiz, fase 3: 2, §5.8).
+func get_ray_volleys() -> int:
+	var list: Variant = lap_value("ray_volleys", [])
+	var p: int = get_phase() - 1
+	if list is Array and p >= 0 and p < (list as Array).size():
+		return maxi(int((list as Array)[p]), 1)
+	return 1
+
+
+## Impactos que lleva la pausa en curso (0 sin pausa).
+func get_pause_impacts() -> int:
+	return _pause_impacts if is_paused() else 0
+
+
+## Golpe en pausa (BossBase lo cuenta): al llegar a pause_hits impactos la pausa
+## se acaba ya (el video sigue: la ventana se cierra o el clip continua), como si
+## hubiera caducado. Duracion de la pelea: §8.1, pasos 19-20 y ajuste de duracion.
+func _on_weak_point_hit(damage: int, source: Node) -> void:
+	var was_paused: bool = is_paused()
+	super._on_weak_point_hit(damage, source)
+	if not was_paused or not is_paused() or not is_fighting():
+		return
+	_pause_impacts += 1
+	var cap: int = get_pause_hits()
+	if cap > 0 and _pause_impacts >= cap:
+		_core.clear_mark()
+		_on_pause_expired()
 
 
 ## La pausa caduca: si habia ventana se cierra (clip siguiente); si no, el clip sigue.

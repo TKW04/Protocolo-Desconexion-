@@ -213,7 +213,9 @@ func test_conveyor_cards_rise_and_wrap_without_touching_the_ceiling() -> void:
 
 
 func test_lap_settings_per_access() -> void:
-	var expect: Dictionary = {1: [[3, 3, 3], 4.0, 4.0], 2: [[4, 4, 4], 3.0, 5.0], 3: [[4, 4, 4], 2.5, 6.0]}
+	# Duracion de la pelea (2026-10-23, §8.1): 4/4/4 en Caché y 5/5/5 en Kernel y
+	# Raíz, un impacto por pausa y los rayos de la fase 3 de Raíz en dos tandas.
+	var expect: Dictionary = {1: [[4, 4, 4], 4.0, 4.0, 1, 1], 2: [[5, 5, 5], 3.0, 5.0, 1, 1], 3: [[5, 5, 5], 2.5, 6.0, 1, 2]}
 	for lap: int in expect:
 		await _arena(lap)
 		_boss.start()
@@ -221,6 +223,9 @@ func test_lap_settings_per_access() -> void:
 		assert_almost_eq(_boss.get_core().get_mark_duration(), float(expect[lap][1]), EPS, "Pausa, acceso %d" % lap)
 		var charger := _level.get_node(^"Objects/cargador_1") as Charger
 		assert_almost_eq(charger.cooldown_s, float(expect[lap][2]), EPS, "Cargadores, acceso %d" % lap)
+		assert_eq(_boss.get_pause_hits(), int(expect[lap][3]), "Impactos por pausa, acceso %d" % lap)
+		_to_phase(3)
+		assert_eq(_boss.get_ray_volleys(), int(expect[lap][4]), "Tandas de rayos en la fase 3, acceso %d" % lap)
 		_level.queue_free()
 		await wait_physics_frames(1)
 
@@ -298,15 +303,19 @@ func test_laser_without_pause_sparks_and_in_pause_hits() -> void:
 	assert_eq((areas[0] as Area2D).collision_layer, WeakPoint.LAYER_ENEMY, "El laser ve la pantalla")
 	assert_eq(core.get_core_layer(), 0, "Pero no el cabezal")
 	core.on_laser_hit(1.0, null)
-	assert_eq(_boss.get_remaining_hits(), 9, "Sin pausa no dana")
+	assert_eq(_boss.get_remaining_hits(), 12, "Sin pausa no dana")
 	assert_true(core.is_spark_visible(), "Chispa gris en la pantalla")
 	_pause()
 	core.on_laser_hit(1.0, null)
+	assert_eq(_boss.get_remaining_hits(), 11, "En pausa el laser es un golpe, sin el Debug")
+	assert_eq(_boss.get_counter_text(), "91")
+	assert_false(_boss.is_paused(), "Un impacto acaba la pausa (pause_hits 1)")
 	core.on_laser_hit(1.0, null)
-	assert_eq(_boss.get_remaining_hits(), 7, "En pausa cada laser es un golpe, sin el Debug")
-	assert_eq(_boss.get_counter_text(), "77")
-	core.on_laser_hit(1.0, null)
-	assert_eq(_boss.get_phase(), 2, "Tres golpes: fase 2")
+	assert_eq(_boss.get_remaining_hits(), 11, "El segundo laser ya no dana")
+	for i: int in 3:
+		_pause()
+		core.on_laser_hit(1.0, null)
+	assert_eq(_boss.get_phase(), 2, "Cuatro pausas con su golpe: fase 2")
 	assert_false(_boss.is_paused(), "La pausa se pierde al cambiar de fase")
 
 
@@ -315,7 +324,8 @@ func test_laser_4_counts_two_hits_in_pause() -> void:
 	_boss.start()
 	_pause()
 	_boss.get_core().on_laser_hit(2.0, null)
-	assert_eq(_boss.get_remaining_hits(), 7, "Laser 4: 2 golpes")
+	assert_eq(_boss.get_remaining_hits(), 10, "Laser 4: 2 golpes en un impacto")
+	assert_false(_boss.is_paused(), "Y la pausa se acaba igual")
 
 
 func test_pause_expires_after_its_duration_and_cannot_be_refreshed_without_debug() -> void:
@@ -328,7 +338,7 @@ func test_pause_expires_after_its_duration_and_cannot_be_refreshed_without_debug
 	_advance(2.0 + DT)
 	assert_false(_boss.is_paused(), "Caduca a los 4 s")
 	_boss.get_core().on_laser_hit(1.0, null)
-	assert_eq(_boss.get_remaining_hits(), 9, "Ya no dana")
+	assert_eq(_boss.get_remaining_hits(), 12, "Ya no dana")
 
 
 func test_heal_hits_never_goes_above_the_phase_start() -> void:
@@ -337,14 +347,14 @@ func test_heal_hits_never_goes_above_the_phase_start() -> void:
 	_to_phase(2)
 	assert_eq(_boss.heal_hits(1), 0, "Fase 2 entera: nada que recuperar")
 	_boss.take_core_hit(1)
-	assert_eq(_boss.get_remaining_hits(), 5)
+	assert_eq(_boss.get_remaining_hits(), 7)
 	assert_eq(_boss.heal_hits(3), 1, "Solo hasta el inicio de la fase")
-	assert_eq(_boss.get_remaining_hits(), 6)
+	assert_eq(_boss.get_remaining_hits(), 8)
 
 
 # --- Paso 16: fase 1 «Clips» ---
 
-func test_phase1_wave_clip_then_window_with_the_playhead_still() -> void:
+func test_phase1_two_clips_then_window_with_the_playhead_still() -> void:
 	await _arena()
 	_boss.start()
 	assert_eq(_boss.get_clip(), Autoplay.ATTACK_GAP, "Espera antes del primer clip")
@@ -358,9 +368,9 @@ func test_phase1_wave_clip_then_window_with_the_playhead_still() -> void:
 	_advance(0.75)
 	assert_true(floor_banner.is_sweeping(), "Barre el suelo")
 	assert_almost_eq(floor_banner.get_corridor_px(), 18.0 * TILE, EPS, "De muro a muro")
-	var t: float = _advance_until(func() -> bool: return _boss.is_window_open(), 5.0)
-	assert_true(_boss.is_window_open(), "Tras el clip, la ventana")
-	assert_true(t > 1.0, "Despues del barrido y el hueco")
+	var t: float = _advance_until(func() -> bool: return _boss.is_window_open(), 8.0)
+	assert_true(_boss.is_window_open(), "Tras dos clips (ola y rayos), la ventana")
+	assert_true(t > 1.0, "Despues del barrido, los rayos y los huecos")
 	assert_eq(_boss.get_screen_text(), "A continuación…")
 	assert_almost_eq(_boss.get_window_time_left(), 5.0, 0.05, "5 s del mundo")
 	assert_almost_eq(_boss.get_playhead_x(), _boss.get_slot_x("center"), EPS, "Cabezal quieto en el centro")
@@ -368,7 +378,7 @@ func test_phase1_wave_clip_then_window_with_the_playhead_still() -> void:
 	assert_almost_eq(_boss.get_playhead_x(), _boss.get_slot_x("center"), EPS, "Sigue quieto (Caché)")
 	_advance(3.0 + 2.0 * DT)
 	assert_false(_boss.is_window_open())
-	assert_eq(_boss.get_clip(), Autoplay.CLIP_RAYS, "Siguiente clip: los rayos")
+	assert_eq(_boss.get_clip(), Autoplay.CLIP_SWEEP_HIGH, "Siguiente clip: el barrido alto")
 
 
 func test_playhead_advances_along_the_bar_during_clips() -> void:
@@ -460,18 +470,26 @@ func test_pause_freezes_the_clip_and_the_window_then_resumes() -> void:
 	assert_almost_eq(_boss.get_window_time_left(), left, EPS, "La ventana no corre en pausa")
 	_advance(1.0 + 3.0 * DT)
 	assert_false(_boss.is_window_open(), "Al caducar la pausa se cierra la ventana")
-	assert_eq(_boss.get_clip(), Autoplay.CLIP_RAYS, "Y empieza el clip siguiente")
+	assert_eq(_boss.get_clip(), Autoplay.CLIP_SWEEP_HIGH, "Y empieza el clip siguiente (ola y rayos antes de la ventana)")
 
 
-func test_three_hits_in_one_pause_go_to_phase_2_with_refills() -> void:
+## Duracion de la pelea (2026-10-23): una pausa da un golpe (pause_hits) y la
+## ventana se cierra con el; la fase 1 de Caché pide cuatro ventanas.
+func test_one_hit_per_pause_four_windows_go_to_phase_2_with_refills() -> void:
 	await _arena()
 	_boss.start()
-	_advance_until(func() -> bool: return _boss.is_window_open(), 8.0)
-	_pause()
-	GameState.debug_energy = 40.0
-	GameState.sync_rate = 50.0
-	for i: int in 3:
+	for i: int in 4:
+		_advance_until(func() -> bool: return _boss.is_window_open(), 12.0)
+		assert_true(_boss.is_window_open(), "Ventana %d" % i)
+		_pause()
+		if i == 3:
+			GameState.debug_energy = 40.0
+			GameState.sync_rate = 50.0
 		_boss.get_core().on_laser_hit(1.0, null)
+		if i < 3:
+			assert_false(_boss.is_paused(), "La pausa acaba tras el golpe")
+			assert_false(_boss.is_window_open(), "Y la ventana con ella")
+			assert_eq(_boss.get_phase(), 1, "Sigue en la fase 1 tras %d golpe(s)" % (i + 1))
 	assert_eq(_boss.get_phase(), 2)
 	assert_eq(_boss.get_counter_text(), "66")
 	assert_almost_eq(GameState.debug_energy, 65.0, EPS, "+25 de energia")
@@ -489,14 +507,14 @@ func _phase2_window() -> void:
 	assert_true(_boss.is_window_open(), "Ventana de la fase 2")
 
 
-func test_phase2_runs_two_clips_then_the_countdown() -> void:
+func test_phase2_runs_three_clips_then_the_countdown() -> void:
 	await _arena()
 	_boss.start()
 	_to_phase(2)
 	var seen: Array = []
 	_boss.attack_started.connect(func(a: StringName) -> void: seen.append(a))
 	_advance_until(func() -> bool: return _boss.is_window_open(), 20.0)
-	assert_eq(seen, [Autoplay.CLIP_COUNTDOWN, Autoplay.CLIP_WAVE, Autoplay.ATTACK_WINDOW], "Dos clips y la ventana")
+	assert_eq(seen, [Autoplay.CLIP_COUNTDOWN, Autoplay.CLIP_WAVE, Autoplay.CLIP_RAYS, Autoplay.ATTACK_WINDOW], "Tres clips y la ventana")
 	assert_eq(_boss.get_countdown(), 5, "Siguiente video en 5")
 	assert_eq(_boss.get_screen_text(), "Siguiente video en 5")
 
@@ -506,7 +524,7 @@ func test_phase2_countdown_to_zero_heals_one_hit_and_punishes() -> void:
 	_boss.start()
 	_to_phase(2)
 	_boss.take_core_hit(1)
-	assert_eq(_boss.get_remaining_hits(), 5)
+	assert_eq(_boss.get_remaining_hits(), 7)
 	_advance_until(func() -> bool: return _boss.is_window_open(), 20.0)
 	var ticks: Array = []
 	_boss.countdown_tick.connect(func(n: int) -> void: ticks.append(n))
@@ -517,7 +535,7 @@ func test_phase2_countdown_to_zero_heals_one_hit_and_punishes() -> void:
 	_advance(5.0 + 2.0 * DT)
 	assert_eq(ticks, [5, 4, 3, 2, 1], "Cada numero de la cuenta (sonido de accesibilidad)")
 	assert_eq(healed, [1], "Llega a 0: recupera un golpe")
-	assert_eq(_boss.get_remaining_hits(), 6, "Vuelve al inicio de la fase")
+	assert_eq(_boss.get_remaining_hits(), 8, "Vuelve al inicio de la fase")
 	assert_eq(_boss.get_counter_text(), "66")
 	_advance_until(func() -> bool: return _boss.is_window_open(), 30.0)
 	assert_eq(seen.size(), 4, "Tanda de 3 clips seguidos y despues la ventana: %s" % [seen])
@@ -527,7 +545,7 @@ func test_phase2_countdown_never_heals_above_the_phase_start() -> void:
 	await _arena()
 	_phase2_window()
 	_advance(5.0 + 2.0 * DT)
-	assert_eq(_boss.get_remaining_hits(), 6, "Con la fase entera no sube")
+	assert_eq(_boss.get_remaining_hits(), 8, "Con la fase entera no sube")
 
 
 func test_phase2_pause_stops_the_countdown() -> void:
@@ -539,7 +557,7 @@ func test_phase2_pause_stops_the_countdown() -> void:
 	assert_true(_boss.is_countdown_stopped())
 	_advance(4.0 + DT)
 	assert_false(_boss.is_window_open(), "La pausa acaba y la ventana con ella")
-	assert_eq(_boss.get_remaining_hits(), 5, "Pausado a tiempo: no recupera nada")
+	assert_eq(_boss.get_remaining_hits(), 7, "Pausado a tiempo: no recupera nada")
 
 
 func test_phase2_playhead_seeks_to_another_slot_each_window() -> void:
@@ -649,7 +667,7 @@ func test_respawn_restarts_the_phase_and_clears_the_attacks() -> void:
 	_boss.start_clip(Autoplay.CLIP_WAVE)
 	GameState.debug_energy = 10.0
 	_boss.restart_phase()
-	assert_eq(_boss.get_remaining_hits(), 6, "Vuelve al inicio de la fase 2")
+	assert_eq(_boss.get_remaining_hits(), 8, "Vuelve al inicio de la fase 2")
 	assert_false((_boss.get_banners()["floor"] as SpamBanner).is_busy(), "Sin la ola")
 	assert_almost_eq(GameState.debug_energy, 50.0, EPS, "Energia >= 50")
 
@@ -660,11 +678,53 @@ func test_final_blow_turns_the_screen_off() -> void:
 	var hooks: Array = []
 	_boss.final_blow.connect(func() -> void: hooks.append(true))
 	_to_phase(3)
-	_pause()
-	for i: int in 3:
+	for i: int in 4:
+		_pause()
 		_boss.get_core().on_laser_hit(1.0, null)
 	assert_true(_boss.is_defeated())
 	assert_eq(hooks.size(), 1, "Gancho del golpe final")
 	assert_true(_boss.is_screen_off(), "La pantalla se queda en negro")
 	assert_false(_boss.get_core().is_enabled(), "Sin cabezal")
 	assert_eq(_boss.get_counter_text(), "0")
+
+
+# --- Duracion de la pelea (2026-10-23, §8.1) ---
+
+func test_pause_ends_after_its_hit_mid_clip_and_the_clip_goes_on() -> void:
+	await _arena()
+	_boss.start()
+	_advance(1.5 + 0.75 + 0.3)
+	var banner := _boss.get_banners()["floor"] as SpamBanner
+	assert_true(banner.is_sweeping())
+	_pause()
+	var x: float = banner.get_banner_center_x()
+	_boss.get_core().on_laser_hit(1.0, null)
+	assert_eq(_boss.get_remaining_hits(), 11)
+	assert_false(_boss.is_paused(), "El impacto acaba la pausa")
+	assert_eq(_boss.get_pause_impacts(), 0)
+	_advance(0.1)
+	assert_gt(banner.get_banner_center_x(), x, "La ola sigue")
+	assert_eq(_boss.get_clip(), Autoplay.CLIP_WAVE, "El clip no se interrumpe")
+
+
+func test_raiz_phase3_rays_fall_in_two_volleys() -> void:
+	for lap: int in [2, 3]:
+		await _arena(lap, true)
+		_place_isak(9, 9)
+		_boss.start()
+		_to_phase(3)
+		_boss.start_clip(Autoplay.CLIP_RAYS)
+		var volleys: int = 1
+		var t: float = 0.0
+		var was_idle: bool = false
+		while _boss.get_clip() == Autoplay.CLIP_RAYS and t < 10.0:
+			_advance(DT)
+			t += DT
+			var busy: bool = _boss.get_bells().any(func(b: AlarmBell) -> bool: return b.is_busy())
+			if busy and was_idle:
+				volleys += 1
+			was_idle = not busy
+		assert_ne(_boss.get_clip(), Autoplay.CLIP_RAYS, "El clip acaba, acceso %d" % lap)
+		assert_eq(volleys, 2 if lap == 3 else 1, "Tandas de rayos en la fase 3, acceso %d" % lap)
+		_level.queue_free()
+		await wait_physics_frames(1)

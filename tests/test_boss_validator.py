@@ -270,7 +270,8 @@ class AutoplayArenaTest(unittest.TestCase):
             self.assertEqual(sorted(scenarios), ["base", "todo al maximo", "tope del acceso"])
             for name, e in scenarios.items():
                 self.assertGreaterEqual(e["min_margin"], 20.0, (lap, name))
-        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [60.0, 60.0, 70.0])
+        # Un golpe por pausa (pause_hits, 2026-10-23): un laser acertado y uno fallado por ventana.
+        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [50.0, 50.0, 60.0])
 
     def test_conveyor_reaches_the_bar_and_every_slot_is_hit(self):
         rep = self.run_arena()["boss"]
@@ -344,7 +345,21 @@ class AutoplayArenaTest(unittest.TestCase):
     def test_model_must_add_the_heals_of_phase_2(self):
         boss = copy.deepcopy(self.boss)
         boss["validation_model"]["heals"] = [0, 0, 0]
-        self.assertIn("las ventanas suman 4 golpes y la fase tiene 3", self.messages(self.run_arena(boss)))
+        self.assertIn("las ventanas suman 5 golpes y la fase tiene 4", self.messages(self.run_arena(boss)))
+
+    def test_model_cannot_ask_more_hits_per_window_than_the_pause_gives(self):
+        boss = copy.deepcopy(self.boss)
+        boss["validation_model"]["laps"]["1"]["windows"] = [[0, 2, 1, 1], [0, 1, 1, 1, 1, 1], [0, 1, 1, 1, 1]]
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 1: la pelea torpe pide 2 golpe(s) en una ventana y cada pausa da 1 (pause_hits)", msg)
+
+    def test_pause_hits_and_ray_volleys_are_reported(self):
+        rep = self.run_arena()["boss"]
+        self.assertEqual({lap: m.get("pause_hits") for lap, m in rep["mark"].items()}, {"1": 1, "2": 1, "3": 1})
+        self.assertEqual(rep["ray_volleys"]["laps"], {"3": [1, 1, 2]})
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["3"]["ray_volleys"] = [1, 1, 0]
+        self.assertIn("rayos: ray_volleys >= 1", self.messages(self.run_arena(boss)))
 
     def test_one_boss_output_does_not_use_the_autoplay_model(self):
         result = vb.validate_arena(load(LEVEL), ROOT)

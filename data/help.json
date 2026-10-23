@@ -609,7 +609,7 @@
 			"_notes": "Jefe Autoplay (paso 20 de docs/propuesta-mundo-2.md §8, §5.10; arena 2-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el WeakPoint del cabezal; solo ayuda mientras se ve (revelado por el Debug o en pausa).",
 			"category": "object",
 			"title": "Botón de pausa",
-			"text": "Ahí está: su botón de pausa. Con el Debug activo, cae encima con un golpe al suelo. Mientras esté en pausa, cada láser a la pantalla cuenta, aunque sueltes el Debug.",
+			"text": "Ahí está: su botón de pausa. Con el Debug activo, cae encima con un golpe al suelo. En pausa, un láser a la pantalla le hace daño, aunque sueltes el Debug; después vuelve a reproducirse.",
 			"first_level": "2-boss",
 			"world": 2,
 			"order": 9,

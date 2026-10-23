@@ -714,6 +714,13 @@ def check_mark(arena, boss, errors, report):
         mark = float(entry.get("mark_duration_s", 0.0))
         lm = model.get("laps", {}).get(str(lap), {})
         worst = max((h for windows in lm.get("windows", []) for h in windows), default=0)
+        cap = int(entry.get("pause_hits", 0))
+        if cap > 0:
+            # Autoplay: cada pausa se acaba tras pause_hits impactos de laser (el modelo torpe no puede pedir mas).
+            if worst > cap:
+                _err(errors, "vuelta %s: la pelea torpe pide %d golpe(s) en una ventana y cada pausa da %d (pause_hits)"
+                     % (lap, worst, cap))
+            worst = min(worst, cap)
         need = int(math.ceil(worst)) + misses
         shots = mark_shots(rules, mark)
         if shots < need:
@@ -722,6 +729,8 @@ def check_mark(arena, boss, errors, report):
         scale = max(rules.debug_world_scale, EPS)
         out[lap] = {"mark_s": mark, "real_with_debug_s": round(mark / scale, 3), "shots": shots,
                     "shots_with_debug": mark_shots(rules, mark / scale), "need": need}
+        if cap > 0:
+            out[lap]["pause_hits"] = cap
     report["mark"] = out
 
 
@@ -1031,6 +1040,14 @@ def _clip_checks(arena, boss, root, errors, report):
     floor_cols = int(lanes["floor"]["to_col"]) - int(lanes["floor"]["from_col"]) + 1
     if int(rays.get("count", 3)) >= floor_cols:
         _err(errors, "rayos: %d por tanda y %d columnas en el suelo (sin hueco seguro)" % (rays.get("count", 3), floor_cols))
+    volleys = {str(lap): e["ray_volleys"] for lap, e in boss.get("laps", {}).items() if e.get("ray_volleys")}
+    if volleys:
+        # Raiz, fase 3 (§5.8): rayos en dos tandas; cada tanda vuelve a empezar en la columna de Isak y respeta el
+        # hueco seguro de arriba; entre tandas, un respiro (las campanas ya libres).
+        gap = float(rays.get("volley_gap_s", 0.5))
+        if gap < 0.0 or any(int(v) < 1 for vols in volleys.values() for v in vols):
+            _err(errors, "rayos: ray_volleys >= 1 y volley_gap_s >= 0 (%s, %g)" % (volleys, gap))
+        report["ray_volleys"] = {"gap_s": gap, "laps": volleys}
     ray_half = float(bell.get("damage_width_px", 48.0)) / 2.0
     escape = (ray_half + rules.hitbox_w / 2.0) / rules.run_speed
     out = []
@@ -1349,6 +1366,13 @@ def format_text(path, result):
             out.append("  marca, vuelta %s: %g s del mundo (%g s reales con el Debug); caben %d laser(es) sin el Debug "
                        "y %d con el; la peor ventana torpe pide %d" % (lap, m["mark_s"], m["real_with_debug_s"],
                                                                       m["shots"], m["shots_with_debug"], m["need"]))
+            if "pause_hits" in m:
+                out[-1] += "; cada pausa acaba tras %d impacto(s) de laser (pause_hits)" % m["pause_hits"]
+        rv = rep.get("ray_volleys")
+        if rv:
+            out.append("  rayos en tandas: %s (respiro de %g s del mundo entre tandas, /speed_scale)"
+                       % ("; ".join("vuelta %s fases %s" % (lap, "/".join(str(v) for v in vols))
+                                    for lap, vols in sorted(rv["laps"].items())), rv["gap_s"]))
         for lap, scen in sorted((rep.get("energy") or {}).items()):
             for name, e in scen.items():
                 peaks = " / ".join("%g (%g)" % (ph["peak"], ph["margin"]) for ph in e["phases"])

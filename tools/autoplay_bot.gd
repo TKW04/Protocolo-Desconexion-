@@ -65,7 +65,7 @@ const ALL_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_DOWN, A_JUMP, A_RUN, 
 const ACCESS_NAMES: Dictionary = {1: "Caché", 2: "Kernel", 3: "Raíz"}
 ## Margen de energia del validador de arenas (tools/validate_boss.py, barra base
 ## 100, pelea torpe; paso 17): 100 - el peor pico por ventana. Solo informe.
-const VALIDATOR_MARGIN: Dictionary = {1: 30.0, 2: 27.5, 3: 25.0}
+const VALIDATOR_MARGIN: Dictionary = {1: 40.0, 2: 37.5, 3: 35.0}
 ## Duracion del bot estimada en §4.4 de la propuesta (s de juego).
 const BOT_ESTIMATE_S: Vector2 = Vector2(110.0, 140.0)
 const MAX_FIGHT_S: float = 600.0
@@ -87,6 +87,9 @@ const JUMP_CLEAR_TO_S: float = 0.68
 ## desde la que se salta a la barra.
 const CARD_FROM_FLOOR_PX: Vector2 = Vector2(30.0, 160.0)
 const CARD_TO_BAR_PX: float = 168.0
+## Con rayos en curso, en el suelo, a esta distancia del muro como minimo (los
+## rayos persiguen la columna de Isak: contra el muro no hay salida).
+const RAY_WALL_GAP_PX: float = 160.0
 ## Distancia (px) de los pies al centro del cabezal con la que se golpea.
 const POUND_TOL_PX: float = 14.0
 ## Adelanto (s reales) del golpe al suelo: salto de 32 px, anticipacion y caida.
@@ -784,25 +787,37 @@ func _ray_escape_x(x: float) -> float:
 		# siempre cabe).
 		r = Vector2(r.x - 100.0, r.y + 100.0)
 	r = Vector2(maxf(r.x, _floor.x + 20.0), minf(r.y, _floor.y - 20.0))
+	# En el suelo, mejor no huir hacia el muro (el rayo siguiente cae en la
+	# columna nueva y contra el muro no queda salida), pero antes eso que cruzar
+	# una franja que avisa.
+	var ranges: Array[Vector2] = [r]
+	if _surface() == &"floor":
+		ranges.push_front(Vector2(maxf(r.x, _floor.x + RAY_WALL_GAP_PX), minf(r.y, _floor.y - RAY_WALL_GAP_PX)))
 	for strict: bool in [true, false]:
-		var best: float = INF
-		var c: float = r.x
-		while c <= r.y:
-			if not _in_ray_band(c, false) and absf(c - x) < absf(best - x):
-				var blocked: bool = false
-				var step: float = 8.0 * signf(c - x)
-				var p: float = x + step
-				while absf(p - x) < absf(c - x):
-					if _band_ahead(x, p, strict):
-						blocked = true
-						break
-					p += step
-				if not blocked:
-					best = c
-			c += 8.0
-		if best != INF:
-			return best
+		for range_x: Vector2 in ranges:
+			var best: float = _ray_escape_in(x, range_x, strict)
+			if best != INF:
+				return best
 	return x
+
+
+func _ray_escape_in(x: float, r: Vector2, strict: bool) -> float:
+	var best: float = INF
+	var c: float = r.x
+	while c <= r.y:
+		if not _in_ray_band(c, false) and absf(c - x) < absf(best - x):
+			var blocked: bool = false
+			var step: float = 8.0 * signf(c - x)
+			var p: float = x + step
+			while absf(p - x) < absf(c - x):
+				if _band_ahead(x, p, strict):
+					blocked = true
+					break
+				p += step
+			if not blocked:
+				best = c
+		c += 8.0
+	return best
 
 
 ## Cruzar `p` desde `x` entra en una franja que no es la de Isak (estricto: que
@@ -900,6 +915,12 @@ func _go_bar(x: float) -> void:
 		_walk_to(under, 0.0, absf(ix - under) > 100.0)
 		return
 	_axis = 0.0
+	# Con los rayos en curso no se sube: caen en la columna de Isak y en la
+	# tarjeta (o contra el muro) no hay sitio para apartarse; se espera en el
+	# suelo, lejos del muro.
+	if _boss.get_clip() == Autoplay.CLIP_RAYS or _boss.get_bells().any(func(b: AlarmBell) -> bool: return b.is_busy()):
+		_walk_to(clampf(ix, _floor.x + RAY_WALL_GAP_PX, _floor.y - RAY_WALL_GAP_PX), 12.0)
+		return
 	for card: Dictionary in _cards(side):
 		var h: float = _floor_y - float(card["surface_y"])
 		if bool(card["solid"]) and h >= CARD_FROM_FLOOR_PX.x and h <= CARD_FROM_FLOOR_PX.y:
