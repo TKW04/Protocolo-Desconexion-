@@ -73,6 +73,16 @@
 		"fade_s": 0.4,
 		"colors": {"back": "#0b0e1a", "border": "#aeb8d2", "text": "#f2f4f8", "fill": "#ff4a2a", "fill_shadow": "#a3221c", "empty": "#aeb8d2", "notch": "#f2f4f8"}
 	},
+	"clock": {
+		"_notes": "Reloj del HUD (C8 de docs/preguntas.md; decision 10 de docs/propuesta-mundo-2.md §9, aprobada el 2026-10-22; §2.3; paso 8 de su §8). HudClock (scripts/ui/hud_clock.gd) en el hueco ClockSlot, a la izquierda de la barra de estado, con la fuente del HUD (HH:MM: cifras y «:»). Visible desde el Mundo from_world (2) en los niveles; oculto en el Mundo 1 y en el hub. Arranca en start_minutes (1024 = 17:04, domingo por la tarde) con cada nivel y avanza minutes_per_s minutos por segundo real (1/60: parece normal; parado en pausa). SALTA skip_minutes (+1 h) de golpe al tocar el borde del scroll (EventBus.scroll_edge_hit) y en cada repeticion de un bucle (EventBus.loop_wrapped): destello de flash_s en skip_color (NOMBRE de la paleta PROVISIONAL del Mundo 2, data/world2_objects.json; los hex del Mundo 2 no estan cerrados) con un bote de bump_scale. SOLO VISUAL: sin efecto en el juego. Valores PROPUESTOS, ajustables jugando.",
+		"from_world": 2,
+		"start_minutes": 1024,
+		"minutes_per_s": 0.0166667,
+		"skip_minutes": 60,
+		"flash_s": 0.6,
+		"bump_scale": 1.25,
+		"skip_color": "magenta"
+	},
 	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
 	"colors": {
 		"text": "#f2f4f8",

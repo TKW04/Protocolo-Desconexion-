@@ -240,6 +240,39 @@
 					"id": "muro_carga"
 				}
 			}
+		},
+		"pause_player": {
+			"scene": "res://scenes/levels/pause_player.tscn",
+			"help_id": "pause_player",
+			"description": "Reproductor con el boton de pausa (2026-10-22, paso 8 de docs/propuesta-mundo-2.md §8, §3.4; PausePlayer, que reutiliza DndSwitch; nivel 2-2). Panel de un reproductor de video en la pared del FONDO (no solido); el objeto (x, y) es la celda donde Isak se pone de pie. Un pulso que alcanza su boton (hit_rect de la seccion pause_player) con Isak de espaldas pose_s lo pausa y da para siempre la habilidad `ability` (ground_pound, gesto Mantener presionado; GameState.obtain_ability, como el dnd_switch: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice story_line (linea importante; «Mira cuánto tiempo ahorramos juntos.», decidida en mundo-2 §7.5) y despues sale el aviso de control «Mantener presionado: …» (data/ability_notices.json). Un solo uso: con el gesto ya obtenido o desbloqueado al cargar arranca pausado e inerte, sin linea, aviso ni Q; tras un rollback sin el vuelve a reproducir. Ayuda con Q pause_player y ficha provisional del album. Validador: lo modela el paso 9b (hasta entonces es decorado). Aspecto PROVISIONAL por codigo (seccion pause_player).",
+			"required": [
+				"id",
+				"ability"
+			],
+			"fields": {
+				"id": "object_id",
+				"ability": "ability",
+				"story_line": "story_line"
+			},
+			"defaults": {},
+			"allowed": {
+				"ability": [
+					"ground_pound"
+				],
+				"story_line": [
+					"pausa_2_2"
+				]
+			},
+			"example": {
+				"type": "pause_player",
+				"x": 6,
+				"y": 9,
+				"params": {
+					"id": "reproductor_2_2",
+					"ability": "ground_pound",
+					"story_line": "pausa_2_2"
+				}
+			}
 		}
 	},
 	"fragile_card": {
@@ -281,6 +314,20 @@
 		"break_s": 0.3,
 		"deflect_s": 0.25,
 		"label": "Cargando…"
+	},
+	"pause_player": {
+		"_notes": "PROPUESTA (2026-10-22, paso 8 de docs/propuesta-mundo-2.md; ajustable jugando). Reproductor con el boton de pausa (PausePlayer = DndSwitch con otro aspecto; sin room_tint, asi que no tine el nivel). panel_rect: tarjeta del reproductor [x, y, ancho, alto] en px desde la esquina de la celda donde Isak se pone de pie (en la pared del fondo, detras de el). button_center_px: centro del boton «||»; hit_rect: zona que tiene que alcanzar el pulso (como el power_switch con un solo pulso); pose_s: Isak de espaldas. clip_s: vuelta de la barra de progreso mientras reproduce; hit_s: destello del boton al pulsarlo; paused_label: rotulo pausado. story_lines: id -> linea importante de Eco al obtener el gesto (admite {apodo}); la de pausa_2_2 es la frase del mundo decidida en mundo-2 §7.5. Aspecto PROVISIONAL por codigo (FeedCardDraw, paleta provisional) hasta el arte del paso 10.",
+		"panel_rect": [-32, -72, 128, 88],
+		"button_center_px": [32, -32],
+		"hit_rect": [8, -56, 48, 48],
+		"pose_s": 0.45,
+		"story_duration_s": 4.0,
+		"clip_s": 4.0,
+		"hit_s": 0.25,
+		"paused_label": "En pausa",
+		"story_lines": {
+			"pausa_2_2": "Mira cuánto tiempo ahorramos juntos."
+		}
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo2_provisional.py; no editar a mano): colores de desarrollo del Mundo 2 por nombre. Los hex no estan cerrados (decision abierta del usuario).",

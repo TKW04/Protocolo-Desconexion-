@@ -16,6 +16,8 @@ este script dibuja lo mismo, con la paleta PROVISIONAL del Mundo 2
                         solo texto, sin AutoSprite)
   loading_wall_00.png   muro «Cargando mas...» (1 x 3 tiles a media escala, 32 x 96) con el circulo de carga
                         a un tercio (paso 7)
+  pause_player_00.png   reproductor con el boton de pausa (2 x 1,4 tiles a media escala, 64 x 44) con la pantalla,
+                        el boton «||» y la barra de progreso con el cabezal (paso 8)
 El arte final del mundo (paso 10) los sustituira.
 
 Uso: python3 -I tools/gen_world2_cards.py [--check]   (--check: 1 si algun PNG no esta al dia)
@@ -147,10 +149,24 @@ def loading_wall():
     return img
 
 
+def pause_player():
+    """Reproductor con el boton de pausa (paso 8) a media escala: 64 x 44 con la pantalla, el boton «||» en
+    blanco y la barra de progreso con el cabezal magenta."""
+    img, d = small_card(64, 44)
+    d.rectangle((3, 4, 60, 31), fill=COLORS["feed_fondo"])
+    d.rectangle((25, 10, 28, 25), fill=COLORS["blanco"])
+    d.rectangle((35, 10, 38, 25), fill=COLORS["blanco"])
+    d.rectangle((3, 36, 60, 37), fill=COLORS["tarjeta_sombra"])
+    d.rectangle((3, 36, 38, 37), fill=COLORS["gris"])
+    d.rectangle((37, 35, 39, 38), fill=COLORS["magenta"])
+    return img
+
+
 def outputs():
     return {"fragile_card_00.png": fragile(), "story_card_00.png": story(), "loop_sign_00.png": loop_sign(),
             "autoplay_video_00.png": autoplay_video(), "video_clone_00.png": video_clone(),
-            "commenter_00.png": commenter(), "loading_wall_00.png": loading_wall()}
+            "commenter_00.png": commenter(), "loading_wall_00.png": loading_wall(),
+            "pause_player_00.png": pause_player()}
 
 
 def main(argv):

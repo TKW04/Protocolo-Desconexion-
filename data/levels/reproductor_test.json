@@ -1,0 +1,64 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 8 de docs/propuesta-mundo-2.md §8, 2026-10-22): sala de 26x12 con el REPRODUCTOR CON EL BOTON DE PAUSA (pause_player, §3.4) que da el gesto Mantener presionado (golpe al suelo). Isak llega por la izquierda (P, de pie en la fila 9) con el pulso y SIN el golpe al suelo. reproductor_prueba (celda 6, 9; panel en la pared del fondo): un pulso de espaldas al boton «||» lo pausa y da el golpe al suelo para siempre (se guarda), Eco dice «Mira cuánto tiempo ahorramos juntos.» (importante) y despues sale el aviso «Mantener presionado: mantén S / stick abajo». Con el gesto ya obtenido arranca pausado e inerte. En el suelo, columnas 15-16, una tarjeta fragil que solo rompe el golpe (fragil_suelo) sobre un hueco de 1 tile para probarlo; la ruta no la exige. Mundo 2: el reloj del HUD se ve (17:04) aunque la sala no tiene scroll. Terminal en (22, 8). El validador aun trata el reproductor como decorado (lo modela el paso 9b). Tileset y fondo del Mundo 1 (provisional). Escena: scenes/levels/reproductor_test.tscn (python3 tools/build_level.py data/levels/reproductor_test.json).",
+	"id": "reproductor_test",
+	"name": "Reproductor (prueba)",
+	"world": 2,
+	"tile_size": 64,
+	"debug_color": "amber",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": false
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "pause_player",
+			"x": 6,
+			"y": 9,
+			"params": {
+				"id": "reproductor_prueba",
+				"ability": "ground_pound",
+				"story_line": "pausa_2_2"
+			}
+		},
+		{
+			"type": "fragile_card",
+			"x": 15,
+			"y": 10,
+			"params": {
+				"id": "fragil_suelo",
+				"width_tiles": 2,
+				"trigger": "pound_only"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 22,
+			"y": 8,
+			"params": {
+				"id": "terminal_reproductor",
+				"text": "Siguiente video",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"##########################",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#........................#",
+		"#.P...................G..#",
+		"###############..#########",
+		"##########################"
+	]
+}

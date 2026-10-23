@@ -131,7 +131,7 @@ NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "abilit
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
-                    "alert_major"}
+                    "alert_major", "pause_player"}
 # Arena de jefe (kind "boss", 2026-10-21): id <mundo>-boss y tamano del jefe Alerta Mayor en tiles
 # (cuerpo inflado arriba, 4 x 4 desde su celda).
 LEVEL_KINDS = ("level", "boss")
@@ -709,7 +709,8 @@ class LevelValidator:
             # Jefe «saco» de boss_test (paso 3 de docs/propuesta-jefe-alerta-mayor.md): 2 x 2 tiles
             # apoyado en (x, y): columnas x y x+1, filas y-1 e y.
             return [(x + i, y - j) for j in range(2) for i in range(2)]
-        if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch"):
+        if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch",
+                    "pause_player"):
             return [(x, y)]
         w, h = get("width_tiles", 1), get("height_tiles", 1)
         if not (_is_int(w) and _is_int(h)) or w < 1 or h < 1:

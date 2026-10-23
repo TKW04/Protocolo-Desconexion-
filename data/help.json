@@ -523,6 +523,17 @@
 			"order": 4,
 			"center_px": [32, 96],
 			"prompt_px": [32, -24]
+		},
+		"pause_player": {
+			"_notes": "Reproductor con el botón de pausa del Mundo 2 (paso 8 de docs/propuesta-mundo-2.md §8, §3.4; nivel 2-2): origen en la esquina de la celda donde Isak se pone de pie; el botón «||» está encima. Pausado o inerte no ayuda. Texto PROPUESTO, por decidir.",
+			"category": "object",
+			"title": "Reproductor",
+			"text": "Un video que nadie mira y que no se acaba. Tiene un botón de pausa. Lánzale un pulso, a ver qué pasa.",
+			"first_level": "2-2",
+			"world": 2,
+			"order": 5,
+			"center_px": [32, -32],
+			"prompt_px": [32, -92]
 		}
 	}
 }

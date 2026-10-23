@@ -26,6 +26,7 @@ TARJETAS_TEST = os.path.join(ROOT, "data", "levels", "tarjetas_test.json")
 AUTOPLAY_TEST = os.path.join(ROOT, "data", "levels", "autoplay_test.json")
 CLONES_TEST = os.path.join(ROOT, "data", "levels", "clones_test.json")
 CARGA_TEST = os.path.join(ROOT, "data", "levels", "carga_test.json")
+REPRODUCTOR_TEST = os.path.join(ROOT, "data", "levels", "reproductor_test.json")
 
 
 def load(path):
@@ -301,6 +302,50 @@ class FeedEnemiesSchemaTest(unittest.TestCase):
         cards = [o for o in level["objects"] if o["type"] == "_pound_card"]
         self.assertEqual(len(cards), 1)
         self.assertEqual(cards[0]["params"]["rows"], 3)
+
+
+class PausePlayerSchemaTest(unittest.TestCase):
+    """Paso 8: el reproductor con el boton de pausa (pause_player) solo da el golpe al suelo, con la linea de
+    Eco del Mundo 2, fuera del terreno; la sala reproductor_test es valida y el validador la acepta (lo trata
+    como decorado hasta el paso 9b)."""
+
+    def assert_fails(self, level, fragment):
+        errors = vls.validate_level(level)
+        self.assertTrue(any(fragment in e for e in errors), "ningun error contiene '%s': %s" % (fragment, errors))
+
+    def player(self, level):
+        return next(o for o in level["objects"] if o["type"] == "pause_player")
+
+    def test_room_is_valid(self):
+        self.assertEqual(vls.validate_level(load(REPRODUCTOR_TEST)), [])
+
+    def test_only_gives_the_ground_pound(self):
+        level = load(REPRODUCTOR_TEST)
+        self.player(level)["params"]["ability"] = "dash"
+        self.assert_fails(level, "ability 'dash' no admitido")
+        level = load(REPRODUCTOR_TEST)
+        del self.player(level)["params"]["ability"]
+        self.assert_fails(level, "falta el param obligatorio 'ability'")
+        level = load(REPRODUCTOR_TEST)
+        self.player(level)["params"]["story_line"] = "dnd_1_3"
+        self.assert_fails(level, "story_line 'dnd_1_3' no admitido")
+
+    def test_not_inside_terrain(self):
+        level = load(REPRODUCTOR_TEST)
+        obj = self.player(level)
+        row = level["grid"][obj["y"]]
+        level["grid"][obj["y"]] = row[:obj["x"]] + "#" + row[obj["x"] + 1:]
+        self.assert_fails(level, "fila %d, columna %d: objects" % (obj["y"], obj["x"]))
+
+    def test_scene_instances_the_player_with_its_ability(self):
+        text = build_level.build_scene(load(REPRODUCTOR_TEST))
+        self.assertIn("pause_player.tscn", text)
+        self.assertIn('ability = &"ground_pound"', text)
+        self.assertIn('metadata/help_id = "pause_player"', text)
+
+    def test_validator_accepts_the_room(self):
+        result = validate_level.validate(load(REPRODUCTOR_TEST), ROOT)
+        self.assertTrue(result["ok"], [e["message"] for e in result["errors"]])
 
 
 class ScrollValidatorTest(unittest.TestCase):

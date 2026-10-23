@@ -15,7 +15,9 @@
 ## PENDIENTE: ruido/distorsion de pantalla con Sync Rate bajo (shader nuevo,
 ## sin propuesta concreta en docs). Gancho: EventBus.low_sync_changed y
 ## GameState.reduce_low_sync_effects.
-## ClockSlot: hueco oculto reservado para la hora del Mundo 2 (C8, PROPUESTA).
+## ClockSlot: reloj del Mundo 2 (C8, decision 10 de docs/propuesta-mundo-2.md,
+## 2026-10-22): HudClock (hijo "Clock", seccion clock de data/hud.json) lo muestra
+## desde el Mundo 2 y salta +1 h con el borde del scroll y los bucles; solo visual.
 ## PowerBank (PROVISIONAL, 2026-10-14): contador minimo de power banks bajo la
 ## barra, a la derecha (icono dibujado con la carga parcial + "x<n>"); oculto
 ## sin power banks ni carga. Se crea por codigo para no tocar hud.tscn ni
@@ -129,6 +131,7 @@ var _lost_icon: Control
 
 ## Ocultarte: caja bajo la barra con el icono y la barra de lo que queda.
 var _boss_bar: BossBar
+var _clock: HudClock
 var _hide_box: HBoxContainer
 var _hide_icon: TextureRect
 var _hide_bar: HideBar
@@ -175,6 +178,10 @@ func _ready() -> void:
 	EventBus.hide_ended.connect(_on_hide_ended)
 	_boss_bar = BossBar.new()
 	add_child(_boss_bar)
+	_clock = HudClock.new()
+	_clock.name = "Clock"
+	add_child(_clock)
+	_clock.setup(_clock_slot, _config.clock, _config)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -195,6 +202,11 @@ func _process(delta: float) -> void:
 ## Barra del jefe (oculta fuera de una pelea).
 func get_boss_bar() -> BossBar:
 	return _boss_bar
+
+
+## Reloj del Mundo 2 (ClockSlot).
+func get_clock() -> HudClock:
+	return _clock
 
 
 func get_sync_ratio() -> float:
@@ -759,6 +771,7 @@ func enable_hub_mode(config: Dictionary) -> void:
 	if _hub_mode:
 		return
 	_hub_mode = true
+	_clock.set_hub_mode(true)
 	_refresh_lives()
 	_signal.visible = false
 	_sync_label.visible = false

@@ -98,6 +98,7 @@ SOURCES = {
     "video_clone": ("assets/sprites/props/world2/video_clone_00.png", None, 1),
     "commenter": ("assets/sprites/props/world2/commenter_00.png", None, 1),
     "loading_wall": ("assets/sprites/props/world2/loading_wall_00.png", None, 1),
+    "pause_player": ("assets/sprites/props/world2/pause_player_00.png", None, 1),
 }
 
 

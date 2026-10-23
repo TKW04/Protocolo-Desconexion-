@@ -564,6 +564,15 @@ func test_broken_loading_wall_gives_no_help() -> void:
 	_assert_no_reread(wall, &"loading_wall", "muro roto")
 
 
+## Reproductor con el boton de pausa (Mundo 2, paso 8): pausado no ayuda.
+func test_paused_pause_player_gives_no_help() -> void:
+	var player := (load("res://scenes/levels/pause_player.tscn") as PackedScene).instantiate() as PausePlayer
+	_place(player, &"pause_player")
+	await _assert_inert_drops_help(player, func() -> void: player.switch_on(), "reproductor en pausa")
+	_assert_no_reread(player, &"pause_player", "reproductor en pausa")
+	GameState.set_ability_unlocked(GameState.ABILITY_GROUND_POUND, false)
+
+
 ## Campana de alarma (1-3): indestructible, ayuda en todas sus fases.
 func test_alarm_bell_helps_in_every_phase() -> void:
 	var bell := (load("res://scenes/enemies/alarm_bell.tscn") as PackedScene).instantiate() as AlarmBell
@@ -654,7 +663,8 @@ func test_every_help_type_is_covered() -> void:
 		&"update_bar", &"power_switch", &"laser_switch", &"debug_switch", &"charge_dock", &"memory_pickup",
 		&"dnd_switch", &"blink_platform", &"alarm_bell", &"alert_major", &"alert_major_core", &"alert_major_bubble",
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
-		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall"]
+		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall",
+		&"pause_player"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

@@ -180,6 +180,9 @@ func advance(dt: float) -> void:
 # --- Interno ---
 
 func _start_tint(instant: bool) -> void:
+	# Sin room_tint en su seccion no hay tinte (el reproductor del Mundo 2, PausePlayer).
+	if not _config.has("room_tint"):
+		return
 	if _tint == null:
 		_tint = CanvasModulate.new()
 		_tint.name = "RoomTint"

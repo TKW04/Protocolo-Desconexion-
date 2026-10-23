@@ -142,7 +142,7 @@ signal dash_denied(reason: StringName)
 @warning_ignore("unused_signal")
 signal ground_pound_landed(rect: Rect2, source: Node2D)
 ## Scroll forzado del Mundo 2 (2026-10-22): Isak toca el borde que dana
-## (`damaged`: le quito Sync Rate). El reloj del HUD saltara +1 h con esto.
+## (`damaged`: le quito Sync Rate). El reloj del HUD (HudClock) salta +1 h con esto.
 @warning_ignore("unused_signal")
 signal scroll_edge_hit(damaged: bool)
 ## Una seccion en bucle del Mundo 2 se repite (`count` = repeticiones). El reloj
