@@ -77,6 +77,54 @@ func test_data() -> void:
 	assert_false(_loop.get_sign_text().to_lower().contains("vuelta"))
 
 
+# Pista clara de la salida (2026-10-23, arreglo tras la prueba del usuario: «hay
+# que ser mas especificos de que tienes que subir antes de que se reinicie»).
+func test_repeat_bar_fills_until_the_loop_repeats() -> void:
+	_setup(4, 30, 20.0 * T + PERIOD_PX)
+	assert_almost_eq(_loop.get_repeat_progress(), 0.0, EPS, "Recien repetido: barra vacia")
+	_setup(4, 30, 20.0 * T + PERIOD_PX * 0.25)
+	assert_almost_eq(_loop.get_repeat_progress(), 0.75, EPS, "Tres cuartos del camino")
+	_setup(4, 22, 20.0 * T + 1.0)
+	assert_gt(_loop.get_repeat_progress(), 0.99, "A punto de repetirse: llena")
+	_setup(18, 18, 20.0 * T + 30.0)
+	_loop.step(DT)
+	assert_true(_loop.is_solved())
+	assert_eq(_loop.get_repeat_progress(), 0.0, "Resuelto: ya no hay cuenta")
+
+
+func test_marker_and_sign_hint_read_the_key_from_the_input_map() -> void:
+	_loop.hint_rect = [16, 20, 3, 2]
+	_loop.sign_hint = "Sube antes de que se repita"
+	_loop.marker_text = "Mantén {tecla:debug} y sube por aquí"
+	assert_true(_loop.is_marker_visible(), "Marca fija mientras no se resuelve")
+	var key: String = PulsePrompt.key_text(&"debug", "?")
+	assert_eq(_loop.get_marker_text(), "Mantén %s y sube por aquí" % key)
+	assert_false(_loop.get_marker_text().contains("{"), "Sin marcadores sueltos")
+	_setup(18, 18, 20.0 * T + 30.0)
+	_loop.step(DT)
+	assert_false(_loop.is_marker_visible(), "Resuelto: la marca desaparece")
+
+
+func test_real_loops_of_the_2_1_and_2_2_say_what_to_do() -> void:
+	for spec: Array in [["res://scenes/levels/2-1.tscn", "Objects/bucle_para_ti", "up", "sube"],
+			["res://scenes/levels/2-2.tscn", "Objects/bucle_uno_mas", "down", "golpea"]]:
+		var level: Node = (load(String(spec[0])) as PackedScene).instantiate()
+		var loop := level.get_node(NodePath(String(spec[1]))) as LoopSection
+		assert_not_null(loop, String(spec[0]))
+		assert_true(loop.is_marker_visible(), "%s: marca de la salida" % spec[0])
+		assert_eq(loop.marker_dir, String(spec[2]))
+		assert_true(loop.get_marker_text().contains(PulsePrompt.key_text(&"debug", "?")), "Tecla del Debug")
+		assert_true(loop.get_marker_text().to_lower().contains(String(spec[3])), "Dice que hacer")
+		assert_true(loop.get_sign_hint().contains("antes de que se repita"), "Y antes de cuando")
+		for text: String in [loop.get_sign_text(), loop.get_sign_hint(), loop.get_marker_text()]:
+			assert_false(text.to_lower().contains("vuelta"), "La UI nunca dice vuelta")
+		level.free()
+	var help: String = HelpCatalog.shared().text(&"loop_section")
+	assert_true(help.contains(PulsePrompt.key_text(&"debug", "?")), "La Q del bucle dice la tecla del Debug")
+	assert_true(help.contains("barra") and help.contains("marca"), "Y que mirar: la barra y la marca")
+	assert_false(help.contains("{"), "Sin marcadores sueltos")
+
+
 func test_wraps_camera_and_isak_together() -> void:
 	_setup(4, 22, 20.0 * T + 10.0)
 	_loop.step(DT)

@@ -120,7 +120,7 @@
 		"loop_section": {
 			"scene": "res://scenes/levels/loop_section.tscn",
 			"help_id": "loop_section",
-			"description": "Seccion en bucle (2026-10-22, paso 5 de docs/propuesta-mundo-2.md §8, §3.5; LoopSection). Objeto logico de un nivel con scroll forzado (camera.vertical autoscroll). band: [fila de arriba, fila de abajo] de la banda (periodo H = abajo - arriba, al menos la vista + 1 = 13 filas). Cuando el borde de arriba de la camara llega a la fila de arriba de la banda sin que Isak haya encontrado la salida, la camara, Isak y Eco bajan H filas juntos y lo que hay en la banda vuelve a su estado inicial: el nivel debe repetir su contenido con periodo H justo debajo de la banda (las 12 filas de arriba de la banda = las 12 de debajo de la banda; '.', 'h', 'o' y 'S' cuentan igual), y el esquema lo comprueba. exit: [columna, fila, ancho, alto] de la salida (fuera de las columnas de paso de la banda o por encima de ella; con los pies de Isak dentro el bucle queda resuelto). hint (opcional): [columna, fila, ancho, alto] que parpadea con glitch en la segunda repeticion. El objeto (x, y) es la celda del cartel «Solo uno mas (llevas N)» (sign_text, {n} = veces vistas; nunca dice «vuelta»), que tambien se dibuja H filas mas abajo; sign_width_tiles de ancho. Cada repeticion: EventBus.loop_wrapped (reloj del HUD, paso 8). Al reaparecer Isak vuelve a empezar. Validador: la fila de arriba de la banda es un techo salvo en las columnas de la salida (sin ella no se sale). Aspecto PROVISIONAL por codigo.",
+			"description": "Seccion en bucle (2026-10-22, paso 5 de docs/propuesta-mundo-2.md §8, §3.5; LoopSection). Objeto logico de un nivel con scroll forzado (camera.vertical autoscroll). band: [fila de arriba, fila de abajo] de la banda (periodo H = abajo - arriba, al menos la vista + 1 = 13 filas). Cuando el borde de arriba de la camara llega a la fila de arriba de la banda sin que Isak haya encontrado la salida, la camara, Isak y Eco bajan H filas juntos y lo que hay en la banda vuelve a su estado inicial: el nivel debe repetir su contenido con periodo H justo debajo de la banda (las 12 filas de arriba de la banda = las 12 de debajo de la banda; '.', 'h', 'o' y 'S' cuentan igual), y el esquema lo comprueba. exit: [columna, fila, ancho, alto] de la salida (fuera de las columnas de paso de la banda o por encima de ella; con los pies de Isak dentro el bucle queda resuelto). hint (opcional): [columna, fila, ancho, alto] que parpadea con glitch en la segunda repeticion. El objeto (x, y) es la celda del cartel «Solo uno mas (llevas N)» (sign_text, {n} = veces vistas; nunca dice «vuelta»), que tambien se dibuja H filas mas abajo; sign_width_tiles de ancho. Cada repeticion: EventBus.loop_wrapped (reloj del HUD, paso 8). Al reaparecer Isak vuelve a empezar. Validador: la fila de arriba de la banda es un techo salvo en las columnas de la salida (sin ella no se sale). PISTA CLARA (2026-10-23, arreglo tras la prueba del usuario): sign_hint (opcional) = segunda linea del cartel con QUE hacer antes de que se repita, y debajo una barra que se llena hasta la repeticion; marker_text (opcional) = placa de una marca fija (esquinas, flecha marker_dir up/down y texto) sobre marker ([columna, fila, ancho, alto]; por defecto, hint) mientras no se resuelva; ambos textos admiten {tecla:<accion>} (tecla del Input Map) y nunca dicen «vuelta». Aspecto PROVISIONAL por codigo.",
 			"required": [
 				"band",
 				"exit"
@@ -131,7 +131,11 @@
 				"exit": "exit_rect",
 				"hint": "hint_rect",
 				"sign_text": "sign_text",
-				"sign_width_tiles": "sign_width_tiles"
+				"sign_width_tiles": "sign_width_tiles",
+				"sign_hint": "sign_hint",
+				"marker": "marker_rect",
+				"marker_text": "marker_text",
+				"marker_dir": "marker_dir"
 			},
 			"defaults": {
 				"sign_text": "Solo uno más (llevas {n})",
@@ -341,12 +345,15 @@
 		"fade_s": 0.25
 	},
 	"loop_section": {
-		"_notes": "PROPUESTA (2026-10-22; docs/propuesta-mundo-2.md §3.5). font / font_size: letra del cartel (la de los textos del juego). z_index: el cartel va detras de Isak y de los objetos. hint_from_repeat: repeticion desde la que parpadea la pista (la segunda) y hint_s cuanto dura. Aspecto PROVISIONAL por codigo (FeedCardDraw, paleta provisional).",
+		"_notes": "PROPUESTA (2026-10-22; docs/propuesta-mundo-2.md §3.5). font / font_size: letra del cartel (la de los textos del juego). z_index: el cartel va detras de Isak y de los objetos. hint_from_repeat: repeticion desde la que parpadea la pista (la segunda) y hint_s cuanto dura. hint_line_px / bar_px: alto de la segunda linea del cartel y de la barra «hasta que se repita»; bar_warn_from: desde que fraccion la barra parpadea en rojo de alerta (2026-10-23). Aspecto PROVISIONAL por codigo (FeedCardDraw, paleta provisional).",
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 16,
 		"z_index": -1,
 		"hint_from_repeat": 2,
-		"hint_s": 0.5
+		"hint_s": 0.5,
+		"hint_line_px": 18,
+		"bar_px": 6,
+		"bar_warn_from": 0.75
 	},
 	"clone_zone": {
 		"_notes": "PROPUESTA (2026-10-22, paso 7 de docs/propuesta-mundo-2.md; ajustable jugando). warn_frames / anim_fps: aviso antes de que nazca un clon (9 a 12 fps = 0,75 s; regla de 6-12 cuadros), como las oleadas de la barra del 99 %. clone_help_id: ayuda con Q de los clones que nacen. z_index: las marcas de la zona van detras de Isak (los clones, al nivel de los enemigos). Aspecto PROVISIONAL por codigo.",

@@ -470,10 +470,10 @@
 			"prompt_px": [32, -8]
 		},
 		"loop_section": {
-			"_notes": "Seccion en bucle del Mundo 2 (paso 5 de docs/propuesta-mundo-2.md §8, §3.5): la Q sale sobre el cartel «Solo uno más». Texto PROPUESTO, por decidir (idea de la propuesta; nunca dice «vuelta»).",
+			"_notes": "Seccion en bucle del Mundo 2 (paso 5 de docs/propuesta-mundo-2.md §8, §3.5): la Q sale sobre el cartel «Solo uno más». Texto PROPUESTO, por decidir (idea de la propuesta; nunca dice «vuelta»). Reescrito el 2026-10-23 tras la prueba del usuario: dice exactamente qué hacer (barra del cartel, marca ámbar, {tecla:debug} leída del Input Map).",
 			"category": "object",
 			"title": "Solo uno más",
-			"text": "Esto ya lo vimos. Lo de salir, no. Mira bien: algo de aquí no se ve a simple vista.",
+			"text": "Esto ya lo vimos: cuando la barra del cartel se llena, todo se repite. Antes, ve a la marca ámbar y mantén {tecla:debug}: el Debug enseña el camino escondido y con él encendido puedes moverte y saltar. Síguelo hasta salir.",
 			"first_level": "2-1",
 			"world": 2,
 			"order": 3,

@@ -489,7 +489,16 @@
           41,
           4,
           5
-        ]
+        ],
+        "marker": [
+          15,
+          43,
+          3,
+          3
+        ],
+        "sign_hint": "Sube por la derecha antes de que se repita",
+        "marker_text": "Mantén {tecla:debug} y sube por aquí",
+        "marker_dir": "up"
       }
     },
     {

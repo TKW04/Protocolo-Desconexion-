@@ -96,9 +96,10 @@ func title(help_id: StringName) -> String:
 
 
 ## Texto de Eco para el tipo, con {apodo} sustituido por `nickname` (vacio: el
-## apodo de la partida, GameState.nickname).
+## apodo de la partida, GameState.nickname) y {tecla:<accion>} por la tecla del
+## Input Map (TextMarkers.apply_keys).
 func text(help_id: StringName, nickname: String = "") -> String:
-	return GameState.apply_nickname(String(entry(help_id).get("text", "")), nickname)
+	return TextMarkers.apply_keys(GameState.apply_nickname(String(entry(help_id).get("text", "")), nickname))
 
 
 func category(help_id: StringName) -> String:

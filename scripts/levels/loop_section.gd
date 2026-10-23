@@ -14,6 +14,16 @@
 ## - Cartel «Solo uno mas (llevas N)» (sign_text, {n} = veces vistas) en la celda
 ##   del objeto y en su copia H filas mas abajo; NUNCA dice «vuelta». En la segunda
 ##   repeticion, hint_rect parpadea con glitch hint_s.
+## - PISTA CLARA DE LA SALIDA (2026-10-23, arreglo tras la prueba del usuario:
+##   «hay que ser mas especificos de que tienes que subir antes de que se
+##   reinicie»): el cartel lleva una segunda linea con QUE hacer (sign_hint, p. ej.
+##   «Sube por la derecha antes de que se repita») y una barra que se llena
+##   hasta la repeticion (get_repeat_progress: 0 justo tras repetirse, 1 al
+##   repetirse); y, mientras no se resuelva, una marca fija sobre hint_rect
+##   o marker_rect (esquinas en debug_ambar, flecha hacia marker_dir y placa marker_text, p. ej.
+##   «Mantén K y sube por aquí»). Los textos admiten {tecla:<accion>} (tecla del
+##   Input Map). Todo se dibuja tambien en la copia H filas mas abajo, como el
+##   cartel: el contenido de la banda es periodico.
 ## - Cada repeticion: senal wrapped y EventBus.loop_wrapped (el reloj del HUD salta
 ##   +1 h; paso 8). Repetir no dana ni gasta nada.
 ## - Al reaparecer Isak (EventBus.player_respawned) vuelve a empezar (sin resolver).
@@ -33,8 +43,15 @@ signal solved
 @export var band_rows: Array = [0, 12]
 @export var exit_rect: Array = [0, 0, 1, 1]
 @export var hint_rect: Array = []
+## Celdas de la marca de la salida ([] = hint_rect).
+@export var marker_rect: Array = []
 @export var sign_text: String = "Solo uno más (llevas {n})"
 @export var sign_width_tiles: int = 5
+## Segunda linea del cartel: que hacer antes de que se repita ("" = sin ella).
+@export var sign_hint: String = ""
+## Placa de la marca sobre hint_rect ("" = sin marca) y direccion de su flecha.
+@export var marker_text: String = ""
+@export_enum("up", "down") var marker_dir: String = "up"
 
 var _cfg: Dictionary = World2ObjectsConfig.section("loop_section")
 var _count: int = 0
@@ -104,6 +121,38 @@ func is_in_exit(feet: Vector2) -> bool:
 ## Texto del cartel ahora («Solo uno mas (llevas N)»: N = veces vistas).
 func get_sign_text() -> String:
 	return sign_text.replace("{n}", str(_count + 1))
+
+
+## Segunda linea del cartel, con la tecla del Input Map.
+func get_sign_hint() -> String:
+	return TextMarkers.apply_keys(sign_hint)
+
+
+## Placa de la marca de la salida, con la tecla del Input Map.
+func get_marker_text() -> String:
+	return TextMarkers.apply_keys(marker_text)
+
+
+## La marca de la salida se ve (sin resolver, con hint_rect y texto).
+func is_marker_visible() -> bool:
+	return not _solved and _marker_cells().size() == 4 and not marker_text.is_empty()
+
+
+func _marker_cells() -> Array:
+	return marker_rect if marker_rect.size() == 4 else hint_rect
+
+
+## Cuanto falta para que se repita: 0 justo tras repetirse (o lejos), 1 al
+## repetirse (el borde de arriba de la camara llega a la banda).
+func get_repeat_progress() -> float:
+	if _solved:
+		return 0.0
+	var isak: Isak = _find_isak()
+	var camera: ScrollCamera = isak.get_scroll_camera() if isak != null else null
+	if camera == null:
+		return 0.0
+	var span: float = float(get_period_rows()) * _tile()
+	return clampf(1.0 - (camera.get_top() - get_band_top_px()) / span, 0.0, 1.0)
 
 
 func is_hint_visible() -> bool:
@@ -194,19 +243,102 @@ func _on_player_respawned(_at: Vector2, _after_death: bool) -> void:
 func _draw() -> void:
 	var t: float = _tile()
 	var period: float = float(get_period_rows()) * t
-	var size := Vector2(float(sign_width_tiles) * t, t * 0.75)
+	var px: int = int(_cfg.get("font_size", 16))
+	var hint: String = get_sign_hint()
+	# Con la segunda linea y la barra el cartel crece hacia arriba: su borde de
+	# abajo no se mueve (no tapa la tarjeta de debajo).
+	var extra: float = 0.0 if hint.is_empty() else float(_cfg.get("hint_line_px", 18)) + float(_cfg.get("bar_px", 6)) + 8.0
+	var size := Vector2(float(sign_width_tiles) * t, t * 0.75 + extra)
+	if _font != null:
+		# El cartel crece a lo ancho (centrado) si una linea no cabe.
+		for line: String in [get_sign_text(), hint]:
+			size.x = maxf(size.x, _font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 24.0)
+	var shift_x: float = (float(sign_width_tiles) * t - size.x) * 0.5
+	var progress: float = get_repeat_progress()
 	for copy: float in [0.0, period]:
-		var rect := Rect2(Vector2(0.0, copy + t * 0.125), size)
+		var rect := Rect2(Vector2(shift_x, copy + t * 0.125 - extra), size)
 		FeedCardDraw.card(self, rect)
 		if _font != null:
-			var px: int = int(_cfg.get("font_size", 16))
-			var text: String = get_sign_text()
-			var width: float = _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-			var baseline := Vector2(rect.position.x + (rect.size.x - width) * 0.5,
-					rect.position.y + (rect.size.y + _font.get_ascent(px)) * 0.5 - 2.0)
-			draw_string(_font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, World2ObjectsConfig.color("blanco"))
+			var lines: PackedStringArray = [get_sign_text()]
+			if not hint.is_empty():
+				lines.append(hint)
+			var line_h: float = float(_cfg.get("hint_line_px", 18))
+			var top: float = rect.position.y + (t * 0.75 - _font.get_ascent(px)) * 0.5 + _font.get_ascent(px) - 2.0
+			for i: int in lines.size():
+				var width: float = _font.get_string_size(lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+				var color: Color = World2ObjectsConfig.color("blanco") if i == 0 else World2ObjectsConfig.color("debug_ambar")
+				draw_string(_font, Vector2(rect.position.x + (rect.size.x - width) * 0.5, top + line_h * float(i)),
+						lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
+		if not hint.is_empty():
+			_draw_bar(Rect2(rect.position.x + 12.0, rect.end.y - float(_cfg.get("bar_px", 6)) - 8.0,
+					rect.size.x - 24.0, float(_cfg.get("bar_px", 6))), progress)
+		if is_marker_visible():
+			_draw_marker(_cells_rect(_marker_cells()), copy, px)
 		if _hint_left > 0.0 and hint_rect.size() == 4:
 			_draw_hint(_cells_rect(hint_rect), copy)
+
+
+## Barra «hasta que se repita»: se llena en ambar y en el ultimo cuarto parpadea
+## en rojo de alerta.
+func _draw_bar(rect: Rect2, progress: float) -> void:
+	draw_rect(rect, World2ObjectsConfig.color("feed_noche"))
+	var fill: Color = World2ObjectsConfig.color("debug_ambar")
+	if progress >= float(_cfg.get("bar_warn_from", 0.75)) and fmod(_time * 4.0, 1.0) < 0.5:
+		fill = World2ObjectsConfig.color("alerta")
+	if progress > 0.0:
+		draw_rect(Rect2(rect.position, Vector2(rect.size.x * progress, rect.size.y)), fill)
+	draw_rect(rect, World2ObjectsConfig.color("tarjeta_borde"), false, 1.0)
+
+
+## Marca de la salida: esquinas sobre hint_rect, flecha hacia marker_dir y placa
+## con marker_text encima (dentro del nivel).
+func _draw_marker(cells: Rect2, copy: float, px: int) -> void:
+	var amber: Color = World2ObjectsConfig.color("debug_ambar")
+	var dark: Color = World2ObjectsConfig.color("feed_noche")
+	var rect := Rect2(cells.position - global_position + Vector2(0.0, copy), cells.size).grow(4.0)
+	var arm: float = 14.0
+	for corner: Vector2 in [rect.position, Vector2(rect.end.x, rect.position.y), Vector2(rect.position.x, rect.end.y), rect.end]:
+		var sx: float = 1.0 if corner.x == rect.position.x else -1.0
+		var sy: float = 1.0 if corner.y == rect.position.y else -1.0
+		draw_rect(Rect2(Vector2(minf(corner.x, corner.x + sx * arm), corner.y - (0.0 if sy > 0.0 else 3.0)), Vector2(arm, 3.0)), amber)
+		draw_rect(Rect2(Vector2(corner.x - (0.0 if sx > 0.0 else 3.0), minf(corner.y, corner.y + sy * arm)), Vector2(3.0, arm)), amber)
+	var bob: float = roundf(sin(_time * TAU * 1.2) * 2.0)
+	var cx: float = rect.get_center().x
+	var up: bool = marker_dir != "down"
+	var h: float = 16.0
+	# Hacia arriba: una flecha justo encima de las celdas y la placa encima.
+	# Hacia abajo (un suelo): dos flechas en los extremos, justo encima del suelo
+	# (Isak de pie en el centro no las tapa), y la placa a la derecha, a la
+	# altura de las flechas (encima puede haber otra tarjeta).
+	var arrow_y: float = rect.position.y - 6.0 + bob
+	var xs: PackedFloat32Array = PackedFloat32Array([cx]) if up else PackedFloat32Array([rect.position.x + 18.0, rect.end.x - 18.0])
+	for x: float in xs:
+		var points: PackedVector2Array
+		if up:
+			points = [Vector2(x, arrow_y - h), Vector2(x + 12.0, arrow_y), Vector2(x - 12.0, arrow_y)]
+		else:
+			points = [Vector2(x, arrow_y), Vector2(x + 12.0, arrow_y - h), Vector2(x - 12.0, arrow_y - h)]
+		# Contorno oscuro de 3 px (se lee sobre tarjetas y fondo).
+		var center := Vector2(x, arrow_y - h * 0.5)
+		var outline: PackedVector2Array = []
+		for p: Vector2 in points:
+			outline.append(p + (p - center).normalized() * 3.0)
+		draw_colored_polygon(outline, dark)
+		draw_colored_polygon(points, amber)
+	var plate_bottom: float = arrow_y - h - 6.0 if up else arrow_y + 4.0
+	if _font == null:
+		return
+	var text: String = get_marker_text()
+	var width: float = _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var plate := Rect2(cx - width * 0.5 - 8.0 if up else rect.end.x + 8.0, plate_bottom - 24.0, width + 16.0, 24.0)
+	var level_w: float = float(_cfg.get("level_width_px", 1280.0))
+	var left: float = -global_position.x + _tile()
+	var right: float = level_w - global_position.x - _tile()
+	plate.position.x = clampf(plate.position.x, left, maxf(left, right - plate.size.x))
+	draw_rect(plate, dark)
+	draw_rect(plate, amber, false, 2.0)
+	draw_string(_font, Vector2(plate.position.x + 8.0, plate.position.y + (plate.size.y + _font.get_ascent(px)) * 0.5 - 2.0),
+			text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, World2ObjectsConfig.color("blanco"))
 
 
 ## Glitch de la pista: barras horizontales que saltan sobre la salida.

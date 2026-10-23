@@ -732,7 +732,10 @@
           63,
           3,
           1
-        ]
+        ],
+        "sign_hint": "Rompe el suelo marcado antes de que se repita",
+        "marker_text": "Mantén {tecla:debug} y golpea aquí ({tecla:move_down})",
+        "marker_dir": "down"
       }
     },
     {

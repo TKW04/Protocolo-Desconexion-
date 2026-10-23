@@ -1143,7 +1143,7 @@ class LevelValidator:
                     self.error("%s: la fila %d no repite la %d (periodo %d): el bucle se notaria"
                                % (what, r + period, r, period), r + period, 0)
                     break
-            for key, optional in (("exit", False), ("hint", True)):
+            for key, optional in (("exit", False), ("hint", True), ("marker", True)):
                 rect = p.get(key)
                 if rect is None and optional:
                     continue
@@ -1151,6 +1151,16 @@ class LevelValidator:
                         and rect[2] >= 1 and rect[3] >= 1 and self.in_bounds(rect[0], rect[1])
                         and self.in_bounds(rect[0] + rect[2] - 1, rect[1] + rect[3] - 1)):
                     self.error("%s: %s debe ser [columna, fila, ancho, alto] dentro del grid" % (what, key), y, x)
+            # Pista clara de la salida (2026-10-23): textos sin «vuelta» y flecha arriba / abajo.
+            for key in ("sign_hint", "marker_text"):
+                if key in p and not isinstance(p[key], str):
+                    self.error("%s: %s debe ser texto" % (what, key), y, x)
+                elif "vuelta" in str(p.get(key, "")).lower():
+                    self.error("%s: %s no puede decir «vuelta»" % (what, key), y, x)
+            if p.get("marker_dir", "up") not in ("up", "down"):
+                self.error("%s: marker_dir debe ser \"up\" o \"down\"" % what, y, x)
+            if "marker_text" in p and p.get("marker") is None and p.get("hint") is None:
+                self.error("%s: marker_text necesita marker o hint" % what, y, x)
             if _is_int(y) and not band[0] <= y <= band[1]:
                 self.error("%s: el cartel va dentro de la banda" % what, y, x)
             elif _is_int(y) and y + period >= self.height:

@@ -6,14 +6,36 @@
 ## - {icono:<id>}: icono en linea; se cambia por el glifo de inline_icons (la
 ##   fuente de textos lo tiene con el ancho del icono) y el cuadro dibuja encima
 ##   el sprite. Un id desconocido se quita (con aviso).
+## - {tecla:<accion>}: primera tecla de la accion en el Input Map (p. ej. «K»
+##   para debug; cambia al reasignarla). Lo usan las ayudas Q (HelpCatalog.text)
+##   y los carteles del Mundo 2 (LoopSection; 2026-10-23).
 ## Solo texto: dibujar el icono lo hace EcoTextBox.
 class_name TextMarkers
 extends RefCounted
 
 const POINTS_TAG: String = "{puntos}"
 const ICON_PATTERN: String = "\\{icono:([a-z0-9_]+)\\}"
+const KEY_PATTERN: String = "\\{tecla:([a-z0-9_]+)\\}"
 
 static var _icon_regex: RegEx
+static var _key_regex: RegEx
+
+
+## {tecla:<accion>} -> primera tecla de la accion en el Input Map (si no tiene,
+## el nombre de la accion).
+static func apply_keys(text: String) -> String:
+	if not text.contains("{tecla:"):
+		return text
+	if _key_regex == null:
+		_key_regex = RegEx.create_from_string(KEY_PATTERN)
+	var out: String = ""
+	var last: int = 0
+	for found: RegExMatch in _key_regex.search_all(text):
+		out += text.substr(last, found.get_start() - last)
+		var action: String = found.get_string(1)
+		out += PulsePrompt.key_text(StringName(action), action.to_upper())
+		last = found.get_end()
+	return out + text.substr(last)
 
 
 ## {puntos} -> `points` (negativo: el saldo actual de GameState).
