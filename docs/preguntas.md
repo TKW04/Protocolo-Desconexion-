@@ -1028,3 +1028,26 @@ Efectos complejos de `propuesta-mejoras.md` implementados con las decisiones del
 6. **Música y efectos de sonido:** se tratan al terminar el 1-1, el 1-2 y el 1-3 (siguen siendo decisión abierta).
 
 **Preguntas abiertas** (con recomendación): `propuesta-1-3.md` §8.
+
+## Mundo 2: lo que el usuario debe revisar al probar (2026-10-23)
+
+El Mundo 2 se hizo con las decisiones delegadas al orquestador (`propuesta-mundo-2.md` §8.1). Lista corta para la primera prueba; ninguna bloquea, todas se ajustan en datos.
+
+**Valores a ajustar jugando**
+- Velocidad del scroll por tramo (sección `scroll` de `data/levels/2-x.json`; 2-1 0,5-0,7, 2-2 0,5-0,9, 2-3 0,4-1,2 tiles/s) y el daño del borde (−10, `data/camera_scroll.json`).
+- Golpe al suelo: tiempo de mantener (0,12 s en el aire, 0,35 s en el suelo) y onda de 1,5 tiles (`data/isak_abilities.json`, `ground_pound`). ¿Se dispara sin querer al bajar de una plataforma de una vía?
+- Frágil 0,6 s, Historia 1,6 s de 3,2 s, clones cada 1,5 s con tope 6, videos cada 2,5 s (`data/world2_objects.json`, `data/enemies/*.json`).
+- Duración del jefe Autoplay: ideal 105 s en Caché; si se hace largo, la primera palanca es `phase1.clips_per_cycle` 2 → 1 (unos −10 s) en `data/bosses/autoplay.json`.
+
+**Textos propuestos (todos marcados como propuesta)**
+- Ayudas Q de los 17 tipos del Mundo 2 (`data/help.json`, `world: 2`).
+- Líneas de Eco: la del reproductor «Mira cuánto tiempo ahorramos juntos.» (`story_lines.pausa_2_2`) y las del jefe (intro, fases, cura, derrota; `texts` de `data/bosses/autoplay.json`).
+- Mensajes de secreto `msg_2_1`, `msg_2_2` y `msg_2_3` (`data/memories.json`) y la capa Caché `boss_w2_l1`.
+- Carteles (`feed_sign`): «Para ti», «Desliza hacia arriba», «Reproducción automática: siempre», «Te podría gustar: esto», «Ya lo has visto todo. (Mentira.)», «Quedan 3 segundos para el siguiente video. No puedes cancelar» y variantes.
+
+**Limitaciones conocidas (no son fallos; decidir si importan)**
+- Validador: la activación de los videos se modela con una cámara centrada en Isak, no con la vista real del scroll; un video puede empezar algo antes o después que en el modelo (el bot del feed lo compensa esperando la fase real).
+- Validador: en las zonas de «Un video más» no se exige ningún golpe (los clones se simulan como amenaza y el camino los evita o los limpia con el golpe al suelo cuando le conviene).
+- Sonido: `AudioManager` engancha las señales por la clase de cada nodo, así que una pieza que hereda de otra del Mundo 1 (la frágil del recordatorio, la Historia de la plataforma que parpadea, el reproductor del interruptor «No molestar») puede sonar como su clase base; los 21 IDs del Mundo 2 son provisionales hasta los sonidos del amigo del usuario.
+- Arte del jefe Autoplay, del Comentarista y pose del golpe al suelo: provisionales por script hasta el paso 23 (AutoSprite, con permiso y total de créditos antes).
+- La salida del validador del 1-2 tiene desde el paso 12 una línea más (el cruce de recordatorios `suelto_b`, que antes se saltaba); el resultado y el camino del Mundo 1 no cambian (comprobado el 2026-10-23 frente a 72d16f7: 1-1, 1-3 y 1-boss idénticos byte a byte).

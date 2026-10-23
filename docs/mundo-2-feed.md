@@ -83,3 +83,32 @@ Un reproductor de video gigante, con un botón de play por ojo. Reproduce clips 
 | **Recompensa** | Fragmento de tiempo: un recuerdo largo de una tarde con su familia, una de las que Isak se perdió mientras miraba el feed. Eco dice: "Mira cuánto tiempo ahorramos." |
 
 > **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).
+
+## 7.8 Estado del Mundo 2 (2026-10-23): diseño final implementado
+
+Resumen de lo que hay en el juego. El detalle, los desvíos y cada decisión están en [propuesta-mundo-2.md](propuesta-mundo-2.md) (§8 y §8.1); lo que el usuario debe revisar al jugar, en [preguntas.md](preguntas.md) («Mundo 2: lo que el usuario debe revisar al probar»); lo pendiente, en [08-pendientes.md](08-pendientes.md).
+
+**Flujo:** hub → carpeta del Mundo 2 (tras vencer a Alerta Mayor) → 2-1 «Para ti» → 2-2 «Un video más» (golpe al suelo) → 2-3 «Scroll infinito» → jefe «Autoplay» → pieza ámbar del hub y Mundo 3 «Próximamente». Todo jugable en Caché y recorrido por bots (`tools/play_feed_bot.gd --level 2-x`, `tools/play_boss_bot.gd --boss autoplay`).
+
+**Decisiones tomadas (frente al mapa conceptual de arriba):**
+- **Paleta B «Índigo frío y Debug miel»** (no violeta neón): `assets/palettes/mundo2.gpl`, Debug `#ffa858`; los puntos de atención llevan contorno de 1 px solo en este mundo.
+- **Golpe al suelo = mantener `move_down`** (S / flecha abajo / stick abajo), sin tecla nueva; se obtiene en el reproductor del inicio del 2-2 (pulso de espaldas a su botón de pausa).
+- **El borde del scroll nunca mata de golpe:** −10 de Sync, reaparición en la tarjeta segura más baja a la vista y 1 s de invulnerabilidad; techo de carga 2 tiles por encima de la vista.
+- **Punto débil del jefe:** Debug → golpe al suelo sobre el cabezal (la «pausa») → láser a la pantalla; **un golpe por pausa** (`pause_hits` 1); sin Debug el golpe solo saca una chispa; el pulso no pausa.
+- **Reloj del HUD** «17:04»: +1 h con cada contacto con el borde y cada repetición de un bucle (solo visual).
+- Textos de Eco, ayudas Q, carteles y mensajes `msg_2_1`-`msg_2_3`: **propuestos** por el orquestador (revisar al jugar). Arte del jefe, del Comentarista y la pose del golpe al suelo: **provisional por script** hasta el paso 23 (AutoSprite, con permiso).
+
+**Valores finales (ajustables jugando):**
+
+| Pieza | Valores |
+|---|---|
+| Golpe al suelo | 0,12 s en el aire (anticipación 0,1 s, caída 960 px/s) o 0,35 s en el suelo; onda de 1,5 tiles que aturde y hace 1 de daño; pose 0,35 s; enfriamiento 0,4 s; gratis |
+| Scroll | 2-1: 0,5 / 0,6 / 0,7 tiles/s; 2-2: 0,5-0,9; 2-3: 0,4-0,8 con ráfagas de 1,2 e inversión; aviso de 9 cuadros a 12 fps |
+| Tarjeta frágil / Historia | 0,6 s al pisarla, aviso 0,5 s, vuelve a los 3 s / 1,6 s encendida de cada 3,2 s |
+| Video en autoplay | clip cada 2,5 s con miniatura de 0,75 s (ola, rayo o cuenta); pulso: pausa 3 s; pausado, el láser lo rompe (vida 2, +25 de energía) |
+| «Un video más» | un clon cada 1,5 s con aviso de 0,75 s, tope 6, vida 1; un golpe al suelo en la zona los elimina |
+| Comentarista / muro «Cargando más…» | bocadillo cada 2,5 s, vida 2 (pulso aturde, láser aturdido derrota) / 3 golpes al suelo |
+| Niveles | 2-1 20 × 130 (dificultad 2, objetivo 300 s; bot 205 s); 2-2 20 × 156 (3, 360 s; bot 239 s); 2-3 20 × 170 (4, 420 s; bot 244 s); 3 secretos y un mensaje por nivel |
+| Jefe Autoplay | arena 20 × 11 a pantalla completa; golpes por fase 4/4/4 (Caché) y 5/5/5 (Kernel, Raíz); pausa 4 / 3 / 2,5 s; cuenta 5 / 4 / 4 s; fase 3 a ×2; en la arena el Debug gasta ×0,25 y el mundo va a ×0,7; bot ideal 105 / 128 / 136 s, torpe 141 / 162 / 175 s, quieto pierde |
+
+**Capturas y mapas:** mapas en `assets/levels_preview/2-1_mapa.png`, `2-2_mapa.png`, `2-3_mapa.png` y `2-boss_mapa.png` (`tools/render_level_map.py`); capturas de los momentos clave con el flujo real en `assets/levels_preview/2-1/`, `2-2/`, `2-3/` y `2-boss/` (`tools/render_level_2_x.gd`, con ventana).
