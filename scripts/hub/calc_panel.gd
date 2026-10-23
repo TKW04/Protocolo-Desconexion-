@@ -89,7 +89,7 @@ func refresh() -> void:
 			"role": String(colors.get("track" if known else "track_unknown", "texto_claro"))})
 	set_options(options)
 	_refresh_detail()
-	set_help(_text_of("help"))
+	set_hints("hub_shop")
 	super.refresh()
 
 

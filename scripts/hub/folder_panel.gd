@@ -74,7 +74,7 @@ func refresh() -> void:
 		set_lines(lines)
 		set_options([{"id": OPTION_ENTER_UNSAVED, "text": String(texts.get("option_enter_unsaved", ""))},
 			{"id": OPTION_STAY, "text": String(texts.get("option_stay", "Volver"))}])
-		set_help(String(texts.get("confirm_help", texts.get("help", ""))))
+		set_hints("hub_confirm")
 		super.refresh()
 		return
 	set_title(HubWorlds.world_title(world_entry))
@@ -91,7 +91,7 @@ func refresh() -> void:
 	# Sin subniveles solo queda Volver: nada que elegir ni que entrar (2026-10-22,
 	# la carpeta del Mundo 2 decia «Pulso: entrar»).
 	var empty: bool = HubWorlds.levels_for_lap(world_entry).is_empty()
-	set_help(String(texts.get("help_empty_world" if empty else "help", texts.get("help", ""))))
+	set_hints("hub_folder_empty" if empty else "hub_folder")
 	super.refresh()
 
 

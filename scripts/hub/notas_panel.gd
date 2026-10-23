@@ -81,7 +81,7 @@ func refresh() -> void:
 			{"id": OPTION_ALBUM, "text": String(texts.get("option_album", ""))},
 			{"id": OPTION_NICKNAME, "text": String(texts.get("option_nickname", "%s")) % GameState.get_nickname()},
 			{"id": OPTION_BACK, "text": String(texts.get("option_back", ""))}])
-	set_help(String(texts.get("help", "")))
+	set_hints("hub_list")
 	super.refresh()
 
 

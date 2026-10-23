@@ -15,6 +15,9 @@
 ## color cuando no esta elegida ("role"). Las subclases pueden dar mas alto a
 ## las filas de opciones y reservar sitio a su izquierda y derecha para dibujar
 ## (_option_row_height, _option_inset_left/right; _after_layout coloca lo suyo).
+## Al pie, la fila de teclas (MenuHints, 2026-10-23): «[G] Aceptar · W/S
+## Elegir · Espacio Volver» con las teclas del Input Map; las subclases eligen
+## el grupo de data/menu_hints.json con set_hints.
 class_name HubPanel
 extends CanvasLayer
 
@@ -34,7 +37,7 @@ var _line_labels: Array[Label] = []
 var _option_labels: Array[Label] = []
 var _detail_labels: Array[Label] = []
 var _message: Label
-var _help: Label
+var _hints: MenuHints
 var _option_ids: Array[StringName] = []
 var _option_texts: Array[String] = []
 var _option_roles: Array[String] = []
@@ -80,6 +83,7 @@ func open() -> void:
 	set_message("")
 	refresh()
 	visible = true
+	_hints.notify_opened(_menu_id())
 	_layout()
 
 
@@ -182,8 +186,9 @@ func set_message(text: String, role: String = "texto_claro") -> void:
 	_layout()
 
 
-func set_help(text: String) -> void:
-	_help.text = text
+## Pie de teclas: grupo `set_id` de data/menu_hints.json.
+func set_hints(set_id: String) -> void:
+	_hints.show_set(set_id)
 	_layout()
 
 
@@ -220,8 +225,13 @@ func get_message() -> String:
 	return _message.text
 
 
+## Texto plano del pie de teclas («G Aceptar · W/S Elegir · Espacio Volver»).
 func get_help() -> String:
-	return _help.text
+	return _hints.get_text()
+
+
+func get_hints() -> MenuHints:
+	return _hints
 
 
 func select(index: int) -> void:
@@ -300,6 +310,13 @@ func _option_inset_left() -> float:
 ## Sitio reservado a la derecha del texto de cada opcion (px de arte).
 func _option_inset_right() -> float:
 	return 0.0
+
+
+## Identificador del menu para el latido de la primera apertura (MenuHints).
+func _menu_id() -> String:
+	var script: Script = get_script()
+	var id: String = String(script.get_global_name()) if script != null else ""
+	return id if not id.is_empty() else "HubPanel"
 
 
 ## Tras colocar las etiquetas (las subclases colocan sus dibujos).
@@ -399,17 +416,34 @@ func _build() -> void:
 	_frame.add_child(_panel)
 	_title = _new_label("Title", String(colors.get("title", "texto_claro")))
 	_message = _new_label("Message", String(colors.get("message", "texto_claro")))
-	_help = _new_label("Help", String(colors.get("help", "texto_tenue")))
+	_hints = MenuHints.new()
+	_hints.setup(_font, int(_config.get("font_size", 12)), _shader, _key_color, hint_colors())
+	_hints.show_set("hub_list")
+	_panel.add_child(_hints)
+	_hints.row_changed.connect(_layout)
 
 
-## Orden de pantalla: titulo, lineas, opciones, detalle, mensaje y ayuda (los
-## vacios o invisibles no ocupan sitio).
+## Colores del pie de teclas con los roles del hub (hints de colors de la
+## seccion panel).
+static func hint_colors() -> Dictionary:
+	var roles: Dictionary = HubData.section("panel").get("hint_colors", {})
+	var out: Dictionary = {}
+	var defaults: Dictionary = {"text": "texto_tenue", "key": "texto_claro", "label": "texto_tenue",
+		"primary_label": "texto_claro", "key_plate": "acento_cian", "key_plate_pulse": "texto_claro",
+		"key_text": "fondo_profundo", "key_border": "texto_claro"}
+	for key: String in defaults:
+		out[key] = HubData.color(String(roles.get(key, defaults[key])))
+	return out
+
+
+## Orden de pantalla: titulo, lineas, opciones, detalle y mensaje (los vacios
+## o invisibles no ocupan sitio); el pie de teclas va debajo (_layout).
 func _ordered_labels() -> Array[Label]:
 	var out: Array[Label] = [_title]
 	for label: Label in _line_labels + _option_labels:
 		if label.visible:
 			out.append(label)
-	for label: Label in _detail_labels + [_message, _help]:
+	for label: Label in _detail_labels + [_message]:
 		if not label.text.is_empty():
 			out.append(label)
 	return out
@@ -433,7 +467,8 @@ func _layout() -> void:
 		var extra: float = inset_left + inset_right if _option_labels.has(label) else 0.0
 		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
 				+ pad * 2.0 + extra)
-	for label: Label in _detail_labels + [_message, _help]:
+	width = maxf(width, _hints.get_row_width() + pad * 2.0)
+	for label: Label in _detail_labels + [_message]:
 		label.visible = labels.has(label)
 	var y: float = pad
 	for i: int in labels.size():
@@ -451,6 +486,10 @@ func _layout() -> void:
 		if label == _title or (next != null and _option_labels.has(next) and not _option_labels.has(label)) \
 				or (_option_labels.has(label) and next != null and not _option_labels.has(next)):
 			y += gap
+	# Pie de teclas, centrado, con aire encima.
+	y += gap
+	_hints.position = Vector2(floorf((width - _hints.get_row_width()) * 0.5), y)
+	y += _hints.get_row_height() + gap
 	var height: float = y - gap + pad
 	_panel.size = Vector2(width, height)
 	var top: float = float(_config.get("top_px", 48))

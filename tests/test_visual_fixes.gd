@@ -250,14 +250,15 @@ func test_arena_camera_frames_isak_and_the_boss() -> void:
 ## se comprueba con el Mundo 3, que se abre al vencer a Autoplay).
 func test_world_without_levels_folder_has_no_enter_hint() -> void:
 	GameState.mark_level_completed(&"2-boss")
+	MenuHints.set_device(MenuHints.Device.KEYBOARD)
 	var panel := FolderPanel.new()
 	panel.world_entry = HubWorlds.world(&"m3")
 	add_child_autofree(panel)
 	panel.refresh()
-	assert_false(panel.get_help().contains("entrar"), "Sin nada que entrar")
-	assert_eq(panel.get_help(), "Pulso o salto: volver")
+	assert_false(panel.get_help().contains("Entrar"), "Sin nada que entrar")
+	assert_eq(panel.get_help(), "G o Espacio Volver")
 	var m1 := FolderPanel.new()
 	m1.world_entry = HubWorlds.world(&"m1")
 	add_child_autofree(m1)
 	m1.refresh()
-	assert_true(m1.get_help().contains("Pulso: entrar"), "El Mundo 1 sigue igual")
+	assert_true(m1.get_help().contains("G Entrar"), "El Mundo 1 sigue igual")

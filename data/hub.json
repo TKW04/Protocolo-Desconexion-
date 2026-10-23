@@ -124,14 +124,11 @@
 			"message_coming_soon": "Próximamente",
 			"empty_world": "Próximamente",
 			"option_back": "Volver",
-			"help": "Arriba/abajo: elegir. Pulso: entrar. Salto: volver",
-			"help_empty_world": "Pulso o salto: volver",
 			"confirm_unsaved_title": "¿Seguro? Aún no has guardado.",
 			"confirm_unsaved_risk": "Si caes sin guardar, Eco te devolverá a tu última copia.",
 			"trash_blocked_text": "Recupera tus archivos de la papelera",
 			"option_enter_unsaved": "Entrar sin guardar",
-			"option_stay": "Volver",
-			"confirm_help": "Arriba/abajo: elegir. Pulso: aceptar. Salto: volver"
+			"option_stay": "Volver"
 		},
 		"colors": {
 			"summary": "texto_tenue",
@@ -195,8 +192,7 @@
 			"message_not_enough_power_banks": "Falta un power bank completo.",
 			"message_access": "Disponible con acceso %s.",
 			"message_soon": "Próximamente.",
-			"message_unknown": "Aún no tienes esta habilidad.",
-			"help": "Arriba/abajo: elegir. Pulso: comprar. Salto: volver"
+			"message_unknown": "Aún no tienes esta habilidad."
 		},
 		"colors": {
 			"points": "ambar",
@@ -259,8 +255,7 @@
 			"message_nothing_to_save": "Todo está guardado",
 			"message_save_failed": "No se pudo guardar",
 			"status_trash": "Tus archivos están en la papelera",
-			"message_trash_pending": "Primero recupera tus archivos de la papelera",
-			"help": "Arriba/abajo: elegir. Pulso: aceptar. Salto: volver"
+			"message_trash_pending": "Primero recupera tus archivos de la papelera"
 		},
 		"colors": {
 			"summary": "texto_tenue",
@@ -296,12 +291,12 @@
 		"margin_px": 3,
 		"padding_px": 10,
 		"line_gap_px": 4,
-		"width_px": 300,
+		"width_px": 372,
 		"top_px": 16,
 		"input_delay_s": 0.15,
 		"confirm_action": "pulse",
 		"cancel_action": "jump",
-		"columns": 6,
+		"columns": 8,
 		"cell_px": 40,
 		"cell_gap_px": 4,
 		"card_px": 64,
@@ -342,9 +337,6 @@
 			"folder_counter": "%d/%d",
 			"message_not_learned": "Aún no lo he apuntado. Pregúntale a Eco con Q.",
 			"message_folder_locked": "Aún no has llegado a este mundo",
-			"help": "Flechas: elegir. Pulso: abrir. Salto: volver",
-			"help_folders": "Flechas: elegir carpeta. Pulso: abrir. Salto: salir",
-			"help_card": "Salto: volver",
 			"counter_memories": "Recuerdos: %d/%d",
 			"section_boss": "Jefe",
 			"section_messages": "Mensajes",
@@ -367,7 +359,6 @@
 			"folder_name": "texto_claro",
 			"folder_name_selected": "acento_cian",
 			"message": "texto_claro",
-			"help": "texto_tenue",
 			"card_title": "acento_cian",
 			"card_text": "texto_claro",
 			"section": "texto_tenue",
@@ -422,9 +413,9 @@
 			"title": "texto_claro",
 			"option": "texto_tenue",
 			"option_selected": "acento_cian",
-			"message": "texto_claro",
-			"help": "texto_tenue"
+			"message": "texto_claro"
 		},
+		"hint_colors": {"text": "texto_tenue", "key": "texto_claro", "label": "texto_tenue", "primary_label": "texto_claro", "key_plate": "acento_cian", "key_plate_pulse": "texto_claro", "key_text": "fondo_profundo", "key_border": "texto_claro"},
 		"texts": {
 			"selected_prefix": "– ",
 			"unselected_prefix": "  ",

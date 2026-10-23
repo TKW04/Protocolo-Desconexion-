@@ -1051,3 +1051,15 @@ El Mundo 2 se hizo con las decisiones delegadas al orquestador (`propuesta-mundo
 - Sonido: `AudioManager` engancha las señales por la clase de cada nodo, así que una pieza que hereda de otra del Mundo 1 (la frágil del recordatorio, la Historia de la plataforma que parpadea, el reproductor del interruptor «No molestar») puede sonar como su clase base; los 21 IDs del Mundo 2 son provisionales hasta los sonidos del amigo del usuario.
 - Arte del jefe Autoplay, del Comentarista y pose del golpe al suelo: provisionales por script hasta el paso 23 (AutoSprite, con permiso y total de créditos antes).
 - La salida del validador del 1-2 tiene desde el paso 12 una línea más (el cruce de recordatorios `suelto_b`, que antes se saltaba); el resultado y el camino del Mundo 1 no cambian (comprobado el 2026-10-23 frente a 72d16f7: 1-1, 1-3 y 1-boss idénticos byte a byte).
+
+## Pie de teclas en los menús del hub (2026-10-23)
+
+Petición del usuario: «cuando abres cualquier menú en el hub quiero que sea claro de que el botón G es el botón de acción para acceder a las opciones de los menús». Decidido por el orquestador (con autoridad del usuario), a revisar al jugar:
+
+- Un único componente `MenuHints` (`scripts/ui/menu_hints.gd`, textos en `data/menu_hints.json`) al pie de cada panel: Notas (menú y confirmación de guardar), álbum (carpetas, pestañas y ficha), tienda de Calc, carpetas de mundo (subniveles, «¿Seguro? Aún no has guardado.» y mundo sin subniveles) y la entrada del apodo. Sustituye a las líneas de ayuda sueltas («Arriba/abajo: elegir. Pulso: aceptar. Salto: volver»).
+- Formato: «[G] Aceptar · W/S Elegir · Espacio Volver»; la acción principal lleva su tecla en una cajita (cian en el hub, como la placa «G» de las estaciones; ámbar en el apodo). El verbo cambia por menú (Comprar, Entrar, Abrir); en la ficha del álbum la acción principal es Volver; en un mundo sin subniveles, «[G] o [Espacio] Volver».
+- Teclas leídas del Input Map con las tablas de Ajustes > Controles (cambian al reasignar). Con mando (el último dispositivo usado) se ven los botones (X, A, B) y la navegación dice «Cruceta».
+- La entrada del apodo acepta con `ui_accept`: muestra «Intro» (o A con mando), no G.
+- La primera vez de la sesión que se abre cada menú, la cajita late 3 s (alterna cian y blanco); sin pausa ni pasos extra. Con «Reducir efectos de Sync bajo» (el único ajuste de reducir efectos) no late, pero sigue resaltada. No se guarda nada: en cada sesión vuelve a latir una vez por menú.
+- El menú de pausa y Ajustes no cambian: no aceptan con G sino con Intro / A y ya dicen «Intro: aceptar».
+- El álbum pasa de 6 a 8 columnas (ancho 372 px de arte): con 31 objetos del Mundo 1 el panel ya se salía de los 720 px y tapaba la ayuda.

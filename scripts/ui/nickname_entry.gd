@@ -50,7 +50,8 @@ var _field: Label
 var _cursor: ColorRect
 var _counter: Label
 var _options: Array[Label] = []
-var _help: Label
+## Pie de teclas (MenuHints, grupo nickname de data/menu_hints.json; acepta con ui_accept).
+var _hints: MenuHints
 
 
 static func load_data() -> Dictionary:
@@ -69,6 +70,7 @@ func _ready() -> void:
 	_open = true
 	_hold_pause()
 	_refresh()
+	_hints.notify_opened("NicknameEntry")
 
 
 func _exit_tree() -> void:
@@ -228,7 +230,7 @@ func get_lines() -> PackedStringArray:
 	var out: PackedStringArray = [_title.text, _text, _counter.text]
 	for label: Label in _options:
 		out.append(label.text)
-	out.append(_help.text)
+	out.append(_hints.get_text())
 	return out
 
 
@@ -284,7 +286,6 @@ func _refresh() -> void:
 		_options[i].text = _txt("selected_prefix" if on else "unselected_prefix") + labels[i]
 		_set_color(_options[i], _color("option_selected" if on else "option"))
 	_counter.text = _txt("counter") % [_text.length(), max_length()]
-	_help.text = _txt("help")
 	_refresh_field()
 	_layout()
 
@@ -369,7 +370,14 @@ func _build() -> void:
 	_counter = _new_label("Counter", _color("counter"), HORIZONTAL_ALIGNMENT_RIGHT)
 	for i: int in 2:
 		_options.append(_new_label("Option_%d" % i, _color("option"), HORIZONTAL_ALIGNMENT_LEFT))
-	_help = _new_label("Help", _color("help"), HORIZONTAL_ALIGNMENT_CENTER)
+	_hints = MenuHints.new()
+	var hint_colors: Dictionary = {}
+	for key: String in (_data.get("hint_colors", {}) as Dictionary):
+		hint_colors[key] = Color.html(String(_data["hint_colors"][key]))
+	_hints.setup(_font, int(_data.get("font_size", 12)), _shader, _key_color, hint_colors)
+	_hints.show_set("nickname")
+	_panel.add_child(_hints)
+	_hints.row_changed.connect(_layout)
 
 
 func _width_of(text: String) -> float:
@@ -391,7 +399,7 @@ func _layout() -> void:
 	var widest_name: float = _width_of("W".repeat(max_length())) + cursor_w + 2.0
 	var width: float = float(_data.get("panel_width_px", 240))
 	width = maxf(width, icon_size.x + gap + _width_of(_title.text) + pad * 2.0)
-	width = maxf(width, _width_of(_help.text) + pad * 2.0)
+	width = maxf(width, _hints.get_row_width() + pad * 2.0)
 	width = maxf(width, widest_name + fpad * 2.0 + _width_of(_counter.text) + gap + pad * 2.0)
 	var options_w: float = 0.0
 	for label: Label in _options:
@@ -423,9 +431,8 @@ func _layout() -> void:
 		label.size = Vector2(w, line_h)
 		x += w + gap * 2.0
 	y += line_h + gap
-	_help.position = Vector2(pad, y)
-	_help.size = Vector2(width - pad * 2.0, line_h)
-	y += line_h + pad
+	_hints.position = Vector2(floorf((width - _hints.get_row_width()) * 0.5), y)
+	y += _hints.get_row_height() + pad
 	_panel.size = Vector2(width, y)
 	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(maxf(screen.y - y, 0.0) * 0.5))
 	_refresh_field()

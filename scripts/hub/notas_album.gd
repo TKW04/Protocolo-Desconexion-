@@ -58,6 +58,8 @@ var _panel: NinePatchRect
 ## Miniatura del mundo junto al titulo de la carpeta abierta.
 var _title_icon: TextureRect
 var _labels: Dictionary[StringName, Label] = {}
+## Pie de teclas (MenuHints, data/menu_hints.json: album_folders / album_grid / album_card).
+var _hints: MenuHints
 var _tab_labels: Array[Label] = []
 var _cells: Array[Control] = []
 var _folders: Array[Control] = []
@@ -228,6 +230,7 @@ func open() -> void:
 	_set_message("")
 	visible = true
 	refresh()
+	_hints.notify_opened("NotasAlbum")
 
 
 func close() -> void:
@@ -421,6 +424,15 @@ func get_card_art() -> Texture2D:
 	return _memory_art.texture if _mode == Mode.CARD and _memory_art.visible else null
 
 
+## Texto plano del pie de teclas.
+func get_help() -> String:
+	return _hints.get_text()
+
+
+func get_hints() -> MenuHints:
+	return _hints
+
+
 func get_message() -> String:
 	return _labels[&"message"].text
 
@@ -590,8 +602,7 @@ func refresh() -> void:
 		var width: float = float(_cfg.get("card_text_width_px", 200))
 		_body_label.text = "\n".join(EcoTextBox.wrap_text(HelpCatalog.shared().text(id), _font,
 			int(_cfg.get("font_size", 12)), width))
-	var help_key: String = "help_card" if card_mode else ("help_folders" if folders_mode else "help")
-	_labels[&"help"].text = String(texts.get(help_key, ""))
+	_hints.show_set("album_card" if card_mode else ("album_folders" if folders_mode else "album_grid"))
 	_layout()
 
 
@@ -839,8 +850,12 @@ func _build() -> void:
 		_panel.set_patch_margin(side, margin)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.add_child(_panel)
-	for key: String in ["title", "counter", "name", "message", "help", "card_title"]:
+	for key: String in ["title", "counter", "name", "message", "card_title"]:
 		_labels[StringName(key)] = _new_label(_panel, key.capitalize().replace(" ", ""), String(colors.get(key, "texto_claro")))
+	_hints = MenuHints.new()
+	_hints.setup(_font, int(_cfg.get("font_size", 12)), _shader, _key_color, HubPanel.hint_colors())
+	_panel.add_child(_hints)
+	_hints.row_changed.connect(_layout)
 	_title_icon = TextureRect.new()
 	_title_icon.name = "TitleIcon"
 	_title_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -958,7 +973,7 @@ func _layout() -> void:
 	var line_h: float = ceilf(_font.get_height(fs))
 	var pad: float = float(_cfg.get("padding_px", 10))
 	var gap: float = float(_cfg.get("line_gap_px", 4))
-	var width: float = float(_cfg.get("width_px", 300))
+	var width: float = maxf(float(_cfg.get("width_px", 300)), _hints.get_row_width() + float(_cfg.get("padding_px", 10)) * 2.0)
 	var inner: float = width - pad * 2.0
 	var y: float = pad
 	# Carpeta abierta: la miniatura del mundo (si la tiene) a la izquierda del titulo.
@@ -1060,7 +1075,8 @@ func _layout() -> void:
 	else:
 		_labels[&"message"].visible = false
 	y += gap
-	y = _place(_labels[&"help"], pad, y, inner, line_h, gap)
+	_hints.position = Vector2(floorf((width - _hints.get_row_width()) * 0.5), y)
+	y += _hints.get_row_height() + gap
 	var height: float = y - gap + pad
 	_panel.size = Vector2(width, height)
 	var top: float = float(_cfg.get("top_px", 16))

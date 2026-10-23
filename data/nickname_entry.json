@@ -1,5 +1,5 @@
 {
-	"_notes": "Entrada del apodo (NicknameEntry, scenes/ui/nickname_entry.tscn + scripts/ui/nickname_entry.gd; docs/propuesta-asistentes-y-vidas.md §2.1 y §9, paso 5 de §10). Componente reutilizable: lo usara el encuentro con Eco del 1-1 (paso 6) y el menu «Apodo» de Notas (paso 8). Panel del estilo del juego (eco_text_panel.png, fuente de textos, shader de color clave, colores de mundo1.gpl) con la esfera de Eco, un titulo, el campo con el apodo actual (GameState.get_nickname(), «Isak» por defecto) y dos opciones: Aceptar y Dejar \"<apodo>\" (keep_template; {apodo} = el actual; la fuente de textos no tiene comillas angulares) y un cursor que parpadea (barra de cursor_width_px; la fuente tampoco tiene guion bajo). Pausa el arbol mientras esta abierto y la pausa se libera SIEMPRE al cerrarse o al salir del arbol. TECLADO: se escribe directamente (letras con tildes y ene, numeros y espacio que la fuente tenga; sin caracteres de control ni simbolos; max_length caracteres, por defecto GameState.NICKNAME_MAX_LENGTH = 12); la primera tecla sustituye el apodo mostrado (resaltado en field_pristine); Retroceso borra; Intro elige la opcion marcada (Aceptar por defecto); Esc deja el apodo actual; las flechas izquierda/derecha cambian de opcion. Las letras nunca cuentan como acciones (A/D, Espacio): todo el teclado lo lee la entrada. MANDO (minimo): ui_accept (A) elige la opcion marcada, ui_cancel (B) deja el actual, izquierda/derecha cambian de opcion; sin teclado el apodo se queda como esta (el actual, «Isak» por defecto). La rejilla de letras navegable con el mando (§9) queda para el port a movil. Al aceptar: el apodo se limpia (GameState.sanitize_nickname: recorta espacios, une los repetidos, maximo de caracteres); si queda vacio se deja el actual; si cambia se guarda en GameState.nickname (v3) y marca «sin guardar». Emite nickname_chosen(apodo) y closed. pixel_scale: se maqueta en pixeles de arte y se escala. layer: por encima del HUD y del cuadro de Eco (11) y por debajo del aviso al salir (50). Ajustable.",
+	"_notes": "Entrada del apodo (NicknameEntry, scenes/ui/nickname_entry.tscn + scripts/ui/nickname_entry.gd; docs/propuesta-asistentes-y-vidas.md §2.1 y §9, paso 5 de §10). Pie de teclas (2026-10-23): MenuHints con el grupo nickname de data/menu_hints.json y los colores hint_colors (Intro / A acepta: ui_accept, leido del Input Map). Componente reutilizable: lo usara el encuentro con Eco del 1-1 (paso 6) y el menu «Apodo» de Notas (paso 8). Panel del estilo del juego (eco_text_panel.png, fuente de textos, shader de color clave, colores de mundo1.gpl) con la esfera de Eco, un titulo, el campo con el apodo actual (GameState.get_nickname(), «Isak» por defecto) y dos opciones: Aceptar y Dejar \"<apodo>\" (keep_template; {apodo} = el actual; la fuente de textos no tiene comillas angulares) y un cursor que parpadea (barra de cursor_width_px; la fuente tampoco tiene guion bajo). Pausa el arbol mientras esta abierto y la pausa se libera SIEMPRE al cerrarse o al salir del arbol. TECLADO: se escribe directamente (letras con tildes y ene, numeros y espacio que la fuente tenga; sin caracteres de control ni simbolos; max_length caracteres, por defecto GameState.NICKNAME_MAX_LENGTH = 12); la primera tecla sustituye el apodo mostrado (resaltado en field_pristine); Retroceso borra; Intro elige la opcion marcada (Aceptar por defecto); Esc deja el apodo actual; las flechas izquierda/derecha cambian de opcion. Las letras nunca cuentan como acciones (A/D, Espacio): todo el teclado lo lee la entrada. MANDO (minimo): ui_accept (A) elige la opcion marcada, ui_cancel (B) deja el actual, izquierda/derecha cambian de opcion; sin teclado el apodo se queda como esta (el actual, «Isak» por defecto). La rejilla de letras navegable con el mando (§9) queda para el port a movil. Al aceptar: el apodo se limpia (GameState.sanitize_nickname: recorta espacios, une los repetidos, maximo de caracteres); si queda vacio se deja el actual; si cambia se guarda en GameState.nickname (v3) y marca «sin guardar». Emite nickname_chosen(apodo) y closed. pixel_scale: se maqueta en pixeles de arte y se escala. layer: por encima del HUD y del cuadro de Eco (11) y por debajo del aviso al salir (50). Ajustable.",
 	"layer": 30,
 	"pixel_scale": 2,
 	"font": "res://assets/sprites/ui/text_font.fnt",
@@ -26,8 +26,7 @@
 		"keep_template": "Dejar \"{apodo}\"",
 		"selected_prefix": "– ",
 		"unselected_prefix": "  ",
-		"counter": "%d/%d",
-		"help": "Escribe tu apodo. Intro: aceptar. Esc: dejar el actual"
+		"counter": "%d/%d"
 	},
 	"colors": {
 		"backdrop": "#0b0e1a",
@@ -42,5 +41,6 @@
 		"option": "#aeb8d2",
 		"option_selected": "#ffa000",
 		"help": "#9bb0e8"
-	}
+	},
+	"hint_colors": {"text": "#9bb0e8", "key": "#f2f4f8", "label": "#9bb0e8", "primary_label": "#f2f4f8", "key_plate": "#ffa000", "key_plate_pulse": "#f2f4f8", "key_text": "#0c1022", "key_border": "#f2f4f8"}
 }
