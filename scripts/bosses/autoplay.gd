@@ -21,8 +21,11 @@
 ##   (MovingPlatform con vuelta, de una via).
 ## - Llegada, intro, reaparicion por fase, golpe final y secuencia de derrota
 ##   como Alerta Mayor (BossBase). Sin rollback.
-## Arte PROVISIONAL (tools/gen_boss_autoplay.py, *_placeholder.png); textos de
-## la pantalla y miniaturas por codigo. Tiempo del mundo (advance).
+## Arte: la pantalla es arte final de AutoSprite (paso 23, 2026-10-23;
+## tools/import_boss_autoplay.py, autoplay_<anim>_NN.png, ART_ANIMS); si faltan
+## esos cuadros, vuelve a los *_placeholder.png. El pie, el cabezal y las
+## tarjetas siguen por script (tools/gen_boss_autoplay.py, *_placeholder.png);
+## textos de la pantalla y miniaturas por codigo. Tiempo del mundo (advance).
 class_name Autoplay
 extends BossBase
 
@@ -66,6 +69,19 @@ const ART_SCREEN_OFF: String = "autoplay_screen_off_placeholder.png"
 const ART_STAND: String = "autoplay_stand_placeholder.png"
 const ART_PLAYHEAD: String = "autoplay_playhead_placeholder.png"
 const ART_CARD: String = "autoplay_card_placeholder.png"
+## Arte final de la pantalla (tools/import_boss_autoplay.py): anim -> [cuadros,
+## fps, bucle]. Sin bucle se queda en el ultimo cuadro (clip_cast: brillando
+## mientras dura el clip; defeat: apagada). Lienzo de 576 x 320 con la pantalla
+## de 512 x 256 a ART_MARGIN_PX del borde.
+const ART_ANIMS: Dictionary = {
+	"idle": [24, 12.0, true],
+	"clip_cast": [8, 12.0, false],
+	"countdown": [24, 12.0, true],
+	"paused": [24, 12.0, true],
+	"x2": [24, 12.0, true],
+	"defeat": [13, 12.0, false],
+}
+const ART_MARGIN_PX: float = 32.0
 
 ## Id del objeto en el nivel (params.id).
 @export var object_id: StringName = &""
@@ -88,6 +104,10 @@ var _fx: ScreenFx
 var _label: Label
 var _screen_label: Label
 var _textures: Dictionary = {}
+## Arte final de la pantalla cargado (si no, los *_placeholder) y su animacion.
+var _art_final: bool = false
+var _art_anim: String = ""
+var _art_t: float = 0.0
 var _cards: Array[MovingPlatform] = []
 var _banners: Dictionary = {}
 var _bells: Array[AlarmBell] = []
@@ -146,6 +166,7 @@ func _physics_process(delta: float) -> void:
 ## La pausa congela la linea de tiempo del jefe (ventana incluida); la cinta
 ## sigue siempre (tambien antes de la pelea).
 func advance(dt: float) -> void:
+	_art_t += dt
 	if not is_fighting() or is_paused():
 		_advance_conveyor(dt)
 		_refresh_screen()
@@ -772,10 +793,12 @@ func _build() -> void:
 	_screen.top_level = true
 	_screen.centered = false
 	_screen.z_index = -1
-	_screen.texture = _texture(ART_SCREEN)
+	_art_final = _texture(_art_file("idle", 0)) != null
+	_screen.texture = _texture(_art_file("idle", 0)) if _art_final else _texture(ART_SCREEN)
 	add_child(_screen)
 	HelpCatalog.tag(_screen, help_id("screen"))
-	_screen.global_position = get_screen_rect().position
+	var margin: float = ART_MARGIN_PX if _art_final else 0.0
+	_screen.global_position = get_screen_rect().position - Vector2(margin, margin)
 	_stand = Sprite2D.new()
 	_stand.name = "Stand"
 	_stand.top_level = true
@@ -793,7 +816,8 @@ func _build() -> void:
 	HelpCatalog.tag(_playhead_sprite, help_id("playhead"))
 	var font := load(String(_arena.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font
 	_label = _make_label("Counter", font)
-	_label.global_position = get_screen_rect().position + Vector2(20.0, 18.0)
+	# Con el arte final el marco es mas grueso: el contador va dentro de la pantalla.
+	_label.global_position = get_screen_rect().position + (Vector2(36.0, 30.0) if _art_final else Vector2(20.0, 18.0))
 	_screen_label = _make_label("ScreenText", font)
 	_screen_label.size = Vector2(get_screen_rect().size.x * 0.5, 24.0)
 	_screen_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -909,12 +933,16 @@ func _texture(file_name: String) -> Texture2D:
 func _refresh_screen() -> void:
 	if _screen == null:
 		return
+	if _art_final:
+		_screen.texture = _art_texture()
 	if _off:
-		_screen.texture = _texture(ART_SCREEN_OFF)
+		if not _art_final:
+			_screen.texture = _texture(ART_SCREEN_OFF)
 		_screen_label.text = ""
 		_fx.queue_redraw()
 		return
-	_screen.texture = _texture(ART_SCREEN_PAUSED if is_paused() else ART_SCREEN)
+	if not _art_final:
+		_screen.texture = _texture(ART_SCREEN_PAUSED if is_paused() else ART_SCREEN)
 	var text: String = ""
 	if is_fighting():
 		if is_paused():
@@ -930,6 +958,42 @@ func _refresh_screen() -> void:
 			text = String(_texts.get("screen_x2", "x2"))
 	_screen_label.text = text
 	_fx.queue_redraw()
+
+
+## Animacion del arte final que toca ahora (ART_ANIMS).
+func get_art_anim() -> String:
+	if _off:
+		return "defeat"
+	if not is_fighting():
+		return "idle"
+	if is_paused():
+		return "paused"
+	if is_countdown_showing():
+		return "countdown"
+	if get_phase() == 3:
+		return "x2"
+	if _clip in [CLIP_WAVE, CLIP_RAYS, CLIP_SWEEP_HIGH, CLIP_COUNTDOWN]:
+		return "clip_cast"
+	return "idle"
+
+
+func _art_file(anim: String, frame: int) -> String:
+	return "autoplay_%s_%02d.png" % [anim, frame]
+
+
+## Cuadro del arte final: cambia de animacion si toca (empieza en el cuadro 0) y
+## avanza con el tiempo del mundo que acumula advance.
+func _art_texture() -> Texture2D:
+	var anim: String = get_art_anim()
+	if anim != _art_anim:
+		_art_anim = anim
+		_art_t = 0.0
+	var spec: Array = ART_ANIMS[anim]
+	var count: int = int(spec[0])
+	var frame: int = int(floor(_art_t * float(spec[1])))
+	frame = posmod(frame, count) if bool(spec[2]) else mini(frame, count - 1)
+	var tex: Texture2D = _texture(_art_file(anim, frame))
+	return tex if tex != null else _texture(_art_file("idle", 0))
 
 
 func _update_label() -> void:
