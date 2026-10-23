@@ -3180,7 +3180,10 @@ class Validator:
                 goals.append(pair)
             nexts = [(e["to"], state) for e in m.edges(node, state, "auto")]
             for g in gates:
-                if g.gid not in state and self._gate_near(g, node) and m.can_open(g, node, state):
+                # Las tarjetas que solo rompe el golpe al suelo y estan ocultas se abren con el Debug activo
+                # (2026-10-23, paso 13 del Mundo 2: la salida del bucle del 2-2; antes nunca se abrian aqui).
+                debug = "auto" if g.kind == "pound" else False
+                if g.gid not in state and self._gate_near(g, node) and m.can_open(g, node, state, debug):
                     nexts.append((node, state | {g.gid}))
             for nxt in nexts:
                 reverse.setdefault(nxt, []).append(pair)

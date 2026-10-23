@@ -119,13 +119,16 @@ func level_text(level: Dictionary) -> String:
 
 
 ## Nombre del estado del subnivel (Completado, Nuevo, Bloqueado, Proximamente).
+## Un subnivel con `available_text` (data/hub.json) lo usa en vez de «Nuevo»
+## mientras esta disponible: el 2-2 sale como «Siguiente video» tras el 2-1
+## (paso 13 de docs/propuesta-mundo-2.md, §4.6).
 func state_text(level: Dictionary) -> String:
 	var texts: Dictionary = _folders.get("texts", {})
 	match HubWorlds.level_state(world_entry, level):
 		HubWorlds.STATE_COMPLETED:
 			return String(texts.get("state_completed", ""))
 		HubWorlds.STATE_AVAILABLE:
-			return String(texts.get("state_available", ""))
+			return String(level.get("available_text", texts.get("state_available", "")))
 	if HubWorlds.is_coming_soon(level):
 		return String(texts.get("state_coming_soon", ""))
 	return String(texts.get("state_locked", ""))

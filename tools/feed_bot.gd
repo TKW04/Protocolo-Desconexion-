@@ -24,6 +24,10 @@
 ##   y lo mantiene desde la cima); lo suelta entre golpes; comprueba `breaks`.
 ## - `wait` final de la terminal con cuenta (`countdown_s`): quieto hasta que la
 ##   cuenta termina y el vortice se lleva a Isak.
+## - 2-2 (paso 13, 2026-10-23): el pulso de espaldas al reproductor (`pause_player`,
+##   hecho cuando queda pausado: da el golpe al suelo) y el compas de las Historias
+##   (`wait_beat` con `rhythm` «_historia_<id>»: el reloj propio de la StoryCard,
+##   que corre desde que empieza el nivel; solo cuenta la fase dentro del ciclo).
 ## Comprobaciones (§7.3): completa el nivel y vuelve al hub con el en
 ## completed_levels; 0 contactos con el borde del scroll; 0 muertes; 0
 ## repeticiones de un bucle; anota golpes, energia minima frente al camino y la
@@ -44,6 +48,11 @@ const SCROLL_HEAD_MARGIN_PX: float = 8.0
 const SCROLL_EXTRA_PX: float = 24.0
 ## Espera maxima de mas por el techo (s) sobre los segundos del camino.
 const SCROLL_WAIT_SLACK_S: float = 8.0
+## Borde del scroll (tiles bajo los pies) con el que el bot deja de esperar a un
+## video que aun no ha entrado en la vista (ver _wait_phase).
+const IDLE_EDGE_TILES: float = 3.5
+## Lo que el bot se acerca a la tarjeta en un golpe al suelo (px; ver _pound_step).
+const POUND_NUDGE_PX: float = 12.0
 ## Sonda de la subida (px): avance lateral y subida que se prueban con test_move.
 const HEAD_PROBE_PX: Vector2 = Vector2(12.0, 40.0)
 
@@ -58,6 +67,7 @@ var _path_offset: float = NAN
 var _scroll_waits: int = 0
 var _scroll_late: int = 0
 var _pounds: int = 0
+var _clone_pulses: int = 0
 var _skip_index: int = -1
 var _jumping: bool = false
 var _head_waits: Dictionary = {}
@@ -155,8 +165,8 @@ func _check_completed() -> bool:
 	for s: Variant in _steps:
 		if s is Dictionary and String((s as Dictionary).get("target", {}).get("id", "")).contains(memory):
 			in_path = true
-	_note("FEED: contactos con el borde %d, muertes %d, repeticiones de bucle %d, golpes %d, golpes al suelo %d, esperas del scroll %d (%d ya pasadas al llegar), dashes %d; %s %s" % [
-		_edge_hits, _deaths, _loop_wraps, _hits, _pounds, _scroll_waits, _scroll_late, _dashes, memory,
+	_note("FEED: contactos con el borde %d, muertes %d, repeticiones de bucle %d, golpes %d, golpes al suelo %d, pulsos a clones %d, esperas del scroll %d (%d ya pasadas al llegar), dashes %d; %s %s" % [
+		_edge_hits, _deaths, _loop_wraps, _hits, _pounds, _clone_pulses, _scroll_waits, _scroll_late, _dashes, memory,
 		"recogido" if GameState.has_memory(StringName(memory)) and not _memory_before.has(StringName(memory))
 			else ("sin recoger (el camino no pasa por su secreto)" if not in_path else "SIN RECOGER")])
 	if _edge_hits > 0:
@@ -368,11 +378,19 @@ func _wait_phase(s: Dictionary) -> bool:
 		await _wait_s(float(s.get("seconds", 0.0)) + shift)
 		return true
 	var started: int = _frame
+	var idle: Array[bool] = [false]
 	var ok: bool = await _wait_until(func() -> bool:
 		if not _ceiling_ok(need):
 			return false
 		var t: float = _clip_time(ref)
 		if t < 0.0:
+			# 2-2 (paso 13): con el scroll forzado el video puede no entrar entero en la vista hasta que el borde
+			# esta cerca (el plan centra la camara en Isak). Se espera a que empiece su clip, pero si el borde
+			# llega a IDLE_EDGE_TILES de los pies se sigue (parado no ataca; al entrar avisa 0,75 s).
+			var camera: ScrollCamera = _isak.get_scroll_camera()
+			if camera != null and (camera.get_bottom() - _isak.global_position.y) / TILE < IDLE_EDGE_TILES:
+				idle[0] = true
+				return true
 			return false
 		var r: float = fposmod(ref_t - t, period)
 		if r > period - LATE_TOL_S:
@@ -383,7 +401,9 @@ func _wait_phase(s: Dictionary) -> bool:
 		var node: Node = _object(id)
 		if node != null:
 			phases.append("%s %.2f (camino %.2f)" % [id, _clip_time(node), fposmod(float(clips[id]) + shift, period)])
-	if _verbose or not ok:
+	if idle[0]:
+		_note("paso %d: %s aun fuera de la vista (parado): sigue sin esperar su fase" % [_step_index, ref.name])
+	elif _verbose or not ok:
 		_note("fase de los clips en el paso %d tras %.2f s%s: %s" % [_step_index, (_frame - started) / 60.0,
 			" (junta la espera del scroll de %.2f s)" % shift if shift > 0.0 else "", ", ".join(phases)])
 	if not ok:
@@ -405,6 +425,78 @@ func _clip_time(node: Node) -> float:
 	return float(t) if t != null and float(t) >= 0.0 else -1.0
 
 
+# --- Reproductor e Historias (2-2) ---
+
+## Reproductor con el boton de pausa (PausePlayer hereda de DndSwitch): hecho
+## cuando esta pausado.
+func _pulse_done(kind: String, node: Node, s: Dictionary) -> bool:
+	if kind == "pause_player":
+		return node == null or bool(node.call(&"is_on"))
+	return super._pulse_done(kind, node, s)
+
+
+func _pulse_step(s: Dictionary) -> bool:
+	var target: Dictionary = s.get("target", {})
+	var ok: bool = await super._pulse_step(s)
+	if ok and String(target.get("type", "")) == "pause_player":
+		_note("reproductor %s pausado con el pulso de espaldas: golpe al suelo obtenido %s (%s)" % [
+			target.get("id", "?"), GameState.is_ability_obtained(GameState.ABILITY_GROUND_POUND), _where()])
+		_shot("02_reproductor")
+	return ok
+
+
+## Compas de una Historia (el plan la modela con un metronomo «_historia_<id>»
+## que arranca con el nivel): su reloj propio. El ciclo del camino se cambia por
+## el actual (o el siguiente si su fase ya paso), porque el bot no va al segundo
+## del camino (las esperas del scroll lo desplazan).
+func _wait_beat(s: Dictionary) -> bool:
+	var rid: String = String(s.get("rhythm", ""))
+	if not rid.begins_with("_historia_"):
+		return await super._wait_beat(s)
+	var card := _object(rid.trim_prefix("_historia_")) as StoryCard
+	var zone: RhythmZone = card.get_own_clock() if card != null else null
+	if zone == null or not zone.is_started():
+		return await _wait_beat_on(s, zone)
+	var copy: Dictionary = s.duplicate(true)
+	var beat: Dictionary = copy.get("beat", {})
+	var cycle: int = zone.get_cycle_count()
+	if float(beat.get("cycle_time_s", 0.0)) < zone.get_cycle_time() - LATE_TOL_S:
+		cycle += 1
+	beat["cycle"] = cycle
+	copy["beat"] = beat
+	return await _wait_beat_on(copy, zone)
+
+
+## Defensa del enjambre (2-2): un clon de «Un video más» peligroso que se
+## acerca por la fila de Isak al alcance del pulso -> pulso (lo aturde 3 s, como
+## haria un jugador que espera una Historia). Si no, la defensa de siempre.
+func _guard() -> void:
+	if _has_control() and _can_pulse_now() and is_instance_valid(_level) and _guard_lock == 0:
+		for zone: Node in _level.get_node(^"Objects").get_children():
+			if not zone is CloneZone:
+				continue
+			for clone: Node in zone.get_children():
+				if not clone is VideoClone or not (clone as VideoClone).is_dangerous():
+					continue
+				var rect: Rect2 = (clone as VideoClone).get_body_rect()
+				if absf(rect.get_center().y - (_isak.global_position.y - 32.0)) > TILE:
+					continue
+				var toward: float = signf(rect.get_center().x - _isak.global_position.x)
+				if _in_pulse_range(rect, 0.9, _isak.facing):
+					_tap(A_PULSE)
+					# Un toque cada pocos cuadros (pulsar en cuadros seguidos no cuenta como just_pressed).
+					_guard_lock = 4
+					_clone_pulses += 1
+					if _clone_pulses == 1 or _verbose:
+						_note("defensa: pulso al clon %s (%s)" % [clone.name, _where()])
+					return
+				if _axis == 0.0 and toward != 0.0 and toward != signf(_isak.facing) and _in_pulse_range(rect, 0.9, toward):
+					_tap(A_RIGHT if toward > 0.0 else A_LEFT)
+					_guard_lock = 3
+					return
+	super._guard()
+
+
 # --- Golpe al suelo ---
 
 ## Paso `ground_pound`: en `shot.x` de la celda `at`, mantiene move_down hasta
@@ -413,6 +505,11 @@ func _clip_time(node: Node) -> float:
 func _pound_step(s: Dictionary) -> bool:
 	var at: Vector2 = _px(s["at"])
 	var x: float = float(s.get("shot", {}).get("x", at.x))
+	if s.has("x_px") and not s.has("shot"):
+		# 2-2 (paso 13): el plan elige la x de la celda mas cercana a su centro desde la que la onda alcanza
+		# la tarjeta, a veces por pocos px; el bot se acerca POUND_NUDGE_PX mas hacia ella (sin salir de la celda).
+		x = clampf(float(s["x_px"]) + signf(float(s.get("facing", 0))) * POUND_NUDGE_PX, at.x - TILE * 0.5 + 6.0,
+			at.x + TILE * 0.5 - 6.0)
 	if DebugMode.is_active() and not bool(s.get("debug", false)):
 		await _debug_off()
 	elif bool(s.get("debug", false)) and not DebugMode.is_active():

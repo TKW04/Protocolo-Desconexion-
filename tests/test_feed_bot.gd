@@ -1,4 +1,5 @@
-# Bot del feed en el 2-1 «Para ti» (paso 12 de docs/propuesta-mundo-2.md, 2026-10-23):
+# Bot del feed en el 2-1 «Para ti» (paso 12 de docs/propuesta-mundo-2.md, 2026-10-23;
+# desde el paso 13, tambien el 2-2 «Un video más», unos 70 s de pared):
 # lanza tools/play_feed_bot.gd en un proceso aparte (--headless --fixed-fps 60, como
 # los bots del 1-2 y del 1-3; unos 40 s de pared, 30 de ellos exportando el camino
 # con el validador) y comprueba que completa el 2-1 real siguiendo el camino
@@ -26,6 +27,30 @@ func test_feed_bot_completes_level_2_1() -> void:
 			"hub cargado tras completar el 2-1", "RESULTADO: recorrido", "golpes 0, muertes 0",
 			"contactos con el borde 0, muertes 0, repeticiones de bucle 0", "dashes 1",
 			"hub: llegada tras el 2-1 (2-1 completado true)"]:
+		assert_string_contains(text, piece)
+
+
+## 2-2 «Un video más» (paso 13, 2026-10-23): obtiene el golpe al suelo en el
+## reproductor (pulso de espaldas; linea de Eco y aviso de control), rompe con el
+## las puertas fragiles, espera las Historias del enjambre (defendiendose de los
+## clones con el pulso) y sale del bucle con el Debug + golpe a la tarjeta oculta.
+func test_feed_bot_completes_level_2_2_obtaining_the_ground_pound() -> void:
+	var args: PackedStringArray = ["--headless", "--fixed-fps", "60", "--path", ProjectSettings.globalize_path("res://"),
+		"-s", PLAYER, "--", "--level", "2-2"]
+	var output: Array = []
+	var code: int = OS.execute(OS.get_executable_path(), args, output, true)
+	var text: String = "".join(output)
+	var summary: String = text.substr(maxi(text.find("play_feed_bot"), 0))
+	assert_eq(code, 0, "El bot del 2-2 termina con 0:\n%s" % summary)
+	assert_string_contains(text, "play_feed_bot (2-2): OK")
+	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % summary)
+	for piece: String in ["linea importante (Eco): «Mira cuánto tiempo ahorramos juntos.»",
+			"reproductor reproductor_2_2 pausado con el pulso de espaldas: golpe al suelo obtenido true",
+			"rompe puerta_reproductor", "rompe salida_oculta", "golpe al suelo 4 ",
+			"terminal terminal_siguiente_video: cuenta empezada y terminada", "hub cargado tras completar el 2-2",
+			"RESULTADO: recorrido", "golpes 0, muertes 0",
+			"contactos con el borde 0, muertes 0, repeticiones de bucle 0",
+			"hub: llegada tras el 2-2 (2-2 completado true)"]:
 		assert_string_contains(text, piece)
 
 

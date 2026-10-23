@@ -649,6 +649,38 @@ class Planner:
             group = self.group_of_node(steps[found]["from"])
         return entry
 
+    def _on_blink(self, step):
+        """Verdadero si el paso empieza, acaba o espera de pie sobre una plataforma que parpadea (Historia)."""
+        for key in ("from", "to", "at"):
+            node = step.get(key)
+            if not node:
+                continue
+            x, feet = (node[0] + 0.5) * self.T, (node[1] + 1) * self.T
+            for bl in self.m.blink_items:
+                rect = bl["rect"]
+                if rect[0] - EPS <= x <= rect[2] + EPS and abs(rect[1] - feet) < 1.0:
+                    return True
+        return False
+
+    def _timed_entry(self, steps, idx):
+        """Primer paso (o su wait_phase) del tramo con tiempo de la busqueda por amenazas que contiene el paso
+        `idx`, si en ese tramo Isak pisa una plataforma que parpadea (una Historia, 2-2): una espera del scroll
+        en medio lo desacompasaria (de pie sobre la Historia, se apaga), asi que va antes del tramo (paso 13 de
+        docs/propuesta-mundo-2.md). None si no."""
+        if steps[idx].get("timed") != "hazard":
+            return None
+        k = idx
+        while k > 0 and steps[k - 1].get("timed") == "hazard":
+            k -= 1
+        j = idx
+        while j + 1 < len(steps) and steps[j + 1].get("timed") == "hazard":
+            j += 1
+        if not any(self._on_blink(st) for st in steps[k:j + 1]):
+            return None
+        if k > 0 and steps[k - 1]["action"] == "wait_phase":
+            k -= 1
+        return k if k < idx else None
+
     def _scroll_pass(self, steps, prewaits, allow_debug_waits=False):
         """Una pasada del scroll por el camino con las esperas previas `prewaits` ({indice del debug_on: s}).
         ("ok", pasos, info, errores) o ("prewait", indice del debug_on, s) si un movimiento con el Debug
@@ -694,6 +726,7 @@ class Planner:
 
         out = []
         last_debug_on = None
+        timed_entries = self.__dict__.setdefault("_timed_entries", set())
         for idx, s in enumerate(steps):
             scale = self.rules.debug_world_scale if s.get("debug_active") else 1.0
             node = self.node_of(s) or s.get("from")
@@ -706,9 +739,11 @@ class Planner:
                     info["waits"] += 1
                     info["wait_s"] += prewaits[idx]
             elif prewaits.get(idx):
-                wait_at(s["from"], prewaits[idx], scale, idx)
-                out.append({"action": "wait_scroll", "at": s["from"], "seconds": prewaits[idx], "state": s["state"],
-                            "reason": "el scroll sube (antes de la tarjeta fragil)"})
+                at = s.get("from") or node
+                wait_at(at, prewaits[idx], scale, idx)
+                out.append({"action": "wait_scroll", "at": at, "seconds": prewaits[idx], "state": s["state"],
+                            "reason": "el scroll sube (antes del tramo con tiempo)" if idx in timed_entries
+                            else "el scroll sube (antes de la tarjeta fragil)"})
                 info["waits"] += 1
                 info["wait_s"] += prewaits[idx]
             samples = self.samples(s) if self.duration(s) > 0.0 else []
@@ -728,6 +763,10 @@ class Planner:
                     # De pie sobre un recordatorio o una tarjeta fragil la cuenta corre: la espera va antes del
                     # movimiento que entra en su grupo (paso 12 de docs/propuesta-mundo-2.md, 2-1).
                     entry = self._group_entry(steps, idx)
+                    if entry is None:
+                        entry = self._timed_entry(steps, idx)
+                        if entry is not None:
+                            self._timed_entries.add(entry)
                     if entry is not None and not allow_debug_waits:
                         return ("prewait", entry, max(waited * scale, DT))
                     sim.restore(saved)
@@ -1473,6 +1512,10 @@ class Planner:
     #     terminar el aviso y vuelan a shot_speed_px_s hasta shot_range_tiles o hasta el terreno ('#').
     # La activacion por camara (el clip empieza al entrar la tarjeta entera en la vista) no fija la fase: como
     # con los banners, la busqueda elige la fase y el camino exportado la sincroniza (wait_phase, clip_cycle_s).
+    # start_delay_s (2026-10-23, paso 13: las parejas del 2-2) desplaza la fase del video (-start_delay_s): dos
+    # videos del MISMO clip que entran a la vez en la vista (mismas filas) guardan en el juego el desfase de sus
+    # start_delay_s, y asi tambien en el plan (sin start_delay_s, fase 0 como antes). Una ola y un rayo juntos
+    # no quedan bien desfasados (la ola mide su ciclo desde el barrido): el 2-2 no los empareja.
     # El pulso (pausa 3 s) y el laser no se usan en el plan: basta con esquivarlos.
 
     def view_rect(self, card):
@@ -1524,6 +1567,7 @@ class Planner:
                 warn = float(p["anticipation_frames"]) / float(p["anim_fps"])
                 clip = str(p["clip"])
                 rest_min = float(p.get("min_rest_s", 0.25))
+                delay = float(p.get("start_delay_s", 0.0))
                 if clip == "wave":
                     b = dict(self.v.enemy_data("spam_banner"))
                     corridor = float(p["wave_tiles"]) * T
@@ -1539,7 +1583,8 @@ class Planner:
                     dw, dh = float(b["damage_size"][0]), float(b["damage_size"][1])
                     bottom = feet - float(b["damage_bottom_px"])
                     out.append({"id": enemy["id"], "dir": facing, "corridor": corridor, "bw": bw, "warn": bwarn,
-                                "sweep": sweep, "interval": interval, "rest": interval - bwarn - sweep, "phase": 0.0,
+                                "sweep": sweep, "interval": interval, "rest": interval - bwarn - sweep,
+                                "phase": (-delay) % interval if delay else 0.0,
                                 "entry": entry, "speed": float(b["sweep_speed_px_s"]), "dw": dw, "dh": dh,
                                 "bottom": bottom, "cell": (bx, by),
                                 "band": (min(a, bnd), bottom - dh, max(a, bnd), bottom), "kind": "banner",
@@ -1555,7 +1600,8 @@ class Planner:
                     view = self.view_rect(card)
                     c0, c1 = int(math.floor(view[0] / T)), int(math.floor(view[2] / T))
                     out.append({"id": enemy["id"], "kind": "ray", "feed": "autoplay_video", "warn": warn,
-                                "wave": wave, "interval": interval, "phase": 0.0, "rhythm": "", "dw": dw,
+                                "wave": wave, "interval": interval, "phase": (-delay) % interval if delay else 0.0,
+                                "rhythm": "", "dw": dw,
                                 "top": top, "bottom_px": bottom, "view": view,
                                 "band": (c0 * T, top, (c1 + 1) * T, bottom), "bottom": bottom, "cell": (x, y)})
                 else:
@@ -1569,8 +1615,9 @@ class Planner:
                         ang = math.radians(float(degs[i]) if i < len(degs) else 0.0) * facing
                         vel = (facing * math.cos(ang), facing * math.sin(ang))
                         travel = self.shot_travel(origin, vel, size, 0.0, float(p["shot_range_tiles"]) * T)
-                        out.append(self.shot_item(enemy["id"], "autoplay_video", warn, interval, 0.0, origin, vel,
-                                                  speed, size, travel))
+                        out.append(self.shot_item(enemy["id"], "autoplay_video", warn, interval,
+                                                  (-delay) % interval if delay else 0.0, origin, vel, speed, size,
+                                                  travel))
             elif enemy["type"] == "commenter":
                 p = dict(self.v.enemy_data("commenter"))
                 p.update(enemy.get("params", {}))

@@ -286,6 +286,16 @@ def render(level, palette):
             for xx in range(x0, x1, 6):
                 d.line((xx, y0, min(xx + 3, x1), y0 + 3), fill=palette["borde_luz"], width=2)
             label((x0 + x1) // 2, y0 - 7, "fragil", palette["borde_luz"])
+        # Mundo 2, el 2-2 real (paso 13 de docs/propuesta-mundo-2.md; 2026-10-23).
+        elif kind == "story_card":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 2), 1)
+            for xx in range(x0, x1, 6):
+                d.line((xx, y0, min(xx + 3, x1), y0), fill=palette["resplandor"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "historia", palette["resplandor"])
+        elif kind == "pause_player":
+            x0, y0, x1, y1 = box(x - 1, y - 1, 3, 2)
+            d.rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), outline=palette["debug_cian"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "reproductor (golpe al suelo)", palette["debug_cian"])
         elif kind == "loop_section":
             top, bottom = p["band"]
             x0, y0, _, _ = box(0, top)

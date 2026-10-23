@@ -1,0 +1,872 @@
+{
+ "format": "isak-climbs/1",
+ "level": "2-2",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "15,154->15,152",
+   "section": "Bajo el nivel",
+   "from": {
+    "cell": [
+     15,
+     154
+    ],
+    "ledge": [
+     13,
+     18
+    ],
+    "row": 154
+   },
+   "to": {
+    "cell": [
+     15,
+     152
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 152
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1024.0,
+   "target_x_px": 1024.0,
+   "debug": false
+  },
+  {
+   "id": "13,152->13,150",
+   "section": "Bajo el nivel",
+   "from": {
+    "cell": [
+     13,
+     152
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 152
+   },
+   "to": {
+    "cell": [
+     13,
+     150
+    ],
+    "ledge": [
+     13,
+     14
+    ],
+    "row": 150
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 896.0,
+   "target_x_px": 896.0,
+   "debug": false
+  },
+  {
+   "id": "13,150->13,148",
+   "section": "Bajo el nivel",
+   "from": {
+    "cell": [
+     13,
+     150
+    ],
+    "ledge": [
+     13,
+     14
+    ],
+    "row": 150
+   },
+   "to": {
+    "cell": [
+     13,
+     148
+    ],
+    "ledge": [
+     1,
+     16
+    ],
+    "row": 148
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 896.0,
+   "target_x_px": 896.0,
+   "debug": false
+  },
+  {
+   "id": "13,148->13,146",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     13,
+     148
+    ],
+    "ledge": [
+     1,
+     16
+    ],
+    "row": 148
+   },
+   "to": {
+    "cell": [
+     13,
+     146
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 146
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 896.0,
+   "target_x_px": 896.0,
+   "debug": false
+  },
+  {
+   "id": "18,148->15,146",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     18,
+     148
+    ],
+    "ledge": [
+     18,
+     18
+    ],
+    "row": 148
+   },
+   "to": {
+    "cell": [
+     15,
+     146
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 146
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1024.0,
+   "debug": false
+  },
+  {
+   "id": "15,146->15,144",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     15,
+     146
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 146
+   },
+   "to": {
+    "cell": [
+     15,
+     144
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 144
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1024.0,
+   "target_x_px": 1024.0,
+   "debug": false
+  },
+  {
+   "id": "13,144->12,142",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     13,
+     144
+    ],
+    "ledge": [
+     13,
+     15
+    ],
+    "row": 144
+   },
+   "to": {
+    "cell": [
+     12,
+     142
+    ],
+    "ledge": [
+     1,
+     12
+    ],
+    "row": 142
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 848.0,
+   "target_x_px": 832.0,
+   "debug": false
+  },
+  {
+   "id": "11,142->11,140",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     11,
+     142
+    ],
+    "ledge": [
+     1,
+     12
+    ],
+    "row": 142
+   },
+   "to": {
+    "cell": [
+     11,
+     140
+    ],
+    "ledge": [
+     6,
+     11
+    ],
+    "row": 140
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,140->11,138",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     11,
+     140
+    ],
+    "ledge": [
+     6,
+     11
+    ],
+    "row": 140
+   },
+   "to": {
+    "cell": [
+     11,
+     138
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 138
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,138->9,136",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     11,
+     138
+    ],
+    "ledge": [
+     11,
+     16
+    ],
+    "row": 138
+   },
+   "to": {
+    "cell": [
+     9,
+     136
+    ],
+    "ledge": [
+     4,
+     9
+    ],
+    "row": 136
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 704.0,
+   "target_x_px": 640.0,
+   "debug": false
+  },
+  {
+   "id": "9,136->9,134",
+   "section": "Inicio «El reproductor»",
+   "from": {
+    "cell": [
+     9,
+     136
+    ],
+    "ledge": [
+     4,
+     9
+    ],
+    "row": 136
+   },
+   "to": {
+    "cell": [
+     9,
+     134
+    ],
+    "ledge": [
+     9,
+     13
+    ],
+    "row": 134
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 640.0,
+   "target_x_px": 640.0,
+   "debug": false
+  },
+  {
+   "id": "11,134->11,132",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     11,
+     134
+    ],
+    "ledge": [
+     9,
+     13
+    ],
+    "row": 134
+   },
+   "to": {
+    "cell": [
+     11,
+     132
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 132
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "17,132->17,130",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     17,
+     132
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 132
+   },
+   "to": {
+    "cell": [
+     17,
+     130
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 130
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "18,130->18,128",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     18,
+     130
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 130
+   },
+   "to": {
+    "cell": [
+     18,
+     128
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 128
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1200.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "1,128->1,126",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     1,
+     128
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 128
+   },
+   "to": {
+    "cell": [
+     1,
+     126
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 126
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "1,126->1,124",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     1,
+     126
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 126
+   },
+   "to": {
+    "cell": [
+     1,
+     124
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 124
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "1,124->1,122",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     1,
+     124
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 124
+   },
+   "to": {
+    "cell": [
+     1,
+     122
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 122
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 128.0,
+   "target_x_px": 128.0,
+   "debug": false
+  },
+  {
+   "id": "17,123->17,121",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     17,
+     123
+    ],
+    "ledge": [
+     4,
+     18
+    ],
+    "row": 123
+   },
+   "to": {
+    "cell": [
+     17,
+     121
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 121
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "2,122->3,120",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     2,
+     122
+    ],
+    "ledge": [
+     1,
+     2
+    ],
+    "row": 122
+   },
+   "to": {
+    "cell": [
+     3,
+     120
+    ],
+    "ledge": [
+     3,
+     10
+    ],
+    "row": 120
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 176.0,
+   "target_x_px": 192.0,
+   "debug": false
+  },
+  {
+   "id": "17,121->17,119",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     17,
+     121
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 121
+   },
+   "to": {
+    "cell": [
+     17,
+     119
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 119
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,119->17,117",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     17,
+     119
+    ],
+    "ledge": [
+     16,
+     17
+    ],
+    "row": 119
+   },
+   "to": {
+    "cell": [
+     17,
+     117
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 117
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1152.0,
+   "target_x_px": 1152.0,
+   "debug": false
+  },
+  {
+   "id": "17,117->15,115",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     17,
+     117
+    ],
+    "ledge": [
+     17,
+     18
+    ],
+    "row": 117
+   },
+   "to": {
+    "cell": [
+     15,
+     115
+    ],
+    "ledge": [
+     1,
+     15
+    ],
+    "row": 115
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 1088.0,
+   "target_x_px": 1024.0,
+   "debug": false
+  },
+  {
+   "id": "9,115->9,113",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     9,
+     115
+    ],
+    "ledge": [
+     1,
+     15
+    ],
+    "row": 115
+   },
+   "to": {
+    "cell": [
+     9,
+     113
+    ],
+    "ledge": [
+     4,
+     9
+    ],
+    "row": 113
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 640.0,
+   "target_x_px": 640.0,
+   "debug": false
+  },
+  {
+   "id": "9,113->9,111",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     9,
+     113
+    ],
+    "ledge": [
+     4,
+     9
+    ],
+    "row": 113
+   },
+   "to": {
+    "cell": [
+     9,
+     111
+    ],
+    "ledge": [
+     9,
+     14
+    ],
+    "row": 111
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 640.0,
+   "target_x_px": 640.0,
+   "debug": false
+  },
+  {
+   "id": "11,111->11,109",
+   "section": "Tramo 1 «Romper para pasar»",
+   "from": {
+    "cell": [
+     11,
+     111
+    ],
+    "ledge": [
+     9,
+     14
+    ],
+    "row": 111
+   },
+   "to": {
+    "cell": [
+     11,
+     109
+    ],
+    "ledge": [
+     10,
+     13
+    ],
+    "row": 109
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,109->11,107",
+   "section": "Tramo 2 «Enjambre»",
+   "from": {
+    "cell": [
+     11,
+     109
+    ],
+    "ledge": [
+     10,
+     13
+    ],
+    "row": 109
+   },
+   "to": {
+    "cell": [
+     11,
+     107
+    ],
+    "ledge": [
+     10,
+     13
+    ],
+    "row": 107
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  },
+  {
+   "id": "11,107->11,105",
+   "section": "Tramo 2 «Enjambre»",
+   "from": {
+    "cell": [
+     11,
+     107
+    ],
+    "ledge": [
+     10,
+     13
+    ],
+    "row": 107
+   },
+   "to": {
+    "cell": [
+     11,
+     105
+    ],
+    "ledge": [
+     1,
+     18
+    ],
+    "row": 105
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 768.0,
+   "target_x_px": 768.0,
+   "debug": false
+  }
+ ]
+}

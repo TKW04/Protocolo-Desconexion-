@@ -41,6 +41,11 @@ const CLIMBS_PATH_BOSS: String = "res://tests/fixtures/climbs_1-boss.json"
 const LEVEL_SCENE_2_1: String = "res://scenes/levels/2-1.tscn"
 const LEVEL_PATH_2_1: String = "res://data/levels/2-1.json"
 const CLIMBS_PATH_2_1: String = "res://tests/fixtures/climbs_2-1.json"
+## 2-2 «Un video más» (paso 13, 2026-10-23): tarjetas de una via, salas con puerta de pie, pasillos y escaleras
+## de una via (tambien la de bajo el nivel), sin el scroll forzado, el bucle ni las zonas de clones.
+const LEVEL_SCENE_2_2: String = "res://scenes/levels/2-2.tscn"
+const LEVEL_PATH_2_2: String = "res://data/levels/2-2.json"
+const CLIMBS_PATH_2_2: String = "res://tests/fixtures/climbs_2-2.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -92,8 +97,9 @@ func _load(scene_path: String = LEVEL_SCENE, level_path: String = LEVEL_PATH) ->
 	for child: Node in _level.get_node(^"Enemies").get_children():
 		child.free()
 	for child: Node in _level.get_node(^"Objects").get_children():
+		# Las fragiles de pie (puertas del golpe al suelo del 2-2) estan rotas cuando se sube por su lado.
 		if child is PopupBlocker or child is UpdateBar or child is BossBase or child is LoopSection \
-				or child is CloneZone:
+				or child is CloneZone or (child is FragileCard and (child as FragileCard).variant == FragileCard.VARIANT_UPRIGHT):
 			child.free()
 	_isak = _level.get_node(^"Isak") as Isak
 	_sim = IsakSim.new(DT)
@@ -402,6 +408,15 @@ func test_every_climb_of_2_1_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 40, "Subidas del 2-1 en %s" % CLIMBS_PATH_2_1)
 	await _load(LEVEL_SCENE_2_1, LEVEL_PATH_2_1)
+	_isak.set(&"_scroll_camera", null)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_2_2_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_2_2))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 20, "Subidas del 2-2 en %s" % CLIMBS_PATH_2_2)
+	await _load(LEVEL_SCENE_2_2, LEVEL_PATH_2_2)
 	_isak.set(&"_scroll_camera", null)
 	await _measure_all(climbs)
 

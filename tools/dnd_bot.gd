@@ -259,6 +259,9 @@ func _dash_step(s: Dictionary) -> bool:
 		_set_axis(0.0)
 		return false
 	_dashes += 1
+	# Energia justo despues de cobrar el dash (Isak.begin_dash): la del aterrizaje puede incluir
+	# recogidas del camino (en el 2-1, el punto de atencion de la fragil del medio da +10).
+	var energy_dash: float = GameState.debug_energy
 	if _dashes == 1:
 		_shot("03_primer_dash", 4)
 	# Durante el dash y tras el: direccion hasta aterrizar o frena en el objetivo.
@@ -289,8 +292,8 @@ func _dash_step(s: Dictionary) -> bool:
 	_set_axis(0.0)
 	var ok: bool = _isak.is_on_floor() and absf(_isak.global_position.y - to.y) < ROW_TOL \
 		and (_isak.global_position.x - (to.x - dir * TILE)) * dir > 0.0
-	_note("dash %d (%s) de x=%.0f: llega a %s (energia %.0f -> %.0f, golpes %d)" % [_dashes, "aereo" if air else "suelo",
-		takeoff, _where(), energy_before, GameState.debug_energy, _hits])
+	_note("dash %d (%s) de x=%.0f: llega a %s (energia %.0f -> %.0f al deslizar, %.0f al aterrizar; golpes %d)" % [
+		_dashes, "aereo" if air else "suelo", takeoff, _where(), energy_before, energy_dash, GameState.debug_energy, _hits])
 	if not ok:
 		_note("paso %d (dash): aterriza en %s, se esperaba la celda %s" % [_step_index, _where(), str(s["to"].get("cell", "?"))])
 	return ok
@@ -321,8 +324,13 @@ func _wait_dash_ready() -> bool:
 ## falta poco (MOVING_GO_S) o llega algo tarde, sigue sin frenar; si no, frena y
 ## sale en la fase del camino. Mas de LATE_TOL_S tarde: el ciclo siguiente.
 func _wait_beat(s: Dictionary) -> bool:
+	return await _wait_beat_on(s, _object(String(s.get("rhythm", ""))) as RhythmZone)
+
+
+## `_wait_beat` con el metronomo ya resuelto (el bot del feed le pasa el reloj
+## propio de una Historia).
+func _wait_beat_on(s: Dictionary, zone: RhythmZone) -> bool:
 	var at: Vector2 = _px(s["at"])
-	var zone := _object(String(s.get("rhythm", ""))) as RhythmZone
 	if zone == null:
 		_note("paso %d: no hay metronomo %s; espera %.2f s" % [_step_index, s.get("rhythm", "?"), float(s.get("seconds", 0.0))])
 		if not await _walk_to(at.x, at.y):
