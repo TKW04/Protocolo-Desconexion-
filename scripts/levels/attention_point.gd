@@ -8,6 +8,10 @@
 ## GameState (persistente) y, si ya estaba capturado, el punto no aparece. Fuera
 ## de un nivel generado (escenas de prueba) no se apunta nada. Aspecto provisional (rombo del color del icono de
 ## puntos del HUD, data/hud.json); el arte llega con el tileset del Mundo 1.
+## En los niveles del Mundo 2 (GeneratedLevel.world == 2) el rombo lleva un
+## contorno oscuro de 1 px (`feed_noche` de la paleta B, data/world2_objects.json)
+## para que no se confunda con el tinte ambar del Debug (decision 2026-10-22,
+## docs/propuesta-mundo-2.md §8.1); el Mundo 1 y el hub no cambian.
 class_name AttentionPoint
 extends Area2D
 
@@ -19,6 +23,12 @@ signal collected(value: int)
 @export var radius_px: float = 16.0
 ## Id persistente del punto; vacio = el nombre del nodo.
 @export var point_id: String = ""
+
+## Mundo con contorno en los puntos y color de la paleta del Mundo 2 que lo pinta.
+const OUTLINE_WORLD: int = 2
+const OUTLINE_PALETTE_NAME: String = "feed_noche"
+## Grosor del contorno en px de pantalla.
+const OUTLINE_PX: float = 1.0
 
 var _taken: bool = false
 
@@ -37,9 +47,33 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	var r: float = radius_px
-	var points := PackedVector2Array([Vector2(0.0, -r), Vector2(r, 0.0), Vector2(0.0, r), Vector2(-r, 0.0)])
-	draw_colored_polygon(points, HudConfig.shared().color(&"attention_icon"))
+	if has_outline():
+		# Rombo mayor detras: grosor perpendicular de OUTLINE_PX en cada lado.
+		draw_colored_polygon(_diamond(radius_px + OUTLINE_PX * sqrt(2.0)), get_outline_color())
+	draw_colored_polygon(_diamond(radius_px), HudConfig.shared().color(&"attention_icon"))
+
+
+func _diamond(r: float) -> PackedVector2Array:
+	return PackedVector2Array([Vector2(0.0, -r), Vector2(r, 0.0), Vector2(0.0, r), Vector2(-r, 0.0)])
+
+
+## true solo dentro de un nivel generado del Mundo 2.
+func has_outline() -> bool:
+	return get_level_world() == OUTLINE_WORLD
+
+
+func get_outline_color() -> Color:
+	return World2ObjectsConfig.color(OUTLINE_PALETTE_NAME, Color.BLACK)
+
+
+## Mundo del nivel generado que lo contiene (0 fuera de uno: hub y escenas de prueba).
+func get_level_world() -> int:
+	var node: Node = get_parent()
+	while node != null:
+		if node is GeneratedLevel:
+			return (node as GeneratedLevel).world
+		node = node.get_parent()
+	return 0
 
 
 ## Ayuda de Eco (HelpCatalog.is_help_live): lo destruido no ayuda; recogido, no.
