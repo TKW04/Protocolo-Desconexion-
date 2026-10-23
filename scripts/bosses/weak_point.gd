@@ -26,6 +26,16 @@
 ## reacciona a cuerpos. Desactivado no reacciona a nada, no para el laser y no
 ## se dibuja.
 ##
+## CABEZAL de Autoplay (2026-10-23, paso 15 de docs/propuesta-mundo-2.md §5.3):
+## con mark_trigger = &"ground_pound" la marca es la PAUSA del jefe y la pone un
+## GOLPE AL SUELO (EventBus.ground_pound_landed) cuyos pies caen en su caja
+## (set_pound_box, 1 x 1 tile sobre la barra) con el Debug ACTIVO; sin el
+## Debug, chispa gris en el cabezal y sin pausa. El pulso no hace nada. El
+## nucleo no es objetivo del laser: lo son los rectangulos de dano que el jefe
+## da con add_damage_rect (la pantalla y su pie, en globales): marcado, cada
+## laser que los alcanza es un golpe; sin marca, chispa gris en su borde. Se
+## dibuja con el icono de pausa (dos barras) sobre el carmin.
+##
 ## Decision 2026-10-14 (docs/preguntas.md, V10): se dibuja POR ENCIMA del tinte
 ## del Debug, para que no quede apagado. El visual vive en un CanvasLayer propio
 ## (follow_viewport, asi sigue a la camara) cuya capa esta entre DebugOverlay
@@ -40,6 +50,9 @@ const GROUP_LASER_ACTIVATABLE: StringName = &"laser_activatable"
 const LAYER_ENEMY: int = 4
 const ANIM_SPARK: StringName = &"gray_spark"
 const LASER_ORIGIN_METHOD: StringName = &"get_laser_origin"
+## Quien pone la marca: el pulso (Mundo 1) o el golpe al suelo (Autoplay).
+const TRIGGER_PULSE: StringName = &"pulse"
+const TRIGGER_GROUND_POUND: StringName = &"ground_pound"
 
 ## Un golpe cuenta (nucleo marcado): `damage` golpes (el dano del laser).
 signal hit(damage: int, source: Node)
@@ -59,6 +72,8 @@ static var _cfg: Dictionary = {}
 
 ## Si es falso, la cuenta de la marca no avanza sola (pruebas: advance_mark).
 @export var auto_process: bool = true
+## TRIGGER_PULSE (por defecto) o TRIGGER_GROUND_POUND (cabezal de Autoplay).
+@export var mark_trigger: StringName = TRIGGER_PULSE
 
 var _layer: CanvasLayer
 var _visual: Node2D
@@ -76,6 +91,9 @@ var _mark_warned: bool = false
 var _mark_flash_left: float = 0.0
 var _shell: Area2D
 var _shell_shape: CollisionShape2D
+## Modo golpe al suelo: caja del cabezal (local) y objetivos del laser.
+var _pound_box: Rect2 = Rect2(-32.0, -48.0, 64.0, 64.0)
+var _damage_areas: Array[Area2D] = []
 
 
 func _ready() -> void:
@@ -97,6 +115,7 @@ func _ready() -> void:
 	_spark.visible = false
 	_spark.z_index = int(config().get("spark_z_index", 5))
 	EventBus.pulse_fired.connect(_on_pulse_fired)
+	EventBus.ground_pound_landed.connect(_on_ground_pound_landed)
 	_layer = CanvasLayer.new()
 	_layer.layer = int(config()["layer"])
 	_layer.follow_viewport_enabled = true
@@ -163,6 +182,10 @@ func set_enabled(enabled: bool) -> void:
 		_shape.set_deferred(&"disabled", not enabled)
 	if _shell_shape != null:
 		_shell_shape.set_deferred(&"disabled", not enabled)
+	for area: Area2D in _damage_areas:
+		for child: Node in area.get_children():
+			if child is CollisionShape2D:
+				(child as CollisionShape2D).set_deferred(&"disabled", not enabled)
 	_sync_targets()
 	if _visual != null:
 		_update(_pulse)
@@ -178,7 +201,13 @@ func is_exposed() -> bool:
 	return _enabled and (DebugMode.get_intensity() > 0.0 or is_marked())
 
 
-## Un pulso que lo alcance ahora lo marca: activo y con el Debug ACTIVO.
+## Marca con el golpe al suelo (cabezal de Autoplay).
+func uses_ground_pound() -> bool:
+	return mark_trigger == TRIGGER_GROUND_POUND
+
+
+## Un pulso (o un golpe al suelo, en ese modo) que lo alcance ahora lo marca:
+## activo y con el Debug ACTIVO.
 func can_mark() -> bool:
 	return _enabled and DebugMode.is_active()
 
@@ -301,6 +330,65 @@ func get_shell_layer() -> int:
 	return _shell.collision_layer if _shell != null else 0
 
 
+# --- Cabezal de Autoplay (golpe al suelo y rectangulos de dano) ---
+
+## Caja del cabezal en coordenadas locales: un golpe al suelo cuyos pies caen
+## dentro la marca (con el Debug activo) o saca la chispa gris.
+func set_pound_box(rect: Rect2) -> void:
+	_pound_box = rect
+
+
+func get_pound_box_global() -> Rect2:
+	return Rect2(global_position + _pound_box.position, _pound_box.size)
+
+
+## Anade un rectangulo de dano (coordenadas GLOBALES, no sigue al cabezal): el
+## laser lo ve siempre que el nucleo esta activo y le llama on_laser_hit.
+func add_damage_rect(rect: Rect2) -> Area2D:
+	var area := Area2D.new()
+	area.name = "Damage%d" % _damage_areas.size()
+	area.top_level = true
+	area.collision_mask = 0
+	area.monitoring = false
+	area.monitorable = true
+	area.add_to_group(GROUP_LASER_ACTIVATABLE)
+	var shape := CollisionShape2D.new()
+	var box := RectangleShape2D.new()
+	box.size = rect.size
+	shape.shape = box
+	shape.disabled = not _enabled
+	area.add_child(shape)
+	add_child(area)
+	area.global_position = rect.get_center()
+	_damage_areas.append(area)
+	_sync_targets()
+	return area
+
+
+## Rectangulos de dano en globales.
+func get_damage_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for area: Area2D in _damage_areas:
+		var size: Vector2 = ((area.get_child(0) as CollisionShape2D).shape as RectangleShape2D).size
+		out.append(Rect2(area.global_position - size * 0.5, size))
+	return out
+
+
+## Golpe al suelo que aterriza con los pies en `feet` (global): con el Debug
+## activo marca (pausa); sin el, chispa gris en el cabezal. Verdadero si cae en
+## la caja. Lo llama la senal EventBus.ground_pound_landed (y las pruebas).
+func receive_ground_pound(feet: Vector2, source: Node = null) -> bool:
+	if not _enabled or not uses_ground_pound():
+		return false
+	if not get_pound_box_global().has_point(feet):
+		return false
+	if can_mark():
+		_mark()
+	else:
+		_deflect(global_position, source)
+	return true
+
+
 # --- Golpes ---
 
 ## Golpes que hacia un pulso antes de la marca (data/weak_point.json); el pulso ya
@@ -314,6 +402,12 @@ static func pulse_damage() -> int:
 ## el nucleo; oculto: chispa en el borde del cuerpo.
 func on_laser_hit(damage: float, source: Node) -> void:
 	if not _enabled:
+		return
+	if uses_ground_pound():
+		if is_marked():
+			hit.emit(maxi(roundi(damage), 1), source)
+		else:
+			_deflect(_damage_point_towards(_source_point(source)), source)
 		return
 	if is_marked():
 		hit.emit(maxi(roundi(damage), 1), source)
@@ -330,7 +424,7 @@ func on_laser_hit(damage: float, source: Node) -> void:
 ## nucleo) o, con el nucleo oculto, el cuerpo (chispa en su borde). Verdadero si
 ## alcanza algo.
 func receive_pulse(area: Area2D) -> bool:
-	if not _enabled or area == null:
+	if not _enabled or area == null or uses_ground_pound():
 		return false
 	var source: Node = area.get_parent()
 	if is_exposed():
@@ -402,6 +496,11 @@ func _update(time_s: float) -> void:
 
 ## El laser ve el nucleo solo expuesto y el cuerpo solo con el nucleo oculto.
 func _sync_targets() -> void:
+	if uses_ground_pound():
+		collision_layer = 0
+		for area: Area2D in _damage_areas:
+			area.collision_layer = LAYER_ENEMY if _enabled else 0
+		return
 	var exposed: bool = is_exposed()
 	collision_layer = LAYER_ENEMY if (_enabled and exposed) else 0
 	if _shell != null:
@@ -417,7 +516,14 @@ func _draw_visual() -> void:
 	_visual.draw_circle(Vector2.ZERO, r, get_fill_color())
 	var ring: float = float(cfg["ring_width_px"])
 	_visual.draw_arc(Vector2.ZERO, r - ring * 0.5, 0.0, TAU, 32, Color(bright, a), ring)
-	_visual.draw_circle(Vector2.ZERO, float(cfg["core_radius_px"]), Color(bright, a))
+	if uses_ground_pound():
+		# Boton de pausa: dos barras blancas sobre el carmin.
+		var bar := Vector2(r * 0.28, r * 1.0)
+		var white := Color(Color.html(String(cfg.get("mark_halo_color", "#f2f4f8"))), a)
+		_visual.draw_rect(Rect2(Vector2(-r * 0.42, -bar.y * 0.5), bar), white)
+		_visual.draw_rect(Rect2(Vector2(r * 0.14, -bar.y * 0.5), bar), white)
+	else:
+		_visual.draw_circle(Vector2.ZERO, float(cfg["core_radius_px"]), Color(bright, a))
 	if is_marked():
 		_draw_mark_halo(cfg, r)
 
@@ -505,3 +611,25 @@ func _update_spark(dt: float) -> void:
 
 func _on_pulse_fired(area: Area2D) -> void:
 	receive_pulse(area)
+
+
+## Punto del borde del rectangulo de dano mas cercano a `from`.
+func _damage_point_towards(from: Vector2) -> Vector2:
+	var best: Vector2 = global_position
+	var best_d: float = INF
+	for rect: Rect2 in get_damage_rects():
+		var p := Vector2(clampf(from.x, rect.position.x, rect.end.x), clampf(from.y, rect.position.y, rect.end.y))
+		var d: float = p.distance_squared_to(from)
+		if d < best_d:
+			best_d = d
+			best = p
+	return best
+
+
+func _on_ground_pound_landed(rect: Rect2, source: Node2D) -> void:
+	if not uses_ground_pound():
+		return
+	var feet := Vector2(rect.get_center().x, rect.end.y)
+	if source != null and is_instance_valid(source):
+		feet = source.global_position
+	receive_ground_pound(feet, source)

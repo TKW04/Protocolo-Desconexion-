@@ -822,6 +822,8 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
     errors, warnings = [], []
     if boss is None:
         boss = load_json(os.path.join(root, "data", "bosses", "%s.json" % level["boss"]))
+    if boss.get("id") != "alert_major":
+        return validate_basic_arena(level, boss, root, physics_path, jump_efficiency, limit)
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
     # Escala del mundo con el Debug propia de la arena (debug_world_scale, §6.4); sin el campo, la global.
     rules.set_level_debug_world_scale(level.get("debug_world_scale"))
@@ -835,6 +837,63 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
     check_mark(arena, boss, errors, report)
     check_center_climb(arena, boss, root, errors, report)
     check_energy(arena, boss, rules, list(upgrades), errors, report, root)
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+
+
+# Pantalla de referencia (resolucion base del juego).
+SCREEN_PX = (1280, 720)
+
+
+def validate_basic_arena(level, boss, root=ROOT, physics_path=None,
+                         jump_efficiency=vl.DEFAULT_JUMP_EFFICIENCY, limit=vl.DEFAULT_LIMIT):
+    """Comprobaciones basicas de la arena de un jefe sin modelo propio todavia (Autoplay, 2026-10-23, pasos
+    15-16 de docs/propuesta-mundo-2.md; su validador completo —cabezal, ventanas, cuenta y energia torpe por
+    acceso— es el paso 17): cabe entera en pantalla, desde P se alcanza el carril del suelo, cada celda del
+    suelo tiene un cargador a arena.charger_max_tiles (3,5) o menos y todos los avisos de sus clips duran de 6 a
+    12 cuadros. Deja un aviso de lo que falta."""
+    errors, warnings = [], []
+    rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
+    arena = Arena(level, boss, rules)
+    report = {"boss": boss.get("id"), "reachable_cells": len(arena.reachable)}
+    w, h = arena.cols * arena.T, arena.rows * arena.T
+    if w > SCREEN_PX[0] or h > SCREEN_PX[1]:
+        _err(errors, "la arena mide %d x %d px y no cabe entera en %d x %d" % (w, h, SCREEN_PX[0], SCREEN_PX[1]))
+    floor = arena.lane_cells("floor") if "floor" in arena.lanes else []
+    if not floor or not any(c in arena.reachable for c in floor):
+        _err(errors, "desde P no se alcanza el carril del suelo")
+    max1 = float(boss.get("arena", {}).get("charger_max_tiles", 3.5))
+    xs = [c for c, r, _ in arena.chargers]
+    worst = worst2 = 0.0
+    if not xs:
+        _err(errors, "la arena no tiene cargadores")
+    for c, r in floor:
+        if not xs:
+            break
+        ds = sorted(abs(c - x) for x in xs)
+        d = ds[0]
+        worst = max(worst, d)
+        if len(ds) > 1:
+            worst2 = max(worst2, ds[1])
+        if d > max1 + EPS:
+            _err(errors, "celda del suelo sin cargador a %g tiles o menos (el mas cercano a %d)" % (max1, d), r, c)
+    for c, r, _ in arena.chargers:
+        if (c, r) not in arena.reachable:
+            _err(errors, "cargador no alcanzable desde P", r, c)
+    report["charger_worst_tiles"] = worst
+    report["charger_second_worst_tiles"] = worst2
+    banner = load_json(os.path.join(root, "data", "enemies", "spam_banner.json"))
+    clips = boss.get("clips", {})
+    tele = [("ola y barrido", int(banner.get("anticipation_frames", 9))),
+            ("rayos", int(clips.get("rays", {}).get("anticipation_frames", 9))),
+            ("cuenta atras", int(clips.get("shots", {}).get("warn_frames", 9)))]
+    for name, frames in tele:
+        if not 6 <= frames <= 12:
+            _err(errors, "aviso de %s de %d cuadros (regla: de 6 a 12)" % (name, frames))
+    report["telegraphs"] = [(n, "%d cuadros" % f) for n, f in tele]
+    warnings.append({"message": "validador completo de %s (cabezal, ventanas, cuenta y energia torpe por acceso) "
+                                "pendiente: paso 17 de docs/propuesta-mundo-2.md" % boss.get("id"),
+                     "row": None, "col": None, "object": None})
     return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
 
 

@@ -285,6 +285,11 @@ signal boss_phase_changed(boss_id: StringName, phase: int)
 @warning_ignore("unused_signal")
 signal boss_weak_point_hit(boss_id: StringName, remaining: int)
 
+## El jefe recupera golpes (BossBase.heal_hits: la cuenta de la fase 2 de
+## Autoplay llega a 0, 2026-10-23); `remaining` = golpes que le quedan.
+@warning_ignore("unused_signal")
+signal boss_healed(boss_id: StringName, remaining: int)
+
 ## Golpe final: el contador llega a 0.
 @warning_ignore("unused_signal")
 signal boss_defeated(boss_id: StringName)

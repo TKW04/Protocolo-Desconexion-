@@ -44,13 +44,7 @@ signal player_hit(amount: float)
 signal final_blow
 ## El cuerpo se ha desarmado en pixeles (fase DISARM de BossDefeat).
 signal disarmed
-## Eco dice una linea por el jefe (kind: intro, phase, defeat; audio:
-## mus_eco_motif en la intro y la derrota).
-signal line_said(kind: StringName)
 
-## Interlocutor del cuadro de texto: Eco hablando por el jefe (icono con
-## interferencia, blip vox_boss_eco_filter; speakers de data/eco_text_box.json).
-const SPEAKER: StringName = &"eco_boss"
 ## Ayudas de Eco con Q (paso 12; data/help.json): por defecto de help_id (la
 ## seccion help de data/bosses/alert_major.json manda).
 const HELP_BODY: StringName = &"alert_major"
@@ -80,9 +74,6 @@ const ART_SHIELD: String = "alert_major_shield.png"
 @export var object_id: StringName = &""
 ## Con Isak llegando por el vortice, espera a que termine y dice la intro.
 @export var intro_on_arrival: bool = true
-## Tras el golpe final empieza la secuencia de derrota (BossDefeat: congelacion,
-## desarme en pixeles, recompensa, linea de derrota y vortice al hub; paso 10).
-@export var defeat_sequence: bool = true
 
 var _arena: Dictionary = {}
 var _texts: Dictionary = {}
@@ -110,7 +101,6 @@ var _attacks: Node2D
 var _intro_state: int = 0
 var _defeat_seq: BossDefeat
 var _music: BossMusic
-var _line_watches: Array[RefCounted] = []
 var _burst: PixelBurst
 var _textures: Dictionary = {}
 ## Avisos dibujados (flechas, lineas, contornos): {kind, id?, ...} en globales.
@@ -250,10 +240,6 @@ func frames_s(frames: Variant) -> float:
 	return float(frames) / maxf(float(_arena.get("anim_fps", 12.0)), 1.0)
 
 
-## Isak del nivel (o null).
-func find_isak() -> Isak:
-	return LevelLookup.find_isak(self)
-
 
 # --- Pelea ---
 
@@ -347,7 +333,7 @@ func _on_defeated() -> void:
 		_begin_defeat.call_deferred()
 
 
-## Secuencia de derrota (paso 10): BossDefeat bajo el nivel.
+## Secuencia de derrota (paso 10 de Alerta Mayor): BossDefeat bajo el nivel.
 func _begin_defeat() -> void:
 	if _defeat_seq != null or not is_inside_tree():
 		return
@@ -361,6 +347,8 @@ func _begin_defeat() -> void:
 ## Secuencia de derrota en curso (null antes del golpe final o sin ella).
 func get_defeat() -> BossDefeat:
 	return _defeat_seq if _defeat_seq != null and is_instance_valid(_defeat_seq) else null
+
+
 
 
 ## Desarme en pixeles (BossDefeat, fase DISARM): el cuerpo y el contador se
@@ -384,71 +372,12 @@ func get_pixel_burst() -> PixelBurst:
 	return _burst if _burst != null and is_instance_valid(_burst) else null
 
 
-## Dice una linea del jefe: Eco hablando por el (interlocutor SPEAKER en el
-## cuadro de texto del nivel: icono con interferencia y su blip; importante =
-## pausa). Llama a `on_done` cuando esa linea se cierra (las no importantes,
-## enseguida). Sin cuadro de texto en el nivel, por EventBus como Eco.
-func say_line(text: String, important: bool, on_done: Callable = Callable(), kind: StringName = &"") -> void:
-	line_said.emit(kind)
-	var box: EcoTextBox = _text_box()
-	if box == null:
-		if important and on_done.is_valid():
-			EventBus.eco_line_finished.connect(on_done, CONNECT_ONE_SHOT)
-		EventBus.eco_line_requested.emit(text, -1.0, important)
-		if not important and on_done.is_valid():
-			on_done.call()
-		return
-	if important and on_done.is_valid():
-		# El vigilante se guarda hasta que termina (RefCounted: sin referencia se liberaria).
-		var watch := _LineWatch.new(box, GameState.apply_nickname(text), Callable())
-		watch.done = func() -> void:
-			_line_watches.erase(watch)
-			on_done.call()
-		_line_watches.append(watch)
-	box.show_line(text, -1.0, important, SPEAKER)
-	if not important and on_done.is_valid():
-		on_done.call()
-
-
 ## help_id de la pieza `key` (body, core, bubble, popup, shield, shot, clone):
 ## seccion help de data/bosses/alert_major.json.
 func help_id(key: String) -> StringName:
 	var defaults: Dictionary = {"body": HELP_BODY, "core": HELP_CORE, "bubble": HELP_BUBBLE, "popup": HELP_POPUP,
 		"shield": HELP_SHIELD, "shot": HELP_SHOT, "clone": HELP_CLONE}
 	return StringName(String((get_config().get("help", {}) as Dictionary).get(key, defaults.get(key, ""))))
-
-
-## Cuadro de texto del nivel (hijo EcoTextBox de la escena generada) o null.
-func _text_box() -> EcoTextBox:
-	var root: Node = _level_root()
-	return root.get_node_or_null(^"EcoTextBox") as EcoTextBox if root != null else null
-
-
-## Espera a que la linea `text` del jefe empiece y despues se cierre (una normal
-## del jefe que se quita para dejarle paso no cuenta) y llama a `done`.
-class _LineWatch extends RefCounted:
-	var box: EcoTextBox
-	var text: String
-	var done: Callable
-	var started: bool = false
-
-	func _init(b: EcoTextBox, t: String, d: Callable) -> void:
-		box = b
-		text = t
-		done = d
-		box.line_started.connect(_on_started)
-		box.line_finished.connect(_on_finished)
-
-	func _on_started(t: String, speaker: StringName) -> void:
-		if speaker == AlertMajor.SPEAKER and t == text:
-			started = true
-
-	func _on_finished(speaker: StringName) -> void:
-		if not started or speaker != AlertMajor.SPEAKER:
-			return
-		box.line_started.disconnect(_on_started)
-		box.line_finished.disconnect(_on_finished)
-		done.call()
 
 
 # --- Musica (mus_boss1 mientras dura la pelea: BossMusic, ambience de audio) ---
@@ -595,31 +524,6 @@ func _apply_lap_settings() -> void:
 			(node as RhythmZone).tempo_steps_s = (p3["tempo_steps_s"] as Array).duplicate()
 		elif node is BlinkPlatform and p3.has("blink_on_fraction"):
 			(node as BlinkPlatform).on_fraction = float(p3["blink_on_fraction"])
-
-
-func _chargers() -> Array[Charger]:
-	var out: Array[Charger] = []
-	var root: Node = _level_root()
-	if root == null:
-		return out
-	var stack: Array[Node] = [root]
-	while not stack.is_empty():
-		var node: Node = stack.pop_back()
-		if node is Charger:
-			out.append(node as Charger)
-		for child: Node in node.get_children():
-			stack.append(child)
-	return out
-
-
-## Raiz del nivel (GeneratedLevel) o el padre.
-func _level_root() -> Node:
-	var node: Node = get_parent()
-	while node != null:
-		if node is GeneratedLevel:
-			return node
-		node = node.get_parent()
-	return get_parent()
 
 
 func _to_global(p: Vector2) -> Vector2:

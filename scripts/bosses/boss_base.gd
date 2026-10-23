@@ -24,12 +24,23 @@
 ## - is_combat_active() (grupo boss): la regeneracion pasiva de Sync 5 se para.
 ## - API de consulta para el bot (como get_beat_phase del 1-3): get_phase(),
 ##   get_window_time_left(), get_attack_state(), get_core_target().
-## Los jefes concretos (AlertMajor) heredan y sobrescriben los _on_* virtuales.
-## Tiempo del mundo: advance(dt) avanza con el delta escalado (pruebas: con
-## auto_process falso llaman a advance a mano).
+## Los jefes concretos (AlertMajor, Autoplay) heredan y sobrescriben los _on_*
+## virtuales. Tiempo del mundo: advance(dt) avanza con el delta escalado
+## (pruebas: con auto_process falso llaman a advance a mano).
+## Generalizado para el jefe del Mundo 2 (2026-10-23, paso 15 de
+## docs/propuesta-mundo-2.md §8): heal_hits (la cuenta de la fase 2 de Autoplay
+## devuelve golpes sin pasar del inicio de la fase; senal healed y
+## EventBus.boss_healed) y lo comun que antes vivia en AlertMajor: say_line
+## (Eco hablando por el jefe, interlocutor SPEAKER, senal line_said), la raiz
+## del nivel, los cargadores de la arena (apply_charger_cooldown), find_isak y
+## el interruptor de la secuencia de derrota (defeat_sequence; BossDefeat lo
+## empieza cada jefe: BossDefeat nombra a BossBase).
 class_name BossBase
 extends Node2D
 
+## Interlocutor del cuadro de texto: Eco hablando por el jefe (icono con
+## interferencia, blip vox_boss_eco_filter; speakers de data/eco_text_box.json).
+const SPEAKER: StringName = &"eco_boss"
 const GROUP: StringName = &"boss"
 const STATE_IDLE: StringName = &"idle"
 const STATE_FIGHTING: StringName = &"fighting"
@@ -48,9 +59,18 @@ signal window_closed
 signal phase_restarted(phase: int)
 ## Golpe final (contador a 0).
 signal defeated
+## El jefe recupera golpes (heal_hits); quedan `remaining`.
+signal healed(remaining: int)
+## Eco dice una linea por el jefe (kind: intro, phase, defeat; audio:
+## mus_eco_motif en la intro y la derrota).
+signal line_said(kind: StringName)
 
 ## Id del jefe (data/bosses/<boss_id>.json y senales de EventBus).
 @export var boss_id: StringName = &""
+## Tras el golpe final empieza la secuencia de derrota (BossDefeat: congelacion,
+## desarme en pixeles, recompensa, linea de derrota y vortice al hub). La llama
+## el jefe concreto con begin_defeat().
+@export var defeat_sequence: bool = true
 ## Empieza la pelea al entrar en el arbol (salas de prueba); la arena la empieza
 ## al terminar la llegada (pasos siguientes).
 @export var auto_start: bool = false
@@ -162,6 +182,21 @@ func take_core_hit(damage: int = 1) -> bool:
 	elif _remaining == floor_hits:
 		_next_phase()
 	return true
+
+
+## El jefe recupera `count` golpes sin pasar de los que tenia al empezar la fase
+## actual (Autoplay: la cuenta de la fase 2 llega a 0). Devuelve los recuperados.
+func heal_hits(count: int = 1) -> int:
+	if _state != STATE_FIGHTING or count <= 0:
+		return 0
+	var top: int = _phase_floor(_phase - 1)
+	var before: int = _remaining
+	_remaining = mini(_remaining + count, top)
+	var gained: int = _remaining - before
+	if gained > 0:
+		healed.emit(_remaining)
+		EventBus.boss_healed.emit(boss_id, _remaining)
+	return gained
 
 
 ## Abre una ventana de `duration_s` segundos del mundo (reinicia la cuenta).
@@ -426,6 +461,95 @@ static func _level_tiles(from: Node) -> TileMapLayer:
 			return tiles
 		node = node.get_parent()
 	return null
+
+
+# --- Comun de los jefes concretos (antes en AlertMajor; 2026-10-23) ---
+
+## Isak del nivel (o null).
+func find_isak() -> Isak:
+	return LevelLookup.find_isak(self)
+
+
+## Raiz del nivel (GeneratedLevel: el primer padre con level_id) o el padre. Sin
+## tipos de GeneratedLevel ni EcoTextBox aqui: los dos nombran a BossBase y el
+## ciclo rompe la carga de los jefes que heredan de esta clase.
+func _level_root() -> Node:
+	var node: Node = get_parent()
+	while node != null:
+		if &"level_id" in node:
+			return node
+		node = node.get_parent()
+	return get_parent()
+
+
+## Cargadores de la arena (los del nivel).
+func _chargers() -> Array[Charger]:
+	var out: Array[Charger] = []
+	var root: Node = _level_root()
+	if root == null:
+		return out
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is Charger:
+			out.append(node as Charger)
+		for child: Node in node.get_children():
+			stack.append(child)
+	return out
+
+
+## Enfriamiento de los cargadores de la arena (laps.<n>.charger_cooldown_s; <= 0 no cambia).
+func apply_charger_cooldown(cooldown_s: float) -> void:
+	if cooldown_s <= 0.0:
+		return
+	for charger: Charger in _chargers():
+		charger.cooldown_s = cooldown_s
+
+
+## Dice una linea del jefe: Eco hablando por el (interlocutor SPEAKER en el
+## cuadro de texto del nivel: icono con interferencia y su blip; importante =
+## pausa). Llama a `on_done` cuando esa linea se cierra (las no importantes,
+## enseguida). Sin cuadro de texto en el nivel, por EventBus como Eco.
+func say_line(text: String, important: bool, on_done: Callable = Callable(), kind: StringName = &"") -> void:
+	line_said.emit(kind)
+	var box: Node = _text_box()
+	if box == null:
+		if important and on_done.is_valid():
+			EventBus.eco_line_finished.connect(on_done, CONNECT_ONE_SHOT)
+		EventBus.eco_line_requested.emit(text, -1.0, important)
+		if not important and on_done.is_valid():
+			on_done.call()
+		return
+	if important and on_done.is_valid():
+		_watch_line(box, GameState.apply_nickname(text), on_done)
+	box.call(&"show_line", text, -1.0, important, SPEAKER)
+	if not important and on_done.is_valid():
+		on_done.call()
+
+
+## Cuadro de texto del nivel (hijo EcoTextBox de la escena generada) o null.
+func _text_box() -> Node:
+	var root: Node = _level_root()
+	return root.get_node_or_null(^"EcoTextBox") if root != null else null
+
+
+## Espera a que la linea `text` del jefe empiece y despues se cierre (una normal
+## del jefe que se quita para dejarle paso no cuenta) y llama a `done`. Con
+## lambdas y no con una clase interna: una clase interna en BossBase rompe la
+## carga de los jefes que heredan cuando se cargan antes que ella (Godot 4.7).
+func _watch_line(box: Node, text: String, done: Callable) -> void:
+	var state: Dictionary = {"started": false}
+	state["start"] = func(t: String, speaker: StringName) -> void:
+		if speaker == SPEAKER and t == text:
+			state["started"] = true
+	state["finish"] = func(speaker: StringName) -> void:
+		if not bool(state["started"]) or speaker != SPEAKER:
+			return
+		box.disconnect(&"line_started", state["start"])
+		box.disconnect(&"line_finished", state["finish"])
+		done.call()
+	box.connect(&"line_started", state["start"])
+	box.connect(&"line_finished", state["finish"])
 
 
 # --- Virtuales del jefe concreto ---

@@ -235,5 +235,34 @@ class ArenaSchemaTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
 
+
+class AutoplayArenaTest(unittest.TestCase):
+    """Arena 2-boss de Autoplay (pasos 15-16 de docs/propuesta-mundo-2.md, 2026-10-23): esquema y
+    comprobaciones basicas (su validador completo es el paso 17)."""
+
+    def setUp(self):
+        self.level = load(os.path.join(ROOT, "data", "levels", "2-boss.json"))
+
+    def test_schema_ok_and_fits_on_screen(self):
+        self.assertEqual(vls.validate_level(self.level, ROOT), [])
+        self.assertEqual((len(self.level["grid"][0]) * 64, len(self.level["grid"]) * 64), (1280, 704))
+        result = vl.validate(self.level, ROOT)
+        self.assertTrue(result["ok"], result["errors"])
+        self.assertEqual(len(result["warnings"]), 1, "solo el aviso del paso 17")
+        self.assertLessEqual(result["boss"]["charger_worst_tiles"], 3.5)
+
+    def test_taller_arena_does_not_fit(self):
+        level = copy.deepcopy(self.level)
+        level["grid"] = level["grid"][:-1] + [level["grid"][-2], level["grid"][-1]]
+        result = vb.validate_basic_arena(level, load(os.path.join(ROOT, "data", "bosses", "autoplay.json")), ROOT)
+        self.assertTrue(any("no cabe entera" in e["message"] for e in result["errors"]))
+
+    def test_charger_far_from_the_floor_fails(self):
+        level = copy.deepcopy(self.level)
+        level["objects"] = [o for o in level["objects"] if o.get("params", {}).get("id") != "cargador_2"]
+        result = vb.validate_basic_arena(level, load(os.path.join(ROOT, "data", "bosses", "autoplay.json")), ROOT)
+        self.assertTrue(any("sin cargador" in e["message"] for e in result["errors"]))
+
+
 if __name__ == "__main__":
     unittest.main()

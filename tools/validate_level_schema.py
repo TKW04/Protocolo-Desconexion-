@@ -131,12 +131,13 @@ NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "abilit
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
-                    "alert_major", "pause_player"}
+                    "alert_major", "pause_player", "autoplay"}
 # Arena de jefe (kind "boss", 2026-10-21): id <mundo>-boss y tamano del jefe Alerta Mayor en tiles
 # (cuerpo inflado arriba, 4 x 4 desde su celda).
 LEVEL_KINDS = ("level", "boss")
 BOSS_LEVEL_ID = re.compile(r"\d+-boss")
-BOSS_FOOTPRINT_TILES = {"alert_major": (4, 4)}
+# Autoplay (jefe del Mundo 2, 2026-10-23): su pantalla de 8 x 4 tiles desde su celda.
+BOSS_FOOTPRINT_TILES = {"alert_major": (4, 4), "autoplay": (8, 4)}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
 # interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
 SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")
@@ -381,6 +382,11 @@ class LevelValidator:
                 if char not in GRID_CHARS:
                     self.error("caracter no valido '%s'" % char, y, x)
         min_rows = math.ceil(SCREEN_HEIGHT_PX / self.level["tile_size"])
+        # Arena de jefe que cabe entera en pantalla con la camara fija (2026-10-23, 2-boss de 20 x 11 =
+        # 1280 x 704, docs/propuesta-mundo-2.md §5.2): basta con que le falte menos de un tile (la camara
+        # se queda arriba y deja una franja de menos de un tile debajo del suelo).
+        if self.level.get("kind") == "boss":
+            min_rows = SCREEN_HEIGHT_PX // self.level["tile_size"]
         if self.height < min_rows:
             self.error("el grid tiene %d filas; hacen falta al menos %d para %d px de alto"
                        % (self.height, min_rows, SCREEN_HEIGHT_PX))

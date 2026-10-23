@@ -314,6 +314,14 @@
 					"width_tiles": 4
 				}
 			}
+		},
+		"autoplay": {
+			"scene": "res://scenes/bosses/autoplay.tscn",
+			"description": "Jefe del Mundo 2 «Autoplay» (2026-10-23, pasos 15-16 de docs/propuesta-mundo-2.md §8, diseño en §5): Autoplay (BossBase) con sus tres fases (clips: ola, rayos y barrido alto; cuenta «Siguiente video en N» que devuelve un golpe si llega a 0; x2 con los avisos intactos). Solo en su arena (kind boss, boss autoplay). (x, y) es la celda de arriba a la izquierda de su pantalla de 8 x 4 tiles (no solida); el pie, la barra, el cabezal, la cinta de tarjetas y los carriles estan en arena de data/bosses/autoplay.json. Daño: Debug -> golpe al suelo sobre el cabezal (pausa) -> laser a la pantalla. Empieza al terminar la llegada de Isak con la linea de intro (pausa; texto PROPUESTO). Tiempo del mundo. Arte PROVISIONAL por script (tools/gen_boss_autoplay.py, *_placeholder.png).",
+			"required": ["id"],
+			"fields": {"id": "object_id"},
+			"defaults": {},
+			"example": {"type": "autoplay", "x": 6, "y": 1, "params": {"id": "autoplay"}}
 		}
 	},
 	"fragile_card": {

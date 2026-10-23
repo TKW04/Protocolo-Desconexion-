@@ -54,6 +54,7 @@ func _ready() -> void:
 	visible = false
 	EventBus.boss_started.connect(_on_boss_started)
 	EventBus.boss_weak_point_hit.connect(_on_boss_hit)
+	EventBus.boss_healed.connect(_on_boss_healed)
 	EventBus.boss_phase_changed.connect(_on_boss_phase_changed)
 	EventBus.boss_defeated.connect(_on_boss_defeated)
 	_layout()
@@ -177,6 +178,15 @@ func _on_boss_hit(boss_id: StringName, _remaining_hits: int) -> void:
 		return
 	_lost_segment = _boss.get_remaining_hits()
 	_hit_flash = float(_cfg.get("hit_flash_s", 0.25))
+	_sync()
+	queue_redraw()
+
+
+## El jefe recupera golpes (Autoplay, fase 2): la barra se rellena.
+func _on_boss_healed(boss_id: StringName, _remaining_hits: int) -> void:
+	if not _is_mine(boss_id):
+		return
+	_lost_segment = -1
 	_sync()
 	queue_redraw()
 

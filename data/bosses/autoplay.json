@@ -1,0 +1,64 @@
+{
+	"_notes": "JEFE DEL MUNDO 2 «Autoplay» (2026-10-23, pasos 15-16 de docs/propuesta-mundo-2.md §8; diseño en §5). Lo lee scripts/bosses/autoplay.gd (Autoplay, un BossBase) en su arena data/levels/2-boss.json «Reproducción automática» (20 x 11 tiles, cabe entera en pantalla con la camara fija: camera.follow false). Vida: laps.<n>.hits_per_phase (Caché 3/3/3, Kernel y Raíz 4/4/4) con el contador 99+ -> 66 -> 33 -> 0 (counter). DAÑO (decision del usuario, §5.3): Debug -> golpe al suelo sobre el CABEZAL (WeakPoint en modo ground_pound, la caja de 1 x 1 sobre la barra) -> PAUSA de laps.<n>.mark_duration_s s del mundo (Caché 4, Kernel 3, Raíz 2,5; es la «marca» de BossBase) -> cada laser a la pantalla (arena.damage_rects: la pantalla hasta la barra y su pie hasta el suelo) es un golpe, sin necesidad del Debug. Sin pausa, el laser a la pantalla saca chispa gris; el golpe al suelo sin el Debug, chispa gris en el cabezal; el pulso y el dash nunca hacen nada. En PAUSA se congelan los clips en curso, la cuenta de la fase 2, la ventana y el cabezal (la cinta de tarjetas sigue: es el feed, no el jefe). Al caducar la pausa, si habia ventana, se cierra y empieza el clip siguiente; si fue a mitad de un clip, el clip sigue. Todo en tiempo del mundo. Textos PROPUESTOS (texts_status). Arte PROVISIONAL por script (tools/gen_boss_autoplay.py, sufijo _placeholder; arte final en el paso 23 con AutoSprite y permiso del usuario); las cajas y los tiempos ya son los definitivos.",
+	"id": "autoplay",
+	"name": "Autoplay",
+	"world": 2,
+	"camera": {"follow": false},
+	"counter": {"max": 99, "full_label": "99+"},
+	"phase_change_refill": {"energy": 25.0, "sync": 25.0},
+	"respawn_min_energy": 50.0,
+	"laps": {
+		"1": {"hits_per_phase": [3, 3, 3], "mark_duration_s": 4.0, "charger_cooldown_s": 4.0, "countdown_s": 5.0, "playhead_window_speed_tiles_s": 0.0},
+		"2": {"hits_per_phase": [4, 4, 4], "mark_duration_s": 3.0, "charger_cooldown_s": 5.0, "countdown_s": 4.0, "playhead_window_speed_tiles_s": 1.0},
+		"3": {"hits_per_phase": [4, 4, 4], "mark_duration_s": 2.5, "charger_cooldown_s": 6.0, "countdown_s": 4.0, "playhead_window_speed_tiles_s": 1.0}
+	},
+	"_laps_notes": "Por acceso (§5.8, PROPUESTA; Kernel y Raíz se cierran al hacer esas vueltas): golpes por fase, duracion de la pausa (mark_duration_s), enfriamiento de los 4 cargadores, cuenta de la fase 2 (countdown_s) y velocidad del cabezal DURANTE la ventana (playhead_window_speed_tiles_s: 0 = quieto en su sitio en Caché; Kernel y Raíz, avanza por la barra y hay que golpearlo en marcha). Pendiente para esas vueltas: el cabezal falso «Saltar anuncio» de Raíz, la cinta que cambia de sentido y los rayos en dos tandas de la fase 3.",
+	"_arena_notes": "Posiciones en celdas de data/levels/2-boss.json (x = columna, y = fila; px = celdas x 64). screen: pantalla [col, fila, ancho, alto] (no solida: Isak pasa por delante); stand: su pie hasta el suelo. damage_rects: donde el laser da a la pantalla (la pantalla hasta la superficie de la barra y el pie hasta el suelo: desde la barra el celular de Isak va a unos 58 px sobre los pies, por debajo del borde de la pantalla). bar: barra de reproduccion (las '-' del nivel) con su superficie; el cabezal se desliza sobre ella entre playhead_from_x y playhead_to_x (centros, tiles) y en la ventana se para en un slot (window_slot en la fase 1; en las fases 2 y 3 salta a uno de seek_slots distinto del anterior: seek). playhead_box_px: caja del golpe al suelo [x, y, ancho, alto] desde el centro del cabezal (centro a playhead_lift_px sobre la superficie). conveyor: cinta de tarjetas que suben (MovingPlatform con vuelta, de una via): columnas [desde, hasta] de cada lado, superficie de abajo (bottom_row: la del suelo) y de arriba (top_row: Isak de pie no toca el techo), cards por columna repartidas a lo largo del recorrido, speed_tiles_s (x speed_scale de la fase). lanes: los dos carriles (suelo y barra); ningun clip barre los dos a la vez. anim_fps: los avisos se miden en cuadros a este ritmo (9 cuadros = 0,75 s; regla de 6-12).",
+	"arena": {
+		"anim_fps": 12.0,
+		"screen": [6, 1, 8, 4],
+		"stand": [9, 5, 2, 5],
+		"damage_rects": [[6, 1, 8, 5], [9, 6, 2, 4]],
+		"bar": {"from_col": 5, "to_col": 14, "surface_row": 6},
+		"playhead_from_x": 5.5,
+		"playhead_to_x": 14.5,
+		"playhead_lift_px": 20.0,
+		"playhead_box_px": [-32, -44, 64, 76],
+		"playhead_clip_speed_tiles_s": 1.5,
+		"slots": {"left": 6.5, "center": 9.5, "right": 12.5},
+		"conveyor": {"columns": [[1, 3], [16, 18]], "bottom_row": 10, "top_row": 3, "cards": 2, "card_height_px": 24, "speed_tiles_s": 0.5},
+		"lanes": {
+			"floor": {"surface_row": 10, "from_col": 1, "to_col": 18},
+			"bar": {"surface_row": 6, "from_col": 5, "to_col": 14}
+		},
+		"art_dir": "res://assets/sprites/bosses/",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"label_color": "#f2f2fa",
+		"warn_color": "#ff4a2a",
+		"thumb_color": "#ff5cfa",
+		"dim_color": "#aeb0d2"
+	},
+	"_clips_notes": "CLIPS (§5.4-§5.6). Al empezar un clip la pantalla muestra su miniatura y el ataque avisa 9 cuadros (anticipation de cada pieza): wave = ola por el carril del suelo (SpamBanner en modo disparo, de muro a muro, alternando la entrada); sweep_high = barrido del carril de la barra (SpamBanner); rays = rays.count columnas de 1 tile desde la fila 1 hasta el suelo, una cada rays.spacing_s (onda de AlarmBell sin campana: draw_bell false), cada una en la columna de Isak al lanzarla salvo que ya haya caido una alli en la tanda (entonces la libre mas cercana); countdown_shots = «3-2-1» en la pantalla durante shots.warn_frames y shots.count NotificationShot en abanico (shots.spread_deg) desde el pie de la pantalla hacia Isak (el dash los atraviesa). contact_damage en todos. Tras cada clip, clip_gap_s; tras clips_per_cycle clips, la VENTANA («A continuación…», window_s; fase 2: «Siguiente video en N», laps.<n>.countdown_s). Fase 2: si la cuenta llega a 0 sin pausa, el jefe recupera heal_hits golpe(s) (nunca por encima del inicio de la fase) y suelta punish_clips clips seguidos. Fase 3: speed_scale x2 en la cinta, el cabezal, los huecos, las olas, los barridos y los proyectiles; los AVISOS no se aceleran (siguen 9 cuadros del mundo). seed: semilla de los slots del cabezal (el bot es determinista).",
+	"clips": {
+		"wave": {"speed_px_s": 640.0},
+		"sweep_high": {"speed_px_s": 640.0},
+		"rays": {"count": 3, "spacing_s": 0.5, "wave_s": 0.4, "anticipation_frames": 9},
+		"shots": {"count": 3, "spread_deg": 14.0, "speed_px_s": 480.0, "size_px": [64, 32], "travel_px": 1100.0, "warn_frames": 9},
+		"contact_damage": 10.0
+	},
+	"phase1": {"first_delay_s": 1.5, "clips": ["wave", "rays", "sweep_high"], "clips_per_cycle": 1, "clip_gap_s": 0.5, "window_s": 5.0, "window_slot": "center", "seek": false, "speed_scale": 1.0},
+	"phase2": {"first_delay_s": 1.5, "clips": ["countdown_shots", "wave", "rays", "sweep_high"], "clips_per_cycle": 2, "clip_gap_s": 0.5, "seek": true, "seek_slots": ["left", "center", "right"], "seed": 2023, "heal_hits": 1, "punish_clips": 3, "speed_scale": 1.0},
+	"phase3": {"first_delay_s": 1.0, "clips": ["wave", "rays", "sweep_high", "countdown_shots"], "clips_per_cycle": 2, "clip_gap_s": 0.5, "window_s": 4.0, "seek": true, "seek_slots": ["left", "center", "right"], "seed": 3023, "speed_scale": 2.0},
+	"defeat": {"freeze_s": 0.3, "disarm_s": 1.6, "exit_wait_max_s": 2.0, "memory_world": 2, "pixels": {"step_px": 4, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 1023}},
+	"texts_status": "PROPUESTA del orquestador (ideas de tono de §5.1), revisar al jugar; los cierra el paso 20",
+	"texts": {
+		"intro": "Te guardé lo mejor para el final, {apodo}. Bueno, para el siguiente.",
+		"phase_lines": {"2": "No te preocupes, empieza solo.", "3": "¿Para qué ir despacio?"},
+		"screen_next": "A continuación…",
+		"screen_countdown": "Siguiente video en %d",
+		"screen_paused": "En pausa",
+		"screen_x2": "x2",
+		"final_system": "Reproducción automática: desactivada.",
+		"defeat": "Vale, {apodo}. Lo dejo en pausa. Solo un momento."
+	}
+}

@@ -176,6 +176,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world1_dnd.py >/dev/null && python3 -I tools/validate_audio.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
+		&& python3 -I tools/gen_boss_autoplay.py --check \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
