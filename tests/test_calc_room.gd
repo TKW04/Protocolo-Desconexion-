@@ -420,9 +420,14 @@ func test_death_waits_and_keeps_progress() -> void:
 func test_pause_stops_the_guide() -> void:
 	await _load()
 	await _stand(9, 9)
+	# El guion corre en _process (cuadros reales): en los cuadros de _stand ya puede
+	# haber pasado la espera junto a la terminal y quedarse en la linea siguiente
+	# (2026-10-23, paso 21 de docs/propuesta-mundo-2.md: la prueba exigia el paso 0 y
+	# dependia del ritmo de los cuadros). Lo que se prueba es que en pausa no avanza.
+	var before: int = _guide().get_step_index()
 	get_tree().paused = true
 	_guide().advance(5.0)
-	assert_eq(_guide().get_step_index(), 0, "Con el arbol en pausa no avanza")
+	assert_eq(_guide().get_step_index(), before, "Con el arbol en pausa no avanza")
 	get_tree().paused = false
-	_run(0.1)
-	assert_gt(_guide().get_step_index(), 0)
+	_run(16.0)  # mas que la espera maxima de wait_quiet (15 s)
+	assert_gt(_guide().get_step_index(), before, "Sin pausa sigue")

@@ -84,6 +84,14 @@ func _on_line(text: String, _duration: float, important: bool) -> void:
 
 ## La arena sin LevelRunner; el jefe sin intro ni proceso propio (advance a mano).
 func _arena(lap: int = 1, auto: bool = false, sim: bool = false) -> GeneratedLevel:
+	# Una arena por vez: cada GeneratedLevel desbloquea sus habilidades al entrar y
+	# devuelve las anteriores al salir; con varias vivas a la vez (la prueba de los
+	# accesos) el autofree las soltaba despues de after_each y dejaba pulso, laser,
+	# Debug y dash desbloqueados para los scripts siguientes (2026-10-23, paso 21 de
+	# docs/propuesta-mundo-2.md: fallaban test_dnd_switch, test_eco_encounter y
+	# test_help_inert en la suite completa).
+	if is_instance_valid(_level):
+		_level.free()
 	_level = LEVEL_SCENE.instantiate() as GeneratedLevel
 	_boss = _level.get_node(^"Objects/alerta_mayor") as AlertMajor
 	_boss.intro_on_arrival = false
