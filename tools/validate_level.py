@@ -103,6 +103,10 @@ movimiento por celdas:
      su enfriamiento y su invulnerabilidad frente a banners y campanas, sigue los metronomos y las
      plataformas que parpadean, comprueba validation.dash_required y exporta pasos dash y wait_beat.
      forbid_abilities de un secreto: su ruta se busca sin esas habilidades (LevelModel.forbidding).
+  11. Mundo 3 (paso 8a de docs/propuesta-mundo-3.md, 2026-10-26; tools/world3_model.py, LevelModel.w3): Pellizcar
+     (nodos comprimidos y aristas pinch / unpinch), likes (corazones, publicaciones y reset como acciones de la
+     progresion; plataformas por umbral; anti-atasco), filtros (Debug junto a lo que esconden; cargador a la
+     vista) y espejos fijos (laser con rebotes, plataformas del reflejo). Sin nada del Mundo 3, w3 es None.
 
 Modelo de movimiento:
   - Isak es una caja de hitbox_size (32x80) con los pies en el origen. Esta de
@@ -147,6 +151,7 @@ import validate_level_schema  # noqa: E402
 import upgrade_catalog  # noqa: E402
 import level_catalog  # noqa: E402
 import world2_model  # noqa: E402
+import world3_model  # noqa: E402
 
 DEFAULT_LIMIT = 0.85
 DEFAULT_JUMP_EFFICIENCY = 0.92
@@ -181,6 +186,8 @@ INF = float("inf")
 DASH_SAMPLE_S = 0.05
 DASH_AFTER_APEX_S = 0.15
 DASH_SEARCH_COST = 0.2
+# Mundo 3 (paso 8a, tools/world3_model.py): coste extra de cada movimiento comprimido en la busqueda.
+PINCH_SEARCH_COST = world3_model.PINCH_SEARCH_COST
 
 
 # --- Datos ---
@@ -505,7 +512,8 @@ class Gate:
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
                  "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %",
                  "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga",
-                 "dnd": "interruptor No molestar", "pound": "tarjeta fragil"}
+                 "dnd": "interruptor No molestar", "pound": "tarjeta fragil",
+                 "heart": "corazon", "like_source": "publicacion", "like_reset": "Borrar publicaciones"}
         if getattr(self, "encounter", False):
             return "encuentro con Eco %s" % self.obj_id
         if self.kind == "switch" and getattr(self, "hidden", False):
@@ -514,6 +522,8 @@ class Gate:
             return "muro Cargando mas %s" % self.obj_id
         if self.kind == "dnd" and getattr(self, "player", False):
             return "reproductor %s" % self.obj_id
+        if self.kind == "dnd" and getattr(self, "crop", False):
+            return "herramienta Recortar %s" % self.obj_id
         return "%s %s" % (names[self.kind], self.obj_id)
 
 
@@ -576,6 +586,8 @@ class LevelModel:
         self.glitch_doors = {}
         self.glitch_walls = []  # {"id", "cells", "door_when"}
         self.terminal_power = []  # {"id", "source", "cell"}
+        # Mundo 3 (paso 8a): Pellizcar, likes, filtros y espejos (tools/world3_model.py); None sin nada del Mundo 3.
+        self.w3 = None
         self._build_objects()
         self._door_gids = set(self.glitch_doors.values())
         self.has_pound_gates = any(g.kind == "pound" for g in self.gates)
@@ -604,6 +616,8 @@ class LevelModel:
         # peligro del grafo (como una Burbuja sin aturdir): el golpe devuelve a la entrada y el plan demuestra
         # que ni andando ni corriendo se cruzan; con el dash, el plan busca el cruce al compas.
         self.dash_corridors = self._dash_corridors()
+        if world3_model.has_world3(level):
+            self.w3 = world3_model.World3(self, Gate)
 
     # Objetos.
     def _params(self, obj):
@@ -822,11 +836,14 @@ class LevelModel:
                 config = str(p.get("_config", "") or "dnd_switch")
                 cfg = self.catalog.get(config, {})
                 sid = str(p.get("id", "dnd_%d_%d" % (obj["x"], obj["y"])))
-                what = "reproductor" if config == "pause_player" else "interruptor No molestar"
+                what = "reproductor" if config == "pause_player" else (
+                    "herramienta Recortar" if config == "crop_tool" else "interruptor No molestar")
                 gate = Gate("dnd:" + sid, "dnd", sid, openers=[cell_rect(obj, cfg.get("hit_rect", [8, -14, 48, 48]),
                                                                           "%s %s" % (what, sid))],
                             col=obj["x"], row=obj["y"], tile=T)
                 gate.player = config == "pause_player"
+                # Herramienta «Recortar» (Mundo 3, paso 8a; tools/world3_model.py): da Pellizcar (compress).
+                gate.crop = config == "crop_tool"
                 gate.ability = str(p.get("ability", "dash"))
                 gate.pulses = 1
                 gate.pose_s = float(cfg.get("pose_s", 0.45))
@@ -1012,25 +1029,36 @@ class LevelModel:
         lo, hi = c - self.K - 3, c + self.K + 3
         # Solo las puertas que cambian el terreno (tanda H2: el interruptor laser, el punto de carga, el
         # anuncio y las habilidades no; el interruptor de pulso, si abre una puerta con glitch).
-        return tuple(sorted(g.gid for g in self.gates
-                            if g.gid in state and g.kind not in ("lswitch", "dock", "dnd")
-                            and not (g.kind == "switch" and ("switch:" + g.obj_id) not in self._door_gids)
-                            and not (g.col_span[1] < lo or g.col_span[0] > hi)))
+        key = tuple(sorted(g.gid for g in self.gates
+                           if g.gid in state and g.kind not in ("lswitch", "dock", "dnd")
+                           and not (g.kind == "switch" and ("switch:" + g.obj_id) not in self._door_gids)
+                           and not (g.col_span[1] < lo or g.col_span[0] > hi)))
+        if self.w3 is not None and self.w3.like_platforms:
+            # Mundo 3: las plataformas de likes encendidas cerca (los umbrales cumplidos, no la cifra).
+            key = key + self.w3.like_key(lo, hi, state)
+        return key
 
     def edges(self, node, state, debug=False):
         if debug == "auto":
             return self.union_edges(node, state) if self.has_debug(state) else self.edges(node, state, False)
         # Dash (paso 9 de docs/propuesta-1-3.md): sus movimientos se suman a los normales cuando la
         # habilidad esta disponible y nunca con el Debug activo (no se combinan).
+        if self.w3 is not None and world3_model.is_pinched(node):
+            return self.w3.pinched_edges(node, state, debug)
         dash = debug is False and self.has_dash(state)
         key = (node, self.local_key(node, state), debug) if not dash else (
             node, self.local_key(node, state), debug, "dash")
         if self.dash_blocked(state):
             key = key + ("nodash",)
+        pinch = self.w3 is not None and self.w3.has_compress(state)
+        if pinch:
+            key = key + ("pinch",)
         if key not in self._edges:
             out = self.world(state, debug).compute_edges(node)
             if dash:
                 out = out + self.world(state, False).compute_dash_edges(node)
+            if pinch:
+                out = out + self.w3.pinch_edges(node, state, debug)
             self._edges[key] = out
         return self._edges[key]
 
@@ -1040,6 +1068,8 @@ class LevelModel:
         marcados con "debug": True. Encenderlo y apagarlo entre movimientos es libre en el grafo; la
         energia y la carga de activation_hold_s las cuenta el plan (tools/level_plan.py)."""
         key = (node, self.local_key(node, state), "union")
+        if self.w3 is not None and (world3_model.is_pinched(node) or self.w3.has_compress(state)):
+            key = key + ("pinch",)
         if self.has_dash(state):
             key = key + ("dash",)
         elif self.dash_blocked(state):
@@ -1126,6 +1156,8 @@ class LevelModel:
     def pound_x(self, gate, node, state, debug=False):
         """x de los pies (dentro de la celda de pie) desde la que la onda alcanza la tarjeta, o None."""
         rules = self.rules
+        if self.w3 is not None and world3_model.is_pinched(node):
+            return None  # comprimido no hay golpe al suelo
         w = self.world(state, debug if debug in (True, False) else False)
         c, r = node
         feet = (r + 1) * self.T
@@ -1168,6 +1200,8 @@ class LevelModel:
         """Verdadero si desde `node` (de pie) se abre la puerta: el pulso toca algun rectangulo de
         la puerta, el laser alcanza a la Burbuja (si se puede usar) o, si es un ability_pickup,
         Isak toca su celda."""
+        if self.w3 is not None and world3_model.is_pinched(node) and gate.kind not in ("pickup", "bar", "dock"):
+            return False  # comprimido no hay pulso, laser ni golpe al suelo
         if gate.kind == "pickup":
             return bool(body_cells(node) & set(gate.cells))
         if gate.kind == "pound":
@@ -1220,6 +1254,8 @@ class LevelModel:
         """Verdadero si el pulso desde `node` (de pie, mirando a un lado) toca alguno de `rects`."""
         if not rects:
             return False
+        if self.w3 is not None and world3_model.is_pinched(node):
+            return False  # comprimido no hay pulso
         dbg = debug if debug in (True, False) else False
         w = self.world(state, dbg)
         c, r = node
@@ -1251,6 +1287,9 @@ class LevelModel:
         altura del celular (pulse_effect_origin) desde una posicion de pie de la celda; alcance
         laser_range_px; lo cortan el terreno, los puentes extendidos y los pop-ups cerrados."""
         rules = self.rules
+        if self.w3 is not None and (self.w3.mirrors or world3_model.is_pinched(node)):
+            # Mundo 3: trazado con rebotes en los espejos fijos (y comprimido no hay laser).
+            return self.w3.laser_shot(rect, node, state, debug)
         if rules.laser_range <= 0.0:
             return None
         w = self.world(state, debug if debug in (True, False) else False)
@@ -1280,6 +1319,8 @@ class LevelModel:
 
     def pulse_shot(self, rects, node, state, debug=False):
         """Como pulse_hits, pero devuelve {"x", "facing"} de la primera posicion que toca."""
+        if self.w3 is not None and world3_model.is_pinched(node):
+            return None
         dbg = debug if debug in (True, False) else False
         w = self.world(state, dbg)
         c, r = node
@@ -1314,7 +1355,7 @@ class LevelModel:
         `time` es el tramo del dash (y del salto y de la caida que lo rodean). `walk_speed` (paso 9):
         andar a otra velocidad (p. ej. corriendo por un pasillo, en la comprobacion de dash_required)."""
         T = self.T
-        speed = self.rules.walk_speed
+        speed = e.get("walk_px_s") or self.rules.walk_speed
         if e["kind"] == "walk":
             return T / (speed if walk_speed is None else walk_speed)
         x_from = (node[0] + 0.5) * T
@@ -1458,6 +1499,8 @@ class World:
         if model.dash_blocked(state):
             for bid, rect in model.dash_corridors:
                 self.hazards.append(rect + ("banner %s (sin el dash)" % bid,))
+        if model.w3 is not None:
+            model.w3.apply_world(self, state, debug)
 
     def is_solid(self, c, r):
         if c < 0 or c >= self.m.cols:
@@ -2055,6 +2098,8 @@ def search(model, source, state, limit, debug="auto", avoid=None):
             if dval > limit + EPS:
                 continue
             cost = STEP_COST + (DASH_SEARCH_COST if e.get("dash") else 0.0)
+            if e.get("pinched"):
+                cost += PINCH_SEARCH_COST
             key = (round(max(c_max, dval), 9), round(c_sum + e["h"] + e["v"] + cost, 9))
             to = e["to"]
             if avoid and body_cells(to) & avoid:
@@ -2079,6 +2124,8 @@ def path_to(parent, target):
 
 def body_cells(node):
     c, r = node
+    if node.__class__ is not tuple and getattr(node, "pinched", False):
+        return {(c, r)}  # comprimido (Mundo 3): la caja cabe en su fila
     return {(c, r), (c, r - 1)}
 
 
@@ -2131,7 +2178,15 @@ class Validator:
         stages = []
         reached_all = set()
         avoid = set(avoid) if avoid else None
-        for _ in range(len(self.model.gates) + 1):
+        w3 = self.model.w3
+        iterations = len(self.model.gates) + 1
+        seen_states = None
+        if w3 is not None and w3.like_gates:
+            # Mundo 3 (paso 8a): corazones, publicaciones y reset de likes son acciones de la progresion; no se
+            # repite un estado ya visto.
+            iterations += w3.extra_iterations()
+            seen_states = {(state, src)}
+        for _ in range(iterations):
             cost, parent = search(self.model, src, state, limit, debug, avoid)
             reached_all |= set(cost)
             goal_nodes = [n for n in cost if self.touches(n, targets)] if need <= state else []
@@ -2161,6 +2216,8 @@ class Validator:
                     if self._gate_near(g, n) and self.model.can_open(g, n, state, debug, use_laser):
                         options.append((cost[n], n[0], g, n))
                         break
+            if seen_states is not None:
+                options += w3.like_options(cost, state, seen_states)
             if not options:
                 stages.append({"src": src, "state": state, "cost": cost, "parent": parent, "gate": None,
                                "end": None, "relay_plans": relay_plans})
@@ -2174,7 +2231,12 @@ class Validator:
                 stage["relay"] = relay_plans[gate.gid]["best"]
                 stage["end"] = relay_plans[gate.gid]["best"]["shot"]
             stages.append(stage)
-            state = state | {gate.gid}
+            if gate.kind in world3_model.LIKE_KINDS:
+                state = w3.apply(state, gate)
+                stage["likes_after"] = w3.likes_of(state)
+                seen_states.add((state, opener))
+            else:
+                state = state | {gate.gid}
             src = opener
         return {"ok": False, "stages": stages, "reached": reached_all, "state": state}
 
@@ -2207,6 +2269,8 @@ class Validator:
         if not main["ok"]:
             self._explain_failure(start, goal_cells)
             self.result["path"] = []
+            if model.w3 is not None:
+                model.w3.check(self, start, goal_cells)
         else:
             self._describe_path(main)
         # Regla 2.
@@ -2229,6 +2293,9 @@ class Validator:
             self._check_softlocks(main, goal_cells)
             # Paso 10: requisitos del diseno (laser / Debug) y plan del camino.
             self._check_requirements(start, goal_cells)
+            if model.w3 is not None:
+                # Mundo 3 (paso 8a): Pellizcar, likes, filtros y espejos sobre el camino principal.
+                model.w3.check(self, start, goal_cells)
             if self.is_advanced() or self.export_requested:
                 self._check_plan()
         return self.finish()
@@ -2247,6 +2314,9 @@ class Validator:
         kinds = {"laser_receiver", "relay_receiver", "ad_cover", "reminder_platform", "snooze_button",
                  "overlay_popup", "update_bar", "power_switch", "debug_switch", "laser_switch", "charge_dock",
                  "dnd_switch", "blink_platform", "rhythm_zone", "alarm_tunnel", "clone_zone"}
+        if self.model.w3 is not None:
+            # Mundo 3 (paso 8a): plan del camino con los likes, el Debug de los filtros y Pellizcar.
+            return True
         if any(o["type"] in kinds for o in self.level.get("objects", [])):
             return True
         if any(e["type"] in ("notification_badge", "spam_banner", "alarm_bell", "autoplay_video", "commenter")
@@ -2542,6 +2612,9 @@ class Validator:
             elif near(g):
                 rep.error("%s: el pulso no alcanza %s desde ninguna celda alcanzable antes de el"
                           % (g.label(), " ni ".join(o[4] for o in g.openers)), g.row, g.col, g.label())
+        if self.model.w3 is not None:
+            for message, row, col in self.model.w3.explain(self, reached, state):
+                rep.error(message, row, col)
         if not self.goal_need <= state and any(self.touches(n, goal_cells) for n in reached):
             # Tanda H2: se llega a la terminal pero no tiene corriente.
             missing = [g.label() for g in self.model.gates if g.gid in self.goal_need - state]
@@ -2641,25 +2714,49 @@ class Validator:
 
         def emit(segment, end):
             walk_from = None
+            walk_pinched = False
             for prev, e in segment:
                 edges_used.append((prev, e))
                 if e["kind"] == "walk" and not e.get("debug"):
+                    if walk_from is not None and bool(e.get("pinched")) != walk_pinched:
+                        actions.append(self._walk_action(walk_from, prev, pinched=walk_pinched))
+                        walk_from = None
                     if walk_from is None:
                         walk_from = prev
+                        walk_pinched = bool(e.get("pinched"))
                     continue
                 if walk_from is not None:
-                    actions.append(self._walk_action(walk_from, prev))
+                    actions.append(self._walk_action(walk_from, prev, pinched=walk_pinched))
                     walk_from = None
-                actions.append(self._walk_action(prev, e["to"], debug=True) if e["kind"] == "walk"
-                               else self._move_action(prev, e))
+                if e["kind"] in ("pinch", "unpinch"):
+                    # Mundo 3 (paso 8a): comprimirse / recuperar el tamano (Pellizcar).
+                    actions.append({"action": e["kind"], "at": [prev[1], prev[0]],
+                                    "text": "%s en (fila %d, columna %d)%s" % (
+                                        "comprimirse (Pellizcar)" if e["kind"] == "pinch" else "recuperar el tamano",
+                                        prev[1], prev[0], self._section_suffix(prev[0], prev[1]))})
+                    continue
+                actions.append(self._walk_action(prev, e["to"], debug=True, pinched=bool(e.get("pinched")))
+                               if e["kind"] == "walk" else self._move_action(prev, e))
             if walk_from is not None:
-                actions.append(self._walk_action(walk_from, end))
+                actions.append(self._walk_action(walk_from, end, pinched=walk_pinched))
 
         for stage in run["stages"]:
             emit(path_to(stage["parent"], stage["end"]), stage["end"])
             if stage["gate"] is not None:
                 n = stage["end"]
                 g = stage["gate"]
+                if g.kind in world3_model.LIKE_KINDS:
+                    # Mundo 3 (paso 8a): likes.
+                    likes = stage.get("likes_after", 0)
+                    if g.kind == "heart":
+                        text = "recoge %s en (fila %d, columna %d) -> %d like(s)" % (g.label(), n[1], n[0], likes)
+                    elif g.kind == "like_source":
+                        text = "pulso desde (fila %d, columna %d) -> %s -> %d like(s)" % (n[1], n[0], g.label(), likes)
+                    else:
+                        text = "pulso de espaldas desde (fila %d, columna %d) -> %s -> 0 likes" % (n[1], n[0], g.label())
+                    actions.append({"action": {"heart": "heart", "like_source": "pulse", "like_reset": "like_reset"}[g.kind],
+                                    "from": [n[1], n[0]], "object": g.label(), "likes": likes, "text": text})
+                    continue
                 if g.kind == "pickup":
                     verb = "pasa por" if getattr(g, "encounter", False) else "recoge"
                     actions.append({"action": "pickup", "from": [n[1], n[0]], "object": g.label(),
@@ -2754,13 +2851,15 @@ class Validator:
                 "travel_px": round(e["travel"], 1), "rise_px": round(e["rise"], 1),
                 "h": round(e["h"], 4), "v": round(e["v"], 4)}
 
-    def _walk_action(self, a, b, debug=False):
+    def _walk_action(self, a, b, debug=False, pinched=False):
         action = {"action": "walk", "from": [a[1], a[0]], "to": [b[1], b[0]],
-                  "text": "andar de (fila %d, columna %d) a (fila %d, columna %d)%s%s"
-                          % (a[1], a[0], b[1], b[0], " con Debug" if debug else "",
+                  "text": "andar%s de (fila %d, columna %d) a (fila %d, columna %d)%s%s"
+                          % (" comprimido" if pinched else "", a[1], a[0], b[1], b[0], " con Debug" if debug else "",
                              self._section_suffix(b[0], b[1]))}
         if debug:
             action["debug"] = True
+        if pinched:
+            action["compressed"] = True
         return action
 
     def _move_action(self, prev, e):
@@ -2772,12 +2871,15 @@ class Validator:
                "-> %.0f %% horizontal, %.0f %% vertical%s%s" % (
                    names[e["kind"]], prev[1], prev[0], to[1], to[0], e["travel"],
                    "sube" if rise >= 0 else "baja", abs(rise), e["h"] * 100, e["v"] * 100,
-                   " (con Debug)" if e.get("debug") else "", self._section_suffix(to[0], to[1]))
+                   (" (con Debug)" if e.get("debug") else "") + (" (comprimido)" if e.get("pinched") else ""),
+                   self._section_suffix(to[0], to[1]))
         action = {"action": e["kind"], "from": [prev[1], prev[0]], "to": [to[1], to[0]],
                   "travel_px": round(e["travel"], 1), "rise_px": round(rise, 1),
                   "h": round(e["h"], 4), "v": round(e["v"], 4), "text": text}
         if e.get("debug"):
             action["debug"] = True
+        if e.get("pinched"):
+            action["compressed"] = True
         return action
 
     def _section_suffix(self, col, row=None):
@@ -3185,6 +3287,8 @@ class Validator:
                 debug = "auto" if g.kind == "pound" else False
                 if g.gid not in state and self._gate_near(g, node) and m.can_open(g, node, state, debug):
                     nexts.append((node, state | {g.gid}))
+            if m.w3 is not None and (m.w3.pubs or m.w3.resets):
+                nexts += m.w3.softlock_nexts(node, state)
             for nxt in nexts:
                 reverse.setdefault(nxt, []).append(pair)
                 if nxt not in seen:
@@ -3289,6 +3393,9 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     # Mundo 2 (2026-10-22, paso 4 de docs/propuesta-mundo-2.md): tarjetas fragiles e Historias como las
     # piezas del Mundo 1 que reutilizan (tools/world2_model.py); sin ellas el nivel no cambia.
     level = world2_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
+    # Mundo 3 (paso 8a de docs/propuesta-mundo-3.md): la herramienta Recortar como interruptor que da Pellizcar
+    # (tools/world3_model.py); sin ella el nivel no cambia.
+    level = world3_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin
@@ -3462,6 +3569,7 @@ def format_text(path, result):
             known["puzzle_actions"],
             "" if known.get("duration_s") is None else ", unos %.1f s" % known["duration_s"],
             "" if known.get("energy_min") is None else ", energia minima %.0f" % known["energy_min"]))
+    out.extend(world3_model.format_lines(result))
     out.extend(format_plan(result.get("plan")))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])

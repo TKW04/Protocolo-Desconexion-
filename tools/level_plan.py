@@ -43,6 +43,8 @@ retroceso al recibir dano ni la energia que gasta el jugador en lo opcional.
 import heapq
 import math
 
+import world3_model
+
 DT = 1.0 / 60.0
 EPS = 1e-6
 INF = float("inf")
@@ -81,7 +83,7 @@ START_S = 0.06
 # Pasos que dejan a Isak parado (el siguiente movimiento arranca acelerando con el arco real; tambien los
 # saltos, caidas y dashes: el bot frena en el centro de la celda de llegada).
 REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "debug_on", "debug_off", "ground_pound",
-                "wait_scroll")
+                "wait_scroll", "like_reset")
 # Scroll forzado (Mundo 2, paso 9 de docs/propuesta-mundo-2.md §7.1): espera maxima por el techo de carga (s) y
 # margen frente al borde que dana por defecto (tiles; 3 en dificultad 2-3 y 2 en dificultad 4).
 SCROLL_MAX_WAIT_S = 120.0
@@ -110,6 +112,8 @@ def path_to(parent, target):
 
 def body_cells(node):
     c, r = node
+    if node.__class__ is not tuple and getattr(node, "pinched", False):
+        return {(c, r)}  # comprimido (Mundo 3, paso 8a)
     return {(c, r), (c, r - 1)}
 
 
@@ -160,6 +164,7 @@ class Planner:
     def build_steps(self, run):
         steps = []
         last_state = frozenset()
+        last_pub = {}
         for stage in run["stages"]:
             state = stage["state"]
             last_state = state
@@ -169,6 +174,12 @@ class Planner:
             if g is None:
                 continue
             n = stage["end"]
+            if g.kind in world3_model.LIKE_KINDS:
+                # Mundo 3 (paso 8a): corazon, publicacion (con su enfriamiento si se repite seguida) o reset.
+                steps.extend(world3_model.plan_steps(self, g, n, state, stage, last_pub))
+                last_pub = {"id": g.obj_id} if g.kind == "like_source" else {}
+                continue
+            last_pub = {}
             if g.kind == "pickup":
                 steps.append(self.pickup_step(g, n))
                 continue
@@ -236,7 +247,8 @@ class Planner:
                 shot = self.m.pulse_shot(g.openers, n, state)
                 steps.append({"action": "pulse", "at": n, "shot": shot, "state": state, "face_back": True,
                               "pose_s": g.pose_s, "count": 1, "of": 1,
-                              "target": {"type": "pause_player" if getattr(g, "player", False) else "dnd_switch",
+                              "target": {"type": "pause_player" if getattr(g, "player", False) else (
+                                  "crop_tool" if getattr(g, "crop", False) else "dnd_switch"),
                                          "id": g.obj_id, "ability": g.ability}})
                 continue
             if g.kind == "lswitch":
@@ -353,7 +365,7 @@ class Planner:
             return s["time"]
         if a == "laser":
             return r.laser_pose_s + s.get("extra_wait", 0.0)
-        if a == "pulse":
+        if a == "pulse" or a == "like_reset":
             if s.get("face_back"):
                 # Interruptor del acertijo de Calc: de espaldas pose_s (no se puede volver a pulsar hasta que
                 # Isak vuelve de perfil) y un cuadro.
@@ -465,10 +477,14 @@ class Planner:
             cu, cv = self.feet(u), self.feet(v)
             speed = self.rules.walk_speed
             if e["kind"] == "walk":
+                wspeed = s.get("walk_speed") or e.get("walk_px_s") or speed
                 if s.get("from_rest"):
-                    return self.rest_walk_samples(cu, cv[0], s.get("walk_speed") or speed)
-                n = max(1, int(round(T / (s.get("walk_speed") or speed) / DT)))
+                    return self.rest_walk_samples(cu, cv[0], wspeed)
+                n = max(1, int(round(T / wspeed / DT)))
                 return [(cu[0] + (cv[0] - cu[0]) * (i + 1) / n, cu[1], False) for i in range(n)]
+            if e["kind"] in ("pinch", "unpinch"):
+                # Mundo 3 (paso 8a): comprimirse / recuperar el tamano en el sitio (squash_s).
+                return [(cu[0], cu[1], False)] * max(1, int(round(self.duration(s) / DT)))
             if e.get("dash"):
                 return self._dash_samples(s, e, cu, cv)
             out = []
@@ -484,9 +500,14 @@ class Planner:
                 out += [(x, y, True) for x, y in real[1]]
             else:
                 info = {"want_traj": True}
-                w = self.m.world(s["state"], bool(s.get("debug")))
-                w.simulate(x0, cu[1], e.get("vy0", 0.0), speed if e["speed"] == "walk" else self.rules.run_speed,
-                           e["xt"], head_lag=e["kind"] != "fall", info=info)
+                if e.get("pinched"):
+                    w = self.m.w3.world_for(e["to"], s["state"], bool(s.get("debug")))
+                    w.simulate(x0, cu[1], e.get("vy0", 0.0), e["walk_px_s"], e["xt"], head_lag=e["kind"] != "fall",
+                               info=info)
+                else:
+                    w = self.m.world(s["state"], bool(s.get("debug")))
+                    w.simulate(x0, cu[1], e.get("vy0", 0.0), speed if e["speed"] == "walk" else self.rules.run_speed,
+                               e["xt"], head_lag=e["kind"] != "fall", info=info)
                 out += [(x, y, True) for x, y in (info.get("traj") or [])]
             land = out[-1][0] if out else cv[0]
             n = int(round(abs(land - cv[0]) / speed / DT))
@@ -3166,6 +3187,7 @@ class Planner:
                     and merged[-1]["kind"] == "walk" and merged[-1].get("debug") == s.get("debug")
                     and merged[-1]["to"] == s["from"] and merged[-1]["to"][1] == s["to"][1]
                     and (s["to"][0] - s["from"][0]) * (merged[-1]["to"][0] - merged[-1]["from"][0]) > 0
+                    and bool(merged[-1]["edge"].get("pinched")) == bool(s["edge"].get("pinched"))
                     and not s.get("timed") == "x"):
                 merged[-1] = dict(merged[-1], to=s["to"], dur=merged[-1]["dur"] + self.duration(s))
                 continue
@@ -3194,6 +3216,11 @@ class Planner:
                 item["target_x_px"] = None if fall_xt is None or abs(fall_xt) > 1e5 else round(fall_xt, 1)
                 item["dash_s"] = round(len(dash["xs"]) * DT, 3)
                 item["air_s"] = round(e.get("time", 0.0), 3)
+            elif a == "move" and s["kind"] in ("pinch", "unpinch"):
+                # Mundo 3 (paso 8a): pulsar gesture_pinch en el sitio (comprimirse / pedir el tamano).
+                item["action"] = s["kind"]
+                item["at"] = cell(s["from"])
+                item["squash_s"] = round(s["edge"].get("time", 0.0), 3)
             elif a == "move":
                 e = s["edge"]
                 item["action"] = s["kind"]
@@ -3207,6 +3234,9 @@ class Planner:
                     item["air_s"] = round(self.air_time(s), 3)
                 if s.get("debug"):
                     item["debug"] = True
+                if e.get("pinched"):
+                    item["compressed"] = True
+                    item["walk_speed_px_s"] = e["walk_px_s"]
             else:
                 item["action"] = a
                 node = self.node_of(s)
@@ -3278,17 +3308,25 @@ class Planner:
                         item["clears"] = list(s["clears"])
                 if s.get("final"):
                     item["final"] = True
+            if a == "heart":
+                item["likes_after"] = s.get("likes_after")
             if "energy_before" in s:
                 item["energy_before"] = s["energy_before"]
                 item["energy_after"] = s["energy_after"]
             out.append(item)
         start = self.v.result.get("start")
+        physics = {"walk_speed_px_s": self.rules.walk_speed, "jump_height_px": round(self.rules.jump_height, 1),
+                   "laser_pose_s": self.rules.laser_pose_s, "pulse_pose_s": self.rules.pulse_pose_s}
+        w3 = self.m.w3
+        if w3 is not None and w3.compress_possible:
+            cr = w3.cmodel.rules
+            physics["compress"] = {"box_px": [cr.hitbox_w, cr.hitbox_h], "walk_speed_px_s": cr.walk_speed,
+                                   "jump_height_px": round(cr.jump_height, 1), "squash_s": w3.squash_s}
         return {
             "format": FORMAT,
             "level": self.level.get("id"),
             "tile_size": T,
-            "physics": {"walk_speed_px_s": self.rules.walk_speed, "jump_height_px": round(self.rules.jump_height, 1),
-                        "laser_pose_s": self.rules.laser_pose_s, "pulse_pose_s": self.rules.pulse_pose_s},
+            "physics": physics,
             "start": cell(tuple(start)) if start else None,
             "time_margin_s": self.margin,
             "duration_s": self.info.get("duration_s"),
