@@ -32,6 +32,11 @@ func size() -> int:
 	return _samples.size()
 
 
+## Tiempo de la ultima muestra (la suma de los dt grabados).
+func now() -> float:
+	return _time
+
+
 ## Apunta el estado de `isak` tras `dt` segundos.
 func record(isak: Isak, dt: float) -> void:
 	if isak == null or not is_instance_valid(isak):
@@ -62,7 +67,9 @@ static func snapshot(isak: Isak, t: float = 0.0) -> Dictionary:
 	var out: Dictionary = {"t": t, "position": isak.global_position, "texture": null,
 		"animation": &"", "frame": 0, "flip_h": false,
 		"sprite_position": Vector2.ZERO, "sprite_scale": Vector2.ONE, "sprite_rotation": 0.0,
-		"sprite_offset": Vector2.ZERO, "centered": true}
+		"sprite_offset": Vector2.ZERO, "centered": true,
+		# Caja de colision de ese momento (Pellizcar la cambia; la usa el Reflejo falso).
+		"hitbox_size": isak.get_hitbox_size(), "on_floor": isak.is_on_floor()}
 	var sprite := isak.get_node_or_null(^"AnimatedSprite2D") as AnimatedSprite2D
 	if sprite == null:
 		return out

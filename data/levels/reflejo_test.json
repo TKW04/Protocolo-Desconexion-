@@ -1,0 +1,173 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-mundo-3.md §8, 2026-10-26): sala de 44x13 del ESPEJO CAZADOR, el REFLEJO FALSO y las placas «Posa aqui» (§3.6). Isak llega por la izquierda (P, fila 9) con pulso y laser. PATRON 16 (columnas 1-18): un laser desde las columnas 2-3 rebota en el espejo '/' (4, 9) y sube al lector del techo (4, 2), que da corriente 6 s al receptor enlazado (17, 9) al otro lado del foso de pinchos (columnas 12-16, 5 tiles: no se salta). El espejo cazador (11, 9) reposa mirando al este (al receptor) y, con Isak a 3 tiles, gira hacia el 45 grados cada 0,6 s (brillo antes de cada giro): hay que llegar y pulsarlo ANTES de que gire (o alejarse para que vuelva al este y volver), y el haz de 6 tiles activa el receptor y extiende el puente (12, 10). Si mira a Isak, el pulso le vuelve (0,5 s aturdido) y el laser le quita 10. Punto de sincronizacion (19). PATRON 17 (columnas 19-42, la sala del reflejo, zone [19, 2, 25, 8]): al cruzar el eje de la pared de espejo (columna 23) sale el REFLEJO FALSO, que repite a Isak con 1 s de retraso y dana al tocarlo. La placa (25, 9) abre la puerta de marco (30, 7) mientras alguien la pisa y 0,3 s mas: Isak solo no llega ni corriendo; el reflejo la pisa 1 s despues y la sostiene. Igual con la placa (34, 9) y la puerta (39, 7); para ir sobrado, pulsar al reflejo cuando este sobre la placa (aturdido 3 s, la sigue pisando). Terminal de salida (41, 8). Sin ayudas Q (los tipos aun no tienen ficha). tools/validate_level.py aun no modela el Mundo 3 (paso 8).",
+	"id": "reflejo_test",
+	"name": "Reflejo (prueba)",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": false
+	},
+	"checkpoints": [
+		{
+			"id": "sync_reflejo",
+			"x": 19,
+			"y": 9
+		}
+	],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "reflejo_falso",
+			"type": "false_reflection",
+			"x": 23,
+			"y": 9,
+			"params": {
+				"mirror_wall": "pared_reflejo",
+				"zone": [
+					19,
+					2,
+					25,
+					8
+				]
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "mirror",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"id": "espejo_sube",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "laser_receiver",
+			"x": 4,
+			"y": 2,
+			"params": {
+				"id": "lector_techo",
+				"target": "receptor_cazador",
+				"window_s": 6.0,
+				"cable": [
+					[
+						5,
+						2
+					],
+					[
+						17,
+						2
+					],
+					[
+						17,
+						8
+					]
+				]
+			}
+		},
+		{
+			"type": "hunter_mirror",
+			"x": 11,
+			"y": 9,
+			"params": {
+				"id": "cazador",
+				"facing": "e"
+			}
+		},
+		{
+			"type": "relay_receiver",
+			"x": 17,
+			"y": 9,
+			"params": {
+				"id": "receptor_cazador",
+				"target": "puente_cazador"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 12,
+			"y": 10,
+			"params": {
+				"id": "puente_cazador",
+				"length_tiles": 5,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "mirror_wall",
+			"x": 20,
+			"y": 4,
+			"params": {
+				"id": "pared_reflejo",
+				"width_tiles": 6,
+				"height_tiles": 5,
+				"side": "center"
+			}
+		},
+		{
+			"type": "pose_plate",
+			"x": 25,
+			"y": 9,
+			"params": {
+				"id": "placa_1",
+				"target": "puerta_1"
+			}
+		},
+		{
+			"type": "frame_door",
+			"x": 30,
+			"y": 7,
+			"params": {
+				"id": "puerta_1"
+			}
+		},
+		{
+			"type": "pose_plate",
+			"x": 34,
+			"y": 9,
+			"params": {
+				"id": "placa_2",
+				"target": "puerta_2"
+			}
+		},
+		{
+			"type": "frame_door",
+			"x": 39,
+			"y": 7,
+			"params": {
+				"id": "puerta_2"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 41,
+			"y": 8,
+			"params": {
+				"id": "terminal_reflejo",
+				"text": "Publicar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"############################################",
+		"############################################",
+		"#.............................#........#...#",
+		"#.............................#........#...#",
+		"#.............................#........#...#",
+		"#.............................#........#...#",
+		"#.............................#........#...#",
+		"#..........................................#",
+		"#..........................................#",
+		"#.P................C...E.................G.#",
+		"############.....###########################",
+		"############^^^^^###########################",
+		"############################################"
+	]
+}

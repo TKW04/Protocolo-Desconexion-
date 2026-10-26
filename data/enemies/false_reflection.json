@@ -1,0 +1,24 @@
+{
+	"_notes": "REFLEJO FALSO (false_reflection), Mundo 3 «La Vitrina» (paso 6 de docs/propuesta-mundo-3.md §8; comportamiento en §3.6, patron 17 de §3.5). Script scripts/enemies/false_reflection.gd (FalseReflection), escena scenes/enemies/false_reflection.tscn. Primera aparicion de Isak Optimizado: INDESTRUCTIBLE (el laser rebota con su chispa gris, deflect_s). Origen en los pies (como Isak). Params del nivel: mirror_wall (id del mirror_wall del que sale) y zone ([columna, fila, ancho, alto] en celdas: su sala). DORMIDO e invisible mientras Isak no cruce la LINEA de su pared de espejo (el eje del reflejo, MirrorWall.get_axis_x); graba a Isak en un bufer (buffer_s de historia, tiempo real) mientras Isak esta en su sala. Al cruzarla SALE donde Isak la cruzo (aparece en emerge_frames cuadros a anim_fps, 9 a 60 fps = 0,15 s, y espera en la linea hasta empezar a reproducir: es el aviso, sin danar; decision del paso 6) y REPRODUCE LA POSICION Y LA POSE de Isak de hace delay_s (1 s = 60 cuadros; nunca de antes de salir: el primer segundo se queda en la linea), con el cuadro del sprite de Isak y la variante saturada (saturation, tint; shader de la pared de espejo). Sin peso: solo el cuadro (ni mochila ni glitch). DANA AL CONTACTO contact_damage (10 de Sync, con el golpe normal de Isak). PISA LAS PLACAS «Posa aqui» como Isak. PULSO (de Isak o el haz del espejo cazador): lo aturde stun_s (3 s, x el multiplicador del Pulso 3) quieto con un velo de estatica (veil_*), sin danar (sigue pisando la placa); al despertar SALTA AL PUNTO ACTUAL DEL BUFER (otra vez delay_s por detras). Con el Debug la reproduccion va en tiempo del mundo: el retraso crece y luego vuelve a delay_s a catchup_rate s/s (sin pasar de max_lag_s). Desaparece (vuelve a dormir y olvida el bufer) al salir Isak de su sala y al reaparecer Isak. Arte PROVISIONAL (el sprite de Isak con shader; el arte final del Isak Optimizado llega con el jefe). Ayuda con Q pendiente: sin help_id; _help_id_planned es el que tendra. Valores PROPUESTOS (los de §3.6), se ajustan jugando.",
+	"delay_s": 1.0,
+	"buffer_s": 3.0,
+	"max_lag_s": 2.5,
+	"catchup_rate": 0.5,
+	"contact_damage": 10.0,
+	"stun_s": 3.0,
+	"emerge_frames": 9,
+	"anim_fps": 60.0,
+	"deflect_s": 0.25,
+	"saturation": 1.35,
+	"tint": "rosa_pastel",
+	"veil_alpha": 0.55,
+	"veil_cells_px": 6.0,
+	"health": 1,
+	"drops": {"_notes": "Indestructible: no suelta nada."},
+	"_help_id_planned": "false_reflection",
+	"level_params": {
+		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params): mirror_wall (id de un mirror_wall del nivel) y zone (rectangulo de celdas dentro del grid que contiene la E y la pared).",
+		"mirror_wall": {"string": true},
+		"zone": {"zone": true}
+	}
+}

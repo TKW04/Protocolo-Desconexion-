@@ -165,6 +165,8 @@ var _state_name: StringName = PlayerState.NONE
 var _jump_buffer_left: float = 0.0
 var _coyote_left: float = 0.0
 var _invulnerable_left: float = 0.0
+## Duracion del proximo estado Hurt si es >= 0 (take_stun; la consume HurtState).
+var _hurt_duration_override: float = -1.0
 var _idle_time: float = 0.0
 var _terminal_playing: bool = false
 var _knockback_direction: float = 0.0
@@ -514,6 +516,22 @@ func take_hit(direction: float = 0.0) -> bool:
 		_regen.note_combat()
 	hurt.emit()
 	return true
+
+
+## Aturdido `seconds` sin dano (2026-10-26, paso 6 de docs/propuesta-mundo-3.md
+## §3.6: el pulso devuelto por el espejo cazador): el mismo golpe que take_hit
+## (estado Hurt con retroceso e invulnerabilidad, sin tocar el Sync Rate) pero
+## con Hurt durante `seconds`. Devuelve false si se ignora (como take_hit).
+func take_stun(seconds: float, direction: float = 0.0) -> bool:
+	_hurt_duration_override = maxf(seconds, 0.0)
+	var taken: bool = take_hit(direction)
+	_hurt_duration_override = -1.0
+	return taken
+
+
+## Duracion del estado Hurt que empieza (la de take_stun o hurt_duration_s).
+func get_hurt_duration_s() -> float:
+	return _hurt_duration_override if _hurt_duration_override >= 0.0 else abilities.hurt_duration_s
 
 
 func die() -> void:

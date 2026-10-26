@@ -126,14 +126,15 @@ TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
                   "blink_platform", "fragile_card", "story_card", "loading_wall",
-                  "like_platform", "mirror_only"}
+                  "like_platform", "mirror_only", "frame_door"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
                     "alert_major", "pause_player", "autoplay",
-                    "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror"}
+                    "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror",
+                    "hunter_mirror", "pose_plate"}
 # Espejos del Mundo 3 (2026-10-26): orientaciones del espejo fijo y ejes de la pared de espejo.
 MIRROR_ORIENTATIONS = ("/", "\\", "|")
 MIRROR_WALL_SIDES = ("center", "left", "right")
@@ -172,6 +173,12 @@ def _is_int(value):
 
 def _is_number(value):
     return (isinstance(value, (int, float))) and not isinstance(value, bool)
+
+
+def _is_zone(value):
+    """[columna, fila, ancho, alto] en celdas, enteros, ancho y alto >= 1."""
+    return isinstance(value, list) and len(value) == 4 and all(_is_int(v) for v in value) \
+        and value[2] >= 1 and value[3] >= 1
 
 
 class LevelValidator:
@@ -490,6 +497,34 @@ class LevelValidator:
                 self._check_commenter(entry, params, data)
             if kind == "influencer_bot":
                 self._check_influencer(entry)
+            if kind == "false_reflection":
+                self._check_false_reflection(entry, params)
+
+    def _check_false_reflection(self, entry, params):
+        """Reflejo falso (false_reflection, paso 6 de docs/propuesta-mundo-3.md §3.6): mirror_wall y zone
+        obligatorios; la pared existe; la sala contiene la E y la pared."""
+        eid = entry.get("id")
+        for key in ("mirror_wall", "zone"):
+            if key not in params:
+                self.error("reflejo falso '%s': falta params.%s" % (eid, key))
+        walls = {o.get("params", {}).get("id"): o for o in self.level.get("objects", [])
+                 if isinstance(o, dict) and o.get("type") == "mirror_wall" and isinstance(o.get("params"), dict)}
+        wall = walls.get(params.get("mirror_wall")) if isinstance(params.get("mirror_wall"), str) else None
+        if "mirror_wall" in params and wall is None:
+            self.error("reflejo falso '%s': mirror_wall '%s' no es el id de un mirror_wall del nivel"
+                       % (eid, params.get("mirror_wall")))
+        zone = params.get("zone")
+        if not _is_zone(zone):
+            return
+        zx, zy, zw, zh = zone
+        inside = lambda cx, cy: zx <= cx < zx + zw and zy <= cy < zy + zh  # noqa: E731
+        x, y = entry.get("x"), entry.get("y")
+        if _is_int(x) and _is_int(y) and not inside(x, y):
+            self.error("reflejo falso '%s': la E (%s, %s) debe estar dentro de su zone %s" % (eid, x, y, zone))
+        if wall is not None and _is_int(wall.get("x")) and _is_int(wall.get("y")) \
+                and not inside(wall["x"], wall["y"]):
+            self.error("reflejo falso '%s': la pared '%s' debe estar dentro de su zone %s"
+                       % (eid, params.get("mirror_wall"), zone))
 
     def _check_influencer(self, entry):
         """Influencer bot (influencer_bot, paso 5 de docs/propuesta-mundo-3.md §3.6): pedestal de 1 x 2; la E
@@ -579,6 +614,15 @@ class LevelValidator:
             if rule.get("string"):
                 if not isinstance(value, str):
                     self.error("enemigo '%s': params.%s debe ser un texto" % (eid, key))
+                continue
+            if rule.get("zone"):
+                # Rectangulo de celdas [columna, fila, ancho, alto] dentro del grid (2026-10-26, paso 6).
+                if not _is_zone(value):
+                    self.error("enemigo '%s': params.%s debe ser [columna, fila, ancho, alto] (enteros, ancho y "
+                               "alto >= 1)" % (eid, key))
+                elif not (self.in_bounds(value[0], value[1])
+                          and self.in_bounds(value[0] + value[2] - 1, value[1] + value[3] - 1)):
+                    self.error("enemigo '%s': params.%s %s se sale del grid" % (eid, key, value))
                 continue
             if not _is_number(value):
                 self.error("enemigo '%s': params.%s debe ser un numero" % (eid, key))
@@ -733,6 +777,9 @@ class LevelValidator:
         if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch",
                     "pause_player", "crop_tool"):
             return [(x, y)]
+        if kind == "frame_door":
+            # Puerta de marco (Mundo 3, paso 6): 1 x 3 desde su celda de arriba.
+            return [(x, y + j) for j in range(3)]
         if kind == "small_frame":
             # Marco pequeno (Mundo 3, paso 7): las celdas del hueco que enmarca.
             length = get("length_tiles", 1)
@@ -892,6 +939,15 @@ class LevelValidator:
                 # Espejos del Mundo 3 (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §3.4).
                 if params.get("orientation") not in MIRROR_ORIENTATIONS:
                     self.error("%s: orientation debe ser uno de %s" % (what, ", ".join(MIRROR_ORIENTATIONS)), y, x)
+            elif kind == "pose_plate":
+                # Placa «Posa aqui» (Mundo 3, paso 6): plana sobre el suelo de su celda.
+                if not self.in_bounds(x, y + 1) or self.cell(x, y + 1) != "#":
+                    self.error("%s: necesita suelo solido debajo (fila %d)" % (what, y + 1), y + 1, x)
+                frame_doors = {o.get("params", {}).get("id") for o in self.level["objects"]
+                               if isinstance(o, dict) and o.get("type") == "frame_door"
+                               and isinstance(o.get("params"), dict)}
+                if params.get("target") not in frame_doors:
+                    self.error("%s: target '%s' no es el id de ninguna frame_door" % (what, params.get("target")), y, x)
             elif kind == "mirror_wall":
                 side = params.get("side", entry.get("defaults", {}).get("side", "center"))
                 if side not in MIRROR_WALL_SIDES:

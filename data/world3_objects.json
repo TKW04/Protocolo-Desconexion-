@@ -344,6 +344,94 @@
 					"width_tiles": 2
 				}
 			}
+		},
+		"hunter_mirror": {
+			"scene": "res://scenes/levels/hunter_mirror.tscn",
+			"help_id": "",
+			"_help_id_planned": "hunter_mirror",
+			"description": "Espejo cazador (2026-10-26, paso 6 de docs/propuesta-mundo-3.md §8, §3.6, patron 16; HunterMirror). Objeto-enemigo de 1 x 1 en un pie, indestructible (sin colision para Isak; capa world y grupo laser_activatable). facing: orientacion de reposo (e, ne, n, nw, w, sw, s, se). Con Isak a <= track_radius_tiles gira hacia el 45 grados cada 0,6 s con un brillo de 9 cuadros antes de cada giro; sin el, vuelve a la de reposo. PULSO que lo alcanza: se congela 3 s y el pulso sale reflejado como un haz de 6 tiles en su orientacion (cortado por el terreno): aturde enemigos, activa receptores de pulso (relay_receiver con corriente, receiver) y, si toca a Isak, lo deja 0,5 s aturdido sin quitar Sync. LASER: sale desde su centro hacia donde mira (cuenta como rebote, maximo mirror.max_bounces); si alcanza a Isak le quita 10. Tiempo del mundo. Sin Q ni ficha todavia (help_id previsto hunter_mirror). Aspecto PROVISIONAL por codigo (seccion hunter_mirror).",
+			"required": [
+				"facing"
+			],
+			"fields": {
+				"id": "object_id",
+				"facing": "facing",
+				"track_radius_tiles": "track_radius_tiles"
+			},
+			"defaults": {
+				"facing": "e"
+			},
+			"allowed": {
+				"facing": [
+					"e",
+					"ne",
+					"n",
+					"nw",
+					"w",
+					"sw",
+					"s",
+					"se"
+				]
+			},
+			"level_params": {
+				"track_radius_tiles": {
+					"min": 1.5,
+					"max": 8
+				}
+			},
+			"example": {
+				"type": "hunter_mirror",
+				"x": 11,
+				"y": 9,
+				"params": {
+					"id": "cazador_1",
+					"facing": "e"
+				}
+			}
+		},
+		"pose_plate": {
+			"scene": "res://scenes/levels/pose_plate.tscn",
+			"help_id": "",
+			"_help_id_planned": "pose_plate",
+			"description": "Placa «Posa aqui» (2026-10-26, paso 6 de docs/propuesta-mundo-3.md §8, §3.6, patron 17; PosePlate). Placa plana de 1 x 1 en el suelo de su celda (la de debajo, solida); sin colision ni dano. Pisada mientras Isak o un Reflejo falso tienen los pies encima (en el suelo); sostiene su puerta (target: id de un frame_door) mientras esta pisada y hold_s (0,3 s) mas. Tiempo del mundo. Sin Q ni ficha todavia (help_id previsto pose_plate). Aspecto PROVISIONAL por codigo (seccion pose_plate).",
+			"required": [
+				"target"
+			],
+			"fields": {
+				"id": "object_id",
+				"target": "target_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "pose_plate",
+				"x": 26,
+				"y": 9,
+				"params": {
+					"id": "placa_1",
+					"target": "puerta_1"
+				}
+			}
+		},
+		"frame_door": {
+			"scene": "res://scenes/levels/frame_door.tscn",
+			"help_id": "",
+			"_help_id_planned": "frame_door",
+			"description": "Puerta de marco (2026-10-26, paso 6 de docs/propuesta-mundo-3.md §8, §3.6, patron 17; FrameDoor). Puerta SOLIDA de 1 x 3 tiles desde su celda de arriba (capa world, como la barra del 99 %; el grid deja sus celdas en '.'). Se abre (aviso de las lamparas + apertura en open_s, 0,2 s) mientras alguna pose_plate con target == su id la sostiene; al soltarse, aviso de 9 cuadros y se cierra en 0,2 s, nunca con Isak o un Reflejo falso en su hueco. Tiempo del mundo. Sin Q ni ficha todavia (help_id previsto frame_door). Aspecto PROVISIONAL por codigo (seccion frame_door).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "frame_door",
+				"x": 29,
+				"y": 7,
+				"params": {
+					"id": "puerta_1"
+				}
+			}
 		}
 	},
 	"likes": {
@@ -569,6 +657,69 @@
 	"mirror_only": {
 		"_notes": "Plataforma del reflejo (MirrorOnlyPlatform). height_px: alto (arriba de su celda). Con el Debug usa el contorno de lo oculto (data/debug_mode.json, hidden_*).",
 		"height_px": 32
+	},
+	"hunter_mirror": {
+		"_notes": "Espejo cazador (HunterMirror; paso 6). turn_interval_s: un giro de 45 grados hacia su objetivo cada 0,6 s; warn_frames a anim_fps: brillo antes de cada giro (9 cuadros a 60 fps = 0,15 s: a 12 fps serian 0,75 s, mas que el propio intervalo; decision del paso 6). track_radius_tiles: radio (centro a centro) en que sigue a Isak (sin el vuelve a la de reposo). freeze_s: congelado por el pulso. beam_tiles / beam_width_px / beam_show_s: haz del pulso reflejado (largo, grosor de la prueba del pulso y tiempo que se ve). isak_stun_s: aturdido de Isak por su propio pulso devuelto (sin quitar Sync). laser_damage: Sync que quita a Isak el laser desviado hacia el. hit_rect: zona del laser y del pulso [x, y, ancho, alto] desde la esquina de su celda. Colores por nombre de la paleta provisional. Valores PROPUESTOS (los de §3.6), se ajustan jugando.",
+		"turn_interval_s": 0.6,
+		"warn_frames": 9,
+		"anim_fps": 60.0,
+		"track_radius_tiles": 3.0,
+		"freeze_s": 3.0,
+		"beam_tiles": 6,
+		"beam_width_px": 24,
+		"beam_show_s": 0.3,
+		"isak_stun_s": 0.5,
+		"laser_damage": 10.0,
+		"hit_rect": [0, 0, 64, 64],
+		"flash_s": 0.15,
+		"head_radius_px": 18,
+		"glass_half_px": 20,
+		"glass_width_px": 6,
+		"stand_width_px": 6,
+		"frame": "dorado",
+		"frame_shadow": "marco_sombra",
+		"warn": "dorado_luz",
+		"frozen": "gris_perla",
+		"frozen_light": "blanco_brillante",
+		"glass": "gris_perla",
+		"glass_light": "blanco_brillante",
+		"eye": "galeria_noche",
+		"stand": "marco_sombra",
+		"flash": "blanco_brillante",
+		"beam": "blanco_brillante",
+		"beam_glow": "dorado_luz"
+	},
+	"pose_plate": {
+		"_notes": "Placa «Posa aqui» (PosePlate; paso 6). hold_s: sigue sosteniendo la puerta 0,3 s tras soltarla. Zona: el ancho de la celda menos inset_px por lado; los pies (en el suelo) a press_tolerance_px del suelo de la celda; feet_fraction: parte del ancho del cuerpo que cuenta como pies. plate_height_px / pressed_sink_px: dibujo. label: rotulo (texto PROPUESTO). Colores por nombre de la paleta provisional.",
+		"hold_s": 0.3,
+		"inset_px": 8,
+		"press_tolerance_px": 12,
+		"feet_fraction": 0.5,
+		"plate_height_px": 8,
+		"pressed_sink_px": 3,
+		"label": "Posa aquí",
+		"label_font": 11,
+		"plate": "dorado",
+		"lit": "dorado_luz",
+		"frame_shadow": "marco_sombra",
+		"feet": "galeria_noche",
+		"label_color": "blanco_brillante",
+		"label_off": "gris_perla"
+	},
+	"frame_door": {
+		"_notes": "Puerta de marco (FrameDoor; paso 6). open_s: apertura y cierre de la hoja (0,2 s). close_warn_frames a anim_fps: aviso antes de cerrarse (9 cuadros a 60 fps = 0,15 s). Colores por nombre de la paleta provisional.",
+		"open_s": 0.2,
+		"close_warn_frames": 9,
+		"anim_fps": 60.0,
+		"frame_px": 6,
+		"frame": "dorado",
+		"frame_shadow": "marco_sombra",
+		"opening": "galeria_noche",
+		"leaf": "trastienda_luz",
+		"leaf_warn": "dorado_luz",
+		"leaf_edge": "dorado",
+		"lamp_on": "dorado_luz",
+		"lamp_off": "marco_sombra"
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo3_provisional.py; no editar a mano): colores de desarrollo del Mundo 3 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 9).",
