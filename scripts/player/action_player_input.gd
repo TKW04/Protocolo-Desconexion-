@@ -11,6 +11,8 @@ const ACTION_LASER: StringName = &"laser"
 const ACTION_HIDE: StringName = &"hide"
 ## Gesto Deslizar (dash; 2026-10-19).
 const ACTION_DASH: StringName = &"gesture_swipe"
+## Gesto Pellizcar (comprimirse; 2026-10-26, docs/propuesta-mundo-3.md §3.3).
+const ACTION_PINCH: StringName = &"gesture_pinch"
 ## Gesto Mantener presionado (golpe al suelo; decision del usuario 2026-10-22):
 ## se mantiene move_down (S / flecha abajo / cruceta o stick abajo; sin tecla
 ## nueva) o gesture_hold si algun dia tiene eventos. Ajustes > Controles reasigna
@@ -30,5 +32,6 @@ func poll() -> void:
 	laser_pressed = Input.is_action_just_pressed(ACTION_LASER)
 	hide_pressed = InputMap.has_action(ACTION_HIDE) and Input.is_action_just_pressed(ACTION_HIDE)
 	dash_pressed = InputMap.has_action(ACTION_DASH) and Input.is_action_just_pressed(ACTION_DASH)
+	pinch_pressed = InputMap.has_action(ACTION_PINCH) and Input.is_action_just_pressed(ACTION_PINCH)
 	hold_held = (InputMap.has_action(ACTION_DOWN) and Input.get_action_strength(ACTION_DOWN) >= HOLD_AXIS_THRESHOLD) \
 			or (InputMap.has_action(ACTION_HOLD) and Input.is_action_pressed(ACTION_HOLD))

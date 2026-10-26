@@ -513,7 +513,7 @@ func _lose_track() -> void:
 
 func _check_hit(isak: Isak) -> bool:
 	var feet: Vector2 = isak.global_position
-	var hurt := Rect2(feet + Vector2(-isak.hitbox_size.x * 0.5, -isak.hitbox_size.y), isak.hitbox_size)
+	var hurt := Rect2(feet + Vector2(-isak.get_hitbox_size().x * 0.5, -isak.get_hitbox_size().y), isak.get_hitbox_size())
 	if not hurt.intersects(get_damage_rect()):
 		return false
 	var direction: float = signf(_lunge_dir.x)

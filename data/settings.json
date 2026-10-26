@@ -27,6 +27,7 @@
 			{"action": "laser", "name": "Láser"},
 			{"action": "gesture_swipe", "name": "Deslizar"},
 			{"action": "move_down", "name": "Mantener presionado"},
+			{"action": "gesture_pinch", "name": "Pellizcar"},
 			{"action": "debug", "name": "Debug"},
 			{"action": "hide", "name": "Ocultarte"},
 			{"action": "help", "name": "Ayuda de Eco"},

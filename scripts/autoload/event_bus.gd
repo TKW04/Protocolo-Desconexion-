@@ -136,6 +136,16 @@ signal dash_started(direction: float)
 ## (Isak.DASH_DENIED_ENERGY / DASH_DENIED_DEBUG): chispa gris, no sale.
 @warning_ignore("unused_signal")
 signal dash_denied(reason: StringName)
+## Pellizcar (2026-10-26, docs/propuesta-mundo-3.md §3.3): Isak se comprime
+## (`compressed` true) o recupera el tamano (false). Sonidos sfx_gesture_pinch /
+## sfx_gesture_unpinch.
+@warning_ignore("unused_signal")
+signal compress_changed(compressed: bool)
+## Likes del Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §3.1):
+## el contador del intento (GameState.likes, 0-likes_max) ha cambiado. No se
+## guarda. Lo escuchan HudLikes y las plataformas de likes.
+@warning_ignore("unused_signal")
+signal likes_changed(likes: int, likes_max: int)
 ## Golpe al suelo (gesto Mantener presionado, 2026-10-22): Isak aterriza y nace la
 ## onda en `rect` (px globales, a ras de suelo; incluye unos px bajo los pies).
 ## Las tarjetas fragiles, los muros y los enemigos que reaccionan se enganchan aqui.

@@ -40,6 +40,9 @@ signal ground_pound_landed(rect: Rect2)
 ## Isak toca el borde que dana del scroll forzado (Mundo 2): `damaged` = le
 ## quito Sync Rate (un segundo contacto dentro de la invulnerabilidad no cuenta).
 signal scroll_edge_hit(damaged: bool)
+## Pellizcar (2026-10-26): Isak se comprime (`compressed` true) o recupera el
+## tamano (false). Tambien EventBus.compress_changed (sonidos).
+signal compress_changed(compressed: bool)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -101,6 +104,10 @@ const POUND_DENIED_BUSY: StringName = &"busy"
 const POUND_DENIED_COOLDOWN: StringName = &"cooldown"
 const POUND_DENIED_LATCHED: StringName = &"latched"
 const POUND_DENIED_ENERGY: StringName = &"energy"
+## Pellizcar (2026-10-26): motivos por los que no se comprime (todos sin aviso).
+const COMPRESS_DENIED_LOCKED: StringName = &"locked"
+const COMPRESS_DENIED_BUSY: StringName = &"busy"
+const COMPRESS_DENIED_ENERGY: StringName = &"energy"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 ## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
@@ -213,6 +220,18 @@ var _pound_requested: bool = false
 var _pound_latched: bool = false
 var _pound_cooldown_left: float = 0.0
 var _pound_effect: GroundPoundEffect
+## Pellizcar (gesto Pellizcar, 2026-10-26; seccion compress de
+## data/isak_abilities.json, docs/propuesta-mundo-3.md §3.3.1). Tiempo real.
+## Comprimido (caja compress_width_px x compress_height_px), vuelta al tamano
+## pedida que espera a que haya sitio, aplastado visible del sprite (0-1) y si la
+## pose provisional esta aplicada al sprite.
+var _compressed: bool = false
+var _uncompress_pending: bool = false
+var _compress_amount: float = 0.0
+var _compress_pose_applied: bool = false
+var _compress_effect: CompressEffect
+var _normal_shape: CapsuleShape2D
+var _compressed_shape: CapsuleShape2D
 ## Posicion y escala del sprite sin la pose del golpe (aplastado provisional).
 var _sprite_base_position := Vector2.ZERO
 var _sprite_base_scale := Vector2.ONE
@@ -259,6 +278,10 @@ func _ready() -> void:
 	_pound_effect.name = "GroundPoundEffect"
 	_pound_effect.configure(abilities.pound_visual)
 	add_child(_pound_effect)
+	_compress_effect = CompressEffect.new()
+	_compress_effect.name = "CompressEffect"
+	_compress_effect.configure(abilities.compress_visual)
+	add_child(_compress_effect)
 	_air_dashes_left = abilities.dash_air_dashes
 	_dash_effect = DashEffect.new()
 	_dash_effect.name = "DashEffect"
@@ -289,6 +312,8 @@ func step(delta: float) -> void:
 	if _warping or _facing_back:
 		input = _warp_input
 	_update_timers(delta)
+	# Antes que el dash: comprimirse en este paso deja el dash ocupado.
+	_update_compress_request()
 	_update_dash_request()
 	_update_pound_request(delta)
 	for i: int in MAX_TRANSITIONS_PER_STEP:
@@ -301,6 +326,7 @@ func step(delta: float) -> void:
 	_update_coyote(delta)
 	_update_dash(delta)
 	_update_pound_effect(delta)
+	_update_compress(delta)
 	_update_laser(delta)
 	_update_hide(delta)
 	_update_regen(delta)
@@ -365,7 +391,7 @@ func can_jump() -> bool:
 
 
 func can_pulse() -> bool:
-	return is_on_floor() and GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
+	return is_on_floor() and GameState.is_ability_unlocked(GameState.ABILITY_PULSE) and not _compressed
 
 
 ## El laser se puede usar: desbloqueado (GameState.ABILITY_LASER), vivo y sin
@@ -381,7 +407,7 @@ func can_laser() -> bool:
 ## que el pulso (ni chispa ni enfriamiento).
 func can_start_laser() -> bool:
 	return is_on_floor() and can_laser() and _state_name != PlayerState.DASH \
-			and _state_name != PlayerState.GROUND_POUND
+			and _state_name != PlayerState.GROUND_POUND and not _compressed
 
 
 func get_laser_cooldown_left() -> float:
@@ -445,6 +471,8 @@ func apply_horizontal(axis: float, delta: float) -> void:
 		facing = signf(axis)
 		_sprite.flip_h = facing < 0.0
 	var speed: float = physics.run_speed if is_running() else physics.walk_speed
+	if _compressed:
+		speed = abilities.compress_walk_speed_px_s
 	var rate: float = physics.air_acceleration
 	if is_on_floor():
 		rate = physics.ground_friction if is_zero_approx(axis) else physics.ground_acceleration
@@ -460,7 +488,7 @@ func apply_gravity(delta: float) -> void:
 
 
 func start_jump() -> void:
-	velocity.y = physics.jump_velocity
+	velocity.y = get_compressed_jump_velocity() if _compressed else physics.jump_velocity
 	_jump_buffer_left = 0.0
 	_coyote_left = 0.0
 
@@ -492,6 +520,9 @@ func die() -> void:
 	if is_dead() or not _ready_ok:
 		return
 	_clear_back_pose()
+	# Morir pide el tamano normal (vuelve al reaparecer, o antes si cabe).
+	if _compressed:
+		_uncompress_pending = true
 	change_state(PlayerState.DEAD)
 
 
@@ -522,6 +553,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	change_state(PlayerState.IDLE)
 	_reset_dash()
 	_reset_pound()
+	_reset_compress()
 	play_animation(ANIM_IDLE)
 	if _scroll_camera != null:
 		# Muerte: el scroll de la seccion vuelve a su parada.
@@ -540,6 +572,9 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 func begin_warp(hidden: bool = true) -> void:
 	if _hide != null:
 		_hide.end(HideMode.REASON_WARP)
+	# Un vortice pide el tamano normal (vuelve en cuanto cabe).
+	if _compressed:
+		_uncompress_pending = true
 	_warping = true
 	_warp_hidden = hidden
 	warp_began.emit(hidden)
@@ -856,7 +891,7 @@ func wants_dash() -> bool:
 func dash_denial() -> StringName:
 	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_DASH):
 		return DASH_DENIED_LOCKED
-	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
+	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
 		return DASH_DENIED_BUSY
 	if _dash_cooldown_left > 0.0:
@@ -1000,7 +1035,7 @@ func wants_ground_pound() -> bool:
 func ground_pound_denial() -> StringName:
 	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND):
 		return POUND_DENIED_LOCKED
-	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
+	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
 		return POUND_DENIED_BUSY
 	if _pound_cooldown_left > 0.0:
@@ -1160,11 +1195,184 @@ func _reset_pound() -> void:
 		_pound_effect.clear()
 
 
+# --- Pellizcar (gesto Pellizcar, 2026-10-26; docs/propuesta-mundo-3.md §3.3) ---
+
+## Isak esta comprimido (caja compress_width_px x compress_height_px).
+func is_compressed() -> bool:
+	return _compressed
+
+
+## La vuelta al tamano esta pedida y espera a que haya sitio.
+func is_uncompress_pending() -> bool:
+	return _uncompress_pending
+
+
+## Caja de colision actual (ancho, alto) con los pies en el origen: hitbox_size
+## o la comprimida. La usan los enemigos y objetos que miden el cuerpo de Isak.
+func get_hitbox_size() -> Vector2:
+	if _compressed and abilities != null:
+		return Vector2(abilities.compress_width_px, abilities.compress_height_px)
+	return hitbox_size
+
+
+## Velocidad del salto comprimido: raiz(2 x gravedad x compress_jump_height_px),
+## con la gravedad de subida de isak_physics (igual que la normal).
+func get_compressed_jump_velocity() -> float:
+	return -sqrt(2.0 * physics.gravity * maxf(abilities.compress_jump_height_px, 0.0))
+
+
+## Aplastado visible del sprite (0 = normal, 1 = comprimido del todo).
+func get_compress_amount() -> float:
+	return _compress_amount
+
+
+func get_compress_effect() -> CompressEffect:
+	return _compress_effect
+
+
+## Motivo por el que no se comprimiria ahora (&"" = sale). Ver COMPRESS_DENIED_*.
+## Sin la habilidad o en el hub; ocupado (muerto, golpe, pulso, laser, dash, golpe
+## al suelo, vortice, de espaldas); energia (si costara; hoy es gratis). Con el
+## Debug si sale.
+func compress_denial() -> StringName:
+	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS):
+		return COMPRESS_DENIED_LOCKED
+	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
+		return COMPRESS_DENIED_BUSY
+	if abilities.compress_energy_cost > 0.0 and GameState.debug_energy + LASER_ENERGY_EPS < abilities.compress_energy_cost:
+		return COMPRESS_DENIED_ENERGY
+	return &""
+
+
+## Hay sitio para recuperar el tamano: la caja comprimida, movida hacia arriba
+## lo que crece, no choca (las plataformas de una via no cuentan al subir).
+func has_room_to_uncompress() -> bool:
+	if not _compressed:
+		return true
+	var grow: float = hitbox_size.y - abilities.compress_height_px
+	if grow <= 0.0 or not is_inside_tree():
+		return true
+	return not test_move(global_transform, Vector2(0.0, -grow))
+
+
+## Comprime a Isak si compress_denial() lo permite. Verdadero si se comprimio.
+func compress() -> bool:
+	if _compressed or compress_denial() != &"":
+		return false
+	if abilities.compress_energy_cost > 0.0:
+		GameState.debug_energy -= abilities.compress_energy_cost
+	# Comprimirse apaga el Ocultarte (como el dash) y corta la terminal.
+	if _hide != null:
+		_hide.end(HideMode.REASON_COMPRESS)
+	reset_idle_time()
+	_compressed = true
+	_uncompress_pending = false
+	_apply_hitbox_shape()
+	if _state_name == PlayerState.IDLE:
+		play_animation(ANIM_IDLE)
+	compress_changed.emit(true)
+	EventBus.compress_changed.emit(true)
+	return true
+
+
+## Pide recuperar el tamano: vuelve ya si cabe; si no, queda pedido y vuelve solo
+## en cuanto haya sitio (icono «sin espacio» mientras tanto). Verdadero si volvio.
+func request_uncompress() -> bool:
+	if not _compressed:
+		return false
+	_uncompress_pending = true
+	return _try_uncompress()
+
+
+## Pulsacion de gesture_pinch: comprimido, pide el tamano (otra pulsacion con la
+## vuelta pedida la cancela); si no, intenta comprimirse.
+func _update_compress_request() -> void:
+	if input == null or not input.pinch_pressed:
+		return
+	if not _compressed:
+		compress()
+	elif _uncompress_pending:
+		_uncompress_pending = false
+	else:
+		request_uncompress()
+
+
+func _try_uncompress() -> bool:
+	if not _compressed or not _uncompress_pending or is_dead() or not has_room_to_uncompress():
+		return false
+	_compressed = false
+	_uncompress_pending = false
+	_apply_hitbox_shape()
+	compress_changed.emit(false)
+	EventBus.compress_changed.emit(false)
+	return true
+
+
+## Vuelta pedida (si ya cabe), aplastado del sprite e icono «sin espacio».
+func _update_compress(delta: float) -> void:
+	if _uncompress_pending:
+		_try_uncompress()
+	var target: float = 1.0 if _compressed else 0.0
+	_compress_amount = move_toward(_compress_amount, target, delta / maxf(abilities.compress_squash_s, 0.001))
+	_update_compress_pose()
+	if _compress_effect != null:
+		_compress_effect.set_blocked(_compressed and _uncompress_pending and not is_dead())
+		_compress_effect.advance(delta, get_hitbox_size().y)
+
+
+## Pose PROVISIONAL: el sprite se aplasta (compress.visual.squash_scale) con los
+## pies quietos, sobre los cuadros del estado. La pose del golpe al suelo tiene
+## preferencia (no coinciden: comprimido no hay golpe).
+func _update_compress_pose() -> void:
+	if is_ground_pounding():
+		_compress_pose_applied = false
+		return
+	if _compress_amount <= 0.0:
+		if _compress_pose_applied:
+			_restore_sprite_shape()
+			_compress_pose_applied = false
+		return
+	var raw: Variant = abilities.compress_visual.get("squash_scale", [1.15, 0.5])
+	var squash := Vector2(1.15, 0.5)
+	if raw is Array and (raw as Array).size() == 2:
+		squash = Vector2(float(raw[0]), float(raw[1]))
+	var k: Vector2 = Vector2.ONE.lerp(squash, _compress_amount)
+	_sprite.scale = _sprite_base_scale * k
+	_sprite.position = Vector2(_sprite_base_position.x, _sprite_base_position.y * k.y)
+	_compress_pose_applied = true
+
+
+func _apply_hitbox_shape() -> void:
+	var shape: CapsuleShape2D = _compressed_shape if _compressed else _normal_shape
+	if shape == null:
+		return
+	_hitbox.shape = shape
+	_hitbox.position = Vector2(0.0, -shape.height * 0.5)
+
+
+## Reaparecer: tamano normal de golpe, sin vuelta pedida ni icono.
+func _reset_compress() -> void:
+	var was: bool = _compressed
+	_compressed = false
+	_uncompress_pending = false
+	_compress_amount = 0.0
+	_apply_hitbox_shape()
+	if _compress_pose_applied:
+		_restore_sprite_shape()
+		_compress_pose_applied = false
+	if _compress_effect != null:
+		_compress_effect.clear()
+	if was:
+		compress_changed.emit(false)
+		EventBus.compress_changed.emit(false)
+
+
 # --- Ocultarte (Pulso 4, tanda M2; HideMode, data/hide_mode.json) ---
 
 ## Corre de verdad: run mantenido y sin el Ocultarte (oculto solo camina).
 func is_running() -> bool:
-	return input != null and input.run_held and not is_hidden()
+	return input != null and input.run_held and not is_hidden() and not _compressed
 
 
 ## El Ocultarte esta activo en este Isak.
@@ -1278,11 +1486,13 @@ func update_air_animation() -> void:
 
 
 func _setup_shapes() -> void:
-	var capsule := CapsuleShape2D.new()
-	capsule.radius = hitbox_size.x * 0.5
-	capsule.height = hitbox_size.y
-	_hitbox.shape = capsule
-	_hitbox.position = Vector2(0.0, -hitbox_size.y * 0.5)
+	_normal_shape = CapsuleShape2D.new()
+	_normal_shape.radius = hitbox_size.x * 0.5
+	_normal_shape.height = hitbox_size.y
+	_compressed_shape = CapsuleShape2D.new()
+	_compressed_shape.radius = minf(abilities.compress_width_px, abilities.compress_height_px) * 0.5
+	_compressed_shape.height = abilities.compress_height_px
+	_apply_hitbox_shape()
 	var circle := CircleShape2D.new()
 	circle.radius = abilities.pulse_radius_px
 	_pulse_shape.shape = circle
@@ -1347,7 +1557,7 @@ func _setup_scroll_camera() -> void:
 ## y el borde que dana, y el aviso.
 func _update_scroll(delta: float) -> void:
 	_camera.global_position = _scroll_camera.update(global_position, WorldTime.scaled_delta(delta))
-	var head: float = global_position.y - hitbox_size.y
+	var head: float = global_position.y - get_hitbox_size().y
 	if not _warping:
 		var ceiling: float = _scroll_camera.ceiling_y()
 		if head < ceiling:
@@ -1356,7 +1566,7 @@ func _update_scroll(delta: float) -> void:
 			head = ceiling
 		if not is_dead() and not _facing_back and _scroll_camera.touches_edge(global_position, head):
 			_hit_scroll_edge()
-	_scroll_overlay.advance(delta, global_position, global_position.y - hitbox_size.y)
+	_scroll_overlay.advance(delta, global_position, global_position.y - get_hitbox_size().y)
 
 
 ## Borde que dana (docs/propuesta-mundo-2.md §3.2): -edge_damage de Sync Rate

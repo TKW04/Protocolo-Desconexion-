@@ -239,7 +239,12 @@ func _below_ceiling(target: Vector2, feet: Vector2) -> float:
 	var clear: float = float(_data.get("ceiling_clear_px", 0))
 	if clear <= 0.0 or not is_inside_tree():
 		return target.y
-	var from := Vector2(target.x, feet.y - float(_data.get("ceiling_probe_from_px", 56)))
+	var probe: float = float(_data.get("ceiling_probe_from_px", 56))
+	# Isak comprimido (Pellizcar, 2026-10-26): el rayo empieza dentro de su caja
+	# baja, para que en un hueco de 1 tile Eco quede dentro y no sobre el techo.
+	if _valid_isak():
+		probe = minf(probe, _isak.get_hitbox_size().y + 8.0)
+	var from := Vector2(target.x, feet.y - probe)
 	var to := Vector2(target.x, target.y - clear)
 	if to.y >= from.y:
 		return target.y

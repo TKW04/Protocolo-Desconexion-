@@ -18,6 +18,6 @@ static func find_isak(from: Node) -> Isak:
 
 ## Rectangulo aproximado del cuerpo de Isak (pies en su origen), en coordenadas globales.
 static func isak_body_rect(isak: Isak) -> Rect2:
-	var size: Vector2 = isak.hitbox_size
+	var size: Vector2 = isak.get_hitbox_size()
 	var feet: Vector2 = isak.global_position
 	return Rect2(feet.x - size.x * 0.5, feet.y - size.y, size.x, size.y)

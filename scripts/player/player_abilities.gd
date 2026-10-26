@@ -32,6 +32,10 @@ const DASH_KEYS: PackedStringArray = ["distance_px", "duration_s", "invulnerable
 const POUND_KEYS: PackedStringArray = ["air_hold_s", "ground_hold_s", "anticipation_s", "drop_speed_px_s",
 	"ground_hop_px", "wave_half_width_px", "wave_height_px", "wave_below_px", "damage", "land_pose_s",
 	"cooldown_s", "energy_cost"]
+## Claves numericas de la seccion opcional compress (propiedad compress_<clave>;
+## Pellizcar, docs/propuesta-mundo-3.md §3.3.1).
+const COMPRESS_KEYS: PackedStringArray = ["width_px", "height_px", "squash_s", "walk_speed_px_s",
+	"jump_height_px", "energy_cost"]
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -93,6 +97,19 @@ var pound_cooldown_s: float = 0.4
 var pound_energy_cost: float = 0.0
 ## Aspecto provisional del golpe (ground_pound.visual).
 var pound_visual: Dictionary = {}
+## Pellizcar (seccion compress, opcional; 2026-10-26, docs/propuesta-mundo-3.md
+## §3.3.1, valores provisionales): caja comprimida (ancho y alto, pies abajo),
+## tiempo del aplastado del sprite, velocidad al andar (sin correr), altura del
+## salto (la gravedad no cambia) y energia (0: gratis).
+var compress_width_px: float = 32.0
+var compress_height_px: float = 40.0
+var compress_squash_s: float = 0.15
+var compress_walk_speed_px_s: float = 160.0
+var compress_jump_height_px: float = 96.0
+var compress_energy_cost: float = 0.0
+## Aspecto provisional (compress.visual): escala del sprite comprimido e icono
+## «sin espacio».
+var compress_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -160,6 +177,19 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var pound_visual: Variant = (pound as Dictionary).get("visual", {})
 	if pound_visual is Dictionary:
 		abilities.pound_visual = pound_visual
+	var compress: Variant = data.get("compress", {})
+	if not compress is Dictionary:
+		return _fail("PlayerAbilities: la clave 'compress' en '%s' debe ser un objeto." % source)
+	for key: String in COMPRESS_KEYS:
+		if not (compress as Dictionary).has(key):
+			continue
+		var value: Variant = compress[key]
+		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+			return _fail("PlayerAbilities: la clave 'compress.%s' en '%s' debe ser numerica." % [key, source])
+		abilities.set("compress_" + key, float(value))
+	var compress_visual: Variant = (compress as Dictionary).get("visual", {})
+	if compress_visual is Dictionary:
+		abilities.compress_visual = compress_visual
 	return abilities
 
 

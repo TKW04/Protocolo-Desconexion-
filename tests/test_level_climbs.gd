@@ -488,3 +488,76 @@ func test_rooftop_climbs_of_the_calc_room_are_measured() -> void:
 	for pair: String in ["9->7", "7->5", "5->3"]:
 		assert_true(roof.has(pair), "Subida %s del cuarto de Calc en %s (%s)" % [pair, CLIMBS_PATH, roof])
 	assert_true(shaft, "Salida del hueco de la izquierda a la azotea (fila 11 -> 9)")
+
+
+## Pellizcar (paso 1 de docs/propuesta-mundo-3.md §8, 2026-10-26): subidas con Isak COMPRIMIDO (caja 32 x 40,
+## salto de ~96 px, gravedad igual) en un mundo de prueba con un escalon de 1 tile y otro de 2. Desde parado
+## pegado al escalon y llegando andando desde 2 tiles atras (saltando a 40 px del borde): el de 1 tile se sube
+## siempre sin tocar techo; el de 2, nunca. Es lo que el validador del Mundo 3 (paso 8) debe suponer para la caja
+## comprimida.
+func test_compressed_isak_climbs_one_tile_but_not_two() -> void:
+	var was: bool = GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS)
+	GameState.set_ability_unlocked(GameState.ABILITY_COMPRESS, true)
+	var steps: Array = [{"x": 512.0, "tiles": 1}, {"x": 512.0, "tiles": 2}]
+	var report: Array[String] = []
+	for step: Dictionary in steps:
+		for variant: String in ["despegue", "atras"]:
+			var res: Dictionary = await _compressed_climb(float(step["x"]), int(step["tiles"]), variant)
+			report.append("%d tile(s) %s: %s" % [int(step["tiles"]), variant, res])
+			if int(step["tiles"]) == 1:
+				assert_true(res["landed"], "Comprimido sube 1 tile (%s): %s" % [variant, res])
+				assert_false(res["ceiling"], "Sin tocar techo (%s)" % variant)
+				assert_gt(float(res["rise"]), T + 8.0, "Con holgura sobre el borde (%s)" % variant)
+			else:
+				assert_false(res["landed"], "Comprimido NO sube 2 tiles (%s): %s" % [variant, res])
+	GameState.set_ability_unlocked(GameState.ABILITY_COMPRESS, was)
+	gut.p("\n".join(report))
+
+
+## Un salto comprimido contra un escalon de `tiles` tiles que empieza en `step_x` (suelo en y = 0). Devuelve si
+## aterriza encima, si toca un techo y lo que suben los pies.
+func _compressed_climb(step_x: float, tiles: int, variant: String) -> Dictionary:
+	var sim := IsakSim.new(DT)
+	var world: Node2D = sim.build_flat_world()
+	var body := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(512.0, tiles * T)
+	shape.shape = rect
+	body.add_child(shape)
+	body.position = Vector2(step_x + 256.0, -tiles * T * 0.5)
+	world.add_child(body)
+	add_child(world)
+	sim.take_manual_control()
+	var isak: Isak = sim.isak
+	await wait_physics_frames(1)
+	isak.global_position = Vector2(step_x - (BACK_PX if variant == "atras" else 17.0), 0.0)
+	sim.settle()
+	sim.input.pinch_pressed = true
+	sim.step(_compress_frames(isak))
+	var res := {"landed": false, "ceiling": false, "rise": 0.0}
+	if not isak.is_compressed():
+		world.free()
+		return res
+	sim.input.move_axis = 1.0
+	if variant == "atras":
+		sim.step_until(func() -> bool: return isak.global_position.x >= step_x - 40.0, MAX_FRAMES)
+	sim.press_jump()
+	var top: float = 0.0
+	for i: int in MAX_FRAMES:
+		top = minf(top, isak.global_position.y)
+		if isak.velocity.y < 0.0 and isak.is_on_ceiling():
+			res["ceiling"] = true
+		sim.step()
+		if isak.is_on_floor() and isak.velocity.y >= 0.0 and i > 2:
+			break
+	sim.input.move_axis = 0.0
+	res["rise"] = -top
+	res["landed"] = isak.is_on_floor() and absf(isak.global_position.y + tiles * T) < 2.0 \
+			and isak.global_position.x > step_x
+	world.free()
+	return res
+
+
+func _compress_frames(isak: Isak) -> int:
+	return ceili(isak.abilities.compress_squash_s / DT) + 1

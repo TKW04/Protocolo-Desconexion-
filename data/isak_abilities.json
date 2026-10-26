@@ -71,6 +71,23 @@
 			"land_scale": [1.15, 0.85]
 		}
 	},
+	"_compress_notes": "PELLIZCAR, gesto Pellizcar (habilidad GameState.ABILITY_COMPRESS; docs/propuesta-mundo-3.md §3.3.1 y decision 3 de su §9, 2026-10-26: valores PROVISIONALES, ajustar jugando). CONTROL: pulsar gesture_pinch (I / RB; reasignable en Ajustes > Controles) para comprimirse; otra pulsacion pide recuperar el tamano (interruptor, como el Ocultarte). CAJA: width_px x height_px con los pies abajo (la normal es Isak.hitbox_size, 32 x 80): cabe por un hueco de 1 tile (64 px) con 24 px de holgura. La caja cambia al instante; el sprite se aplasta (y se recupera) en squash_s. MOVIMIENTO: anda a walk_speed_px_s sin correr; salto de jump_height_px (velocidad = raiz(2 x gravedad x altura) con la gravedad de isak_physics: sube escalones de 1 tile, no de 2); gravedad igual. VOLVER AL TAMANO: si no cabe (techo encima), queda pedido y vuelve solo en cuanto hay sitio; mientras tanto, icono pequeno «sin espacio» sobre la cabeza (visual.blocked_*). energy_cost 0 (gratis). Con el Debug si. No sale: sin la habilidad, en el hub (Isak.level_mode), en Hurt, muerto, de espaldas, en un vortice, durante el dash, el golpe al suelo, el pulso o el laser. Comprimido no hay pulso, laser, dash, golpe al suelo ni Ocultarte (comprimirse apaga el Ocultarte: HideMode.REASON_COMPRESS). Un golpe quita lo de siempre y sigue comprimido. Morir y reaparecer vuelve al tamano normal (al morir queda pedido; al reaparecer, de golpe). Empezar un vortice tambien lo pide. Tiempo real (como el resto de Isak). Senales Isak.compress_changed y EventBus.compress_changed (sonidos sfx_gesture_pinch / sfx_gesture_unpinch). visual: pose PROVISIONAL por escala del sprite (squash_scale sobre los cuadros existentes, pies quietos) hasta la pose compress de AutoSprite; icono «sin espacio» (barra de techo y flecha hacia arriba) en blocked_color / blocked_edge, blocked_gap_px sobre la cabeza comprimida, parpadeo a blocked_blink_hz. Unidades: px, s, px/s, energia.",
+	"compress": {
+		"width_px": 32.0,
+		"height_px": 40.0,
+		"squash_s": 0.15,
+		"walk_speed_px_s": 160.0,
+		"jump_height_px": 96.0,
+		"energy_cost": 0.0,
+		"visual": {
+			"squash_scale": [1.15, 0.5],
+			"blocked_color": "#f2f4f8",
+			"blocked_edge": "#aeb8d2",
+			"blocked_gap_px": 14.0,
+			"blocked_size_px": 12.0,
+			"blocked_blink_hz": 2.0
+		}
+	},
 	"laser_visual": {
 		"core": "#f2f4f8",
 		"glow": "#3dfff5",

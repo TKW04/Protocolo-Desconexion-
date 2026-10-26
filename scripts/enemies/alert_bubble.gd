@@ -422,7 +422,7 @@ func _check_player(real_delta: float) -> void:
 		_has_prev = false
 		return
 	var feet: Vector2 = isak.global_position
-	var hurt := Rect2(feet + Vector2(-isak.hitbox_size.x * 0.5, -isak.hitbox_size.y), isak.hitbox_size)
+	var hurt := Rect2(feet + Vector2(-isak.get_hitbox_size().x * 0.5, -isak.get_hitbox_size().y), isak.get_hitbox_size())
 	if is_dangerous():
 		if hurt.intersects(get_damage_rect()):
 			_hit(isak)

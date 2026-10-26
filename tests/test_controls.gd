@@ -101,7 +101,7 @@ func _action(action: StringName) -> void:
 func test_remappable_actions_exclude_dev_and_ui_keys() -> void:
 	var actions: Array[StringName] = ControlBindings.actions()
 	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"gesture_swipe", &"move_down",
-		&"debug", &"hide", &"help", &"pause"] as Array[StringName])
+		&"gesture_pinch", &"debug", &"hide", &"help", &"pause"] as Array[StringName])
 	for action: StringName in actions:
 		assert_false(String(action).begins_with("ui_"))
 		assert_false([&"restart_level", &"debug_wipe_save"].has(action), "Sin teclas de pruebas")
@@ -121,6 +121,8 @@ func test_default_labels_and_glyphs() -> void:
 	assert_eq(ControlBindings.binding_label(&"move_down", font), "S / stick abajo",
 			"Mantener presionado (golpe al suelo, 2026-10-22): los eventos de move_down")
 	assert_eq(ControlBindings.action_name(&"move_down"), "Mantener presionado")
+	assert_eq(ControlBindings.binding_label(&"gesture_pinch", font), "I / RB", "Pellizcar (2026-10-26): I / RB")
+	assert_eq(ControlBindings.action_name(&"gesture_pinch"), "Pellizcar")
 	assert_eq(ControlBindings.binding_label(&"move_left", font), "A / stick a la izquierda")
 	for action: StringName in ControlBindings.actions():
 		var text: String = ControlBindings.binding_label(action, font)
@@ -298,8 +300,11 @@ func test_dash_is_remappable_and_its_notice_follows() -> void:
 	assert_true(_is_action(_key(KEY_E), &"gesture_swipe"))
 	assert_false(_is_action(_key(KEY_L), &"gesture_swipe"))
 	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / B (mando)", "El aviso se actualiza")
-	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_RIGHT_SHOULDER)), ControlBindings.Result.OK)
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / RB (mando)")
+	# RB es de Pellizcar (gesture_pinch, reasignable desde el 2026-10-26): LB sigue libre.
+	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_RIGHT_SHOULDER)), ControlBindings.Result.CONFLICT,
+			"RB es de Pellizcar")
+	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_LEFT_SHOULDER)), ControlBindings.Result.OK)
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / LB (mando)")
 	ControlBindings.restore_defaults()
 	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L / B (mando)")
 
@@ -354,8 +359,9 @@ func test_menu_capture_assigns_and_esc_cancels() -> void:
 	_tap(_button(JOY_BUTTON_START))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS, "Start tambien cancela")
 	_action(&"ui_accept")
-	_tap(_button(JOY_BUTTON_RIGHT_SHOULDER))
-	assert_true(_is_action(_button(JOY_BUTTON_RIGHT_SHOULDER), &"pulse"), "Boton de mando asignado")
+	# LB: libre (RB es de Pellizcar desde el 2026-10-26).
+	_tap(_button(JOY_BUTTON_LEFT_SHOULDER))
+	assert_true(_is_action(_button(JOY_BUTTON_LEFT_SHOULDER), &"pulse"), "Boton de mando asignado")
 	assert_true(get_tree().paused, "Todo con el juego en pausa")
 
 
