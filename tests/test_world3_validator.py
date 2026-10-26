@@ -2,6 +2,10 @@
 los espejos fijos del Mundo 3 «La Vitrina» (tools/world3_model.py). Las salas de los pasos 2-5 y 7 validan (con
 el camino exportado) y los negativos sinteticos fallan como deben: umbral sin publicacion, filtro obligatorio sin
 Debug o sin energia, espejo de 4 rebotes, hueco de 1 fila sin Pellizcar y la regla de diseno de §3.3.2.
+Paso 8b (2026-10-26): espejo cazador, Reflejo falso, placas y puertas de marco, Influencer, Ladron y
+requires_abilities; la sala reflejo_test valida y los negativos (reflejo que alcanza a Isak si se para, puerta que
+se cierra sin el reflejo, receptor que el cazador nunca mira, robo del Ladron, salto preciso en la ceguera del flash)
+fallan; un secreto con requires_abilities no cuenta como inalcanzable sin la habilidad.
 Uso: python3 -m unittest tests/test_world3_validator.py
 """
 
@@ -61,10 +65,10 @@ class PinchedNodeTest(unittest.TestCase):
 
 
 class RoomsTest(unittest.TestCase):
-    """Las salas del Mundo 3 de los pasos 2-5 y 7 validan y exportan su camino."""
+    """Las salas del Mundo 3 de los pasos 2-7 validan y exportan su camino."""
 
     def test_rooms_validate_and_export(self):
-        for name in ("likes_test", "recorte_test", "filtro_test", "espejos_test", "vitrina_test"):
+        for name in ("likes_test", "recorte_test", "filtro_test", "espejos_test", "vitrina_test", "reflejo_test"):
             export = []
             result = run(load(name), export)
             self.assertTrue(result["ok"], "%s: %s" % (name, messages(result)))
@@ -183,8 +187,10 @@ class LikesTest(unittest.TestCase):
         pubs = [i for i, st in enumerate(steps) if st["action"] == "pulse"
                 and st.get("target", {}).get("type") == "like_source"]
         self.assertEqual(len(pubs), 2)
+        # Paso 8b: el Ladron se acerca durante la espera; el plan la parte con pulsos que lo aturden.
         waits = [st for st in steps[pubs[0]:pubs[1]] if st["action"] == "wait"]
-        self.assertTrue(waits and waits[0]["seconds"] >= 8.0, steps[pubs[0]:pubs[1] + 1])
+        self.assertTrue(waits and sum(w["seconds"] for w in waits) >= 8.0 - 1e-6, steps[pubs[0]:pubs[1] + 1])
+        self.assertEqual(result["world3"]["enemies"][1]["thefts"], 0)
 
     def test_threshold_without_publication_fails(self):
         # Diez corazones y ninguna publicacion: el camino llega, pero perder likes bloquearia el nivel.
@@ -322,6 +328,219 @@ class MirrorTest(unittest.TestCase):
         set_cell(level, 23, 9, ".")
         result = run(level, schema=False)
         self.assertTrue(any("reflejo_1" in m and "no se ve" in m for m in messages(result)), messages(result))
+
+
+def flat_room(width, objects, enemies=(), abilities=None, grid_edit=None, rows=12):
+    """Sala sintetica plana: suelo en la fila 10, P en (2, 9) y G en (width - 4, 9) con su terminal encima."""
+    grid = ["#" * width] + ["#" + "." * (width - 2) + "#" for _ in range(9)] + ["#" * width for _ in range(rows - 10)]
+    gc = width - 4
+    grid[9] = grid[9][:2] + "P" + grid[9][3:gc] + "G" + grid[9][gc + 1:]
+    level = {"id": "w3_sintetica", "name": "Mundo 3 (sintetica)", "world": 3, "tile_size": 64, "debug_color": "green",
+             "abilities_available": dict(abilities or {"pulse": True}), "checkpoints": [], "secrets": [],
+             "enemies": list(enemies), "unlocks": [], "grid": grid,
+             "objects": list(objects) + [{"type": "exit_terminal", "x": gc, "y": 8,
+                                          "params": {"id": "t", "width_tiles": 1, "height_tiles": 2}}]}
+    if grid_edit:
+        grid_edit(level)
+    return level
+
+
+def reflection_stop_room(pulse):
+    """Sala del Reflejo falso que acaba en una terminal con cuenta de 3 s dentro de su sala: Isak se para."""
+    level = flat_room(30, [{"type": "mirror_wall", "x": 10, "y": 4,
+                            "params": {"id": "pared", "width_tiles": 4, "height_tiles": 5}}],
+                      [{"id": "reflejo", "type": "false_reflection", "x": 12, "y": 9,
+                        "params": {"mirror_wall": "pared", "zone": [8, 2, 21, 8]}}],
+                      abilities={"pulse": pulse})
+    level["objects"][-1]["params"]["countdown_s"] = 3.0
+    return level
+
+
+class ReflectionTest(unittest.TestCase):
+    def test_reflejo_room_hunter_reflection_and_doors(self):
+        export = []
+        result = run(load("reflejo_test"), export)
+        self.assertTrue(result["ok"], messages(result))
+        w3 = result["world3"]
+        self.assertEqual([h["facing"] for h in w3["hunters"]], ["e"])
+        doors = {d["id"]: d for d in w3["enemies"] if d["kind"] == "frame_door"}
+        for door in ("puerta_1", "puerta_2"):
+            self.assertIn("reflejo reflejo_falso", doors[door]["pressed_by"])
+            self.assertIsNotNone(doors[door]["crossed_at_s"])
+        refl = next(e for e in w3["enemies"] if e["kind"] == "false_reflection")
+        self.assertGreaterEqual(refl["min_gap_tiles"], 1.0)
+        steps = export[0]["steps"]
+        via = [st for st in steps if st.get("target", {}).get("via_hunter")]
+        self.assertEqual(via[0]["target"]["via_hunter"]["id"], "cazador")
+        self.assertEqual(via[0]["target"]["via_hunter"]["facing"], "e")
+
+    def test_hunter_that_must_turn_waits(self):
+        # Receptor encima del cazador: solo lo mira hacia el norte, tras dos giros hacia Isak (wait_hunter).
+        level = load("reflejo_test")
+        rec = obj(level, "receptor_cazador")
+        rec["x"], rec["y"] = 11, 6
+        export = []
+        result = run(level, export, schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        steps = export[0]["steps"]
+        actions = [st["action"] for st in steps]
+        self.assertIn("wait_hunter", actions)
+        i = actions.index("wait_hunter")
+        self.assertEqual(steps[i]["target"]["facing"], "n")
+        self.assertEqual(steps[i + 1]["target"]["via_hunter"]["facing"], "n")
+        self.assertGreater(steps[i]["seconds"], 0.0)
+
+    def test_receiver_the_hunter_never_faces_fails(self):
+        # En reposo al oeste y girando hacia Isak (que llega por el oeste): nunca mira al receptor del este.
+        level = load("reflejo_test")
+        obj(level, "cazador")["params"]["facing"] = "w"
+        result = run(level, schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("cazador" in m and "receptor" in m for m in messages(result)), messages(result))
+
+    def test_door_closes_without_the_reflection(self):
+        # Sin el Reflejo falso la placa solo la pisa Isak: la puerta se cierra antes de que llegue.
+        level = load("reflejo_test")
+        level["enemies"] = []
+        set_cell(level, 23, 9, ".")
+        result = run(level, schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("puerta de marco puerta_1" in m and "cerrada" in m for m in messages(result)),
+                        messages(result))
+
+    def test_reflection_reaches_isak_when_he_stops(self):
+        result = run(reflection_stop_room(pulse=False), schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Reflejo falso reflejo" in m and "alcanza a Isak" in m for m in messages(result)),
+                        messages(result))
+
+    def test_pulse_stuns_the_reflection_when_he_stops(self):
+        export = []
+        result = run(reflection_stop_room(pulse=True), export, schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        pulses = [st for st in export[0]["steps"] if st["action"] == "pulse"
+                  and st.get("target", {}).get("type") == "false_reflection"]
+        self.assertTrue(pulses)
+        refl = next(e for e in result["world3"]["enemies"] if e["kind"] == "false_reflection")
+        self.assertEqual(refl["stuns"], 1)
+
+
+def influencer_room(**params):
+    """Influencer (columna 20, mira al oeste) y un foso de pinchos de 2 tiles (columnas 17-18) que se salta justo
+    cuando su flash ciega a Isak; sin cobertura y lejos del pulso al cargar."""
+    def edit(level):
+        for c in (17, 18):
+            set_cell(level, c, 10, ".")
+            set_cell(level, c, 11, "^")
+    p = {"facing": -1}
+    p.update(params)
+    return flat_room(32, [], [{"id": "influencer", "type": "influencer_bot", "x": 20, "y": 9, "params": p}],
+                     grid_edit=edit)
+
+
+class InfluencerTest(unittest.TestCase):
+    def test_precise_jump_during_the_blindness_fails(self):
+        result = run(influencer_room(), schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Influencer influencer" in m and "salto preciso" in m for m in messages(result)),
+                        messages(result))
+
+    def test_short_sight_is_fine(self):
+        # Con 2 tiles de vista solo lo ve al aterrizar junto a el y lo deja atras antes del flash.
+        result = run(influencer_room(sight_tiles=2), schema=False)
+        self.assertTrue(result["ok"], messages(result))
+
+    def test_vitrina_influencer_is_covered(self):
+        result = run(load("vitrina_test"))
+        inf = next(e for e in result["world3"]["enemies"] if e["kind"] == "influencer_bot")
+        self.assertEqual(inf["flashes"], 0)
+        self.assertGreaterEqual(inf["charges"], 1)
+
+
+def thief_tunnel_room():
+    """Pellizcar desde el inicio, publicacion y corazones antes de un tunel de 1 fila (columnas 12-19) con el Ladron
+    dentro; la salida esta en una repisa a la que solo se sube por una plataforma de likes de umbral 5."""
+    def edit(level):
+        for r in range(1, 9):
+            for c in range(12, 20):
+                set_cell(level, c, r, "#")
+        for r in range(6, 10):
+            for c in range(25, 29):
+                set_cell(level, c, r, "#")
+        set_cell(level, 26, 9, "#")
+        set_cell(level, 26, 5, "G")
+        level["grid"][9] = level["grid"][9].replace("G", ".")
+        level["objects"][-1].update({"x": 26, "y": 4})
+    objects = [{"type": "heart_pickup", "x": 4 + i, "y": 9, "params": {"id": "corazon_%d" % i}} for i in range(5)]
+    objects += [{"type": "like_source", "x": 9, "y": 9, "params": {"id": "pub"}},
+                {"type": "like_platform", "x": 22, "y": 8, "params": {"id": "likes_5", "threshold": 5}}]
+    return flat_room(30, objects, [{"id": "ladron", "type": "like_thief", "x": 17, "y": 9,
+                                    "params": {"patrol_range_px": 128}}],
+                     abilities={"pulse": True, "compress": True}, grid_edit=edit)
+
+
+class ThiefTest(unittest.TestCase):
+    def test_vitrina_stuns_the_thief(self):
+        export = []
+        result = run(load("vitrina_test"), export)
+        self.assertTrue(result["ok"], messages(result))
+        thief = next(e for e in result["world3"]["enemies"] if e["kind"] == "like_thief")
+        self.assertEqual(thief["thefts"], 0)
+        self.assertGreaterEqual(thief["stuns"], 1)
+        self.assertTrue(any(st.get("target", {}).get("type") == "like_thief" for st in export[0]["steps"]))
+
+    def test_path_that_only_passes_if_the_thief_steals_fails(self):
+        # Comprimido en el tunel no hay pulso: el Ladron alcanza a Isak con likes.
+        result = run(thief_tunnel_room(), schema=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("Ladron de likes ladron" in m and "roba" in m for m in messages(result)), messages(result))
+
+
+def secret_room(requires=None):
+    """Sala de pinch_room sin Pellizcar: la meta en la zona de inicio y un secreto tras el tunel de 1 fila."""
+    level = pinch_room(tunnel=5)
+    level["abilities_available"] = {"pulse": True}
+    width = len(level["grid"][0])
+    gc = width - 3
+    level["grid"][5] = level["grid"][5][:gc] + "S" + level["grid"][5][gc + 1:]
+    level["grid"][5] = level["grid"][5][:5] + "G" + level["grid"][5][6:]
+    level["objects"] = [{"type": "exit_terminal", "x": 5, "y": 4, "params": {"id": "t", "width_tiles": 1,
+                                                                              "height_tiles": 2}}]
+    secret = {"id": "secreto_marco", "x": gc, "y": 5, "reward": "attention_points"}
+    if requires:
+        secret["requires_abilities"] = list(requires)
+    level["secrets"] = [secret]
+    return level
+
+
+class RequiresAbilitiesTest(unittest.TestCase):
+    def test_secret_needing_a_later_gesture_is_not_an_error(self):
+        result = run(secret_room(["compress"]), schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        item = next(i for i in result["secrets"]["items"] if i["id"] == "secreto_marco")
+        self.assertTrue(item["reachable"])
+        self.assertFalse(item["reachable_without_abilities"])
+        self.assertIn("con compress se alcanza", validate_level.format_text("x", result))
+
+    def test_without_the_field_it_is_unreachable(self):
+        result = run(secret_room(), schema=False)
+        self.assertTrue(any("secreto_marco" in m and "no se alcanza" in m for m in messages(result)), messages(result))
+
+    def test_wrong_ability_is_still_an_error(self):
+        result = run(secret_room(["dash"]), schema=False)
+        self.assertTrue(any("secreto_marco" in m and "ni con dash" in m for m in messages(result)), messages(result))
+
+    def test_schema_accepts_requires_abilities_and_compress(self):
+        import validate_level_schema
+        self.assertIn("compress", validate_level_schema.KNOWN_ABILITIES)
+        level = load("recorte_test")
+        level["abilities_available"]["compress"] = False
+        self.assertEqual(validate_level_schema.validate_level(level, ROOT), [])
+        level = load("likes_test")
+        bad = {"id": "s", "x": 1, "y": 1, "requires_abilities": ["volar"]}
+        level["secrets"] = [bad]
+        errs = validate_level_schema.validate_level(level, ROOT)
+        self.assertTrue(any("requires_abilities" in e for e in map(str, errs)), errs)
 
 
 class OutputTest(unittest.TestCase):

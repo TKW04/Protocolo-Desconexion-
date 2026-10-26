@@ -29,11 +29,11 @@ salida del 1-1 al 2-3 y de las arenas es identica byte a byte). Modela:
     pulso de espaldas -> 0) son acciones de la progresion (like_gates, aparte de model.gates: no son puertas
     obligatorias). La progresion solo usa una publicacion mientras quede un umbral normal por cumplir y el reset
     mientras haya una plataforma inversa apagada; no repite una accion que deja el mismo estado en el mismo
-    sitio. Abilities_available.compress lo admite el modelo, pero el esquema aun no (KNOWN_ABILITIES): por ahora
-    Pellizcar llega por la herramienta. Plataformas de likes
+    sitio. Abilities_available.compress tambien da Pellizcar (en KNOWN_ABILITIES del esquema desde el paso 8b).
+    Plataformas de likes
     (like_platform): tabla de card_height_px arriba de su celda, encendida con likes >= threshold (invert:
-    likes < threshold); one_way, solo apoyo. Las perdidas por golpe y el Ladron no se modelan aqui (el camino no
-    recibe golpes; el Ladron es del paso 8b). Regla anti-atasco: cada plataforma de likes que pisa el camino
+    likes < threshold); one_way, solo apoyo. Las perdidas por golpe no se modelan (el camino no recibe golpes; el
+    Ladron, paso 8b, mas abajo). Regla anti-atasco: cada plataforma de likes que pisa el camino
     tiene una publicacion alcanzable SIN likes desde el ultimo punto de sincronizacion (o P) antes de ella. En
     el grafo de los soft-locks (regla 7) entran las publicaciones y el reset (no los corazones: conservador).
   - Filtros (§3.2): dentro de un filtro fijo, la franja de cada peligro oculto (pincho '^' o fake_floor; la
@@ -53,13 +53,49 @@ salida del 1-1 al 2-3 y de las arenas es identica byte a byte). Modela:
     (puentes, plataformas del reflejo) y el objetivo (lector laser, interruptor laser, anuncio, Posponer,
     Burbuja). Asi el acertijo lector -> receptor enlazado -> puente funciona por espejos. Salida por lector:
     desde donde, cuantos rebotes y cuanto alcance; un lector que solo se alcanzaria con mas de 3 rebotes es un
-    error. El espejo cazador congelado es del paso 8b.
+    error. El espejo cazador, paso 8b (mas abajo).
   - Plataformas del reflejo (mirror_only): solidas para el grafo (tabla de height_px arriba de su celda); el
     validador comprueba que cada una se ve en su pared de espejo mas cercana (reflejada dentro del cristal) y
     que, si el camino la pisa, la pared esta a la vista (VIEW_TILES / 2 columnas) desde donde salta.
 
-Ganchos del paso 8b (sin modelar todavia): Influencer y Ladron (amenazas evitables: la salida los nombra),
-espejo cazador, Reflejo falso, placas «Posa aqui» y requires_abilities.
+Paso 8b (2026-10-26, §7.1): enemigos, espejo cazador, Reflejo falso, placas y puertas de marco.
+
+  - Espejo cazador (hunter_mirror, §3.6): indestructible y sin colision. Con Isak (centro de su caja) a
+    <= track_radius_tiles gira 45 grados hacia el cada turn_interval_s (0,6 s); fuera de su radio vuelve a la
+    orientacion de reposo (facing). EL PULSO REFLEJADO ES UNA ARISTA: un receptor (puente con receiver o
+    relay_receiver) tambien se activa si el pulso de Isak alcanza al cazador y su haz (beam_tiles, cortado por el
+    terreno, grosor beam_width_px) en una orientacion que pueda tener en ese momento toca el receptor
+    (LevelModel.receiver_hits). Orientaciones posibles desde una celda de pie: la de reposo si Isak esta fuera
+    del radio o llega a pulsarlo antes del primer giro (le sobra HUNTER_APPROACH_FRACTION del intervalo andando
+    desde el borde del radio) y las del giro hacia Isak (esperando quieto). El plan simula la orientacion por
+    tiempo desde que Isak entra en su radio y, si al pulsarlo aun no mira al receptor, inserta una espera
+    wait_hunter (o es un error si no llegara a mirarlo). LASER: se refleja en el cazador hacia donde mira desde
+    las celdas fuera de su radio (en reposo) si la orientacion es horizontal o vertical; desde dentro del radio o
+    en diagonal el cazador para el disparo (congelarlo con el pulso para disparar desde dentro no se modela:
+    conservador).
+  - Placas «Posa aqui» (pose_plate) y puertas de marco (frame_door): la puerta es solida en el grafo hasta que
+    Isak pisa una de sus placas (accion de la progresion «plate:<id>», como los likes); el plan comprueba el
+    tiempo: placa pisada por Isak o por el Reflejo falso, hold_s (0,3 s) de mas, apertura de open_s (0,2 s;
+    solida mientras se abre), aviso de close_warn_frames antes de cerrarse y nunca con alguien en el hueco. Si la
+    puerta aun esta cerrada cuando el camino llega, espera wait_reflection delante (el reflejo pisa la placa con
+    su retraso); si no se abriria a tiempo, error.
+  - Reflejo falso (false_reflection): en su sala (zone) sale al cruzar Isak el eje de su pared de espejo, espera
+    delay_s en el punto de cruce sin danar y despues repite la posicion de Isak de hace delay_s (1 s; con el Debug
+    el retraso real crece: no se modela, se usa 1 s). Regla: con el reflejo activo y sin aturdir,
+    |Isak(t) - Isak(t - 1 s)| >= REFLECTION_GAP_TILES (1 tile). Si no se cumple, el plan aturde al reflejo con un
+    pulso desde una celda de pie (3 s, sigue pisando la placa) o es un error.
+  - Influencer bot: linea de vision con terreno (franja de sight_band_px a la altura de la lente, sight_tiles,
+    facing, rayo de la lente a Isak cortado por solidos y tablas). Si al terminar la carga (0,75 s) aun ve a Isak,
+    el flash ciega veil_hold_s + veil_fade_s (1,5 s) sin dano; ningun salto o caida «preciso» (exigencia mayor que
+    BLIND_JUMP_MAX) puede empezar durante la ceguera: el plan aturde al bot con el pulso antes del flash (desde
+    una celda de pie) o es un error. Taparse o salir de su vista durante la carga lo resuelve.
+  - Ladron de likes: patrulla, aviso, persecucion a chase_speed_px_s dentro de su correa, huida y busqueda (sin
+    likes), en 1D por su fila. Robo = contacto persiguiendo con likes > 0 y sin dash: el plan lo aturde antes con
+    el pulso (desde una celda de pie) o es un error (0 robos en la solucion).
+  - Secretos con requires_abilities (LevelModel / Validator): se comprueban con esas habilidades (como si el
+    nivel las diera) y sin ellas no cuentan como inalcanzables.
+  Camino exportado: wait_hunter, wait_reflection y pulsos a influencer_bot / like_thief / false_reflection; el
+  pulso al cazador lleva target.via_hunter {id, facing}.
 """
 import copy
 import json
@@ -69,6 +105,7 @@ import os
 EPS = 1e-6
 INF = float("inf")
 SIM_DT = 1.0 / 60.0
+DT_SIM = SIM_DT
 # Paso del muestreo de posiciones de pie dentro de una celda (el de validate_level.PULSE_SAMPLE_PX).
 SAMPLE_PX = 4.0
 # Coste extra en la busqueda de cada movimiento comprimido (recuperar el tamano en cuanto se pueda).
@@ -86,11 +123,32 @@ BLIND_ABOVE_TILES = 2
 # Rebotes que se prueban para explicar un lector fuera del limite (mirror.max_bounces).
 DIAG_BOUNCES = 8
 
-WORLD3_TYPES = ("heart_pickup", "like_source", "like_platform", "like_reset", "crop_tool", "filter_zone",
-                "small_frame", "mirror", "mirror_wall", "mirror_only")
 ENEMIES_8B = ("influencer_bot", "like_thief", "false_reflection")
 OBJECTS_8B = ("hunter_mirror", "pose_plate", "frame_door")
+WORLD3_TYPES = ("heart_pickup", "like_source", "like_platform", "like_reset", "crop_tool", "filter_zone",
+                "small_frame", "mirror", "mirror_wall", "mirror_only") + OBJECTS_8B
 LIKE_KINDS = ("heart", "like_source", "like_reset")
+# Acciones de la progresion del Mundo 3 (los likes y, paso 8b, pisar una placa «Posa aqui»).
+ACTION_KINDS = LIKE_KINDS + ("plate",)
+# --- Paso 8b ---
+FACINGS = ("e", "ne", "n", "nw", "w", "sw", "s", "se")
+# Exigencia (max(h, v)) a partir de la cual un salto o una caida es «preciso» y no puede empezar con la ceguera del
+# flash (decision del paso 8b: la mitad del alcance; los saltos cortos y las bajadas se hacen a ciegas).
+BLIND_JUMP_MAX = 0.5
+# El cazador aun mira a su reposo si Isak llega a pulsarlo andando desde el borde de su radio en esta fraccion del
+# intervalo de giro (el plan lo comprueba con el tiempo exacto).
+HUNTER_APPROACH_FRACTION = 0.75
+# Al pulsar el cazador no debe estar a punto de girar (s antes del giro).
+HUNTER_TURN_MARGIN_S = 0.1
+# Espera maxima (s) que se prueba para que el cazador mire al receptor o una puerta de marco se abra.
+MAX_WAIT_S = 6.0
+# Correcciones maximas del plan (pulsos y esperas insertados) por pasada.
+MAX_FIXES = 24
+# Margen (s) de las esperas por una puerta de marco (dos cuadros).
+WAIT_MARGIN_S = 2.0 / 60.0
+# Distancia minima (tiles) entre Isak y donde estaba 1 s antes con el Reflejo falso activo (§7.1).
+REFLECTION_GAP_TILES = 1.0
+WAIT_KINDS = ("wait", "wait_hunter", "wait_reflection")
 
 
 class Pinched(tuple):
@@ -135,7 +193,60 @@ def has_world3(level):
     abilities = level.get("abilities_available", {}) or {}
     if abilities.get("compress"):
         return True
+    if any(isinstance(e, dict) and e.get("type") in ENEMIES_8B for e in level.get("enemies", [])):
+        return True
     return any(isinstance(o, dict) and o.get("type") in WORLD3_TYPES for o in level.get("objects", []))
+
+
+def facing_vector(index):
+    a = float(index % 8) * math.pi * 0.25
+    return math.cos(a), -math.sin(a)
+
+
+def index_for_vector(dx, dy):
+    if abs(dx) < EPS and abs(dy) < EPS:
+        return 0
+    return int(round(math.atan2(-dy, dx) / (math.pi * 0.25))) % 8
+
+
+def step_toward(cur, target):
+    diff = (target - cur) % 8
+    if diff == 0:
+        return cur
+    return (cur + (1 if diff <= 4 else -1)) % 8
+
+
+def turn_path(start, target):
+    seq = [start]
+    while seq[-1] != target and len(seq) < 9:
+        seq.append(step_toward(seq[-1], target))
+    return seq
+
+
+def segment_hits_rect(a, b, rect):
+    """Liang-Barsky (HunterMirror.segment_hits_rect)."""
+    x0, y0, x1, y1 = rect[:4]
+    if x0 <= a[0] <= x1 and y0 <= a[1] <= y1:
+        return True
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    t0, t1 = 0.0, 1.0
+    for p, q in ((-dx, a[0] - x0), (dx, x1 - a[0]), (-dy, a[1] - y0), (dy, y1 - a[1])):
+        if abs(p) < 1e-9:
+            if q < 0.0:
+                return False
+            continue
+        t = q / p
+        if p < 0.0:
+            t0 = max(t0, t)
+        else:
+            t1 = min(t1, t)
+        if t0 > t1:
+            return False
+    return True
+
+
+def rects_overlap(a, b):
+    return a[0] < b[2] and a[2] > b[0] and a[1] < b[3] and a[3] > b[1]
 
 
 def lower(level, catalog):
@@ -329,10 +440,114 @@ class World3:
             vertical = str(p.get("orientation", "wall")) in ("floor", "ceiling")
             cells = [(obj["x"], obj["y"] + i) for i in range(n)] if vertical else [(obj["x"] + i, obj["y"]) for i in range(n)]
             self.small_frames.append({"id": str(p.get("id", "frame_%d_%d" % (obj["x"], obj["y"]))), "cells": set(cells)})
-        self.pending_8b = [("%s %s" % (e.get("type"), e.get("id", ""))).strip() for e in level.get("enemies", [])
-                           if e.get("type") in ENEMIES_8B]
-        self.pending_8b += ["%s %s" % (o["type"], (o.get("params") or {}).get("id", "")) for o in level.get("objects", [])
-                            if o.get("type") in OBJECTS_8B]
+        self._build_8b(level, cat, T, gate_cls)
+
+    # --- Paso 8b: construccion ---
+
+    def _enemy_data(self, kind):
+        try:
+            with open(os.path.join(self.m.rules.root, "data", "enemies", "%s.json" % kind), encoding="utf-8") as handle:
+                return json.load(handle)
+        except (OSError, ValueError):
+            return {}
+
+    def _build_8b(self, level, cat, T, gate_cls):
+        self.influencers, self.thieves, self.reflections = [], [], []
+        for e in level.get("enemies", []):
+            kind = e.get("type")
+            if kind not in ENEMIES_8B:
+                continue
+            p = dict(self._enemy_data(kind))
+            p.update(e.get("params") or {})
+            fx, fy = (e["x"] + 0.5) * T, (e["y"] + 1) * T
+            eid = str(e.get("id", "%s_%d_%d" % (kind, e["x"], e["y"])))
+            if kind == "influencer_bot":
+                bw, bh = (float(v) for v in p.get("body_size", [48.0, 120.0]))
+                self.influencers.append({
+                    "id": eid, "cell": (e["x"], e["y"]), "lens": (fx, fy - float(p.get("lens_height_px", 96.0))),
+                    "band": float(p.get("sight_band_px", 64.0)) * 0.5, "sight": float(p.get("sight_tiles", 8)) * T,
+                    "facing": int(p.get("facing", 0)),
+                    "warn": float(p.get("anticipation_frames", 9)) / float(p.get("anim_fps", 12.0)),
+                    "cooldown": float(p.get("cooldown_s", 3.0)), "stun": float(p.get("stun_s", 3.0)),
+                    "veil": float(p.get("veil_hold_s", 1.0)) + float(p.get("veil_fade_s", 0.5)),
+                    "body": (fx - bw * 0.5, fy - bh, fx + bw * 0.5, fy)})
+            elif kind == "like_thief":
+                self.thieves.append({"id": eid, "cell": (e["x"], e["y"]), "spawn": (fx, fy), "p": p})
+            else:
+                wall = next((w for w in self.mirror_walls if w["id"] == str(p.get("mirror_wall", ""))), None)
+                zone = p.get("zone")
+                zrect = None
+                if isinstance(zone, list) and len(zone) == 4:
+                    zrect = (zone[0] * T, zone[1] * T, (zone[0] + zone[2]) * T, (zone[1] + zone[3]) * T)
+                self.reflections.append({
+                    "id": eid, "cell": (e["x"], e["y"]), "wall": wall["id"] if wall else None,
+                    "axis": wall["axis"] if wall else fx, "zone": zrect, "delay": float(p.get("delay_s", 1.0)),
+                    "stun": float(p.get("stun_s", 3.0)),
+                    "emerge": float(p.get("emerge_frames", 9)) / float(p.get("anim_fps", 60.0))})
+        hcfg = cat.get("hunter_mirror", {})
+        self.hunters = []
+        for obj in level.get("objects", []):
+            if obj["type"] != "hunter_mirror":
+                continue
+            p = _params(cat, obj)
+            hit = hcfg.get("hit_rect", [0, 0, 64, 64])
+            x0, y0 = obj["x"] * T + float(hit[0]), obj["y"] * T + float(hit[1])
+            rect = (x0, y0, x0 + float(hit[2]), y0 + float(hit[3]))
+            facing = str(p.get("facing", "e"))
+            self.hunters.append({
+                "id": str(p.get("id", "hunter_%d_%d" % (obj["x"], obj["y"]))), "cell": (obj["x"], obj["y"]),
+                "rect": rect, "center": ((rect[0] + rect[2]) * 0.5, (rect[1] + rect[3]) * 0.5),
+                "rest": FACINGS.index(facing) if facing in FACINGS else 0,
+                "radius": float(p.get("track_radius_tiles", hcfg.get("track_radius_tiles", 3.0))) * T,
+                "interval": float(hcfg.get("turn_interval_s", 0.6)),
+                "warn": float(hcfg.get("warn_frames", 9)) / float(hcfg.get("anim_fps", 60.0)),
+                "freeze": float(hcfg.get("freeze_s", 3.0)), "beam": float(hcfg.get("beam_tiles", 6)) * T,
+                "beam_half": float(hcfg.get("beam_width_px", 24)) * 0.5})
+        dcfg = cat.get("frame_door", {})
+        self.doors = []
+        for obj in level.get("objects", []):
+            if obj["type"] != "frame_door":
+                continue
+            p = _params(cat, obj)
+            x, y = obj["x"], obj["y"]
+            self.doors.append({
+                "id": str(p.get("id", "door_%d_%d" % (x, y))), "cells": [(x, y + i) for i in range(3)],
+                "rect": (x * T, y * T, (x + 1) * T, (y + 3) * T), "col": x, "row": y, "plates": [],
+                "open_s": float(dcfg.get("open_s", 0.2)),
+                "warn": float(dcfg.get("close_warn_frames", 9)) / float(dcfg.get("anim_fps", 60.0))})
+        pcfg = cat.get("pose_plate", {})
+        self.plates = []
+        for obj in level.get("objects", []):
+            if obj["type"] != "pose_plate":
+                continue
+            p = _params(cat, obj)
+            x, y = obj["x"], obj["y"]
+            pid = str(p.get("id", "plate_%d_%d" % (x, y)))
+            g = gate_cls("plate:" + pid, "plate", pid, cells=[(x, y)], col=x, row=y, tile=T)
+            g.target = str(p.get("target", ""))
+            inset, tol, h = float(pcfg.get("inset_px", 8)), float(pcfg.get("press_tolerance_px", 12)), float(
+                pcfg.get("plate_height_px", 8))
+            g.press = (x * T + inset, (y + 1) * T - h - tol, (x + 1) * T - inset, (y + 1) * T + tol)
+            g.hold_s = float(pcfg.get("hold_s", 0.3))
+            g.feet_fraction = float(pcfg.get("feet_fraction", 0.5))
+            self.plates.append(g)
+            self.like_gates.append(g)
+            for d in self.doors:
+                if d["id"] == g.target:
+                    d["plates"].append(g.gid)
+        self.isak_w = self.m.rules.hitbox_w
+
+    @property
+    def keyed(self):
+        """El estado de la progresion cambia el terreno (plataformas de likes o puertas de marco)."""
+        return bool(self.like_platforms or self.plates)
+
+    @property
+    def softlock_actions(self):
+        return bool(self.pubs or self.resets or self.plates)
+
+    def door_open(self, d, state):
+        return any(gid in state for gid in d["plates"])
 
     @staticmethod
     def _blind_rects(cells, T, fid):
@@ -365,6 +580,14 @@ class World3:
         if not debug:
             for f in self.filters:
                 world.hazards.extend(f["hazards"])
+        for d in self.doors:
+            # Puerta de marco (paso 8b): solida hasta que Isak pisa una de sus placas (el plan comprueba el tiempo).
+            if self.door_open(d, state):
+                continue
+            for c, r in d["cells"]:
+                if 0 <= r < rows and 0 <= c < cols:
+                    world.solid[r][c] = True
+                    world.support[r][c] = True
 
     # --- Likes ---
 
@@ -386,12 +609,18 @@ class World3:
 
     def like_key(self, lo, hi, state):
         likes = self.likes_of(state)
-        return tuple(("likes", p["id"]) for p in self.like_platforms
-                     if not (p["span"][1] < lo or p["span"][0] > hi) and self.platform_on(p, likes))
+        key = tuple(("likes", p["id"]) for p in self.like_platforms
+                    if not (p["span"][1] < lo or p["span"][0] > hi) and self.platform_on(p, likes))
+        if self.plates:
+            key = key + tuple(("door", d["id"]) for d in self.doors
+                              if lo <= d["col"] <= hi and self.door_open(d, state))
+        return key
 
     def apply(self, state, gate):
-        """Estado tras una accion de likes (corazon, publicacion o reset)."""
+        """Estado tras una accion de likes (corazon, publicacion o reset) o una placa (paso 8b)."""
         likes = self.likes_of(state)
+        if gate.kind == "plate":
+            return state | {gate.gid}
         if gate.kind == "heart":
             return self.with_likes(state | {gate.gid}, min(self.likes_max, likes + gate.value))
         if gate.kind == "like_source":
@@ -400,7 +629,7 @@ class World3:
 
     def useful(self, gate, state):
         likes = self.likes_of(state)
-        if gate.kind == "heart":
+        if gate.kind in ("heart", "plate"):
             return gate.gid not in state
         if gate.kind == "like_source":
             return likes < min(self.normal_max, self.likes_max)
@@ -408,6 +637,8 @@ class World3:
 
     def can_act(self, gate, node, state):
         m = self.m
+        if gate.kind == "plate":
+            return (node[0], node[1]) in set(gate.cells)  # de pie en la celda de la placa
         if gate.kind == "heart":
             c, r = node
             cells = {(c, r)} if is_pinched(node) else {(c, r), (c, r - 1)}
@@ -418,7 +649,7 @@ class World3:
 
     def near(self, gate, node):
         T = self.m.T
-        if gate.kind == "heart":
+        if gate.kind in ("heart", "plate"):
             return gate.col - 1 <= node[0] <= gate.col + 1
         reach = self.m.rules.pulse_radius + T
         x = (node[0] + 0.5) * T
@@ -442,11 +673,14 @@ class World3:
         return out
 
     def extra_iterations(self):
-        return len(self.hearts) + (self.likes_max // 5 + 1) * (len(self.pubs) + len(self.resets)) + 2
+        return len(self.hearts) + (self.likes_max // 5 + 1) * (len(self.pubs) + len(self.resets)) + 2 + len(self.plates)
 
     def softlock_nexts(self, node, state):
-        """Publicaciones y reset en el grafo de los soft-locks (sin los corazones: conservador)."""
+        """Publicaciones, reset y placas en el grafo de los soft-locks (sin los corazones: conservador)."""
         out = []
+        for g in self.plates:
+            if g.gid not in state and self.can_act(g, node, state):
+                out.append((node, state | {g.gid}))
         likes = self.likes_of(state)
         for g in self.pubs + self.resets:
             if g.kind == "like_source" and likes >= self.likes_max:
@@ -625,8 +859,12 @@ class World3:
                             return 0.0
         return INF
 
-    def trace(self, w, x, y, hx, hy, rect, max_bounces=None):
-        """Trazado del laser con rebotes hasta `rect`: {"dist", "bounces", "mirrors", "points"} o None."""
+    def trace(self, w, x, y, hx, hy, rect, max_bounces=None, hunters=None):
+        """Trazado del laser con rebotes hasta `rect`: {"dist", "bounces", "mirrors", "points"} o None.
+        `hunters` (paso 8b): espejos cazadores [{"id", "rect", "center", "out": (hx, hy) o None}]: el disparo sale
+        de su centro hacia `out` (cuenta como rebote) o, con None, lo paran."""
+        if hunters:
+            return self._trace_hunters(w, x, y, hx, hy, rect, max_bounces, hunters)
         rules = self.m.rules
         max_bounces = self.max_bounces if max_bounces is None else max_bounces
         remaining = rules.laser_range
@@ -668,6 +906,74 @@ class World3:
             excluded = mirror
         return None
 
+    def _trace_hunters(self, w, x, y, hx, hy, rect, max_bounces, hunters):
+        """trace() con los espejos cazadores como reflectores (paso 8b)."""
+        rules = self.m.rules
+        max_bounces = self.max_bounces if max_bounces is None else max_bounces
+        remaining = rules.laser_range
+        half = rules.laser_thickness * 0.5
+        traveled = 0.0
+        bounces = 0
+        used = []
+        points = [(x, y)]
+        excluded = None
+        for _ in range(max_bounces + 2):
+            d_target = self._enter(rect, x, y, hx, hy, half)
+            d_wall = self._wall(w, x, y, hx, hy, remaining, half)
+            d_mirror, mirror = INF, None
+            for mi in self.mirrors + hunters:
+                if mi is excluded:
+                    continue
+                d = self._enter(mi["rect"], x, y, hx, hy, 0.0)
+                if d is not None and d < d_mirror:
+                    d_mirror, mirror = d, mi
+            if d_target is not None and d_target <= min(d_wall, d_mirror, remaining) + EPS:
+                points.append((x + hx * d_target, y + hy * d_target))
+                return {"dist": traveled + d_target, "bounces": bounces, "mirrors": used, "points": points}
+            if mirror is None or d_mirror > remaining + EPS or d_mirror >= d_wall - EPS:
+                return None
+            if bounces >= max_bounces:
+                return None
+            ax, ay = x + hx * d_mirror, y + hy * d_mirror
+            if "out" in mirror:
+                if mirror["out"] is None:
+                    return None  # cazador en una orientacion que no se modela: para el disparo
+                bx, by = mirror["center"]
+                extra = math.hypot(bx - ax, by - ay)
+                nhx, nhy = mirror["out"]
+            else:
+                bx, by, extra = self._reflection_point(ax, ay, hx, hy, mirror["center"], mirror["orient"])
+                nhx, nhy = self._reflect(hx, hy, mirror["orient"])
+            traveled += d_mirror + extra
+            remaining -= d_mirror + extra
+            if remaining <= EPS:
+                return None
+            hx, hy = nhx, nhy
+            x, y = bx, by
+            bounces += 1
+            used.append(mirror["id"])
+            points.append((x, y))
+            excluded = mirror
+        return None
+
+    def hunter_reflectors(self, node):
+        """Cazadores para el laser desde `node`: fuera de su radio miran a su reposo (si es horizontal o vertical,
+        reflejan); dentro o en diagonal, paran el disparo."""
+        out = []
+        cx, cy = self.isak_center(node)
+        for h in self.hunters:
+            out_dir = None
+            if math.hypot(cx - h["center"][0], cy - h["center"][1]) > h["radius"] + EPS and h["rest"] % 2 == 0:
+                vx, vy = facing_vector(h["rest"])
+                out_dir = (float(round(vx)), float(round(vy)))
+            out.append({"id": h["id"], "rect": h["rect"], "center": h["center"], "out": out_dir})
+        return out
+
+    def isak_center(self, node):
+        T = self.m.T
+        hh = self.cmodel.hh if is_pinched(node) else self.m.hh
+        return (node[0] + 0.5) * T, (node[1] + 1) * T - hh * 0.5
+
     def laser_shot(self, rect, node, state, debug=False, max_bounces=None):
         """Como LevelModel.laser_shot, con el trazado por espejos."""
         if is_pinched(node):
@@ -682,16 +988,87 @@ class World3:
         feet = (r + 1) * T
         py = feet + rules.phone_y
         x = c * T
+        hunters = self.hunter_reflectors(node) if self.hunters else None
         while x <= (c + 1) * T + EPS:
             if not w.collides(x, feet):
                 for facing in (1.0, -1.0):
                     px = x + rules.phone_x * facing
-                    hit = self.trace(w, px, py, facing, 0.0, rect, max_bounces)
+                    hit = self.trace(w, px, py, facing, 0.0, rect, max_bounces, hunters)
                     if hit is not None:
                         return {"x": x, "facing": facing, "dist": hit["dist"], "bounces": hit["bounces"],
                                 "mirrors": list(hit["mirrors"]), "points": hit["points"]}
             x += SAMPLE_PX
         return None
+
+    # --- Espejo cazador: pulso reflejado (paso 8b) ---
+
+    def beam_end(self, h, index, w):
+        """Fin del haz del cazador `h` mirando a `index`: beam_tiles o el primer solido (HunterMirror.get_beam_end)."""
+        T = self.m.T
+        x0, y0 = h["center"]
+        vx, vy = facing_vector(index)
+        step = 4.0
+        d = 0.0
+        while d < h["beam"] - EPS:
+            nd = min(d + step, h["beam"])
+            x, y = x0 + vx * nd, y0 + vy * nd
+            c, r = int(math.floor(x / T)), int(math.floor(y / T))
+            if (c, r) != h["cell"] and w.is_solid(c, r):
+                return x0 + vx * d, y0 + vy * d
+            d = nd
+        return x0 + vx * h["beam"], y0 + vy * h["beam"]
+
+    def beam_touches(self, h, index, rects, w):
+        a = h["center"]
+        b = self.beam_end(h, index, w)
+        g = h["beam_half"]
+        return any(segment_hits_rect(a, b, (r[0] - g, r[1] - g, r[2] + g, r[3] + g)) for r in rects)
+
+    def hunter_options(self, h, node):
+        """Orientaciones (indice, giros desde el reposo) que puede tener el cazador cuando Isak lo pulsa desde
+        `node`: fuera de su radio, el reposo; dentro, el reposo si Isak llega antes del primer giro y las del giro
+        hacia Isak (esperando quieto)."""
+        cx, cy = self.isak_center(node)
+        dx, dy = cx - h["center"][0], cy - h["center"][1]
+        dist = math.hypot(dx, dy)
+        if dist > h["radius"] + EPS:
+            return [(h["rest"], 0)]
+        seq = list(enumerate(turn_path(h["rest"], index_for_vector(dx, dy))))
+        approach = self.m.rules.walk_speed * h["interval"] * HUNTER_APPROACH_FRACTION
+        if len(seq) > 1 and h["radius"] - dist > approach:
+            seq = seq[1:]
+        return [(idx, k) for k, idx in seq]
+
+    def beam_hit(self, rects, node, state, debug=False):
+        """El pulso desde `node` alcanza un cazador cuyo haz toca `rects` en una orientacion posible:
+        {"hunter", "index", "turns", "shot"} o None."""
+        if not self.hunters or is_pinched(node) or not rects:
+            return None
+        m = self.m
+        if not m.has_pulse(state):
+            return None
+        w = m.world(state, False)
+        for h in self.hunters:
+            shot = m.pulse_shot([h["rect"]], node, state, debug)
+            if shot is None:
+                continue
+            for idx, k in self.hunter_options(h, node):
+                if self.beam_touches(h, idx, rects, w):
+                    return {"hunter": h, "index": idx, "turns": k, "shot": shot}
+        return None
+
+    def beam_step_info(self, rects, node, state):
+        """(shot, via_hunter) para el paso del plan de un pulso que llega por el cazador (o (None, None))."""
+        hit = self.beam_hit(rects, node, state)
+        if hit is None:
+            return None, None
+        return hit["shot"], {"id": hit["hunter"]["id"], "facing": FACINGS[hit["index"]], "turns": hit["turns"]}
+
+    def beam_note(self, rects, node, state):
+        hit = self.beam_hit(rects, node, state) if self.hunters else None
+        if hit is None or self.m.pulse_hits(rects, node, state):
+            return ""
+        return " (por el espejo cazador %s mirando al %s)" % (hit["hunter"]["id"], FACINGS[hit["index"]])
 
     # --- Comprobaciones tras el camino principal ---
 
@@ -703,7 +1080,7 @@ class World3:
             nodes, states = self._path_nodes(v, main)
             if self.compress_possible:
                 out["pinch"] = self._check_pinch(v, nodes, states)
-            if self.like_platforms or self.like_gates:
+            if self.like_platforms or any(g.kind in LIKE_KINDS for g in self.like_gates):
                 out["likes"] = self._check_likes(v, main, nodes, states, start)
             if self.filters:
                 out["filters"] = self._check_filters(v, main)
@@ -711,8 +1088,6 @@ class World3:
                 out["mirror_only"] = self._check_mirror_only(v, main)
         if self.mirrors:
             out["mirrors"] = self._check_mirrors(v, main)
-        if self.pending_8b:
-            out["pending_8b"] = list(self.pending_8b)
         if out:
             v.result["world3"] = out
 
@@ -1031,6 +1406,27 @@ class World3:
                     out.append(("el marco pequeno %s solo se cruza comprimido y el nivel no tiene Pellizcar (ni "
                                 "abilities_available.compress ni una herramienta Recortar)" % f["id"],
                                 min(r for _, r in f["cells"]), c))
+        for d in self.doors:
+            if self.door_open(d, state) or abs(d["col"] - far) > m.K + 2:
+                continue
+            plates = [g for g in self.plates if g.gid in d["plates"]]
+            out.append(("la puerta de marco %s sigue cerrada: el camino no llega a %s" % (
+                d["id"], ", ".join("su placa %s" % g.obj_id for g in plates) or "ninguna placa (no tiene)"),
+                d["row"], d["col"]))
+        for h in self.hunters:
+            if abs(h["cell"][0] - far) > m.K + 4:
+                continue
+            w = m.world(state, False)
+            for g in m.gates:
+                if g.kind != "bridge" or g.gid in state or not g.openers:
+                    continue
+                if not any(self.beam_touches(h, i, g.openers, w) for i in range(8)):
+                    continue
+                looks = [FACINGS[i] for i in range(8) if self.beam_touches(h, i, g.openers, w)]
+                out.append(("%s: el espejo cazador %s solo llevaria el pulso al receptor mirando al %s y no mira asi "
+                            "desde ninguna celda alcanzable desde la que se le pulsa (reposo %s; gira hacia Isak a "
+                            "<= %.1f tiles)" % (g.label(), h["id"], "/".join(looks), FACINGS[h["rest"]],
+                                                h["radius"] / m.T), h["cell"][1], h["cell"][0]))
         return out
 
 
@@ -1073,6 +1469,8 @@ def _search(model, source, state, limit):
 def plan_steps(planner, g, n, state, stage, last_pub):
     """Pasos del plan para una accion de likes de la progresion. `last_pub`: {id: True} de la publicacion usada en
     la accion anterior (si se repite seguida, se espera su enfriamiento)."""
+    if g.kind == "plate":
+        return []  # pisar la placa es parte del recorrido (el plan comprueba la puerta con el tiempo)
     likes = stage.get("likes_after")
     if g.kind == "heart":
         return [{"action": "heart", "at": n, "state": state, "likes_after": likes,
@@ -1089,6 +1487,715 @@ def plan_steps(planner, g, n, state, stage, last_pub):
     out.append({"action": "pulse", "at": n, "shot": shot, "state": state,
                 "target": {"type": "like_source", "id": g.obj_id, "likes_after": likes}})
     return out
+
+
+# --- Plan del camino: espejo cazador, enemigos, Reflejo falso y puertas de marco (paso 8b) ---
+
+def _step_frames(planner, steps):
+    """Cuadros del camino (Planner.frames) y el primer cuadro de cada paso (con uno de mas al final)."""
+    frames = planner.frames(steps)
+    first = []
+    n = 0
+    for s in steps:
+        first.append(n)
+        n += len(planner.samples(s))
+    first.append(n)
+    return frames, first
+
+
+def _step_pinched(s):
+    if s["action"] == "move":
+        return is_pinched(s["to"]) or is_pinched(s["from"])
+    return is_pinched(s.get("at") or ())
+
+
+def _end_frame(steps, first):
+    for i, s in enumerate(steps):
+        if s.get("final"):
+            return first[i + 1]
+    return first[-1]
+
+
+def _pulse_reach(rules, x, feet, facings, rect):
+    for f in facings:
+        px, py = x + rules.phone_x * f, feet + rules.phone_y
+        qx = min(max(px, rect[0]), rect[2])
+        qy = min(max(py, rect[1]), rect[3])
+        if math.hypot(px - qx, py - qy) <= rules.pulse_radius + EPS:
+            return True
+    return False
+
+
+def _cell_of(T, x, feet):
+    return (int(x // T), int(round(feet / T)) - 1)
+
+
+def _hunter_advance(h, st, cx, cy, dt):
+    """Un paso de HunterMirror.advance con Isak (centro de su caja) en (cx, cy)."""
+    if st["freeze"] > 0.0:
+        st["freeze"] -= dt
+        if st["freeze"] <= 0.0:
+            st["freeze"] = 0.0
+            st["turn"] = 0.0
+        return
+    dx, dy = cx - h["center"][0], cy - h["center"][1]
+    target = index_for_vector(dx, dy) if math.hypot(dx, dy) <= h["radius"] else h["rest"]
+    if target == st["idx"]:
+        st["turn"] = 0.0
+        return
+    st["turn"] += dt
+    if st["turn"] >= h["interval"] - 0.0001:
+        st["idx"] = step_toward(st["idx"], target)
+        st["turn"] = 0.0
+
+
+def plan_hunters(planner, steps):
+    """Orientacion del espejo cazador por tiempo en los pulsos que llegan por su haz (target.via_hunter): si al
+    pulsarlo aun no mira donde hace falta, espera wait_hunter delante del pulso; si esperando no llegaria, error."""
+    w3 = planner.m.w3
+    if w3 is None or not w3.hunters:
+        return steps
+    items = []
+    for _ in range(MAX_FIXES):
+        problem, items = _sim_hunters(planner, w3, steps)
+        if problem is None:
+            break
+        i, h, st, need, x, feet = problem
+        s = steps[i]
+        wait = _hunter_wait(planner, w3, h, st, need, x, feet)
+        node = s["at"]
+        if wait is None:
+            planner.error("espejo cazador %s: cuando el camino lo pulsa desde (fila %d, columna %d) mira al %s y su haz "
+                          "solo llega a %s mirando al %s; esperando quieto no llega a mirar asi (docs/propuesta-mundo-3.md "
+                          "§3.6)" % (h["id"], node[1], node[0], FACINGS[st["idx"]], s["target"].get("id"), FACINGS[need]),
+                          node, h["id"])
+            break
+        steps = steps[:i] + [{"action": "wait_hunter", "at": node, "seconds": wait, "state": s["state"],
+                              "reason": "esperar a que el espejo cazador %s mire al %s" % (h["id"], FACINGS[need]),
+                              "target": {"type": "hunter_mirror", "id": h["id"], "facing": FACINGS[need]}}] + steps[i:]
+        if s.get("relay"):
+            s["relay"] = dict(s["relay"], time_s=s["relay"]["time_s"] + wait)
+        via = s["target"]["via_hunter"]
+        via["wait_s"] = round(via.get("wait_s", 0.0) + wait, 3)
+    planner.v.result.setdefault("world3", {})["hunters"] = items
+    return steps
+
+
+def _sim_hunters(planner, w3, steps):
+    frames, first = _step_frames(planner, steps)
+    rules = planner.rules
+    sts = [{"idx": h["rest"], "turn": 0.0, "freeze": 0.0} for h in w3.hunters]
+    items = []
+    end = _end_frame(steps, first)
+    for f in range(min(end, len(frames))):
+        i, k, x, feet, air, debug, action, _ = frames[f]
+        s = steps[i]
+        dt = DT_SIM * (rules.debug_world_scale if debug else 1.0)
+        hh = w3.cmodel.hh if _step_pinched(s) else w3.m.hh
+        cx, cy = x, feet - hh * 0.5
+        if action == "pulse" and k == 0:
+            shot = s.get("shot")
+            facings = (shot["facing"],) if shot else (1.0, -1.0)
+            via = (s.get("target") or {}).get("via_hunter")
+            for h, st in zip(w3.hunters, sts):
+                if via and via["id"] == h["id"]:
+                    need = FACINGS.index(via["facing"])
+                    dx, dy = cx - h["center"][0], cy - h["center"][1]
+                    target = index_for_vector(dx, dy) if math.hypot(dx, dy) <= h["radius"] else h["rest"]
+                    ok = st["freeze"] > 0.0 or (st["idx"] == need and (
+                        target == need or st["turn"] <= h["interval"] - HUNTER_TURN_MARGIN_S))
+                    if st["freeze"] > 0.0:
+                        ok = st["idx"] == need
+                    if not ok:
+                        return (i, h, dict(st), need, x, feet), items
+                    items.append({"id": h["id"], "from": [s["at"][1], s["at"][0]], "facing": via["facing"],
+                                  "target": s["target"].get("id"), "wait_s": via.get("wait_s", 0.0),
+                                  "t": round(f * DT_SIM, 2)})
+                if _pulse_reach(rules, x, feet, facings, h["rect"]):
+                    st["freeze"] = h["freeze"]
+                    st["turn"] = 0.0
+        for h, st in zip(w3.hunters, sts):
+            _hunter_advance(h, st, cx, cy, dt)
+    return None, items
+
+
+def _hunter_wait(planner, w3, h, st, need, x, feet):
+    """Segundos de espera quieto (pies en x, feet) hasta que el cazador mira a `need`, o None."""
+    st = dict(st)
+    cx, cy = x, feet - w3.m.hh * 0.5
+    t = 0.0
+    while t < MAX_WAIT_S:
+        _hunter_advance(h, st, cx, cy, DT_SIM)
+        t += DT_SIM
+        if st["idx"] == need and st["freeze"] <= 0.0 and st["turn"] <= EPS:
+            return round(t + DT_SIM, 4)
+    return None
+
+
+def plan_enemies(planner, steps):
+    """Influencer, Ladron, Reflejo falso y puertas de marco a lo largo del camino (simulacion por cuadros): inserta
+    pulsos que aturden y esperas wait_reflection; lo que no se resuelve es un error."""
+    w3 = planner.m.w3
+    if w3 is None or not (w3.influencers or w3.thieves or w3.reflections or w3.doors):
+        return steps
+    attempts = {}
+    res = None
+    for _ in range(MAX_FIXES + 1):
+        res = _EnemySim(planner, w3, steps).run()
+        fix = res["fix"]
+        if fix is None:
+            break
+        key = fix.get("key")
+        attempts[key] = attempts.get(key, 0) + 1
+        if attempts[key] > 3:
+            res["errors"].append(fix["fail"])
+            break
+        steps = _apply_fix(steps, fix)
+    else:
+        res["errors"].append(("no se pudieron resolver los enemigos del Mundo 3 con %d pulsos o esperas" % MAX_FIXES,
+                              None, None))
+    seen = set()
+    for message, node, obj in res["errors"]:
+        if message in seen:
+            continue
+        seen.add(message)
+        planner.error(message, node, obj)
+    planner.v.result.setdefault("world3", {})["enemies"] = res["info"]
+    return steps
+
+
+def _apply_fix(steps, fix):
+    pos, off = fix["pos"], fix.get("offset", 0)
+    new = fix["step"]
+    if off:
+        s = steps[pos]
+        a = {k: v for k, v in s.items() if not k.startswith("_") and k != "final"}
+        a["seconds"] = off * DT_SIM
+        b = {k: v for k, v in s.items() if not k.startswith("_")}
+        b["seconds"] = max(0.0, s.get("seconds", 0.0) - off * DT_SIM)
+        return steps[:pos] + [a, new, b] + steps[pos + 1:]
+    return steps[:pos] + [new] + steps[pos:]
+
+
+class _EnemySim:
+    def __init__(self, planner, w3, steps, probe=None):
+        self.p = planner
+        self.w3 = w3
+        self.m = w3.m
+        self.T = self.m.T
+        self.rules = planner.rules
+        self.steps = steps
+        self.probe = probe  # {"door": id, "from": cuadro}: solo busca cuando se abre esa puerta
+        self.frames, self.first = _step_frames(planner, steps)
+        self.end = min(_end_frame(steps, self.first), len(self.frames))
+        self.errors = []
+        self.fix = None
+
+    # --- Utilidades ---
+
+    def node_at(self, f):
+        _, _, x, feet = self.frames[f][:4]
+        return _cell_of(self.T, x, feet)
+
+    def insertion(self, g):
+        """Donde se inserta un paso para que ocurra en el cuadro g: (pos, offset, nodo, cuadro) o None."""
+        i, k = self.frames[g][0], self.frames[g][1]
+        s = self.steps[i]
+        if s["action"] == "move":
+            n = len(self.p.samples(s))
+            if s["kind"] == "walk" and k >= n / 2:
+                node, pos, frame = s["to"], i + 1, self.first[i + 1]
+            else:
+                node, pos, frame = s["from"], i, self.first[i]
+            off = 0
+        elif s["action"] in WAIT_KINDS:
+            node = s.get("at")
+            pos, off, frame = i, k, g
+            if k == 0:
+                frame = self.first[i]
+        else:
+            node = s.get("at")
+            pos, off, frame = i + 1, 0, self.first[i + 1]
+        if node is None or is_pinched(node):
+            return None
+        return (pos, off, tuple(node), frame)
+
+    def pulse_fix(self, frames, rect_at, target, reverse=False):
+        """Pulso insertado desde una celda de pie que alcanza rect_at(F) en el cuadro F del pulso."""
+        seen = set()
+        m = self.m
+        order = sorted(frames, reverse=reverse)
+        for g in order:
+            cand = self.insertion(g)
+            if cand is None or cand in seen:
+                continue
+            seen.add(cand)
+            pos, off, node, frame = cand
+            if frame > max(frames) or frame >= len(self.frames) + 1:
+                continue
+            rect = rect_at(min(frame, len(self.frames) - 1))
+            if rect is None:
+                continue
+            state = self.steps[self.frames[g][0]]["state"]
+            if not m.has_pulse(state):
+                continue
+            shot = m.pulse_shot([rect], node, state)
+            if shot is None:
+                continue
+            step = {"action": "pulse", "at": node, "shot": shot, "state": state, "target": dict(target)}
+            return {"pos": pos, "offset": off, "step": step}
+        return None
+
+    # --- Isak ---
+
+    def isak(self, f):
+        i, k, x, feet, air, debug, action, dinv = self.frames[f]
+        s = self.steps[i]
+        pinched = _step_pinched(s)
+        hh = self.w3.cmodel.hh if pinched else self.m.hh
+        return {"i": i, "k": k, "x": x, "feet": feet, "air": air, "debug": debug, "action": action, "dash": dinv,
+                "hh": hh, "s": s, "state": s["state"]}
+
+    def rect(self, x, feet, hh):
+        hw = self.m.hw
+        return (x - hw, feet - hh, x + hw, feet)
+
+    # --- Influencer ---
+
+    def sees(self, inf, x, feet, hh, world):
+        top = feet - hh
+        lx, ly = inf["lens"]
+        if feet < ly - inf["band"] or top > ly + inf["band"]:
+            return False
+        dx = x - lx
+        if abs(dx) > inf["sight"] + EPS:
+            return False
+        if inf["facing"] != 0 and abs(dx) > EPS and (1 if dx > 0 else -1) != inf["facing"]:
+            return False
+        ay = min(max(ly, top), feet)
+        dist = math.hypot(dx, ay - ly)
+        n = max(1, int(dist / 4.0))
+        T = self.T
+        for j in range(1, n + 1):
+            px, py = lx + dx * j / n, ly + (ay - ly) * j / n
+            c, r = int(math.floor(px / T)), int(math.floor(py / T))
+            if world.is_solid(c, r):
+                return False
+            if (c, r) in world.thin and r * T <= py <= r * T + world.thin[(c, r)]:
+                return False
+        return True
+
+    def precise_jumps(self, f0, f1):
+        out = []
+        for j, s in enumerate(self.steps):
+            if not (f0 <= self.first[j] < f1) or s["action"] != "move":
+                continue
+            e = s["edge"]
+            if e["kind"] in ("walk", "pinch", "unpinch"):
+                continue
+            if max(e["h"], e["v"]) > BLIND_JUMP_MAX + EPS:
+                out.append((j, s))
+        return out
+
+    # --- Ladron ---
+
+    def thief_move(self, st, vx, dt, world):
+        """Mueve al ladron por su fila; devuelve True si una pared lo para."""
+        if abs(vx) < EPS:
+            return False
+        nx = st["x"] + vx * dt
+        lead = nx + (24.0 if vx > 0 else -24.0)
+        c, r = int(math.floor(lead / self.T)), int(math.floor((st["feet"] - 1.0) / self.T))
+        if world.is_solid(c, r):
+            return True
+        st["x"] = nx
+        return False
+
+    def thief_clamp(self, st, vx):
+        lx0, _, lx1, _ = st["leash"]
+        if vx > 0.0 and st["x"] + 24.0 >= lx1:
+            return 0.0
+        if vx < 0.0 and st["x"] - 24.0 <= lx0:
+            return 0.0
+        return vx
+
+    def thief_sees(self, st, cx, cy, radius):
+        lx0, ly0, lx1, ly1 = st["leash"]
+        if not (lx0 <= cx <= lx1 and ly0 <= cy <= ly1):
+            return False
+        return math.hypot(cx - st["x"], cy - (st["feet"] - 24.0)) <= radius + EPS
+
+    def thief_rect(self, st):
+        return (st["x"] - 24.0, st["feet"] - 48.0, st["x"] + 24.0, st["feet"])
+
+    # --- Placas ---
+
+    @staticmethod
+    def presses(g, x, feet, air, width):
+        if air:
+            return False
+        px0, py0, px1, py1 = g.press
+        if feet < py0 or feet > py1:
+            return False
+        half = width * 0.5 * g.feet_fraction
+        return x + half >= px0 and x - half <= px1
+
+    # --- Simulacion ---
+
+    def run(self):
+        w3, m, T, rules = self.w3, self.m, self.T, self.rules
+        frames = self.frames
+        D = int(round(1.0 / DT_SIM))
+        infl = [{"d": d, "state": "idle", "t": 0.0, "left": 0.0, "charge_f": None, "charges": 0, "flashes": 0,
+                 "covered": 0, "stuns": 0, "blind": []} for d in w3.influencers]
+        thieves = []
+        for d in w3.thieves:
+            p = d["p"]
+            sx, sf = d["spawn"]
+            lw, lh = float(p.get("leash_width_px", 768.0)), float(p.get("leash_height_px", 320.0))
+            thieves.append({"d": d, "p": p, "x": sx, "feet": sf, "origin": sx, "dir": float(p.get("start_direction", 1)),
+                            "state": "patrol", "t": 0.0, "left": 0.0, "notice_f": None, "notices": 0, "stuns": 0,
+                            "thefts": 0, "leash": (sx - lw / 2, sf - 24.0 - lh / 2, sx + lw / 2, sf - 24.0 + lh / 2),
+                            "hist": []})
+        refls = [{"d": d, "state": "dormant", "side": 0, "fe": None, "pos": None, "left": 0.0, "stuns": 0,
+                  "min_gap": None, "emerged": None, "hist": [], "violating": False, "contacts": 0} for d in w3.reflections]
+        plates = {g.gid: {"g": g, "hold": 0.0, "holding": False, "by": set()} for g in w3.plates}
+        doors = [{"d": d, "state": "closed", "t": 0.0, "open": 0.0, "solid": True, "crossed": None, "opened_at": None,
+                  "blocked_err": False} for d in w3.doors]
+        xs, fs, airs, hhs = [], [], [], []
+        hw = m.hw
+        for f in range(self.end):
+            me = self.isak(f)
+            x, feet, air, hh, state = me["x"], me["feet"], me["air"], me["hh"], me["state"]
+            xs.append(x)
+            fs.append(feet)
+            airs.append(air)
+            hhs.append(hh)
+            dt = DT_SIM * (rules.debug_world_scale if me["debug"] else 1.0)
+            world = m.world(state, False)
+            irect = self.rect(x, feet, hh)
+            cx, cy = x, feet - hh * 0.5
+            pulse = me["action"] == "pulse" and me["k"] == 0
+            facings = ()
+            if pulse:
+                shot = me["s"].get("shot")
+                facings = (shot["facing"],) if shot else (1.0, -1.0)
+            # --- Influencer ---
+            for st in infl:
+                d = st["d"]
+                if pulse and _pulse_reach(rules, x, feet, facings, d["body"]):
+                    st["state"], st["left"] = "stunned", d["stun"]
+                    st["stuns"] += 1
+                    continue
+                st["t"] += dt
+                if st["state"] == "idle":
+                    if self.sees(d, x, feet, hh, world):
+                        st["state"], st["t"], st["charge_f"] = "charge", 0.0, f
+                        st["charges"] += 1
+                elif st["state"] == "charge":
+                    if st["t"] >= d["warn"] - 0.0001:
+                        if self.sees(d, x, feet, hh, world):
+                            st["flashes"] += 1
+                            f1 = f + int(math.ceil(d["veil"] / DT_SIM))
+                            jumps = self.precise_jumps(f, f1)
+                            st["blind"].append({"t0": round(f * DT_SIM, 2), "t1": round(f1 * DT_SIM, 2),
+                                                "jumps": len(jumps)})
+                            if jumps and self.probe is None:
+                                fix = self.pulse_fix(list(range(st["charge_f"], f)), lambda F, d=d: d["body"],
+                                                     {"type": "influencer_bot", "id": d["id"]})
+                                j, sj = jumps[0]
+                                fail = ("Influencer %s: su flash ciega a Isak %.1f s desde los %.1f s y el camino exige "
+                                        "un salto preciso durante la ceguera (de (fila %d, columna %d) a (fila %d, "
+                                        "columna %d), %.0f %%); ni lo tapa el terreno ni el pulso lo aturde antes "
+                                        "(docs/propuesta-mundo-3.md §3.6)" % (
+                                            d["id"], d["veil"], f * DT_SIM, sj["from"][1], sj["from"][0], sj["to"][1],
+                                            sj["to"][0], 100 * max(sj["edge"]["h"], sj["edge"]["v"])),
+                                        sj["from"], d["id"])
+                                if fix is not None:
+                                    fix.update({"key": ("influencer", d["id"], st["charges"]), "fail": fail})
+                                    self.fix = fix
+                                    return self.result(infl, thieves, refls, doors)
+                                self.errors.append(fail)
+                        else:
+                            st["covered"] += 1
+                        st["state"], st["t"] = "cooldown", 0.0
+                elif st["state"] == "cooldown":
+                    if st["t"] >= d["cooldown"]:
+                        st["state"], st["t"] = "idle", 0.0
+                elif st["state"] == "stunned":
+                    st["left"] -= dt
+                    if st["left"] <= 0.0:
+                        st["state"], st["t"] = "idle", 0.0
+            # --- Ladron ---
+            likes = World3.likes_of(state)
+            for st in thieves:
+                p = st["p"]
+                st["hist"].append(self.thief_rect(st))
+                if pulse and _pulse_reach(rules, x, feet, facings, self.thief_rect(st)):
+                    st["state"], st["t"], st["left"] = "stunned", 0.0, float(p.get("stun_s", 3.0))
+                    st["stuns"] += 1
+                    continue
+                st["t"] += dt
+                s0 = st["state"]
+                if s0 == "patrol":
+                    vx = st["dir"] * float(p.get("patrol_speed_px_s", 80.0))
+                    wall = self.thief_move(st, vx, dt, world)
+                    turn = wall
+                    probe_x = st["x"] + st["dir"] * (24.0 + 2.0)
+                    if not world.is_support(int(math.floor(probe_x / T)), int(math.floor((st["feet"] + 1.0) / T))):
+                        turn = True
+                    half = float(p.get("patrol_range_px", 256.0)) * 0.5
+                    if half > 0.0:
+                        if st["dir"] > 0 and st["x"] >= st["origin"] + half:
+                            turn = True
+                        elif st["dir"] < 0 and st["x"] <= st["origin"] - half:
+                            turn = True
+                    if turn:
+                        st["dir"] = -st["dir"]
+                    if self.thief_sees(st, cx, cy, float(p.get("detect_radius_px", 256.0))):
+                        st["state"], st["t"] = ("notice" if likes > 0 else "search"), 0.0
+                        if likes > 0:
+                            st["notice_f"] = f
+                            st["notices"] += 1
+                elif s0 == "notice":
+                    if st["t"] >= float(p.get("anticipation_frames", 9)) / float(p.get("anim_fps", 12.0)):
+                        st["state"], st["t"] = "chase", 0.0
+                elif s0 == "chase":
+                    if not self.thief_sees(st, cx, cy, float(p.get("give_up_radius_px", 448.0))):
+                        self.thief_back(st)
+                    else:
+                        dx = x - st["x"]
+                        vx = (1.0 if dx > 0 else -1.0) * float(p.get("chase_speed_px_s", 140.0)) if abs(dx) > 2.0 else 0.0
+                        self.thief_move(st, self.thief_clamp(st, vx), dt, world)
+                        if not me["dash"] and rects_overlap(irect, self.thief_rect(st)):
+                            if likes > 0:
+                                fail = ("Ladron de likes %s: alcanza a Isak en (fila %d, columna %d) a los %.1f s y le "
+                                        "roba likes; el camino tiene que evitarlo o aturdirlo antes con el pulso (0 "
+                                        "robos; docs/propuesta-mundo-3.md §7.1)" % (
+                                            st["d"]["id"], self.node_at(f)[1], self.node_at(f)[0], f * DT_SIM),
+                                        self.node_at(f), st["d"]["id"])
+                                if self.probe is None:
+                                    start = st["notice_f"] if st["notice_f"] is not None else max(0, f - D)
+                                    hist = st["hist"]
+                                    fix = self.pulse_fix(list(range(start, f + 1)),
+                                                         lambda F, hist=hist: hist[F] if F < len(hist) else None,
+                                                         {"type": "like_thief", "id": st["d"]["id"]})
+                                    if fix is not None:
+                                        fix.update({"key": ("thief", st["d"]["id"], st["thefts"]), "fail": fail})
+                                        self.fix = fix
+                                        return self.result(infl, thieves, refls, doors)
+                                    self.errors.append(fail)
+                                st["thefts"] += 1
+                                st["state"], st["t"] = "flee", 0.0
+                            else:
+                                st["state"], st["t"] = "search", 0.0
+                elif s0 == "flee":
+                    away = -1.0 if x > st["x"] else 1.0
+                    st["dir"] = away
+                    self.thief_move(st, self.thief_clamp(st, away * float(p.get("flee_speed_px_s", 200.0))), dt, world)
+                    if st["t"] >= float(p.get("flee_s", 2.0)):
+                        self.thief_back(st)
+                elif s0 == "search":
+                    if st["t"] >= float(p.get("search_s", 1.0)):
+                        self.thief_back(st)
+                elif s0 == "stunned":
+                    st["left"] -= dt
+                    if st["left"] <= 0.0:
+                        self.thief_back(st)
+            # --- Reflejo falso ---
+            for st in refls:
+                d = st["d"]
+                z = d["zone"]
+                inside = z is None or (z[0] <= cx < z[2] and z[1] <= cy < z[3])
+                if not inside:
+                    if st["state"] != "dormant":
+                        st["state"], st["pos"] = "dormant", None
+                    st["side"] = 0
+                    st["hist"].append(None)
+                    st["violating"] = False
+                    continue
+                if pulse and st["pos"] is not None:
+                    px, pf, _, ph = st["pos"]
+                    if _pulse_reach(rules, x, feet, facings, self.rect(px, pf, ph)):
+                        st["state"], st["left"] = "stunned", d["stun"]
+                        st["stuns"] += 1
+                if st["state"] == "dormant":
+                    side = 1 if x > d["axis"] else (-1 if x < d["axis"] else 0)
+                    if st["side"] and side and side != st["side"]:
+                        st["state"], st["fe"] = "emerging", f
+                        st["emerged"] = [int(round(feet / T)) - 1, int(x // T)]
+                        st["pos"] = (x, feet, air, hh)
+                    if side:
+                        st["side"] = side
+                elif st["state"] == "emerging":
+                    fe = st["fe"]
+                    st["pos"] = (xs[fe], fs[fe], airs[fe], hhs[fe])
+                    if (f - fe) * DT_SIM >= max(d["emerge"], d["delay"]) - 0.0001:
+                        st["state"] = "active"
+                elif st["state"] == "stunned":
+                    st["left"] -= dt
+                    if st["left"] <= 0.0:
+                        st["state"] = "active"
+                if st["state"] == "active":
+                    j = max(f - int(round(d["delay"] / DT_SIM)), st["fe"])
+                    st["pos"] = (xs[j], fs[j], airs[j], hhs[j])
+                st["hist"].append(self.rect(st["pos"][0], st["pos"][1], st["pos"][3]) if st["pos"] else None)
+                if st["state"] != "active":
+                    st["violating"] = False
+                    continue
+                gap = math.hypot(x - st["pos"][0], feet - st["pos"][1])
+                st["min_gap"] = gap if st["min_gap"] is None else min(st["min_gap"], gap)
+                if gap < T * REFLECTION_GAP_TILES - EPS:
+                    if st["violating"]:
+                        continue
+                    st["violating"] = True
+                    st["contacts"] += 1
+                    node = self.node_at(f)
+                    fail = ("Reflejo falso %s: alcanza a Isak en (fila %d, columna %d) a los %.1f s (Isak a %.0f px de "
+                            "donde estaba %.0f s antes; minimo %g tile) y el pulso no lo aturde a tiempo desde una celda "
+                            "de pie (docs/propuesta-mundo-3.md §7.1)" % (
+                                d["id"], node[1], node[0], f * DT_SIM, gap, d["delay"], REFLECTION_GAP_TILES),
+                            node, d["id"])
+                    if self.probe is None:
+                        hist = st["hist"]
+                        lo = max(st["fe"], f - D)
+                        fix = self.pulse_fix(list(range(lo, f + 1)),
+                                             lambda F, hist=hist: hist[F] if F < len(hist) else None,
+                                             {"type": "false_reflection", "id": d["id"]}, reverse=True)
+                        if fix is not None:
+                            fix.update({"key": ("reflection", d["id"], st["stuns"]), "fail": fail})
+                            self.fix = fix
+                            return self.result(infl, thieves, refls, doors)
+                        self.errors.append(fail)
+                else:
+                    st["violating"] = False
+            # --- Placas y puertas ---
+            for ps in plates.values():
+                g = ps["g"]
+                by = set()
+                if self.presses(g, x, feet, air, m.rules.hitbox_w):
+                    by.add("Isak")
+                for st in refls:
+                    if st["pos"] is not None and st["state"] != "dormant":
+                        px, pf, pa, _ = st["pos"]
+                        if self.presses(g, px, pf, pa, m.rules.hitbox_w):
+                            by.add("reflejo %s" % st["d"]["id"])
+                ps["by"] |= by
+                if by:
+                    ps["hold"] = g.hold_s
+                else:
+                    ps["hold"] = max(ps["hold"] - dt, 0.0)
+                ps["holding"] = bool(by) or ps["hold"] > 0.0
+            for ds in doors:
+                d = ds["d"]
+                held = any(plates[gid]["holding"] for gid in d["plates"])
+                ds["t"] += dt
+                if ds["state"] == "closed" and held:
+                    ds["state"], ds["t"] = "opening", 0.0
+                if ds["state"] == "opening":
+                    ds["open"] = min(ds["open"] + dt / max(d["open_s"], 0.001), 1.0)
+                    if ds["open"] >= 1.0:
+                        ds["state"], ds["t"], ds["solid"] = "open", 0.0, False
+                        if ds["opened_at"] is None:
+                            ds["opened_at"] = round(f * DT_SIM, 2)
+                elif ds["state"] == "open":
+                    if not held:
+                        ds["state"], ds["t"] = "warn", 0.0
+                elif ds["state"] == "warn":
+                    blocked = rects_overlap(irect, d["rect"]) or any(
+                        st["pos"] is not None and st["state"] != "dormant"
+                        and rects_overlap(self.rect(st["pos"][0], st["pos"][1], st["pos"][3]), d["rect"])
+                        for st in refls)
+                    if held:
+                        ds["state"], ds["t"] = "open", 0.0
+                    elif ds["t"] >= d["warn"] - 0.0001 and not blocked:
+                        ds["state"], ds["t"], ds["solid"] = "closing", 0.0, True
+                elif ds["state"] == "closing":
+                    if held:
+                        ds["state"], ds["t"] = "opening", 0.0
+                    else:
+                        ds["open"] = max(ds["open"] - dt / max(d["open_s"], 0.001), 0.0)
+                        if ds["open"] <= 0.0:
+                            ds["state"], ds["t"] = "closed", 0.0
+                if self.probe is not None:
+                    if d["id"] == self.probe["door"] and f >= self.probe["from"] and not ds["solid"]:
+                        return {"probe_open": f}
+                    continue
+                if rects_overlap(irect, d["rect"]):
+                    if ds["solid"]:
+                        if ds["blocked_err"]:
+                            continue
+                        fix = self.door_fix(ds, f)
+                        if fix is not None and "step" in fix:
+                            self.fix = fix
+                            return self.result(infl, thieves, refls, doors)
+                        ds["blocked_err"] = True
+                        self.errors.append(fix["fail"])
+                    elif ds["crossed"] is None:
+                        ds["crossed"] = round(f * DT_SIM, 2)
+        if self.probe is not None:
+            return {"probe_open": None}
+        return self.result(infl, thieves, refls, doors, plates)
+
+    def thief_back(self, st):
+        if abs(st["origin"] - st["x"]) > 1.0:
+            st["dir"] = 1.0 if st["origin"] > st["x"] else -1.0
+        st["state"], st["t"] = "patrol", 0.0
+
+    def door_fix(self, ds, f):
+        d = ds["d"]
+        i = self.frames[f][0]
+        s = self.steps[i]
+        node = s["from"] if s["action"] == "move" else s.get("at")
+        cell = self.node_at(f)
+        plates = ", ".join(g.obj_id for g in self.w3.plates if g.gid in d["plates"]) or "-"
+        fail = ("puerta de marco %s: sigue cerrada cuando el camino llega a (fila %d, columna %d) a los %.1f s y ni "
+                "esperando delante la sostiene a tiempo su placa (%s) con Isak o el Reflejo falso (abierta mientras la "
+                "pisan y %.1f s mas; docs/propuesta-mundo-3.md §3.6)" % (
+                    d["id"], cell[1], cell[0], f * DT_SIM, plates,
+                    next((g.hold_s for g in self.w3.plates if g.gid in d["plates"]), 0.3)), cell, d["id"])
+        if node is None or self.steps[i]["action"] in WAIT_KINDS:
+            return {"fail": fail}
+        node = tuple(node)
+        wait = {"action": "wait_reflection", "at": node, "seconds": MAX_WAIT_S, "state": s["state"]}
+        probe = _EnemySim(self.p, self.w3, self.steps[:i] + [wait], probe={"door": d["id"], "from": self.first[i]})
+        res = probe.run()
+        if res.get("probe_open") is None:
+            return {"fail": fail}
+        secs = (res["probe_open"] - self.first[i]) * DT_SIM + WAIT_MARGIN_S
+        step = {"action": "wait_reflection", "at": node, "seconds": round(secs, 4), "state": s["state"],
+                "reason": "esperar a que se abra la puerta de marco %s (su placa la pisa el Reflejo falso)" % d["id"],
+                "target": {"type": "frame_door", "id": d["id"]}}
+        return {"pos": i, "offset": 0, "step": step, "key": ("door", d["id"], i), "fail": fail}
+
+    def result(self, infl, thieves, refls, doors, plates=None):
+        info = []
+        for st in infl:
+            info.append({"kind": "influencer_bot", "id": st["d"]["id"], "charges": st["charges"],
+                         "flashes": st["flashes"], "covered": st["covered"], "stuns": st["stuns"],
+                         "blind": st["blind"]})
+        for st in thieves:
+            info.append({"kind": "like_thief", "id": st["d"]["id"], "notices": st["notices"], "stuns": st["stuns"],
+                         "thefts": st["thefts"]})
+        for st in refls:
+            info.append({"kind": "false_reflection", "id": st["d"]["id"], "emerged": st["emerged"],
+                         "min_gap_tiles": None if st["min_gap"] is None else round(st["min_gap"] / self.T, 2),
+                         "stuns": st["stuns"], "contacts": st["contacts"]})
+        waits = {}
+        for s in self.steps:
+            if s["action"] == "wait_reflection" and (s.get("target") or {}).get("type") == "frame_door":
+                waits[s["target"]["id"]] = waits.get(s["target"]["id"], 0.0) + s.get("seconds", 0.0)
+        for ds in doors:
+            d = ds["d"]
+            by = set()
+            if plates:
+                for gid in d["plates"]:
+                    by |= plates[gid]["by"]
+            info.append({"kind": "frame_door", "id": d["id"],
+                         "plates": [g.obj_id for g in self.w3.plates if g.gid in d["plates"]],
+                         "pressed_by": sorted(by), "opened_at_s": ds["opened_at"], "crossed_at_s": ds["crossed"],
+                         "wait_s": round(waits.get(d["id"], 0.0), 2)})
+        return {"fix": self.fix, "errors": self.errors, "info": info}
 
 
 # --- Texto ---
@@ -1159,6 +2266,37 @@ def format_lines(result):
             "; el camino la pisa saltando desde (fila %d, columna %d)%s" % (
                 it["from"][0], it["from"][1], ", con la pared a la vista" if it.get("wall_in_view") else "")
             if it.get("from") else ""))
-    if w3.get("pending_8b"):
-        out.append("  sin modelar todavia (paso 8b, amenazas evitables): %s" % ", ".join(w3["pending_8b"]))
+    for it in w3.get("hunters", []):
+        out.append("  espejo cazador %s: pulso desde (fila %d, columna %d) mirando al %s -> haz a %s%s" % (
+            it["id"], it["from"][0], it["from"][1], it["facing"], it["target"],
+            " (espera %.2f s a que gire)" % it["wait_s"] if it.get("wait_s") else " (sin esperar)"))
+    for it in w3.get("enemies", []):
+        kind = it["kind"]
+        if kind == "influencer_bot":
+            blind = [b for b in it["blind"]]
+            out.append("  Influencer %s: lo ve %d vez(es); %d flash(es) que ciegan%s, %d tapado(s) o fuera de su vista, "
+                       "%d aturdido(s) con el pulso" % (
+                           it["id"], it["charges"], it["flashes"],
+                           " (%s)" % ", ".join("%.1f-%.1f s%s" % (b["t0"], b["t1"], ", %d salto(s) preciso(s)" % b["jumps"]
+                                                                  if b["jumps"] else ", sin saltos precisos")
+                                               for b in blind) if blind else "",
+                           it["covered"], it["stuns"]))
+        elif kind == "like_thief":
+            out.append("  Ladron de likes %s: lo persigue %d vez(es), %d aturdido(s) con el pulso, %d robo(s)" % (
+                it["id"], it["notices"], it["stuns"], it["thefts"]))
+        elif kind == "false_reflection":
+            if it["emerged"] is None:
+                out.append("  Reflejo falso %s: no sale (el camino no cruza su pared de espejo en su sala)" % it["id"])
+            else:
+                out.append("  Reflejo falso %s: sale en (fila %d, columna %d); Isak a %s tile(s) como minimo de donde "
+                           "estaba 1 s antes; %d aturdido(s) con el pulso%s" % (
+                               it["id"], it["emerged"][0], it["emerged"][1],
+                               "-" if it["min_gap_tiles"] is None else "%.2f" % it["min_gap_tiles"], it["stuns"],
+                               ", %d alcance(s)" % it["contacts"] if it["contacts"] else ""))
+        elif kind == "frame_door":
+            out.append("  puerta de marco %s (placa %s): la pisan %s; abierta a los %s, el camino la cruza a los %s%s" % (
+                it["id"], ", ".join(it["plates"]) or "-", " y ".join(it["pressed_by"]) or "nadie",
+                "-" if it["opened_at_s"] is None else "%.2f s" % it["opened_at_s"],
+                "-" if it["crossed_at_s"] is None else "%.2f s" % it["crossed_at_s"],
+                " (espera %.2f s al reflejo)" % it["wait_s"] if it.get("wait_s") else ""))
     return out

@@ -83,7 +83,7 @@ START_S = 0.06
 # Pasos que dejan a Isak parado (el siguiente movimiento arranca acelerando con el arco real; tambien los
 # saltos, caidas y dashes: el bot frena en el centro de la celda de llegada).
 REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "debug_on", "debug_off", "ground_pound",
-                "wait_scroll", "like_reset")
+                "wait_scroll", "like_reset", "wait_hunter", "wait_reflection")
 # Scroll forzado (Mundo 2, paso 9 de docs/propuesta-mundo-2.md §7.1): espera maxima por el techo de carga (s) y
 # margen frente al borde que dana por defecto (tiles; 3 en dificultad 2-3 y 2 en dificultad 4).
 SCROLL_MAX_WAIT_S = 120.0
@@ -174,8 +174,9 @@ class Planner:
             if g is None:
                 continue
             n = stage["end"]
-            if g.kind in world3_model.LIKE_KINDS:
-                # Mundo 3 (paso 8a): corazon, publicacion (con su enfriamiento si se repite seguida) o reset.
+            if g.kind in world3_model.ACTION_KINDS:
+                # Mundo 3 (paso 8a): corazon, publicacion (con su enfriamiento si se repite seguida) o reset; paso 8b:
+                # la placa «Posa aqui» no anade pasos.
                 steps.extend(world3_model.plan_steps(self, g, n, state, stage, last_pub))
                 last_pub = {"id": g.obj_id} if g.kind == "like_source" else {}
                 continue
@@ -193,8 +194,14 @@ class Planner:
                     steps.append(self.move(u, e, state) | {"timed": "relay:" + g.obj_id})
                 b = relay["pulse"]
                 shot = self.m.pulse_shot(g.openers, b, state)
+                target = {"type": "relay_receiver", "id": g.relay["id"], "opens": g.label()}
+                if shot is None and self.m.w3 is not None and self.m.w3.hunters:
+                    # Mundo 3 (paso 8b): el pulso llega al receptor por el haz del espejo cazador.
+                    shot, via = self.m.w3.beam_step_info(g.openers, b, state)
+                    if via:
+                        target["via_hunter"] = via
                 steps.append({"action": "pulse", "at": b, "shot": shot, "state": state,
-                              "target": {"type": "relay_receiver", "id": g.relay["id"], "opens": g.label()},
+                              "target": target,
                               "relay": {"gate": g.obj_id, "lector": lector["id"], "window_s": lector["window"],
                                         "time_s": relay["time"]}})
                 continue
@@ -275,8 +282,13 @@ class Planner:
                 continue
             shot = self.m.pulse_shot(g.openers, n, state)
             kind = {"bridge": "receiver", "popup": "popup_blocker", "bubble": "alert_bubble"}.get(g.kind, g.kind)
-            steps.append({"action": "pulse", "at": n, "shot": shot, "state": state,
-                          "target": {"type": kind, "id": g.obj_id, "opens": g.label()}})
+            target = {"type": kind, "id": g.obj_id, "opens": g.label()}
+            if shot is None and g.kind == "bridge" and self.m.w3 is not None and self.m.w3.hunters:
+                # Mundo 3 (paso 8b): por el haz del espejo cazador.
+                shot, via = self.m.w3.beam_step_info(g.openers, n, state)
+                if via:
+                    target["via_hunter"] = via
+            steps.append({"action": "pulse", "at": n, "shot": shot, "state": state, "target": target})
         end = run["stages"][-1]["end"]
         # Terminal de salida: pulso desde la celda que encontro el validador (normalmente la meta).
         for item in self.v.result.get("exit_terminals", []):
@@ -371,7 +383,7 @@ class Planner:
                 # Isak vuelve de perfil) y un cuadro.
                 return max(r.pulse_pose_s, s.get("pose_s", 0.0)) + DT
             return r.pulse_pose_s
-        if a in ("wait", "wait_phase", "wait_beat", "wait_scroll"):
+        if a in ("wait", "wait_phase", "wait_beat", "wait_scroll", "wait_hunter", "wait_reflection"):
             return s.get("seconds", 0.0)
         if a == "ground_pound":
             return r.pound_s + (r.pound_cooldown_s if s.get("cooldown_before") else 0.0)
@@ -594,6 +606,8 @@ class Planner:
         if not main["ok"]:
             return None
         steps = self.build_steps(main)
+        # Mundo 3 (paso 8b): orientacion del espejo cazador por tiempo (esperas antes del acertijo del lector).
+        steps = world3_model.plan_hunters(self, steps)
         self.check_relays(steps)
         steps = self.check_reminders(steps)
         steps = self.check_overlays(steps)
@@ -602,6 +616,8 @@ class Planner:
         steps = self.check_banners(steps)
         steps = self.check_clones(steps)
         steps = self.check_scroll(steps)
+        # Mundo 3 (paso 8b): Influencer, Ladron, Reflejo falso y puertas de marco (pulsos y esperas wait_reflection).
+        steps = world3_model.plan_enemies(self, steps)
         steps = self.check_energy(steps)
         self.check_loop_energy(steps)
         self.info["bars"] = []
@@ -3250,7 +3266,7 @@ class Planner:
                     if "rect" in s["target"]:
                         tgt["rect_px"] = [round(v, 1) for v in s["target"]["rect"]]
                     item["target"] = tgt
-                if a in ("wait", "wait_phase", "wait_beat", "wait_scroll"):
+                if a in ("wait", "wait_phase", "wait_beat", "wait_scroll", "wait_hunter", "wait_reflection"):
                     item["seconds"] = round(s.get("seconds", 0.0), 3)
                     if s.get("reason"):
                         item["reason"] = s["reason"]

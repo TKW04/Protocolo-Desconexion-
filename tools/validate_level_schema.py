@@ -12,6 +12,9 @@ Reglas:
     secretos <-> celdas S, o {object: <tipo>} con un objeto de ese tipo en su x, y;
     requires_upgrade (si esta) es una mejora de data/upgrades.json ("pista:nivel" o legacy_id) y needs_debug un booleano;
     forbid_abilities (2026-10-20, paso 7 de docs/propuesta-1-3.md) una lista no vacia de habilidades conocidas;
+    requires_abilities (2026-10-26, paso 8b de docs/propuesta-mundo-3.md §7.1: secreto que se alcanza con un gesto
+    obtenido mas adelante, p. ej. el marco del 3-1 con Pellizcar) una lista no vacia de habilidades conocidas sin
+    repetir y sin ninguna de forbid_abilities;
     reward (opcional) es una recompensa conocida o una lista de ellas (attention_points, power_bank,
     extra_life, memory); la recompensa memory (mensaje de secreto, 2026-10-19, paso 4 de
     docs/propuesta-recuerdos.md) lleva memory_id: un mensaje (kind secret) de data/memories.json de
@@ -107,7 +110,8 @@ REQUIRED_FIELDS = {
     "objects": list,
     "unlocks": list,
 }
-KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound"}
+# compress: Pellizcar (Mundo 3, paso 8b de docs/propuesta-mundo-3.md: abilities_available.compress).
+KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound", "compress"}
 # Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);
 # tower = camara de torre (scripts/player/tower_camera.gd, data/camera_tower.json).
 # autoscroll = scroll forzado del Mundo 2 (2026-10-22; scripts/player/scroll_camera.gd,
@@ -1779,6 +1783,22 @@ class LevelValidator:
                     for name in forbid:
                         if name not in KNOWN_ABILITIES:
                             self.error("%s '%s': habilidad desconocida en forbid_abilities: '%s'"
+                                       % (what, entry.get("id"), name), pos[1], pos[0])
+            if "requires_abilities" in entry:
+                # Paso 8b de docs/propuesta-mundo-3.md §7.1: el validador de alcanzabilidad lo comprueba con esas
+                # habilidades y sin ellas no lo cuenta como inalcanzable.
+                needs = entry["requires_abilities"]
+                if not (isinstance(needs, list) and needs and all(isinstance(a, str) for a in needs)) \
+                        or len(set(needs)) != len(needs):
+                    self.error("%s '%s': requires_abilities debe ser una lista no vacia de habilidades sin repetir"
+                               % (what, entry.get("id")), pos[1], pos[0])
+                else:
+                    for name in needs:
+                        if name not in KNOWN_ABILITIES:
+                            self.error("%s '%s': habilidad desconocida en requires_abilities: '%s'"
+                                       % (what, entry.get("id"), name), pos[1], pos[0])
+                        elif name in (entry.get("forbid_abilities") or []):
+                            self.error("%s '%s': '%s' esta a la vez en requires_abilities y en forbid_abilities"
                                        % (what, entry.get("id"), name), pos[1], pos[0])
             if "object" in entry:
                 if (entry["object"], pos) not in self.object_anchors:

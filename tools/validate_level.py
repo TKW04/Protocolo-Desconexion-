@@ -107,6 +107,10 @@ movimiento por celdas:
      (nodos comprimidos y aristas pinch / unpinch), likes (corazones, publicaciones y reset como acciones de la
      progresion; plataformas por umbral; anti-atasco), filtros (Debug junto a lo que esconden; cargador a la
      vista) y espejos fijos (laser con rebotes, plataformas del reflejo). Sin nada del Mundo 3, w3 es None.
+     Paso 8b: espejo cazador (pulso reflejado como arista hacia los receptores, receiver_hits; orientacion por
+     tiempo en el plan), placas «Posa aqui» y puertas de marco (accion de la progresion; tiempo en el plan),
+     Influencer, Ladron y Reflejo falso (simulados en el plan, que inserta pulsos y esperas) y secretos con
+     requires_abilities (_granted: se comprueban con esas habilidades).
 
 Modelo de movimiento:
   - Isak es una caja de hitbox_size (32x80) con los pies en el origen. Esta de
@@ -513,7 +517,8 @@ class Gate:
                  "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %",
                  "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga",
                  "dnd": "interruptor No molestar", "pound": "tarjeta fragil",
-                 "heart": "corazon", "like_source": "publicacion", "like_reset": "Borrar publicaciones"}
+                 "heart": "corazon", "like_source": "publicacion", "like_reset": "Borrar publicaciones",
+                 "plate": "placa Posa aqui"}
         if getattr(self, "encounter", False):
             return "encuentro con Eco %s" % self.obj_id
         if self.kind == "switch" and getattr(self, "hidden", False):
@@ -1033,8 +1038,9 @@ class LevelModel:
                            if g.gid in state and g.kind not in ("lswitch", "dock", "dnd")
                            and not (g.kind == "switch" and ("switch:" + g.obj_id) not in self._door_gids)
                            and not (g.col_span[1] < lo or g.col_span[0] > hi)))
-        if self.w3 is not None and self.w3.like_platforms:
-            # Mundo 3: las plataformas de likes encendidas cerca (los umbrales cumplidos, no la cifra).
+        if self.w3 is not None and self.w3.keyed:
+            # Mundo 3: las plataformas de likes encendidas cerca (los umbrales cumplidos, no la cifra) y las puertas de
+            # marco abiertas (paso 8b).
             key = key + self.w3.like_key(lo, hi, state)
         return key
 
@@ -1240,7 +1246,17 @@ class LevelModel:
             if not use_laser or not self.has_laser(state):
                 return False
             return node in self.relay_plan(gate, state, debug)["ok"]
+        if gate.kind == "bridge":
+            return self.receiver_hits(gate, node, state, debug)
         return self.pulse_hits(gate.openers, node, state, debug)
+
+    def receiver_hits(self, gate, node, state, debug=False):
+        """El pulso desde `node` activa el receptor de `gate`: lo alcanza o (Mundo 3, paso 8b) alcanza a un espejo
+        cazador cuyo haz lo toca en una orientacion que puede tener (tools/world3_model.py)."""
+        if self.pulse_hits(gate.openers, node, state, debug):
+            return True
+        return bool(self.w3 is not None and self.w3.hunters
+                    and self.w3.beam_hit(gate.openers, node, state, debug) is not None)
 
     def reveal_near(self, gate, node):
         """El Debug activo descubre el panel oculto con los pies de Isak (centro de la celda de pie) a
@@ -1287,8 +1303,8 @@ class LevelModel:
         altura del celular (pulse_effect_origin) desde una posicion de pie de la celda; alcance
         laser_range_px; lo cortan el terreno, los puentes extendidos y los pop-ups cerrados."""
         rules = self.rules
-        if self.w3 is not None and (self.w3.mirrors or world3_model.is_pinched(node)):
-            # Mundo 3: trazado con rebotes en los espejos fijos (y comprimido no hay laser).
+        if self.w3 is not None and (self.w3.mirrors or self.w3.hunters or world3_model.is_pinched(node)):
+            # Mundo 3: trazado con rebotes en los espejos fijos y los cazadores (y comprimido no hay laser).
             return self.w3.laser_shot(rect, node, state, debug)
         if rules.laser_range <= 0.0:
             return None
@@ -1424,7 +1440,7 @@ class LevelModel:
             times, parent = self.time_search(starts, state, debug)
             for n, t in times.items():
                 total = t + PULSE_DELAY_S
-                if total <= lector["window"] + EPS and self.pulse_hits(gate.openers, n, state, debug):
+                if total <= lector["window"] + EPS and self.receiver_hits(gate, n, state, debug):
                     out["ok"][n] = total
             if out["ok"]:
                 b = min(out["ok"], key=lambda n: (out["ok"][n], n[1], n[0]))
@@ -1435,7 +1451,7 @@ class LevelModel:
             else:
                 # Lo mejor posible aunque no quepa (para explicar el fallo).
                 cands = [(t + PULSE_DELAY_S, n) for n, t in times.items()
-                         if self.pulse_hits(gate.openers, n, state, debug)]
+                         if self.receiver_hits(gate, n, state, debug)]
                 if cands:
                     out["closest"] = min(cands)
         if sources is None:
@@ -2231,7 +2247,7 @@ class Validator:
                 stage["relay"] = relay_plans[gate.gid]["best"]
                 stage["end"] = relay_plans[gate.gid]["best"]["shot"]
             stages.append(stage)
-            if gate.kind in world3_model.LIKE_KINDS:
+            if gate.kind in world3_model.ACTION_KINDS:
                 state = w3.apply(state, gate)
                 stage["likes_after"] = w3.likes_of(state)
                 seen_states.add((state, opener))
@@ -2745,6 +2761,12 @@ class Validator:
             if stage["gate"] is not None:
                 n = stage["end"]
                 g = stage["gate"]
+                if g.kind == "plate":
+                    # Mundo 3 (paso 8b): placa «Posa aqui» (el plan comprueba la puerta con el tiempo).
+                    actions.append({"action": "plate", "from": [n[1], n[0]], "object": g.label(),
+                                    "text": "pisa %s en (fila %d, columna %d) -> abre la puerta de marco %s"
+                                            % (g.label(), n[1], n[0], g.target)})
+                    continue
                 if g.kind in world3_model.LIKE_KINDS:
                     # Mundo 3 (paso 8a): likes.
                     likes = stage.get("likes_after", 0)
@@ -2772,10 +2794,12 @@ class Validator:
                                             % (n[1], n[0], lector, g.relay["lector"]["window"])})
                     emit(relay["path"], relay["pulse"])
                     b = relay["pulse"]
+                    via = self.model.w3.beam_note(g.openers, b, stage["state"]) if (
+                        self.model.w3 is not None and self.model.w3.hunters) else ""
                     actions.append({"action": "pulse", "from": [b[1], b[0]], "object": g.label(),
-                                    "text": "pulso desde (fila %d, columna %d) -> receptor enlazado %s -> %s "
+                                    "text": "pulso desde (fila %d, columna %d)%s -> receptor enlazado %s -> %s "
                                             "(%.1f s desde el disparo)"
-                                            % (b[1], b[0], g.relay["id"], g.label(), relay["time"])})
+                                            % (b[1], b[0], via, g.relay["id"], g.label(), relay["time"])})
                     continue
                 if g.kind == "switch":
                     # Tanda H2: pulsos de espaldas (y, si es el panel oculto, antes el Debug que lo descubre).
@@ -2942,16 +2966,20 @@ class Validator:
             if not s.get("needs_debug"):
                 continue
             cell = {(s["x"], s["y"])}
-            without = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=False)
+            # requires_abilities (Mundo 3, paso 8b): con esas habilidades dadas.
+            sv, sstart, needs = self._granted(s, start)
+            without = sv.progression(sstart, frozenset(), self.rules.limit, targets=cell, debug=False)
             # Con la holgura calibrada (2026-10-17) el Debug se enciende donde hace falta (union de
             # movimientos, como en el camino): con el Debug siempre encendido una plataforma oculta
             # seria un techo en sitios donde nadie lo usa.
-            mode = self._debug_mode()
+            mode = sv._debug_mode()
             # forbid_abilities (paso 9 de docs/propuesta-1-3.md): la ruta del secreto no usa esas habilidades
             # (p. ej. el dash); «sin Debug no se alcanza» se comprueba con todas.
-            with self.model.forbidding(self._forbidden_of(s)):
-                with_debug = self.progression(start, frozenset(), self.rules.limit, targets=cell, debug=mode)
+            with sv.model.forbidding(self._forbidden_of(s)):
+                with_debug = sv.progression(sstart, frozenset(), self.rules.limit, targets=cell, debug=mode)
             info.append({"id": s["id"], "without_debug": without["ok"], "with_debug": with_debug["ok"]})
+            if needs:
+                info[-1]["requires_abilities"] = list(needs)
             if self._forbidden_of(s):
                 info[-1]["forbid_abilities"] = list(self._forbidden_of(s))
             if without["ok"]:
@@ -2983,6 +3011,28 @@ class Validator:
         """Habilidades que la ruta del secreto no puede usar (forbid_abilities; paso 9 del 1-3)."""
         return tuple(str(a) for a in secret.get("forbid_abilities", []) or [])
 
+    def _granted(self, secret, start):
+        """requires_abilities (Mundo 3, paso 8b de docs/propuesta-mundo-3.md §7.1): el secreto se alcanza con un
+        gesto obtenido mas adelante (p. ej. Pellizcar). Devuelve (validador, inicio, habilidades) con esas
+        habilidades dadas desde el inicio (abilities_available), o (self, start, ()) sin el campo."""
+        needs = tuple(str(a) for a in secret.get("requires_abilities", []) or [])
+        if not needs:
+            return self, start, ()
+        cache = self.__dict__.setdefault("_granted_cache", {})
+        if needs not in cache:
+            import copy
+            level = copy.deepcopy(self.level)
+            abilities = dict(level.get("abilities_available") or {})
+            for a in needs:
+                abilities[a] = True
+            level["abilities_available"] = abilities
+            other = Validator(level, self.rules)
+            other.goal_cells = self.goal_cells
+            other_start, _ = other.spawn_node(self.find("P")[0])
+            cache[needs] = (other, other_start)
+        other, other_start = cache[needs]
+        return other, other_start, needs
+
     def _check_reachable_secrets(self, start):
         """Secretos que se recogen sin Debug: los que son un objeto recogible (no la pared con
         glitch) y los de una celda S sin "needs_debug" (regla 4). Se alcanzan
@@ -3003,18 +3053,29 @@ class Validator:
             forbid = self._forbidden_of(s)
             if forbid:
                 item["forbid_abilities"] = list(forbid)
+            # requires_abilities (Mundo 3, paso 8b): se comprueba con esas habilidades; sin ellas no cuenta como
+            # inalcanzable (primera visita).
+            sv, sstart, needs = self._granted(s, start)
+            if needs:
+                first = self.progression(start, frozenset(), self.rules.limit, targets=cell)
+                item["requires_abilities"] = list(needs)
+                item["reachable_without_abilities"] = first["ok"]
+                if first["ok"]:
+                    self.report.warning("el secreto %s se alcanza ya sin %s (requires_abilities)"
+                                        % (what, ", ".join(needs)), s["y"], s["x"], s["id"])
             if not required or self.rules.has_upgrade(required):
                 # Se tiene que alcanzar: sin las habilidades de forbid_abilities (paso 9).
-                with self.model.forbidding(forbid):
-                    run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
+                with sv.model.forbidding(forbid):
+                    run = sv.progression(sstart, frozenset(), self.rules.limit, targets=cell)
             else:
-                run = self.progression(start, frozenset(), self.rules.limit, targets=cell)
+                run = sv.progression(sstart, frozenset(), self.rules.limit, targets=cell)
             item.update({"reachable": run["ok"],
                          "secret_gates_opened": sorted(g for g in run["state"] if g in self.secret_gates())})
             if not required or self.rules.has_upgrade(required):
                 if not run["ok"]:
-                    self.report.error("el secreto %s no se alcanza%s" % (
-                        what, " con la mejora %s" % required if required else ""), s["y"], s["x"], s["id"])
+                    self.report.error("el secreto %s no se alcanza%s%s" % (
+                        what, " con la mejora %s" % required if required else "",
+                        " ni con %s (requires_abilities)" % ", ".join(needs) if needs else ""), s["y"], s["x"], s["id"])
                 continue
             item["requires_upgrade"] = required
             item["reachable_without_upgrade"] = run["ok"]
@@ -3101,18 +3162,22 @@ class Validator:
                 continue
             needs_debug = bool(secret.get("needs_debug"))
             item["needs_debug"] = needs_debug
+            # requires_abilities (Mundo 3, paso 8b): el mensaje se comprueba con esas habilidades.
+            sv, sstart, needs = self._granted(secret, start)
+            if needs:
+                item["requires_abilities"] = list(needs)
             forbid = self._forbidden_of(secret)
             if forbid:
                 item["forbid_abilities"] = list(forbid)
             # forbid_abilities (paso 9): lo que el secreto exige alcanzar se comprueba sin esas habilidades; lo
             # que NO debe alcanzarse (sin Debug, si lo exige), con todas.
-            with self.model.forbidding(() if needs_debug else forbid):
-                without = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=False)
+            with sv.model.forbidding(() if needs_debug else forbid):
+                without = sv.progression(sstart, frozenset(), self.rules.limit, targets={cell}, debug=False)
             item["reachable_without_debug"] = without["ok"]
             if needs_debug:
-                mode = self._debug_mode()
-                with self.model.forbidding(forbid):
-                    with_debug = self.progression(start, frozenset(), self.rules.limit, targets={cell}, debug=mode)
+                mode = sv._debug_mode()
+                with sv.model.forbidding(forbid):
+                    with_debug = sv.progression(sstart, frozenset(), self.rules.limit, targets={cell}, debug=mode)
                 item["reachable_with_debug"] = with_debug["ok"]
                 if without["ok"]:
                     self.report.error("el mensaje %s se alcanza sin Debug (su secreto %s lo exige)"
@@ -3261,6 +3326,10 @@ class Validator:
         if gate.kind in ("bubble", "ad", "lswitch") and self.model.laser_possible:
             reach = max(reach, self.rules.laser_range + T)
         x = (node[0] + 0.5) * T
+        if gate.kind == "bridge" and self.model.w3 is not None and self.model.w3.hunters:
+            # Mundo 3 (paso 8b): el receptor tambien se activa pulsando un espejo cazador.
+            if any(h["rect"][0] - reach <= x <= h["rect"][2] + reach for h in self.model.w3.hunters):
+                return True
         return any(o[0] - reach <= x <= o[2] + reach for o in gate.openers)
 
     def _check_softlocks(self, main, goal_cells):
@@ -3287,7 +3356,7 @@ class Validator:
                 debug = "auto" if g.kind == "pound" else False
                 if g.gid not in state and self._gate_near(g, node) and m.can_open(g, node, state, debug):
                     nexts.append((node, state | {g.gid}))
-            if m.w3 is not None and (m.w3.pubs or m.w3.resets):
+            if m.w3 is not None and m.w3.softlock_actions:
                 nexts += m.w3.softlock_nexts(node, state)
             for nxt in nexts:
                 reverse.setdefault(nxt, []).append(pair)
@@ -3467,6 +3536,12 @@ def format_text(path, result):
             out.append("  mejoras: " + "; ".join("%s %s (base %s)" % (label, _num(value), _num(base))
                                                   for label, value, base in changed))
     for item in (result.get("secrets") or {}).get("items", []):
+        if item.get("requires_abilities") and "reachable" in item:
+            # Mundo 3 (paso 8b): secreto que se alcanza con un gesto obtenido mas adelante.
+            out.append("  secreto %s: con %s %s; sin ello %s (no cuenta en la primera visita)" % (
+                item["id"], ", ".join(item["requires_abilities"]),
+                "se alcanza" if item["reachable"] else "no se alcanza",
+                "se alcanza" if item.get("reachable_without_abilities") else "no se alcanza"))
         if "requires_upgrade" in item:
             out.append("  secreto %s: sin %s %s; con ella %s (radio %.0f px)" % (
                 item["id"], item["requires_upgrade"],
@@ -3497,6 +3572,8 @@ def format_text(path, result):
                                      "se alcanza" if item.get("reachable_with_upgrade") else "no se alcanza")
         if item.get("forbid_abilities"):
             reach += " (ruta sin %s)" % ", ".join(item["forbid_abilities"])
+        if item.get("requires_abilities"):
+            reach += " (con %s)" % ", ".join(item["requires_abilities"])
         out.append("  mensaje %s (%s, fila %d, columna %d) del secreto %s: %s; %s" % (
             item["memory_id"], item["id"], item["cell"][1], item["cell"][0], item["secret"], reach,
             "obligatorio" if item["mandatory"] else "opcional"))
