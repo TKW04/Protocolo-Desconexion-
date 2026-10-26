@@ -142,7 +142,7 @@
 			},
 			"allowed": {
 				"trigger_event": ["laser_fired"],
-				"unless_ability": ["pulse", "debug", "laser", "dash"]
+				"unless_ability": ["pulse", "debug", "laser", "dash", "compress"]
 			},
 			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}
 		},

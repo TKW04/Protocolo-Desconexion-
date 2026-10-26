@@ -1,0 +1,76 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 7 de docs/propuesta-mundo-3.md §8, 2026-10-26): sala de 34x14 con la herramienta «RECORTAR» (crop_tool, §3.6) que da el gesto Pellizcar (compress) y MARCOS PEQUENOS (small_frame, §3.3.2). Isak llega por la izquierda (P, de pie en la fila 9) con el pulso y SIN Pellizcar. recortar_prueba (celda 5, 9; monitor en la pared del fondo): un pulso de espaldas da Pellizcar para siempre (se guarda), Eco dice «Te queda mejor así.» (importante) y despues sale el aviso «Pellizcar: I / RB (mando)». Con el gesto ya obtenido arranca recortada e inerte. La SALIDA de la sala de inicio es un marco pequeno en la pared (marco_pared: columnas 12-13, fila 9, hueco de 1 fila): solo se cruza comprimido (I). Al otro lado hay sitio para recuperar el tamano y un MARCO EN EL SUELO (marco_suelo, columna 17, fila 10): dejarse caer comprimido a la galeria de 1 fila (fila 11, columnas 17-23) que pasa bajo el muro de las columnas 20-23 y da a un FOSO (columnas 24-26, suelo en la fila 12): para subir a la repisa de la terminal (2 tiles) hay que recuperar el tamano (el salto comprimido es de 1,5 tiles). Terminal en (30, 8). El validador de alcanzabilidad aun no modela Pellizcar (paso del validador del Mundo 3): hasta entonces la terminal sale inalcanzable. Tileset y fondo del Mundo 1 (provisional). Escena: scenes/levels/recorte_test.tscn (python3 tools/build_level.py data/levels/recorte_test.json).",
+	"id": "recorte_test",
+	"name": "Recortar (prueba)",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": false
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "crop_tool",
+			"x": 5,
+			"y": 9,
+			"params": {
+				"id": "recortar_prueba",
+				"ability": "compress",
+				"story_line": "recorte_3_2"
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 12,
+			"y": 9,
+			"params": {
+				"id": "marco_pared",
+				"orientation": "wall",
+				"length_tiles": 2
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 17,
+			"y": 10,
+			"params": {
+				"id": "marco_suelo",
+				"orientation": "floor",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 30,
+			"y": 8,
+			"params": {
+				"id": "terminal_recorte",
+				"text": "Publicar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"##################################",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#...........##......####.........#",
+		"#.P.................####......G..#",
+		"#################.######...#######",
+		"#################..........#######",
+		"##################################",
+		"##################################"
+	]
+}
