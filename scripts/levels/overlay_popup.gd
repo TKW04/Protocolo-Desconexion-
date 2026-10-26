@@ -107,6 +107,13 @@ func _process(delta: float) -> void:
 	advance(WorldTime.scaled_delta(delta))
 
 
+## Opacidad de una capa que el Debug «ve a traves» (la regla del pop-up
+## translucido, compartida con el filtro del Mundo 3, FilterZone): de `base` sin
+## Debug a `debug` con la intensidad de revelado del Debug (0-1).
+static func see_through_alpha(base: float, debug: float, intensity: float) -> float:
+	return lerpf(base, debug, clampf(intensity, 0.0, 1.0))
+
+
 # --- Consultas ---
 
 func get_state() -> State:
@@ -238,7 +245,7 @@ func _update_visual() -> void:
 		return
 	# Revelado persistente (Debug 3): tras apagar el Debug se sigue viendo a traves.
 	var intensity: float = 0.0 if opaque else DebugMode.get_reveal_intensity()
-	var alpha: float = 1.0 if opaque else lerpf(opacity, debug_opacity, intensity)
+	var alpha: float = 1.0 if opaque else see_through_alpha(opacity, debug_opacity, intensity)
 	_body.modulate.a = alpha
 	_label.modulate.a = alpha
 	_debug_frame.visible = intensity > 0.0

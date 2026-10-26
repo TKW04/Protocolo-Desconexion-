@@ -12,6 +12,12 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
     solidas para los bordes), '-' una via, '^' pinchos (solo dibujo).
   - Hazards: un Area2D (scripts/levels/spike_hazard.gd) por tramo horizontal de
     '^', forma y capas de data/hazards.json.
+  - Filtros del Mundo 3 (filter_zone, 2026-10-26, paso 3 de docs/propuesta-mundo-3.md §3.2):
+    los '^' dentro de un filtro (de cualquiera de sus positions) no van en Tiles sino en un
+    hijo «HiddenSpikes» del filtro (TileMapLayer que el filtro dibuja a su manera) y su
+    Area de dano lleva hidden_by_filter, el dano de filter_zone.spike_hidden_damage y
+    knockback_direction hacia la entrada del filtro; fake_floor genera un hijo «Cover»
+    (terreno sin colision, como el cover de glitch_wall).
   - HiddenPlatforms: scenes/levels/hidden_platform.tscn por cada 'h'.
   - AttentionPoints: scenes/levels/attention_point.tscn en el centro de cada 'o'.
   - Checkpoints: Marker2D Checkpoint (grupo "checkpoint") por cada C, en los
@@ -243,11 +249,12 @@ def select_tile(grid, r, c, m):
     return None
 
 
-def tile_map_data(level, catalog, tilemap, cells=None, grid=None):
+def tile_map_data(level, catalog, tilemap, cells=None, grid=None, skip=None):
     """PackedByteArray de TileMapLayer.tile_map_data: version 0 (uint16) y por celda
     x, y (int16), source, atlas x, atlas y, alternativa (uint16), little endian.
     `cells` / `grid` (terreno falso de una pared con glitch, 2026-10-22): solo esas
-    celdas, con los bordes del grid dado."""
+    celdas, con los bordes del grid dado. `skip`: celdas que no van (pinchos ocultos por un
+    filtro, 2026-10-26)."""
     grid = grid or solid_grid(level, catalog)
     original = level["grid"]
     source = int(tilemap["source_id"])
@@ -262,7 +269,7 @@ def tile_map_data(level, catalog, tilemap, cells=None, grid=None):
             if cells is not None:
                 if (c, r) not in cells:
                     continue
-            elif original[r][c] not in ("#", "-", "^"):
+            elif original[r][c] not in ("#", "-", "^") or (skip and (c, r) in skip):
                 continue
             atlas = select_tile(grid, r, c, tilemap)
             data += u16(c) + u16(r) + u16(source) + u16(int(atlas[0])) + u16(int(atlas[1])) + u16(0)
@@ -278,11 +285,12 @@ def cover_cells(params):
     return {(x + i, y + j) for j in range(h) for i in range(w)}
 
 
-def cover_layer_data(level, catalog, tilemap, params):
+def cover_layer_data(level, catalog, tilemap, params, cells=None):
     """Terreno falso (2026-10-22): tiles del interior tapado y de las celdas solidas que lo
     rodean (8 vecinos), con los bordes como si el interior fuera solido; asi el bloque se
-    ve entero, sin la costura de la sala escondida."""
-    cells = cover_cells(params)
+    ve entero, sin la costura de la sala escondida. `cells`: otras celdas (suelo falso de un
+    filtro, 2026-10-26) en vez del cover de la pared."""
+    cells = cover_cells(params) if cells is None else cells
     grid = [list(row) for row in solid_grid(level, catalog)]
     for (c, r) in cells:
         grid[r][c] = "#"
@@ -297,8 +305,10 @@ def cover_layer_data(level, catalog, tilemap, params):
     return tile_map_data(level, catalog, tilemap, cells | ring, grid)
 
 
-def spike_runs(level, tilemap):
-    """Tramos horizontales de '^' con la misma orientacion: (fila, col_desde, col_hasta, techo)."""
+def spike_runs(level, tilemap, key=None):
+    """Tramos horizontales de '^' con la misma orientacion: (fila, col_desde, col_hasta, techo).
+    `key(c, r)` (2026-10-26): un tramo se corta tambien donde cambia (pinchos de un filtro)."""
+    key = key or (lambda c, r: None)
     grid = level["grid"]
     runs = []
     for r, row in enumerate(grid):
@@ -309,12 +319,52 @@ def spike_runs(level, tilemap):
                 continue
             ceiling = select_tile(grid, r, c, tilemap) == tilemap["spikes"]["ceiling"]
             end = c
-            while end + 1 < len(row) and row[end + 1] == "^" and \
+            while end + 1 < len(row) and row[end + 1] == "^" and key(end + 1, r) == key(c, r) and \
                     (select_tile(grid, r, end + 1, tilemap) == tilemap["spikes"]["ceiling"]) == ceiling:
                 end += 1
             runs.append((r, c, end, ceiling))
             c = end + 1
     return runs
+
+
+def object_params(catalog, obj):
+    params = dict(catalog["types"][obj["type"]].get("defaults", {}))
+    params.update(obj.get("params", {}))
+    return params
+
+
+def filter_rects(obj, params):
+    """Rectangulos (x, y, ancho, alto) en celdas de un filter_zone: uno por sitio de positions
+    (o el suyo si es fijo)."""
+    w, h = int(params["width_tiles"]), int(params["height_tiles"])
+    corners = params.get("positions") or [[obj["x"], obj["y"]]]
+    return [(int(p[0]), int(p[1]), w, h) for p in corners]
+
+
+def filter_cells(obj, params):
+    return {(x + i, y + j) for (x, y, w, h) in filter_rects(obj, params) for j in range(h) for i in range(w)}
+
+
+def fake_floor_cells(params):
+    """Celdas del suelo falso de un filter_zone (fake_floor = [[x, y, ancho, alto], ...])."""
+    return {(int(x) + i, int(y) + j) for (x, y, w, h) in params.get("fake_floor", [])
+            for j in range(int(h)) for i in range(int(w))}
+
+
+def filter_hidden_spikes(level, catalog):
+    """{(c, r): (indice del objeto, direccion del retroceso)} de los '^' bajo un filtro
+    (2026-10-26). Gana el primer filtro que los cubre."""
+    grid = level["grid"]
+    out = {}
+    for i, obj in enumerate(level.get("objects", [])):
+        if obj["type"] != "filter_zone":
+            continue
+        params = object_params(catalog, obj)
+        direction = 1.0 if params.get("entry", "left") == "right" else -1.0
+        for (c, r) in sorted(filter_cells(obj, params)):
+            if 0 <= r < len(grid) and 0 <= c < len(grid[r]) and grid[r][c] == "^":
+                out.setdefault((c, r), (i, direction))
+    return out
 
 
 def glitch_neighbors(level, obj, params):
@@ -426,8 +476,9 @@ def build_scene(level, root=ROOT, warnings=None):
     scene.node("Background", parent=".", instance=scene.ext_resource("PackedScene", background),
                props=bg_props)
 
+    hidden_spikes = filter_hidden_spikes(level, catalog)
     scene.node("Tiles", "TileMapLayer", parent=".", props=[
-        ("tile_map_data", tile_map_data(level, catalog, tilemap)),
+        ("tile_map_data", tile_map_data(level, catalog, tilemap, skip=set(hidden_spikes))),
         ("tile_set", scene.ext_resource("TileSet", tilemap["tileset"])),
     ])
 
@@ -435,16 +486,25 @@ def build_scene(level, root=ROOT, warnings=None):
     scene.node("Hazards", "Node2D", parent=".")
     spikes = hazards["spikes"]
     height = float(spikes["hitbox_height_px"])
-    for r, c0, c1, ceiling in spike_runs(level, tilemap):
+    for r, c0, c1, ceiling in spike_runs(level, tilemap, key=lambda c, r: hidden_spikes.get((c, r))):
         width = (c1 - c0 + 1) * t
         y = r * t + (height * 0.5 if ceiling else t - height * 0.5)
         name = "Spikes_%d_%d" % (c0, r)
+        hidden = hidden_spikes.get((c0, r))
+        extra = []
+        if hidden is not None:
+            # Pinchos bajo un filtro (2026-10-26): -10 y empujan hacia la entrada (no matan).
+            extra = [
+                ("damage", fmt_number(float(catalog.get("filter_zone", {}).get("spike_hidden_damage", 10.0)))),
+                ("hidden_by_filter", "true"),
+                ("knockback_direction", fmt_number(hidden[1])),
+            ]
         scene.node(name, "Area2D", parent="Hazards", props=[
             ("position", fmt_vector2(c0 * t + width * 0.5, y)),
             ("collision_layer", str(int(spikes["collision_layer"]))),
             ("collision_mask", str(int(spikes["collision_mask"]))),
             ("script", scene.ext_resource("Script", SPIKE_SCRIPT)),
-        ])
+        ] + extra)
         shape = scene.sub_resource("RectangleShape2D", [("size", fmt_vector2(width, height))])
         scene.node("CollisionShape2D", "CollisionShape2D", parent="Hazards/" + name, props=[("shape", shape)])
 
@@ -483,7 +543,7 @@ def build_scene(level, root=ROOT, warnings=None):
     # Objetos del catalogo.
     scene.node("Objects", "Node2D", parent=".")
     used_names = set()
-    for obj in level.get("objects", []):
+    for index, obj in enumerate(level.get("objects", [])):
         entry = catalog["types"][obj["type"]]
         params = dict(entry.get("defaults", {}))
         params.update(obj.get("params", {}))
@@ -522,6 +582,27 @@ def build_scene(level, root=ROOT, warnings=None):
                 ("tile_set", scene.ext_resource("TileSet", tilemap["tileset"])),
                 ("collision_enabled", "false"),
             ])
+        if obj["type"] == "filter_zone":
+            # Filtro (2026-10-26): suelo falso (Cover, sin colision) y pinchos ocultos
+            # (HiddenSpikes, datos que dibuja FilterZone); celdas en coordenadas del nivel.
+            layer_pos = fmt_vector2(-obj["x"] * t, -obj["y"] * t)
+            floor_cells = fake_floor_cells(params)
+            if floor_cells:
+                scene.node("Cover", "TileMapLayer", parent="Objects/%s" % name, props=[
+                    ("position", layer_pos),
+                    ("tile_map_data", cover_layer_data(level, catalog, tilemap, params, floor_cells)),
+                    ("tile_set", scene.ext_resource("TileSet", tilemap["tileset"])),
+                    ("collision_enabled", "false"),
+                ])
+            own = {cell for cell, (i, _) in hidden_spikes.items() if i == index}
+            if own:
+                scene.node("HiddenSpikes", "TileMapLayer", parent="Objects/%s" % name, props=[
+                    ("visible", "false"),
+                    ("position", layer_pos),
+                    ("tile_map_data", tile_map_data(level, catalog, tilemap, own)),
+                    ("tile_set", scene.ext_resource("TileSet", tilemap["tileset"])),
+                    ("collision_enabled", "false"),
+                ])
 
     scene.node("Enemies", "Node2D", parent=".")
     for enemy in level.get("enemies", []):

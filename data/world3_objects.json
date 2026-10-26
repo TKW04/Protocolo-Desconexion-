@@ -155,6 +155,63 @@
 				}
 			}
 		},
+		"filter_zone": {
+			"scene": "res://scenes/levels/filter_zone.tscn",
+			"help_id": "",
+			"_help_id_planned": "filter_zone",
+			"description": "Filtro (2026-10-26, paso 3 de docs/propuesta-mundo-3.md §8, §3.2 y decision 5 de §9: el filtro engana, no mata; FilterZone). Rectangulo de width_tiles x height_tiles desde (x, y) con una capa rosada y suavizada encima, borde de marco y cartel (label, texto por instancia: «Filtro: Orejitas · Brillo +40»); SIN colision. Debajo, el nivel real: los pinchos '^' del grid dentro del filtro (de cualquiera de sus positions) son hidden_by_filter (tools/build_level.py no los dibuja en Tiles: los dibuja el filtro fuera de su capa actual; su Area de dano quita 10 y empuja hacia la entrada `entry`, left o right) y fake_floor ([[x, y, ancho, alto], ...] en celdas del nivel: suelo falso, terreno SIN colision como el cover de glitch_wall, hijo Cover; el grid deja '.'; solo en filtros fijos). Con el Debug (reutiliza OverlayPopup.see_through_alpha) la capa baja a debug_opacity (10 %), los pinchos se ven en rojo y el suelo falso con contorno discontinuo; el borde y el cartel se ven siempre. Filtro movil: positions ([[x, y], ...] 2-3 esquinas, la primera = (x, y)) y cycle_s (4 s de tiempo del mundo por sitio): se desliza ida y vuelta entre ellas con aviso de warn_frames cuadros a anim_fps (la cinta del borde parpadea); los peligros NO se mueven. Vineta que tiembla con Isak a <= tremble_radius_tiles (3) de un peligro oculto (senal hazard_near_changed para el desafinado de la musica). Esquema: caida del suelo falso <= max_drop_tiles con salida, no tapa el umbral de una like_platform, cartel no vacio y tamano >= 2 x 2. Sin enemigos dormidos todavia. Sin Q ni ficha todavia (help_id previsto filter_zone). Validador de alcanzabilidad: aun no lo modela (paso 8). Aspecto PROVISIONAL por codigo (seccion filter_zone, paleta provisional).",
+			"required": [
+				"label"
+			],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"label": "label_text",
+				"entry": "entry_side",
+				"fake_floor": "fake_floor_rects",
+				"positions": "positions",
+				"cycle_s": "cycle_s"
+			},
+			"defaults": {
+				"width_tiles": 6,
+				"height_tiles": 4,
+				"entry": "left"
+			},
+			"allowed": {
+				"entry": [
+					"left",
+					"right"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 2,
+					"max": 40,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 2,
+					"max": 12,
+					"int": true
+				},
+				"cycle_s": {
+					"min": 2.0,
+					"max": 12.0
+				}
+			},
+			"example": {
+				"type": "filter_zone",
+				"x": 8,
+				"y": 5,
+				"params": {
+					"id": "filtro_1",
+					"label": "Filtro: Orejitas · Brillo +40",
+					"width_tiles": 12,
+					"height_tiles": 6
+				}
+			}
+		},
 		"small_frame": {
 			"scene": "res://scenes/levels/small_frame.tscn",
 			"help_id": "",
@@ -423,6 +480,41 @@
 		"scissors": "gris_perla",
 		"flash": "blanco_brillante",
 		"text": "blanco_brillante"
+	},
+	"filter_zone": {
+		"_notes": "PROPUESTA (2026-10-26, paso 3 de docs/propuesta-mundo-3.md §3.2). Filtro (FilterZone). opacity: capa rosada sin Debug; debug_opacity: con el Debug del todo (10 %); glow_steps / glow_px: suavizado (bandas mas claras hacia el borde); frame_px: marco dorado; tape_px: cinta del borde (parpadea en el aviso del filtro movil); sign_*: cartel (fuente de textos, escala, relleno); slide_s: lo que tarda en deslizarse de un sitio a otro (dentro de cycle_s); warn_frames / anim_fps: aviso antes de moverse (9 a 12 fps = 0,75 s de tiempo del mundo); spike_hidden_damage: dano del pincho oculto (Sync Rate); fake_floor_debug_alpha: el suelo falso con el Debug del todo; dash_px / gap_px / outline_px: contornos con el Debug; tremble_radius_tiles / tremble_px / tremble_hz: vineta que tiembla cerca de un peligro oculto; max_drop_tiles: caida maxima del suelo falso; exit_climb_tiles: altura que se sube de un salto para salir del foso (el salto es de 3 tiles justos: 2 con margen); colores por nombre de la paleta provisional.",
+		"opacity": 0.6,
+		"debug_opacity": 0.1,
+		"glow_steps": 4,
+		"glow_px": 6,
+		"frame_px": 6,
+		"tape_px": 3,
+		"sign_font": "res://assets/sprites/ui/text_font.fnt",
+		"sign_scale": 1,
+		"sign_padding_px": 4,
+		"slide_s": 0.5,
+		"warn_frames": 9,
+		"anim_fps": 12.0,
+		"spike_hidden_damage": 10.0,
+		"fake_floor_debug_alpha": 0.3,
+		"dash_px": 6,
+		"gap_px": 6,
+		"outline_px": 2,
+		"tremble_radius_tiles": 3,
+		"tremble_px": 2,
+		"tremble_hz": 18.0,
+		"max_drop_tiles": 3,
+		"exit_climb_tiles": 2,
+		"fill": "rosa_pastel",
+		"glow": "blanco_brillante",
+		"frame": "dorado",
+		"frame_light": "dorado_luz",
+		"tape": "rosa_sombra",
+		"tape_warn": "blanco_brillante",
+		"sign_back": "galeria_noche",
+		"sign_text": "blanco_brillante",
+		"spike_debug": "alerta",
+		"fake_floor_debug": "debug_verde"
 	},
 	"small_frame": {
 		"_notes": "PROPUESTA (2026-10-26, paso 7 de docs/propuesta-mundo-3.md §3.3.2). Marco pequeno (SmallFrame, solo decorado). border_px: grosor del marco dorado, que se dibuja FUERA de las celdas del hueco (sobre el terreno de alrededor, sin tapar el paso); lip_px: remate a lo largo del hueco en sus dos extremos; corner_px: adorno de las esquinas; z_index: delante del terreno. Colores por nombre de la paleta provisional.",

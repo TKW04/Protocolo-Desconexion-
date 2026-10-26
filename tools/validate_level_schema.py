@@ -488,6 +488,16 @@ class LevelValidator:
                 self._check_autoplay(entry, params, data)
             if kind == "commenter" and isinstance(data, dict):
                 self._check_commenter(entry, params, data)
+            if kind == "influencer_bot":
+                self._check_influencer(entry)
+
+    def _check_influencer(self, entry):
+        """Influencer bot (influencer_bot, paso 5 de docs/propuesta-mundo-3.md §3.6): pedestal de 1 x 2; la E
+        es la celda de abajo y la de encima (el bot) no puede ser solida ni salir del grid."""
+        x, y = entry.get("x"), entry.get("y")
+        if _is_int(x) and _is_int(y) and (not self.in_bounds(x, y - 1) or self.cell(x, y - 1) == "#"):
+            self.error("influencer '%s': la celda de encima del pedestal (%d, %d) esta ocupada o fuera del grid"
+                       % (entry.get("id"), x, y - 1), y - 1, x)
 
     def _check_autoplay(self, entry, params, data):
         """Video en autoplay (autoplay_video, 2026-10-22, paso 6 de docs/propuesta-mundo-2.md §3.4): clip
@@ -803,6 +813,8 @@ class LevelValidator:
                 self._check_exceptions_panel(what, x, y, params)
             if kind == "small_frame":
                 self._check_small_frame(what, x, y, params, entry.get("defaults", {}))
+            if kind == "filter_zone":
+                self._check_filter_zone(what, x, y, params, entry.get("defaults", {}), catalog)
             if kind == "boss_dummy":
                 for cx in (x, x + 1):
                     if not self.in_bounds(cx, y + 1) or self.cell(cx, y + 1) != "#":
@@ -1334,6 +1346,129 @@ class LevelValidator:
                 if not self.in_bounds(sx, sy) or self.cell(sx, sy) != "#":
                     self.error("%s: un marco %s necesita terreno ('#') en (%d, %d): el hueco es de 1 tile"
                                % (what, "de pared" if wall else "de suelo o techo", sx, sy), sy, sx)
+
+    def _filter_rects(self, x, y, params, defaults):
+        """Rectangulos (x, y, ancho, alto) de un filter_zone, uno por sitio (None si no valen)."""
+        w = params.get("width_tiles", defaults.get("width_tiles", 1))
+        h = params.get("height_tiles", defaults.get("height_tiles", 1))
+        if not (_is_int(w) and _is_int(h)):
+            return None
+        positions = params.get("positions")
+        if positions is None:
+            return [(x, y, w, h)]
+        if not (isinstance(positions, list) and all(
+                isinstance(p, list) and len(p) == 2 and all(_is_int(v) for v in p) for p in positions)):
+            return None
+        return [(p[0], p[1], w, h) for p in positions]
+
+    def _check_filter_zone(self, what, x, y, params, defaults, catalog):
+        """Filtro (Mundo 3, paso 3 de docs/propuesta-mundo-3.md §3.2; decision 5 de §9: el filtro
+        engana, no mata). Lo comprobable sin simular: (1) la zona siempre se ve como zona: cartel
+        no vacio, tamano >= 2 x 2 (level_params) y todos sus sitios dentro del grid; filtro movil
+        con 2-3 positions [x, y] distintas (la primera = su celda) y cycle_s; (2) suelo falso
+        (fake_floor, solo en filtros fijos) dentro del filtro, sobre celdas libres ('.'), con
+        caida <= max_drop_tiles hasta terreno ('#' o '-') y salida (foso de <= exit_climb_tiles o
+        abierto por un lado al nivel del fondo); (3) no tapa el umbral de una like_platform (sus
+        celdas y la fila de encima, donde se dibuja la cifra). El cargador a la vista antes de un
+        filtro obligatorio y que haga falta el Debug para cruzarlo son del validador (paso 8)."""
+        cfg = catalog.get("filter_zone", {})
+        label = params.get("label")
+        if not isinstance(label, str) or not label.strip():
+            self.error("%s: label (el cartel) debe ser un texto no vacio: la zona siempre se ve como zona"
+                       % what, y, x)
+        positions = params.get("positions")
+        if positions is not None:
+            if not (isinstance(positions, list) and 2 <= len(positions) <= 3):
+                self.error("%s: positions debe ser una lista de 2 o 3 sitios [x, y]" % what, y, x)
+                return
+            if positions[0] != [x, y]:
+                self.error("%s: el primer sitio de positions debe ser su celda [%d, %d]" % (what, x, y), y, x)
+            if len({tuple(p) if isinstance(p, list) else p for p in positions}) != len(positions):
+                self.error("%s: positions repite un sitio" % what, y, x)
+            if "cycle_s" not in params:
+                self.error("%s: un filtro movil necesita cycle_s" % what, y, x)
+        elif "cycle_s" in params:
+            self.error("%s: cycle_s solo vale con positions (filtro movil)" % what, y, x)
+        rects = self._filter_rects(x, y, params, defaults)
+        if rects is None:
+            self.error("%s: positions debe ser una lista de [x, y] enteros" % what, y, x)
+            return
+        cells = set()
+        for (rx, ry, w, h) in rects:
+            if w < 2 or h < 2:
+                return
+            for j in range(h):
+                for i in range(w):
+                    if not self.in_bounds(rx + i, ry + j):
+                        self.error("%s: el sitio [%d, %d] se sale del grid" % (what, rx, ry), ry + j, rx + i)
+                        return
+                    cells.add((rx + i, ry + j))
+        floors = params.get("fake_floor", [])
+        if floors and positions is not None:
+            self.error("%s: el suelo falso solo va en filtros fijos (sin positions): lo que se mueve es lo "
+                       "que se ve, no el suelo" % what, y, x)
+        if not (isinstance(floors, list) and all(isinstance(f, list) and len(f) == 4 and all(_is_int(v) for v in f)
+                                                 and f[2] >= 1 and f[3] >= 1 for f in floors)):
+            self.error("%s: fake_floor debe ser una lista de [x, y, ancho, alto] (enteros, tamano >= 1)" % what, y, x)
+            floors = []
+        max_drop = int(cfg.get("max_drop_tiles", 3))
+        climb = int(cfg.get("exit_climb_tiles", 2))
+        for (fx, fy, fw, fh) in floors:
+            self._check_fake_floor(what, (fx, fy, fw, fh), cells, max_drop, climb)
+        for i, obj in enumerate(self.level["objects"]):
+            if not (isinstance(obj, dict) and obj.get("type") == "like_platform"):
+                continue
+            px, py = obj.get("x"), obj.get("y")
+            pw = (obj.get("params") or {}).get("width_tiles", 2)
+            if not (_is_int(px) and _is_int(py) and _is_int(pw)):
+                continue
+            covered = [(px + k, py + d) for d in (-1, 0) for k in range(pw) if (px + k, py + d) in cells]
+            if covered:
+                self.error("%s: tapa el umbral de la plataforma de likes objects[%d] (%d, %d): el filtro nunca "
+                           "esconde un umbral" % (what, i, px, py), covered[0][1], covered[0][0])
+
+    def _check_fake_floor(self, what, rect, cells, max_drop, climb):
+        """Un suelo falso: celdas libres dentro del filtro; bajo cada columna, terreno a <= max_drop
+        filas de su cara de arriba (sin terreno en medio) y una salida del foso."""
+        fx, fy, fw, fh = rect
+        landings = []
+        for i in range(fw):
+            c = fx + i
+            for j in range(fh):
+                if not self.in_bounds(c, fy + j):
+                    self.error("%s: fake_floor se sale del grid" % what, fy + j, c)
+                    return
+                if (c, fy + j) not in cells:
+                    self.error("%s: fake_floor fuera del filtro: el suelo falso solo existe bajo la capa"
+                               % what, fy + j, c)
+                    return
+                if self.cell(c, fy + j) != ".":
+                    self.error("%s: fake_floor sobre '%s': el grid debe dejar el foso vacio ('.')"
+                               % (what, self.cell(c, fy + j)), fy + j, c)
+                    return
+            r = fy + fh
+            while self.in_bounds(c, r) and self.cell(c, r) not in "#-":
+                r += 1
+            if not self.in_bounds(c, r):
+                self.error("%s: bajo el suelo falso no hay fondo (el filtro engana, no mata)" % what, fy, c)
+                return
+            if r - fy > max_drop:
+                self.error("%s: el suelo falso deja caer %d tiles (maximo %d)" % (what, r - fy, max_drop), fy, c)
+                return
+            landings.append((c, r))
+        # Salida: foso poco hondo (se sube de un salto) o abierto por un lado al nivel del fondo.
+        deepest = max(r - fy for (_, r) in landings)
+        if deepest <= climb:
+            return
+        for (c, r) in landings:
+            for side in (-1, 1):
+                nc = c + side
+                if fx <= nc < fx + fw:
+                    continue
+                if self.in_bounds(nc, r - 1) and self.cell(nc, r - 1) != "#":
+                    return
+        self.error("%s: el foso del suelo falso (%d tiles) no tiene salida: debe medir <= %d o abrirse por un lado"
+                   % (what, deepest, climb), fy, fx)
 
     def _check_exceptions_panel(self, what, x, y, params):
         """Decorado de la sala «Excepciones» (2026-10-20): title texto no vacio y contacts lista de
