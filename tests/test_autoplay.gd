@@ -237,7 +237,9 @@ func test_start_shows_full_counter_with_the_playhead_hidden() -> void:
 	assert_true(_boss.get_core().is_enabled(), "El cabezal esta activo")
 	assert_false(_boss.get_core().is_revealed(), "Sin el Debug no se ve el boton de pausa")
 	_debug_on()
-	await wait_frames(1)
+	# El revelado se actualiza en WeakPoint._process: hay que esperar un frame
+	# de proceso (con la carga, varios pasos de fisica caben en el mismo frame).
+	await wait_process_frames(1)
 	assert_true(_boss.get_core().is_revealed(), "Con el Debug se ve en rojo")
 
 
