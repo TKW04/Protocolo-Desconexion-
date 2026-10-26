@@ -280,6 +280,25 @@ func test_commenter_warns_then_spits_a_rising_bubble_every_interval() -> void:
 	assert_eq(c.get_spit_count(), 2, "Otro cada 2,5 s")
 
 
+func test_commenter_art_follows_its_state() -> void:
+	var c: Commenter = _commenter(4)
+	for anim: String in Commenter.ART_ANIMS:
+		for i: int in int(Commenter.ART_ANIMS[anim][0]):
+			var path: String = Commenter.ART_DIR + "commenter_%s_%02d.png" % [anim, i]
+			assert_true(ResourceLoader.exists(path), "Existe %s" % path)
+	assert_eq(c.get_art_frame(), ["spit", 0], "El aviso empieza a inflarse")
+	_step_commenter(c, 0.7)
+	assert_eq(c.get_art_frame(), ["spit", 8], "Al final del aviso, el ultimo cuadro inflado")
+	_step_commenter(c, 0.1)
+	assert_eq(c.get_spit_count(), 1)
+	assert_eq(c.get_art_frame()[0], "spit", "Justo tras escupir, la cola del spit")
+	assert_gte(int(c.get_art_frame()[1]), Commenter.ART_SPIT_WARN_FRAMES)
+	_step_commenter(c, 0.5)
+	assert_eq(c.get_art_frame()[0], "idle", "Despues, en reposo")
+	c.stun()
+	assert_eq(c.get_art_frame()[0], "stunned")
+
+
 func test_commenter_bubble_hurts_isak_above() -> void:
 	var c: Commenter = _commenter(4)
 	_stand_at(5)

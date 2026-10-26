@@ -66,6 +66,12 @@ const RUN_FPS: float = 14.0
 ##   duracion del dash) sin bucle: deslizamiento bajo e inclinado hacia delante,
 ##   celdas 9, 13 y 18 de hojas/dash_right/spritesheet.png (AutoSprite; comando
 ##   en docs/guia-sprites-ia.md). Sustituye a la pose provisional por cizalla.
+## ground_pound_air / ground_pound_land (2026-10-26): pose del golpe al suelo,
+##   2 cuadros a 12 fps cada una sin bucle (encogido en el aire durante la
+##   anticipacion y la caida; agachado con el puno en el suelo al aterrizar),
+##   celdas 13,14 y 22,23 de hojas/ground_pound_right/spritesheet.png
+##   (AutoSprite; comandos en docs/guia-sprites-ia.md). Sustituyen a la pose
+##   provisional por escala (Isak.update_ground_pound_pose).
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
 	"walk": [WALK_FPS, true, false],
@@ -82,6 +88,8 @@ const ANIMATIONS: Dictionary[String, Array] = {
 	"terminal_outro": [6.0, false, false],
 	"back_idle": [1.0, true, false],
 	"dash": [15.0, false, false],
+	"ground_pound_air": [12.0, false, false],
+	"ground_pound_land": [12.0, false, false],
 }
 
 ## Animaciones hechas con cuadros de otra (sin PNG propios):

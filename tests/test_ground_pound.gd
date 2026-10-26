@@ -192,6 +192,21 @@ func test_land_pose_blocks_movement_and_then_cools_down() -> void:
 	assert_almost_eq(_isak.get_ground_pound_cooldown_left(), 0.4, DT * 2.0, "Enfriamiento de 0,4 s")
 
 
+func test_pose_uses_the_autosprite_frames_without_scaling() -> void:
+	_jump_to_apex()
+	_hold(true)
+	_sim.step_until(func() -> bool: return _isak.is_ground_pounding(), _sim.steps_for(1.0))
+	var sprite: AnimatedSprite2D = _isak.get_sprite()
+	assert_eq(sprite.animation, Isak.ANIM_GROUND_POUND_AIR, "Encogido en el aire")
+	assert_eq(sprite.scale, Vector2.ONE, "Sin el estirado provisional")
+	_pound_until_landed()
+	assert_eq(sprite.animation, Isak.ANIM_GROUND_POUND_LAND, "Agachado al aterrizar")
+	assert_eq(sprite.scale, Vector2.ONE, "Sin el aplastado provisional")
+	_hold(false)
+	_sim.step_until(func() -> bool: return not _isak.is_ground_pounding(), _sim.steps_for(1.0))
+	assert_ne(sprite.animation, Isak.ANIM_GROUND_POUND_LAND, "Al terminar vuelve a su animacion")
+
+
 func test_short_tap_in_air_does_nothing() -> void:
 	_jump_to_apex()
 	_hold(true)

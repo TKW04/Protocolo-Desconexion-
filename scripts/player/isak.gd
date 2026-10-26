@@ -65,6 +65,8 @@ const ANIM_LASER: StringName = &"laser"
 const ANIM_BACK_IDLE: StringName = &"back_idle"
 ## Pose del gesto Deslizar (dash; hoja de AutoSprite, tools/build_isak_frames.gd).
 const ANIM_DASH: StringName = &"dash"
+const ANIM_GROUND_POUND_AIR: StringName = &"ground_pound_air"
+const ANIM_GROUND_POUND_LAND: StringName = &"ground_pound_land"
 ## Estados en los que la pose del laser se corta (tienen animacion propia).
 const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
 ## Margen al pasar del tiempo de anticipacion al cuadro de la pose.
@@ -1081,11 +1083,19 @@ func end_ground_pound() -> void:
 	_restore_sprite_shape()
 
 
-## Pose PROVISIONAL del golpe (sin hoja propia): en el aire, el ultimo cuadro de
-## caida estirado (drop_scale); al aterrizar, el primer cuadro de aterrizaje
-## aplastado (land_scale). Los pies no se mueven.
+## Pose del golpe: con la hoja de AutoSprite (ground_pound_air / _land de
+## isak_frames.tres, 2026-10-26) se reproduce su animacion sin escalar. Sin
+## ella, la PROVISIONAL: en el aire, el ultimo cuadro de caida estirado
+## (drop_scale); al aterrizar, el primer cuadro de aterrizaje aplastado
+## (land_scale). Los pies no se mueven.
 func update_ground_pound_pose(landed: bool) -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
+	var art: StringName = ANIM_GROUND_POUND_LAND if landed else ANIM_GROUND_POUND_AIR
+	if frames != null and frames.has_animation(art):
+		_restore_sprite_shape()
+		if _sprite.animation != art:
+			_sprite.play(art)
+		return
 	var anim: StringName = ANIM_JUMP_LAND if landed else ANIM_JUMP_FALL
 	if frames != null and frames.has_animation(anim):
 		_sprite.animation = anim

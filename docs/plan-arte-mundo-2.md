@@ -62,8 +62,46 @@ Sin reintentos: todas las piezas se aceptaron a la primera. Autoplay completo: 4
 - Pedir `frameSize` 1024 y guardar las hojas reducidas a 512 da margen de calidad sin cargar el repositorio.
 - Pedir todas las animaciones en una sola llamada funciona; el orden de las hojas devueltas **no** sigue el del pedido: identificarlas mirándolas.
 
-## 2. Pendiente (fases posteriores, con su propio visto bueno)
+## 2. Comentarista y golpe al suelo (2026-10-26)
 
-- **Comentarista** (base, una pose, `idle`, `spit`, `stunned`: 21 créditos, 42 con reintentos).
-- **Golpe al suelo de Isak** (`ground_pound`: 5, +3 si hace falta una pose).
-- Ficha del álbum `autoplay` con el arte final (cambiar el origen en `tools/gen_album_cards.py`) y `import_boss_autoplay.py --check` en `tools/run_tests.sh`.
+### 2.1 Créditos
+
+Saldo al empezar (`get_account`): **403** (la memoria decía 400: el base del Comentarista del 2026-10-23 tampoco aparece descontado, como el de Autoplay). Antes de generar se comprobó con `list_jobs` y `get_character` que no había trabajos ni poses nuevas desde el 2026-10-23.
+
+| # | Llamada | Pieza | Créditos | Saldo tras la llamada |
+|---|---|---|---|---|
+| 1 | `generate_pose` | Comentarista `Stunned` (`cmvp9o5b9005ile3qrv9zpb41`): ojos en espiral, boca ondulada, dos estrellas | 3 | 400 |
+| 2 | `generate_spritesheet` turbo | Isak `ground_pound` (`custom`, modo `reference`) | 5 | 395 |
+| 3 | `generate_spritesheet` turbo (una llamada, 3 animaciones) | Comentarista `idle`, `spit`, `stunned` (`first_frame`, `raw_prompt`, vista de frente; `idle` y `spit` del base al base, `stunned` de `Stunned` a `Stunned`) | 15 | **380** |
+| | | **Total** | **23** (tope 35) | |
+
+Sin reintentos: todo se aceptó a la primera.
+
+### 2.2 Comentarista
+
+- **Hojas** en `hojas/commenter/<anim>/spritesheet.png` (5 × 5 cuadros de 512, cuantizadas a 256 colores); base y pose en `hojas/commenter/base.png` y `pose_stunned.png`. Como en Autoplay, el orden de las hojas devueltas no seguía el del pedido: se identificaron mirándolas.
+- **Importador** `python3 -I tools/import_commenter.py` (`--check` en `tools/run_tests.sh`): una sola transformación para las tres hojas (caja de la celda 0 de `idle` → 24 × 28 píxeles de arte con 8 de margen), paleta B solo con `feed_noche`, `feed_medio`, `feed_resplandor`, `tarjeta_borde`, `blanco`, `gris`, `magenta` y `magenta_sombra` (cuerpo → `feed_resplandor` / `feed_medio`, bisel → `tarjeta_borde`, mofletes → `magenta`, contorno → `feed_noche`; las estrellas amarillas del aturdido quedan blancas: sin ámbar ni rojo), ampliado ×2: lienzo de 80 × 88 con el cuerpo de **48 × 56** (`body_size`) a 16 px del borde. 62 PNG en `assets/sprites/enemies/commenter/commenter_<anim>_NN.png`.
+
+| Animación | Celdas | Cuadros | Cuándo (tiempo del mundo, 12 fps) |
+|---|---|---|---|
+| `idle` | 0-23 | 24 | en bucle en reposo; parpadea una vez por vuelta |
+| `spit` | 0, 3, 4, 5, 6, 8, 10, 11, 13 + 14-18 | 9 + 5 | los 9 primeros, uno por cuadro del aviso (se infla); los 5 últimos justo tras escupir (se aplasta y vuelve). En las celdas 14-15 se borra el bocadillo que dibuja la IA (solo queda la mancha del cuerpo): el de verdad lo lanza el juego por la columna de delante |
+| `stunned` | 0-23 | 24 | en bucle aturdido (se tambalea, giran las estrellas) |
+| derrotado | `idle` 0 | 1 | gris y a media transparencia |
+
+- **Código:** `scripts/enemies/commenter.gd` (`ART_ANIMS`, `get_art_frame()`, `_art_texture()`): dibuja el cuadro en `_draw` reflejado con `facing` (el arte mira a la derecha, la cola hacia la pared). El aviso del bocadillo en la columna de delante (blanco con marco rojo) y las chispas del láser siguen por código encima. Si faltan los cuadros, vuelve al provisional (`_draw_placeholder`). **Tiempos, cajas, daño y textos sin cambios.** Prueba nueva `test_commenter_art_follows_its_state` en `tests/test_world2_enemies.gd`.
+- **Calidad:** se reconoce bien a 48 px; las espirales del aturdido quedan algo borrosas al reducir; los mofletes inflados del `spit` sobresalen del cuerpo (caben en el margen).
+
+### 2.3 Golpe al suelo de Isak
+
+- Hoja en `hojas/ground_pound_right/spritesheet.png` (pedida a 512 por cuadro y guardada reducida a 256, la escala de las demás hojas de Isak). Salto pequeño, encogido, caída y aterrizaje agachado con el puño en el suelo y polvo.
+- Importada con `tools/import_sheet.py` (comandos en `docs/guia-sprites-ia.md`): `ground_pound_air` (celdas 13, 14, encogido) y `ground_pound_land` (22, 23, agachado), 12 fps sin bucle, en `tools/build_isak_frames.gd` → `scenes/player/isak_frames.tres`.
+- `Isak.update_ground_pound_pose` usa esas animaciones sin escalar si existen (la pose provisional por escala queda de respaldo). Prueba nueva `test_pose_uses_the_autosprite_frames_without_scaling` en `tests/test_ground_pound.gd`.
+
+### 2.4 Copias para revisar
+
+`docs/capturas/arte-autosprite-2026-10-26/`: base y pose del Comentarista, sus tres hojas, los cuadros importados (todos y los clave a ×4), la hoja del golpe al suelo y sus cuadros importados.
+
+## 3. Pendiente
+
+- Fichas del álbum `autoplay` y `commenter` con el arte final (cambiar el origen en `tools/gen_album_cards.py`).

@@ -117,6 +117,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 11 (2026-10-22): el 2-1 real (tests/test_level_2_1.py, camino exportado y subidas al dia).
 # Desde el paso 13 (2026-10-23): el 2-2 real (tests/test_level_2_2.py).
 # Desde el paso 14 (2026-10-23): el 2-3 real (tests/test_level_2_3.py).
+# Desde el paso 23 (2026-10-26): el arte final de Autoplay y del Comentarista al dia
+# (tools/import_boss_autoplay.py --check, tools/import_commenter.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -182,6 +184,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
+		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2

@@ -16,7 +16,9 @@
 ## - defeated: vida a 0 (laser aturdido); suelta drops y no vuelve.
 ## El cuerpo no dana; el bocadillo si (el dash lo atraviesa). LASER: despierto,
 ## chispa gris (el disparo se consume); aturdido, dano. Al reaparecer Isak
-## vuelve al estado inicial. Solo texto: aspecto PROVISIONAL por codigo.
+## vuelve al estado inicial. Arte final de AutoSprite (2026-10-26;
+## tools/import_commenter.py, ART_ANIMS); si faltan los cuadros, aspecto
+## provisional por codigo. El aviso del bocadillo en la boca se dibuja siempre.
 class_name Commenter
 extends Node2D
 
@@ -38,6 +40,20 @@ const GROUP: StringName = &"enemy"
 const TILE: float = 64.0
 const LAYER_WORLD: int = 1
 const LAYER_ENEMY: int = 4
+
+## Arte final (tools/import_commenter.py): anim -> [cuadros, fps, bucle]. Lienzo
+## de 80 x 88 con el cuerpo de 48 x 56 a ART_MARGIN_PX del borde izquierdo y del
+## de arriba. El arte mira a la derecha (facing 1); con facing -1 se refleja.
+## spit: cuadros 0-8 durante el aviso (uno por cuadro de anticipacion) y
+## 9-13 justo despues de escupir.
+const ART_DIR: String = "res://assets/sprites/enemies/commenter/"
+const ART_ANIMS: Dictionary = {
+	"idle": [24, 12.0, true],
+	"spit": [14, 12.0, false],
+	"stunned": [24, 12.0, true],
+}
+const ART_SPIT_WARN_FRAMES: int = 9
+const ART_MARGIN_PX: float = 16.0
 
 @export_file("*.json") var data_path: String = DEFAULT_DATA_PATH
 
@@ -83,6 +99,9 @@ var _ready_ok: bool = false
 var _health: EnemyHealth
 var _body: StaticBody2D
 var _shots: Array[NotificationShot] = []
+## Tiempo del mundo desde el ultimo bocadillo (cuadros 9-13 del spit).
+var _since_spit: float = INF
+var _art_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -118,6 +137,7 @@ func step(delta: float) -> void:
 		return
 	var dt: float = WorldTime.scaled_delta(delta)
 	_time += dt
+	_since_spit += dt
 	if _deflect_left > 0.0:
 		_deflect_left = maxf(_deflect_left - dt, 0.0)
 	match _state:
@@ -267,6 +287,7 @@ func reset_patrol() -> void:
 	_deflect_left = 0.0
 	_cycle_t = -offset_s
 	_spits = 0
+	_since_spit = INF
 	if _state != STATE_DEFEATED:
 		_change_state(STATE_REST)
 		if _cycle_t >= 0.0:
@@ -300,6 +321,7 @@ func _spit() -> void:
 	shot.global_position = get_mouth_point()
 	_shots.append(shot)
 	_spits += 1
+	_since_spit = 0.0
 	spat.emit(shot)
 
 
@@ -342,23 +364,53 @@ func _on_pulse_fired(area: Area2D) -> void:
 	receive_pulse(area)
 
 
-# --- Dibujo (PROVISIONAL, paleta provisional del Mundo 2; solo texto) ---
+# --- Arte ---
+
+## [animacion, cuadro] del arte final que toca ahora (ART_ANIMS).
+func get_art_frame() -> Array:
+	match _state:
+		STATE_DEFEATED:
+			return ["idle", 0]
+		STATE_STUNNED:
+			return ["stunned", _art_loop_frame("stunned")]
+		STATE_WARN:
+			var k: int = int(floor(maxf(_cycle_t, 0.0) * anim_fps))
+			return ["spit", clampi(k, 0, ART_SPIT_WARN_FRAMES - 1)]
+	var tail: int = int(ART_ANIMS["spit"][0]) - ART_SPIT_WARN_FRAMES
+	var tail_s: float = float(tail) / float(ART_ANIMS["spit"][1])
+	if _since_spit >= 0.0 and _since_spit < tail_s:
+		var after: int = int(floor(_since_spit * float(ART_ANIMS["spit"][1])))
+		return ["spit", ART_SPIT_WARN_FRAMES + mini(after, tail - 1)]
+	return ["idle", _art_loop_frame("idle")]
+
+
+func _art_loop_frame(anim: String) -> int:
+	var spec: Array = ART_ANIMS[anim]
+	return posmod(int(floor(_time * float(spec[1]))), int(spec[0]))
+
+
+func _art_texture(anim: String, frame: int) -> Texture2D:
+	var path: String = ART_DIR + "commenter_%s_%02d.png" % [anim, frame]
+	if not _art_cache.has(path):
+		_art_cache[path] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _art_cache[path]
+
+
+# --- Dibujo ---
 
 func _draw() -> void:
 	var body := Rect2(Vector2(-body_size.x * 0.5, -body_size.y), body_size)
 	var defeated_now: bool = _state == STATE_DEFEATED
-	FeedCardDraw.card(self, body, 0.5 if defeated_now else 1.0, false, "tarjeta_base")
-	var white: Color = World2ObjectsConfig.color("blanco")
 	var grey: Color = World2ObjectsConfig.color("gris")
-	var font: Font = ThemeDB.fallback_font
-	# Cara de texto: «...» (comentando), «||» aturdido, «x» derrotado.
-	var face: String = "..."
-	if defeated_now:
-		face = "x"
-	elif _state == STATE_STUNNED:
-		face = "||"
-	draw_string(font, body.position + Vector2(0.0, body.size.y * 0.6), face, HORIZONTAL_ALIGNMENT_CENTER,
-		body.size.x, 18, grey if defeated_now else white)
+	var art: Array = get_art_frame()
+	var tex: Texture2D = _art_texture(art[0], art[1])
+	if tex != null:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(float(facing), 1.0))
+		var tint: Color = Color(0.6, 0.6, 0.7, 0.5) if defeated_now else Color.WHITE
+		draw_texture(tex, body.position - Vector2(ART_MARGIN_PX, ART_MARGIN_PX), tint)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	else:
+		_draw_placeholder(body, defeated_now)
 	if _state == STATE_WARN:
 		# Aviso: el bocadillo se infla en la boca (crece con el aviso), en rojo.
 		var k: float = clampf(_cycle_t / maxf(get_warn_s(), 0.001), 0.0, 1.0)
@@ -373,6 +425,21 @@ func _draw() -> void:
 		for a: float in [0.0, 45.0, 90.0, 135.0]:
 			var d := Vector2(12.0, 0.0).rotated(deg_to_rad(a))
 			draw_line(c - d, c + d, grey, 2.0)
+
+
+## Aspecto PROVISIONAL por codigo (sin los cuadros del arte final): tarjeta
+## con cara de texto «...» (comentando), «||» aturdido, «x» derrotado.
+func _draw_placeholder(body: Rect2, defeated_now: bool) -> void:
+	FeedCardDraw.card(self, body, 0.5 if defeated_now else 1.0, false, "tarjeta_base")
+	var white: Color = World2ObjectsConfig.color("blanco")
+	var grey: Color = World2ObjectsConfig.color("gris")
+	var face: String = "..."
+	if defeated_now:
+		face = "x"
+	elif _state == STATE_STUNNED:
+		face = "||"
+	draw_string(ThemeDB.fallback_font, body.position + Vector2(0.0, body.size.y * 0.6), face,
+		HORIZONTAL_ALIGNMENT_CENTER, body.size.x, 18, grey if defeated_now else white)
 
 
 func _load_data() -> bool:
