@@ -50,9 +50,10 @@ Sin reintentos: todas las piezas se aceptaron a la primera. Autoplay completo: 4
 ### 1.4 Calidad y defectos vistos
 
 - La pantalla se reconoce y es coherente entre animaciones; la paleta B se respeta (sin rojos ni ámbar en el cuerpo).
-- El brillo neón de `Playing` / `x2` y los resplandores de `idle` dejan anillos lavanda alrededor de los ojos al reducir la paleta (se leen como halo; aceptable).
-- El cuadro 2 de `clip_cast` (encogerse) baja la pantalla unos 30 px durante 1-2 cuadros.
-- La miniatura del clip (`ScreenFx`, abajo a la derecha) y la caja roja de la «Cuenta atrás» pisan el ojo derecho; el texto de la pantalla, la barra de progreso del arte. Es dibujo por código heredado del provisional: se puede recolocar sin tocar el arte.
+- ~~El brillo neón de `Playing` / `x2` y los resplandores de `idle` dejan anillos lavanda alrededor de los ojos al reducir la paleta.~~ **Corregido el 2026-10-26 por script** (`CLEAN_HALO` de `tools/import_boss_autoplay.py`, en `idle`, `clip_cast` y `x2`): dentro de cada ojo y en su halo, el gris, el bisel, el resplandor y la luz de tarjeta se rellenan con los colores vecinos (ojo, triángulo, halo magenta oscuro o fondo); la barra de progreso no se toca.
+- ~~El cuadro 2 de `clip_cast` (encogerse) baja la pantalla unos 30 px durante 1-2 cuadros.~~ **Corregido el 2026-10-26** (`RECENTER`): cada cuadro de `clip_cast` se desplaza en vertical para que el centro de lo opaco siga en el de la referencia (bajaba hasta 7 píxeles de arte, 28 px); el encogido se conserva.
+- ~~La miniatura del clip (`ScreenFx`, abajo a la derecha) y la caja roja de la «Cuenta atrás» pisan el ojo derecho.~~ **Corregido el 2026-10-26**: con el arte final van en una caja vertical entre el ojo derecho y el marco (`Autoplay.ART_THUMB_BOX`, 56 × 120 px a (420, 60) de la caja `screen`; `get_thumb_rect()`); el provisional conserva la caja de antes. El texto de la pantalla sigue pisando la barra de progreso del arte.
+- Capturas antes / después en `docs/capturas/arte-correcciones-2026-10-26/` (`autoplay_*` y `juego_despues_*`, estas con el flujo real de `tools/render_level_2_x.gd`).
 - La barra del jefe del HUD tapa el borde superior de la pantalla (ya pasaba con el provisional).
 
 ### 1.5 Lecciones
@@ -80,7 +81,7 @@ Sin reintentos: todo se aceptó a la primera.
 ### 2.2 Comentarista
 
 - **Hojas** en `hojas/commenter/<anim>/spritesheet.png` (5 × 5 cuadros de 512, cuantizadas a 256 colores); base y pose en `hojas/commenter/base.png` y `pose_stunned.png`. Como en Autoplay, el orden de las hojas devueltas no seguía el del pedido: se identificaron mirándolas.
-- **Importador** `python3 -I tools/import_commenter.py` (`--check` en `tools/run_tests.sh`): una sola transformación para las tres hojas (caja de la celda 0 de `idle` → 24 × 28 píxeles de arte con 8 de margen), paleta B solo con `feed_noche`, `feed_medio`, `feed_resplandor`, `tarjeta_borde`, `blanco`, `gris`, `magenta` y `magenta_sombra` (cuerpo → `feed_resplandor` / `feed_medio`, bisel → `tarjeta_borde`, mofletes → `magenta`, contorno → `feed_noche`; las estrellas amarillas del aturdido quedan blancas: sin ámbar ni rojo), ampliado ×2: lienzo de 80 × 88 con el cuerpo de **48 × 56** (`body_size`) a 16 px del borde. 62 PNG en `assets/sprites/enemies/commenter/commenter_<anim>_NN.png`.
+- **Importador** `python3 -I tools/import_commenter.py` (`--check` en `tools/run_tests.sh`): una sola transformación para las tres hojas (caja de la celda 0 de `idle` → 24 × 28 píxeles de arte con 8 de margen), paleta B solo con `feed_noche`, `feed_medio`, `feed_resplandor`, `tarjeta_borde`, `blanco`, `gris`, `magenta` y `magenta_sombra` (cuerpo → `feed_resplandor` / `feed_medio`, bisel → `tarjeta_borde`, mofletes → `magenta`, contorno → `feed_noche`; sin ámbar ni rojo), ampliado ×2: lienzo de 80 × 88 con el cuerpo de **48 × 56** (`body_size`) a 16 px del borde. 62 PNG en `assets/sprites/enemies/commenter/commenter_<anim>_NN.png`.
 
 | Animación | Celdas | Cuadros | Cuándo (tiempo del mundo, 12 fps) |
 |---|---|---|---|
@@ -90,7 +91,8 @@ Sin reintentos: todo se aceptó a la primera.
 | derrotado | `idle` 0 | 1 | gris y a media transparencia |
 
 - **Código:** `scripts/enemies/commenter.gd` (`ART_ANIMS`, `get_art_frame()`, `_art_texture()`): dibuja el cuadro en `_draw` reflejado con `facing` (el arte mira a la derecha, la cola hacia la pared). El aviso del bocadillo en la columna de delante (blanco con marco rojo) y las chispas del láser siguen por código encima. Si faltan los cuadros, vuelve al provisional (`_draw_placeholder`). **Tiempos, cajas, daño y textos sin cambios.** Prueba nueva `test_commenter_art_follows_its_state` en `tests/test_world2_enemies.gd`.
-- **Calidad:** se reconoce bien a 48 px; las espirales del aturdido quedan algo borrosas al reducir; los mofletes inflados del `spit` sobresalen del cuerpo (caben en el margen).
+- **Calidad:** se reconoce bien a 48 px; los mofletes inflados del `spit` sobresalen del cuerpo (caben en el margen).
+- **Aturdido redibujado por script (2026-10-26):** a 48 px las espirales de la IA quedaban borrosas y las estrellas amarillas caían en gris (ámbar y rojo están fuera de la paleta B). `redraw_stunned` de `tools/import_commenter.py` conserva el tambaleo y la órbita de la IA (posiciones) y dibuja encima, por cuadro: ojos con una espiral nítida de 7 × 7 (blanco sobre `feed_noche`, la derecha en espejo) que gira 90° cada 3 cuadros (dos vueltas por bucle de 24) y estrellas blancas con núcleo `magenta` y contorno `feed_noche`, a propósito (dos como máximo, nunca encima del cuerpo). Capturas en `docs/capturas/arte-correcciones-2026-10-26/comentarista_*`. Sin créditos de AutoSprite.
 
 ### 2.3 Golpe al suelo de Isak
 

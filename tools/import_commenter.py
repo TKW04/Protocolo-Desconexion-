@@ -14,8 +14,9 @@ hojas/commenter/<anim>/spritesheet.png (5 x 5 cuadros de 512 px):
      el alfa se umbraliza y tools/reduce_palette.py la pasa a la paleta B
      (mundo2.gpl) solo con ALLOWED: cuerpo -> feed_resplandor / feed_medio,
      bisel -> tarjeta_borde, mofletes -> magenta, contorno -> feed_noche, ojos
-     y texto -> blanco / gris (sin rojos ni ambares: las estrellas del
-     aturdido quedan blancas).
+     y texto -> blanco / gris (sin rojos ni ambares).
+  2b. En `stunned` los ojos en espiral y las estrellas se redibujan por
+     script encima de cada cuadro reducido (redraw_stunned, REDRAW_STUNNED).
   3. En las celdas de KEEP_BODY_ONLY se borra todo lo que no esta unido al
      cuerpo (la mancha opaca mas grande): el bocadillo que la IA dibuja al
      escupir (el de verdad lo lanza el juego por la columna de delante).
@@ -71,6 +72,33 @@ ANIMS = {
 }
 ## Celdas (anim, celda) donde solo se queda el cuerpo (sin el bocadillo escupido).
 KEEP_BODY_ONLY = {("spit", 14), ("spit", 15)}
+
+## Aturdido redibujado por script (correccion del 2026-10-26): a 48 px las
+## espirales de la IA quedaban borrosas y las estrellas amarillas caian en gris.
+## Cada cuadro conserva el tambaleo y la orbita de la IA (posiciones), pero los
+## ojos son una espiral nitida que gira (SPIRAL rotada 90 grados cada
+## SPIRAL_STEP cuadros; la derecha en espejo) y las estrellas, una estrella
+## blanca con nucleo magenta y contorno feed_noche (sin ambar: paleta B).
+REDRAW_STUNNED = "stunned"
+SPIRAL = [".WWWWW.",
+          "W#####W",
+          "WWWWW#W",
+          "W###W#W",
+          "W#WWW#W",
+          "W#####W",
+          ".WWWWW."]
+STAR = ["...#...",
+        "..#W#..",
+        "##WWW##",
+        "#WWMWW#",
+        ".#WWW#.",
+        ".#W#W#.",
+        ".##.##."]
+SPIRAL_STEP = 3
+STAR_MERGE = 6
+STAR_COUNT = 2
+COLORS = {"W": "blanco", "#": "feed_noche", "M": "magenta"}
+BODY = "feed_resplandor"
 
 
 def parse_cells(spec):
@@ -147,15 +175,118 @@ def to_art(cell, box, body_only):
     return keep_largest_blob(small) if body_only else small
 
 
+def rotate_pattern(rows, turns):
+    for _ in range(turns % 4):
+        rows = ["".join(rows[len(rows) - 1 - y][x] for y in range(len(rows))) for x in range(len(rows[0]))]
+    return rows
+
+
+def stamp(px, size, rows, cx, cy, rgb):
+    h, w = len(rows), len(rows[0])
+    for y, line in enumerate(rows):
+        for x, ch in enumerate(line):
+            tx, ty = cx - w // 2 + x, cy - h // 2 + y
+            if ch != "." and 0 <= tx < size[0] and 0 <= ty < size[1]:
+                px[tx, ty] = rgb[COLORS[ch]] + (255,)
+
+
+def body_top(px, size, body_rgb, light_rgb):
+    """Primera fila con al menos 8 pixeles de cuerpo (feed_resplandor o bisel)."""
+    for y in range(size[1]):
+        if sum(1 for x in range(size[0]) if px[x, y][3] and px[x, y][:3] in (body_rgb, light_rgb)) >= 8:
+            return y
+    raise SystemExit("aturdido: no se encuentra el cuerpo")
+
+
+def components(points):
+    """Manchas 8-conexas de un conjunto de (x, y)."""
+    left, out = set(points), []
+    while left:
+        stack = [left.pop()]
+        blob = list(stack)
+        while stack:
+            x, y = stack.pop()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    n = (x + dx, y + dy)
+                    if n in left:
+                        left.remove(n)
+                        stack.append(n)
+                        blob.append(n)
+        out.append(blob)
+    return out
+
+
+def redraw_stunned(art, frame, rgb):
+    """Ojos en espiral y estrellas nitidos sobre el cuadro reducido (ver REDRAW_STUNNED)."""
+    px = art.load()
+    size = art.size
+    body, light, dark = rgb[BODY], rgb["tarjeta_borde"], rgb["feed_noche"]
+    top = body_top(px, size, body, light)
+    # Estrellas: todo lo que queda por encima del contorno superior del cuerpo.
+    stars = [(x, y) for y in range(top - 1) for x in range(size[0]) if px[x, y][3]]
+    for x in range(size[0]):
+        if px[x, top - 1][3] and px[x, top - 1][:3] != dark:
+            stars.append((x, top - 1))
+    # Manchas de la misma estrella (a menos de STAR_MERGE) se juntan; quedan las
+    # STAR_COUNT mas grandes (la pose tiene dos estrellas).
+    groups = []
+    for blob in sorted(components(stars), key=len, reverse=True):
+        if len(blob) < 2:
+            continue
+        bx = sum(p[0] for p in blob) / len(blob)
+        by = sum(p[1] for p in blob) / len(blob)
+        for g in groups:
+            gx, gy = sum(p[0] for p in g) / len(g), sum(p[1] for p in g) / len(g)
+            if abs(gx - bx) < STAR_MERGE and abs(gy - by) < STAR_MERGE:
+                g.extend(blob)
+                break
+        else:
+            groups.append(list(blob))
+    groups = sorted(groups, key=len, reverse=True)[:STAR_COUNT]
+    centers = [(round(sum(p[0] for p in g) / len(g)), round(sum(p[1] for p in g) / len(g))) for g in groups]
+    for x, y in stars:
+        px[x, y] = (0, 0, 0, 0) if y < top - 1 else dark + (255,)
+    # Ojos: lo claro (blanco / gris) de la mitad alta del cuerpo, a cada lado.
+    xs = [x for x in range(size[0]) if px[x, top + 4][3] and px[x, top + 4][:3] == body]
+    x0, x1 = min(xs), max(xs)
+    mid = (x0 + x1) / 2
+    eyes = {"l": [], "r": []}
+    for y in range(top + 3, top + 12):
+        for x in range(x0 + 1, x1):
+            if px[x, y][3] and px[x, y][:3] in (rgb["blanco"], rgb["gris"]):
+                eyes["l" if x < mid else "r"].append((x, y))
+    turns = frame // SPIRAL_STEP
+    for side, pts in eyes.items():
+        if not pts:
+            raise SystemExit(f"aturdido {frame}: no se encuentra el ojo {side}")
+        for x, y in pts:
+            px[x, y] = body + (255,)
+        cx = round(sum(p[0] for p in pts) / len(pts))
+        cy = round(sum(p[1] for p in pts) / len(pts))
+        rows = rotate_pattern(SPIRAL, turns)
+        if side == "r":
+            rows = [line[::-1] for line in rows]
+        stamp(px, size, rows, cx, cy, rgb)
+    # Estrellas encima (nunca pisan el cuerpo: el centro queda 4 filas por encima).
+    for cx, cy in centers:
+        stamp(px, size, STAR, cx, min(cy, top - 4), rgb)
+    return art
+
+
 def build(out_dir):
     allowed = reduce_palette.select_colors(reduce_palette.load_gpl(GPL), only=ALLOWED)
+    rgb = dict(allowed)
     sheets = {a: Image.open(os.path.join(SHEETS, a, "spritesheet.png")).convert("RGBA") for a in ANIMS}
     box = opaque_box(cell_image(sheets[REF[0]], REF[1]))
     files = []
     for anim, spec in ANIMS.items():
         for i, c in enumerate(parse_cells(spec)):
             art = to_art(cell_image(sheets[anim], c), box, (anim, c) in KEEP_BODY_ONLY)
-            img = reduce_palette.reduce_image(art, allowed).resize(CANVAS, Image.NEAREST)
+            art = reduce_palette.reduce_image(art, allowed)
+            if anim == REDRAW_STUNNED:
+                art = redraw_stunned(art, i, rgb)
+            img = art.resize(CANVAS, Image.NEAREST)
             name = f"{PREFIX}_{anim}_{i:02d}.png"
             img.save(os.path.join(out_dir, name))
             files.append(name)

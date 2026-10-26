@@ -14,6 +14,7 @@ guardadas en hojas/autoplay/<anim>/spritesheet.png (5 x 5 cuadros):
      el alfa se umbraliza y tools/reduce_palette.py la pasa a mundo2.gpl sin los
      rojos ni los ambares (EXCLUDE): el magenta rosado de la IA cae en
      magenta / magenta_sombra, nunca en alerta (rojo = dano y punto debil).
+  2b. Correcciones por script (CLEAN_HALO, RECENTER; ver abajo).
   3. Se amplia x GRID (4) sin filtro: la pantalla mide 512 x 256 (la caja
      `screen` de 8 x 4 tiles de data/bosses/autoplay.json) en un lienzo de
      CANVAS (576 x 320); el juego lo coloca MARGIN_PX por encima y a la
@@ -67,6 +68,104 @@ ANIMS = {
 }
 
 
+## Correcciones por script del 2026-10-26 (docs/plan-arte-mundo-2.md §1.4):
+## - CLEAN_HALO: el brillo neon de la IA dejaba anillos lavanda (gris, bisel,
+##   resplandor) alrededor de los ojos y del triangulo al reducir la paleta.
+##   Dentro de cada ojo y en su halo (hasta EYE_BAND pixeles de arte mas alla
+##   del radio, al menos EYE_HALO_MIN) esos colores se rellenan con lo que los
+##   rodea (el ojo, el triangulo, el halo magenta oscuro o el fondo).
+## - RECENTER: en `clip_cast` (encogerse) la IA bajaba la pantalla hasta 10
+##   pixeles de arte (~30-40 px del juego) durante 2-3 cuadros; cada cuadro se
+##   desplaza en vertical para que el centro de lo opaco siga en el de la
+##   referencia (el encogido se conserva, la caida no).
+CLEAN_HALO = {"idle", "clip_cast", "x2"}
+RECENTER = {"clip_cast"}
+LAVENDER = ["gris", "tarjeta_borde", "feed_resplandor", "tarjeta_luz"]
+EYE_COLORS = ["blanco", "magenta"]
+EYE_WINDOW = (14, 14, 129, 58)
+EYE_SIZE = (10, 34)
+EYE_BAND = 5
+## Radio exterior minimo de la banda (el halo del brillo es mas ancho que el ojo
+## encendido) y fila desde la que empieza la barra de progreso (no se toca).
+EYE_HALO_MIN = 19
+BAR_ROW = 57
+
+
+def eye_discs(px, rgb):
+    """[(cx, cy, r)] de los dos ojos: las dos manchas claras redondas mayores de EYE_WINDOW."""
+    x0, y0, x1, y1 = EYE_WINDOW
+    eye = {rgb[n] for n in EYE_COLORS}
+    left = {(x, y) for y in range(y0, y1) for x in range(x0, x1) if px[x, y][3] and px[x, y][:3] in eye}
+    blobs = []
+    while left:
+        stack = [left.pop()]
+        blob = list(stack)
+        while stack:
+            x, y = stack.pop()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    n = (x + dx, y + dy)
+                    if n in left:
+                        left.remove(n)
+                        stack.append(n)
+                        blob.append(n)
+        xs, ys = [p[0] for p in blob], [p[1] for p in blob]
+        w, h = max(xs) - min(xs) + 1, max(ys) - min(ys) + 1
+        if EYE_SIZE[0] <= w <= EYE_SIZE[1] and EYE_SIZE[0] <= h <= EYE_SIZE[1] and abs(w - h) <= 8:
+            blobs.append((len(blob), (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, max(w, h) / 2))
+    blobs.sort(reverse=True)
+    return [b[1:] for b in blobs[:2]]
+
+
+def clean_halo(art, rgb):
+    px = art.load()
+    lav = {rgb[n] for n in LAVENDER}
+    todo = set()
+    for cx, cy, r in eye_discs(px, rgb):
+        hi = max(r + EYE_BAND, EYE_HALO_MIN)
+        for y in range(int(cy - hi) - 1, int(cy + hi) + 2):
+            for x in range(int(cx - hi) - 1, int(cx + hi) + 2):
+                if not (EYE_WINDOW[0] <= x < EYE_WINDOW[2] and 0 <= y < BAR_ROW):
+                    continue
+                d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+                if d <= hi and px[x, y][3] and px[x, y][:3] in lav:
+                    todo.add((x, y))
+    # Relleno por mayoria de los vecinos que no son lavanda, de fuera hacia dentro.
+    while todo:
+        done = {}
+        for x, y in todo:
+            votes = {}
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    n = (x + dx, y + dy)
+                    if n == (x, y) or n in todo or not (0 <= n[0] < art.width and 0 <= n[1] < art.height):
+                        continue
+                    p = px[n]
+                    if p[3] and p[:3] not in lav:
+                        votes[p[:3]] = votes.get(p[:3], 0) + 1
+            if votes:
+                done[(x, y)] = max(sorted(votes), key=lambda c: votes[c])
+        if not done:
+            break
+        for (x, y), c in done.items():
+            px[x, y] = c + (255,)
+            todo.discard((x, y))
+    return art
+
+
+def center_y(img):
+    box = img.getchannel("A").getbbox()
+    return (box[1] + box[3]) / 2
+
+
+def shift_y(img, dy):
+    if dy == 0:
+        return img
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    out.paste(img, (0, dy))
+    return out
+
+
 def parse_cells(spec):
     out = []
     for part in spec.split(","):
@@ -111,13 +210,21 @@ def to_art(cell, box):
 
 def build(out_dir):
     allowed = reduce_palette.select_colors(reduce_palette.load_gpl(GPL), exclude=EXCLUDE)
+    rgb = dict(allowed)
     files = []
     for anim, spec in ANIMS.items():
         sheet = Image.open(os.path.join(SHEETS, anim, "spritesheet.png")).convert("RGBA")
         cells = parse_cells(spec)
         box = opaque_box(cell_image(sheet, cells[0]))
+        ref_cy = None
         for i, c in enumerate(cells):
             art = reduce_palette.reduce_image(to_art(cell_image(sheet, c), box), allowed)
+            if anim in RECENTER:
+                if ref_cy is None:
+                    ref_cy = center_y(art)
+                art = shift_y(art, round(ref_cy - center_y(art)))
+            if anim in CLEAN_HALO:
+                art = clean_halo(art, rgb)
             img = art.resize(CANVAS, Image.NEAREST)
             name = f"{PREFIX}_{anim}_{i:02d}.png"
             img.save(os.path.join(out_dir, name))

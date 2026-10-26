@@ -82,6 +82,9 @@ const ART_ANIMS: Dictionary = {
 	"defeat": [13, 12.0, false],
 }
 const ART_MARGIN_PX: float = 32.0
+## Miniatura del clip con el arte final, relativa a la caja `screen`: el hueco
+## entre el ojo derecho (hasta x ~ 412 con su halo, mas al crecer en clip_cast) y el marco (x ~ 484).
+const ART_THUMB_BOX := Rect2(420.0, 60.0, 56.0, 120.0)
 
 ## Id del objeto en el nivel (params.id).
 @export var object_id: StringName = &""
@@ -1086,6 +1089,17 @@ func _from_global(p: Vector2) -> Vector2:
 	return parent.to_local(p) if parent != null else p
 
 
+## Caja global de la miniatura del clip y de la caja de la «Cuenta atras»
+## (ScreenFx). Con el arte final va en vertical entre el ojo derecho y el marco
+## (ART_THUMB_BOX, correccion del 2026-10-26: antes tapaba el ojo derecho); con
+## el provisional, abajo a la derecha como siempre.
+func get_thumb_rect() -> Rect2:
+	var r: Rect2 = get_screen_rect()
+	if _art_final:
+		return Rect2(r.position + ART_THUMB_BOX.position, ART_THUMB_BOX.size)
+	return Rect2(r.position + Vector2(r.size.x * 0.5 + 24.0, r.size.y - 96.0), Vector2(r.size.x * 0.5 - 48.0, 56.0))
+
+
 ## [col, fila, ancho, alto] en celdas -> Rect2 global.
 func _cells_rect(cells: Variant) -> Rect2:
 	var c: Array = cells
@@ -1105,7 +1119,7 @@ class ScreenFx extends Node2D:
 		var thumb := Color.html(String(cfg.get("thumb_color", "#ff5cfa")))
 		var warn := Color.html(String(cfg.get("warn_color", "#ff4a2a")))
 		var r: Rect2 = boss.get_screen_rect()
-		var box := Rect2(r.position + Vector2(r.size.x * 0.5 + 24.0, r.size.y - 96.0), Vector2(r.size.x * 0.5 - 48.0, 56.0))
+		var box: Rect2 = boss.get_thumb_rect()
 		match boss.get_clip():
 			Autoplay.CLIP_WAVE:
 				var pts := PackedVector2Array()
