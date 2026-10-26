@@ -6,10 +6,10 @@
 # maximo; marcan «sin guardar») y
 # EFECTOS SIMPLES sobre el valor efectivo: alcance y aturdimiento del pulso,
 # enfriamiento, coste y dano del laser, gasto del Debug y maximos de Sync Rate y
-# energia (HUD, papelera, hub, cargadores, drops y power banks). Los JSON base
+# energia (HUD, papelera, hub, cargadores y drops). Los JSON base
 # no cambian. Efectos de la tanda M2 en test_hide_mode.gd, test_pulse_return.gd,
 # test_laser_pierce*.gd, test_debug_upgrades.gd, test_passive_regen.gd y
-# test_power_bank_cap.gd. Mas pruebas de la tienda en test_calc_station.gd; guardado v4 y
+# test_power_bank_collectible.gd. Mas pruebas de la tienda en test_calc_station.gd; guardado v4 y
 # migracion en test_save_game.gd; papelera en test_game_over.gd.
 extends GutTest
 
@@ -207,9 +207,8 @@ func test_level_5_spends_a_power_bank() -> void:
 	GameState.upgrade_levels[&"sync"] = 4
 	GameState.lap = GameState.LAP_HARD
 	GameState.attention_points = 30
-	GameState.empty_power_banks = 2
 	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.NOT_ENOUGH_POWER_BANKS,
-		"Los vacios no cuentan: hace falta uno completo")
+		"Sin power bank no se compra")
 	assert_eq(GameState.attention_points, 30)
 	GameState.power_banks = 1
 	GameState.attention_points = 24
@@ -217,7 +216,7 @@ func test_level_5_spends_a_power_bank() -> void:
 	GameState.attention_points = 25
 	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.OK)
 	assert_eq(GameState.power_banks, 0, "El power bank se gasta")
-	assert_eq(GameState.empty_power_banks, 2)
+	assert_eq(GameState.get_power_banks_spent(), 1)
 	assert_eq(GameState.attention_points, 0)
 	assert_eq(GameState.get_upgrade_level(&"sync"), 5)
 
@@ -356,11 +355,10 @@ func test_sync_and_energy_maxima_everywhere() -> void:
 	GameState.debug_energy = 100.0
 	assert_almost_eq(GameState.recharge_debug_energy(50.0), 30.0, EPS, "Cargador hasta 130")
 	assert_almost_eq(GameState.debug_energy, 130.0, EPS)
-	# Drops: el sobrante por encima del maximo nuevo carga los power banks vacios.
-	GameState.empty_power_banks = 1
+	# Drops: llenan hasta el maximo nuevo; el sobrante se pierde.
 	GameState.debug_energy = 120.0
 	assert_almost_eq(GameState.add_debug_energy(50.0), 40.0, EPS, "Sobran 40 sobre 130")
-	assert_almost_eq(GameState.power_bank_charge, 40.0, EPS)
+	assert_almost_eq(GameState.debug_energy, 130.0, EPS)
 	# Hub: al entrar llena hasta los maximos nuevos.
 	GameState.debug_energy = 10.0
 	GameState.sync_rate = 10.0

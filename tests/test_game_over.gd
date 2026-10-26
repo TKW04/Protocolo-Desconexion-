@@ -59,15 +59,14 @@ func _upgrade_id() -> StringName:
 	return &"energia:3"
 
 
-## Partida con Eco, Notas y pulso; laser, 9 puntos, un power bank completo y uno
-## vacio, una mejora y el 1-1 completado; GUARDADA.
+## Partida con Eco, Notas y pulso; laser, 9 puntos, dos power banks (completos:
+## coleccionable puro desde el 2026-10-25), una mejora y el 1-1 completado; GUARDADA.
 func _saved_progress() -> void:
 	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	GameState.obtain_ability(GameState.ABILITY_LASER)
 	GameState.attention_points = 9
-	GameState.power_banks = 1
-	GameState.add_empty_power_bank()
+	GameState.power_banks = 2
 	GameState.upgrade_levels[&"energia"] = 3
 	GameState.mark_level_completed(&"1-1")
 	GameState.unlock_level(&"1-2")
@@ -143,7 +142,6 @@ func test_saved_things_go_to_the_trash_and_come_back_all_at_once() -> void:
 	assert_true(GameState.has_trash_pending(), "Lo guardado esta en la papelera")
 	assert_eq(GameState.attention_points, 0, "Isak llega sin puntos")
 	assert_eq(GameState.power_banks, 0)
-	assert_eq(GameState.empty_power_banks, 0)
 	assert_false(GameState.is_upgrade_purchased(_upgrade_id()), "Sin mejoras")
 	assert_eq(GameState.get_upgrade_level(&"energia"), 1)
 	assert_almost_eq(GameState.get_debug_energy_max(), 100.0, 0.001, "Papelera: maximo base")
@@ -151,15 +149,13 @@ func test_saved_things_go_to_the_trash_and_come_back_all_at_once() -> void:
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_LASER))
 	var trash: Dictionary = GameState.get_trash()
 	assert_eq(int(trash[GameState.TRASH_POINTS]), 9, "Los puntos de la copia (no los de despues)")
-	assert_eq(int(trash[GameState.TRASH_POWER_BANKS]), 1)
-	assert_eq(int(trash[GameState.TRASH_EMPTY_POWER_BANKS]), 1)
+	assert_eq(int(trash[GameState.TRASH_POWER_BANKS]), 2)
 	assert_eq(trash[GameState.TRASH_ABILITIES], ["laser"])
 	assert_eq(trash[GameState.TRASH_UPGRADES], {"energia": 3}, "La papelera guarda los niveles por pista")
 	assert_true(GameState.recover_trash(), "Se recupera todo de golpe")
 	assert_false(GameState.has_trash_pending())
 	assert_eq(GameState.attention_points, 9)
-	assert_eq(GameState.power_banks, 1)
-	assert_eq(GameState.empty_power_banks, 1)
+	assert_eq(GameState.power_banks, 2)
 	assert_true(GameState.is_upgrade_purchased(_upgrade_id()))
 	assert_eq(GameState.get_upgrade_level(&"energia"), 3, "Recupera el nivel")
 	assert_almost_eq(GameState.get_debug_energy_max(), 120.0, 0.001, "y su maximo")

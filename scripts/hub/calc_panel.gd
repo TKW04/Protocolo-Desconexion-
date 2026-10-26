@@ -4,7 +4,7 @@
 ## arte y medidas en la seccion calc de data/hub.json; pistas y niveles en
 ## data/upgrades.json (UpgradeCatalog); reglas en GameState.
 ## - Lineas: saldo de puntos de atencion (con el rombo, ambar), power banks
-##   (con su carga) y «Sin guardar» / «Todo guardado».
+##   (los que se tienen, encontrados y gastados; 2026-10-25) y «Sin guardar» / «Todo guardado».
 ## - Una FILA por pista (Pulso, Laser, Debug, Sync Rate, Energia): chip con el
 ##   icono (elegida: marco cian), nombre y 5 recuadros: comprado, siguiente
 ##   (late), vacio, bloqueado por acceso (candado), Proximamente y desconocido
@@ -98,10 +98,11 @@ func points_text() -> String:
 	return _text_of("points", "%d") % GameState.attention_points
 
 
-## «Power banks: 1 (carga 0/200)».
+## «Power banks: 1 (encontrados 2, gastados 1)»: los que se tienen, los
+## encontrados y los gastados (coleccionable puro, 2026-10-25).
 func power_banks_text() -> String:
 	return _text_of("power_banks", "%d %d %d") % [
-		GameState.power_banks, floori(GameState.power_bank_charge), roundi(GameState.get_power_bank_capacity())]
+		GameState.power_banks, GameState.get_power_banks_found(), GameState.get_power_banks_spent()]
 
 
 ## Pistas en el orden de la tienda (el del catalogo).

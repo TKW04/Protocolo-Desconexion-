@@ -2,8 +2,8 @@
 ## usuario 2026-10-15: en los mapas hay cargadores en ciertos puntos que reponen
 ## la energia de Debug, la misma que gasta el laser). Se activa AL TOCARLO
 ## (como el punto de sincronizacion y la puerta de salida: sin accion nueva).
-## Repone `amount` (sin desbordar a los power banks: el desborde es solo de los
-## drops). Si la barra ya esta llena no se gasta.
+## Repone `amount` (el sobrante se pierde). Si la barra ya esta llena no se
+## gasta.
 ## - reusable true (PROPUESTA por defecto): tras usarse se enfria cooldown_s
 ##   (tiempo del mundo) y vuelve a estar listo. El enfriamiento no se guarda.
 ## - reusable false: un solo uso; queda gastado y se guarda por nivel en

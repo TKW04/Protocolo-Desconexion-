@@ -14,7 +14,8 @@
 ##                                  la plataforma oculta, que se ve y es solida
 ##   10_debug_persistente_aviso.png el mismo en el ultimo medio segundo: cuadro apagado del parpadeo
 ##                                  (Isak aun se sostiene: sigue solida hasta los 1,5 s)
-##   11_power_bank_sin_espacio.png  power bank de mapa con el tope lleno (3): «Sin espacio»
+## (La 11, power bank «Sin espacio», se retiro el 2026-10-25: el power bank es un
+## coleccionable puro sin tope.)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_upgrades_m2.gd [-- carpeta_salida]
 extends SceneTree
@@ -22,7 +23,6 @@ extends SceneTree
 const ROOM: String = "res://scenes/levels/mensajes_test.tscn"
 const TOWER: String = "res://scenes/levels/1-2.tscn"
 const BUBBLE: String = "res://scenes/enemies/alert_bubble.tscn"
-const PICKUP: String = "res://scenes/levels/power_bank_pickup.tscn"
 const DEFAULT_OUT: String = "user://upgrades_m2"
 const SAVE_PATH: String = "user://render_upgrades_m2_save.json"
 const TILE: float = 64.0
@@ -56,7 +56,6 @@ func _run() -> void:
 	await _pierce_shot(out_dir)
 	await _pulse_return_shot(out_dir)
 	await _debug_shots(out_dir)
-	await _no_room_shot(out_dir)
 	print("render_upgrades_m2: %s" % ("OK" if _ok else "FALLO"))
 	_state.call(&"use_save_path", SAVE_PATH, true)
 	SaveFile.delete(SAVE_PATH)
@@ -249,37 +248,6 @@ func _debug_shots(out_dir: String) -> void:
 	_debug.call(&"reset")
 	_debug.set(&"input_enabled", true)
 	tower.queue_free()
-	await process_frame
-
-
-# --- Power bank «Sin espacio» ---
-
-func _no_room_shot(out_dir: String) -> void:
-	var room: Node = await _load_room()
-	var isak: Node2D = room.call(&"get_isak")
-	_state.set(&"power_banks", 2)
-	_state.set(&"empty_power_banks", 1)
-	var pickup: Node2D = (load(PICKUP) as PackedScene).instantiate()
-	pickup.name = "power_bank_lleno"
-	pickup.set(&"object_id", &"power_bank_lleno")
-	room.get_node(^"Objects").add_child(pickup)
-	pickup.global_position = Vector2(7.0 * TILE, 10.0 * TILE)
-	isak.global_position = Vector2(5.5 * TILE, 11.0 * TILE)
-	isak.call(&"snap_camera")
-	for i: int in 10:
-		await physics_frame
-	_fake.set(&"move_axis", 1.0)
-	for i: int in 60:
-		await physics_frame
-		if bool(pickup.call(&"is_no_room_shown")):
-			break
-	_fake.set(&"move_axis", 0.0)
-	for i: int in 12:
-		await physics_frame
-	_check(bool(pickup.call(&"is_no_room_shown")), "no sale «Sin espacio»")
-	_check(not bool(pickup.call(&"is_taken")), "se recoge con el tope lleno")
-	await _save(out_dir, "11_power_bank_sin_espacio.png")
-	room.queue_free()
 	await process_frame
 
 

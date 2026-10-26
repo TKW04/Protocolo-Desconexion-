@@ -102,10 +102,10 @@ signal checkpoint_activated(level_id: String, checkpoint_id: StringName)
 @warning_ignore("unused_signal")
 signal player_respawned(position: Vector2, after_death: bool)
 
-## Cambian los power banks: `full` completos y `charge` de carga parcial sobre
-## `capacity` (data/power_bank.json). Lo emite GameState.
+## Cambian los power banks que se tienen (`held`, completos; coleccionable puro
+## desde el 2026-10-25). Lo emite GameState.
 @warning_ignore("unused_signal")
-signal power_banks_changed(full: int, charge: float, capacity: float)
+signal power_banks_changed(held: int)
 
 ## Se ha comprado el siguiente nivel de la pista de mejoras `id` (data/upgrades.json,
 ## p. ej. "pulso"). Lo emite GameState.purchase_upgrade.
@@ -254,13 +254,9 @@ signal hide_ended(reason: StringName)
 @warning_ignore("unused_signal")
 signal debug_reveal_changed(revealing: bool)
 ## Pulso de retorno (Pulso 5): aturdir a `enemy` dio `amount` de energia
-## (`gained` = lo que entro en la barra; nunca desborda a los power banks).
+## (`gained` = lo que entro en la barra; el resto se pierde).
 @warning_ignore("unused_signal")
 signal pulse_energy_returned(enemy: Node, amount: float, gained: float)
-## Un power bank de mapa no se recogio porque el tope (3) esta lleno: se queda
-## en el mapa con «Sin espacio».
-@warning_ignore("unused_signal")
-signal power_bank_no_room(pickup: Node2D)
 ## Se obtuvo el recuerdo `memory_id` (data/memories.json; GameState.obtain_memory):
 ## queda «sin guardar» y sin leer (docs/propuesta-recuerdos.md §4).
 @warning_ignore("unused_signal")

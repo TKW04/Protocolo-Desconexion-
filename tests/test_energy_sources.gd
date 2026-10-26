@@ -156,11 +156,10 @@ func test_charger_refills_energy_with_cooldown() -> void:
 
 func test_charger_full_bar_is_not_spent_and_no_power_bank_overflow() -> void:
 	var c: Charger = _charger(_world)
-	GameState.add_empty_power_bank()
 	GameState.debug_energy = GameState.get_debug_energy_max()
 	assert_almost_eq(c.try_use(_isak), 0.0, EPS, "Barra llena: no se gasta")
 	assert_true(c.is_ready())
-	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "No carga power banks (solo los drops)")
+	assert_eq(GameState.power_banks, 0, "No da power banks (coleccionable puro)")
 
 
 func test_single_use_charger_is_saved() -> void:

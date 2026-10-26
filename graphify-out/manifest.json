@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "data/enemies/alert_bubble.json": {
-    "mtime": 1792122713.2588155,
-    "seen": 1792467567.6082869,
-    "ast_hash": "5c67590a2be28bdcf5ded711e92ddf36",
+    "mtime": 1792983235.803598,
+    "seen": 1792984295.256932,
+    "ast_hash": "b224548df55b1c107484e20b08810e23",
     "semantic_hash": ""
   },
   "data/enemies/notification_badge.json": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "data/hub.json": {
-    "mtime": 1792787082.090081,
-    "seen": 1792787210.0980558,
-    "ast_hash": "424053b9c181eea1e6d8925f52ec0b71",
+    "mtime": 1792983215.2131395,
+    "seen": 1792984295.256941,
+    "ast_hash": "bf240d8a0fc3715609a693602fc50249",
     "semantic_hash": ""
   },
   "data/hud.json": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "data/passive_regen.json": {
-    "mtime": 1792279905.7386334,
-    "seen": 1792467567.608303,
-    "ast_hash": "e5925104a0c36f11fa8f43a8b1f93324",
+    "mtime": 1792983235.8068855,
+    "seen": 1792984295.256969,
+    "ast_hash": "3030f75bf21a2c2162bcef90f2c3b9ab",
     "semantic_hash": ""
   },
   "data/pause_menu.json": {
@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "data/power_bank.json": {
-    "mtime": 1792283510.313167,
-    "seen": 1792467567.608304,
-    "ast_hash": "9489eaf5715f7653134501b6cf228150",
+    "mtime": 1792983132.6036692,
+    "seen": 1792984295.25697,
+    "ast_hash": "e00b1f84dae336c683f512e921c4e393",
     "semantic_hash": ""
   },
   "data/quit_prompt.json": {
@@ -246,9 +246,9 @@
     "semantic_hash": ""
   },
   "data/recharge_pickup.json": {
-    "mtime": 1792122713.2637708,
-    "seen": 1792467567.608305,
-    "ast_hash": "add1de9f0b988ccad60e485858c3801b",
+    "mtime": 1792983235.8052592,
+    "seen": 1792984295.256972,
+    "ast_hash": "43f14dfd55df438ed48de33f3e7e6bf6",
     "semantic_hash": ""
   },
   "data/settings.json": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "data/upgrades.json": {
-    "mtime": 1792282637.9029815,
-    "seen": 1792467567.608309,
-    "ast_hash": "f2e0dd00806e1789eb029fe8c72c6b8f",
+    "mtime": 1792983227.378905,
+    "seen": 1792984295.256976,
+    "ast_hash": "0993d9c4d3d7082a64f67416721b94fa",
     "semantic_hash": ""
   },
   "data/warp.json": {
@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "data/world1_objects.json": {
-    "mtime": 1792725049.1913755,
-    "seen": 1792728580.461875,
-    "ast_hash": "ea2ae9431b5903729b11e03c18830dd9",
+    "mtime": 1792983227.3818579,
+    "seen": 1792984295.256979,
+    "ast_hash": "fa7068539e007b2b3c3f7eaf984803f4",
     "semantic_hash": ""
   },
   "tests/fixtures/climbs_1-2.json": {
@@ -750,9 +750,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1792789668.9523444,
-    "seen": 1792789940.602088,
-    "ast_hash": "a8685db07ca3de6de102fb55dd8e3589",
+    "mtime": 1792984272.009532,
+    "seen": 1792984295.257063,
+    "ast_hash": "40ee99507e626cc725d0353e59142d3a",
     "semantic_hash": ""
   },
   "docs/01-ficha-reglas.md": {
@@ -798,9 +798,9 @@
     "semantic_hash": ""
   },
   "docs/08-pendientes.md": {
-    "mtime": 1792750339.1417537,
-    "seen": 1792767630.13114,
-    "ast_hash": "adf1110101de88fb51ab0e1cf605854b",
+    "mtime": 1792984223.671527,
+    "seen": 1792984295.257069,
+    "ast_hash": "958ae8350efe85ea7d2a8b9feb553981",
     "semantic_hash": ""
   },
   "docs/INDEX.md": {
@@ -864,9 +864,9 @@
     "semantic_hash": ""
   },
   "docs/preguntas.md": {
-    "mtime": 1792787206.465948,
-    "seen": 1792787210.09822,
-    "ast_hash": "6a425c312659e31c9743588ae8fa474a",
+    "mtime": 1792984200.4667876,
+    "seen": 1792984295.2570791,
+    "ast_hash": "553c025676c7343c8717b8f307a46e4a",
     "semantic_hash": ""
   },
   "docs/propuesta-1-1-ampliado.md": {
@@ -906,9 +906,9 @@
     "semantic_hash": ""
   },
   "docs/propuesta-mejoras.md": {
-    "mtime": 1792282590.09681,
-    "seen": 1792467567.608374,
-    "ast_hash": "ac7681773c9e82cd9ad9226e6eb2c134",
+    "mtime": 1792984182.6293077,
+    "seen": 1792984295.2570848,
+    "ast_hash": "25ac188e6e3c35a4060894d1f38a2101",
     "semantic_hash": ""
   },
   "docs/propuesta-recuerdos.md": {

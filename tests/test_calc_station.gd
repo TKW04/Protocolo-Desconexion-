@@ -168,7 +168,7 @@ func test_shop_rows_chips_boxes_and_next_level_detail() -> void:
 	assert_eq(_panel.get_option_ids(), _panel.get_track_ids(), "Una fila por pista")
 	var lines: PackedStringArray = _panel.get_lines()
 	assert_eq(lines[0], "◆ 30 puntos de atención", "Saldo con el icono")
-	assert_eq(lines[1], "Power banks: 0 (carga 0/%d)" % roundi(GameState.get_power_bank_capacity()))
+	assert_eq(lines[1], "Power banks: 0 (encontrados 0, gastados 0)")
 	assert_eq(lines[2], "Todo guardado")
 	assert_eq([_panel.track_name(&"pulso"), _panel.track_name(&"laser"), _panel.track_name(&"debug"),
 		_panel.track_name(&"sync"), _panel.track_name(&"energia")], ["Pulso", "Láser", "???", "Sync Rate", "Energía"])
@@ -309,15 +309,13 @@ func test_level_5_in_root_needs_and_spends_a_power_bank() -> void:
 	_panel.select_option(&"energia")
 	assert_eq(_panel.box_states(&"energia"), [&"full", &"full", &"full", &"full", &"next"] as Array[StringName])
 	assert_eq(_panel.get_detail_lines()[4], "Falta un power bank completo")
-	GameState.empty_power_banks = 1
-	_panel.refresh()
-	assert_eq(_panel.get_detail_lines()[4], "Falta un power bank completo", "Uno vacio no sirve")
 	GameState.power_banks = 1
 	_panel.refresh()
 	assert_eq(_panel.get_detail_lines()[4], "Disponible")
 	_panel._unhandled_input(_action(&"pulse"))
 	assert_eq(_panel.get_message(), "Nivel 5 instalado: Recarga pasiva.")
 	assert_eq(GameState.power_banks, 0, "El power bank se gasta")
+	assert_eq(_panel.power_banks_text(), "Power banks: 0 (encontrados 1, gastados 1)")
 	assert_eq(GameState.attention_points, 5)
 	assert_eq(GameState.get_upgrade_level(&"energia"), 5)
 

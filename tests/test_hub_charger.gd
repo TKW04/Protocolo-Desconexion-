@@ -127,7 +127,6 @@ func test_recharges_50_up_to_the_max_and_cools_down_20_s() -> void:
 	var charger: Charger = _hub.get_charger()
 	var isak: Isak = _hub.get_isak()
 	var max_e: float = GameState.get_debug_energy_max()
-	GameState.add_empty_power_bank()
 	GameState.debug_energy = 20.0
 	assert_eq(charger.try_use(isak), 50.0, "+50")
 	assert_eq(GameState.debug_energy, 70.0)
@@ -141,7 +140,7 @@ func test_recharges_50_up_to_the_max_and_cools_down_20_s() -> void:
 	GameState.debug_energy = max_e - 20.0
 	assert_eq(charger.try_use(isak), 20.0, "Hasta el maximo, sin desbordar")
 	assert_eq(GameState.debug_energy, max_e)
-	assert_eq(GameState.power_bank_charge, 0.0, "Sin desborde a los power banks")
+	assert_eq(GameState.power_banks, 0, "Sin power banks del sobrante")
 	charger.advance(20.0)
 	assert_eq(charger.try_use(isak), 0.0, "Con la barra llena no se gasta")
 	assert_true(charger.is_ready())

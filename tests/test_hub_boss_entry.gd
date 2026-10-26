@@ -112,8 +112,8 @@ func test_other_rows_do_not_change() -> void:
 	var panel: FolderPanel = _panel()
 	_complete_1_3_like_the_terminal()
 	var levels: Array[Dictionary] = HubWorlds.levels(_m1())
-	assert_eq(panel.level_text(levels[0]), "1-1 Bandeja de entrada - Completado 0/9")
-	assert_eq(panel.level_text(levels[2]), "1-3 No molestar - Completado 0/9")
+	assert_eq(panel.level_text(levels[0]), "1-1 Bandeja de entrada - Completado 0/9 - Power bank 0/1")
+	assert_eq(panel.level_text(levels[2]), "1-3 No molestar - Completado 0/9 - Power bank 0/1")
 
 
 func test_folder_and_cyan_piece_wait_for_the_boss() -> void:

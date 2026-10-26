@@ -382,10 +382,10 @@ func test_far_popup_closes_with_wide_pulse() -> void:
 	var popup: PopupBlocker = await _pulse_at_far_popup()
 	assert_almost_eq(_isak.abilities.pulse_radius_px, 112.0, 0.001)
 	assert_ne(popup.get_state(), PopupBlocker.State.OPEN, "Con Pulso amplio el pulso llega al boton")
-	# Detras, el unico power bank (vacio) del 1-1.
+	# Detras, el unico power bank del 1-1 (completo: coleccionable puro, 2026-10-25).
 	await wait_physics_frames(60)
 	var bank := _object("power_bank_pulso_amplio") as PowerBankPickup
-	var banks_before: int = GameState.empty_power_banks
+	var banks_before: int = GameState.power_banks
 	_sim.input.move_axis = -1.0
 	_sim.step_until(func() -> bool: return _isak.global_position.x <= bank.global_position.x + _tile * 0.5,
 			_sim.steps_for(3.0))
@@ -393,7 +393,7 @@ func test_far_popup_closes_with_wide_pulse() -> void:
 	await wait_physics_frames(3)
 	assert_true(not is_instance_valid(bank) or bank.is_taken(), "Con el pop-up cerrado se llega al power bank")
 	assert_true(GameState.is_pickup_collected(&"1-1", &"power_bank_pulso_amplio"), "Queda recogido en el guardado")
-	assert_eq(GameState.empty_power_banks, banks_before + 1, "Suma un power bank vacio")
+	assert_eq(GameState.power_banks, banks_before + 1, "Suma un power bank completo")
 	GameState.reset_progress()
 	SaveFile.delete("user://test_level_1_1_save.json")
 	GameState.save_path = saved_path

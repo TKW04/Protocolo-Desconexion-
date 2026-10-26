@@ -32,8 +32,6 @@ func _fill_progress() -> void:
 	GameState.capture_attention_point(&"1-1", &"Point_8_9", 1)
 	GameState.capture_attention_point(&"1-1", &"Point_14_8", 1)
 	GameState.power_banks = 2
-	GameState.empty_power_banks = 1
-	GameState.power_bank_charge = 35.0
 	GameState.obtained_abilities[GameState.ABILITY_PULSE] = true
 	GameState.purchase_upgrade(&"pulso")
 	GameState.mark_level_completed(&"1-1")
@@ -118,8 +116,6 @@ func test_round_trip_keeps_all_progress() -> void:
 	assert_eq(GameState.attention_points, 19)
 	assert_eq(GameState.get_captured_points(&"1-1"), [&"Point_14_8", &"Point_8_9"] as Array[StringName])
 	assert_eq(GameState.power_banks, 2)
-	assert_eq(GameState.empty_power_banks, 1)
-	assert_almost_eq(GameState.power_bank_charge, 35.0, 0.001)
 	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"))
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 2)
 	assert_true(GameState.is_level_completed(&"1-1"))
@@ -189,23 +185,19 @@ func test_odd_field_types_are_tolerated() -> void:
 	assert_eq(GameState.get_captured_points(&"1-1"), [&"Point_8_9"] as Array[StringName])
 	assert_eq(GameState.get_captured_points(&"1-2"), [] as Array[StringName])
 	assert_eq(GameState.get_upgrade_levels_data(), {"pulso": 2}, "Ids desconocidos se ignoran (v1 -> v4)")
-	assert_eq(GameState.power_banks, 0)
-	assert_almost_eq(GameState.power_bank_charge, GameState.get_power_bank_capacity(), 0.001, "Carga acotada")
+	assert_eq(GameState.power_banks, 0, "Negativos a 0; la carga ya no existe")
 	assert_false(GameState.is_level_completed(&"1-1"))
 
 
-func test_power_bank_charge_needs_an_empty_power_bank() -> void:
-	# Guardado de antes de los power banks vacios: la carga se conserva en uno.
+## Coleccionable puro (2026-10-25): los power banks vacios de un guardado
+## anterior pasan a completos y la carga parcial se ignora.
+func test_old_empty_power_banks_load_as_full() -> void:
 	SaveFile.write(PATH, {"version": 1, "power_banks": {"full": 1, "charge": 40.0}})
 	assert_true(GameState.load_game())
-	assert_eq(GameState.power_banks, 1)
-	assert_eq(GameState.empty_power_banks, 1)
-	assert_almost_eq(GameState.power_bank_charge, 40.0, 0.001)
-	# Con "empty" 0 la carga no tiene donde estar: se descarta.
-	SaveFile.write(PATH, {"version": 1, "power_banks": {"full": 0, "empty": 0, "charge": 40.0}})
+	assert_eq(GameState.power_banks, 1, "La carga sola no crea power banks")
+	SaveFile.write(PATH, {"version": 4, "power_banks": {"full": 1, "empty": 2, "charge": 40.0}})
 	assert_true(GameState.load_game())
-	assert_eq(GameState.empty_power_banks, 0)
-	assert_almost_eq(GameState.power_bank_charge, 0.0, 0.001)
+	assert_eq(GameState.power_banks, 3, "Los vacios cuentan como completos")
 
 
 func test_orphan_tmp_is_recovered() -> void:
@@ -239,7 +231,7 @@ func test_every_progress_change_marks_unsaved() -> void:
 	var changes: Dictionary[String, Callable] = {
 		"punto": func() -> void: GameState.capture_attention_point(&"1-1", &"Point_8_9", 1),
 		"objeto": func() -> void: GameState.mark_pickup_collected(&"1-1", &"cargador_x"),
-		"power bank": func() -> void: GameState.add_empty_power_bank(),
+		"power bank": func() -> void: GameState.collect_power_bank_pickup(&"1-1", &"power_bank_x"),
 		"habilidad": func() -> void: GameState.obtain_ability(&"laser"),
 		"nivel completado": func() -> void: GameState.mark_level_completed(&"1-1"),
 		"nivel desbloqueado": func() -> void: GameState.unlock_level(&"1-2"),

@@ -10,8 +10,8 @@
 #   los objetos del mundo con WorldTime.scaled_delta() (Isak y el HUD no).
 # - Progreso persistente (decisiones del 2026-10-14): puntos acumulados, ids de
 #   puntos de atención ya capturados por nivel, niveles de las mejoras de Calc
-#   por pistas (data/upgrades.json, upgrade_levels), power banks (completos, vacios y carga parcial,
-#   data/power_bank.json), habilidades obtenidas con un ability_pickup (p. ej.
+#   por pistas (data/upgrades.json, upgrade_levels), power banks (coleccionable
+#   puro desde el 2026-10-25: llegan completos, data/power_bank.json), habilidades obtenidas con un ability_pickup (p. ej.
 #   el laser, 2026-10-15) y niveles completados/desbloqueados. Se guarda en
 #   save_path (user://save.json; en las pruebas otra ruta) con SaveFile.
 # - Guardado MANUAL (decision 2026-10-15, docs/propuesta-hub-y-guardado.md):
@@ -26,7 +26,7 @@
 #   (docs/propuesta-asistentes-y-vidas.md §5).
 # Cada setter acota el valor y emite la señal correspondiente por EventBus.
 # Reglas de juego que viven aquí: recarga de energía por punto de atención
-# (A10), desbordamiento de energía a power bank, compra de mejoras y valores
+# (A10), compra de mejoras (el nivel 5 gasta un power bank) y valores
 # efectivos (base + mejoras). Quién gasta, cura o desbloquea vive en otros scripts.
 extends Node
 
@@ -92,8 +92,6 @@ const ROLLBACK_GAME_OVER: StringName = &"game_over"
 ## Claves del contenido de la papelera (get_trash) y del informe de apply_rollback.
 const TRASH_POINTS: String = "attention_points"
 const TRASH_POWER_BANKS: String = "power_banks"
-const TRASH_EMPTY_POWER_BANKS: String = "empty_power_banks"
-const TRASH_POWER_BANK_CHARGE: String = "power_bank_charge"
 const TRASH_UPGRADES: String = "upgrades"
 const TRASH_ABILITIES: String = "abilities"
 ## Argumento de usuario de las builds de depuracion que da por conocido un
@@ -126,9 +124,10 @@ const BASE_VALUES: Dictionary[StringName, float] = {
 	&"game_state.sync_regen_per_s": 0.0,
 	&"game_state.energy_regen_pct_s": 0.0,
 }
-## Tope de power banks (completos + vacios) a la vez si data/power_bank.json no
-## dice otro (max_total; docs/propuesta-mejoras.md §5.1, tanda M2).
-const POWER_BANK_MAX_TOTAL_DEFAULT: int = 3
+## Tipo de objeto del power bank de mapa en data/levels/<id>.json.
+const POWER_BANK_PICKUP_TYPE: String = "power_bank_pickup"
+## Patron del JSON de un nivel (contador de power banks por nivel).
+const LEVEL_DATA_PATTERN: String = "res://data/levels/%s.json"
 
 ## Resultado de comprar el siguiente nivel de una pista (check_purchase /
 ## purchase_upgrade): pista desconocida, ya en el nivel maximo, habilidad sin
@@ -186,31 +185,19 @@ var attention_points: int = ATTENTION_POINTS_MIN:
 		attention_points = maxi(value, ATTENTION_POINTS_MIN)
 		EventBus.attention_points_changed.emit(attention_points)
 
-## Power banks completos (solo sirven para pagar mejoras).
+## Power banks que Isak tiene (sin gastar). Coleccionable puro (decision del
+## usuario 2026-10-25, docs/propuesta-mejoras.md §5.1): el de mapa llega YA
+## COMPLETO, sin tope ni carga; solo se gasta al comprar un nivel 5 en Calc
+## (cost.power_banks de data/upgrades.json). Calc no los vende.
 var power_banks: int = 0:
 	set(value):
 		power_banks = maxi(value, 0)
 		_emit_power_banks()
 
-## Power banks que Isak tiene pero aun no estan llenos (decision 2026-10-14: un
-## power bank comprado u obtenido llega VACIO y se carga con el sobrante de
-## energia de los drops). Sin ninguno, el sobrante se pierde.
-var empty_power_banks: int = 0:
-	set(value):
-		empty_power_banks = maxi(value, 0)
-		_emit_power_banks()
-
-## Carga del power bank vacio que se esta llenando (0 a get_power_bank_capacity();
-## siempre 0 si no hay power banks vacios).
-var power_bank_charge: float = 0.0:
-	set(value):
-		power_bank_charge = maxf(value, 0.0)
-		_emit_power_banks()
-
 ## Ids de puntos de atencion ya capturados por nivel (id de nivel -> {id: true}).
 ## No reaparecen ni cuentan al rejugar el nivel.
 var captured_points: Dictionary[StringName, Dictionary] = {}
-## Ids de power banks de mapa (power_bank_pickup) ya recogidos por nivel (id de
+## Ids de objetos de un solo uso (power banks de mapa, cargadores de un solo uso) ya recogidos por nivel (id de
 ## nivel -> {id: true}). Como los puntos: no reaparecen al rejugar el nivel.
 var collected_pickups: Dictionary[StringName, Dictionary] = {}
 ## Nivel de cada pista de mejoras de Calc (id de pista de data/upgrades.json ->
@@ -436,15 +423,12 @@ func apply_sync_damage(amount: float) -> void:
 
 
 ## Suma puntos de atencion; cada uno repone energia de Debug (A10; la mejora
-## "Recarga mejorada" sube cuanto). Si la barra ya esta llena, el sobrante solo
-## va al power bank cuando attention_point_energy_overflows es true (decision
-## 2026-10-14: false, solo desbordan los drops de enemigos).
+## "Recarga mejorada" sube cuanto). Lo que no cabe en la barra se pierde.
 func add_attention_points(amount: int) -> void:
 	if amount <= 0:
 		return
 	attention_points += amount
-	add_debug_energy(amount * get_energy_per_attention_point(),
-			bool(_power_bank_data.get("attention_point_energy_overflows", false)))
+	add_debug_energy(amount * get_energy_per_attention_point())
 
 
 ## Captura el punto de atencion `point_id` del nivel `level`: suma `value`
@@ -481,16 +465,15 @@ func get_captured_points(level: StringName) -> Array[StringName]:
 
 
 ## Recoge el power bank de mapa `pickup_id` del nivel `level`: suma un power
-## bank VACIO (decision 2026-10-14; se carga con el sobrante de los drops) y lo apunta como recogido (persistente). Falso si ya estaba
-## recogido o si el tope esta lleno (can_take_power_bank; el objeto se queda en
-## el mapa con «Sin espacio» y no se apunta). Sin nivel (escenas de prueba) no
-## se apunta nada y siempre cuenta (salvo el tope).
+## bank COMPLETO (coleccionable puro, decision 2026-10-25; sin tope ni carga) y
+## lo apunta como recogido (persistente; un rollback lo devuelve como el resto
+## de lo no guardado). Falso si ya estaba recogido. Sin nivel (escenas de
+## prueba) no se apunta nada y siempre cuenta.
 func collect_power_bank_pickup(level: StringName, pickup_id: StringName) -> bool:
-	if not can_take_power_bank():
-		return false
 	if not mark_pickup_collected(level, pickup_id):
 		return false
-	add_empty_power_bank()
+	power_banks += 1
+	request_save()
 	return true
 
 
@@ -513,70 +496,31 @@ func is_pickup_collected(level: StringName, pickup_id: StringName) -> bool:
 	return collected_pickups.has(level) and collected_pickups[level].has(pickup_id)
 
 
-## Recarga de energia de Debug (drops de enemigos y jefes, puntos de atencion).
-## Lo que no cabe en la barra carga los power banks vacios (si
-## `overflow_to_power_bank`; ver add_power_bank_charge).
+## Recarga de energia de Debug (drops de enemigos y jefes, puntos de atencion,
+## cargadores). Lo que no cabe en la barra se pierde (desde el 2026-10-25 los
+## power banks no se cargan: son coleccionables completos).
 ## Devuelve el sobrante que no entro en la barra.
-func add_debug_energy(amount: float, overflow_to_power_bank: bool = true) -> float:
+func add_debug_energy(amount: float) -> float:
 	if amount <= 0.0:
 		return 0.0
 	var room: float = maxf(get_debug_energy_max() - debug_energy, 0.0)
 	var to_bar: float = minf(amount, room)
 	if to_bar > 0.0:
 		debug_energy += to_bar
-	var overflow: float = amount - to_bar
-	if overflow > 0.0 and overflow_to_power_bank:
-		add_power_bank_charge(overflow)
-	return overflow
-
-
-## Suma un power bank VACIO (comprado u obtenido; decision 2026-10-14). Se
-## llena con el sobrante de energia de los drops (add_power_bank_charge).
-func add_empty_power_bank(count: int = 1) -> void:
-	if count <= 0:
-		return
-	empty_power_banks += count
-	request_save()
-
-
-## Carga los power banks vacios con `amount` de energia: cada
-## get_power_bank_capacity() llena uno, que pasa a completo. Lo que no cabe
-## (sin power banks vacios) se pierde. Devuelve la energia que no se uso.
-func add_power_bank_charge(amount: float) -> float:
-	var capacity: float = get_power_bank_capacity()
-	if amount <= 0.0 or capacity <= 0.0 or empty_power_banks <= 0:
-		return maxf(amount, 0.0)
-	var charge: float = power_bank_charge + amount
-	var empties: int = empty_power_banks
-	var completed: int = 0
-	while empties > 0 and charge >= capacity - 0.0001:
-		charge -= capacity
-		empties -= 1
-		completed += 1
-	var wasted: float = 0.0
-	if empties == 0:
-		wasted = maxf(charge, 0.0)
-		charge = 0.0
-	empty_power_banks = empties
-	power_bank_charge = maxf(charge, 0.0)
-	if completed > 0:
-		power_banks += completed
-	request_save()
-	return wasted
+	return amount - to_bar
 
 
 ## Llena la barra de energia de Debug (hub provisional, decision 2026-10-15).
-## No desborda a los power banks.
 func refill_debug_energy() -> void:
 	debug_energy = get_debug_energy_max()
 
 
 ## Recarga de un cargador (charger, 2026-10-15): suma hasta `amount` a la barra
-## sin desbordar a los power banks (el desborde es solo de los drops). Devuelve
-## la energia que entro de verdad (0 si la barra estaba llena).
+## (el sobrante se pierde). Devuelve la energia que entro de verdad (0 si la
+## barra estaba llena).
 func recharge_debug_energy(amount: float) -> float:
 	var before: float = debug_energy
-	add_debug_energy(amount, false)
+	add_debug_energy(amount)
 	return debug_energy - before
 
 
@@ -587,38 +531,60 @@ func heal_sync(amount: float) -> void:
 	sync_rate += amount
 
 
-func get_power_bank_capacity() -> float:
-	return float(_power_bank_data.get("capacity_energy", 200.0))
+## Power banks gastados en Calc: suma de cost.power_banks de los niveles
+## comprados de cada pista (data/upgrades.json; hoy, los niveles 5).
+func get_power_banks_spent() -> int:
+	var catalog: UpgradeCatalog = UpgradeCatalog.shared()
+	var spent: int = 0
+	for track: StringName in upgrade_levels:
+		for level: int in range(UpgradeCatalog.LEVEL_MIN + 1, get_upgrade_level(track) + 1):
+			var entry: UpgradeCatalog.Level = catalog.get_level(track, level)
+			if entry != null:
+				spent += maxi(entry.cost_power_banks, 0)
+	return spent
 
 
-## Tope de power banks a la vez, completos + vacios (data/power_bank.json,
-## max_total: 3; tanda M2, docs/propuesta-mejoras.md §5.1). No crece con las
-## mejoras. Solo impide RECOGER mas: las devoluciones de la migracion y la
-## papelera pueden superarlo (no se borra nada).
-func get_power_bank_max_total() -> int:
-	return int(_power_bank_data.get("max_total", POWER_BANK_MAX_TOTAL_DEFAULT))
+## Power banks encontrados en la partida: los que se tienen mas los gastados
+## (hub y Calc muestran encontrados y gastados; decision 2026-10-25).
+func get_power_banks_found() -> int:
+	return power_banks + get_power_banks_spent()
 
 
-## Power banks que se tienen ahora (completos + vacios; el que se esta cargando
-## es uno de los vacios).
-func get_power_bank_total() -> int:
-	return power_banks + empty_power_banks
+## Ids de los power banks de mapa del nivel `level` (objetos power_bank_pickup
+## de data/levels/<id>.json; params.id). Vacio si no hay datos.
+static func level_power_bank_ids(level: StringName) -> Array[StringName]:
+	var out: Array[StringName] = []
+	if level == NO_LEVEL:
+		return out
+	var path: String = LEVEL_DATA_PATTERN % String(level)
+	if not FileAccess.file_exists(path):
+		return out
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not data is Dictionary:
+		return out
+	for obj: Variant in (data as Dictionary).get("objects", []):
+		if obj is Dictionary and String((obj as Dictionary).get("type", "")) == POWER_BANK_PICKUP_TYPE:
+			var params: Variant = (obj as Dictionary).get("params", {})
+			var id: String = String((params as Dictionary).get("id", "")) if params is Dictionary else ""
+			if not id.is_empty():
+				out.append(StringName(id))
+	return out
 
 
-## Hay hueco para recoger otro power bank de mapa (por debajo del tope). Pagar un
-## nivel 5 en Calc gasta uno completo y libera su hueco.
-func can_take_power_bank() -> bool:
-	return get_power_bank_total() < get_power_bank_max_total()
+## Power banks del nivel `level`: x = recogidos, y = total del mapa (como los
+## puntos de atencion: «Power bank 0/1» en el HUD del nivel y en la carpeta).
+func get_level_power_bank_progress(level: StringName) -> Vector2i:
+	var ids: Array[StringName] = level_power_bank_ids(level)
+	var found: int = 0
+	for id: StringName in ids:
+		if is_pickup_collected(level, id):
+			found += 1
+	return Vector2i(found, ids.size())
 
 
 ## Ajustes del contador del HUD (seccion "hud" de data/power_bank.json).
 func get_power_bank_hud_data() -> Dictionary:
 	return _power_bank_data.get("hud", {})
-
-
-## Aviso «Sin espacio» del power bank de mapa con el tope lleno (seccion no_room).
-func get_power_bank_no_room_data() -> Dictionary:
-	return _power_bank_data.get("no_room", {})
 
 
 # --- Mejoras de Calc por pistas (data/upgrades.json, tanda M1) ---
@@ -683,8 +649,8 @@ func begin_attempt() -> void:
 
 
 ## Pulso de retorno (Pulso 5, tanda M2): el pulso acaba de aturdir a `enemy`.
-## Con la mejora da pulse_energy_on_stun de energia (4) a la barra, sin desbordar
-## a los power banks, UNA vez por enemigo y por intento (begin_attempt). Devuelve
+## Con la mejora da pulse_energy_on_stun de energia (4) a la barra (sin desborde),
+## UNA vez por enemigo y por intento (begin_attempt). Devuelve
 ## la energia del retorno (4) si se cobro ahora y 0 sin mejora o ya cobrado (con
 ## la barra llena se cobra igual y no entra nada: no desborda). Emite
 ## EventBus.pulse_energy_returned con lo que entro de verdad.
@@ -949,8 +915,6 @@ func reset_progress() -> void:
 	obtained_abilities.clear()
 	seen_notices.clear()
 	power_banks = 0
-	empty_power_banks = 0
-	power_bank_charge = 0.0
 	completed_levels.clear()
 	unlocked_levels.clear()
 	_refresh_maxima()
@@ -1066,7 +1030,7 @@ func to_save_data() -> Dictionary:
 		"upgrade_levels": _upgrade_levels_save_data(),
 		"abilities_obtained": _keys_sorted(obtained_abilities),
 		"seen_notices": _keys_sorted(seen_notices),
-		"power_banks": {"full": power_banks, "empty": empty_power_banks, "charge": power_bank_charge},
+		"power_banks": {"full": power_banks},
 		"completed_levels": _keys_sorted(completed_levels),
 		"unlocked_levels": _keys_sorted(unlocked_levels),
 		"lap": lap,
@@ -1127,13 +1091,10 @@ func apply_save_data(data: Dictionary) -> bool:
 		seen_notices[id] = true
 	var banks: Variant = data.get("power_banks", {})
 	if banks is Dictionary:
-		power_banks = _as_int(banks.get("full", 0))
-		var charge: float = clampf(_as_float(banks.get("charge", 0.0)), 0.0, get_power_bank_capacity())
-		# Guardados de antes de los power banks vacios (sin "empty"): la carga
-		# parcial que tenian se conserva en un power bank vacio.
-		var empty: int = _as_int(banks.get("empty", 1 if charge > 0.0 else 0))
-		empty_power_banks = empty
-		power_bank_charge = charge if empty > 0 else 0.0
+		# Coleccionable puro desde el 2026-10-25: los power banks vacios de un
+		# guardado anterior (recogidos en el mapa) pasan a completos; la carga
+		# parcial ("charge") ya no existe y se ignora.
+		power_banks = maxi(_as_int(banks.get("full", 0)), 0) + maxi(_as_int(banks.get("empty", 0)), 0)
 	var legacy_upgrades: Array[StringName] = _string_names(data.get("upgrades_purchased", []))
 	if int(version) < 4:
 		_migrate_upgrades_to_v4(legacy_upgrades)
@@ -1660,18 +1621,14 @@ func discard_to_trash() -> Dictionary:
 	var trash: Dictionary = {
 		TRASH_POINTS: attention_points,
 		TRASH_POWER_BANKS: power_banks,
-		TRASH_EMPTY_POWER_BANKS: empty_power_banks,
-		TRASH_POWER_BANK_CHARGE: power_bank_charge,
 		TRASH_UPGRADES: get_upgrade_levels_data(),
 		TRASH_ABILITIES: abilities,
 	}
-	if attention_points <= 0 and power_banks <= 0 and empty_power_banks <= 0 and power_bank_charge <= 0.0 \
+	if attention_points <= 0 and power_banks <= 0 \
 			and not has_any_upgrade() and abilities.is_empty():
 		trash = {}
 	attention_points = ATTENTION_POINTS_MIN
 	power_banks = 0
-	empty_power_banks = 0
-	power_bank_charge = 0.0
 	upgrade_levels.clear()
 	for id: String in abilities:
 		obtained_abilities.erase(StringName(id))
@@ -1704,8 +1661,6 @@ func recover_trash() -> bool:
 	_trash = {}
 	attention_points += int(trash.get(TRASH_POINTS, 0))
 	power_banks += int(trash.get(TRASH_POWER_BANKS, 0))
-	empty_power_banks += int(trash.get(TRASH_EMPTY_POWER_BANKS, 0))
-	power_bank_charge += float(trash.get(TRASH_POWER_BANK_CHARGE, 0.0))
 	_set_upgrade_levels(trash.get(TRASH_UPGRADES, {}))
 	for id: Variant in trash.get(TRASH_ABILITIES, []):
 		var ability := StringName(String(id))
@@ -1738,7 +1693,7 @@ func _build_locked_abilities() -> Dictionary[StringName, bool]:
 
 
 func _emit_power_banks() -> void:
-	EventBus.power_banks_changed.emit(power_banks, power_bank_charge, get_power_bank_capacity())
+	EventBus.power_banks_changed.emit(power_banks)
 
 
 ## Reaplica los topes (y avisa al HUD) tras cambiar las mejoras.

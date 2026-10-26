@@ -1,6 +1,6 @@
 ## Recarga que suelta un enemigo o jefe al ser eliminado (decision 2026-10-14):
 ## al tocarla Isak suma `amount` de energia de Debug (el sobrante con la barra
-## llena carga el power bank, GameState.add_debug_energy) o de Sync Rate
+## llena se pierde, GameState.add_debug_energy) o de Sync Rate
 ## (GameState.heal_sync). Comportamiento en data/recharge_pickup.json; cuanto
 ## suelta cada enemigo, en su JSON (drops). Aspecto: sprite energy_drop_idle o
 ## sync_drop_idle segun `kind` (EnergySprite, docs/estilizacion-energia.md),

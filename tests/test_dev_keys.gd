@@ -79,7 +79,7 @@ func _fill_progress() -> void:
 	GameState.capture_attention_point(&"1-1", &"Point_test_a", 1)
 	GameState.capture_attention_point(&"1-1", &"Point_test_b", 1)
 	assert_eq(GameState.purchase_upgrade(&"sync"), GameState.PurchaseResult.OK)
-	GameState.add_empty_power_bank()
+	GameState.collect_power_bank_pickup(&"1-2", &"power_bank_test")
 
 
 func _eventbus_connections() -> int:
@@ -170,7 +170,7 @@ func test_restart_resets_level_and_keeps_save() -> void:
 	assert_true(GameState.is_attention_point_captured(&"1-1", &"Point_test_b"))
 	assert_true(GameState.is_upgrade_purchased(&"sync:2"))
 	assert_eq(GameState.power_banks, banks)
-	assert_eq(GameState.empty_power_banks, 1)
+	assert_true(GameState.is_pickup_collected(&"1-2", &"power_bank_test"))
 	assert_true(FileAccess.file_exists(PATH), "El archivo de guardado sigue ahi")
 	var data: Dictionary = SaveFile.read(PATH)
 	assert_eq((data["captured_points"]["1-1"] as Array).size(), 2)

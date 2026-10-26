@@ -148,7 +148,7 @@ func _regen_energy(dt: float) -> float:
 	var max_value: float = GameState.get_debug_energy_max()
 	if GameState.debug_energy >= max_value - EPS:
 		return 0.0
-	# Nunca desborda a los power banks (recharge_debug_energy no desborda).
+	# Nunca desborda (recharge_debug_energy pierde el sobrante).
 	return GameState.recharge_debug_energy(max_value * pct / 100.0 * dt)
 
 

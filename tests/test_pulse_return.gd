@@ -108,11 +108,10 @@ func test_badge_also_returns_energy() -> void:
 func test_full_bar_never_overflows() -> void:
 	GameState.upgrade_levels[&"pulso"] = 5
 	GameState.debug_energy = GameState.get_debug_energy_max()
-	GameState.empty_power_banks = 1
 	var b: AlertBubble = _bubble(0.0)
 	assert_true(b.receive_pulse(_area))
 	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS)
-	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "No desborda a los power banks")
+	assert_eq(GameState.power_banks, 0, "No da power banks")
 	assert_true(GameState.is_pulse_return_claimed(b), "Se gasta igual (una vez por enemigo)")
 
 

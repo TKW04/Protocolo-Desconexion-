@@ -25,7 +25,7 @@
 	"pop_bounce_velocity": -720.0,
 	"stomp_tolerance_px": 8.0,
 	"drops": {
-		"_notes": "Recargas que suelta al morir (vida a 0 por el laser desde 2026-10-15; antes al reventar por caida) (decision del usuario 2026-10-14: los enemigos y jefes sueltan energia de Debug y Sync Rate; comportamiento en data/recharge_pickup.json). PROPUESTA, ajustar jugando: debug_energy 25 (= 1,25 s de Debug a 20/s; con la barra llena va entero al power bank), sync_rate 10 (= un golpe de contacto, contact_damage). Solo al morir: aturdirla con el pulso no suelta nada. Todo enemigo define su seccion drops (generalizado 2026-10-15, EnemyHealth.parse_drops). Los enemigos reaparecen al rejugar el nivel, asi que sus drops tambien (duda abierta: farmeo de power banks).",
+		"_notes": "Recargas que suelta al morir (vida a 0 por el laser desde 2026-10-15; antes al reventar por caida) (decision del usuario 2026-10-14: los enemigos y jefes sueltan energia de Debug y Sync Rate; comportamiento en data/recharge_pickup.json). PROPUESTA, ajustar jugando: debug_energy 25 (= 1,25 s de Debug a 20/s; con la barra llena se pierde; los power banks no se cargan desde el 2026-10-25), sync_rate 10 (= un golpe de contacto, contact_damage). Solo al morir: aturdirla con el pulso no suelta nada. Todo enemigo define su seccion drops (generalizado 2026-10-15, EnemyHealth.parse_drops). Los enemigos reaparecen al rejugar el nivel, asi que sus drops tambien (duda abierta: farmeo de power banks).",
 		"debug_energy": 25.0,
 		"sync_rate": 10.0
 	},

@@ -18,9 +18,11 @@
 ## ClockSlot: reloj del Mundo 2 (C8, decision 10 de docs/propuesta-mundo-2.md,
 ## 2026-10-22): HudClock (hijo "Clock", seccion clock de data/hud.json) lo muestra
 ## desde el Mundo 2 y salta +1 h con el borde del scroll y los bucles; solo visual.
-## PowerBank (PROVISIONAL, 2026-10-14): contador minimo de power banks bajo la
-## barra, a la derecha (icono dibujado con la carga parcial + "x<n>"); oculto
-## sin power banks ni carga. Se crea por codigo para no tocar hud.tscn ni
+## PowerBank (PROVISIONAL; contador por nivel desde el 2026-10-25, coleccionable
+## puro): bajo la barra, a la derecha, icono dibujado (pila llena) y
+## «recogidos/total» de los power banks del nivel actual (como los puntos de
+## atencion; GameState.get_level_power_bank_progress); solo en niveles con
+## power banks, nunca en el hub. Se crea por codigo para no tocar hud.tscn ni
 ## data/hud.json; sus ajustes estan en data/power_bank.json (hud).
 ## El porcentaje de Sync Rate muestra el valor real (puede pasar de 100 % con
 ## la mejora "Sync reforzado"); las barras siguen la fraccion del maximo.
@@ -71,8 +73,9 @@ const BLINK_ON_FRACTION: float = 0.5
 ## color clave (la fuente esta dibujada en el color "text").
 const NEUTRAL_MODULATE: Color = Color.WHITE
 const PANEL_ASSET: StringName = &"panel"
-## Contador de power banks (glifos de la fuente del HUD: "x" y cifras).
-const POWER_BANK_FORMAT: String = "x%d"
+## Contador de power banks del nivel: recogidos/total (fuente de textos: la del
+## HUD no tiene «/»).
+const POWER_BANK_FORMAT: String = "%d/%d"
 
 var _config: HudConfig = HudConfig.shared()
 var _sync_ratio: float = FULL
@@ -105,6 +108,7 @@ var _all_tweens: Array[Tween] = []
 var _power_bank_box: HBoxContainer
 var _power_bank_icon: HudPowerBankIcon
 var _power_bank_label: Label
+## Power banks recogidos en el nivel actual (para el bote al recoger uno).
 var _power_banks: int = 0
 
 ## Modo hub (enable_hub_mode): Modo Avion en lugar de la senal e indicador
@@ -246,17 +250,13 @@ func get_attention_text() -> String:
 	return _attention_label.text
 
 
-## Contador de power banks: texto ("x2"), visible y carga parcial (0-1).
+## Contador de power banks del nivel: texto («0/1») y visible.
 func get_power_bank_text() -> String:
 	return _power_bank_label.text
 
 
 func is_power_bank_shown() -> bool:
 	return _power_bank_box.visible
-
-
-func get_power_bank_charge_ratio() -> float:
-	return _power_bank_icon.charge_ratio
 
 
 func is_low_sync_shown() -> bool:
@@ -461,17 +461,24 @@ func _on_world_changed(world: int) -> void:
 		_power_bank_icon.queue_redraw()
 
 
-func _on_power_banks_changed(full: int, charge: float, capacity: float) -> void:
-	var ratio: float = clampf(charge / capacity, 0.0, FULL) if capacity > 0.0 else 0.0
-	_power_bank_label.text = POWER_BANK_FORMAT % maxi(full, 0)
-	_power_bank_icon.charge_ratio = ratio
-	_power_bank_icon.queue_redraw()
-	var show_empty: bool = bool(GameState.get_power_bank_hud_data().get("show_when_empty", false))
-	# Tambien se ve con power banks vacios (llegan sin carga, decision 2026-10-14).
-	_power_bank_box.visible = show_empty or full > 0 or ratio > 0.0 or GameState.empty_power_banks > 0
-	if full > _power_banks:
+func _on_power_banks_changed(_held: int) -> void:
+	_refresh_power_bank()
+
+
+## Contador del nivel actual (GameState.current_level): «recogidos/total»; oculto
+## en el hub y en niveles sin power banks.
+func _refresh_power_bank() -> void:
+	if _power_bank_box == null:
+		return
+	var progress := Vector2i.ZERO
+	if not _hub_mode:
+		progress = GameState.get_level_power_bank_progress(GameState.current_level)
+	var fmt: String = String(GameState.get_power_bank_hud_data().get("format", POWER_BANK_FORMAT))
+	_power_bank_label.text = fmt % [progress.x, progress.y]
+	_power_bank_box.visible = progress.y > 0
+	if progress.x > _power_banks and progress.y > 0:
 		_pulse(_power_bank_label)
-	_power_banks = full
+	_power_banks = progress.x
 
 
 func _build_power_bank(c: HudConfig, font: Font) -> void:
@@ -494,18 +501,21 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 	_power_bank_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_power_bank_icon.outline_color = c.color(&"text")
 	_power_bank_icon.fill_color = c.debug_color_for_world(_world)
+	_power_bank_icon.charge_ratio = FULL
 	_power_bank_box.add_child(_power_bank_icon)
 	_power_bank_label = Label.new()
 	_power_bank_label.name = "Count"
-	_power_bank_label.add_theme_font_override("font", font)
-	_power_bank_label.add_theme_font_size_override("font_size", c.font_size)
+	var text_font: Font = load(String(d.get("font", ""))) as Font if not String(d.get("font", "")).is_empty() else null
+	_power_bank_label.add_theme_font_override("font", text_font if text_font != null else font)
+	_power_bank_label.add_theme_font_size_override("font_size", int(d.get("font_size", c.font_size)))
 	_power_bank_label.add_theme_color_override("font_color", NEUTRAL_MODULATE)
-	_power_bank_label.material = c.new_key_swap_material(c.color(&"text"), c.color(&"text"))
+	_power_bank_label.material = c.new_key_swap_material(
+			Color.html(String(d.get("font_key_color", "#f2f4f8"))), c.color(&"text"))
 	_power_bank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_power_bank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_power_bank_label.text = POWER_BANK_FORMAT % 0
+	_power_bank_label.text = POWER_BANK_FORMAT % [0, 0]
 	_power_bank_box.add_child(_power_bank_label)
-	_power_bank_box.visible = bool(d.get("show_when_empty", false))
+	_power_bank_box.visible = false
 
 
 # --- Ocultarte (Pulso 4, tanda M2) ---
@@ -772,6 +782,7 @@ func enable_hub_mode(config: Dictionary) -> void:
 		return
 	_hub_mode = true
 	_clock.set_hub_mode(true)
+	_refresh_power_bank()
 	_refresh_lives()
 	_signal.visible = false
 	_sync_label.visible = false

@@ -66,6 +66,8 @@ func refresh() -> void:
 	var lines: Array = [
 		{"text": String(texts.get("last_level", "%s")) % last_level_text(), "color": colors.get("summary", "texto_tenue")},
 		{"text": String(texts.get("points", "%d")) % GameState.attention_points, "color": colors.get("points", "ambar")},
+		{"text": String(texts.get("power_banks", "%d %d")) % [GameState.get_power_banks_found(), GameState.get_power_banks_spent()],
+			"color": colors.get("power_banks", "acento_cian")},
 		{"text": HubWorlds.access_label(), "color": colors.get("summary", "texto_tenue")},
 		{"text": String(texts.get("saved_at", "%s")) % saved_at_text(), "color": colors.get("summary", "texto_tenue")},
 		{"text": status_text(), "color": colors.get("unsaved" if GameState.has_unsaved_changes() or GameState.has_trash_pending() else "saved", "texto_tenue")},

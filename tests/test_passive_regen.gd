@@ -139,12 +139,11 @@ func test_energy_5_regenerates_after_3_seconds() -> void:
 
 func test_energy_5_never_overflows_and_not_with_debug_or_hide() -> void:
 	GameState.upgrade_levels[&"energia"] = 5
-	GameState.empty_power_banks = 1
 	GameState.debug_energy = 129.9
 	var regen := PassiveRegen.new()
 	_run(regen, 10.0)
 	assert_almost_eq(GameState.debug_energy, 130.0, EPS, "Llena la barra")
-	assert_almost_eq(GameState.power_bank_charge, 0.0, EPS, "Nunca desborda a los power banks")
+	assert_eq(GameState.power_banks, 0, "Nunca da power banks")
 	# Con el Ocultarte activo no recarga.
 	GameState.debug_energy = 40.0
 	regen.reset()

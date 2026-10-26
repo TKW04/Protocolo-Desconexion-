@@ -82,11 +82,12 @@ func test_pulse_opens_the_summary_with_isak_facing_back() -> void:
 	assert_eq(_panel.get_lines(), PackedStringArray([
 		"Último nivel: Bandeja de entrada (1-1)",
 		"Puntos de atención: 9",
+		"Power banks: 0 encontrados, 0 gastados",
 		"Acceso: Caché",
 		"Última copia: nunca",
 		"Sin guardar"]))
 	_assert_no_internal_lap_words(_panel.get_lines())
-	assert_eq(_panel.get_line_color(4), Color.html("#ffa000"), "Sin guardar en ambar")
+	assert_eq(_panel.get_line_color(5), Color.html("#ffa000"), "Sin guardar en ambar")
 	assert_eq(_panel.get_option_ids(), [NotasPanel.OPTION_SAVE, NotasPanel.OPTION_ALBUM, NotasPanel.OPTION_NICKNAME,
 		NotasPanel.OPTION_BACK] as Array[StringName], "Guardar / Álbum / Apodo / Volver")
 
@@ -107,12 +108,12 @@ func test_save_asks_for_confirmation_then_writes_and_clears_the_indicator() -> v
 	assert_eq(GameState.save_path, PATH)
 	assert_false(GameState.has_unsaved_changes())
 	assert_false(hud.is_unsaved_indicator_shown(), "El indicador del HUD se apaga")
-	assert_eq(_panel.get_lines()[4], "Todo guardado")
+	assert_eq(_panel.get_lines()[5], "Todo guardado")
 	assert_eq(_panel.get_message(), "Apuntado. Copia guardada")
 	assert_eq(_panel.get_mode(), NotasPanel.Mode.SUMMARY)
 	assert_eq(_panel.get_save_count(), 1)
 	assert_true(_station.is_flashing(), "Destello cian del monitor")
-	assert_ne(_panel.get_lines()[3], "Última copia: nunca", "Muestra la fecha de la copia")
+	assert_ne(_panel.get_lines()[4], "Última copia: nunca", "Muestra la fecha de la copia")
 	var data: Dictionary = SaveFile.read(PATH)
 	assert_eq(int(data.get("attention_points", -1)), 9)
 
@@ -120,7 +121,7 @@ func test_save_asks_for_confirmation_then_writes_and_clears_the_indicator() -> v
 func test_nothing_to_save_does_not_write() -> void:
 	await _open_with_pulse()
 	assert_false(GameState.has_unsaved_changes())
-	assert_eq(_panel.get_lines()[4], "Todo guardado")
+	assert_eq(_panel.get_lines()[5], "Todo guardado")
 	_panel.select_option(NotasPanel.OPTION_SAVE)
 	_panel.confirm()
 	assert_eq(_panel.get_mode(), NotasPanel.Mode.SUMMARY, "Sin confirmacion")

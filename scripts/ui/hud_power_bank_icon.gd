@@ -1,12 +1,13 @@
 ## Icono PROVISIONAL del contador de power banks del HUD (2026-10-14): una pila
-## con contorno (color de texto del HUD) rellena de abajo arriba segun la carga
-## parcial del siguiente power bank, en el color del Debug del mundo. Se dibuja
+## con contorno (color de texto del HUD) rellena de abajo arriba segun
+## charge_ratio, en el color del Debug del mundo (desde el 2026-10-25 el HUD la
+## pinta siempre llena: los power banks son coleccionables completos). Se dibuja
 ## en pixeles de arte (el Frame del HUD escala x2). Sin asset propio todavia.
 class_name HudPowerBankIcon
 extends Control
 
-## Carga parcial del siguiente power bank (0-1).
-var charge_ratio: float = 0.0
+## Relleno de la pila (0-1; el HUD usa 1, llena).
+var charge_ratio: float = 1.0
 var outline_color: Color = Color.WHITE
 var fill_color: Color = Color.CYAN
 

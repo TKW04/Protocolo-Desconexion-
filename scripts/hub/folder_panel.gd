@@ -101,7 +101,8 @@ func get_level_state(level_id: StringName) -> StringName:
 	return HubWorlds.STATE_LOCKED if level.is_empty() else HubWorlds.level_state(world_entry, level)
 
 
-## Texto del subnivel: «1-1 Bandeja de entrada - Completado 9/9», «... - Nuevo».
+## Texto del subnivel: «1-1 Bandeja de entrada - Completado 9/9 - Power bank 1/1»
+## (el power bank solo si el mapa tiene alguno), «... - Nuevo».
 ## El jefe (kind "boss") sale como «Jefe: Alerta Mayor - Nuevo», sin id ni
 ## puntos (la arena no tiene puntos de atencion).
 func level_text(level: Dictionary) -> String:
@@ -113,8 +114,13 @@ func level_text(level: Dictionary) -> String:
 	if HubWorlds.is_boss(level):
 		return String(texts.get("boss_level", "%s - %s")) % [name, label]
 	if state == HubWorlds.STATE_COMPLETED:
-		return String(texts.get("level_points", "%s %s %s %d/%d")) % [id, name, label,
+		var text: String = String(texts.get("level_points", "%s %s %s %d/%d")) % [id, name, label,
 			GameState.get_captured_points(StringName(id)).size(), HubWorlds.level_points_total(id)]
+		# Power banks del mapa (coleccionable puro, 2026-10-25), como los puntos.
+		var banks: Vector2i = GameState.get_level_power_bank_progress(StringName(id))
+		if banks.y > 0:
+			text += String(texts.get("level_power_banks", " %d/%d")) % [banks.x, banks.y]
+		return text
 	return String(texts.get("level", "%s %s")) % [id, name] + " - " + label
 
 
