@@ -1,9 +1,10 @@
-[gd_resource type="SpriteFrames" load_steps=5 format=3]
+[gd_resource type="SpriteFrames" load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_locked_00.png" id="1_folder_locked_00"]
 [ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_available_00.png" id="2_folder_available_00"]
 [ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_available_01.png" id="3_folder_available_01"]
 [ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_completed_00.png" id="4_folder_completed_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_all_done_00.png" id="5_folder_all_done_00"]
 
 [resource]
 animations = [{
@@ -32,5 +33,13 @@ animations = [{
 }],
 "loop": true,
 "name": &"completed",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_folder_all_done_00")
+}],
+"loop": true,
+"name": &"all_done",
 "speed": 1.0
 }]

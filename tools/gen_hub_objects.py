@@ -12,7 +12,10 @@ Salidas (assets/sprites/hub/):
   tiles/       dock_top_{left,center,right}, dock_fill, dock_fill_alt,
                one_way_{left,center,right,single}             64x64
   folders/     folder_locked_00, folder_available_00..01,
-               folder_completed_00                             128x128
+               folder_completed_00, folder_all_done_00 (carpeta
+               generica de respaldo) y, por mundo con carpeta,
+               folder_<m>_{locked,available_00..01,completed,all_done}
+               (icono grande del mundo, 2026-10-26)            128x128
   notas/       notas_powered_off_00 (apagada, antes de la presentacion),
                notas_off_00..01, notas_prompt_00..01,
                notas_active_00..01 (reskin de la copia local)  64x128
@@ -42,7 +45,11 @@ Salidas (assets/sprites/hub/):
                con el texto en fondo_profundo; margen de 3 px)       16x16
                world_icon_m1_00 (miniatura del Mundo 1:
                campana de notificaciones, en la carpeta)       16x16
+               world_icon_m2_00, world_icon_m3_00 (miniaturas de
+               los Mundos 2 y 3 para el album)                 16x16
                page_dot_current_00, page_dot_other_00          8x8
+  menu/        menu_<opcion>_00 y menu_level_<id>_00 (+ _off_00):
+               iconos de las opciones de Notas y de las carpetas 12x12
 
 El fondo, los tiles y las carpetas se dibujan en una rejilla logica de 2x2 px
 (como el tileset del Mundo 1); Notas, Calc, huecos e iconos a 1 px (como
@@ -419,13 +426,382 @@ def folder(state, frame):
         cv.rect(48, 45, 49, 46, BO)
         if frame == 1:
             cv.halo(CT)
-    else:  # completed
+    else:  # completed (todos los subniveles) / all_done (TODO obtenido: con check)
         folder_shape(cv, CA, FP, CB, CT)
         cv.box(sx0, sy0, sx1, sy1, CB, CT, cut=False)
         cv.hline(6, 30, 52, CT)
         cv.rect(30, 51, 31, 52, FP)
-        cv.stamp(44, 44, CHECK, {"#": FP})
+        if state == "all_done":
+            cv.stamp(44, 44, CHECK, {"#": FP})
     return cv.x2()
+
+
+# ------------------------------------------- carpetas con el icono del mundo (2026-10-26)
+# Peticion del usuario (2026-10-26): la carpeta de cada mundo deja de ser una
+# carpeta generica y pasa a ser un icono grande que lo representa (Mundo 1
+# Notificaciones: campana; Mundo 2 El Feed: tarjeta de video con el boton de
+# reproducir y la barra de progreso en ambar; Mundo 3 La Vitrina: foto
+# instantanea con marco). Rejilla logica de 64x64 (x2 = 128x128), como la
+# carpeta. Abajo a la izquierda, la placa del numero (lo escribe FolderStation);
+# abajo a la derecha, la insignia del estado: candado (locked) o check (all_done:
+# TODO el mundo obtenido, HubWorlds.is_world_all_done). Estados: locked (gris,
+# GRAY_MAP), available (2 cuadros: el 1 con halo cian_tenue), completed (todos los
+# subniveles, sin check) y all_done (con check).
+GRAY_MAP = {FP: FP, SO: SO, PA: PA, DK: DK, BA: BA, GA: BA, GF: GA, TR: BA, BO: GA, TT: GA,
+            TC: GF, CT: BA, CA: GA, CB: GF, AM: GA, AS: BA}
+NUMBER_PLATE = (2, 44, 19, 59)   # placa del numero (logico, inclusivo)
+STATE_BADGE = (44, 44, 61, 59)   # insignia del estado (logico, inclusivo)
+
+
+def remap(cv, mapping):
+    for y in range(cv.h):
+        for x in range(cv.w):
+            c = cv.px[x, y]
+            if c[3] and c in mapping:
+                cv.px[x, y] = mapping[c]
+
+
+def big_bell(cv):
+    cx = 31.5
+    # Asa: anillo sobre la cupula.
+    for y in range(6, 13):
+        for x in range(26, 38):
+            if 2.0 <= math.hypot(x - cx, y - 10) <= 3.6:
+                cv.p(x, y, TT)
+    for y in range(12, 41):
+        t = (y - 12) / 28.0
+        half = 6.5 + 8.5 * t ** 0.55 + max(0, y - 35) * 1.1
+        x0, x1 = int(round(cx - half)), int(round(cx + half))
+        cv.hline(x0, x1, y, TC)
+        cv.hline(int(round(cx + half * 0.45)), x1, y, TT)  # sombra a la derecha
+        if y < 34:
+            cv.hline(x0 + 2, x0 + 3, y, CB)  # brillo a la izquierda
+    cv.box(10, 40, 53, 44, BO, FP, cut=True)  # borde inferior
+    cv.hline(11, 52, 41, TC)
+    for y in range(44, 51):
+        for x in range(27, 37):
+            if math.hypot(x - cx, y - 46.5) <= 3.4:
+                cv.p(x, y, CA)  # badajo: el aviso, en cian
+    # Ondas de sonido a los lados.
+    for side in (-1, 1):
+        for y in range(16, 37):
+            for x in range(0, 64):
+                d = math.hypot(x - cx, (y - 26) * 1.15)
+                if (side < 0 and x < 12) or (side > 0 and x > 51):
+                    if 22.5 <= d <= 24.2 or 27.5 <= d <= 29.2:
+                        cv.p(x, y, CA)
+
+
+def big_feed(cv):
+    # Tarjetas del feed asomando por detras y la tarjeta de video delante.
+    cv.box(16, 5, 47, 12, BA, TR)
+    cv.box(12, 9, 51, 15, PA, TR)
+    cv.box(7, 13, 56, 49, PA, BO)
+    cv.rect(10, 16, 53, 39, SO)  # pantalla
+    cv.hline(10, 53, 16, FP)
+    # Boton de reproducir (triangulo en ambar con sombra).
+    for y in range(19, 37):
+        k = 9 - abs(y - 27.5)
+        if k > 0:
+            x1 = 26 + int(k * 1.6)
+            cv.hline(26, x1, y, AM)
+            cv.p(x1, y, AS)
+    cv.vline(26, 19, 36, AS)
+    # Barra de progreso con el cabezal.
+    cv.rect(10, 43, 53, 44, GA)
+    cv.rect(10, 43, 33, 44, AM)
+    cv.box(32, 41, 36, 46, TC, FP, cut=True)
+    # Puntos de la cabecera.
+    for x in (47, 50):
+        cv.rect(x, 18, x + 1, 19, TT)
+
+
+def big_photo(cv):
+    # Foto instantanea de la vitrina: una detras, girada, y la de delante.
+    cv.box(24, 6, 57, 40, TT, GF)
+    cv.rect(27, 9, 54, 31, GA)
+    cv.box(6, 12, 45, 49, TC, TT)
+    cv.rect(10, 16, 41, 39, CT)  # foto
+    cv.rect(10, 16, 41, 25, CA)  # cielo
+    for y in range(17, 23):
+        for x in range(30, 40):
+            if math.hypot(x - 35, y - 20) <= 2.8:
+                cv.p(x, y, AM)  # sol
+    for y in range(26, 40):  # montanas
+        for x in range(10, 42):
+            if y >= 26 + abs(x - 19) * 0.9 or y >= 31 + abs(x - 33) * 0.8:
+                cv.p(x, y, TR if y < 33 else BO)
+    cv.hline(12, 30, 44, GF)  # pie de foto
+    # Destello (brilla, «todo pulido»).
+    for x, y in ((52, 44), (52, 43), (52, 45), (51, 44), (53, 44), (52, 42), (52, 46), (50, 44), (54, 44)):
+        cv.p(x, y, CB)
+
+
+WORLD_ICONS = {"m1": big_bell, "m2": big_feed, "m3": big_photo}
+
+
+def world_folder(world, state, frame):
+    cv = Canvas(64, 64)
+    WORLD_ICONS[world](cv)
+    cv.halo(FP)
+    if state == "locked":
+        remap(cv, GRAY_MAP)
+    elif state == "available" and frame == 1:
+        cv.halo(CT)
+    # Placa del numero (el numero lo escribe FolderStation).
+    border = {"locked": GA, "available": CA, "completed": TT, "all_done": CA}[state]
+    nx0, ny0, nx1, ny1 = NUMBER_PLATE
+    cv.box(nx0, ny0, nx1, ny1, FP, border)
+    cv.hline(nx0 + 2, nx1 - 2, ny0 + 1, PA)
+    bx0, by0, bx1, by1 = STATE_BADGE
+    if state == "locked":
+        cv.box(bx0, by0, bx1, by1, FP, GA)
+        cv.stamp(bx0 + 5, by0 + 4, LOCK, {"#": TT})
+    elif state == "all_done":
+        cv.box(bx0, by0, bx1, by1, CA, FP)
+        cv.hline(bx0 + 2, bx1 - 2, by0 + 1, CB)
+        cv.stamp(bx0 + 3, by0 + 4, CHECK, {"#": FP})
+    return cv.x2()
+
+
+def world_icon_feed():
+    """Miniatura del Mundo 2 (album): tarjeta de video con el boton en ambar."""
+    cv = Canvas(16, 16)
+    cv.box(1, 2, 14, 13, PA, BO)
+    cv.rect(3, 4, 12, 9, SO)
+    for y in range(4, 10):
+        k = 3 - abs(y - 6.5)
+        if k > 0:
+            cv.hline(6, 6 + int(k * 1.5), y, AM)
+    cv.hline(3, 12, 11, GA)
+    cv.hline(3, 7, 11, AM)
+    cv.halo(FP)
+    return cv.img
+
+
+def world_icon_photo():
+    """Miniatura del Mundo 3 (album): foto instantanea con su marco."""
+    cv = Canvas(16, 16)
+    cv.box(2, 1, 13, 14, TC, TT)
+    cv.rect(4, 3, 11, 9, CT)
+    cv.rect(4, 3, 11, 5, CA)
+    cv.p(9, 4, AM)
+    for x in range(4, 12):
+        cv.vline(x, 7 + abs(x - 6) // 2 if x < 9 else 8, 9, TR)
+    cv.hline(4, 9, 12, GF)
+    cv.halo(FP)
+    return cv.img
+
+
+# ---------------------------------------------- iconos de los menus del hub (12x12)
+# Peticion del usuario (2026-10-26): iconos junto a las opciones de los menus de
+# Notas (Guardar con un disquete, Album, Apodo, Volver; Si / No de la
+# confirmacion) y de las carpetas (un icono por subnivel, el jefe con la
+# estrella de puntas de jefe, Volver y Entrar sin guardar). 12x12 px de arte (x2
+# en pantalla, la altura de una linea de la fuente de textos), trazo claro y
+# contorno fondo_profundo. Las variantes _off (subnivel bloqueado o
+# «Proximamente») pasan por GRAY_MAP.
+MENU = 12
+MENU_STAMPS = {
+    "save": (["#########...",
+              "#bmmmsmmb#..",
+              "#bmmmsmmbb#.",
+              "#bmmmmmmbbb#",
+              "#bbbbbbbbbb#",
+              "#bllllllllb#",
+              "#blkkkkkklb#",
+              "#bllllllllb#",
+              "#blkkkkkklb#",
+              "#bllllllllb#",
+              "#bbbbbbbbbb#",
+              "############"],
+             {"#": FP, "b": TR, "m": TC, "s": SO, "l": TC, "k": GF}),
+    "album": (["###########.",
+               "#sccccccccc#",
+               "#scwwwwwwwc#",
+               "#scwppppawc#",
+               "#scwpppppwc#",
+               "#scwpgpppwc#",
+               "#scwgggpgwc#",
+               "#scwwwwwwwc#",
+               "#sccccccccc#",
+               "#scctttttcc#",
+               "#sccccccccc#",
+               "###########."],
+              {"#": FP, "s": BO, "c": TR, "w": TC, "p": CA, "a": AM, "g": CT, "t": TT}),
+    "nickname": (["............",
+                  "....####....",
+                  "....#kk#....",
+                  "############",
+                  "#wwwwwwwwww#",
+                  "#whhhwllllw#",
+                  "#whhhwwwwww#",
+                  "#wbbbwlllww#",
+                  "#bbbbbwwwww#",
+                  "#wwwwwwwwww#",
+                  "############",
+                  "............"],
+                 {"#": FP, "w": TC, "h": CA, "b": TR, "l": GF, "k": BO}),
+}
+
+
+def _menu_canvas():
+    return Canvas(MENU, MENU)
+
+
+def menu_icon(name):
+    cv = _menu_canvas()
+    if name in MENU_STAMPS:
+        rows, cmap = MENU_STAMPS[name]
+        assert all(len(r) == MENU for r in rows) and len(rows) == MENU, name
+        cv.stamp(0, 0, rows, cmap)
+        return cv
+    draw = MENU_DRAW[name]
+    draw(cv)
+    cv.halo(FP)
+    return cv
+
+
+def _menu_back(cv):
+    # Flecha de vuelta (punta a la izquierda y curva hacia abajo a la derecha).
+    for y, x0, x1 in ((2, 3, 3), (3, 2, 3), (4, 1, 8), (5, 1, 9), (6, 2, 3), (7, 3, 3)):
+        cv.hline(x0, x1, y, TC)
+    for y in range(5, 9):
+        cv.hline(9, 10, y, TC)
+    cv.hline(4, 9, 9, TC)
+    cv.hline(4, 8, 10, TC)
+    cv.p(9, 4, TT)
+
+
+def _menu_yes(cv):
+    cv.stamp(0, 2, CHECK, {"#": CA})
+
+
+def _menu_no(cv):
+    for i in range(8):
+        cv.rect(2 + i, 2 + i, 3 + i, 2 + i, TT)
+        cv.rect(8 - i, 2 + i, 9 - i, 2 + i, TT)
+
+
+def _menu_enter(cv):
+    for y, x0, x1 in ((3, 4, 4), (4, 4, 5), (5, 0, 6), (6, 0, 6), (7, 4, 5), (8, 4, 4)):
+        cv.hline(x0, x1, y, TC)
+    cv.rect(9, 1, 10, 10, CA)  # el vortice / la puerta
+    cv.vline(8, 2, 9, CT)
+
+
+def _menu_inbox(cv):  # 1-1 Bandeja de entrada: sobre con aviso
+    cv.rect(1, 3, 9, 9, TC)
+    for i in range(4):
+        cv.p(2 + i, 4 + i, GF)
+        cv.p(8 - i, 4 + i, GF)
+    cv.rect(9, 1, 10, 2, CA)
+
+
+def _menu_tower(cv):  # 1-2 Centro de notificaciones: torre de 4 pisos
+    cv.rect(5, 0, 6, 1, BO)
+    cv.rect(2, 2, 9, 2, BO)
+    cv.rect(2, 3, 9, 10, TT)
+    for k in range(4):
+        y = 3 + k * 2
+        cv.rect(3, y, 4, y, CA)
+        cv.rect(7, y, 8, y, CA)
+
+
+def _menu_moon(cv):  # 1-3 No molestar: luna
+    for y in range(MENU):
+        for x in range(MENU):
+            if math.hypot(x - 5, y - 6) <= 4.6 and math.hypot(x - 7.5, y - 4.2) > 3.8:
+                cv.p(x, y, TC if x < 4 else TT)
+    cv.p(9, 2, CB)
+    cv.p(10, 7, CB)
+
+
+def _menu_boss_alert(cv):  # Jefe Alerta Mayor: senal de alerta con «!»
+    for y in range(1, 11):
+        half = (y - 1) * 0.55
+        cv.hline(int(round(5.5 - half - 0.5)), int(round(5.5 + half + 0.5)), y, TC)
+    cv.hline(0, 11, 10, TT)
+    cv.rect(5, 4, 6, 7, FP)
+    cv.rect(5, 9, 6, 9, FP)
+
+
+def _menu_boss_autoplay(cv):  # Jefe Autoplay: boton de reproducir que no para
+    for y in range(MENU):
+        for x in range(MENU):
+            if math.hypot(x - 5.5, y - 5.5) <= 5.2:
+                cv.p(x, y, AM if x + y < 13 else AS)
+    for y in range(3, 9):
+        k = 3 - abs(y - 5.5)
+        if k > 0:
+            cv.hline(4, 4 + int(k * 1.4), y, FP)
+
+
+HEART = ["............",
+         "............",
+         "..aaa..sss..",
+         ".aaaaasssss.",
+         ".awaaasssss.",
+         ".aaaaasssss.",
+         "..aaaassss..",
+         "...aaasss...",
+         "....aass....",
+         ".....as.....",
+         "............",
+         "............"]
+
+
+def _menu_heart(cv):  # 2-1 Para ti: corazon (lo que te recomiendan)
+    cv.stamp(0, 0, HEART, {"a": AM, "s": AS, "w": TC})
+
+
+def _menu_video_plus(cv):  # 2-2 Un video mas: tarjeta con reproducir y «+»
+    cv.rect(0, 3, 8, 10, TT)
+    cv.rect(1, 4, 7, 9, SO)
+    for y in range(5, 9):
+        k = 2 - abs(y - 6.5)
+        if k > 0:
+            cv.hline(3, 3 + int(k * 1.5), y, AM)
+    cv.rect(9, 0, 9, 4, CA)
+    cv.rect(7, 2, 11, 2, CA)
+
+
+def _menu_scroll(cv):  # 2-3 Scroll infinito: lista que no acaba y flecha abajo
+    for y in (0, 3):
+        cv.rect(1, y, 10, y + 1, TT)
+    cv.rect(1, 6, 10, 6, GA)
+    for i in range(4):  # chevron hacia abajo, 2 px de grosor
+        cv.rect(2 + i, 7 + i, 3 + i, 7 + i, AM)
+        cv.rect(8 - i, 7 + i, 9 - i, 7 + i, AM)
+
+
+def _menu_unknown(cv):  # subnivel sin icono propio
+    for y, x0, x1 in ((1, 4, 7), (2, 3, 8), (3, 3, 4), (3, 7, 8), (4, 6, 8), (5, 5, 7), (6, 5, 6), (7, 5, 6),
+                      (9, 5, 6), (10, 5, 6)):
+        cv.hline(x0, x1, y, TT)
+
+
+MENU_DRAW = {"back": _menu_back, "yes": _menu_yes, "no": _menu_no, "enter": _menu_enter,
+             "level_1_1": _menu_inbox, "level_1_2": _menu_tower, "level_1_3": _menu_moon,
+             "level_1_boss": _menu_boss_alert, "level_2_1": _menu_heart, "level_2_2": _menu_video_plus,
+             "level_2_3": _menu_scroll, "level_2_boss": _menu_boss_autoplay, "level_unknown": _menu_unknown}
+MENU_ICONS = ["save", "album", "nickname", "back", "yes", "no", "enter",
+              "level_1_1", "level_1_2", "level_1_3", "level_1_boss",
+              "level_2_1", "level_2_2", "level_2_3", "level_2_boss", "level_unknown"]
+
+
+def menu_outputs():
+    out = {}
+    for name in MENU_ICONS:
+        cv = menu_icon(name)
+        out[f"menu/menu_{name}_00.png"] = cv.img
+        if name.startswith("level_"):
+            off = Canvas(MENU, MENU)
+            off.img.paste(cv.img)
+            off.px = off.img.load()
+            remap(off, GRAY_MAP)
+            out[f"menu/menu_{name}_off_00.png"] = off.img
+    return out
 
 
 # ------------------------------------------------------------- Notas (64x128)
@@ -1040,6 +1416,13 @@ def outputs():
     out["folders/folder_available_00.png"] = folder("available", 0)
     out["folders/folder_available_01.png"] = folder("available", 1)
     out["folders/folder_completed_00.png"] = folder("completed", 0)
+    out["folders/folder_all_done_00.png"] = folder("all_done", 0)
+    for world in WORLD_ICONS:
+        out[f"folders/folder_{world}_locked_00.png"] = world_folder(world, "locked", 0)
+        for f in range(2):
+            out[f"folders/folder_{world}_available_{f:02d}.png"] = world_folder(world, "available", f)
+        out[f"folders/folder_{world}_completed_00.png"] = world_folder(world, "completed", 0)
+        out[f"folders/folder_{world}_all_done_00.png"] = world_folder(world, "all_done", 0)
     out["notas/notas_powered_off_00.png"] = notas("powered_off", 0)
     for st in ("off", "prompt", "active"):
         for f in range(2):
@@ -1060,6 +1443,8 @@ def outputs():
     out["icons/icon_unsaved_00.png"] = icon_unsaved()
     out["icons/icon_settings_00.png"] = icon_settings()
     out["icons/world_icon_m1_00.png"] = world_icon_bell()
+    out["icons/world_icon_m2_00.png"] = world_icon_feed()
+    out["icons/world_icon_m3_00.png"] = world_icon_photo()
     out["icons/icon_notas_00.png"] = icon_notas()
     out["icons/icon_calc_00.png"] = icon_calc()
     out["icons/lcd_panel_00.png"] = lcd_panel()
@@ -1075,6 +1460,7 @@ def outputs():
     for i in range(8):
         out[f"charger/charger_cooling_{i:02d}.png"] = charger("cooling", progress=i / 7 * 0.875 + 0.0)
     out["charger/charger_spent_00.png"] = charger("spent")
+    out.update(menu_outputs())
     return out
 
 
@@ -1092,7 +1478,14 @@ FRAMES = {
                           ("active", "notas/notas_active", 2, 4.0, True)],
     "folder_frames.tres": [("locked", "folders/folder_locked", 1, 1.0, True),
                            ("available", "folders/folder_available", 2, 2.0, True),
-                           ("completed", "folders/folder_completed", 1, 1.0, True)],
+                           ("completed", "folders/folder_completed", 1, 1.0, True),
+                           ("all_done", "folders/folder_all_done", 1, 1.0, True)],
+    # Una por mundo con carpeta (icono grande del mundo; folder_frames de worlds).
+    **{f"folder_{w}_frames.tres": [("locked", f"folders/folder_{w}_locked", 1, 1.0, True),
+                                   ("available", f"folders/folder_{w}_available", 2, 2.0, True),
+                                   ("completed", f"folders/folder_{w}_completed", 1, 1.0, True),
+                                   ("all_done", f"folders/folder_{w}_all_done", 1, 1.0, True)]
+       for w in ("m1", "m2", "m3")},
     "calc_frames.tres": [("powered_off", "calc/calc_off", 1, 1.0, True),
                          ("sleep", "calc/calc_sleep", 3, 2.0, True),
                          ("awake", "calc/calc_awake", 4, 3.0, True)],

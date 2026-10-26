@@ -19,12 +19,18 @@
 ##   cuenta como un subnivel mas de la vuelta. Mientras no este completado, la
 ##   carpeta no pasa a completed (ni se enciende la pieza del fondo del hub),
 ##   aunque aun no sea jugable.
+## - Check de la carpeta (2026-10-26, peticion del usuario): completed solo dice
+##   que se superaron todos los subniveles (y enciende la pieza del fondo); el
+##   check sale con is_world_all_done: ademas, todos los puntos, power banks,
+##   vidas extra y recuerdos del mundo en la vuelta (world_progress).
 class_name HubWorlds
 extends RefCounted
 
 const STATE_LOCKED: StringName = &"locked"
 const STATE_AVAILABLE: StringName = &"available"
 const STATE_COMPLETED: StringName = &"completed"
+## Solo arte de la carpeta (folder_art_state): TODO el mundo obtenido, con check.
+const STATE_ALL_DONE: StringName = &"all_done"
 const KIND_BOSS: String = "boss"
 
 
@@ -186,6 +192,92 @@ static func folder_state(world_entry: Dictionary) -> StringName:
 		if not GameState.is_level_completed(StringName(String(level.get("id", "")))):
 			return STATE_AVAILABLE
 	return STATE_COMPLETED
+
+
+## TODO el mundo obtenido en la vuelta actual (2026-10-26, peticion del usuario:
+## el check de la carpeta solo sale entonces). Partes (world_progress):
+## - levels: subniveles de la vuelta completados (jefe incluido; folder_state).
+## - points: puntos de atencion capturados / total de cada subnivel (como la fila
+##   «Completado 9/9» del panel).
+## - power_banks: power banks de mapa recogidos / total (« - Power bank n/N»).
+## - extra_lives: vidas extra de los mapas (extra_life_pickup; secreto encontrado).
+## - memories: mensajes de secretos del mundo ofrecidos en la vuelta
+##   (MemoryCatalog.is_reached) y la capa del jefe de la vuelta, obtenidos.
+## Cada parte es Vector2i(obtenido, total). Sin subniveles en la vuelta, nunca.
+static func world_progress(world_entry: Dictionary) -> Dictionary:
+	var levels_done := Vector2i.ZERO
+	var points := Vector2i.ZERO
+	var banks := Vector2i.ZERO
+	var lives := Vector2i.ZERO
+	var mems := Vector2i.ZERO
+	for level: Dictionary in levels_for_lap(world_entry):
+		var id := StringName(String(level.get("id", "")))
+		levels_done += Vector2i(1 if GameState.is_level_completed(id) else 0, 1)
+		var total: int = level_points_total(String(id))
+		points += Vector2i(mini(GameState.get_captured_points(id).size(), total), total)
+		banks += GameState.get_level_power_bank_progress(id)
+		for secret: StringName in level_extra_life_secrets(id):
+			lives += Vector2i(1 if GameState.is_secret_found(id, secret) else 0, 1)
+	var world_id: int = int(world_entry.get("world", 0))
+	var catalog: MemoryCatalog = MemoryCatalog.shared()
+	if not levels_for_lap(world_entry).is_empty():
+		for id: StringName in catalog.ids_of(world_id, MemoryCatalog.KIND_SECRET):
+			if catalog.is_reached(id, GameState.lap):
+				mems += Vector2i(1 if GameState.has_memory(id) else 0, 1)
+		var boss_layer: StringName = catalog.boss_id(world_id, GameState.lap)
+		if not boss_layer.is_empty():
+			mems += Vector2i(1 if GameState.has_memory(boss_layer) else 0, 1)
+	return {"levels": levels_done, "points": points, "power_banks": banks, "extra_lives": lives, "memories": mems}
+
+
+## Partes de world_progress que aun faltan, en su orden (vacio = todo obtenido).
+static func world_missing(world_entry: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	var progress: Dictionary = world_progress(world_entry)
+	for key: String in progress:
+		var v: Vector2i = progress[key]
+		if v.x < v.y:
+			out.append(key)
+	return out
+
+
+## Check de la carpeta: mundo desbloqueado con subniveles en la vuelta y TODO
+## obtenido (world_progress sin nada pendiente).
+static func is_world_all_done(world_entry: Dictionary) -> bool:
+	if folder_state(world_entry) != STATE_COMPLETED:
+		return false
+	return world_missing(world_entry).is_empty()
+
+
+## Estado del arte de la carpeta: el de folder_state y, si ademas esta todo
+## obtenido, STATE_ALL_DONE (con check). La pieza del fondo del hub sigue con
+## folder_state (se enciende al vencer al jefe).
+static func folder_art_state(world_entry: Dictionary) -> StringName:
+	return STATE_ALL_DONE if is_world_all_done(world_entry) else folder_state(world_entry)
+
+
+## Secretos con vida extra del subnivel (extra_life_pickup de su JSON,
+## params.secret_id), en cache por id.
+static var _extra_life_cache: Dictionary = {}
+
+
+static func level_extra_life_secrets(level_id: StringName) -> Array[StringName]:
+	if _extra_life_cache.has(level_id):
+		return _extra_life_cache[level_id]
+	var out: Array[StringName] = []
+	var pattern: String = String(HubData.section("folders").get("level_data_pattern", "res://data/levels/%s.json"))
+	var path: String = pattern % String(level_id)
+	if FileAccess.file_exists(path):
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if data is Dictionary:
+			for obj: Variant in (data as Dictionary).get("objects", []):
+				if obj is Dictionary and String((obj as Dictionary).get("type", "")) == "extra_life_pickup":
+					var params: Variant = (obj as Dictionary).get("params", {})
+					var secret: String = String((params as Dictionary).get("secret_id", "")) if params is Dictionary else ""
+					if not secret.is_empty():
+						out.append(StringName(secret))
+	_extra_life_cache[level_id] = out
+	return out
 
 
 ## El subnivel es el jefe del mundo (kind "boss").

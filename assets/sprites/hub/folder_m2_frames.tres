@@ -1,0 +1,45 @@
+[gd_resource type="SpriteFrames" load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_m2_locked_00.png" id="1_folder_m2_locked_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_m2_available_00.png" id="2_folder_m2_available_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_m2_available_01.png" id="3_folder_m2_available_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_m2_completed_00.png" id="4_folder_m2_completed_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/folders/folder_m2_all_done_00.png" id="5_folder_m2_all_done_00"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_folder_m2_locked_00")
+}],
+"loop": true,
+"name": &"locked",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_folder_m2_available_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_folder_m2_available_01")
+}],
+"loop": true,
+"name": &"available",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_folder_m2_completed_00")
+}],
+"loop": true,
+"name": &"completed",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_folder_m2_all_done_00")
+}],
+"loop": true,
+"name": &"all_done",
+"speed": 1.0
+}]

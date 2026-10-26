@@ -202,35 +202,35 @@ func test_folders_sit_on_shelves_with_their_state_and_number() -> void:
 	assert_eq(_hub.get_folder(&"m3").get_number_text(), "3")
 
 
-# Miniatura del mundo (2026-10-15): campana en la carpeta del Mundo 1 junto al
-# numero; las bloqueadas, sin miniatura (no se adelanta el mundo).
-func test_world_1_folder_shows_its_bell_miniature_and_locked_ones_do_not() -> void:
+# Icono grande del mundo (2026-10-26, peticion del usuario; antes, carpeta generica
+# con la miniatura de 2026-10-15): campana, tarjeta de video y foto; sin
+# miniatura y con el numero en la placa de abajo a la izquierda.
+func test_folders_show_the_big_world_icon_with_the_number_plate() -> void:
 	_spawn()
-	var m1: FolderStation = _hub.get_folder(&"m1")
-	assert_true(m1.is_miniature_visible(), "Campana en la carpeta del Mundo 1")
-	assert_eq(m1.get_miniature().texture.resource_path, "res://assets/sprites/hub/icons/world_icon_m1_00.png")
-	assert_eq(m1.get_miniature().texture.get_size(), Vector2(16.0, 16.0), "Icono de 16x16")
-	var mr: Array = HubData.section("folders")["miniature_rect_px"]
-	assert_eq(m1.get_miniature().position, Vector2(float(mr[0]), float(mr[1])))
-	assert_eq(m1.get_miniature().scale, Vector2(2.0, 2.0), "x2, como el arte de la carpeta")
-	var nr: Array = HubData.section("folders")["number_rect_with_miniature_px"]
-	assert_eq(m1.get_node(^"Number").position, Vector2(float(nr[0]), float(nr[1])), "Numero a la derecha")
-	for id: StringName in [&"m2", &"m3"]:
-		var locked: FolderStation = _hub.get_folder(id)
-		assert_false(locked.is_miniature_visible(), "%s bloqueada: sin miniatura" % id)
-		var r: Array = HubData.section("folders")["number_rect_px"]
-		assert_eq(locked.get_node(^"Number").position, Vector2(float(r[0]), float(r[1])), "Numero centrado")
+	var expected: Dictionary = {&"m1": "folder_m1_frames.tres", &"m2": "folder_m2_frames.tres", &"m3": "folder_m3_frames.tres"}
+	var nr: Array = HubData.section("folders")["world_number_rect_px"]
+	for id: StringName in expected:
+		var folder: FolderStation = _hub.get_folder(id)
+		assert_true(folder.has_world_art(), "%s: icono del mundo" % id)
+		var sprite := folder.get_visual() as AnimatedSprite2D
+		assert_eq(sprite.sprite_frames.resource_path, "res://assets/sprites/hub/" + String(expected[id]))
+		for anim: StringName in [&"locked", &"available", &"completed", &"all_done"]:
+			assert_true(sprite.sprite_frames.has_animation(anim), "%s: %s" % [id, anim])
+		assert_eq(sprite.sprite_frames.get_frame_texture(&"locked", 0).get_size(), Vector2(128.0, 128.0), "64x64 de arte a x2")
+		assert_false(folder.is_miniature_visible(), "%s: sin miniatura (el icono ya es el mundo)" % id)
+		assert_eq(folder.get_node(^"Number").position, Vector2(float(nr[0]), float(nr[1])), "Numero en su placa")
 	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss"]:
 		GameState.mark_level_completed(id)
-	m1.refresh_state()
-	assert_true(m1.is_miniature_visible(), "Tambien completada")
+	_hub.get_folder(&"m1").refresh_state()
+	assert_false(_hub.get_folder(&"m1").is_miniature_visible(), "Tampoco completada")
 
 
 func test_completed_world_shows_the_completed_folder() -> void:
 	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss"]:
 		GameState.mark_level_completed(id)
 	_spawn()
-	assert_eq(_hub.get_folder(&"m1").get_folder_animation(), &"completed")
+	assert_eq(_hub.get_folder(&"m1").get_folder_animation(), &"completed", "Subniveles superados: sin check")
+	assert_false(_hub.get_folder(&"m1").is_check_shown(), "Falta lo coleccionable")
 
 
 func test_shelves_are_reachable_with_one_jump_from_the_dock() -> void:
@@ -291,7 +291,9 @@ func test_pulse_on_the_shelf_opens_the_sublevel_panel() -> void:
 	assert_true(_isak.is_facing_back(), "Isak de espaldas")
 	var panel: FolderPanel = folder.get_folder_panel()
 	assert_eq(panel.get_title(), "Mundo 1 - Notificaciones")
-	assert_eq(panel.get_lines(), PackedStringArray(["Acceso: Caché"]), "Nivel de acceso, no la vuelta")
+	assert_eq(panel.get_lines()[0], "Acceso: Caché", "Nivel de acceso, no la vuelta")
+	assert_eq(panel.get_lines()[1], "Para el check: niveles, puntos, power banks, vidas extra, recuerdos",
+		"Lo que falta para el check de la carpeta")
 	for line: String in panel.get_lines():
 		for word: String in ["Vuelta", "vuelta", "Easy", "Normal", "Hard"]:
 			assert_false(line.contains(word), "«%s» no dice «%s»" % [line, word])
@@ -395,7 +397,10 @@ func test_hub_sprite_frames_and_tiles_exist_and_load() -> void:
 	var specs: Dictionary = {
 		"res://assets/sprites/hub/hub_bg_frames.tres": {&"off": 2, &"on": 1},
 		"res://assets/sprites/hub/notas_frames.tres": {&"powered_off": 1, &"off": 2, &"prompt": 2, &"active": 2},
-		"res://assets/sprites/hub/folder_frames.tres": {&"locked": 1, &"available": 2, &"completed": 1},
+		"res://assets/sprites/hub/folder_frames.tres": {&"locked": 1, &"available": 2, &"completed": 1, &"all_done": 1},
+		"res://assets/sprites/hub/folder_m1_frames.tres": {&"locked": 1, &"available": 2, &"completed": 1, &"all_done": 1},
+		"res://assets/sprites/hub/folder_m2_frames.tres": {&"locked": 1, &"available": 2, &"completed": 1, &"all_done": 1},
+		"res://assets/sprites/hub/folder_m3_frames.tres": {&"locked": 1, &"available": 2, &"completed": 1, &"all_done": 1},
 		"res://assets/sprites/hub/calc_frames.tres": {&"powered_off": 1, &"sleep": 3, &"awake": 4},
 	}
 	for path: String in specs:
@@ -408,7 +413,8 @@ func test_hub_sprite_frames_and_tiles_exist_and_load() -> void:
 			assert_eq(frames.get_frame_count(anim), int(specs[path][anim]), "%s: cuadros de %s" % [path, anim])
 			for i: int in frames.get_frame_count(anim):
 				assert_not_null(frames.get_frame_texture(anim, i))
-	var dirs: Dictionary = {"tiles": Vector2(64, 64), "dock_slots": Vector2(64, 96), "icons": Vector2.ZERO}
+	var dirs: Dictionary = {"tiles": Vector2(64, 64), "dock_slots": Vector2(64, 96), "icons": Vector2.ZERO,
+		"menu": Vector2(12, 12)}
 	for dir: String in dirs:
 		for file: String in DirAccess.get_files_at("res://assets/sprites/hub/" + dir):
 			if not file.ends_with(".png"):

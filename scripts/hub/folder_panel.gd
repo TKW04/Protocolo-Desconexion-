@@ -19,6 +19,12 @@
 ##   salto) deja en la lista del panel; con todo guardado entra directo. Desde
 ##   el 2026-10-16 el aviso anade el riesgo del game over (confirm_unsaved_risk:
 ##   «Si caes sin guardar, Eco te devolverá a tu última copia.»).
+## - Iconos (2026-10-26, peticion del usuario): cada subnivel lleva su icono
+##   (icon de worlds; gris, variante _off, si esta bloqueado o «Próximamente»), y
+##   Volver / Entrar sin guardar los de folders.option_icons.
+## - Linea del check (2026-10-26): bajo el acceso, lo que falta para el check de
+##   la carpeta («Para el check: puntos, recuerdos», HubWorlds.world_missing) o
+##   «Todo obtenido» (HubWorlds.is_world_all_done).
 class_name FolderPanel
 extends HubPanel
 
@@ -72,8 +78,9 @@ func refresh() -> void:
 		if not risk.is_empty():
 			lines.append({"text": risk, "color": String(colors.get("message", "texto_claro"))})
 		set_lines(lines)
-		set_options([{"id": OPTION_ENTER_UNSAVED, "text": String(texts.get("option_enter_unsaved", ""))},
-			{"id": OPTION_STAY, "text": String(texts.get("option_stay", "Volver"))}])
+		set_options([{"id": OPTION_ENTER_UNSAVED, "text": String(texts.get("option_enter_unsaved", "")),
+				"icon": option_icon_path(OPTION_ENTER_UNSAVED)},
+			{"id": OPTION_STAY, "text": String(texts.get("option_stay", "Volver")), "icon": option_icon_path(OPTION_STAY)}])
 		set_hints("hub_confirm")
 		super.refresh()
 		return
@@ -82,17 +89,48 @@ func refresh() -> void:
 	# Mundo sin subniveles en la vuelta (Mundo 2 recien desbloqueado): «Próximamente».
 	if HubWorlds.levels_for_lap(world_entry).is_empty():
 		lines.append({"text": String(texts.get("empty_world", "")), "color": String(colors.get("message", "texto_claro"))})
+	else:
+		var done: bool = HubWorlds.is_world_all_done(world_entry)
+		lines.append({"text": todo_text(), "color": String(colors.get("todo_done" if done else "todo_missing", "texto_tenue"))})
 	set_lines(lines)
 	var options: Array = []
 	for level: Dictionary in HubWorlds.levels_for_lap(world_entry):
-		options.append({"id": StringName(String(level.get("id", ""))), "text": level_text(level)})
-	options.append({"id": OPTION_BACK, "text": String(texts.get("option_back", "Volver"))})
+		options.append({"id": StringName(String(level.get("id", ""))), "text": level_text(level), "icon": level_icon_path(level)})
+	options.append({"id": OPTION_BACK, "text": String(texts.get("option_back", "Volver")), "icon": option_icon_path(OPTION_BACK)})
 	set_options(options)
 	# Sin subniveles solo queda Volver: nada que elegir ni que entrar (2026-10-22,
 	# la carpeta del Mundo 2 decia «Pulso: entrar»).
 	var empty: bool = HubWorlds.levels_for_lap(world_entry).is_empty()
 	set_hints("hub_folder_empty" if empty else "hub_folder")
 	super.refresh()
+
+
+## Linea del check: «Todo obtenido» o «Para el check: <lo que falta>».
+func todo_text() -> String:
+	var texts: Dictionary = _folders.get("texts", {})
+	if HubWorlds.is_world_all_done(world_entry):
+		return String(texts.get("todo_done", ""))
+	var parts: Dictionary = texts.get("todo_parts", {})
+	var names: PackedStringArray = []
+	for key: String in HubWorlds.world_missing(world_entry):
+		names.append(String(parts.get(key, key)))
+	return String(texts.get("todo_missing", "%s")) % ", ".join(names)
+
+
+## Icono del subnivel (icon de worlds o level_icon_unknown); bloqueado o
+## «Próximamente», su variante gris _off.
+func level_icon_path(level: Dictionary) -> String:
+	var path: String = String(level.get("icon", _folders.get("level_icon_unknown", "")))
+	if HubWorlds.level_state(world_entry, level) == HubWorlds.STATE_LOCKED and path.ends_with("_00.png"):
+		var off: String = path.trim_suffix("_00.png") + "_off_00.png"
+		if ResourceLoader.exists(off):
+			return off
+	return path
+
+
+## Ruta del icono de la opcion `id` (folders.option_icons; vacia si no tiene).
+func option_icon_path(id: StringName) -> String:
+	return String(_folders.get("option_icons", {}).get(String(id), ""))
 
 
 ## Estado del subnivel `level_id` (HubWorlds.STATE_*; locked si no esta).

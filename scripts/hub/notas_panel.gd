@@ -9,6 +9,9 @@
 ##   (Si / No) y al confirmar llama a GameState.save_game(): mensaje y destello
 ##   cian en el monitor (senal saved). Álbum y Apodo los abre la estacion
 ##   (senales album_requested y nickname_requested).
+## - Iconos junto a cada opcion (2026-10-26, peticion del usuario; notas.option_icons):
+##   Guardar = disquete, Álbum = álbum de fotos, Apodo = credencial, Volver =
+##   flecha de regreso; en la confirmacion, Sí = check y No = aspa.
 ## - Salto: desde la confirmacion vuelve al resumen; desde el resumen cierra.
 ## - Papelera llena tras un game over (2026-10-16, propuesta de asistentes
 ##   §5.2): Guardar no guarda y avisa «Primero recupera tus archivos de la
@@ -75,16 +78,22 @@ func refresh() -> void:
 	set_lines(lines)
 	if _mode == Mode.CONFIRM:
 		set_title(String(texts.get("confirm_title", "")))
-		set_options([{"id": OPTION_YES, "text": String(texts.get("option_yes", ""))},
-			{"id": OPTION_NO, "text": String(texts.get("option_no", ""))}])
+		set_options([{"id": OPTION_YES, "text": String(texts.get("option_yes", "")), "icon": option_icon_path(OPTION_YES)},
+			{"id": OPTION_NO, "text": String(texts.get("option_no", "")), "icon": option_icon_path(OPTION_NO)}])
 	else:
 		set_title(String(texts.get("title", "")))
-		set_options([{"id": OPTION_SAVE, "text": String(texts.get("option_save", ""))},
-			{"id": OPTION_ALBUM, "text": String(texts.get("option_album", ""))},
-			{"id": OPTION_NICKNAME, "text": String(texts.get("option_nickname", "%s")) % GameState.get_nickname()},
-			{"id": OPTION_BACK, "text": String(texts.get("option_back", ""))}])
+		set_options([{"id": OPTION_SAVE, "text": String(texts.get("option_save", "")), "icon": option_icon_path(OPTION_SAVE)},
+			{"id": OPTION_ALBUM, "text": String(texts.get("option_album", "")), "icon": option_icon_path(OPTION_ALBUM)},
+			{"id": OPTION_NICKNAME, "text": String(texts.get("option_nickname", "%s")) % GameState.get_nickname(),
+				"icon": option_icon_path(OPTION_NICKNAME)},
+			{"id": OPTION_BACK, "text": String(texts.get("option_back", "")), "icon": option_icon_path(OPTION_BACK)}])
 	set_hints("hub_list")
 	super.refresh()
+
+
+## Ruta del icono de la opcion `id` (notas.option_icons; vacia si no tiene).
+func option_icon_path(id: StringName) -> String:
+	return String(_notas.get("option_icons", {}).get(String(id), ""))
 
 
 ## Texto del estado: «Sin guardar» o «Todo guardado».

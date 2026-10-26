@@ -18,6 +18,11 @@
 ## Al pie, la fila de teclas (MenuHints, 2026-10-23): «[G] Aceptar · W/S
 ## Elegir · Espacio Volver» con las teclas del Input Map; las subclases eligen
 ## el grupo de data/menu_hints.json con set_hints.
+## Iconos de las opciones (2026-10-26, peticion del usuario): una opcion puede
+## traer "icon" (ruta de una textura o Texture2D; los de menu_* de
+## tools/gen_hub_objects.py, 12x12 px de arte); si alguna lo trae, cada fila
+## reserva option_icon_px + option_icon_gap_px a la izquierda y el icono va
+## centrado en la fila (las subclases con su propio dibujo, como Calc, no los usan).
 class_name HubPanel
 extends CanvasLayer
 
@@ -41,6 +46,8 @@ var _hints: MenuHints
 var _option_ids: Array[StringName] = []
 var _option_texts: Array[String] = []
 var _option_roles: Array[String] = []
+var _option_icons: Array[Texture2D] = []
+var _icon_rects: Array[TextureRect] = []
 var _selected: int = 0
 var _open: bool = false
 var _open_time: float = 0.0
@@ -127,10 +134,12 @@ func set_options(options: Array) -> void:
 	_option_ids.clear()
 	_option_texts.clear()
 	_option_roles.clear()
+	_option_icons.clear()
 	for option: Dictionary in options:
 		_option_ids.append(StringName(option.get("id", "")))
 		_option_texts.append(String(option.get("text", "")))
 		_option_roles.append(String(option.get("role", "")))
+		_option_icons.append(_icon_texture(option.get("icon", null)))
 	while _option_labels.size() < _option_ids.size():
 		var label: Label = _new_label("Option%d" % _option_labels.size(), "texto_tenue")
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -234,6 +243,16 @@ func get_hints() -> MenuHints:
 	return _hints
 
 
+## Icono de la opcion `index` (null si no tiene).
+func get_option_icon(index: int) -> Texture2D:
+	return _option_icons[index] if index >= 0 and index < _option_icons.size() else null
+
+
+## Nodo del icono de la opcion `index` (pruebas: posicion y visibilidad).
+func get_option_icon_rect(index: int) -> TextureRect:
+	return _icon_rects[index] if index >= 0 and index < _icon_rects.size() else null
+
+
 func select(index: int) -> void:
 	if _option_ids.is_empty():
 		return
@@ -302,9 +321,10 @@ func _option_row_height(line_h: float) -> float:
 	return line_h
 
 
-## Sitio reservado a la izquierda del texto de cada opcion (px de arte).
+## Sitio reservado a la izquierda del texto de cada opcion (px de arte): el del
+## icono si alguna opcion lo trae.
 func _option_inset_left() -> float:
-	return 0.0
+	return _icon_inset() if _has_option_icons() else 0.0
 
 
 ## Sitio reservado a la derecha del texto de cada opcion (px de arte).
@@ -347,6 +367,55 @@ func _text(key: String, fallback: String = "") -> String:
 
 func _action(key: String, fallback: String) -> StringName:
 	return StringName(String(_config.get(key, fallback)))
+
+
+func _icon_texture(value: Variant) -> Texture2D:
+	if value is Texture2D:
+		return value
+	var path: String = String(value) if value != null else ""
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
+
+
+func _has_option_icons() -> bool:
+	for tex: Texture2D in _option_icons:
+		if tex != null:
+			return true
+	return false
+
+
+func _icon_px() -> float:
+	return float(_config.get("option_icon_px", 12))
+
+
+func _icon_inset() -> float:
+	return _icon_px() + float(_config.get("option_icon_gap_px", 4))
+
+
+## Coloca el icono de cada opcion a la izquierda de su etiqueta, centrado en la fila.
+func _place_option_icons(line_h: float, row_h: float) -> void:
+	while _icon_rects.size() < _option_labels.size():
+		var rect := TextureRect.new()
+		rect.name = "OptionIcon%d" % _icon_rects.size()
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_panel.add_child(rect)
+		_icon_rects.append(rect)
+	var px: float = _icon_px()
+	var inset: float = _icon_inset()
+	for i: int in _icon_rects.size():
+		var rect: TextureRect = _icon_rects[i]
+		var label: Label = _option_labels[i] if i < _option_labels.size() else null
+		var tex: Texture2D = _option_icons[i] if i < _option_icons.size() else null
+		rect.visible = tex != null and label != null and label.visible and i < _option_ids.size()
+		if not rect.visible:
+			continue
+		rect.texture = tex
+		rect.size = Vector2(px, px)
+		var row_top: float = label.position.y - floorf((row_h - line_h) * 0.5)
+		rect.position = Vector2(label.position.x - inset, row_top + floorf((row_h - px) * 0.5))
 
 
 func _accepts_input() -> bool:
@@ -494,4 +563,5 @@ func _layout() -> void:
 	_panel.size = Vector2(width, height)
 	var top: float = float(_config.get("top_px", 48))
 	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(minf(top, maxf(screen.y - height, 0.0))))
+	_place_option_icons(line_h, row_h)
 	_after_layout()

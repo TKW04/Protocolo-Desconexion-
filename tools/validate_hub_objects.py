@@ -46,6 +46,7 @@ SIZES = {
     ("icons", "page_dot_"): (8, 8, True),
     ("icons", "lcd_panel_"): (16, 16, True),
     ("charger", "charger_"): (32, 64, True),
+    ("menu", "menu_"): (12, 12, True),
 }
 SEAMLESS = ("dock_top_center", "dock_fill_00", "dock_fill_alt", "one_way_center")
 

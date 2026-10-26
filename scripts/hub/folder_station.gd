@@ -8,6 +8,12 @@
 ##   (icono de 16x16; Mundo 1: campana) y la carpeta no esta bloqueada, sale en
 ##   miniature_rect_px junto al numero (que pasa a number_rect_with_miniature_px).
 ##   Bloqueada: sin miniatura, numero centrado. Sin insignia de vuelta.
+## - Icono grande del mundo (2026-10-26, peticion del usuario): si la entrada del
+##   mundo trae `folder_frames`, el arte es ese icono (campana, tarjeta de video,
+##   foto) en lugar de la carpeta generica, sin miniatura y con el numero en la
+##   placa de abajo a la izquierda (world_number_rect_px). Animacion segun
+##   HubWorlds.folder_art_state: locked, available, completed (subniveles
+##   superados, sin check) y all_done (TODO obtenido: con check).
 ## - Disponible o completada: con Isak cerca (de pie en la repisa) sale la
 ##   tecla del pulso; el pulso abre el FolderPanel con Isak de espaldas.
 ## - Bloqueada: no abre el panel; con Isak cerca sale «Sin descargar» en lugar
@@ -38,6 +44,9 @@ var _entering: StringName = &""
 
 
 func _ready() -> void:
+	var world_frames: String = String(world_entry.get("folder_frames", ""))
+	if not world_frames.is_empty() and ResourceLoader.exists(world_frames):
+		frames = world_frames
 	super._ready()
 	_build_folder()
 	EventBus.trash_changed.connect(_on_trash_changed)
@@ -49,6 +58,22 @@ func _ready() -> void:
 ## Estado de la carpeta (HubWorlds.STATE_*).
 func get_folder_state() -> StringName:
 	return HubWorlds.folder_state(world_entry)
+
+
+## Estado del arte: el de la carpeta o all_done (con check; HubWorlds.folder_art_state).
+func get_art_state() -> StringName:
+	return HubWorlds.folder_art_state(world_entry)
+
+
+## Con el check de TODO obtenido.
+func is_check_shown() -> bool:
+	return get_folder_animation() == HubWorlds.STATE_ALL_DONE
+
+
+## Usa el icono grande del mundo (folder_frames de worlds).
+func has_world_art() -> bool:
+	var world_frames: String = String(world_entry.get("folder_frames", ""))
+	return not world_frames.is_empty() and frames == world_frames
 
 
 func is_locked() -> bool:
@@ -153,7 +178,7 @@ func _apply_visuals() -> void:
 	if _miniature != null:
 		_miniature.visible = mini
 	_place_number(mini)
-	var state: StringName = get_folder_state()
+	var state: StringName = get_art_state()
 	if state != _shown_state:
 		_shown_state = state
 		var colors: Dictionary = _folders.get("number_colors", {})
@@ -165,7 +190,9 @@ func _show_visual_state(_value: StringName) -> void:
 	var sprite := _visual as AnimatedSprite2D
 	if sprite == null or sprite.sprite_frames == null:
 		return
-	var state: StringName = get_folder_state()
+	var state: StringName = get_art_state()
+	if not sprite.sprite_frames.has_animation(state):
+		state = get_folder_state()
 	if sprite.sprite_frames.has_animation(state) and (sprite.animation != state or not sprite.is_playing()):
 		sprite.play(state)
 
@@ -189,6 +216,8 @@ func _place_number(with_miniature: bool) -> void:
 	if _number == null:
 		return
 	var key: String = "number_rect_with_miniature_px" if with_miniature else "number_rect_px"
+	if has_world_art():
+		key = "world_number_rect_px"
 	var r: Array = _folders.get(key, _folders.get("number_rect_px", [24, 44, 78, 38]))
 	_number.position = Vector2(float(r[0]), float(r[1]))
 	_number.size = Vector2(float(r[2]), float(r[3])) / _number.scale.x
@@ -218,7 +247,8 @@ func _build_folder() -> void:
 	add_child(_number)
 	_place_number(false)
 	var mini_path: String = String(world_entry.get("miniature", ""))
-	if not mini_path.is_empty() and ResourceLoader.exists(mini_path):
+	# Con el icono grande del mundo no hay miniatura (el icono ya es el mundo).
+	if not mini_path.is_empty() and ResourceLoader.exists(mini_path) and not has_world_art():
 		var tex := load(mini_path) as Texture2D
 		var mr: Array = _folders.get("miniature_rect_px", [34, 48, 32, 32])
 		_miniature = Sprite2D.new()
