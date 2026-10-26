@@ -1,0 +1,193 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 4 de docs/propuesta-mundo-3.md §8, 2026-10-26): sala de 40x13 de los ESPEJOS del Mundo 3 (§3.4). Isak llega por la izquierda (P, fila 9) con pulso, laser y Debug. (1) Espejo '/' en (5, 9): un laser desde las columnas 2-4 sube por la columna 5 hasta el lector del techo (5, 2), fuera de alcance de frente; da corriente al receptor enlazado (8, 9), que con el pulso extiende el puente decorativo (9, 7). (2) Espejo '|' en (13, 9): el laser vuelve por donde vino (pasa por Isak sin danarlo; mas alla, el '/' de la columna 5 lo baja al suelo). (3) Cadena de 3 rebotes: laser desde la columna 15 al '/' (17, 9), sube al '/' (17, 5), va a la derecha al '/' (19, 5) y sube al lector (19, 2) con 684 de los 768 px. Cargador en (22, 9). (4) Pared de espejo (26-31, filas 4-9, eje en su centro) sobre un foso de 6 tiles (2 de hondo, con salida, sin pinchos): las plataformas del reflejo (27, 9) y (29, 8) son solidas e invisibles; el espejo las muestra en las columnas 30 y 28 (reflejadas) e Isak se ve en el con 1 s de retraso y mas saturado; con el Debug se ven con contorno. Terminal en (36, 8). El validador aun no modela los espejos (paso 8): la meta se alcanza sin ellos. Tileset y fondo del Mundo 1 (provisional). Escena: scenes/levels/espejos_test.tscn (python3 tools/build_level.py data/levels/espejos_test.json).",
+	"id": "espejos_test",
+	"name": "Espejos (prueba)",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "mirror",
+			"x": 5,
+			"y": 9,
+			"params": {
+				"id": "espejo_sube",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "laser_receiver",
+			"x": 5,
+			"y": 2,
+			"params": {
+				"id": "lector_techo",
+				"target": "receptor_espejos",
+				"window_s": 6.0,
+				"cable": [
+					[
+						6,
+						2
+					],
+					[
+						8,
+						2
+					],
+					[
+						8,
+						8
+					]
+				]
+			}
+		},
+		{
+			"type": "relay_receiver",
+			"x": 8,
+			"y": 9,
+			"params": {
+				"id": "receptor_espejos",
+				"target": "puente_espejos"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 9,
+			"y": 7,
+			"params": {
+				"id": "puente_espejos",
+				"length_tiles": 3,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 13,
+			"y": 9,
+			"params": {
+				"id": "espejo_vuelta",
+				"orientation": "|"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 17,
+			"y": 9,
+			"params": {
+				"id": "cadena_1",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 17,
+			"y": 5,
+			"params": {
+				"id": "cadena_2",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 19,
+			"y": 5,
+			"params": {
+				"id": "cadena_3",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "laser_receiver",
+			"x": 19,
+			"y": 2,
+			"params": {
+				"id": "lector_cadena",
+				"target": "receptor_espejos",
+				"window_s": 6.0,
+				"cable": [
+					[
+						18,
+						2
+					],
+					[
+						8,
+						2
+					]
+				]
+			}
+		},
+		{
+			"type": "charger",
+			"x": 22,
+			"y": 9,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "mirror_wall",
+			"x": 26,
+			"y": 4,
+			"params": {
+				"id": "pared_espejo",
+				"width_tiles": 6,
+				"height_tiles": 6,
+				"side": "center"
+			}
+		},
+		{
+			"type": "mirror_only",
+			"x": 27,
+			"y": 9,
+			"params": {
+				"id": "reflejo_1",
+				"width_tiles": 1
+			}
+		},
+		{
+			"type": "mirror_only",
+			"x": 29,
+			"y": 8,
+			"params": {
+				"id": "reflejo_2",
+				"width_tiles": 1
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 36,
+			"y": 8,
+			"params": {
+				"id": "terminal_espejos",
+				"text": "Publicar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"########################################",
+		"########################################",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#.P.................................G..#",
+		"##########################......########",
+		"##########################......########",
+		"########################################"
+	]
+}

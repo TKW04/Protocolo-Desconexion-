@@ -18,6 +18,22 @@
 ##
 ## Tiempo: real (es de Isak; el Debug no lo ralentiza).
 ##
+## REBOTES (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §3.4; espejos del
+## Mundo 3): el haz vuela segun `heading` (vector unitario; horizontal al salir
+## de Isak, pero tras un rebote puede ir en vertical o, con el espejo cazador
+## del paso 6, en diagonal). Un colisionador cuyo nodo (o padres, como
+## on_laser_hit) tenga REFLECT_METHOD, laser_reflection(projectile,
+## hit_position) -> Dictionary, es un REFLECTOR: si devuelve {"heading":
+## Vector2, "position": Vector2} el proyectil se coloca en position, sigue en
+## heading con el alcance que le quedaba (lo recorrido cuenta hasta el punto de
+## rebote) y emite bounced; si devuelve {} se trata como un choque normal (el
+## reflector puede tener on_laser_hit: el 4.o espejo «consume» el disparo). El
+## limite de rebotes lo decide el reflector con get_bounce_count() (Mirror,
+## data/world3_objects.json mirror.max_bounces = 3). Tras un rebote el
+## colisionador del reflector se excluye del rayo hasta el siguiente rebote (el
+## haz sale desde dentro de el). exclude_source = false deja que el haz
+## reflejado alcance a quien disparo (el cazador del paso 6 lo usara).
+##
 ## PERFORA (Laser 5, tanda M2 de las mejoras de Calc, laser_pierce de
 ## isak_abilities con la mejora): el haz atraviesa a los ENEMIGOS (grupo enemy;
 ## tambien la plataforma del enemigo aturdido) y dana a cada uno una vez por
@@ -35,6 +51,8 @@ signal hit(target: Node, damage: float)
 signal expired
 ## Ha atravesado a `target` (Laser 5) y sigue volando.
 signal pierced(target: Node, damage: float)
+## Ha rebotado en `reflector` en `at` (global) y sigue hacia `new_heading`.
+signal bounced(reflector: Node, at: Vector2, new_heading: Vector2)
 
 ## Objetos del entorno (Area2D) que el laser debe tocar.
 const GROUP_LASER_ACTIVATABLE: StringName = &"laser_activatable"
@@ -52,9 +70,21 @@ const MAX_PIERCES_PER_STEP: int = 8
 ## Grupo de los enemigos (lo que el laser que perfora atraviesa).
 const GROUP_ENEMY: StringName = &"enemy"
 const VULNERABLE_METHOD: StringName = &"is_laser_vulnerable"
+## Interfaz de los reflectores (espejos): ver la cabecera.
+const REFLECT_METHOD: StringName = &"laser_reflection"
+## Rebotes que se resuelven como mucho en un mismo paso (salvaguarda).
+const MAX_BOUNCES_PER_STEP: int = 8
 
-## 1 derecha, -1 izquierda.
-var direction: float = 1.0
+## 1 derecha, -1 izquierda (sentido horizontal del disparo). Asignarlo pone
+## `heading` en horizontal; tras un rebote vertical conserva el ultimo sentido.
+var direction: float = 1.0:
+	set(value):
+		direction = -1.0 if value < 0.0 else 1.0
+		heading = Vector2(direction, 0.0)
+## Direccion de vuelo (unitaria). Ver REBOTES en la cabecera.
+var heading: Vector2 = Vector2.RIGHT
+## Si es false, el haz (tambien el reflejado) puede alcanzar a `source`.
+var exclude_source: bool = true
 var speed_px_s: float = 1200.0
 var range_px: float = 768.0
 var damage: float = 1.0
@@ -80,6 +110,12 @@ var _hit_target: Node
 ## Laser 5: colisionadores ya atravesados (se excluyen del rayo) y enemigos ya danados.
 var _pierced_rids: Array[RID] = []
 var _pierced: Array[Node] = []
+## Rebotes de este disparo, reflector excluido del rayo y recorrido desde el
+## ultimo rebote (para el dibujo de la estela).
+var _bounces: int = 0
+var _reflector_rid: RID = RID()
+var _segment_traveled: float = 0.0
+var _bounce_points: Array[Vector2] = []
 
 
 ## Configura con los valores de `abilities` (PlayerAbilities).
@@ -114,33 +150,111 @@ func step(delta: float) -> void:
 		if _impact_left <= 0.0:
 			queue_free()
 		return
-	var distance: float = minf(speed_px_s * delta, range_px - _traveled)
-	if distance <= 0.0:
+	var budget: float = minf(speed_px_s * delta, range_px - _traveled)
+	if budget <= 0.0:
 		_finish(null, false)
 		return
-	var from_pos: Vector2 = global_position
-	var to_pos: Vector2 = from_pos + Vector2(direction * distance, 0.0)
-	var result: Dictionary = _cast(from_pos, to_pos)
-	# Laser 5: atraviesa enemigos y sigue el rayo desde alli en el mismo paso.
-	var pierces: int = 0
-	while pierce and not result.is_empty() and pierces < MAX_PIERCES_PER_STEP:
-		var collider: Node = result.get("collider") as Node
-		var target: Node = find_laser_target(collider)
-		if not can_pierce(target):
+	for guard: int in MAX_BOUNCES_PER_STEP + 1:
+		var from_pos: Vector2 = global_position
+		var to_pos: Vector2 = from_pos + heading * budget
+		var result: Dictionary = _cast(from_pos, to_pos)
+		# Laser 5: atraviesa enemigos y sigue el rayo desde alli en el mismo paso.
+		var pierces: int = 0
+		while pierce and not result.is_empty() and pierces < MAX_PIERCES_PER_STEP:
+			var collider: Node = result.get("collider") as Node
+			var target: Node = find_laser_target(collider)
+			if not can_pierce(target):
+				break
+			_pierce(target, result["rid"], result["position"])
+			pierces += 1
+			result = _cast(result["position"], to_pos)
+		if result.is_empty():
+			global_position = to_pos
+			_advance_traveled(budget)
 			break
-		_pierce(target, result["rid"], result["position"])
-		pierces += 1
-		result = _cast(result["position"], to_pos)
-	if not result.is_empty():
-		global_position = result["position"]
-		_traveled += absf(global_position.x - from_pos.x)
-		_on_collision(result.get("collider") as Node)
-		return
-	global_position = to_pos
-	_traveled += distance
+		var hit_pos: Vector2 = result["position"]
+		var hit_collider: Node = result.get("collider") as Node
+		var moved: float = from_pos.distance_to(hit_pos)
+		var bounce: Dictionary = _ask_reflector(hit_collider, hit_pos)
+		if bounce.is_empty() or guard >= MAX_BOUNCES_PER_STEP:
+			global_position = hit_pos
+			_advance_traveled(moved)
+			_on_collision(hit_collider)
+			return
+		var at: Vector2 = bounce["position"]
+		moved += hit_pos.distance_to(at)
+		_advance_traveled(moved)
+		redirect(bounce["heading"], at, find_reflector(hit_collider), result["rid"])
+		budget -= moved
+		if budget <= 0.0 or _traveled >= range_px - 0.001:
+			break
 	queue_redraw()
 	if _traveled >= range_px - 0.001:
 		_finish(null, false)
+
+
+## Cambia la direccion del haz en `at` (global) hacia `new_heading` (se
+## normaliza): cuenta un rebote, excluye `rid` (el colisionador del reflector)
+## del rayo hasta el siguiente rebote y emite bounced. Lo usa step() con los
+## reflectores; publico para el espejo cazador (paso 6) y las pruebas. No cambia
+## el alcance: sigue con el que le quedaba.
+func redirect(new_heading: Vector2, at: Vector2, reflector: Node = null, rid: RID = RID()) -> void:
+	if _done or new_heading.is_zero_approx():
+		return
+	heading = new_heading.normalized()
+	global_position = at
+	_bounces += 1
+	_reflector_rid = rid
+	_segment_traveled = 0.0
+	_bounce_points.append(at)
+	queue_redraw()
+	bounced.emit(reflector, at, heading)
+
+
+## Rebotes hechos en este disparo.
+func get_bounce_count() -> int:
+	return _bounces
+
+
+## Puntos (globales) donde ha rebotado, en orden.
+func get_bounce_points() -> Array[Vector2]:
+	return _bounce_points
+
+
+## Alcance que le queda (px).
+func get_remaining_range() -> float:
+	return maxf(range_px - _traveled, 0.0)
+
+
+func get_heading() -> Vector2:
+	return heading
+
+
+## Nodo reflector (con laser_reflection) en `node` o sus padres; null si no.
+static func find_reflector(node: Node) -> Node:
+	var current: Node = node
+	for i: int in MAX_PARENT_HOPS + 1:
+		if current == null:
+			return null
+		if current.has_method(REFLECT_METHOD):
+			return current
+		current = current.get_parent()
+	return null
+
+
+func _ask_reflector(collider: Node, hit_pos: Vector2) -> Dictionary:
+	var reflector: Node = find_reflector(collider)
+	if reflector == null:
+		return {}
+	var answer: Variant = reflector.call(REFLECT_METHOD, self, hit_pos)
+	if answer is Dictionary and (answer as Dictionary).has("heading") and (answer as Dictionary).has("position"):
+		return answer
+	return {}
+
+
+func _advance_traveled(distance: float) -> void:
+	_traveled += distance
+	_segment_traveled += distance
 
 
 ## Choca ya con `target` (un objeto con on_laser_hit) sin volar: lo usan los
@@ -207,14 +321,16 @@ func _draw() -> void:
 			draw_rect(Rect2(Vector2(-thickness_px * 0.5, -thickness_px * 0.5), Vector2(thickness_px, thickness_px)), _core)
 		return
 	# Haz detras de la punta (sin pasar por detras del celular al salir).
-	var visible_len: float = minf(length_px, _traveled)
+	# Se dibuja en el eje de `heading` (horizontal, vertical o diagonal); tras un
+	# rebote la estela empieza en el espejo.
+	var visible_len: float = minf(length_px, _segment_traveled)
 	if visible_len <= 0.0:
 		return
-	var x0: float = -direction * visible_len
-	var left: float = minf(x0, 0.0)
+	draw_set_transform(Vector2.ZERO, heading.angle())
 	var glow_h: float = thickness_px + 2.0 * _glow_px
-	draw_rect(Rect2(Vector2(left, -glow_h * 0.5), Vector2(visible_len, glow_h)), Color(_glow, _glow_alpha))
-	draw_rect(Rect2(Vector2(left, -thickness_px * 0.5), Vector2(visible_len, thickness_px)), _core)
+	draw_rect(Rect2(Vector2(-visible_len, -glow_h * 0.5), Vector2(visible_len, glow_h)), Color(_glow, _glow_alpha))
+	draw_rect(Rect2(Vector2(-visible_len, -thickness_px * 0.5), Vector2(visible_len, thickness_px)), _core)
+	draw_set_transform(Vector2.ZERO)
 
 
 ## Rayo de la punta a `to` contra world y enemy; ignora Isak y las Area2D que no
@@ -225,7 +341,9 @@ func _cast(from_pos: Vector2, to_pos: Vector2) -> Dictionary:
 	params.collide_with_areas = true
 	params.hit_from_inside = true
 	var exclude: Array[RID] = _pierced_rids.duplicate()
-	if source is CollisionObject2D:
+	if _reflector_rid.is_valid():
+		exclude.append(_reflector_rid)
+	if exclude_source and source is CollisionObject2D:
 		exclude.append((source as CollisionObject2D).get_rid())
 	for i: int in MAX_IGNORED_AREAS:
 		params.exclude = exclude
