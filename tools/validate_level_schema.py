@@ -125,13 +125,18 @@ CAMERA_LIMITS = ("grid",)
 TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
-                  "blink_platform", "fragile_card", "story_card", "loading_wall"}
+                  "blink_platform", "fragile_card", "story_card", "loading_wall",
+                  "like_platform", "mirror_only"}
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
-                    "alert_major", "pause_player", "autoplay"}
+                    "alert_major", "pause_player", "autoplay",
+                    "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror"}
+# Espejos del Mundo 3 (2026-10-26): orientaciones del espejo fijo y ejes de la pared de espejo.
+MIRROR_ORIENTATIONS = ("/", "\\", "|")
+MIRROR_WALL_SIDES = ("center", "left", "right")
 # Arena de jefe (kind "boss", 2026-10-21): id <mundo>-boss y tamano del jefe Alerta Mayor en tiles
 # (cuerpo inflado arriba, 4 x 4 desde su celda).
 LEVEL_KINDS = ("level", "boss")
@@ -716,8 +721,16 @@ class LevelValidator:
             # apoyado en (x, y): columnas x y x+1, filas y-1 e y.
             return [(x + i, y - j) for j in range(2) for i in range(2)]
         if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch",
-                    "pause_player"):
+                    "pause_player", "crop_tool"):
             return [(x, y)]
+        if kind == "small_frame":
+            # Marco pequeno (Mundo 3, paso 7): las celdas del hueco que enmarca.
+            length = get("length_tiles", 1)
+            if not _is_int(length) or length < 1:
+                return None
+            if get("orientation", "wall") == "wall":
+                return [(x + i, y) for i in range(length)]
+            return [(x, y + i) for i in range(length)]
         w, h = get("width_tiles", 1), get("height_tiles", 1)
         if not (_is_int(w) and _is_int(h)) or w < 1 or h < 1:
             return None
@@ -788,6 +801,8 @@ class LevelValidator:
                 self._check_glitch_cover(what, x, y, params["cover"])
             if kind == "exceptions_panel":
                 self._check_exceptions_panel(what, x, y, params)
+            if kind == "small_frame":
+                self._check_small_frame(what, x, y, params, entry.get("defaults", {}))
             if kind == "boss_dummy":
                 for cx in (x, x + 1):
                     if not self.in_bounds(cx, y + 1) or self.cell(cx, y + 1) != "#":
@@ -861,6 +876,14 @@ class LevelValidator:
                     self.error("%s: secret_id debe ser un texto no vacio (id del registro)" % what, y, x)
             elif kind == "memory_pickup":
                 self._check_memory_pickup(what, x, y, params)
+            elif kind == "mirror":
+                # Espejos del Mundo 3 (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §3.4).
+                if params.get("orientation") not in MIRROR_ORIENTATIONS:
+                    self.error("%s: orientation debe ser uno de %s" % (what, ", ".join(MIRROR_ORIENTATIONS)), y, x)
+            elif kind == "mirror_wall":
+                side = params.get("side", entry.get("defaults", {}).get("side", "center"))
+                if side not in MIRROR_WALL_SIDES:
+                    self.error("%s: side debe ser uno de %s" % (what, ", ".join(MIRROR_WALL_SIDES)), y, x)
             elif kind == "eco_encounter":
                 encounters.append((what, x, y))
                 self._check_eco_encounter(what, x, y, params, entry.get("defaults", {}))
@@ -1289,6 +1312,28 @@ class LevelValidator:
                 if self.cell(cx + i, cy + j) == "#":
                     self.error("%s: cover tapa terreno ('#'): solo celdas libres" % what, cy + j, cx + i)
                     return
+
+    def _check_small_frame(self, what, x, y, params, defaults):
+        """Marco pequeno (Mundo 3, paso 7 de docs/propuesta-mundo-3.md, §3.3.2): solo decorado sobre un
+        hueco de 1 tile del grid. Cada celda del hueco es '.'; en una pared (wall) tiene terreno ('#')
+        encima y debajo (hueco de 1 fila de alto); en un suelo o un techo (floor / ceiling), a izquierda y
+        derecha."""
+        length = params.get("length_tiles", defaults.get("length_tiles", 1))
+        if not _is_int(length) or length < 1:
+            return
+        wall = params.get("orientation", defaults.get("orientation", "wall")) == "wall"
+        cells = [(x + i, y) for i in range(length)] if wall else [(x, y + i) for i in range(length)]
+        for (cx, cy) in cells:
+            if not self.in_bounds(cx, cy):
+                return
+            if self.cell(cx, cy) != ".":
+                self.error("%s: el hueco del marco debe estar vacio ('.'), hay '%s'" % (what, self.cell(cx, cy)),
+                           cy, cx)
+            sides = [(cx, cy - 1), (cx, cy + 1)] if wall else [(cx - 1, cy), (cx + 1, cy)]
+            for (sx, sy) in sides:
+                if not self.in_bounds(sx, sy) or self.cell(sx, sy) != "#":
+                    self.error("%s: un marco %s necesita terreno ('#') en (%d, %d): el hueco es de 1 tile"
+                               % (what, "de pared" if wall else "de suelo o techo", sx, sy), sy, sx)
 
     def _check_exceptions_panel(self, what, x, y, params):
         """Decorado de la sala «Excepciones» (2026-10-20): title texto no vacio y contacts lista de

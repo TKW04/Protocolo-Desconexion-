@@ -146,6 +146,11 @@ signal compress_changed(compressed: bool)
 ## guarda. Lo escuchan HudLikes y las plataformas de likes.
 @warning_ignore("unused_signal")
 signal likes_changed(likes: int, likes_max: int)
+## Espejos del Mundo 3 (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §3.4): el
+## laser ha rebotado en `mirror` (Mirror; despues tambien el espejo cazador) en
+## `at` (global). Sonido sfx_w3_mirror_bounce (paso 19).
+@warning_ignore("unused_signal")
+signal mirror_bounced(mirror: Node2D, at: Vector2)
 ## Golpe al suelo (gesto Mantener presionado, 2026-10-22): Isak aterriza y nace la
 ## onda en `rect` (px globales, a ras de suelo; incluye unos px bajo los pies).
 ## Las tarjetas fragiles, los muros y los enemigos que reaccionan se enganchan aqui.

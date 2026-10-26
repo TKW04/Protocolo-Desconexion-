@@ -64,6 +64,10 @@ func _ready() -> void:
 	# Arena de jefe (2026-10-21): los objetos y enemigos con active_in_phase
 	# empiezan inactivos; el jefe los activa en sus fases.
 	BossBase.apply_phase_nodes(self, 0)
+	# Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md): contador de likes
+	# del intento (golpes que sueltan corazones; LikesSystem).
+	if world == LikesSystem.WORLD:
+		LikesSystem.attach(self)
 
 
 func _exit_tree() -> void:

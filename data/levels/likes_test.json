@@ -1,0 +1,150 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 2 de docs/propuesta-mundo-3.md §8, 2026-10-26): sala de 30x12 de los LIKES del Mundo 3 (§3.1). Isak llega por la izquierda (P, fila 9) con el pulso. Cuatro corazones sueltos en el suelo (columnas 4-7, +1 cada uno) y una publicacion (like_source, columna 8: un pulso a su marco da +5 y se enfria 8 s con el anillo). Escalera de umbrales: plataforma ♥5 (columnas 10-11, fila 8) y ♥10 (13-14, fila 6) hasta la repisa de la columna 16-18 (fila 4) con un corazon. Punto de sincronizacion sync_likes (columna 15): al morir el contador vuelve al valor de ese momento y el corazon de la columna 17 (cogido despues) vuelve. «Borrar publicaciones» (like_reset, columna 20: pulso de espaldas -> 0) y una plataforma INVERSA (inversa_5, columnas 22-23, fila 8: solida solo con menos de 5 likes) con un corazon encima. Un golpe quita 3 likes, que salen como corazones que parpadean 2 s. Terminal en (27, 8): al terminar, «Los likes no se guardan.». Mundo 3: contador ♥ a la derecha de los puntos. Tileset y fondo del Mundo 1 (provisional). Escena: scenes/levels/likes_test.tscn (python3 tools/build_level.py data/levels/likes_test.json).",
+	"id": "likes_test",
+	"name": "Likes (prueba)",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": false
+	},
+	"checkpoints": [
+		{
+			"id": "sync_likes",
+			"x": 15,
+			"y": 9
+		}
+	],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "heart_pickup",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"id": "corazon_1"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 5,
+			"y": 9,
+			"params": {
+				"id": "corazon_2"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 6,
+			"y": 9,
+			"params": {
+				"id": "corazon_3"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "corazon_4"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 8,
+			"y": 9,
+			"params": {
+				"id": "publicacion_1"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 10,
+			"y": 8,
+			"params": {
+				"id": "likes_5",
+				"threshold": 5
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 13,
+			"y": 6,
+			"params": {
+				"id": "likes_10",
+				"threshold": 10
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 17,
+			"y": 3,
+			"params": {
+				"id": "corazon_repisa"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 17,
+			"y": 9,
+			"params": {
+				"id": "corazon_tras_sync"
+			}
+		},
+		{
+			"type": "like_reset",
+			"x": 20,
+			"y": 9,
+			"params": {
+				"id": "borrar_publicaciones"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 22,
+			"y": 8,
+			"params": {
+				"id": "inversa_5",
+				"threshold": 5,
+				"invert": true
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 22,
+			"y": 7,
+			"params": {
+				"id": "corazon_inversa"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 27,
+			"y": 8,
+			"params": {
+				"id": "terminal_likes",
+				"text": "Publicar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"##############################",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#...............###..........#",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#............................#",
+		"#.P............C...........G.#",
+		"##############################",
+		"##############################"
+	]
+}

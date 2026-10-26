@@ -13,7 +13,7 @@ const MISSING_COLOR: Color = Color.MAGENTA
 const PERCENT: float = 100.0
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
 const SPECIAL_KEYS: Array[String] = ["colors", "debug_colors", "assets", "signal_thresholds",
-	"battery_thresholds", "font", "font_glyphs", "key_swap_shader", "lives", "hide", "boss_bar", "clock"]
+	"battery_thresholds", "font", "font_glyphs", "key_swap_shader", "lives", "hide", "boss_bar", "clock", "likes"]
 
 var low_sync_threshold: float = 20.0
 ## Pixeles de pantalla por pixel de arte (entero).
@@ -46,6 +46,8 @@ var lives: Dictionary = {}
 var hide: Dictionary = {}
 ## Reloj del Mundo 2 (seccion clock; HudClock, paso 8 de docs/propuesta-mundo-2.md).
 var clock: Dictionary = {}
+## Likes del Mundo 3 (seccion likes; HudLikes, paso 2 de docs/propuesta-mundo-3.md).
+var likes: Dictionary = {}
 
 static var _cached: HudConfig
 
@@ -92,6 +94,8 @@ static func load_from_file(path: String = DEFAULT_PATH) -> HudConfig:
 	config.hide = raw_hide if raw_hide is Dictionary else {}
 	var raw_clock: Variant = dict.get("clock", {})
 	config.clock = raw_clock if raw_clock is Dictionary else {}
+	var raw_likes: Variant = dict.get("likes", {})
+	config.likes = raw_likes if raw_likes is Dictionary else {}
 	var raw_assets: Dictionary = dict.get("assets", {})
 	for name: String in raw_assets:
 		config.assets[StringName(name)] = raw_assets[name]

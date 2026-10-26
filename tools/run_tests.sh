@@ -119,6 +119,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 14 (2026-10-23): el 2-3 real (tests/test_level_2_3.py).
 # Desde el paso 23 (2026-10-26): el arte final de Autoplay y del Comentarista al dia
 # (tools/import_boss_autoplay.py --check, tools/import_commenter.py --check).
+# Desde el paso 0 de docs/propuesta-mundo-3.md (2026-10-26): la paleta provisional del Mundo 3 al dia y sus 5 reglas
+# de §6.1 (tools/palette_mundo3_provisional.py --check, tests/test_palette_mundo3.py).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -162,7 +164,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
-		tests/test_world2_schema.py tests/test_world2_feed_validator.py \
+		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
@@ -183,6 +185,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world1_dnd.py >/dev/null && python3 -I tools/validate_audio.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
+		&& python3 -I tools/palette_mundo3_provisional.py --check \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then

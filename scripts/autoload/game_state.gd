@@ -342,9 +342,23 @@ var _player_hidden: bool = false
 ## en este intento de nivel (begin_attempt lo vacia). No se guarda.
 var _pulse_return_claimed: Dictionary[String, bool] = {}
 
+## Likes del Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §3.1 y §2.3):
+## contador de 0 a get_likes_max() (30) POR INTENTO. NO va en save.json (los likes no se
+## guardan: es el tema del mundo). Empieza en 0 con cada intento (begin_attempt),
+## se apunta al activar un punto de sincronizacion y vuelve a ese valor al
+## reaparecer tras morir (o a 0 sin punto). likes_checkpoint_serial cuenta los
+## puntos activados en el intento: un corazon recogido despues del ultimo vuelve
+## al reaparecer (HeartPickup). Tope y demas valores en la seccion likes de
+## data/world3_objects.json (get_likes_max; LIKES_MAX_DEFAULT si falta).
+const LIKES_MAX_DEFAULT: int = 30
+var likes: int = 0
+var _likes_at_checkpoint: int = 0
+var likes_checkpoint_serial: int = 0
+
 
 func _ready() -> void:
 	EventBus.state_refresh_requested.connect(emit_state)
+	EventBus.player_respawned.connect(_on_player_respawned_likes)
 	var path: String = resolve_save_path(OS.get_cmdline_args(), OS.get_environment(SAVE_PATH_ENV))
 	use_save_path(path, path == SAVE_PATH_TESTS or path == SAVE_PATH_TOOLS)
 	# Ajustes (settings.cfg, aparte del guardado): las rutas de pruebas y
@@ -646,6 +660,66 @@ func set_player_hidden(hidden: bool) -> void:
 func begin_attempt() -> void:
 	_pulse_return_claimed.clear()
 	set_player_hidden(false)
+	reset_likes()
+
+
+# --- Likes (Mundo 3; no se guardan) ---
+
+## Tope del contador (max de la seccion likes de data/world3_objects.json: 30).
+func get_likes_max() -> int:
+	return int(World3ObjectsConfig.section("likes").get("max", LIKES_MAX_DEFAULT))
+
+
+## Fija el contador (recortado a 0-get_likes_max()) y avisa si cambia.
+func set_likes(value: int) -> void:
+	var clamped: int = clampi(value, 0, get_likes_max())
+	if clamped == likes:
+		return
+	likes = clamped
+	EventBus.likes_changed.emit(likes, get_likes_max())
+
+
+## Suma `amount` likes sin pasar del tope. Devuelve los que entraron.
+func add_likes(amount: int) -> int:
+	var before: int = likes
+	set_likes(likes + maxi(amount, 0))
+	return likes - before
+
+
+## Quita hasta `amount` likes (golpe, Ladron). Devuelve los que se perdieron.
+func lose_likes(amount: int) -> int:
+	var before: int = likes
+	set_likes(likes - maxi(amount, 0))
+	return before - likes
+
+
+## Intento nuevo (o fin del nivel): 0 likes y sin valor de punto de sincronizacion.
+func reset_likes() -> void:
+	_likes_at_checkpoint = 0
+	likes_checkpoint_serial = 0
+	likes = 0
+	EventBus.likes_changed.emit(likes, get_likes_max())
+
+
+## Valor que se recupera al morir (el del ultimo punto de sincronizacion o 0).
+func get_likes_at_checkpoint() -> int:
+	return _likes_at_checkpoint
+
+
+## Apunta los likes de ahora como los del punto de sincronizacion.
+func note_likes_checkpoint() -> void:
+	_likes_at_checkpoint = likes
+	likes_checkpoint_serial += 1
+
+
+## Muerte: el contador vuelve al valor del ultimo punto de sincronizacion.
+func restore_likes_checkpoint() -> void:
+	set_likes(_likes_at_checkpoint)
+
+
+func _on_player_respawned_likes(_at: Vector2, after_death: bool) -> void:
+	if after_death:
+		restore_likes_checkpoint()
 
 
 ## Pulso de retorno (Pulso 5, tanda M2): el pulso acaba de aturdir a `enemy`.
@@ -894,6 +968,7 @@ static func resolve_save_path(args: PackedStringArray, env_path: String) -> Stri
 ## cambios sin guardar (no queda nada que merezca guardarse).
 func reset_progress() -> void:
 	attention_points = ATTENTION_POINTS_MIN
+	reset_likes()
 	lap = LAP_EASY
 	found_secrets.clear()
 	memories.clear()
@@ -1208,13 +1283,16 @@ func emit_state() -> void:
 	_emit_power_banks()
 	EventBus.unsaved_changes_changed.emit(_unsaved)
 	_emit_lives()
+	EventBus.likes_changed.emit(likes, get_likes_max())
 
 
 ## Fija el ultimo punto de sincronizacion de `level` (sustituye al anterior).
+## Apunta tambien los likes del intento (vuelven a este valor al morir).
 func set_last_checkpoint(level: StringName, checkpoint_id: StringName) -> void:
 	if last_checkpoint.get(level, NO_LEVEL) == checkpoint_id:
 		return
 	last_checkpoint[level] = checkpoint_id
+	note_likes_checkpoint()
 	EventBus.checkpoint_activated.emit(String(level), checkpoint_id)
 
 

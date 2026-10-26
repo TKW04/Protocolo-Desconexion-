@@ -1,0 +1,39 @@
+GIMP Palette
+Name: Mundo 3 La Vitrina - PROVISIONAL (solo desarrollo, hex sin cerrar)
+Columns: 4
+# PROVISIONAL: colores de desarrollo del Mundo 3, sin cerrar (el usuario elige variante en el paso 9).
+# Generado por tools/palette_mundo3_provisional.py
+# galeria_noche: Contorno oscuro (puntos de atencion, siluetas), sombra profunda
+ 30  20  38	galeria_noche
+# trastienda_fondo: Fondo de la galeria: malva medio-oscuro («trastienda»)
+ 90  61  98	trastienda_fondo
+# trastienda_medio: Fondo medio: fotos enmarcadas en paralaje
+106  76 114	trastienda_medio
+# trastienda_luz: Focos y luz del fondo
+138 108 146	trastienda_luz
+# marco_sombra: Sombra de los marcos dorados
+ 92  74  44	marco_sombra
+# dorado: Marcos dorados APAGADOS (tono 45-52, saturacion <= 55 %)
+179 160  92	dorado
+# dorado_luz: Bisel y brillo de los marcos
+216 199 140	dorado_luz
+# rosa_pastel: Rosa pastel: plataformas de likes, carteles, acentos
+246 200 220	rosa_pastel
+# rosa_sombra: Sombra del rosa pastel
+184 138 162	rosa_sombra
+# corazon_rosa: Corazones de likes (rosa, nunca rojo; borde blanco_brillante)
+255 170 210	corazon_rosa
+# blanco_brillante: Blanco brillante: marcos, plataformas, destellos, borde de los corazones
+251 248 252	blanco_brillante
+# gris_perla: Sombra de lo blanco, texto secundario
+200 188 203	gris_perla
+# alerta: Rojo de dano (el del Mundo 1, reservado)
+255  74  42	alerta
+# alerta_sombra: Sombra de lo rojo; contorno de lo que dana bajo el velo del flash
+163  34  28	alerta_sombra
+# ambar: Puntos de atencion (el del Mundo 1, reservado)
+255 160   0	ambar
+# ambar_sombra: Sombra de los puntos de atencion (reservado)
+168  95   0	ambar_sombra
+# debug_verde: Debug del Mundo 3: verde acido (debug_colors["3"] de data/hud.json)
+166 255  46	debug_verde

@@ -4,7 +4,8 @@ docs/propuesta-mundo-2.md §8).
 - load_catalog(root, world): data/world<N>_objects.json. Desde el Mundo 2, los tipos
   genericos del Mundo 1 (cargador, punto de sincronizacion, pared con glitch,
   vortices, recogidas...) mas los del mundo: se unen los `types` (gana el del mundo)
-  y las demas secciones del mundo se anaden o sustituyen a las del Mundo 1.
+  y las demas secciones del mundo se anaden o sustituyen a las del Mundo 1. Desde el
+  Mundo 3, tambien los de los mundos intermedios (1, 2, 3: gana el mas alto).
 - tileset_json(root, world) y background_res(root, world): el tileset y el fondo del
   mundo; si aun no existen (el arte del Mundo 2 es el paso 10), los del Mundo 1 como
   PROVISIONALES.
@@ -28,19 +29,25 @@ def catalog_path(root, world):
 
 
 def load_catalog(root, world):
-    """Catalogo del mundo `world` (con los tipos del Mundo 1 debajo desde el Mundo 2).
+    """Catalogo del mundo `world`: los tipos del Mundo 1 debajo desde el Mundo 2 y, desde el
+    Mundo 3 (2026-10-26, paso 0 de docs/propuesta-mundo-3.md §8), tambien los de los mundos
+    intermedios (1, luego 2, luego 3...; gana el del mundo mas alto). Las demas secciones se
+    anaden o sustituyen en el mismo orden. Sin catalogo propio, el del Mundo 1.
     Lanza OSError / ValueError si falta o no se puede leer el del Mundo 1."""
     world = int(world)
     base = _load(catalog_path(root, BASE_WORLD))
     if world == BASE_WORLD or not os.path.exists(catalog_path(root, world)):
         return base
-    own = _load(catalog_path(root, world))
     merged = copy.deepcopy(base)
-    for key, value in own.items():
-        if key == "types":
-            merged.setdefault("types", {}).update(copy.deepcopy(value))
-        else:
-            merged[key] = copy.deepcopy(value)
+    for layer in range(BASE_WORLD + 1, world + 1):
+        if not os.path.exists(catalog_path(root, layer)):
+            continue
+        own = _load(catalog_path(root, layer))
+        for key, value in own.items():
+            if key == "types":
+                merged.setdefault("types", {}).update(copy.deepcopy(value))
+            else:
+                merged[key] = copy.deepcopy(value)
     return merged
 
 

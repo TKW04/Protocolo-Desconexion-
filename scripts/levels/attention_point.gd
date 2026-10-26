@@ -11,7 +11,10 @@
 ## En los niveles del Mundo 2 (GeneratedLevel.world == 2) el rombo lleva un
 ## contorno oscuro de 1 px (`feed_noche` de la paleta B, data/world2_objects.json)
 ## para que no se confunda con el tinte ambar del Debug (decision 2026-10-22,
-## docs/propuesta-mundo-2.md §8.1); el Mundo 1 y el hub no cambian.
+## docs/propuesta-mundo-2.md §8.1); el Mundo 1 y el hub no cambian. Desde el
+## 2026-10-26 tambien en el Mundo 3 (regla 1 de docs/propuesta-mundo-3.md §6.1:
+## el dorado de los marcos no se confunde con los puntos), con `galeria_noche` de
+## la paleta provisional (data/world3_objects.json).
 class_name AttentionPoint
 extends Area2D
 
@@ -27,6 +30,9 @@ signal collected(value: int)
 ## Mundo con contorno en los puntos y color de la paleta del Mundo 2 que lo pinta.
 const OUTLINE_WORLD: int = 2
 const OUTLINE_PALETTE_NAME: String = "feed_noche"
+## Mundos con contorno (2 y 3) y nombre del color en la paleta del Mundo 3.
+const OUTLINE_WORLDS: Array[int] = [2, 3]
+const OUTLINE_PALETTE_NAME_W3: String = "galeria_noche"
 ## Grosor del contorno en px de pantalla.
 const OUTLINE_PX: float = 1.0
 
@@ -57,12 +63,14 @@ func _diamond(r: float) -> PackedVector2Array:
 	return PackedVector2Array([Vector2(0.0, -r), Vector2(r, 0.0), Vector2(0.0, r), Vector2(-r, 0.0)])
 
 
-## true solo dentro de un nivel generado del Mundo 2.
+## true solo dentro de un nivel generado del Mundo 2 o del Mundo 3.
 func has_outline() -> bool:
-	return get_level_world() == OUTLINE_WORLD
+	return get_level_world() in OUTLINE_WORLDS
 
 
 func get_outline_color() -> Color:
+	if get_level_world() == 3:
+		return World3ObjectsConfig.color(OUTLINE_PALETTE_NAME_W3, Color.BLACK)
 	return World2ObjectsConfig.color(OUTLINE_PALETTE_NAME, Color.BLACK)
 
 

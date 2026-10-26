@@ -136,6 +136,7 @@ var _lost_icon: Control
 ## Ocultarte: caja bajo la barra con el icono y la barra de lo que queda.
 var _boss_bar: BossBar
 var _clock: HudClock
+var _likes: HudLikes
 var _hide_box: HBoxContainer
 var _hide_icon: TextureRect
 var _hide_bar: HideBar
@@ -186,6 +187,9 @@ func _ready() -> void:
 	_clock.name = "Clock"
 	add_child(_clock)
 	_clock.setup(_clock_slot, _config.clock, _config)
+	# Likes del Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md): a la
+	# derecha de los puntos, solo en sus niveles.
+	_likes = HudLikes.attach(_row, _config)
 	EventBus.state_refresh_requested.emit()
 	# El primer estado no se anima.
 	_finish_animations()
@@ -211,6 +215,11 @@ func get_boss_bar() -> BossBar:
 ## Reloj del Mundo 2 (ClockSlot).
 func get_clock() -> HudClock:
 	return _clock
+
+
+## Contador de likes del Mundo 3 (oculto fuera de sus niveles).
+func get_likes() -> HudLikes:
+	return _likes
 
 
 func get_sync_ratio() -> float:
@@ -782,6 +791,7 @@ func enable_hub_mode(config: Dictionary) -> void:
 		return
 	_hub_mode = true
 	_clock.set_hub_mode(true)
+	_likes.set_hub_mode(true)
 	_refresh_power_bank()
 	_refresh_lives()
 	_signal.visible = false

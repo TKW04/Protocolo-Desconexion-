@@ -37,9 +37,24 @@ static func lines_for(memory_id: StringName) -> PackedStringArray:
 	return out
 
 
+## Aviso del sistema con otras lineas y otro aspecto (`cfg`, mismas claves que
+## notice con colores en hex; 2026-10-26: «Los likes no se guardan.» de HudLikes,
+## docs/propuesta-mundo-3.md §2.3). Hijo de `host`.
+static func show_lines(lines: PackedStringArray, cfg: Dictionary, host: Node) -> MemoryNotice:
+	var notice := MemoryNotice.new()
+	notice.name = "SystemNotice"
+	notice.setup_lines(lines, cfg)
+	host.add_child(notice)
+	return notice
+
+
 func setup(memory_id: StringName) -> void:
-	_cfg = World1ObjectsConfig.section("memory_pickup").get("notice", {})
-	_lines = lines_for(memory_id)
+	setup_lines(lines_for(memory_id), World1ObjectsConfig.section("memory_pickup").get("notice", {}))
+
+
+func setup_lines(lines: PackedStringArray, cfg: Dictionary) -> void:
+	_cfg = cfg
+	_lines = lines
 	layer = int(_cfg.get("layer", 12))
 	_left = float(_cfg.get("show_s", 3.5))
 	var font_path: String = String(_cfg.get("font", "res://assets/sprites/ui/text_font.fnt"))

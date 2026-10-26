@@ -99,6 +99,15 @@
 		"bump_scale": 1.25,
 		"skip_color": "magenta"
 	},
+	"likes": {
+		"_notes": "Contador de likes del Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §2.3; HudLikes, scripts/ui/hud_likes.gd): corazon rosa con borde blanco y la cifra (GameState.likes) a la DERECHA de los puntos de atencion, solo en los niveles del mundo world (3); oculto en el hub y en los demas mundos. Al terminar el nivel (EventBus.level_completed) el contador se vacia y sale el aviso del sistema de la seccion likes.notice de data/world3_objects.json («Los likes no se guardan.», texto propuesto). heart_px: radio del corazon (px de arte); spacing_px: separacion; font_key_color: color con el que esta dibujada la fuente del HUD (se sustituye por el de texto); heart / heart_border: NOMBRES de la paleta PROVISIONAL del Mundo 3. La Q de Eco (hud_likes) llega en el paso 9. Valores PROPUESTOS.",
+		"world": 3,
+		"heart_px": 4,
+		"spacing_px": 2,
+		"font_key_color": "#f2f4f8",
+		"heart": "corazon_rosa",
+		"heart_border": "blanco_brillante"
+	},
 	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
 	"colors": {
 		"text": "#f2f4f8",

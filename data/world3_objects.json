@@ -1,0 +1,501 @@
+{
+	"_notes": "Catalogo de objetos del Mundo 3 «La Vitrina» (docs/propuesta-mundo-3.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 3 usa los tipos de data/world1_objects.json y data/world2_objects.json mas los de este archivo (tools/level_catalog.py los une en ese orden; si un tipo esta en varios, gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, tools/palette_mundo3_provisional.py).",
+	"tile_size": 64,
+	"types": {
+		"heart_pickup": {
+			"scene": "res://scenes/levels/heart_pickup.tscn",
+			"help_id": "",
+			"_help_id_planned": "heart_pickup",
+			"description": "Corazon suelto (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §8, §3.1; HeartPickup). Al tocarlo suma value likes (1) al contador del intento (GameState.likes, 0-30, no se guarda). No reaparece en el intento; si se cogio despues del ultimo punto de sincronizacion, vuelve al reaparecer Isak tras morir. Centrado en su celda. Los corazones que suelta un golpe (-3) son de este tipo, parpadean drop_blink_s y se pueden recoger otra vez (seccion likes). Rosa con borde blanco, nunca rojo. Sin Q ni ficha todavia (pasos 9/19: help_id previsto heart_pickup). Aspecto PROVISIONAL por codigo (seccion heart_pickup, paleta provisional).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"value": "value"
+			},
+			"defaults": {
+				"value": 1
+			},
+			"level_params": {
+				"value": {
+					"min": 1,
+					"max": 5,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "heart_pickup",
+				"x": 6,
+				"y": 8,
+				"params": {}
+			}
+		},
+		"like_source": {
+			"scene": "res://scenes/levels/like_source.tscn",
+			"help_id": "",
+			"_help_id_planned": "like_source",
+			"description": "Publicacion (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §8, §3.1; LikeSource). Marco de 1 x 1 en la pared del fondo (sin colision): un PULSO que alcanza su marco (hit_rect de la seccion like_source) da gain likes (5) sin pasar del tope y se enfria cooldown_s (8 s de tiempo del mundo: el Debug lo ralentiza) con el anillo de carga visible; reutilizable (regla anti-atasco: cerca de cada umbral obligatorio hay una). Al reaparecer Isak vuelve lista. Sin Q ni ficha todavia (help_id previsto like_source). Aspecto PROVISIONAL por codigo.",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"gain": "gain",
+				"cooldown_s": "cooldown_s"
+			},
+			"defaults": {
+				"gain": 5,
+				"cooldown_s": 8.0
+			},
+			"level_params": {
+				"gain": {
+					"min": 1,
+					"max": 10,
+					"int": true
+				},
+				"cooldown_s": {
+					"min": 2.0,
+					"max": 20.0
+				}
+			},
+			"example": {
+				"type": "like_source",
+				"x": 6,
+				"y": 8,
+				"params": {}
+			}
+		},
+		"like_platform": {
+			"scene": "res://scenes/levels/like_platform.tscn",
+			"help_id": "",
+			"_help_id_planned": "like_platform",
+			"description": "Plataforma de likes (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §8, §3.1; LikePlatform). SOLIDA de width_tiles x 1 (1-4; arriba de su celda, card_height_px; el grid deja sus celdas en '.') si likes >= threshold (umbrales de 5 en 5, de 5 a 25); con invert, solo si likes < threshold (las de los secretos con «Borrar publicaciones»). Muestra su umbral siempre (corazon y cifra; la inversa, tachado). Apagada: contorno discontinuo sin colision (Isak cae sin dano). Si deja de cumplirse, PARPADEA warn_frames cuadros a anim_fps (9 a 12 fps: 0,75 s de tiempo del mundo) y despues desaparece; si vuelve a cumplirse durante el aviso, se queda. No se materializa con Isak dentro de su caja. one_way: de una via. Sin Q ni ficha todavia (help_id previsto like_platform). Aspecto PROVISIONAL por codigo.",
+			"required": [
+				"threshold"
+			],
+			"fields": {
+				"id": "object_id",
+				"threshold": "threshold",
+				"invert": "invert",
+				"width_tiles": "width_tiles",
+				"one_way": "one_way"
+			},
+			"defaults": {
+				"threshold": 5,
+				"invert": false,
+				"width_tiles": 2,
+				"one_way": false
+			},
+			"level_params": {
+				"threshold": {
+					"min": 5,
+					"max": 25,
+					"int": true
+				},
+				"width_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "like_platform",
+				"x": 6,
+				"y": 8,
+				"params": {
+					"threshold": 10
+				}
+			}
+		},
+		"like_reset": {
+			"scene": "res://scenes/levels/like_reset.tscn",
+			"help_id": "",
+			"_help_id_planned": "like_reset",
+			"description": "«Borrar publicaciones» (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §8, §3.1; LikeReset). Panel en la pared del fondo: un PULSO DE ESPALDAS (como DndSwitch / PausePlayer: el pulso alcanza su hit_rect e Isak se pone de espaldas pose_s) pone el contador a 0 (GameState.set_likes(0)); reutilizable. Solo en secretos (§4.1.1), junto a plataformas inversas. Sin Q ni ficha todavia (help_id previsto like_reset). Aspecto PROVISIONAL por codigo.",
+			"required": [],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "like_reset",
+				"x": 6,
+				"y": 9,
+				"params": {}
+			}
+		},
+		"crop_tool": {
+			"scene": "res://scenes/levels/crop_tool.tscn",
+			"help_id": "",
+			"_help_id_planned": "crop_tool",
+			"description": "Herramienta «Recortar» (2026-10-26, paso 7 de docs/propuesta-mundo-3.md §8, §3.6; CropTool, que hereda de DndSwitch como PausePlayer; 3-2). Monitor con unas tijeras de recorte en la pared del FONDO (no solido); el objeto (x, y) es la celda donde Isak se pone de pie. Un pulso que alcanza su zona (hit_rect de la seccion crop_tool) con Isak de espaldas pose_s la usa y da para siempre la habilidad `ability` (compress, gesto Pellizcar; GameState.obtain_ability: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice story_line (linea importante; «Te queda mejor así.», decidida en mundo-3 §1) y despues sale el aviso de control «Pellizcar: I / RB (mando)» (data/ability_notices.json). Un solo uso (regla de unless_ability): con el gesto ya obtenido o desbloqueado al cargar arranca recortada e inerte, sin linea, aviso ni Q; tras un rollback sin el vuelve. Sin tinte del nivel. Senal switched_on (sonido sfx_w3_crop_tool). Sin Q ni ficha todavia (help_id previsto crop_tool). Validador: aun no lo modela (paso del validador de Pellizcar). Aspecto PROVISIONAL por codigo (seccion crop_tool, paleta provisional).",
+			"required": [
+				"id",
+				"ability"
+			],
+			"fields": {
+				"id": "object_id",
+				"ability": "ability",
+				"story_line": "story_line"
+			},
+			"defaults": {},
+			"allowed": {
+				"ability": [
+					"compress"
+				],
+				"story_line": [
+					"recorte_3_2"
+				]
+			},
+			"example": {
+				"type": "crop_tool",
+				"x": 12,
+				"y": 9,
+				"params": {
+					"id": "recortar_3_2",
+					"ability": "compress",
+					"story_line": "recorte_3_2"
+				}
+			}
+		},
+		"small_frame": {
+			"scene": "res://scenes/levels/small_frame.tscn",
+			"help_id": "",
+			"_help_id_planned": "small_frame",
+			"description": "Marco pequeno (2026-10-26, paso 7 de docs/propuesta-mundo-3.md §8, §3.3.2; SmallFrame). SOLO DECORADO: el hueco de 1 tile de alto es del grid ('.'); el objeto dibuja un marco de foto dorado alrededor de sus celdas para que se lea (y la Q lo explique, mas adelante). Sin colision ni estado. orientation: wall (paso horizontal por una pared: celdas (x .. x+length_tiles-1, y), con terreno encima y debajo de cada una) o floor / ceiling (paso vertical por un suelo o un techo, dejarse caer comprimido: celdas (x, y .. y+length_tiles-1), con terreno a izquierda y derecha). length_tiles: grosor de la pared o del suelo que atraviesa (1-4). Lo comprueba tools/validate_level_schema.py. Sin Q ni ficha todavia (help_id previsto small_frame). Aspecto PROVISIONAL por codigo (seccion small_frame, paleta provisional).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"orientation": "orientation",
+				"length_tiles": "length_tiles"
+			},
+			"defaults": {
+				"orientation": "wall",
+				"length_tiles": 1
+			},
+			"allowed": {
+				"orientation": [
+					"wall",
+					"floor",
+					"ceiling"
+				]
+			},
+			"level_params": {
+				"length_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "small_frame",
+				"x": 21,
+				"y": 9,
+				"params": {
+					"orientation": "wall",
+					"length_tiles": 2
+				}
+			}
+		},
+		"mirror": {
+			"scene": "res://scenes/levels/mirror.tscn",
+			"help_id": "",
+			"_help_id_planned": "mirror",
+			"description": "Espejo fijo (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §8, §3.4; Mirror). Objeto de 1 x 1 en un pie (sin colision para Isak; capa world y grupo laser_activatable: el laser lo encuentra). orientation '/' o '\\\\': el laser gira 90 grados (con '/', el que va a la derecha sube y el que va a la izquierda baja; con '\\\\', al reves); '|': vuelve por donde vino. Sigue con el alcance que le quedaba (768 px en total). Punto de rebote = donde el haz cruza la linea del cristal: desde el celular de Isak de pie en la fila del espejo, con '/' sube por x = 56 px de su columna (llega a un lector laser de esa columna) y con '\\\\' por x = 8. Como mucho mirror.max_bounces (3) rebotes por disparo: el siguiente espejo lo para. Destello en cada rebote y EventBus.mirror_bounced (sfx_w3_mirror_bounce, paso 19). El pulso no le hace nada. Sin Q ni ficha todavia (pasos 9/19: help_id previsto mirror). Aspecto PROVISIONAL por codigo (seccion mirror, paleta provisional).",
+			"required": [
+				"orientation"
+			],
+			"fields": {
+				"id": "object_id",
+				"orientation": "orientation"
+			},
+			"defaults": {
+				"orientation": "/"
+			},
+			"example": {
+				"type": "mirror",
+				"x": 10,
+				"y": 9,
+				"params": {
+					"orientation": "/"
+				}
+			}
+		},
+		"mirror_wall": {
+			"scene": "res://scenes/levels/mirror_wall.tscn",
+			"help_id": "",
+			"_help_id_planned": "mirror_wall",
+			"description": "Pared de espejo (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §8, §3.4; MirrorWall). Marco dorado de width_tiles x height_tiles en la pared del fondo: decorado, sin colision (puede tapar terreno: no se comprueban sus celdas). Muestra el reflejo horizontal respecto al eje side ('center' = centro del marco; 'left' / 'right' = su borde: el marco muestra la franja de su ancho a ese lado). Refleja a Isak con 1 s de desfase (seccion mirror_wall: delay_s) y la variante saturada (saturation), y las plataformas mirror_only que la tienen por la pared mas cercana, en su posicion reflejada; el resto del nivel no se refleja (el cristal es un tinte). Sin Q ni ficha todavia (help_id previsto mirror_wall). Aspecto PROVISIONAL por codigo.",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"side": "side"
+			},
+			"defaults": {
+				"width_tiles": 6,
+				"height_tiles": 4,
+				"side": "center"
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 2,
+					"max": 20,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 2,
+					"max": 11,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "mirror_wall",
+				"x": 10,
+				"y": 4,
+				"params": {
+					"width_tiles": 6,
+					"height_tiles": 5
+				}
+			}
+		},
+		"mirror_only": {
+			"scene": "res://scenes/levels/mirror_only.tscn",
+			"help_id": "",
+			"_help_id_planned": "mirror_only",
+			"description": "Plataforma del reflejo (2026-10-26, paso 4 de docs/propuesta-mundo-3.md §8, §3.4; MirrorOnlyPlatform, hereda de HiddenPlatform). SOLIDA siempre (capa world) pero INVISIBLE en el mundo: solo se dibuja en el reflejo de la pared de espejo mas cercana (mirror_wall), en su posicion reflejada; con el Debug tambien se ve con el contorno de lo oculto. width_tiles x height_px (seccion mirror_only, 32 px arriba de su celda); el grid deja sus celdas en '.'. one_way: de una via. Sin Q ni ficha todavia (help_id previsto mirror_only).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"one_way": "one_way"
+			},
+			"defaults": {
+				"width_tiles": 2,
+				"one_way": false
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 6,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "mirror_only",
+				"x": 10,
+				"y": 8,
+				"params": {
+					"width_tiles": 2
+				}
+			}
+		}
+	},
+	"likes": {
+		"_notes": "Contador de likes del Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §3.1 y §2.3; GameState.likes, LikesSystem). max: tope por intento (0-30). hit_loss: likes que quita un golpe recibido (Isak.hurt); salen como corazones (heart_pickup) que parpadean drop_blink_s (tiempo del mundo) a drop_blink_hz y se pueden recoger otra vez pasado drop_pickup_delay_s, repartidos drop_spread_px en horizontal y drop_rise_px por encima de los pies; desaparecen al reaparecer Isak. notice: aviso del sistema al terminar el nivel (estilo MemoryNotice): el contador se vacia en el fundido de salida (texto PROPUESTO). Valores PROPUESTOS, ajustables jugando.",
+		"max": 30,
+		"hit_loss": 3,
+		"drop_blink_s": 2.0,
+		"drop_blink_hz": 8.0,
+		"drop_pickup_delay_s": 0.35,
+		"drop_spread_px": 40,
+		"drop_rise_px": 112,
+		"notice": {
+			"lines": [
+				"Los likes no se guardan."
+			],
+			"font": "res://assets/sprites/ui/text_font.fnt",
+			"scale": 2,
+			"top_px": 96,
+			"padding_px": 4,
+			"line_gap_px": 2,
+			"text_color": "blanco_brillante",
+			"fill_color": "galeria_noche",
+			"fill_alpha": 0.85,
+			"border_color": "rosa_pastel",
+			"show_s": 2.5,
+			"fade_s": 0.5,
+			"layer": 52
+		}
+	},
+	"heart_pickup": {
+		"_notes": "Corazon (HeartPickup). radius_px: recogida y dibujo; bob_px / bob_hz: flota; colores por NOMBRE de la paleta provisional (fill rosa, border blanco, shine).",
+		"radius_px": 14,
+		"bob_px": 2.0,
+		"bob_hz": 1.2,
+		"fill": "corazon_rosa",
+		"border": "blanco_brillante",
+		"shine": "blanco_brillante"
+	},
+	"like_source": {
+		"_notes": "Publicacion (LikeSource). frame_rect: marco en px desde la esquina de su celda; hit_rect: zona que el pulso tiene que alcanzar; ring_*: anillo de carga del enfriamiento; flash_s: destello al dar likes; colores por nombre de la paleta provisional.",
+		"frame_rect": [
+			4,
+			4,
+			56,
+			48
+		],
+		"hit_rect": [
+			4,
+			4,
+			56,
+			48
+		],
+		"ring_center_px": [
+			54,
+			8
+		],
+		"ring_radius_px": 7,
+		"flash_s": 0.3,
+		"frame": "dorado",
+		"frame_light": "dorado_luz",
+		"frame_shadow": "marco_sombra",
+		"photo": "rosa_pastel",
+		"photo_shade": "rosa_sombra",
+		"heart": "corazon_rosa",
+		"heart_border": "blanco_brillante",
+		"ring": "blanco_brillante",
+		"ring_back": "galeria_noche",
+		"text": "blanco_brillante"
+	},
+	"like_platform": {
+		"_notes": "Plataforma de likes (LikePlatform). card_height_px: alto de la plataforma; warn_frames / anim_fps: aviso al desaparecer (9 a 12 fps = 0,75 s, tiempo del mundo); dash_px / gap_px: contorno discontinuo apagada; label_*: corazon y cifra del umbral encima (px, fuente de textos); colores por nombre de la paleta provisional.",
+		"card_height_px": 32,
+		"warn_frames": 9,
+		"anim_fps": 12.0,
+		"dash_px": 6,
+		"gap_px": 6,
+		"label_font": "res://assets/sprites/ui/text_font.fnt",
+		"label_offset_px": [
+			4,
+			-4
+		],
+		"label_heart_px": 5,
+		"fill": "rosa_pastel",
+		"edge": "blanco_brillante",
+		"shade": "rosa_sombra",
+		"frame": "dorado",
+		"off_edge": "rosa_sombra",
+		"label": "blanco_brillante",
+		"label_back": "galeria_noche",
+		"heart": "corazon_rosa"
+	},
+	"like_reset": {
+		"_notes": "«Borrar publicaciones» (LikeReset). panel_rect: panel en px desde la esquina de su celda; hit_rect: zona del pulso; pose_s: Isak de espaldas; flash_s: destello al borrar; colores por nombre de la paleta provisional.",
+		"panel_rect": [
+			6,
+			0,
+			52,
+			44
+		],
+		"hit_rect": [
+			8,
+			-14,
+			48,
+			48
+		],
+		"pose_s": 0.45,
+		"flash_s": 0.4,
+		"frame": "dorado",
+		"panel": "galeria_noche",
+		"bin": "gris_perla",
+		"heart": "corazon_rosa",
+		"text": "blanco_brillante"
+	},
+	"crop_tool": {
+		"_notes": "PROPUESTA (2026-10-26, paso 7 de docs/propuesta-mundo-3.md; ajustable jugando). Herramienta «Recortar» (CropTool = DndSwitch con otro aspecto; sin room_tint, asi que no tine el nivel). panel_rect: monitor [x, y, ancho, alto] en px desde la esquina de la celda donde Isak se pone de pie (en la pared del fondo, detras de el); screen_inset_px: margen de la pantalla dentro del marco; scissors_center_px: centro de las tijeras; hit_rect: zona que tiene que alcanzar el pulso; pose_s: Isak de espaldas; hit_s: destello al usarla; done_label: rotulo ya recortada. story_lines: id -> linea importante de Eco al obtener el gesto (admite {apodo}); la de recorte_3_2 es la frase decidida del mundo. Colores por nombre de la paleta provisional.",
+		"panel_rect": [-32, -72, 128, 88],
+		"screen_inset_px": 6,
+		"scissors_center_px": [32, -30],
+		"hit_rect": [8, -56, 48, 48],
+		"pose_s": 0.45,
+		"story_duration_s": 4.0,
+		"hit_s": 0.25,
+		"done_label": "Recortado",
+		"story_lines": {
+			"recorte_3_2": "Te queda mejor así."
+		},
+		"frame": "dorado",
+		"frame_light": "dorado_luz",
+		"frame_shadow": "marco_sombra",
+		"screen": "galeria_noche",
+		"photo": "rosa_pastel",
+		"photo_shade": "rosa_sombra",
+		"crop_line": "blanco_brillante",
+		"scissors": "gris_perla",
+		"flash": "blanco_brillante",
+		"text": "blanco_brillante"
+	},
+	"small_frame": {
+		"_notes": "PROPUESTA (2026-10-26, paso 7 de docs/propuesta-mundo-3.md §3.3.2). Marco pequeno (SmallFrame, solo decorado). border_px: grosor del marco dorado, que se dibuja FUERA de las celdas del hueco (sobre el terreno de alrededor, sin tapar el paso); lip_px: remate a lo largo del hueco en sus dos extremos; corner_px: adorno de las esquinas; z_index: delante del terreno. Colores por nombre de la paleta provisional.",
+		"border_px": 10,
+		"lip_px": 4,
+		"corner_px": 6,
+		"z_index": 1,
+		"frame": "dorado",
+		"frame_light": "dorado_luz",
+		"frame_shadow": "marco_sombra",
+		"corner": "dorado_luz"
+	},
+	"mirror": {
+		"_notes": "Espejo fijo (Mirror). max_bounces: rebotes por disparo (el siguiente espejo para el laser; lo usara tambien el espejo cazador del paso 6). hit_rect: zona del laser [x, y, ancho, alto] desde la esquina de su celda (la celda entera). flash_s / flash_radius_px: destello de cada rebote (tiempo del mundo); absorbed: color del destello al parar un disparo. glass_*: cristal (media diagonal y grosor), stand_width_px: pie. Colores por nombre de la paleta provisional.",
+		"max_bounces": 3,
+		"hit_rect": [
+			0,
+			0,
+			64,
+			64
+		],
+		"flash_s": 0.15,
+		"flash_radius_px": 14,
+		"glass_half_px": 26,
+		"glass_width_px": 6,
+		"stand_width_px": 6,
+		"frame": "dorado",
+		"glass": "gris_perla",
+		"glass_light": "blanco_brillante",
+		"stand": "marco_sombra",
+		"flash": "blanco_brillante",
+		"absorbed": "gris_perla"
+	},
+	"mirror_wall": {
+		"_notes": "Pared de espejo (MirrorWall). delay_s: desfase del Isak reflejado (s reales, como Isak; bufer IsakPoseBuffer). saturation: saturacion del Isak reflejado (shader; > 1 = mas saturado, el aviso de Isak Optimizado) e isak_tint su tinte. frame_px: grosor del marco; glass / glass_alpha: tinte del cristal; platform_*: dibujo de las plataformas del reflejo; shine_alpha: brillo diagonal; z_index: detras de Isak y del terreno del nivel. Colores por nombre de la paleta provisional.",
+		"delay_s": 1.0,
+		"saturation": 1.35,
+		"isak_tint": "blanco_brillante",
+		"frame_px": 8,
+		"glass": "trastienda_fondo",
+		"glass_alpha": 0.85,
+		"platform_fill": "rosa_pastel",
+		"platform_edge": "blanco_brillante",
+		"platform_alpha": 0.9,
+		"frame": "dorado",
+		"frame_light": "dorado_luz",
+		"frame_shadow": "marco_sombra",
+		"shine": "blanco_brillante",
+		"shine_alpha": 0.18,
+		"z_index": -1
+	},
+	"mirror_only": {
+		"_notes": "Plataforma del reflejo (MirrorOnlyPlatform). height_px: alto (arriba de su celda). Con el Debug usa el contorno de lo oculto (data/debug_mode.json, hidden_*).",
+		"height_px": 32
+	},
+	"palette": {
+		"_notes": "PROVISIONAL (tools/palette_mundo3_provisional.py; no editar a mano): colores de desarrollo del Mundo 3 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 9).",
+		"galeria_noche": "#1e1426",
+		"trastienda_fondo": "#5a3d62",
+		"trastienda_medio": "#6a4c72",
+		"trastienda_luz": "#8a6c92",
+		"marco_sombra": "#5c4a2c",
+		"dorado": "#b3a05c",
+		"dorado_luz": "#d8c78c",
+		"rosa_pastel": "#f6c8dc",
+		"rosa_sombra": "#b88aa2",
+		"corazon_rosa": "#ffaad2",
+		"blanco_brillante": "#fbf8fc",
+		"gris_perla": "#c8bccb",
+		"alerta": "#ff4a2a",
+		"alerta_sombra": "#a3221c",
+		"ambar": "#ffa000",
+		"ambar_sombra": "#a85f00",
+		"debug_verde": "#a6ff2e"
+	}
+}
