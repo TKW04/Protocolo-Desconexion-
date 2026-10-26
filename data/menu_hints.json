@@ -1,5 +1,5 @@
 {
-	"_notes": "Pie de teclas de los menus (MenuHints, scripts/ui/menu_hints.gd; 2026-10-23, peticion del usuario: que al abrir cualquier menu del hub quede claro que G, la accion pulse, es la que acepta). Una fila al pie de cada panel: la accion principal (primary) con su tecla en una cajita resaltada y las demas en texto, separadas por separator (glifo «·» de la fuente de textos). LAS TECLAS SE LEEN DEL INPUT MAP (ControlBindings.primary + input_label, mismas tablas que data/ability_notices.json y Ajustes > Controles); al reasignar en Ajustes > Controles cambian solas. Con mando (ultimo dispositivo usado) se ve el boton (X, A, B) y las pistas nav dicen pad_nav. sets: una lista por menu; cada pista {action | actions, label, primary, join (entre teclas), compact (une sin separador si todas son de una letra: WASD), nav (flechas/cruceta), text (texto sin tecla)}. Menus: hub_list (Notas y su confirmacion), hub_shop (tienda de Calc), hub_folder / hub_folder_empty / hub_confirm (carpetas de mundo y «¿Seguro? Aún no has guardado.»), album_folders / album_grid / album_card (album de Notas) y nickname (entrada del apodo: acepta con ui_accept, Intro / A). La primera vez de la sesion que se abre cada menu la cajita late first_open_pulse_s s (periodo pulse_period_s); con «Reducir efectos» no late. Nunca dicen vuelta.",
+	"_notes": "Pie de teclas de los menus (MenuHints, scripts/ui/menu_hints.gd; 2026-10-23, peticion del usuario: que al abrir cualquier menu del hub quede claro que G, la accion pulse, es la que acepta). Una fila al pie de cada panel: la accion principal (primary) con su tecla en una cajita resaltada y las demas en texto, separadas por separator (glifo «·» de la fuente de textos). LAS TECLAS SE LEEN DEL INPUT MAP (ControlBindings.primary + input_label, mismas tablas que data/ability_notices.json y Ajustes > Controles); al reasignar en Ajustes > Controles cambian solas. Con mando (ultimo dispositivo usado) se ve el boton (X, A, B) y las pistas nav dicen pad_nav. sets: una lista por menu; cada pista {action | actions, label, primary, join (entre teclas), compact (une sin separador si todas son de una letra: WASD), nav (flechas/cruceta), text (texto sin tecla), keycap (tecla en cajita sin ser la principal: placa key_plate_secondary, no late)}. Menus: hub_notas (Notas y su confirmacion desde el 2026-10-26, peticion del usuario: solo Aceptar y Volver, cada uno con su cajita, sin «Elegir»), hub_list (lista generica), hub_shop (tienda de Calc), hub_folder / hub_folder_empty / hub_confirm (carpetas de mundo y «¿Seguro? Aún no has guardado.»), album_folders / album_grid / album_card (album de Notas) y nickname (entrada del apodo: acepta con ui_accept, Intro / A). La primera vez de la sesion que se abre cada menu la cajita late first_open_pulse_s s (periodo pulse_period_s); con «Reducir efectos» no late. Nunca dicen vuelta.",
 	"separator": " · ",
 	"key_pad_px": 2,
 	"first_open_pulse_s": 3.0,
@@ -10,6 +10,10 @@
 			{"action": "pulse", "label": "Aceptar", "primary": true},
 			{"actions": ["move_up", "move_down"], "label": "Elegir", "nav": true},
 			{"action": "jump", "label": "Volver"}
+		],
+		"hub_notas": [
+			{"action": "pulse", "label": "Aceptar", "primary": true},
+			{"action": "jump", "label": "Volver", "keycap": true}
 		],
 		"hub_confirm": [
 			{"action": "pulse", "label": "Aceptar", "primary": true},

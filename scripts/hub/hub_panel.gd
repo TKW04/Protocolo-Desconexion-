@@ -48,6 +48,8 @@ var _option_texts: Array[String] = []
 var _option_roles: Array[String] = []
 var _option_icons: Array[Texture2D] = []
 var _icon_rects: Array[TextureRect] = []
+var _line_icons: Array[Texture2D] = []
+var _line_icon_rects: Array[TextureRect] = []
 var _selected: int = 0
 var _open: bool = false
 var _open_time: float = 0.0
@@ -114,15 +116,19 @@ func set_title(text: String) -> void:
 	_title.text = text
 
 
-## Lineas fijas bajo el titulo: cada una {"text": String, "color": rol}.
+## Lineas fijas bajo el titulo: cada una {"text": String, "color": rol} y, si
+## se quiere, "icon" (Texture2D o ruta; 2026-10-26): el icono va a la izquierda
+## del texto y el par se centra en el panel.
 func set_lines(lines: Array) -> void:
 	while _line_labels.size() < lines.size():
 		_line_labels.append(_new_label("Line%d" % _line_labels.size(), "texto_tenue"))
+	_line_icons.clear()
 	for i: int in _line_labels.size():
 		var label: Label = _line_labels[i]
 		label.visible = i < lines.size()
+		var line: Dictionary = lines[i] if label.visible else {}
+		_line_icons.append(_icon_texture(line.get("icon", null)))
 		if label.visible:
-			var line: Dictionary = lines[i]
 			label.text = String(line.get("text", ""))
 			_set_color(label, String(line.get("color", "texto_tenue")))
 	_layout()
@@ -246,6 +252,21 @@ func get_hints() -> MenuHints:
 ## Icono de la opcion `index` (null si no tiene).
 func get_option_icon(index: int) -> Texture2D:
 	return _option_icons[index] if index >= 0 and index < _option_icons.size() else null
+
+
+## Icono de la linea fija `index` (null si no tiene).
+func get_line_icon(index: int) -> Texture2D:
+	return _line_icons[index] if index >= 0 and index < _line_icons.size() else null
+
+
+## Nodo del icono de la linea fija `index` (pruebas: posicion y visibilidad).
+func get_line_icon_rect(index: int) -> TextureRect:
+	return _line_icon_rects[index] if index >= 0 and index < _line_icon_rects.size() else null
+
+
+## Etiqueta de la linea fija `index` (pruebas: posicion junto al icono).
+func get_line_label(index: int) -> Label:
+	return _line_labels[index] if index >= 0 and index < _line_labels.size() else null
 
 
 ## Nodo del icono de la opcion `index` (pruebas: posicion y visibilidad).
@@ -418,6 +439,37 @@ func _place_option_icons(line_h: float, row_h: float) -> void:
 		rect.position = Vector2(label.position.x - inset, row_top + floorf((row_h - px) * 0.5))
 
 
+## Lineas fijas con icono: icono y texto juntos, centrados en el panel.
+func _place_line_icons(line_h: float, width: float, pad: float) -> void:
+	while _line_icon_rects.size() < _line_labels.size():
+		var rect := TextureRect.new()
+		rect.name = "LineIcon%d" % _line_icon_rects.size()
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_panel.add_child(rect)
+		_line_icon_rects.append(rect)
+	var px: float = _icon_px()
+	var inset: float = _icon_inset()
+	var font_size: int = int(_config.get("font_size", 12))
+	for i: int in _line_icon_rects.size():
+		var rect: TextureRect = _line_icon_rects[i]
+		var label: Label = _line_labels[i]
+		var tex: Texture2D = _line_icons[i] if i < _line_icons.size() else null
+		rect.visible = tex != null and label.visible
+		if not rect.visible:
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			continue
+		var text_w: float = ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+		var start: float = pad + floorf((width - pad * 2.0 - inset - text_w) * 0.5)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.position.x = start + inset
+		label.size.x = text_w
+		rect.texture = tex
+		rect.size = Vector2(px, px)
+		rect.position = Vector2(start, label.position.y + floorf((line_h - px) * 0.5))
+
+
 func _accepts_input() -> bool:
 	return _open_time >= float(_config.get("input_delay_s", 0.15))
 
@@ -499,7 +551,7 @@ static func hint_colors() -> Dictionary:
 	var out: Dictionary = {}
 	var defaults: Dictionary = {"text": "texto_tenue", "key": "texto_claro", "label": "texto_tenue",
 		"primary_label": "texto_claro", "key_plate": "acento_cian", "key_plate_pulse": "texto_claro",
-		"key_text": "fondo_profundo", "key_border": "texto_claro"}
+		"key_text": "fondo_profundo", "key_border": "texto_claro", "key_plate_secondary": "texto_tenue"}
 	for key: String in defaults:
 		out[key] = HubData.color(String(roles.get(key, defaults[key])))
 	return out
@@ -534,6 +586,9 @@ func _layout() -> void:
 	var row_h: float = maxf(_option_row_height(line_h), line_h)
 	for label: Label in labels:
 		var extra: float = inset_left + inset_right if _option_labels.has(label) else 0.0
+		var line_index: int = _line_labels.find(label)
+		if line_index >= 0 and line_index < _line_icons.size() and _line_icons[line_index] != null:
+			extra = _icon_inset()
 		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
 				+ pad * 2.0 + extra)
 	width = maxf(width, _hints.get_row_width() + pad * 2.0)
@@ -564,4 +619,5 @@ func _layout() -> void:
 	var top: float = float(_config.get("top_px", 48))
 	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(minf(top, maxf(screen.y - height, 0.0))))
 	_place_option_icons(line_h, row_h)
+	_place_line_icons(line_h, width, pad)
 	_after_layout()

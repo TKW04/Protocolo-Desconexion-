@@ -1,9 +1,13 @@
 ## Panel de Notas (antes «copia local»; docs/propuesta-hub-y-guardado.md §4.2 y
 ## docs/propuesta-asistentes-y-vidas.md §2.2, paso 8 de §10). Textos y colores
 ## en la seccion notas de data/hub.json.
-## - Resumen de progreso: ultimo nivel, puntos de atencion, nivel de acceso
-##   («Acceso: Caché», HubWorlds.access_label()), ultima copia
-##   y el estado «Sin guardar» (ambar) / «Todo guardado».
+## - Resumen de progreso (cabecera reordenada el 2026-10-26, peticion del
+##   usuario; notas.line_icons): puntos de atencion (rombo + numero), power
+##   banks, nivel de acceso («Acceso: Caché», HubWorlds.access_label(), con el
+##   icono de su vuelta), «Guardado en: aaaa-mm-dd hh:mm» (o «Sin guardar» sin
+##   copia) y «Sin guardar» (ambar) solo con copia y cambios pendientes. Sin
+##   «Último nivel» ni «Todo guardado». Pie de teclas hub_notas: Aceptar y
+##   Volver, sin «Elegir».
 ## - Opciones Guardar, Álbum, Apodo y Volver. Guardar sin cambios pendientes
 ##   dice «Todo esta guardado» (no escribe); con cambios pide confirmacion
 ##   (Si / No) y al confirmar llama a GameState.save_game(): mensaje y destello
@@ -66,15 +70,19 @@ func refresh() -> void:
 		return
 	var texts: Dictionary = _notas.get("texts", {})
 	var colors: Dictionary = _notas.get("colors", {})
+	var pending: bool = GameState.has_unsaved_changes()
+	var never: bool = GameState.saved_at.is_empty()
 	var lines: Array = [
-		{"text": String(texts.get("last_level", "%s")) % last_level_text(), "color": colors.get("summary", "texto_tenue")},
-		{"text": String(texts.get("points", "%d")) % GameState.attention_points, "color": colors.get("points", "ambar")},
+		{"text": String(texts.get("points", "%d")) % GameState.attention_points, "color": colors.get("points", "ambar"),
+			"icon": line_icon_path(&"points")},
 		{"text": String(texts.get("power_banks", "%d %d")) % [GameState.get_power_banks_found(), GameState.get_power_banks_spent()],
 			"color": colors.get("power_banks", "acento_cian")},
-		{"text": HubWorlds.access_label(), "color": colors.get("summary", "texto_tenue")},
-		{"text": String(texts.get("saved_at", "%s")) % saved_at_text(), "color": colors.get("summary", "texto_tenue")},
-		{"text": status_text(), "color": colors.get("unsaved" if GameState.has_unsaved_changes() or GameState.has_trash_pending() else "saved", "texto_tenue")},
+		{"text": HubWorlds.access_label(), "color": colors.get("summary", "texto_tenue"), "icon": access_icon_path()},
+		{"text": saved_at_line(), "color": colors.get("unsaved" if never and pending else "summary", "texto_tenue")},
 	]
+	var status: String = status_text()
+	if not status.is_empty():
+		lines.append({"text": status, "color": colors.get("unsaved", "ambar")})
 	set_lines(lines)
 	if _mode == Mode.CONFIRM:
 		set_title(String(texts.get("confirm_title", "")))
@@ -87,7 +95,7 @@ func refresh() -> void:
 			{"id": OPTION_NICKNAME, "text": String(texts.get("option_nickname", "%s")) % GameState.get_nickname(),
 				"icon": option_icon_path(OPTION_NICKNAME)},
 			{"id": OPTION_BACK, "text": String(texts.get("option_back", "")), "icon": option_icon_path(OPTION_BACK)}])
-	set_hints("hub_list")
+	set_hints("hub_notas")
 	super.refresh()
 
 
@@ -96,37 +104,43 @@ func option_icon_path(id: StringName) -> String:
 	return String(_notas.get("option_icons", {}).get(String(id), ""))
 
 
-## Texto del estado: «Sin guardar» o «Todo guardado».
+## Ruta del icono de la linea `id` de la cabecera (notas.line_icons; "" si no tiene).
+func line_icon_path(id: StringName) -> String:
+	var value: Variant = _notas.get("line_icons", {}).get(String(id), "")
+	return String(value) if value is String else ""
+
+
+## Icono del nivel de acceso actual (notas.line_icons.access, uno por vuelta).
+func access_icon_path(lap: int = -1) -> String:
+	var list: Variant = _notas.get("line_icons", {}).get("access", [])
+	if not (list is Array) or (list as Array).is_empty():
+		return ""
+	var current: int = GameState.lap if lap < 0 else lap
+	return String((list as Array)[clampi(current, 1, (list as Array).size()) - 1])
+
+
+## Estado bajo la fecha: «Sin guardar» solo si ya hay copia y cambios
+## pendientes (sin copia ya lo dice la linea de la fecha), o la papelera; si
+## no, vacio (sin «Todo guardado» desde el 2026-10-26).
 func status_text() -> String:
-	var key: String = "status_unsaved" if GameState.has_unsaved_changes() else "status_saved"
-	if GameState.has_trash_pending():
-		key = "status_trash"
-	return String(_notas.get("texts", {}).get(key, ""))
-
-
-## Ultimo nivel: el actual de GameState o, si no hay, el ultimo completado;
-## con su nombre de data/levels/<id>.json («Bandeja de entrada (1-1)»).
-func last_level_text() -> String:
 	var texts: Dictionary = _notas.get("texts", {})
-	var id: String = String(GameState.current_level)
-	if id.is_empty() and not GameState.completed_levels.is_empty():
-		id = String(GameState.completed_levels.keys().back())
-	if id.is_empty():
-		return String(texts.get("no_level", ""))
-	var name: String = level_name(id)
-	return id if name == id else String(texts.get("level_with_id", "%s (%s)")) % [name, id]
+	if GameState.has_trash_pending():
+		return String(texts.get("status_trash", ""))
+	if GameState.has_unsaved_changes() and not GameState.saved_at.is_empty():
+		return String(texts.get("status_unsaved", ""))
+	return ""
 
 
-## Nombre del nivel (campo name de su JSON) o el id.
-func level_name(level_id: String) -> String:
-	var path: String = String(_notas.get("level_data_pattern", "res://data/levels/%s.json")) % level_id
-	if not FileAccess.file_exists(path):
-		return level_id
-	var level: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return String(level.get("name", level_id)) if level is Dictionary else level_id
+## «Guardado en: 2026-10-15 18:04» o, sin copia, «Sin guardar».
+func saved_at_line() -> String:
+	var texts: Dictionary = _notas.get("texts", {})
+	if GameState.saved_at.is_empty():
+		return String(texts.get("never_saved", ""))
+	return String(texts.get("saved_at", "%s")) % saved_at_text()
 
 
-## Fecha de la ultima copia en hora local («2026-10-15 18:04») o «nunca».
+## Fecha de la ultima copia en hora local («2026-10-15 18:04»; aaaa-mm-dd hh:mm)
+## o «Sin guardar».
 func saved_at_text() -> String:
 	if GameState.saved_at.is_empty():
 		return String(_notas.get("texts", {}).get("never_saved", ""))

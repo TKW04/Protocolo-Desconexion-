@@ -79,15 +79,30 @@ func test_pulse_opens_the_summary_with_isak_facing_back() -> void:
 	assert_true(_isak.is_facing_back())
 	assert_eq(_panel.get_mode(), NotasPanel.Mode.SUMMARY)
 	assert_eq(_panel.get_title(), "Notas")
+	# Cabecera del 2026-10-26: sin «Último nivel»; puntos con su icono; acceso con
+	# el icono de su vuelta; sin copia, «Sin guardar» en la linea de la fecha.
 	assert_eq(_panel.get_lines(), PackedStringArray([
-		"Último nivel: Bandeja de entrada (1-1)",
-		"Puntos de atención: 9",
+		"9",
 		"Power banks: 0 encontrados, 0 gastados",
 		"Acceso: Caché",
-		"Última copia: nunca",
 		"Sin guardar"]))
 	_assert_no_internal_lap_words(_panel.get_lines())
-	assert_eq(_panel.get_line_color(5), Color.html("#ffa000"), "Sin guardar en ambar")
+	assert_eq(_panel.get_line_color(0), Color.html("#ffa000"), "Puntos en ambar")
+	assert_eq(_panel.get_line_color(3), Color.html("#ffa000"), "Sin guardar en ambar")
+	assert_eq(_panel.get_line_icon(0).resource_path, "res://assets/sprites/hub/menu/menu_attention_00.png")
+	assert_eq(_panel.get_line_icon(2).resource_path, "res://assets/sprites/hub/menu/menu_access_cache_00.png")
+	assert_null(_panel.get_line_icon(1))
+	assert_null(_panel.get_line_icon(3))
+	for i: int in [0, 2]:
+		var rect: TextureRect = _panel.get_line_icon_rect(i)
+		var label: Label = _panel.get_line_label(i)
+		assert_true(rect.visible, "Icono visible en la linea %d" % i)
+		assert_lt(rect.position.x + rect.size.x, label.position.x + 0.5, "Icono a la izquierda del texto")
+		assert_almost_eq(rect.position.y + rect.size.y * 0.5, label.position.y + label.size.y * 0.5, 1.0, "Centrado")
+	assert_false(_panel.get_line_icon_rect(1).visible)
+	assert_eq(_panel.access_icon_path(2), "res://assets/sprites/hub/menu/menu_access_kernel_00.png")
+	assert_eq(_panel.access_icon_path(3), "res://assets/sprites/hub/menu/menu_access_root_00.png")
+	assert_eq(_panel.get_help(), "G Aceptar · Espacio Volver", "Pie sin «Elegir»")
 	assert_eq(_panel.get_option_ids(), [NotasPanel.OPTION_SAVE, NotasPanel.OPTION_ALBUM, NotasPanel.OPTION_NICKNAME,
 		NotasPanel.OPTION_BACK] as Array[StringName], "Guardar / Álbum / Apodo / Volver")
 
@@ -108,12 +123,19 @@ func test_save_asks_for_confirmation_then_writes_and_clears_the_indicator() -> v
 	assert_eq(GameState.save_path, PATH)
 	assert_false(GameState.has_unsaved_changes())
 	assert_false(hud.is_unsaved_indicator_shown(), "El indicador del HUD se apaga")
-	assert_eq(_panel.get_lines()[5], "Todo guardado")
+	assert_eq(_panel.get_lines().size(), 4, "Sin «Todo guardado»")
+	assert_false(_panel.get_lines().has("Todo guardado"))
 	assert_eq(_panel.get_message(), "Apuntado. Copia guardada")
 	assert_eq(_panel.get_mode(), NotasPanel.Mode.SUMMARY)
 	assert_eq(_panel.get_save_count(), 1)
 	assert_true(_station.is_flashing(), "Destello cian del monitor")
-	assert_ne(_panel.get_lines()[4], "Última copia: nunca", "Muestra la fecha de la copia")
+	var regex := RegEx.create_from_string("^Guardado en: \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$")
+	assert_not_null(regex.search(_panel.get_lines()[3]), "Fecha aaaa-mm-dd hh:mm: %s" % _panel.get_lines()[3])
+	# Con copia y cambios nuevos: la fecha y debajo «Sin guardar» en ambar.
+	GameState.request_save()
+	assert_eq(_panel.get_lines().size(), 5)
+	assert_eq(_panel.get_lines()[4], "Sin guardar")
+	assert_eq(_panel.get_line_color(4), Color.html("#ffa000"))
 	var data: Dictionary = SaveFile.read(PATH)
 	assert_eq(int(data.get("attention_points", -1)), 9)
 
@@ -121,7 +143,7 @@ func test_save_asks_for_confirmation_then_writes_and_clears_the_indicator() -> v
 func test_nothing_to_save_does_not_write() -> void:
 	await _open_with_pulse()
 	assert_false(GameState.has_unsaved_changes())
-	assert_eq(_panel.get_lines()[5], "Todo guardado")
+	assert_false(_panel.get_lines().has("Todo guardado"), "Sin «Todo guardado»")
 	_panel.select_option(NotasPanel.OPTION_SAVE)
 	_panel.confirm()
 	assert_eq(_panel.get_mode(), NotasPanel.Mode.SUMMARY, "Sin confirmacion")

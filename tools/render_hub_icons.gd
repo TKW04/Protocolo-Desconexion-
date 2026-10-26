@@ -12,6 +12,9 @@
 ##   07_m1_panel_todo.png      Mundo 1 con todo: «Todo obtenido»
 ##   08_m2_panel.png           panel del Mundo 2 (iconos del feed)
 ##   09_confirmar_sin_guardar.png «¿Seguro?» con Entrar sin guardar / Volver
+##   10_notas_guardado.png     cabecera de Notas tras guardar (2026-10-26: rombo de
+##                             puntos, icono del acceso, «Guardado en: aaaa-mm-dd hh:mm»)
+##   11_notas_kernel_sin_guardar.png  acceso Kernel con su icono y «Sin guardar» bajo la fecha
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_hub_icons.gd [-- carpeta_salida]
 extends SceneTree
@@ -58,6 +61,17 @@ func _run() -> void:
 	np.call(&"confirm")
 	await _frames(4)
 	await _save(out_dir, "04_notas_confirmar.png")
+	# 10-11: cabecera tras guardar («Guardado en: aaaa-mm-dd hh:mm») y en Kernel.
+	np.call(&"select_option", &"yes")
+	np.call(&"confirm")
+	await _frames(4)
+	await _save(out_dir, "10_notas_guardado.png")
+	_state.set(&"lap", 2)
+	_state.call(&"request_save")
+	np.call(&"refresh")
+	await _frames(4)
+	await _save(out_dir, "11_notas_kernel_sin_guardar.png")
+	_state.set(&"lap", 1)
 	np.call(&"close")
 	# 09: «¿Seguro?» al entrar con cambios sin guardar.
 	var fp: Node = m1.call(&"get_folder_panel")

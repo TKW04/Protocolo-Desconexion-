@@ -167,8 +167,15 @@ func test_notas_menu_has_an_icon_per_option_with_the_floppy_for_save() -> void:
 	assert_eq(panel.get_mode(), NotasPanel.Mode.CONFIRM)
 	assert_eq(panel.get_option_icon(0).resource_path, MENU % "yes")
 	assert_eq(panel.get_option_icon(1).resource_path, MENU % "no")
-	assert_true(panel.get_help().contains("W/S Elegir"), "El pie de teclas sigue")
+	assert_eq(panel.get_help(), "G Aceptar · Espacio Volver", "Notas: sin «Elegir» (2026-10-26)")
 	panel.close()
+
+
+func test_notas_header_icons_are_12px_from_the_menu_set() -> void:
+	for name: String in ["attention", "access_cache", "access_kernel", "access_root"]:
+		var tex: Texture2D = load(MENU % name)
+		assert_not_null(tex, name)
+		assert_eq(tex.get_size(), Vector2(12.0, 12.0), "%s: 12x12" % name)
 
 
 func test_folder_panel_has_an_icon_per_level_and_grey_when_locked() -> void:

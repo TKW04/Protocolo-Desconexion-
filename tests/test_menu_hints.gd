@@ -62,9 +62,11 @@ func test_every_hub_panel_has_hints_with_g() -> void:
 		var hints: MenuHints = panel.get_hints()
 		assert_not_null(hints, "%s tiene pie de teclas" % key)
 		assert_true(hints.is_visible_in_tree(), "%s: pie visible" % key)
-		assert_eq(hints.get_key_texts(), PackedStringArray(["G"]), "%s: G en la cajita" % key)
+		# Notas (2026-10-26): Aceptar y Volver con su cajita cada uno, sin «Elegir».
+		var caps: PackedStringArray = ["G", "Espacio"] if key == "notas" else ["G"]
+		assert_eq(hints.get_key_texts(), caps, "%s: teclas en cajita" % key)
 		assert_true(panel.get_help().begins_with(expected[key]), "%s: %s" % [key, panel.get_help()])
-		assert_true(panel.get_help().contains("W/S Elegir"), "%s: elegir" % key)
+		assert_eq(panel.get_help().contains("Elegir"), key != "notas", "%s: elegir" % key)
 		assert_true(panel.get_help().contains("Espacio Volver"), "%s: volver" % key)
 		_assert_glyphs(panel.get_help(), key)
 		assert_false(panel.get_help().to_lower().contains("vuelta"), "Nunca dice vuelta")
@@ -136,16 +138,15 @@ func test_pad_shows_buttons() -> void:
 	Input.parse_input_event(press)
 	await wait_physics_frames(2)
 	assert_eq(MenuHints.current_device(), MenuHints.Device.PAD, "Ultimo dispositivo: mando")
-	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["X"]), "Pulso del mando")
-	assert_true(panel.get_help().contains("Cruceta Elegir"), panel.get_help())
-	assert_true(panel.get_help().contains("A Volver"), panel.get_help())
+	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["X", "A"]), "Pulso y salto del mando")
+	assert_eq(panel.get_help(), "X Aceptar · A Volver", "Notas: sin «Elegir»")
 	var key := InputEventKey.new()
 	key.keycode = KEY_Z
 	key.physical_keycode = KEY_Z
 	key.pressed = true
 	# Sin ventana las teclas no llegan por parse_input_event: se entrega directa.
 	panel.get_hints()._input(key)
-	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["G"]), "Vuelve al teclado")
+	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["G", "Espacio"]), "Vuelve al teclado")
 
 
 func test_remap_changes_hint() -> void:
@@ -153,10 +154,10 @@ func test_remap_changes_hint() -> void:
 	var event := InputEventKey.new()
 	event.physical_keycode = KEY_H
 	ControlBindings.assign(&"pulse", event, true)
-	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["H"]), "Tecla reasignada")
+	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["H", "Espacio"]), "Tecla reasignada")
 	assert_true(panel.get_help().begins_with("H Aceptar"), panel.get_help())
 	ControlBindings.restore_defaults()
-	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["G"]), "Restaurada")
+	assert_eq(panel.get_hints().get_key_texts(), PackedStringArray(["G", "Espacio"]), "Restaurada")
 
 
 func test_first_open_pulses_once_per_menu() -> void:
@@ -188,3 +189,24 @@ func test_reduced_effects_do_not_pulse() -> void:
 	panel.open()
 	assert_false(panel.get_hints().is_pulsing(), "Con «Reducir efectos» no late")
 	assert_eq(panel.get_hints().get_plate_color(), HubData.color("acento_cian"), "Pero sigue resaltada")
+
+
+func test_notas_back_key_has_its_own_fixed_keycap() -> void:
+	# 2026-10-26: Volver de Notas va en cajita secundaria (texto_tenue) que no late.
+	var panel := NotasPanel.new()
+	add_child_autofree(panel)
+	panel.open()
+	assert_eq(panel.get_help(), "G Aceptar · Espacio Volver")
+	var rects: Array[Color] = []
+	for child: Node in panel.get_hints().get_children():
+		if child is ColorRect:
+			rects.append((child as ColorRect).color)
+	assert_eq(rects.size(), 4, "Dos cajitas (borde y placa)")
+	assert_eq(rects[3], HubData.color("texto_tenue"), "Volver: placa secundaria")
+	panel.close()
+	# Los otros menus no cambian.
+	var calc := CalcPanel.new()
+	add_child_autofree(calc)
+	calc.open()
+	assert_true(calc.get_help().contains("W/S Elegir"), calc.get_help())
+	assert_eq(calc.get_hints().get_key_texts(), PackedStringArray(["G"]))

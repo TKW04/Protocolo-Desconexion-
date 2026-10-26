@@ -82,7 +82,7 @@ static func reset_seen() -> void:
 
 ## Fuente, tamano, shader de color clave (fuente dibujada en `key_color`) y
 ## colores: text, key, label, primary_label, key_plate, key_plate_pulse,
-## key_text, key_border (Color).
+## key_text, key_border y, opcional, key_plate_secondary (Color).
 func setup(font: Font, font_size: int, shader: Shader, key_color: Color, colors: Dictionary) -> void:
 	_font = font
 	_font_size = font_size
@@ -288,6 +288,17 @@ func _rebuild() -> void:
 				_key_texts.append(keys[i])
 			x = _add_text(" " + label, "primary_label", x)
 			plain_keys = join.join(keys)
+		elif bool(item.get("keycap", false)):
+			# Tecla en cajita sin ser la principal (2026-10-26, Volver de Notas): placa
+			# secundaria que no late.
+			var join_k: String = String(item.get("join", "/"))
+			for i: int in keys.size():
+				if i > 0:
+					x = _add_text(join_k, "text", x)
+				x = _add_keycap(keys[i], x, line_h, pad_x, false)
+				_key_texts.append(keys[i])
+			x = _add_text(" " + label, "label", x)
+			plain_keys = join_k.join(keys)
 		else:
 			x = _add_text(plain_keys, "key", x)
 			x = _add_text(" " + label, "label", x)
@@ -327,7 +338,9 @@ func _add_text(text: String, color_key: String, x: float) -> float:
 
 
 ## Cajita: borde de 1 px, placa y la tecla; ocupa todo el alto de la fila.
-func _add_keycap(key: String, x: float, line_h: float, pad_x: float) -> float:
+## `primary` = la de la accion principal (placa key_plate, late); si no,
+## key_plate_secondary fija.
+func _add_keycap(key: String, x: float, line_h: float, pad_x: float, primary: bool = true) -> float:
 	var w: float = _width_of(key) + pad_x * 2.0 + 2.0
 	var border := ColorRect.new()
 	border.name = "KeyBorder"
@@ -338,12 +351,13 @@ func _add_keycap(key: String, x: float, line_h: float, pad_x: float) -> float:
 	add_child(border)
 	var plate := ColorRect.new()
 	plate.name = "KeyPlate"
-	plate.color = _color("key_plate")
+	plate.color = _color("key_plate") if primary else _colors.get("key_plate_secondary", _color("key"))
 	plate.position = Vector2(x + 1.0, 1.0)
 	plate.size = Vector2(w - 2.0, line_h)
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(plate)
-	_plates.append(plate)
+	if primary:
+		_plates.append(plate)
 	var label: Label = _add_label(key, "key_text", Vector2(x + 1.0 + pad_x, 1.0))
 	label.name = "KeyText"
 	return x + w

@@ -50,6 +50,8 @@ Salidas (assets/sprites/hub/):
                page_dot_current_00, page_dot_other_00          8x8
   menu/        menu_<opcion>_00 y menu_level_<id>_00 (+ _off_00):
                iconos de las opciones de Notas y de las carpetas 12x12
+               menu_attention_00 y menu_access_<cache|kernel|root>_00
+               (cabecera de Notas, 2026-10-26)                 12x12
 
 El fondo, los tiles y las carpetas se dibujan en una rejilla logica de 2x2 px
 (como el tileset del Mundo 1); Notas, Calc, huecos e iconos a 1 px (como
@@ -775,6 +777,48 @@ def _menu_scroll(cv):  # 2-3 Scroll infinito: lista que no acaba y flecha abajo
         cv.rect(8 - i, 7 + i, 9 - i, 7 + i, AM)
 
 
+def _menu_attention(cv):  # puntos de atencion: el rombo ambar del HUD (hud_attention) a 12 px
+    for y in range(MENU):
+        for x in range(MENU):
+            d = abs(x - 5.5) + abs(y - 5.5)
+            if d <= 5.0:
+                cv.p(x, y, AS if (x - 5.5) + (y - 5.5) >= 3.0 else AM)
+    cv.rect(5, 5, 6, 6, AS)
+    cv.p(4, 3, TC)
+
+
+def _menu_access_cache(cv):  # acceso Caché: chip de memoria con patillas
+    cv.rect(3, 3, 8, 8, CA)
+    cv.rect(4, 4, 7, 7, FP)
+    cv.rect(5, 5, 6, 6, CB)
+    for k in (4, 7):
+        cv.hline(1, 2, k, TT)
+        cv.hline(9, 10, k, TT)
+        cv.vline(k, 1, 2, TT)
+        cv.vline(k, 9, 10, TT)
+
+
+def _menu_access_kernel(cv):  # acceso Kernel: nucleo (anillo y centro)
+    for y in range(MENU):
+        for x in range(MENU):
+            r = math.hypot(x - 5.5, y - 5.5)
+            if 4.3 <= r <= 5.6:
+                cv.p(x, y, AM)
+            elif r <= 2.3:
+                cv.p(x, y, CB if x + y <= 10 else CA)
+
+
+def _menu_access_root(cv):  # acceso Raíz: tronco y raices hacia abajo
+    cv.rect(5, 0, 6, 5, TC)
+    for i in range(4):
+        cv.p(4 - i, 6 + i, TT)
+        cv.p(7 + i, 6 + i, TT)
+    cv.vline(5, 6, 10, TT)
+    cv.vline(6, 6, 9, TT)
+    for x, y in ((1, 10), (10, 10), (5, 11)):
+        cv.p(x, y, CA)
+
+
 def _menu_unknown(cv):  # subnivel sin icono propio
     for y, x0, x1 in ((1, 4, 7), (2, 3, 8), (3, 3, 4), (3, 7, 8), (4, 6, 8), (5, 5, 7), (6, 5, 6), (7, 5, 6),
                       (9, 5, 6), (10, 5, 6)):
@@ -784,10 +828,13 @@ def _menu_unknown(cv):  # subnivel sin icono propio
 MENU_DRAW = {"back": _menu_back, "yes": _menu_yes, "no": _menu_no, "enter": _menu_enter,
              "level_1_1": _menu_inbox, "level_1_2": _menu_tower, "level_1_3": _menu_moon,
              "level_1_boss": _menu_boss_alert, "level_2_1": _menu_heart, "level_2_2": _menu_video_plus,
-             "level_2_3": _menu_scroll, "level_2_boss": _menu_boss_autoplay, "level_unknown": _menu_unknown}
+             "level_2_3": _menu_scroll, "level_2_boss": _menu_boss_autoplay, "level_unknown": _menu_unknown,
+             "attention": _menu_attention, "access_cache": _menu_access_cache,
+             "access_kernel": _menu_access_kernel, "access_root": _menu_access_root}
 MENU_ICONS = ["save", "album", "nickname", "back", "yes", "no", "enter",
               "level_1_1", "level_1_2", "level_1_3", "level_1_boss",
-              "level_2_1", "level_2_2", "level_2_3", "level_2_boss", "level_unknown"]
+              "level_2_1", "level_2_2", "level_2_3", "level_2_boss", "level_unknown",
+              "attention", "access_cache", "access_kernel", "access_root"]
 
 
 def menu_outputs():
