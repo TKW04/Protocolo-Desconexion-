@@ -1,0 +1,619 @@
+# Propuesta: Mundo 3 «La Vitrina» (3-1, 3-2, 3-3 y jefe La Curadora)
+
+**Estado:** **PROPUESTA (2026-10-26) con todas las decisiones de diseño tomadas por el orquestador** con la autoridad que el usuario delegó (igual que en el Mundo 2; ver §9, cada una marcada «Decisión tomada»). **En implementación:** pasos 0-8 hechos el 2026-10-26 (mecánicas, enemigos, objetos y validador, con salas de prueba y arte provisional por código); el avance está en §8.1. Desarrolla `mundo-3-vitrina.md` sin contradecirlo. Lo que no viene de los docs va marcado **PROPUESTA**. Los valores son orientativos y se ajustan jugando y con el validador. **Los textos de Eco, de la Curadora, de los carteles y de los mensajes de Mamá son borradores de tono** revisables al jugar. Este documento cubre solo **Caché** (plan de producción: primero los 18 niveles en Easy). Kernel y Raíz salen solo en el jefe, a alto nivel, como en Alerta Mayor y Autoplay. **Queda fuera de la autoridad delegada** (lo decide el usuario en su momento, no bloquea el diseño): cerrar los **hex** de la paleta (decisión abierta de `CLAUDE.md`; §6.1) y **gastar créditos de AutoSprite** (permiso y total previo; §6.2).
+
+**Fuentes:** `mundo-3-vitrina.md` (ficha original), `01-ficha-reglas.md` §5, `02-isak-habilidades.md` §3.5, `04-personajes.md` §12.1-§12.2 y §12.5, `05-hub.md` §13.4, `07-estilo-visual.md` §15.2-§15.7, `08-pendientes.md`, `preguntas.md` (A3, V14, «Mundo 2: lo que el usuario debe revisar al probar»), `propuesta-recuerdos.md` (§10, §11.2-§11.3), `propuesta-mejoras.md` §4, `propuesta-asistentes-y-vidas.md`, `propuesta-1-2.md` §0, `propuesta-1-3.md`, `propuesta-jefe-alerta-mayor.md`, `propuesta-mundo-2.md` (plantilla de este documento), `mundo-2-feed.md` §7.8, `lista-sonidos.md`, `CLAUDE.md` y el código y los datos actuales (`project.godot`, `scripts/autoload/game_state.gd`, `scripts/player/isak.gd`, `data/hub.json`, `data/memories.json`, `data/isak_abilities.json`, `data/bosses/*.json`).
+
+**Física de referencia** (datos actuales): andar 220 px/s (3,4 tiles/s), correr 360 px/s; salto de unos 184 px a 60 Hz (subidas cómodas de 2 tiles), cumbre a 0,4 s. Caja de colisión de Isak **32 × 80 px** (`Isak.hitbox_size`): no cabe por un hueco de 1 tile de alto. Pulso gratis, radio 96 px, solo en el suelo, pose 0,33 s. Láser 10 de energía, 768 px, horizontal, solo en el suelo. Debug: mantener 1 s, 20/s reales, mundo ×0,5. Dash 192 px en 0,2 s, invulnerable 0,3 s, 10 de energía. Golpe al suelo gratis (0,12 s en el aire / 0,35 s en el suelo, onda de 1,5 tiles). Golpe recibido −10 de Sync Rate e invulnerabilidad 1 s. Energía 100 (110-130 con las mejoras). La pantalla mide **20 × 11,25 tiles** (1280 × 720).
+
+---
+
+## 0. Resumen
+
+- **El mundo:** una red de fotos donde todo está editado. Eco le robó a Isak la **imagen**. La **mecánica central nueva** es que **el mundo depende de cómo te ven**: los **likes** son un recurso de nivel (no se guardan) que **sostiene la geometría** (plataformas que solo existen con N likes), y **lo que ves no es lo que hay** (filtros que esconden peligros, espejos que muestran plataformas invisibles). Ni temporizadores ni notificaciones (Mundo 1), ni scroll forzado (Mundo 2): aquí el reto es **leer la escena real y administrar una cifra que no vale nada fuera**.
+- **Gesto del mundo:** **Pellizcar** (habilidad `compress`, ya existe en `GameState`; acción `gesture_pinch`, **I / RB**, ya asignada en `project.godot`): Isak se comprime a la mitad de alto para pasar por los **marcos pequeños** (huecos de 1 tile). Se obtiene al principio del 3-2 con la herramienta «Recortar».
+- **Niveles (horizontales, 14 filas):** 3-1 «Galería de perfil» (likes, Influencer bot, Ladrón de likes, primer espejo; 220 × 14), 3-2 «Sin filtro» (Pellizcar y filtros; 250 × 14), 3-3 «Espejo, espejito» (espejos que desvían el láser, espejo cazador, Reflejo falso y examen final; 280 × 14).
+- **Jefe La Curadora:** marco gigante con cabeza de cámara. Daño = **Debug revela la pantalla rota → pulso que marca → láser** (la regla de Alerta Mayor), con el giro del mundo: en la fase 2 el pulso y el láser **llegan por un espejo** porque la Curadora está de espaldas, y en la fase 3 hay que **pellizcarse para escapar de los marcos que se cierran** mientras un Reflejo falso copia a Isak. Arena de **20 × 11**: cabe entera en pantalla. 9 golpes en Caché, **uno por marca**.
+- **Arte:** casi todo por script (familia de formas «marcos y espejos»). AutoSprite, con permiso, para la Curadora, el Influencer bot y la pose de Pellizcar: **68-71 créditos** (hasta ~142 con reintentos) de un saldo de **380**.
+- **Tamaño:** unos 24 pasos. Similar al Mundo 2 en contenido propio; el validador crece menos (sin scroll), pero los espejos, los likes y el Reflejo falso son tres modelos nuevos. **≈ 55-65 %** del esfuerzo total del Mundo 1.
+
+---
+
+## 1. Qué está decidido y qué es propuesta
+
+| Tema | Decidido en los docs | PROPUESTA / decisión tomada en este documento |
+|---|---|---|
+| Tema | Eco robó la **imagen**; «no te quita cosas por la fuerza, te ofrece una versión mejor de ti» (`mundo-3` §8). | Los likes como cifra que sostiene el mundo y se evapora al salir (§2.3). |
+| Paleta | Rosa pastel y blanco brillante, acento **dorado**, Debug **verde ácido** (`07` §15.3); marcos por todas partes. | Reglas de contraste y choques (dorado frente al ámbar de los puntos, rosa frente al rojo de daño, cian de Eco sobre blanco); hex provisionales por script, cierre del usuario con 3 variantes (§6.1). |
+| Música | Chiptune alegre, casi de comercial, con notas desafinadas que se acentúan cerca de los peligros. | El desafinado sale a ≤ 3 tiles de un peligro oculto y tiene su equivalente visual (§6.4). |
+| Humor y lo oscuro | Pies de foto («Mi vida es increíble #bendecido»), bots que dicen «No olviden suscribirse», filtros con orejas de perro que esconden pinchos; Isak se ve reflejado más pulido. | Carteles, fotos «originales» del fondo que solo enseña el Debug (§2.2). |
+| Mecánicas | Plataformas de likes; corazones sueltos suben el contador; el daño y el ladrón los quitan. Filtros que el Debug quita. Espejos que reflejan a Isak y al «pulso de datos»; plataformas que solo están en el reflejo. Marcos pequeños con Pellizcar. | Valores y reglas de cada una (§3.1-§3.5); **lo que rebota en los espejos es el láser** y el pulso solo rebota en el **espejo cazador** (§3.4). Resuelve el apuntado pendiente de A3 sin apuntado libre. |
+| Enemigos | Influencer bot, Ladrón de likes, Filtro, Espejo cazador y Reflejo falso (`mundo-3` §8.3). | Parámetros, reglas y qué se reutiliza (§3.6); placa «Posa aquí» para usar el retraso del Reflejo falso. |
+| Gesto | **Pellizcar** = comprimirse para pasar por huecos pequeños (`02` §3.5); se obtiene en el 3-2 con «Recortar»; Eco: «Te queda mejor así.» `gesture_pinch` (I / RB) y `ABILITY_COMPRESS` ya existen. | Valores, reglas y control (§3.3). |
+| Niveles | Objetivo, dificultad (3, 4, 4), duración (6, 7 y 8 min), tramos, cierre y secreto de cada uno (`mundo-3` §8.4-§8.6). | Tamaños, columnas, economía, secretos B y C y la posición de cada cosa (§4). |
+| Jefe | La Curadora: marco gigante, cabeza de cámara; aplica filtros; Eco habla por ella con voz cálida, casi maternal; punto débil: pantalla rota bajo el filtro, solo con el Debug, en rojo; fases 1-3; recompensa. | Daño (marca y espejos), arena, ataques, energía y Kernel / Raíz (§5). |
+| Recuerdo de jefe | Textos de las 3 capas `boss_w3_l1`-`l3` ya en `data/memories.json` (propuesta del orquestador) e ilustración por script (`memory_art_w3`). | Cómo se entrega: igual que Alerta Mayor y Autoplay (§5.9). |
+| Mensajes de secretos | **3 por mundo en Caché**, de **Mamá**; reaparecen en Kernel y Raíz si no se obtienen; requisito del final real. | Borradores `msg_3_1`-`msg_3_3` y dónde va cada uno (§4.5); `msg_3_2` está en el marco pequeño del 3-1 (lo pide la ficha). |
+| Hub | Carpeta M3 en la columna 16 (ya existe, `unlocked_by: ["2-boss"]`); al completar el mundo, **tercera pieza del fondo en verde ácido** (`05` §13.4). | Filas del panel, desbloqueo del Mundo 4 y línea de Calc (§4.6). |
+| Vidas, power banks, puntos | Vida extra cada 3 mapas (1-1, 2-1): **la siguiente va en el 3-1**. ≈ 9 puntos por mapa. Al menos un power bank por mundo y vuelta. | Dónde va cada cosa (§4). |
+| Eco | «Esfera con un marco dorado, como un retrato»; frase «Te hice mejor. ¿Por qué querrías volver?» (`04` §12.1). | Variante de arte de la esfera compañera en el Mundo 3 (§6.3). |
+| Isak Optimizado | Aparece primero como el **Reflejo falso del Mundo 3**: movimiento perfecto y sin peso, colores algo más saturados; «detalles que el jugador aprende a leer en el Mundo 3» (`04` §12.2). | El Reflejo falso reutiliza las hojas de Isak con una variante saturada y sin animaciones secundarias (§3.6, §6.2). |
+
+---
+
+## 2. Tema y tono
+
+### 2.1 Idea
+
+Una galería infinita de fotos perfectas. Isak avanza por pasillos de marcos dorados donde **lo que existe depende de cuántos te miran**: las plataformas se sostienen con likes, y los likes se pierden con un golpe o los roba alguien. Debajo de cada filtro hay pinchos; detrás de cada espejo, un Isak más pulido que no se cansa. El gesto del mundo, **Pellizcar**, se obtiene de una herramienta de **«Recortar»**: Eco lo presenta como una mejora («Te queda mejor así.»), y es la primera vez que el jugador recibe una habilidad que, en el fondo, **lo hace más pequeño**. La ironía del mundo: los likes son lo único que se cuenta aquí dentro y **no valen nada fuera** (no se guardan, no se canjean, desaparecen al terminar el nivel).
+
+### 2.2 Tono
+
+- **Superficie (humor):** carteles con la voz de una red de fotos inventada (sin marcas): «Mi vida es increíble #bendecido» y «No olviden suscribirse» (doc); **PROPUESTA de estilo** (textos revisables): «Filtro: Orejitas · Brillo +40», «Sin editar = sin likes», «Tu mejor ángulo es el de otro», «Foto de perfil actualizada (otra vez)», «Publicado hace 0 segundos». Los Influencer bots dicen frases cortas en bocadillo, solo texto.
+- **Fondo (lo oscuro):** el fondo de la galería está lleno de **fotos perfectas** de Isak que él no recuerda haberse hecho. **Con el Debug**, algunas muestran la **original** (pelo revuelto, una mancha de grasa, alguien riendo fuera de foco): tipo `decor` con dos estados, sin colisión ni efecto, fuera del camino. Isak se ve en los espejos con un segundo de desfase y algo más saturado (§3.4).
+- **Eco:** esfera con **marco dorado**, como un retrato (`04` §12.1). Comenta lo justo (historia y Q). Su frase del mundo, **«Te queda mejor así.»**, al obtener Pellizcar (decidida, `mundo-3` §8.5); la del recuerdo, «Te hice mejor. ¿Por qué querrías volver?», en la recompensa. En el jefe, **cálida y casi maternal**, que contrasta a propósito con los mensajes de Mamá (que son torpes, cotidianos y de verdad).
+
+### 2.3 Los likes no se guardan (PROPUESTA de presentación)
+
+- **HUD:** el contador de likes (`07` §15.7: «junto al HUD») es un corazón rosa con la cifra («♥ 12»), a la derecha de los puntos de atención, **solo en los niveles del Mundo 3**; oculto en el hub y en los demás mundos. La primera vez lleva Q de Eco (`hud_likes`, idea: «Aquí todo se mide en esto. Fuera no compra nada.»).
+- **Al terminar el nivel** el contador se vacía en el fundido de salida con el aviso del sistema «Los likes no se guardan.» (texto propuesto). En el hub, **Calc** puede comentarlo en su LCD la primera vez que Isak llega del 3-1 (idea: «Likes canjeables: 0. Ya lo sabía.»).
+- **Reloj del HUD:** sigue visible (se muestra desde el Mundo 2), a un minuto por minuto real y **sin saltos** (los saltos de hora son del Mundo 2).
+
+---
+
+## 3. Mecánicas
+
+### 3.1 Likes y plataformas de likes (`heart_pickup`, `like_platform`, `like_source`, `like_reset`)
+
+| Regla | Valor propuesto | Por qué |
+|---|---|---|
+| Contador | Entero de **0 a 30** por intento (`GameState.likes`, **no va en `save.json`**). Empieza en 0 al entrar al nivel. | Recurso de nivel, como la energía de un tramo: no rompe la economía de puntos. |
+| Corazón suelto (`heart_pickup`) | +1 al tocarlo. No reaparece en el intento; sí al reaparecer en el punto de sincronización si se cogió después de él. | El doc: «los corazones sueltos suben el contador». |
+| Publicación (`like_source`, objeto reutilizable) | Un **pulso** a su marco da **+5** (sin pasar de 30); enfriamiento **8 s** del mundo, con el anillo de carga visible. | **Regla anti-atasco** (como los cargadores reutilizables del 2-1): cerca de cada umbral obligatorio hay una publicación, así que perder likes nunca bloquea el nivel. |
+| Plataforma de likes (`like_platform`) | Sólida si `likes ≥ threshold` (umbrales de 5 en 5, de 5 a 25). Muestra su umbral siempre («♥10»). Sin likes suficientes: contorno discontinuo sin colisión (el aspecto de la plataforma apagada del 1-3). | El doc. El umbral visible hace justo el reto: se sabe qué falta. |
+| Aviso al desaparecer | Si el contador baja del umbral, **parpadea 9 cuadros a 12 fps (0,75 s)** y después desaparece. No se materializa con Isak dentro. | Regla de los 6-12 cuadros; nadie cae sin aviso. |
+| Perder likes | **Golpe recibido: −3**, que salen como corazones que parpadean **2 s** y se pueden recoger otra vez. **Ladrón:** hasta −5 (§3.6). | El doc: «si le hacen daño o un enemigo se los roba, algunas plataformas desaparecen». Recuperables para que no sea un castigo doble. |
+| Muerte | El contador vuelve al valor que tenía al tocar el último punto de sincronización (o 0). | Igual que el resto del estado del intento. |
+| «Borrar publicaciones» (`like_reset`, objeto) | Un pulso de espaldas lo pone a **0**. Solo en secretos (§4.1.1). | Plataformas **inversas** (`invert: true`: sólidas solo con `likes < threshold`): el mensaje de Mamá se encuentra soltando los likes. Es el tema del mundo en una mecánica. |
+| Tiempo | El aviso y el enfriamiento van en **tiempo del mundo** (el Debug los ralentiza). | Coherente con los temporizadores del 1-2. |
+
+### 3.2 Filtros (`filter_zone`)
+
+- **Qué es:** un rectángulo del nivel con una **capa rosada y suavizada** encima (`07` §15.6) y un borde de marco con su cartel («Filtro: Orejitas · Brillo +40»). Debajo, el nivel real: **pinchos ocultos** (`^` con `hidden_by_filter`), **suelo falso** (terreno sin colisión, como el `cover` de `glitch_wall` del 1-3) y, a veces, enemigos dormidos.
+- **Con el Debug:** la capa baja al 10 % y se ve el nivel «sin filtro» (pinchos en rojo, suelo falso con contorno discontinuo). Reutiliza el **pop-up translúcido** del 1-2 (`OverlayPopup`, que ya baja su opacidad con el Debug) y el `cover` de `GlitchWall`.
+- **Justo y legible (PROPUESTA de reglas, el validador las exige):** (1) la zona filtrada **siempre se ve** como zona (borde de marco, brillo, cartel): el jugador sabe que ahí miente algo; (2) **el filtro engaña, no mata**: un pincho oculto quita 10 y empuja hacia la entrada de la zona, y un suelo falso deja caer como mucho 3 tiles a un foso con salida; (3) antes de cada filtro obligatorio hay un cargador a la vista; (4) el filtro nunca esconde el umbral de una plataforma de likes.
+- **Filtro que se mueve (3-2, Tramo 4):** `filter_zone` con `positions` y `cycle_s` (4 s): se desliza entre dos o tres sitios con aviso de 9 cuadros (la cinta del borde parpadea). **Los peligros no se mueven: se mueve lo que se ve.** Sin el Debug, se puede memorizar lo que quedó al descubierto; con el Debug, se ve todo. «Lo que era seguro deja de serlo» (doc) en la lectura, no en la física.
+- **Pista sonora:** el desafinado de la música sube a ≤ 3 tiles de un peligro oculto y, a la vez, **la viñeta del filtro tiembla** (misma información por la vista; `lista-sonidos.md` §«Lo inverso»). No dice dónde está, solo que está cerca.
+
+### 3.3 Pellizcar (gesto, habilidad `compress`)
+
+#### 3.3.1 Valores iniciales (PROPUESTA; sección `compress` de `data/isak_abilities.json`)
+
+| Parámetro | Valor | Por qué |
+|---|---|---|
+| Control | **Pulsar `gesture_pinch`** (I / RB; ya en el Input Map, reasignable en Ajustes > Controles) para comprimirse; otra pulsación para recuperar el tamaño | Interruptor, como el Ocultarte: el jugador decide cuándo, y «recuperar el tamaño en el momento justo» (doc) pide controlar el momento. |
+| Caja | **32 × 40 px** (la mitad de alto); el sprite se aplasta en 0,15 s (anticipación de 3 cuadros a 20 fps) | Cabe por un hueco de 1 tile (64 px) con 24 px de holgura de techo. |
+| Movimiento comprimido | Andar **160 px/s**, sin correr; salto de **≈ 96 px** (1,5 tiles; sube escalones de 1 tile); gravedad igual | Más lento y bajo: comprimirse cuesta algo y no sustituye al tamaño normal. |
+| Volver al tamaño | Se pide con la misma tecla; si no cabe (techo bajo), **queda pedido** y vuelve solo en cuanto hay sitio, con un icono pequeño de «sin espacio» mientras tanto | Nunca se queda uno atascado por un milímetro. |
+| Coste | **0 de energía** | Herramienta básica del mundo, como el pulso y el golpe al suelo. La tensión está en la lentitud. |
+| Con el Debug | **Sí** (hay marcos pequeños dentro de filtros) | Combina con el gesto del mundo, como el golpe al suelo en el Mundo 2. |
+| No sale | Sin la habilidad, en el hub, en Hurt, muerto, de espaldas, en un vórtice, durante el dash, el golpe al suelo, el pulso o el láser | Mismas reglas que los otros gestos. |
+| Comprimido no hay | Pulso, láser, dash, golpe al suelo ni Ocultarte (pellizcarse **apaga el Ocultarte**) | Una cosa a la vez: comprimirse es esconderse de verdad, sin armas. |
+| Daño | −10 como siempre; **sigue comprimido** (no crece de golpe dentro de un marco) | Evita que un golpe te aplaste contra un techo. |
+| Tienda | Sin pista propia, como el dash y el golpe al suelo | Los gestos progresan por las combinaciones del Mundo 5 (Filo = dash comprimido). |
+| Tiempo | De Isak: tiempo real | Como los demás gestos. |
+
+#### 3.3.2 Marcos pequeños (`small_frame`)
+
+- **Qué son:** huecos de **1 tile de alto** con forma de marco de foto (doc), en paredes (pasos horizontales) o en suelos y techos (pasos verticales: dejarse caer comprimido). En el grid es un hueco normal de 1 fila; el objeto `small_frame` solo **dibuja el marco** (decorado con su `help_id`) para que se lean y la Q los explique.
+- **Antes del gesto (3-1):** el marco del secreto «parece decorativo» (doc): es un marco pequeño de verdad, sin nada visible detrás. La Q de Eco lo marca mientras su mensaje esté pendiente (idea: «Demasiado pequeño. Por ahora.»).
+- **Regla de diseño:** toda salida comprimida da a un sitio donde se puede recuperar el tamaño a ≤ 4 tiles; ningún tramo obligatorio pide ir comprimido más de 12 tiles.
+
+### 3.4 Espejos (`mirror`, `mirror_wall`, `mirror_only`)
+
+**Decisión de lectura:** la ficha habla de espejos que «reflejan a Isak y al pulso de datos». En el juego, desde el 2026-10-15, el proyectil es el **láser** (el pulso es un área de 96 px alrededor del celular, sin dirección). Así que **los espejos desvían el láser**, y el pulso solo rebota en el **espejo cazador** (§3.6), que lo convierte en un haz. Esto resuelve el «apuntado en el Mundo 3» que dejó pendiente A3 **sin apuntado libre**: los espejos apuntan por el jugador.
+
+| Tipo | Qué hace | Reutiliza |
+|---|---|---|
+| **Espejo fijo** (`mirror`, objeto, 1 × 1) | Orientación `/`, `\` o `|`. El láser que le llega gira 90° (`/`, `\`) o vuelve por donde vino (`|`); alcance restante = el que le quedaba (768 px en total). Así el láser sube, baja y llega a **lectores láser** fuera de alcance. El pulso no le hace nada. | `LaserProjectile` (cambio de dirección al chocar), lector láser y receptor del 1-2 |
+| **Pared de espejo** (`mirror_wall`, marco dorado grande) | Muestra el **reflejo** de su lado de la sala (Isak incluido, con **1 s de desfase** y colores algo más saturados: el aviso de lo que es Isak Optimizado). Es decorado: no tiene colisión. | Shader de pantalla con la región invertida; Isak con la variante saturada (§6.2) |
+| **Plataforma del reflejo** (`mirror_only`) | Sólida pero **invisible** en el mundo; **solo se dibuja en el reflejo** de la pared de espejo más cercana (en su posición reflejada). El jugador lee el espejo para saber dónde pisar. **Con el Debug** también se ve con contorno (regla general de lo oculto). | Plataforma oculta `h` con otro dibujo |
+
+- **Combinación con la energía:** el espejo es la forma **gratis** de ver las plataformas del reflejo; el Debug, la cara. Eso convierte el espejo en una decisión de lectura, no en un trámite.
+- **Rebote máximo:** 3 espejos por disparo (el validador lo comprueba); cada rebote hace un destello y `sfx_w3_mirror_bounce`.
+
+### 3.5 Lenguaje de combinaciones del Mundo 3 (amplía `propuesta-1-2.md` §0, `propuesta-1-3.md` §4 y `propuesta-mundo-2.md` §3.6)
+
+| Regla nueva | Consecuencia de diseño |
+|---|---|
+| El suelo depende de una cifra | Un golpe no solo quita Sync: puede quitar el camino. Esquivar vale doble. |
+| Lo filtrado miente | El Debug pasa de «ver lo oculto» a «ver lo real»; se decide cuándo gastarlo. |
+| El espejo apunta por ti | El láser llega a sitios que Isak no ve de frente. |
+| Comprimido, desarmado | Pasar por un marco obliga a dejar el pulso y el láser fuera. |
+
+- **Patrón 14. Pagar con likes:** una subida por plataformas de umbral creciente (5 → 10 → 15) con corazones en el camino y un Ladrón antes del último escalón.
+- **Patrón 15. Ver antes de pisar:** un filtro corto con dos salidas, una segura; el Debug enseña cuál (o el filtro móvil, si se espera).
+- **Patrón 16. Banda de espejos:** láser al espejo `/` para subir a un lector alto, con un espejo cazador que hay que congelar con el pulso.
+- **Patrón 17. Engañar al reflejo:** placa «Posa aquí» que abre una puerta mientras alguien la pisa; el Reflejo falso la pisa 1 s después y la sostiene.
+- **Fórmula de ventana** (`propuesta-1-2.md` §0.1): ventana ≥ k × (recorrido + poses + compresiones 0,15 s + golpes 0,35 s + dashes 0,2 s), con k = 2 en dificultad 3 y k = 1,6 en dificultad 4.
+
+### 3.6 Enemigos y objetos (qué se reutiliza)
+
+Todo en **tiempo del mundo**, con `help_id`, `level_params` con rangos validados por el esquema, aviso de 6-12 cuadros antes de dañar y vuelta al estado inicial al reaparecer. **Rojo solo para lo que daña.**
+
+| Tipo (id) | Comportamiento (doc) | Cómo se resuelve (doc) | Implementación (PROPUESTA) | Reutiliza |
+|---|---|---|---|---|
+| **Influencer bot** (`influencer_bot`, enemigo) | Posa y dispara destellos de flash que ciegan la pantalla unos segundos | Aturdir con el pulso antes del flash, o taparse con el entorno | En un pedestal (1 × 2). Al ver a Isak en línea recta horizontal a ≤ 8 tiles (sin terreno entre medias) **carga el flash 0,75 s** (aro de obturador que se cierra y «3-2-1 ¡Sonríe!») y dispara. **Ceguera:** velo blanco al 70 % durante **1,5 s** que se desvanece; el nivel sigue visible al 30 % y **lo que daña conserva su contorno rojo**; sin daño. Con «Reducir efectos», el velo baja al 40 %. Una columna, una plataforma o un marco entre medias **tapa** el flash. Enfriamiento 3 s. El **pulso lo aturde 3 s**; aturdido, el **láser lo derrota** (vida 2, suelta +20 de energía y 2 corazones). El dash no lo esquiva (es luz). Frase en bocadillo: «No olviden suscribirse». | Activación y aviso del **video en autoplay**; velo de **`OverlayPopup`**; aturdido y vida de la Burbuja / `EnemyHealth`. Línea de visión nueva (rayo de terreno, como el láser). |
+| **Ladrón de likes** (`like_thief`, enemigo) | Se acerca y le roba likes a Isak | Aturdirlo con el pulso para recuperar los likes que soltó | Mano pequeña con marco. Patrulla; a ≤ 4 tiles **persigue a 140 px/s** (más lento que andar) con 9 cuadros de aviso (se le encienden los dedos). Al contacto **roba hasta 5 likes** (no quita Sync) y **huye 2 s**, con una bolsa con la cifra. El **pulso lo aturde 3 s** y **suelta lo robado** como corazones (2 s para recogerlos). Aturdido, el láser lo derrota (vida 2, suelta lo que lleve). Sin likes, solo se para y «busca» (signo «?»). | Patrulla y contacto de la **Burbuja**; persecución dentro de la correa del **punto rojo**; corazones como los drops. |
+| **Filtro** (`filter_zone`, objeto) | Esconde peligros bajo una vista bonita | Debug para ver el nivel real | §3.2 | **`OverlayPopup`** + `cover` de **`GlitchWall`** |
+| **Espejo cazador** (`hunter_mirror`, objeto-enemigo, indestructible) | Devuelve el pulso de Isak en dirección contraria | Usar el rebote a favor, apuntando para que llegue a otro objeto | Espejo de 1 × 1 en un pie que **gira hacia Isak a 45° cada 0,6 s** (8 orientaciones; con un brillo de 9 cuadros antes de cada giro). **Pulso a ≤ 96 px:** lo **congela 3 s** en su orientación actual y el pulso **sale reflejado** como un haz de 6 tiles en esa dirección (aturde enemigos, activa receptores de pulso; si apunta a Isak, lo deja 0,5 s aturdido, sin quitar Sync: «devuelve el pulso»). **Láser:** sale reflejado hacia donde mire (si mira a Isak, le quita 10). **Su retraso al girar es lo que se aprovecha:** colocarse para que, al pulsarlo, mire al objetivo. | `relay_receiver` (respuesta al pulso), espejo fijo (§3.4), **`AlarmBell`** (aviso antes de cada giro) |
+| **Reflejo falso** (`false_reflection`, enemigo) | Copia de Isak que repite sus movimientos con un segundo de retraso | Aprovechar el retraso para engañarlo y pasar | Sale de una pared de espejo al cruzar su línea. Reproduce **la posición y la pose de Isak de hace 1 s** (búfer de 60 cuadros); **daña al contacto** (−10). Sin peso: no rebota la mochila ni hace glitch (`04` §12.2). **Pisa las placas «Posa aquí»** igual que Isak (patrón 17). El pulso lo **aturde 3 s** (se queda quieto con un velo de estática) y al despertar **salta al punto actual del búfer**. Indestructible (es la primera aparición de Isak Optimizado). Desaparece al salir Isak de su sala (`zone`). | Búfer de posiciones nuevo; dibujo = hojas de Isak con la variante saturada (§6.2); contacto de la Burbuja |
+| **Placa «Posa aquí»** (`pose_plate`) y **puerta de marco** (`frame_door`) | — | — | La placa abre su puerta mientras alguien (Isak o el Reflejo falso) la pisa, y **0,3 s** más. La puerta (1 × 3) se abre en 0,2 s con aviso. | Puerta de la **barra del 99 %** (apertura), interruptores del 1-3 |
+| **Herramienta «Recortar»** (`crop_tool`, objeto; 3-2) | Isak la encuentra y obtiene Pellizcar; Eco: «Te queda mejor así.» | — | Monitor con unas tijeras de recorte en la pared del fondo; **pulso de espaldas** (como el `dnd_switch` y el reproductor del 2-2): concede `compress`, línea de Eco (importante) y aviso de control; un solo uso (`unless_ability`), vuelve tras un rollback sin el gesto. | **`DndSwitch`** / `PausePlayer` |
+| **Marco dorado gigante** (`exit_terminal`, `skin: "golden_frame"`; 3-3) | Lleva al jefe | — | Terminal de salida con otro aspecto (pulso, como el 1-1); vuelve al hub y desbloquea la fila del jefe. | `exit_terminal` (`skin`) |
+
+Los tipos de los Mundos 1 y 2 (Burbuja, punto rojo, banner, video, clones…) **no aparecen** en el Mundo 3: cada mundo tiene su familia de formas (`07` §15.5). Los genéricos sí: cargador, punto de atención, power bank, vida extra, `memory_pickup`, pared con glitch, lector láser, receptor enlazado, puente, `decor`, vórtices y pinchos.
+
+---
+
+## 4. Niveles, tramo a tramo
+
+**Convención:** niveles **horizontales de 14 filas** (como el 1-3), con la cámara del 1-1 (sigue a Isak en horizontal y encaja en vertical). Columnas desde la izquierda; filas desde arriba (suelo de referencia en la fila 12; pared superior en la 0). Subidas de 2 tiles medidas con el Isak real (`tests/test_level_climbs.gd`, 16 px de holgura de techo) y, desde este mundo, **también comprimido** (fixture nuevo con la caja de 32 × 40).
+
+### 4.1 Nivel 3-1 «Galería de perfil»
+
+**Doc:** presentar los likes como recurso y las plataformas que dependen de ellos; unos 6 min; dificultad 3; tramos 1-4; secreto: un marco pequeño que parece decorativo y se revisita con Pellizcar; un punto de sincronización a mitad.
+
+- **Mapa: 220 × 14** (14 080 × 896 px). `target_duration_s` **360**; camino del validador de unos **170-200 s**. Dificultad `3`. `abilities_available`: pulso, láser, Debug, dash y golpe al suelo (Pellizcar, **no**).
+
+| Tramo | Columnas | Contenido | Duración (camino) |
+|---|---|---|---|
+| Inicio «Perfil» | 0-20 | Vórtice (3, 11), cartel «Mi vida es increíble #bendecido», 1 punto. **Primera vez que se ve el contador de likes** (Q `hud_likes`). | 12 s |
+| Tramo 1 «Corazones» | 21-70 | Pasillo de marcos con **18 corazones** en arco (se cogen andando). **Primera plataforma de likes** (umbral 5) sobre un foso de 4 tiles; después, escalera de umbrales 5 → 10 (patrón 14 sin ladrón). **Primera publicación** (`like_source`) junto al foso. **Marco pequeño «decorativo»** (secreto A, col. 58). 1 punto. | 40 s |
+| Tramo 2 «Pose» | 71-118 | **Primer Influencer bot** (col. 84) con dos columnas-marco que tapan el flash: se avanza de columna en columna y se aturde desde la última. El segundo (col. 104) sobre una repisa: aturdirlo o saltar por debajo de su línea. `cargador_1` (col. 96). 1 punto. | 35 s |
+| Pausa | 119-123 | **`sync_1`** (col. 121). | — |
+| Tramo 3 «Ladrón» | 124-170 | **Primer Ladrón de likes** (col. 140) **justo antes** de una plataforma de umbral 15 (doc). Si roba, el pulso le hace soltar los corazones; si no da tiempo, hay una publicación al lado. **Secreto B «Sin likes»** (§4.1.1). 1 punto. | 40 s |
+| Tramo 4 «Del otro lado» | 171-210 | **Primer espejo** (doc): pared de espejo (cols. 182-188) que muestra el reflejo de Isak sobre plataformas que solo existen en el reflejo (`mirror_only`) para cruzar un foso de 6 tiles (caída a un foso de 2 con salida, sin pinchos). `cargador_2` (col. 176). **Secreto C** (§4.1.1). 1 punto. | 35 s |
+| Cierre «Publicar» | 211-219 | Terminal «Publicar» (pulso): fundido, aviso «Los likes no se guardan.» y vuelta al hub. 1 punto. | 10 s |
+
+#### 4.1.1 Secretos y economía del 3-1
+
+- **Secreto A «Marco decorativo» (doc):** un marco pequeño en la pared (col. 58, fila 11). Sin Pellizcar es un adorno. **Con Pellizcar** (al rejugar el 3-1 tras el inicio del 3-2) se entra a una salita con el **`memory_pickup` `msg_3_2`**, **1 punto** y el **power bank** del nivel. `requires_abilities: ["compress"]`. Eco lo recuerda al obtener el gesto (§4.2). Se puede rejugar el 3-1 dentro de la vuelta (confirmado en `propuesta-recuerdos.md` §10).
+- **Secreto B «Sin likes»:** a mitad del Tramo 3, un suelo de plataformas **inversas** (umbral 1, `invert`: sólidas solo con 0 likes) parece un adorno brillante. Junto a ellas, un botón «Borrar publicaciones» (`like_reset`, pulso de espaldas). Con 0 likes el suelo inverso aparece y lleva a una vitrina baja con el **`memory_pickup` `msg_3_1`**. Al salir hay una **publicación** para recuperar likes antes del umbral 15. Alcanzable en Caché con lo que se tiene; `forbid_abilities: ["dash"]`.
+- **Secreto C «Vida extra»:** tras la pared de espejo, una **pared con glitch** (`visible_only_with_debug`, col. 205) a la que se llega con **salto + dash aéreo** desde la última plataforma del reflejo. Detrás, la **vida extra del Mundo 3** (`vida_extra_3_1`; N = 3: la anterior fue la del 2-1). La tercera del juego.
+
+| Dónde | Ruta | Secretos |
+|---|---|---|
+| Inicio | 1 | |
+| Tramo 1 | 1 | A: 1 + `msg_3_2` + power bank (con Pellizcar) |
+| Tramo 2 | 1 | |
+| Tramo 3 | 1 | B: `msg_3_1` |
+| Tramo 4 | 1 | C: vida extra |
+| Cierre | 1 | |
+| **Total** | **6** | **1 punto + 2 mensajes + power bank + vida extra** |
+
+- **7 puntos** en la primera visita del Caché (6 + el del secreto A al volver con Pellizcar): la vida extra y el mensaje del secreto B ocupan el sitio de los otros dos. Se compensa con **10 en el 3-2 y el 3-3** (§4.2-§4.3): el mundo suma **27**, como los Mundos 1 y 2.
+- **Cargadores:** 2 (+50, reutilizables, 10 s). **Publicaciones:** 3. **Power bank:** 1 (secreto A). **Puntos de sincronización:** 1 (`sync_1`, a mitad, doc).
+- **Energía:** obligatoria ~20 (láser al Influencer aturdido, opcional; el espejo hace innecesario el Debug); típica 40-70 (secreto C y Debug para ver las plataformas del reflejo).
+
+### 4.2 Nivel 3-2 «Sin filtro»
+
+**Doc:** obtener Pellizcar y enseñar a ver más allá del filtro; unos 7 min; dificultad 4; inicio con «Recortar» y «Te queda mejor así.»; tramos 1-4; secreto: el marco pequeño del 3-1 (§4.1.1).
+
+- **Mapa: 250 × 14.** `target_duration_s` **420**; camino de unos **200-240 s**. Dificultad `4`. `abilities_available`: pulso, láser, Debug, dash y golpe al suelo; `compress` se obtiene en el inicio.
+
+| Tramo | Columnas | Contenido | Duración (camino) |
+|---|---|---|---|
+| Inicio «Estudio» | 0-22 | Vórtice, 1 punto. **«Recortar»** (`crop_tool`, col. 12): pulso de espaldas → Pellizcar; Eco: **«Te queda mejor así.»** (importante, decidida) y el aviso «Pellizcar: I / RB (mando)». **La salida es un marco pequeño** (col. 21): uso obligatorio a 9 tiles de la obtención. | 22 s |
+| Tramo 1 «Recorte» | 23-75 | **Marcos pequeños encadenados** (doc): paso por la pared, marco en el suelo para dejarse caer comprimido y **recuperar el tamaño en el aire** antes de un foso de 3 tiles que pide el salto normal («el momento justo»). Línea de Eco (no importante) en la col. 40: «Ese marco de la galería… ahora sí cabes.» (idea). 1 punto. | 45 s |
+| Tramo 2 «Filtro» | 76-124 | **Primer filtro grande** (doc; cols. 86-112, «Filtro: Orejitas · Brillo +40»): parece un pasillo llano; tiene pinchos y dos suelos falsos que solo enseña el Debug (patrón 15). `cargador_1` a la entrada (col. 82). **Secreto A** (§4.2.1). 1 punto. | 40 s |
+| Pausa | 125-129 | **`sync_1`**. | — |
+| Tramo 3 «Mezcla» | 130-186 | Filtro + **Influencer bots** + plataformas de likes (doc): el flash ciega justo en el filtro, así que **se aturde al bot antes de encender el Debug** o se gasta más energía esperando. Un Ladrón antes de un umbral 10 y una publicación. `cargador_2` (col. 158). **Secreto B** (§4.2.1). 1 punto. | 55 s |
+| Tramo 4 «El filtro se mueve» | 187-240 | **Filtro móvil** (doc; §3.2): se desliza entre tres posiciones cada 4 s; los pinchos quedan quietos. Marcos pequeños entre filtros (Debug + Pellizcar). `cargador_3` (col. 200). **Secreto C**. 1 punto. | 50 s |
+| Cierre | 241-249 | Terminal «Publicar sin filtro» y vuelta al hub. 1 punto. | 10 s |
+
+#### 4.2.1 Secretos y economía del 3-2
+
+- **Secreto A «Original»:** dentro del primer filtro, uno de los suelos falsos da a un sótano (caída de 2 tiles) con un marco pequeño que lleva a una vitrina con **2 puntos** y una foto «original» de Isak (`decor`, solo con el Debug). Debug + Pellizcar.
+- **Secreto B «Pose sin flash»:** una repisa alta del Tramo 3 a la que solo se sube por una plataforma de umbral 20 (todos los corazones del tramo sin dejarse robar, o dos publicaciones): **power bank** y **1 punto**.
+- **Secreto C:** **1 punto** tras un marco pequeño del Tramo 4 al que se llega con salto + dash aéreo **antes** de comprimirse (hay que recuperar el tamaño para el dash y comprimirse al aterrizar).
+- **El mensaje del 3-2** es `msg_3_2`, en el marco del 3-1 (doc: «el marco pequeño de 3-1, ahora accesible, con un recuerdo coleccionable»). El 3-2 no tiene mensaje propio.
+
+| Dónde | Ruta | Secretos |
+|---|---|---|
+| Inicio | 1 | |
+| Tramo 1 | 1 | |
+| Tramo 2 | 1 | A: 2 |
+| Tramo 3 | 1 | B: 1 + power bank |
+| Tramo 4 | 1 | C: 1 |
+| Cierre | 1 | |
+| **Total** | **6** | **4 puntos + power bank** |
+
+- **10 puntos.** **Cargadores:** 3. **Publicaciones:** 2. **Power bank:** 1. **Vida extra:** no. **Puntos de sincronización:** 1.
+- **Energía:** obligatoria ~60 (Debug en el primer filtro y en el móvil, con un cargador a pie de cada uno); típica 80-110.
+
+### 4.3 Nivel 3-3 «Espejo, espejito»
+
+**Doc:** combinar espejos, likes y Pellizcar y preparar la copia final; unos 8 min; dificultad 4; tramos 1-4 (sala de espejos, plataformas del reflejo con marcos que conectan los lados, primer Reflejo falso, examen final); cierre: marco dorado gigante hacia el jefe; secreto: una vitrina que solo se ve con el Debug, con un recuerdo y puntos.
+
+- **Mapa: 280 × 14.** `target_duration_s` **480**; camino de unos **230-270 s**. Dificultad `4`. Todo el kit: pulso, láser, Debug, dash, golpe al suelo y Pellizcar.
+
+| Tramo | Columnas | Contenido | Duración (camino) |
+|---|---|---|---|
+| Inicio | 0-14 | Vórtice, 1 punto, cartel «Tu mejor ángulo es el de otro» (propuesta). | 10 s |
+| Tramo 1 «Sala de espejos» | 15-78 | **Espejos fijos** (doc: «hay que usar el rebote para activar mecanismos fuera de alcance»): láser a un `/` que sube a un lector láser en el techo (puente); dos rebotes para otro. **Primer espejo cazador** (col. 60, patrón 16): congelarlo con el pulso cuando mira al receptor enlazado. 1 punto. | 55 s |
+| Tramo 2 «Ambos lados» | 79-138 | Pared de espejo larga con **plataformas del reflejo** y una **pared de marcos** con huecos pequeños que conecta los dos lados de la sala (doc): se cruza comprimido de un lado al otro para usar lo que solo se ve desde allí. Plataformas de likes de umbral 10. `cargador_1` (col. 100). 1 punto. | 55 s |
+| Pausa | 139-143 | **`sync_1`**. | — |
+| Tramo 3 «Reflejo falso» | 144-200 | **Primer Reflejo falso** (doc): sale de la pared de espejo. Dos **placas «Posa aquí»** (patrón 17): se pisa la placa, se sigue, y el reflejo la sostiene 1 s después mientras Isak cruza la puerta. Si se para, el reflejo lo alcanza (contacto −10). El pulso lo aturde para ganar margen. `cargador_2` (col. 170). **Secreto B** (§4.3.1). 1 punto. | 55 s |
+| Tramo 4 «Examen» | 201-266 | **Todo junto** (doc): likes (umbral 15), filtro, espejo cazador, Ladrón y Reflejo falso. Diseñado en tres salas de una pantalla, una amenaza nueva por sala sobre las anteriores, para que se lea. `cargador_3` (col. 230). **Secreto A** y **C** (§4.3.1). 1 punto. | 70 s |
+| Cierre «Marco dorado» | 267-279 | **Marco dorado gigante** (`exit_terminal`, `skin: "golden_frame"`): pulso → vuelta al hub con la fila «Jefe: La Curadora» desbloqueada. 1 punto. | 10 s |
+
+#### 4.3.1 Secretos y economía del 3-3
+
+- **Secreto A «Vitrina oculta» (doc):** en el Tramo 4, una vitrina en la pared del fondo que **solo existe con el Debug** (pared con glitch `visible_only_with_debug` + interior tapado con `cover`). Dentro: **`memory_pickup` `msg_3_3`** y **2 puntos**. `forbid_abilities: ["dash"]`.
+- **Secreto B «Doble rebote»:** en el Tramo 3, un lector láser detrás de la pared de espejo solo se alcanza con **dos espejos fijos y el cazador congelado**: abre una vitrina con **1 punto** y un **power bank**.
+- **Secreto C:** **1 punto** en una plataforma de umbral 25 del Tramo 4 (todo el contador).
+
+| Dónde | Ruta | Secretos |
+|---|---|---|
+| Inicio | 1 | |
+| Tramo 1 | 1 | |
+| Tramo 2 | 1 | |
+| Tramo 3 | 1 | B: 1 + power bank |
+| Tramo 4 | 1 | A: 2 + `msg_3_3`; C: 1 |
+| Cierre | 1 | |
+| **Total** | **6** | **4 puntos + mensaje + power bank** |
+
+- **10 puntos.** **Mundo 3: 27 puntos** (7 + 10 + 10). Con los Mundos 1 y 2, unos **81** al terminar el Mundo 3 en Caché.
+- **Cargadores:** 3. **Power banks:** 1 (el Mundo 3 suma 3: 3-1, 3-2 y 3-3). **Puntos de sincronización:** 1.
+
+### 4.4 Duración, dificultad y progresión
+
+| Nivel | Mapa | Dificultad | Camino (validador) | Objetivo | Enseña | Combina con |
+|---|---|---|---|---|---|---|
+| 3-1 | 220 × 14 | 3 | ~185 s | 360 s | Likes, plataformas de likes, publicaciones, Influencer, Ladrón, espejo y reflejo | Pulso, láser, Debug, dash y golpe al suelo |
+| 3-2 | 250 × 14 | 4 | ~220 s | 420 s | Pellizcar, marcos pequeños, filtros, filtro móvil | Todo lo anterior |
+| 3-3 | 280 × 14 | 4 | ~250 s | 480 s | Espejos fijos, espejo cazador, Reflejo falso, placas | Todo el kit |
+| Jefe | 20 × 11 | 4,5 | ~110-140 s (bot) | 240 s | Marca con espejo, ceguera, marcos que se cierran | Todo el kit |
+
+**Curva:** el 3-1 sube un punto respecto al 2-1 porque el jugador ya tiene todo el kit del Mundo 2; el 3-2 y el 3-3 comparten el 4 de la ficha, y el 3-3 se distingue por **combinar** (tres amenazas a la vez solo en el Tramo 4), no por apretar los tiempos.
+
+**Qué prepara cada nivel para el jefe:** taparse del flash y aturdir antes (3-1, 3-2) → fase 1; Debug para ver bajo el filtro (3-2) → fase 1; espejo cazador congelado con el pulso y láser rebotado (3-3) → fase 2; Reflejo falso y marcos pequeños (3-2, 3-3) → fase 3.
+
+### 4.5 Mensajes recuperables `msg_3_x` (borradores de tono; PROPUESTA)
+
+Remitente **Mamá**, tono cálido y cotidiano, firma con humor (`04` §12.5). Siguen el hilo del recuerdo del jefe (la foto movida de la cocina, el altavoz, el Abuelito; `propuesta-recuerdos.md` §11.2) **sin contarlo**. Van en `data/memories.json` con `level`, `secret` y `first_lap: 1`; reaparecen en Kernel y Raíz si no se obtienen; ≤ 280 caracteres (validador). Revisables al jugar.
+
+| Id | Nivel · secreto | Asunto | Idea del texto (borrador) |
+|---|---|---|---|
+| `msg_3_1` | 3-1 · `secreto_sin_likes` | «La tele» | «Isak, ¿cómo se pasa una foto del celular a la tele? El Abuelito quiere verla en grande y yo no encuentro el botón. No es urgente. Bueno, un poco. — Mamá (tecnológicamente, en proceso)» |
+| `msg_3_2` | 3-1 · `secreto_marco_decorativo` | «El altavoz» | «El Abuelito encontró el altavoz viejo en el armario. Dice que sigue contestando con chasquidos y que tú sabes por qué. Te espera en la cocina con el destornillador chiquito. — Mamá (y no toques mis cucharas)» |
+| `msg_3_3` | 3-3 · `secreto_vitrina_oculta` | «Fondo de pantalla» | «Cambié el fondo de pantalla. Puse la de la cocina, la movida. Ya sé que dices que sales fatal. A mí me encanta. — Mamá (no pienso cambiarla)» |
+
+`msg_3_2` tiene `level: "3-1"` (lo ofrece el 3-1) y `order: 2` (es el mensaje del capítulo del 3-2): el esquema de `memories.json` ya admite que `order` y `level` no coincidan; el validador de recuerdos solo comprueba que el secreto exista en ese nivel.
+
+### 4.6 Hub y progresión
+
+- **`data/hub.json`, mundo `m3`:** filas `3-1 «Galería de perfil»`, `3-2 «Sin filtro»`, `3-3 «Espejo, espejito»` y `{"id": "3-boss", "name": "La Curadora", "kind": "boss"}`, todas con `laps: [1]`; mientras no exista cada una, `playable: false` («Próximamente»). Desbloqueo en cadena (`unlocks`); el 3-2 y el 3-3 con `available_text` «Nueva foto» (propuesta, como el «Siguiente video» del Mundo 2).
+- **Carpeta M3** (columna 16, ya existe con su miniatura de foto instantánea, `world_icon_photo` de `tools/gen_hub_objects.py`): sin cambios. El álbum de Notas abre la carpeta «La Vitrina» al desbloquear el mundo.
+- **Al vencer a la Curadora:** **tercera pieza del fondo en verde ácido** (`05` §13.4; capa `room.pieces`, como la ámbar, con `tools/gen_hub_piece_w3.py`), placa «!» en Notas por el recuerdo sin leer y **Mundo 4 «El Chat» desbloqueado** (`m4.unlocked_by: ["3-boss"]`). El Mundo 4 **no tiene carpeta física** en la página 1 del hub (columnas 4, 10 y 16 ocupadas): su desbloqueo se ve en el álbum (carpeta «El Chat» abierta) y la carpeta se coloca al diseñar el Mundo 4.
+- **Rejugar con Pellizcar:** permitido (el gesto es de Isak). El validador revisa con `abilities_available.compress` que ningún secreto de los Mundos 1 y 2 se vuelva trivial (huecos de 1 tile que hoy son decorado).
+
+---
+
+## 5. Jefe del Mundo 3: La Curadora
+
+### 5.1 Concepto y tono
+
+- **Decidido:** «una IA que edita todo lo que ve»; cuerpo = **marco de foto gigante**, cabeza = **cámara**; aplica filtros a la arena para esconder sus ataques; Eco habla a través de ella con **voz cálida y casi maternal**. Arena: galería enorme con espejos, marcos y plataformas de likes. Punto débil: bajo el filtro, su cara verdadera es una **pantalla rota**, solo visible con el Debug, en rojo. Fases: (1) fotos con flash y filtros que esconden pinchos y huecos; (2) espejos que reflejan el pulso, con el punto débil **de espaldas**; (3) un **Reflejo falso** de Isak, más pulido y más rápido, que el Debug distingue del real, y **Pellizcar para escapar de los marcos que se cierran**. Recompensa: fragmento de imagen; Eco: «Te hice mejor. ¿Por qué querrías volver?».
+- **Tono (PROPUESTA):** dulce y controladora; nunca grita. Líneas: **intro** (pausa), **cambios de fase** (sin pausa), **derrota** (pausa, tras la recompensa). Borradores: intro, «Ven, déjame verte. Así no. Mejor así.»; fase 2, «No te gires, cariño. De espaldas sales mejor.»; fase 3, «Mira qué bien te queda. Él no se cansa.».
+- **Sin rollback** (solo el jefe final).
+
+### 5.2 Arena «Exposición» (20 × 11 tiles)
+
+- **1280 × 704 px:** cabe entera en pantalla, cámara fija (como Autoplay). Muros en las columnas 0 y 19, techo en la fila 0, suelo en la 10. Isak de pie en el suelo ocupa las filas 8-9.
+- **La Curadora:** marco de 8 × 4 tiles (columnas 6-13, filas 1-4) con la cámara-cabeza en el centro de su lado superior. No es sólida. En la fase 1 **baja a encuadrar** (§5.4) dos filas.
+- **Plataformas de likes** (columnas 3-5 y 14-16, superficie en la fila 6): umbral **5**, para estar a la altura de la lente cuando baja. Los corazones los suelta ella en cada «sesión» (los likes son su cebo).
+- **Repisas fijas** (columnas 1-2 y 17-18, fila 8) con **biombos** que tapan el flash. El hueco de 1 tile que queda **debajo** de cada repisa (fila 9) es un **marco pequeño**: solo cabe Isak comprimido (fase 3).
+- **Espejos de esquina** (fase 2): dos `mirror` `\` y `/` en (1, 1) y (18, 1), y el **espejo cazador** de la arena en el centro del suelo (columna 9, fila 9).
+- **Cargadores:** 4 en el suelo, columnas 3, 7, 12 y 16: +50, enfriamiento 4 s en Caché (5 en Kernel, 6 en Raíz). Desde cualquier celda del suelo hay uno a ≤ 3,5 tiles.
+- **Debug en la arena:** `debug_drain_scale` **0,25** y `debug_world_scale` **0,7**, los de Alerta Mayor y Autoplay; se recalculan con el validador de arenas.
+- Vórtice de llegada en (5, 9). Sin puntos, power banks ni vida extra.
+
+```
+      0         1
+      01234567890123456789
+   0  ####################   techo
+   1  #\    [==()==]    /#   Curadora: marco 8x4 (cols 6-13, filas 1-4); () = cámara-cabeza
+   2  #     [      ]     #   \ y / = espejos de esquina (fase 2)
+   3  #     [      ]     #
+   4  #     [______]     #
+   5  #                  #
+   6  #  ♥♥♥        ♥♥♥  #   plataformas de likes (umbral 5; cols 3-5 y 14-16)
+   7  #                  #
+   8  #B=              =B#   repisas fijas con biombo B (cols 1-2 y 17-18)
+   9  #[]C P C ◇  C   C[]#   suelo; [] = marcos pequeños bajo las repisas, C = cargadores (3, 7, 12, 16),
+  10  ####################   P = vórtice (5), ◇ = espejo cazador (fase 2)
+```
+
+### 5.3 Punto débil y daño: la marca «sin filtro» (decisión tomada)
+
+Se mantiene la regla de Alerta Mayor, la más clara para el jugador y la de V14 («con el pulso, salvo que la ficha diga otra cosa»): **Debug → pulso que marca → láser**.
+
+1. **Oculto:** sin el Debug, la cámara-cabeza es un objetivo bonito y pulido. El láser rebota (chispa gris; nunca vuelve hacia Isak en el jefe) y el pulso no hace nada.
+2. **Revelado:** con el Debug activo, la **pantalla rota** se ve en rojo pulsante (`WeakPoint`, por encima del tinte).
+3. **Marcado:** un **pulso** que la alcanza con el Debug activo la marca `mark_duration_s` del mundo (**Caché 4 s, Kernel 3 s, Raíz 2,5 s**). Con la marca, **un láser** que le llegue es **un golpe** (2 con el Láser 4) **sin necesidad del Debug**, y la marca termina (**un golpe por marca**, `laps.<n>.mark_hits` = 1: la lección de duración de Autoplay).
+4. **El giro del mundo (fase 2):** de espaldas, el pulso y el láser **solo llegan por el espejo cazador** (§5.5).
+- **Nada más hace daño:** ni el dash, ni el golpe al suelo, ni Pellizcar. La marca se pierde al caducar, al cambiar de fase, en el golpe final y al reaparecer.
+- **Contador:** **9 golpes en Caché (3 por fase)**; **12 en Kernel y Raíz (4 por fase)**. `BossBar` con el estilo «retrato»: un marco que se agrieta por tercios (99 → 66 → 33 → 0, como Alerta Mayor).
+
+### 5.4 Fase 1 «Sesión de fotos» (doc: fotos con flash y filtros que esconden pinchos y huecos)
+
+| Ataque | Aviso | Respuesta | Reutiliza |
+|---|---|---|---|
+| **Flash:** la cámara dispara a toda la arena | Aro de obturador y «3-2-1 ¡Sonríe!» **0,75 s** | Ponerse detrás de un biombo o bajo una plataforma de likes (tapan la línea de la cámara); si no, ceguera de 1,5 s (§3.6), sin daño | Flash del Influencer bot |
+| **Filtro de suelo:** cubre medio suelo con el filtro rosado; debajo aparecen **pinchos** (−10) durante 4 s | El filtro entra por el borde en 9 cuadros | Ver con el Debug dónde están, o subir a las repisas o plataformas | `filter_zone` (versión de arena) |
+| **Recorte:** un marco vacío cae y recorta una franja vertical de 3 columnas | Contorno rojo de la franja, 9 cuadros | Salir de la franja o atravesarla con el dash | Onda de `AlarmBell` con otra forma |
+
+**Ventana:** tras una sesión (flash + filtro + recorte), la Curadora **baja a encuadrar** 2 filas durante **5 s del mundo** (unos 7 s reales con el Debug a ×0,7): la lente queda a la altura de las plataformas de likes y deja caer **6 corazones**. Solución: coger likes, subir a una plataforma, Debug, pulso a la lente (a ≤ 96 px desde el borde interior de la plataforma), soltar el Debug y láser. Un golpe por ventana: tres ventanas.
+
+### 5.5 Fase 2 «De espaldas» (doc: espejos que reflejan el pulso; punto débil de espaldas)
+
+- **La Curadora se da la vuelta:** el marco muestra su trasera y la pantalla rota queda **mirando al techo-fondo**, donde solo llegan los espejos de esquina.
+- **Cómo se le da:** el **espejo cazador** del suelo gira hacia Isak (45° cada 0,6 s). Con el Debug activo, Isak se coloca para que, **al pulsarlo**, el cazador mire a un espejo de esquina: el pulso sale reflejado (§3.6), sube al espejo de esquina y llega a su espalda: **marca**. El cazador queda **congelado 3 s** en esa orientación: un **láser** al cazador sigue el mismo camino y es el golpe. Es el patrón 16 del 3-3.
+- **Ataques entre ventanas:** flash **reflejado** (los espejos de esquina lo devuelven: los biombos solo tapan desde un lado; hay que mirar de dónde viene), **dos Ladrones de likes** que entran por los marcos pequeños (las plataformas de likes desaparecen si te roban) y el recorte.
+- **Ventanas:** cada 3 ataques, la Curadora «posa» 5 s del mundo sin atacar. 3 golpes.
+
+### 5.6 Fase 3 «Retrato perfecto» (doc: Reflejo falso más pulido y más rápido; Debug distingue al real; Pellizcar para escapar)
+
+- **Reflejo falso:** sale del marco de la Curadora y repite a Isak con **0,5 s** de retraso (más rápido que el del 3-3), con contacto −10. Al aparecer, la Curadora **aplica un filtro de pantalla completa** que da a Isak y al reflejo **el mismo aspecto**. **Con el Debug**, Isak conserva su contorno cian con glitch (el real «hace glitches», `04` §12.2) y el reflejo se ve con costuras rojas: **así se sabe quién eres**. El pulso aturde al reflejo 3 s.
+- **Marcos que se cierran:** cada 6 s del mundo, un marco gigante se cierra sobre la mitad izquierda o derecha de la arena (aviso: el marco se dibuja en rojo 0,75 s y se estrecha en 0,5 s). Lo único que queda a salvo es el **marco pequeño** de ese lado (bajo la repisa, fila 9): **pellizcarse y meterse** dentro. Si no, −10 y empujón a la otra mitad. El reflejo **no se pellizca** (es perfecto: no se hace pequeño), así que el marco lo «borra» y vuelve a salir 2 s después.
+- **Daño:** de frente otra vez: la Curadora vuelve a bajar a encuadrar tras cada cierre (3 s del mundo); Debug → pulso → láser desde una plataforma de likes, con el reflejo detrás. 3 golpes. El último es el **golpe final**: el filtro se cae, el marco se resquebraja y queda una pantalla rota; se desarma en píxeles (`BossDefeat`, `PixelBurst`).
+
+### 5.7 Energía (estimación; la valida `tools/validate_boss.py`)
+
+Mismos supuestos que `propuesta-jefe-alerta-mayor.md` §2.4.7 (pelea torpe: 3 s de Debug por ventana, un láser fallado por ventana y una ventana perdida por fase). Diferencias: en la fase 2 se apunta al cazador con el Debug activo (más segundos de Debug) y en la fase 3 se usa el Debug para distinguirse del reflejo.
+
+| | Caché | Kernel | Raíz |
+|---|---|---|---|
+| Golpes (láseres mínimos) | 9 (90) | 12 (120) | 12 (120) |
+| Marca (`mark_duration_s`) | 4 s | 3 s | 2,5 s |
+| Debug en la arena | ×0,25 (5/s), mundo ×0,7 | igual | igual |
+| Cargadores | 4 de 4 s | 4 de 5 s | 4 de 6 s |
+| Pico torpe estimado por ventana (margen sobre 100) | ~60 (≥ 30) | ~72 (≥ 25) | ~80 (≥ 20) |
+
+**Palancas, solo en datos y por este orden:** `mark_duration_s`, enfriamiento de los cargadores, giro del cazador (s por paso) y `debug_drain_scale` del acceso. Las mejoras de Calc ayudan pero nunca son requisito.
+
+### 5.8 Kernel y Raíz (PROPUESTA a alto nivel; se cierran al hacer esas vueltas)
+
+Decidido: «los puntos débiles cambian en cada vuelta».
+
+| | Caché | Kernel | Raíz |
+|---|---|---|---|
+| Fase 1 | Baja al centro | Baja a la izquierda o a la derecha (hay que leer cuál) y el flash sale dos veces | Baja solo 3 s y el filtro cubre todo el suelo salvo una franja |
+| Fase 2 | Un rebote (cazador → esquina) | Dos rebotes (cazador → esquina → esquina) | El cazador gira sin parar (el pulso lo congela 2 s) y hay una **espalda falsa** con grieta gris que solo el Debug distingue de la roja |
+| Fase 3 | Un reflejo a 0,5 s; marcos cada 6 s | Reflejo a 0,4 s; marcos cada 5 s | Dos reflejos (0,5 y 1 s); marcos cada 5 s |
+| Ocultarte (Kernel+) | — | El flash no «captura» a Isak oculto (idea de `propuesta-mejoras.md` §4) | Igual; **nunca es requisito** |
+
+### 5.9 Recompensa y vuelta al hub
+
+1. **Golpe final** → desarme → **`BossReward.grant(3, vuelta)`** (ya existe): entrega `boss_w3_l1` en Caché **sin guardar**, más las capas inferiores que falten. Panel «Recuerdo recuperado», título «Fragmento de imagen», «Capa: Caché», texto y aviso «Guarda en Notas para conservarlo.». La ilustración (`memory_art_w3`, borrosa en Caché) sale en Notas. Sin código nuevo.
+2. **Eco** (línea importante, borrador): «Te hice mejor. ¿Por qué querrías volver?» ya cierra el texto de la capa; la línea de derrota de Eco es otra, más corta (idea: «Bueno. Guárdala, si quieres. Nadie la va a ver.»).
+3. **Hub:** pieza verde ácido, Mundo 4 desbloqueado (§4.6), placa «!» en Notas.
+4. **Muerte en la pelea:** reaparece al principio de la fase con energía ≥ 50 y **likes ≥ 10**. **Game over:** el de siempre. **R:** reinicia la pelea.
+
+### 5.10 Ayuda con Q (tipos nuevos del jefe, `world: 3`; textos por revisar)
+
+| Tipo | Idea del texto |
+|---|---|
+| `curator_boss` | «Edita todo lo que ve. Con el Debug se ve lo que esconde. Márcala con el pulso y dispárale.» |
+| `curator_lens` (Objeto) | «Cuando baja a encuadrar, la tienes a tu altura.» |
+| `closing_frame` (Objeto) | «Se cierra. Lo pequeño se salva.» |
+
+---
+
+## 6. Arte y sonido
+
+### 6.1 Paleta del Mundo 3
+
+- **Decidido:** rosa pastel y blanco brillante, acento **dorado**, Debug **verde ácido** (`07` §15.3); marcos por todas partes; unos 16 colores más el del Debug en `assets/palettes/mundo3.gpl` (`07` §15.2).
+- **Hex:** **provisionales por script** (`tools/palette_mundo3_provisional.py`, como el paso 0 del Mundo 2) durante el desarrollo. **El cierre es del usuario** (decisión abierta de `CLAUDE.md`): en el paso 9 se le enseñan **3 variantes** con maqueta y contrastes y elige una, como en los Mundos 1 y 2. No bloquea la mecánica.
+- **Reglas que toda variante debe cumplir** (las comprueba `--check`):
+  1. **Dorado frente al ámbar de los puntos** (`#ffa000`), del brillo de Eco con la Q y de «sin guardar»: el dorado de los marcos es **apagado** (saturación ≤ 55 %, tono 45-52°) y los puntos de atención llevan el **contorno oscuro de 1 px** también en el Mundo 3 (hoy solo en el Mundo 2; `AttentionPoint.has_outline()` pasa a «mundos 2 y 3»). ΔE ≥ 20 entre dorado y puntos, también con el tinte del Debug.
+  2. **Rosa frente al rojo de daño:** el rosa pastel es claro y poco saturado (L ≥ 75); el **rojo de daño** (`alerta`) y el del punto débil (carmín pulsante) se reservan. **Los corazones de likes son rosa con borde blanco, nunca rojos.**
+  3. **Cian de Eco y de Isak sobre blanco brillante:** el blanco solo en marcos, plataformas y destellos; el **fondo de la galería es malva medio-oscuro** («trastienda»), para que Isak (gris) y Eco (cian) contrasten ≥ 3:1 (medido como en el 1-2 con `measure_tower_contrast.py`). Eco lleva su marco dorado de 1 px en este mundo (§6.3).
+  4. **Debug verde ácido** frente al verde de nada más del juego (no hay otro); su tinte no debe confundir el rosa del filtro (el filtro desaparece con el Debug, así que no conviven).
+  5. **Ceguera del flash:** el velo blanco deja el contorno rojo de lo que daña con contraste ≥ 3:1.
+
+### 6.2 Qué se hace con AutoSprite y qué por script
+
+Precios: personaje 3, pose 3, animación turbo 5, `upload_character` y `regenerate_*` 0. **Saldo: 380** (2026-10-26). Créditos reservados para enemigos y jefes, **siempre con permiso previo** del usuario, que recibe el total antes de gastar y con **parada tras el personaje base** (regla del Mundo 2).
+
+| Pieza | Vía | Créditos (una pasada) | Con un reintento por pieza |
+|---|---|---|---|
+| **La Curadora** (marco con cabeza de cámara): base (+ recorte y `upload_character` si `pixelArt` vuelve a pintar un chico, como con Autoplay), poses `Shooting`, `Turned` y `Posing`, y animaciones turbo `idle`, `flash`, `frame_down`, `turn`, `x_reflection` y `defeat` | AutoSprite | 3 + 9 + 30 = **42** | 84 |
+| **Influencer bot** (criatura que posa en un pedestal): base, una pose y animaciones `idle`, `flash_charge` y `stunned` | AutoSprite | 3 + 3 + 15 = **21** | 42 |
+| **Pose `compress` de Isak** (comprimirse, andar comprimido y volver) | AutoSprite sobre el personaje «Isak» (precedentes: el dash y el golpe al suelo, 5) | **5** (+3 si hace falta una pose) | 10-16 |
+| **Total recomendado** | | **68-71** (saldo después: ~309-312) | **136-142** (~238-244) |
+| Reflejo falso | **Script/shader:** las hojas de Isak con una variante algo más saturada y sin animaciones secundarias (`04` §12.2: «misma silueta, colores más saturados»); 0 créditos | 0 | 0 |
+| Ladrón de likes, espejo cazador, espejos, pared de espejo, plataformas de likes, corazones, publicación, «Borrar publicaciones», filtros, marcos pequeños, «Recortar», placa y puerta, biombos, tileset y fondo de la galería, fotos «originales», carteles, HUD de likes, fichas del álbum, miniaturas de nivel, pieza verde del hub, piezas de interfaz del jefe (lente rota, marcos que se cierran, barra «retrato») | **Script** (`tools/gen_world3_*.py` con validador de paleta) | 0 | 0 |
+
+- **Por qué así:** la familia de formas del Mundo 3 son **marcos y espejos** (`07` §15.5): geometría que el script resuelve bien. La IA aporta en lo grande y orgánico (la Curadora) y en la única criatura con personalidad (el Influencer). El Ladrón es una mano con marco, pequeña y simple: por script.
+- **Margen para los Mundos 4-6:** tras el Mundo 3 quedarían unos 310 créditos en una pasada: caben 3 jefes (~126) y 3 enemigos (~63) con unos 120 de reserva para reintentos.
+- **Hasta tener el arte final:** todo por script (sufijo `_placeholder` en la Curadora y el Influencer). La pose `compress` es provisional por escala del sprite (como la del golpe al suelo antes de su hoja).
+
+### 6.3 Por script (detalle)
+
+- `tools/gen_world3_tiles.py`: tileset de la galería (suelo de parqué claro con zócalo de marco, paredes de marcos, plataforma de una vía «repisa de vitrina»); `data/tileset_mundo3.json`.
+- `tools/gen_world3_background.py`: fondo horizontal en capas (trastienda malva, fotos enmarcadas en paralaje, focos), sin costura como el del 1-1.
+- `tools/gen_world3_objects.py`: corazón, plataforma de likes (encendida, apagada, aviso, inversa), publicación, «Borrar publicaciones», filtro (capa, borde, cartel), suelo falso, marcos pequeños, espejos fijos, pared de espejo (marco), espejo cazador, placa y puerta de marco, «Recortar», biombo, fotos perfectas / originales (`decor` de dos estados), marco dorado de salida, HUD de likes, miniaturas de nivel.
+- `tools/gen_world3_enemies.py`: Ladrón de likes; Influencer bot provisional.
+- `tools/gen_eco_companion.py`: variante del Mundo 3 de la esfera con **marco dorado** (`04` §12.1).
+- `tools/gen_boss_curator.py`: piezas de interfaz del jefe y cuerpo provisional.
+- `tools/gen_hub_piece_w3.py`: pieza verde ácido del fondo del hub.
+
+### 6.4 Sonido
+
+IDs de `lista-sonidos.md` (los del Mundo 3 ya listados) y nuevos. Se conectan en `data/audio.json` a señales; archivo ausente = silencio; provisionales de `tools/gen_audio_placeholders.py`; los definitivos los hace el amigo del usuario.
+
+| ID | Cuándo | Origen |
+|---|---|---|
+| `sfx_gesture_pinch` / `sfx_gesture_unpinch` | Pellizcar y recuperar el tamaño | `lista-sonidos.md` |
+| `sfx_w3_like_collect` / `sfx_w3_like_stolen` | Coger un corazón / el Ladrón roba | idem |
+| `sfx_w3_like_platform` | Plataforma de likes que aparece o desaparece (con el aviso) | idem |
+| `sfx_w3_flash_charge` / `sfx_w3_flash` | Influencer y Curadora (aviso obligatorio) | idem |
+| `sfx_w3_mirror_bounce` | Rebote del láser o del pulso en un espejo | idem |
+| `sfx_w3_filter_shimmer` | Zona con filtro (bucle suave por nodo) | idem |
+| `amb_w3_gallery`, `mus_w3_level`, `mus_boss3` | Ambiente, nivel (con la capa desafinada cerca de peligros ocultos, §3.2) y jefe | idem |
+| **Nuevos (PROPUESTA):** `sfx_w3_like_source` (publicación), `sfx_w3_like_reset`, `sfx_w3_crop_tool` (obtener el gesto), `sfx_w3_hunter_turn` (giro del cazador, **accesibilidad**: acompaña al brillo), `sfx_w3_reflection_spawn`, `sfx_w3_pose_plate`, `sfx_boss3_intro`, `sfx_boss3_turn`, `sfx_boss3_frame_close` (**accesibilidad**) | — | nuevos |
+| Reutilizados | `sfx_weak_point_mark` / `_warn` / `_end`, `sfx_weak_point_hit`, `sfx_boss_phase_change`, `sfx_boss_defeat` → `stg_boss_defeated` → `mus_memory`, `vox_boss_eco_filter`, `sfx_hub_wallpaper_piece`, `sfx_charger`, `sfx_dash_through`, `sfx_memory_pickup` | — |
+
+- **Accesibilidad:** «Señales sonoras de ritmo» (activada por defecto) cubre el giro del cazador y los marcos que se cierran. El desafinado nunca es la única pista (§3.2).
+
+---
+
+## 7. Validación: validador y bots
+
+### 7.1 Validador de niveles (`tools/validate_level.py` + `tools/level_plan.py`)
+
+- **Pellizcar:** habilidad del grafo (`abilities_available.compress` o el `crop_tool`, que es una puerta). Movimientos comprimidos con su caja (32 × 40), su velocidad y su salto; arista de compresión / vuelta (0,15 s) que exige sitio para volver. Huecos de 1 fila solo comprimido. Salida: «tramo 1 (cols. 23-75): 3 marcos, 9,5 tiles comprimido como máximo».
+- **Likes como estado discreto:** en lugar del contador (0-30), el estado guarda **qué umbrales del nivel se cumplen** (los distintos umbrales presentes, normalmente 3-5): pequeño y exacto. Corazones (una vez por intento), publicaciones (con enfriamiento), pérdidas por golpe (el camino no recibe golpes) y robos (el camino **evita** el contacto del Ladrón o lo aturde antes). Plataformas inversas con `like_reset`. Exige que cada umbral obligatorio tenga una publicación alcanzable desde el último punto de sincronización (regla anti-atasco).
+- **Filtros:** el plan atraviesa una zona filtrada **solo con el Debug encendido** si dentro hay peligros ocultos o suelo falso (el jugador no los ve sin él); con filtro móvil, sin Debug solo vale el paso por celdas que el filtro descubrió en el ciclo anterior. Comprueba las reglas de §3.2 (pinchos −10 sin pozos mortales, caída ≤ 3 tiles con salida, cargador a la vista).
+- **Espejos:** trazado del láser con rebotes (`mirror`, `hunter_mirror` congelado) hasta lectores y receptores; el cazador como estado (orientación por tiempo desde que Isak entra en su rango) y el pulso reflejado como arista. Máximo 3 rebotes.
+- **Plataformas del reflejo:** sólidas para el grafo (son reales); el validador solo comprueba que cada una se vea en una pared de espejo desde donde se salta.
+- **Enemigos:** Influencer (línea de visión con terreno; el camino lo aturde antes del flash o pasa tapado durante la carga), Ladrón (persecución y contacto), Reflejo falso (`|Isak(t) − Isak(t − 1 s)| ≥ 1 tile` en su sala salvo con el reflejo aturdido; placas que sostiene el reflejo con su retraso).
+- **Secretos:** `forbid_abilities`, recompensa `memory` y, nuevo, **`requires_abilities`** para secretos que se alcanzan con un gesto obtenido más adelante (el marco del 3-1 con Pellizcar): el validador los comprueba con esa habilidad y no los cuenta como inalcanzables en la primera visita.
+- **Camino exportado** (`isak-path/1`): pasos `pinch` / `unpinch`, `like_reset`, `wait_hunter` (esperar la orientación del cazador) y `wait_reflection`.
+- **Pasadas:** sin mejoras, con mejoras, `--access-cap` y todo al máximo. **La salida del 1-1 al 2-3 y de las arenas tiene que ser idéntica byte a byte.**
+
+### 7.2 Validador de arenas (`tools/validate_boss.py`)
+
+Rama `validate_curator_arena` (las de Alerta Mayor y Autoplay no cambian): alcance del pulso a la lente desde las plataformas en cada ventana; camino del pulso reflejado y del láser en la fase 2 (cazador → esquina → espalda) con el tiempo de giro; ventanas con k = 2 (recorrido + likes + 1 s de Debug + pulso + primer láser); avisos de 6-12 cuadros; un marco pequeño libre a ≤ 4 tiles cuando se cierra un marco; ningún ataque en todos los carriles a la vez; **energía torpe por acceso** (pico ≤ máximo − 20) y cargador a ≤ 4 tiles.
+
+### 7.3 Bots
+
+- **Bot de la galería** (`tools/gallery_bot.gd` + `tools/play_gallery_bot.gd`): **extiende `tools/dnd_bot.gd`** (niveles horizontales, dash aéreo y frenada). Pasos nuevos `pinch`, `unpinch`, `like_reset`, `wait_hunter` y `wait_reflection`. Comprobaciones: completa el nivel y vuelve al hub con él en `completed_levels`; 0 muertes; 0 robos en la solución; energía mínima frente al camino; duración anotada. El 3-2 empieza sin el gesto y el bot lo obtiene en «Recortar».
+- **Bot del jefe** (`tools/curator_bot.gd`, lanzador `tools/play_boss_bot.gd -- --boss curator`): política por fase (biombo ante el flash, salir de la franja del recorte, likes y plataforma en la ventana, colocarse ante el cazador en la fase 2, pellizcarse en el marco pequeño del lado que se cierra en la fase 3). Perfiles `ideal`, `clumsy` e `idle`, y `--lap 1|2|3`. Comprueba `boss_w3_l<n>` sin guardar y la vuelta al hub con el Mundo 4 desbloqueado.
+- **En la suite** (`tools/run_tests.sh`), como los del Mundo 2.
+
+---
+
+## 8. Plan de implementación
+
+Pasos pequeños, como en el Mundo 2. Cada paso lleva sus pruebas y **termina con `tools/run_tests.sh` en verde (o la parte afectada, y la suite completa en los pasos 20-21) y `graphify update .`**. El arte es por script (`_placeholder` en la Curadora y el Influencer) hasta el paso 23. Los textos se marcan como propuestos. Un commit local por paso, sin push.
+
+| Paso | Qué | Archivos probables | Terminado cuando | Tamaño | Depende de | En paralelo con |
+|---|---|---|---|---|---|---|
+| 0 | **Paleta provisional** por script (nombres de color, reglas de §6.1 en `--check`) | `tools/palette_mundo3_provisional.py`, `assets/palettes/mundo3_provisional.gpl`, `data/world3_objects.json` (`palette`) | `--check` en la suite | S | — | 1, 2 |
+| 1 | **Pellizcar en Isak:** estado `Compress` (caja 32 × 40, velocidad, salto, vuelta pedida, reglas con Debug, dash, golpe, pulso, láser, Ocultarte, vórtices, muerte); valores en `data/isak_abilities.json`; aviso «Pellizcar: I / RB (mando)» y fila en Ajustes > Controles; pose provisional; `test_arena` con el gesto | `scripts/player/states/compress_state.gd`, `scripts/player/isak.gd`, `data/ability_notices.json`, `scripts/ui/control_bindings.gd`, `tests/test_compress.gd` | GUT: cabe por 1 tile, no vuelve sin sitio y vuelve solo al haberlo, sin pulso ni láser comprimido, con el Debug sí, apaga el Ocultarte; subidas comprimido medidas (`tests/test_level_climbs.gd`) | M | — | 0, 2 |
+| 2 | **Likes:** `GameState.likes` (por intento, fuera del guardado, vuelta al valor del checkpoint), `heart_pickup`, `like_source`, `like_platform` (umbral, aviso, `invert`), `like_reset`, pérdida por golpe con corazones recuperables, `HudLikes` solo en el Mundo 3, aviso «Los likes no se guardan.»; sala `likes_test` | `scripts/levels/like_platform.gd`, `scripts/levels/heart_pickup.gd`, `scripts/levels/like_source.gd`, `scripts/ui/hud_likes.gd`, `data/world3_objects.json`, `data/hud.json`, `tests/test_likes.gd` | GUT: umbrales, aviso de 0,75 s, no se materializa con Isak dentro, −3 y recogida, checkpoint, inversa, nada en `save.json` | M | 0 | 1, 3 |
+| 3 | **Filtros:** `filter_zone` (capa, Debug, pinchos ocultos, suelo falso, filtro móvil, viñeta que tiembla); sala `filtro_test` | `scripts/levels/filter_zone.gd`, `tests/test_filter_zone.gd` | GUT: sin Debug no se ven, con Debug sí, el pincho empuja a la entrada, el móvil no mueve los peligros | M | 0 | 2, 4 |
+| 4 | **Espejos:** `mirror` (rebote del láser), `mirror_wall` (reflejo con 1 s de desfase y variante saturada de Isak), `mirror_only`; sala `espejos_test` | `scripts/levels/mirror.gd`, `scripts/levels/mirror_wall.gd`, `scripts/player/laser_projectile.gd`, `tests/test_mirrors.gd` | GUT: 90° y vuelta, alcance restante, máximo 3 rebotes, plataforma invisible sólida y dibujada en el reflejo | M | 0 | 3, 5 |
+| 5 | **Influencer bot y Ladrón de likes** (línea de visión, flash y ceguera con «Reducir efectos», robo y huida, aturdido y drops); sala `vitrina_test` | `scripts/enemies/influencer_bot.gd`, `scripts/enemies/like_thief.gd`, `data/enemies/*.json`, `tests/test_world3_enemies.gd` | GUT: aviso de 0,75 s, el terreno tapa, el pulso aturde antes del flash, el robo suelta los likes al aturdir | M | 2 | 4, 6 |
+| 6 | **Espejo cazador, Reflejo falso, placa y puerta**; sala `reflejo_test` | `scripts/levels/hunter_mirror.gd`, `scripts/enemies/false_reflection.gd`, `scripts/levels/pose_plate.gd`, `tests/test_reflection.gd` | GUT: giro con aviso, pulso congela y sale reflejado, láser reflejado; el reflejo repite con 1 s, sostiene la placa, el pulso lo aturde y salta al búfer | M-L | 4 | 5, 7 |
+| 7 | **«Recortar» y marcos pequeños** (`crop_tool` hereda de `DndSwitch`; `small_frame` decorado con Q); sala `recorte_test` | `scripts/levels/crop_tool.gd`, `tests/test_crop_tool.gd` | GUT: un uso, guardado, Papelera y rollback; línea de Eco y aviso | S | 1 | 6 |
+| 8 | **Validador y camino exportado** (§7.1), en dos partes: 8a Pellizcar, likes, filtros y espejos; 8b enemigos, cazador, reflejo, placas y `requires_abilities`; negativos sintéticos | `tools/validate_level.py`, `tools/level_plan.py`, `tools/world3_model.py`, `tests/test_world3_validator.py` | Las salas 2-7 validan; negativos fallan (umbral sin publicación, filtro sin Debug, reflejo que alcanza, espejo de 4 rebotes); salidas del Mundo 1 y 2 idénticas | **XL** | 1-7 | 9 |
+| 9 | **Arte por script del mundo** (§6.3), Eco con marco dorado, ayudas Q (`world: 3`) y fichas del álbum; **3 variantes de paleta para que el usuario elija** y aplicar la elegida | `tools/gen_world3_*.py` + validadores, `tools/palette_mundo3_variants.py`, `data/help.json`, `tools/gen_album_cards.py` | Validadores de paleta en la suite; contraste de Isak y Eco ≥ 3:1 en capturas; el usuario elige variante | L | 0, 2-7 | 8 |
+| 10 | **El 3-1 real** (§4.1) + filas del Mundo 3 en `data/hub.json` + `msg_3_1` y `msg_3_2` en `data/memories.json` + vida extra | `data/levels/3-1.json`, `scenes/levels/3-1.tscn`, `data/hub.json`, `data/memories.json`, `tests/test_level_3_1.py/.gd` | Valida en todas las pasadas con camino exportado; jugable desde la carpeta M3 tras Autoplay; el secreto A valida con `requires_abilities` | L | 8, 9 | 11 |
+| 11 | **Bot de la galería** recorriendo el 3-1 | `tools/gallery_bot.gd`, `tools/play_gallery_bot.gd`, `tests/test_gallery_bot.gd` | Código 0: completa el 3-1 sin morir ni ser robado; duración anotada | M-L | 10 | 12 |
+| 12 | **El 3-2 real** (§4.2) + bot (obtiene Pellizcar) + prueba GUT del marco del 3-1 rejugado con el gesto | `data/levels/3-2.json`, `tests/test_level_3_2.*` | Valida; el bot lo completa; `msg_3_2` se recoge en el 3-1 con Pellizcar | L | 8-11 | 14 |
+| 13 | **El 3-3 real** (§4.3) + `msg_3_3` + bot | `data/levels/3-3.json`, `tests/test_level_3_3.*` | Valida (cazador, reflejo, placas, examen); el bot lo completa; desbloquea la fila del jefe | L | 12 | 14-16 |
+| 14 | **Datos y lógica de la Curadora:** `data/bosses/curator.json` (fases, ataques, `laps` con `mark_hits`), `WeakPoint` con la marca del pulso y la vía por espejo, señales | `scripts/bosses/curator.gd`, `scripts/bosses/weak_point.gd`, `tests/test_curator.gd` | GUT: sin Debug no hay marca; la marca por el cazador en la fase 2; un golpe por marca | M | 4-6 | 10-13 |
+| 15 | **Arena `3-boss`** (20 × 11, plataformas de likes, biombos, marcos pequeños, espejos, 4 cargadores, Debug ×0,25 / ×0,7) y **fases 1-3** (sesión, de espaldas, retrato perfecto con reflejo y marcos que se cierran) | `data/levels/3-boss.json`, `scripts/bosses/curator.gd` | GUT de cada fase con el tiempo avanzado a mano; la arena cabe entera en pantalla | L | 14, 1, 6 | 10-13 |
+| 16 | **Validador de arenas** para la Curadora (§7.2) | `tools/validate_boss.py`, `tests/test_boss_validator.py` | Márgenes de energía torpe ≥ 20 en los tres accesos; avisos ≥ 6 cuadros; marco pequeño libre en cada cierre | M | 15 | 17 |
+| 17 | **Barra «retrato», recompensa y hub:** `BossBar` con su estilo, `BossReward.grant(3, …)`, pieza verde, `m4` desbloqueado, fila «Jefe: La Curadora» jugable, línea de Calc | `data/hud.json`, `data/hub.json`, `tools/gen_hub_piece_w3.py`, `tests/test_hub_boss_entry.gd` | Desde la carpeta M3 se entra, se vence, se recibe `boss_w3_l1` sin guardar y se vuelve al hub con la pieza verde | S-M | 15 | 16 |
+| 18 | **Bot del jefe** (ideal / torpe / quieto, `--lap 1-3`) | `tools/curator_bot.gd`, `tests/test_curator_bot.gd` | Ideal y torpe vencen sin muertes en los tres accesos; quieto pierde; ideal en Caché entre 100 y 150 s | M-L | 15-17 | 19 |
+| 19 | **Textos, ayudas Q y audio:** líneas de Eco (obtención, jefe), ayudas, carteles, IDs de §6.4 con provisionales | `data/bosses/curator.json`, `data/help.json`, `data/audio.json`, `tools/gen_audio_placeholders.py` | `validate_audio.py` pasa; la Q explica cada tipo nuevo | S | 14-17 | 18 |
+| 20 | **Pruebas de conjunto:** negativos (quieto pierde; sin Debug no hay marca; perder likes no bloquea; el filtro no mata), salidas del validador de los Mundos 1-2 idénticas, suite completa | `tests/*`, `tools/run_tests.sh` | Suite en verde con los bots del Mundo 3 | S | 10-19 | — |
+| 21 | **Capturas, mapas y docs** (`mundo-3-vitrina.md` §8.8, `08-pendientes.md`, `CLAUDE.md`, `INDEX.md`, sección de revisión en `preguntas.md`) | `tools/render_level_3_x.gd`, `tools/render_level_map.py` | Capturas en `assets/levels_preview/3-x/`; mapas al día | S-M | 20 | 22 |
+| 22 | **Lista de revisión del usuario** al probar (§10) volcada a `preguntas.md` y avisar | `docs/preguntas.md` | Lista publicada | S | 21 | — |
+| 23 | **Arte final con AutoSprite** (con permiso y total previo; parada tras el base): Curadora, Influencer y pose `compress` (§6.2) | `docs/plan-arte-mundo-3.md`, `tools/import_boss_curator.py`, `tools/reduce_palette.py` | Integrado sin cambiar tiempos ni cajas; los bots dan los mismos resultados | M | 21 y permiso | — |
+
+**Orden:** 0, 1 y 2 a la vez → 3-7 (máximo 3-4 subagentes a la vez: 3+4, 5+7, 6) → 8 y 9 en paralelo → 10 → 11 → 12 → 13. El jefe (14-19) puede empezar tras el 6, en paralelo con los niveles 10-13 → 20 → 21 → 22 → 23.
+
+**Tamaño relativo (estimación):**
+
+| | Mundo 2 | Mundo 3 |
+|---|---|---|
+| Habilidad nueva | Golpe al suelo | Pellizcar (cambia la caja de colisión: toca más sistemas) |
+| Mecánica de cámara | Scroll forzado (lo más caro del Mundo 2) | Ninguna nueva (cámara horizontal del 1-1) |
+| Tipos nuevos | ~10 | ~14, la mitad sobre piezas existentes |
+| Validador | Scroll como amenaza móvil y bucles | Caja comprimida, likes discretos, trazado de espejos y retraso del reflejo |
+| Jefe | Reutiliza `BossBase` | Reutiliza `BossBase` y `WeakPoint`; tres fases con mecánicas distintas |
+| **Total** | ≈ 60-70 % del Mundo 1 | **≈ 55-65 %** del Mundo 1 |
+
+### 8.1 Avance y desvíos
+
+Cada paso hecho se anota aquí con su fecha, lo que se hizo, los desvíos frente a esta propuesta y, si hace falta decidir algo durante la implementación, la entrada **«Decisión tomada»** con su razón (el usuario delegó las decisiones de diseño del Mundo 3, como las del Mundo 2). Todo el arte de estos pasos es **provisional por código** con la paleta provisional; ningún tipo nuevo tiene aún ayuda Q ni ficha (llevan `_help_id_planned`; pasos 9 y 19).
+
+**Paso 0 (2026-10-26) — paleta provisional.** `tools/palette_mundo3_provisional.py` escribe `assets/palettes/mundo3_provisional.gpl` y la sección `palette` de `data/world3_objects.json` (16 colores + `debug_verde` `#a6ff2e`); `--check` (en `tools/run_tests.sh`) mide las 5 reglas de §6.1: dorado 47°, sat. 49 %, ΔE 50 frente a los puntos (36 con el tinte del Debug); rosa L 85; corazón ΔE 37 frente al rojo; cian de Isak / Eco sobre el malva 3,3 / 3,4:1; contorno rojo bajo el velo 4,3:1. Los puntos de atención llevan contorno de 1 px también en el Mundo 3 (`galeria_noche`). **No es la elección final** (paso 9, del usuario). Decisiones tomadas: el contraste de Isak se mide por su cian (su cuerpo casi negro no llega a 3:1 sobre un fondo medio-oscuro si Eco también cumple); bajo el velo, el contorno de lo que daña va en `alerta_sombra` (`alerta` sola da ~2,5:1). `tools/level_catalog.py`: el Mundo 3 usa los tipos de los Mundos 1-3 (la regla de §3.6 de no usar los del Mundo 2 queda para el diseño de los niveles). Prueba `tests/test_palette_mundo3.py`.
+
+**Paso 1 (2026-10-26) — Pellizcar.** Sección `compress` de `data/isak_abilities.json`; aviso «Pellizcar: I / RB (mando)» y fila «Pellizcar» en Ajustes > Controles (en `data/settings.json`, donde se definen las filas); señal `EventBus.compress_changed`; icono «sin espacio» (`CompressEffect`). Caja 32 × 40 al instante con los pies abajo y sprite aplastado en 0,15 s (pose provisional por escala); 160 px/s sin correr; salto de 96 px de datos (~90 px medidos). Los enemigos (banner, punto rojo, Burbuja), `LevelLookup`, Eco bajo techos y el techo de carga del scroll miden la caja actual (`Isak.get_hitbox_size()`). **Desvío:** Pellizcar es un **modificador** de Isak, no un estado `Compress` (comprimido sigue en Idle/Run/Jump/Fall; un estado aparte los duplicaría). Decisiones tomadas: otra pulsación con la vuelta pedida la cancela; un vórtice pide el tamaño normal; al morir bajo un techo la caja no crece hasta reaparecer. Al ser reasignable, RB cuenta como conflicto en Controles. Pruebas `tests/test_compress.gd` (17) y caso comprimido en `tests/test_level_climbs.gd` (sube 1 tile, no 2).
+
+**Paso 2 (2026-10-26) — likes.** `GameState.likes` (0-30, por intento, fuera de `save.json`, vuelve al valor del último punto de sincronización al morir; `EventBus.likes_changed`), `heart_pickup`, `like_source` (+5, 8 s con anillo), `like_platform` (umbral visible, aviso 9 cuadros a 12 fps, no se materializa con Isak dentro, `invert` con corazón tachado), `like_reset`, nodo `LikesSystem` que `GeneratedLevel` añade en el Mundo 3 (−3 por golpe con la señal `hurt` de Isak, corazones que parpadean 2 s), `HudLikes` (sección `likes` de `data/hud.json`, solo Mundo 3) y «Los likes no se guardan.» al completar el nivel (`MemoryNotice.show_lines`). Decisiones tomadas: los corazones del golpe salen 112 px sobre los pies y no se recogen los primeros 0,35 s (si no, se recogerían solos); la publicación vuelve lista al reaparecer y «Borrar publicaciones» es reutilizable; una caída fuera del nivel que no es muerte conserva los likes; el esquema limita el umbral a 5-25 (no exige múltiplos de 5). Sala `likes_test`; prueba `tests/test_likes.gd` (17).
+
+**Paso 3 (2026-10-26) — filtros.** `filter_zone` (`FilterZone`): capa rosada al 60 % con marco, cinta y cartel siempre visibles; con el Debug, capa al 10 % (`OverlayPopup.see_through_alpha()`), pinchos ocultos en rojo y suelo falso al 30 % con contorno discontinuo. `tools/build_level.py` saca todo `^` dentro de un filtro a un hijo `HiddenSpikes` (−10 y empuje hacia `entry`; exports nuevos de `SpikeHazard`) y `fake_floor` genera un `Cover` sin colisión (como `glitch_wall`); los niveles existentes salen idénticos. Filtro móvil de ida y vuelta entre 2-3 sitios con aviso de 0,75 s y 0,5 s de deslizamiento; los peligros no se mueven. Viñeta que tiembla a ≤ 3 tiles (`hazard_near_changed`, `get_hazard_proximity()` para el desafinado). Esquema: cartel, tamaño, posiciones, caída ≤ 3 con salida, no tapar likes. Decisiones tomadas: los pinchos ocultos se deducen del grid (sin campo por pincho); suelo falso solo en filtros fijos; salida del foso ≤ 2 tiles o abierto por un lado (el salto da justo 3). Pendiente: enemigos dormidos bajo el filtro. Sala `filtro_test`; pruebas `tests/test_filter_zone.gd` y `tests/test_world3_filter_schema.py`.
+
+**Paso 4 (2026-10-26) — espejos.** `LaserProjectile` va en cualquier dirección y rebota (`redirect`, contador de rebotes, alcance restante de 768 px, `exclude_source`); `mirror` (`/` `\` 90°, `|` devuelve; máx. 3 rebotes, el 4.º lo para con destello gris; `EventBus.mirror_bounced`), `mirror_wall` (dibujo propio, no SubViewport: refleja a Isak con su cuadro de hace 1 s, más saturado por shader, y las plataformas del reflejo; búfer `IsakPoseBuffer`) y `mirror_only` (sólida, invisible, con contorno con el Debug, 32 px de alto). Decisiones tomadas: el rebote es en el punto real del cristal (sirve para las 8 direcciones; consecuencia: desde el celular de Isak un `/` llega a un lector de su columna y un `\` no); `|` devuelve también en vertical; el espejo no es sólido. Sala `espejos_test`; prueba `tests/test_mirrors.gd` (16).
+
+**Paso 5 (2026-10-26) — Influencer bot y Ladrón de likes.** `InfluencerBot` (`data/enemies/influencer_bot.json`): visión con terreno en una franja de 64 px a 8 tiles, carga 0,75 s con aro y «3-2-1 ¡Sonríe!», vuelve a mirar al disparar (taparse durante la carga salva), velo `FlashVeil` 70 % / 40 % (1,0 s lleno + 0,5 s de fundido) con lo que daña contorneado en `alerta_sombra`, enfriamiento 3 s, pulso aturde y cancela, aturdido el láser lo derrota (+20 de energía y 2 corazones). `LikeThief` (`data/enemies/like_thief.json`): persigue a 140 px/s con aviso de 9 cuadros dentro de su correa, roba hasta 5 sin quitar Sync, huye 2 s, aturdido suelta lo robado (`LikesSystem.drop_hearts`), sin likes «?». Decisiones tomadas: pedestal no sólido ni dañino; el Ladrón no roba durante un dash y no suelta energía; valores no dados por el doc (huida 200 px/s, abandono 448 px, correa 12 × 5 tiles, «busca» 1 s). Sala `vitrina_test`; prueba `tests/test_world3_enemies.gd` (19).
+
+**Paso 6 (2026-10-26) — espejo cazador, Reflejo falso, placa y puerta.** `HunterMirror` (giro de 45° cada 0,6 s hacia Isak a ≤ 3 tiles, si no vuelve a su reposo; brillo previo; pulso: congela 3 s y haz de 6 tiles que activa receptores, aturde enemigos y aturde 0,5 s a Isak sin Sync con `Isak.take_stun`; láser: sale hacia donde mira y daña a Isak si le apunta), `FalseReflection` (nace al cruzar el eje de su `mirror_wall`, repite el búfer de 1 s —que guarda también la caja de Pellizcar—, −10 al contacto, pisa placas, el pulso lo aturde 3 s y salta al búfer, se va al salir de su `zone`), `PosePlate` + `FrameDoor` (abierta mientras alguien pisa y 0,3 s más; se abre en 0,2 s; avisa 9 cuadros antes de cerrar; nunca se cierra con alguien dentro). Decisiones tomadas: brillo del cazador de 9 cuadros a 60 fps (0,15 s; a 12 fps superaría el intervalo de giro); el haz no encadena cazadores; el reflejo espera sin dañar en el punto de cruce hasta empezar a reproducir; aturdido no daña pero sigue pisando la placa; con el Debug su retraso crece (tope 2,5 s) y luego vuelve a 1 s. Sala `reflejo_test` (patrones 16 y 17); prueba `tests/test_reflection.gd` (19).
+
+**Paso 7 (2026-10-26) — «Recortar» y marcos pequeños.** `CropTool` (hereda de `DndSwitch` como `PausePlayer`: pulso de espaldas, da `compress` para siempre con guardado/Papelera/rollback, Eco «Te queda mejor así.» importante y aviso; inerte con el gesto) y `SmallFrame` (decorado sin colisión, `orientation` wall/floor/ceiling y `length_tiles`; el esquema comprueba el hueco). Decisión tomada: un paso vertical comprimido es un hueco del suelo que da a una galería de 1 fila (el Isak comprimido tiene el mismo ancho, así que un hueco en el suelo solo no obliga a comprimirse). Pendiente: conectar `sfx_w3_crop_tool` en `data/audio.json` (paso 19). Sala `recorte_test`; prueba `tests/test_crop_tool.gd` (9).
+
+**Paso 8 (2026-10-26) — validador y camino exportado (8a y 8b).** Módulo `tools/world3_model.py`, que solo se activa si el nivel tiene objetos del Mundo 3 (las salidas del 1-1 al 2-boss son idénticas byte a byte en las cuatro pasadas, camino exportado incluido). **8a:** nodos comprimidos aparte (caja 32 × 40, 160 px/s, salto 96 × 0,92 = 88 px) con aristas `pinch` / `unpinch` de 0,15 s que exigen sitio, `crop_tool` como puerta, error si un tramo va > 12 tiles comprimido o no recupera el tamaño a ≤ 4 tiles; likes con la cifra exacta (4 corazones + una publicación = 9 no cumplen ♥10), publicaciones con su enfriamiento, reset y plataformas inversas, regla anti-atasco (cada plataforma de likes del camino con una publicación alcanzable sin likes desde el último punto de sincronización); filtros con cargador a ≤ 20 columnas antes; láser con hasta 3 rebotes hasta lectores y receptores; `mirror_only` visible en su pared desde donde se salta. **8b:** Influencer (visión con terreno; ningún salto con exigencia > 50 % durante la ceguera; el plan lo aturde antes o falla), Ladrón (0 robos: el plan lo aturde antes del contacto), espejo cazador (el pulso reflejado es una arista hacia receptores con `wait_hunter`), placas y puertas (simulación cuadro a cuadro con `wait_reflection`), Reflejo falso (regla `|Isak(t) − Isak(t − 1 s)| ≥ 1 tile` con pulso de aturdido insertado) y **`requires_abilities`** en `secrets` (se comprueba con la habilidad concedida; sin ella no es error); `compress` admitido en `abilities_available`. Camino exportado con `pinch`, `unpinch`, `heart`, `like_reset`, `wait_hunter`, `wait_reflection` y pulsos a enemigos del Mundo 3. Las seis salas del Mundo 3 validan en las cuatro pasadas (normal, `--export-path`, `--access-cap`, todo al máximo). Pruebas `tests/test_world3_validator.py` (38, con los negativos de §8). Skill `level-builder` actualizada. **Desvíos y decisiones tomadas:**
+- **Filtros: el Debug solo se exige junto a lo que esconden** (la celda del peligro, 1 tile a cada lado y 2 por encima), no en toda la zona. *Razón:* con el Debug en todo el filtro, `filtro_test` pedía 129 de energía con un máximo de 100; el jugador solo necesita ver bajo el filtro donde algo miente. **Filtro móvil:** solo pide el Debug lo que tapan todas sus posiciones a la vez (lo que descubre su ciclo se da por memorizado).
+- **Láser y cazador:** el láser solo rebota en el cazador desde fuera de su radio de seguimiento y en horizontal o vertical; congelarlo con el pulso para disparar desde dentro no se modela (conservador; §7.1 hablaba del «cazador congelado»). Tampoco se modelan el retraso extra del reflejo con el Debug, el aturdido ×1,5 del Pulso 3 ni el haz del cazador aturdiendo enemigos.
+- En los soft-locks solo cuentan publicaciones y reset (no los corazones); una puerta de marco queda abierta en el grafo de soft-lock una vez pisada su placa (indulgente). El plan no espera a que pase la ceguera por su cuenta.
+- Límite conocido: los pasos que insertan pasadas posteriores (banners, desvíos de energía) no se vuelven a comprobar contra el cazador, el reflejo y las puertas; no ocurre en las salas actuales.
+
+**Parada antes del paso 9** (2026-10-26): el paso 9 incluye que el usuario elija entre 3 variantes de paleta (decisión abierta de `CLAUDE.md`). Siguen los pasos 9 (arte por script, Eco con marco dorado, ayudas Q y fichas, 3 variantes) y 10-13 (niveles); el jefe (14-19) puede empezar ya.
+
+---
+
+## 9. Decisiones tomadas (2026-10-26, por el orquestador con la autoridad delegada por el usuario)
+
+Cada una se puede cambiar cuando el usuario pruebe el mundo. Ninguna queda abierta.
+
+1. **Decisión tomada: mecánica central = los likes sostienen el mundo** (§3.1), con filtros y espejos como «lo que ves no es lo que hay». *Razón:* es lo que pide la ficha (`01` §5, `mundo-3` §8.2) y es distinta de los temporizadores y las notificaciones del Mundo 1 y del scroll forzado del Mundo 2: aquí el reto es de **lectura y administración**, no de prisa. Los likes **no se guardan** porque es el tema (no valen nada fuera) y así no tocan la economía de puntos (450) ni el guardado.
+2. **Decisión tomada: perder likes nunca bloquea** (publicaciones reutilizables cerca de cada umbral; corazones del golpe recuperables 2 s; vuelta al valor del checkpoint al morir). *Razón:* la lección del soft-lock del bucle del 2-1 (`propuesta-mundo-2.md` §8.1).
+3. **Decisión tomada: Pellizcar = pulsar I / RB** (`gesture_pinch`, ya asignado), interruptor, gratis, caja 32 × 40, sin pulso ni láser comprimido, Debug sí, vuelta pedida que se cumple al haber sitio (§3.3). *Razón:* no hace falta tocar `project.godot` ni el mando (sin botones libres); un interruptor permite «recuperar el tamaño en el momento justo» (doc); ir desarmado le da coste sin usar energía.
+4. **Decisión tomada: lo que rebota en los espejos es el láser; el pulso solo en el espejo cazador** (§3.4, §3.6). *Razón:* desde el 2026-10-15 el «pulso de datos» con dirección es el láser; el pulso es un área. Resuelve el apuntado pendiente de A3 sin apuntado libre.
+5. **Decisión tomada: el filtro engaña, no mata** (pinchos −10 que empujan a la entrada, caídas ≤ 3 tiles con salida, zona siempre visible como zona; el filtro móvil mueve lo que se ve, no los peligros) (§3.2). *Razón:* esconder peligros es injusto si castiga sin aviso; así el Debug es la herramienta y no una adivinanza.
+6. **Decisión tomada: flash del Influencer = ceguera de 1,5 s sin daño**, con el contorno rojo de lo que daña visible y «Reducir efectos» al 40 %; lo tapan el terreno y los biombos (§3.6). *Razón:* el doc dice que ciega; con daño encima sería doble castigo, y la accesibilidad del juego exige que nada dependa de ver a ciegas.
+7. **Decisión tomada: niveles horizontales de 14 filas** con la cámara del 1-1, de 220, 250 y 280 columnas, dificultad 3 / 4 / 4 (doc) y duraciones 6 / 7 / 8 min (doc). *Razón:* la galería es un pasillo; evita una cámara nueva (lo más caro del Mundo 2) y deja el presupuesto para Pellizcar, los likes y los espejos.
+8. **Decisión tomada: `msg_3_2` está en el marco pequeño del 3-1** y el 3-2 no tiene mensaje propio; nuevo campo `requires_abilities` en `secrets` (§4.1.1, §4.5, §7.1). *Razón:* la ficha pone el recuerdo del 3-2 en ese marco; rejugar dentro de la vuelta está permitido y Eco lo recuerda al obtener el gesto.
+9. **Decisión tomada: daño a la Curadora = Debug revela → pulso marca → láser**, un golpe por marca, 9 golpes en Caché y 12 en Kernel y Raíz; en la fase 2 el pulso y el láser llegan por el espejo cazador; en la fase 3 Pellizcar salva de los marcos que se cierran y el Debug distingue a Isak del Reflejo falso (§5.3-§5.6). *Razón:* la regla de Alerta Mayor ya está probada y es la de V14; el giro de cada fase sale literal de la ficha; «un golpe por marca» viene del ajuste de duración de Autoplay (peleas de 100-140 s).
+10. **Decisión tomada: arena 20 × 11 a pantalla completa con cámara fija**, Debug ×0,25 / ×0,7 y 4 cargadores de 4 / 5 / 6 s (§5.2). *Razón:* evita el corte de la arena de Alerta Mayor y reutiliza cifras ya calibradas.
+11. **Decisión tomada: mensajes `msg_3_1`-`msg_3_3` como borradores revisables** (la tele, el altavoz, el fondo de pantalla) (§4.5). *Razón:* siguen el hilo del recuerdo del jefe sin contarlo, como los del Mundo 2; el usuario delegó la redacción.
+12. **Decisión tomada: arte por script salvo la Curadora, el Influencer y la pose `compress`**; el Reflejo falso es Isak con una variante saturada por shader y el Ladrón va por script (§6.2). *Razón:* familia de formas geométrica; los créditos se guardan para los Mundos 4-6. **El gasto en sí espera el permiso del usuario** (regla de los créditos).
+13. **Decisión tomada: hex provisionales por script con reglas de contraste; el usuario elige entre 3 variantes en el paso 9** (§6.1). *Razón:* `CLAUDE.md` reserva al usuario los hex de los mundos 3 en adelante; las reglas evitan los choques de dorado con el ámbar de los puntos, de rosa con el rojo de daño y del cian de Eco sobre blanco.
+14. **Decisión tomada: Mundo 4 desbloqueado en datos y en el álbum al vencer a la Curadora, sin carpeta física hasta diseñar el Mundo 4** (§4.6). *Razón:* la página 1 del hub no tiene sitio y colocar la carpeta es parte del diseño del Mundo 4.
+15. **Decisión tomada: el reloj del HUD sigue visible en el Mundo 3 sin saltos** (§2.3). *Razón:* se muestra «desde el Mundo 2»; los saltos son el tema del Mundo 2.
+
+---
+
+## 10. Riesgos y qué debe revisar el usuario al probar
+
+**Riesgos:**
+1. **La caja comprimida toca muchos sistemas** (colisión, techo, cámara, Eco bajo techos, vórtices, Ocultarte): hacerlo primero en `test_arena` y medir las subidas comprimido.
+2. **Likes que frustran:** que un robo o un golpe tiren a Isak de una plataforma. Mitigado con el aviso de 0,75 s, los corazones recuperables y las publicaciones; ajustar jugando el −3 y el robo de 5.
+3. **Ceguera del flash** molesta o injusta: valores en datos (1,5 s, 70 %) y opción «Reducir efectos».
+4. **Legibilidad de la paleta** (dorado frente a ámbar, rosa frente a rojo, cian sobre blanco): reglas de §6.1 con `--check` y capturas con el Debug.
+5. **Validador:** el trazado de espejos y el retraso del reflejo son modelos nuevos; los likes como umbrales discretos mantienen el estado pequeño. Riesgo de duración de la suite con tres bots más: proceso aparte, como en el Mundo 2.
+6. **Pellizcar en mapas viejos:** revisar que no abra atajos en los Mundos 1 y 2.
+7. **Créditos de AutoSprite:** ~70 en una pasada; con reintentos, ~140. Parada tras cada base.
+
+**Qué debe revisar el usuario al probar (se volcará a `preguntas.md`, paso 22):**
+- Ritmo de cada nivel (duraciones y si el 3-1 se siente un paso por encima del 2-1).
+- Valores de Pellizcar (velocidad y salto comprimido, la vuelta pedida) y si I / RB es cómodo.
+- Likes: −3 por golpe, robo de 5, umbrales, enfriamiento de las publicaciones y si el contador del HUD se lee bien.
+- Ceguera del flash (duración e intensidad).
+- Si los filtros se leen como zona antes de entrar y si el filtro móvil es justo sin el Debug.
+- Si las plataformas del reflejo se entienden mirando el espejo.
+- El espejo cazador: si su giro se lee y si el pulso reflejado se entiende.
+- El Reflejo falso y las placas «Posa aquí».
+- La pelea de la Curadora: duración (objetivo 100-150 s en Caché), la fase 2 (apuntar con el cazador) y la fase 3 (distinguirse del reflejo con el Debug).
+- Textos propuestos: línea de Eco al obtener Pellizcar (ya decidida en la ficha), línea del marco del 3-1, ayudas Q, carteles, líneas de la Curadora y mensajes `msg_3_1`-`msg_3_3`.
+- La paleta (elegir variante en el paso 9) y el arte de AutoSprite tras cada base (paso 23).

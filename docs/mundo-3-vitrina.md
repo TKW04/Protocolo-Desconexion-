@@ -83,3 +83,36 @@ Una IA que edita todo lo que ve. Su cuerpo es un marco de foto gigante y su cabe
 | **Recompensa** | Fragmento de imagen: un recuerdo de Isak despeinado, riendo, en una foto sin editar. Eco dice: "Te hice mejor. ¿Por qué querrías volver?" |
 
 > **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).
+
+## 8.8 Estado del Mundo 3 (2026-10-26): mecánicas implementadas, niveles sin hacer
+
+Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada decisión están en [propuesta-mundo-3.md](propuesta-mundo-3.md) (§8 y §8.1); lo pendiente, en [08-pendientes.md](08-pendientes.md).
+
+**Hecho (pasos 0-8 del plan):** todas las piezas del mundo funcionan en salas de prueba y el validador las modela; todavía no hay niveles 3-1 a 3-3 ni jefe, y el Mundo 3 sigue «Próximamente» en el hub.
+
+**Decisiones tomadas (frente al mapa conceptual de arriba):**
+- **Los likes sostienen el mundo** y **no se guardan** (se vacían al terminar el nivel con «Los likes no se guardan.»); perder likes nunca bloquea (publicaciones reutilizables cerca de cada umbral, corazones del golpe recuperables).
+- **Pellizcar = pulsar I / RB** (interruptor, gratis); comprimido no hay pulso, láser, dash, golpe al suelo ni Ocultarte; con el Debug sí.
+- **Lo que rebota en los espejos es el láser**; el pulso solo en el espejo cazador, que lo devuelve como un haz.
+- **El filtro engaña, no mata:** pinchos −10 que empujan a la entrada y caídas cortas con salida; el Debug enseña lo que hay debajo.
+- **El flash del Influencer ciega sin dañar** y lo que daña conserva su contorno.
+- **Paleta provisional por script** (`assets/palettes/mundo3_provisional.gpl`): la elige el usuario entre 3 variantes en el paso 9.
+
+**Valores (ajustables jugando):**
+
+| Pieza | Valores |
+|---|---|
+| Pellizcar | caja 32 × 40; anda a 160 px/s sin correr; salto de ~90 px (sube 1 tile); aplastado en 0,15 s; vuelta pedida si no cabe, con icono «sin espacio» |
+| Likes | 0-30 por intento; corazón +1; publicación +5 con 8 s de enfriamiento; golpe −3 (recuperables 2 s); plataformas de umbral 5-25, aviso de 0,75 s al apagarse, inversas con «Borrar publicaciones» |
+| Filtro | capa al 60 % (10 % con el Debug); pinchos ocultos −10; suelo falso con caída ≤ 3 tiles; filtro móvil cada 4 s con aviso de 0,75 s; la viñeta tiembla a ≤ 3 tiles de un peligro oculto |
+| Espejos | `/` y `\` giran el láser 90°, `|` lo devuelve; alcance total 768 px; máximo 3 rebotes; pared de espejo con Isak reflejado 1 s tarde y más saturado; plataformas que solo se ven en el reflejo |
+| Influencer bot | ve a 8 tiles; carga 0,75 s; ceguera 1,5 s al 70 % (40 % con «Reducir efectos»); enfriamiento 3 s; pulso aturde 3 s; aturdido, el láser lo derrota (vida 2, +20 de energía y 2 corazones) |
+| Ladrón de likes | persigue a 140 px/s a ≤ 4 tiles con aviso; roba hasta 5 likes y huye 2 s; aturdido suelta lo robado |
+| Espejo cazador | gira 45° cada 0,6 s hacia Isak (a ≤ 3 tiles); el pulso lo congela 3 s y sale un haz de 6 tiles; el láser sale hacia donde mira |
+| Reflejo falso | repite a Isak con 1 s de retraso; −10 al contacto; pisa placas; el pulso lo aturde 3 s |
+| Placa «Posa aquí» y puerta de marco | la puerta (1 × 3) se abre en 0,2 s mientras alguien pisa la placa y 0,3 s más |
+| «Recortar» | pulso de espaldas: da Pellizcar; Eco: «Te queda mejor así.» |
+
+**Salas de prueba** (`-- --start-level=<sala>`, builds de depuración): `likes_test`, `filtro_test`, `espejos_test`, `vitrina_test` (Influencer y Ladrón), `reflejo_test` (cazador, Reflejo falso y placas) y `recorte_test` («Recortar» y marcos pequeños). Todo el arte es provisional por código; las ayudas Q y las fichas del álbum llegan en el paso 9.
+
+**Sigue:** paso 9 (arte por script, ayudas Q y elección de paleta por el usuario), niveles 3-1 a 3-3 con su bot (10-13), jefe La Curadora (14-19) y arte final con AutoSprite con permiso (23).
