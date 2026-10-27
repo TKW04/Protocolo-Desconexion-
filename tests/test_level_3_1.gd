@@ -342,12 +342,13 @@ func test_world_3_folder_lists_3_1_after_autoplay_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m3"))
 	assert_eq(levels.size(), 4, "3-1, 3-2, 3-3 y el jefe")
 	assert_eq(panel.level_text(levels[0]), "3-1 Galería de perfil - Nuevo")
-	# Pasos 12 y 13 (2026-10-27): el 3-2 y el 3-3 son jugables (bloqueados hasta completar el anterior); el jefe,
-	# «Próximamente».
+	# Pasos 12, 13 y 17 (2026-10-27): el 3-2, el 3-3 y el jefe son jugables (bloqueados hasta completar el
+	# anterior: el jefe, «Bloqueado» hasta el 3-3).
 	assert_false(HubWorlds.is_coming_soon(levels[1]), "El 3-2 ya existe")
 	assert_false(HubWorlds.is_coming_soon(levels[2]), "El 3-3 ya existe")
-	assert_true(HubWorlds.is_coming_soon(levels[3]), "El jefe «Próximamente»")
-	assert_eq(panel.level_text(levels[3]), "Jefe: La Curadora - Próximamente")
+	assert_false(HubWorlds.is_coming_soon(levels[3]), "El jefe ya existe (paso 17)")
+	assert_eq(panel.get_level_state(&"3-boss"), HubWorlds.STATE_LOCKED, "Jefe bloqueado hasta el 3-3")
+	assert_eq(panel.level_text(levels[3]), "Jefe: La Curadora - Bloqueado")
 	for line: String in panel.get_lines():
 		for word: String in ["Vuelta", "vuelta", "Easy", "Normal", "Hard"]:
 			assert_false(line.contains(word), "«%s» no dice «%s»" % [line, word])

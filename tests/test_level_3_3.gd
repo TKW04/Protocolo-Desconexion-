@@ -6,8 +6,8 @@
 # puertas de marco con el Reflejo falso, el examen (filtro con pinchos ocultos, Ladrones,
 # cazador y reflejo), los secretos A (vitrina tras la pared que solo se ve con el Debug,
 # con msg_3_3), B (vitrina alta con el power bank) y C (♥25), el marco dorado de salida
-# (skin golden_frame) -> hub con el 3-3 completado y la fila del jefe desbloqueada (aun
-# «Próximamente»), y la fila del 3-3 en la carpeta del Mundo 3 tras el 3-2. La ruta
+# (skin golden_frame) -> hub con el 3-3 completado y la fila del jefe desbloqueada (jugable
+# desde el paso 17), y la fila del 3-3 en la carpeta del Mundo 3 tras el 3-2. La ruta
 # completa la comprueban tools/validate_level.py (tests/test_level_3_3.py) y el bot de la
 # galeria (tests/test_gallery_bot.gd); aqui Isak se coloca en cada punto. Usa su propia
 # ruta de guardado (nunca user://save.json).
@@ -277,7 +277,8 @@ func test_golden_frame_completes_the_level_and_unlocks_the_boss_row() -> void:
 	var panel: FolderPanel = _main.get_hub().get_folder(&"m3").get_folder_panel()
 	assert_eq(panel.get_level_state(&"3-3"), HubWorlds.STATE_COMPLETED)
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m3"))
-	assert_true(HubWorlds.is_coming_soon(levels[3]), "La Curadora sigue «Próximamente» hasta el paso 17")
+	assert_false(HubWorlds.is_coming_soon(levels[3]), "La Curadora jugable (paso 17)")
+	assert_eq(panel.get_level_state(&"3-boss"), HubWorlds.STATE_AVAILABLE, "Jefe disponible tras el 3-3")
 
 
 func test_world_3_folder_lists_3_3_after_the_3_2_and_loads_it() -> void:
@@ -294,7 +295,8 @@ func test_world_3_folder_lists_3_3_after_the_3_2_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m3"))
 	assert_eq(panel.level_text(levels[2]), "3-3 Espejo, espejito - Nueva foto")
 	assert_false(HubWorlds.is_coming_soon(levels[2]), "3-3 jugable")
-	assert_true(HubWorlds.is_coming_soon(levels[3]), "Jefe «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(levels[3]), "Jefe jugable (paso 17)")
+	assert_eq(panel.get_level_state(&"3-boss"), HubWorlds.STATE_LOCKED, "Jefe bloqueado hasta el 3-3")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"3-3"))
 	panel.confirm()

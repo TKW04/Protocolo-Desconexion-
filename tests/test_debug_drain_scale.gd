@@ -119,8 +119,10 @@ func test_boss_test_room_drains_a_quarter() -> void:
 
 
 func test_charger_cooldown_is_per_instance() -> void:
+	# Sin autofree (paso 20 del Mundo 3): liberada despues de after_each, la sala devolvia el Debug al
+	# valor que vio al entrar (desbloqueado por before_each) y lo dejaba encendido para los scripts siguientes.
 	var level := (load("res://scenes/levels/boss_test.tscn") as PackedScene).instantiate() as GeneratedLevel
-	add_child_autofree(level)
+	add_child(level)
 	await wait_physics_frames(1)
 	var charger := level.find_child("cargador_saco", true, false) as Charger
 	assert_almost_eq(charger.cooldown_s, 4.0, EPS)
@@ -137,3 +139,4 @@ func test_charger_cooldown_is_per_instance() -> void:
 			if node is Charger:
 				assert_almost_eq((node as Charger).cooldown_s, 10.0, EPS, "%s %s: 10 s" % [id, node.name])
 		other.free()
+	level.free()

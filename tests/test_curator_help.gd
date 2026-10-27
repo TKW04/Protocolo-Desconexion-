@@ -109,8 +109,9 @@ func test_lens_help_only_while_lowered_to_frame() -> void:
 	assert_eq(HelpCatalog.help_id_of(lens), Curator.HELP_LENS)
 	_boss.start()
 	assert_false(lens.call(&"is_help_available"), "Arriba, sin ventana: la lente no ayuda")
-	_advance_until(func() -> bool: return _boss.is_window_open(), 10.0)
-	assert_true(_boss.is_window_open())
+	# 20 s: desde el paso 18 los huecos entre ataques son de 2 s (la ventana de la fase 1 abre tras sus tres ataques).
+	_advance_until(func() -> bool: return _boss.is_window_open(), 20.0)
+	assert_true(_boss.is_window_open(), "La primera ventana se abre")
 	_advance(0.5)
 	assert_true(lens.call(&"is_help_available"), "Baja a encuadrar: ayuda")
 	assert_almost_eq((lens as Node2D).global_position, _boss.get_lens_point(), Vector2(1.0, 1.0),
@@ -118,7 +119,7 @@ func test_lens_help_only_while_lowered_to_frame() -> void:
 	_boss.close_window()
 	assert_false(lens.call(&"is_help_available"), "Vuelve a subir: sin ayuda")
 	_to_phase(2)
-	_advance_until(func() -> bool: return _boss.is_window_open(), 12.0)
+	_advance_until(func() -> bool: return _boss.is_window_open(), 20.0)
 	assert_true(_boss.is_window_open(), "Posa de espaldas")
 	assert_false(lens.call(&"is_help_available"), "De espaldas no baja: sin ayuda")
 

@@ -1165,8 +1165,17 @@ func _check_victory(hub: HubRoom) -> bool:
 		["2-boss completado", GameState.is_level_completed(&"2-boss")],
 		["recuerdo %s sin guardar" % layer, GameState.has_memory(layer) and GameState.has_unsaved_changes()],
 		["Mundo 3 desbloqueado", HubWorlds.is_world_unlocked(HubWorlds.world(&"m3"))],
-		["Mundo 3 Próximamente", HubWorlds.levels_for_lap(HubWorlds.world(&"m3")).is_empty()],
 	]
+	# Desde el paso 10 del Mundo 3 (2026-10-26) la carpeta de Caché tiene el 3-1 jugable
+	# (disponible al vencer a Autoplay); Kernel y Raíz aun no tienen subniveles («Próximamente»).
+	var m3: Dictionary = HubWorlds.world(&"m3")
+	var m3_levels: Array[Dictionary] = HubWorlds.levels_for_lap(m3)
+	if _lap == 1:
+		var first: Dictionary = m3_levels[0] if not m3_levels.is_empty() else {}
+		checks.append(["Mundo 3 con el 3-1 disponible", String(first.get("id", "")) == "3-1"
+			and HubWorlds.level_state(m3, first) == HubWorlds.STATE_AVAILABLE])
+	else:
+		checks.append(["Mundo 3 Próximamente", m3_levels.is_empty()])
 	# La pieza ambar depende de la carpeta del acceso actual: solo Caché tiene hoy
 	# la fila del jefe (los subniveles de Kernel y Raíz aun no existen).
 	if _lap == 1:

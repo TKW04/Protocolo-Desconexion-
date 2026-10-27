@@ -145,6 +145,10 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 17 (2026-10-27): la pieza verde acido del hub (tools/gen_hub_piece_w3.py --check); la barra
 # «retrato», la recompensa, la fila «Jefe: La Curadora» y el Mundo 4 los prueban tests/test_boss_bar.gd,
 # tests/test_boss_reward.gd, tests/test_hub_boss_entry.gd y tests/test_boss_save_flow.gd (GUT).
+# Desde el paso 20 (2026-10-27): el esquema de los filtros y el validador del Mundo 3 con sus negativos sinteticos
+# (tests/test_world3_filter_schema.py y tests/test_world3_validator.py, de los pasos 3 y 8, que no estaban en la
+# lista) y las pruebas de conjunto del Mundo 3 (tests/test_world3_negatives.py: perder likes nunca bloquea y el filtro
+# no mata en los niveles reales; su parte con el Isak real, tests/test_world3_negatives.gd, GUT).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -190,6 +194,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py \
+		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \

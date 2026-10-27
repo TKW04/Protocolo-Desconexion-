@@ -658,7 +658,8 @@ func test_discarded_clone_gives_no_help() -> void:
 ## Carteles del feed con la ayuda del reloj y del borde (paso 11 del Mundo 2): no se destruyen ni se
 ## gastan, asi que siempre ayudan (la Q sale hasta aprender el tipo y luego la relectura).
 func test_feed_signs_always_help() -> void:
-	for help_id: StringName in [&"hud_clock", &"feed_edge"]:
+	# hud_likes (Mundo 3): el cartel «Mi vida es increíble #bendecido» del 3-1 lleva la Q del contador.
+	for help_id: StringName in [&"hud_clock", &"feed_edge", &"hud_likes"]:
 		var sign := (load("res://scenes/levels/feed_sign.tscn") as PackedScene).instantiate() as FeedSign
 		sign.text = "Para ti"
 		_place(sign, help_id)
@@ -773,6 +774,210 @@ func test_curator_lens_and_closing_frame_only_while_shown() -> void:
 	await _assert_inert_drops_help(closing, func() -> void: state["closing"] = false, "marco ya abierto")
 
 
+# --- Mundo 3: niveles (paso 20 de docs/propuesta-mundo-3.md, 2026-10-27) ---
+
+func _w3_scene(type: String) -> Node2D:
+	var types: Dictionary = World3ObjectsConfig.data().get("types", {})
+	var path: String = String((types.get(type, {}) as Dictionary).get("scene", ""))
+	return (load(path) as PackedScene).instantiate() as Node2D
+
+
+## Comprueba que `node` es el candidato, aplica `action` (el uso o el estado que
+## en otros tipos lo volveria inerte) y comprueba que sigue siendo el candidato.
+func _assert_keeps_helping(node: Node2D, action: Callable, why: String) -> void:
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(node), "%s: ayuda" % why)
+	assert_eq(_help.get_target(), node, "%s: candidato con Q" % why)
+	action.call()
+	_run(0.2)
+	assert_true(HelpCatalog.is_help_live(node), "%s: sigue ayudando" % why)
+	assert_eq(_help.get_target(), node, "%s: sigue siendo el candidato" % why)
+
+
+## Corazon: recogido no ayuda; los que suelta el Ladron (temporales) nunca llevan la Q.
+func test_collected_heart_pickup_gives_no_help() -> void:
+	var heart := _w3_scene("heart_pickup") as HeartPickup
+	_place(heart, &"heart_pickup")
+	await _assert_inert_drops_help(heart, func() -> void: assert_true(heart.collect()), "corazon recogido")
+	_assert_no_reread(heart, &"heart_pickup", "corazon recogido")
+	var dropped := _w3_scene("heart_pickup") as HeartPickup
+	dropped.dropped = true
+	_place(dropped, &"heart_pickup")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_false(HelpCatalog.is_help_live(dropped), "Corazon soltado: sin Q")
+	assert_null(_help.get_target(), "Corazon soltado: no es candidato")
+
+
+## Publicacion: reutilizable (enfriandose tras dar likes sigue ayudando, como el cargador).
+func test_used_like_source_keeps_helping() -> void:
+	var source := _w3_scene("like_source") as LikeSource
+	_place(source, &"like_source")
+	await _assert_keeps_helping(source, func() -> void:
+		assert_true(source.like(), "da likes")
+		assert_false(source.is_ready(), "se enfria"), "publicacion usada")
+
+
+## «Borrar publicaciones»: reutilizable; tras poner el contador a 0 sigue ayudando.
+func test_used_like_reset_keeps_helping() -> void:
+	GameState.set_likes(12)
+	var reset := _w3_scene("like_reset") as LikeReset
+	_place(reset, &"like_reset")
+	await _assert_keeps_helping(reset, func() -> void:
+		reset.clear_likes()
+		assert_eq(GameState.likes, 0, "contador a 0"), "borrar publicaciones usado")
+
+
+## Plataforma de likes: no se destruye; apagada (sin el umbral) o encendida, ayuda.
+func test_like_platform_helps_on_and_off() -> void:
+	GameState.set_likes(0)
+	var platform := _w3_scene("like_platform") as LikePlatform
+	platform.threshold = 5
+	_place(platform, &"like_platform")
+	await _assert_keeps_helping(platform, func() -> void:
+		GameState.set_likes(10)
+		platform.snap()
+		assert_true(platform.meets_threshold(), "umbral cumplido con 10 likes"), "plataforma de likes con el umbral")
+	GameState.set_likes(0)
+	platform.snap()
+	_run(0.2)
+	assert_false(platform.is_solid(), "apagada sin likes")
+	assert_true(HelpCatalog.is_help_live(platform), "Apagada: sigue ayudando")
+
+
+## Marco pequeno: decorado fijo, siempre explica (con Pellizcar o sin el).
+func test_small_frame_always_helps() -> void:
+	var frame := _w3_scene("small_frame") as SmallFrame
+	_place(frame, &"small_frame")
+	await _assert_keeps_helping(frame, func() -> void: GameState.obtain_ability(&"compress"),
+		"marco pequeno con Pellizcar")
+
+
+## Espejo: indestructible; tras rebotar un laser sigue ayudando.
+func test_mirror_always_helps() -> void:
+	var mirror := _w3_scene("mirror") as Mirror
+	_place(mirror, &"mirror")
+	await _assert_keeps_helping(mirror, func() -> void: mirror.on_laser_hit(1.0, null), "espejo tras un laser")
+
+
+## Pared de espejo: indestructible, siempre ayuda.
+func test_mirror_wall_always_helps() -> void:
+	var wall := _w3_scene("mirror_wall") as MirrorWall
+	wall.auto_process = false
+	_place(wall, &"mirror_wall")
+	wall.isak = _isak
+	await _assert_keeps_helping(wall, func() -> void: wall.advance(1.0), "pared de espejo")
+
+
+## Plataforma del reflejo: invisible en el mundo sin el Debug (solo se ve en el espejo), asi
+## que sin el Debug no lleva la Q (la explica la pared de espejo); oculta no es candidato.
+func test_hidden_mirror_only_platform_gives_no_help() -> void:
+	var platform := _w3_scene("mirror_only") as MirrorOnlyPlatform
+	_place(platform, &"mirror_only")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_false(platform.is_visible_in_world(), "Sin Debug no se ve")
+	assert_false(HelpCatalog.is_help_live(platform), "Oculta: sin Q")
+	assert_null(_help.get_target(), "Oculta: no es candidato")
+	assert_true(platform.is_solid(), "Pero sigue siendo solida")
+
+
+## «Recortar»: encendida (Pellizcar ya dado) no ayuda, como el interruptor No molestar.
+func test_switched_on_crop_tool_gives_no_help() -> void:
+	var crop := _w3_scene("crop_tool") as CropTool
+	_place(crop, &"crop_tool")
+	await _assert_inert_drops_help(crop, func() -> void: crop.switch_on(), "Recortar encendida")
+	_assert_no_reread(crop, &"crop_tool", "Recortar encendida")
+
+
+## Filtro: no se destruye; con el Debug o sin el, ayuda.
+func test_filter_zone_always_helps() -> void:
+	var zone := _w3_scene("filter_zone") as FilterZone
+	zone.label_text = "Filtro: Prueba"
+	_place(zone, &"filter_zone")
+	await _assert_keeps_helping(zone, func() -> void: zone.advance(1.0), "filtro")
+
+
+## Espejo cazador: indestructible; congelado por el pulso sigue ayudando.
+func test_frozen_hunter_mirror_keeps_helping() -> void:
+	var hunter := _w3_scene("hunter_mirror") as HunterMirror
+	hunter.auto_process = false
+	_place(hunter, &"hunter_mirror")
+	hunter.isak = _isak
+	await _assert_keeps_helping(hunter, func() -> void:
+		hunter.freeze()
+		assert_true(hunter.is_frozen(), "congelado"), "espejo cazador congelado")
+
+
+## Placa «Posa aquí» y puerta de marco: se reutilizan (cada vez que el reflejo o Isak posan),
+## asi que siempre ayudan.
+func test_pose_plate_and_frame_door_always_help() -> void:
+	var plate := _w3_scene("pose_plate") as PosePlate
+	plate.auto_process = false
+	_place(plate, &"pose_plate")
+	plate.isak = _isak
+	await _assert_keeps_helping(plate, func() -> void: plate.advance(1.0), "placa")
+	plate.free()
+	var door := _w3_scene("frame_door") as FrameDoor
+	door.auto_process = false
+	_place(door, &"frame_door")
+	await _assert_keeps_helping(door, func() -> void: door.advance(1.0), "puerta de marco")
+
+
+# --- Mundo 3: enemigos (paso 20) ---
+
+## Influencer bot: aturdido sigue ayudando; derrotado (laser aturdido) no.
+func test_defeated_influencer_bot_gives_no_help() -> void:
+	var bot := (load("res://scenes/enemies/influencer_bot.tscn") as PackedScene).instantiate() as InfluencerBot
+	bot.set_physics_process(false)
+	_place(bot, &"influencer_bot")
+	bot.target = _isak
+	await wait_process_frames(1)
+	bot.drops = {}
+	bot.stun()
+	assert_true(HelpCatalog.is_help_live(bot), "Influencer aturdido: sigue ayudando")
+	await _assert_inert_drops_help(bot, func() -> void:
+		bot.stun()
+		bot.on_laser_hit(10.0, null)
+		assert_true(bot.is_defeated(), "derrotado"), "influencer derrotado")
+	_assert_no_reread(bot, &"influencer_bot", "influencer derrotado")
+
+
+## Ladron de likes: aturdido sigue ayudando; derrotado no.
+func test_defeated_like_thief_gives_no_help() -> void:
+	var thief := (load("res://scenes/enemies/like_thief.tscn") as PackedScene).instantiate() as LikeThief
+	thief.set_physics_process(false)
+	thief.patrol_range_px = 0.0
+	_place(thief, &"like_thief")
+	thief.target = _isak
+	await wait_process_frames(1)
+	thief.drops = {}
+	thief.stun()
+	assert_true(HelpCatalog.is_help_live(thief), "Ladron aturdido: sigue ayudando")
+	await _assert_inert_drops_help(thief, func() -> void:
+		thief.stun()
+		thief.on_laser_hit(10.0, null)
+		assert_true(thief.is_defeated(), "derrotado"), "ladron derrotado")
+	_assert_no_reread(thief, &"like_thief", "ladron derrotado")
+
+
+## Reflejo falso: dormido en la pared no ayuda; fuera, si; al volver a la pared, no.
+func test_vanished_false_reflection_gives_no_help() -> void:
+	var reflection := (load("res://scenes/enemies/false_reflection.tscn") as PackedScene).instantiate() \
+		as FalseReflection
+	reflection.auto_process = false
+	_place(reflection, &"false_reflection")
+	reflection.target = _isak
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_false(HelpCatalog.is_help_live(reflection), "Dormido: sin Q")
+	assert_null(_help.get_target(), "Dormido: no es candidato")
+	reflection.emerge()
+	assert_true(reflection.is_present(), "fuera de la pared")
+	await _assert_inert_drops_help(reflection, func() -> void: reflection.vanish(), "reflejo de vuelta a la pared")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
@@ -784,7 +989,10 @@ func test_every_help_type_is_covered() -> void:
 		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall",
 		&"pause_player", &"hud_clock", &"feed_edge", &"autoplay", &"autoplay_playhead", &"autoplay_pause_button",
 		&"autoplay_card", &"autoplay_countdown", &"autoplay_clip", &"autoplay_fan",
-		&"curator_boss", &"curator_lens", &"closing_frame"]
+		&"curator_boss", &"curator_lens", &"closing_frame",
+		&"heart_pickup", &"like_source", &"like_reset", &"like_platform", &"small_frame", &"mirror", &"mirror_wall",
+		&"mirror_only", &"crop_tool", &"filter_zone", &"hunter_mirror", &"pose_plate", &"frame_door", &"hud_likes",
+		&"influencer_bot", &"like_thief", &"false_reflection"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

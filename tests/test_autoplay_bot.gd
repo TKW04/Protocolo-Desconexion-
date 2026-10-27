@@ -11,8 +11,9 @@
 #   que el Debug se corte por falta de energia en una ventana;
 # - quieto: pierde (game over) sin vencer.
 # Al vencer: recompensa de la capa del acceso (boss_w2_l<n>) sin guardar, vuelta
-# al hub con 2-boss completado y el Mundo 3 desbloqueado «Próximamente» (y la
-# pieza ambar encendida en Caché). El bot usa user://bot_save.json.
+# al hub con 2-boss completado y el Mundo 3 desbloqueado: en Caché con el 3-1
+# disponible (paso 10 del Mundo 3) y la pieza ambar encendida; en Kernel y Raíz,
+# «Próximamente» (sin subniveles todavia). El bot usa user://bot_save.json.
 extends GutTest
 
 const PLAYER: String = "res://tools/play_boss_bot.gd"
@@ -34,7 +35,8 @@ func _assert_victory(profile: String, lap: int) -> void:
 	assert_eq(int(r["code"]), 0, "%s termina con 0:\n%s" % [label, r["summary"]])
 	assert_string_contains(r["text"], label + ": OK")
 	assert_false(String(r["text"]).contains("FALLO"), "Sin fallos:\n%s" % r["summary"])
-	var hub: String = "hub tras la pelea: 2-boss completado si, recuerdo boss_w2_l%d sin guardar si, Mundo 3 desbloqueado si, Mundo 3 Próximamente si" % lap
+	var m3: String = "Mundo 3 con el 3-1 disponible si" if lap == 1 else "Mundo 3 Próximamente si"
+	var hub: String = "hub tras la pelea: 2-boss completado si, recuerdo boss_w2_l%d sin guardar si, Mundo 3 desbloqueado si, %s" % [lap, m3]
 	assert_string_contains(r["text"], hub)
 	if lap == 1:
 		assert_string_contains(r["text"], "pieza ambar encendida si")

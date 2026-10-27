@@ -18,6 +18,7 @@ const EPS: float = 0.001
 
 var _saved_path: String
 var _saved_lap: int
+var _saved_debug: bool = false
 var _root: Node2D
 var _boss: Curator
 var _hunter: HunterMirror
@@ -35,6 +36,9 @@ func after_all() -> void:
 func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_lap = GameState.lap
+	# El Debug desbloqueado no lo quita reset_progress: se devuelve en after_each (paso 20 del Mundo 3:
+	# dejarlo encendido hacia que test_debug_chip, test_dnd_switch y test_eco_encounter fallaran en la suite).
+	_saved_debug = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
@@ -55,6 +59,7 @@ func after_each() -> void:
 	GameState.reset_progress()
 	GameState.lap = _saved_lap
 	GameState.save_path = _saved_path
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, _saved_debug)
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
 	GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
 
