@@ -122,9 +122,14 @@ class Level31Test(unittest.TestCase):
         report = {e["id"]: e for e in self.result["world3"]["enemies"]}
         self.assertEqual((report["ladron_1"]["thefts"], report["ladron_1"]["stuns"]), (0, 1),
                          "0 robos: el pulso lo aturde antes del contacto")
-        for iid in ("influencer_1", "influencer_2"):
-            self.assertEqual((report[iid]["flashes"], report[iid]["blind"]), (0, []), "Ningun flash ciega (%s)" % iid)
-        self.assertEqual(report["influencer_1"]["covered"], 1, "Las columnas-marco tapan el flash")
+        # Paso 11 (2026-10-27): andando, las columnas-marco de 1 x 2 se pasan por lo alto (el validador ya no da por
+        # bueno saltarlas desde la celda pegada; tests/test_world3_validator.py, ColumnJumpTest) y el Influencer 1
+        # llega a disparar una vez sobre la segunda: su ceguera no cae en ningun salto preciso.
+        self.assertEqual((report["influencer_2"]["flashes"], report["influencer_2"]["blind"]), (0, []),
+                         "El segundo Influencer no ciega (se pasa por debajo de su linea)")
+        self.assertLessEqual(report["influencer_1"]["flashes"], 1)
+        self.assertTrue(all(b["jumps"] == 0 for b in report["influencer_1"]["blind"]),
+                        "Ningun salto preciso durante la ceguera: %s" % report["influencer_1"]["blind"])
         wall = obj(self.level, "pared_espejo")
         self.assertEqual((wall["type"], wall["x"], wall["params"]["width_tiles"]), ("mirror_wall", 182, 7),
                          "Pared de espejo en las columnas 182-188")

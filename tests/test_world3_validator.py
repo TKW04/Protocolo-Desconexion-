@@ -450,11 +450,53 @@ class InfluencerTest(unittest.TestCase):
         result = run(influencer_room(sight_tiles=2), schema=False)
         self.assertTrue(result["ok"], messages(result))
 
-    def test_vitrina_influencer_is_covered(self):
+    def test_vitrina_influencer_flash_does_not_blind_a_precise_jump(self):
+        # Paso 11 (2026-10-27): desde que el validador modela la pared en el aire (ColumnJumpTest), las columnas-marco
+        # de 1 x 2 se pasan por encima (sube a lo alto y baja) y el Influencer llega a disparar una vez; su ceguera no
+        # cae en ningun salto preciso. Antes: 0 flashes (el camino las saltaba andando, que el juego no hace).
         result = run(load("vitrina_test"))
         inf = next(e for e in result["world3"]["enemies"] if e["kind"] == "influencer_bot")
-        self.assertEqual(inf["flashes"], 0)
+        self.assertLessEqual(inf["flashes"], 1)
+        self.assertTrue(all(b["jumps"] == 0 for b in inf["blind"]), inf["blind"])
         self.assertGreaterEqual(inf["charges"], 1)
+
+
+def column_room(world=3):
+    """Sala plana con una columna de 1 x 2 en la columna 9 (filas 8-9) y un corazon (activa el modelo del Mundo 3)."""
+    def edit(level):
+        for r in (8, 9):
+            set_cell(level, 9, r, "#")
+        level["world"] = world
+    objects = [{"type": "heart_pickup", "x": 4, "y": 9, "params": {"id": "corazon"}}] if world == 3 else []
+    return flat_room(20, objects, grid_edit=edit)
+
+
+class ColumnJumpTest(unittest.TestCase):
+    """Paso 11 de docs/propuesta-mundo-3.md (2026-10-27, bot de la galeria en el 3-1): en el juego, al chocar con una
+    pared en el aire la velocidad horizontal vuelve a 0 y luego Isak acelera con air_acceleration; andando no salta
+    una columna de 1 x 2 desde la celda pegada a ella (sube pegado y aterriza en lo alto). El modelo conservador
+    seguia a walk_speed al instante y daba el salto por bueno (3-1, columnas-marco 79 y 82)."""
+
+    @staticmethod
+    def _walk_over(export):
+        return [s for s in export[0]["steps"] if s.get("from", {}).get("cell") == [8, 9]
+                and s.get("to", {}).get("cell") == [10, 9] and s.get("speed", "walk") == "walk"]
+
+    def test_world_3_does_not_walk_jump_a_column_from_its_side(self):
+        export = []
+        result = run(column_room(), export, schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertEqual(self._walk_over(export), [], "andando no se salta la columna desde la celda pegada")
+        self.assertTrue(any(s.get("to", {}).get("cell") == [9, 7] for s in export[0]["steps"]) or any(
+            s.get("speed") == "run" or s.get("action") in ("jump_run", "dash") for s in export[0]["steps"]),
+            "pasa por lo alto de la columna (o corriendo)")
+
+    def test_worlds_1_and_2_keep_the_old_model(self):
+        # Limite conocido: fuera del Mundo 3 el modelo no cambia (salidas del 1-1 al 2-boss identicas byte a byte).
+        export = []
+        result = run(column_room(world=1), export, schema=False)
+        self.assertTrue(result["ok"], messages(result))
+        self.assertTrue(self._walk_over(export), "el modelo de los Mundos 1-2 sigue dando el salto por bueno")
 
 
 def thief_tunnel_room():

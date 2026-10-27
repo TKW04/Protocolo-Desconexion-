@@ -1646,6 +1646,14 @@ class World:
             info["time"] = 0.0
             info["head_hit"] = False
         cur = float(vx0)
+        # Pared en el aire (2026-10-27, paso 11 de docs/propuesta-mundo-3.md, bot de la galeria): en Godot, al chocar
+        # con una pared la velocidad horizontal vuelve a 0 (move_and_slide) y, ya libre, Isak acelera otra vez con
+        # air_acceleration. El modelo conservador seguia a `speed` al instante y daba por bueno saltar andando una
+        # columna de 1 x 2 desde la celda pegada a ella (3-1, columnas-marco 79 y 82), que el juego no pasa (sube
+        # pegado y aterriza en lo alto). Solo en los niveles del Mundo 3 (w3): las salidas del 1-1 al 2-boss siguen
+        # identicas byte a byte (sus bots ya recorren esos saltos; limite conocido).
+        wall_regain = accel is None and m.w3 is not None and m.rules.air_accel > 0.0
+        accel_now = accel
         for _ in range(int(SIM_MAX_S / dt)):
             steps += 1
             if info is not None:
@@ -1655,22 +1663,26 @@ class World:
                 traj_vy.append(vy)
             # Horizontal.
             if abs(x_target - x) > EPS:
-                if accel is None:
+                if accel_now is None:
                     step = speed * dt
                 else:
-                    cur = min(speed, cur + accel * dt)
+                    cur = min(speed, cur + accel_now * dt)
                     step = cur * dt
                 nx = x_target if abs(x_target - x) <= step else x + math.copysign(step, x_target - x)
                 if not self.collides(nx, y):
                     x = nx
                 elif nx > x:
                     cur = 0.0
+                    if wall_regain:
+                        accel_now = m.rules.air_accel
                     wall = math.floor((nx + m.hw - EPS) / T) * T
                     cand = wall - m.hw
                     if cand > x and not self.collides(cand, y):
                         x = cand
                 else:
                     cur = 0.0
+                    if wall_regain:
+                        accel_now = m.rules.air_accel
                     wall = (math.floor((nx - m.hw) / T) + 1) * T
                     cand = wall + m.hw
                     if cand < x and not self.collides(cand, y):
