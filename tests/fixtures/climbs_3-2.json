@@ -1,0 +1,552 @@
+{
+ "format": "isak-climbs/1",
+ "level": "3-2",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "41,11->42,9",
+   "section": "Tramo 1 «Recorte»",
+   "from": {
+    "cell": [
+     41,
+     11
+    ],
+    "ledge": [
+     32,
+     41
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     42,
+     9
+    ],
+    "ledge": [
+     42,
+     45
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 2672.0,
+   "target_x_px": 2688.0,
+   "debug": false
+  },
+  {
+   "id": "46,11->45,9",
+   "section": "Tramo 1 «Recorte»",
+   "from": {
+    "cell": [
+     46,
+     11
+    ],
+    "ledge": [
+     46,
+     46
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     45,
+     9
+    ],
+    "ledge": [
+     42,
+     45
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 2960.0,
+   "target_x_px": 2944.0,
+   "debug": false
+  },
+  {
+   "id": "83,11->84,9",
+   "section": "Tramo 2 «Filtro»",
+   "from": {
+    "cell": [
+     83,
+     11
+    ],
+    "ledge": [
+     57,
+     83
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     84,
+     9
+    ],
+    "ledge": [
+     84,
+     89
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 5360.0,
+   "target_x_px": 5376.0,
+   "debug": false
+  },
+  {
+   "id": "91,11->90,9",
+   "section": "Tramo 2 «Filtro»",
+   "from": {
+    "cell": [
+     91,
+     11
+    ],
+    "ledge": [
+     91,
+     91
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     90,
+     9
+    ],
+    "ledge": [
+     84,
+     90
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 5840.0,
+   "target_x_px": 5824.0,
+   "debug": true
+  },
+  {
+   "id": "91,11->92,9",
+   "section": "Tramo 2 «Filtro»",
+   "from": {
+    "cell": [
+     91,
+     11
+    ],
+    "ledge": [
+     91,
+     91
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     92,
+     9
+    ],
+    "ledge": [
+     92,
+     93
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 5872.0,
+   "target_x_px": 5888.0,
+   "debug": true
+  },
+  {
+   "id": "94,11->93,9",
+   "section": "Tramo 2 «Filtro»",
+   "from": {
+    "cell": [
+     94,
+     11
+    ],
+    "ledge": [
+     94,
+     94
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     93,
+     9
+    ],
+    "ledge": [
+     92,
+     93
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 6032.0,
+   "target_x_px": 6016.0,
+   "debug": true
+  },
+  {
+   "id": "94,11->95,9",
+   "section": "Tramo 2 «Filtro»",
+   "from": {
+    "cell": [
+     94,
+     11
+    ],
+    "ledge": [
+     94,
+     94
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     95,
+     9
+    ],
+    "ledge": [
+     95,
+     114
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6064.0,
+   "target_x_px": 6080.0,
+   "debug": true
+  },
+  {
+   "id": "115,11->114,9",
+   "section": "Tramo 2 «Filtro»",
+   "from": {
+    "cell": [
+     115,
+     11
+    ],
+    "ledge": [
+     115,
+     154
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     114,
+     9
+    ],
+    "ledge": [
+     96,
+     114
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 7376.0,
+   "target_x_px": 7360.0,
+   "debug": false
+  },
+  {
+   "id": "152,11->152,9",
+   "section": "Tramo 3 «Mezcla»",
+   "from": {
+    "cell": [
+     152,
+     11
+    ],
+    "ledge": [
+     115,
+     154
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     152,
+     9
+    ],
+    "ledge": [
+     152,
+     153
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 9792.0,
+   "target_x_px": 9792.0,
+   "debug": false
+  },
+  {
+   "id": "172,11->173,9",
+   "section": "Tramo 3 «Mezcla»",
+   "from": {
+    "cell": [
+     172,
+     11
+    ],
+    "ledge": [
+     167,
+     172
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     173,
+     9
+    ],
+    "ledge": [
+     173,
+     173
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 11056.0,
+   "target_x_px": 11072.0,
+   "debug": false
+  },
+  {
+   "id": "174,11->173,9",
+   "section": "Tramo 3 «Mezcla»",
+   "from": {
+    "cell": [
+     174,
+     11
+    ],
+    "ledge": [
+     174,
+     179
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     173,
+     9
+    ],
+    "ledge": [
+     173,
+     173
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 11152.0,
+   "target_x_px": 11136.0,
+   "debug": false
+  },
+  {
+   "id": "220,11->221,9",
+   "section": "Tramo 4 «El filtro se mueve»",
+   "from": {
+    "cell": [
+     220,
+     11
+    ],
+    "ledge": [
+     220,
+     220
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     221,
+     9
+    ],
+    "ledge": [
+     221,
+     222
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14128.0,
+   "target_x_px": 14144.0,
+   "debug": false
+  },
+  {
+   "id": "153,9->155,7",
+   "section": "Tramo 3 «Mezcla»",
+   "from": {
+    "cell": [
+     153,
+     9
+    ],
+    "ledge": [
+     152,
+     153
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     155,
+     7
+    ],
+    "ledge": [
+     155,
+     166
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 9856.0,
+   "target_x_px": 9920.0,
+   "debug": false
+  },
+  {
+   "id": "222,9->223,7",
+   "section": "Tramo 4 «El filtro se mueve»",
+   "from": {
+    "cell": [
+     222,
+     9
+    ],
+    "ledge": [
+     221,
+     222
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     223,
+     7
+    ],
+    "ledge": [
+     223,
+     224
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14256.0,
+   "target_x_px": 14272.0,
+   "debug": false
+  },
+  {
+   "id": "162,7->162,5",
+   "section": "Tramo 3 «Mezcla»",
+   "from": {
+    "cell": [
+     162,
+     7
+    ],
+    "ledge": [
+     155,
+     166
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     162,
+     5
+    ],
+    "ledge": [
+     162,
+     163
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 10432.0,
+   "target_x_px": 10432.0,
+   "debug": false
+  },
+  {
+   "id": "224,7->225,6",
+   "section": "Tramo 4 «El filtro se mueve»",
+   "from": {
+    "cell": [
+     224,
+     7
+    ],
+    "ledge": [
+     223,
+     224
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     225,
+     6
+    ],
+    "ledge": [
+     225,
+     228
+    ],
+    "row": 6
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14384.0,
+   "target_x_px": 14400.0,
+   "debug": false
+  },
+  {
+   "id": "163,5->164,3",
+   "section": "Tramo 3 «Mezcla»",
+   "from": {
+    "cell": [
+     163,
+     5
+    ],
+    "ledge": [
+     162,
+     163
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     164,
+     3
+    ],
+    "ledge": [
+     164,
+     167
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 10480.0,
+   "target_x_px": 10496.0,
+   "debug": false
+  }
+ ]
+}

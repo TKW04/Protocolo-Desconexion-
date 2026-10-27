@@ -58,6 +58,12 @@ const CLIMBS_PATH_2_3: String = "res://tests/fixtures/climbs_2-3.json"
 const LEVEL_SCENE_3_1: String = "res://scenes/levels/3-1.tscn"
 const LEVEL_PATH_3_1: String = "res://data/levels/3-1.json"
 const CLIMBS_PATH_3_1: String = "res://tests/fixtures/climbs_3-1.json"
+## 3-2 «Sin filtro» (paso 12 de docs/propuesta-mundo-3.md, 2026-10-27): bloques del Recorte, suelo elevado del
+## primer filtro y su sotano, bloque de la ♥10 y la repisa de la ♥20 (con el contador al maximo), escalera y
+## orilla del Tramo 4; con «Recortar» hecho (tools/level_climbs.py baja el crop_tool) y sin las subidas comprimido.
+const LEVEL_SCENE_3_2: String = "res://scenes/levels/3-2.tscn"
+const LEVEL_PATH_3_2: String = "res://data/levels/3-2.json"
+const CLIMBS_PATH_3_2: String = "res://tests/fixtures/climbs_3-2.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -451,6 +457,14 @@ func test_every_climb_of_3_1_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 15, "Subidas del 3-1 en %s" % CLIMBS_PATH_3_1)
 	await _load(LEVEL_SCENE_3_1, LEVEL_PATH_3_1)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_3_2_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_3_2))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 12, "Subidas del 3-2 en %s" % CLIMBS_PATH_3_2)
+	await _load(LEVEL_SCENE_3_2, LEVEL_PATH_3_2)
 	await _measure_all(climbs)
 
 

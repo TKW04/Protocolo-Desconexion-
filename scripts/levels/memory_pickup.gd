@@ -49,12 +49,12 @@ func _ready() -> void:
 		_taken = true
 		queue_free()
 		return
-	var size_px: Array = _config.get("size_px", [36, 32])
+	var hit: Rect2 = get_pickup_rect()
 	_shape = CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(float(size_px[0]), float(size_px[1]))
+	rect.size = hit.size
 	_shape.shape = rect
-	_shape.position = _center()
+	_shape.position = hit.get_center()
 	add_child(_shape)
 	_sprite = AnimatedSprite2D.new()
 	_sprite.name = "Sprite"
@@ -120,6 +120,21 @@ func collect() -> bool:
 
 func _draw_scale() -> float:
 	return float(_config.get("draw_scale", 2))
+
+
+## Zona de recogida (local, desde la esquina de la celda): size_px centrada en
+## center_px y alargada hacia abajo hasta reach_floor_px (el suelo de la celda,
+## 64). Paso 12 de docs/propuesta-mundo-3.md (2026-10-27): asi tambien la toca
+## Isak comprimido (caja de 32 x 40 pegada al suelo), que no llegaba a la zona de
+## la mitad alta (el msg_3_2 tras el marco pequeno del 3-1); de pie no cambia nada.
+func get_pickup_rect() -> Rect2:
+	var size_px: Array = _config.get("size_px", [36, 32])
+	var size := Vector2(float(size_px[0]), float(size_px[1]))
+	var rect := Rect2(_center() - size * 0.5, size)
+	var floor_y: float = float(_config.get("reach_floor_px", 0.0))
+	if floor_y > rect.end.y:
+		rect.size.y = floor_y - rect.position.y
+	return rect
 
 
 func _center() -> Vector2:

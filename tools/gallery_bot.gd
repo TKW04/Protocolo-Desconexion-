@@ -31,6 +31,10 @@
 ## laser, Debug, dash y golpe al suelo; Eco, Notas y Calc conocidos, Mundos 1 y 2
 ## completados) y los niveles anteriores del Mundo 3 completados; Pellizcar solo
 ## desde el 3-3 (el 3-2 lo da «Recortar»).
+## El 3-2 «Sin filtro» (paso 12, 2026-10-27) se recorre con los mismos pasos, sin
+## cambios en el bot: «Recortar» de espaldas (Pellizcar), 4 marcos pequenos con pinch
+## / unpinch, el Debug en los tres filtros, el Ladron aturdido antes de la ♥10 y
+## dashes; comprueba ademas que Pellizcar queda obtenido.
 ## Lo lanza tools/play_gallery_bot.gd (uso y argumentos alli).
 extends "res://tools/dnd_bot.gd"
 

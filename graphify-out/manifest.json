@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "data/hub.json": {
-    "mtime": 1793071491.0500696,
-    "seen": 1793072893.733283,
-    "ast_hash": "8a7e992807870610d745e2ed11f7d294",
+    "mtime": 1793075937.6422179,
+    "seen": 1793077442.308915,
+    "ast_hash": "c699b9970f7a93af004776a99398937f",
     "semantic_hash": ""
   },
   "data/hud.json": {
@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "data/world1_objects.json": {
-    "mtime": 1793041580.442267,
-    "seen": 1793041792.617436,
-    "ast_hash": "ef3bb13fbc2cf5f7e68f0515743ff1d1",
+    "mtime": 1793076684.8032582,
+    "seen": 1793077442.308964,
+    "ast_hash": "6a7bdbf7aa953d7ba38153a541f70862",
     "semantic_hash": ""
   },
   "tests/fixtures/climbs_1-2.json": {
@@ -546,9 +546,9 @@
     "semantic_hash": ""
   },
   "tools/level_climbs.py": {
-    "mtime": 1793071817.006022,
-    "seen": 1793072893.733403,
-    "ast_hash": "2ff3647450e9e8d7298687df2ce70cdb",
+    "mtime": 1793076190.326585,
+    "seen": 1793077442.309032,
+    "ast_hash": "02508302948b492814783a228720305e",
     "semantic_hash": ""
   },
   "tools/level_plan.py": {
@@ -582,9 +582,9 @@
     "semantic_hash": ""
   },
   "tools/run_tests.sh": {
-    "mtime": 1793074651.855498,
-    "seen": 1793074698.972097,
-    "ast_hash": "77385d9d31e89efc9662aa83e5b747ec",
+    "mtime": 1793076995.7293541,
+    "seen": 1793077442.309043,
+    "ast_hash": "267b8e08e51fd6ceabefc9328436ddc5",
     "semantic_hash": ""
   },
   "tools/upgrade_catalog.py": {
@@ -750,9 +750,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1793074651.854095,
-    "seen": 1793074698.972126,
-    "ast_hash": "5a2585dbf59d3310069a51d91a8aeb6c",
+    "mtime": 1793077383.660884,
+    "seen": 1793077442.3090718,
+    "ast_hash": "ac0703b250cd7ebe36fae312fc95fda1",
     "semantic_hash": ""
   },
   "docs/01-ficha-reglas.md": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "docs/mundo-3-vitrina.md": {
-    "mtime": 1793072844.3351924,
-    "seen": 1793072893.733453,
-    "ast_hash": "1e10a55865b03b8561c05a7051d04849",
+    "mtime": 1793077375.4570045,
+    "seen": 1793077442.309085,
+    "ast_hash": "6d0948d12b6ce4f456bbfbe699061547",
     "semantic_hash": ""
   },
   "docs/mundo-4-chat.md": {
@@ -1632,9 +1632,9 @@
     "semantic_hash": ""
   },
   "docs/propuesta-mundo-3.md": {
-    "mtime": 1793074682.3386464,
-    "seen": 1793074698.97215,
-    "ast_hash": "a56adcf96612e09d369eafee8e454f89",
+    "mtime": 1793077424.9104464,
+    "seen": 1793077442.309099,
+    "ast_hash": "66bfffe9597aec486d716f4ca65c3eea",
     "semantic_hash": ""
   },
   "data/levels/likes_test.json": {
@@ -1788,9 +1788,27 @@
     "semantic_hash": ""
   },
   "tests/test_level_3_1.py": {
-    "mtime": 1793074467.2390432,
-    "seen": 1793074698.972045,
-    "ast_hash": "1cd6dd21950dbd581f12682fc6098ed1",
+    "mtime": 1793076733.3120434,
+    "seen": 1793077442.308985,
+    "ast_hash": "e8bae9613cf82105af85b8596867fc5c",
+    "semantic_hash": ""
+  },
+  "data/levels/3-2.json": {
+    "mtime": 1793076362.02627,
+    "seen": 1793077442.308927,
+    "ast_hash": "b63e8c88fefc7a2378ccc178a131d64b",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/climbs_3-2.json": {
+    "mtime": 1793076220.7315745,
+    "seen": 1793077442.308974,
+    "ast_hash": "f3bf6365f4c9bd6c950ca264112fcee3",
+    "semantic_hash": ""
+  },
+  "tests/test_level_3_2.py": {
+    "mtime": 1793076774.974427,
+    "seen": 1793077442.3089862,
+    "ast_hash": "2389414fc2cf983b3234a61ea4459ba8",
     "semantic_hash": ""
   }
 }

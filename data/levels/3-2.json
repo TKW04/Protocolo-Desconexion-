@@ -1,0 +1,512 @@
+{
+	"_notes": "NIVEL 3-2 «Sin filtro» (paso 12 de docs/propuesta-mundo-3.md §8, 2026-10-27; diseño en su §4.2 y §4.2.1, desvíos en §8.1). Horizontal de 250 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 420 s. Llega con todo el kit del Mundo 2 (pulso, láser, Debug, dash y golpe al suelo) y SIN Pellizcar: lo da «Recortar». Contador de likes a 0. INICIO «Estudio» (0-22): vórtice en (3, 11), 1 punto y la herramienta «Recortar» (crop_tool recortar, 12, 11): pulso de espaldas -> Pellizcar, Eco «Te queda mejor así.» (importante) y el aviso «Pellizcar: I / RB (mando)». La salida es un marco pequeño (marco_salida, 21, 11): uso obligatorio a 9 tiles. TRAMO 1 «Recorte» (23-75): marco de pared de 2 tiles (marco_recorte_1, 30-31, fila 11), línea de Eco no importante en la 40 («Ese marco de la galería… ahora sí cabes.»: recuerda el secreto A del 3-1), bloque (42-45, de pie en la 9) con un marco en el suelo (marco_suelo, 46, 10) que deja caer comprimido a una galería de 1 fila (46-51) bajo un muro hasta el techo; al salir se recupera el tamaño y un foso de 2 con pinchos (55-56) pide el salto normal (comprimido no llega). 1 punto. TRAMO 2 «Filtro» (76-124): cargador_1 (82) a la entrada; suelo elevado (84-114, de pie en la 9) bajo el filtro «Filtro: Orejitas · Brillo +40» (86-112, filas 4-10): parece un pasillo llano y tiene dos suelos falsos (91 y 94, fosos de 2 con salida) que solo enseña el Debug. El de la 94 da al sótano del secreto A. 1 punto (113). PAUSA (125-129): sync_1 (127). TRAMO 3 «Mezcla» (130-186): 15 corazones (130-144), publicacion_ladron (146), Ladrón de likes ladron_1 (149) justo antes de la ♥10 (152-153, de una vía), única subida al bloque (155-166, de pie en la 7) con cargador_2 (158), publicacion_repisa (161), 1 punto (165) y la ♥20 del secreto B; columna-marco (173) que tapa el flash del Influencer influencer_1 (175, mira a la izquierda) y el filtro «Filtro: Glamour · Ojos grandes» (177-186) con un pincho oculto hundido en el suelo (181, 12). TRAMO 4 «El filtro se mueve» (187-240): cargador_3 (200), filtro móvil «Filtro: Glow · Piel perfecta» (7 x 7) entre las columnas 204, 207 y 210 cada 4 s sobre tres pinchos hundidos (206, 210, 214; el de la 210 lo tapan sus tres sitios: Debug), marco pequeño entre filtros (marco_entre_filtros, 219, 11), escalera (221-224) a la orilla (225-228, de pie en la 6, 1 punto) y, a 4 tiles, la repisa del secreto C (233-235) con su marco (marco_repisa, 236, 6). CIERRE (241-249): 1 punto y la terminal «Publicar sin filtro» (pulso) en (246, 10): vuelta al hub; desbloquea el 3-3. Sin mensaje propio (msg_3_2 está en el marco pequeño del 3-1). Escena: scenes/levels/3-2.tscn (python3 tools/build_level.py data/levels/3-2.json).",
+	"id": "3-2",
+	"name": "Sin filtro",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"target_duration_s": 420,
+	"difficulty": 4,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": false
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio «Estudio»",
+			"x_from": 0,
+			"x_to": 22
+		},
+		{
+			"name": "Tramo 1 «Recorte»",
+			"x_from": 23,
+			"x_to": 75
+		},
+		{
+			"name": "Tramo 2 «Filtro»",
+			"x_from": 76,
+			"x_to": 124,
+			"patterns": [
+				"ver_antes_de_pisar"
+			]
+		},
+		{
+			"name": "Pausa",
+			"x_from": 125,
+			"x_to": 129
+		},
+		{
+			"name": "Tramo 3 «Mezcla»",
+			"x_from": 130,
+			"x_to": 186,
+			"patterns": [
+				"pagar_con_likes"
+			]
+		},
+		{
+			"name": "Tramo 4 «El filtro se mueve»",
+			"x_from": 187,
+			"x_to": 240
+		},
+		{
+			"name": "Cierre «Publicar sin filtro»",
+			"x_from": 241,
+			"x_to": 249
+		}
+	],
+	"grid": [
+		"##########################################################################################################################################################################################################################################################",
+		"#....................#........##...............#####.......................................................................................................................................................................#................#............#",
+		"#....................#........##...............#####.......................................................................................................................................................................#................#............#",
+		"#....................#........##...............#####..................................................................................................................o....................................................#................#............#",
+		"#....................#........##...............#####................................................................................................................####...................................................#................#............#",
+		"#....................#........##...............#####.......................................................................................................................................................................#................####.........#",
+		"#....................#........##...............#####.......................................................................................................................................................................#......o..........oS#.........#",
+		"#....................#........##...............#####.................................................................................................................o.....................................................#.....####....#######.........#",
+		"#....................#........##...............#####.......................................................................................................############....................................................#...######....................#",
+		"#....................#........##...............#####.............................................................o.........................................############....................................................#...######....................#",
+		"#....................#........##..........####.#####................................#######.##.####################........................................############......#.............................................#.########....................#",
+		"#..P....o..........................o......####......................................#######.##...ooS###############............C.....................E.....############......#.E.............................................########..............o..G..#",
+		"#######################################################^^############################################################################################################################^########################^###^###^###################################",
+		"##########################################################################################################################################################################################################################################################"
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 127,
+			"y": 11
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_original",
+			"x": 99,
+			"y": 11,
+			"reward": "attention_points",
+			"points": 2,
+			"needs_debug": true,
+			"note": "A «Original» (§4.2.1): el suelo falso de la columna 94 (solo se ve con el Debug) deja caer al sótano (foso de 2); comprimido se pasa el marco pequeño marco_original (95, 11) a la vitrina de 1 fila (96-99) con 2 puntos (97, 98). Debug + Pellizcar. Sin la foto «original» (no hay arte de decor para ella)."
+		},
+		{
+			"id": "secreto_pose_sin_flash",
+			"x": 165,
+			"y": 3,
+			"object": "power_bank_pickup",
+			"reward": [
+				"attention_points",
+				"power_bank"
+			],
+			"points": 1,
+			"note": "B «Pose sin flash» (§4.2.1): desde el bloque de la ♥10, la plataforma likes_20 (162-163, fila 6, de una vía) es la única subida a la repisa alta (164-167, de pie en la 3) con el power bank del nivel (power_bank_3_2, esta celda) y 1 punto (166, 3). 20 likes: los 15 corazones del tramo y una publicación sin dejarse robar, o las dos publicaciones (publicacion_ladron y publicacion_repisa)."
+		},
+		{
+			"id": "secreto_repisa",
+			"x": 238,
+			"y": 6,
+			"reward": "attention_points",
+			"points": 1,
+			"note": "C (§4.2.1): repisa (233-235, fila 7) a 4 tiles de la orilla del Tramo 4 (225-228): solo con salto + dash aéreo a tamaño normal; al aterrizar, comprimido por el marco marco_repisa (236, 6) al nicho (237-238) con 1 punto (237, 6)."
+		}
+	],
+	"enemies": [
+		{
+			"id": "ladron_1",
+			"type": "like_thief",
+			"x": 149,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128
+			}
+		},
+		{
+			"id": "influencer_1",
+			"type": "influencer_bot",
+			"x": 175,
+			"y": 11,
+			"params": {
+				"facing": -1
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "crop_tool",
+			"x": 12,
+			"y": 11,
+			"params": {
+				"id": "recortar",
+				"ability": "compress",
+				"story_line": "recorte_3_2"
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 21,
+			"y": 11,
+			"params": {
+				"id": "marco_salida",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 30,
+			"y": 11,
+			"params": {
+				"id": "marco_recorte_1",
+				"orientation": "wall",
+				"length_tiles": 2
+			}
+		},
+		{
+			"type": "eco_line",
+			"x": 40,
+			"y": 10,
+			"params": {
+				"id": "eco_marco_galeria",
+				"text": "Ese marco de la galería… ahora sí cabes.",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"duration_s": 4.0,
+				"once": true
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 46,
+			"y": 10,
+			"params": {
+				"id": "marco_suelo",
+				"orientation": "floor",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "charger",
+			"x": 82,
+			"y": 11,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "filter_zone",
+			"x": 86,
+			"y": 4,
+			"params": {
+				"id": "filtro_orejitas",
+				"label": "Filtro: Orejitas · Brillo +40",
+				"width_tiles": 27,
+				"height_tiles": 7,
+				"entry": "left",
+				"fake_floor": [
+					[
+						91,
+						10,
+						1,
+						1
+					],
+					[
+						94,
+						10,
+						1,
+						1
+					]
+				]
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 95,
+			"y": 11,
+			"params": {
+				"id": "marco_original",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 130,
+			"y": 11,
+			"params": {
+				"id": "corazon_01"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 131,
+			"y": 11,
+			"params": {
+				"id": "corazon_02"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 132,
+			"y": 11,
+			"params": {
+				"id": "corazon_03"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 133,
+			"y": 11,
+			"params": {
+				"id": "corazon_04"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 134,
+			"y": 11,
+			"params": {
+				"id": "corazon_05"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 135,
+			"y": 11,
+			"params": {
+				"id": "corazon_06"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 136,
+			"y": 11,
+			"params": {
+				"id": "corazon_07"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 137,
+			"y": 11,
+			"params": {
+				"id": "corazon_08"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 138,
+			"y": 11,
+			"params": {
+				"id": "corazon_09"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 139,
+			"y": 11,
+			"params": {
+				"id": "corazon_10"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 140,
+			"y": 11,
+			"params": {
+				"id": "corazon_11"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 141,
+			"y": 11,
+			"params": {
+				"id": "corazon_12"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 142,
+			"y": 11,
+			"params": {
+				"id": "corazon_13"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 143,
+			"y": 11,
+			"params": {
+				"id": "corazon_14"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 144,
+			"y": 11,
+			"params": {
+				"id": "corazon_15"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 146,
+			"y": 11,
+			"params": {
+				"id": "publicacion_ladron"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 152,
+			"y": 10,
+			"params": {
+				"id": "likes_10",
+				"threshold": 10,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "charger",
+			"x": 158,
+			"y": 7,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 161,
+			"y": 7,
+			"params": {
+				"id": "publicacion_repisa"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 162,
+			"y": 6,
+			"params": {
+				"id": "likes_20",
+				"threshold": 20,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 165,
+			"y": 3,
+			"params": {
+				"id": "power_bank_3_2"
+			}
+		},
+		{
+			"type": "filter_zone",
+			"x": 177,
+			"y": 6,
+			"params": {
+				"id": "filtro_glamour",
+				"label": "Filtro: Glamour · Ojos grandes",
+				"width_tiles": 10,
+				"height_tiles": 7,
+				"entry": "left"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 200,
+			"y": 11,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "filter_zone",
+			"x": 204,
+			"y": 6,
+			"params": {
+				"id": "filtro_movil",
+				"label": "Filtro: Glow · Piel perfecta",
+				"width_tiles": 7,
+				"height_tiles": 7,
+				"entry": "left",
+				"positions": [
+					[
+						204,
+						6
+					],
+					[
+						207,
+						6
+					],
+					[
+						210,
+						6
+					]
+				],
+				"cycle_s": 4.0
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 219,
+			"y": 11,
+			"params": {
+				"id": "marco_entre_filtros",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 236,
+			"y": 6,
+			"params": {
+				"id": "marco_repisa",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 246,
+			"y": 10,
+			"params": {
+				"id": "terminal_sin_filtro",
+				"text": "Publicar sin filtro",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "3-3"
+		}
+	]
+}

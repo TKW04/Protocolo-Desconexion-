@@ -4,7 +4,7 @@
 # a 0, objetos y economia (7 puntos, 2 cargadores, 18 corazones, 3 publicaciones,
 # power bank, vida extra y los mensajes msg_3_1 / msg_3_2), la Q del contador de
 # likes en el cartel de la sala de inicio, los corazones que encienden la ♥5, los
-# tres secretos (A tras el marco pequeno, B con «Borrar publicaciones» y las
+# tres secretos (A tras el marco pequeno, tambien rejugado con Pellizcar desde el paso 12, B con «Borrar publicaciones» y las
 # inversas, C tras la pared con glitch), el punto de sincronizacion, la terminal
 # «Publicar» -> hub con el 3-1 completado, y la carpeta del Mundo 3 tras Autoplay.
 # La ruta completa la comprueba tools/validate_level.py (tests/test_level_3_1.py);
@@ -70,6 +70,7 @@ func after_each() -> void:
 	GameState.reset_progress()
 	GameState.set_ability_unlocked(GameState.ABILITY_DASH, false)
 	GameState.set_ability_unlocked(POUND, false)
+	GameState.set_ability_unlocked(GameState.ABILITY_COMPRESS, false)
 	GameState.set_likes(0)
 	GameState.last_checkpoint.clear()
 	GameState.save_path = _saved_path
@@ -214,6 +215,54 @@ func test_secret_a_room_behind_the_small_frame() -> void:
 	assert_eq(GameState.get_power_banks_found(), banks + 1, "Y el power bank")
 
 
+## Paso 12 (2026-10-27, §4.1.1 y §9.8): el 3-1 rejugado con Pellizcar ya obtenido en el
+## 3-2. Sin el gesto el marco pequeno (58, 11) cierra el paso; comprimido, Isak lo cruza
+## andando desde la derecha y recoge en la salita msg_3_2, su punto y el power bank.
+func test_secret_a_replayed_with_compress_through_the_small_frame() -> void:
+	GameState.obtain_ability(GameState.ABILITY_COMPRESS)
+	GameState.seen_notices[GameState.ABILITY_COMPRESS] = true
+	GameState.unlock_level(&"3-2")
+	GameState.mark_level_completed(&"3-1")
+	GameState.mark_level_completed(&"3-2")
+	_start()
+	await _arrive()
+	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Pellizcar, del 3-2")
+	assert_false(GameState.has_memory(&"msg_3_2"))
+	var frame_x: float = 58 * TILE
+	# Sin comprimir: el marco no deja pasar.
+	_teleport(60, 11)
+	await wait_physics_frames(3)
+	_isak.input.move_axis = -1.0
+	await wait_physics_frames(90)
+	_isak.input.move_axis = 0.0
+	assert_gt(_isak.global_position.x, frame_x + TILE, "De pie no cabe por el marco de 1 tile")
+	assert_false(GameState.has_memory(&"msg_3_2"))
+	# Comprimido: pasa y recoge lo de la salita.
+	var before: int = GameState.attention_points
+	var banks: int = GameState.get_power_banks_found()
+	assert_eq(_isak.compress_denial(), &"", "Pellizcar disponible en el 3-1")
+	# Un toque de gesture_pinch: el flanco se borra en cuanto Isak lo usa (si siguiera puesto, el cuadro
+	# siguiente pediria ya el tamano).
+	var release := func(_compressed: bool) -> void: _isak.input.pinch_pressed = false
+	_isak.compress_changed.connect(release)
+	_isak.input.pinch_pressed = true
+	await wait_physics_frames(15)
+	_isak.compress_changed.disconnect(release)
+	_isak.input.pinch_pressed = false
+	assert_true(_isak.is_compressed(), "Pellizcar en el 3-1")
+	_isak.input.move_axis = -1.0
+	for i: int in 360:
+		if _isak.global_position.x < 54 * TILE:
+			break
+		await wait_physics_frames(1)
+	_isak.input.move_axis = 0.0
+	assert_lt(_isak.global_position.x, frame_x, "Comprimido cruza el marco hasta la salita")
+	await wait_physics_frames(6)
+	assert_true(GameState.has_memory(&"msg_3_2"), "El mensaje de Mamá del capitulo del 3-2")
+	assert_eq(GameState.attention_points, before + 1, "Y el punto del secreto")
+	assert_eq(GameState.get_power_banks_found(), banks + 1, "Y el power bank")
+
+
 func test_secret_b_needs_zero_likes() -> void:
 	_start()
 	await _arrive()
@@ -274,7 +323,8 @@ func test_publish_terminal_completes_the_level_and_returns_to_the_hub() -> void:
 	assert_eq(GameState.likes, 0, "Los likes no se guardan")
 	var panel: FolderPanel = _main.get_hub().get_folder(&"m3").get_folder_panel()
 	assert_eq(panel.get_level_state(&"3-1"), HubWorlds.STATE_COMPLETED)
-	assert_eq(panel.get_level_state(&"3-2"), HubWorlds.STATE_LOCKED, "El 3-2 aun «Próximamente»")
+	# Paso 12 (2026-10-27): el 3-2 «Sin filtro» ya es jugable.
+	assert_eq(panel.get_level_state(&"3-2"), HubWorlds.STATE_AVAILABLE, "El 3-2 disponible («Nueva foto»)")
 
 
 func test_world_3_folder_lists_3_1_after_autoplay_and_loads_it() -> void:
@@ -292,7 +342,9 @@ func test_world_3_folder_lists_3_1_after_autoplay_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m3"))
 	assert_eq(levels.size(), 4, "3-1, 3-2, 3-3 y el jefe")
 	assert_eq(panel.level_text(levels[0]), "3-1 Galería de perfil - Nuevo")
-	for i: int in range(1, 4):
+	# Paso 12 (2026-10-27): el 3-2 es jugable (bloqueado hasta completar el 3-1); el 3-3 y el jefe, «Próximamente».
+	assert_false(HubWorlds.is_coming_soon(levels[1]), "El 3-2 ya existe")
+	for i: int in range(2, 4):
 		assert_true(HubWorlds.is_coming_soon(levels[i]), "%s «Próximamente»" % levels[i]["id"])
 	assert_eq(panel.level_text(levels[3]), "Jefe: La Curadora - Próximamente")
 	for line: String in panel.get_lines():

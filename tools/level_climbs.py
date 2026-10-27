@@ -29,6 +29,8 @@ from collections import deque
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level as vl  # noqa: E402
+import level_catalog  # noqa: E402
+import world3_model  # noqa: E402
 
 FORMAT = "isak-climbs/1"
 
@@ -57,6 +59,10 @@ def climbs(level, root=ROOT):
         # fases 1-2 (plataformas de una via, sin el jefe ni sus ataques; tools/validate_boss.py).
         import validate_boss
         level = validate_boss.geometry_level(level)
+    # Mundo 3 (paso 12 de docs/propuesta-mundo-3.md, el 3-2 real, 2026-10-27): la herramienta «Recortar» como el
+    # interruptor que da Pellizcar, igual que en validate_level.validate (sin crop_tool el nivel no cambia); sin
+    # esto el marco pequeno de la salida del Estudio cerraba el paso y el 3-2 salia con 0 subidas.
+    level = world3_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     validator = vl.Validator(level, rules)
     model = validator.model
     # Acertijo de Calc (tanda H2 del paso 14, 2026-10-17): con sus piezas hechas la pared con glitch es
@@ -89,6 +95,9 @@ def climbs(level, root=ROOT):
                 seen.add(to)
                 queue.append(to)
             if e["kind"] not in ("jump", "jump_run") or e["rise"] <= vl.EPS:
+                continue
+            # Las subidas comprimido (Pellizcar) las mide tests/test_compress.gd con su caja; aqui, el Isak normal.
+            if world3_model.is_pinched(node) or world3_model.is_pinched(to):
                 continue
             w = model.world(state, bool(e.get("debug")))
             a, b = ledge_of(w, node), ledge_of(w, to)

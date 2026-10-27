@@ -84,11 +84,11 @@ Una IA que edita todo lo que ve. Su cuerpo es un marco de foto gigante y su cabe
 
 > **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).
 
-## 8.8 Estado del Mundo 3 (2026-10-26): mecánicas implementadas y el 3-1 jugable
+## 8.8 Estado del Mundo 3 (2026-10-27): mecánicas implementadas, el 3-1 y el 3-2 jugables
 
 Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada decisión están en [propuesta-mundo-3.md](propuesta-mundo-3.md) (§8 y §8.1); lo pendiente, en [08-pendientes.md](08-pendientes.md).
 
-**Hecho (pasos 0-10 del plan):** todas las piezas del mundo funcionan en salas de prueba y el validador las modela. **El 3-1 «Galería de perfil» es jugable** desde la carpeta M3 al vencer a Autoplay (220 × 14; corazones y plataformas ♥5 / ♥10 / ♥15, dos Influencer con columnas que tapan el flash, un Ladrón antes del ♥15, pared de espejo con plataformas del reflejo, un punto de sincronización a mitad; el cartel de inicio lleva la Q del contador de likes). Secretos: A, el marco pequeño (`msg_3_2`, 1 punto y el power bank, solo con Pellizcar: se vuelve desde el 3-2); B, «Sin likes» (`msg_3_1`, con «Borrar publicaciones»); C, la vida extra del Mundo 3 (Debug + salto con dash aéreo). El 3-2, el 3-3 y el jefe salen «Próximamente».
+**Hecho (pasos 0-12 del plan):** todas las piezas del mundo funcionan en salas de prueba y el validador las modela. **El 3-1 «Galería de perfil» es jugable** desde la carpeta M3 al vencer a Autoplay (220 × 14; corazones y plataformas ♥5 / ♥10 / ♥15, dos Influencer con columnas que tapan el flash, un Ladrón antes del ♥15, pared de espejo con plataformas del reflejo, un punto de sincronización a mitad; el cartel de inicio lleva la Q del contador de likes). Secretos: A, el marco pequeño (`msg_3_2`, 1 punto y el power bank, solo con Pellizcar: se vuelve desde el 3-2); B, «Sin likes» (`msg_3_1`, con «Borrar publicaciones»); C, la vida extra del Mundo 3 (Debug + salto con dash aéreo). **El 3-2 «Sin filtro» es jugable** tras completar el 3-1 («Nueva foto»; 250 × 14, dificultad 4): «Recortar» al empezar da Pellizcar («Te queda mejor así.») y la salida del Estudio ya es un marco pequeño; marcos encadenados en el Recorte (pared, suelo con galería de 1 fila y un foso que pide el salto a tamaño normal; Eco recuerda el marco de la galería), el primer filtro grande con dos suelos falsos, la mezcla de Ladrón, ♥10, Influencer tapado por una columna-marco y un segundo filtro, y el filtro que se mueve entre tres sitios sobre pinchos quietos. Secretos: A, la vitrina «Original» bajo un suelo falso (2 puntos; Debug + Pellizcar); B, la repisa de la ♥20 (power bank y 1 punto); C, el nicho tras un marco al que se llega con salto + dash aéreo (1 punto). Sin mensaje propio: `msg_3_2` está en el marco del 3-1, que ahora se recoge comprimido. El 3-3 y el jefe salen «Próximamente».
 
 **Decisiones tomadas (frente al mapa conceptual de arriba):**
 - **Los likes sostienen el mundo** y **no se guardan** (se vacían al terminar el nivel con «Los likes no se guardan.»); perder likes nunca bloquea (publicaciones reutilizables cerca de cada umbral, corazones del golpe recuperables).
@@ -115,4 +115,6 @@ Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada deci
 
 **Salas de prueba** (`-- --start-level=<sala>`, builds de depuración): `likes_test`, `filtro_test`, `espejos_test`, `vitrina_test` (Influencer y Ladrón), `reflejo_test` (cazador, Reflejo falso y placas) y `recorte_test` («Recortar» y marcos pequeños). Desde el paso 9: arte por script del mundo (tileset, fondo, objetos y enemigos; el Influencer, provisional), Eco con marco dorado, ayudas Q y fichas del álbum de los 16 tipos nuevos.
 
-**Sigue:** bot de la galería sobre el 3-1 (11), niveles 3-2 y 3-3 con su bot (12-13), jefe La Curadora (14-19) y arte final con AutoSprite con permiso (23).
+**Bot de la galería** (`tools/play_gallery_bot.gd -- --level 3-1|3-2`): completa el 3-1 (68 s de juego) y el 3-2 (85 s, obtiene Pellizcar) sin golpes, muertes ni robos.
+
+**Sigue:** nivel 3-3 con su bot (13), jefe La Curadora (14-19) y arte final con AutoSprite con permiso (23).

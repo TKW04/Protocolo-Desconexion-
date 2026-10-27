@@ -1063,10 +1063,11 @@
 		"appear_pop_scale": 1.5
 	},
 	"memory_pickup": {
-		"_notes": "PROPUESTA (2026-10-19, ajustable jugando). draw_scale: escala entera del arte de 24x20 (x2: 48 x 40 px). center_px: centro del dibujo y de la zona de recogida respecto a la esquina de la celda; va en la mitad alta de la celda (a la altura del pecho de Isak de pie en esa fila) para no tapar un punto de atencion de la misma celda (1-2, celda 26, 37). size_px: zona de recogida. Flota bob_px a bob_hz (tiempo del mundo); al recogerlo, memory_pickup_collect sube collect_rise_px. notice: aviso del SISTEMA (no de Eco; docs/propuesta-recuerdos.md §1.4 y §9.5) arriba en el centro de la pantalla, sin pausar: lines (fuente de textos, solo sus glifos; {remitente} = sender del mensaje), scale entera, top_px, padding_px, line_gap_px, colores de la paleta del Mundo 1 sin rojos (texto banner_blanco, fondo noche_profunda con fill_alpha y borde debug_cian), show_s y fade_s (lo ultimo de show_s se desvanece), en tiempo real; layer por encima del HUD y del cuadro de Eco.",
+		"_notes": "PROPUESTA (2026-10-19, ajustable jugando). draw_scale: escala entera del arte de 24x20 (x2: 48 x 40 px). center_px: centro del dibujo y de la zona de recogida respecto a la esquina de la celda; va en la mitad alta de la celda (a la altura del pecho de Isak de pie en esa fila) para no tapar un punto de atencion de la misma celda (1-2, celda 26, 37). size_px: zona de recogida; reach_floor_px (2026-10-27, paso 12 de docs/propuesta-mundo-3.md): la zona baja hasta esa y de la celda (64 = su suelo) para que la toque tambien Isak comprimido (caja de 32 x 40), que no llegaba a la mitad alta (msg_3_2 tras el marco pequeno del 3-1). Flota bob_px a bob_hz (tiempo del mundo); al recogerlo, memory_pickup_collect sube collect_rise_px. notice: aviso del SISTEMA (no de Eco; docs/propuesta-recuerdos.md §1.4 y §9.5) arriba en el centro de la pantalla, sin pausar: lines (fuente de textos, solo sus glifos; {remitente} = sender del mensaje), scale entera, top_px, padding_px, line_gap_px, colores de la paleta del Mundo 1 sin rojos (texto banner_blanco, fondo noche_profunda con fill_alpha y borde debug_cian), show_s y fade_s (lo ultimo de show_s se desvanece), en tiempo real; layer por encima del HUD y del cuadro de Eco.",
 		"draw_scale": 2,
 		"center_px": [32, 4],
 		"size_px": [36, 32],
+		"reach_floor_px": 64,
 		"bob_px": 2.0,
 		"bob_hz": 1.0,
 		"collect_rise_px": 32.0,

@@ -8,7 +8,8 @@
 ## morir ni ser robado, 1 si no):
 ##   Godot --headless --fixed-fps 60 --path . -s tools/play_gallery_bot.gd
 ##        [-- --level 3-1|3-2|3-3|<sala>_test] [--path <camino.json>] [--verbose] [--shots <carpeta>]
-## Sin --path el bot exporta el camino con el validador (unos 25 s de pared en el 3-1).
+## Sin --path el bot exporta el camino con el validador (unos 25 s de pared en el 3-1 y unos
+## 20 s en el 3-2, que obtiene Pellizcar en «Recortar»).
 ## Con ventana: quita --headless.
 extends SceneTree
 
