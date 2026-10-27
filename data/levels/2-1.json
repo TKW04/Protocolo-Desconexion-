@@ -1,5 +1,5 @@
 {
-  "_notes": "Nivel 2-1 «Para ti» (paso 11 de docs/propuesta-mundo-2.md §8; diseno en su §4.1 y §4.1.1, desvios en §8.1). Feed vertical de 20 x 130 con scroll forzado hacia arriba: Inicio parado con el cartel «Para ti» (Q de Eco sobre el reloj del HUD), Tramo 1 a 0,65 tiles/s (cartel «Desliza hacia arriba» con la Q del borde), Tramo 2 a 0,78 con el primer video en autoplay (ola) y el segundo (rayo), Pausa con sync_1 y cargador_1 (el scroll se para), Tramo 3 a 0,78 con el bucle «Solo uno más» (banda h 78-92; salida con tarjetas ocultas a la derecha, solo con el Debug), el cargador_bucle de carga completa en la banda (regla anti-atasco: quien entra sin energia recarga en cada repeticion) y el video de la cuenta, Tramo 4 a 0,9 con las primeras tarjetas fragiles y la primera zona de clones (se cruza sin pararse: aun no hay golpe al suelo) y el Cierre con la terminal que se activa sola tras la cuenta de 3 s y vuelve al hub. Secretos: A (video en negro, msg_2_1, Debug sin dash), B (vida extra tras la pared con glitch, salto + dash aereo y Debug) y C (repisa alta). Alturas h desde el suelo de la sala de inicio: fila = 129 - h. Tileset y fondo del Mundo 1 (provisional hasta el arte del paso 10). Escena: scenes/levels/2-1.tscn (python3 tools/build_level.py data/levels/2-1.json). Arreglo tras la primera prueba del usuario (2026-10-23): scroll un 30 % mas rapido (0,5/0,6/0,7 -> 0,65/0,78/0,9 tiles/s) y cargador_bucle (+100, 10 s) dentro de la banda del bucle (docs/propuesta-mundo-2.md §8.1).",
+  "_notes": "Nivel 2-1 «Para ti» (paso 11 de docs/propuesta-mundo-2.md §8; diseno en su §4.1 y §4.1.1, desvios en §8.1). Feed vertical de 20 x 130 con scroll forzado hacia arriba: Inicio parado con el cartel «Para ti» (Q de Eco sobre el reloj del HUD), Tramo 1 a 0,65 tiles/s (cartel «Desliza hacia arriba» con la Q del borde), Tramo 2 a 0,78 con el primer video en autoplay (ola) y el segundo (rayo), Pausa con sync_1 y cargador_1 (el scroll se para), Tramo 3 a 0,78 con el bucle «Solo uno más» (banda h 78-92; salida con tarjetas ocultas a la derecha, solo con el Debug), el cargador_bucle de carga completa en la banda (regla anti-atasco: quien entra sin energia recarga en cada repeticion) y el video de la cuenta, Tramo 4 a 0,9 con las primeras tarjetas fragiles y la primera zona de clones (se cruza sin pararse: aun no hay golpe al suelo) y el Cierre con la terminal que se activa sola tras la cuenta de 3 s y vuelve al hub. Secretos: A (video en negro, msg_2_1, Debug sin dash), B (vida extra tras la pared con glitch, salto + dash aereo y Debug) y C (repisa alta). Alturas h desde el suelo de la sala de inicio: fila = 129 - h. Tileset y fondo del Mundo 1 (provisional hasta el arte del paso 10). Escena: scenes/levels/2-1.tscn (python3 tools/build_level.py data/levels/2-1.json). Arreglo tras la primera prueba del usuario (2026-10-23): scroll un 30 % mas rapido (0,5/0,6/0,7 -> 0,65/0,78/0,9 tiles/s); segunda prueba (2026-10-26): base +20 % y tramos acelerados +23 % (0,65/0,78/0,9 -> 0,78/0,96/1,1 tiles/s), camino 160,5 -> 134,2 s y cargador_bucle (+100, 10 s) dentro de la banda del bucle (docs/propuesta-mundo-2.md §8.1).",
   "id": "2-1",
   "name": "Para ti",
   "world": 2,
@@ -20,27 +20,27 @@
   },
   "scroll": {
     "start_resume_row": 121,
-    "default_speed_tiles_s": 0.65,
+    "default_speed_tiles_s": 0.78,
     "stages": [
       {
         "y_from": 90,
         "y_to": 129,
-        "speed_tiles_s": 0.65
+        "speed_tiles_s": 0.78
       },
       {
         "y_from": 67,
         "y_to": 89,
-        "speed_tiles_s": 0.78
+        "speed_tiles_s": 0.96
       },
       {
         "y_from": 35,
         "y_to": 66,
-        "speed_tiles_s": 0.78
+        "speed_tiles_s": 0.96
       },
       {
         "y_from": 0,
         "y_to": 34,
-        "speed_tiles_s": 0.9
+        "speed_tiles_s": 1.1
       }
     ],
     "stops": [

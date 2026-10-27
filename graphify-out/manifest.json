@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "data/help.json": {
-    "mtime": 1793071504.2557995,
-    "seen": 1793072893.7332811,
-    "ast_hash": "b9cabb8793ee3610b8414e1f1c6d5ad3",
+    "mtime": 1793084561.17054,
+    "seen": 1793085320.717493,
+    "ast_hash": "e41f8fcb03b984ef92857ace08df5886",
     "semantic_hash": ""
   },
   "data/hide_mode.json": {
@@ -108,15 +108,15 @@
     "semantic_hash": ""
   },
   "data/hub.json": {
-    "mtime": 1793078440.6107247,
-    "seen": 1793080955.920619,
-    "ast_hash": "56ee6858c2046f375f7e03b0ff747e89",
+    "mtime": 1793083339.0066624,
+    "seen": 1793083728.115883,
+    "ast_hash": "15c04d30759339e0c7de77efd9a10dbf",
     "semantic_hash": ""
   },
   "data/hud.json": {
-    "mtime": 1793041321.7697256,
-    "seen": 1793041792.6173928,
-    "ast_hash": "3ecbf9a0158e485ace7fee2550b98a3f",
+    "mtime": 1793083152.5500147,
+    "seen": 1793083728.115884,
+    "ast_hash": "edb97db3eca0c044c84dfbed418ca7cb",
     "semantic_hash": ""
   },
   "data/isak_abilities.json": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "data/text_font.json": {
-    "mtime": 1792427109.4320245,
-    "seen": 1792467567.608307,
-    "ast_hash": "c53c036a8c34e8b08df695159b0121a3",
+    "mtime": 1793084312.473358,
+    "seen": 1793085320.717536,
+    "ast_hash": "d520ef21f6577f19030ae82bac4e205a",
     "semantic_hash": ""
   },
   "data/tileset_mundo1.json": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "tools/gen_album_cards.py": {
-    "mtime": 1793071511.506444,
-    "seen": 1793072893.733361,
-    "ast_hash": "50876cba4454584ad4faf4dbc7c2fa96",
+    "mtime": 1793084561.1427,
+    "seen": 1793085320.7175791,
+    "ast_hash": "10e073bc8a7093462646cd74e0568764",
     "semantic_hash": ""
   },
   "tools/gen_alert_bubble.py": {
@@ -480,9 +480,9 @@
     "semantic_hash": ""
   },
   "tools/gen_text_font.py": {
-    "mtime": 1792427108.9959445,
-    "seen": 1792467567.608329,
-    "ast_hash": "38c9738408439ef587342308d88f2db9",
+    "mtime": 1793084312.4765098,
+    "seen": 1793085320.7175941,
+    "ast_hash": "ae65b412dc938ab28c7a45658b0ed4dc",
     "semantic_hash": ""
   },
   "tools/gen_tileset_mundo1.py": {
@@ -576,15 +576,15 @@
     "semantic_hash": ""
   },
   "tools/render_level_map.py": {
-    "mtime": 1792739381.329773,
-    "seen": 1792742193.06983,
-    "ast_hash": "40a1d8be6623935e83135267afb04833",
+    "mtime": 1793111140.5833542,
+    "seen": 1793111367.51177,
+    "ast_hash": "69223d47e7f76d6e4a6ddf6288be3069",
     "semantic_hash": ""
   },
   "tools/run_tests.sh": {
-    "mtime": 1793082551.4774628,
-    "seen": 1793082669.998192,
-    "ast_hash": "8ba2715d5849e97362ba3dde65412173",
+    "mtime": 1793115501.3580573,
+    "seen": 1793115925.300546,
+    "ast_hash": "7294af05b8fa81fe4c55bf3044d65fd2",
     "semantic_hash": ""
   },
   "tools/upgrade_catalog.py": {
@@ -750,9 +750,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1793080266.606439,
-    "seen": 1793080955.920772,
-    "ast_hash": "10e7168fd71d298143c47191f58191c7",
+    "mtime": 1793111340.7876208,
+    "seen": 1793111367.5118022,
+    "ast_hash": "0f5a0394d8a27716278687d4a6369837",
     "semantic_hash": ""
   },
   "docs/01-ficha-reglas.md": {
@@ -798,15 +798,15 @@
     "semantic_hash": ""
   },
   "docs/08-pendientes.md": {
-    "mtime": 1793047639.620344,
-    "seen": 1793056300.143834,
-    "ast_hash": "5e20db883aaf472656e2e5290ace3b8d",
+    "mtime": 1793115862.0119603,
+    "seen": 1793115925.300578,
+    "ast_hash": "2a8989241f6a37ad364e792f4ea433e1",
     "semantic_hash": ""
   },
   "docs/INDEX.md": {
-    "mtime": 1792750339.143118,
-    "seen": 1792767630.1311412,
-    "ast_hash": "9632b7dfb48bf9a5c359dc963d43ecfb",
+    "mtime": 1793111287.4656622,
+    "seen": 1793111367.511809,
+    "ast_hash": "3852ea937c5962545b08a172cac8c9a7",
     "semantic_hash": ""
   },
   "docs/estilizacion-energia.md": {
@@ -816,9 +816,9 @@
     "semantic_hash": ""
   },
   "docs/guia-sprites-ia.md": {
-    "mtime": 1793020294.9351225,
-    "seen": 1793020986.547592,
-    "ast_hash": "9f9710fa915d888a7e911c2236d09377",
+    "mtime": 1793115801.5407367,
+    "seen": 1793115925.30058,
+    "ast_hash": "4c3a273d39a064814d087155ba5d6fd4",
     "semantic_hash": ""
   },
   "docs/mundo-1-notificaciones.md": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "docs/mundo-3-vitrina.md": {
-    "mtime": 1793082604.8900049,
-    "seen": 1793082669.998233,
-    "ast_hash": "be78e3d729ec59566b3b99e7f48d9e0d",
+    "mtime": 1793115862.013876,
+    "seen": 1793115925.300583,
+    "ast_hash": "c55dbf3553a0a21926905b6ec7cbf102",
     "semantic_hash": ""
   },
   "docs/mundo-4-chat.md": {
@@ -864,9 +864,9 @@
     "semantic_hash": ""
   },
   "docs/preguntas.md": {
-    "mtime": 1792984200.4667876,
-    "seen": 1792984295.2570791,
-    "ast_hash": "553c025676c7343c8717b8f307a46e4a",
+    "mtime": 1793111457.9132311,
+    "seen": 1793111469.2548149,
+    "ast_hash": "de5bc75969feb95916cebc8e625a6cc1",
     "semantic_hash": ""
   },
   "docs/propuesta-1-1-ampliado.md": {
@@ -942,9 +942,9 @@
     "semantic_hash": ""
   },
   "docs/lista-sonidos.md": {
-    "mtime": 1792788339.6173596,
-    "seen": 1792789940.6020968,
-    "ast_hash": "dbfe4f362c793301ba758090a4f69967",
+    "mtime": 1793085184.769754,
+    "seen": 1793085320.71766,
+    "ast_hash": "ddcfe5ba7ac2833de8eb500dc2ba0945",
     "semantic_hash": ""
   },
   "tests/fixtures/climbs_1-3.json": {
@@ -960,9 +960,9 @@
     "semantic_hash": ""
   },
   "data/audio.json": {
-    "mtime": 1792788319.3476498,
-    "seen": 1792789940.6019452,
-    "ast_hash": "3b30c18602c7125b1dc6f7e3afb1255a",
+    "mtime": 1793084741.595887,
+    "seen": 1793085320.71747,
+    "ast_hash": "e459b3166cbb6a742415e18c0e848b87",
     "semantic_hash": ""
   },
   "tests/test_audio_catalog.py": {
@@ -972,9 +972,9 @@
     "semantic_hash": ""
   },
   "tools/gen_audio_placeholders.py": {
-    "mtime": 1792747915.9061847,
-    "seen": 1792748387.0811222,
-    "ast_hash": "7a12414067dc68f4481ec83963941f6b",
+    "mtime": 1793084694.6618373,
+    "seen": 1793085320.71758,
+    "ast_hash": "6b07f2b6bd22585aed9acd0a9719e480",
     "semantic_hash": ""
   },
   "tools/validate_audio.py": {
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "tests/test_boss_validator.py": {
-    "mtime": 1792749266.5381246,
-    "seen": 1792749747.8436291,
-    "ast_hash": "05182a346f4cd5eac031aff4822490c7",
+    "mtime": 1793086236.9824026,
+    "seen": 1793086565.263083,
+    "ast_hash": "bd8b17266633422cabbfcbb6e5b3af78",
     "semantic_hash": ""
   },
   "tools/gen_boss_alert_major.py": {
@@ -1044,9 +1044,9 @@
     "semantic_hash": ""
   },
   "tools/validate_boss.py": {
-    "mtime": 1792749060.1540315,
-    "seen": 1792749747.8436842,
-    "ast_hash": "3714181ec7623090df469a245c08c89b",
+    "mtime": 1793083455.8160567,
+    "seen": 1793083728.116014,
+    "ast_hash": "321cd5727aebd16c4d5e262c2d04010d",
     "semantic_hash": ""
   },
   "data/boss_reward.json": {
@@ -1632,9 +1632,9 @@
     "semantic_hash": ""
   },
   "docs/propuesta-mundo-3.md": {
-    "mtime": 1793082604.8885658,
-    "seen": 1793082669.998271,
-    "ast_hash": "a8e486fec64a4601e781485235832f80",
+    "mtime": 1793111314.091973,
+    "seen": 1793111367.511828,
+    "ast_hash": "66f4d35f9af8d56e582b93445096767a",
     "semantic_hash": ""
   },
   "data/levels/likes_test.json": {
@@ -1650,9 +1650,9 @@
     "semantic_hash": ""
   },
   "data/enemies/influencer_bot.json": {
-    "mtime": 1793070288.487957,
-    "seen": 1793070847.7219782,
-    "ast_hash": "76815d952c6bbcf13b37cc3c1fbf2f58",
+    "mtime": 1793115801.5378003,
+    "seen": 1793115925.300411,
+    "ast_hash": "007d0ec98c92b262ab25bb148b45c1de",
     "semantic_hash": ""
   },
   "data/enemies/like_thief.json": {
@@ -1716,15 +1716,15 @@
     "semantic_hash": ""
   },
   "data/world3_background.json": {
-    "mtime": 1793070506.0105584,
-    "seen": 1793070847.722037,
+    "mtime": 1793084638.4725986,
+    "seen": 1793085320.717543,
     "ast_hash": "53fc927d30369de431d8316f7e301613",
     "semantic_hash": ""
   },
   "tools/gen_world3_background.py": {
-    "mtime": 1793070068.6975203,
-    "seen": 1793070847.722087,
-    "ast_hash": "cb2ec716209eef1444eb2e7e660b5214",
+    "mtime": 1793084628.4332848,
+    "seen": 1793085320.717605,
+    "ast_hash": "b5f187faf8a100ccc88e1de1b3df4a8c",
     "semantic_hash": ""
   },
   "tools/gen_world3_enemies.py": {
@@ -1788,9 +1788,9 @@
     "semantic_hash": ""
   },
   "tests/test_level_3_1.py": {
-    "mtime": 1793079987.6624563,
-    "seen": 1793080955.9206882,
-    "ast_hash": "acff7254a685bec647d0c8bd3d1bff21",
+    "mtime": 1793083348.421196,
+    "seen": 1793083728.115951,
+    "ast_hash": "bdd6f196ceddc930e4336463deb37163",
     "semantic_hash": ""
   },
   "data/levels/3-2.json": {
@@ -1806,9 +1806,9 @@
     "semantic_hash": ""
   },
   "tests/test_level_3_2.py": {
-    "mtime": 1793079987.6657896,
-    "seen": 1793080955.9206889,
-    "ast_hash": "993974faf67d5fd08a8061e02285a9ee",
+    "mtime": 1793083348.4194357,
+    "seen": 1793083728.115952,
+    "ast_hash": "fabbde9df3015f4c239ae12b16680e92",
     "semantic_hash": ""
   },
   "data/levels/3-3.json": {
@@ -1824,9 +1824,9 @@
     "semantic_hash": ""
   },
   "tests/test_level_3_3.py": {
-    "mtime": 1793079497.529544,
-    "seen": 1793080955.9206889,
-    "ast_hash": "ec0ab0b6ced7c9eabff2d80f38bcc8d1",
+    "mtime": 1793083348.4175417,
+    "seen": 1793083728.115953,
+    "ast_hash": "868bc2333e896af7ba072f1d43716ff8",
     "semantic_hash": ""
   },
   "tools/gen_world3_exit_frame.py": {
@@ -1836,9 +1836,9 @@
     "semantic_hash": ""
   },
   "data/bosses/curator.json": {
-    "mtime": 1793081587.4587276,
-    "seen": 1793082669.998045,
-    "ast_hash": "8a6ce17fb5f625d864fde841ff457fd2",
+    "mtime": 1793085858.2391043,
+    "seen": 1793086565.262996,
+    "ast_hash": "bfd413ab062eb1223a195cb12618eeef",
     "semantic_hash": ""
   },
   "data/levels/3-boss.json": {
@@ -1848,9 +1848,231 @@
     "semantic_hash": ""
   },
   "tools/gen_boss_curator.py": {
-    "mtime": 1793082178.538568,
-    "seen": 1793082669.9981482,
-    "ast_hash": "3b0a47a279ceb69f259f311706e54dbb",
+    "mtime": 1793084538.507381,
+    "seen": 1793085320.717582,
+    "ast_hash": "13abc30c93765ad392d6887a27de005a",
+    "semantic_hash": ""
+  },
+  "tools/gen_hub_piece_w3.py": {
+    "mtime": 1793083019.0064685,
+    "seen": 1793083728.115978,
+    "ast_hash": "0fb96e88e8228be1b0167c619ed6ce4c",
+    "semantic_hash": ""
+  },
+  "tests/test_world3_negatives.py": {
+    "mtime": 1793087247.5457132,
+    "seen": 1793109514.7045739,
+    "ast_hash": "adc2eb160555217b0ba77f4978e27a48",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-1_02_plataforma_likes.png": {
+    "mtime": 1793111167.2569811,
+    "seen": 1793111367.5118961,
+    "ast_hash": "8de29b56789e58943bc2e8320d97c06c",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-1_04_influencer_flash.png": {
+    "mtime": 1793111167.2813299,
+    "seen": 1793111367.511898,
+    "ast_hash": "733566305ba76f1399bef1d9db4b5900",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-1_12_pared_espejo.png": {
+    "mtime": 1793111167.2993755,
+    "seen": 1793111367.511898,
+    "ast_hash": "b13322fac9461f1ac1caf6744fd35688",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-2_06_recortar.png": {
+    "mtime": 1793111167.3311472,
+    "seen": 1793111367.511899,
+    "ast_hash": "9dd315ebf7e4e8fa49471e9b1df8e976",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-2_08_marco_pequeno.png": {
+    "mtime": 1793111167.3444247,
+    "seen": 1793111367.5119,
+    "ast_hash": "d193f340b39299dd91ffd22d27c60416",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-2_09_filtro.png": {
+    "mtime": 1793111167.3573616,
+    "seen": 1793111367.511901,
+    "ast_hash": "a2820fe36da257fca3b1dd75527c4eba",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-2_10_filtro_debug.png": {
+    "mtime": 1793111167.3701112,
+    "seen": 1793111367.5119019,
+    "ast_hash": "3865da246051846cfd96f67ddca46513",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-3_11_espejo_laser.png": {
+    "mtime": 1793111167.389231,
+    "seen": 1793111367.511903,
+    "ast_hash": "4bfb3c58dfd53c70b88955f48c069b5b",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-3_13_cazador_haz.png": {
+    "mtime": 1793111167.4025478,
+    "seen": 1793111367.511904,
+    "ast_hash": "502f0fe030bf4cf57d78e7922633c6eb",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-3_14_reflejo_falso.png": {
+    "mtime": 1793111167.4143946,
+    "seen": 1793111367.511904,
+    "ast_hash": "d04a60900fb787722ba1af2093c1ffee",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-3_15_puerta_marco.png": {
+    "mtime": 1793111167.4262276,
+    "seen": 1793111367.511905,
+    "ast_hash": "25985566d133ed1f7a18513362bcc261",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-boss_02_fase1.png": {
+    "mtime": 1793111167.438574,
+    "seen": 1793111367.5119061,
+    "ast_hash": "84c1e7207ee19119058c29c050f95b08",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-boss_05_fase1_marca.png": {
+    "mtime": 1793111167.4504967,
+    "seen": 1793111367.511907,
+    "ast_hash": "cfca1958f93d4a419f98001bf03ebdf3",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-boss_07_fase2_ventana.png": {
+    "mtime": 1793111167.4622068,
+    "seen": 1793111367.511908,
+    "ast_hash": "3173cba890402cf8a2b507e827d1ffb8",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-boss_09_fase3_marco.png": {
+    "mtime": 1793111167.473495,
+    "seen": 1793111367.511909,
+    "ast_hash": "bb5ee6f01eed885af09a0f4712e718a1",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-boss_13_recompensa.png": {
+    "mtime": 1793111167.4853868,
+    "seen": 1793111367.51191,
+    "ast_hash": "db8977cf63086d08c20a5d299c82134c",
+    "semantic_hash": ""
+  },
+  "docs/capturas/mundo3-2026-10-27/3-boss_14_hub_pieza_verde.png": {
+    "mtime": 1793111167.496427,
+    "seen": 1793111367.51191,
+    "ast_hash": "f210b5ccbc6fb87155ee02c68c69111a",
+    "semantic_hash": ""
+  },
+  "tools/import_boss_curator.py": {
+    "mtime": 1793114400.6992974,
+    "seen": 1793115925.3005319,
+    "ast_hash": "94869b67ec7154407b6c7a7aa8da96fb",
+    "semantic_hash": ""
+  },
+  "tools/import_influencer_bot.py": {
+    "mtime": 1793114377.3251176,
+    "seen": 1793115925.300533,
+    "ast_hash": "ec099a190596f9420502fffebd6f8370",
+    "semantic_hash": ""
+  },
+  "docs/plan-arte-mundo-3.md": {
+    "mtime": 1793115845.553811,
+    "seen": 1793115925.300589,
+    "ast_hash": "e027d89e42867f8a740b3e5fb06dad09",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/curadora_base.png": {
+    "mtime": 1793113363.9717968,
+    "seen": 1793115925.300608,
+    "ast_hash": "8136adc925ea6131107b60949d4e8a93",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/curadora_base_recorte.png": {
+    "mtime": 1793113405.5489783,
+    "seen": 1793115925.300609,
+    "ast_hash": "833cc0f714b37405425a4373e1732349",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/curadora_cuadros.png": {
+    "mtime": 1793115774.4574976,
+    "seen": 1793115925.30061,
+    "ast_hash": "afb481f3cfbb0cd27fdadb90d1393d5b",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/curadora_marco_subido.png": {
+    "mtime": 1793115774.8171353,
+    "seen": 1793115925.30061,
+    "ast_hash": "3a8b4b166548164f5954087034ac1d18",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/influencer_base.png": {
+    "mtime": 1793113364.6172147,
+    "seen": 1793115925.300611,
+    "ast_hash": "ce9c2be148a696c693260e0b75f600c3",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/influencer_cuadros.png": {
+    "mtime": 1793115774.7370305,
+    "seen": 1793115925.3006122,
+    "ast_hash": "20a2785a091ac8d46867fd7b5550d00f",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/isak_compress_cuadros.png": {
+    "mtime": 1793115774.804108,
+    "seen": 1793115925.3006122,
+    "ast_hash": "35815f2fe887905f386ef79fa378e9bb",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_curadora_fase1.png": {
+    "mtime": 1793115772.8033342,
+    "seen": 1793115925.3006132,
+    "ast_hash": "f506e1b1237fb9f7e5e5bd214f694abb",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_curadora_fase2.png": {
+    "mtime": 1793115772.8317013,
+    "seen": 1793115925.3006139,
+    "ast_hash": "faeea7ca189419ec217dd0f55d68444a",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_curadora_fase3.png": {
+    "mtime": 1793115772.8395426,
+    "seen": 1793115925.3006139,
+    "ast_hash": "72f601769ac68f62ea17f924a4b18350",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_curadora_flash.png": {
+    "mtime": 1793115772.8134544,
+    "seen": 1793115925.3006148,
+    "ast_hash": "fa0d52dfc35172ac0dc7b2384721741d",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_curadora_golpe_final.png": {
+    "mtime": 1793115772.847379,
+    "seen": 1793115925.300617,
+    "ast_hash": "d70a255b34099900928a4748d9f9cd57",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_curadora_ventana.png": {
+    "mtime": 1793115772.823234,
+    "seen": 1793115925.300618,
+    "ast_hash": "e11dd76b209ab480e722a325e6e21ef1",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_influencer_flash.png": {
+    "mtime": 1793115772.8548608,
+    "seen": 1793115925.300618,
+    "ast_hash": "4147f2c881c435edc550b2abd92f185a",
+    "semantic_hash": ""
+  },
+  "docs/capturas/arte-autosprite-2026-10-27/juego_isak_compress.png": {
+    "mtime": 1793115772.861494,
+    "seen": 1793115925.3006191,
+    "ast_hash": "edf0b7ba2ce0985d12d09abdf253d73c",
     "semantic_hash": ""
   }
 }

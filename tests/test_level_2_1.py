@@ -85,14 +85,14 @@ class Level21Test(unittest.TestCase):
         scroll = self.level["scroll"]
         self.assertEqual(scroll["start_resume_row"], row(8), "Arranca al subir a h 8")
         speeds = sorted((s["y_from"], s["speed_tiles_s"]) for s in scroll["stages"])
-        self.assertEqual([v for _, v in speeds], [0.9, 0.78, 0.78, 0.65],
-                         "0,65 / 0,78 / 0,78 / 0,9 de abajo arriba (un 30 % mas rapido tras la primera prueba del usuario)")
+        self.assertEqual([v for _, v in speeds], [1.1, 0.96, 0.96, 0.78],
+                         "0,78 / 0,96 / 0,96 / 1,1 de abajo arriba (+30 % tras la primera prueba y +20-23 % tras la segunda)")
         self.assertEqual(scroll["stops"], [{"id": "sync_1", "at_row": row(62) + 2, "resume_row": row(63)}])
         info = self.result["plan"]["scroll"]
         self.assertGreaterEqual(info["margin_min_tiles"], 3.0, "Nunca a menos de 3 tiles del borde")
         self.assertEqual(info["loops"], ["bucle_para_ti"])
-        self.assertTrue(145.0 <= self.result["plan"]["duration_s"] <= 180.0,
-                        "Camino de unos 160 s con el scroll mas rapido (antes 205 s): %.1f"
+        self.assertTrue(120.0 <= self.result["plan"]["duration_s"] <= 150.0,
+                        "Camino de unos 134 s con el scroll mas rapido (antes 160 s y 205 s): %.1f"
                         % self.result["plan"]["duration_s"])
 
     def test_loop_has_a_charger_against_the_energy_soft_lock(self):

@@ -103,12 +103,12 @@ Resumen de lo que hay en el juego. El detalle, los desvíos y cada decisión est
 | Pieza | Valores |
 |---|---|
 | Golpe al suelo | 0,12 s en el aire (anticipación 0,1 s, caída 960 px/s) o 0,35 s en el suelo; onda de 1,5 tiles que aturde y hace 1 de daño; pose 0,35 s; enfriamiento 0,4 s; gratis |
-| Scroll | 2-1: 0,5 / 0,6 / 0,7 tiles/s; 2-2: 0,5-0,9; 2-3: 0,4-0,8 con ráfagas de 1,2 e inversión; aviso de 9 cuadros a 12 fps |
+| Scroll | 2-1: 0,78 / 0,96 / 0,96 / 1,1 tiles/s (2026-10-26, segunda prueba del usuario: base +20 %, tramos acelerados +23 %; antes 0,65 / 0,78 / 0,78 / 0,9 y, en el diseño original, 0,5 / 0,6 / 0,7); camino del validador 134,2 s; 2-2: 0,5-0,9; 2-3: 0,4-0,8 con ráfagas de 1,2 e inversión; aviso de 9 cuadros a 12 fps |
 | Tarjeta frágil / Historia | 0,6 s al pisarla, aviso 0,5 s, vuelve a los 3 s / 1,6 s encendida de cada 3,2 s |
 | Video en autoplay | clip cada 2,5 s con miniatura de 0,75 s (ola, rayo o cuenta); pulso: pausa 3 s; pausado, el láser lo rompe (vida 2, +25 de energía) |
 | «Un video más» | un clon cada 1,5 s con aviso de 0,75 s, tope 6, vida 1; un golpe al suelo en la zona los elimina |
 | Comentarista / muro «Cargando más…» | bocadillo cada 2,5 s, vida 2 (pulso aturde, láser aturdido derrota) / 3 golpes al suelo |
-| Niveles | 2-1 20 × 130 (dificultad 2, objetivo 300 s; bot 205 s); 2-2 20 × 156 (3, 360 s; bot 239 s); 2-3 20 × 170 (4, 420 s; bot 244 s); 3 secretos y un mensaje por nivel |
+| Niveles | 2-1 20 × 130 (dificultad 2, objetivo 300 s; bot 134,7 s desde el 2026-10-26); 2-2 20 × 156 (3, 360 s; bot 239 s); 2-3 20 × 170 (4, 420 s; bot 244 s); 3 secretos y un mensaje por nivel |
 | Jefe Autoplay | arena 20 × 11 a pantalla completa; golpes por fase 4/4/4 (Caché) y 5/5/5 (Kernel, Raíz); pausa 4 / 3 / 2,5 s; cuenta 5 / 4 / 4 s; fase 3 a ×2; en la arena el Debug gasta ×0,25 y el mundo va a ×0,7; bot ideal 105 / 128 / 136 s, torpe 141 / 162 / 175 s, quieto pierde |
 
 **Capturas y mapas:** mapas en `assets/levels_preview/2-1_mapa.png`, `2-2_mapa.png`, `2-3_mapa.png` y `2-boss_mapa.png` (`tools/render_level_map.py`); capturas de los momentos clave con el flujo real en `assets/levels_preview/2-1/`, `2-2/`, `2-3/` y `2-boss/` (`tools/render_level_2_x.gd`, con ventana).
