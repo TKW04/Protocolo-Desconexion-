@@ -796,6 +796,42 @@
 			"center_px": [192, 64],
 			"prompt_px": [192, -8]
 		},
+		"curator_boss": {
+			"_notes": "Jefe La Curadora (paso 19 de docs/propuesta-mundo-3.md §8, §5.10; arena 3-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el marco (Sprite2D sin centrar: origen arriba a la izquierda, 512 x 256).",
+			"category": "enemy",
+			"title": "La Curadora",
+			"text": "Edita todo lo que ve. Con el Debug se ve lo que esconde. Cuando baja a encuadrar, márcala con el pulso y dispárale. De espaldas, solo le llega lo que manda el espejo cazador.",
+			"first_level": "3-boss",
+			"world": 3,
+			"order": 4,
+			"radius_tiles": 7.0,
+			"center_px": [256, 128],
+			"prompt_px": [256, -16]
+		},
+		"curator_lens": {
+			"_notes": "Jefe La Curadora (paso 19 de docs/propuesta-mundo-3.md §8, §5.10). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en la lente (Curator.get_lens_point); solo mientras baja a encuadrar (ventana de las fases 1 y 3).",
+			"category": "object",
+			"title": "Lente",
+			"text": "Cuando baja a encuadrar, la tienes a tu altura. Desde la plataforma de likes de ese lado le llega el pulso.",
+			"first_level": "3-boss",
+			"world": 3,
+			"order": 15,
+			"radius_tiles": 5.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -40]
+		},
+		"closing_frame": {
+			"_notes": "Jefe La Curadora (paso 19 de docs/propuesta-mundo-3.md §8, §5.10). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en el centro del marco que se cierra (Curator.get_closing_rect); solo mientras avisa o se cierra (fase 3).",
+			"category": "object",
+			"title": "Marco que se cierra",
+			"text": "Se cierra. Lo pequeño se salva: pellízcate dentro del marco pequeño de ese lado o vete a la otra mitad.",
+			"first_level": "3-boss",
+			"world": 3,
+			"order": 16,
+			"radius_tiles": 8.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -40]
+		},
 		"influencer_bot": {
 			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
 			"category": "enemy",

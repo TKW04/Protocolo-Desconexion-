@@ -132,6 +132,11 @@ SOURCES = {
     "false_reflection": ("assets/sprites/enemies/world3/false_reflection_00.png", None, 1),
     # Paso 10 (el 3-1 real): el contador de likes del HUD, ayuda sobre el cartel de la sala de inicio.
     "hud_likes": ("assets/sprites/props/world3/hud_likes_00.png", None, 1),
+    # Jefe La Curadora (paso 19 de docs/propuesta-mundo-3.md): arte PROVISIONAL del jefe
+    # (tools/gen_boss_curator.py, paleta B) hasta el arte final del paso 23.
+    "curator_boss": ("assets/sprites/bosses/curator_frame_placeholder.png", None, 1),
+    "curator_lens": ("assets/sprites/bosses/curator_lens_card_placeholder.png", None, 1),
+    "closing_frame": ("assets/sprites/bosses/curator_closing_frame_card_placeholder.png", None, 1),
 }
 
 

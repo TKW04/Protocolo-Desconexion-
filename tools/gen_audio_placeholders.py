@@ -181,6 +181,7 @@ def build(rng: np.random.Generator) -> dict[str, np.ndarray]:
     swell = 1 + 0.15 * np.sin(2 * np.pi * t / (len(t) / RATE))
     s["amb_hub"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.8 * swell + hum, 10 ** (-18 / 20))
     world2(s, rng)
+    world3(s, rng)
     return s
 
 
@@ -267,6 +268,84 @@ def world2(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
     s["sfx_boss2_countdown"] = note(880, 0.09, soft_square, 1.8)
     s["sfx_boss2_pause"] = np.concatenate([note(659, 0.08, soft_square, 1.5), note(440, 0.18, tri, 1.0)])
     s["sfx_boss2_resume"] = np.concatenate([note(440, 0.08, soft_square, 1.5), note(659, 0.12, tri, 1.2)])
+
+
+def world3(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
+    """Mundo 3 «La Vitrina» (paso 19 de docs/propuesta-mundo-3.md, §6.4): provisionales con los IDs de
+    data/audio.json; los definitivos los hace el amigo del usuario con el mismo nombre. Va despues de
+    world2: el generador de ruido es comun y asi los del Mundo 1 y 2 no cambian."""
+    # Pellizcar y recuperar el tamano: barrido que baja (se encoge) y que sube.
+    d = 0.18
+    s["sfx_gesture_pinch"] = tri(sweep(880, 440, d), d) * env(len(t_axis(d)), 0.004, 0.07, 1.4)
+    s["sfx_gesture_unpinch"] = tri(sweep(440, 880, d), d) * env(len(t_axis(d)), 0.004, 0.07, 1.4)
+    # Likes: coger un corazon (dos notas que suben), el Ladron roba (dos que bajan con «zip»).
+    s["sfx_w3_like_collect"] = np.concatenate([note(988, 0.04, sine, 2), note(1319, 0.07, sine, 1.6)])
+    d = 0.2
+    zip_ = 0.4 * lowpass(noise(d, rng), 3000) * env(len(t_axis(d)), 0.002, 0.08, 2)
+    s["sfx_w3_like_stolen"] = mix_at(np.concatenate([note(784, 0.06, tri, 2), note(523, 0.12, tri, 1.5)]),
+        zip_, 0.0)
+    # Plataforma de likes que aparece o avisa: acorde corto de cristal.
+    s["sfx_w3_like_platform"] = mix_at(note(659, 0.2, sine, 1.4), 0.5 * note(988, 0.18, sine, 1.8), 0.02)
+    # Publicacion (suma likes) y «Borrar publicaciones» (los quita).
+    s["sfx_w3_like_source"] = np.concatenate([note(784, 0.05, tri, 2), note(988, 0.05, tri, 2),
+        note(1175, 0.09, tri, 1.5)])
+    d = 0.3
+    s["sfx_w3_like_reset"] = (0.5 * lowpass(noise(d, rng), 1500) + 0.5 * tri(sweep(660, 220, d), d)) \
+        * env(len(t_axis(d)), 0.002, 0.12, 1.4)
+    # Flash: carga (zumbido que sube, aviso obligatorio) y disparo (destello blanco de ruido).
+    d = 0.6
+    s["sfx_w3_flash_charge"] = sine(sweep(400, 1600, d), d) * env(len(t_axis(d)), 0.05, 0.05, 0.6) * 0.6
+    d = 0.25
+    s["sfx_w3_flash"] = (lowpass(noise(d, rng), 6000) + 0.3 * sine(2093, d)) * env(len(t_axis(d)), 0.001, 0.1, 2.5)
+    # Rebote en un espejo: «ting» metalico.
+    d = 0.22
+    s["sfx_w3_mirror_bounce"] = sum(a * sine(f, d) * np.exp(-t_axis(d) * r) for f, a, r in
+        [(1568, 1.0, 14), (1568 * 2.4, 0.3, 22)]) * env(len(t_axis(d)), 0.001, 0.05, 0.4)
+    # Filtro cerca (peligro oculto): brillo desafinado (dos senos a 7 Hz de distancia).
+    d = 0.6
+    s["sfx_w3_filter_shimmer"] = 0.5 * (sine(1046, d) + sine(1053, d)) * np.sin(np.pi * t_axis(d) / d) ** 2
+    # «Recortar»: el gesto obtenido (tijeretazo y nota que se queda).
+    d = 0.08
+    snip = lowpass(noise(d, rng), 5000) * env(len(t_axis(d)), 0.001, 0.03, 4)
+    s["sfx_w3_crop_tool"] = np.concatenate([snip, snip, note(659, 0.3, tri, 0.9)])
+    # Giro del espejo cazador (accesibilidad, acompana al brillo): tic doble agudo.
+    s["sfx_w3_hunter_turn"] = np.concatenate([note(1397, 0.03, tri, 2), np.zeros(int(0.04 * RATE)),
+        note(1760, 0.04, tri, 2)])
+    # Sale un Reflejo falso: barrido de cristal hacia arriba.
+    d = 0.3
+    s["sfx_w3_reflection_spawn"] = 0.6 * sine(sweep(523, 1046, d) * (1 + 0.01 * np.sin(2 * np.pi * 9 * t_axis(d))), d) \
+        * env(len(t_axis(d)), 0.02, 0.15, 1.0)
+    # Placa de pose pisada: «clac» grave.
+    d = 0.12
+    s["sfx_w3_pose_plate"] = (sine(sweep(180, 110, d), d) + 0.3 * lowpass(noise(d, rng), 1500)) \
+        * env(len(t_axis(d)), 0.001, 0.05, 2)
+    # Ambiente de la galeria: aire de sala con un brillo lejano, en bucle sin costura (8 s).
+    d = 8.0
+    t = t_axis(d)
+    air = lowpass(noise(d, rng), 450)
+    fade = int(0.5 * RATE)
+    ramp = np.linspace(0, 1, fade)
+    air[:fade] = air[:fade] * ramp + air[-fade:] * (1 - ramp)
+    air = air[: len(t) - fade]
+    t = t[: len(air)]
+    hum = 0.12 * sine(110, len(t) / RATE) + 0.05 * sine(880, len(t) / RATE)
+    swell = 1 + 0.15 * np.sin(2 * np.pi * 2 * t / (len(t) / RATE))
+    s["amb_w3_gallery"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.8 * swell + hum, 10 ** (-18 / 20))
+    # Musica del nivel (bucle de 8 s, vals lento de galeria) y del jefe (mas rapida, con pulso).
+    s["mus_w3_level"] = normalize(loop_bars([659, 784, 988, 784], 0.25, sine, [165, 220, 196, 147], 0.5),
+        10 ** (-14 / 20))
+    s["mus_boss3"] = normalize(loop_bars([659, 988, 784, 1175, 988, 784], 0.125, tri, [165, 165, 220, 196], 0.375),
+        10 ** (-14 / 20))
+    # Jefe: intro (obturador y «3-2-1»), se gira de espaldas y el marco que se cierra (accesibilidad).
+    d = 0.05
+    shutter = lowpass(noise(d, rng), 4000) * env(len(t_axis(d)), 0.001, 0.02, 3)
+    s["sfx_boss3_intro"] = np.concatenate([shutter, np.zeros(int(0.05 * RATE)), note(523, 0.1, sine, 1.2),
+        note(659, 0.1, sine, 1.2), note(988, 0.3, sine, 0.8)])
+    d = 0.4
+    s["sfx_boss3_turn"] = (0.6 * lowpass(noise(d, rng), 900) + 0.5 * tri(sweep(330, 196, d), d)) \
+        * env(len(t_axis(d)), 0.05, 0.15, 1.0)
+    d = 0.5
+    s["sfx_boss3_frame_close"] = soft_square(sweep(196, 392, d), d, 2) * env(len(t_axis(d)), 0.01, 0.08, 0.8) * 0.7
 
 
 def write_wav(path: str, data: np.ndarray) -> None:

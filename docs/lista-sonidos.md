@@ -281,6 +281,11 @@ Todos **F** (sin construir). Lista orientativa para no olvidar familias; se deta
 | `sfx_w3_flash_charge` / `sfx_w3_flash` | Influencer bot | M3 | P1 | Aviso previo obligatorio (ciega la pantalla) |
 | `sfx_w3_mirror_bounce` | Rebote del pulso en espejo | M3 | P2 | |
 | `sfx_w3_filter_shimmer` | Zona con filtro | M3 | P2 | |
+| `sfx_w3_like_source` / `sfx_w3_like_reset` | Publicación que suma likes / «Borrar publicaciones» | M3 | P2 | Nuevos (paso 19 del Mundo 3) |
+| `sfx_w3_crop_tool` | «Recortar»: se obtiene Pellizcar | M3 | P1 | Nuevo (paso 19) |
+| `sfx_w3_hunter_turn` | Giro del espejo cazador | M3 | P1 | Nuevo (paso 19); **accesibilidad**: acompaña al brillo del aviso |
+| `sfx_w3_reflection_spawn` / `sfx_w3_pose_plate` | Sale un Reflejo falso / placa de pose pisada | M3 | P2 | Nuevos (paso 19) |
+| `sfx_boss3_intro` / `sfx_boss3_turn` / `sfx_boss3_frame_close` | La Curadora: intro, se pone de espaldas, marco que se cierra | M3 | P1 | Nuevos (paso 19); el marco, **accesibilidad** |
 | `sfx_w4_typing` | «Escribiendo…» (aviso de plataforma) | M4 | P1 | Accesibilidad: anticipa el salto |
 | `sfx_w4_bubble_pop_in` | Burbuja-plataforma que aparece | M4 | P1 | |
 | `sfx_w4_seen_freeze` / `sfx_w4_seen_break` | Zona «Visto»: congelar / romper | M4 | P1 | |
@@ -436,6 +441,33 @@ Para que quien hace los sonidos los pruebe en la build de Windows sin reexportar
 - **Log del juego:** en Windows `%APPDATA%\Godot\app_userdata\Isak Fix\logs\godot.log`; en macOS `~/Library/Application Support/Godot/app_userdata/Isak Fix/logs/godot.log`.
 - **Para pasarlo al juego:** cuando un sonido esté bien, se copia a `assets/audio/` con el mismo nombre y se importa (pasos de arriba); la carpeta externa es solo para probar.
 - Pruebas: `tests/test_audio_external.gd` (WAV y MP3 generados en la prueba; el OGG real se toma de `ISAK_TEST_OGG` o del SDK de Android si existe, si no esa prueba queda pendiente).
+
+### Mundo 3 «La Vitrina» (2026-10-27, paso 19 de `docs/propuesta-mundo-3.md`)
+
+Los 21 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (función `world3`, después de `world2`: los anteriores no cambian; se generan con `--only <prefijo>`) y enganchados en `data/audio.json` sin tocar la lógica:
+
+| ID | Señal | Notas |
+|---|---|---|
+| `sfx_gesture_pinch` / `sfx_gesture_unpinch` | `EventBus.compress_changed` (true / false) | |
+| `sfx_w3_like_collect` | `HeartPickup.collected` | Posicional |
+| `sfx_w3_like_stolen` | `LikeThief.stole` | Posicional |
+| `sfx_w3_like_platform` | `LikePlatform.switched_on` y `warning_started` | Aparece o avisa de que se va |
+| `sfx_w3_like_source` / `sfx_w3_like_reset` | `LikeSource.liked` / `LikeReset.reset_done` | Posicionales |
+| `sfx_w3_flash_charge` / `sfx_w3_flash` | `InfluencerBot.charge_started` / `flashed`; `Curator.attack_started` (`flash`, `flash_reflected`) / `Curator.flashed` | El aviso suena con el aro |
+| `sfx_w3_mirror_bounce` | `EventBus.mirror_bounced` | Espejos y cazador |
+| `sfx_w3_filter_shimmer` | `FilterZone.hazard_near_changed` (true) | **Desvío:** golpe corto «desafinado» al acercarse a un peligro oculto, no un bucle por nodo: solo suena un bucle de fondo a la vez (prioridades de `ambience`); nunca es la única pista (el filtro se ve) |
+| `sfx_w3_crop_tool` | `CropTool.switched_on` | Hereda de `DndSwitch`: suena también `sfx_dnd_switch` (como el reproductor del 2-2) |
+| `sfx_w3_hunter_turn` | `HunterMirror.turn_warned` | `cue` (señal de ritmo) |
+| `sfx_w3_reflection_spawn` | `FalseReflection.emerged` | Posicional |
+| `sfx_w3_pose_plate` | `PosePlate.pressed_changed` (true) | Posicional |
+| `amb_w3_gallery` | ambiente de `World3Background` (prioridad 0) | El fondo de la galería tiene clase propia desde el paso 19 |
+| `mus_w3_level` | ambiente de `GalleryMusic` (prioridad 10) | Lo crea `World3Background` fuera de las arenas (sin nodos del grupo `boss`) |
+| `mus_boss3` | ambiente de `CuratorMusic` (prioridad 20) | La Curadora lo crea al empezar cada fase y lo quita en el golpe final, como `AutoplayMusic` |
+| `sfx_boss3_intro` | `EventBus.boss_started` (`curator`) | |
+| `sfx_boss3_turn` | `Curator.phase_changed` (2) | Se pone de espaldas; suena junto a `sfx_boss_phase_change` |
+| `sfx_boss3_frame_close` | `Curator.attack_started` (`closing_frame`) | `cue`; suena con el aviso de 9 cuadros |
+
+Reutilizados sin cambios: la marca (`sfx_weak_point_*`), `sfx_boss_phase_change`, `sfx_boss_defeat` → `stg_boss_defeated` → `mus_memory`, `mus_eco_motif` en la intro y la derrota (`Curator.line_said`), `vox_boss_eco_filter`, `sfx_hub_wallpaper_piece` y `sfx_memory_pickup` (`sfx_charger` y `sfx_dash_through`, que §6.4 también lista, aún no están en el catálogo). `python3 tools/validate_audio.py`: 107 sonidos. Prueba `tests/test_curator_help.gd`.
 
 ### Pendiente
 

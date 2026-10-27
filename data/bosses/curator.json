@@ -71,12 +71,12 @@
 	"phase2": {"first_delay_s": 1.5, "attacks": ["flash_reflected", "crop", "flash_reflected"], "attack_gap_s": 0.5, "window_s": 5.0, "window_hearts": 0},
 	"phase3": {"first_delay_s": 1.5, "reflection_emerge_s": 1.0, "reflection_respawn_s": 2.0, "frame_warn_frames": 9, "frame_close_s": 0.5, "frame_damage": 10.0, "window_s": 3.0, "window_hearts": 3, "portrait_filter_alpha": 0.22},
 	"defeat": {"freeze_s": 0.3, "disarm_s": 1.6, "exit_wait_max_s": 2.0, "memory_world": 3, "pixels": {"step_px": 4, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 1027}},
-	"_help_notes": "AYUDAS DE ECO CON Q (paso 19, sin hacer): tipos previstos de §5.10 (curator_boss, curator_lens, closing_frame). Hasta entonces el jefe no etiqueta sus piezas (HelpCatalog.tag) para no pedir ayudas que data/help.json aun no tiene.",
-	"_help_planned": {"boss": "curator_boss", "lens": "curator_lens", "closing_frame": "closing_frame"},
-	"texts_status": "PROPUESTA del orquestador (paso 15, 2026-10-27; tono de §5.1: dulce y controladora, nunca grita; Eco habla por ella con voz calida y casi maternal), revisar al jugar y en el paso 19. intro (importante, pausa), phase_lines (sin pausa), final_system (texto del sistema en el golpe final) y defeat (importante, tras la recompensa).",
+	"_help_notes": "AYUDAS DE ECO CON Q (paso 19 de docs/propuesta-mundo-3.md §8, 2026-10-27; §5.10; textos en data/help.json, world 3, first_level 3-boss, PROPUESTOS): pieza -> help_id. boss = el marco (Sprite2D Frame); lens = un punto en la lente que solo ayuda mientras baja a encuadrar (ventanas de las fases 1 y 3); closing_frame = un punto en el centro del marco que se cierra, solo mientras avisa o se cierra (fase 3). Lo que no se ve no ayuda.",
+	"help": {"boss": "curator_boss", "lens": "curator_lens", "closing_frame": "closing_frame"},
+	"texts_status": "PROPUESTA del orquestador (pasos 15 y 19, 2026-10-27; tono de §5.1: dulce y controladora, nunca grita; Eco habla por ella con voz calida y casi maternal), revisar al jugar. Paso 19: el apodo en la intro y la fase 3 con el tono vanidoso de Eco del Mundo 3 («Te hice mejor…», que queda para cerrar la capa del recuerdo). Sin linea de obtencion del gesto: Pellizcar lo da «Recortar» en el 3-2 («Te queda mejor así.»). intro (importante, pausa), phase_lines (sin pausa), final_system (texto del sistema en el golpe final) y defeat (importante, tras la recompensa).",
 	"texts": {
-		"intro": "Ven, déjame verte. Así no. Mejor así.",
-		"phase_lines": {"2": "No te gires, cariño. De espaldas sales mejor.", "3": "Mira qué bien te queda. Él no se cansa."},
+		"intro": "Ven, {apodo}, déjame verte. Así no. Mejor así.",
+		"phase_lines": {"2": "No te gires, cariño. De espaldas sales mejor.", "3": "Mira qué bien te queda, {apodo}. Ese eres tú, pero mejor: no se cansa."},
 		"final_system": "Filtro: eliminado.",
 		"defeat": "Bueno. Guárdala, si quieres. Nadie la va a ver."
 	}

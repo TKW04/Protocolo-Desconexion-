@@ -150,6 +150,9 @@ PUNCT = {
     "«": ["...."] * 3 + [".#.#", "#.#.", ".#.#", "...."],
     "»": ["...."] * 3 + ["#.#.", ".#.#", "#.#.", "...."],
     "·": ["."] * 4 + ["#", ".", "."],
+    # Almohadilla del cartel «Mi vida es increíble #bendecido» del 3-1 (2026-10-27, paso 19 del
+    # Mundo 3): rejilla de 5 x 7 a la altura de las mayusculas.
+    "#": [".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#."],
 }
 
 # --- Marcas diacriticas: (filas, fila de inicio en la celda para mayuscula, para minuscula). ---

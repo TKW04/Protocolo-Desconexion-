@@ -126,8 +126,10 @@ def data_text():
     return json.dumps(data, indent="\t", ensure_ascii=False) + "\n"
 
 
+# Desde el paso 19 (audio del Mundo 3) la escena usa World3Background (hereda de World1Background): el
+# ambiente amb_w3_gallery y la musica mus_w3_level de data/audio.json se enlazan por su clase.
 SCENE_TEXT = ('[gd_scene load_steps=2 format=3]\n\n'
-              '[ext_resource type="Script" path="res://scripts/levels/world1_background.gd" id="1_bg"]\n\n'
+              '[ext_resource type="Script" path="res://scripts/levels/world3_background.gd" id="1_bg"]\n\n'
               '[node name="World3Background" type="Node2D"]\n'
               'script = ExtResource("1_bg")\n'
               'data_path = "res://data/world3_background.json"\n')

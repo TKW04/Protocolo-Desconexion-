@@ -5,7 +5,7 @@
 	"lcd_font": "res://assets/sprites/ui/text_font_lcd.fnt",
 	"lcd_advance": 6,
 	"font_size": 12,
-	"font_glyphs": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÓÚáéíóúÜüÑñ0123456789.,;:¿?¡!-–—\"'()/%+… []▼◆«»·",
+	"font_glyphs": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÓÚáéíóúÜüÑñ0123456789.,;:¿?¡!-–—\"'()/%+… []▼◆«»·#",
 	"assets": {
 		"font": {"path": "res://assets/sprites/ui/text_font.png", "frame_size": [8, 16], "columns": 16, "rows": 7}
 	}

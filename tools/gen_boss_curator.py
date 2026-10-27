@@ -15,6 +15,11 @@ assets/sprites/bosses/:
   curator_frame_off_placeholder.png   golpe final: el marco con la pantalla rota apagada (grietas gris perla)
   curator_biombo_placeholder.png      biombo de 1 x 2 tiles (64 x 128) que tapa el flash: tres hojas rosa
                                       sombra con marco dorado
+  curator_lens_card_placeholder.png   ficha del album de la lente (paso 19): la camara-cabeza bajada a
+                                      encuadrar, con el aro dorado del flash (64 x 64)
+  curator_closing_frame_card_placeholder.png  ficha del album del marco que se cierra (paso 19): marco dorado
+                                      con el contorno rojo del aviso estrechandose y el marco pequeno a salvo
+                                      abajo (64 x 64; rojo = lo que dana)
 Los avisos (aro del flash, filtro de suelo, recorte, marco que se cierra) los dibuja scripts/bosses/curator.gd
 por codigo.
 
@@ -141,8 +146,46 @@ def biombo():
     return img
 
 
+def lens_card():
+    """Ficha de la lente (curator_lens): la camara-cabeza con el aro del flash."""
+    w, h = 64, 64
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((2, 2, w - 3, h - 3), outline=C["dorado"], width=3)
+    d.rectangle((10, 18, 54, 50), fill=C["galeria_noche"])
+    d.rectangle((13, 21, 51, 47), fill=C["trastienda_medio"])
+    d.rectangle((40, 14, 50, 18), fill=C["galeria_noche"])
+    d.ellipse((19, 21, 45, 47), fill=C["galeria_noche"])
+    d.ellipse((23, 25, 41, 43), fill=C["gris_perla"])
+    d.ellipse((28, 30, 36, 38), fill=C["trastienda_fondo"])
+    d.ellipse((26, 27, 29, 30), fill=C["blanco_brillante"])
+    return img
+
+
+def closing_frame_card():
+    """Ficha del marco que se cierra (closing_frame): marco dorado, aviso rojo y marco pequeno."""
+    w, h = 64, 64
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle((0, 0, w - 1, 47), fill=C["marco_sombra"])
+    d.rectangle((3, 3, w - 4, 44), fill=C["dorado"])
+    d.rectangle((3, 3, w - 4, 5), fill=C["dorado_luz"])
+    d.rectangle((8, 8, w - 9, 39), fill=C["galeria_noche"])
+    d.rectangle((14, 13, w - 15, 34), outline=C["alerta"], width=3)
+    # Flechas hacia dentro (se estrecha).
+    for x0, x1 in ((9, 13), (w - 10, w - 14)):
+        d.line((x0, 23, x1, 23), fill=C["alerta"], width=2)
+    # Marco pequeno abajo, a salvo.
+    d.rectangle((20, 52, 43, 63), fill=C["dorado"])
+    d.rectangle((23, 55, 40, 63), fill=C["galeria_noche"])
+    d.rectangle((29, 58, 34, 63), fill=C["gris_perla"])
+    return img
+
+
 def outputs():
     return {
+        "curator_lens_card_placeholder.png": lens_card(),
+        "curator_closing_frame_card_placeholder.png": closing_frame_card(),
         "curator_frame_placeholder.png": frame("on"),
         "curator_frame_back_placeholder.png": frame_back(),
         "curator_frame_off_placeholder.png": frame("off"),

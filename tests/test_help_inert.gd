@@ -748,6 +748,31 @@ func test_finished_fan_shot_gives_no_help() -> void:
 		shot.step(STEP), "abanico terminado")
 
 
+# --- La Curadora (paso 19 de docs/propuesta-mundo-3.md, 2026-10-27) ---
+
+## El marco: al desarmarse en pixeles se oculta y deja de ayudar.
+func test_disarmed_curator_frame_gives_no_help() -> void:
+	var frame := Sprite2D.new()
+	frame.centered = false
+	frame.texture = load("res://assets/sprites/bosses/curator_frame_placeholder.png") as Texture2D
+	_place(frame, &"curator_boss")
+	await _assert_inert_drops_help(frame, func() -> void: frame.visible = false, "marco desarmado")
+
+
+## La lente solo ayuda mientras baja a encuadrar; el marco que se cierra, mientras avisa o se cierra.
+func test_curator_lens_and_closing_frame_only_while_shown() -> void:
+	var state: Dictionary = {"lens": true, "closing": true}
+	var lens := Curator.HelpMarker.new()
+	lens.available = func() -> bool: return bool(state["lens"])
+	_place(lens, &"curator_lens")
+	await _assert_inert_drops_help(lens, func() -> void: state["lens"] = false, "lente que vuelve a subir")
+	lens.free()
+	var closing := Curator.HelpMarker.new()
+	closing.available = func() -> bool: return bool(state["closing"])
+	_place(closing, &"closing_frame")
+	await _assert_inert_drops_help(closing, func() -> void: state["closing"] = false, "marco ya abierto")
+
+
 func test_every_help_type_is_covered() -> void:
 	var covered: Array[StringName] = [&"popup_blocker", &"alert_bubble", &"receiver", &"bridge", &"glitch_wall",
 		&"exit_terminal", &"attention_point", &"ability_pickup", &"power_bank_pickup", &"energy_drop", &"sync_drop",
@@ -758,7 +783,8 @@ func test_every_help_type_is_covered() -> void:
 		&"alert_major_popup", &"boss_popup_shield", &"notification_shot", &"alert_major_clone", &"fragile_card",
 		&"story_card", &"loop_section", &"autoplay_video", &"video_clone", &"commenter", &"loading_wall",
 		&"pause_player", &"hud_clock", &"feed_edge", &"autoplay", &"autoplay_playhead", &"autoplay_pause_button",
-		&"autoplay_card", &"autoplay_countdown", &"autoplay_clip", &"autoplay_fan"]
+		&"autoplay_card", &"autoplay_countdown", &"autoplay_clip", &"autoplay_fan",
+		&"curator_boss", &"curator_lens", &"closing_frame"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

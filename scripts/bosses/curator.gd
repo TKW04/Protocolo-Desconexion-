@@ -73,6 +73,12 @@ const ART_FRAME_BACK: String = "curator_frame_back_placeholder.png"
 const ART_FRAME_OFF: String = "curator_frame_off_placeholder.png"
 const ART_BIOMBO: String = "curator_biombo_placeholder.png"
 
+## Ayudas de Eco con Q (paso 19 de docs/propuesta-mundo-3.md, §5.10; data/help.json):
+## por defecto de help_id (la seccion help de data/bosses/curator.json manda).
+const HELP_BOSS: StringName = &"curator_boss"
+const HELP_LENS: StringName = &"curator_lens"
+const HELP_CLOSING_FRAME: StringName = &"closing_frame"
+
 ## Id del objeto en el nivel (params.id).
 @export var object_id: StringName = &""
 ## Con Isak llegando por el vortice, espera a que termine y dice la intro.
@@ -122,6 +128,10 @@ var _reflection_wait: Array[float] = []
 # Camino del cazador (fase 2) que se dibuja un momento.
 var _route: PackedVector2Array = PackedVector2Array()
 var _route_left: float = 0.0
+# Ayudas Q de la lente y del marco que se cierra, y musica de la pelea (paso 19).
+var _lens_help: HelpMarker
+var _closing_help: HelpMarker
+var _music: CuratorMusic
 
 
 func _ready() -> void:
@@ -399,6 +409,7 @@ func begin_intro() -> void:
 
 
 func _on_phase_started(phase_index: int) -> void:
+	_start_music()
 	_clear_attacks()
 	_apply_lap_settings()
 	BossBase.apply_phase_nodes(_level_root(), phase_index)
@@ -488,6 +499,7 @@ func _on_core_hit(_remaining_hits: int) -> void:
 
 
 func _on_defeated() -> void:
+	_stop_music()
 	_clear_attacks()
 	_attack = &""
 	_core.set_enabled(false)
@@ -929,6 +941,9 @@ func _build() -> void:
 	_frame_sprite.z_index = -1
 	_frame_sprite.texture = _texture(ART_FRAME)
 	add_child(_frame_sprite)
+	HelpCatalog.tag(_frame_sprite, help_id("boss"))
+	_lens_help = _make_help_marker("LensHelp", is_lens_help_available, help_id("lens"))
+	_closing_help = _make_help_marker("ClosingFrameHelp", is_closing_help_available, help_id("closing_frame"))
 	for cells: Variant in _arena.get("biombos", []):
 		var biombo := Sprite2D.new()
 		biombo.name = "Biombo%d" % _biombo_sprites.size()
@@ -987,6 +1002,59 @@ func _place_frame() -> void:
 	var rect: Rect2 = get_frame_rect()
 	_frame_sprite.global_position = rect.position + Vector2(0.0, get_lowered_offset())
 	_label.global_position = _frame_sprite.global_position + Vector2(24.0, 20.0)
+	if _lens_help != null:
+		_lens_help.global_position = get_lens_point()
+	if _closing_help != null:
+		var closing: Rect2 = get_closing_rect()
+		if closing.has_area():
+			_closing_help.global_position = closing.get_center()
+
+
+func _make_help_marker(node_name: String, available: Callable, id: StringName) -> HelpMarker:
+	var marker := HelpMarker.new()
+	marker.name = node_name
+	marker.top_level = true
+	marker.available = available
+	add_child(marker)
+	HelpCatalog.tag(marker, id)
+	return marker
+
+
+# --- Ayudas Q y musica (paso 19 de docs/propuesta-mundo-3.md) ---
+
+## help_id de la pieza `key` (boss, lens, closing_frame): seccion help de
+## data/bosses/curator.json.
+func help_id(key: String) -> StringName:
+	var defaults: Dictionary = {"boss": HELP_BOSS, "lens": HELP_LENS, "closing_frame": HELP_CLOSING_FRAME}
+	return StringName(String((get_config().get("help", {}) as Dictionary).get(key, defaults.get(key, ""))))
+
+
+## La lente ayuda solo mientras baja a encuadrar (ventanas de las fases 1 y 3).
+func is_lens_help_available() -> bool:
+	return is_fighting() and not _off and is_window_open() and get_phase() != 2
+
+
+## El marco que se cierra ayuda solo mientras avisa o se cierra.
+func is_closing_help_available() -> bool:
+	return is_fighting() and not _off and get_closing_rect().has_area()
+
+
+## Musica de la pelea (mus_boss3 mientras exista; null fuera de ella).
+func get_music() -> CuratorMusic:
+	return _music if _music != null and is_instance_valid(_music) else null
+
+
+func _start_music() -> void:
+	if _music == null or not is_instance_valid(_music):
+		_music = CuratorMusic.new()
+		_music.name = "CuratorMusic"
+		add_child(_music)
+
+
+func _stop_music() -> void:
+	if _music != null and is_instance_valid(_music):
+		_music.queue_free()
+	_music = null
 
 
 func _refresh() -> void:
@@ -1160,3 +1228,13 @@ class CuratorFx extends Node2D:
 						draw_rect(b, seam, false, 2.0)
 						draw_line(Vector2(b.position.x, b.get_center().y), Vector2(b.end.x, b.get_center().y), seam, 2.0)
 						draw_line(Vector2(b.get_center().x, b.position.y), Vector2(b.get_center().x, b.end.y), seam, 2.0)
+
+
+## Marca de una ayuda Q de una pieza del jefe sin nodo propio (la lente, el
+## marco que se cierra): un punto que solo ayuda mientras `available` diga que
+## se ve (paso 19; como CountdownHelp de Autoplay).
+class HelpMarker extends Node2D:
+	var available: Callable
+
+	func is_help_available() -> bool:
+		return available.is_valid() and bool(available.call())
