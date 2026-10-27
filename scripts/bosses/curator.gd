@@ -514,7 +514,7 @@ func _on_window_opened(_duration_s: float) -> void:
 	var phase_index: int = get_phase()
 	var p: Dictionary = phase_data(phase_index)
 	if phase_index == 2:
-		var back: Array = _arena.get("back_core_px", [640, 88])
+		var back: Array = _arena.get("back_core_px", [640, 120])
 		_core.global_position = _to_global(Vector2(float(back[0]), float(back[1])))
 		_say_window2_hint()
 	else:
@@ -848,7 +848,7 @@ func _show_route(side: String) -> void:
 		return
 	# Antes de que el golpe cierre la ventana: la linea del golpe si se ve.
 	_route_in_window = is_window_open()
-	var back: Array = _arena.get("back_core_px", [640, 88])
+	var back: Array = _arena.get("back_core_px", [640, 120])
 	_route = PackedVector2Array([hunter.get_center(), get_corner_center(side),
 		_to_global(Vector2(float(back[0]), float(back[1])))])
 	_route_left = 0.4
