@@ -131,6 +131,9 @@ var _help: Label
 var _option_labels: Array[Label] = []
 var _icon_rects: Array[TextureRect] = []
 var _icon_cache: Dictionary = {}
+## Ancho del bloque de opciones de la pagina actual (-1 = por medir) y su x.
+var _block_w: float = -1.0
+var _option_x: float = 0.0
 
 
 func _init() -> void:
@@ -625,7 +628,8 @@ func get_option_label(index: int) -> Label:
 
 
 func get_panel_rect() -> Rect2:
-	return Rect2(_panel.global_position * _frame.scale.x, _panel.size * _frame.scale.x)
+	# El marco esta en el origen: posicion local por la escala, en px de pantalla.
+	return Rect2(_panel.position * _frame.scale.x, _panel.size * _frame.scale.x)
 
 
 # --- Interno ---
@@ -670,6 +674,7 @@ func _quit_prompt_open() -> bool:
 func _show_page(page: Page) -> void:
 	_page = page
 	_selected = 0
+	_block_w = -1.0
 	_option_actions.clear()
 	_option_buses.clear()
 	_notice = ""
@@ -926,60 +931,90 @@ func _build() -> void:
 	_show_page(Page.MAIN)
 
 
-func _ordered_labels() -> Array[Label]:
-	var out: Array[Label] = [_title]
-	for i: int in _options.size():
-		out.append(_option_labels[i])
-	out.append(_detail)
-	out.append(_help)
-	return out
-
-
 func _layout() -> void:
 	if _frame == null or not is_inside_tree():
 		return
 	var screen: Vector2 = get_viewport().get_visible_rect().size / _frame.scale.x
 	_frame.size = screen
 	_backdrop.size = screen
+	# Panel de tamano fijo (2026-10-27, peticion del usuario: «que no este
+	# cambiando segun te mueves por el menu»): mismo ancho y alto en todas las
+	# paginas, con filas reservadas para la pagina mas larga (Controles); el
+	# titulo arriba, las opciones alineadas arriba y el detalle y la ayuda en
+	# filas fijas al pie.
 	var font_size: int = int(_data.get("font_size", 12))
 	var line_h: float = ceilf(_font.get_height(font_size))
 	var pad: float = float(_data.get("padding_px", 12))
 	var gap: float = float(_data.get("line_gap_px", 6))
-	var width: float = float(_data.get("panel_width_px", 240))
+	var pitch: float = line_h + float(_data.get("option_gap_px", 4))
+	var size: Vector2 = fixed_panel_size()
+	var width: float = size.x
 	var icons: bool = _page_has_icons()
 	var icon_px: float = float(_data.get("option_icon_px", 12))
 	var inset: float = icon_px + float(_data.get("option_icon_gap_px", 4)) if icons else 0.0
-	var block_w: float = 0.0
-	for i: int in _options.size():
-		block_w = maxf(block_w, inset + ceilf(_font.get_string_size(_option_labels[i].text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x))
-	for label: Label in _ordered_labels():
-		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + pad * 2.0)
-	width = maxf(width, block_w + pad * 2.0)
-	var block_x: float = pad + floorf((width - pad * 2.0 - block_w) * 0.5)
-	for i: int in range(_options.size(), _option_labels.size()):
-		_option_labels[i].visible = false
-	var last_option: Label = _option_labels[_options.size() - 1] if not _options.is_empty() else null
-	var y: float = pad
-	for label: Label in _ordered_labels():
-		label.visible = not label.text.is_empty()
+	var slot: float = _prefix_slot(font_size)
+	if _block_w < 0.0:
+		# Ancho del bloque de opciones sin prefijo, fijado al entrar en la
+		# pagina: cambiar la seleccion o un valor no mueve el bloque.
+		_block_w = 0.0
+		for i: int in _options.size():
+			_block_w = maxf(_block_w, inset + slot + ceilf(_font.get_string_size(_option_text_at(i),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x))
+	_option_x = pad + maxf(floorf((width - pad * 2.0 - _block_w) * 0.5), 0.0)
+	var options_y: float = pad + line_h + gap * 2.0
+	var detail_y: float = options_y + (_max_option_rows() - 1) * pitch + line_h + gap * 2.0
+	_place_centered(_title, pad, width, pad, line_h)
+	_place_centered(_detail, detail_y, width, pad, line_h)
+	_place_centered(_help, detail_y + line_h + gap, width, pad, line_h)
+	for i: int in _option_labels.size():
+		var label: Label = _option_labels[i]
+		label.visible = i < _options.size() and not label.text.is_empty()
 		if not label.visible:
 			continue
-		var index: int = _option_labels.find(label)
-		if icons and index >= 0 and index < _options.size():
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-			label.position = Vector2(block_x + inset, y)
-			label.size = Vector2(width - pad - block_x - inset, line_h)
-		else:
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			label.position = Vector2(pad, y)
-			label.size = Vector2(width - pad * 2.0, line_h)
-		y += line_h + gap
-		if label == _title or label == last_option:
-			y += gap
-	var height: float = y - gap + pad
-	_panel.size = Vector2(width, height)
-	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(maxf(screen.y - height, 0.0) * 0.5))
+		var prefix: String = _text("selected_prefix" if i == _selected else "unselected_prefix")
+		var shift: float = slot - ceilf(_font.get_string_size(prefix, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.position = Vector2(_option_x + inset + shift, options_y + i * pitch)
+		label.size = Vector2(maxf(width - pad - label.position.x, 0.0), line_h)
+	_panel.size = size
+	_panel.position = Vector2(floorf((screen.x - size.x) * 0.5), floorf(maxf(screen.y - size.y, 0.0) * 0.5))
 	_place_option_icons(line_h, icon_px, inset)
+
+
+## Tamano fijo del panel en px de arte: `panel_width_px` de ancho y el alto de
+## titulo, las filas de la pagina mas larga, detalle y ayuda.
+func fixed_panel_size() -> Vector2:
+	var font_size: int = int(_data.get("font_size", 12))
+	var line_h: float = ceilf(_font.get_height(font_size))
+	var pad: float = float(_data.get("padding_px", 12))
+	var gap: float = float(_data.get("line_gap_px", 6))
+	var pitch: float = line_h + float(_data.get("option_gap_px", 4))
+	var rows: int = _max_option_rows()
+	var height: float = pad + line_h + gap * 2.0 + (rows - 1) * pitch + line_h + gap * 2.0 + line_h + gap + line_h + pad
+	return Vector2(float(_data.get("panel_width_px", 320)), height)
+
+
+## Filas de opciones reservadas: la pagina mas larga (Controles: una por accion
+## mas Restablecer y Volver; Sonido: una por bus mas Volver; minimo `panel_option_rows`).
+func _max_option_rows() -> int:
+	return maxi(int(_data.get("panel_option_rows", 8)),
+		maxi(ControlBindings.actions().size() + 2, GameSettings.AUDIO_BUSES.size() + 1))
+
+
+## Ancho reservado al prefijo de seleccion (el mayor de los dos), para que el
+## texto de las opciones no se mueva al cambiar la seleccion.
+func _prefix_slot(font_size: int) -> float:
+	var out: float = 0.0
+	for key: String in ["selected_prefix", "unselected_prefix"]:
+		out = maxf(out, ceilf(_font.get_string_size(_text(key), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x))
+	return out
+
+
+func _place_centered(label: Label, y: float, width: float, pad: float, line_h: float) -> void:
+	label.visible = not label.text.is_empty()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = Vector2(pad, y)
+	label.size = Vector2(width - pad * 2.0, line_h)
 
 
 ## Coloca el icono de cada opcion a la izquierda de su etiqueta, centrado en la fila.
@@ -1001,4 +1036,4 @@ func _place_option_icons(line_h: float, icon_px: float, inset: float) -> void:
 			continue
 		rect.texture = tex
 		rect.size = Vector2(icon_px, icon_px)
-		rect.position = Vector2(label.position.x - inset, label.position.y + floorf((line_h - icon_px) * 0.5))
+		rect.position = Vector2(_option_x, label.position.y + floorf((line_h - icon_px) * 0.5))
