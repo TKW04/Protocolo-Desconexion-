@@ -95,6 +95,10 @@ rm -f "$IMPORT_LOG"
 # en procesos aparte: ideal y torpe en Caché, Kernel y Raíz y el quieto que pierde; unos 40 s de pared en
 # total; usa user://bot_save.json) y, con el paso 20, las ayudas, textos y sonidos del jefe
 # (tests/test_autoplay_help.gd).
+# Desde el 2026-10-27 (paso 18 de docs/propuesta-mundo-3.md) GUT lanza tambien el bot del jefe La Curadora
+# (tests/test_curator_bot.gd: tools/play_boss_bot.gd -- --boss curator, logica en tools/curator_bot.gd, en procesos
+# aparte: ideal y torpe en Caché, Kernel y Raíz y el quieto que pierde; unos 60 s de pared en total; usa
+# user://bot_save.json).
 # Desde el 2026-10-19 (paso 1 de docs/propuesta-recuerdos.md): el esquema de los recuerdos
 # (data/memories.json; tools/validate_memories.py y tests/test_memories.py).
 # Desde el paso 4 (2026-10-19): el arte del mensaje de secreto (tools/validate_memory_pickup.py).

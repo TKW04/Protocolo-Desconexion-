@@ -1,12 +1,14 @@
 ## Lanzador de los bots de jefe: Alerta Mayor (paso 14 de
-## docs/propuesta-jefe-alerta-mayor.md §6; logica en tools/boss_bot.gd) y
+## docs/propuesta-jefe-alerta-mayor.md §6; logica en tools/boss_bot.gd),
 ## Autoplay (paso 19 de docs/propuesta-mundo-2.md §8; logica en
-## tools/autoplay_bot.gd). Pelea en la arena real (1-boss o 2-boss) con el Isak
-## real y solo acciones del Input Map, vence y vuelve al hub.
+## tools/autoplay_bot.gd) y La Curadora (paso 18 de docs/propuesta-mundo-3.md §8;
+## logica en tools/curator_bot.gd). Pelea en la arena real (1-boss, 2-boss o
+## 3-boss) con el Isak real y solo acciones del Input Map, vence y vuelve al hub.
 ## Uso (rapido, sin ventana; codigo 0 si el perfil cumple, 1 si no):
 ##   Godot --headless --fixed-fps 60 --path . -s tools/play_boss_bot.gd
-##        [-- --boss alert_major|autoplay] [--profile ideal|clumsy|idle] [--lap 1|2|3] [--verbose] [--trace]
-## --boss: alert_major (por defecto, arena 1-boss) o autoplay (arena 2-boss).
+##        [-- --boss alert_major|autoplay|curator] [--profile ideal|clumsy|idle] [--lap 1|2|3] [--verbose] [--trace]
+## --boss: alert_major (por defecto, arena 1-boss), autoplay (arena 2-boss) o
+## curator (arena 3-boss).
 ## --profile: ideal (por defecto, pelea limpia: vence sin morir), clumsy (torpe:
 ## validation_model del JSON del jefe; vence sin quedarse sin energia en una
 ## ventana) o idle (quieto: debe acabar en game over sin vencer).
@@ -17,6 +19,7 @@ extends SceneTree
 const BOT_SCRIPTS: Dictionary = {
 	"alert_major": "res://tools/boss_bot.gd",
 	"autoplay": "res://tools/autoplay_bot.gd",
+	"curator": "res://tools/curator_bot.gd",
 }
 
 
@@ -31,7 +34,7 @@ func _run() -> void:
 	if at >= 0 and at + 1 < args.size():
 		boss = args[at + 1]
 	if not BOT_SCRIPTS.has(boss):
-		print("play_boss_bot: jefe desconocido «%s» (alert_major, autoplay)" % boss)
+		print("play_boss_bot: jefe desconocido «%s» (alert_major, autoplay, curator)" % boss)
 		quit(1)
 		return
 	var bot: Node = Node.new()

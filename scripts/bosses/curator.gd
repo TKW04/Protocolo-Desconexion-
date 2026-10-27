@@ -681,8 +681,12 @@ func _hurt(isak: Isak, damage: float, direction: float) -> bool:
 	return true
 
 
+## Lado de la lente en la ventana. Fase 1: laps.<n>.window_side (near = el de
+## Isak; random = al azar, Kernel). Fase 3: siempre el de Isak (§5.6 «baja a
+## encuadrar hacia donde esta Isak»; paso 18: con el lado al azar de Kernel la
+## ventana de 3 s del otro lado no cabia y el bot ideal perdia 7 de 11).
 func _choose_window_side() -> String:
-	if String(lap_value("window_side", "near")) == "random":
+	if get_phase() == 1 and String(lap_value("window_side", "near")) == "random":
 		return SIDE_LEFT if _rng.randi_range(0, 1) == 0 else SIDE_RIGHT
 	var isak: Isak = find_isak()
 	return side_of_x(isak.global_position.x) if isak != null else SIDE_LEFT

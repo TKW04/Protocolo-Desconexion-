@@ -479,11 +479,11 @@ class CuratorArenaTest(unittest.TestCase):
     def test_short_mark_slow_chargers_and_few_likes(self):
         boss = copy.deepcopy(self.boss)
         boss["laps"]["3"]["mark_duration_s"] = 0.5
-        boss["laps"]["3"]["charger_cooldown_s"] = 9.0
+        boss["laps"]["3"]["charger_cooldown_s"] = 11.0
         boss["respawn_min_likes"] = 3
         msg = self.messages(self.run_arena(boss))
         self.assertIn("vuelta 3: en la marca de 0.50 s caben", msg)
-        self.assertIn("vuelta 3: los cargadores se enfrian 9.0", msg)
+        self.assertIn("vuelta 3: los cargadores se enfrian 11.0", msg)
         self.assertIn("likes al empezar cada fase 3 < umbral", msg)
 
     def test_other_bosses_do_not_use_the_curator_model(self):
