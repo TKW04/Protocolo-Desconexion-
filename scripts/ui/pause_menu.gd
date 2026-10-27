@@ -54,6 +54,12 @@
 ## EcoTextBox (con una linea en pantalla o en cola).
 ## Con el arbol en pausa no avanzan el mundo, los temporizadores ni
 ## GameState.play_time_s (todos son pausables); el menu procesa siempre.
+## ICONOS (2026-10-27, peticion del usuario): cada opcion lleva un icono de 12 px
+## de arte (option_icons de data/pause_menu.json, clave = Option en minusculas;
+## mismo sistema que los paneles del hub, menu_* de tools/gen_hub_objects.py).
+## Las filas de Controles (BINDING) no llevan. En una pagina con iconos las
+## opciones se alinean a la izquierda en un bloque centrado y el icono va a la
+## izquierda del texto, centrado en la fila.
 ## El nodo vive siempre en el arbol (oculto si esta cerrado): lo crea LevelRunner
 ## (niveles y hub del flujo del juego) o HubRoom si se abre solo.
 class_name PauseMenu
@@ -123,6 +129,8 @@ var _title: Label
 var _detail: Label
 var _help: Label
 var _option_labels: Array[Label] = []
+var _icon_rects: Array[TextureRect] = []
+var _icon_cache: Dictionary = {}
 
 
 func _init() -> void:
@@ -599,11 +607,45 @@ func get_all_texts() -> PackedStringArray:
 	return out
 
 
+## Icono de la opcion `index` de la pagina actual (null si no tiene).
+func get_option_icon(index: int) -> Texture2D:
+	if index < 0 or index >= _options.size():
+		return null
+	return _icon_for(_options[index])
+
+
+## Nodo del icono de la opcion `index` (pruebas: posicion y visibilidad).
+func get_option_icon_rect(index: int) -> TextureRect:
+	return _icon_rects[index] if index >= 0 and index < _icon_rects.size() else null
+
+
+## Etiqueta de la opcion `index` (pruebas: posicion junto al icono).
+func get_option_label(index: int) -> Label:
+	return _option_labels[index] if index >= 0 and index < _option_labels.size() else null
+
+
 func get_panel_rect() -> Rect2:
 	return Rect2(_panel.global_position * _frame.scale.x, _panel.size * _frame.scale.x)
 
 
 # --- Interno ---
+
+func _icon_for(option: Option) -> Texture2D:
+	var key: String = String(Option.keys()[option]).to_lower()
+	if _icon_cache.has(key):
+		return _icon_cache[key]
+	var path: String = String(_data.get("option_icons", {}).get(key, ""))
+	var tex: Texture2D = load(path) as Texture2D if not path.is_empty() and ResourceLoader.exists(path) else null
+	_icon_cache[key] = tex
+	return tex
+
+
+func _page_has_icons() -> bool:
+	for option: Option in _options:
+		if _icon_for(option) != null:
+			return true
+	return false
+
 
 func _hold_pause() -> void:
 	if _owns_pause or not is_inside_tree() or get_tree().paused:
@@ -904,8 +946,16 @@ func _layout() -> void:
 	var pad: float = float(_data.get("padding_px", 12))
 	var gap: float = float(_data.get("line_gap_px", 6))
 	var width: float = float(_data.get("panel_width_px", 240))
+	var icons: bool = _page_has_icons()
+	var icon_px: float = float(_data.get("option_icon_px", 12))
+	var inset: float = icon_px + float(_data.get("option_icon_gap_px", 4)) if icons else 0.0
+	var block_w: float = 0.0
+	for i: int in _options.size():
+		block_w = maxf(block_w, inset + ceilf(_font.get_string_size(_option_labels[i].text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x))
 	for label: Label in _ordered_labels():
 		width = maxf(width, ceilf(_font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + pad * 2.0)
+	width = maxf(width, block_w + pad * 2.0)
+	var block_x: float = pad + floorf((width - pad * 2.0 - block_w) * 0.5)
 	for i: int in range(_options.size(), _option_labels.size()):
 		_option_labels[i].visible = false
 	var last_option: Label = _option_labels[_options.size() - 1] if not _options.is_empty() else null
@@ -914,11 +964,41 @@ func _layout() -> void:
 		label.visible = not label.text.is_empty()
 		if not label.visible:
 			continue
-		label.position = Vector2(pad, y)
-		label.size = Vector2(width - pad * 2.0, line_h)
+		var index: int = _option_labels.find(label)
+		if icons and index >= 0 and index < _options.size():
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+			label.position = Vector2(block_x + inset, y)
+			label.size = Vector2(width - pad - block_x - inset, line_h)
+		else:
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			label.position = Vector2(pad, y)
+			label.size = Vector2(width - pad * 2.0, line_h)
 		y += line_h + gap
 		if label == _title or label == last_option:
 			y += gap
 	var height: float = y - gap + pad
 	_panel.size = Vector2(width, height)
 	_panel.position = Vector2(floorf((screen.x - width) * 0.5), floorf(maxf(screen.y - height, 0.0) * 0.5))
+	_place_option_icons(line_h, icon_px, inset)
+
+
+## Coloca el icono de cada opcion a la izquierda de su etiqueta, centrado en la fila.
+func _place_option_icons(line_h: float, icon_px: float, inset: float) -> void:
+	while _icon_rects.size() < _option_labels.size():
+		var rect := TextureRect.new()
+		rect.name = "OptionIcon%d" % _icon_rects.size()
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_panel.add_child(rect)
+		_icon_rects.append(rect)
+	for i: int in _icon_rects.size():
+		var rect: TextureRect = _icon_rects[i]
+		var tex: Texture2D = get_option_icon(i)
+		var label: Label = _option_labels[i] if i < _option_labels.size() else null
+		rect.visible = tex != null and label != null and label.visible
+		if not rect.visible:
+			continue
+		rect.texture = tex
+		rect.size = Vector2(icon_px, icon_px)
+		rect.position = Vector2(label.position.x - inset, label.position.y + floorf((line_h - icon_px) * 0.5))

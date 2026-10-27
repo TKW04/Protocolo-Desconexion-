@@ -226,3 +226,37 @@ func test_calc_shop_keeps_its_own_drawing_without_option_icons() -> void:
 	for i: int in panel.get_option_ids().size():
 		assert_null(panel.get_option_icon(i), "La tienda no usa iconos de opcion")
 	panel.close()
+
+
+# 2026-10-27 (peticion del usuario): el Mundo 3 salia con «?» (level_icon_unknown).
+func test_world_3_levels_have_their_own_icons() -> void:
+	GameState.mark_level_completed(&"2-boss")
+	GameState.mark_level_completed(&"3-1")
+	var m3: Dictionary = HubWorlds.world(&"m3")
+	var levels: Array[Dictionary] = HubWorlds.levels_for_lap(m3)
+	assert_eq(levels.size(), 4, "3-1, 3-2, 3-3 y La Curadora")
+	_spawn()
+	var panel: FolderPanel = _hub.get_folder(&"m3").get_folder_panel()
+	var unknown: String = MENU % "level_unknown"
+	var names: Array[String] = ["level_3_1", "level_3_2", "level_3_3", "level_3_boss"]
+	for i: int in levels.size():
+		var path: String = panel.level_icon_path(levels[i])
+		assert_ne(path, unknown, "%s sin «?»" % levels[i].get("id"))
+		assert_true(path.begins_with("res://assets/sprites/hub/menu/menu_%s" % names[i]), path)
+		var tex: Texture2D = load(path)
+		assert_not_null(tex, path)
+		assert_eq(tex.get_size(), Vector2(12.0, 12.0))
+	assert_eq(panel.level_icon_path(levels[0]), MENU % "level_3_1", "Completado: en color")
+	panel.open()
+	assert_eq(panel.get_option_icon(0).resource_path, MENU % "level_3_1")
+	assert_true(panel.get_option_icon_rect(0).visible)
+	panel.close()
+
+
+func test_every_hub_level_has_its_own_icon() -> void:
+	var unknown: String = MENU % "level_unknown"
+	for world_id: StringName in [&"m1", &"m2", &"m3"]:
+		for level: Dictionary in HubWorlds.levels_for_lap(HubWorlds.world(world_id)):
+			var path: String = String(level.get("icon", ""))
+			assert_false(path.is_empty() or path == unknown, "%s con icono propio" % level.get("id"))
+			assert_true(ResourceLoader.exists(path), path)

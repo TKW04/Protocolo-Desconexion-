@@ -15,6 +15,9 @@
 ##   10_notas_guardado.png     cabecera de Notas tras guardar (2026-10-26: rombo de
 ##                             puntos, icono del acceso, «Guardado en: aaaa-mm-dd hh:mm»)
 ##   11_notas_kernel_sin_guardar.png  acceso Kernel con su icono y «Sin guardar» bajo la fecha
+##   12_m3_panel.png           panel del Mundo 3 con sus iconos (2026-10-27: antes «?»)
+##   13_pausa_principal.png    menu de pausa (ESC) con un icono por opcion (2026-10-27)
+##   14_pausa_ajustes.png      pagina Ajustes del menu de pausa con sus iconos
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_hub_icons.gd [-- carpeta_salida]
 extends SceneTree
@@ -110,6 +113,22 @@ func _run() -> void:
 	await _frames(6)
 	await _save(out_dir, "02_carpeta_check.png")
 	await _panel_shot(m1, out_dir, "07_m1_panel_todo.png")
+	# 12: Mundo 3 (3-1 completado, 3-2 nuevo, 3-3 y jefe bloqueados).
+	_state.call(&"mark_level_completed", &"3-1")
+	_state.call(&"unlock_level", &"3-2")
+	_refresh()
+	await _panel_shot(_hub.call(&"get_folder", &"m3"), out_dir, "12_m3_panel.png")
+	# 13-14: menu de pausa (ESC) con iconos.
+	var menu: Node = get_first_node_in_group(&"pause_menu")
+	_check(menu != null and menu.call(&"request_open"), "el menu de pausa no se abre")
+	if menu != null:
+		await _frames(4)
+		await _save(out_dir, "13_pausa_principal.png")
+		menu.call(&"activate", 1)  # PauseMenu.Option.SETTINGS
+		await _frames(4)
+		await _save(out_dir, "14_pausa_ajustes.png")
+		menu.call(&"close")
+		await _frames(2)
 	_hub.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))

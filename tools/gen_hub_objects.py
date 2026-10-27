@@ -52,6 +52,8 @@ Salidas (assets/sprites/hub/):
                iconos de las opciones de Notas y de las carpetas 12x12
                menu_attention_00 y menu_access_<cache|kernel|root>_00
                (cabecera de Notas, 2026-10-26)                 12x12
+               menu_pause_<opcion>_00 (opciones del menu de pausa,
+               data/pause_menu.json option_icons; 2026-10-27)  12x12
 
 El fondo, los tiles y las carpetas se dibujan en una rejilla logica de 2x2 px
 (como el tileset del Mundo 1); Notas, Calc, huecos e iconos a 1 px (como
@@ -825,16 +827,249 @@ def _menu_unknown(cv):  # subnivel sin icono propio
         cv.hline(x0, x1, y, TT)
 
 
+# --- Mundo 3 «La Vitrina» (2026-10-27, peticion del usuario: el hub mostraba
+# «?» en sus filas). Paleta del hub (sin el verde acido del Mundo 3, que no esta
+# en hub.gpl): trazo claro y acento cian_brillo / ambar como los Mundos 1 y 2.
+
+def _menu_gallery(cv):  # 3-1 Galeria de perfil: rejilla 2x2 de fotos, la 1.ª el perfil
+    for x0, y0 in ((1, 1), (6, 1), (1, 6), (6, 6)):
+        cv.rect(x0, y0, x0 + 4, y0 + 4, TR)
+    cv.rect(2, 2, 4, 4, BO)          # foto de perfil: cabeza y hombros
+    cv.p(3, 2, TC)
+    cv.hline(2, 4, 5, TC)
+    cv.rect(3, 3, 3, 3, TC)
+    for x0, y0 in ((6, 1), (1, 6), (6, 6)):  # miniaturas: sol y colina
+        cv.p(x0 + 3, y0 + 1, CB)
+        cv.hline(x0, x0 + 4, y0 + 4, TT)
+        cv.hline(x0 + 1, x0 + 2, y0 + 3, TT)
+
+
+def _menu_no_filter(cv):  # 3-2 Sin filtro: lente con una raya que la tacha
+    for y in range(MENU):
+        for x in range(MENU):
+            r = math.hypot(x - 5.5, y - 5.5)
+            if 3.6 <= r <= 5.4:
+                cv.p(x, y, TC if x + y < 12 else TT)
+            elif r < 3.6:
+                cv.p(x, y, TR)
+    cv.rect(3, 3, 4, 4, CB)
+    for i in range(10):  # raya de 2 px de abajo-izquierda a arriba-derecha
+        cv.rect(1 + i, 10 - i, 2 + i, 10 - i, AM)
+
+
+def _menu_mirror(cv):  # 3-3 Espejo, espejito: espejo de mano
+    for y in range(MENU):
+        for x in range(MENU):
+            e = ((x - 5.5) / 4.6) ** 2 + ((y - 3.8) / 3.9) ** 2
+            if e <= 1.0:
+                cv.p(x, y, CT if e < 0.55 else BO)
+    for i in range(3):  # reflejo en diagonal
+        cv.p(4 + i, 3 - i + 1, CB)
+    cv.p(3, 4, CB)
+    cv.rect(5, 8, 6, 11, TT)
+    cv.rect(5, 8, 5, 11, TC)
+
+
+def _menu_boss_curator(cv):  # Jefe La Curadora: marco dorado con corona y un ojo
+    cv.rect(1, 3, 10, 11, AM)
+    cv.rect(2, 4, 9, 10, AS)
+    cv.rect(3, 5, 8, 9, SO)
+    for x in (2, 5, 6, 9):  # corona
+        cv.vline(x, 0, 2, AM)
+    cv.hline(2, 9, 2, AM)
+    cv.hline(4, 7, 7, TC)     # ojo
+    cv.hline(5, 6, 6, TC)
+    cv.hline(5, 6, 8, TC)
+    cv.rect(5, 7, 6, 7, CA)
+
+
+# --- Menu de pausa (2026-10-27, peticion del usuario: «iconicemos el menu de
+# ESC»). Mismo sistema, tamano y contorno que los de Notas y las carpetas.
+
+def _pause_resume(cv):  # Reanudar: reproducir
+    for y in range(1, 11):
+        k = 5 - abs(y - 5.5)
+        if k > 0:
+            cv.hline(3, 3 + int(k * 1.4), y, TC if y < 6 else TT)
+    cv.p(3, 5, CB)
+
+
+def _pause_settings(cv):  # Ajustes: el engranaje del HUD del hub a 12 px
+    for y in range(MENU):
+        for x in range(MENU):
+            dx, dy = x - 5.5, y - 5.5
+            r = math.hypot(dx, dy)
+            a = (math.degrees(math.atan2(dy, dx)) + 360.0) % 45.0
+            if 1.9 <= r <= 3.9 or (11.0 <= a <= 34.0 and 3.9 < r <= 5.7):
+                cv.p(x, y, TT if dx + dy > 3.0 else TC)
+    cv.rect(5, 5, 6, 6, CA)
+
+
+def _pause_exit_hub(cv):  # Salir al hub: casita con la puerta cian
+    for y in range(0, 6):
+        cv.hline(max(0, 5 - y), min(11, 6 + y), y, TC)
+    cv.rect(2, 6, 9, 11, TT)
+    cv.rect(5, 8, 6, 11, CA)
+
+
+def _pause_quit(cv):  # Cerrar el juego: simbolo de encendido
+    for y in range(MENU):
+        for x in range(MENU):
+            r = math.hypot(x - 5.5, y - 6.0)
+            ang = math.degrees(math.atan2(x - 5.5, -(y - 6.0)))
+            if 3.6 <= r <= 5.3 and abs(ang) > 38.0:
+                cv.p(x, y, TC if y < 8 else TT)
+    cv.rect(5, 0, 6, 6, TC)
+
+
+def _pause_eco_help(cv):  # Ayudas de Eco: Eco brillando en dorado con su Q
+    for y in range(MENU):
+        for x in range(MENU):
+            r = math.hypot(x - 5.5, y - 5.5)
+            if r <= 5.4:
+                cv.p(x, y, AM if x + y < 12 else AS)
+    cv.rect(4, 3, 7, 3, FP)   # Q
+    cv.rect(4, 7, 7, 7, FP)
+    cv.vline(3, 4, 6, FP)
+    cv.vline(8, 4, 6, FP)
+    cv.p(7, 8, FP)
+    cv.p(8, 9, FP)
+    cv.p(2, 2, TC)
+
+
+def _pause_low_sync(cv):  # Reducir efectos de Sync bajo: senal con una barra
+    for i, h in enumerate((3, 5, 7, 9)):
+        x = 1 + i * 3
+        cv.rect(x, 10 - h, x + 1, 10, TC if i == 0 else GA)
+    cv.hline(0, 11, 11, TT)
+
+
+def _pause_debug_outline(cv):  # Contorno del Debug: plataforma de contorno discontinuo
+    for i in range(10):
+        if (i // 2) % 2 == 0:
+            for x, y in ((1 + i, 1), (10 - i, 10), (1, 10 - i), (10, 1 + i)):
+                cv.p(x, y, CB)
+    cv.rect(3, 3, 8, 8, CT)
+    cv.rect(4, 4, 7, 7, CA)
+
+
+def _pause_rhythm(cv):  # Senales sonoras de ritmo: nota musical
+    cv.vline(7, 0, 8, TC)
+    cv.rect(8, 1, 9, 2, TC)
+    cv.p(10, 3, TC)
+    cv.rect(3, 7, 6, 10, TC)
+    cv.rect(3, 10, 3, 10, CLEAR)
+    cv.rect(6, 7, 6, 7, CLEAR)
+    cv.rect(4, 9, 5, 9, TT)
+    cv.p(1, 3, CA)
+    cv.p(0, 2, CA)
+
+
+def _pause_sound(cv):  # Sonido / volumen: altavoz con ondas
+    cv.rect(0, 4, 2, 7, TT)
+    for x in range(3, 6):
+        cv.vline(x, 4 - (x - 2), 7 + (x - 2), TC)
+    for y in range(3, 9):
+        cv.p(8 if 4 <= y <= 7 else 7, y, CA)
+    for y in range(1, 11):
+        cv.p(10 if 3 <= y <= 8 else 9, y, CT)
+
+
+def _pause_display(cv):  # Pantalla: monitor
+    cv.rect(0, 1, 11, 8, TT)
+    cv.rect(1, 2, 10, 7, SO)
+    cv.rect(2, 3, 4, 4, CA)
+    cv.hline(2, 8, 6, CT)
+    cv.rect(5, 9, 6, 9, TT)
+    cv.hline(3, 8, 10, TC)
+
+
+def _pause_controls(cv):  # Controles: mando
+    cv.rect(1, 3, 10, 8, TT)
+    cv.rect(0, 5, 11, 9, TT)
+    cv.rect(0, 9, 2, 10, TT)
+    cv.rect(9, 9, 11, 10, TT)
+    cv.hline(1, 10, 3, TC)
+    cv.hline(2, 4, 6, FP)   # cruceta
+    cv.vline(3, 5, 7, FP)
+    cv.p(8, 5, CA)
+    cv.p(9, 6, AM)
+
+
+def _pause_window_mode(cv):  # Modo de ventana: ventana con su barra
+    cv.rect(1, 1, 10, 10, TT)
+    cv.rect(2, 2, 9, 3, BO)
+    cv.rect(2, 4, 9, 9, SO)
+    cv.rect(8, 2, 9, 3, CA)
+    cv.hline(3, 6, 6, CT)
+    cv.hline(3, 4, 8, CT)
+
+
+def _pause_window_size(cv):  # Tamano de ventana: flecha doble en diagonal
+    for i in range(8):
+        cv.rect(2 + i, 9 - i, 2 + i, 9 - i, TC)
+    cv.rect(1, 6, 1, 10, TC)
+    cv.rect(1, 10, 5, 10, TC)
+    cv.rect(10, 1, 10, 5, TC)
+    cv.rect(6, 1, 10, 1, TC)
+    cv.rect(0, 0, 3, 0, CT)
+    cv.rect(0, 0, 0, 3, CT)
+    cv.rect(8, 11, 11, 11, CT)
+    cv.rect(11, 8, 11, 11, CT)
+
+
+def _pause_scale_mode(cv):  # Escalado: rejilla de pixeles
+    for j in range(3):
+        for i in range(3):
+            cv.rect(1 + i * 3 + i // 2 * 0, 1 + j * 3, 3 + i * 3, 3 + j * 3, TC if (i + j) % 2 == 0 else TR)
+    cv.rect(10, 1, 11, 11, CLEAR)
+    cv.rect(1, 10, 11, 11, CLEAR)
+
+
+def _pause_reset(cv):  # Restablecer valores: flecha en circulo
+    for y in range(MENU):
+        for x in range(MENU):
+            r = math.hypot(x - 5.5, y - 6.0)
+            ang = math.degrees(math.atan2(y - 6.0, x - 5.5))
+            if 3.4 <= r <= 5.0 and not (-80.0 < ang < -20.0):
+                cv.p(x, y, TC if y < 7 else TT)
+    cv.rect(8, 0, 11, 0, CA)   # punta
+    cv.rect(11, 0, 11, 3, CA)
+    cv.rect(10, 1, 10, 2, CA)
+
+
+def _pause_swap(cv):  # Intercambiar: dos flechas opuestas
+    cv.hline(1, 9, 3, TC)
+    cv.vline(8, 1, 5, TC)
+    cv.vline(9, 2, 4, TC)
+    cv.hline(2, 10, 8, CA)
+    cv.vline(3, 6, 10, CA)
+    cv.vline(2, 7, 9, CA)
+
+
 MENU_DRAW = {"back": _menu_back, "yes": _menu_yes, "no": _menu_no, "enter": _menu_enter,
              "level_1_1": _menu_inbox, "level_1_2": _menu_tower, "level_1_3": _menu_moon,
              "level_1_boss": _menu_boss_alert, "level_2_1": _menu_heart, "level_2_2": _menu_video_plus,
              "level_2_3": _menu_scroll, "level_2_boss": _menu_boss_autoplay, "level_unknown": _menu_unknown,
              "attention": _menu_attention, "access_cache": _menu_access_cache,
-             "access_kernel": _menu_access_kernel, "access_root": _menu_access_root}
+             "access_kernel": _menu_access_kernel, "access_root": _menu_access_root,
+             "level_3_1": _menu_gallery, "level_3_2": _menu_no_filter, "level_3_3": _menu_mirror,
+             "level_3_boss": _menu_boss_curator,
+             "pause_resume": _pause_resume, "pause_settings": _pause_settings, "pause_exit_hub": _pause_exit_hub,
+             "pause_quit": _pause_quit, "pause_eco_help": _pause_eco_help, "pause_low_sync": _pause_low_sync,
+             "pause_debug_outline": _pause_debug_outline, "pause_rhythm": _pause_rhythm,
+             "pause_sound": _pause_sound, "pause_display": _pause_display, "pause_controls": _pause_controls,
+             "pause_window_mode": _pause_window_mode, "pause_window_size": _pause_window_size,
+             "pause_scale_mode": _pause_scale_mode, "pause_reset": _pause_reset, "pause_swap": _pause_swap}
 MENU_ICONS = ["save", "album", "nickname", "back", "yes", "no", "enter",
               "level_1_1", "level_1_2", "level_1_3", "level_1_boss",
-              "level_2_1", "level_2_2", "level_2_3", "level_2_boss", "level_unknown",
-              "attention", "access_cache", "access_kernel", "access_root"]
+              "level_2_1", "level_2_2", "level_2_3", "level_2_boss",
+              "level_3_1", "level_3_2", "level_3_3", "level_3_boss", "level_unknown",
+              "attention", "access_cache", "access_kernel", "access_root",
+              "pause_resume", "pause_settings", "pause_exit_hub", "pause_quit", "pause_eco_help",
+              "pause_low_sync", "pause_debug_outline", "pause_rhythm", "pause_sound", "pause_display",
+              "pause_controls", "pause_window_mode", "pause_window_size", "pause_scale_mode",
+              "pause_reset", "pause_swap"]
 
 
 def menu_outputs():
