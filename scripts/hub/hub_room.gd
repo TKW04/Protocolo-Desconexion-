@@ -104,8 +104,10 @@
 ## (InstallerDecor) y la pieza 4 del fondo en off (M4 disponible). Las carpetas
 ## de cada pagina salen de HubWorlds.folder_worlds(pagina) con su `col` local a
 ## la pagina; las ocultas (requires_upgrade sin instalar) no se construyen.
-## Pieza 4: arte PROVISIONAL por codigo (room.pieces con `provisional`) hasta el
-## paso 7.
+## Pieza 4: desde el paso 7, arte por script (frames de tools/gen_hub_update_art.py,
+## hub_piece_w4_frames.tres) en CORAL PROVISIONAL #ff7f66 (la paleta del Mundo 4
+## sigue abierta); el contorno por codigo (room.pieces con `provisional`) queda de
+## respaldo si faltan los frames.
 ## TEXTOS Y PISTAS (2026-10-27, paso 6 de docs/propuesta-hub-mundos-4-6.md):
 ## comentario de Calc al volver de 3-boss (calc.remarks con
 ## requires_pending_upgrade) y, al terminar de deslizarse a la pagina del

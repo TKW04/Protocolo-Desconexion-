@@ -19,8 +19,9 @@
 ##                                encendidas: recuerdos de jefe 1-3) y las dos lineas
 ##   10_m4_proximamente.png       (paso 5) panel de M4 abierto: «Próximamente»
 ##   11_pagina1_pieza4.png        (paso 5) pagina 1 con la pieza 4 (coral PROVISIONAL) en off
-## Necesita ventana (no funciona con --headless).
-## Uso: Godot --path . -s tools/render_hub_pages.gd [-- carpeta_salida]
+## Necesita ventana (no funciona con --headless) y --fixed-fps 60 (las esperas van
+## por cuadros: sin el, a veces «Isak no llega» en las capturas 01-02).
+## Uso: Godot --fixed-fps 60 --path . -s tools/render_hub_pages.gd [-- carpeta_salida]
 extends SceneTree
 
 const SCENE: String = "res://scenes/hub/hub.tscn"
@@ -113,6 +114,10 @@ func _run() -> void:
 			box.call(&"confirm")
 			box.call(&"advance", 1.0)
 			_check(await _wait(func() -> bool: return bool(install.call(&"is_done"))), "no termina la instalacion")
+			# Cierra lo que quede en el cuadro: la linea de Notas (importante, pausa)
+			# y el recordatorio «¡Apuntado! Guárdalo…» (no importante, paso 6).
+			await _close_lines(hub.call(&"get_text_box"))
+			_check(not paused, "el juego sigue en pausa tras la instalacion")
 		_check(int(hub.call(&"get_page_count")) == 3, "sin pagina 3 tras instalar")
 		await _stand_on(hub, isak, &"m5")
 		await _save(out_dir, "08_pagina2_final.png")
@@ -144,6 +149,17 @@ func _stand_on(hub: Node, isak: Node2D, id: StringName) -> Node:
 	hub.call(&"finish_page_slide")
 	await _frames(40)
 	return folder
+
+
+## Cierra todas las lineas del cuadro de texto (importantes y no importantes).
+func _close_lines(box: Node) -> void:
+	for i: int in 30:
+		await _frames(2)
+		if not bool(box.call(&"is_showing")):
+			return
+		box.call(&"finish_typing")
+		box.call(&"confirm")
+		box.call(&"advance", 30.0)
 
 
 func _open() -> Node:

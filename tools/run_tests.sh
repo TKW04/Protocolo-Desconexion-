@@ -151,6 +151,10 @@ rm -f "$IMPORT_LOG"
 # (tests/test_world3_filter_schema.py y tests/test_world3_validator.py, de los pasos 3 y 8, que no estaban en la
 # lista) y las pruebas de conjunto del Mundo 3 (tests/test_world3_negatives.py: perder likes nunca bloquea y el filtro
 # no mata en los niveles reales; su parte con el Isak real, tests/test_world3_negatives.gd, GUT).
+# Desde los pasos 7-8 de docs/propuesta-hub-mundos-4-6.md (2026-10-27): el arte del acertijo del hub
+# (tools/gen_hub_update_art.py --check) y el bot del hub (tests/test_hub_update_bot.gd, GUT:
+# tools/play_hub_update_bot.gd en procesos aparte, perfiles ideal, quieto, sin guardar y Kernel/Raiz; unos
+# 20 s de pared en total; usa user://bot_save.json).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -226,6 +230,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \
+		&& python3 -I tools/gen_hub_update_art.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/import_boss_curator.py --check >/dev/null && python3 -I tools/import_influencer_bot.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then
