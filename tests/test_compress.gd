@@ -398,22 +398,35 @@ func test_warp_requests_normal_size() -> void:
 	_isak.end_warp()
 
 
-# --- Pose provisional y Eco ---
+# --- Pose (AutoSprite) y Eco ---
 
-func test_provisional_squash_pose() -> void:
+## Con los cuadros de AutoSprite (paso 23 del Mundo 3, 2026-10-27): desde la
+## mitad del aplastado se ven compress_idle / compress_walk sin escalar; antes, el
+## aplastado provisional por escala sobre los cuadros normales.
+func test_pose_uses_the_autosprite_frames_without_scaling() -> void:
 	var sprite: AnimatedSprite2D = _isak.get_sprite()
 	var base_y: float = sprite.position.y
+	assert_true(_isak.has_compress_art(), "Hay cuadros compress_idle y compress_walk")
 	_pinch()
-	assert_lt(_isak.get_compress_amount(), 1.0, "Se aplasta poco a poco")
+	assert_lt(_isak.get_compress_amount(), 0.5, "Empieza a aplastarse")
+	assert_lt(sprite.scale.y, 1.0, "Aplastado provisional mientras empieza")
 	_sim.step(_sim.frames(0.15))
 	assert_almost_eq(_isak.get_compress_amount(), 1.0, EPS, "En 0,15 s")
-	assert_almost_eq(sprite.scale.y, 0.5, EPS, "Aplastado (squash_scale)")
-	assert_almost_eq(sprite.scale.x, 1.15, EPS)
-	assert_almost_eq(sprite.position.y, base_y * 0.5, EPS, "Pies quietos")
+	assert_eq(sprite.animation, Isak.ANIM_COMPRESS_IDLE, "Comprimido quieto")
+	assert_eq(sprite.scale, Vector2.ONE, "Sin el aplastado provisional")
+	assert_almost_eq(sprite.position.y, base_y, EPS, "Pies quietos")
+	_sim.input.move_axis = 1.0
+	_sim.step(_sim.frames(0.3))
+	assert_eq(sprite.animation, Isak.ANIM_COMPRESS_WALK, "Anda comprimido")
+	assert_eq(sprite.scale, Vector2.ONE)
+	_sim.input.move_axis = 0.0
+	_sim.step(2)
+	assert_eq(sprite.animation, Isak.ANIM_COMPRESS_IDLE, "Se para comprimido")
 	_pinch()
 	_sim.step(_sim.frames(0.15) + 1)
 	assert_eq(sprite.scale, Vector2.ONE, "Vuelve a su escala")
 	assert_almost_eq(sprite.position.y, base_y, EPS)
+	assert_eq(sprite.animation, Isak.ANIM_IDLE, "Vuelve a la animacion normal")
 
 
 func test_eco_stays_under_a_low_ceiling() -> void:

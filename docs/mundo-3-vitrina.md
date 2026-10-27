@@ -133,4 +133,4 @@ Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada deci
 
 **Paleta:** cerrada en el paso 9 con la variante B «Terciopelo de trastienda»; las variantes A y C quedan en `docs/arte/mundo3_paleta_variantes.png`.
 
-**Sigue:** lista de revisión del usuario en `preguntas.md` (22) y arte final con AutoSprite con permiso (23).
+**Hecho después:** lista de revisión del usuario en `preguntas.md` (22) y arte final con AutoSprite de la Curadora, el Influencer y la pose `compress` de Isak (23, 2026-10-27; `plan-arte-mundo-3.md` §3).

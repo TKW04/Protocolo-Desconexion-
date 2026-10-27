@@ -70,6 +70,16 @@ const ANIM_BACK_IDLE: StringName = &"back_idle"
 const ANIM_DASH: StringName = &"dash"
 const ANIM_GROUND_POUND_AIR: StringName = &"ground_pound_air"
 const ANIM_GROUND_POUND_LAND: StringName = &"ground_pound_land"
+## Pose del gesto Pellizcar (AutoSprite, 2026-10-27): comprimido quieto / andando.
+const ANIM_COMPRESS_IDLE: StringName = &"compress_idle"
+const ANIM_COMPRESS_WALK: StringName = &"compress_walk"
+## Animaciones del estado que la pose comprimida sustituye (el resto, p. ej. la
+## muerte, se ve con los cuadros normales).
+const COMPRESS_ART_MAP: Dictionary = {
+	&"idle": &"compress_idle", &"jump_land": &"compress_idle", &"hurt": &"compress_idle",
+	&"jump_rise": &"compress_idle", &"jump_apex": &"compress_idle", &"jump_fall": &"compress_idle",
+	&"walk": &"compress_walk", &"run": &"compress_walk",
+}
 ## Estados en los que la pose del laser se corta (tienen animacion propia).
 const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
 ## Margen al pasar del tiempo de anticipacion al cuadro de la pose.
@@ -1339,13 +1349,26 @@ func _update_compress(delta: float) -> void:
 		_compress_effect.advance(delta, get_hitbox_size().y)
 
 
-## Pose PROVISIONAL: el sprite se aplasta (compress.visual.squash_scale) con los
-## pies quietos, sobre los cuadros del estado. La pose del golpe al suelo tiene
-## preferencia (no coinciden: comprimido no hay golpe).
+## Pose comprimida: con los cuadros de AutoSprite (compress_idle / compress_walk,
+## sin escalar) desde la mitad del aplastado; antes, y si faltan los cuadros
+## (pose PROVISIONAL), el sprite se aplasta (compress.visual.squash_scale) con
+## los pies quietos sobre los cuadros del estado. La pose del golpe al suelo
+## tiene preferencia (no coinciden: comprimido no hay golpe).
 func _update_compress_pose() -> void:
 	if is_ground_pounding():
 		_compress_pose_applied = false
 		return
+	if has_compress_art():
+		var art_now: bool = _sprite.animation in [ANIM_COMPRESS_IDLE, ANIM_COMPRESS_WALK]
+		if is_compress_art_active():
+			_restore_sprite_shape()
+			_compress_pose_applied = true
+			if not art_now and _sprite.animation in COMPRESS_ART_MAP and not is_laser_posing() and not _facing_back:
+				_sprite.play(_compress_art_anim(_sprite.animation))
+			return
+		if art_now:
+			var moving: bool = is_on_floor() and absf(velocity.x) > 8.0
+			_sprite.play(ANIM_WALK if moving else ANIM_IDLE)
 	if _compress_amount <= 0.0:
 		if _compress_pose_applied:
 			_restore_sprite_shape()
@@ -1359,6 +1382,24 @@ func _update_compress_pose() -> void:
 	_sprite.scale = _sprite_base_scale * k
 	_sprite.position = Vector2(_sprite_base_position.x, _sprite_base_position.y * k.y)
 	_compress_pose_applied = true
+
+
+## Hay cuadros de la pose comprimida (compress_idle y compress_walk).
+func has_compress_art() -> bool:
+	var frames: SpriteFrames = _sprite.sprite_frames if _sprite != null else null
+	return frames != null and frames.has_animation(ANIM_COMPRESS_IDLE) and frames.has_animation(ANIM_COMPRESS_WALK)
+
+
+## Se ve la pose comprimida de AutoSprite (desde la mitad del aplastado).
+func is_compress_art_active() -> bool:
+	return _compress_amount >= 0.5 and not is_ground_pounding() and has_compress_art()
+
+
+## La animacion del estado `anim` con la pose comprimida si toca (COMPRESS_ART_MAP).
+func _compress_art_anim(anim: StringName) -> StringName:
+	if not is_compress_art_active() or not COMPRESS_ART_MAP.has(anim):
+		return anim
+	return COMPRESS_ART_MAP[anim]
 
 
 func _apply_hitbox_shape() -> void:
@@ -1436,6 +1477,7 @@ func get_passive_regen() -> PassiveRegen:
 ## Mientras dura la pose del laser o la de espaldas los estados no cambian la
 ## animacion (al acabar, _end_laser_pose o face_side ponen la del estado).
 func play_animation(anim: StringName) -> void:
+	anim = _compress_art_anim(anim)
 	var frames: SpriteFrames = _sprite.sprite_frames
 	if frames == null or not frames.has_animation(anim) or is_laser_posing() or _facing_back:
 		return
@@ -1483,6 +1525,10 @@ func get_animation_frame() -> int:
 func update_air_animation() -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
 	if frames == null or is_laser_posing() or _facing_back:
+		return
+	if is_compress_art_active():
+		if _sprite.animation != ANIM_COMPRESS_IDLE:
+			_sprite.play(ANIM_COMPRESS_IDLE)
 		return
 	var vy: float = velocity.y
 	var anim: StringName = ANIM_JUMP_APEX
