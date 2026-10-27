@@ -201,14 +201,14 @@ class Level33Test(unittest.TestCase):
                                   capture_output=True, text=True)
             self.assertEqual(done.returncode, 0, "%s: %s" % (cmd[0], done.stdout + done.stderr))
 
-    def test_playable_after_the_3_2_and_boss_row_still_coming_soon(self):
+    def test_playable_after_the_3_2_and_boss_row_playable(self):
         with open(os.path.join(ROOT, "data", "hub.json"), encoding="utf-8") as handle:
             hub = json.load(handle)
         m3 = next(w for w in hub["worlds"] if w["id"] == "m3")
         rows = {lv.get("id"): lv for lv in m3["levels"]}
         self.assertTrue(rows["3-3"]["playable"])
         self.assertEqual(rows["3-3"]["available_text"], "Nueva foto")
-        self.assertFalse(rows["3-boss"]["playable"], "La Curadora sigue «Próximamente» hasta el paso 17")
+        self.assertTrue(rows["3-boss"]["playable"], "La Curadora jugable desde el paso 17")
         with open(os.path.join(ROOT, "data", "levels", "3-2.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle)["unlocks"], [{"type": "level", "id": "3-3"}])
         with open(os.path.join(ROOT, "data", "world1_objects.json"), encoding="utf-8") as handle:

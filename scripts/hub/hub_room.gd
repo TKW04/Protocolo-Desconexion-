@@ -65,6 +65,12 @@
 ## el hub abierto solo, uno propio (hijo "PauseMenu"). No se abre
 ## (blocks_pause_menu) hasta terminar la llegada, durante la salida por el
 ## vortice ni con el panel de una estacion o carpeta abierto.
+## COMENTARIOS DE CALC (2026-10-27, paso 17 de docs/propuesta-mundo-3.md §2.3;
+## seccion calc.remarks de data/hub.json): al terminar la llegada (y la
+## presentacion de Notas y el encuentro con Calc, si tocan; nunca tras un game
+## over), si se llega de `after_level` (arrived_from_level, lo da LevelRunner) y
+## Calc es conocida, Calc dice una vez por partida guardada su linea en el LCD
+## (no importante: no pausa). Visto = GameState.mark_notice_seen("calc_remark_<id>").
 class_name HubRoom
 extends Node2D
 
@@ -102,6 +108,9 @@ var light_piece_on_arrival: bool = false
 ## background_on_world). Lo da LevelRunner con light_piece_on_arrival
 ## (2026-10-23, paso 18 de docs/propuesta-mundo-2.md: pieza ambar del Mundo 2).
 var light_piece_world: int = 0
+## Nivel del que se llega (LevelRunner._show_hub; "" al abrir el hub solo).
+## Lo leen los comentarios de Calc (calc.remarks de data/hub.json).
+var arrived_from_level: String = ""
 
 var _room: Dictionary = HubData.section("room")
 var _isak: Isak
@@ -414,8 +423,43 @@ func _on_arrival_finished() -> void:
 
 func _start_calc_intro() -> void:
 	var calc_intro: CalcIntro = get_calc_intro()
-	if calc_intro != null:
-		calc_intro.start()
+	if calc_intro != null and calc_intro.start():
+		calc_intro.finished.connect(start_calc_remark, CONNECT_ONE_SHOT)
+		return
+	start_calc_remark()
+
+
+## Prefijo de seen_notices de los comentarios de Calc.
+const CALC_REMARK_NOTICE: String = "calc_remark_%s"
+
+
+## Comentario de Calc que toca al llegar de arrived_from_level ({} si ninguno):
+## el primero de calc.remarks con ese after_level, Calc conocida y sin ver.
+func pending_calc_remark() -> Dictionary:
+	if arrived_from_level.is_empty() or not GameState.has_met_ally(GameState.ALLY_CALC):
+		return {}
+	for entry: Variant in (HubData.section("calc") as Dictionary).get("remarks", []):
+		if not entry is Dictionary:
+			continue
+		var remark: Dictionary = entry
+		if String(remark.get("after_level", "")) != arrived_from_level:
+			continue
+		if GameState.is_notice_seen(StringName(CALC_REMARK_NOTICE % String(remark.get("id", "")))):
+			continue
+		if String(remark.get("text", "")).is_empty():
+			continue
+		return remark
+	return {}
+
+
+## Dice el comentario de Calc pendiente (no importante). Verdadero si salio.
+func start_calc_remark() -> bool:
+	var remark: Dictionary = pending_calc_remark()
+	if remark.is_empty() or _text_box == null:
+		return false
+	GameState.mark_notice_seen(StringName(CALC_REMARK_NOTICE % String(remark.get("id", ""))))
+	_text_box.show_line(String(remark.get("text", "")), float(remark.get("duration_s", -1.0)), false, &"calc")
+	return true
 
 
 ## Un asistente recien conocido enciende sus estaciones (requires_ally).

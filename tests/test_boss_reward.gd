@@ -175,6 +175,32 @@ func test_reward_panel_in_kernel_and_root_names_the_access() -> void:
 		reward.free()
 
 
+## Paso 17 de docs/propuesta-mundo-3.md (2026-10-27): La Curadora entrega
+## boss_w3_l1 «Fragmento de imagen» en Caché, sin guardar, con la linea del
+## sistema de su golpe final; su ilustracion (memory_art_w3, borrosa en Caché)
+## existe para la ficha de Notas.
+func test_curator_grants_the_image_fragment_in_cache() -> void:
+	var got: Array[StringName] = BossReward.grant(3, 1)
+	assert_eq(got, [&"boss_w3_l1"] as Array[StringName], "Capa Caché del Mundo 3")
+	assert_true(GameState.has_unsaved_changes(), "Sin guardar")
+	assert_true(GameState.has_unread_memories(), "Placa «!» en Notas")
+	var cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/bosses/curator.json"))
+	var line: String = String((cfg.get("texts", {}) as Dictionary).get("final_system", ""))
+	assert_eq(line, "Filtro: eliminado.", "Linea del sistema del golpe final (propuesta)")
+	assert_eq(String((cfg.get("texts", {}) as Dictionary).get("defeat", "")),
+		"Bueno. Guárdala, si quieres. Nadie la va a ver.", "Linea de derrota de Eco (propuesta, §5.9)")
+	var reward: BossReward = BossReward.show_for(&"boss_w3_l1", self, line)
+	assert_eq(reward.get_text(&"header"), "Recuerdo recuperado")
+	assert_eq(reward.get_text(&"title"), "Fragmento de imagen")
+	assert_eq(reward.get_text(&"layer"), "Capa: Caché")
+	assert_eq(reward.get_text(&"notice"), "Guarda en Notas para conservarlo.")
+	assert_string_contains(reward.get_text(&"text"), "«Te hice mejor. ¿Por qué querrías volver?»",
+		"La linea importante de Eco cierra el texto de la capa (§5.9)")
+	reward.free()
+	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w3_cache.png"), "Borrosa en Caché")
+	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w3.png"), "Nitida en Kernel")
+
+
 ## Los textos definitivos (paso 6) caben en el panel de la recompensa.
 func test_every_boss_layer_fits_the_reward_panel() -> void:
 	var catalog: MemoryCatalog = MemoryCatalog.shared()

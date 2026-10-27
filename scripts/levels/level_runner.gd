@@ -595,6 +595,7 @@ func _show_hub(level_id: String, attention_points: int, rollback_report: Diction
 	_hub.rollback_report = rollback_report
 	_hub.light_piece_on_arrival = _light_piece_next
 	_hub.light_piece_world = _light_piece_world_next if _light_piece_next else 0
+	_hub.arrived_from_level = level_id
 	_light_piece_next = false
 	_light_piece_world_next = 0
 	_hub.level_handler = _on_hub_level_requested

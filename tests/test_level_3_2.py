@@ -201,7 +201,7 @@ class Level32Test(unittest.TestCase):
         self.assertTrue(rows["3-2"]["playable"])
         self.assertEqual(rows["3-2"]["available_text"], "Nueva foto")
         self.assertTrue(rows["3-3"]["playable"], "El 3-3 ya es jugable (paso 13)")
-        self.assertFalse(rows["3-boss"]["playable"])
+        self.assertTrue(rows["3-boss"]["playable"], "La Curadora jugable desde el paso 17")
         with open(os.path.join(ROOT, "data", "levels", "3-1.json"), encoding="utf-8") as handle:
             self.assertEqual(json.load(handle)["unlocks"], [{"type": "level", "id": "3-2"}], "Lo desbloquea el 3-1")
         self.assertTrue(os.path.exists(os.path.join(ROOT, "scenes", "levels", "3-2.tscn")))

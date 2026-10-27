@@ -21,6 +21,13 @@
 ## final del relleno e icono de play dibujado por codigo (sin textura); legible
 ## sin color: relleno macizo frente a pista hueca, posicion del cabezal y el
 ## contador. Arte PROVISIONAL por codigo con la paleta B del Mundo 2.
+## style "portrait" (La Curadora, 2026-10-27, paso 17 de docs/propuesta-mundo-3.md
+## §5.3): los segmentos de siempre dentro de un MARCO DE RETRATO dorado dibujado
+## por codigo (sombra, dorado y bisel) que SE AGRIETA POR TERCIOS: una grieta por
+## fase pasada en el tercio de esa fase (las fases se vacian de derecha a
+## izquierda) y las tres en el golpe final (99 -> 66 -> 33 -> 0); icono de camara
+## por codigo (icon_shape "camera"). Legible sin color: segmentos llenos frente a
+## huecos, grietas (forma, no color) y el contador. Paleta B del Mundo 3.
 class_name BossBar
 extends Control
 
@@ -153,7 +160,7 @@ func get_boss() -> BossBase:
 	return _boss
 
 
-## Estilo de la barra: "segments" (Alerta Mayor) o "playback" (Autoplay).
+## Estilo de la barra: "segments" (Alerta Mayor), "playback" (Autoplay) o "portrait" (La Curadora).
 func get_style() -> String:
 	return String(_cfg.get("style", "segments"))
 
@@ -301,6 +308,8 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(s, s))
 		draw_style_box(_frame_box, Rect2(Vector2.ZERO, size_px))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	elif get_style() == "portrait":
+		_draw_portrait_frame(size_px, back)
 	else:
 		draw_rect(Rect2(Vector2.ZERO, size_px * s), back)
 		draw_rect(Rect2(Vector2.ZERO, size_px * s), border, false, s)
@@ -316,6 +325,8 @@ func _draw() -> void:
 		var isz: float = float(_cfg.get("icon_size_px", 14))
 		draw_colored_polygon(PackedVector2Array([Vector2(ix, iy) * s, Vector2(ix + isz, iy + isz * 0.5) * s,
 				Vector2(ix, iy + isz) * s]), _color("icon", "#ff5cfa"))
+	elif String(_cfg.get("icon_shape", "")) == "camera":
+		_draw_camera_icon(Vector2(float(icon_at[0]), float(icon_at[1])), float(_cfg.get("icon_size_px", 12)))
 	# Nombre y contador (fila de arriba).
 	if _font != null:
 		var fs: int = int(_cfg.get("font_size", 12))
@@ -375,6 +386,71 @@ func _draw() -> void:
 			else:
 				draw_rect(nr, notch_c)
 			x += notch_w
+	if get_style() == "portrait":
+		_draw_cracks(size_px)
+
+
+## Grietas del marco «retrato» (style "portrait"): una por fase pasada y todas
+## con el jefe a 0 golpes (golpe final). 0 en los demas estilos.
+func get_frame_cracks() -> int:
+	if get_style() != "portrait" or _hits.is_empty():
+		return 0
+	if _remaining <= 0 and get_segment_count() > 0:
+		return _hits.size()
+	return get_passed_notches()
+
+
+## Marco de retrato dorado (style "portrait"): sombra exterior, dorado con bisel
+## claro arriba y a la izquierda, de frame_thickness_px, y el fondo dentro.
+func _draw_portrait_frame(size_px: Vector2, back: Color) -> void:
+	var s: float = _scale
+	var t: float = float(_cfg.get("frame_thickness_px", 3))
+	var outer: Color = _color("frame_shadow", "#54442a")
+	var gold: Color = _color("frame", "#b0a064")
+	var light: Color = _color("frame_light", "#d6c896")
+	draw_rect(Rect2(Vector2.ZERO, size_px * s), outer)
+	draw_rect(Rect2(Vector2(1, 1) * s, (size_px - Vector2(2, 2)) * s), gold)
+	draw_rect(Rect2(Vector2(1, 1) * s, Vector2(size_px.x - 2, 1) * s), light)
+	draw_rect(Rect2(Vector2(1, 1) * s, Vector2(1, size_px.y - 2) * s), light)
+	draw_rect(Rect2(Vector2(t, t) * s, (size_px - Vector2(t, t) * 2.0) * s), outer)
+	draw_rect(Rect2(Vector2(t + 1, t + 1) * s, (size_px - Vector2(t + 1, t + 1) * 2.0) * s), back)
+
+
+## Grietas: en el tercio (de las fases) de cada fase pasada, de derecha a
+## izquierda, un zigzag que baja desde el borde de arriba y otro que sube desde
+## el de abajo (sin tapar el texto ni los segmentos).
+func _draw_cracks(size_px: Vector2) -> void:
+	var s: float = _scale
+	var crack: Color = _color("crack", "#180f20")
+	var light: Color = _color("frame_light", "#d6c896")
+	var t: float = float(_cfg.get("frame_thickness_px", 3))
+	var depth: float = float(_cfg.get("crack_depth_px", 4))
+	var phases: int = maxi(_hits.size(), 1)
+	for k: int in get_frame_cracks():
+		var third: int = phases - 1 - k
+		var cx: float = roundf(size_px.x * (float(third) + 0.5) / float(phases))
+		var top := PackedVector2Array([Vector2(cx, 0), Vector2(cx + 2, t * 0.5), Vector2(cx - 1, t),
+				Vector2(cx + 1, t + depth * 0.5), Vector2(cx - 1, t + depth)])
+		var bottom := PackedVector2Array([Vector2(cx + 3, size_px.y), Vector2(cx + 1, size_px.y - t * 0.5),
+				Vector2(cx + 4, size_px.y - t), Vector2(cx + 2, size_px.y - t - depth * 0.5)])
+		for line: PackedVector2Array in [top, bottom]:
+			var pts := PackedVector2Array()
+			for v: Vector2 in line:
+				pts.append(v * s)
+			draw_polyline(pts, crack, s)
+			# Canto roto: un pixel claro junto a la grieta, sobre el dorado.
+			draw_rect(Rect2((line[1] + Vector2(1, 0)) * s, Vector2(1, 1) * s), light)
+
+
+## Camara (style "portrait", icon_shape "camera"): visor, cuerpo y lente.
+func _draw_camera_icon(at: Vector2, w: float) -> void:
+	var s: float = _scale
+	var body: Color = _color("icon", "#d6c896")
+	var lens: Color = _color("back", "#180f20")
+	var h: float = roundf(w * 0.7)
+	draw_rect(Rect2((at + Vector2(roundf(w * 0.25), 0)) * s, Vector2(roundf(w * 0.35), 2) * s), body)
+	draw_rect(Rect2((at + Vector2(0, 2)) * s, Vector2(w, h - 2) * s), body)
+	draw_circle((at + Vector2(w * 0.5, 2.0 + (h - 2.0) * 0.5)) * s, (h - 2.0) * 0.32 * s, lens)
 
 
 ## Barra de reproduccion (style "playback"): capitulos por fase, relleno hasta

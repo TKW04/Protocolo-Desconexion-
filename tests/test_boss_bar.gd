@@ -163,3 +163,51 @@ func test_alert_major_keeps_the_segments_after_autoplay() -> void:
 	_spawn()
 	_boss.start()
 	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda el estilo")
+
+
+# --- Paso 17 de docs/propuesta-mundo-3.md (2026-10-27): La Curadora ---
+
+## La Curadora usa el estilo «retrato» (styles.curator de data/hud.json): los
+## segmentos por fase dentro de un marco que se agrieta por tercios (99 -> 66
+## -> 33 -> 0): una grieta por fase pasada y las tres en el golpe final.
+func test_curator_bar_is_a_portrait_that_cracks_by_thirds() -> void:
+	_boss = BossBase.new()
+	_boss.boss_id = &"curator"
+	_boss.auto_process = false
+	_boss.lap_override = 1
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_true(_bar.visible)
+	assert_eq(_bar.get_style(), "portrait", "Marco de retrato")
+	assert_eq(_bar.get_segment_count(), 9, "Caché: 3 golpes por fase")
+	assert_eq(_bar.get_counter_text(), "99+")
+	assert_eq(_bar.get_frame_cracks(), 0, "Marco entero al empezar")
+	_hits(3)
+	assert_eq(_boss.get_phase(), 2)
+	assert_eq(_bar.get_counter_text(), "66")
+	assert_eq(_bar.get_lit_segments(), 6, "Legible sin color: 6 llenos")
+	assert_eq(_bar.get_frame_cracks(), 1, "Primer tercio agrietado")
+	_hits(3)
+	assert_eq(_bar.get_counter_text(), "33")
+	assert_eq(_bar.get_frame_cracks(), 2)
+	assert_almost_eq(_bar.get_screen_rect().get_center().x, 640.0, 1.0, "Arriba en el centro")
+	_hits(3)
+	assert_eq(_bar.get_counter_text(), "0")
+	assert_eq(_bar.get_frame_cracks(), 3, "Golpe final: el marco entero agrietado")
+	assert_true(_bar.is_hiding())
+
+
+func test_curator_bar_in_kernel_has_twelve_segments_and_others_keep_their_style() -> void:
+	_boss = BossBase.new()
+	_boss.boss_id = &"curator"
+	_boss.auto_process = false
+	_boss.lap_override = 2
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_eq(_bar.get_segment_count(), 12, "Kernel: 4 golpes por fase")
+	_boss.queue_free()
+	await wait_frames(2)
+	_spawn()
+	_boss.start()
+	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda el retrato")
+	assert_eq(_bar.get_frame_cracks(), 0, "Sin grietas fuera del retrato")

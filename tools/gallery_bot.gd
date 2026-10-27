@@ -200,7 +200,7 @@ func _check_completed() -> bool:
 	if _gallery_level == "3-3":
 		if not GameState.is_level_unlocked(&"3-boss"):
 			return _fail("el 3-3 no desbloquea la fila «Jefe: La Curadora»")
-		_note("fila del jefe: 3-boss desbloqueado %s (sin jugar hasta el paso 17)" % GameState.is_level_unlocked(&"3-boss"))
+		_note("fila del jefe: 3-boss desbloqueado %s (jugable desde el paso 17)" % GameState.is_level_unlocked(&"3-boss"))
 	return true
 
 

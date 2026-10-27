@@ -388,3 +388,187 @@ func test_autoplay_from_the_m2_folder_and_back_with_the_amber_piece() -> void:
 	EcoTextBox.pause_important = true
 	BossReward.pause_tree = true
 	BossDefeat.freeze_tree = true
+
+
+# --- Paso 17 de docs/propuesta-mundo-3.md (2026-10-27): «Jefe: La Curadora» ---
+
+func _m3() -> Dictionary:
+	return HubWorlds.world(&"m3")
+
+
+## Mundos 1 y 2 completos (Autoplay vencido) y el 3-1 a 3-3 como sus terminales.
+func _complete_worlds_1_2_and_3_3() -> void:
+	_complete_world_1_and_2_3()
+	GameState.mark_level_completed(&"2-boss")
+	for id: String in ["3-1", "3-2", "3-3"]:
+		GameState.mark_level_completed(StringName(id))
+		var level: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/%s.json" % id))
+		for unlock: Variant in (level as Dictionary).get("unlocks", []):
+			if String((unlock as Dictionary).get("type", "")) == "level":
+				GameState.unlock_level(StringName(String((unlock as Dictionary).get("id", ""))))
+
+
+func test_curator_row_is_playable_after_3_3_and_world_4_waits_for_her() -> void:
+	var boss: Dictionary = _row(_m3(), "3-boss")
+	assert_true(HubWorlds.is_boss(boss))
+	assert_true(HubWorlds.is_playable(boss), "playable: true desde el paso 17")
+	var panel := FolderPanel.new()
+	panel.world_entry = _m3()
+	add_child_autofree(panel)
+	_complete_world_1_and_2_3()
+	GameState.mark_level_completed(&"2-boss")
+	assert_eq(panel.level_text(boss), "Jefe: La Curadora - Bloqueado", "Antes del 3-3")
+	assert_false(HubWorlds.can_enter(&"3-boss"))
+	_complete_worlds_1_2_and_3_3()
+	assert_eq(panel.level_text(boss), "Jefe: La Curadora - Nuevo", "Tras el 3-3")
+	assert_true(HubWorlds.can_enter(&"3-boss"))
+	assert_eq(HubWorlds.folder_state(_m3()), HubWorlds.STATE_AVAILABLE, "Sin el jefe la carpeta no se completa")
+	var m4: Dictionary = HubWorlds.world(&"m4")
+	assert_eq(m4.get("unlocked_by", []), ["3-boss"], "El Mundo 4 se abre con La Curadora")
+	assert_false(HubWorlds.is_world_unlocked(m4), "Mundo 4 bloqueado antes del jefe")
+	GameState.mark_level_completed(&"3-boss")
+	assert_true(HubWorlds.is_world_unlocked(m4), "Mundo 4 desbloqueado al vencerla")
+	assert_true(NotasAlbum.is_world_visited(4), "El album abre la carpeta «El Chat»")
+	for entry: Dictionary in HubWorlds.folder_worlds():
+		assert_ne(String(entry.get("id", "")), "m4", "El Mundo 4 no tiene carpeta fisica en el hub")
+
+
+func test_green_piece_hidden_then_blinking_then_lit() -> void:
+	_complete_world_1_and_2_3()
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(3), &"hidden", "Mundo 3 bloqueado: pieza gris")
+	_hub.free()
+	GameState.mark_level_completed(&"2-boss")
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(2), &"on", "La ambar sigue encendida")
+	assert_eq(_hub.get_piece_animation(3), &"off", "Mundo 3 desbloqueado: contorno verde")
+	_hub.free()
+	_complete_worlds_1_2_and_3_3()
+	GameState.mark_level_completed(&"3-boss")
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(3), &"on", "La Curadora vencida: pieza verde encendida")
+	assert_eq(_hub.get_background_state(), &"on", "La cian sigue en el fondo")
+
+
+## Terminado cuando (paso 17): desde la carpeta M3 se entra a «Jefe: La Curadora», se vence, se recibe
+## boss_w3_l1 sin guardar (panel «Recuerdo recuperado» / «Fragmento de imagen» / «Capa: Caché») y se vuelve al
+## hub con la pieza verde encendida, el Mundo 4 desbloqueado (sin carpeta) y la placa «!» en Notas.
+func test_curator_from_the_m3_folder_and_back_with_the_green_piece() -> void:
+	EcoTextBox.pause_important = false
+	BossReward.pause_tree = false
+	BossDefeat.freeze_tree = false
+	EcoProgress.meet_eco_with_pulse()
+	_complete_worlds_1_2_and_3_3()
+	GameState.request_save()
+	var main: LevelRunner = _start_main("hub")
+	var hub: HubRoom = main.get_hub()
+	var arrival: WarpVortex = hub.get_arrival_vortex()
+	if arrival != null:
+		arrival.advance(LONG_STEP_S)
+	var folder: FolderStation = hub.get_folder(&"m3")
+	assert_true(folder.open(hub.get_isak()), "La carpeta del Mundo 3 se abre")
+	var panel: FolderPanel = folder.get_folder_panel()
+	panel.skip_input_delay()
+	assert_true(panel.select_option(&"3-boss"), "Fila del jefe elegible")
+	panel.confirm()
+	assert_true(panel.is_confirming_unsaved())
+	assert_true(panel.select_option(FolderPanel.OPTION_ENTER_UNSAVED))
+	panel.confirm()
+	hub.get_departure_vortex().advance(LONG_STEP_S)
+	await wait_process_frames(2)
+	main.advance(LONG_STEP_S)
+	main.advance(LONG_STEP_S)
+	assert_eq(main.get_level_id(), "3-boss", "Entra a la arena de La Curadora")
+	assert_eq(GameState.lives, GameState.lives_max, "Tres vidas por intento")
+	main.auto_advance = true
+	var boss := main.get_level().get_node(^"Objects/curator") as Curator
+	boss.intro_on_arrival = false
+	await wait_physics_frames(3)
+	if not boss.is_fighting():
+		boss.start()
+	var hud := main.get_level().get_node_or_null(^"Hud") as Hud
+	assert_not_null(hud, "HUD de la arena")
+	var bar: BossBar = hud.get_boss_bar() if hud != null else null
+	if bar != null:
+		assert_true(bar.visible, "Barra del jefe en el HUD")
+		assert_eq(bar.get_style(), "portrait", "Barra «retrato»")
+	var guard: int = 0
+	while not boss.is_defeated() and guard < 40:
+		boss.take_core_hit(1)
+		guard += 1
+	assert_true(boss.is_defeated(), "Golpe final (simulado con la API del jefe)")
+	await wait_physics_frames(2)
+	if bar != null:
+		assert_eq(bar.get_frame_cracks(), 3, "Marco agrietado entero en el golpe final")
+	var defeat: BossDefeat = boss.get_defeat()
+	assert_not_null(defeat, "Secuencia de derrota")
+	var texts: Dictionary = {}
+	var t: float = 0.0
+	while t < 25.0 and is_instance_valid(defeat) and defeat.get_stage() < BossDefeat.Stage.DONE:
+		var reward: BossReward = defeat.get_reward()
+		if reward != null and texts.is_empty():
+			for key: StringName in [&"system", &"header", &"title", &"layer", &"notice"]:
+				texts[key] = reward.get_text(key)
+		if reward != null and reward.can_close():
+			reward.confirm()
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(texts.get(&"header", ""), "Recuerdo recuperado")
+	assert_eq(texts.get(&"title", ""), "Fragmento de imagen")
+	assert_eq(texts.get(&"layer", ""), "Capa: Caché")
+	assert_eq(texts.get(&"notice", ""), "Guarda en Notas para conservarlo.")
+	assert_eq(texts.get(&"system", ""), "Filtro: eliminado.")
+	assert_true(GameState.has_memory(&"boss_w3_l1"), "Capa Caché del Mundo 3")
+	assert_false(GameState.has_memory(&"boss_w3_l2"), "Solo la capa del acceso actual")
+	assert_true(GameState.has_unsaved_changes(), "Sin guardar: se guarda en Notas")
+	t = 0.0
+	while t < 8.0 and not main.is_in_hub():
+		await wait_physics_frames(1)
+		t += DT
+	assert_true(main.is_in_hub(), "Vuelve al hub")
+	assert_true(GameState.is_level_completed(&"3-boss"))
+	hub = main.get_hub()
+	assert_true(hub.light_piece_on_arrival)
+	assert_eq(hub.light_piece_world, 3, "Se enciende la pieza del Mundo 3")
+	watch_signals(hub)
+	t = 0.0
+	while t < 10.0 and (hub.get_piece_animation(3) != &"on" or hub.is_piece_lighting() or hub.is_piece_pending()):
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(hub.get_piece_animation(3), &"on", "Pieza verde encendida")
+	assert_eq(hub.get_piece_animation(2), &"on", "La ambar sigue encendida")
+	assert_eq(hub.get_background_state(), &"on", "La cian sigue encendida")
+	assert_signal_emitted_with_parameters(hub, "wallpaper_piece_lit", [3])
+	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m4")), "Mundo 4 desbloqueado (unlocked_by 3-boss)")
+	assert_true(NotasAlbum.is_world_visited(4), "Carpeta «El Chat» abierta en el album")
+	assert_true(GameState.has_unread_memories(), "Recuerdo sin leer")
+	assert_true(hub.get_notas().is_unread_badge_visible(), "Placa «!» en Notas")
+	EcoTextBox.pause_important = true
+	BossReward.pause_tree = true
+	BossDefeat.freeze_tree = true
+
+
+## Linea de Calc (§2.3, paso 17): al llegar del 3-1 con Calc conocida, una vez por partida, en su LCD.
+func test_calc_remark_after_3_1_once() -> void:
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	_hub.arrived_from_level = "3-1"
+	add_child(_hub)
+	assert_true(_hub.pending_calc_remark().is_empty(), "Sin Calc conocida no hay comentario")
+	_hub.free()
+	EcoProgress.meet_calc()
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	_hub.arrived_from_level = "2-3"
+	add_child(_hub)
+	assert_true(_hub.pending_calc_remark().is_empty(), "Solo al llegar del 3-1")
+	_hub.free()
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	_hub.arrived_from_level = "3-1"
+	add_child(_hub)
+	assert_true(_hub.start_calc_remark(), "Calc comenta los likes")
+	assert_eq(_hub.get_text_box().get_speaker_id(), &"calc", "Con su estilo LCD")
+	assert_string_contains(_hub.get_text_box().get_text(), "Likes canjeables: 0.")
+	assert_false(_hub.start_calc_remark(), "Una sola vez")
+	assert_true(GameState.is_notice_seen(&"calc_remark_likes_3_1"))

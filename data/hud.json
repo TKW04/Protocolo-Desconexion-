@@ -72,7 +72,7 @@
 		"hide_after_defeat_s": 1.2,
 		"fade_s": 0.4,
 		"colors": {"back": "#0b0e1a", "border": "#aeb8d2", "text": "#f2f4f8", "fill": "#ff4a2a", "fill_shadow": "#a3221c", "empty": "#aeb8d2", "notch": "#f2f4f8"},
-		"_styles_notes": "Estilos por jefe (2026-10-23, paso 18 de docs/propuesta-mundo-2.md): styles.<boss_id> sustituye claves de la base al enlazar ese jefe (colors se mezcla). autoplay: style playback = BARRA DE REPRODUCCION (pista con un capitulo por fase separados chapter_gap_px, relleno desde la izquierda hasta los golpes que quedan, cabezal redondo de knob_radius_px al final del relleno; legible sin color: relleno macizo frente a pista hueca, posicion del cabezal y el contador); sin textura de marco ni de icono: rectangulo back/border e icono de play dibujado por codigo (icon_shape play, icon_size_px). Colores de la paleta B del Mundo 2 (mundo2.gpl): back feed_noche, border tarjeta_borde, text blanco, fill y icon magenta (los ojos-boton de play), fill_shadow magenta_sombra, empty gris. Arte PROVISIONAL por codigo.",
+		"_styles_notes": "Estilos por jefe (2026-10-23, paso 18 de docs/propuesta-mundo-2.md): styles.<boss_id> sustituye claves de la base al enlazar ese jefe (colors se mezcla). autoplay: style playback = BARRA DE REPRODUCCION (pista con un capitulo por fase separados chapter_gap_px, relleno desde la izquierda hasta los golpes que quedan, cabezal redondo de knob_radius_px al final del relleno; legible sin color: relleno macizo frente a pista hueca, posicion del cabezal y el contador); sin textura de marco ni de icono: rectangulo back/border e icono de play dibujado por codigo (icon_shape play, icon_size_px). Colores de la paleta B del Mundo 2 (mundo2.gpl): back feed_noche, border tarjeta_borde, text blanco, fill y icon magenta (los ojos-boton de play), fill_shadow magenta_sombra, empty gris. Arte PROVISIONAL por codigo. curator (2026-10-27, paso 17 de docs/propuesta-mundo-3.md §5.3): style portrait = los segmentos por fase de la base dentro de un MARCO DE RETRATO dorado dibujado por codigo (frame_shadow, frame y bisel frame_light, de frame_thickness_px) que SE AGRIETA POR TERCIOS: una grieta (crack, de crack_depth_px desde los bordes de arriba y de abajo) en el tercio de cada fase pasada, de derecha a izquierda, y las tres en el golpe final (99 -> 66 -> 33 -> 0); icono de camara por codigo (icon_shape camera). Legible sin color: segmentos llenos frente a huecos, las grietas (forma) y el contador. Colores de la paleta B del Mundo 3 (mundo3.gpl): back y crack galeria_noche, frame dorado, frame_light e icon dorado_luz, frame_shadow marco_sombra, text y notch blanco_brillante, fill rosa_pastel (el retrato filtrado; sin rojo, que es dano), fill_shadow rosa_sombra, empty gris_perla. Arte PROVISIONAL por codigo.",
 		"styles": {
 			"autoplay": {
 				"style": "playback",
@@ -86,6 +86,17 @@
 				"chapter_gap_px": 2,
 				"knob_radius_px": 4,
 				"colors": {"back": "#0d0b24", "border": "#a9a6f2", "text": "#f2f2fa", "fill": "#ff5cfa", "fill_shadow": "#7a2290", "empty": "#aeb0d2", "icon": "#ff5cfa"}
+			},
+			"curator": {
+				"style": "portrait",
+				"frame": "",
+				"icon": "",
+				"icon_shape": "camera",
+				"icon_px": [6, 8],
+				"icon_size_px": 12,
+				"frame_thickness_px": 3,
+				"crack_depth_px": 4,
+				"colors": {"back": "#180f20", "border": "#b0a064", "text": "#fcf8fc", "fill": "#f8d6e8", "fill_shadow": "#a8809a", "empty": "#c4b8cc", "notch": "#fcf8fc", "frame": "#b0a064", "frame_light": "#d6c896", "frame_shadow": "#54442a", "crack": "#180f20", "icon": "#d6c896"}
 			}
 		}
 	},

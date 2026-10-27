@@ -239,3 +239,63 @@ func test_saved_autoplay_victory_survives_a_restart_in_the_hub() -> void:
 	assert_eq(hub2.get_piece_animation(2), &"on", "La pieza ambar sigue encendida")
 	assert_false(hub2.light_piece_on_arrival, "Sin volver a animarla")
 	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m3")), "Mundo 3 desbloqueado")
+
+
+## Paso 17 de docs/propuesta-mundo-3.md (2026-10-27): la victoria sobre La
+## Curadora (capa boss_w3_l1 sin guardar) se guarda en Notas y al arrancar otra
+## vez en el hub siguen el 3-boss completado, la capa, la pieza verde encendida
+## (sin volver a animarse) y el Mundo 4 desbloqueado (sin carpeta en el hub).
+func test_saved_curator_victory_survives_a_restart_in_the_hub() -> void:
+	_after_1_3()
+	for id: StringName in [&"1-boss", &"2-1", &"2-2", &"2-3", &"2-boss", &"3-1", &"3-2", &"3-3"]:
+		GameState.mark_level_completed(id)
+	GameState.unlock_level(&"3-boss")
+	_main = MAIN_SCENE.instantiate() as LevelRunner
+	_main.start_level_id = "3-boss"
+	add_child(_main)
+	var boss := _main.get_level().get_node(^"Objects/curator") as Curator
+	boss.intro_on_arrival = false
+	await wait_physics_frames(3)
+	if not boss.is_fighting():
+		boss.start()
+	var guard: int = 0
+	while not boss.is_defeated() and guard < 40:
+		boss.take_core_hit(1)
+		guard += 1
+	await wait_physics_frames(2)
+	var defeat: BossDefeat = boss.get_defeat()
+	var t: float = 0.0
+	while t < 30.0 and not _main.is_in_hub():
+		if is_instance_valid(defeat) and defeat.get_reward() != null and defeat.get_reward().can_close():
+			defeat.get_reward().confirm()
+		await wait_physics_frames(1)
+		t += DT
+	assert_true(_main.is_in_hub(), "Vuelve al hub tras vencer a La Curadora")
+	var hub: HubRoom = _main.get_hub()
+	t = 0.0
+	while t < 10.0 and (not hub.has_arrived() or hub.is_piece_pending() or hub.is_piece_lighting()):
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(hub.get_piece_animation(3), &"on", "Pieza verde encendida")
+	assert_true(GameState.has_memory(&"boss_w3_l1") and GameState.has_unsaved_changes(), "Recuerdo sin guardar")
+	_save_in_notas(hub)
+	_free_main()
+	GameState.reset_progress()
+	assert_false(GameState.has_memory(&"boss_w3_l1"))
+	assert_true(GameState.load_game(), "Carga la partida")
+	GameState.started_from_save = true
+	_main = MAIN_SCENE.instantiate() as LevelRunner
+	add_child(_main)
+	t = 0.0
+	while t < 10.0 and not (_main.is_in_hub() and _main.get_hub().has_arrived()):
+		await wait_physics_frames(1)
+		t += DT
+	var hub2: HubRoom = _main.get_hub()
+	assert_true(GameState.is_level_completed(&"3-boss"), "3-boss completado")
+	assert_true(GameState.has_memory(&"boss_w3_l1"), "La capa Caché del Mundo 3 sigue")
+	assert_true(hub2.get_notas().is_unread_badge_visible(), "Placa «!» en Notas: sin leer")
+	assert_eq(hub2.get_piece_animation(3), &"on", "La pieza verde sigue encendida")
+	assert_eq(hub2.get_piece_animation(2), &"on", "Y la ambar")
+	assert_false(hub2.light_piece_on_arrival, "Sin volver a animarla")
+	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m4")), "Mundo 4 desbloqueado")
+	assert_true(NotasAlbum.is_world_visited(4), "Carpeta «El Chat» abierta en el album")
