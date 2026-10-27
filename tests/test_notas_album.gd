@@ -135,6 +135,8 @@ func test_folder_names_fit_on_one_line() -> void:
 		var entry: Dictionary = NotasAlbum.world_entry(i + 1)
 		entry["unlocked"] = true
 		worlds.append(entry)
+	# Mundos 4-6: visibles solo con el upgrade del hub (paso 5 de la propuesta 4-6).
+	GameState.install_hub_upgrade(&"hub_update_4_6")
 	_album.open()
 	for i: int in DESIGN_WORLD_NAMES.size():
 		var texts: PackedStringArray = _album.get_folder_texts(i)
@@ -152,7 +154,9 @@ func test_folder_names_fit_on_one_line() -> void:
 
 
 func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
-	# Se simula que el Mundo 4 ya se alcanzo (hoy no tiene subniveles).
+	# Se simula que el Mundo 4 ya se alcanzo (hoy no tiene subniveles; visible
+	# solo con el upgrade del hub, paso 5 de la propuesta 4-6).
+	GameState.install_hub_upgrade(&"hub_update_4_6")
 	var m4: Dictionary = NotasAlbum.world_entry(4)
 	m4["unlocked"] = true
 	_album.open()

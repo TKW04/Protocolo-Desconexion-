@@ -53,8 +53,10 @@
 ## fase) y gasto por ventana frente al margen del validador, flashes que ciegan,
 ## cierres con Isak fuera de su refugio, corazones, likes al pisar una plataforma,
 ## pulsos, laseres, dashes y pellizcos; al final, la recompensa (boss_w3_l<n> sin
-## guardar) y la vuelta al hub con 3-boss completado, el Mundo 4 desbloqueado y,
-## en Caché, la pieza verde encendida. Usa user://bot_save.json (borrado al
+## guardar) y la vuelta al hub con 3-boss completado, el acertijo del hub
+## pendiente (desde el paso 5 de docs/propuesta-hub-mundos-4-6.md el Mundo 4 queda
+## oculto hasta instalar el upgrade, con la pagina 2 «en instalacion») y, en
+## Caché, la pieza verde encendida. Usa user://bot_save.json (borrado al
 ## empezar). Lo lanza tools/play_boss_bot.gd -- --boss curator; lo ejecuta
 ## tests/test_curator_bot.gd.
 extends Node
@@ -1503,7 +1505,9 @@ func _check_victory(hub: HubRoom) -> bool:
 	var checks: Array = [
 		["3-boss completado", GameState.is_level_completed(&"3-boss")],
 		["recuerdo %s sin guardar" % layer, GameState.has_memory(layer) and GameState.has_unsaved_changes()],
-		["Mundo 4 desbloqueado", HubWorlds.is_world_unlocked(HubWorlds.world(&"m4"))],
+		["acertijo del hub pendiente", HubWorlds.is_hub_upgrade_pending()
+			and HubWorlds.folder_state(HubWorlds.world(&"m4")) == HubWorlds.STATE_HIDDEN
+			and hub.get_page_state(2) == HubRoom.PAGE_INSTALLING],
 	]
 	# La pieza verde depende de la carpeta del acceso actual: solo Caché tiene hoy
 	# la fila del jefe (los subniveles de Kernel y Raíz aun no existen).

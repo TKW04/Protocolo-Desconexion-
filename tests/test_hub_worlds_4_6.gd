@@ -5,8 +5,8 @@
 # install_hub_upgrade solo marca «sin guardar»; un game over sin guardar lo
 # pierde (el acertijo vuelve a estar pendiente); guardado, vuelve con la copia y
 # no va a la Papelera; el cambio de vuelta (Kernel y Raiz) lo conserva. Con
-# hub_upgrades.enforce_requires_upgrade false (TEMPORAL, hasta que el acertijo
-# exista en el hub) M4 se comporta como hasta hoy. Usa su propia ruta de guardado.
+# hub_upgrades.enforce_requires_upgrade (true desde el paso 5, la instalacion)
+# M4 espera al upgrade. Usa su propia ruta de guardado.
 extends GutTest
 
 const EcoProgress = preload("res://tests/support/eco_progress.gd")
@@ -77,14 +77,19 @@ func test_folder_worlds_by_page() -> void:
 	assert_eq(_ids(HubWorlds.folder_worlds(3)), ["m6"] as Array[String])
 
 
-func test_temporary_flag_keeps_world_4_as_today() -> void:
-	assert_false(HubWorlds.is_requires_upgrade_enforced(), "TEMPORAL: aun no se aplica (no se puede instalar)")
+func test_flag_is_enforced_since_the_install_step() -> void:
+	# Paso 5 (2026-10-27): la instalacion existe en el hub, asi que la bandera
+	# (antes TEMPORAL en false) se aplica: M4 espera al upgrade.
+	assert_true(HubWorlds.is_requires_upgrade_enforced(), "Se aplica desde el paso 5")
 	assert_false(HubWorlds.is_world_unlocked(_w(&"m4")), "Bloqueado antes de La Curadora")
 	GameState.mark_level_completed(&"3-boss")
-	assert_true(HubWorlds.is_world_unlocked(_w(&"m4")), "Como hoy: desbloqueado con 3-boss")
-	assert_true(NotasAlbum.is_world_visited(4), "Como hoy: el album abre «El Chat»")
+	assert_eq(HubWorlds.folder_state(_w(&"m4")), HubWorlds.STATE_HIDDEN, "Con 3-boss, oculto hasta instalar")
+	assert_false(NotasAlbum.is_world_visited(4), "El album no abre «El Chat» sin el upgrade")
+	assert_true(HubWorlds.is_hub_upgrade_pending(), "El acertijo cuenta como pendiente")
+	GameState.install_hub_upgrade(UPGRADE)
+	assert_true(HubWorlds.is_world_unlocked(_w(&"m4")), "Instalado: disponible con 3-boss")
+	assert_true(NotasAlbum.is_world_visited(4), "Instalado: el album abre «El Chat»")
 	assert_false(HubWorlds.is_world_unlocked(_w(&"m5")), "M5 espera a 4-boss")
-	assert_true(HubWorlds.is_hub_upgrade_pending(), "El acertijo ya cuenta como pendiente")
 
 
 # --- Estados con el requisito aplicado ---

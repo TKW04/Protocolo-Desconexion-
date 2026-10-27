@@ -1,7 +1,7 @@
 """Datos del upgrade del hub (paso 0 de docs/propuesta-hub-mundos-4-6.md, 2026-10-27): m4-m6 de data/hub.json con
 page, col, requires_upgrade hub_update_4_6 y unlocked_by en orden (3-boss, 4-boss, 5-boss); la pagina 1 sigue con
 M1-M3 en las columnas 4, 10 y 16 (el hub de hoy no cambia); seccion hub_upgrades con el acertijo tras 3-boss y la
-bandera TEMPORAL enforce_requires_upgrade en false hasta que el acertijo exista en el hub; guardado v6.
+bandera enforce_requires_upgrade (true desde el paso 5, la instalacion en el hub); guardado v6.
 Uso: python3 -m unittest tests/test_hub_worlds_4_6.py
 """
 
@@ -55,7 +55,7 @@ class HubWorlds46DataTest(unittest.TestCase):
 
     def test_hub_upgrades_section(self):
         section = self.hub["hub_upgrades"]
-        self.assertIs(section["enforce_requires_upgrade"], False, "TEMPORAL hasta el paso de la instalacion")
+        self.assertIs(section["enforce_requires_upgrade"], True, "Se aplica desde el paso 5 (instalacion)")
         self.assertEqual(section["upgrades"][UPGRADE]["after_level"], "3-boss")
         boss_ids = {lvl["id"] for w in self.hub["worlds"] for lvl in w.get("levels", [])}
         self.assertIn("3-boss", boss_ids)

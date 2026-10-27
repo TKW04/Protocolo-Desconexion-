@@ -244,7 +244,7 @@ func test_saved_autoplay_victory_survives_a_restart_in_the_hub() -> void:
 ## Paso 17 de docs/propuesta-mundo-3.md (2026-10-27): la victoria sobre La
 ## Curadora (capa boss_w3_l1 sin guardar) se guarda en Notas y al arrancar otra
 ## vez en el hub siguen el 3-boss completado, la capa, la pieza verde encendida
-## (sin volver a animarse) y el Mundo 4 desbloqueado (sin carpeta en el hub).
+## (sin volver a animarse) y el acertijo del hub pendiente (M4 oculto hasta instalar).
 func test_saved_curator_victory_survives_a_restart_in_the_hub() -> void:
 	_after_1_3()
 	for id: StringName in [&"1-boss", &"2-1", &"2-2", &"2-3", &"2-boss", &"3-1", &"3-2", &"3-3"]:
@@ -297,5 +297,7 @@ func test_saved_curator_victory_survives_a_restart_in_the_hub() -> void:
 	assert_eq(hub2.get_piece_animation(3), &"on", "La pieza verde sigue encendida")
 	assert_eq(hub2.get_piece_animation(2), &"on", "Y la ambar")
 	assert_false(hub2.light_piece_on_arrival, "Sin volver a animarla")
-	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m4")), "Mundo 4 desbloqueado")
-	assert_true(NotasAlbum.is_world_visited(4), "Carpeta «El Chat» abierta en el album")
+	assert_true(HubWorlds.is_hub_upgrade_pending(), "Acertijo del hub pendiente (paso 5 de la propuesta 4-6)")
+	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m4")), HubWorlds.STATE_HIDDEN, "Mundo 4 oculto hasta instalar")
+	assert_eq(hub2.get_page_state(2), HubRoom.PAGE_INSTALLING, "Pagina 2 «en instalacion» al cargar")
+	assert_false(NotasAlbum.is_world_visited(4), "«El Chat» cerrada en el album hasta instalar")

@@ -239,11 +239,13 @@ func test_with_the_upgrade_all_three_pages_exist() -> void:
 	assert_eq(_hub.get_view_rect(), _page_rect(3))
 
 
-func test_folders_stay_on_page_one() -> void:
+func test_folders_on_their_pages_with_the_upgrade() -> void:
 	_install()
 	_spawn()
-	assert_eq(_hub.get_folder_ids(), [&"m1", &"m2", &"m3"] as Array[StringName],
-		"Las carpetas M4-M6 llegan con la instalacion (paso 5)")
+	assert_eq(_hub.get_folder_ids(), [&"m1", &"m2", &"m3", &"m4", &"m5", &"m6"] as Array[StringName],
+		"Con el upgrade: M4 y M5 en la pagina 2 y M6 en la 3 (paso 5)")
+	assert_eq(_hub.get_folder(&"m4").position.x, 1280.0 + 4.0 * T, "M4: columna 4 de la pagina 2")
+	assert_eq(_hub.get_folder(&"m6").position.x, 2560.0 + 9.0 * T, "M6: columna 9 de la pagina 3")
 
 
 func test_arrival_is_on_the_page_of_the_world_folder() -> void:

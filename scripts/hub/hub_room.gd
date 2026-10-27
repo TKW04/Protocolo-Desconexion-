@@ -91,9 +91,21 @@
 ## (cargador_p2). Mientras esta activo y no inerte (Papelera llena), Isak puede
 ## usar en el hub el dash, el golpe al suelo y Pellizcar obtenidos
 ## (Isak.hub_gestures). Con 3/3, el pulso al instalador emite
-## update_install_requested (lo consumira el paso 5: la instalacion); hasta
-## entonces nada se instala. Las verificaciones no se guardan: cada visita
+## update_install_requested. Las verificaciones no se guardan: cada visita
 ## empieza en 0/3.
+## INSTALACION Y UPGRADE (2026-10-27, paso 5 de docs/propuesta-hub-mundos-4-6.md
+## §3; seccion hub_update_install de data/hub.json): update_install_requested
+## empieza HubUpdateInstall (hijo "UpdateInstall": pausa, barra de 3 s,
+## destello, linea importante de Notas). En el destello, apply_update_install
+## instala el upgrade (GameState.install_hub_upgrade: solo «sin guardar»; un game
+## over sin guardar lo pierde y el acertijo se repite), quita el acertijo y
+## reconstruye la sala con las 3 paginas: carpetas M4 y M5 en la pagina 2 y M6
+## (con su candado de 5 ranuras) en la 3, el instalador como decorado apagado
+## (InstallerDecor) y la pieza 4 del fondo en off (M4 disponible). Las carpetas
+## de cada pagina salen de HubWorlds.folder_worlds(pagina) con su `col` local a
+## la pagina; las ocultas (requires_upgrade sin instalar) no se construyen.
+## Pieza 4: arte PROVISIONAL por codigo (room.pieces con `provisional`) hasta el
+## paso 7.
 class_name HubRoom
 extends Node2D
 
@@ -112,8 +124,8 @@ signal level_requested(level_id: StringName)
 ## sfx_hub_page_slide, paso 7).
 signal page_changed(page: int)
 ## Con 3/3 se ha pulsado el instalador del acertijo de la pagina 2: se pide
-## instalar `upgrade_id` (paso 5 de docs/propuesta-hub-mundos-4-6.md; hoy nadie
-## lo instala todavia).
+## instalar `upgrade_id` (paso 5 de docs/propuesta-hub-mundos-4-6.md: empieza la
+## instalacion, HubUpdateInstall).
 signal update_install_requested(upgrade_id: StringName)
 
 ## Estados de una pagina del hub (get_page_state).
@@ -181,6 +193,8 @@ var _edge_glitch: HubEdgeGlitch
 var _update_puzzle: HubUpdatePuzzle
 var _charger_p2: Charger
 var _update_install_requested: StringName = &""
+var _update_install: HubUpdateInstall
+var _installer_decor: Node2D
 
 
 func _enter_tree() -> void:
@@ -225,6 +239,7 @@ func _ready() -> void:
 	_build_stations()
 	_build_folders()
 	_build_update_puzzle()
+	_build_installer_decor()
 	EventBus.ally_met.connect(_on_ally_met)
 	if not rollback_report.is_empty():
 		_game_over_intro = GameOverIntro.new()
@@ -278,6 +293,8 @@ func blocks_pause_menu() -> bool:
 		return true
 	var calc_intro: CalcIntro = get_calc_intro()
 	if calc_intro != null and calc_intro.is_running():
+		return true
+	if is_update_installing():
 		return true
 	if _isak == null or not is_instance_valid(_isak) or _isak.is_warping() or _isak.is_facing_back():
 		return true
@@ -538,6 +555,22 @@ func is_update_install_requested() -> bool:
 	return not _update_install_requested.is_empty()
 
 
+## Instalacion en curso o terminada en esta visita (null si no se ha pedido).
+func get_update_install() -> HubUpdateInstall:
+	return _update_install if _update_install != null and is_instance_valid(_update_install) else null
+
+
+## La instalacion esta en marcha (juego en pausa).
+func is_update_installing() -> bool:
+	var install: HubUpdateInstall = get_update_install()
+	return install != null and install.is_running()
+
+
+## Instalador apagado como decorado de la pagina 2 (null sin el upgrade).
+func get_installer_decor() -> Node2D:
+	return _installer_decor
+
+
 ## Rectangulo que ve la camara en la pagina `page` (por defecto, la actual).
 func get_camera_rect(page: int = -1) -> Rect2i:
 	var entry: Dictionary = _page_entry(_current_page if page < 1 else page)
@@ -740,7 +773,11 @@ func _build_room() -> void:
 		var world: int = int(entry.get("world", 0))
 		piece.name = "Piece%d" % world
 		piece.centered = false
-		piece.sprite_frames = load(String(entry.get("frames", ""))) as SpriteFrames
+		var frames_path: String = String(entry.get("frames", ""))
+		if not frames_path.is_empty():
+			piece.sprite_frames = load(frames_path) as SpriteFrames
+		elif entry.get("provisional", null) is Dictionary:
+			_make_provisional_piece(piece, entry["provisional"])
 		var at: Array = entry.get("position_px", [0, 0])
 		piece.position = Vector2(float(at[0]), float(at[1]))
 		room.add_child(piece)
@@ -761,6 +798,34 @@ func _build_room() -> void:
 	_add_box(bodies, "WallLeft", Rect2(-thick, -thick, thick, height + thick * 2.0))
 	_add_box(bodies, "WallRight", Rect2(size.x, -thick, thick, height + thick * 2.0))
 	_add_box(bodies, "Ceiling", Rect2(0.0, -thick, size.x, thick))
+
+
+## Pieza del fondo PROVISIONAL por codigo (room.pieces con `provisional`; paso 7
+## para el arte): SpriteFrames vacias con hidden, off (2 cuadros, como las
+## demas) y on, y un hijo que dibuja el contorno (off, parpadea) o el relleno (on)
+## de polygon_px en `color`.
+func _make_provisional_piece(piece: AnimatedSprite2D, cfg: Dictionary) -> void:
+	var image := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+	var empty := ImageTexture.create_from_image(image)
+	var frames := SpriteFrames.new()
+	for spec: Array in [[&"hidden", 1, 1.0], [&"off", 2, 1.5], [&"on", 1, 1.0]]:
+		var anim: StringName = spec[0]
+		if not frames.has_animation(anim):
+			frames.add_animation(anim)
+		frames.set_animation_loop(anim, true)
+		frames.set_animation_speed(anim, float(spec[2]))
+		for i: int in int(spec[1]):
+			frames.add_frame(anim, empty)
+	piece.sprite_frames = frames
+	var art := _ProvisionalPiece.new()
+	art.name = "ProvisionalArt"
+	art.piece = piece
+	art.color = Color(String(cfg.get("color", "#ff7f66")))
+	for p: Variant in cfg.get("polygon_px", []):
+		art.polygon.append(Vector2(float((p as Array)[0]), float((p as Array)[1])))
+	piece.add_child(art)
+	piece.frame_changed.connect(art.queue_redraw)
+	piece.animation_changed.connect(art.queue_redraw)
 
 
 ## Indicador de paginas en la fila page_dot_row de cada pagina: con una sola,
@@ -1037,9 +1102,93 @@ func _build_update_puzzle() -> void:
 		move_child(_charger_p2, 2)
 
 
+## Instalador apagado como decorado de la pagina 2 (§3.1 paso 5) cuando el
+## upgrade ya esta instalado (hub_update_install.installer_decor_cell). Sin
+## colision ni prompt. Arte PROVISIONAL (terminal de HubProvisionalArt, atenuado).
+func _build_installer_decor() -> void:
+	if _installer_decor != null and is_instance_valid(_installer_decor):
+		_installer_decor.queue_free()
+	_installer_decor = null
+	var page: int = int(HubUpdatePuzzle.load_data().get("page", 2))
+	var upgrade := StringName(String(HubUpdatePuzzle.load_data().get("upgrade", "hub_update_4_6")))
+	if page > get_page_count() or get_page_state(page) != PAGE_OPEN or not GameState.has_hub_upgrade(upgrade):
+		return
+	var cfg: Dictionary = HubData.section("hub_update_install")
+	var t: float = HubData.tile_size()
+	var cell: Array = cfg.get("installer_decor_cell", [7, 6])
+	var size: Array = cfg.get("installer_decor_size_tiles", [2, 3])
+	var art := HubProvisionalArt.new()
+	art.kind = &"terminal"
+	art.size = Vector2(float(size[0]), float(size[1])) * t
+	art.modulate = Color(0.55, 0.55, 0.6)
+	_installer_decor = Node2D.new()
+	_installer_decor.name = "InstallerDecor"
+	_installer_decor.position = Vector2(get_camera_rect(page).position) + Vector2(float(cell[0]), float(cell[1])) * t
+	_installer_decor.add_child(art)
+	add_child(_installer_decor)
+	move_child(_installer_decor, 2)
+
+
 func _on_update_install_requested(upgrade_id: StringName) -> void:
 	_update_install_requested = upgrade_id
 	update_install_requested.emit(upgrade_id)
+	_start_update_install(upgrade_id)
+
+
+## Empieza la secuencia de §3.1 (HubUpdateInstall). Falso si ya hay una.
+func _start_update_install(upgrade_id: StringName) -> bool:
+	if get_update_install() != null or GameState.has_hub_upgrade(upgrade_id):
+		return false
+	if _update_puzzle != null and is_instance_valid(_update_puzzle):
+		var installer: HubInstaller = _update_puzzle.get_installer()
+		if installer != null and installer.is_panel_open():
+			installer.close(true)
+	_update_install = HubUpdateInstall.new()
+	_update_install.name = "UpdateInstall"
+	_update_install.upgrade_id = upgrade_id
+	_update_install.text_box = _text_box
+	_update_install.apply = apply_update_install
+	if _update_puzzle != null and is_instance_valid(_update_puzzle):
+		var colors: Array[Color] = []
+		for id: StringName in _update_puzzle.get_check_ids():
+			colors.append(_update_puzzle.get_check(id).frame_color)
+		if not colors.is_empty():
+			_update_install.colors = colors
+	add_child(_update_install)
+	return _update_install.start()
+
+
+## Instala el upgrade `upgrade_id` y deja el hub en su forma final (lo llama
+## HubUpdateInstall en el destello; tambien sirve en pruebas): marca «sin
+## guardar», quita el acertijo y reconstruye sala, paginas y carpetas. Falso si
+## ya estaba instalado.
+func apply_update_install(upgrade_id: StringName) -> bool:
+	if not GameState.install_hub_upgrade(upgrade_id):
+		return false
+	if _update_puzzle != null and is_instance_valid(_update_puzzle):
+		remove_child(_update_puzzle)
+		_update_puzzle.queue_free()
+	_update_puzzle = null
+	_page_count = _count_pages()
+	var old_room: Node = get_node_or_null(^"Room")
+	if old_room != null:
+		remove_child(old_room)
+		old_room.queue_free()
+	_pieces.clear()
+	_page_indicators.clear()
+	_edge_glitch = null
+	_build_room()
+	for node_name: String in ["Shelves", "Folders"]:
+		var old: Node = get_node_or_null(NodePath(node_name))
+		if old != null:
+			remove_child(old)
+			old.queue_free()
+	_folders.clear()
+	_build_folders()
+	_build_installer_decor()
+	if _isak != null and is_instance_valid(_isak):
+		_set_camera_left(float(get_camera_rect(_current_page).position.x))
+	return true
 
 
 func _build_stations() -> void:
@@ -1114,9 +1263,17 @@ func _build_folders() -> void:
 	var shelf_y: float = get_shelf_top_y()
 	var tiles: Dictionary = cfg.get("shelf", {})
 	var scene := load(String(cfg.get("scene", "res://scenes/hub/folder_station.tscn"))) as PackedScene
-	for entry: Dictionary in HubWorlds.folder_worlds():
+	var entries: Array[Dictionary] = []
+	for page: int in range(1, get_page_count() + 1):
+		if get_page_state(page) != PAGE_OPEN:
+			continue
+		for world_entry: Dictionary in HubWorlds.folder_worlds(page):
+			if HubWorlds.folder_state(world_entry) != HubWorlds.STATE_HIDDEN:
+				entries.append(world_entry)
+	for entry: Dictionary in entries:
 		var id := StringName(String(entry.get("id", "")))
-		var col: int = int(entry.get("col", 0))
+		# `col` es local a la pagina de la carpeta.
+		var col: int = int(entry.get("col", 0)) + (HubWorlds.world_page(entry) - 1) * get_page_size_tiles().x
 		var first: int = col - extra
 		var last: int = col + width - 1 + extra
 		for c: int in range(first, last + 1):
@@ -1189,3 +1346,23 @@ func _swap_to_level() -> void:
 	tree.root.add_child(runner)
 	tree.current_scene = runner
 	queue_free()
+
+
+## Contorno o relleno PROVISIONAL de una pieza del fondo (ver _make_provisional_piece).
+class _ProvisionalPiece:
+	extends Node2D
+	var piece: AnimatedSprite2D
+	var color: Color = Color("#ff7f66")
+	var polygon: PackedVector2Array = PackedVector2Array()
+
+	func _draw() -> void:
+		if piece == null or polygon.size() < 3:
+			return
+		var closed: PackedVector2Array = polygon.duplicate()
+		closed.append(polygon[0])
+		match piece.animation:
+			&"on":
+				draw_colored_polygon(polygon, Color(color, 0.45))
+				draw_polyline(closed, color, 4.0)
+			&"off":
+				draw_polyline(closed, Color(color, 1.0 if piece.frame == 0 else 0.35), 4.0)

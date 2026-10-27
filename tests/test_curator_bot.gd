@@ -12,7 +12,7 @@
 #   que el Debug se corte por falta de energia en una ventana;
 # - quieto: pierde (game over) sin vencer.
 # Al vencer: recompensa de la capa del acceso (boss_w3_l<n>) sin guardar, vuelta
-# al hub con 3-boss completado y el Mundo 4 desbloqueado (y la pieza verde
+# al hub con 3-boss completado y el acertijo del hub pendiente (M4 oculto hasta instalar; y la pieza verde
 # encendida en Caché). El bot usa user://bot_save.json.
 extends GutTest
 
@@ -35,7 +35,7 @@ func _assert_victory(profile: String, lap: int) -> void:
 	assert_eq(int(r["code"]), 0, "%s termina con 0:\n%s" % [label, r["summary"]])
 	assert_string_contains(r["text"], label + ": OK")
 	assert_false(String(r["text"]).contains("FALLO"), "Sin fallos:\n%s" % r["summary"])
-	var hub: String = "hub tras la pelea: 3-boss completado si, recuerdo boss_w3_l%d sin guardar si, Mundo 4 desbloqueado si" % lap
+	var hub: String = "hub tras la pelea: 3-boss completado si, recuerdo boss_w3_l%d sin guardar si, acertijo del hub pendiente si" % lap
 	assert_string_contains(r["text"], hub)
 	if lap == 1:
 		assert_string_contains(r["text"], "pieza verde encendida si")

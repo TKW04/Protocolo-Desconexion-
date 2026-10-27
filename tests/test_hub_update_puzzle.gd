@@ -3,7 +3,7 @@
 # Positivos: cada verificacion se resuelve con las habilidades previstas (V1:
 # Debug + laser + pulso; V2: golpe al suelo + salto + dash aereo + pulso; V3:
 # laser por el espejo + Pellizcar + pulso) y con 3/3 el pulso al instalador
-# PIDE la instalacion (no instala: paso 5). Negativos de §2.7: sin el Debug
+# PIDE la instalacion (la secuencia es del paso 5: tests/test_hub_update_install.gd). Negativos de §2.7: sin el Debug
 # lector1 no se ve ni se le apunta; sin cable el pulso a RE no hace nada; la
 # placa solo responde al golpe al suelo; la plataforma baja a los 3 s con aviso;
 # sin dash V2 no se alcanza; sin marco iluminado o sin comprimirse no se entra
@@ -427,7 +427,7 @@ func test_installer_with_less_than_three_lists_what_is_missing() -> void:
 	installer.close(true)
 
 
-func test_three_of_three_requests_the_install_without_installing() -> void:
+func test_three_of_three_requests_the_install_once() -> void:
 	_setup()
 	for id: StringName in [&"v1", &"v2", &"v3"]:
 		_puzzle.get_check(id).complete()
@@ -440,11 +440,10 @@ func test_three_of_three_requests_the_install_without_installing() -> void:
 	assert_true(_hub.is_update_install_requested())
 	assert_eq(_hub.get_update_install_requested(), UPGRADE)
 	assert_true(_puzzle.is_install_requested())
-	assert_false(GameState.has_hub_upgrade(UPGRADE), "No se instala todavia (paso 5)")
-	assert_false(HubWorlds.is_requires_upgrade_enforced(), "La bandera temporal sigue en falso")
-	_puzzle.get_installer().close(true)
-	await wait_physics_frames(4)
-	await _pulse()
+	assert_true(_hub.is_update_installing(), "Empieza la instalacion (paso 5; tests/test_hub_update_install.gd)")
+	assert_false(GameState.has_hub_upgrade(UPGRADE), "Aun no instalado: la barra se esta llenando")
+	assert_false(_puzzle.get_installer().is_panel_open(), "La instalacion cierra el panel del instalador")
+	_puzzle.get_installer().open(_isak)
 	assert_eq(requested.size(), 1, "Se pide una vez por visita")
 
 

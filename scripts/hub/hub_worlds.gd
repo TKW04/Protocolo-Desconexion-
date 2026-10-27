@@ -28,9 +28,10 @@
 ##   esta OCULTO (folder_state STATE_HIDDEN; nunca desbloqueado); con el, visible
 ##   y bloqueado hasta su unlocked_by (m4 3-boss, m5 4-boss, m6 5-boss) y
 ##   disponible despues. page: pagina del hub de su carpeta (por defecto 1;
-##   folder_worlds filtra por pagina). TEMPORAL: mientras
-##   hub_upgrades.enforce_requires_upgrade sea false (aun no se puede instalar en
-##   el hub) requires_upgrade no se aplica y M4 se comporta como hasta hoy.
+##   folder_worlds filtra por pagina). Desde el paso 5 (2026-10-27,
+##   instalacion en el hub) hub_upgrades.enforce_requires_upgrade es true: el
+##   requisito se aplica (la bandera y requires_upgrade_override quedan para las
+##   pruebas).
 class_name HubWorlds
 extends RefCounted
 
@@ -98,8 +99,7 @@ static var requires_upgrade_override: int = -1
 
 
 ## requires_upgrade se aplica (hub_upgrades.enforce_requires_upgrade de
-## data/hub.json). TEMPORAL (paso 0): false hasta que el acertijo y la
-## instalacion existan en el hub, para que M4 siga como hasta hoy.
+## data/hub.json). true desde el paso 5 (la instalacion existe en el hub).
 static func is_requires_upgrade_enforced() -> bool:
 	if requires_upgrade_override >= 0:
 		return requires_upgrade_override == 1

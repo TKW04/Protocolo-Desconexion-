@@ -426,11 +426,18 @@ func test_curator_row_is_playable_after_3_3_and_world_4_waits_for_her() -> void:
 	var m4: Dictionary = HubWorlds.world(&"m4")
 	assert_eq(m4.get("unlocked_by", []), ["3-boss"], "El Mundo 4 se abre con La Curadora")
 	assert_false(HubWorlds.is_world_unlocked(m4), "Mundo 4 bloqueado antes del jefe")
+	assert_false(HubWorlds.is_hub_upgrade_pending(), "Sin acertijo antes del jefe")
 	GameState.mark_level_completed(&"3-boss")
-	assert_true(HubWorlds.is_world_unlocked(m4), "Mundo 4 desbloqueado al vencerla")
-	assert_true(NotasAlbum.is_world_visited(4), "El album abre la carpeta «El Chat»")
+	# Paso 5 de docs/propuesta-hub-mundos-4-6.md: vencerla deja el acertijo del hub
+	# pendiente; M4 sigue oculto hasta instalar el upgrade (y el album, cerrado).
+	assert_true(HubWorlds.is_hub_upgrade_pending(), "Acertijo del hub pendiente al vencerla")
+	assert_eq(HubWorlds.folder_state(m4), HubWorlds.STATE_HIDDEN, "Mundo 4 oculto hasta instalar")
+	assert_false(NotasAlbum.is_world_visited(4), "El album no abre «El Chat» hasta instalar")
 	for entry: Dictionary in HubWorlds.folder_worlds():
-		assert_ne(String(entry.get("id", "")), "m4", "El Mundo 4 no tiene carpeta fisica en el hub")
+		assert_ne(String(entry.get("id", "")), "m4", "El Mundo 4 no tiene carpeta en la pagina 1")
+	GameState.install_hub_upgrade(&"hub_update_4_6")
+	assert_true(HubWorlds.is_world_unlocked(m4), "Mundo 4 desbloqueado al instalar (unlocked_by 3-boss)")
+	assert_true(NotasAlbum.is_world_visited(4), "El album abre la carpeta «El Chat»")
 
 
 func test_green_piece_hidden_then_blinking_then_lit() -> void:
@@ -455,7 +462,7 @@ func test_green_piece_hidden_then_blinking_then_lit() -> void:
 
 ## Terminado cuando (paso 17): desde la carpeta M3 se entra a «Jefe: La Curadora», se vence, se recibe
 ## boss_w3_l1 sin guardar (panel «Recuerdo recuperado» / «Fragmento de imagen» / «Capa: Caché») y se vuelve al
-## hub con la pieza verde encendida, el Mundo 4 desbloqueado (sin carpeta) y la placa «!» en Notas.
+## hub con la pieza verde encendida, el acertijo del hub pendiente (M4 oculto) y la placa «!» en Notas.
 func test_curator_from_the_m3_folder_and_back_with_the_green_piece() -> void:
 	EcoTextBox.pause_important = false
 	BossReward.pause_tree = false
@@ -542,8 +549,10 @@ func test_curator_from_the_m3_folder_and_back_with_the_green_piece() -> void:
 	assert_eq(hub.get_piece_animation(2), &"on", "La ambar sigue encendida")
 	assert_eq(hub.get_background_state(), &"on", "La cian sigue encendida")
 	assert_signal_emitted_with_parameters(hub, "wallpaper_piece_lit", [3])
-	assert_true(HubWorlds.is_world_unlocked(HubWorlds.world(&"m4")), "Mundo 4 desbloqueado (unlocked_by 3-boss)")
-	assert_true(NotasAlbum.is_world_visited(4), "Carpeta «El Chat» abierta en el album")
+	assert_true(HubWorlds.is_hub_upgrade_pending(), "Acertijo del hub pendiente (paso 5 de la propuesta 4-6)")
+	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m4")), HubWorlds.STATE_HIDDEN, "Mundo 4 oculto hasta instalar")
+	assert_eq(hub.get_page_state(2), HubRoom.PAGE_INSTALLING, "Pagina 2 «en instalacion»")
+	assert_false(NotasAlbum.is_world_visited(4), "«El Chat» cerrada en el album hasta instalar")
 	assert_true(GameState.has_unread_memories(), "Recuerdo sin leer")
 	assert_true(hub.get_notas().is_unread_badge_visible(), "Placa «!» en Notas")
 	EcoTextBox.pause_important = true

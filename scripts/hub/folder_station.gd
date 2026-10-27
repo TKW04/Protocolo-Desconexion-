@@ -21,6 +21,15 @@
 ## - Papelera llena tras un game over (2026-10-16, propuesta de asistentes
 ##   §2.5): ninguna carpeta se abre; con Isak cerca sale «Recupera tus archivos
 ##   de la papelera» (folders.texts.trash_blocked_text) en lugar de la tecla.
+## - Mundos 4-6 (2026-10-27, paso 5 de docs/propuesta-hub-mundos-4-6.md §3.3):
+##   un mundo con requires_upgrade bloqueado muestra con Isak cerca una segunda
+##   placa bajo «Sin descargar» con la condicion, sin nombres
+##   (folders.texts.locked_condition_text, «Completa el mundo anterior»). Con
+##   lock_slots (M6 «La Nube»), mientras esta bloqueado lleva encima el candado de
+##   5 ranuras (CloudLock), una encendida por cada recuerdo de esa lista obtenido
+##   (las capas Cache de los jefes 1-5; solo visual: la disponibilidad es
+##   unlocked_by). Sin folder_frames usa la carpeta generica (locked: gris con
+##   candado y sin miniatura). Arte del candado PROVISIONAL por codigo (paso 7).
 ## - Al elegir un subnivel: cierra el panel, Isak sigue de espaldas (la estacion
 ##   queda OPEN) y emite level_chosen; HubRoom hace el resto (vortice de salida
 ##   y carga del nivel).
@@ -37,6 +46,8 @@ var world_entry: Dictionary = {}
 var _folders: Dictionary = HubData.section("folders")
 var _locked_root: Node2D
 var _trash_root: Node2D
+var _condition_root: Node2D
+var _cloud_lock: _CloudLock
 var _number: Label
 var _miniature: Sprite2D
 var _shown_state: StringName = &""
@@ -50,6 +61,7 @@ func _ready() -> void:
 	super._ready()
 	_build_folder()
 	EventBus.trash_changed.connect(_on_trash_changed)
+	EventBus.memory_obtained.connect(_on_memory_obtained)
 	refresh_state()
 
 
@@ -91,6 +103,34 @@ func is_locked_hint_visible() -> bool:
 
 func get_locked_hint_text() -> String:
 	return (_locked_root.get_node(^"Text") as Label).text if _locked_root != null else ""
+
+
+## Segunda linea con la condicion (mundo con requires_upgrade bloqueado, Isak cerca).
+func is_locked_condition_visible() -> bool:
+	return _condition_root != null and _condition_root.visible
+
+
+func get_locked_condition_text() -> String:
+	return (_condition_root.get_node(^"Text") as Label).text if _condition_root != null else ""
+
+
+## Candado de ranuras (lock_slots; M6) visible: la carpeta esta bloqueada.
+func is_cloud_lock_visible() -> bool:
+	return _cloud_lock != null and _cloud_lock.visible
+
+
+## Ranuras del candado (tamano de lock_slots; 0 sin candado).
+func get_lock_slot_count() -> int:
+	return (world_entry.get("lock_slots", []) as Array).size()
+
+
+## Ranuras encendidas: recuerdos de lock_slots obtenidos.
+func get_lock_slots_lit() -> int:
+	var lit: int = 0
+	for id: Variant in world_entry.get("lock_slots", []):
+		if GameState.has_memory(StringName(String(id))):
+			lit += 1
+	return lit
 
 
 ## Bloqueada por la papelera llena (game over pendiente de recuperar).
@@ -172,6 +212,11 @@ func _apply_visuals() -> void:
 	if locked or blocked:
 		_key_root.visible = false
 	_locked_root.visible = locked and get_state() == State.PROMPT
+	if _condition_root != null:
+		_condition_root.visible = _locked_root.visible
+	if _cloud_lock != null:
+		_cloud_lock.visible = locked
+		_cloud_lock.queue_redraw()
 	if _trash_root != null:
 		_trash_root.visible = blocked and get_state() == State.PROMPT
 	var mini: bool = _miniature != null and not locked
@@ -200,6 +245,10 @@ func _show_visual_state(_value: StringName) -> void:
 # --- Interno ---
 
 func _on_trash_changed(_pending: bool) -> void:
+	refresh_state()
+
+
+func _on_memory_obtained(_id: StringName) -> void:
 	refresh_state()
 
 
@@ -261,13 +310,33 @@ func _build_folder() -> void:
 		add_child(_miniature)
 	var station_cfg: Dictionary = HubData.section("station")
 	var top: float = prompt_top_px if prompt_top_px >= 0.0 else 0.0
+	var hint_bottom: float = top - float(station_cfg.get("key_gap_px", 8))
+	var condition: String = String(_folders.get("texts", {}).get("locked_condition_text", ""))
+	if not HubWorlds.required_upgrade(world_entry).is_empty() and not condition.is_empty():
+		# Segunda linea (debajo): la condicion; «Sin descargar» sube encima.
+		_condition_root = PulsePrompt.make_plate(self, "LockedCondition", condition, font, font_size,
+			int(station_cfg.get("font_scale", 2)),
+			"#" + HubData.color(String(station_cfg.get("label_plate_color", "fondo_profundo"))).to_html(false),
+			"#" + HubData.color(String(station_cfg.get("label_border_color", "borde"))).to_html(false),
+			float(station_cfg.get("label_padding_px", 3)), get_size().x, hint_bottom)
+		_condition_root.visible = false
+		(_condition_root.get_node(^"Text") as Label).add_theme_color_override(&"font_color",
+			HubData.color("texto_tenue"))
+		hint_bottom = _condition_root.position.y - 6.0
 	_locked_root = PulsePrompt.make_plate(self, "LockedHint",
 		String(_folders.get("texts", {}).get("locked_text", "")), font, font_size,
 		int(station_cfg.get("font_scale", 2)),
 		"#" + HubData.color(String(station_cfg.get("label_plate_color", "fondo_profundo"))).to_html(false),
 		"#" + HubData.color(String(station_cfg.get("label_border_color", "borde"))).to_html(false),
-		float(station_cfg.get("label_padding_px", 3)), get_size().x, top - float(station_cfg.get("key_gap_px", 8)))
+		float(station_cfg.get("label_padding_px", 3)), get_size().x, hint_bottom)
 	_locked_root.visible = false
+	if get_lock_slot_count() > 0:
+		_cloud_lock = _CloudLock.new()
+		_cloud_lock.name = "CloudLock"
+		_cloud_lock.station = self
+		_cloud_lock.position = Vector2(get_size().x * 0.5, 60.0)
+		_cloud_lock.visible = false
+		add_child(_cloud_lock)
 	_trash_root = PulsePrompt.make_plate(self, "TrashHint",
 		String(_folders.get("texts", {}).get("trash_blocked_text", "")), font, font_size,
 		int(station_cfg.get("font_scale", 2)),
@@ -276,3 +345,30 @@ func _build_folder() -> void:
 		float(station_cfg.get("label_padding_px", 3)), get_size().x, top - float(station_cfg.get("key_gap_px", 8)))
 	_trash_root.visible = false
 	_shown_state = &""
+
+
+## Candado de La Nube PROVISIONAL por codigo (paso 7): placa con una ranura por
+## recuerdo de lock_slots (encendida en acento_cian si se obtuvo, apagada en
+## gris_apagado), centrada en su posicion.
+class _CloudLock:
+	extends Node2D
+	var station: FolderStation
+
+	func _draw() -> void:
+		if station == null:
+			return
+		var n: int = station.get_lock_slot_count()
+		var slot: float = 14.0
+		var gap: float = 6.0
+		var w: float = float(n) * slot + float(n - 1) * gap
+		var panel := Rect2(Vector2(-w * 0.5 - 5.0, -slot * 0.5 - 5.0), Vector2(w + 10.0, slot + 10.0))
+		draw_rect(panel.grow(2.0), HubData.color("borde"))
+		draw_rect(panel, HubData.color("fondo_profundo"))
+		var i: int = 0
+		for id: Variant in station.world_entry.get("lock_slots", []):
+			var on: bool = GameState.has_memory(StringName(String(id)))
+			var r := Rect2(Vector2(-w * 0.5 + float(i) * (slot + gap), -slot * 0.5), Vector2(slot, slot))
+			draw_rect(r, HubData.color("acento_cian") if on else HubData.color("gris_apagado"))
+			if not on:
+				draw_rect(r.grow(-3.0), HubData.color("fondo_profundo"))
+			i += 1
