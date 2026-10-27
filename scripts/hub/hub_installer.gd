@@ -9,12 +9,14 @@
 ##   §3.1 y GameState.install_hub_upgrade son del paso 5, que consume esta senal.
 ## - Inerte (Papelera llena, §2.5): el panel solo dice «Recupera tus archivos de
 ##   la papelera» y no pide nada.
-## Arte PROVISIONAL (HubProvisionalArt terminal escalado) hasta el paso 7.
+## Arte por script (paso 7): DEFAULT_FRAMES (tools/gen_hub_objects.py).
 class_name HubInstaller
 extends HubStation
 
 ## Se ha pedido instalar `upgrade_id` (pulso con 3/3). Una vez por visita.
 signal install_requested(upgrade_id: StringName)
+
+const DEFAULT_FRAMES: String = "res://assets/sprites/hub/installer_frames.tres"
 
 var upgrade_id: StringName = &""
 ## Ids de las verificaciones en orden y sus nombres (texto de interfaz).
@@ -31,6 +33,9 @@ var _plate: Node2D
 
 func _ready() -> void:
 	visual_kind = &"terminal"
+	# Arte por script (paso 7, tools/gen_hub_objects.py); sin el, el provisional.
+	if frames.is_empty():
+		frames = DEFAULT_FRAMES
 	super._ready()
 	var font: Font = load(String(_config.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font
 	_plate = PulsePrompt.make_plate(self, "Progress", get_progress_text(), font, int(_config.get("font_size", 12)),

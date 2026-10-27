@@ -10,15 +10,19 @@
 ##   (V1: el receptor enlazado RE al activarse).
 ## Inerte (set_inert, p. ej. con la Papelera llena, §2.5): el pulso no hace nada.
 ## No es solida ni objetivo del laser. Sin rojo (en el hub nada hace dano).
-## Arte PROVISIONAL por codigo (pantalla apagada / encendida y marco de color)
-## hasta el paso 7; sin pictogramas todavia. El origen es la esquina superior
-## izquierda de su celda de arriba.
+## Arte por script (paso 7, tools/gen_hub_update_art.py): ART_DIR +
+## update_check_<check_id>_<off|done|inert>_NN.png, con el marco del color de su
+## mundo y los pictogramas de las habilidades que pide; hecha, la pantalla se
+## enciende y late (done_00/01). Sin esos archivos (otro check_id), el dibujo
+## por codigo de antes. El origen es la esquina superior izquierda de su celda
+## de arriba.
 class_name UpdateCheck
 extends Node2D
 
 const GROUP: StringName = &"update_check"
 const MODE_PULSE: StringName = &"pulse"
 const MODE_LINKED: StringName = &"linked"
+const ART_DIR: String = "res://assets/sprites/hub_update/"
 
 ## Se ha encendido (para el resto de la visita).
 signal completed(check_id: StringName)
@@ -42,10 +46,13 @@ var _pose_left: float = 0.0
 var _time: float = 0.0
 var _rejections: int = 0
 var _label: Label
+## Texturas del arte por script (vacias = dibujo por codigo).
+var _art: Dictionary = {}
 
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	_load_art()
 	EventBus.pulse_fired.connect(receive_pulse)
 	if not label_text.is_empty():
 		_label = Label.new()
@@ -131,7 +138,26 @@ func complete() -> bool:
 	return true
 
 
+## Arte por script de este check_id, si existe.
+func has_art() -> bool:
+	return not _art.is_empty()
+
+
+func _load_art() -> void:
+	_art.clear()
+	for key: String in ["off_00", "done_00", "done_01", "inert_00"]:
+		var path: String = ART_DIR + "update_check_%s_%s.png" % [String(check_id), key]
+		if not ResourceLoader.exists(path):
+			_art.clear()
+			return
+		_art[key] = load(path) as Texture2D
+
+
 func _draw() -> void:
+	if has_art():
+		var key: String = "inert_00" if _inert else ("off_00" if not _done else ("done_01" if sin(_time * 4.0) > 0.0 else "done_00"))
+		draw_texture_rect(_art[key] as Texture2D, Rect2(Vector2.ZERO, size), false)
+		return
 	var body := Rect2(Vector2.ZERO, size)
 	draw_rect(body, HubData.color("panel"))
 	var frame: Color = frame_color if not _inert else HubData.color("gris_apagado")

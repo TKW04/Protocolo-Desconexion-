@@ -541,7 +541,72 @@ def big_photo(cv):
         cv.p(x, y, CB)
 
 
-WORLD_ICONS = {"m1": big_bell, "m2": big_feed, "m3": big_photo}
+def big_chat(cv):
+    # Mundo 4 «El Chat» (2026-10-27, paso 7 de docs/propuesta-hub-mundos-4-6.md): dos bocadillos, el de
+    # delante con los tres puntos de «escribiendo...» y el de detras con renglones. Colores del hub (el coral
+    # del Mundo 4 sigue abierto: decision del usuario).
+    cv.box(22, 6, 57, 29, TT, GF)
+    cv.rect(25, 9, 54, 26, GA)
+    for y in (13, 18, 23):
+        cv.hline(28, 50 if y != 23 else 42, y, TT)
+    for k in range(4):  # cola del de detras, hacia la derecha
+        cv.hline(48 - k, 50, 30 + k, GF)
+    cv.box(6, 18, 45, 45, TC, TT)
+    cv.rect(9, 21, 42, 42, CB)
+    for k in range(6):  # cola del de delante, hacia la izquierda
+        cv.hline(12, 16 - k // 2, 46 + k, TT)
+        cv.p(12, 46 + k, TT)
+    cv.rect(13, 45, 16, 46, TC)
+    for x in (15, 24, 33):  # «escribiendo...»
+        cv.rect(x, 30, x + 4, 34, CT)
+        cv.rect(x + 1, 30, x + 3, 31, CA)
+
+
+def big_shop(cv):
+    # Mundo 5 «La Tienda»: bolsa de la compra con asas y la etiqueta del precio en ambar.
+    for y in range(6, 18):  # asas
+        for x in range(16, 48):
+            d = math.hypot((x - 31.5) / 1.3, y - 17)
+            if 8.0 <= d <= 10.2 and y < 17:
+                cv.p(x, y, TT)
+    cv.box(8, 16, 55, 52, TC, TT)
+    cv.rect(11, 19, 52, 49, CB)
+    cv.hline(11, 52, 19, TC)
+    for x in (22, 41):  # remaches de las asas
+        cv.rect(x - 1, 21, x + 1, 23, TT)
+    cv.vline(52, 20, 49, GF)
+    cv.hline(11, 52, 49, GF)
+    # Etiqueta del precio (cuelga de la bolsa) con su agujero.
+    cv.box(30, 30, 51, 43, AM, AS)
+    cv.rect(33, 33, 35, 35, AS)
+    cv.hline(38, 48, 35, AS)
+    cv.hline(38, 45, 39, AS)
+    cv.vline(31, 24, 30, AS)
+
+
+def big_cloud(cv):
+    # Mundo 6 «La Nube»: nube con la flecha de subir en cian.
+    blobs = ((20, 30, 11), (32, 22, 13), (45, 30, 10), (14, 38, 8), (50, 38, 8))
+    for y in range(6, 50):
+        for x in range(2, 62):
+            inside = any(math.hypot(x - bx, y - by) <= r for bx, by, r in blobs) or (14 <= x <= 50 and 30 <= y <= 46)
+            if inside:
+                cv.p(x, y, TC)
+    # Sombra abajo a la derecha y brillo arriba.
+    for y in range(6, 50):
+        for x in range(2, 62):
+            if cv.get(x, y) == TC and (cv.get(x, y + 2) != TC or cv.get(x + 2, y) != TC):
+                cv.p(x, y, TT)
+    for x in range(26, 36):
+        cv.p(x, 11, CB)
+    # Flecha de subir.
+    for k in range(6):
+        cv.hline(31 - k, 32 + k, 24 + k, CA)
+    cv.rect(29, 30, 34, 41, CA)
+    cv.vline(29, 30, 41, CT)
+
+
+WORLD_ICONS = {"m1": big_bell, "m2": big_feed, "m3": big_photo, "m4": big_chat, "m5": big_shop, "m6": big_cloud}
 
 
 def world_folder(world, state, frame):
@@ -1678,6 +1743,149 @@ def page_dot(current):
     return cv.img
 
 
+# ------------------------------------- hub de varias paginas (paso 7, 2026-10-27)
+# docs/propuesta-hub-mundos-4-6.md §3.2 y §5.1: fondo de las paginas 2 y 3, candado
+# de 5 ranuras de La Nube e instalador (HubInstaller y su decorado apagado). Solo
+# colores de hub.gpl. Lo que lleva los colores del Debug de los Mundos 2 y 3 (o el
+# coral PROVISIONAL del Mundo 4) va en tools/gen_hub_update_art.py.
+
+def page_background(page):
+    """Fondo de la pagina `page` (2 o 3): el mismo ambiente de la 1 sin la foto. Las trazas
+    de la izquierda siguen las que salen por la derecha de la pagina anterior (y 58, 150 y 226
+    en la 1; y 90 y 200 en la 2) y el motivo de arriba queda tenue (dock y panel) para no
+    competir con las piezas: la 2, una ventana del sistema con su barra de progreso vacia; la
+    3, una nube de trazas (La Nube)."""
+    cv = Canvas(BG_W, BG_H, BA)
+    if page == 2:
+        traces = [[(0, 58), (40, 58), (52, 70), (84, 70)],
+                  [(0, 150), (30, 150), (42, 138), (80, 138)],
+                  [(0, 226), (56, 226), (70, 240), (70, 272)],
+                  [(639, 90), (596, 90), (584, 102), (548, 102)],
+                  [(639, 200), (604, 200), (590, 214), (590, 272)],
+                  [(200, 272), (236, 272), (248, 260), (392, 260), (404, 272), (440, 272)]]
+    else:
+        traces = [[(0, 90), (44, 90), (56, 78), (96, 78)],
+                  [(0, 200), (36, 200), (50, 214), (50, 272)],
+                  [(600, 64), (560, 64), (548, 76), (520, 76)],
+                  [(610, 180), (572, 180), (560, 168), (528, 168)],
+                  [(232, 272), (268, 272), (280, 260), (360, 260), (372, 272), (408, 272)]]
+    for pts in traces:
+        trace(cv, pts)
+    if page == 2:
+        x0, y0, x1, y1 = 212, 44, 428, 150
+        cv.rect(x0 - 1, y0 - 1, x1 + 1, y1 + 1, FP)
+        cv.rect(x0, y0, x1, y1, DK)
+        cv.rect(x0, y0, x1, y0 + 9, PA)
+        for k in range(3):
+            cv.rect(x1 - 8 - k * 7, y0 + 3, x1 - 5 - k * 7, y0 + 6, GA)
+        cv.hline(x0 + 6, x0 + 60, y0 + 5, DK)
+        for y in (y0 + 24, y0 + 34, y0 + 44):
+            cv.hline(x0 + 14, x1 - 60 if y != y0 + 44 else x1 - 110, y, PA)
+        bx0, by0, bx1, by1 = x0 + 14, y1 - 30, x1 - 14, y1 - 18
+        cv.rect(bx0, by0, bx1, by1, FP)
+        cv.rect(bx0 + 1, by0 + 1, bx1 - 1, by1 - 1, PA)
+        for x in range(bx0 + 3, bx1 - 2, 12):
+            cv.rect(x, by0 + 3, x + 5, by1 - 3, BA)
+        trace(cv, [(320, y1 + 2), (320, 186), (332, 198), (332, 232)])
+    else:
+        # Nube arriba, por encima de los avisos de la carpeta M6 (columna 9), y los datos que
+        # suben por los lados (nunca por detras de la carpeta ni de sus placas).
+        blobs = ((290, 66, 20), (320, 52, 28), (354, 64, 22), (272, 78, 12), (370, 80, 13))
+        inside = set()
+        for y in range(16, 100):
+            for x in range(240, 400):
+                if any(math.hypot(x - bx, (y - by) * 1.15) <= r for bx, by, r in blobs) \
+                        or (272 <= x <= 370 and 66 <= y <= 90):
+                    inside.add((x, y))
+        for x, y in inside:
+            edge = any((x + ex, y + ey) not in inside for ex, ey in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            cv.p(x, y, TR if edge else DK)
+        for pts in ([(212, 236), (212, 96), (224, 84), (262, 84)], [(428, 236), (428, 96), (416, 84), (380, 84)]):
+            trace(cv, pts)
+            for y in range(112, 230, 18):  # datos que suben a la nube
+                cv.rect(pts[0][0] - 1, y, pts[0][0] + 1, y + 3, PA)
+    return cv.x2()
+
+
+LOCK_W, LOCK_SHACKLE, LOCK_BODY = 55, 8, 15  # candado de La Nube (logico; x2 en pantalla)
+LOCK_SLOT, LOCK_GAP, LOCK_MARGIN = 7, 3, 4
+
+
+def cloud_lock_plate(slots=5):
+    """Candado de `slots` ranuras de La Nube (FolderStation._CloudLock): arco arriba y
+    cuerpo con las ranuras vacias; cada recuerdo obtenido enciende la suya
+    (cloud_lock_slot_on). 55 x 23 de arte (x2 = 110 x 46)."""
+    cv = Canvas(LOCK_W, LOCK_SHACKLE + LOCK_BODY)
+    cx = (LOCK_W - 1) / 2.0
+    for y in range(0, LOCK_SHACKLE + 2):
+        for x in range(LOCK_W):
+            d = math.hypot((x - cx) / 1.6, y - LOCK_SHACKLE - 1)
+            if 5.5 <= d <= 8.6:
+                cv.p(x, y, GF if d < 7.2 else TT)
+    top = LOCK_SHACKLE
+    cv.box(0, top, LOCK_W - 1, top + LOCK_BODY - 1, PA, FP)
+    cv.hline(2, LOCK_W - 3, top + 1, GF)
+    cv.hline(2, LOCK_W - 3, top + LOCK_BODY - 2, SO)
+    for i in range(slots):
+        x = LOCK_MARGIN + i * (LOCK_SLOT + LOCK_GAP)
+        cv.rect(x - 1, top + 3, x + LOCK_SLOT, top + 4 + LOCK_SLOT, GA)
+        cv.rect(x, top + 4, x + LOCK_SLOT - 1, top + 3 + LOCK_SLOT, FP)
+    return cv.x2()
+
+
+def cloud_lock_slot_on():
+    cv = Canvas(LOCK_SLOT, LOCK_SLOT, CA)
+    cv.hline(0, LOCK_SLOT - 1, 0, CB)
+    cv.vline(0, 0, LOCK_SLOT - 1, CB)
+    cv.hline(1, LOCK_SLOT - 1, LOCK_SLOT - 1, CT)
+    cv.vline(LOCK_SLOT - 1, 1, LOCK_SLOT - 1, CT)
+    return cv.x2()
+
+
+DOWNLOAD = ["..####..", "..####..", "..####..", "########", ".######.", "..####..", "...##...", "........",
+            "########"]
+
+
+def installer(state, f):
+    """Instalador de la actualizacion (HubInstaller, 2 x 3 tiles; 64 x 96 de arte, x2): torre
+    con pantalla, la flecha de descarga y tres pilotos (las tres verificaciones). Estados de
+    HubStation: powered_off (el decorado apagado tras instalar), off (2 cuadros: la flecha
+    late), prompt (borde cian, 2 cuadros) y active (pantalla encendida, 2 cuadros)."""
+    cv = Canvas(64, 96)
+    dead = state == "powered_off"
+    edge = CA if state in ("prompt", "active") else (GA if dead else BO)
+    cv.box(6, 4, 57, 87, PA, FP)
+    cv.rect(7, 5, 56, 5, edge)
+    cv.vline(7, 6, 86, edge if not dead else GA)
+    cv.vline(56, 6, 86, SO)
+    cv.hline(8, 55, 86, SO)
+    # Pantalla.
+    sx0, sy0, sx1, sy1 = 12, 10, 51, 45
+    screen = {"powered_off": DK, "off": FP, "prompt": FP, "active": CT}[state]
+    cv.box(sx0 - 1, sy0 - 1, sx1 + 1, sy1 + 1, screen, FP, cut=False)
+    arrow = {"powered_off": BA, "off": TT if f == 0 else CT, "prompt": CA, "active": CB}[state]
+    cv.stamp(28, 18, DOWNLOAD, {"#": arrow})
+    if state == "active":
+        cv.hline(sx0 + 3, sx1 - 3, sy1 - 5, FP)
+        cv.hline(sx0 + 3, sx0 + 3 + (sx1 - sx0 - 6) * (1 + f) // 3, sy1 - 5, CB)
+    elif not dead:
+        cv.hline(sx0 + 3, sx1 - 3, sy1 - 5, PA)
+    # Tres pilotos (V1-V3), rejilla de ventilacion y patas.
+    for k in range(3):
+        x = 19 + k * 10
+        cv.rect(x, 52, x + 5, 55, FP)
+        lit = state == "active" or (state == "prompt" and f == k % 2)
+        cv.rect(x + 1, 53, x + 4, 54, (CA if lit else GA) if not dead else SO)
+    for y in range(62, 80, 4):
+        cv.hline(14, 49, y, FP if not dead else SO)
+        cv.hline(14, 49, y + 1, TR if not dead else PA)
+    cv.rect(10, 88, 17, 91, FP)
+    cv.rect(46, 88, 53, 91, FP)
+    if state == "prompt" and f == 1:
+        cv.halo(CT)
+    return cv.x2()
+
+
 # ------------------------------------------------------------------ salida
 def outputs():
     """{ruta relativa a assets/sprites/hub: imagen} (orden estable)."""
@@ -1743,6 +1951,14 @@ def outputs():
         out[f"charger/charger_cooling_{i:02d}.png"] = charger("cooling", progress=i / 7 * 0.875 + 0.0)
     out["charger/charger_spent_00.png"] = charger("spent")
     out.update(menu_outputs())
+    out["background/hub_bg_page2_00.png"] = page_background(2)
+    out["background/hub_bg_page3_00.png"] = page_background(3)
+    out["lock/cloud_lock_plate_00.png"] = cloud_lock_plate()
+    out["lock/cloud_lock_slot_on_00.png"] = cloud_lock_slot_on()
+    out["installer/installer_powered_off_00.png"] = installer("powered_off", 0)
+    for st in ("off", "prompt", "active"):
+        for f in range(2):
+            out[f"installer/installer_{st}_{f:02d}.png"] = installer(st, f)
     return out
 
 
@@ -1767,7 +1983,11 @@ FRAMES = {
                                    ("available", f"folders/folder_{w}_available", 2, 2.0, True),
                                    ("completed", f"folders/folder_{w}_completed", 1, 1.0, True),
                                    ("all_done", f"folders/folder_{w}_all_done", 1, 1.0, True)]
-       for w in ("m1", "m2", "m3")},
+       for w in WORLD_ICONS},
+    "installer_frames.tres": [("powered_off", "installer/installer_powered_off", 1, 1.0, True),
+                              ("off", "installer/installer_off", 2, 1.5, True),
+                              ("prompt", "installer/installer_prompt", 2, 3.0, True),
+                              ("active", "installer/installer_active", 2, 4.0, True)],
     "calc_frames.tres": [("powered_off", "calc/calc_off", 1, 1.0, True),
                          ("sleep", "calc/calc_sleep", 3, 2.0, True),
                          ("awake", "calc/calc_awake", 4, 3.0, True)],

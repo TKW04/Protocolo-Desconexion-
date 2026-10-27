@@ -29,7 +29,8 @@
 ##   5 ranuras (CloudLock), una encendida por cada recuerdo de esa lista obtenido
 ##   (las capas Cache de los jefes 1-5; solo visual: la disponibilidad es
 ##   unlocked_by). Sin folder_frames usa la carpeta generica (locked: gris con
-##   candado y sin miniatura). Arte del candado PROVISIONAL por codigo (paso 7).
+##   candado y sin miniatura). Arte del candado por script (paso 7,
+##   tools/gen_hub_objects.py: lock/cloud_lock_plate y cloud_lock_slot_on).
 ## - Al elegir un subnivel: cierra el panel, Isak sigue de espaldas (la estacion
 ##   queda OPEN) y emite level_chosen; HubRoom hace el resto (vortice de salida
 ##   y carga del nivel).
@@ -38,6 +39,9 @@ extends HubStation
 
 ## Se eligio entrar al subnivel `level_id` desde esta carpeta.
 signal level_chosen(station: FolderStation, level_id: StringName)
+## Ha aparecido el aviso «Sin descargar» (Isak llega a una carpeta bloqueada;
+## lo usa el audio: el candado, data/audio.json).
+signal locked_shown(station: FolderStation)
 
 ## Mundo de la carpeta (entrada de worlds de data/hub.json). Se da antes de
 ## anadirla al arbol.
@@ -211,7 +215,10 @@ func _apply_visuals() -> void:
 	var blocked: bool = not locked and is_blocked_by_trash()
 	if locked or blocked:
 		_key_root.visible = false
+	var was_shown: bool = _locked_root.visible
 	_locked_root.visible = locked and get_state() == State.PROMPT
+	if _locked_root.visible and not was_shown:
+		locked_shown.emit(self)
 	if _condition_root != null:
 		_condition_root.visible = _locked_root.visible
 	if _cloud_lock != null:
@@ -347,17 +354,44 @@ func _build_folder() -> void:
 	_shown_state = &""
 
 
-## Candado de La Nube PROVISIONAL por codigo (paso 7): placa con una ranura por
-## recuerdo de lock_slots (encendida en acento_cian si se obtuvo, apagada en
-## gris_apagado), centrada en su posicion.
+## Candado de La Nube: placa con una ranura por recuerdo de lock_slots
+## (encendida en acento_cian si se obtuvo), centrada en su posicion. Arte por
+## script (cloud_lock_plate_00 con 5 ranuras vacias y cloud_lock_slot_on_00
+## encima de cada una obtenida); con otro numero de ranuras o sin los archivos,
+## el dibujo por codigo de antes.
 class _CloudLock:
 	extends Node2D
+	const PLATE: String = "res://assets/sprites/hub/lock/cloud_lock_plate_00.png"
+	const SLOT_ON: String = "res://assets/sprites/hub/lock/cloud_lock_slot_on_00.png"
+	const ART_SLOTS: int = 5
 	var station: FolderStation
+	# Referencias propias: una textura cargada dentro de _draw se libera antes
+	# de que se pinte (sale blanca).
+	var _plate: Texture2D
+	var _on: Texture2D
+
+	func _ready() -> void:
+		if ResourceLoader.exists(PLATE) and ResourceLoader.exists(SLOT_ON):
+			_plate = load(PLATE) as Texture2D
+			_on = load(SLOT_ON) as Texture2D
 
 	func _draw() -> void:
 		if station == null:
 			return
 		var n: int = station.get_lock_slot_count()
+		if n == ART_SLOTS and _plate != null and _on != null:
+			# Placa de 110 x 46: arco de 16 px y cuerpo de 30; ranuras de 14 cada 20 px
+			# desde x 8, con su borde de arriba en y 0 del cuerpo + 8 (centradas en 0).
+			var plate: Texture2D = _plate
+			var on_tex: Texture2D = _on
+			var origin := Vector2(-plate.get_size().x * 0.5, -31.0)
+			draw_texture(plate, origin)
+			var k: int = 0
+			for id: Variant in station.world_entry.get("lock_slots", []):
+				if GameState.has_memory(StringName(String(id))):
+					draw_texture(on_tex, origin + Vector2(8.0 + 20.0 * float(k), 24.0))
+				k += 1
+			return
 		var slot: float = 14.0
 		var gap: float = 6.0
 		var w: float = float(n) * slot + float(n - 1) * gap

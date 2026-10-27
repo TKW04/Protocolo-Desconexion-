@@ -47,6 +47,10 @@ SIZES = {
     ("icons", "lcd_panel_"): (16, 16, True),
     ("charger", "charger_"): (32, 64, True),
     ("menu", "menu_"): (12, 12, True),
+    # Hub de varias paginas (2026-10-27, paso 7 de docs/propuesta-hub-mundos-4-6.md).
+    ("lock", "cloud_lock_plate"): (110, 46, True),
+    ("lock", "cloud_lock_slot_on"): (14, 14, False),
+    ("installer", "installer_"): (128, 192, True),
 }
 SEAMLESS = ("dock_top_center", "dock_fill_00", "dock_fill_alt", "one_way_center")
 

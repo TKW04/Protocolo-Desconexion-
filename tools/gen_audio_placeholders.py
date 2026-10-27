@@ -182,6 +182,7 @@ def build(rng: np.random.Generator) -> dict[str, np.ndarray]:
     s["amb_hub"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.8 * swell + hum, 10 ** (-18 / 20))
     world2(s, rng)
     world3(s, rng)
+    hub_4_6(s, rng)
     return s
 
 
@@ -346,6 +347,36 @@ def world3(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
         * env(len(t_axis(d)), 0.05, 0.15, 1.0)
     d = 0.5
     s["sfx_boss3_frame_close"] = soft_square(sweep(196, 392, d), d, 2) * env(len(t_axis(d)), 0.01, 0.08, 0.8) * 0.7
+
+
+def hub_4_6(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
+    """Hub de los Mundos 4-6 (paso 7 de docs/propuesta-hub-mundos-4-6.md, 2026-10-27): acertijo
+    «Actualizacion del sistema», instalacion, paginas y candado. Va despues de world3 (el generador de
+    ruido es comun: asi los anteriores no cambian)."""
+    # Verificacion completada: tres notas que suben, limpias (sin rojo: nada hace dano en el hub).
+    s["sfx_hub_update_check"] = np.concatenate([note(659, 0.05, tri, 2), note(784, 0.05, tri, 2),
+        note(1046, 0.14, sine, 1.2)])
+    # Instalacion en marcha (la barra de 3 s): pulso que sube con tics de progreso.
+    d = 3.0
+    t = t_axis(d)
+    rise = 0.35 * tri(sweep(220, 440, d), d) * (0.6 + 0.4 * np.sin(2 * np.pi * 6 * t) ** 2)
+    ticks = np.zeros(len(t))
+    for k in range(12):
+        ticks = mix_at(ticks, 0.4 * note(880 + 40 * k, 0.03, tri, 2), k * 0.25)
+    s["sfx_hub_install_bar"] = (rise + ticks) * env(len(t), 0.05, 0.1, 1.0)
+    # Instalacion terminada (el destello): acorde que se abre.
+    d = 0.7
+    chord = sum(a * note(f, d, sine, 0.7) for f, a in ((523, 0.6), (659, 0.5), (784, 0.5), (1046, 0.4)))
+    sparkle = 0.15 * lowpass(noise(d, rng), 6000) * env(len(t_axis(d)), 0.001, 0.2, 2.5)
+    s["sfx_hub_install"] = chord + sparkle
+    # Deslizar de pagina: «swish» corto y suave.
+    d = 0.3
+    s["sfx_hub_page_slide"] = 0.6 * lowpass(noise(d, rng), 1400) * np.sin(np.pi * t_axis(d) / d) ** 2 \
+        + 0.15 * sine(sweep(300, 500, d), d) * env(len(t_axis(d)), 0.05, 0.1)
+    # Carpeta bloqueada (candado): «clac» metalico corto.
+    d = 0.15
+    s["sfx_hub_folder_locked"] = (0.6 * sine(sweep(900, 600, d), d) * np.exp(-t_axis(d) * 30)
+        + 0.3 * lowpass(noise(d, rng), 3000) * env(len(t_axis(d)), 0.001, 0.03, 4))
 
 
 def write_wav(path: str, data: np.ndarray) -> None:

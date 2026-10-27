@@ -12,13 +12,15 @@
 ## - Inerte (set_inert; Papelera llena): el golpe no hace nada.
 ## La plataforma se coloca ya arriba: su caja queda por encima de la cabeza de
 ## Isak de pie en el suelo, asi que nunca lo atrapa (aparece con un crecimiento
-## solo visual de rise_s). Arte PROVISIONAL por codigo hasta el paso 7. Origen:
+## solo visual de rise_s). Arte por script (paso 7, tools/gen_hub_update_art.py:
+## pound_plate_<on|inert>_00 y loading_platform_NN; sin ellos, por codigo). Origen:
 ## esquina superior izquierda de la celda de la placa (apoyada en el suelo de la
 ## fila de abajo); platform_rect en coordenadas locales.
 class_name PoundPlate
 extends Node2D
 
 const GROUP: StringName = &"pound_plate"
+const ART_DIR: String = "res://assets/sprites/hub_update/"
 
 ## La placa ha recibido un golpe al suelo (la plataforma sube o se rellena).
 signal pressed
@@ -45,10 +47,14 @@ var _lowered_count: int = 0
 var _body: StaticBody2D
 var _shape: CollisionShape2D
 var _time: float = 0.0
+var _art: Dictionary = {}
 
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	for key: String in ["pound_plate_on_00", "pound_plate_inert_00", "loading_platform_00", "loading_platform_01"]:
+		if ResourceLoader.exists(ART_DIR + key + ".png"):
+			_art[key] = load(ART_DIR + key + ".png") as Texture2D
 	_body = StaticBody2D.new()
 	_body.name = "Platform"
 	_body.collision_layer = 1
@@ -176,12 +182,18 @@ func _draw() -> void:
 	# Placa: losa del color del Debug del Mundo 2 con el dibujo de la onda.
 	var plate := Rect2(Vector2((t - plate_width_px) * 0.5, t - plate_height_px), Vector2(plate_width_px, plate_height_px))
 	var color: Color = plate_color if not _inert else HubData.color("gris_apagado")
-	draw_rect(plate, HubData.color("dock"))
-	draw_rect(plate, color, false, 2.0)
-	var mid: float = plate.get_center().x
-	for i: int in 3:
-		var r: float = 6.0 + 7.0 * float(i)
-		draw_arc(Vector2(mid, plate.position.y), r, PI, TAU, 10, Color(color, 0.9 - 0.25 * float(i)), 2.0)
+	var plate_tex: Texture2D = _art.get("pound_plate_inert_00" if _inert else "pound_plate_on_00") as Texture2D
+	if plate_tex != null:
+		# Placa de 64 x 8 abajo y la onda encima (textura de 64 x 32 apoyada en el suelo).
+		var ts: Vector2 = plate_tex.get_size()
+		draw_texture(plate_tex, Vector2(plate.get_center().x - ts.x * 0.5, t - ts.y))
+	else:
+		draw_rect(plate, HubData.color("dock"))
+		draw_rect(plate, color, false, 2.0)
+		var mid: float = plate.get_center().x
+		for i: int in 3:
+			var r: float = 6.0 + 7.0 * float(i)
+			draw_arc(Vector2(mid, plate.position.y), r, PI, TAU, 10, Color(color, 0.9 - 0.25 * float(i)), 2.0)
 	if not is_platform_up():
 		return
 	if is_warning() and int(_time * 10.0) % 2 == 0:
@@ -192,7 +204,15 @@ func _draw() -> void:
 	var floor_y: float = t
 	var top: float = lerpf(floor_y, p.position.y, grow)
 	draw_rect(Rect2(Vector2(p.position.x + 8.0, top), Vector2(p.size.x - 16.0, floor_y - top)), Color(HubData.color("traza"), 0.55))
-	draw_rect(Rect2(Vector2(p.position.x, top), p.size), HubData.color("panel"))
-	draw_rect(Rect2(Vector2(p.position.x, top), p.size), plate_color, false, 2.0)
+	var slab_tex: Texture2D = _art.get("loading_platform_%02d" % (int(_time * 6.0) % 2)) as Texture2D
+	if slab_tex != null:
+		draw_texture_rect(slab_tex, Rect2(Vector2(p.position.x, top), p.size), false)
+	else:
+		draw_rect(Rect2(Vector2(p.position.x, top), p.size), HubData.color("panel"))
+		draw_rect(Rect2(Vector2(p.position.x, top), p.size), plate_color, false, 2.0)
 	var fill: float = clampf(_up_left / maxf(up_s, 0.01), 0.0, 1.0)
-	draw_rect(Rect2(Vector2(p.position.x + 4.0, top + 4.0), Vector2((p.size.x - 8.0) * fill, p.size.y - 8.0)), plate_color)
+	if slab_tex != null:
+		# Tiempo que queda: linea fina en el canto de abajo (las franjas se siguen viendo).
+		draw_rect(Rect2(Vector2(p.position.x + 4.0, top + p.size.y - 4.0), Vector2((p.size.x - 8.0) * fill, 2.0)), plate_color)
+	else:
+		draw_rect(Rect2(Vector2(p.position.x + 4.0, top + 4.0), Vector2((p.size.x - 8.0) * fill, p.size.y - 8.0)), plate_color)

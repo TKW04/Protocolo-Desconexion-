@@ -14,7 +14,7 @@
 ## 3. NOTAS: linea importante de Notas (notas_line, PROPUESTA) en el cuadro del hub.
 ## 4. DONE: se quita la pausa y se suelta el control (finished); Notas recuerda
 ##    guardar (show_saved_reminder, no importante; paso 6).
-## Arte PROVISIONAL por codigo (paso 7). advance(delta) permite avanzarla en pruebas.
+## Arte por script (paso 7; ver _InstallArt). advance(delta) permite avanzarla en pruebas.
 class_name HubUpdateInstall
 extends CanvasLayer
 
@@ -193,14 +193,27 @@ func _release_pause() -> void:
 		get_tree().paused = false
 
 
-## Barra y destello PROVISIONALES por codigo (paso 7), centrados en pantalla.
+## Barra y destello, centrados en pantalla. Arte por script (paso 7,
+## tools/gen_hub_update_art.py): install_panel_00 (panel y hueco de la barra, a
+## la medida de bar_size_px) e install_bar_fill_<i>_00 (cada tercio, en el color
+## de su verificacion); sin ellos (u otra medida), por codigo. El destello es
+## un velo blanco por codigo.
 class _InstallArt:
 	extends Control
+	const ART_DIR: String = "res://assets/sprites/hub_update/"
 	var owner_install: HubUpdateInstall
+	var _panel_tex: Texture2D
+	var _fill_tex: Array[Texture2D] = []
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		size = Vector2(1280.0, 720.0)
+		if ResourceLoader.exists(ART_DIR + "install_panel_00.png"):
+			_panel_tex = load(ART_DIR + "install_panel_00.png") as Texture2D
+		for i: int in 3:
+			var path: String = ART_DIR + "install_bar_fill_%d_00.png" % i
+			if ResourceLoader.exists(path):
+				_fill_tex.append(load(path) as Texture2D)
 
 	func _draw() -> void:
 		if owner_install == null:
@@ -211,8 +224,12 @@ class _InstallArt:
 		var panel := Rect2(Vector2(640.0, 360.0) - Vector2(bar.x + 48.0, bar.y + 96.0) * 0.5,
 			Vector2(bar.x + 48.0, bar.y + 96.0))
 		draw_rect(Rect2(Vector2.ZERO, size), Color(HubData.color("fondo_profundo"), 0.55))
-		draw_rect(panel.grow(2.0), HubData.color("acento_cian"))
-		draw_rect(panel, HubData.color("fondo_profundo"))
+		var textured: bool = _panel_tex != null and _panel_tex.get_size() == panel.grow(2.0).size
+		if textured:
+			draw_texture(_panel_tex, panel.grow(2.0).position)
+		else:
+			draw_rect(panel.grow(2.0), HubData.color("acento_cian"))
+			draw_rect(panel, HubData.color("fondo_profundo"))
 		var font: Font = load("res://assets/sprites/ui/text_font.fnt") as Font
 		var text: String = owner_install.get_bar_text()
 		var text_w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x * 2.0
@@ -220,16 +237,22 @@ class _InstallArt:
 		draw_string(font, Vector2(0.0, 12.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, HubData.color("texto_claro"))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		var bar_rect := Rect2(Vector2(640.0 - bar.x * 0.5, panel.end.y - bar.y - 24.0), bar)
-		draw_rect(bar_rect.grow(2.0), HubData.color("borde"))
-		draw_rect(bar_rect, HubData.color("base"))
+		if not textured:
+			draw_rect(bar_rect.grow(2.0), HubData.color("borde"))
+			draw_rect(bar_rect, HubData.color("base"))
 		var fill: float = owner_install.get_bar_fill()
 		var n: int = maxi(owner_install.colors.size(), 1)
 		var seg: float = bar.x / float(n)
 		for i: int in n:
 			var x0: float = float(i) * seg
 			var w: float = clampf(bar.x * fill - x0, 0.0, seg)
-			if w > 0.0:
-				draw_rect(Rect2(bar_rect.position + Vector2(x0, 0.0), Vector2(w, bar.y)), owner_install.colors[i])
+			if w <= 0.0:
+				continue
+			var dest := Rect2(bar_rect.position + Vector2(x0, 0.0), Vector2(w, bar.y))
+			if textured and n == _fill_tex.size() and _fill_tex[i].get_size().y == bar.y:
+				draw_texture_rect_region(_fill_tex[i], dest, Rect2(Vector2.ZERO, Vector2(minf(w, _fill_tex[i].get_size().x), bar.y)))
+			else:
+				draw_rect(dest, owner_install.colors[i])
 		if owner_install.get_step() == HubUpdateInstall.Step.FLASH:
 			var a: float = 1.0 - clampf(owner_install._time / owner_install.get_flash_s(), 0.0, 1.0)
 			draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 1.0, 1.0, 0.85 * a))

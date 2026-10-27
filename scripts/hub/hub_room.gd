@@ -778,9 +778,20 @@ func _build_room() -> void:
 	_background.centered = false
 	_background.sprite_frames = load(String(_room.get("background", ""))) as SpriteFrames
 	room.add_child(_background)
-	# Paginas 2 y 3: fondo PROVISIONAL de un color (el arte llega en el paso 7).
+	# Paginas 2 y 3: su fondo (room.page_backgrounds, arte por script de
+	# tools/gen_hub_objects.py, paso 7); sin el, el color liso de respaldo.
+	var page_art: Dictionary = _room.get("page_backgrounds", {})
 	for page: int in range(2, get_page_count() + 1):
 		var page_rect: Rect2i = get_camera_rect(page)
+		var art_path: String = String(page_art.get(str(page), ""))
+		if not art_path.is_empty() and ResourceLoader.exists(art_path):
+			var art := Sprite2D.new()
+			art.name = "PageBackground%d" % page
+			art.texture = load(art_path) as Texture2D
+			art.centered = false
+			art.position = Vector2(page_rect.position)
+			room.add_child(art)
+			continue
 		var fill := ColorRect.new()
 		fill.name = "PageBackground%d" % page
 		fill.color = Color(String(_room.get("page_background_color", "#3a4862")))
@@ -1125,7 +1136,8 @@ func _build_update_puzzle() -> void:
 
 ## Instalador apagado como decorado de la pagina 2 (§3.1 paso 5) cuando el
 ## upgrade ya esta instalado (hub_update_install.installer_decor_cell). Sin
-## colision ni prompt. Arte PROVISIONAL (terminal de HubProvisionalArt, atenuado).
+## colision ni prompt. Arte: el cuadro powered_off de installer_decor_frames
+## (tools/gen_hub_objects.py, paso 7); sin el, la terminal provisional atenuada.
 func _build_installer_decor() -> void:
 	if _installer_decor != null and is_instance_valid(_installer_decor):
 		_installer_decor.queue_free()
@@ -1138,10 +1150,23 @@ func _build_installer_decor() -> void:
 	var t: float = HubData.tile_size()
 	var cell: Array = cfg.get("installer_decor_cell", [7, 6])
 	var size: Array = cfg.get("installer_decor_size_tiles", [2, 3])
-	var art := HubProvisionalArt.new()
-	art.kind = &"terminal"
-	art.size = Vector2(float(size[0]), float(size[1])) * t
-	art.modulate = Color(0.55, 0.55, 0.6)
+	var decor_size: Vector2 = Vector2(float(size[0]), float(size[1])) * t
+	var art: Node2D
+	var frames_path: String = String(cfg.get("installer_decor_frames", HubInstaller.DEFAULT_FRAMES))
+	var frames := load(frames_path) as SpriteFrames if ResourceLoader.exists(frames_path) else null
+	if frames != null and frames.has_animation(&"powered_off"):
+		var sprite := Sprite2D.new()
+		sprite.name = "Art"
+		sprite.centered = false
+		sprite.texture = frames.get_frame_texture(&"powered_off", 0)
+		sprite.scale = decor_size / sprite.texture.get_size()
+		art = sprite
+	else:
+		var provisional := HubProvisionalArt.new()
+		provisional.kind = &"terminal"
+		provisional.size = decor_size
+		provisional.modulate = Color(0.55, 0.55, 0.6)
+		art = provisional
 	_installer_decor = Node2D.new()
 	_installer_decor.name = "InstallerDecor"
 	_installer_decor.position = Vector2(get_camera_rect(page).position) + Vector2(float(cell[0]), float(cell[1])) * t
