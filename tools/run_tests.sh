@@ -127,6 +127,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 14 (2026-10-23): el 2-3 real (tests/test_level_2_3.py).
 # Desde el paso 23 (2026-10-26): el arte final de Autoplay y del Comentarista al dia
 # (tools/import_boss_autoplay.py --check, tools/import_commenter.py --check).
+# Desde el paso 23 del Mundo 3 (2026-10-27): el arte final de La Curadora y del Influencer bot al dia
+# (tools/import_boss_curator.py --check, tools/import_influencer_bot.py --check).
 # Desde el paso 0 de docs/propuesta-mundo-3.md (2026-10-26): la paleta provisional del Mundo 3 al dia y sus 5 reglas
 # de §6.1 (tools/palette_mundo3_provisional.py --check, tests/test_palette_mundo3.py).
 # Desde el paso 9 (2026-10-26): las 3 variantes de paleta del Mundo 3 cumplen las 5 reglas
@@ -224,6 +226,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
+		&& python3 -I tools/import_boss_curator.py --check >/dev/null && python3 -I tools/import_influencer_bot.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2

@@ -14,8 +14,10 @@
 ## - stunned: el pulso lo aturde stun_s y cancela la carga; al despertar, idle.
 ## - defeated: vida a 0 (laser aturdido; despierto rebota con chispa gris como
 ##   el Comentarista); suelta drops y heart_drops corazones y no vuelve.
-## Al reaparecer Isak vuelve a idle (el velo lo quita FlashVeil). Aspecto
-## PROVISIONAL por codigo (_draw_placeholder) hasta el arte de AutoSprite.
+## Al reaparecer Isak vuelve a idle (el velo lo quita FlashVeil). Arte final con
+## AutoSprite (paso 23, 2026-10-27; tools/import_influencer_bot.py,
+## influencer_bot_<anim>_NN.png, ART_ANIMS): de frente, sin reflejar; si faltan
+## los cuadros, aspecto PROVISIONAL por codigo (_draw_placeholder).
 class_name InfluencerBot
 extends Node2D
 
@@ -39,6 +41,18 @@ const GROUP: StringName = &"enemy"
 const TILE: float = 64.0
 const LAYER_WORLD: int = 1
 const LAYER_ENEMY: int = 4
+## Arte final: anim -> [cuadros, fps]. idle en reposo y enfriando (bucle);
+## flash_charge, un cuadro por cuadro del aviso; stunned en bucle; derrotado,
+## idle 0 gris y a media transparencia.
+const ART_DIR: String = "res://assets/sprites/enemies/world3/"
+const ART_ANIMS: Dictionary = {
+	"idle": [24, 12.0],
+	"flash_charge": [9, 12.0],
+	"stunned": [24, 12.0],
+}
+## El lienzo (96 x 160) sobresale 16 px de la celda de 1 x 2 tiles por los lados
+## y por arriba, con los pies en el origen.
+const ART_OFFSET: Vector2 = Vector2(-48.0, -144.0)
 
 @export_file("*.json") var data_path: String = DEFAULT_DATA_PATH
 
@@ -83,6 +97,7 @@ var _state_t: float = 0.0
 var _stun_left: float = 0.0
 var _deflect_left: float = 0.0
 var _time: float = 0.0
+var _art_cache: Dictionary = {}
 var _look: int = 1
 var _flashes: int = 0
 var _ready_ok: bool = false
@@ -343,11 +358,37 @@ func _on_pulse_fired(area: Area2D) -> void:
 	receive_pulse(area)
 
 
-# --- Dibujo (PROVISIONAL por codigo) ---
+# --- Dibujo ---
+
+## [animacion, cuadro] del arte final que toca ahora (ART_ANIMS).
+func get_art_frame() -> Array:
+	match _state:
+		STATE_DEFEATED:
+			return ["idle", 0]
+		STATE_STUNNED:
+			return ["stunned", posmod(floori(_time * float(ART_ANIMS["stunned"][1])), int(ART_ANIMS["stunned"][0]))]
+		STATE_CHARGE:
+			var n: int = int(ART_ANIMS["flash_charge"][0])
+			var k: float = _state_t / maxf(get_warn_s(), 0.001)
+			return ["flash_charge", clampi(floori(k * float(n)), 0, n - 1)]
+	return ["idle", posmod(floori(_time * float(ART_ANIMS["idle"][1])), int(ART_ANIMS["idle"][0]))]
+
+
+func _art_texture(anim: String, frame: int) -> Texture2D:
+	var path: String = ART_DIR + "influencer_bot_%s_%02d.png" % [anim, frame]
+	if not _art_cache.has(path):
+		_art_cache[path] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _art_cache[path]
+
 
 func _draw() -> void:
 	var defeated_now: bool = _state == STATE_DEFEATED
-	_draw_placeholder(defeated_now)
+	var art: Array = get_art_frame()
+	var tex: Texture2D = _art_texture(art[0], art[1])
+	if tex != null:
+		draw_texture(tex, ART_OFFSET, Color(0.6, 0.6, 0.7, 0.5) if defeated_now else Color.WHITE)
+	else:
+		_draw_placeholder(defeated_now)
 	var lens: Vector2 = get_lens_point() - global_position
 	if _state == STATE_CHARGE:
 		# Aviso: aro de obturador que se cierra (ambar: el flash no dana) y la cuenta.

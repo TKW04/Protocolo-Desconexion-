@@ -431,3 +431,17 @@ func test_vitrina_room_has_its_enemies_and_objects() -> void:
 	assert_not_null(level.get_node_or_null(^"Objects/publicacion"))
 	assert_lt(thief.global_position.x, platform.global_position.x, "El ladron va antes del umbral 10")
 	level.free()
+
+
+func test_influencer_art_follows_its_state() -> void:
+	var b: InfluencerBot = _influencer(4)
+	_stand_at(9)
+	assert_eq(String(b.get_art_frame()[0]), "idle", "Posa en reposo")
+	_step_bot(b, DT)
+	assert_true(b.is_charging())
+	assert_eq(b.get_art_frame(), ["flash_charge", 0], "Empieza el aviso")
+	_step_bot(b, 0.7)
+	assert_eq(b.get_art_frame(), ["flash_charge", 8], "Al final del aviso, el flash cargado")
+	_step_bot(b, 0.1)
+	assert_eq(String(b.get_art_frame()[0]), "idle", "Enfriando: vuelve a posar")
+	assert_not_null(load("res://assets/sprites/enemies/world3/influencer_bot_stunned_00.png"), "Cuadros de tools/import_influencer_bot.py")

@@ -23,7 +23,7 @@
 	"outline_px": 3.0,
 	"speech": "No olviden suscribirse",
 	"countdown_text": ["3", "2", "1", "¡Sonríe!"],
-	"art_placeholder": true,
+	"art_placeholder": false,
 	"help_id": "influencer_bot",
 	"level_params": {
 		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max], sus valores o string (texto).",
