@@ -77,6 +77,11 @@ def climbs(level, root=ROOT):
     w3 = getattr(model, "w3", None)
     if w3 is not None and w3.like_platforms:
         state = w3.with_likes(state, w3.likes_max)
+    # Mundo 3 (paso 13, el 3-3 real, 2026-10-27): con las placas «Posa aqui» pisadas, como el jugador al que el
+    # Reflejo falso le sostiene la puerta; sin esto las puertas de marco cerraban el paso y el 3-3 solo tenia las
+    # subidas de antes del Tramo 3. Sin placas nada cambia.
+    if w3 is not None and getattr(w3, "plates", None):
+        state = state | frozenset(g.gid for g in w3.plates)
     start_cell = validator.find("P")[0]
     start, why = validator.spawn_node(start_cell, state)
     if start is None:

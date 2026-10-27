@@ -1739,7 +1739,10 @@ class _EnemySim:
             state = self.steps[self.frames[g][0]]["state"]
             if not m.has_pulse(state):
                 continue
-            shot = m.pulse_shot([rect], node, state)
+            # Un pulso que aturde a un enemigo no puede tocar de paso a un espejo cazador (lo congelaria en la
+            # orientacion de ese momento y su haz no llegaria a su receptor; paso 13, sala del examen del 3-3).
+            avoid = [h["rect"] for h in self.w3.hunters] or None
+            shot = m.pulse_shot([rect], node, state, avoid=avoid)
             if shot is None:
                 continue
             step = {"action": "pulse", "at": node, "shot": shot, "state": state, "target": dict(target)}

@@ -64,6 +64,12 @@ const CLIMBS_PATH_3_1: String = "res://tests/fixtures/climbs_3-1.json"
 const LEVEL_SCENE_3_2: String = "res://scenes/levels/3-2.tscn"
 const LEVEL_PATH_3_2: String = "res://data/levels/3-2.json"
 const CLIMBS_PATH_3_2: String = "res://tests/fixtures/climbs_3-2.json"
+## 3-3 «Espejo, espejito» (paso 13 de docs/propuesta-mundo-3.md, 2026-10-27): plataformas del reflejo al bloque A,
+## escalon del bloque B, la ♥15 al bloque C y la ♥25 del secreto C (contador al maximo), y el puente del secreto B
+## a la vitrina alta; con las placas pisadas (tools/level_climbs.py abre las puertas de marco).
+const LEVEL_SCENE_3_3: String = "res://scenes/levels/3-3.tscn"
+const LEVEL_PATH_3_3: String = "res://data/levels/3-3.json"
+const CLIMBS_PATH_3_3: String = "res://tests/fixtures/climbs_3-3.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -465,6 +471,14 @@ func test_every_climb_of_3_2_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 12, "Subidas del 3-2 en %s" % CLIMBS_PATH_3_2)
 	await _load(LEVEL_SCENE_3_2, LEVEL_PATH_3_2)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_3_3_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_3_3))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 8, "Subidas del 3-3 en %s" % CLIMBS_PATH_3_3)
+	await _load(LEVEL_SCENE_3_3, LEVEL_PATH_3_3)
 	await _measure_all(climbs)
 
 

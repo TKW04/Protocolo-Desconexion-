@@ -1,0 +1,328 @@
+{
+ "format": "isak-climbs/1",
+ "level": "3-3",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "102,11->102,9",
+   "section": "Tramo 2 «Ambos lados»",
+   "from": {
+    "cell": [
+     102,
+     11
+    ],
+    "ledge": [
+     101,
+     117
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     102,
+     9
+    ],
+    "ledge": [
+     102,
+     102
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 6592.0,
+   "target_x_px": 6592.0,
+   "debug": false
+  },
+  {
+   "id": "190,11->191,9",
+   "section": "Tramo 3 «Reflejo falso»",
+   "from": {
+    "cell": [
+     190,
+     11
+    ],
+    "ledge": [
+     127,
+     190
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     191,
+     9
+    ],
+    "ledge": [
+     191,
+     195
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 12208.0,
+   "target_x_px": 12224.0,
+   "debug": false
+  },
+  {
+   "id": "213,11->213,9",
+   "section": "Tramo 4 «Examen»",
+   "from": {
+    "cell": [
+     213,
+     11
+    ],
+    "ledge": [
+     192,
+     215
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     213,
+     9
+    ],
+    "ledge": [
+     213,
+     214
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 13696.0,
+   "target_x_px": 13696.0,
+   "debug": false
+  },
+  {
+   "id": "102,9->104,7",
+   "section": "Tramo 2 «Ambos lados»",
+   "from": {
+    "cell": [
+     102,
+     9
+    ],
+    "ledge": [
+     102,
+     102
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     104,
+     7
+    ],
+    "ledge": [
+     104,
+     104
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6592.0,
+   "target_x_px": 6656.0,
+   "debug": false
+  },
+  {
+   "id": "191,9->188,8",
+   "section": "Tramo 3 «Reflejo falso»",
+   "from": {
+    "cell": [
+     191,
+     9
+    ],
+    "ledge": [
+     191,
+     195
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     188,
+     8
+    ],
+    "ledge": [
+     188,
+     188
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 12224.0,
+   "target_x_px": 12096.0,
+   "debug": false
+  },
+  {
+   "id": "195,9->196,7",
+   "section": "Tramo 3 «Reflejo falso»",
+   "from": {
+    "cell": [
+     195,
+     9
+    ],
+    "ledge": [
+     191,
+     195
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     196,
+     7
+    ],
+    "ledge": [
+     196,
+     199
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 12528.0,
+   "target_x_px": 12544.0,
+   "debug": false
+  },
+  {
+   "id": "214,9->216,7",
+   "section": "Tramo 4 «Examen»",
+   "from": {
+    "cell": [
+     214,
+     9
+    ],
+    "ledge": [
+     213,
+     214
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     216,
+     7
+    ],
+    "ledge": [
+     216,
+     221
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 13760.0,
+   "target_x_px": 13824.0,
+   "debug": false
+  },
+  {
+   "id": "125,8->124,6",
+   "section": "Tramo 2 «Ambos lados»",
+   "from": {
+    "cell": [
+     125,
+     8
+    ],
+    "ledge": [
+     125,
+     126
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     124,
+     6
+    ],
+    "ledge": [
+     118,
+     124
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 8016.0,
+   "target_x_px": 8000.0,
+   "debug": false
+  },
+  {
+   "id": "104,7->106,6",
+   "section": "Tramo 2 «Ambos lados»",
+   "from": {
+    "cell": [
+     104,
+     7
+    ],
+    "ledge": [
+     104,
+     104
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     106,
+     6
+    ],
+    "ledge": [
+     106,
+     111
+    ],
+    "row": 6
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6720.0,
+   "target_x_px": 6784.0,
+   "debug": false
+  },
+  {
+   "id": "221,7->223,5",
+   "section": "Tramo 4 «Examen»",
+   "from": {
+    "cell": [
+     221,
+     7
+    ],
+    "ledge": [
+     216,
+     221
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     223,
+     5
+    ],
+    "ledge": [
+     223,
+     224
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14208.0,
+   "target_x_px": 14272.0,
+   "debug": false
+  }
+ ]
+}

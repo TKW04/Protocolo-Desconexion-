@@ -6,7 +6,8 @@
 # completado, sin morir, sin golpes y sin robos. Tambien las salas recorte_test (Recortar, pinch / unpinch) y
 # reflejo_test (laser por espejo, pulso reflejado por el espejo cazador, placas y puertas de marco con el Reflejo
 # falso), para los pasos que el 3-1 no usa. Desde el paso 12 (2026-10-27), tambien el 3-2 «Sin filtro» real, que
-# obtiene Pellizcar en «Recortar». Cada caso usa su propio guardado (ISAK_SAVE_PATH).
+# obtiene Pellizcar en «Recortar», y desde el paso 13 el 3-3 «Espejo, espejito» (cazador, reflejo y placas en un
+# camino real). Cada caso usa su propio guardado (ISAK_SAVE_PATH).
 extends GutTest
 
 const PLAYER: String = "res://tools/play_gallery_bot.gd"
@@ -53,6 +54,27 @@ func test_gallery_bot_completes_level_3_2_and_obtains_compress() -> void:
 	for piece: String in ["linea importante (Eco): «Te queda mejor así.»", "Pellizcar obtenido true",
 			"hub cargado tras completar el 3-2", "golpes 0, muertes 0", "GALERIA: muertes 0, golpes 0, robos 0 (0 likes)",
 			"pellizcos 4 / vueltas 4", "likes_10 ", "hub: llegada tras el 3-2 (3-2 completado true; likes 0)"]:
+		assert_string_contains(text, piece)
+
+
+## Paso 13 (2026-10-27): el 3-3 «Espejo, espejito» real con Pellizcar ya obtenido: laseres por uno y dos espejos,
+## el espejo cazador de la sala congelado mirando al n (wait_hunter), el marco de la pared de marcos, las plataformas
+## del reflejo, las puertas de marco que sostiene el Reflejo falso (wait_reflection), el examen (Ladrones, filtro con
+## el Debug y el pulso al Reflejo falso de espaldas antes del segundo cazador) y el marco dorado; vuelve al hub con el
+## 3-3 completado y la fila del jefe desbloqueada.
+func test_gallery_bot_completes_level_3_3_and_unlocks_the_boss_row() -> void:
+	var run: Dictionary = _play("3-3")
+	var text: String = run["text"]
+	assert_eq(run["code"], 0, "El bot del 3-3 termina con 0:\n%s" % run["summary"])
+	assert_string_contains(text, "play_gallery_bot (3-3): OK")
+	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % run["summary"])
+	for piece: String in ["laser a lector_techo", "laser a lector_doble",
+			"pulso reflejado por cazador_sala (mira al n) a puente_cazador",
+			"pulso a false_reflection reflejo_examen: stunned",
+			"pulso reflejado por cazador_examen (mira al n) a puente_examen", "hub cargado tras completar el 3-3",
+			"golpes 0, muertes 0", "GALERIA: muertes 0, golpes 0, robos 0 (0 likes)", "pellizcos 1 / vueltas 1",
+			"likes_10 ", "likes_15 ", "fila del jefe: 3-boss desbloqueado true",
+			"hub: llegada tras el 3-3 (3-3 completado true; likes 0)"]:
 		assert_string_contains(text, piece)
 
 

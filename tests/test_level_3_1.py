@@ -214,9 +214,9 @@ class Level31Test(unittest.TestCase):
         m3 = next(w for w in hub["worlds"] if w["id"] == "m3")
         self.assertEqual(m3["unlocked_by"], ["2-boss"], "La carpeta M3 se abre al vencer a Autoplay")
         rows = [(lv["id"], lv["name"], lv["playable"], lv.get("kind")) for lv in m3["levels"]]
-        # Paso 12 (2026-10-27): el 3-2 «Sin filtro» ya es jugable.
+        # Pasos 12 y 13 (2026-10-27): el 3-2 «Sin filtro» y el 3-3 «Espejo, espejito» ya son jugables.
         self.assertEqual(rows, [("3-1", "Galería de perfil", True, None), ("3-2", "Sin filtro", True, None),
-                                ("3-3", "Espejo, espejito", False, None), ("3-boss", "La Curadora", False, "boss")])
+                                ("3-3", "Espejo, espejito", True, None), ("3-boss", "La Curadora", False, "boss")])
         self.assertTrue(all(lv["laps"] == [1] for lv in m3["levels"]))
         self.assertTrue(os.path.exists(os.path.join(ROOT, "scenes", "levels", "3-1.tscn")))
         with open(os.path.join(ROOT, "data", "memories.json"), encoding="utf-8") as handle:

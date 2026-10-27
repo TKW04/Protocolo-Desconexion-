@@ -1333,8 +1333,11 @@ class LevelModel:
             x += PULSE_SAMPLE_PX
         return None
 
-    def pulse_shot(self, rects, node, state, debug=False):
-        """Como pulse_hits, pero devuelve {"x", "facing"} de la primera posicion que toca."""
+    def pulse_shot(self, rects, node, state, debug=False, avoid=None):
+        """Como pulse_hits, pero devuelve {"x", "facing"} de la primera posicion que toca. `avoid` (paso 13 del
+        Mundo 3, 2026-10-27): rectangulos que el pulso NO debe tocar desde esa posicion (un espejo cazador al
+        lado de un Reflejo falso: el pulso que aturde al reflejo lo congelaria en otra orientacion); sin el
+        parametro no cambia nada."""
         if self.w3 is not None and world3_model.is_pinched(node):
             return None
         dbg = debug if debug in (True, False) else False
@@ -1342,14 +1345,20 @@ class LevelModel:
         c, r = node
         feet = (r + 1) * self.T
         x = c * self.T
+
+        def touches(px, py, rect):
+            qx = min(max(px, rect[0]), rect[2])
+            qy = min(max(py, rect[1]), rect[3])
+            return math.hypot(px - qx, py - qy) <= self.rules.pulse_radius + EPS
+
         while x <= (c + 1) * self.T + EPS:
             if not w.collides(x, feet) and not w.in_hazard(x, feet):
                 for facing in (1.0, -1.0):
                     px, py = x + self.rules.phone_x * facing, feet + self.rules.phone_y
+                    if avoid and any(touches(px, py, rect) for rect in avoid):
+                        continue
                     for rect in rects:
-                        qx = min(max(px, rect[0]), rect[2])
-                        qy = min(max(py, rect[1]), rect[3])
-                        if math.hypot(px - qx, py - qy) <= self.rules.pulse_radius + EPS:
+                        if touches(px, py, rect):
                             return {"x": x, "facing": facing}
             x += PULSE_SAMPLE_PX
         return None

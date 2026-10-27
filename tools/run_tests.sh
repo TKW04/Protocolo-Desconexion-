@@ -85,7 +85,8 @@ rm -f "$IMPORT_LOG"
 # exportacion del camino; usa user://bot_save.json).
 # Desde el 2026-10-27 (paso 11 de docs/propuesta-mundo-3.md) GUT lanza tambien el bot de la galeria en el 3-1
 # (tests/test_gallery_bot.gd: tools/play_gallery_bot.gd en procesos aparte, el 3-1 y las salas recorte_test y
-# reflejo_test; unos 35 s de pared con la exportacion del camino; cada caso con su ISAK_SAVE_PATH).
+# reflejo_test; desde los pasos 12 y 13 tambien el 3-2 y el 3-3; unos 90 s de pared con la exportacion del camino;
+# cada caso con su ISAK_SAVE_PATH).
 # Desde el 2026-10-21 (paso 14 de docs/propuesta-jefe-alerta-mayor.md) GUT lanza tambien el bot del jefe
 # (tests/test_boss_bot.gd: tools/play_boss_bot.gd en procesos aparte, perfiles ideal y torpe en Caché,
 # Kernel y Raíz y el quieto que pierde; unos 50 s de pared en total; usa user://bot_save.json).
@@ -130,6 +131,8 @@ rm -f "$IMPORT_LOG"
 # contraste de Isak y Eco (tools/validate_world3_tiles.py).
 # Desde el paso 10 (2026-10-26): el 3-1 real (tests/test_level_3_1.py, camino exportado y subidas al dia).
 # Desde el paso 12 (2026-10-27): el 3-2 real (tests/test_level_3_2.py, camino exportado y subidas al dia).
+# Desde el paso 13 (2026-10-27): el 3-3 real (tests/test_level_3_3.py, camino exportado y subidas al dia) y el arte
+# del marco dorado de salida (tools/gen_world3_exit_frame.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -138,7 +141,7 @@ _export_test_rooms() {
 	for room in "$PROJECT_DIR"/data/levels/*_test.json "$PROJECT_DIR"/data/levels/1-2.json \
 		"$PROJECT_DIR"/data/levels/1-3.json "$PROJECT_DIR"/data/levels/2-1.json "$PROJECT_DIR"/data/levels/2-2.json \
 		"$PROJECT_DIR"/data/levels/2-3.json "$PROJECT_DIR"/data/levels/3-1.json \
-		"$PROJECT_DIR"/data/levels/3-2.json; do
+		"$PROJECT_DIR"/data/levels/3-2.json "$PROJECT_DIR"/data/levels/3-3.json; do
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
@@ -172,7 +175,7 @@ _validate_levels() {
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
-		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
+		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
@@ -186,6 +189,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/level_climbs.py --check data/levels/2-3.json \
 		&& python3 tools/level_climbs.py --check data/levels/3-1.json \
 		&& python3 tools/level_climbs.py --check data/levels/3-2.json \
+		&& python3 tools/level_climbs.py --check data/levels/3-3.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \
@@ -198,6 +202,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
 		&& python3 -I tools/palette_mundo3_provisional.py --check && python3 -I tools/palette_mundo3_preview.py --check \
+		&& python3 -I tools/gen_world3_exit_frame.py --check \
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \

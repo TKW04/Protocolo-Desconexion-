@@ -1,0 +1,840 @@
+{
+	"_notes": "NIVEL 3-3 «Espejo, espejito» (paso 13 de docs/propuesta-mundo-3.md §8, 2026-10-27; diseño en su §4.3 y §4.3.1, desvíos en §8.1). Horizontal de 280 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Todo el kit: pulso, láser, Debug, dash, golpe al suelo y Pellizcar. INICIO (0-14): vórtice (3, 11), cartel «Tu mejor ángulo es el de otro», 1 punto y publicacion_perfil (12; anti-atasco de la ♥10 desde P: el grafo de los soft-locks no abre los puentes del Tramo 1). TRAMO 1 «Sala de espejos» (15-78): láser al espejo '/' (20, 11) que sube al lector del techo (20, 2) -> receptor enlazado (24) -> puente sobre el foso de pinchos 26-31; dos rebotes ('/' en (38, 11) y (38, 7)) al lector (41, 7) -> receptor (44) -> puente 46-51; espejo cazador cazador_sala (60, 11, reposo al este): con Isak en la 58 gira e -> ne -> n y, congelado mirando al n, su haz llega al receptor (60, 7) que tiende el puente 62-67 (wait_hunter). 1 punto. TRAMO 2 «Ambos lados» (79-138): 10 corazones, publicacion_espejo (90), cargador_1 (91), pared de espejo pared_lados (92-99, side right: enseña lo que hay al otro lado de la pared de marcos de la columna 100), marco pequeño marco_lados (100, 11); al otro lado, dos plataformas del reflejo (102, 10) y (104, 8) suben al bloque A (106-111, túnel debajo: salida si se cae), 1 punto, la ♥10 (113-116, de una vía) al bloque B. PAUSA (139-143): sync_1 (141) y publicacion_pausa (145; anti-atasco de la ♥15). TRAMO 3 «Reflejo falso» (144-200): pared_reflejo (148-153) y el Reflejo falso (sale en la 151, sala 147-180); placa_1 (157) -> puerta_1 (160) y placa_2 (166) -> puerta_2 (169): Isak no llega solo, el reflejo las pisa 1 s después (wait_reflection); 1 punto; cargador_2 (174); secreto B. TRAMO 4 «Examen» (201-266), tres salas: (1) 5 corazones, publicacion_examen (208), ladron_1 (211), ♥15 (213-214) al bloque C (216-221; secreto A en su cara, secreto C encima), 1 punto; (2) cargador_3 (225), filtro «Filtro: Retrato · Sin poros» (228-237) con dos pinchos hundidos (231, 234) y ladron_2 (240); (3) pared_examen (245-250) con reflejo_examen, placa_examen (252) -> puerta_examen (255) y cazador_examen (259) con su receptor (259, 7) y el puente 261-266: esperando el giro del cazador el reflejo alcanza a Isak, que lo aturde de espaldas (el pulso no toca al cazador) y luego pulsa al cazador. CIERRE «Marco dorado» (267-279): 1 punto y la terminal de salida con skin golden_frame (275, 10): vuelta al hub; desbloquea la fila «Jefe: La Curadora» (3-boss, aún sin jugar hasta el paso 17). Escena: scenes/levels/3-3.tscn (python3 tools/build_level.py data/levels/3-3.json).",
+	"id": "3-3",
+	"name": "Espejo, espejito",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"target_duration_s": 480,
+	"difficulty": 4,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"laser_required": true,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio",
+			"x_from": 0,
+			"x_to": 14
+		},
+		{
+			"name": "Tramo 1 «Sala de espejos»",
+			"x_from": 15,
+			"x_to": 78,
+			"patterns": [
+				"banda_de_espejos"
+			]
+		},
+		{
+			"name": "Tramo 2 «Ambos lados»",
+			"x_from": 79,
+			"x_to": 138
+		},
+		{
+			"name": "Pausa",
+			"x_from": 139,
+			"x_to": 143
+		},
+		{
+			"name": "Tramo 3 «Reflejo falso»",
+			"x_from": 144,
+			"x_to": 200,
+			"patterns": [
+				"enganar_al_reflejo"
+			]
+		},
+		{
+			"name": "Tramo 4 «Examen»",
+			"x_from": 201,
+			"x_to": 266,
+			"patterns": [
+				"pagar_con_likes"
+			]
+		},
+		{
+			"name": "Cierre «Marco dorado»",
+			"x_from": 267,
+			"x_to": 279
+		}
+	],
+	"grid": [
+		"########################################################################################################################################################################################################################################################################################",
+		"#...................................................................................................#...........................................................#........#.....................................................................................#.......................#",
+		"#...................................................................................................#...........................................................#........#.....................................................................................#.......................#",
+		"#...................................................................................................#...........................................................#........#.....................................................................................#.......................#",
+		"#...................................................................................................#...........................................................#........#.....................................................................................#.......................#",
+		"#...................................................................................................#...........................................................#........#.....................................................So..............................#.......................#",
+		"#...................................................................................................#.......o...................................................#........#.....................................................................................#.......................#",
+		"#...................................................................................................#.....######......#######...................................#........#............................o...................o....................................#.......................#",
+		"#...................................................................................................#.....######......#######...................................#........#..........................####................######.................................#.......................#",
+		"#...................................................................................................#.....######......#########.............................................................#.......####................######.........................................................#",
+		"#...................................................................................................#.................#########................................................................#............................##.........................................................#",
+		"#..P.....o..............................................................o.............................................#########..............C.........E...........o...........................#...................E.....ooS##..................E.......E.....................o....G...#",
+		"##########################......##############......##########......###################################################################################################################################################################^##^##########################......#############",
+		"##########################^^^^^^##############^^^^^^##########^^^^^^#################################################################################################################################################################################################^^^^^^#############"
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 141,
+			"y": 11
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_vitrina_oculta",
+			"x": 219,
+			"y": 11,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 2,
+			"memory_id": "msg_3_3",
+			"needs_debug": true,
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "A «Vitrina oculta» (§4.3.1): pared con glitch visible solo con el Debug (216, filas 10-11) en la cara del bloque C; dentro, la vitrina (217-219, tapada con cover) con msg_3_3 (mensaje_3_3, esta celda) y 2 puntos (217, 218). Sin dash."
+		},
+		{
+			"id": "secreto_doble_rebote",
+			"x": 197,
+			"y": 7,
+			"object": "power_bank_pickup",
+			"reward": [
+				"attention_points",
+				"power_bank"
+			],
+			"points": 1,
+			"gates": [
+				"puente_rebote"
+			],
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "B «Doble rebote» (§4.3.1): láser desde la 185 al '/' (185, 11), sube al '/' (185, 8), va al espejo cazador cazador_rebote (188, 8, en reposo al norte sobre un bloque suelto) y sube al lector (188, 5): 3 rebotes. Receptor (190, 11) -> puente puente_rebote (192-195, fila 10, desde el escalon de la 191) -> vitrina alta (196-199, de pie en la 7) con el power bank (power_bank_3_3, esta celda) y 1 punto (198, 7). Sin dash (con salto + dash aereo se llegaria desde el escalon sin el puente). El cazador refleja el láser en reposo (el validador no modela congelarlo para disparar desde dentro de su radio)."
+		},
+		{
+			"id": "secreto_umbral_25",
+			"x": 223,
+			"y": 5,
+			"reward": "attention_points",
+			"points": 1,
+			"note": "C (§4.3.1): plataforma ♥25 (223-224, fila 6, de una vía) junto al bloque C, con 1 punto (224, 5). 25 likes: los 15 corazones y dos publicaciones."
+		}
+	],
+	"enemies": [
+		{
+			"id": "reflejo_falso",
+			"type": "false_reflection",
+			"x": 151,
+			"y": 11,
+			"params": {
+				"mirror_wall": "pared_reflejo",
+				"zone": [
+					147,
+					1,
+					34,
+					11
+				]
+			}
+		},
+		{
+			"id": "ladron_1",
+			"type": "like_thief",
+			"x": 211,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128
+			}
+		},
+		{
+			"id": "ladron_2",
+			"type": "like_thief",
+			"x": 240,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128
+			}
+		},
+		{
+			"id": "reflejo_examen",
+			"type": "false_reflection",
+			"x": 248,
+			"y": 11,
+			"params": {
+				"mirror_wall": "pared_examen",
+				"zone": [
+					244,
+					1,
+					23,
+					11
+				]
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "feed_sign",
+			"x": 5,
+			"y": 8,
+			"params": {
+				"id": "cartel_angulo",
+				"text": "Tu mejor ángulo\nes el de otro",
+				"width_tiles": 6,
+				"height_tiles": 2,
+				"accent": "gris"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 12,
+			"y": 11,
+			"params": {
+				"id": "publicacion_perfil"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 20,
+			"y": 11,
+			"params": {
+				"id": "espejo_sube",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "laser_receiver",
+			"x": 20,
+			"y": 2,
+			"params": {
+				"id": "lector_techo",
+				"target": "receptor_techo",
+				"window_s": 6.0,
+				"cable": [
+					[
+						21,
+						2
+					],
+					[
+						24,
+						2
+					],
+					[
+						24,
+						10
+					]
+				]
+			}
+		},
+		{
+			"type": "relay_receiver",
+			"x": 24,
+			"y": 11,
+			"params": {
+				"id": "receptor_techo",
+				"target": "puente_techo"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 26,
+			"y": 12,
+			"params": {
+				"id": "puente_techo",
+				"length_tiles": 6,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 38,
+			"y": 11,
+			"params": {
+				"id": "espejo_doble_1",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 38,
+			"y": 7,
+			"params": {
+				"id": "espejo_doble_2",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "laser_receiver",
+			"x": 41,
+			"y": 7,
+			"params": {
+				"id": "lector_doble",
+				"target": "receptor_doble",
+				"window_s": 6.0,
+				"cable": [
+					[
+						42,
+						7
+					],
+					[
+						44,
+						7
+					],
+					[
+						44,
+						10
+					]
+				]
+			}
+		},
+		{
+			"type": "relay_receiver",
+			"x": 44,
+			"y": 11,
+			"params": {
+				"id": "receptor_doble",
+				"target": "puente_doble"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 46,
+			"y": 12,
+			"params": {
+				"id": "puente_doble",
+				"length_tiles": 6,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "hunter_mirror",
+			"x": 60,
+			"y": 11,
+			"params": {
+				"id": "cazador_sala",
+				"facing": "e"
+			}
+		},
+		{
+			"type": "receiver",
+			"x": 60,
+			"y": 7,
+			"params": {
+				"target": "puente_cazador"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 62,
+			"y": 12,
+			"params": {
+				"id": "puente_cazador",
+				"length_tiles": 6,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 79,
+			"y": 11,
+			"params": {
+				"id": "corazon_01"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 80,
+			"y": 11,
+			"params": {
+				"id": "corazon_02"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 81,
+			"y": 11,
+			"params": {
+				"id": "corazon_03"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 82,
+			"y": 11,
+			"params": {
+				"id": "corazon_04"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 83,
+			"y": 11,
+			"params": {
+				"id": "corazon_05"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 84,
+			"y": 11,
+			"params": {
+				"id": "corazon_06"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 85,
+			"y": 11,
+			"params": {
+				"id": "corazon_07"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 86,
+			"y": 11,
+			"params": {
+				"id": "corazon_08"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 87,
+			"y": 11,
+			"params": {
+				"id": "corazon_09"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 88,
+			"y": 11,
+			"params": {
+				"id": "corazon_10"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 90,
+			"y": 11,
+			"params": {
+				"id": "publicacion_espejo"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 91,
+			"y": 11,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "mirror_wall",
+			"x": 92,
+			"y": 3,
+			"params": {
+				"id": "pared_lados",
+				"width_tiles": 8,
+				"height_tiles": 8,
+				"side": "right"
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 100,
+			"y": 11,
+			"params": {
+				"id": "marco_lados",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "mirror_only",
+			"x": 102,
+			"y": 10,
+			"params": {
+				"id": "reflejo_1",
+				"width_tiles": 1,
+				"one_way": true
+			}
+		},
+		{
+			"type": "mirror_only",
+			"x": 104,
+			"y": 8,
+			"params": {
+				"id": "reflejo_2",
+				"width_tiles": 1,
+				"one_way": true
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 113,
+			"y": 7,
+			"params": {
+				"id": "likes_10",
+				"threshold": 10,
+				"width_tiles": 4,
+				"one_way": true
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 145,
+			"y": 11,
+			"params": {
+				"id": "publicacion_pausa"
+			}
+		},
+		{
+			"type": "mirror_wall",
+			"x": 148,
+			"y": 4,
+			"params": {
+				"id": "pared_reflejo",
+				"width_tiles": 6,
+				"height_tiles": 7,
+				"side": "center"
+			}
+		},
+		{
+			"type": "pose_plate",
+			"x": 157,
+			"y": 11,
+			"params": {
+				"id": "placa_1",
+				"target": "puerta_1"
+			}
+		},
+		{
+			"type": "frame_door",
+			"x": 160,
+			"y": 9,
+			"params": {
+				"id": "puerta_1"
+			}
+		},
+		{
+			"type": "pose_plate",
+			"x": 166,
+			"y": 11,
+			"params": {
+				"id": "placa_2",
+				"target": "puerta_2"
+			}
+		},
+		{
+			"type": "frame_door",
+			"x": 169,
+			"y": 9,
+			"params": {
+				"id": "puerta_2"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 174,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 185,
+			"y": 11,
+			"params": {
+				"id": "espejo_rebote_1",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 185,
+			"y": 8,
+			"params": {
+				"id": "espejo_rebote_2",
+				"orientation": "/"
+			}
+		},
+		{
+			"type": "hunter_mirror",
+			"x": 188,
+			"y": 8,
+			"params": {
+				"id": "cazador_rebote",
+				"facing": "n"
+			}
+		},
+		{
+			"type": "laser_receiver",
+			"x": 188,
+			"y": 5,
+			"params": {
+				"id": "lector_rebote",
+				"target": "receptor_rebote",
+				"window_s": 6.0,
+				"cable": [
+					[
+						189,
+						5
+					],
+					[
+						190,
+						5
+					],
+					[
+						190,
+						10
+					]
+				]
+			}
+		},
+		{
+			"type": "relay_receiver",
+			"x": 190,
+			"y": 11,
+			"params": {
+				"id": "receptor_rebote",
+				"target": "puente_rebote"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 192,
+			"y": 10,
+			"params": {
+				"id": "puente_rebote",
+				"length_tiles": 4,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 197,
+			"y": 7,
+			"params": {
+				"id": "power_bank_3_3"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 202,
+			"y": 11,
+			"params": {
+				"id": "corazon_11"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 203,
+			"y": 11,
+			"params": {
+				"id": "corazon_12"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 204,
+			"y": 11,
+			"params": {
+				"id": "corazon_13"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 205,
+			"y": 11,
+			"params": {
+				"id": "corazon_14"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 206,
+			"y": 11,
+			"params": {
+				"id": "corazon_15"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 208,
+			"y": 11,
+			"params": {
+				"id": "publicacion_examen"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 213,
+			"y": 10,
+			"params": {
+				"id": "likes_15",
+				"threshold": 15,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 216,
+			"y": 10,
+			"params": {
+				"id": "pared_vitrina",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"visible_only_with_debug": true,
+				"cover": [
+					217,
+					10,
+					3,
+					2
+				]
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 219,
+			"y": 11,
+			"params": {
+				"id": "mensaje_3_3",
+				"memory_id": "msg_3_3"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 223,
+			"y": 6,
+			"params": {
+				"id": "likes_25",
+				"threshold": 25,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "charger",
+			"x": 225,
+			"y": 11,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "filter_zone",
+			"x": 228,
+			"y": 6,
+			"params": {
+				"id": "filtro_examen",
+				"label": "Filtro: Retrato · Sin poros",
+				"width_tiles": 10,
+				"height_tiles": 7,
+				"entry": "left"
+			}
+		},
+		{
+			"type": "mirror_wall",
+			"x": 245,
+			"y": 4,
+			"params": {
+				"id": "pared_examen",
+				"width_tiles": 6,
+				"height_tiles": 7,
+				"side": "center"
+			}
+		},
+		{
+			"type": "pose_plate",
+			"x": 252,
+			"y": 11,
+			"params": {
+				"id": "placa_examen",
+				"target": "puerta_examen"
+			}
+		},
+		{
+			"type": "frame_door",
+			"x": 255,
+			"y": 9,
+			"params": {
+				"id": "puerta_examen"
+			}
+		},
+		{
+			"type": "hunter_mirror",
+			"x": 259,
+			"y": 11,
+			"params": {
+				"id": "cazador_examen",
+				"facing": "e"
+			}
+		},
+		{
+			"type": "receiver",
+			"x": 259,
+			"y": 7,
+			"params": {
+				"target": "puente_examen"
+			}
+		},
+		{
+			"type": "bridge_inactive",
+			"x": 261,
+			"y": 12,
+			"params": {
+				"id": "puente_examen",
+				"length_tiles": 6,
+				"direction": "right"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 275,
+			"y": 10,
+			"params": {
+				"id": "marco_dorado",
+				"text": "Marco dorado",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"skin": "golden_frame"
+			}
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "3-boss"
+		}
+	]
+}

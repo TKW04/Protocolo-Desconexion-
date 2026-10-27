@@ -35,6 +35,12 @@
 ## cambios en el bot: «Recortar» de espaldas (Pellizcar), 4 marcos pequenos con pinch
 ## / unpinch, el Debug en los tres filtros, el Ladron aturdido antes de la ♥10 y
 ## dashes; comprueba ademas que Pellizcar queda obtenido.
+## El 3-3 «Espejo, espejito» (paso 13, 2026-10-27) es el primer camino real con `wait_hunter`, pulsos
+## reflejados por el espejo cazador hacia un receptor de pulso (el camino nombra su puente: hecho al
+## extenderse), `wait_reflection` ante las puertas de marco y un pulso al Reflejo falso (de espaldas, sin
+## tocar al cazador): `wait_hunter` espera como mucho sus segundos (el plan la parte con el pulso al reflejo)
+## y el pulso al cazador espera a que acabe la pose del anterior para girarse. Comprueba ademas que el 3-3
+## desbloquea la fila del jefe (3-boss).
 ## Lo lanza tools/play_gallery_bot.gd (uso y argumentos alli).
 extends "res://tools/dnd_bot.gd"
 
@@ -45,6 +51,8 @@ const A_DOWN: StringName = &"move_down"
 const ENEMY_PULSE_WAIT_S: float = 4.0
 ## Holgura (s) sobre los segundos del camino en las esperas del cazador y del reflejo.
 const WAIT_SLACK_S: float = 3.0
+## Enemigos del Mundo 3 que el camino aturde con el pulso (el Reflejo falso desde el 3-3, paso 13).
+const ENEMY_KINDS: PackedStringArray = ["like_thief", "influencer_bot", "false_reflection"]
 
 var _gallery_level: String = "3-1"
 var _thefts: int = 0
@@ -189,6 +197,10 @@ func _check_completed() -> bool:
 		return _fail("el Ladron roba %d vez/veces (el camino lo aturde antes)" % _thefts)
 	if _gallery_level == "3-2" and not GameState.is_ability_obtained(GameState.ABILITY_COMPRESS):
 		return _fail("Pellizcar no queda obtenido tras el 3-2")
+	if _gallery_level == "3-3":
+		if not GameState.is_level_unlocked(&"3-boss"):
+			return _fail("el 3-3 no desbloquea la fila «Jefe: La Curadora»")
+		_note("fila del jefe: 3-boss desbloqueado %s (sin jugar hasta el paso 17)" % GameState.is_level_unlocked(&"3-boss"))
 	return true
 
 
@@ -347,7 +359,7 @@ func _pulse_step(s: Dictionary) -> bool:
 	var target: Dictionary = s.get("target", {})
 	var kind: String = String(target.get("type", ""))
 	var node: Node = _object(String(target.get("id", "")))
-	if kind in ["like_thief", "influencer_bot"]:
+	if kind in ENEMY_KINDS:
 		return await _enemy_pulse_step(s, node)
 	if target.has("via_hunter"):
 		return await _hunter_pulse_step(s, node)
@@ -380,6 +392,9 @@ func _pulse_step(s: Dictionary) -> bool:
 func _pulse_done(kind: String, node: Node, s: Dictionary) -> bool:
 	if node == null:
 		return true
+	# Receptor de pulso sin id (el haz del cazador del 3-3): el camino nombra su puente; hecho al empezar a extenderse.
+	if node is PulseBridge:
+		return (node as PulseBridge).get_state() != PulseBridge.State.RETRACTED
 	match kind:
 		"like_source":
 			return GameState.likes > _source_before or not (node as LikeSource).is_ready()
@@ -389,6 +404,8 @@ func _pulse_done(kind: String, node: Node, s: Dictionary) -> bool:
 			return bool(node.call(&"is_on"))
 		"like_thief", "influencer_bot":
 			return bool(node.call(&"is_stunned")) or bool(node.call(&"is_defeated"))
+		"false_reflection":
+			return (node as FalseReflection).is_stunned()
 	return super._pulse_done(kind, node, s)
 
 
@@ -426,7 +443,7 @@ func _enemy_pulse_step(s: Dictionary, node: Node) -> bool:
 	var facing: float = float(s.get("facing", 1))
 	# Ya en la celda del camino y con el enemigo delante: no se recoloca (volver atras gira a Isak de espaldas
 	# al Ladron que se acerca y le da tiempo a robar; 3-1, paso 49).
-	var body: Rect2 = node.call(&"get_body_rect")
+	var body: Rect2 = _body_rect(node)
 	var in_cell: bool = absf(_isak.global_position.x - at.x) <= TILE * 0.5 and absf(_isak.global_position.y - at.y) < ROW_TOL \
 		and signf(body.get_center().x - _isak.global_position.x) == signf(facing)
 	if not in_cell and not await _walk_to(float(s.get("x_px", at.x)), at.y):
@@ -438,7 +455,7 @@ func _enemy_pulse_step(s: Dictionary, node: Node) -> bool:
 		await _face(facing)
 		var reach: bool = await _wait_until(func() -> bool:
 			return _pulse_done(kind, node, s) or (_has_control() and _can_pulse_now()
-				and _in_pulse_range(node.call(&"get_body_rect"), 0.9, _isak.facing)), ENEMY_PULSE_WAIT_S)
+				and _in_pulse_range(_body_rect(node), 0.9, _isak.facing)), ENEMY_PULSE_WAIT_S)
 		if _pulse_done(kind, node, s):
 			break
 		if not reach:
@@ -453,6 +470,13 @@ func _enemy_pulse_step(s: Dictionary, node: Node) -> bool:
 	_note("pulso a %s %s: %s (%s; likes %d)" % [kind, node.name, String(node.call(&"get_state")) if ok else "SIN EFECTO",
 		_where(), GameState.likes])
 	return ok
+
+
+## Caja del enemigo para el alcance del pulso (el Reflejo falso la da con get_body_rect_now).
+func _body_rect(node: Node) -> Rect2:
+	if node is FalseReflection:
+		return (node as FalseReflection).get_body_rect_now()
+	return node.call(&"get_body_rect")
 
 
 ## Pulso reflejado por un espejo cazador hacia un receptor (`target.via_hunter`):
@@ -472,16 +496,27 @@ func _hunter_pulse_step(s: Dictionary, node: Node) -> bool:
 	for attempt: int in 3:
 		if _pulse_done(kind, node, s):
 			break
-		if (x - _isak.global_position.x) * facing > 4.0 and absf(_isak.global_position.y - at.y) < ROW_TOL:
+		# Ya en la celda con el cazador al alcance mirando hacia el: no se recoloca (examen del 3-3: Isak acaba de
+		# aturdir de espaldas al Reflejo falso y volver a la x del camino lo dejaria al borde del alcance).
+		var placed: bool = mirror != null and absf(_isak.global_position.x - at.x) <= TILE * 0.5 \
+			and absf(_isak.global_position.y - at.y) < ROW_TOL and _in_pulse_range(mirror.get_hit_rect(), 0.9, facing)
+		if placed:
+			_set_axis(0.0)
+		elif (x - _isak.global_position.x) * facing > 4.0 and absf(_isak.global_position.y - at.y) < ROW_TOL:
 			if not await _walk_through(x, at.y, facing):
 				return false
 		elif not await _walk_to(x, at.y):
 			return false
+		# Tras otro pulso (el del Reflejo falso, de espaldas) Isak sigue en la pose y no se gira: se espera a que
+		# pueda pulsar antes de darse la vuelta hacia el cazador.
+		await _wait_can_pulse()
 		if signf(_isak.facing) != signf(facing):
 			await _face(facing)
 		await _wait_until(func() -> bool:
 			return _has_control() and _can_pulse_now() and (mirror == null or mirror.get_facing_name() == want),
 			float(via.get("wait_s", 0.0)) + 1.0)
+		if signf(_isak.facing) != signf(facing):
+			await _face(facing)
 		var seen: String = mirror.get_facing_name() if mirror != null else "?"
 		_tap(A_PULSE)
 		_set_axis(0.0)
@@ -489,8 +524,9 @@ func _hunter_pulse_step(s: Dictionary, node: Node) -> bool:
 		if _pulse_done(kind, node, s):
 			_note("pulso reflejado por %s (mira al %s) a %s (%s)" % [via.get("id", "?"), seen, target.get("id", "?"), _where()])
 			return true
-		_note("paso %d: el pulso reflejado por %s (mira al %s, camino %s) no activa %s (%s)" % [_step_index,
-			via.get("id", "?"), seen, want, target.get("id", "?"), _where()])
+		_note("paso %d: el pulso reflejado por %s (mira al %s, camino %s) no activa %s (%s; congelado %s, haz hasta %s, Isak mira %+d, puede pulsar %s)" % [_step_index,
+			via.get("id", "?"), seen, want, target.get("id", "?"), _where(), mirror.is_frozen() if mirror != null else false,
+			mirror.get_beam_end() if mirror != null else Vector2.ZERO, int(_isak.facing), _can_pulse_now()])
 		if mirror != null and attempt < 2:
 			await _settle()
 			await _walk_to(x - facing * (mirror.get_track_radius_px() + TILE), at.y)
@@ -498,21 +534,26 @@ func _hunter_pulse_step(s: Dictionary, node: Node) -> bool:
 	return _pulse_done(kind, node, s)
 
 
-## Paso `wait_hunter`: quieto hasta que el espejo cazador mira hacia `target.facing`.
+## Paso `wait_hunter`: quieto hasta que el espejo cazador mira hacia `target.facing`, como mucho los segundos
+## del camino: el plan puede partir la espera con un pulso al Reflejo falso que se acerca (examen del 3-3,
+## paso 13), y el pulso al cazador ya espera por su cuenta a la orientacion buena.
 func _wait_hunter(s: Dictionary) -> bool:
 	var at: Vector2 = _px(s["at"])
-	if not await _walk_to(at.x, at.y):
-		return false
+	if absf(_isak.global_position.x - at.x) > TILE * 0.5 or absf(_isak.global_position.y - at.y) >= ROW_TOL:
+		if not await _walk_to(at.x, at.y):
+			return false
+	_set_axis(0.0)
 	var target: Dictionary = s.get("target", {})
 	var mirror := _object(String(target.get("id", ""))) as HunterMirror
 	var want: String = String(target.get("facing", ""))
-	var ok: bool = await _wait_until(func() -> bool: return mirror == null or mirror.get_facing_name() == want,
-		float(s.get("seconds", 0.0)) + WAIT_SLACK_S)
+	var turned: bool = await _wait_until(func() -> bool: return mirror == null or mirror.get_facing_name() == want,
+		float(s.get("seconds", 0.0)))
 	_hunter_waits += 1
-	if _verbose or not ok:
+	if _verbose:
 		_note("espera del cazador %s: mira al %s (camino %s, %.2f s)%s" % [target.get("id", "?"),
-			mirror.get_facing_name() if mirror != null else "?", want, float(s.get("seconds", 0.0)), "" if ok else " SIN GIRAR"])
-	return ok
+			mirror.get_facing_name() if mirror != null else "?", want, float(s.get("seconds", 0.0)),
+			"" if turned else " (aun girando)"])
+	return true
 
 
 ## Paso `wait_reflection`: quieto hasta que la puerta de marco esta abierta.

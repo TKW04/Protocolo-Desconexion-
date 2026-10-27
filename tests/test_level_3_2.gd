@@ -282,7 +282,7 @@ func test_terminal_completes_the_level_and_unlocks_the_3_3() -> void:
 	assert_eq(GameState.likes, 0, "Los likes no se guardan")
 	var panel: FolderPanel = _main.get_hub().get_folder(&"m3").get_folder_panel()
 	assert_eq(panel.get_level_state(&"3-2"), HubWorlds.STATE_COMPLETED)
-	assert_eq(panel.get_level_state(&"3-3"), HubWorlds.STATE_LOCKED, "El 3-3 aun «Próximamente»")
+	assert_eq(panel.get_level_state(&"3-3"), HubWorlds.STATE_AVAILABLE, "El 3-3 disponible (paso 13)")
 
 
 func test_world_3_folder_lists_3_2_after_the_3_1_and_loads_it() -> void:
@@ -298,7 +298,7 @@ func test_world_3_folder_lists_3_2_after_the_3_1_and_loads_it() -> void:
 	var panel: FolderPanel = folder.get_folder_panel()
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m3"))
 	assert_eq(panel.level_text(levels[1]), "3-2 Sin filtro - Nueva foto")
-	assert_true(HubWorlds.is_coming_soon(levels[2]), "3-3 «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(levels[2]), "3-3 jugable (paso 13)")
 	assert_true(HubWorlds.is_coming_soon(levels[3]), "Jefe «Próximamente»")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"3-2"))
