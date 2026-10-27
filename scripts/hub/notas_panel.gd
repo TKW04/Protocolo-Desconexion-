@@ -7,7 +7,8 @@
 ##   icono de su vuelta), «Guardado en: aaaa-mm-dd hh:mm» (o «Sin guardar» sin
 ##   copia) y «Sin guardar» (ambar) solo con copia y cambios pendientes. Sin
 ##   «Último nivel» ni «Todo guardado». Pie de teclas hub_notas: Aceptar y
-##   Volver, sin «Elegir».
+##   Volver, sin «Elegir». Con el acertijo del hub montado, ademas
+##   «Actualización: n/3 · Falta: …» (update_progress_text; paso 6 del hub 4-6).
 ## - Opciones Guardar, Álbum, Apodo y Volver. Guardar sin cambios pendientes
 ##   dice «Todo esta guardado» (no escribe); con cambios pide confirmacion
 ##   (Si / No) y al confirmar llama a GameState.save_game(): mensaje y destello
@@ -83,6 +84,10 @@ func refresh() -> void:
 	var status: String = status_text()
 	if not status.is_empty():
 		lines.append({"text": status, "color": colors.get("unsaved", "ambar")})
+	var update: String = update_progress_text()
+	if not update.is_empty():
+		lines.append({"text": update, "color": String(HubData.section("hub_update_hints").get("notas_progress", {}).get(
+			"color", "acento_cian"))})
 	set_lines(lines)
 	if _mode == Mode.CONFIRM:
 		set_title(String(texts.get("confirm_title", "")))
@@ -129,6 +134,19 @@ func status_text() -> String:
 	if GameState.has_unsaved_changes() and not GameState.saved_at.is_empty():
 		return String(texts.get("status_unsaved", ""))
 	return ""
+
+
+## Pista 2 del acertijo del hub (2026-10-27, paso 6 de
+## docs/propuesta-hub-mundos-4-6.md §2.4): mientras el acertijo esta montado,
+## «Actualización: n/3 · Falta: …» (HubUpdatePuzzle.get_progress_line); si no, "".
+## No es una linea de voz y sale siempre (tambien con las ayudas ocultas).
+func update_progress_text() -> String:
+	if not is_inside_tree():
+		return ""
+	var puzzle := get_tree().get_first_node_in_group(HubUpdatePuzzle.GROUP) as HubUpdatePuzzle
+	if puzzle == null or puzzle.is_queued_for_deletion():
+		return ""
+	return puzzle.get_progress_line()
 
 
 ## «Guardado en: 2026-10-15 18:04» o, sin copia, «Sin guardar».

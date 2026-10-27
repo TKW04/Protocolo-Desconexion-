@@ -9,11 +9,12 @@
 		"v3": "#a6ff2e"
 	},
 	"texts": {
-		"_notes": "PROVISIONALES (para depurar; los textos finales y las pistas son del paso 6). {n} y {total}: verificaciones hechas y totales. trash: el mismo texto que las carpetas (folders.texts.trash_blocked_text).",
+		"_notes": "PROPUESTOS (paso 6, 2026-10-27; docs/propuesta-hub-mundos-4-6.md §1: pantalla del instalador «Actualización del sistema · Verificaciones 0/3 · No apagues el dispositivo»). {n} y {total}: verificaciones hechas y totales. screen_note: ultima linea del panel (no con la Papelera llena). trash: el mismo texto que las carpetas (folders.texts.trash_blocked_text). Las pistas y las lineas de Eco, Calc y Notas estan en hub_update_hints de data/hub.json.",
 		"title": "Actualización del sistema",
 		"progress": "Verificaciones {n}/{total}",
 		"missing": "Falta: {names}",
-		"ready": "Listo para instalar (provisional)",
+		"ready": "Listo para instalar",
+		"screen_note": "No apagues el dispositivo",
 		"trash": "Recupera tus archivos de la papelera",
 		"names_separator": ", "
 	},

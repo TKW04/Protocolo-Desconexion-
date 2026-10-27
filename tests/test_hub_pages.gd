@@ -26,6 +26,9 @@ func before_each() -> void:
 	_saved_debug = GameState.is_ability_unlocked(GameState.ABILITY_DEBUG)
 	GameState.use_save_path(PATH, true)
 	EcoProgress.meet_notas()
+	# La linea de Eco al entrar en la pagina 2 (paso 6) pausa el juego: aqui se
+	# da por vista (se prueba en tests/test_hub_update_texts.gd).
+	GameState.mark_notice_seen(&"hub_update_intro")
 	DebugMode.input_enabled = false
 	DebugMode.reset()
 

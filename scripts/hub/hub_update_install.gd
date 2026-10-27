@@ -12,7 +12,8 @@
 ##    guardar»), quita el acertijo, construye las carpetas M4 y M5 en la pagina 2
 ##    y abre la pagina 3 (M6).
 ## 3. NOTAS: linea importante de Notas (notas_line, PROPUESTA) en el cuadro del hub.
-## 4. DONE: se quita la pausa y se suelta el control (finished).
+## 4. DONE: se quita la pausa y se suelta el control (finished); Notas recuerda
+##    guardar (show_saved_reminder, no importante; paso 6).
 ## Arte PROVISIONAL por codigo (paso 7). advance(delta) permite avanzarla en pruebas.
 class_name HubUpdateInstall
 extends CanvasLayer
@@ -155,7 +156,26 @@ func _finish() -> void:
 		return
 	_set_step(Step.DONE)
 	_release_pause()
+	show_saved_reminder()
 	finished.emit()
+
+
+## Recordatorio de Notas al soltar el control (2026-10-27, paso 6;
+## hub_update_hints.saved_reminder de data/hub.json, PROPUESTA de §2.6): «¡Apuntado!
+## Guárdalo para que no se pierda.», NO importante, una vez por partida guardada
+## (seen_notices). Verdadero si salio.
+func show_saved_reminder() -> bool:
+	var cfg: Variant = HubData.section("hub_update_hints").get("saved_reminder", {})
+	if not cfg is Dictionary or text_box == null:
+		return false
+	var notice := StringName(String((cfg as Dictionary).get("notice", "hub_update_saved_reminder")))
+	var text: String = String((cfg as Dictionary).get("text", ""))
+	if text.is_empty() or GameState.is_notice_seen(notice):
+		return false
+	GameState.mark_notice_seen(notice)
+	text_box.show_line(text, float((cfg as Dictionary).get("duration_s", -1.0)), false,
+		StringName(String((cfg as Dictionary).get("speaker", "notas"))))
+	return true
 
 
 func _hold_pause() -> void:

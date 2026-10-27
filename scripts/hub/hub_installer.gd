@@ -1,7 +1,8 @@
 ## Instalador del acertijo «Actualizacion del sistema» (2026-10-27, paso 3 de
 ## docs/propuesta-hub-mundos-4-6.md §2.2; lo monta HubUpdatePuzzle). Estacion
-## HubStation de 2 x 3 tiles con una placa encima «Verificaciones n/3» (texto
-## PROVISIONAL de data/hub_update.json, texts).
+## HubStation de 2 x 3 tiles con una placa encima «Verificaciones n/3» (texts
+## de data/hub_update.json; PROPUESTOS desde el paso 6: panel «Actualización del
+## sistema» · «Verificaciones n/3» · «No apagues el dispositivo», §1).
 ## - Pulso con menos de 3/3: se abre el panel con el progreso y lo que falta.
 ## - Pulso con 3/3: se abre el panel «listo» y se PIDE la instalacion una vez
 ##   (install_requested + is_install_requested). NO instala: la secuencia de
@@ -138,4 +139,6 @@ func _refresh_panel() -> void:
 				names.append(String(check_names.get(id, String(id))))
 			lines.append({"text": String(texts.get("missing", "Falta: {names}")).replace("{names}",
 				String(texts.get("names_separator", ", ")).join(names)), "color": "texto_tenue"})
+		if not String(texts.get("screen_note", "")).is_empty():
+			lines.append({"text": String(texts.get("screen_note", "")), "color": "texto_tenue"})
 	panel.set_lines(lines)

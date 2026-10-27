@@ -106,6 +106,11 @@
 ## la pagina; las ocultas (requires_upgrade sin instalar) no se construyen.
 ## Pieza 4: arte PROVISIONAL por codigo (room.pieces con `provisional`) hasta el
 ## paso 7.
+## TEXTOS Y PISTAS (2026-10-27, paso 6 de docs/propuesta-hub-mundos-4-6.md):
+## comentario de Calc al volver de 3-boss (calc.remarks con
+## requires_pending_upgrade) y, al terminar de deslizarse a la pagina del
+## acertijo, la linea de Eco (HubUpdatePuzzle.start_intro); las pistas 3 y 4 y
+## la linea de progreso de Notas son de HubUpdatePuzzle.
 class_name HubRoom
 extends Node2D
 
@@ -241,6 +246,7 @@ func _ready() -> void:
 	_build_update_puzzle()
 	_build_installer_decor()
 	EventBus.ally_met.connect(_on_ally_met)
+	page_changed.connect(_on_page_changed)
 	if not rollback_report.is_empty():
 		_game_over_intro = GameOverIntro.new()
 		_game_over_intro.name = "GameOverIntro"
@@ -721,6 +727,11 @@ func pending_calc_remark() -> Dictionary:
 			continue
 		if String(remark.get("text", "")).is_empty():
 			continue
+		# requires_pending_upgrade (paso 6 del hub 4-6): solo con ese upgrade del
+		# hub pendiente (el acertijo a la vista; no en Kernel/Raiz ya instalado).
+		var upgrade: String = String(remark.get("requires_pending_upgrade", ""))
+		if not upgrade.is_empty() and not HubWorlds.is_hub_upgrade_pending(StringName(upgrade)):
+			continue
 		return remark
 	return {}
 
@@ -733,6 +744,15 @@ func start_calc_remark() -> bool:
 	GameState.mark_notice_seen(StringName(CALC_REMARK_NOTICE % String(remark.get("id", ""))))
 	_text_box.show_line(String(remark.get("text", "")), float(remark.get("duration_s", -1.0)), false, &"calc")
 	return true
+
+
+## Al llegar a la pagina del acertijo por primera vez, la linea de Eco
+## (HubUpdatePuzzle.start_intro; una vez por partida guardada).
+func _on_page_changed(page: int) -> void:
+	if _update_puzzle == null or not is_instance_valid(_update_puzzle):
+		return
+	if page == int(HubUpdatePuzzle.load_data().get("page", 2)):
+		_update_puzzle.start_intro()
 
 
 ## Un asistente recien conocido enciende sus estaciones (requires_ally).
@@ -1090,6 +1110,7 @@ func _build_update_puzzle() -> void:
 	_update_puzzle = HubUpdatePuzzle.new()
 	_update_puzzle.name = "UpdatePuzzle"
 	_update_puzzle.position = origin
+	_update_puzzle.text_box = _text_box
 	add_child(_update_puzzle)
 	move_child(_update_puzzle, 2)
 	_update_puzzle.install_requested.connect(_on_update_install_requested)

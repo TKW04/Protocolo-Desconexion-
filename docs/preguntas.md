@@ -1121,3 +1121,20 @@ El Mundo 3 «La Vitrina» se hizo con las decisiones delegadas al orquestador (`
 - Audio provisional: los 21 IDs del Mundo 3 (`CuratorMusic`, `GalleryMusic`, ambiente de la galería…) suenan con provisionales hasta los sonidos del amigo del usuario; `sfx_charger` y `sfx_dash_through` no existen en `data/audio.json` (ni provisional).
 - Iconos de nivel del Mundo 3 en la carpeta del hub: genéricos.
 - **La suite completa no se ha corrido tras el paso 20** (solo las pruebas del Mundo 3); pendiente antes de dar el mundo por cerrado.
+
+## Hub Mundos 4-6, paso 6: textos y pistas del acertijo (2026-10-27)
+
+Paso 6 de `docs/propuesta-hub-mundos-4-6.md` (sección `hub_update_hints` de `data/hub.json`, `texts` de `data/hub_update.json`). **Todos los textos son PROPUESTOS**: revisar al jugar. Cada línea sale una vez por partida guardada (`seen_notices`); con «Ayudas de Eco: Ocultar» no salen las pistas 3 y 4 (la línea de Eco al entrar sí: es historia).
+
+**Textos propuestos**
+- Calc, al volver de La Curadora con el acertijo pendiente (no importante): «Actualización detectada. Tamaño: 3 apps. Precio: 0. Sospechoso.» (`calc.remarks`, `update_3_boss`).
+- Eco, al entrar por primera vez en la página 2 (importante, pausa): «¿Una actualización? Instálala, {apodo}. Las actualizaciones siempre mejoran algo.».
+- Eco, pista 3 (a los 90 s en la página 2 sin verificación nueva; no importante): «Cada color es un sitio por el que ya pasaste. Usa lo que aprendiste allí.».
+- Notas, pista 2 (resumen de Notas mientras el acertijo está montado): «Actualización: n/3 · Falta: Integridad, Búfer, Recorte» (sin pictogramas: llegan con el arte).
+- Pantalla del instalador: «Actualización del sistema» · «Verificaciones n/3» · «Falta: …» / «Listo para instalar» · «No apagues el dispositivo».
+- Notas, al soltar el control tras instalar (no importante): «¡Apuntado! Guárdalo para que no se pierda.».
+
+**Decisiones del orquestador a revisar**
+- Pista 4 (la tecla tras 2 fallos en la visita): V1 enseña la tecla del **pulso** (fallo = se acaba la corriente de lector1), V2 la de **Deslizar** (fallo = baja la plataforma), V3 la del **láser** mientras el marco sigue cerrado y la de **Pellizcar** después (fallo = chocar sin comprimir contra el marco del nicho). Los fallos no se guardan (cada visita, desde 0).
+- «Actualización: n/3» va en el resumen de Notas (§2.4); el instalador conserva «Verificaciones n/3» (§1).
+- La cuenta de la pista 3 solo avanza con Isak en la página 2 y se reinicia con cada verificación nueva; con las ayudas ocultas no sale ni se da por vista.

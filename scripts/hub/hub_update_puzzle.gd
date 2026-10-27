@@ -25,10 +25,28 @@
 ## visita y todo vuelve a 0/3 (§2.6). Sin dano ni vidas (el hub no tiene).
 ## Terreno y arte PROVISIONALES por codigo (paso 7). El origen del nodo es la
 ## esquina superior izquierda de la pagina (origin = camera_rect de la pagina).
+## TEXTOS Y PISTAS (2026-10-27, paso 6 de docs/propuesta-hub-mundos-4-6.md §1 y
+## §2.4; seccion hub_update_hints de data/hub.json; textos PROPUESTOS):
+## - Linea de Eco al cruzar a la pagina 2 por primera vez (start_intro, la llama
+##   HubRoom en page_changed): importante (pausa), historia (sale con las ayudas
+##   ocultas), una vez por partida guardada (seen_notices hub_update_intro).
+## - Pista 3, Eco a los after_s s (90) de Isak en la pagina 2 sin ninguna
+##   verificacion nueva: no importante, una vez por partida guardada
+##   (hub_update_hint_eco). No sale con «Ayudas de Eco: Ocultar» ni inerte.
+## - Pista 4, la tecla: tras after_fails (2) fallos en una verificacion sin
+##   hacer (V1: se acaba la corriente de lector1, power_lost; V2: baja la
+##   plataforma, platform_lowered; V3: Isak sin comprimir choca contra el marco
+##   del nicho) sale sobre ella la tecla de la accion que falta (Input Map,
+##   estilo de la tecla del pulso). Los fallos son de la visita (no se guardan).
+##   No sale con las ayudas ocultas ni inerte; se quita al hacer la verificacion.
+## - Pista 2 («Actualizacion: n/3» en Notas): get_progress_line, la lee NotasPanel
+##   por el grupo GROUP.
 class_name HubUpdatePuzzle
 extends Node2D
 
 const DATA_PATH: String = "res://data/hub_update.json"
+## Grupo del acertijo montado (lo busca NotasPanel para su linea de progreso).
+const GROUP: StringName = &"hub_update_puzzle"
 
 ## La verificacion `check_id` se ha encendido (`done` = cuantas van).
 signal check_completed(check_id: StringName, done: int)
@@ -54,6 +72,18 @@ var _frame: SmallFrame
 var _barrier: StaticBody2D
 var _glitch: HubEdgeGlitch
 var _frame_lit: bool = false
+## Cuadro de texto del hub (lineas de Eco; lo da HubRoom).
+var text_box: EcoTextBox
+var _hints: Dictionary = HubData.section("hub_update_hints")
+## Segundos con Isak en la pagina sin verificacion nueva (pista 3).
+var _idle_s: float = 0.0
+## Fallos por verificacion en esta visita (pista 4).
+var _fails: Dictionary[StringName, int] = {}
+var _keys: Dictionary[StringName, Node2D] = {}
+var _key_base_y: Dictionary[StringName, float] = {}
+var _key_shown_action: Dictionary[StringName, StringName] = {}
+var _bumping: bool = false
+var _time: float = 0.0
 
 
 static func load_data() -> Dictionary:
@@ -69,6 +99,10 @@ func _ready() -> void:
 	_build_v3()
 	_build_checks()
 	_build_installer()
+	_build_keys()
+	add_to_group(GROUP)
+	_reader1.power_lost.connect(func() -> void: register_failure(&"v1"))
+	_plate.platform_lowered.connect(func() -> void: register_failure(&"v2"))
 	EventBus.trash_changed.connect(func(_pending: bool) -> void: refresh_inert())
 	EventBus.trash_recovered.connect(func(_trash: Dictionary) -> void: refresh_inert())
 	refresh_inert(true)
@@ -169,7 +203,101 @@ func absolute_col(col: int) -> int:
 	return col + int(roundf(position.x / HubData.tile_size()))
 
 
+## Linea de progreso para el resumen de Notas (pista 2, siempre):
+## «Actualizacion: n/3 · Falta: …» (notas_progress de hub_update_hints).
+func get_progress_line() -> String:
+	var cfg: Dictionary = _hint_cfg("notas_progress")
+	var text: String = String(cfg.get("text", "Actualización: {n}/{total}")) \
+		.replace("{n}", str(get_done_count())).replace("{total}", str(get_check_ids().size()))
+	var names: PackedStringArray = []
+	for id: StringName in get_check_ids():
+		if not _done.has(id):
+			names.append(_check_name(id))
+	if not names.is_empty():
+		text += String(cfg.get("missing", " · Falta: {names}")).replace("{names}",
+			String(_cfg("texts").get("names_separator", ", ")).join(names))
+	return text
+
+
+## Fallos de la verificacion `id` en esta visita.
+func get_failure_count(id: StringName) -> int:
+	return int(_fails.get(id, 0))
+
+
+## Segundos acumulados de la pista 3 (Isak en la pagina sin verificacion nueva).
+func get_idle_seconds() -> float:
+	return _idle_s
+
+
+## La tecla de la pista 4 esta a la vista sobre la verificacion `id`.
+func is_key_hint_visible(id: StringName) -> bool:
+	var key: Node2D = _keys.get(id, null)
+	return key != null and key.visible
+
+
+## Texto de la tecla de la pista 4 de `id` (aunque este oculta).
+func get_key_hint_text(id: StringName) -> String:
+	var key: Node2D = _keys.get(id, null)
+	var label := key.get_node_or_null(^"Plate/Text") as Label if key != null else null
+	return label.text if label != null else ""
+
+
+## Accion cuya tecla ensena la pista 4 de `id` (V3: el laser mientras el marco
+## siga cerrado, Pellizcar despues).
+func get_key_hint_action(id: StringName) -> StringName:
+	var actions: Dictionary = _hint_cfg("key_hint").get("actions", {})
+	var key: String = String(id)
+	if id == &"v3" and not _frame_lit and actions.has("v3_blocked"):
+		key = "v3_blocked"
+	return StringName(String(actions.get(key, "pulse")))
+
+
+## Isak esta dentro de la pagina del acertijo.
+func is_isak_on_page() -> bool:
+	if isak == null or not is_instance_valid(isak):
+		return false
+	var x: float = isak.global_position.x - global_position.x
+	return x >= 0.0 and x < float(HubData.section("room").get("size_tiles", [20, 11])[0]) * HubData.tile_size()
+
+
 # --- Acciones ---
+
+## Linea de Eco al entrar por primera vez en la pagina 2 (importante: pausa).
+## Una vez por partida guardada; sale aunque las ayudas esten ocultas (historia).
+## Verdadero si salio.
+func start_intro() -> bool:
+	var cfg: Dictionary = _hint_cfg("intro")
+	var notice := StringName(String(cfg.get("notice", "hub_update_intro")))
+	var lines: Array = cfg.get("lines", [])
+	if text_box == null or lines.is_empty() or GameState.is_notice_seen(notice):
+		return false
+	GameState.mark_notice_seen(notice)
+	for line: Variant in lines:
+		text_box.show_line(String(line), float(cfg.get("duration_s", -1.0)), true,
+			StringName(String(cfg.get("speaker", ""))))
+	return true
+
+
+## Cuenta un fallo de la verificacion `id` (pista 4). Sin efecto si ya esta
+## hecha o el acertijo esta inerte. Devuelve los fallos que lleva.
+func register_failure(id: StringName) -> int:
+	var check: UpdateCheck = get_check(id)
+	if check == null or check.is_completed() or _inert:
+		return get_failure_count(id)
+	_fails[id] = get_failure_count(id) + 1
+	_refresh_keys()
+	return _fails[id]
+
+
+## Avanza las pistas `dt` s (lo llama _physics_process; util en pruebas).
+func advance_hints(dt: float) -> void:
+	_time += dt
+	if is_isak_on_page() and not is_complete():
+		_idle_s += dt
+		_try_eco_hint()
+	_check_frame_bump()
+	_refresh_keys()
+
 
 ## Recalcula «inerte» (Papelera llena) y lo aplica a todas las piezas y a los
 ## gestos del hub.
@@ -193,6 +321,10 @@ func refresh_inert(force: bool = false) -> void:
 func set_isak(value: Isak) -> void:
 	isak = value
 	refresh_inert()
+
+
+func _physics_process(delta: float) -> void:
+	advance_hints(delta)
 
 
 # --- Montaje ---
@@ -375,6 +507,99 @@ func _build_installer() -> void:
 	_installer.install_requested.connect(func(id: StringName) -> void: install_requested.emit(id))
 
 
+## Placas de la tecla de la pista 4 (una por verificacion, ocultas), con el
+## estilo de la tecla del pulso de las estaciones (seccion station).
+func _build_keys() -> void:
+	var station: Dictionary = HubData.section("station")
+	var cfg: Dictionary = _hint_cfg("key_hint")
+	var font: Font = load(String(station.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font
+	for id: StringName in _checks:
+		var check: UpdateCheck = _checks[id]
+		var holder := Node2D.new()
+		holder.name = "KeyHint_%s" % id
+		holder.position = check.position
+		holder.visible = false
+		holder.z_index = 5
+		add_child(holder)
+		var plate: Node2D = PulsePrompt.make_plate(holder, "Plate", PulsePrompt.key_text(get_key_hint_action(id), "?"),
+			font, int(station.get("font_size", 12)), int(station.get("font_scale", 2)),
+			"#" + HubData.color(String(station.get("key_plate_color", "fondo_profundo"))).to_html(false),
+			"#" + HubData.color(String(station.get("key_border_color", "acento_cian"))).to_html(false),
+			float(station.get("key_padding_px", 3)), check.size.x, -float(cfg.get("gap_px", 24)))
+		_keys[id] = holder
+		_key_base_y[id] = plate.position.y
+
+
+func _hint_cfg(key: String) -> Dictionary:
+	var value: Variant = _hints.get(key, {})
+	return value if value is Dictionary else {}
+
+
+func _check_name(id: StringName) -> String:
+	for entry: Variant in _data.get("checks", []):
+		if StringName(String((entry as Dictionary).get("id", ""))) == id:
+			return String((entry as Dictionary).get("name", String(id)))
+	return String(id)
+
+
+## Pista 3: Eco a los after_s s sin verificacion nueva (no importante).
+func _try_eco_hint() -> void:
+	var cfg: Dictionary = _hint_cfg("eco_hint")
+	if _idle_s < float(cfg.get("after_s", 90.0)) or _inert or text_box == null:
+		return
+	if not GameSettings.is_eco_help_shown():
+		return
+	var notice := StringName(String(cfg.get("notice", "hub_update_hint_eco")))
+	var text: String = String(cfg.get("text", ""))
+	if text.is_empty() or GameState.is_notice_seen(notice):
+		return
+	GameState.mark_notice_seen(notice)
+	text_box.show_line(text, float(cfg.get("duration_s", -1.0)), false, StringName(String(cfg.get("speaker", ""))))
+
+
+## V3: Isak sin comprimir, en el suelo, contra el marco del nicho = un fallo
+## (al empezar el contacto; se rearma al alejarse bump_reset_px).
+func _check_frame_bump() -> void:
+	if isak == null or not is_instance_valid(isak) or _inert:
+		_bumping = false
+		return
+	var t: float = HubData.tile_size()
+	var frame_left: float = cell_position(_cfg("v3").get("frame_cell", [17, 8])).x
+	var frame_bottom: float = cell_position(_cfg("v3").get("frame_cell", [17, 8])).y + t
+	var right: float = isak.global_position.x + isak.get_hitbox_size().x * 0.5
+	var gap: float = frame_left - right
+	var touching: bool = not isak.is_compressed() and isak.is_on_floor() and gap <= 2.0 and gap > -t * 0.5 \
+		and absf(isak.global_position.y - frame_bottom) < 4.0 and isak.facing > 0.0
+	if touching and not _bumping:
+		_bumping = true
+		register_failure(&"v3")
+	elif not touching and gap > float(_hint_cfg("key_hint").get("bump_reset_px", 24)):
+		_bumping = false
+
+
+func _refresh_keys() -> void:
+	var shown: bool = GameSettings.is_eco_help_shown() and not _inert
+	var after: int = int(_hint_cfg("key_hint").get("after_fails", 2))
+	var station: Dictionary = HubData.section("station")
+	for id: StringName in _keys:
+		var holder: Node2D = _keys[id]
+		var check: UpdateCheck = get_check(id)
+		var was_visible: bool = holder.visible
+		holder.visible = shown and check != null and not check.is_completed() and get_failure_count(id) >= after
+		var plate := holder.get_node_or_null(^"Plate") as Node2D
+		if plate == null or not holder.visible:
+			continue
+		# La tecla se lee del Input Map al aparecer y si cambia la accion (V3).
+		var action: StringName = get_key_hint_action(id)
+		if not was_visible or _key_shown_action.get(id, &"") != action:
+			_key_shown_action[id] = action
+			PulsePrompt.set_plate_text(plate, PulsePrompt.key_text(action, "?"),
+				load(String(station.get("font", "res://assets/sprites/ui/text_font.fnt"))) as Font,
+				int(station.get("font_size", 12)), float(station.get("key_padding_px", 3)))
+		plate.position.y = PulsePrompt.bob_y(_key_base_y[id], _time, float(station.get("key_bob_s", 0.35)),
+				float(station.get("key_bob_px", 2)))
+
+
 # --- Interno ---
 
 func _complete(id: StringName) -> void:
@@ -387,6 +612,8 @@ func _on_check_completed(id: StringName) -> void:
 	if _done.has(id):
 		return
 	_done.append(id)
+	_idle_s = 0.0
+	_refresh_keys()
 	if _installer != null:
 		_installer.set_done(_done)
 	check_completed.emit(id, _done.size())
