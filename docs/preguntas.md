@@ -1077,3 +1077,46 @@ Decisión del usuario, aprobada el 2026-10-25. **Sustituye** a la «Decisión 3�
 - **Niveles y validador:** sin cambios (1-1, 1-2, 1-3, 2-2 y 2-3 conservan su power bank; el validador no modelaba la carga). Las notas de algunos niveles aún dicen «power bank vacío» (texto histórico, sin efecto).
 - **Pruebas:** `tests/test_power_bank_collectible.gd` sustituye a `test_power_bank_cap.gd`; actualizadas las de guardado, papelera, Calc, Notas, carpetas, cargadores, regeneración y Pulso de retorno. La captura 11 «Sin espacio» de `tools/render_upgrades_m2.gd` se retira.
 - **Dudas abiertas:** (1) ¿Se quiere un arte propio para el contador del HUD o basta la pila dibujada con «0/1»? (2) ¿El contador de la carpeta debe salir también en los subniveles no completados?
+
+## Mundo 3: lo que el usuario debe revisar al probar (2026-10-27)
+
+El Mundo 3 «La Vitrina» se hizo con las decisiones delegadas al orquestador (`propuesta-mundo-3.md` §9; avance y desvíos en su §8.1, resumen en `mundo-3-vitrina.md` §8.8). Lista corta para la primera prueba (paso 22); ninguna bloquea, todas se ajustan en datos.
+
+**Cómo probar**
+- Desde el hub: carpeta M3 (se abre al vencer a Autoplay) → 3-1 → 3-2 («Nueva foto», tras el 3-1) → 3-3 (tras el 3-2) → fila «Jefe: La Curadora» (tras el 3-3). Al vencerla: «Fragmento de imagen» sin guardar, pieza verde ácido del hub y Mundo 4 desbloqueado (sin carpeta; se ve en el álbum).
+- Directo (builds de depuración): `$GODOT --path . -- --start-level=3-1` (igual con `3-2`, `3-3` y `3-boss`).
+- La Curadora en los tres accesos (Caché / Kernel / Raíz): jugarla en cada vuelta o mirarla con el bot, `$GODOT --headless --fixed-fps 60 --path . -s tools/play_boss_bot.gd -- --boss curator --profile ideal|clumsy --lap 1|2|3`.
+- Bot de los niveles: `$GODOT --headless --fixed-fps 60 --path . -s tools/play_gallery_bot.gd -- --level 3-1|3-2|3-3` (sin `--headless` se ve jugar).
+- Capturas ya hechas en `docs/capturas/mundo3-2026-10-27/` y `assets/levels_preview/3-x/`; mapas (con los secretos) en `assets/levels_preview/3-x_mapa.png`.
+
+**Valores a ajustar jugando** (tabla completa en `mundo-3-vitrina.md` §8.8)
+- Ritmo de cada nivel y si el 3-1 se siente un paso por encima del 2-1. Duraciones del bot (sin golpes, muertes ni robos): **3-1 68,4 s, 3-2 85,2 s, 3-3 128,7 s**.
+- Pellizcar (I / RB): caja 32 × 40, 160 px/s, salto de ~90 px, vuelta pedida con icono «sin espacio»; ¿es cómoda la tecla?
+- Likes: −3 por golpe (recuperables 2 s), robo de 5 del Ladrón, umbrales ♥5-♥25, publicación +5 con 8 s de enfriamiento; ¿se lee bien el contador del HUD?
+- Ceguera del flash del Influencer: 1,5 s al 70 % (40 % con «Reducir efectos»).
+- Filtros: ¿se leen como zona antes de entrar? ¿Es justo el filtro móvil (cada 4 s, aviso de 0,75 s) sin el Debug?
+- Espejos: si las plataformas del reflejo se entienden mirando el espejo, si el giro del espejo cazador se lee y si el pulso reflejado se entiende; el Reflejo falso y las placas «Posa aquí».
+- La Curadora (objetivo 100-150 s en Caché): bot ideal **106,9 / 149,2 / 139,1 s** y torpe **151,4 / 192,7 / 181,1 s** (Caché / Kernel / Raíz). La fase 2 (apuntar con el cazador) y la fase 3 (distinguirse del reflejo con el Debug). Los huecos entre ataques (`attack_gap_s` 0,5 → 2,0 en las fases 1-2) y el arranque de las fases 2-3 (`first_delay_s` 1,5 → 3,0) se alargaron para que el ideal llegara a la duración pedida (`data/bosses/curator.json`; razón en `propuesta-mundo-3.md` §8.1): ¿se hace lenta la pelea?
+
+**Puntos a vigilar**
+- El camino del 3-3 pulsa 5 veces la primera publicación (unos 33 s) para llegar a los likes del secreto C (♥25): ¿hace falta otra publicación más cerca?
+- Fase 3 del jefe: el bot espera comprimido dentro del marco pequeño; quizá es un refugio demasiado seguro. Revisar si se puede vencer sin él y si cuesta lo que debe.
+- `like_reset` («Borrar publicaciones») y las plataformas de los secretos (inversas del 3-1, ♥20 del 3-2, ♥25 del 3-3) no se han probado en un camino real (el bot no entra en los secretos): probarlas a mano.
+- El validador de arenas solo modela el rebote único de Caché (no los dos rebotes de Kernel ni el cazador que no para de Raíz).
+
+**Textos propuestos (todos marcados como propuesta)**
+- Ayudas Q de los 20 tipos del Mundo 3 (`data/help.json`, `world: 3`: 16 piezas del mundo, `hud_likes` y las 3 del jefe).
+- Líneas de Eco del jefe y de la Curadora (`texts` de `data/bosses/curator.json`: `intro`, `phase_lines`, `final_system`, `defeat`; con el apodo) y la de la recompensa «Bueno. Guárdala, si quieres. Nadie la va a ver.».
+- Mensajes de secreto `msg_3_1` («La tele»), `msg_3_2` y `msg_3_3` («Fondo de pantalla»), de Mamá, y la capa Caché `boss_w3_l1` «Fragmento de imagen» (`data/memories.json`).
+- Línea de Calc la primera vez que se llega del 3-1: «Likes canjeables: 0. Ya lo sabía.» (`data/hub.json`).
+- Carteles (`feed_sign`): «Mi vida es increíble #bendecido» (3-1, lleva la Q del contador de likes) y «Tu mejor ángulo es el de otro» (3-3); línea del marco del 3-1.
+
+**Paleta**
+- Elegida la variante **B «Terciopelo de trastienda»** (`assets/palettes/mundo3.gpl`); A «Ciruela y oro viejo» y C «Lavanda gris y champán» quedan en la comparativa `docs/arte/mundo3_paleta_variantes.png` (métricas en `propuesta-mundo-3.md` §8.1, paso 9).
+- Para cambiarla: `python3 -I tools/palette_mundo3_preview.py --apply A|C` (regenera paleta, arte por script del mundo y fichas) y después reconstruir el TileSet con `$GODOT --headless --path . -s tools/build_tileset_mundo1.gd -- --map res://data/tileset_mundo3.json`.
+
+**Limitaciones conocidas (no son fallos; decidir si importan)**
+- Arte `_placeholder` por script de la Curadora (`tools/gen_boss_curator.py`), del Influencer y de la pose `compress` (por escala) hasta el paso 23 con AutoSprite: 68-71 créditos (hasta ~142 con reintentos) de un saldo de 380; **requiere permiso y el total previo del usuario**, con parada tras cada base.
+- Audio provisional: los 21 IDs del Mundo 3 (`CuratorMusic`, `GalleryMusic`, ambiente de la galería…) suenan con provisionales hasta los sonidos del amigo del usuario; `sfx_charger` y `sfx_dash_through` no existen en `data/audio.json` (ni provisional).
+- Iconos de nivel del Mundo 3 en la carpeta del hub: genéricos.
+- **La suite completa no se ha corrido tras el paso 20** (solo las pruebas del Mundo 3); pendiente antes de dar el mundo por cerrado.
