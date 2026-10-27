@@ -23,6 +23,14 @@
 ##   que se superaron todos los subniveles (y enciende la pieza del fondo); el
 ##   check sale con is_world_all_done: ademas, todos los puntos, power banks,
 ##   vidas extra y recuerdos del mundo en la vuelta (world_progress).
+## - Mundos 4-6 (2026-10-27, paso 0 de docs/propuesta-hub-mundos-4-6.md §3.3-§3.4):
+##   requires_upgrade (id de GameState.HUB_UPGRADES). Sin el upgrade el mundo
+##   esta OCULTO (folder_state STATE_HIDDEN; nunca desbloqueado); con el, visible
+##   y bloqueado hasta su unlocked_by (m4 3-boss, m5 4-boss, m6 5-boss) y
+##   disponible despues. page: pagina del hub de su carpeta (por defecto 1;
+##   folder_worlds filtra por pagina). TEMPORAL: mientras
+##   hub_upgrades.enforce_requires_upgrade sea false (aun no se puede instalar en
+##   el hub) requires_upgrade no se aplica y M4 se comporta como hasta hoy.
 class_name HubWorlds
 extends RefCounted
 
@@ -31,6 +39,10 @@ const STATE_AVAILABLE: StringName = &"available"
 const STATE_COMPLETED: StringName = &"completed"
 ## Solo arte de la carpeta (folder_art_state): TODO el mundo obtenido, con check.
 const STATE_ALL_DONE: StringName = &"all_done"
+## Mundo con requires_upgrade sin ese upgrade instalado: sin carpeta.
+const STATE_HIDDEN: StringName = &"hidden"
+## Pagina del hub por defecto (la unica que existe hasta el paso 2 del plan).
+const DEFAULT_PAGE: int = 1
 const KIND_BOSS: String = "boss"
 
 
@@ -64,14 +76,64 @@ static func worlds() -> Array[Dictionary]:
 	return out
 
 
-## Mundos con carpeta en el hub (los que tienen `col`). Los demas (4-6, aun sin
-## contenido) solo guardan su nombre para el album de Notas.
-static func folder_worlds() -> Array[Dictionary]:
+## Mundos con carpeta en la pagina `page` del hub (los que tienen `col` y esa
+## `page`, por defecto 1). Hasta que exista el hub de varias paginas (paso 2 de
+## docs/propuesta-hub-mundos-4-6.md) solo se construye la pagina 1: M1-M3.
+static func folder_worlds(page: int = DEFAULT_PAGE) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for entry: Dictionary in worlds():
-		if entry.has("col"):
+		if entry.has("col") and world_page(entry) == page:
 			out.append(entry)
 	return out
+
+
+## Pagina del hub de la carpeta del mundo (`page`; por defecto 1).
+static func world_page(world_entry: Dictionary) -> int:
+	return int(world_entry.get("page", DEFAULT_PAGE))
+
+
+## Override de pruebas de hub_upgrades.enforce_requires_upgrade: -1 = el de los
+## datos, 0 = no se aplica, 1 = se aplica.
+static var requires_upgrade_override: int = -1
+
+
+## requires_upgrade se aplica (hub_upgrades.enforce_requires_upgrade de
+## data/hub.json). TEMPORAL (paso 0): false hasta que el acertijo y la
+## instalacion existan en el hub, para que M4 siga como hasta hoy.
+static func is_requires_upgrade_enforced() -> bool:
+	if requires_upgrade_override >= 0:
+		return requires_upgrade_override == 1
+	return bool(HubData.section("hub_upgrades").get("enforce_requires_upgrade", false))
+
+
+## Upgrade del hub que el mundo necesita para verse (vacio si ninguno).
+static func required_upgrade(world_entry: Dictionary) -> StringName:
+	return StringName(String(world_entry.get("requires_upgrade", "")))
+
+
+## El mundo es visible: no pide upgrade, o lo tiene instalado (o el requisito
+## aun no se aplica). Si no, esta oculto (STATE_HIDDEN).
+static func is_world_visible(world_entry: Dictionary) -> bool:
+	var upgrade: StringName = required_upgrade(world_entry)
+	if upgrade.is_empty() or not is_requires_upgrade_enforced():
+		return true
+	return GameState.has_hub_upgrade(upgrade)
+
+
+## Acertijo del upgrade `id` pendiente: su after_level (hub_upgrades.upgrades
+## de data/hub.json; 3-boss para hub_update_4_6) esta completado y el upgrade no
+## esta instalado. Se calcula (no se guarda): quien vencio a La Curadora con un
+## guardado anterior lo ve al cargar. Un game over sin guardar tras instalar lo
+## vuelve a dejar pendiente; en Kernel y Raiz, con el upgrade conservado, no.
+static func is_hub_upgrade_pending(id: StringName = GameState.HUB_UPGRADE_UPDATE_4_6) -> bool:
+	if GameState.has_hub_upgrade(id):
+		return false
+	var upgrades: Variant = HubData.section("hub_upgrades").get("upgrades", {})
+	if not upgrades is Dictionary or not (upgrades as Dictionary).has(String(id)):
+		return false
+	var spec: Variant = (upgrades as Dictionary)[String(id)]
+	var after: String = String((spec as Dictionary).get("after_level", "")) if spec is Dictionary else ""
+	return not after.is_empty() and GameState.is_level_completed(StringName(after))
 
 
 ## Nombre del mundo con su numero, «Mundo 1 - Notificaciones» (folders.texts.title
@@ -130,6 +192,10 @@ static func is_in_lap(level: Dictionary, lap: int = -1) -> bool:
 
 
 static func is_world_unlocked(world_entry: Dictionary) -> bool:
+	# requires_upgrade (paso 0 de la propuesta de los Mundos 4-6): oculto = nunca
+	# desbloqueado (la carpeta «El Chat» del album se abre al instalar).
+	if not is_world_visible(world_entry):
+		return false
 	if bool(world_entry.get("unlocked", false)):
 		return true
 	# unlocked_by (2026-10-21): se desbloquea al completar alguno de esos
@@ -181,8 +247,11 @@ static func is_level_unlocked_by_progress(level_id: StringName) -> bool:
 	return false
 
 
-## Estado de la carpeta del mundo: locked, available o completed.
+## Estado de la carpeta del mundo: hidden (requires_upgrade sin instalar),
+## locked, available o completed.
 static func folder_state(world_entry: Dictionary) -> StringName:
+	if not world_entry.is_empty() and not is_world_visible(world_entry):
+		return STATE_HIDDEN
 	if world_entry.is_empty() or not is_world_unlocked(world_entry):
 		return STATE_LOCKED
 	var current: Array[Dictionary] = levels_for_lap(world_entry)

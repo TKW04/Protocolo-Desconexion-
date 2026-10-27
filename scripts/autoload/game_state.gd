@@ -54,9 +54,16 @@ const ENERGY_PER_ATTENTION_POINT: float = 10.0
 ## de docs/propuesta-mejoras.md: upgrade_levels por pista, que sustituye a
 ## upgrades_purchased, con devoluciones; v5 desde 2026-10-19, paso 2 de
 ## docs/propuesta-recuerdos.md §7: memories (ids de los recuerdos obtenidos y
-## guardados) y memories_read; la migracion los crea vacios). Se cargan las versiones 1 a
+## guardados) y memories_read; la migracion los crea vacios; v6 desde 2026-10-27,
+## paso 0 de docs/propuesta-hub-mundos-4-6.md: hub_upgrades, upgrades instalados en
+## el hub, que la migracion crea vacio). Se cargan las versiones 1 a
 ## SAVE_VERSION (las anteriores se migran); otra se aparta como .corrupt.
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
+## Upgrades del hub (v6; docs/propuesta-hub-mundos-4-6.md §2.6 y §3.4): ids que
+## se pueden instalar. «Actualización del sistema» (acertijo tras La Curadora)
+## hace visibles las carpetas de los Mundos 4-6 (requires_upgrade de data/hub.json).
+const HUB_UPGRADE_UPDATE_4_6: StringName = &"hub_update_4_6"
+const HUB_UPGRADES: Array[StringName] = [HUB_UPGRADE_UPDATE_4_6]
 ## Vueltas (docs/preguntas.md, tres vueltas): 1 Easy, 2 Normal, 3 Hard (nombres
 ## internos; de cara al jugador son niveles de acceso Caché, Kernel y Raíz, ver
 ## HubWorlds.access_name: la UI nunca dice vuelta ni Easy/Normal/Hard).
@@ -226,6 +233,14 @@ var memories: Dictionary[StringName, bool] = {}
 ## Recuerdos obtenidos ya leidos en Notas (los demas son «nuevos»: marca en el
 ## icono de Notas del hub). Leer no marca «sin guardar» (como learned_help).
 var memories_read: Dictionary[StringName, bool] = {}
+## Upgrades del hub instalados (id de HUB_UPGRADES -> true; v6,
+## docs/propuesta-hub-mundos-4-6.md §2.6, decisiones del usuario del 2026-10-27).
+## Instalar solo marca «sin guardar» (install_hub_upgrade): un game over sin
+## guardar vuelve a la copia y lo pierde, como cualquier progreso sin guardar (no
+## es excepcion). No va a la Papelera (es estado del hub, no un objeto). El
+## rollback de fin de vuelta (Caché -> Kernel -> Raíz, paso 16 de asistentes, aun
+## sin implementar) lo CONSERVA: el acertijo no se repite.
+var hub_upgrades: Dictionary[StringName, bool] = {}
 ## Apodo con el que Eco llama al jugador (v3; por defecto NICKNAME_DEFAULT).
 var nickname: String = NICKNAME_DEFAULT
 ## Asistentes ya conocidos (id de ALLIES -> true; v3). Sustituye a eco_met y a
@@ -973,6 +988,7 @@ func reset_progress() -> void:
 	found_secrets.clear()
 	memories.clear()
 	memories_read.clear()
+	hub_upgrades.clear()
 	nickname = NICKNAME_DEFAULT
 	allies_met.clear()
 	ally_arrivals.clear()
@@ -1112,6 +1128,7 @@ func to_save_data() -> Dictionary:
 		"found_secrets": secrets,
 		"memories": _keys_sorted(memories),
 		"memories_read": _keys_sorted(memories_read),
+		"hub_upgrades": _keys_sorted(hub_upgrades),
 		"nickname": nickname,
 		"allies_met": _keys_sorted(allies_met),
 		"learned_help": _keys_sorted(learned_help),
@@ -1197,6 +1214,14 @@ func apply_save_data(data: Dictionary) -> bool:
 		for id: StringName in _string_names(data.get("memories_read", [])):
 			if memories.has(id):
 				memories_read[id] = true
+	# v6 (upgrades del hub): un guardado anterior no los tiene y empieza sin
+	# ninguno (migracion). Quien ya vencio a La Curadora ve el acertijo al cargar:
+	# «acertijo pendiente» se calcula (HubWorlds.is_hub_upgrade_pending), no se
+	# guarda. Ids que no estan en HUB_UPGRADES se ignoran.
+	if int(version) >= 6:
+		for id: StringName in _string_names(data.get("hub_upgrades", [])):
+			if HUB_UPGRADES.has(id):
+				hub_upgrades[id] = true
 	if int(version) < 3:
 		_migrate_to_v3(data)
 	else:
@@ -1337,6 +1362,23 @@ func mark_secret_found(level: StringName, secret_id: StringName) -> bool:
 
 func is_secret_found(level: StringName, secret_id: StringName) -> bool:
 	return found_secrets.has(level) and found_secrets[level].has(secret_id)
+
+
+## Upgrade del hub `id` instalado (v6; docs/propuesta-hub-mundos-4-6.md §2.6).
+func has_hub_upgrade(id: StringName) -> bool:
+	return hub_upgrades.has(id)
+
+
+## Instala el upgrade del hub `id` (HUB_UPGRADES): solo marca «sin guardar»
+## (guardado manual: se guarda en Notas) y lo anuncia con
+## EventBus.hub_upgrade_installed. Falso si ya estaba o si `id` no se conoce.
+func install_hub_upgrade(id: StringName) -> bool:
+	if not HUB_UPGRADES.has(id) or hub_upgrades.has(id):
+		return false
+	hub_upgrades[id] = true
+	request_save()
+	EventBus.hub_upgrade_installed.emit(id)
+	return true
 
 
 func is_ability_unlocked(ability: StringName) -> bool:
@@ -1631,6 +1673,8 @@ func _emit_lives() -> void:
 ##   Notas, Calc y demas asistentes conocidos, el apodo, las ayudas aprendidas
 ##   (album) y el pulso. Los recuerdos guardados (memories) vuelven con la
 ##   copia y no van a la papelera; los obtenidos sin guardar se pierden.
+##   Igual los upgrades del hub (hub_upgrades, v6): vuelven con la copia, no van
+##   a la papelera y el instalado sin guardar se pierde (el acertijo se repite).
 ## - Eco «desecha» lo guardado (habilidades salvo el pulso, power banks, puntos
 ##   de atencion y mejoras): pasa a la papelera (discard_to_trash) y se recupera
 ##   todo de golpe en el hub (recover_trash).

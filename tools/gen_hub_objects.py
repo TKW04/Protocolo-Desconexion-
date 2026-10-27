@@ -1876,8 +1876,9 @@ def scene(imgs, path, state="off"):
     floor_y = int(hub["room"]["floor_row"]) * T
     shelf_y = floor_y - int(hub["folders"]["shelf_height_px"])
     extra = int(hub["folders"]["shelf_extra_tiles"])
-    # Solo los mundos con carpeta en el hub (con col; los 4-6 solo tienen nombre).
-    folder_worlds = [w for w in hub["worlds"] if "col" in w]
+    # Solo los mundos con carpeta en la pagina 1 del hub (con col y page 1; los
+    # 4-6 van a las paginas 2 y 3, paso 0 de docs/propuesta-hub-mundos-4-6.md).
+    folder_worlds = [w for w in hub["worlds"] if "col" in w and int(w.get("page", 1)) == 1]
     for world, st in zip(folder_worlds, ("available", "locked", "locked")):
         c0 = int(world["col"])
         for c in range(c0 - extra, c0 + 2 + extra):

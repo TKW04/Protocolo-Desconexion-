@@ -91,3 +91,27 @@ func test_derived_from_completed_even_without_unlocked_levels() -> void:
 	assert_eq(HubWorlds.level_state(_m1(), levels[1]), HubWorlds.STATE_AVAILABLE, "1-2 por los unlocks del 1-1")
 	assert_eq(HubWorlds.level_state(_m1(), levels[2]), HubWorlds.STATE_LOCKED, "1-3 hasta completar el 1-2")
 	assert_eq(HubWorlds.level_state(_m1(), _boss()), HubWorlds.STATE_LOCKED)
+
+
+## Paso 0 de docs/propuesta-hub-mundos-4-6.md (2026-10-27): un guardado v5 de
+## quien ya vencio a La Curadora se migra sin upgrades del hub y con el acertijo
+## pendiente (se calcula al cargar); no pierde nada de lo que tenia.
+func test_v5_save_with_3_boss_has_the_hub_update_pending() -> void:
+	var data: Dictionary = {
+		"version": 5,
+		"lap": 1,
+		"completed_levels": ["1-1", "1-2", "1-3", "1-boss", "2-1", "2-2", "2-3", "2-boss", "3-1", "3-2", "3-3", "3-boss"],
+		"allies_met": ["eco", "notas", "calc"],
+		"abilities_obtained": ["pulse", "laser", "debug", "dash", "ground_pound", "compress"],
+		"nickname": "Isak",
+	}
+	assert_true(SaveFile.write(PATH, data), "Guardado v5 escrito")
+	GameState.use_save_path(PATH, false)
+	assert_true(GameState.started_from_save, "Se carga el v5")
+	assert_true(GameState.hub_upgrades.is_empty(), "Sin upgrades tras migrar")
+	assert_true(HubWorlds.is_hub_upgrade_pending(), "El acertijo queda pendiente")
+	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m3")), HubWorlds.STATE_COMPLETED, "M3 sigue completado")
+	HubWorlds.requires_upgrade_override = 1
+	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m4")), HubWorlds.STATE_HIDDEN,
+		"Con el requisito aplicado, M4 espera al upgrade")
+	HubWorlds.requires_upgrade_override = -1

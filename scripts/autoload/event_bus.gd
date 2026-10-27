@@ -276,6 +276,10 @@ signal pulse_energy_returned(enemy: Node, amount: float, gained: float)
 ## queda «sin guardar» y sin leer (docs/propuesta-recuerdos.md §4).
 @warning_ignore("unused_signal")
 signal memory_obtained(memory_id: StringName)
+## Se instalo el upgrade del hub `upgrade_id` (GameState.install_hub_upgrade;
+## docs/propuesta-hub-mundos-4-6.md §3.1): queda «sin guardar».
+@warning_ignore("unused_signal")
+signal hub_upgrade_installed(upgrade_id: StringName)
 ## Se leyo en Notas el recuerdo `memory_id` (GameState.mark_memory_read): el icono
 ## de Notas del hub deja de marcarlo como nuevo.
 @warning_ignore("unused_signal")

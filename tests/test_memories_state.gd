@@ -116,7 +116,7 @@ func test_round_trip_keeps_memories_and_read_marks() -> void:
 	GameState.mark_memory_read(&"msg_1_1")
 	assert_true(GameState.save_game())
 	var data: Dictionary = SaveFile.read(PATH)
-	assert_eq(int(data["version"]), 5)
+	assert_eq(int(data["version"]), GameState.SAVE_VERSION, "v5 o posterior (v6 desde los upgrades del hub)")
 	assert_eq(data["memories"], ["boss_w1_l1", "msg_1_1"], "Lista ordenada")
 	assert_eq(data["memories_read"], ["msg_1_1"])
 	GameState.reset_progress()

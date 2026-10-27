@@ -1,6 +1,6 @@
 # Propuesta: acertijo del hub y entrada a los Mundos 4-6 («Actualización del sistema»)
 
-Estado: **PROPUESTA (2026-10-27), sin implementar.** Solo documento: no cambia código ni datos.
+Estado: **APROBADA (2026-10-27)** con las respuestas del usuario a §6.2 (ver §6.3). **Paso 0 hecho (2026-10-27): datos y guardado** (§5.3). El resto, sin implementar.
 
 **Idea del usuario (se respeta tal cual):** al vencer a La Curadora (jefe del Mundo 3) se habilita en el hub un acertijo. Resolviéndolo con las habilidades que Isak tiene hasta ahora se hace un *upgrade* del hub y aparecen las entradas de los Mundos 4, 5 y 6, cada uno con sus subniveles.
 
@@ -130,7 +130,7 @@ Con «Ayudas de Eco: Ocultar» (Ajustes) no salen las pistas 3 y 4. Las pistas 1
 | Verificaciones a medias | **No se guardan** y se reinician en cada visita al hub, como el enfriamiento del cargador. **Razón:** el acertijo dura poco y así no hay un estado intermedio en el guardado. |
 | Instalar | Se añade `"hub_update_4_6"` a una lista nueva del guardado, `hub_upgrades`. **Solo marca «sin guardar»**: se guarda en Notas, que está en la página 1 (la regla del guardado manual). Notas lo recuerda: «¡Apuntado! Guárdalo para que no se pierda.» (**PROPUESTA**, no es importante). |
 | Entrar a M4 sin guardar | La confirmación que ya existe («¿Seguro? Aún no has guardado.» + «Si caes sin guardar, Eco te devolverá a tu última copia.»). |
-| Game over con el upgrade sin guardar | Rollback a la última copia, como con todo lo obtenido: si la copia no tenía el upgrade, el hub vuelve a la página 2 «en instalación» y se repite el acertijo (dura un minuto). La Papelera **no** se lleva el upgrade: es estado del hub, no un objeto. |
+| Game over con el upgrade sin guardar | **Decisión del usuario, 2026-10-27:** el upgrade **no** es excepción al guardado manual. Rollback a la última copia, como con todo lo obtenido: si la copia no tenía el upgrade, el hub vuelve a la página 2 «en instalación» y se repite el acertijo (dura un minuto). La Papelera **no** se lleva el upgrade: es estado del hub, no un objeto. |
 | Vidas | No se gastan en el hub. |
 | Rollback de fin de vuelta (Caché → Kernel, Kernel → Raíz) | El upgrade **se conserva**, como `found_secrets` y el álbum: el hub no «se desinstala». Ver §4.3 para lo que pasa con las carpetas. |
 
@@ -214,7 +214,7 @@ Va en orden, como M1 → M2 → M3. Un game over sin guardar vuelve a bloquear e
 
 ### 4.3 Vueltas Caché, Kernel y Raíz (PROPUESTA)
 
-- El upgrade **se conserva** a través del rollback de fin de vuelta (§2.6): en Kernel y Raíz las tres páginas existen desde el principio y **el acertijo no se repite**. **Razón:** es estado del hub, como el álbum, y repetirlo no aporta nada nuevo.
+- **Decisión del usuario, 2026-10-27:** el upgrade **se conserva** a través del rollback de fin de vuelta (§2.6): en Kernel y Raíz las tres páginas existen desde el principio y **el acertijo no se repite**. **Razón:** es estado del hub, como el álbum, y repetirlo no aporta nada nuevo.
 - La disponibilidad **sí depende de la vuelta**: M4 vuelve a pedir el `3-boss` de la vuelta actual, M5 el `4-boss` y M6 el `5-boss`, como hoy M2 pide el `1-boss`. Mientras tanto, las carpetas se ven bloqueadas con su candado. Depende de cómo quede `completed_levels` por vuelta (matiz pendiente de `propuesta-recuerdos.md` §10.1 / paso 16 de asistentes); si ese matiz cambia, esta regla lo sigue.
 - La UI nunca dice vuelta, Easy, Normal ni Hard.
 
@@ -246,10 +246,12 @@ Va en orden, como M1 → M2 → M3. Un game over sin guardar vuelve a bloquear e
 
 Cada paso lleva sus pruebas y termina con la parte afectada de `tools/run_tests.sh` en verde y `graphify update .`. Un commit local por paso, sin push. Los textos van marcados como propuestos y el arte es por script.
 
+**Numeración (2026-10-27):** el orquestador fusionó los pasos 0 y 1 de esta tabla en un único «paso 0: datos y guardado» (respuestas del usuario volcadas en §6.3 + los datos y el guardado). Los demás pasos conservan su número.
+
 | Paso | Qué | Archivos probables | Terminado cuando | Tamaño | Depende de |
 |---|---|---|---|---|---|
-| 0 | El usuario responde las preguntas de §6.2 | este documento | Respuestas volcadas aquí | S | — |
-| 1 | **Datos y guardado:** v6 con `hub_upgrades` y migración; `requires_upgrade`, `page`, `col`, `unlocked_by` de m5/m6; `HubWorlds` (oculta / bloqueada / disponible); el rollback de vuelta conserva el upgrade | `data/hub.json`, `scripts/autoload/game_state.gd`, `scripts/hub/hub_worlds.gd`, `tests/test_hub_worlds_4_6.gd`, prueba de migración | GUT: sin upgrade m4-m6 ocultos; con el upgrade m4 disponible (con `3-boss`), m5 bloqueado hasta `4-boss` y m6 hasta `5-boss`; v5 → v6; game over sin guardar lo quita; el rollback de vuelta lo conserva | M | 0 |
+| 0 | El usuario responde las preguntas de §6.2 (**hecho, §6.3**) | este documento | Respuestas volcadas aquí | S | — |
+| 1 | (**Hecho junto con el 0, 2026-10-27; §5.3.**) **Datos y guardado:** v6 con `hub_upgrades` y migración; `requires_upgrade`, `page`, `col`, `unlocked_by` de m5/m6; `HubWorlds` (oculta / bloqueada / disponible); el rollback de vuelta conserva el upgrade | `data/hub.json`, `scripts/autoload/game_state.gd`, `scripts/hub/hub_worlds.gd`, `tests/test_hub_worlds_4_6.gd`, prueba de migración | GUT: sin upgrade m4-m6 ocultos; con el upgrade m4 disponible (con `3-boss`), m5 bloqueado hasta `4-boss` y m6 hasta `5-boss`; v5 → v6; game over sin guardar lo quita; el rollback de vuelta lo conserva | M | 0 |
 | 2 | **Hub de varias páginas:** sala 60 × 11, cámara que se desliza, paredes según el estado, indicador de 1-3 puntos, llegada por página; hub idéntico antes de la Curadora; comprobar el Debug obtenido en el hub | `scripts/hub/hub_room.gd`, `scenes/hub/hub.tscn`, `tests/test_hub_pages.gd`, `tests/test_hub_room.gd` | GUT: sin `3-boss` una página y pruebas actuales iguales; con `3-boss` se cruza a la 2; con el upgrade, a la 3; la cámara no enseña dos páginas a la vez | M-L | 1 |
 | 3 | **Acertijo:** `hub_installer`, `update_check`, `pound_plate`, plataforma temporal y el montaje de V1-V3 en la página 2; inerte con la Papelera llena; reinicio por visita | `scripts/hub/hub_installer.gd`, `scripts/levels/update_check.gd`, `scripts/levels/pound_plate.gd`, `data/hub_update.json`, `tests/test_hub_update_puzzle.gd` | GUT de §2.7 (positivos y negativos) | L | 2 |
 | 4 | **Validador** de la página 2 (rejilla, `requires_abilities`, energía y ventanas) | `tools/validate_level.py`, `tools/level_plan.py`, `tests/test_hub_update_validator.py` | Valida con todas las habilidades; los negativos fallan (sin dash, sin Pellizcar, sin Debug); las salidas de los Mundos 1-3 son idénticas | M | 3 |
@@ -263,6 +265,16 @@ Cada paso lleva sus pruebas y termina con la parte afectada de `tools/run_tests.
 **Orden:** 1 → 2 → 3 → (4 y 5 a la vez) → (6 y 7 a la vez) → 8 → 9 → 10.
 
 **Tamaño total (estimación):** como uno de los acertijos del Mundo 1 más el sistema de páginas, unas 2-3 veces el encuentro con Calc. No hace falta AutoSprite.
+
+### 5.3 Avance
+
+**Paso 0 «datos y guardado» (2026-10-27, hecho; pasos 0 y 1 de la tabla):**
+
+- **`data/hub.json`:** `m4` `{"page": 2, "col": 4, "unlocked_by": ["3-boss"], "requires_upgrade": "hub_update_4_6"}`, `m5` `{"page": 2, "col": 14, "unlocked_by": ["4-boss"], …}` y `m6` `{"page": 3, "col": 9, "unlocked_by": ["5-boss"], …}`. Sección nueva **`hub_upgrades`**: `upgrades.hub_update_4_6.after_level: "3-boss"` y la bandera **`enforce_requires_upgrade`** (ver «Temporal»). `worlds_notes` al día. Todavía **no** hay `room.pages`, `update_puzzle` ni el comentario de Calc (pasos 2, 3 y 6).
+- **`HubWorlds`** (`scripts/hub/hub_worlds.gd`): `folder_worlds(page = 1)` filtra por página (el hub, que solo construye la página 1, sigue con M1-M3 idénticas; `tools/gen_hub_objects.py` filtra igual), `world_page`, `required_upgrade`, `is_world_visible`, `is_requires_upgrade_enforced` (con `requires_upgrade_override` para las pruebas) y **`is_hub_upgrade_pending(id)`** («acertijo pendiente» = `after_level` completado y el upgrade sin instalar; se calcula, no se guarda). Estado nuevo **`STATE_HIDDEN`** en `folder_state` (oculta); sin el upgrade `is_world_unlocked` es falso, así que la carpeta «El Chat» del álbum de Notas (`NotasAlbum.is_world_visited`) se abre **al instalar**. Bloqueada y disponible siguen la regla de `unlocked_by` (M5 con `4-boss`, M6 con `5-boss`).
+- **Guardado v6** (`scripts/autoload/game_state.gd`): `SAVE_VERSION` 6, `hub_upgrades` (lista ordenada en `save.json`; ids fuera de `HUB_UPGRADES` se ignoran). La migración desde v1-v5 lo deja vacío sin tocar nada más (quien ya venció a la Curadora queda con el acertijo pendiente). `has_hub_upgrade(id)` e `install_hub_upgrade(id)` (solo marca «sin guardar» y emite `EventBus.hub_upgrade_installed`). Game over: vuelve la copia (sin guardar se pierde y el acertijo se repite; guardado se conserva y no va a la Papelera). El rollback de fin de vuelta aún no existe (paso 16 de asistentes): queda documentado en `hub_upgrades` y en `apply_rollback` que lo conserva; las pruebas comprueban que con `lap` 2 y 3 el upgrade sigue y el acertijo no está pendiente.
+- **Pruebas:** nuevas `tests/test_hub_worlds_4_6.gd` (datos, páginas, bandera temporal, oculta / bloqueada / disponible en orden, álbum, instalación, v6, migración v5, tipos raros, game over sin guardar y guardado, Kernel y Raíz) y `tests/test_hub_worlds_4_6.py` (datos); `tests/test_hub_legacy_unlocks.gd` gana el caso v5 con `3-boss`; `tests/test_save_game.gd` y `tests/test_memories_state.gd`, a la v6.
+- **Temporal (a quitar en el paso 5, instalación):** `hub_upgrades.enforce_requires_upgrade` está en **`false`**: mientras el acertijo no exista no hay forma de instalar, así que `requires_upgrade` no se aplica y **M4 se comporta como hasta hoy** (se desbloquea con `3-boss`, abre «El Chat» del álbum y el bot de la Curadora lo sigue viendo desbloqueado). Al ponerla a `true` hay que cambiar `tests/test_hub_boss_entry.gd` (Mundo 4 «desbloqueado al vencerla» → acertijo pendiente y M4 oculto), `tests/test_boss_save_flow.gd` y `tools/curator_bot.gd` («Mundo 4 desbloqueado» → acertijo pendiente), y `test_temporary_flag_keeps_world_4_as_today` de `tests/test_hub_worlds_4_6.gd`.
 
 ---
 
@@ -278,3 +290,10 @@ Cada paso lleva sus pruebas y termina con la parte afectada de `tools/run_tests.
 1. **Kernel y Raíz:** ¿el upgrade se conserva y el acertijo no se repite en las vueltas siguientes (recomendado, §4.3)? ¿O se repite en cada vuelta con otra variante?
 2. **Game over sin guardar tras instalar:** ¿se pierde el upgrade y se repite el acertijo, como cualquier progreso sin guardar (recomendado, §2.6)? ¿O el upgrade se queda para siempre al instalarlo, como excepción al guardado manual?
 3. **Nombre de cara al jugador:** ¿«Actualización del sistema» y las verificaciones «Integridad», «Búfer» y «Recorte» (propuestos; no «Caché», que es el nombre del primer acceso)? ¿Otro nombre?
+
+### 6.3 Respuestas (Decisión del usuario, 2026-10-27)
+
+1. **Decisión del usuario, 2026-10-27:** el acertijo «Actualización del sistema», con sus verificaciones «Integridad», «Búfer» y «Recorte», está **aprobado como se propone** (opción A, §2).
+2. **Decisión del usuario, 2026-10-27:** los Mundos 4, 5 y 6 aparecen **todos visibles** en el hub tras resolver el acertijo (upgrade), pero **solo el 4 está disponible**; el 5 se habilita al completar el 4 (jefe incluido) y el 6 al completar el 5 (§4.1).
+3. **Decisión del usuario, 2026-10-27:** en Kernel y Raíz el upgrade **se conserva** y el acertijo **no se repite** (§4.3; responde a la pregunta 1).
+4. **Decisión del usuario, 2026-10-27:** si hay game over / rollback sin guardar tras instalar, el upgrade **se pierde** y el acertijo se repite, como cualquier progreso sin guardar: el upgrade **no** es excepción (§2.6; responde a la pregunta 2).
