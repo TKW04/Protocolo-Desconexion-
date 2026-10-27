@@ -3828,6 +3828,21 @@ def main(argv):
         try:
             level = load_json(path)
             upgrades = [u.strip() for u in args.upgrades.split(",") if u.strip()]
+            # Acertijo de la pagina 2 del hub (data/hub_update.json; paso 4 de docs/propuesta-hub-mundos-4-6.md):
+            # no es un nivel; lo valida tools/hub_update_model.py con este mismo modelo de movimiento.
+            import hub_update_model  # noqa: E402 (importa este modulo)
+            if hub_update_model.is_hub_update(level):
+                if export is not None:
+                    print("%s: el acertijo del hub no exporta camino" % path, file=sys.stderr)
+                    return 2
+                result = hub_update_model.validate_hub_update(level, jump_efficiency=args.jump_efficiency,
+                                                              physics_path=args.physics, upgrades=upgrades)
+                failed = failed or not result["ok"]
+                if args.json:
+                    outputs[path] = result
+                else:
+                    print(hub_update_model.format_text(path, result))
+                continue
             if args.access_cap:
                 upgrades += access_cap_upgrades(level, args.lap)
             result = validate(level, limit=args.limit, jump_efficiency=args.jump_efficiency, run=args.run,

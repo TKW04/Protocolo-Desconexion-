@@ -197,6 +197,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py \
+		tests/test_hub_update_validator.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
