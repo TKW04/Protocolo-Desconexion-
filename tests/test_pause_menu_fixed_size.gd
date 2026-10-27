@@ -4,6 +4,10 @@
 # paginas y al mover la seleccion; el texto de las opciones no se mueve al
 # elegirlas (ancho reservado al prefijo); detalle y ayuda en filas fijas; nada
 # se sale del panel ni de la pantalla.
+# Compacto (2026-10-27, peticion del usuario: «hazlo mas pequeno, tiene mucho
+# espacio en blanco»): una ventana de panel_option_rows filas; Controles se
+# desplaza con la seleccion (la elegida siempre visible, todas alcanzables,
+# ▲ / ▼ si hay filas fuera) y el ancho lo fija el texto mas largo.
 extends GutTest
 
 
@@ -70,6 +74,8 @@ func _check_page(label: String) -> void:
 		if n > 0:
 			for i: int in n:
 				var opt: Label = _menu.get_option_label(i)
+				if not opt.visible:
+					continue  # Fuera de la ventana (Controles se desplaza)
 				var font: Font = opt.get_theme_font(&"font")
 				var prefix: String = opt.text.substr(0, 2)
 				var start: float = opt.position.x + font.get_string_size(prefix, HORIZONTAL_ALIGNMENT_LEFT, -1,
@@ -132,3 +138,89 @@ func test_toggling_a_setting_keeps_the_panel_and_options_still() -> void:
 	assert_eq(_menu.get_option_icon_rect(0).position.x, x, "La columna de iconos no se mueve")
 	_menu.activate(PauseMenu.Option.ECO_HELP)
 	_menu.activate(PauseMenu.Option.DEBUG_OUTLINE)
+
+
+func test_panel_is_compact() -> void:
+	var data: Dictionary = PauseMenu.load_data()
+	assert_eq(_menu.visible_option_rows(), int(data["panel_option_rows"]))
+	assert_lte(_menu.visible_option_rows(), 8, "Ventana de 8 filas como mucho")
+	var size: Vector2 = _menu.fixed_panel_size()
+	assert_lte(size.y, 240.0, "Alto compacto (px de arte): %s" % size)
+	assert_lte(size.x, 320.0, "Ancho compacto (px de arte): %s" % size)
+	# Ajustes (8) y Sonido (7) caben enteras: no se desplazan.
+	_menu.activate(PauseMenu.Option.SETTINGS)
+	assert_lte(_menu.get_options().size(), _menu.visible_option_rows())
+	assert_eq(_menu.scroll_arrows_shown(), Vector2i.ZERO, "Ajustes sin flechas")
+	_menu.activate(PauseMenu.Option.SOUND)
+	assert_lte(_menu.get_options().size(), _menu.visible_option_rows())
+	assert_eq(_menu.scroll_arrows_shown(), Vector2i.ZERO, "Sonido sin flechas")
+
+
+## Los textos de titulo, detalle, avisos y ayuda (con valores largos reales)
+## caben en el ancho del panel.
+func test_longest_texts_fit_the_width() -> void:
+	var data: Dictionary = PauseMenu.load_data()
+	var font: Font = load(String(data["font"])) as Font
+	var room: float = float(data["panel_width_px"]) - 2.0 * float(data["padding_px"])
+	var values: Dictionary = {"{w}": "1920", "{h}": "1080", "{scale}": "3", "{input}": "stick a la izquierda",
+		"{action}": "Mover a la izquierda"}
+	var keyed := RegEx.create_from_string("detail|^help_|^title_|reserved|blocked|cancelled|_done")
+	for key: String in data["texts"]:
+		if keyed.search(key) == null:
+			continue
+		var text: String = String(data["texts"][key])
+		for tag: String in values:
+			text = text.replace(tag, String(values[tag]))
+		var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size()).x
+		assert_lte(w, room, "«%s» cabe en el ancho (%s px)" % [text, w])
+
+
+## Controles: cada fila se alcanza con W/S, la elegida siempre se ve, nunca hay
+## mas filas que la ventana, las filas no salen de su zona y las flechas dicen
+## si hay filas fuera.
+func test_controls_scroll_follows_the_selection() -> void:
+	_menu.activate(PauseMenu.Option.SETTINGS)
+	_menu.activate(PauseMenu.Option.CONTROLS)
+	var n: int = _menu.get_options().size()
+	var rows: int = _menu.visible_option_rows()
+	assert_gt(n, rows, "Controles tiene mas filas que la ventana")
+	assert_eq(_menu.scroll_arrows_shown(), Vector2i(0, 1), "Al inicio: solo ▼")
+	var top: float = _menu.get_option_label(0).position.y
+	var seen: Dictionary = {}
+	for step: int in n * 2 + 1:
+		var sel: int = _menu.get_options().find(_menu.get_selected_option()) if step == 0 else -1
+		var shown: int = 0
+		for i: int in n:
+			var label: Label = _menu.get_option_label(i)
+			assert_eq(label.visible, _menu.is_option_shown(i), "Fila %d visible solo en la ventana" % i)
+			if label.visible:
+				shown += 1
+				seen[i] = true
+				assert_gte(label.position.y, top - 0.5, "Fila %d no sube por encima de la ventana" % i)
+				assert_lte(label.position.y, top + (rows - 1) * (label.size.y + 4.0) + 0.5,
+					"Fila %d no baja de la ventana" % i)
+		assert_eq(shown, rows, "Siempre %d filas visibles" % rows)
+		var scroll: int = _menu.get_scroll()
+		assert_eq(_menu.scroll_arrows_shown(), Vector2i(int(scroll > 0), int(scroll + rows < n)), "Flechas")
+		if sel >= 0:
+			assert_true(_menu.is_option_shown(sel))
+		_menu.move_selection(1)
+		# La elegida (tras moverse) siempre se ve.
+		var index: int = (step + 1) % n
+		assert_true(_menu.is_option_shown(index), "La fila elegida %d se ve" % index)
+		assert_true(_menu.get_option_label(index).text.begins_with("–"), "Y es la marcada")
+	assert_eq(seen.size(), n, "Todas las filas se alcanzan con el desplazamiento")
+	# Al final de la lista: ▲ y Volver en la ultima fila visible; W desde el
+	# principio salta al final y S desde el final vuelve al principio.
+	_menu.select(PauseMenu.Option.BACK)
+	assert_eq(_menu.get_scroll(), n - rows)
+	assert_eq(_menu.scroll_arrows_shown(), Vector2i(1, 0), "Al final: solo ▲")
+	_menu.move_selection(1)
+	assert_eq(_menu.get_scroll(), 0, "Vuelta al principio")
+	_menu.move_selection(-1)
+	assert_eq(_menu.get_scroll(), n - rows, "Arriba desde el principio: al final")
+	# Volver de un conflicto a una fila profunda la deja a la vista.
+	var actions: Array[StringName] = ControlBindings.actions()
+	_menu.select_action(actions[actions.size() - 1])
+	assert_true(_menu.is_option_shown(actions.size() - 1))
+	assert_eq(_menu.get_panel_rect(), _rect, "El panel no cambia al desplazarse")

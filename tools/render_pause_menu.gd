@@ -23,6 +23,9 @@
 ##   15_deslizar.png      Controles con «Deslizar: L / B» elegido (gesto del
 ##                         dash, 2026-10-19, docs/propuesta-1-3.md §2.4)
 ##   16_deslizar_e.png    tras reasignar Deslizar a E (sin conflicto)
+##   17_controles_final.png Controles con «Volver» elegido (final de la lista:
+##                         la ventana desplazada y la flecha ▲, 2026-10-27)
+##   18_sonido.png        Ajustes > Sonido (volumen de cada bus)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_pause_menu.gd [-- carpeta_salida]
 extends SceneTree
@@ -171,6 +174,18 @@ func _run() -> void:
 	await create_timer(0.1).timeout
 	_check(InputMap.event_is_action(_key_event(KEY_E), &"gesture_swipe", true), "Deslizar con E")
 	await _save(out_dir, "16_deslizar_e.png")
+	# Final de la lista de Controles (menu compacto, 2026-10-27): ventana
+	# desplazada con ▲ y sin ▼.
+	hub_menu.call(&"select", 4)  # BACK
+	await create_timer(0.1).timeout
+	_check(hub_menu.call(&"scroll_arrows_shown") == Vector2i(1, 0), "final de Controles: solo ▲")
+	await _save(out_dir, "17_controles_final.png")
+	_press(&"pause")
+	await create_timer(0.1).timeout
+	hub_menu.call(&"activate", 19)  # SOUND
+	await create_timer(0.1).timeout
+	_check(int(hub_menu.call(&"get_page")) == 8, "pagina Sonido")
+	await _save(out_dir, "18_sonido.png")
 	load("res://scripts/autoload/control_bindings.gd").call(&"restore_defaults")
 	hub_menu.call(&"close")
 	hub.queue_free()

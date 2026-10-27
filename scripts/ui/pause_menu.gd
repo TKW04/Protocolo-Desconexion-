@@ -134,6 +134,12 @@ var _icon_cache: Dictionary = {}
 ## Ancho del bloque de opciones de la pagina actual (-1 = por medir) y su x.
 var _block_w: float = -1.0
 var _option_x: float = 0.0
+## Primera fila visible de la pagina (ventana de `panel_option_rows` filas:
+## Controles se desplaza siguiendo la seleccion).
+var _scroll: int = 0
+## Flechas de desplazamiento (▲ = el glifo ▼ volteado: la fuente no tiene ▲).
+var _arrow_up: Label
+var _arrow_down: Label
 
 
 func _init() -> void:
@@ -674,6 +680,7 @@ func _quit_prompt_open() -> bool:
 func _show_page(page: Page) -> void:
 	_page = page
 	_selected = 0
+	_scroll = 0
 	_block_w = -1.0
 	_option_actions.clear()
 	_option_buses.clear()
@@ -928,6 +935,11 @@ func _build() -> void:
 	_title = _new_label("Title", _color("title"))
 	_detail = _new_label("Detail", _color("detail"))
 	_help = _new_label("Help", _color("help"))
+	_arrow_up = _new_label("ScrollUp", _color("help"))
+	_arrow_down = _new_label("ScrollDown", _color("help"))
+	_arrow_up.text = _text("scroll_arrow")
+	_arrow_down.text = _text("scroll_arrow")
+	_arrow_up.scale = Vector2(1.0, -1.0)
 	_show_page(Page.MAIN)
 
 
@@ -937,11 +949,13 @@ func _layout() -> void:
 	var screen: Vector2 = get_viewport().get_visible_rect().size / _frame.scale.x
 	_frame.size = screen
 	_backdrop.size = screen
-	# Panel de tamano fijo (2026-10-27, peticion del usuario: «que no este
-	# cambiando segun te mueves por el menu»): mismo ancho y alto en todas las
-	# paginas, con filas reservadas para la pagina mas larga (Controles); el
-	# titulo arriba, las opciones alineadas arriba y el detalle y la ayuda en
-	# filas fijas al pie.
+	# Panel de tamano fijo (2026-10-27, peticiones del usuario: «que no este
+	# cambiando segun te mueves por el menu» y «mas pequeno, tiene mucho espacio
+	# en blanco»): mismo ancho y alto en todas las paginas, con una ventana de
+	# `panel_option_rows` filas; la pagina mas larga (Controles) se desplaza con
+	# la seleccion y muestra ▲ / ▼ si hay filas fuera. Titulo arriba, opciones
+	# centradas en la ventana (las paginas cortas no quedan pegadas arriba) y
+	# detalle y ayuda en filas fijas al pie.
 	var font_size: int = int(_data.get("font_size", 12))
 	var line_h: float = ceilf(_font.get_height(font_size))
 	var pad: float = float(_data.get("padding_px", 12))
@@ -949,56 +963,97 @@ func _layout() -> void:
 	var pitch: float = line_h + float(_data.get("option_gap_px", 4))
 	var size: Vector2 = fixed_panel_size()
 	var width: float = size.x
+	var rows: int = visible_option_rows()
+	var n: int = _options.size()
+	var scrolls: bool = n > rows
 	var icons: bool = _page_has_icons()
 	var icon_px: float = float(_data.get("option_icon_px", 12))
 	var inset: float = icon_px + float(_data.get("option_icon_gap_px", 4)) if icons else 0.0
 	var slot: float = _prefix_slot(font_size)
+	var arrow_w: float = ceilf(_font.get_string_size(_text("scroll_arrow"), HORIZONTAL_ALIGNMENT_LEFT, -1,
+		font_size).x)
 	if _block_w < 0.0:
 		# Ancho del bloque de opciones sin prefijo, fijado al entrar en la
-		# pagina: cambiar la seleccion o un valor no mueve el bloque.
+		# pagina: cambiar la seleccion o un valor no mueve el bloque. En una
+		# pagina que se desplaza incluye la columna de las flechas.
 		_block_w = 0.0
-		for i: int in _options.size():
+		for i: int in n:
 			_block_w = maxf(_block_w, inset + slot + ceilf(_font.get_string_size(_option_text_at(i),
 				HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x))
+		if scrolls:
+			_block_w += float(_data.get("scroll_arrow_gap_px", 6)) + arrow_w
 	_option_x = pad + maxf(floorf((width - pad * 2.0 - _block_w) * 0.5), 0.0)
+	# Ventana: la seleccion siempre visible, moviendo lo minimo.
+	_scroll = clampi(_scroll, 0, maxi(n - rows, 0))
+	if _selected < _scroll:
+		_scroll = _selected
+	elif _selected >= _scroll + rows:
+		_scroll = _selected - rows + 1
+	var shown: int = mini(n, rows)
+	var arrow_x: float = _option_x + _block_w - arrow_w
 	var options_y: float = pad + line_h + gap * 2.0
-	var detail_y: float = options_y + (_max_option_rows() - 1) * pitch + line_h + gap * 2.0
+	var top_y: float = options_y + floorf(float(rows - shown) * pitch * 0.5)
+	var detail_y: float = options_y + (rows - 1) * pitch + line_h + gap * 2.0
 	_place_centered(_title, pad, width, pad, line_h)
 	_place_centered(_detail, detail_y, width, pad, line_h)
 	_place_centered(_help, detail_y + line_h + gap, width, pad, line_h)
 	for i: int in _option_labels.size():
 		var label: Label = _option_labels[i]
-		label.visible = i < _options.size() and not label.text.is_empty()
+		label.visible = i < n and i >= _scroll and i < _scroll + rows and not label.text.is_empty()
 		if not label.visible:
 			continue
 		var prefix: String = _text("selected_prefix" if i == _selected else "unselected_prefix")
 		var shift: float = slot - ceilf(_font.get_string_size(prefix, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		label.position = Vector2(_option_x + inset + shift, options_y + i * pitch)
-		label.size = Vector2(maxf(width - pad - label.position.x, 0.0), line_h)
+		label.position = Vector2(_option_x + inset + shift, top_y + (i - _scroll) * pitch)
+		# En una pagina que se desplaza la fila acaba antes de la columna de flechas.
+		var right: float = arrow_x - float(_data.get("scroll_arrow_gap_px", 6)) if scrolls else width - pad
+		label.size = Vector2(maxf(right - label.position.x, 0.0), line_h)
+	_arrow_up.visible = scrolls and _scroll > 0
+	_arrow_down.visible = scrolls and _scroll + rows < n
+	for arrow: Label in [_arrow_up, _arrow_down]:
+		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		arrow.size = Vector2(arrow_w, line_h)
+		arrow.pivot_offset = arrow.size * 0.5
+	_arrow_up.position = Vector2(arrow_x, top_y)
+	_arrow_down.position = Vector2(arrow_x, top_y + (shown - 1) * pitch)
 	_panel.size = size
 	_panel.position = Vector2(floorf((screen.x - size.x) * 0.5), floorf(maxf(screen.y - size.y, 0.0) * 0.5))
 	_place_option_icons(line_h, icon_px, inset)
 
 
 ## Tamano fijo del panel en px de arte: `panel_width_px` de ancho y el alto de
-## titulo, las filas de la pagina mas larga, detalle y ayuda.
+## titulo, la ventana de `panel_option_rows` filas, detalle y ayuda.
 func fixed_panel_size() -> Vector2:
 	var font_size: int = int(_data.get("font_size", 12))
 	var line_h: float = ceilf(_font.get_height(font_size))
 	var pad: float = float(_data.get("padding_px", 12))
 	var gap: float = float(_data.get("line_gap_px", 6))
 	var pitch: float = line_h + float(_data.get("option_gap_px", 4))
-	var rows: int = _max_option_rows()
+	var rows: int = visible_option_rows()
 	var height: float = pad + line_h + gap * 2.0 + (rows - 1) * pitch + line_h + gap * 2.0 + line_h + gap + line_h + pad
 	return Vector2(float(_data.get("panel_width_px", 320)), height)
 
 
-## Filas de opciones reservadas: la pagina mas larga (Controles: una por accion
-## mas Restablecer y Volver; Sonido: una por bus mas Volver; minimo `panel_option_rows`).
-func _max_option_rows() -> int:
-	return maxi(int(_data.get("panel_option_rows", 8)),
-		maxi(ControlBindings.actions().size() + 2, GameSettings.AUDIO_BUSES.size() + 1))
+## Filas visibles de opciones (`panel_option_rows`, 8: caben Ajustes y Sonido
+## enteras; Controles, mas larga, se desplaza con la seleccion).
+func visible_option_rows() -> int:
+	return maxi(1, int(_data.get("panel_option_rows", 8)))
+
+
+## Primera fila visible de la pagina actual.
+func get_scroll() -> int:
+	return _scroll
+
+
+## La opcion `index` de la pagina actual se ve (esta dentro de la ventana).
+func is_option_shown(index: int) -> bool:
+	return index >= 0 and index < _options.size() and index >= _scroll and index < _scroll + visible_option_rows()
+
+
+## Flechas ▲ / ▼ visibles (hay filas por encima / por debajo de la ventana).
+func scroll_arrows_shown() -> Vector2i:
+	return Vector2i(int(_arrow_up.visible), int(_arrow_down.visible))
 
 
 ## Ancho reservado al prefijo de seleccion (el mayor de los dos), para que el
