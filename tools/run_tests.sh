@@ -135,6 +135,9 @@ rm -f "$IMPORT_LOG"
 # del marco dorado de salida (tools/gen_world3_exit_frame.py --check).
 # Desde el paso 14 (2026-10-27): los datos y la logica de La Curadora (tests/test_curator.gd, GUT: marca solo con el
 # Debug, un golpe por marca y la via por el espejo cazador de la fase 2).
+# Desde el paso 15 (2026-10-27): la arena 3-boss «Exposición» (se valida y construye con las demas: esquema,
+# comprobaciones basicas de validate_basic_arena y escena al dia; el validador completo es el paso 16), sus fases
+# (tests/test_curator_arena.gd, GUT) y el arte provisional de la Curadora (tools/gen_boss_curator.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -207,6 +210,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/gen_world3_exit_frame.py --check \
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
+		&& python3 -I tools/gen_boss_curator.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2

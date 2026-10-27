@@ -1,0 +1,214 @@
+{
+	"_notes": "ARENA DEL JEFE DEL MUNDO 3 «Exposición» (La Curadora; paso 15 de docs/propuesta-mundo-3.md §8, 2026-10-27; diseño en §5.2). kind boss: sin meta G ni terminal (la pelea termina con el golpe final y la secuencia de derrota de BossBase); el jefe es el objeto curator (Curator, datos de la pelea en data/bosses/curator.json). 20 x 11 tiles = 1280 x 704 px: CABE ENTERA en pantalla (camara fija, camera.follow false del jefe), como la de Autoplay. Muros en las columnas 0 y 19, techo en la fila 0 y suelo en la 10 (Isak de pie en las filas 8-9). El jefe: marco de 8 x 4 (columnas 6-13, filas 1-4; no solido) con la camara-cabeza arriba en el centro; en las ventanas de las fases 1 y 3 baja 2 filas a encuadrar. PLATAFORMAS DE LIKES likes_izq y likes_der (columnas 3-5 y 14-16, superficie en la fila 6, umbral 5, de una via): desde ellas el celular de Isak queda a la altura de la lente que baja. REPISAS fijas (las '#' de las columnas 1-2 y 17-18 de la fila 8; se sube desde el suelo y desde ellas a las plataformas) con los BIOMBOS encima (columnas 2 y 17, filas 6-7; los dibuja la Curadora: tapan el flash). MARCOS PEQUEÑOS marco_izq y marco_der: el hueco de 1 fila bajo cada repisa (fila 9), solo para Isak comprimido (fase 3). FASE 2 (active_in_phase [2]): espejos de esquina espejo_izq (1, 1) y espejo_der (18, 1), el ESPEJO CAZADOR cazador en el centro del suelo (9, 9; reposo mirando al norte, al marco) y dos Ladrones de likes junto a los marcos pequeños (E en las columnas 4 y 15: el hueco del marco debe quedar en '.'). CARGADORES de arena (§5.2): columnas 3, 7, 12 y 16 del suelo: +50, reutilizables, 4 s en Caché (la Curadora los pone a 5 s en Kernel y 6 s en Raíz: laps.<n>.charger_cooldown_s); desde cualquier celda del suelo hay uno a 3,5 tiles o menos. Debug a un cuarto de gasto (debug_drain_scale 0.25) y mundo a x0,7 con el Debug (debug_world_scale 0.7), los de Alerta Mayor y Autoplay (los recalcula el validador de arenas del paso 16). Vortice de llegada (P) en (5, 9). Sin puntos, power banks, vida extra ni checkpoints. Se abre con $GODOT --path . -- --start-level=3-boss (build de depuracion); la fila «Jefe: La Curadora» del hub sigue «Próximamente» hasta el paso 17. Validador: hoy solo las comprobaciones basicas de validate_basic_arena (el completo es el paso 16).",
+	"id": "3-boss",
+	"name": "Exposición",
+	"world": 3,
+	"kind": "boss",
+	"boss": "curator",
+	"tile_size": 64,
+	"debug_color": "green",
+	"target_duration_s": 300,
+	"difficulty": 4,
+	"debug_drain_scale": 0.25,
+	"debug_world_scale": 0.7,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"sections": [
+		{
+			"name": "Exposición",
+			"x_from": 0,
+			"x_to": 19,
+			"patterns": [
+				"sin_filtro",
+				"de_espaldas",
+				"retrato_perfecto"
+			]
+		}
+	],
+	"grid": [
+		"####################",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"###..............###",
+		"#...EP.........E...#",
+		"####################"
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"type": "like_thief",
+			"id": "ladron_izq",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"patrol_range_px": 128,
+				"start_direction": 1
+			},
+			"active_in_phase": [
+				2
+			]
+		},
+		{
+			"type": "like_thief",
+			"id": "ladron_der",
+			"x": 15,
+			"y": 9,
+			"params": {
+				"patrol_range_px": 128,
+				"start_direction": -1
+			},
+			"active_in_phase": [
+				2
+			]
+		}
+	],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 3,
+			"y": 9,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 12,
+			"y": 9,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 16,
+			"y": 9,
+			"params": {
+				"id": "cargador_4",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 3,
+			"y": 6,
+			"params": {
+				"id": "likes_izq",
+				"threshold": 5,
+				"width_tiles": 3,
+				"one_way": true
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 14,
+			"y": 6,
+			"params": {
+				"id": "likes_der",
+				"threshold": 5,
+				"width_tiles": 3,
+				"one_way": true
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 1,
+			"y": 9,
+			"params": {
+				"id": "marco_izq",
+				"orientation": "wall",
+				"length_tiles": 2
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 17,
+			"y": 9,
+			"params": {
+				"id": "marco_der",
+				"orientation": "wall",
+				"length_tiles": 2
+			}
+		},
+		{
+			"type": "mirror",
+			"x": 1,
+			"y": 1,
+			"params": {
+				"id": "espejo_izq",
+				"orientation": "\\"
+			},
+			"active_in_phase": [
+				2
+			]
+		},
+		{
+			"type": "mirror",
+			"x": 18,
+			"y": 1,
+			"params": {
+				"id": "espejo_der",
+				"orientation": "/"
+			},
+			"active_in_phase": [
+				2
+			]
+		},
+		{
+			"type": "hunter_mirror",
+			"x": 9,
+			"y": 9,
+			"params": {
+				"id": "cazador",
+				"facing": "n"
+			},
+			"active_in_phase": [
+				2
+			]
+		},
+		{
+			"type": "curator",
+			"x": 6,
+			"y": 1,
+			"params": {
+				"id": "curator"
+			}
+		}
+	],
+	"unlocks": []
+}

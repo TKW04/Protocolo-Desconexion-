@@ -582,9 +582,9 @@
     "semantic_hash": ""
   },
   "tools/run_tests.sh": {
-    "mtime": 1793080182.4668102,
-    "seen": 1793080955.920743,
-    "ast_hash": "1f02217099b4758d4bfb64b657512109",
+    "mtime": 1793082551.4774628,
+    "seen": 1793082669.998192,
+    "ast_hash": "8ba2715d5849e97362ba3dde65412173",
     "semantic_hash": ""
   },
   "tools/upgrade_catalog.py": {
@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "tools/validate_level_schema.py": {
-    "mtime": 1793046171.9843495,
-    "seen": 1793047467.009535,
-    "ast_hash": "b77a75a920194c627234a3d5440b8a43",
+    "mtime": 1793081840.5421946,
+    "seen": 1793082669.9982028,
+    "ast_hash": "16073d24f456fdf9f1c1e31ae5d1bd3f",
     "semantic_hash": ""
   },
   "tools/validate_memories.py": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "docs/mundo-3-vitrina.md": {
-    "mtime": 1793080311.488023,
-    "seen": 1793080955.920783,
-    "ast_hash": "014af298401279218598a02fbcc4306c",
+    "mtime": 1793082604.8900049,
+    "seen": 1793082669.998233,
+    "ast_hash": "be78e3d729ec59566b3b99e7f48d9e0d",
     "semantic_hash": ""
   },
   "docs/mundo-4-chat.md": {
@@ -1614,9 +1614,9 @@
     "semantic_hash": ""
   },
   "data/world3_objects.json": {
-    "mtime": 1793070839.4149218,
-    "seen": 1793070847.722037,
-    "ast_hash": "b343b8ff8be711cb926c5a1aa7ba17d8",
+    "mtime": 1793081840.192249,
+    "seen": 1793082669.998112,
+    "ast_hash": "c1b7b98823c08c26f07ad17309eb2f92",
     "semantic_hash": ""
   },
   "tests/test_palette_mundo3.py": {
@@ -1632,9 +1632,9 @@
     "semantic_hash": ""
   },
   "docs/propuesta-mundo-3.md": {
-    "mtime": 1793080311.4863503,
-    "seen": 1793080955.920796,
-    "ast_hash": "c5013674c899778b73d01f065c9f5868",
+    "mtime": 1793082604.8885658,
+    "seen": 1793082669.998271,
+    "ast_hash": "a8e486fec64a4601e781485235832f80",
     "semantic_hash": ""
   },
   "data/levels/likes_test.json": {
@@ -1833,6 +1833,24 @@
     "mtime": 1793079137.153965,
     "seen": 1793080955.920727,
     "ast_hash": "067cbca1d8d7edc9d19e8e2856bb9ed9",
+    "semantic_hash": ""
+  },
+  "data/bosses/curator.json": {
+    "mtime": 1793081587.4587276,
+    "seen": 1793082669.998045,
+    "ast_hash": "8a6ce17fb5f625d864fde841ff457fd2",
+    "semantic_hash": ""
+  },
+  "data/levels/3-boss.json": {
+    "mtime": 1793082134.797539,
+    "seen": 1793082669.998077,
+    "ast_hash": "9dc9140c1183a5b7ad42b0d685225ef0",
+    "semantic_hash": ""
+  },
+  "tools/gen_boss_curator.py": {
+    "mtime": 1793082178.538568,
+    "seen": 1793082669.9981482,
+    "ast_hash": "3b0a47a279ceb69f259f311706e54dbb",
     "semantic_hash": ""
   }
 }

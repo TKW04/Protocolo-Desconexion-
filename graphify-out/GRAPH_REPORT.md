@@ -1,17 +1,17 @@
 # Graph Report - isak-fix-claude-code  (2026-10-27)
 
 ## Corpus Check
-- 259 files · ~724,160 words
+- 262 files · ~729,630 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 980 file(s) not represented in the graph (top: .gd 393, .uid 392, .tscn 129)
+- Unclassified: 989 file(s) not represented in the graph (top: .gd 396, .uid 396, .tscn 131)
 
 ## Summary
-- 4115 nodes · 8737 edges · 244 communities (171 shown, 73 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 474 edges (avg confidence: 0.91)
+- 4128 nodes · 8765 edges · 226 communities (156 shown, 70 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 476 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ea96980f`
+- Built from commit: `25c4795a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,7 +32,7 @@
 - LevelModel
 - gen_calc_encounter.py
 - base_level
-- World
+- gen_boss_curator.py
 - gen_world1_puzzle.py
 - gen_world1_tower.py
 - Propuesta: nivel 1-3 «No molestar» y el gesto Deslizar (dash)
@@ -48,7 +48,7 @@
 - gen_warp_objects.py
 - 2. Los asistentes
 - Level12Test
-- ._validate
+- validate_memories.py
 - Guía: hojas de sprites de Isak con IA
 - test_world2_feed_validator.py
 - gen_tileset_mundo1.py
@@ -60,9 +60,9 @@
 - VerticalSchemaTest
 - gen_popup.py
 - gen_world1_objects.py
-- validate_help_prompt.py
+- json
 - palette_hub_preview.py
-- os
+- gen_boss_dummy_placeholder.py
 - 2. Vacíos que impiden implementar
 - 3. Ambigüedades técnicas
 - ._check_softlocks
@@ -139,7 +139,7 @@
 - run_tests.sh
 - Decisiones del 2026-10-15: tres vueltas, hub y guardado
 - 8.1 Avance y desvíos
-- font_chars
+- validate_ui_assets.py
 - Plan y presupuesto: arte final de Alerta Mayor con AutoSprite (paso 16)
 - Level23Test
 - import_commenter.py
@@ -158,7 +158,7 @@
 - BossTestRoomTest
 - AlertMajorFightDataTest
 - MemoryArtTest
-- ._check_exit_terminals
+- .__init__
 - ReducePaletteTest
 - test_import_sheet.py
 - ValidationBlockSchemaTest
@@ -168,8 +168,8 @@
 - Propuesta: 1-1 ampliado y mejoras permanentes
 - 3. Mecánicas
 - validate_arena
-- Encuentro con Calc: acertijo de la azotea del 1-2
-- measure_tower_contrast.py
+- import_isak_back_idle.py
+- argparse
 - PaletteMundo3Test
 - gen_hud_assets.py
 - search
@@ -186,25 +186,22 @@
 - 2.4 Energía: números reales y solución (aprobado el 2026-10-20)
 - 5. Jefe del Mundo 3: La Curadora
 - AlertMajorFinalArtTest
-- 6. Arte y sonido
+- Propuesta: Mundo 2 «El Feed» (2-1, 2-2, 2-3 y jefe Autoplay)
 - gen_world2_cards.py
-- Propuesta: nivel 1-2 «Centro de notificaciones» y lenguaje de combinaciones
+- 3. Los pisos
 - palette_mundo3_preview.py
 - Arena
-- 4. Niveles, tramo a tramo
+- blink_standing_problems
 - .simulate
 - Propuesta: sistema de mejoras de Calc (cinco pistas de 5 niveles)
 - Propuesta: Mundo 3 «La Vitrina» (3-1, 3-2, 3-3 y jefe La Curadora)
-- validate_ui_assets.py
+- validate
 - .x2
-- validate_memories.py
 - EconomyTest
-- validate_tileset.py
 - Integración del sistema de audio (2026-10-20)
 - gen_world3_enemies.py
 - receiver
 - World3
-- validate_sprites.py
 - level_plan.py
 - notas
 - gen_world3_objects.py
@@ -214,36 +211,22 @@
 - Notas del 1-1 ampliado (2026-10-14)
 - gen_world3_background.py
 - Pinched
-- 3. Esquema del nivel, tramo a tramo
 - gen_world1_facade.py
 - Level33Test
 - .beam_hit
-- 6. Arte y sonido
-- build_scene
-- gen_world3_exit_frame.py
 - C
 - validate_audio.py
-- canvas
+- 3. Mecánicas
 - validate_enemy_sprites.py
 - lower
-- re
 - palette_mundo2_provisional.py
-- select_tile
-- RealData
 - fill
-- level_climbs.py
 - .set_cell
-- tile_map_data
 - stunned
-- .test_dash_cooldown_between_two_dashes
 - 3. Cómo se vence
-- 2. Estructura vertical
-- fmt_value
 - menu_outputs
 - composition
-- 2. Tema y tono
 - CliTest
-- check_mark
 - Ficha del juego y estructura de mundos
 
 ## God Nodes (most connected - your core abstractions)
@@ -265,15 +248,15 @@
   docs/propuesta-mundo-2.md → tests/test_validate_level.py
 - `4.5 Mensajes recuperables `msg_3_x` (borradores de tono; PROPUESTA)` --references--> `secret()`  [INFERRED]
   docs/propuesta-mundo-3.md → tests/test_validate_level.py
-- `6.2 Qué se hace con AutoSprite y qué por script` --references--> `stunned()`  [INFERRED]
-  docs/propuesta-mundo-3.md → tools/gen_alert_bubble.py
 - `15.3.1 Paleta del hub (PROPUESTA 2026-10-15)` --references--> `base()`  [INFERRED]
   docs/07-estilo-visual.md → tools/gen_checkpoint.py
+- `Notas de los objetos del Mundo 1 (puente, receptor, pared con glitch y fondo; 2026-10-14)` --references--> `one_way()`  [INFERRED]
+  docs/preguntas.md → tools/gen_hub_objects.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (244 total, 73 thin omitted)
+## Communities (226 total, 70 thin omitted)
 
 ### Community 0 - "Level22Test"
 Cohesion: 0.13
@@ -292,8 +275,8 @@ Cohesion: 0.15
 Nodes (24): apply_debug(), cyan_comparison(), cyan_metrics(), de(), draw_hidden(), draw_weak_point(), font(), hexs() (+16 more)
 
 ### Community 4 - "sys"
-Cohesion: 0.11
-Nodes (19): sprite_frames_tres(), main(), main(), main(), main(), main(), check_config(), main() (+11 more)
+Cohesion: 0.10
+Nodes (20): sprite_frames_tres(), main(), main(), main(), main(), main(), check_config(), main() (+12 more)
 
 ### Community 6 - "gen_audio_placeholders.py"
 Cohesion: 0.14
@@ -302,6 +285,10 @@ Nodes (25): 6.1 Textos del jefe (paso 12; propuesta del orquestador, revisar al 
 ### Community 7 - "Level32Test"
 Cohesion: 0.17
 Nodes (5): Level32Test, obj(), of_type(), secret_item(), section_of()
+
+### Community 10 - "Validator"
+Cohesion: 0.11
+Nodes (3): climbs(), ledge_of(), Validator
 
 ### Community 11 - "math"
 Cohesion: 0.12
@@ -315,29 +302,29 @@ Nodes (41): Ajuste del 1-2 tras probarlo: techos y contraste del fondo (2026-10-
 Cohesion: 0.12
 Nodes (23): autodetect_grid(), bbox_alpha(), changed_pixels(), color_dist(), content_mask_fn(), detect_shadow_color(), drop_specks(), feet_anchor() (+15 more)
 
-### Community 14 - "LevelModel"
-Cohesion: 0.08
-Nodes (4): anim_length(), LevelModel, has_world3(), is_pinched()
-
 ### Community 15 - "gen_calc_encounter.py"
-Cohesion: 0.10
-Nodes (35): Decisiones tomadas, Formato, Validación de alcanzabilidad, 2. Secuencia (exacta), 3. Piezas (implementadas en H1), Reglas, battery_icon(), calc_charging() (+27 more)
+Cohesion: 0.07
+Nodes (44): Formato, Validación de alcanzabilidad, 10. Tanda H2 hecha (2026-10-17): la azotea del 1-2 y el validador, 11. Tanda H3 hecha (2026-10-17): el encuentro en el hub, 1. Idea, 2. Secuencia (exacta), 3. Piezas (implementadas en H1), 4. Guion propio de Eco (`EcoGuide`) (+36 more)
 
 ### Community 16 - "base_level"
 Cohesion: 0.16
 Nodes (5): base_level(), BrokenVariantsTest, obj_id(), secret(), set_cell()
 
+### Community 17 - "gen_boss_curator.py"
+Cohesion: 0.24
+Nodes (8): biombo(), camera_head(), frame(), frame_back(), frame_border(), main(), outputs(), png_bytes()
+
 ### Community 18 - "gen_world1_puzzle.py"
-Cohesion: 0.13
-Nodes (21): 10. Requisitos técnicos y plan de implementación, 4.1 Elementos, 4.2 Pasos (orden obligatorio), 4.3 Pistas, fallos y reinicio, 4.4 Obtención del Debug (momento de historia), 4. El acertijo del Debug (piso 2, «Correo certificado»), 7. Ayudas Q y álbum del 1-2, ad_card() (+13 more)
+Cohesion: 0.09
+Nodes (32): Decisiones tomadas, 10. Requisitos técnicos y plan de implementación, 11. Preguntas (resueltas el 2026-10-16), 1. Concepto, objetivo y tono, 4.1 Elementos, 4.2 Pasos (orden obligatorio), 4.3 Pistas, fallos y reinicio, 4.4 Obtención del Debug (momento de historia) (+24 more)
 
 ### Community 19 - "gen_world1_tower.py"
 Cohesion: 0.13
 Nodes (25): bar_fill(), bar_housing(), circle(), clock(), disc(), drop_arrow(), drop_shadow(), outputs() (+17 more)
 
 ### Community 20 - "Propuesta: nivel 1-3 «No molestar» y el gesto Deslizar (dash)"
-Cohesion: 0.12
-Nodes (17): 1. Concepto, objetivo y tono, 2.1 Valores iniciales propuestos, 2.2 Reglas, 2.3 Aspecto y respuesta (propuesta), 2.4 Aviso de control, ayuda y álbum, 2. Mecánica del dash (gesto Deslizar), 4. Lenguaje de combinaciones del dash (amplía §0 de `propuesta-1-2.md`), 5.1 Interruptor «No molestar» (`dnd_switch`, objeto) (+9 more)
+Cohesion: 0.07
+Nodes (27): 1. Concepto, objetivo y tono, 2.1 Valores iniciales propuestos, 2.2 Reglas, 2.3 Aspecto y respuesta (propuesta), 2.4 Aviso de control, ayuda y álbum, 2. Mecánica del dash (gesto Deslizar), 3.0 Dimensiones y estructura, 3.1 Inicio: sala «Ajustes» (columnas 1-22) (+19 more)
 
 ### Community 21 - "0. Lenguaje de combinaciones (reutilizable en todos los niveles)"
 Cohesion: 0.25
@@ -345,7 +332,7 @@ Nodes (8): 0.1 Reglas físicas que se respetan y se explotan, 0.2 Patrón 1: Atu
 
 ### Community 22 - "Canvas"
 Cohesion: 0.09
-Nodes (14): album_folder(), Canvas, dock_fill(), icon_airplane(), icon_calc(), icon_notas(), icon_settings(), icon_unsaved() (+6 more)
+Nodes (16): 4.6 Hub y progresión, album_cell(), album_folder(), Canvas, dock_fill(), icon_airplane(), icon_calc(), icon_notas() (+8 more)
 
 ### Community 23 - "gen_checkpoint.py"
 Cohesion: 0.20
@@ -369,23 +356,23 @@ Nodes (19): upgrade_catalog_total(), access_cap(), effective_value(), legacy_ids
 
 ### Community 28 - "import_boss_alert_major.py"
 Cohesion: 0.16
-Nodes (12): add_outline(), build(), import_anim(), main(), main(), main(), check_image(), load_gpl() (+4 more)
+Nodes (10): add_outline(), build(), import_anim(), main(), check_image(), load_gpl(), main(), nearest() (+2 more)
 
 ### Community 29 - "4. Niveles, tramo a tramo"
-Cohesion: 0.20
-Nodes (10): 4.1.1 Secretos y economía del 2-1, 4.1 Nivel 2-1 «Para ti», 4.2.1 Secretos y economía del 2-2, 4.2 Nivel 2-2 «Un video más», 4.3.1 Secretos y economía del 2-3, 4.3 Nivel 2-3 «Scroll infinito», 4.4 Duración, dificultad y progresión, 4.5 Mensajes recuperables `msg_2_x` (borradores de tono; PROPUESTA) (+2 more)
+Cohesion: 0.25
+Nodes (8): 4.2.1 Secretos y economía del 2-2, 4.2 Nivel 2-2 «Un video más», 4.3.1 Secretos y economía del 2-3, 4.3 Nivel 2-3 «Scroll infinito», 4.4 Duración, dificultad y progresión, 4.5 Mensajes recuperables `msg_2_x` (borradores de tono; PROPUESTA), 4.6 Hub y progresión, 4. Niveles, tramo a tramo
 
 ### Community 30 - "gen_warp_objects.py"
-Cohesion: 0.13
-Nodes (15): preview(), animations(), cursor(), _in_arcs(), main(), outputs(), pins(), prompt_glyph() (+7 more)
+Cohesion: 0.09
+Nodes (25): preview(), animations(), cursor(), _in_arcs(), main(), outputs(), pins(), prompt_glyph() (+17 more)
 
 ### Community 31 - "2. Los asistentes"
-Cohesion: 0.16
-Nodes (11): 2.1 Eco, 2.2 Notas: consola de guardado y álbum, 2.3 Calc, 2.4 Linterna, 2.5 Papelera, 2. Los asistentes, 5.1 Vidas (decisiones del usuario 2026-10-15 (3)), 5.2 Flujo del game over (paso a paso) (+3 more)
+Cohesion: 0.11
+Nodes (19): 11. Riesgos, 12. Preguntas abiertas (con recomendación), 13. Documentos que cambian, 1. Concepto, 2.1 Eco, 2.2 Notas: consola de guardado y álbum, 2.3 Calc, 2.4 Linterna (+11 more)
 
-### Community 33 - "._validate"
-Cohesion: 0.19
-Nodes (4): _boss_set(), LevelLinks, _message(), Synthetic
+### Community 33 - "validate_memories.py"
+Cohesion: 0.07
+Nodes (18): A11 [RESUELTO] HUD definitivo del Mundo 1 (paso 12, 2026-10-14), _boss_set(), LevelLinks, _message(), RealData, Synthetic, _validate(), _check_level_links() (+10 more)
 
 ### Community 34 - "Guía: hojas de sprites de Isak con IA"
 Cohesion: 0.15
@@ -397,7 +384,7 @@ Nodes (11): ClonesTest, FeedHazardModelTest, load(), LoadingWallTest, LoopEnergy
 
 ### Community 36 - "gen_tileset_mundo1.py"
 Cohesion: 0.13
-Nodes (15): build(), decor_grid(), decor_window(), main(), one_way_tile(), preview(), rivet(), solid_tile() (+7 more)
+Nodes (15): build(), composition(), decor_grid(), decor_window(), main(), one_way_tile(), preview(), rivet() (+7 more)
 
 ### Community 37 - "test_build_level.py"
 Cohesion: 0.14
@@ -420,20 +407,20 @@ Cohesion: 0.18
 Nodes (11): Canvas, check_points(), close_button(), close_sheet(), door(), door_sheet(), glitch_rows(), main() (+3 more)
 
 ### Community 44 - "gen_world1_objects.py"
-Cohesion: 0.16
-Nodes (11): bg_cielo(), bg_fondo_medio(), bg_preview(), bg_resplandor(), bridge_half(), checker(), glitch_sheet(), glitch_tile() (+3 more)
+Cohesion: 0.15
+Nodes (12): bg_cielo(), bg_fondo_medio(), bg_preview(), bg_resplandor(), bridge_half(), bridge_off(), checker(), glitch_sheet() (+4 more)
 
-### Community 45 - "validate_help_prompt.py"
-Cohesion: 0.48
-Nodes (5): fnt_chars(), hex_rgb(), luminance(), main(), palette_by_name()
+### Community 45 - "json"
+Cohesion: 0.08
+Nodes (23): banner_walk_hits(), load_level(), load_level(), load_level(), load_level(), load_level(), load_level(), load_level() (+15 more)
 
 ### Community 46 - "palette_hub_preview.py"
 Cohesion: 0.22
 Nodes (13): check(), contrast_rows(), font(), hx(), lin(), main(), mockup(), folder() (+5 more)
 
-### Community 47 - "os"
-Cohesion: 0.13
-Nodes (10): badge(), check_palette(), main(), outputs(), text(), load_spec(), main(), clean() (+2 more)
+### Community 47 - "gen_boss_dummy_placeholder.py"
+Cohesion: 0.48
+Nodes (5): badge(), check_palette(), main(), outputs(), text()
 
 ### Community 48 - "2. Vacíos que impiden implementar"
 Cohesion: 0.12
@@ -448,8 +435,8 @@ Cohesion: 0.13
 Nodes (14): collect(), dissolve(), frames_resource(), idle(), outputs(), phone(), plus_one_big(), ring() (+6 more)
 
 ### Community 52 - "os"
-Cohesion: 0.05
-Nodes (34): load_level(), load_level(), load_level(), load_level(), load_level(), reaches(), load_level(), load_level() (+26 more)
+Cohesion: 0.08
+Nodes (12): deep(), hidden_gap(), reaches(), catalog_path(), _load(), load_catalog(), main(), validate_file() (+4 more)
 
 ### Community 53 - "ScrollSim"
 Cohesion: 0.18
@@ -460,8 +447,8 @@ Cohesion: 0.07
 Nodes (13): arrow(), big_bell(), big_photo(), charger(), charger_remap(), dock_top(), _energy_module(), folder() (+5 more)
 
 ### Community 56 - "gen_album_cards.py"
-Cohesion: 0.16
-Nodes (10): card(), help_types(), main(), outputs(), reduce(), silhouette(), load_gpl(), colors() (+2 more)
+Cohesion: 0.12
+Nodes (13): card(), help_types(), main(), outputs(), reduce(), silhouette(), load_gpl(), colors() (+5 more)
 
 ### Community 57 - "Canvas"
 Cohesion: 0.07
@@ -476,8 +463,8 @@ Cohesion: 0.23
 Nodes (6): box(), chip(), lock(), main(), outputs(), preview()
 
 ### Community 62 - "puzzle_levels.py"
-Cohesion: 0.11
-Nodes (13): banner_tunnel(), banner_walk_hits(), blink_pit(), blink_standing_problems(), dash_corridor(), deep(), dnd_gap(), hidden_gap() (+5 more)
+Cohesion: 0.17
+Nodes (9): banner_tunnel(), blink_pit(), dash_corridor(), dnd_gap(), load_room(), long_banner_corridor(), obj_by_id(), secret_behind_pit() (+1 more)
 
 ### Community 63 - "checked"
 Cohesion: 0.18
@@ -496,8 +483,8 @@ Cohesion: 0.18
 Nodes (11): 15.1 Resolución y técnica, 15.2 Reglas generales, 15.3 Paletas por mundo, 15.4 Isak y su copia, 15.5 Enemigos y jefes, 15.6 Efectos visuales, 15.7 Interfaz, 15.8 Referencias de estilo (+3 more)
 
 ### Community 69 - "Propuesta: recuerdos de jefe en tres capas"
-Cohesion: 0.12
-Nodes (16): 10. Decisiones del 2026-10-19 (usuario), 11.1 Paso 5: entrega por jefe (Caché hecha; Kernel y Raíz, diseño), 11.2 Paso 6: textos (2026-10-22), 11.3 Paso 7: las 6 ilustraciones (2026-10-22), 11.4 Paso 8: requisito del final real (2026-10-22), 11. Pasos 5-8 (2026-10-22), 1. La decisión, 2. Relación con los fragmentos (+8 more)
+Cohesion: 0.13
+Nodes (15): 10. Decisiones del 2026-10-19 (usuario), 11.1 Paso 5: entrega por jefe (Caché hecha; Kernel y Raíz, diseño), 11.2 Paso 6: textos (2026-10-22), 11.3 Paso 7: las 6 ilustraciones (2026-10-22), 11.4 Paso 8: requisito del final real (2026-10-22), 11. Pasos 5-8 (2026-10-22), 1. La decisión, 2. Relación con los fragmentos (+7 more)
 
 ### Community 70 - "gen_boss_alert_major.py"
 Cohesion: 0.15
@@ -521,7 +508,7 @@ Nodes (16): Art, bike(), blur(), cup(), head(), isak(), outputs(), radio() (+8 m
 
 ### Community 80 - "validate_boss.py"
 Cohesion: 0.12
-Nodes (10): autoplay_conveyor(), _bar_travel(), conveyor_level(), energy_lap_autoplay(), _laser_hits(), _phase_slots(), _phase_window(), _rects_px() (+2 more)
+Nodes (15): autoplay_conveyor(), _bar_travel(), check_mark(), check_phase3(), conveyor_level(), energy_lap_autoplay(), _intervals_overlap(), _laser_hits() (+7 more)
 
 ### Community 83 - "Pipeline de pixel art"
 Cohesion: 0.25
@@ -541,7 +528,7 @@ Nodes (9): 7.1 Ambientación, 7.2 Mecánica central: scroll forzado, 7.3 Enemigo
 
 ### Community 87 - "8. Mapa conceptual: Mundo 3, La Vitrina"
 Cohesion: 0.22
-Nodes (9): 8.1 Ambientación, 8.2 Mecánicas centrales, 8.3 Enemigos y elementos del mundo, 8.4 Nivel 3-1: Galería de perfil, 8.5 Nivel 3-2: Sin filtro, 8.6 Nivel 3-3: Espejo, espejito, 8.7 Jefe: La Curadora, 8.8 Estado del Mundo 3 (2026-10-27): mecánicas implementadas, el 3-1, el 3-2 y el 3-3 jugables (+1 more)
+Nodes (9): 8.1 Ambientación, 8.2 Mecánicas centrales, 8.3 Enemigos y elementos del mundo, 8.4 Nivel 3-1: Galería de perfil, 8.5 Nivel 3-2: Sin filtro, 8.6 Nivel 3-3: Espejo, espejito, 8.7 Jefe: La Curadora, 8.8 Estado del Mundo 3 (2026-10-27): mecánicas implementadas, el 3-1, el 3-2 y el 3-3 jugables y La Curadora en su arena (+1 more)
 
 ### Community 88 - "9. Mapa conceptual: Mundo 4, El Chat"
 Cohesion: 0.25
@@ -580,7 +567,7 @@ Cohesion: 0.25
 Nodes (8): 9.1 Ambientación, 9.2 Mecánicas centrales, 9.3 Enemigos y elementos del mundo, 9.4 Nivel 4-1: Chats recientes, 9.5 Nivel 4-2: Grupo sin respuesta, 9.6 Nivel 4-3: Mensajes sin leer, 9.7 Jefe: El Visto, 9. Mapa conceptual: Mundo 4, El Chat
 
 ### Community 97 - "messages"
-Cohesion: 0.21
+Cohesion: 0.20
 Nodes (3): messages(), NegativeTest, room()
 
 ### Community 98 - "gen_upgrade_fx.py"
@@ -588,7 +575,7 @@ Cohesion: 0.13
 Nodes (11): Tanda M2 (hecha el 2026-10-17), energy_return(), Frame, lost_trail(), main(), outputs(), pierce_spark(), plus_four() (+3 more)
 
 ### Community 100 - "._explain_failure"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (3): body_cells(), path_to(), emit()
 
 ### Community 101 - "ArenaTest"
@@ -612,8 +599,8 @@ Cohesion: 0.29
 Nodes (7): 6.1 Ambientación, 6.2 Enemigos y elementos del mundo, 6.3 Nivel 1-1: Bandeja de entrada, 6.4 Nivel 1-2: Centro de notificaciones, 6.5 Nivel 1-3: No molestar, 6.6 Jefe: Alerta Mayor, 6. Mapa conceptual: Mundo 1, Notificaciones
 
 ### Community 106 - "palette_mundo3_provisional.py"
-Cohesion: 0.19
-Nodes (18): check_rules(), de(), gpl_text(), hsv(), hue_deg(), hx(), _is_green(), lab() (+10 more)
+Cohesion: 0.17
+Nodes (18): de(), gpl_text(), hsv(), hue_deg(), hx(), _is_green(), lab(), f() (+10 more)
 
 ### Community 107 - "15. Estilo visual"
 Cohesion: 0.17
@@ -645,11 +632,11 @@ Nodes (6): 3.1 Movimiento, 3.2 Combate y utilidad, 3.3 Barras, 3.4 Daño y muert
 
 ### Community 114 - "gen_memory_pickup.py"
 Cohesion: 0.18
-Nodes (10): collect(), envelope(), frames_resource(), idle(), letter(), new_dot(), open_envelope(), outputs() (+2 more)
+Nodes (9): collect(), envelope(), frames_resource(), idle(), letter(), new_dot(), open_envelope(), outputs() (+1 more)
 
 ### Community 115 - "5. Jefe del Mundo 2: Autoplay"
-Cohesion: 0.11
-Nodes (18): 0. Resumen, 1. Qué está decidido y qué es propuesta, 5.10 Ayuda con Q (tipos nuevos, `world: 2`; textos de Eco por escribir), 5.1 Concepto y tono, 5.2 Arena «Reproducción automática» (20 × 11 tiles), 5.3 Punto débil y daño: la pausa (PROPUESTA; decisión abierta 7), 5.4 Fase 1 «Clips» (doc: olas, rayos y barridos), 5.5 Fase 2 «Siguiente video en 5» (+10 more)
+Cohesion: 0.18
+Nodes (11): 5.10 Ayuda con Q (tipos nuevos, `world: 2`; textos de Eco por escribir), 5.1 Concepto y tono, 5.2 Arena «Reproducción automática» (20 × 11 tiles), 5.3 Punto débil y daño: la pausa (PROPUESTA; decisión abierta 7), 5.4 Fase 1 «Clips» (doc: olas, rayos y barridos), 5.5 Fase 2 «Siguiente video en 5», 5.6 Fase 3 «x2», 5.7 Energía (estimación; la valida `tools/validate_boss.py`) (+3 more)
 
 ### Community 117 - "2. El jefe"
 Cohesion: 0.15
@@ -672,12 +659,12 @@ Cohesion: 0.50
 Nodes (4): Decisiones del 2026-10-15: tres vueltas, hub y guardado, Dudas abiertas, Nombres de las vueltas de cara al jugador (decisión del 2026-10-15), Sugerencia de dificultad (propuesta del equipo, pendiente de aprobar; no es decisión)
 
 ### Community 124 - "8.1 Avance y desvíos"
-Cohesion: 0.24
-Nodes (12): Mundo 2: scroll forzado, tarjetas, bucles y golpe al suelo (2026-10-22), 3.4 Enemigos y objetos (qué se reutiliza), 7.1 Validador de niveles (`tools/validate_level.py` + `tools/level_plan.py`), 8.1 Avance y desvíos, 8. Plan de implementación, one_way(), autoplay_video(), commenter() (+4 more)
+Cohesion: 0.20
+Nodes (14): Mundo 2: scroll forzado, tarjetas, bucles y golpe al suelo (2026-10-22), 3.4 Enemigos y objetos (qué se reutiliza), 7.1 Validador de niveles (`tools/validate_level.py` + `tools/level_plan.py`), 7.2 Validador de arenas (`tools/validate_boss.py`), 7.3 Bots, 7. Validación: validador y bots, 8.1 Avance y desvíos, 8. Plan de implementación (+6 more)
 
-### Community 125 - "font_chars"
-Cohesion: 0.16
-Nodes (3): font_chars(), TextFontTest, crop()
+### Community 125 - "validate_ui_assets.py"
+Cohesion: 0.09
+Nodes (15): ability_notice_strings(), collect_texts(), font_chars(), game_strings(), load_json(), TextFontTest, check_asset(), check_battery() (+7 more)
 
 ### Community 126 - "Plan y presupuesto: arte final de Alerta Mayor con AutoSprite (paso 16)"
 Cohesion: 0.08
@@ -689,15 +676,11 @@ Nodes (5): enemy(), Level23Test, obj(), row(), section_of()
 
 ### Community 128 - "import_commenter.py"
 Cohesion: 0.16
-Nodes (11): body_top(), build(), cell_image(), components(), keep_largest_blob(), opaque_box(), parse_cells(), redraw_stunned() (+3 more)
+Nodes (12): body_top(), build(), cell_image(), components(), keep_largest_blob(), main(), opaque_box(), parse_cells() (+4 more)
 
 ### Community 132 - "test_world3_validator.py"
 Cohesion: 0.07
 Nodes (28): column_room(), edit(), ColumnJumpTest, drop(), FilterTest, flat_room(), influencer_room(), edit() (+20 more)
-
-### Community 133 - "Rules"
-Cohesion: 0.10
-Nodes (4): _basic_checks(), validate_basic_arena(), Rules, validate()
 
 ### Community 134 - ".hazard_search"
 Cohesion: 0.18
@@ -707,13 +690,17 @@ Nodes (5): edge_samples(), local(), run(), standing(), rects_overlap()
 Cohesion: 0.16
 Nodes (4): enemy(), Level13Test, obj(), section_of()
 
+### Community 145 - ".__init__"
+Cohesion: 0.11
+Nodes (5): crop(), anim_length(), Gate, sprite_frames(), has_world3()
+
 ### Community 149 - "world3_model.py"
-Cohesion: 0.12
-Nodes (17): _apply_fix(), _cell_of(), _end_frame(), _hunter_advance(), _hunter_wait(), index_for_vector(), plan_enemies(), plan_hunters() (+9 more)
+Cohesion: 0.11
+Nodes (18): _apply_fix(), _cell_of(), _end_frame(), format_lines(), _hunter_advance(), _hunter_wait(), index_for_vector(), plan_enemies() (+10 more)
 
 ### Community 151 - "import_boss_autoplay.py"
-Cohesion: 0.26
-Nodes (9): build(), cell_image(), center_y(), clean_halo(), eye_discs(), opaque_box(), parse_cells(), shift_y() (+1 more)
+Cohesion: 0.24
+Nodes (10): build(), cell_image(), center_y(), clean_halo(), eye_discs(), main(), opaque_box(), parse_cells() (+2 more)
 
 ### Community 152 - "Propuesta: 1-1 ampliado y mejoras permanentes"
 Cohesion: 0.22
@@ -724,16 +711,16 @@ Cohesion: 0.20
 Nodes (10): 3.1.1 Avisos, 3.1 Scroll forzado (`camera.vertical: "autoscroll"`, nuevo), 3.2 El borde que daña (PROPUESTA), 3.3.1 Valores iniciales (PROPUESTA; sección `ground_pound` de `data/isak_abilities.json`), 3.3.2 Reglas, 3.3.3 Control (decisión abierta 2), 3.3 Golpe al suelo (gesto **Mantener presionado**, habilidad `ground_pound`), 3.5 Secciones en bucle (+2 more)
 
 ### Community 154 - "validate_arena"
-Cohesion: 0.12
-Nodes (23): anim_fps(), check_art_telegraphs(), check_center_climb(), check_chargers(), check_lanes(), check_phase3(), check_telegraphs(), check_windows() (+15 more)
+Cohesion: 0.10
+Nodes (21): anim_fps(), _basic_checks(), check_art_telegraphs(), check_center_climb(), check_chargers(), check_lanes(), check_telegraphs(), check_windows() (+13 more)
 
-### Community 155 - "Encuentro con Calc: acertijo de la azotea del 1-2"
-Cohesion: 0.17
-Nodes (11): 10. Tanda H2 hecha (2026-10-17): la azotea del 1-2 y el validador, 11. Tanda H3 hecha (2026-10-17): el encuentro en el hub, 1. Idea, 4. Guion propio de Eco (`EcoGuide`), 5. Iconos y variables en los cuadros de texto (H1), 6. Calc en el hub (tanda H3, hecha el 2026-10-17), 7. Plan de tandas, 8. Cambios en `propuesta-1-2.md` §paso 14 (+3 more)
+### Community 155 - "import_isak_back_idle.py"
+Cohesion: 0.60
+Nodes (3): clean(), compare(), main()
 
-### Community 156 - "measure_tower_contrast.py"
-Cohesion: 0.36
-Nodes (6): edges(), luminance(), main(), measure_shot(), ratio(), summarize()
+### Community 156 - "argparse"
+Cohesion: 0.08
+Nodes (21): default_out(), dump(), main(), edges(), luminance(), main(), measure_shot(), ratio() (+13 more)
 
 ### Community 158 - "gen_hud_assets.py"
 Cohesion: 0.09
@@ -752,8 +739,8 @@ Cohesion: 0.18
 Nodes (10): 0. Resumen, 1.1 Ya decidido, 1.2 Sin rollback en esta pelea (decisión 1, aprobada el 2026-10-20), 1.3 Cómo se llega (aprobado), 1. Acceso al jefe, 4.1 Piezas nuevas, 4.2 Validación y bot, 4. Implementación: piezas (+2 more)
 
 ### Community 162 - "build_level.py"
-Cohesion: 0.14
-Nodes (12): enemy_help_id(), fake_floor_cells(), filter_cells(), filter_hidden_spikes(), filter_rects(), load_json(), main(), object_params() (+4 more)
+Cohesion: 0.06
+Nodes (37): 2.1 Dimensiones, 2.2 Cámara con scroll vertical, 2.3 Puntos de sincronización (uno cada dos pisos), 2. Estructura vertical, build_scene(), feet(), camera_bands(), cover_cells() (+29 more)
 
 ### Community 163 - "main"
 Cohesion: 0.25
@@ -764,8 +751,8 @@ Cohesion: 0.14
 Nodes (12): alert(), anticipate_frames(), bubble(), exclamation(), Frame, idle_frames(), inside(), main() (+4 more)
 
 ### Community 167 - "outputs"
-Cohesion: 0.23
-Nodes (9): Láser, vida de enemigos y energía (2026-10-15), 4. Impacto técnico y riesgos, ability(), charger(), energy_drop(), outputs(), power_bank(), stamp() (+1 more)
+Cohesion: 0.20
+Nodes (11): Láser, vida de enemigos y energía (2026-10-15), 4. Impacto técnico y riesgos, 5.1 Interruptor «No molestar» (`dnd_switch`, objeto), 10. Plan de implementación, ability(), charger(), energy_drop(), outputs() (+3 more)
 
 ### Community 168 - "Level31Test"
 Cohesion: 0.21
@@ -780,84 +767,68 @@ Cohesion: 0.29
 Nodes (7): 2.4.2 Supuestos de la simulación (Caché, sin mejoras), 2.4.3 Resultado con el diseño anterior (Debug 20/s, 2 cargadores de esquina, 10 s), 2.4.4 Opciones comparadas (pelea torpe, Caché, barra de 100), 2.4.5 Solución elegida el 2026-10-20 (con la marca, el Debug pasa a 0,25: §2.4.7), 2.4.6 Kernel y Raíz (misma lógica), 2.4.7 Energía con la marca (2026-10-21, vigente), 2.4 Energía: números reales y solución (aprobado el 2026-10-20)
 
 ### Community 171 - "5. Jefe del Mundo 3: La Curadora"
-Cohesion: 0.18
-Nodes (11): 5.10 Ayuda con Q (tipos nuevos del jefe, `world: 3`; textos por revisar), 5.1 Concepto y tono, 5.2 Arena «Exposición» (20 × 11 tiles), 5.3 Punto débil y daño: la marca «sin filtro» (decisión tomada), 5.4 Fase 1 «Sesión de fotos» (doc: fotos con flash y filtros que esconden pinchos y huecos), 5.5 Fase 2 «De espaldas» (doc: espejos que reflejan el pulso; punto débil de espaldas), 5.6 Fase 3 «Retrato perfecto» (doc: Reflejo falso más pulido y más rápido; Debug distingue al real; Pellizcar para escapar), 5.7 Energía (estimación; la valida `tools/validate_boss.py`) (+3 more)
+Cohesion: 0.20
+Nodes (10): 5.10 Ayuda con Q (tipos nuevos del jefe, `world: 3`; textos por revisar), 5.1 Concepto y tono, 5.2 Arena «Exposición» (20 × 11 tiles), 5.3 Punto débil y daño: la marca «sin filtro» (decisión tomada), 5.5 Fase 2 «De espaldas» (doc: espejos que reflejan el pulso; punto débil de espaldas), 5.6 Fase 3 «Retrato perfecto» (doc: Reflejo falso más pulido y más rápido; Debug distingue al real; Pellizcar para escapar), 5.7 Energía (estimación; la valida `tools/validate_boss.py`), 5.8 Kernel y Raíz (PROPUESTA a alto nivel; se cierran al hacer esas vueltas) (+2 more)
 
-### Community 173 - "6. Arte y sonido"
-Cohesion: 0.40
-Nodes (5): 6.1 Paleta del Mundo 2, 6.2 Qué se hace con AutoSprite y qué por script, 6.3 Por script (detalle), 6.4 Sonido, 6. Arte y sonido
+### Community 173 - "Propuesta: Mundo 2 «El Feed» (2-1, 2-2, 2-3 y jefe Autoplay)"
+Cohesion: 0.15
+Nodes (13): 0. Resumen, 1. Qué está decidido y qué es propuesta, 2.1 Idea, 2.2 Tono, 2.3 Reloj del HUD y tarjetas de recuerdos (PROPUESTA), 2. Tema y tono, 6.1 Paleta del Mundo 2, 6.2 Qué se hace con AutoSprite y qué por script (+5 more)
 
 ### Community 174 - "gen_world2_cards.py"
-Cohesion: 0.23
-Nodes (10): card(), feed_edge(), fragile(), hud_clock(), loop_sign(), main(), outputs(), outputs_for() (+2 more)
+Cohesion: 0.18
+Nodes (13): 4.1.1 Secretos y economía del 2-1, 4.1 Nivel 2-1 «Para ti», autoplay_video(), card(), feed_edge(), fragile(), hud_clock(), loop_sign() (+5 more)
 
-### Community 175 - "Propuesta: nivel 1-2 «Centro de notificaciones» y lenguaje de combinaciones"
-Cohesion: 0.12
-Nodes (16): 11. Preguntas (resueltas el 2026-10-16), 1. Concepto, objetivo y tono, 3.0 Vestíbulo (filas 56-61), 3.1 Piso 1: Mensajes (filas 44-55). Dificultad 1,5 de 5, 3.2 Piso 2: Correo (filas 32-43). Dificultad 2 de 5, 3.3 Piso 3: Recordatorios (filas 20-31). Dificultad 2,5 de 5 (el pico del nivel), 3.4 Piso 4: Actualizaciones (filas 8-19). Dificultad 2 de 5, 3.5 Azotea (filas 0-7) (+8 more)
+### Community 175 - "3. Los pisos"
+Cohesion: 0.29
+Nodes (7): 3.0 Vestíbulo (filas 56-61), 3.1 Piso 1: Mensajes (filas 44-55). Dificultad 1,5 de 5, 3.2 Piso 2: Correo (filas 32-43). Dificultad 2 de 5, 3.3 Piso 3: Recordatorios (filas 20-31). Dificultad 2,5 de 5 (el pico del nivel), 3.4 Piso 4: Actualizaciones (filas 8-19). Dificultad 2 de 5, 3.5 Azotea (filas 0-7), 3. Los pisos
 
 ### Community 176 - "palette_mundo3_preview.py"
 Cohesion: 0.14
-Nodes (14): apply(), attention_point(), build(), check_variants(), _half(), main(), margins(), options() (+6 more)
+Nodes (15): apply(), attention_point(), build(), check_variants(), _half(), main(), margins(), options() (+7 more)
 
-### Community 179 - "4. Niveles, tramo a tramo"
-Cohesion: 0.25
-Nodes (8): 4.2.1 Secretos y economía del 3-2, 4.2 Nivel 3-2 «Sin filtro», 4.3.1 Secretos y economía del 3-3, 4.3 Nivel 3-3 «Espejo, espejito», 4.4 Duración, dificultad y progresión, 4.5 Mensajes recuperables `msg_3_x` (borradores de tono; PROPUESTA), 4.6 Hub y progresión, 4. Niveles, tramo a tramo
+### Community 180 - ".simulate"
+Cohesion: 0.15
+Nodes (3): 7. Plan de implementación (pasos pequeños), World, fall_from()
 
 ### Community 181 - "Propuesta: sistema de mejoras de Calc (cinco pistas de 5 niveles)"
 Cohesion: 0.08
 Nodes (24): 10. Plan de implementación (pasos pequeños), 11. Preguntas abiertas (con recomendación por defecto), 1. Concepto y UI de Calc, 2. Efectos por pista y nivel (propuesta, ajustable), 3.1 Presupuesto, 3.2 Costes (90 por pista; reparto propuesto), 3.3 Por vuelta (con el tope Caché 3 / Kernel 4 / Raíz 5), 3.4 Comprobación numérica (script temporal, fuera del repo) (+16 more)
 
 ### Community 182 - "Propuesta: Mundo 3 «La Vitrina» (3-1, 3-2, 3-3 y jefe La Curadora)"
-Cohesion: 0.15
-Nodes (12): 0. Resumen, 10. Riesgos y qué debe revisar el usuario al probar, 1. Qué está decidido y qué es propuesta, 2.1 Idea, 2.2 Tono, 2.3 Los likes no se guardan (PROPUESTA de presentación), 2. Tema y tono, 7.2 Validador de arenas (`tools/validate_boss.py`) (+4 more)
-
-### Community 183 - "validate_ui_assets.py"
-Cohesion: 0.31
-Nodes (9): check_asset(), check_battery(), has_key(), check_font(), check_lcd_font(), load_gpl(), main(), parse_fnt() (+1 more)
+Cohesion: 0.10
+Nodes (19): 0. Resumen, 10. Riesgos y qué debe revisar el usuario al probar, 1. Qué está decidido y qué es propuesta, 2.1 Idea, 2.2 Tono, 2.3 Los likes no se guardan (PROPUESTA de presentación), 2. Tema y tono, 4.2.1 Secretos y economía del 3-2 (+11 more)
 
 ### Community 184 - ".x2"
-Cohesion: 0.27
-Nodes (8): 1.1 Créditos, 1.2 Desvíos y decisiones, 1.3 Integración, 1.4 Calidad y defectos vistos, 1.5 Lecciones, 1. Autoplay (2026-10-23), 3. Pendiente, Arte del Mundo 2 con AutoSprite (paso 23 de `propuesta-mundo-2.md`)
-
-### Community 185 - "validate_memories.py"
-Cohesion: 0.16
-Nodes (13): A11 [RESUELTO] HUD definitivo del Mundo 1 (paso 12, 2026-10-14), _validate(), _check_level_links(), _check_message_links(), _check_message_place(), font_glyphs(), hub_levels(), _is_int() (+5 more)
-
-### Community 187 - "validate_tileset.py"
-Cohesion: 0.32
-Nodes (3): load_gpl(), main(), res_to_path()
+Cohesion: 0.43
+Nodes (6): 1.1 Créditos, 1.2 Desvíos y decisiones, 1.3 Integración, 1.4 Calidad y defectos vistos, 1.5 Lecciones, 1. Autoplay (2026-10-23)
 
 ### Community 189 - "Integración del sistema de audio (2026-10-20)"
 Cohesion: 0.33
 Nodes (6): Cómo se conecta (sin tocar la lógica), Cómo sustituir un sonido provisional por el definitivo, Integración del sistema de audio (2026-10-20), Pendiente, Piezas, Probar sonidos sin reexportar: carpeta de audio externo (2026-10-21)
 
 ### Community 190 - "gen_world3_enemies.py"
-Cohesion: 0.31
-Nodes (9): C(), false_reflection(), influencer_bot_placeholder(), like_thief(), like_thief_warn(), main(), outputs(), outputs_for() (+1 more)
+Cohesion: 0.15
+Nodes (15): C(), false_reflection(), influencer_bot_placeholder(), like_thief(), like_thief_warn(), main(), outputs(), outputs_for() (+7 more)
 
 ### Community 192 - "receiver"
-Cohesion: 0.09
-Nodes (24): 11. Riesgos, 12. Preguntas abiertas (con recomendación), 13. Documentos que cambian, 1. Concepto, 3.1 Reglas (decididas), 3.2 Estados por tipo, 3.3 Datos, 3.4 Interfaz (+16 more)
+Cohesion: 0.12
+Nodes (16): 3.1 Reglas (decididas), 3.2 Estados por tipo, 3.3 Datos, 3.4 Interfaz, 3.5 Álbum de Notas, 3. Sistema de ayuda con Q, 4.1 Líneas de `data/levels/1-1.json`, 4.2 Avisos de `data/ability_notices.json` (+8 more)
 
 ### Community 193 - "World3"
 Cohesion: 0.12
 Nodes (3): _path(), plain(), World3
-
-### Community 194 - "validate_sprites.py"
-Cohesion: 0.48
-Nodes (4): anim_of(), check(), load_gpl(), main()
 
 ### Community 195 - "level_plan.py"
 Cohesion: 0.15
 Nodes (3): body_cells(), path_to(), plan_level()
 
 ### Community 196 - "notas"
-Cohesion: 0.22
-Nodes (6): 10. Plan de implementación, album_cell(), notas(), notepad(), pencil(), terminal_body()
+Cohesion: 0.25
+Nodes (5): 7. Plan de implementación (pasos pequeños), notas(), notepad(), pencil(), terminal_body()
 
 ### Community 197 - "gen_world3_objects.py"
-Cohesion: 0.21
-Nodes (10): binarize(), _like_card(), like_platform_invert(), like_platform_off(), like_platform_on(), main(), outputs(), outputs_for() (+2 more)
+Cohesion: 0.26
+Nodes (17): 3.6 Enemigos y objetos (qué se reutiliza), 5.4 Fase 1 «Sesión de fotos» (doc: fotos con flash y filtros que esconden pinchos y huecos), 7.1 Validador de niveles (`tools/validate_level.py` + `tools/level_plan.py`), C(), canvas(), crop_tool(), dashed_rect(), digits() (+9 more)
 
 ### Community 201 - "palette_mundo2_preview.py"
 Cohesion: 0.18
@@ -867,10 +838,6 @@ Nodes (15): apply(), attention_point(), build(), card_tile(), check_variants(), 
 Cohesion: 0.40
 Nodes (8): C(), composite(), data_text(), focos(), fotos(), layers(), main(), trastienda()
 
-### Community 207 - "3. Esquema del nivel, tramo a tramo"
-Cohesion: 0.22
-Nodes (9): 3.0 Dimensiones y estructura, 3.1 Inicio: sala «Ajustes» (columnas 1-22), 3.2 Tramo 1: Silenciados (columnas 23-72), 3.3 Tramo 2: Vibración (columnas 73-130), 3.4 Tramo 3: Interrupciones (columnas 131-185), 3.5 Tramo 4: Alarmas (columnas 186-240), 3.6 Cierre: Pantalla de bloqueo (columnas 241-259), 3.7 Economía (+1 more)
-
 ### Community 209 - "gen_world1_facade.py"
 Cohesion: 0.18
 Nodes (9): card(), facade(), facade_logical(), outputs(), tab(), text_cells(), text_width(), trace() (+1 more)
@@ -879,103 +846,59 @@ Nodes (9): card(), facade(), facade_logical(), outputs(), tab(), text_cells(), t
 Cohesion: 0.16
 Nodes (5): Level33Test, obj(), of_type(), secret_item(), section_of()
 
-### Community 214 - "6. Arte y sonido"
-Cohesion: 0.40
-Nodes (5): 6.1 Paleta del Mundo 3, 6.2 Qué se hace con AutoSprite y qué por script, 6.3 Por script (detalle), 6.4 Sonido, 6. Arte y sonido
-
-### Community 215 - "build_scene"
-Cohesion: 0.21
-Nodes (7): build_scene(), find_cells(), fmt_string(), help_tag(), Scene, background_res(), tileset_json()
-
-### Community 216 - "gen_world3_exit_frame.py"
-Cohesion: 0.29
-Nodes (10): binarize(), build(), C(), camera_mark(), easel(), frame(), frames_resource(), lens() (+2 more)
-
 ### Community 217 - "C"
-Cohesion: 0.22
-Nodes (22): Cómo ejecutar, Mundo 3 en el validador (pasos 8a y 8b, 2026-10-26), 3.1 Likes y plataformas de likes (`heart_pickup`, `like_platform`, `like_source`, `like_reset`), 3.4 Espejos (`mirror`, `mirror_wall`, `mirror_only`), 4.1.1 Secretos y economía del 3-1, 4.1 Nivel 3-1 «Galería de perfil», 7.1 Validador de niveles (`tools/validate_level.py` + `tools/level_plan.py`), 8.1 Avance y desvíos (+14 more)
+Cohesion: 0.24
+Nodes (17): Cómo ejecutar, Mundo 3 en el validador (pasos 8a y 8b, 2026-10-26), 3.1 Likes y plataformas de likes (`heart_pickup`, `like_platform`, `like_source`, `like_reset`), 3.4 Espejos (`mirror`, `mirror_wall`, `mirror_only`), 4.1.1 Secretos y economía del 3-1, 4.1 Nivel 3-1 «Galería de perfil», 8.1 Avance y desvíos, 8. Plan de implementación (+9 more)
 
 ### Community 218 - "validate_audio.py"
-Cohesion: 0.18
-Nodes (11): f(), class_has_signal(), event_bus_signals(), layout_buses(), _load(), main(), missing_files(), _number() (+3 more)
+Cohesion: 0.20
+Nodes (10): class_has_signal(), event_bus_signals(), layout_buses(), _load(), main(), missing_files(), _number(), _read() (+2 more)
 
-### Community 219 - "canvas"
-Cohesion: 0.22
-Nodes (13): 3.2 Filtros (`filter_zone`), 3.3.1 Valores iniciales (PROPUESTA; sección `compress` de `data/isak_abilities.json`), 3.3.2 Marcos pequeños (`small_frame`), 3.3 Pellizcar (gesto, habilidad `compress`), 3.5 Lenguaje de combinaciones del Mundo 3 (amplía `propuesta-1-2.md` §0, `propuesta-1-3.md` §4 y `propuesta-mundo-2.md` §3.6), 3.6 Enemigos y objetos (qué se reutiliza), 3. Mecánicas, canvas() (+5 more)
+### Community 219 - "3. Mecánicas"
+Cohesion: 0.33
+Nodes (6): 3.2 Filtros (`filter_zone`), 3.3.1 Valores iniciales (PROPUESTA; sección `compress` de `data/isak_abilities.json`), 3.3.2 Marcos pequeños (`small_frame`), 3.3 Pellizcar (gesto, habilidad `compress`), 3.5 Lenguaje de combinaciones del Mundo 3 (amplía `propuesta-1-2.md` §0, `propuesta-1-3.md` §4 y `propuesta-mundo-2.md` §3.6), 3. Mecánicas
 
 ### Community 220 - "validate_enemy_sprites.py"
 Cohesion: 0.27
 Nodes (8): check_enemy(), check_png(), load_gpl(), main(), res_to_path(), colors(), main(), rgb()
 
-### Community 221 - "lower"
-Cohesion: 0.29
-Nodes (3): lower(), _params(), _rect_cells()
-
-### Community 222 - "re"
-Cohesion: 0.29
-Nodes (5): ability_notice_strings(), collect_texts(), game_strings(), load_json(), sprite_frames()
-
 ### Community 223 - "palette_mundo2_provisional.py"
 Cohesion: 0.33
 Nodes (6): check_rules(), gpl_text(), hue_deg(), main(), palette_section(), write_objects()
 
-### Community 224 - "select_tile"
-Cohesion: 0.20
-Nodes (5): cover_cells(), glitch_neighbors(), solid(), select_tile(), spike_runs()
-
-### Community 227 - "level_climbs.py"
-Cohesion: 0.39
-Nodes (5): climbs(), default_out(), dump(), ledge_of(), main()
-
-### Community 231 - "tile_map_data"
-Cohesion: 0.33
-Nodes (3): cover_layer_data(), solid_grid(), tile_map_data()
-
 ### Community 232 - "stunned"
-Cohesion: 0.20
-Nodes (10): 13. Sistema de audio: qué hay hoy y qué falta, 1. SFX de Isak: movimiento y habilidades, 4. SFX de enemigos del Mundo 1 y del jefe Alerta Mayor, 2.1 Créditos, 2.2 Comentarista, 2.3 Golpe al suelo de Isak, 2.4 Copias para revisar, 2. Comentarista y golpe al suelo (2026-10-26) (+2 more)
+Cohesion: 0.11
+Nodes (17): 13. Sistema de audio: qué hay hoy y qué falta, 1. SFX de Isak: movimiento y habilidades, 4. SFX de enemigos del Mundo 1 y del jefe Alerta Mayor, 2.1 Créditos, 2.2 Comentarista, 2.3 Golpe al suelo de Isak, 2.4 Copias para revisar, 2. Comentarista y golpe al suelo (2026-10-26) (+9 more)
 
 ### Community 235 - "3. Cómo se vence"
 Cohesion: 0.50
 Nodes (4): 3.1 Solución ideal, paso a paso (Caché, sin mejoras), 3.2 Errores típicos y cómo se recupera, 3.3 Qué pasa al vencerlo, 3. Cómo se vence
 
-### Community 236 - "2. Estructura vertical"
-Cohesion: 0.33
-Nodes (5): 2.1 Dimensiones, 2.2 Cámara con scroll vertical, 2.3 Puntos de sincronización (uno cada dos pisos), 2. Estructura vertical, camera_bands()
-
-### Community 237 - "fmt_value"
-Cohesion: 0.40
-Nodes (5): feet(), fmt_coord(), fmt_number(), fmt_value(), fmt_vector2()
-
 ### Community 238 - "menu_outputs"
 Cohesion: 0.40
 Nodes (5): _menu_canvas(), menu_icon(), menu_outputs(), remap(), world_folder()
-
-### Community 240 - "2. Tema y tono"
-Cohesion: 0.50
-Nodes (4): 2.1 Idea, 2.2 Tono, 2.3 Reloj del HUD y tarjetas de recuerdos (PROPUESTA), 2. Tema y tono
 
 ### Community 243 - "Ficha del juego y estructura de mundos"
 Cohesion: 0.67
 Nodes (3): 1. Ficha del juego, 5. Estructura de mundos, Ficha del juego y estructura de mundos
 
 ## Knowledge Gaps
-- **73 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **70 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Planner` connect `Planner` to `level_plan.py`, `.hazard_search`, `.check_loop_energy`, `.rest_walk_samples`, `._scroll_pass`, `.simulate_clones`, `.check_banners`, `.check_reminders`, `.duration`, `.zone_states_after`?**
-  _High betweenness centrality (0.086) - this node is a cross-community bridge._
+  _High betweenness centrality (0.083) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `Canvas` (e.g. with `calc_charging()` and `calc_low()`) actually correct?**
   _`Canvas` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Level22Test` be split into smaller, more focused modules?**
   _Cohesion score 0.13230769230769232 - nodes in this community are weakly interconnected._
-- **Why does `LevelValidator` connect `LevelValidator` to `os`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
+- **Why does `Preguntas abiertas sobre el documento de diseño` connect `Preguntas abiertas sobre el documento de diseño` to `validate_memories.py`, `outputs`, `1. Contradicciones`, `Notas del 1-1 ampliado (2026-10-14)`, `2. Vacíos que impiden implementar`, `3. Ambigüedades técnicas`, `Decisiones del 2026-10-15: tres vueltas, hub y guardado`?**
+  _High betweenness centrality (0.061) - this node is a cross-community bridge._
 - **Should `LevelValidator` be split into smaller, more focused modules?**
   _Cohesion score 0.05157677571470675 - nodes in this community are weakly interconnected._
-- **Why does `Preguntas abiertas sobre el documento de diseño` connect `Preguntas abiertas sobre el documento de diseño` to `outputs`, `1. Contradicciones`, `Notas del 1-1 ampliado (2026-10-14)`, `2. Vacíos que impiden implementar`, `3. Ambigüedades técnicas`, `validate_memories.py`, `Decisiones del 2026-10-15: tres vueltas, hub y guardado`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+- **Why does `LevelValidator` connect `LevelValidator` to `os`?**
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
 - **Should `gen_eco_companion.py` be split into smaller, more focused modules?**
   _Cohesion score 0.13846153846153847 - nodes in this community are weakly interconnected._

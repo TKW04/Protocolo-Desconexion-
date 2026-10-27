@@ -84,7 +84,7 @@ Una IA que edita todo lo que ve. Su cuerpo es un marco de foto gigante y su cabe
 
 > **Recompensa (decisión del usuario, 2026-10-18):** recuerdo de jefe (tres capas), ver [propuesta-recuerdos.md](propuesta-recuerdos.md).
 
-## 8.8 Estado del Mundo 3 (2026-10-27): mecánicas implementadas, el 3-1, el 3-2 y el 3-3 jugables
+## 8.8 Estado del Mundo 3 (2026-10-27): mecánicas implementadas, el 3-1, el 3-2 y el 3-3 jugables y La Curadora en su arena
 
 Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada decisión están en [propuesta-mundo-3.md](propuesta-mundo-3.md) (§8 y §8.1); lo pendiente, en [08-pendientes.md](08-pendientes.md).
 
@@ -117,4 +117,6 @@ Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada deci
 
 **Bot de la galería** (`tools/play_gallery_bot.gd -- --level 3-1|3-2|3-3`): completa el 3-1 (68 s de juego), el 3-2 (85 s, obtiene Pellizcar) y el 3-3 (129 s: esperas del cazador y del reflejo y un pulso al reflejo) sin golpes, muertes ni robos.
 
-**Sigue:** jefe La Curadora (14-19) y arte final con AutoSprite con permiso (23).
+**Jefe La Curadora (pasos 14-15, 2026-10-27):** lógica y arena `3-boss` «Exposición» (20 × 11, cabe entera en pantalla; `-- --start-level=3-boss`, la fila del hub sigue «Próximamente»). Daño = la marca «sin filtro»: Debug → pulso (marca 4 / 3 / 2,5 s) → láser, **un golpe por marca y por ventana**; 9 golpes en Caché y 12 en Kernel y Raíz. Fase 1: flash (tapan biombos, plataformas de likes y el marco pequeño), filtro de suelo con pinchos que solo enseña el Debug y recorte; luego baja a encuadrar con la lente a la altura de una plataforma de likes y suelta 6 corazones. Fase 2: de espaldas; el pulso y el láser solo llegan por el espejo cazador mirando a un espejo de esquina; flash reflejado y dos Ladrones. Fase 3: Reflejo falso a 0,5 s con el filtro del retrato (el Debug distingue a Isak), marcos que se cierran sobre la mitad de Isak (solo se salva comprimido en el marco pequeño) y ventana de 3 s tras cada cierre. Reaparición con energía ≥ 50 y likes ≥ 10. Arte provisional por script (`tools/gen_boss_curator.py`); textos propuestos. Detalle y decisiones en [propuesta-mundo-3.md](propuesta-mundo-3.md) §8.1 (pasos 14 y 15).
+
+**Sigue:** validador de la arena (16), barra, recompensa y hub (17), bot (18), textos, ayudas y audio (19) y arte final con AutoSprite con permiso (23).

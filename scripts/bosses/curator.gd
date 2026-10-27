@@ -352,12 +352,21 @@ func get_cover_rects() -> Array[Rect2]:
 
 
 ## La linea de `source` (global) al centro del cuerpo de Isak no cruza terreno
-## ni nada que tape (biombos, plataformas de likes): el flash le llega.
+## ni nada que tape (biombos, plataformas de likes) y, con la luz desde arriba,
+## Isak no esta debajo de una plataforma de likes: el flash le llega.
 func can_flash_reach(source: Vector2) -> bool:
 	var isak: Isak = find_isak()
 	if isak == null or isak.is_dead():
 		return false
-	var target: Vector2 = LevelLookup.isak_body_rect(isak).get_center()
+	var body: Rect2 = LevelLookup.isak_body_rect(isak)
+	var target: Vector2 = body.get_center()
+	# Bajo una plataforma de likes (con la luz desde arriba): tapa como un techo.
+	for node: Node in _level_nodes():
+		if node is LikePlatform:
+			var card: Rect2 = (node as LikePlatform).get_card_rect()
+			if source.y < card.position.y and body.position.y >= card.end.y - 0.5 \
+					and target.x >= card.position.x and target.x <= card.end.x:
+				return false
 	var covers: Array[Rect2] = get_cover_rects()
 	var tiles: TileMapLayer = _tiles()
 	var length: float = source.distance_to(target)
@@ -863,6 +872,11 @@ func _step_reflections(dt: float) -> void:
 		if not is_instance_valid(r):
 			continue
 		r.step(real)
+		# No se pellizca: en un marco pequeño no cabe y el marco lo borra (vuelve
+		# a salir pasado reflection_respawn_s).
+		if r.is_present() and _in_small_frame(r.get_body_rect_now().get_center()):
+			r.vanish()
+			_reflection_wait[i] = float(phase_data(3).get("reflection_respawn_s", 2.0))
 		if _reflection_wait[i] >= 0.0:
 			_reflection_wait[i] -= dt
 			if _reflection_wait[i] <= 0.0:
@@ -872,6 +886,13 @@ func _step_reflections(dt: float) -> void:
 		if mat != null:
 			mat.set_shader_parameter(&"saturation", 1.0)
 			mat.set_shader_parameter(&"tint", Color.WHITE)
+
+
+func _in_small_frame(point: Vector2) -> bool:
+	for side: String in [SIDE_LEFT, SIDE_RIGHT]:
+		if get_small_frame_rect(side).has_point(point):
+			return true
+	return false
 
 
 func _free_reflections() -> void:
