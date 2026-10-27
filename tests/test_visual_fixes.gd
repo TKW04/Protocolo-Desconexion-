@@ -252,7 +252,10 @@ func test_world_without_levels_folder_has_no_enter_hint() -> void:
 	GameState.mark_level_completed(&"2-boss")
 	MenuHints.set_device(MenuHints.Device.KEYBOARD)
 	var panel := FolderPanel.new()
-	panel.world_entry = HubWorlds.world(&"m3")
+	# Desde el paso 10 de docs/propuesta-mundo-3.md el Mundo 3 tiene el 3-1: el mismo mundo sin sus filas.
+	var no_levels: Dictionary = HubWorlds.world(&"m3").duplicate()
+	no_levels["levels"] = []
+	panel.world_entry = no_levels
 	add_child_autofree(panel)
 	panel.refresh()
 	assert_false(panel.get_help().contains("Entrar"), "Sin nada que entrar")

@@ -52,6 +52,12 @@ const CLIMBS_PATH_2_2: String = "res://tests/fixtures/climbs_2-2.json"
 const LEVEL_SCENE_2_3: String = "res://scenes/levels/2-3.tscn"
 const LEVEL_PATH_2_3: String = "res://data/levels/2-3.json"
 const CLIMBS_PATH_2_3: String = "res://tests/fixtures/climbs_2-3.json"
+## 3-1 «Galería de perfil» (paso 10 de docs/propuesta-mundo-3.md, 2026-10-26): suelo, columnas-marco, escalones,
+## repisas y las plataformas de likes (con el contador al maximo: encendidas las normales, apagadas las inversas)
+## y las del reflejo, sin enemigos.
+const LEVEL_SCENE_3_1: String = "res://scenes/levels/3-1.tscn"
+const LEVEL_PATH_3_1: String = "res://data/levels/3-1.json"
+const CLIMBS_PATH_3_1: String = "res://tests/fixtures/climbs_3-1.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -126,6 +132,10 @@ func _load(scene_path: String = LEVEL_SCENE, level_path: String = LEVEL_PATH) ->
 		elif child is BlinkPlatform:
 			child.set_physics_process(false)
 			child.call(&"_set_solid", true)
+		elif child is LikePlatform:
+			# Mundo 3: como con el contador al maximo (tools/level_climbs.py): normales encendidas, inversas no.
+			child.set_physics_process(false)
+			child.call(&"_set_solid", not (child as LikePlatform).invert)
 	_hidden.clear()
 	for child: Node in _level.get_node(^"HiddenPlatforms").get_children():
 		_hidden.append(child)
@@ -433,6 +443,14 @@ func test_every_climb_of_2_3_lands_with_headroom_using_the_real_isak() -> void:
 	assert_gt(climbs.size(), 40, "Subidas del 2-3 en %s" % CLIMBS_PATH_2_3)
 	await _load(LEVEL_SCENE_2_3, LEVEL_PATH_2_3)
 	_isak.set(&"_scroll_camera", null)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_3_1_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_3_1))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 15, "Subidas del 3-1 en %s" % CLIMBS_PATH_3_1)
+	await _load(LEVEL_SCENE_3_1, LEVEL_PATH_3_1)
 	await _measure_all(climbs)
 
 

@@ -92,7 +92,7 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 		[&"autoplay_video", &"video_clone", &"commenter", &"autoplay", &"autoplay_clip", &"autoplay_fan"] as Array[StringName],
 		"Mundo 2: el video en autoplay (paso 6), el clon y el Comentarista (paso 7 de docs/propuesta-mundo-2.md) y Autoplay, sus clips y el abanico (paso 20)")
 	# Mundo 3 (paso 9 de docs/propuesta-mundo-3.md): 13 objetos y 3 enemigos en el orden de help.json.
-	assert_eq(NotasAlbum.album_ids(3, HelpCatalog.CATEGORY_OBJECT).size(), 13, "Mundo 3: 13 objetos")
+	assert_eq(NotasAlbum.album_ids(3, HelpCatalog.CATEGORY_OBJECT).size(), 14, "Mundo 3: 13 objetos y el contador de likes (paso 10)")
 	assert_eq(NotasAlbum.album_ids(3, HelpCatalog.CATEGORY_ENEMY),
 		[&"influencer_bot", &"like_thief", &"false_reflection"] as Array[StringName],
 		"Mundo 3: Influencer bot y Ladron de likes (3-1) y Reflejo falso (3-3)")

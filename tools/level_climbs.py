@@ -65,6 +65,12 @@ def climbs(level, root=ROOT):
     # sala «Ajustes»; sin el, el pasillo del banner obligatorio cierra el paso en el grafo.
     state = frozenset(g.gid for g in model.gates if g.kind in ("bridge", "popup", "bar", "pickup", "switch",
                                                                 "lswitch", "dock", "dnd"))
+    # Mundo 3 (paso 10 de docs/propuesta-mundo-3.md, el 3-1 real, 2026-10-26): con el contador al maximo, como
+    # el jugador que va cogiendo los corazones: las plataformas de likes normales encendidas (las inversas,
+    # de los secretos, apagadas). Sin objetos del Mundo 3 (w3 None) nada cambia.
+    w3 = getattr(model, "w3", None)
+    if w3 is not None and w3.like_platforms:
+        state = w3.with_likes(state, w3.likes_max)
     start_cell = validator.find("P")[0]
     start, why = validator.spawn_node(start_cell, state)
     if start is None:

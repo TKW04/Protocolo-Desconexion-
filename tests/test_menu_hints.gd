@@ -97,7 +97,10 @@ func test_folder_confirm_and_empty_world() -> void:
 	assert_true(folder.is_confirming_unsaved(), "Pregunta antes de entrar sin guardar")
 	assert_true(folder.get_help().begins_with("G Aceptar"), folder.get_help())
 	var empty := FolderPanel.new()
-	empty.world_entry = HubWorlds.world(&"m3")
+	# Un mundo sin subniveles (desde el paso 10 del Mundo 3 el Mundo 3 tiene el 3-1: se le quitan las filas).
+	var no_levels: Dictionary = HubWorlds.world(&"m3").duplicate()
+	no_levels["levels"] = []
+	empty.world_entry = no_levels
 	add_child_autofree(empty)
 	empty.open()
 	assert_eq(empty.get_help(), "G o Espacio Volver")

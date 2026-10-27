@@ -1,0 +1,547 @@
+{
+	"_notes": "NIVEL 3-1 «Galería de perfil» (paso 10 de docs/propuesta-mundo-3.md §8, 2026-10-26; diseño en su §4.1 y §4.1.1, desvíos en §8.1). Horizontal de 220 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple). Llega con todo el kit del Mundo 2 (pulso, láser, Debug, dash y golpe al suelo) y SIN Pellizcar. Contador de likes a 0. INICIO «Perfil» (0-20): vórtice en (3, 11), cartel «Mi vida es increíble #bendecido» (feed_sign cartel_bendecido, 6 x 2) que lleva la Q del contador de likes (hud_likes) y 1 punto. TRAMO 1 «Corazones» (21-70): 18 corazones en fila (columnas 22-39, fila 11: se cogen andando), la publicación publicacion_foso (40) y el foso de 4 (42-45, 1 de hondo) con la primera plataforma de likes ♥5 (43-44, de una vía) que sube a la repisa A (46-49, de pie en la 8: 3 tiles sobre el suelo); escalera ♥10 (50-51, de pie en la 6) hasta lo alto del bloque B (52-58, de pie en la 4, 1 punto). Al bajar por la derecha, el MARCO PEQUEÑO «decorativo» (marco_decorativo, 58, 11; secreto A, solo con Pellizcar): salita (53-57, filas 9-11) con msg_3_2, 1 punto y el power bank. TRAMO 2 «Pose» (71-118): Influencer influencer_1 (84) mirando a la izquierda con dos columnas-marco de 2 tiles (79 y 82) que tapan el flash (se avanza de columna en columna y se aturde desde la 83); escalón con 1 punto (90-92); cargador_1 (96); influencer_2 en una repisa colgada (102-106, fila 8): se pasa por debajo de su línea. PAUSA (119-123): sync_1 (121). TRAMO 3 «Ladrón» (124-170): «Borrar publicaciones» (127) y tres plataformas INVERSAS (♥5 tachado, 129-136) que suben a la vitrina baja (138-142, fila 5) con msg_3_1 (secreto B); publicaciones en 144 y 151; Ladrón de likes ladron_1 (147) justo antes de la plataforma ♥15 (153-154), la única subida al bloque (156-163, de pie en la 7, 1 punto). TRAMO 4 «Del otro lado» (171-210): cargador_2 (176), escalón (179-182, de pie en la 9) y foso de 6 (183-188, 2 de hondo con salida por la izquierda, sin pinchos) bajo la pared de espejo (182-188, filas 4-10): las plataformas del reflejo reflejo_1 (184, fila 9) y reflejo_2 (186-187, fila 8) solo se ven en el espejo y llevan a la otra orilla (189-198, de pie en la 6, 1 punto). Secreto C: repisa (203-208, fila 7) a 4 tiles de la orilla, solo con salto + dash aéreo, con una pared con glitch visible solo con el Debug (206, filas 5-6) y la vida extra del Mundo 3 detrás. CIERRE «Publicar» (211-219): 1 punto y terminal «Publicar» (pulso) en (215, 10): «Los likes no se guardan.» y vuelta al hub; desbloquea el 3-2. Escena: scenes/levels/3-1.tscn (python3 tools/build_level.py data/levels/3-1.json).",
+	"id": "3-1",
+	"name": "Galería de perfil",
+	"world": 3,
+	"tile_size": 64,
+	"debug_color": "green",
+	"target_duration_s": 360,
+	"difficulty": 3,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": false
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio «Perfil»",
+			"x_from": 0,
+			"x_to": 20
+		},
+		{
+			"name": "Tramo 1 «Corazones»",
+			"x_from": 21,
+			"x_to": 70,
+			"patterns": [
+				"pagar_con_likes"
+			]
+		},
+		{
+			"name": "Tramo 2 «Pose»",
+			"x_from": 71,
+			"x_to": 118
+		},
+		{
+			"name": "Pausa",
+			"x_from": 119,
+			"x_to": 123
+		},
+		{
+			"name": "Tramo 3 «Ladrón»",
+			"x_from": 124,
+			"x_to": 170,
+			"patterns": [
+				"pagar_con_likes"
+			]
+		},
+		{
+			"name": "Tramo 4 «Del otro lado»",
+			"x_from": 171,
+			"x_to": 210
+		},
+		{
+			"name": "Cierre «Publicar»",
+			"x_from": 211,
+			"x_to": 219
+		}
+	],
+	"grid": [
+		"############################################################################################################################################################################################################################",
+		"#..........................................................................................................................................................................................................................#",
+		"#..........................................................................................................................................................................................................................#",
+		"#..........................................................................................................................................................................................................................#",
+		"#......................................................o....................................................................................S..............................................................................#",
+		"#...................................................#######...............................................................................#####............................................................................#",
+		"#...................................................#######......................................................................................................................................o.........................#",
+		"#...................................................#######.............................................E......................................................o.............................##########....######..........#",
+		"#...................................................#######...........................................#####.................................................########.........................##########....................#",
+		"#.............................................####..#.....#................................o................................................................########.........................##########....................#",
+		"#.............................................#######.....#....................#..#.......###...............................................................########...............####......##########....................#",
+		"#..P..........o...............................#######.o........................#..#.E.....###............................C.........................E........########...............####......##########.............o..G...#",
+		"##########################################....##############################################################################################################################################################################",
+		"############################################################################################################################################################################################################################"
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 121,
+			"y": 11
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_marco_decorativo",
+			"x": 55,
+			"y": 11,
+			"object": "power_bank_pickup",
+			"reward": [
+				"attention_points",
+				"memory",
+				"power_bank"
+			],
+			"points": 1,
+			"memory_id": "msg_3_2",
+			"requires_abilities": [
+				"compress"
+			],
+			"note": "A «Marco decorativo» (§4.1.1): marco pequeno en la pared derecha del bloque B (58, 11). Sin Pellizcar es un adorno; con el gesto (al rejugar el 3-1 tras obtenerlo en el 3-2) se entra comprimido a la salita (53-57, filas 9-11) con el mensaje msg_3_2 (memory_pickup mensaje_3_2, 56, 11), 1 punto (54, 11) y el power bank del nivel (power_bank_3_1, esta celda)."
+		},
+		{
+			"id": "secreto_sin_likes",
+			"x": 140,
+			"y": 4,
+			"reward": "memory",
+			"memory_id": "msg_3_1",
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "B «Sin likes» (§4.1.1): «Borrar publicaciones» (127, 11) pone el contador a 0 y aparecen las plataformas inversas (129-136, ♥5 tachado: solidas con menos de 5 likes) que suben a la vitrina baja (138-142, fila 5) con el mensaje msg_3_1 (memory_pickup mensaje_3_1 en esta celda). Al bajar, publicaciones en 144 y 151 para volver a los 15. Ruta sin dash."
+		},
+		{
+			"id": "secreto_vida_extra",
+			"x": 206,
+			"y": 5,
+			"object": "glitch_wall",
+			"needs_debug": true,
+			"reward": "extra_life",
+			"note": "C «Vida extra» (§4.1.1): repisa (204-208, fila 7) a 5 tiles del borde de la orilla del espejo (columna 198): solo con salto + dash aereo. Pared con glitch visible solo con el Debug (206, filas 5-6); al disolverla aparece la vida extra del Mundo 3 (vida_extra_3_1, registro 3-1 / C)."
+		}
+	],
+	"enemies": [
+		{
+			"id": "influencer_1",
+			"type": "influencer_bot",
+			"x": 84,
+			"y": 11,
+			"params": {
+				"facing": -1
+			}
+		},
+		{
+			"id": "influencer_2",
+			"type": "influencer_bot",
+			"x": 104,
+			"y": 7,
+			"params": {
+				"facing": -1
+			}
+		},
+		{
+			"id": "ladron_1",
+			"type": "like_thief",
+			"x": 147,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "feed_sign",
+			"x": 6,
+			"y": 9,
+			"help_id": "hud_likes",
+			"params": {
+				"id": "cartel_bendecido",
+				"text": "Mi vida es increíble\n#bendecido",
+				"width_tiles": 6,
+				"height_tiles": 2,
+				"accent": "gris"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 22,
+			"y": 11,
+			"params": {
+				"id": "corazon_01"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 23,
+			"y": 11,
+			"params": {
+				"id": "corazon_02"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 24,
+			"y": 11,
+			"params": {
+				"id": "corazon_03"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 25,
+			"y": 11,
+			"params": {
+				"id": "corazon_04"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 26,
+			"y": 11,
+			"params": {
+				"id": "corazon_05"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 27,
+			"y": 11,
+			"params": {
+				"id": "corazon_06"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 28,
+			"y": 11,
+			"params": {
+				"id": "corazon_07"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 29,
+			"y": 11,
+			"params": {
+				"id": "corazon_08"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 30,
+			"y": 11,
+			"params": {
+				"id": "corazon_09"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 31,
+			"y": 11,
+			"params": {
+				"id": "corazon_10"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 32,
+			"y": 11,
+			"params": {
+				"id": "corazon_11"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 33,
+			"y": 11,
+			"params": {
+				"id": "corazon_12"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 34,
+			"y": 11,
+			"params": {
+				"id": "corazon_13"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 35,
+			"y": 11,
+			"params": {
+				"id": "corazon_14"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 36,
+			"y": 11,
+			"params": {
+				"id": "corazon_15"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 37,
+			"y": 11,
+			"params": {
+				"id": "corazon_16"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 38,
+			"y": 11,
+			"params": {
+				"id": "corazon_17"
+			}
+		},
+		{
+			"type": "heart_pickup",
+			"x": 39,
+			"y": 11,
+			"params": {
+				"id": "corazon_18"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 40,
+			"y": 11,
+			"params": {
+				"id": "publicacion_foso"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 43,
+			"y": 11,
+			"params": {
+				"id": "likes_5",
+				"threshold": 5,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 50,
+			"y": 7,
+			"params": {
+				"id": "likes_10",
+				"threshold": 10,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 58,
+			"y": 11,
+			"params": {
+				"id": "marco_decorativo",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 55,
+			"y": 11,
+			"params": {
+				"id": "power_bank_3_1"
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 56,
+			"y": 11,
+			"params": {
+				"id": "mensaje_3_2",
+				"memory_id": "msg_3_2"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 96,
+			"y": 11,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "like_reset",
+			"x": 127,
+			"y": 11,
+			"params": {
+				"id": "borrar_publicaciones"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 129,
+			"y": 10,
+			"params": {
+				"id": "inversa_1",
+				"threshold": 5,
+				"invert": true,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 132,
+			"y": 8,
+			"params": {
+				"id": "inversa_2",
+				"threshold": 5,
+				"invert": true,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 135,
+			"y": 6,
+			"params": {
+				"id": "inversa_3",
+				"threshold": 5,
+				"invert": true,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 140,
+			"y": 4,
+			"params": {
+				"id": "mensaje_3_1",
+				"memory_id": "msg_3_1"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 144,
+			"y": 11,
+			"params": {
+				"id": "publicacion_vitrina"
+			}
+		},
+		{
+			"type": "like_source",
+			"x": 151,
+			"y": 11,
+			"params": {
+				"id": "publicacion_umbral"
+			}
+		},
+		{
+			"type": "like_platform",
+			"x": 153,
+			"y": 10,
+			"params": {
+				"id": "likes_15",
+				"threshold": 15,
+				"width_tiles": 2,
+				"one_way": true
+			}
+		},
+		{
+			"type": "charger",
+			"x": 176,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "mirror_wall",
+			"x": 182,
+			"y": 4,
+			"params": {
+				"id": "pared_espejo",
+				"width_tiles": 7,
+				"height_tiles": 7,
+				"side": "center"
+			}
+		},
+		{
+			"type": "mirror_only",
+			"x": 184,
+			"y": 9,
+			"params": {
+				"id": "reflejo_1",
+				"width_tiles": 1
+			}
+		},
+		{
+			"type": "mirror_only",
+			"x": 186,
+			"y": 8,
+			"params": {
+				"id": "reflejo_2",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 206,
+			"y": 5,
+			"params": {
+				"id": "pared_vida_extra",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"visible_only_with_debug": true
+			}
+		},
+		{
+			"type": "extra_life_pickup",
+			"x": 206,
+			"y": 6,
+			"params": {
+				"id": "vida_extra_3_1",
+				"secret_id": "C"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 215,
+			"y": 10,
+			"params": {
+				"id": "terminal_publicar",
+				"text": "Publicar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "3-2"
+		}
+	]
+}

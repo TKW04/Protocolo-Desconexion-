@@ -130,6 +130,8 @@ SOURCES = {
     "like_thief": ("assets/sprites/enemies/world3/like_thief_warn_00.png", None, 1),
     "influencer_bot": ("assets/sprites/enemies/world3/influencer_bot_placeholder_00.png", None, 1),
     "false_reflection": ("assets/sprites/enemies/world3/false_reflection_00.png", None, 1),
+    # Paso 10 (el 3-1 real): el contador de likes del HUD, ayuda sobre el cartel de la sala de inicio.
+    "hud_likes": ("assets/sprites/props/world3/hud_likes_00.png", None, 1),
 }
 
 

@@ -785,6 +785,17 @@
 			"center_px": [32, 96],
 			"prompt_px": [32, -8]
 		},
+		"hud_likes": {
+			"_notes": "Contador de likes del HUD (paso 10 de docs/propuesta-mundo-3.md §8, §4.1: «primera vez que se ve el contador de likes»). El contador es del HUD, así que la Q va sobre un objeto del mundo, como la hora del 2-1: el cartel «Mi vida es increíble #bendecido» de la sala de inicio del 3-1 (feed_sign de 6 x 2 con help_id hud_likes; origen en su esquina superior izquierda). Ficha del álbum: hud_likes_00.png de tools/gen_world3_objects.py. Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Likes",
+			"text": "¿Ves el corazón de arriba? Son tus likes. Aquí dentro hay suelo que solo aguanta si tienes bastantes. Fuera de aquí no valen nada.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 14,
+			"center_px": [192, 64],
+			"prompt_px": [192, -8]
+		},
 		"influencer_bot": {
 			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
 			"category": "enemy",

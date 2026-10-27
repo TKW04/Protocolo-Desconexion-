@@ -1,0 +1,712 @@
+{
+ "format": "isak-climbs/1",
+ "level": "3-1",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "42,12->41,11",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     42,
+     12
+    ],
+    "ledge": [
+     42,
+     45
+    ],
+    "row": 12
+   },
+   "to": {
+    "cell": [
+     41,
+     11
+    ],
+    "ledge": [
+     1,
+     41
+    ],
+    "row": 11
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 2704.0,
+   "target_x_px": 2688.0,
+   "debug": false
+  },
+  {
+   "id": "43,12->43,10",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     43,
+     12
+    ],
+    "ledge": [
+     42,
+     45
+    ],
+    "row": 12
+   },
+   "to": {
+    "cell": [
+     43,
+     10
+    ],
+    "ledge": [
+     43,
+     44
+    ],
+    "row": 10
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 2816.0,
+   "target_x_px": 2816.0,
+   "debug": false
+  },
+  {
+   "id": "41,11->43,10",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     41,
+     11
+    ],
+    "ledge": [
+     1,
+     41
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     43,
+     10
+    ],
+    "ledge": [
+     43,
+     44
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 2688.0,
+   "target_x_px": 2752.0,
+   "debug": false
+  },
+  {
+   "id": "78,11->79,9",
+   "section": "Tramo 2 «Pose»",
+   "from": {
+    "cell": [
+     78,
+     11
+    ],
+    "ledge": [
+     59,
+     78
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     79,
+     9
+    ],
+    "ledge": [
+     79,
+     79
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 5040.0,
+   "target_x_px": 5056.0,
+   "debug": false
+  },
+  {
+   "id": "80,11->79,9",
+   "section": "Tramo 2 «Pose»",
+   "from": {
+    "cell": [
+     80,
+     11
+    ],
+    "ledge": [
+     80,
+     81
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     79,
+     9
+    ],
+    "ledge": [
+     79,
+     79
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 5136.0,
+   "target_x_px": 5120.0,
+   "debug": false
+  },
+  {
+   "id": "81,11->82,9",
+   "section": "Tramo 2 «Pose»",
+   "from": {
+    "cell": [
+     81,
+     11
+    ],
+    "ledge": [
+     80,
+     81
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     82,
+     9
+    ],
+    "ledge": [
+     82,
+     82
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 5232.0,
+   "target_x_px": 5248.0,
+   "debug": false
+  },
+  {
+   "id": "83,11->82,9",
+   "section": "Tramo 2 «Pose»",
+   "from": {
+    "cell": [
+     83,
+     11
+    ],
+    "ledge": [
+     83,
+     89
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     82,
+     9
+    ],
+    "ledge": [
+     82,
+     82
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 5328.0,
+   "target_x_px": 5312.0,
+   "debug": false
+  },
+  {
+   "id": "89,11->90,9",
+   "section": "Tramo 2 «Pose»",
+   "from": {
+    "cell": [
+     89,
+     11
+    ],
+    "ledge": [
+     83,
+     89
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     90,
+     9
+    ],
+    "ledge": [
+     90,
+     92
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 5744.0,
+   "target_x_px": 5760.0,
+   "debug": false
+  },
+  {
+   "id": "93,11->92,9",
+   "section": "Tramo 2 «Pose»",
+   "from": {
+    "cell": [
+     93,
+     11
+    ],
+    "ledge": [
+     93,
+     155
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     92,
+     9
+    ],
+    "ledge": [
+     90,
+     92
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 5968.0,
+   "target_x_px": 5952.0,
+   "debug": false
+  },
+  {
+   "id": "153,11->153,9",
+   "section": "Tramo 3 «Ladrón»",
+   "from": {
+    "cell": [
+     153,
+     11
+    ],
+    "ledge": [
+     93,
+     155
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     153,
+     9
+    ],
+    "ledge": [
+     153,
+     154
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 9856.0,
+   "target_x_px": 9856.0,
+   "debug": false
+  },
+  {
+   "id": "178,11->179,9",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     178,
+     11
+    ],
+    "ledge": [
+     164,
+     178
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     179,
+     9
+    ],
+    "ledge": [
+     179,
+     182
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 11440.0,
+   "target_x_px": 11456.0,
+   "debug": false
+  },
+  {
+   "id": "183,11->182,9",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     183,
+     11
+    ],
+    "ledge": [
+     183,
+     188
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     182,
+     9
+    ],
+    "ledge": [
+     179,
+     182
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 11728.0,
+   "target_x_px": 11712.0,
+   "debug": false
+  },
+  {
+   "id": "44,10->46,8",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     44,
+     10
+    ],
+    "ledge": [
+     43,
+     44
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     46,
+     8
+    ],
+    "ledge": [
+     46,
+     49
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 2880.0,
+   "target_x_px": 2944.0,
+   "debug": false
+  },
+  {
+   "id": "50,9->49,8",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     50,
+     9
+    ],
+    "ledge": [
+     50,
+     51
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     49,
+     8
+    ],
+    "ledge": [
+     46,
+     49
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 3216.0,
+   "target_x_px": 3200.0,
+   "debug": false
+  },
+  {
+   "id": "154,9->156,7",
+   "section": "Tramo 3 «Ladrón»",
+   "from": {
+    "cell": [
+     154,
+     9
+    ],
+    "ledge": [
+     153,
+     154
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     156,
+     7
+    ],
+    "ledge": [
+     156,
+     163
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 9920.0,
+   "target_x_px": 9984.0,
+   "debug": false
+  },
+  {
+   "id": "182,9->184,8",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     182,
+     9
+    ],
+    "ledge": [
+     179,
+     182
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     184,
+     8
+    ],
+    "ledge": [
+     184,
+     184
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 11712.0,
+   "target_x_px": 11776.0,
+   "debug": false
+  },
+  {
+   "id": "49,8->50,6",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     49,
+     8
+    ],
+    "ledge": [
+     46,
+     49
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     50,
+     6
+    ],
+    "ledge": [
+     50,
+     51
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3200.0,
+   "target_x_px": 3200.0,
+   "debug": false
+  },
+  {
+   "id": "184,8->186,7",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     184,
+     8
+    ],
+    "ledge": [
+     184,
+     184
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     186,
+     7
+    ],
+    "ledge": [
+     186,
+     187
+    ],
+    "row": 7
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 11840.0,
+   "target_x_px": 11904.0,
+   "debug": false
+  },
+  {
+   "id": "187,7->189,6",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     187,
+     7
+    ],
+    "ledge": [
+     186,
+     187
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     189,
+     6
+    ],
+    "ledge": [
+     189,
+     198
+    ],
+    "row": 6
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 12032.0,
+   "target_x_px": 12096.0,
+   "debug": false
+  },
+  {
+   "id": "51,6->52,4",
+   "section": "Tramo 1 «Corazones»",
+   "from": {
+    "cell": [
+     51,
+     6
+    ],
+    "ledge": [
+     50,
+     51
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     52,
+     4
+    ],
+    "ledge": [
+     52,
+     58
+    ],
+    "row": 4
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 3312.0,
+   "target_x_px": 3328.0,
+   "debug": false
+  },
+  {
+   "id": "205,6->206,4",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     205,
+     6
+    ],
+    "ledge": [
+     203,
+     205
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     206,
+     4
+    ],
+    "ledge": [
+     206,
+     206
+    ],
+    "row": 4
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 13168.0,
+   "target_x_px": 13184.0,
+   "debug": false
+  },
+  {
+   "id": "207,6->206,4",
+   "section": "Tramo 4 «Del otro lado»",
+   "from": {
+    "cell": [
+     207,
+     6
+    ],
+    "ledge": [
+     207,
+     208
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     206,
+     4
+    ],
+    "ledge": [
+     206,
+     206
+    ],
+    "row": 4
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 13264.0,
+   "target_x_px": 13248.0,
+   "debug": false
+  }
+ ]
+}

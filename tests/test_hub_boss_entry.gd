@@ -383,7 +383,8 @@ func test_autoplay_from_the_m2_folder_and_back_with_the_amber_piece() -> void:
 	p3.world_entry = m3
 	add_child_autofree(p3)
 	p3.refresh()
-	assert_true(HubWorlds.levels_for_lap(m3).is_empty(), "Sin subniveles: la carpeta dice «Próximamente»")
+	# Desde el paso 10 de docs/propuesta-mundo-3.md (2026-10-26) el Mundo 3 tiene el 3-1: disponible tras Autoplay.
+	assert_eq(p3.get_level_state(&"3-1"), HubWorlds.STATE_AVAILABLE, "El 3-1 disponible al vencer a Autoplay")
 	EcoTextBox.pause_important = true
 	BossReward.pause_tree = true
 	BossDefeat.freeze_tree = true
