@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "data/help.json": {
-    "mtime": 1793084561.17054,
-    "seen": 1793085320.717493,
-    "ast_hash": "e41f8fcb03b984ef92857ace08df5886",
+    "mtime": 1793124064.6694372,
+    "seen": 1793124138.101005,
+    "ast_hash": "e2139cb30dd60cfc880fc24a362aad1e",
     "semantic_hash": ""
   },
   "data/hide_mode.json": {
@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "data/hub.json": {
-    "mtime": 1793083339.0066624,
-    "seen": 1793083728.115883,
-    "ast_hash": "15c04d30759339e0c7de77efd9a10dbf",
+    "mtime": 1793129049.0464618,
+    "seen": 1793129465.728153,
+    "ast_hash": "0f10275044df0a825de944bd30363652",
     "semantic_hash": ""
   },
   "data/hud.json": {
@@ -228,9 +228,9 @@
     "semantic_hash": ""
   },
   "data/pause_menu.json": {
-    "mtime": 1792552076.5671184,
-    "seen": 1792552368.426463,
-    "ast_hash": "c2c8f3949e375d3ee46105b152927b67",
+    "mtime": 1793128283.5734577,
+    "seen": 1793128411.9950879,
+    "ast_hash": "a931adc1216d2ae5fd33b112712c5f25",
     "semantic_hash": ""
   },
   "data/power_bank.json": {
@@ -450,9 +450,9 @@
     "semantic_hash": ""
   },
   "tools/gen_hub_objects.py": {
-    "mtime": 1793036960.5706794,
-    "seen": 1793037328.472794,
-    "ast_hash": "39b081bb972f39fe561fff60971d6cd0",
+    "mtime": 1793129089.4902759,
+    "seen": 1793129465.728425,
+    "ast_hash": "6e6171ff0f92d8c2429751d3a1da71d2",
     "semantic_hash": ""
   },
   "tools/gen_hud_assets.py": {
@@ -750,9 +750,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1793111340.7876208,
-    "seen": 1793111367.5118022,
-    "ast_hash": "0f5a0394d8a27716278687d4a6369837",
+    "mtime": 1793124151.4103408,
+    "seen": 1793124504.718967,
+    "ast_hash": "42ddef510051ed748823c4abed4e65d5",
     "semantic_hash": ""
   },
   "docs/01-ficha-reglas.md": {
@@ -798,15 +798,15 @@
     "semantic_hash": ""
   },
   "docs/08-pendientes.md": {
-    "mtime": 1793115862.0119603,
-    "seen": 1793115925.300578,
-    "ast_hash": "2a8989241f6a37ad364e792f4ea433e1",
+    "mtime": 1793129427.4333565,
+    "seen": 1793129465.728533,
+    "ast_hash": "417938f9810d90f39c5b3d817b6f7166",
     "semantic_hash": ""
   },
   "docs/INDEX.md": {
-    "mtime": 1793111287.4656622,
-    "seen": 1793111367.511809,
-    "ast_hash": "3852ea937c5962545b08a172cac8c9a7",
+    "mtime": 1793128609.426521,
+    "seen": 1793129465.728533,
+    "ast_hash": "631ebd7fc0b454117dc8906c6fe81473",
     "semantic_hash": ""
   },
   "docs/estilizacion-energia.md": {
@@ -864,9 +864,9 @@
     "semantic_hash": ""
   },
   "docs/preguntas.md": {
-    "mtime": 1793111457.9132311,
-    "seen": 1793111469.2548149,
-    "ast_hash": "de5bc75969feb95916cebc8e625a6cc1",
+    "mtime": 1793124394.551159,
+    "seen": 1793124504.718984,
+    "ast_hash": "40fd86ef0d94d79501eda87156c1b752",
     "semantic_hash": ""
   },
   "docs/propuesta-1-1-ampliado.md": {
@@ -1836,9 +1836,9 @@
     "semantic_hash": ""
   },
   "data/bosses/curator.json": {
-    "mtime": 1793085858.2391043,
-    "seen": 1793086565.262996,
-    "ast_hash": "bfd413ab062eb1223a195cb12618eeef",
+    "mtime": 1793127338.7808454,
+    "seen": 1793127486.006479,
+    "ast_hash": "893c419873d25a6c9a6f154d712d0985",
     "semantic_hash": ""
   },
   "data/levels/3-boss.json": {
@@ -2073,6 +2073,126 @@
     "mtime": 1793115772.861494,
     "seen": 1793115925.3006191,
     "ast_hash": "edf0b7ba2ce0985d12d09abdf253d73c",
+    "semantic_hash": ""
+  },
+  "docs/capturas/iconos-m3-pausa-2026-10-27/12_m3_panel.png": {
+    "mtime": 1793124132.9759157,
+    "seen": 1793124138.10126,
+    "ast_hash": "c13dc161c1511cb657943b36007ecef8",
+    "semantic_hash": ""
+  },
+  "docs/capturas/iconos-m3-pausa-2026-10-27/13_pausa_principal.png": {
+    "mtime": 1793124132.9768057,
+    "seen": 1793124138.1012611,
+    "ast_hash": "1590a27e6723d4434528ca6319eda081",
+    "semantic_hash": ""
+  },
+  "docs/capturas/iconos-m3-pausa-2026-10-27/14_pausa_ajustes.png": {
+    "mtime": 1793124132.9777894,
+    "seen": 1793124138.101262,
+    "ast_hash": "a302c499b6f7d65aa01992b53b9a52bf",
+    "semantic_hash": ""
+  },
+  "docs/capturas/curadora-fase2-2026-10-27/fase2_ventana_abierta.png": {
+    "mtime": 1793124375.0929492,
+    "seen": 1793124504.719027,
+    "ast_hash": "55d450a44f403885eb17a7cd4e13656c",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-fijo-2026-10-27/01_principal.png": {
+    "mtime": 1793127290.529894,
+    "seen": 1793127308.840731,
+    "ast_hash": "fecbc6a8ad59208e686586ad44da713e",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-fijo-2026-10-27/02_ajustes.png": {
+    "mtime": 1793127290.5405903,
+    "seen": 1793127308.8407319,
+    "ast_hash": "1f395c7d0e389eef8916893cd95dd6af",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-fijo-2026-10-27/03_pantalla.png": {
+    "mtime": 1793127290.5499592,
+    "seen": 1793127308.8407328,
+    "ast_hash": "9f145fd433abc66ad83476a3098cef39",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-fijo-2026-10-27/04_controles.png": {
+    "mtime": 1793127290.560088,
+    "seen": 1793127308.840734,
+    "ast_hash": "d2fd0a13cd029a9f18d6a00039125663",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-fijo-2026-10-27/05_conflicto.png": {
+    "mtime": 1793127290.568686,
+    "seen": 1793127308.840735,
+    "ast_hash": "816c4f9927e89c3b872af49d4fa9c668",
+    "semantic_hash": ""
+  },
+  "docs/capturas/curadora-fase2-2026-10-27/punto_debil_antes.png": {
+    "mtime": 1793127323.2180226,
+    "seen": 1793127486.006718,
+    "ast_hash": "d8daeb978fba26c102b7242bb768912e",
+    "semantic_hash": ""
+  },
+  "docs/capturas/curadora-fase2-2026-10-27/punto_debil_despues.png": {
+    "mtime": 1793127323.2258196,
+    "seen": 1793127486.0067189,
+    "ast_hash": "b74418254927894cc0cc9da8a48a8ad3",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/01_principal.png": {
+    "mtime": 1793128407.8565917,
+    "seen": 1793128411.995284,
+    "ast_hash": "cd2f0f1b0b187a29d234e5d4b94d1db4",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/02_ajustes.png": {
+    "mtime": 1793128407.864708,
+    "seen": 1793128411.995285,
+    "ast_hash": "38ca7d51bc2be75b336610cd9bebc988",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/03_pantalla.png": {
+    "mtime": 1793128407.8728266,
+    "seen": 1793128411.995286,
+    "ast_hash": "bf4c28814162d50dfadc03a212f10310",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/04_sonido.png": {
+    "mtime": 1793128407.8800662,
+    "seen": 1793128411.995286,
+    "ast_hash": "64ed82e86b222bfb38e6854dc17e757f",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/05_controles_inicio.png": {
+    "mtime": 1793128407.8868248,
+    "seen": 1793128411.995287,
+    "ast_hash": "abff1ee9015de0dd81864860a9e04765",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/06_controles_final.png": {
+    "mtime": 1793128407.893711,
+    "seen": 1793128411.995287,
+    "ast_hash": "6a08d44ceeae63bf2e873d316ed1248a",
+    "semantic_hash": ""
+  },
+  "docs/capturas/menu-pausa-compacto-2026-10-27/07_conflicto.png": {
+    "mtime": 1793128407.9013531,
+    "seen": 1793128411.9952881,
+    "ast_hash": "a7e002c22c7c9c9348a5c38b54dbee26",
+    "semantic_hash": ""
+  },
+  "tests/test_hub_worlds_4_6.py": {
+    "mtime": 1793129390.0276825,
+    "seen": 1793129465.7283242,
+    "ast_hash": "32f0a97324e882a4f9301d312d480681",
+    "semantic_hash": ""
+  },
+  "docs/propuesta-hub-mundos-4-6.md": {
+    "mtime": 1793129455.465547,
+    "seen": 1793129465.72855,
+    "ast_hash": "e749d9235ffc2552516c4245e3c053f1",
     "semantic_hash": ""
   }
 }
