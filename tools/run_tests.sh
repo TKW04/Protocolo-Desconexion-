@@ -133,6 +133,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 12 (2026-10-27): el 3-2 real (tests/test_level_3_2.py, camino exportado y subidas al dia).
 # Desde el paso 13 (2026-10-27): el 3-3 real (tests/test_level_3_3.py, camino exportado y subidas al dia) y el arte
 # del marco dorado de salida (tools/gen_world3_exit_frame.py --check).
+# Desde el paso 14 (2026-10-27): los datos y la logica de La Curadora (tests/test_curator.gd, GUT: marca solo con el
+# Debug, un golpe por marca y la via por el espejo cazador de la fase 2).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

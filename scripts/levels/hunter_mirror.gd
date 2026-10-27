@@ -54,6 +54,10 @@ signal isak_stunned
 signal isak_hit(damage: float)
 ## Ha desviado un laser hacia `new_heading`.
 signal bounced(at: Vector2, new_heading: Vector2)
+## Igual que bounced, con el disparo (2026-10-27, paso 14 de
+## docs/propuesta-mundo-3.md: La Curadora sigue el laser que el cazador manda a
+## un espejo de esquina y lo entrega a su espalda).
+signal laser_redirected(projectile: Node, at: Vector2, new_heading: Vector2)
 
 @export var object_id: StringName = &""
 ## Orientacion de reposo (FACINGS).
@@ -401,6 +405,7 @@ func laser_reflection(projectile: Node, _hit_position: Vector2) -> Dictionary:
 		track_projectile(projectile as LaserProjectile, at)
 	_flash_left = float(_cfg.get("flash_s", 0.15))
 	bounced.emit(at, out)
+	laser_redirected.emit(projectile, at, out)
 	EventBus.mirror_bounced.emit(self, at)
 	queue_redraw()
 	return {"heading": out, "position": at}

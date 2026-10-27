@@ -136,7 +136,7 @@ NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "abilit
                     "memory_pickup",
                     "laser_receiver", "relay_receiver", "snooze_button", "power_switch", "debug_switch",
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
-                    "alert_major", "pause_player", "autoplay",
+                    "alert_major", "pause_player", "autoplay", "curator",
                     "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror",
                     "hunter_mirror", "pose_plate"}
 # Espejos del Mundo 3 (2026-10-26): orientaciones del espejo fijo y ejes de la pared de espejo.
@@ -146,8 +146,9 @@ MIRROR_WALL_SIDES = ("center", "left", "right")
 # (cuerpo inflado arriba, 4 x 4 desde su celda).
 LEVEL_KINDS = ("level", "boss")
 BOSS_LEVEL_ID = re.compile(r"\d+-boss")
-# Autoplay (jefe del Mundo 2, 2026-10-23): su pantalla de 8 x 4 tiles desde su celda.
-BOSS_FOOTPRINT_TILES = {"alert_major": (4, 4), "autoplay": (8, 4)}
+# Autoplay (jefe del Mundo 2, 2026-10-23): su pantalla de 8 x 4 tiles desde su celda. La Curadora (Mundo 3,
+# 2026-10-27): su marco de 8 x 4.
+BOSS_FOOTPRINT_TILES = {"alert_major": (4, 4), "autoplay": (8, 4), "curator": (8, 4)}
 # Acertijo de la azotea del 1-2 (encuentro con Calc, 2026-10-17, tanda H1 del paso 14):
 # interruptores (piezas que se «hacen»), punto de carga de 2x1 y acciones del guion de Eco.
 SWITCH_TYPES = ("power_switch", "debug_switch", "laser_switch")

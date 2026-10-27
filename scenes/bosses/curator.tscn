@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/bosses/curator.gd" id="1_curator"]
+
+[node name="Curator" type="Node2D" groups=["boss"]]
+script = ExtResource("1_curator")
+boss_id = &"curator"

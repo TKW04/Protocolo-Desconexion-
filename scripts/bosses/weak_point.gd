@@ -36,6 +36,17 @@
 ## laser que los alcanza es un golpe; sin marca, chispa gris en su borde. Se
 ## dibuja con el icono de pausa (dos barras) sobre el carmin.
 ##
+## GOLPES POR MARCA y VIA POR ESPEJO (2026-10-27, paso 14 de
+## docs/propuesta-mundo-3.md §5.3, La Curadora): set_mark_hits(n) (laps.<n>.mark_hits
+## del jefe, via BossBase; 0 = sin tope, lo de siempre) hace que la marca termine
+## tras n golpes de laser (un golpe por marca). Con set_via_only(true) el nucleo
+## esta DE ESPALDAS: ni el pulso ni el laser de Isak le llegan directos (no es
+## objetivo del laser y el pulso no hace nada); solo el jefe, que calcula el
+## camino por el espejo cazador, se los entrega con receive_via_pulse (marca con
+## el Debug ACTIVO; sin el, chispa gris) y receive_via_laser (un golpe si esta
+## marcado; si no, chispa gris). show_deflect(at) saca la chispa gris donde diga
+## el jefe (p. ej. el pulso reflejado que da en su frente).
+##
 ## Decision 2026-10-14 (docs/preguntas.md, V10): se dibuja POR ENCIMA del tinte
 ## del Debug, para que no quede apagado. El visual vive en un CanvasLayer propio
 ## (follow_viewport, asi sigue a la camara) cuya capa esta entre DebugOverlay
@@ -94,6 +105,11 @@ var _shell_shape: CollisionShape2D
 ## Modo golpe al suelo: caja del cabezal (local) y objetivos del laser.
 var _pound_box: Rect2 = Rect2(-32.0, -48.0, 64.0, 64.0)
 var _damage_areas: Array[Area2D] = []
+## Golpes de laser por marca (0 = sin tope) y los que lleva la marca en curso.
+var _mark_hits: int = 0
+var _mark_hits_used: int = 0
+## De espaldas: solo recibe lo que el jefe le entrega por el espejo cazador.
+var _via_only: bool = false
 
 
 func _ready() -> void:
@@ -243,6 +259,33 @@ func set_mark_duration(duration_s: float) -> void:
 	_mark_duration_s = maxf(duration_s, 0.0)
 
 
+## Golpes de laser que da cada marca (BossBase: laps.<vuelta>.mark_hits; 0 = sin tope).
+func set_mark_hits(hits: int) -> void:
+	_mark_hits = maxi(hits, 0)
+
+
+func get_mark_hits() -> int:
+	return _mark_hits
+
+
+## Golpes que lleva la marca en curso (0 sin marca).
+func get_mark_hits_used() -> int:
+	return _mark_hits_used if is_marked() else 0
+
+
+## De espaldas (fase 2 de La Curadora): el pulso y el laser solo llegan por el
+## jefe (receive_via_pulse / receive_via_laser). Cambiarlo quita la marca.
+func set_via_only(via: bool) -> void:
+	if via != _via_only:
+		clear_mark()
+	_via_only = via
+	_sync_targets()
+
+
+func is_via_only() -> bool:
+	return _via_only
+
+
 ## Avanza la cuenta de la marca `dt` segundos del mundo.
 func advance_mark(dt: float) -> void:
 	if _mark_left <= 0.0:
@@ -261,6 +304,7 @@ func advance_mark(dt: float) -> void:
 ## Quita la marca sin mark_expired (el jefe sube, cambia de fase o reaparece).
 func clear_mark() -> void:
 	_mark_left = 0.0
+	_mark_hits_used = 0
 	_mark_warned = false
 	_mark_flash_left = 0.0
 	_sync_targets()
@@ -409,8 +453,12 @@ func on_laser_hit(damage: float, source: Node) -> void:
 		else:
 			_deflect(_damage_point_towards(_source_point(source)), source)
 		return
+	if _via_only:
+		# De espaldas: el laser directo no llega (solo receive_via_laser).
+		_deflect(global_position, source)
+		return
 	if is_marked():
-		hit.emit(maxi(roundi(damage), 1), source)
+		_register_hit(damage, source)
 		return
 	if is_exposed():
 		_deflect(global_position, source)
@@ -424,7 +472,7 @@ func on_laser_hit(damage: float, source: Node) -> void:
 ## nucleo) o, con el nucleo oculto, el cuerpo (chispa en su borde). Verdadero si
 ## alcanza algo.
 func receive_pulse(area: Area2D) -> bool:
-	if not _enabled or area == null or uses_ground_pound():
+	if not _enabled or area == null or uses_ground_pound() or _via_only:
 		return false
 	var source: Node = area.get_parent()
 	if is_exposed():
@@ -439,6 +487,35 @@ func receive_pulse(area: Area2D) -> bool:
 		return false
 	_deflect(_shell_point_towards(_pulse_center(area)), source)
 	return true
+
+
+## Pulso que llega por el espejo cazador (lo decide el jefe): con el Debug
+## ACTIVO marca; sin el, chispa gris. Verdadero si el nucleo esta activo.
+func receive_via_pulse(source: Node = null) -> bool:
+	if not _enabled:
+		return false
+	if can_mark():
+		_mark()
+	else:
+		_deflect(global_position, source)
+	return true
+
+
+## Laser que llega por el espejo cazador: marcado, un golpe de su dano (y la
+## marca cuenta el golpe); sin marca, chispa gris. Verdadero si fue golpe.
+func receive_via_laser(damage: float, source: Node = null) -> bool:
+	if not _enabled:
+		return false
+	if is_marked():
+		_register_hit(damage, source)
+		return true
+	_deflect(global_position, source)
+	return false
+
+
+## Chispa gris en `at` (global) sin dano ni marca (golpe que no llega).
+func show_deflect(at: Vector2, source: Node = null) -> void:
+	_deflect(at, source)
 
 
 ## Verdadero si algun circulo de `area` toca el circulo (`center`, `radius`).
@@ -496,6 +573,11 @@ func _update(time_s: float) -> void:
 
 ## El laser ve el nucleo solo expuesto y el cuerpo solo con el nucleo oculto.
 func _sync_targets() -> void:
+	if _via_only:
+		collision_layer = 0
+		if _shell != null:
+			_shell.collision_layer = 0
+		return
 	if uses_ground_pound():
 		collision_layer = 0
 		for area: Area2D in _damage_areas:
@@ -554,8 +636,20 @@ func _draw_mark_halo(cfg: Dictionary, r: float) -> void:
 		_visual.draw_arc(Vector2.ZERO, radius, from, to, 8, color, width)
 
 
+## Un golpe con la marca: lo emite y, con mark_hits, la marca termina al llegar
+## al tope (sin mark_expired: la quita el golpe).
+func _register_hit(damage: float, source: Node) -> void:
+	_mark_hits_used += 1
+	var used: int = _mark_hits_used
+	hit.emit(maxi(roundi(damage), 1), source)
+	if _mark_hits > 0 and used >= _mark_hits and is_marked():
+		clear_mark()
+
+
 func _mark() -> void:
 	var refreshed: bool = is_marked()
+	if not refreshed:
+		_mark_hits_used = 0
 	_mark_left = _mark_duration_s
 	_mark_warned = false
 	_mark_flash_left = float(config().get("mark_flash_s", 0.15))

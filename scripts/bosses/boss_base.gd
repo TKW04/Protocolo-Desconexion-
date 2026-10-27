@@ -89,6 +89,9 @@ var _window_open: bool = false
 var _weak_point: WeakPoint
 ## Marca del nucleo de la vuelta actual (s del mundo; <= 0 = la del WeakPoint).
 var _mark_duration_s: float = 0.0
+## Golpes de laser por marca de la vuelta actual (laps.<n>.mark_hits; 0 = sin
+## tope). La Curadora: 1 (2026-10-27, paso 14 de docs/propuesta-mundo-3.md §5.3).
+var _mark_hits: int = 0
 
 
 func _ready() -> void:
@@ -126,10 +129,12 @@ func load_config(data: Dictionary = {}) -> bool:
 	var entry: Variant = laps.get(str(lap), laps.get("1", {}))
 	_hits_per_phase.clear()
 	_mark_duration_s = 0.0
+	_mark_hits = 0
 	if entry is Dictionary:
 		for value: Variant in (entry as Dictionary).get("hits_per_phase", []):
 			_hits_per_phase.append(maxi(int(value), 1))
 		_mark_duration_s = float((entry as Dictionary).get("mark_duration_s", 0.0))
+		_mark_hits = maxi(int((entry as Dictionary).get("mark_hits", 0)), 0)
 	_apply_mark_duration()
 	if _hits_per_phase.is_empty():
 		_hits_per_phase.append(1)
@@ -333,6 +338,11 @@ func get_attack_state() -> StringName:
 ## Duracion de la marca de la vuelta actual (s del mundo; 0 = la del WeakPoint).
 func get_mark_duration() -> float:
 	return _mark_duration_s
+
+
+## Golpes de laser por marca de la vuelta actual (0 = sin tope).
+func get_mark_hits() -> int:
+	return _mark_hits
 
 
 ## Punto debil de este jefe (null si no tiene).
@@ -622,6 +632,8 @@ func _defeat() -> void:
 func _apply_mark_duration() -> void:
 	if _weak_point != null and is_instance_valid(_weak_point) and _mark_duration_s > 0.0:
 		_weak_point.set_mark_duration(_mark_duration_s)
+	if _weak_point != null and is_instance_valid(_weak_point) and _mark_hits > 0:
+		_weak_point.set_mark_hits(_mark_hits)
 
 
 func _clear_mark() -> void:

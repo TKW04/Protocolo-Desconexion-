@@ -419,6 +419,25 @@
 					"id": "puerta_1"
 				}
 			}
+		},
+		"curator": {
+			"scene": "res://scenes/bosses/curator.tscn",
+			"description": "Jefe del Mundo 3 «La Curadora» (2026-10-27, pasos 14-15 de docs/propuesta-mundo-3.md §8, diseño en §5): Curator (BossBase) con sus tres fases (sesión de fotos con flash, filtro de suelo y recorte; de espaldas con el espejo cazador; retrato perfecto con Reflejos falsos y marcos que se cierran). Solo en su arena (kind boss, boss curator). (x, y) es la celda de arriba a la izquierda de su marco de 8 x 4 tiles (no sólido); la lente, los biombos, los espejos de esquina, las mitades y los marcos pequeños están en arena de data/bosses/curator.json. Daño: Debug -> pulso (marca) -> láser, un golpe por marca y por ventana; en la fase 2 solo por el espejo cazador. Empieza al terminar la llegada de Isak con la línea de intro (pausa; texto PROPUESTO). Tiempo del mundo. Arte PROVISIONAL por script (tools/gen_boss_curator.py, *_placeholder.png).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "curator",
+				"x": 6,
+				"y": 1,
+				"params": {
+					"id": "curator"
+				}
+			}
 		}
 	},
 	"likes": {
