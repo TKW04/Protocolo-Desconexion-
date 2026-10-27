@@ -328,6 +328,68 @@ def render(level, palette):
             x0, y0, x1, y1 = box(x, y)
             d.rectangle((x0 + 4, y0 + 3, x1 - 4, y1 - 3), outline=palette["debug_cian"], width=2)
             label((x0 + x1) // 2, y1 + 6, "vida extra", palette["debug_cian"])
+        # Mundo 3 «La Vitrina» (paso 21 de docs/propuesta-mundo-3.md; 2026-10-27).
+        elif kind == "heart_pickup":
+            x0, y0, x1, y1 = box(x, y)
+            cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+            d.polygon([(cx - 4, cy - 2), (cx, cy + 4), (cx + 4, cy - 2), (cx, cy - 1)], fill=palette["carmin"])
+        elif kind == "like_platform":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 2), 1)
+            d.rectangle((x0 + 1, y0 + 1, x1 - 1, y0 + 4), outline=palette["carmin"])
+            tag = "%s%d" % ("<" if p.get("invert") else "♥", int(p.get("threshold", 0)))
+            label((x0 + x1) // 2, y0 - 7, tag, palette["carmin"])
+        elif kind in ("like_source", "like_reset", "crop_tool"):
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 3, y0 + 3, x1 - 3, y1 - 3), outline=palette["carmin"], width=2)
+            tag = {"like_source": "publicacion", "like_reset": "borrar", "crop_tool": "Recortar (Pellizcar)"}[kind]
+            label((x0 + x1) // 2, y0 - 7, tag, palette["carmin"])
+        elif kind == "filter_zone":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 1))
+            for xx in range(x0, x1, 8):
+                d.line((xx, y0, xx + 4, y0), fill=palette["borde_luz"])
+                d.line((xx, y1, xx + 4, y1), fill=palette["borde_luz"])
+            label(x0 + 2, y0 + 8, "filtro" + (" movil" if p.get("positions") else ""), palette["borde_luz"], anchor="lm")
+            for fc, fr, fw, fh in p.get("fake_floor", []):
+                fx0, fy0, fx1, fy1 = box(fc, fr, fw, fh)
+                d.rectangle((fx0, fy0, fx1, fy1), outline=palette["alerta"])
+        elif kind == "small_frame":
+            n = int(p.get("length_tiles", 1))
+            vertical = p.get("orientation", "wall") in ("floor", "ceiling")
+            x0, y0, x1, y1 = box(x, y, 1 if vertical else n, n if vertical else 1)
+            d.rectangle((x0 + 1, y0 + 1, x1 - 1, y1 - 1), outline=palette["resplandor"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "marco", palette["resplandor"])
+        elif kind in ("mirror", "hunter_mirror"):
+            x0, y0, x1, y1 = box(x, y)
+            o = p.get("orientation", "|")
+            if kind == "hunter_mirror":
+                d.ellipse((x0 + 3, y0 + 3, x1 - 3, y1 - 3), outline=palette["debug_cian"], width=2)
+                label((x0 + x1) // 2, y0 - 7, "cazador", palette["debug_cian"])
+            elif o == "/":
+                d.line((x0 + 2, y1 - 2, x1 - 2, y0 + 2), fill=palette["debug_cian"], width=2)
+            elif o == "\\":
+                d.line((x0 + 2, y0 + 2, x1 - 2, y1 - 2), fill=palette["debug_cian"], width=2)
+            else:
+                d.line(((x0 + x1) // 2, y0 + 2, (x0 + x1) // 2, y1 - 2), fill=palette["debug_cian"], width=2)
+        elif kind == "mirror_wall":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 1))
+            d.rectangle((x0, y0, x1, y1), outline=palette["debug_cian"])
+            label((x0 + x1) // 2, y0 + 8, "pared de espejo", palette["debug_cian"])
+        elif kind == "mirror_only":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), 1)
+            for xx in range(x0, x1, 4):
+                d.line((xx, y0, min(xx + 2, x1), y0), fill=palette["debug_cian"], width=3)
+        elif kind == "pose_plate":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 2, y1 - 4, x1 - 2, y1 - 1), fill=palette["borde_luz"])
+            label((x0 + x1) // 2, y0 + 6, "placa", palette["borde_luz"])
+        elif kind == "frame_door":
+            x0, y0, x1, y1 = box(x, y, 1, 3)
+            d.rectangle((x0 + 3, y0 + 1, x1 - 3, y1 - 1), outline=palette["borde_luz"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "puerta de marco", palette["borde_luz"])
+        elif kind == "curator":
+            x0, y0, x1, y1 = box(x, y, 8, 4)
+            d.rectangle((x0, y0, x1, y1), outline=palette["borde_luz"], width=2)
+            label((x0 + x1) // 2, (y0 + y1) // 2, "La Curadora", palette["banner_blanco"], normal)
         elif kind == "alert_major":
             # Jefe: caja de su badge de 256 px (4 x 4 tiles) centrada en su celda.
             x0, y0, x1, y1 = box(x - 2, y, 4, 4)
