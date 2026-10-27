@@ -30,8 +30,11 @@
 ## - Llegada, intro, reaparicion por fase (energia >= 50 y likes >= 10; tambien al
 ##   empezar cada fase), golpe final y secuencia de derrota como Autoplay
 ##   (BossBase, BossDefeat). Sin rollback.
-## Arte PROVISIONAL por script (tools/gen_boss_curator.py, *_placeholder.png,
-## paleta B del Mundo 3); avisos, filtros y textos por codigo. Tiempo del mundo
+## Arte final del marco con AutoSprite (paso 23, 2026-10-27; tools/import_boss_curator.py,
+## curator_<anim>_NN.png, ART_ANIMS; docs/plan-arte-mundo-3.md): si faltan los
+## cuadros vuelve al PROVISIONAL por script (tools/gen_boss_curator.py,
+## *_placeholder.png, paleta B del Mundo 3), que siguen siendo los biombos y las
+## fichas del album; avisos, filtros y textos por codigo. Tiempo del mundo
 ## (advance; las pruebas lo llaman a mano con auto_process falso).
 class_name Curator
 extends BossBase
@@ -72,6 +75,24 @@ const ART_FRAME: String = "curator_frame_placeholder.png"
 const ART_FRAME_BACK: String = "curator_frame_back_placeholder.png"
 const ART_FRAME_OFF: String = "curator_frame_off_placeholder.png"
 const ART_BIOMBO: String = "curator_biombo_placeholder.png"
+## Arte final (tools/import_boss_curator.py): anim -> [cuadros, fps, bucle].
+## idle en reposo; flash durante el aviso del flash (un cuadro por cuadro del
+## aviso); frame_down en la ventana de las fases 1 y 3; turn al empezar la
+## fase 2 (y al reves al empezar la 3; de espaldas, su ultimo cuadro);
+## x_reflection en la fase 3; defeat desde el golpe final (se queda apagada).
+const ART_ANIMS: Dictionary = {
+	"idle": [19, 12.0, true],
+	"flash": [9, 12.0, false],
+	"frame_down": [24, 12.0, true],
+	"turn": [13, 12.0, false],
+	"x_reflection": [24, 12.0, true],
+	"defeat": [13, 12.0, false],
+}
+## El lienzo del arte final (576 x 356) sobresale de la caja `frame`
+## ART_MARGIN_PX por cada lado y ART_TOP_PX mas por arriba (la camara): la lente
+## cae en lens_px y el borde de abajo del marco en el de la caja.
+const ART_MARGIN_PX: float = 32.0
+const ART_TOP_PX: float = 40.0
 
 ## Ayudas de Eco con Q (paso 19 de docs/propuesta-mundo-3.md, §5.10; data/help.json):
 ## por defecto de help_id (la seccion help de data/bosses/curator.json manda).
@@ -98,6 +119,13 @@ var _fx: CuratorFx
 var _label: Label
 var _flash_label: Label
 var _textures: Dictionary = {}
+# Reloj del arte final (tiempo del mundo): total, desde el empezar de la fase y
+# desde que cambio la animacion de un solo uso (turn, defeat).
+var _art_t: float = 0.0
+var _art_phase_t: float = 0.0
+var _art_key: String = ""
+var _art_since: float = 0.0
+var _art_on: bool = false
 var _burst: PixelBurst
 var _off: bool = false
 var _rng := RandomNumberGenerator.new()
@@ -154,6 +182,9 @@ func _physics_process(delta: float) -> void:
 
 
 func advance(dt: float) -> void:
+	_art_t += dt
+	_art_phase_t += dt
+	_art_since += dt
 	if not is_fighting():
 		_refresh()
 		return
@@ -419,6 +450,7 @@ func _on_phase_started(phase_index: int) -> void:
 	_ensure_min_likes()
 	_rng.seed = 3027 + phase_index
 	_lower = 0.0
+	_art_phase_t = 0.0
 	var p: Dictionary = phase_data(phase_index)
 	_attack_index = 0
 	_attacks_left = (p.get("attacks", []) as Array).size()
@@ -1004,8 +1036,10 @@ func _texture(file_name: String) -> Texture2D:
 
 func _place_frame() -> void:
 	var rect: Rect2 = get_frame_rect()
-	_frame_sprite.global_position = rect.position + Vector2(0.0, get_lowered_offset())
-	_label.global_position = _frame_sprite.global_position + Vector2(24.0, 20.0)
+	var at: Vector2 = rect.position + Vector2(0.0, get_lowered_offset())
+	var art: Vector2 = Vector2(ART_MARGIN_PX, ART_MARGIN_PX + ART_TOP_PX) if _art_on else Vector2.ZERO
+	_frame_sprite.global_position = at - art
+	_label.global_position = at + Vector2(24.0, 20.0)
 	if _lens_help != null:
 		_lens_help.global_position = get_lens_point()
 	if _closing_help != null:
@@ -1064,7 +1098,12 @@ func _stop_music() -> void:
 func _refresh() -> void:
 	if _frame_sprite == null:
 		return
-	if _off:
+	var art: Array = get_art_frame()
+	var art_tex: Texture2D = _texture("curator_%s_%02d.png" % [art[0], art[1]])
+	_art_on = art_tex != null
+	if _art_on:
+		_frame_sprite.texture = art_tex
+	elif _off:
 		_frame_sprite.texture = _texture(ART_FRAME_OFF)
 	elif get_phase() == 2 and is_fighting():
 		_frame_sprite.texture = _texture(ART_FRAME_BACK)
@@ -1083,6 +1122,52 @@ func _refresh() -> void:
 	if _flash_label.visible:
 		_flash_label.global_position = _flash_source + Vector2(-24.0, 36.0)
 	_fx.queue_redraw()
+
+
+## [animacion, cuadro] del arte final que toca ahora (ART_ANIMS).
+func get_art_frame() -> Array:
+	var key: String = "idle"
+	if _off:
+		key = "defeat"
+	elif is_fighting() and get_phase() == 2:
+		key = "turn"
+	elif is_fighting() and get_phase() == 3 and _art_phase_t < _art_duration("turn"):
+		key = "turn_back"
+	elif is_flash_warning():
+		key = "flash"
+	elif is_window_open() and get_phase() != 2:
+		key = "frame_down"
+	elif is_fighting() and get_phase() == 3:
+		key = "x_reflection"
+	if key != _art_key:
+		_art_key = key
+		_art_since = 0.0
+	match key:
+		"defeat", "turn":
+			return [key, _art_once(key, _art_since)]
+		"turn_back":
+			return ["turn", int(ART_ANIMS["turn"][0]) - 1 - _art_once("turn", _art_phase_t)]
+		"flash":
+			var warn: float = frames_s((get_config().get("flash", {}) as Dictionary).get("warn_frames", 9))
+			var n: int = int(ART_ANIMS["flash"][0])
+			return ["flash", clampi(floori(_attack_t / maxf(warn, 0.001) * float(n)), 0, n - 1)]
+	var spec: Array = ART_ANIMS[key]
+	return [key, posmod(floori(_art_t * float(spec[1])), int(spec[0]))]
+
+
+func _art_once(anim: String, t: float) -> int:
+	var spec: Array = ART_ANIMS[anim]
+	return clampi(floori(t * float(spec[1])), 0, int(spec[0]) - 1)
+
+
+func _art_duration(anim: String) -> float:
+	var spec: Array = ART_ANIMS[anim]
+	return float(spec[0]) / float(spec[1])
+
+
+## El marco se ve con el arte final (cuadros de tools/import_boss_curator.py).
+func has_final_art() -> bool:
+	return _art_on
 
 
 func _update_label() -> void:

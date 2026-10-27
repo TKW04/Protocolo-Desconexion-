@@ -318,3 +318,35 @@ func test_nothing_else_damages() -> void:
 	_debug_on()
 	assert_false(core.receive_ground_pound(core.global_position), "El golpe al suelo no hace nada")
 	assert_eq(_boss.get_remaining_hits(), 9)
+
+
+# --- Arte final (paso 23, AutoSprite) ---
+
+func test_final_art_follows_its_state() -> void:
+	await _setup()
+	assert_true(_boss.has_final_art(), "Cuadros de tools/import_boss_curator.py")
+	assert_eq(String(_boss.get_art_frame()[0]), "idle", "Fase 1 entre ataques")
+	var sprite := _boss.get_node(^"Frame") as Sprite2D
+	var rect: Rect2 = _boss.get_frame_rect()
+	assert_eq(sprite.global_position, rect.position - Vector2(Curator.ART_MARGIN_PX, Curator.ART_MARGIN_PX + Curator.ART_TOP_PX),
+		"El lienzo sobresale de la caja (la caja no cambia)")
+	assert_eq(sprite.texture.get_size(), Vector2(576.0, 356.0))
+	_boss.open_window(5.0)
+	_boss.advance(DT)
+	assert_eq(String(_boss.get_art_frame()[0]), "frame_down", "Ventana: baja a encuadrar")
+	_to_phase(2)
+	_boss.advance(DT)
+	assert_eq(_boss.get_art_frame(), ["turn", 0], "Fase 2: empieza a darse la vuelta")
+	for i: int in roundi(1.5 / DT):
+		_boss.advance(DT)
+	assert_eq(_boss.get_art_frame(), ["turn", 12], "De espaldas: el ultimo cuadro del giro")
+	_to_phase(3)
+	_boss.advance(DT)
+	assert_eq(_boss.get_art_frame(), ["turn", 12], "Fase 3: se vuelve de frente (giro al reves)")
+	for i: int in roundi(1.2 / DT):
+		_boss.advance(DT)
+	assert_ne(String(_boss.get_art_frame()[0]), "turn", "Tras el giro, de frente")
+	while not _boss.is_defeated():
+		_boss.take_core_hit(1)
+	_boss.advance(DT)
+	assert_eq(String(_boss.get_art_frame()[0]), "defeat", "Golpe final: se apaga")
