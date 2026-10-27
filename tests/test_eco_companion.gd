@@ -257,3 +257,30 @@ func test_level_runner_adds_the_companion_to_the_level() -> void:
 	assert_false(eco.is_shown(), "Isak aun no ha llegado")
 	main.free()
 	EcoTextBox.pause_important = saved
+
+
+# --- Marco dorado del Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §6.3) ---
+
+func _eco_in_level(scene_path: String) -> EcoCompanion:
+	var level := (load(scene_path) as PackedScene).instantiate() as GeneratedLevel
+	_root.add_child(level)
+	GameState.meet_ally(GameState.ALLY_ECO)
+	_eco = EcoCompanion.attach(_isak, level)
+	_eco.auto_advance = false
+	_run(1.0)
+	return _eco
+
+
+func test_world_3_eco_wears_a_gold_frame_only_with_the_whole_sphere() -> void:
+	var eco := _eco_in_level("res://scenes/levels/likes_test.tscn")
+	var frame: Sprite2D = eco.get_world_frame()
+	assert_not_null(frame, "En el Mundo 3 Eco lleva su marco")
+	assert_eq(frame.texture.resource_path, String((_data["world_frames"] as Dictionary)["3"]))
+	assert_eq(frame.scale, (eco.get_node(^"Sprite") as Node2D).scale, "A la escala de la esfera")
+	assert_true(frame.visible, "Siguiendo a Isak (idle) se ve")
+	assert_true(String(eco.get_shown_animation()).begins_with("idle"))
+
+
+func test_other_worlds_and_hub_have_no_frame() -> void:
+	assert_null(_eco_in_level("res://scenes/levels/correo_test.tscn").get_world_frame(), "Mundo 1: sin marco")
+	assert_null(_attach(true).get_world_frame(), "Hub: sin marco")

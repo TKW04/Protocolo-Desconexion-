@@ -1,0 +1,45 @@
+{
+	"_notes": "Fondo de la galeria del Mundo 3 (generado por tools/gen_world3_background.py; no editar a mano). Mismo formato que data/world1_background.json (scripts/levels/world1_background.gd): capas de atras hacia delante con scroll_scale y repeat_size; trastienda malva, fotos enmarcadas en paralaje y focos. Sin capa de torre (los niveles del Mundo 3 son horizontales).",
+	"z_index": -100,
+	"layers": [
+		{
+			"name": "Trastienda",
+			"texture": "res://assets/sprites/backgrounds/mundo3_bg_trastienda.png",
+			"scroll_scale": [
+				0.1,
+				0.0
+			],
+			"repeat_size": [
+				1280,
+				0
+			],
+			"repeat_times": 3
+		},
+		{
+			"name": "Fotos",
+			"texture": "res://assets/sprites/backgrounds/mundo3_bg_fotos.png",
+			"scroll_scale": [
+				0.25,
+				0.0
+			],
+			"repeat_size": [
+				1280,
+				0
+			],
+			"repeat_times": 3
+		},
+		{
+			"name": "Focos",
+			"texture": "res://assets/sprites/backgrounds/mundo3_bg_focos.png",
+			"scroll_scale": [
+				0.45,
+				0.0
+			],
+			"repeat_size": [
+				1280,
+				0
+			],
+			"repeat_times": 3
+		}
+	]
+}

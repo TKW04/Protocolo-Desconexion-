@@ -4,6 +4,8 @@
   (--check sale con 0).
 - Casos negativos sinteticos: dorado saturado o con el tono del ambar, rosa oscuro, corazon rojo, fondo claro que
   apaga a Isak y a Eco, otro verde en la paleta, reservados cambiados y velo que se come el contorno rojo.
+- Paso 9: las 3 variantes (tools/palette_mundo3_variants.py) cumplen las 5 reglas; la elegida (B) es la del juego,
+  con el mayor margen minimo, en assets/palettes/mundo3.gpl (la provisional ya no existe).
 - El catalogo del Mundo 3 une los tipos de los Mundos 1, 2 y 3 (tools/level_catalog.py).
 
 Uso: python3 -m unittest tests/test_palette_mundo3.py
@@ -16,7 +18,9 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import level_catalog  # noqa: E402
+import palette_mundo3_preview as preview  # noqa: E402
 import palette_mundo3_provisional as pal  # noqa: E402
+import palette_mundo3_variants as variants  # noqa: E402
 
 
 def _with(**hexes):
@@ -29,6 +33,17 @@ class PaletteMundo3Test(unittest.TestCase):
                                  "--check"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(pal.check_rules(), [])
+
+    def test_three_variants_pass_and_the_chosen_one_is_used(self):
+        self.assertEqual(sorted(variants.VARIANTS), ["A", "B", "C"])
+        self.assertEqual(preview.check_variants(), [])
+        self.assertEqual(variants.ACTIVE, "B")
+        self.assertEqual({n: v for n, v, _r in pal.COLORS}, variants.VARIANTS["B"]["hex"])
+        self.assertEqual(pal.DEBUG[1], "a6ff2e")
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "assets", "palettes", "mundo3.gpl")))
+        self.assertFalse(os.path.exists(pal.PROVISIONAL_GPL))
+        worst = {vid: preview.margins(variants.rows(vid, preview.provisional_rows()))[2][0] for vid in variants.VARIANTS}
+        self.assertEqual(max(worst, key=worst.get), "B", worst)
 
     def test_sixteen_colors_plus_debug(self):
         self.assertEqual(len(pal.COLORS), 16)

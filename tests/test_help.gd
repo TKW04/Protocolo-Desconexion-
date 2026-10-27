@@ -298,6 +298,12 @@ func _data_help_ids() -> Dictionary:
 		var id2: Variant = (world2["types"][type] as Dictionary).get("help_id")
 		if id2 is String and not (id2 as String).is_empty():
 			used[id2] = "world2_objects.types.%s" % type
+	# Mundo 3 (2026-10-26, paso 9 de docs/propuesta-mundo-3.md): tipos de data/world3_objects.json.
+	var world3: Dictionary = World3ObjectsConfig.data()
+	for type: String in world3.get("types", {}):
+		var id3: Variant = (world3["types"][type] as Dictionary).get("help_id")
+		if id3 is String and not (id3 as String).is_empty():
+			used[id3] = "world3_objects.types.%s" % type
 	# Chip de una habilidad con ayuda propia (2026-10-16: debug_chip).
 	var by_ability: Dictionary = (world["ability_pickup"] as Dictionary).get("by_ability", {})
 	for ability: String in by_ability:

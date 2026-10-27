@@ -132,12 +132,12 @@ func test_catalog_and_data() -> void:
 	var types: Dictionary = World3ObjectsConfig.data().get("types", {})
 	for t: String in ["hunter_mirror", "pose_plate", "frame_door"]:
 		assert_true(types.has(t), "Tipo %s en data/world3_objects.json" % t)
-		assert_eq(String(types[t].get("help_id", "x")), "", "Sin Q todavia (%s)" % t)
+		assert_eq(String(types[t].get("help_id", "")), t, "Con su Q desde el paso 9 (%s)" % t)
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/enemies/false_reflection.json"))
 	assert_true(parsed is Dictionary)
 	assert_almost_eq(float(parsed["delay_s"]), 1.0, 0.0001, "Reflejo de hace 1 s")
 	assert_almost_eq(float(parsed["contact_damage"]), 10.0, 0.0001)
-	assert_false((parsed as Dictionary).has("help_id"), "Sin help_id todavia (solo _help_id_planned)")
+	assert_eq(String((parsed as Dictionary).get("help_id", "")), "false_reflection", "Con su Q desde el paso 9")
 
 
 # --- Espejo cazador ---

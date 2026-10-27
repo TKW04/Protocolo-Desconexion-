@@ -112,6 +112,24 @@ SOURCES = {
     "autoplay_countdown": ("assets/sprites/bosses/autoplay_countdown_card_placeholder.png", None, 1),
     "autoplay_clip": ("assets/sprites/bosses/autoplay_clip_card_placeholder.png", None, 1),
     "autoplay_fan": ("assets/sprites/bosses/autoplay_fan_card_placeholder.png", None, 1),
+    # Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8): arte por script del mundo con la paleta elegida
+    # (tools/gen_world3_objects.py y tools/gen_world3_enemies.py; el Influencer, PROVISIONAL hasta AutoSprite).
+    "heart_pickup": ("assets/sprites/props/world3/heart_pickup_00.png", None, 2),
+    "like_source": ("assets/sprites/props/world3/like_source_00.png", None, 1),
+    "like_platform": ("assets/sprites/props/world3/like_platform_on_00.png", None, 1),
+    "like_reset": ("assets/sprites/props/world3/like_reset_00.png", None, 1),
+    "crop_tool": ("assets/sprites/props/world3/crop_tool_00.png", None, 1),
+    "filter_zone": ("assets/sprites/props/world3/filter_zone_00.png", None, 1),
+    "small_frame": ("assets/sprites/props/world3/small_frame_00.png", None, 1),
+    "mirror": ("assets/sprites/props/world3/mirror_00.png", None, 1),
+    "mirror_wall": ("assets/sprites/props/world3/mirror_wall_00.png", None, 1),
+    "mirror_only": ("assets/sprites/props/world3/mirror_only_00.png", None, 1),
+    "hunter_mirror": ("assets/sprites/props/world3/hunter_mirror_00.png", None, 1),
+    "pose_plate": ("assets/sprites/props/world3/pose_plate_00.png", None, 2),
+    "frame_door": ("assets/sprites/props/world3/frame_door_00.png", None, 1),
+    "like_thief": ("assets/sprites/enemies/world3/like_thief_warn_00.png", None, 1),
+    "influencer_bot": ("assets/sprites/enemies/world3/influencer_bot_placeholder_00.png", None, 1),
+    "false_reflection": ("assets/sprites/enemies/world3/false_reflection_00.png", None, 1),
 }
 
 

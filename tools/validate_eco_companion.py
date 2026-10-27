@@ -8,7 +8,7 @@ ambar), los ambar (_amber_, glow_in: Eco ofrece o explica una ayuda) de
 mundo1.gpl con ambar y ambar_sombra (sin rojo ni carmin) y con dorado de
 verdad (ambar y ambar_sombra presentes; glow_in_00 al menos una chispa) y los
 atenuados (_dim, hub) solo de hub.gpl (sin ambar ni los rojos
-reservados). Ademas: no hay PNG de mas en la carpeta, los PNG estan al dia con
+reservados); el marco dorado del Mundo 3 (eco_frame_w3_00) solo dorado y dorado_luz de mundo3.gpl. Ademas: no hay PNG de mas en la carpeta, los PNG estan al dia con
 el generador y el SpriteFrames (assets/sprites/eco_companion_frames.tres)
 coincide con el que escribiria.
 
@@ -46,6 +46,17 @@ def main():
     for rel, expected in sorted(imgs.items()):
         path = os.path.join(REPO, "assets/sprites", rel)
         base = os.path.basename(rel)
+        if rel == gen.FRAME_W3:
+            used = {c[:3] for c in expected.getdata() if c[3] == 255}
+            gold = gen.load_gpl(os.path.join(REPO, gen.M3_GPL))
+            want = {gold["dorado"][:3], gold["dorado_luz"][:3]}
+            if not used or not used <= want:
+                errs.append(f"{rel}: el marco del Mundo 3 solo usa dorado y dorado_luz de mundo3.gpl")
+            if os.path.exists(path) and Image.open(path).convert("RGBA").tobytes() != expected.tobytes():
+                errs.append(f"{rel}: no coincide con tools/gen_eco_companion.py (regenera)")
+            elif not os.path.exists(path):
+                errs.append(f"{rel}: falta (regenera con tools/gen_eco_companion.py)")
+            continue
         amber = "_amber_" in base or "_glow_in_" in base
         pal = pal_hub if "_dim_" in base else (pal_amber if amber else pal_m1)
         if amber:

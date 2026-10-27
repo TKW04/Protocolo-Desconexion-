@@ -88,7 +88,7 @@ Una IA que edita todo lo que ve. Su cuerpo es un marco de foto gigante y su cabe
 
 Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada decisión están en [propuesta-mundo-3.md](propuesta-mundo-3.md) (§8 y §8.1); lo pendiente, en [08-pendientes.md](08-pendientes.md).
 
-**Hecho (pasos 0-8 del plan):** todas las piezas del mundo funcionan en salas de prueba y el validador las modela; todavía no hay niveles 3-1 a 3-3 ni jefe, y el Mundo 3 sigue «Próximamente» en el hub.
+**Hecho (pasos 0-9 del plan):** todas las piezas del mundo funcionan en salas de prueba y el validador las modela; todavía no hay niveles 3-1 a 3-3 ni jefe, y el Mundo 3 sigue «Próximamente» en el hub.
 
 **Decisiones tomadas (frente al mapa conceptual de arriba):**
 - **Los likes sostienen el mundo** y **no se guardan** (se vacían al terminar el nivel con «Los likes no se guardan.»); perder likes nunca bloquea (publicaciones reutilizables cerca de cada umbral, corazones del golpe recuperables).
@@ -96,7 +96,7 @@ Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada deci
 - **Lo que rebota en los espejos es el láser**; el pulso solo en el espejo cazador, que lo devuelve como un haz.
 - **El filtro engaña, no mata:** pinchos −10 que empujan a la entrada y caídas cortas con salida; el Debug enseña lo que hay debajo.
 - **El flash del Influencer ciega sin dañar** y lo que daña conserva su contorno.
-- **Paleta provisional por script** (`assets/palettes/mundo3_provisional.gpl`): la elige el usuario entre 3 variantes en el paso 9.
+- **Paleta: variante B «Terciopelo de trastienda»** (`assets/palettes/mundo3.gpl`), elegida en el paso 9 por el orquestador con la autoridad delegada entre 3 variantes (`docs/arte/mundo3_paleta_variantes.png`); se cambia con `tools/palette_mundo3_preview.py --apply`.
 
 **Valores (ajustables jugando):**
 
@@ -113,6 +113,6 @@ Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada deci
 | Placa «Posa aquí» y puerta de marco | la puerta (1 × 3) se abre en 0,2 s mientras alguien pisa la placa y 0,3 s más |
 | «Recortar» | pulso de espaldas: da Pellizcar; Eco: «Te queda mejor así.» |
 
-**Salas de prueba** (`-- --start-level=<sala>`, builds de depuración): `likes_test`, `filtro_test`, `espejos_test`, `vitrina_test` (Influencer y Ladrón), `reflejo_test` (cazador, Reflejo falso y placas) y `recorte_test` («Recortar» y marcos pequeños). Todo el arte es provisional por código; las ayudas Q y las fichas del álbum llegan en el paso 9.
+**Salas de prueba** (`-- --start-level=<sala>`, builds de depuración): `likes_test`, `filtro_test`, `espejos_test`, `vitrina_test` (Influencer y Ladrón), `reflejo_test` (cazador, Reflejo falso y placas) y `recorte_test` («Recortar» y marcos pequeños). Desde el paso 9: arte por script del mundo (tileset, fondo, objetos y enemigos; el Influencer, provisional), Eco con marco dorado, ayudas Q y fichas del álbum de los 16 tipos nuevos.
 
-**Sigue:** paso 9 (arte por script, ayudas Q y elección de paleta por el usuario), niveles 3-1 a 3-3 con su bot (10-13), jefe La Curadora (14-19) y arte final con AutoSprite con permiso (23).
+**Sigue:** niveles 3-1 a 3-3 con su bot (10-13), jefe La Curadora (14-19) y arte final con AutoSprite con permiso (23).

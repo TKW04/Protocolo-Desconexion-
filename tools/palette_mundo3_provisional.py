@@ -26,6 +26,11 @@ atencion, icono del HUD, brillo de Eco con la Q, «sin guardar»).
 Genera assets/palettes/mundo3_provisional.gpl y escribe la seccion palette de data/world3_objects.json.
 Con --check sale con 1 si algo no esta al dia o una regla falla (imprime las medidas con --verbose).
 
+Desde el paso 9 (2026-10-26) hay una variante ELEGIDA en tools/palette_mundo3_variants.py (ACTIVE): sus hex
+sustituyen a los de abajo (que se quedan como referencia de la provisional) y la salida es
+assets/palettes/mundo3.gpl (la provisional, assets/palettes/mundo3_provisional.gpl, se borro). Con ACTIVE = None
+volveria la provisional. Las 3 variantes y su comparativa: tools/palette_mundo3_preview.py.
+
 Uso: python3 tools/palette_mundo3_provisional.py [--check] [--verbose]
 """
 import colorsys
@@ -36,7 +41,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GPL = os.path.join(ROOT, "assets", "palettes", "mundo3_provisional.gpl")
+PROVISIONAL_GPL = os.path.join(ROOT, "assets", "palettes", "mundo3_provisional.gpl")
+GPL = PROVISIONAL_GPL
 OBJECTS = os.path.join(ROOT, "data", "world3_objects.json")
 HUD = os.path.join(ROOT, "data", "hud.json")
 DEBUG_MODE = os.path.join(ROOT, "data", "debug_mode.json")
@@ -62,6 +68,16 @@ COLORS = [
     ("ambar_sombra", "a85f00", "Sombra de los puntos de atencion (reservado)"),
 ]
 DEBUG = ("debug_verde", "a6ff2e", "Debug del Mundo 3: verde acido (debug_colors[\"3\"] de data/hud.json)")
+
+## Paso 9: variante elegida (tools/palette_mundo3_variants.py). Sus hex sustituyen a los de arriba.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import palette_mundo3_variants as variants  # noqa: E402
+
+if variants.ACTIVE:
+    COLORS = variants.rows(variants.ACTIVE, COLORS)
+    DEBUG = (DEBUG[0], variants.DEBUG_HEX, DEBUG[2])
+    TITLE = "Mundo 3 La Vitrina - variante %s (%s)" % (variants.ACTIVE, variants.VARIANTS[variants.ACTIVE]["title"])
+    GPL = os.path.join(ROOT, "assets", "palettes", "mundo3.gpl")
 
 ## Reservados del Mundo 1 (significan lo mismo en todo el juego).
 RESERVED = {"alerta": "ff4a2a", "alerta_sombra": "a3221c", "ambar": "ffa000", "ambar_sombra": "a85f00"}
@@ -253,8 +269,10 @@ def metrics_line(m):
 
 # ------------------------------------------------------------------ salida
 def gpl_text():
-    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4",
-             "# PROVISIONAL: colores de desarrollo del Mundo 3, sin cerrar (el usuario elige variante en el paso 9).",
+    head = ("# Variante %s elegida en el paso 9 (tools/palette_mundo3_variants.py; cambiable con "
+            "tools/palette_mundo3_preview.py --apply)." % variants.ACTIVE if variants.ACTIVE else
+            "# PROVISIONAL: colores de desarrollo del Mundo 3, sin cerrar (el usuario elige variante en el paso 9).")
+    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4", head,
              "# Generado por tools/palette_mundo3_provisional.py"]
     for name, value, role in COLORS + [DEBUG]:
         r, g, b = hx(value)
@@ -264,8 +282,13 @@ def gpl_text():
 
 
 def palette_section():
-    out = {"_notes": "PROVISIONAL (tools/palette_mundo3_provisional.py; no editar a mano): colores de desarrollo "
-                     "del Mundo 3 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 9)."}
+    if variants.ACTIVE:
+        out = {"_notes": "Variante %s (tools/palette_mundo3_variants.py, escrita por tools/palette_mundo3_provisional.py; "
+                         "no editar a mano): colores del Mundo 3 por nombre. Elegida en el paso 9; se cambia con "
+                         "tools/palette_mundo3_preview.py --apply." % variants.ACTIVE}
+    else:
+        out = {"_notes": "PROVISIONAL (tools/palette_mundo3_provisional.py; no editar a mano): colores de desarrollo "
+                         "del Mundo 3 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 9)."}
     for name, value, _role in COLORS + [DEBUG]:
         out[name] = "#" + value
     return out
@@ -296,9 +319,14 @@ def main(argv):
             errors.append("%s no esta al dia" % os.path.relpath(GPL, ROOT))
         if data.get("palette") != palette_section():
             errors.append("la seccion palette de %s no esta al dia" % os.path.relpath(OBJECTS, ROOT))
+        if variants.ACTIVE and os.path.exists(PROVISIONAL_GPL):
+            errors.append("%s sobra con la variante %s elegida (ejecuta tools/palette_mundo3_provisional.py)"
+                          % (os.path.relpath(PROVISIONAL_GPL, ROOT), variants.ACTIVE))
     else:
         with open(GPL, "w", encoding="utf-8") as fh:
             fh.write(gpl_text())
+        if variants.ACTIVE and os.path.exists(PROVISIONAL_GPL):
+            os.remove(PROVISIONAL_GPL)
         write_objects(data, palette_section())
     if "--verbose" in argv or not check:
         print("palette_mundo3_provisional: " + metrics_line(metrics()))

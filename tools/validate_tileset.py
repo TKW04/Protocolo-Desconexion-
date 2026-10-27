@@ -21,9 +21,11 @@ Devuelve 0 si todo es correcto y 1 si hay algun fallo.
 import argparse
 import json
 import os
+import site
 import sys
 
-from PIL import Image
+sys.path.append(site.getusersitepackages())  # Pillow en el site de usuario (tambien con python3 -I)
+from PIL import Image  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 N, E, S, W = 1, 2, 4, 8

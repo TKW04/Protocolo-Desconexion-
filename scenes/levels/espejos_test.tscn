@@ -1,8 +1,8 @@
 [gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
-[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
-[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world3_background.tscn" id="2_world3_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo3.tres" id="3_mundo3"]
 [ext_resource type="PackedScene" path="res://scenes/levels/mirror.tscn" id="4_mirror"]
 [ext_resource type="PackedScene" path="res://scenes/levels/laser_receiver.tscn" id="5_laser_receiver"]
 [ext_resource type="PackedScene" path="res://scenes/levels/relay_receiver.tscn" id="6_relay_receiver"]
@@ -27,11 +27,11 @@ debug_color = "green"
 abilities_available = {"debug": true, "laser": true, "pulse": true}
 source_path = "res://data/levels/espejos_test.json"
 
-[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+[node name="Background" parent="." instance=ExtResource("2_world3_background")]
 
 [node name="Tiles" type="TileMapLayer" parent="."]
 tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 6, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 11, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 16, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 21, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 22, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 24, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 26, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 27, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 28, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 29, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 31, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 32, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 33, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 34, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 35, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 36, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 37, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 38, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 39, 0, 0, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 26, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 27, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 28, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 29, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 30, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 31, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 32, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 33, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 34, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 35, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 36, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 37, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 38, 0, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 39, 0, 1, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 24, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 10, 0, 0, 0, 4, 0, 1, 0, 0, 0, 32, 0, 10, 0, 0, 0, 6, 0, 0, 0, 0, 0, 33, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 34, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 35, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 36, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 37, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 38, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 39, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 6, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 7, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 8, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 10, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 11, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 12, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 13, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 16, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 17, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 22, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 24, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 25, 0, 11, 0, 0, 0, 5, 0, 1, 0, 0, 0, 32, 0, 11, 0, 0, 0, 7, 0, 0, 0, 0, 0, 33, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 34, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 35, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 36, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 37, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 38, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 39, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 0, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 2, 0, 12, 0, 0, 0, 0, 0, 2, 0, 0, 0, 3, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 6, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 7, 0, 12, 0, 0, 0, 0, 0, 2, 0, 0, 0, 8, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 10, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 11, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 12, 0, 12, 0, 0, 0, 0, 0, 2, 0, 0, 0, 13, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 16, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 17, 0, 12, 0, 0, 0, 0, 0, 2, 0, 0, 0, 18, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 22, 0, 12, 0, 0, 0, 0, 0, 2, 0, 0, 0, 23, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 24, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 25, 0, 12, 0, 0, 0, 1, 0, 2, 0, 0, 0, 26, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 27, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 28, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 29, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 30, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 31, 0, 12, 0, 0, 0, 6, 0, 1, 0, 0, 0, 32, 0, 12, 0, 0, 0, 0, 0, 3, 0, 0, 0, 33, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 34, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 35, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 36, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 37, 0, 12, 0, 0, 0, 0, 0, 2, 0, 0, 0, 38, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0, 39, 0, 12, 0, 0, 0, 7, 0, 1, 0, 0, 0)
-tile_set = ExtResource("3_mundo1")
+tile_set = ExtResource("3_mundo3")
 
 [node name="Hazards" type="Node2D" parent="."]
 
@@ -45,10 +45,11 @@ tile_set = ExtResource("3_mundo1")
 
 [node name="Objects" type="Node2D" parent="."]
 
-[node name="espejo_sube" parent="Objects" instance=ExtResource("4_mirror")]
+[node name="espejo_sube" parent="Objects" instance=ExtResource("4_mirror") groups=["help_target"]]
 position = Vector2(320, 576)
 object_id = &"espejo_sube"
 orientation = "/"
+metadata/help_id = "mirror"
 
 [node name="lector_techo" parent="Objects" instance=ExtResource("5_laser_receiver") groups=["help_target"]]
 position = Vector2(320, 128)
@@ -71,25 +72,29 @@ object_id = &"puente_espejos"
 length_tiles = 3
 metadata/help_id = "bridge"
 
-[node name="espejo_vuelta" parent="Objects" instance=ExtResource("4_mirror")]
+[node name="espejo_vuelta" parent="Objects" instance=ExtResource("4_mirror") groups=["help_target"]]
 position = Vector2(832, 576)
 object_id = &"espejo_vuelta"
 orientation = "|"
+metadata/help_id = "mirror"
 
-[node name="cadena_1" parent="Objects" instance=ExtResource("4_mirror")]
+[node name="cadena_1" parent="Objects" instance=ExtResource("4_mirror") groups=["help_target"]]
 position = Vector2(1088, 576)
 object_id = &"cadena_1"
 orientation = "/"
+metadata/help_id = "mirror"
 
-[node name="cadena_2" parent="Objects" instance=ExtResource("4_mirror")]
+[node name="cadena_2" parent="Objects" instance=ExtResource("4_mirror") groups=["help_target"]]
 position = Vector2(1088, 320)
 object_id = &"cadena_2"
 orientation = "/"
+metadata/help_id = "mirror"
 
-[node name="cadena_3" parent="Objects" instance=ExtResource("4_mirror")]
+[node name="cadena_3" parent="Objects" instance=ExtResource("4_mirror") groups=["help_target"]]
 position = Vector2(1216, 320)
 object_id = &"cadena_3"
 orientation = "/"
+metadata/help_id = "mirror"
 
 [node name="lector_cadena" parent="Objects" instance=ExtResource("5_laser_receiver") groups=["help_target"]]
 position = Vector2(1216, 128)
@@ -107,24 +112,27 @@ object_id = &"cargador_1"
 reusable = true
 metadata/help_id = "charger"
 
-[node name="pared_espejo" parent="Objects" instance=ExtResource("9_mirror_wall")]
+[node name="pared_espejo" parent="Objects" instance=ExtResource("9_mirror_wall") groups=["help_target"]]
 position = Vector2(1664, 256)
 height_tiles = 6
 object_id = &"pared_espejo"
 side = "center"
 width_tiles = 6
+metadata/help_id = "mirror_wall"
 
-[node name="reflejo_1" parent="Objects" instance=ExtResource("10_mirror_only")]
+[node name="reflejo_1" parent="Objects" instance=ExtResource("10_mirror_only") groups=["help_target"]]
 position = Vector2(1728, 576)
 object_id = &"reflejo_1"
 one_way = false
 width_tiles = 1
+metadata/help_id = "mirror_only"
 
-[node name="reflejo_2" parent="Objects" instance=ExtResource("10_mirror_only")]
+[node name="reflejo_2" parent="Objects" instance=ExtResource("10_mirror_only") groups=["help_target"]]
 position = Vector2(1856, 512)
 object_id = &"reflejo_2"
 one_way = false
 width_tiles = 1
+metadata/help_id = "mirror_only"
 
 [node name="terminal_espejos" parent="Objects" instance=ExtResource("11_exit_terminal") groups=["help_target"]]
 position = Vector2(2304, 512)

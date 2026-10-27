@@ -121,6 +121,10 @@ rm -f "$IMPORT_LOG"
 # (tools/import_boss_autoplay.py --check, tools/import_commenter.py --check).
 # Desde el paso 0 de docs/propuesta-mundo-3.md (2026-10-26): la paleta provisional del Mundo 3 al dia y sus 5 reglas
 # de §6.1 (tools/palette_mundo3_provisional.py --check, tests/test_palette_mundo3.py).
+# Desde el paso 9 (2026-10-26): las 3 variantes de paleta del Mundo 3 cumplen las 5 reglas
+# (tools/palette_mundo3_preview.py --check; la elegida, la B, la escribe palette_mundo3_provisional.py), el arte por
+# script de objetos y enemigos (tools/validate_world3_objects.py) y el tileset y el fondo de la galeria con el
+# contraste de Isak y Eco (tools/validate_world3_tiles.py).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -185,7 +189,8 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world1_dnd.py >/dev/null && python3 -I tools/validate_audio.py >/dev/null \
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
-		&& python3 -I tools/palette_mundo3_provisional.py --check \
+		&& python3 -I tools/palette_mundo3_provisional.py --check && python3 -I tools/palette_mundo3_preview.py --check \
+		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then

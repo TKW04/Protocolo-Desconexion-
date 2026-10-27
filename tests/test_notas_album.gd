@@ -65,9 +65,10 @@ func test_every_help_type_has_a_world() -> void:
 		var level_world: Dictionary = HubWorlds.world_of_level(StringName(String(entry.get("first_level", ""))))
 		if not level_world.is_empty():
 			assert_eq(int(level_world.get("world", 0)), world, "%s: world coincide con su first_level" % id)
-	# Desde el 2026-10-22 (paso 4 de docs/propuesta-mundo-2.md) hay tipos del Mundo 2.
+	# Desde el 2026-10-22 (paso 4 de docs/propuesta-mundo-2.md) hay tipos del Mundo 2 y desde el 2026-10-26
+	# (paso 9 de docs/propuesta-mundo-3.md), del Mundo 3.
 	for id: StringName in HelpCatalog.shared().ids():
-		assert_between(HelpCatalog.shared().world(id), 1, 2, "Hoy los tipos son del Mundo 1 o 2 (%s)" % id)
+		assert_between(HelpCatalog.shared().world(id), 1, 3, "Hoy los tipos son de los Mundos 1-3 (%s)" % id)
 
 
 func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
@@ -76,8 +77,8 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	assert_eq(enemies, [&"alert_bubble", &"notification_badge", &"spam_banner", &"spam_banner_dash", &"alarm_bell",
 		&"alert_major", &"alert_major_bubble", &"notification_shot", &"alert_major_clone"] as Array[StringName],
 		"Burbuja (1-1), punto rojo y banner (1-2), banner obligatorio con el dash y campana (1-3) y Alerta Mayor, sus Burbujas, la rafaga y las copias (1-boss), en orden")
-	assert_eq(enemies.size() + objects.size() + NotasAlbum.album_ids(2).size(), HelpCatalog.shared().ids().size(),
-		"Todos los tipos del Mundo 1 (y los del Mundo 2 aparte)")
+	assert_eq(enemies.size() + objects.size() + NotasAlbum.album_ids(2).size() + NotasAlbum.album_ids(3).size(),
+		HelpCatalog.shared().ids().size(), "Todos los tipos del Mundo 1 (y los de los Mundos 2 y 3 aparte)")
 	assert_eq(objects[0], &"attention_point", "Orden de help.json")
 	for i: int in range(1, objects.size()):
 		assert_true(int(HelpCatalog.shared().entry(objects[i - 1]).get("order", 0))
@@ -90,7 +91,12 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	assert_eq(NotasAlbum.album_ids(2, HelpCatalog.CATEGORY_ENEMY),
 		[&"autoplay_video", &"video_clone", &"commenter", &"autoplay", &"autoplay_clip", &"autoplay_fan"] as Array[StringName],
 		"Mundo 2: el video en autoplay (paso 6), el clon y el Comentarista (paso 7 de docs/propuesta-mundo-2.md) y Autoplay, sus clips y el abanico (paso 20)")
-	for world: int in range(3, 7):
+	# Mundo 3 (paso 9 de docs/propuesta-mundo-3.md): 13 objetos y 3 enemigos en el orden de help.json.
+	assert_eq(NotasAlbum.album_ids(3, HelpCatalog.CATEGORY_OBJECT).size(), 13, "Mundo 3: 13 objetos")
+	assert_eq(NotasAlbum.album_ids(3, HelpCatalog.CATEGORY_ENEMY),
+		[&"influencer_bot", &"like_thief", &"false_reflection"] as Array[StringName],
+		"Mundo 3: Influencer bot y Ladron de likes (3-1) y Reflejo falso (3-3)")
+	for world: int in range(4, 7):
 		assert_eq(NotasAlbum.album_ids(world).size(), 0, "Mundo %d aun sin tipos" % world)
 
 

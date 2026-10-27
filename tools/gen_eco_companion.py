@@ -32,6 +32,12 @@ scripts/levels/eco_companion.gd), no los cuadros.
   fuerte; glow_out es la misma secuencia al reves (mismos PNG, solo en el
   SpriteFrames).
 
+- Marco dorado del Mundo 3 (2026-10-26, paso 9 de docs/propuesta-mundo-3.md §6.3; docs/04-personajes.md §12.1):
+  eco_frame_w3_00.png, un anillo de 1 px en el dorado apagado del Mundo 3 (assets/palettes/mundo3.gpl) justo por
+  fuera del contorno de la esfera, con dos pixeles de brillo (dorado_luz) arriba a la izquierda. No es una
+  animacion: EcoCompanion lo superpone (world_frames de data/eco_companion.json) en los niveles de ese mundo
+  mientras la esfera esta entera (idle, talk, notice y sus _amber).
+
 Colores: normal solo de assets/palettes/mundo1.gpl (noche_profunda, cielo,
 resplandor, borde_luz, banner_blanco; sin rojos, carmin ni ambar), _amber y
 glow_in de mundo1.gpl con ambar y ambar_sombra (los dorados de los puntos de
@@ -68,6 +74,8 @@ RADIUS = 10.5
 
 M1 = load_gpl(os.path.join(REPO, "assets/palettes/mundo1.gpl"))
 HUB = load_gpl(os.path.join(REPO, "assets/palettes/hub.gpl"))
+M3_GPL = "assets/palettes/mundo3.gpl"
+FRAME_W3 = "%s/eco_frame_w3_00.png" % OUT_DIR
 
 # Papeles de color -> color de la paleta (normal: Mundo 1; dim: hub, apagado).
 ROLES = {
@@ -333,6 +341,19 @@ def frame(anim, f, variant):
     return cv.img
 
 
+def frame_w3():
+    """Marco dorado de 1 px del Mundo 3 (anillo por fuera del contorno de la esfera completa)."""
+    m3 = load_gpl(os.path.join(REPO, M3_GPL))
+    cv = Canvas(SIZE, SIZE)
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if RADIUS + 1.0 <= _d(x, y) < RADIUS + 2.0:
+                cv.p(x, y, m3["dorado"])
+    for x, y in ((8, 6), (6, 8)):
+        cv.p(x, y, m3["dorado_luz"])
+    return cv.img
+
+
 def anim_name(anim, variant):
     return anim + SUFFIX[variant]
 
@@ -346,6 +367,7 @@ def outputs():
                 continue
             for f in range(count):
                 out["%s/eco_%s_%02d.png" % (OUT_DIR, anim_name(anim, variant), f)] = frame(anim, f, variant)
+    out[FRAME_W3] = frame_w3()
     return out
 
 

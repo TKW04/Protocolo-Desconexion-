@@ -56,6 +56,8 @@ const ANIM_DISAPPEAR: StringName = &"disappear"
 const ANIM_GLOW_IN: StringName = &"glow_in"
 const ANIM_GLOW_OUT: StringName = &"glow_out"
 const AMBER_SUFFIX: String = "_amber"
+## Animaciones con la esfera entera (con o sin _amber): solo con ellas se ve el marco del mundo.
+const FRAMED_ANIMS: Array[StringName] = [&"idle", &"talk", &"notice"]
 ## Opacidad de Isak por debajo de la cual ya fue absorbido por el vortice.
 const ABSORBED_ALPHA: float = 0.01
 
@@ -70,6 +72,10 @@ signal help_target_changed(target: Node2D)
 var _data: Dictionary = {}
 var _isak: Isak
 var _dim: bool = false
+## Mundo del nivel donde acompana (0 = desconocido: sin marco). Lo pone attach() desde el GeneratedLevel.
+var _world: int = 0
+## Marco del mundo (world_frames de data/eco_companion.json; Mundo 3: marco dorado de 1 px). null si no hay.
+var _world_frame: Sprite2D = null
 var _state: State = State.HIDDEN
 var _anchor: Vector2 = Vector2.ZERO
 var _velocity: Vector2 = Vector2.ZERO
@@ -109,6 +115,8 @@ static func attach(isak: Isak, parent: Node, dim: bool = false) -> EcoCompanion:
 	var eco := (load(SCENE_PATH) as PackedScene).instantiate() as EcoCompanion
 	eco._isak = isak
 	eco._dim = dim
+	if parent is GeneratedLevel:
+		eco._world = (parent as GeneratedLevel).world
 	parent.add_child(eco)
 	eco._place_in_tree(parent)
 	return eco
@@ -130,6 +138,8 @@ func _ready() -> void:
 	_sprite.scale = Vector2.ONE * maxi(1, int(_data.get("sprite_scale", 1)))
 	if _dim:
 		modulate.a = float(_data.get("hub_alpha", 0.8))
+	else:
+		_make_world_frame()
 	visible = false
 	EventBus.ally_met.connect(_on_ally_met)
 	EventBus.eco_line_started.connect(_on_eco_line_started)
@@ -635,9 +645,34 @@ func _update_visual(delta: float) -> void:
 		var index: int = floori(time * fps)
 		_sprite.frame = index % count if frames.get_animation_loop(anim_name) else mini(index, count - 1)
 	_sprite.flip_h = _side < 0.0
+	if _world_frame != null:
+		_world_frame.visible = StringName(String(_sprite.animation).trim_suffix(AMBER_SUFFIX)) in FRAMED_ANIMS
 	var amp: float = float(_data.get("bob_amplitude_px", 4))
 	var bob: float = sin(TAU * float(_data.get("bob_hz", 0.8)) * _time) * amp
 	global_position = (_anchor + Vector2(0.0, bob)).round()
+
+
+## Marco del mundo (paso 9 de docs/propuesta-mundo-3.md §6.3): en el Mundo 3, anillo dorado de 1 px
+## (tools/gen_eco_companion.py) sobre la esfera, a su misma escala; no en el hub.
+func _make_world_frame() -> void:
+	var frames: Dictionary = _data.get("world_frames", {}) as Dictionary
+	var path: String = String(frames.get(str(_world), ""))
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return
+	_world_frame = Sprite2D.new()
+	_world_frame.name = "WorldFrame"
+	_world_frame.texture = load(path) as Texture2D
+	_world_frame.centered = true
+	_world_frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_world_frame.scale = _sprite.scale
+	_world_frame.position = _sprite.position
+	_world_frame.visible = false
+	add_child(_world_frame)
+
+
+## Marco del mundo (null si este mundo no lo lleva o en el hub).
+func get_world_frame() -> Sprite2D:
+	return _world_frame
 
 
 func _play(anim: StringName) -> void:

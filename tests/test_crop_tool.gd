@@ -231,7 +231,7 @@ func test_saved_gesture_goes_to_the_trash_and_comes_back() -> void:
 func test_small_frame_is_only_decor() -> void:
 	var entry: Dictionary = _types().get("small_frame", {})
 	assert_eq(entry.get("scene"), "res://scenes/levels/small_frame.tscn")
-	assert_eq(entry.get("_help_id_planned"), "small_frame", "Lleva su help_id previsto (la Q, mas adelante)")
+	assert_eq(entry.get("help_id"), "small_frame", "Lleva su Q (paso 9)")
 	var frame := (load(String(entry.get("scene"))) as PackedScene).instantiate() as SmallFrame
 	frame.orientation = SmallFrame.WALL
 	frame.length_tiles = 2

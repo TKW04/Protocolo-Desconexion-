@@ -8,7 +8,8 @@
 ## - Custom data: `kind` (solid, one_way, hazard, decor) y `hazard` ("spikes"
 ##   en los pinchos, "" en el resto).
 ## Requiere el PNG importado antes (Godot --headless --import).
-## Uso: Godot --headless --path . -s tools/build_tileset_mundo1.gd
+## Uso: Godot --headless --path . -s tools/build_tileset_mundo1.gd [-- --map res://data/tileset_mundo3.json]
+## (--map: otro mapa con el mismo formato, p. ej. el del Mundo 3 de tools/gen_world3_tiles.py; 2026-10-26).
 extends SceneTree
 
 const MAP_PATH: String = "res://data/tileset_mundo1.json"
@@ -20,7 +21,12 @@ const KIND_ONE_WAY: String = "one_way"
 
 
 func _init() -> void:
-	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MAP_PATH))
+	var map_path: String = MAP_PATH
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var i: int = args.find("--map")
+	if i >= 0 and i + 1 < args.size():
+		map_path = args[i + 1]
+	var map: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(map_path))
 	var tileset: TileSet = build(map)
 	var out: String = map["tileset"]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out.get_base_dir()))

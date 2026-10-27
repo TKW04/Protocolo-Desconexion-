@@ -639,6 +639,187 @@
 			"radius_tiles": 6.0,
 			"center_px": [0, 0],
 			"prompt_px": [0, -30]
+		},
+		"heart_pickup": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Corazón",
+			"text": "Un like. Cógelo y suma uno. Si te golpean pierdes tres, pero caen cerca: recógelos antes de que se apaguen.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 1,
+			"center_px": [32, 32],
+			"prompt_px": [32, 8]
+		},
+		"like_source": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Publicación",
+			"text": "Una publicación. Dale un pulso y te da cinco likes. Después tarda un rato en volver a estar lista.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 2,
+			"center_px": [32, 28],
+			"prompt_px": [32, -6]
+		},
+		"like_platform": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Plataforma de likes",
+			"text": "Solo está ahí si tienes los likes que marca su número. Si bajas de esa cifra, parpadea y desaparece. Las del corazón tachado, al revés: solo están si tienes menos.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 3,
+			"center_px": [64, 16],
+			"prompt_px": [64, -22]
+		},
+		"small_frame": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Marco pequeño",
+			"text": "Un marco pequeño. Tal como estás, por ahí no cabes.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 4,
+			"center_px": [32, 32],
+			"prompt_px": [32, -8]
+		},
+		"mirror_wall": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Pared de espejo",
+			"text": "Te refleja con un segundo de retraso. Fíjate en el reflejo: enseña cosas que aquí no se ven.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 5,
+			"radius_tiles": 4.0,
+			"center_px": [64, 64],
+			"prompt_px": [64, -10]
+		},
+		"mirror_only": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Plataforma del reflejo",
+			"text": "Solo se ve en el espejo, pero está aquí de verdad. Puedes pisarla. Con el Debug se le ve el contorno.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 6,
+			"center_px": [32, 16],
+			"prompt_px": [32, -8]
+		},
+		"like_reset": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Borrar publicaciones",
+			"text": "Ponte de espaldas y dale un pulso: tu contador de likes vuelve a cero. Sirve para las plataformas del corazón tachado.",
+			"first_level": "3-2",
+			"world": 3,
+			"order": 7,
+			"center_px": [32, 22],
+			"prompt_px": [32, -18]
+		},
+		"crop_tool": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Recortar",
+			"text": "Una herramienta de edición. Ponte de espaldas y dale un pulso.",
+			"first_level": "3-2",
+			"world": 3,
+			"order": 8,
+			"center_px": [32, -28],
+			"prompt_px": [32, -80]
+		},
+		"filter_zone": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Filtro",
+			"text": "Un filtro. Lo que hay debajo no es lo que ves: puede haber pinchos o suelo que no aguanta. Con el Debug se ve lo que esconde.",
+			"first_level": "3-2",
+			"world": 3,
+			"order": 9,
+			"radius_tiles": 4.0,
+			"center_px": [64, 64],
+			"prompt_px": [64, -28]
+		},
+		"mirror": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Espejo",
+			"text": "Un espejo. El láser rebota en él: lo gira o lo devuelve por donde vino, según cómo esté puesto.",
+			"first_level": "3-3",
+			"world": 3,
+			"order": 10,
+			"center_px": [32, 32],
+			"prompt_px": [32, -8]
+		},
+		"hunter_mirror": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Espejo cazador",
+			"text": "Este espejo te sigue con la mirada. Un pulso lo congela un momento y sale reflejado en un haz. El láser sale hacia donde mira: cuidado si te mira a ti.",
+			"first_level": "3-3",
+			"world": 3,
+			"order": 11,
+			"center_px": [32, 26],
+			"prompt_px": [32, -8]
+		},
+		"pose_plate": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Posa aquí",
+			"text": "Una placa. Mientras alguien la pisa, su puerta de marco está abierta. Ese alguien no tienes por qué ser tú.",
+			"first_level": "3-3",
+			"world": 3,
+			"order": 12,
+			"center_px": [32, 56],
+			"prompt_px": [32, 30]
+		},
+		"frame_door": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Puerta de marco",
+			"text": "Se abre mientras alguien pisa su placa y se cierra poco después de que la suelte. Avisa antes de cerrarse.",
+			"first_level": "3-3",
+			"world": 3,
+			"order": 13,
+			"center_px": [32, 96],
+			"prompt_px": [32, -8]
+		},
+		"influencer_bot": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Influencer bot",
+			"text": "Cuando te ve, cuenta hasta tres y dispara el flash. No hace daño, pero te deja sin ver un momento. Ponte detrás de algo o atúrdelo antes con un pulso.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 1,
+			"radius_tiles": 4.0,
+			"center_px": [0, -96],
+			"prompt_px": [0, -136]
+		},
+		"like_thief": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Ladrón de likes",
+			"text": "Una mano que roba likes. Si te alcanza, se lleva unos cuantos y huye. Un pulso la aturde y suelta lo que robó.",
+			"first_level": "3-1",
+			"world": 3,
+			"order": 2,
+			"radius_tiles": 4.0,
+			"center_px": [0, -24],
+			"prompt_px": [0, -60]
+		},
+		"false_reflection": {
+			"_notes": "Mundo 3 (paso 9 de docs/propuesta-mundo-3.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Reflejo falso",
+			"text": "Es tu reflejo, un segundo tarde. Si te paras, te alcanza, y duele. No se puede romper; un pulso lo deja quieto un rato.",
+			"first_level": "3-3",
+			"world": 3,
+			"order": 3,
+			"radius_tiles": 4.0,
+			"center_px": [0, -48],
+			"prompt_px": [0, -104]
 		}
 	}
 }
