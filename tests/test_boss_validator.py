@@ -379,5 +379,118 @@ class AutoplayArenaTest(unittest.TestCase):
         self.assertTrue(any("sin cargador" in e["message"] for e in result["errors"]))
 
 
+class CuratorArenaTest(unittest.TestCase):
+    """Arena 3-boss de La Curadora (paso 16 de docs/propuesta-mundo-3.md, §7.2, 2026-10-27): validador completo
+    (avisos, refugios, ventanas por fase y acceso, cazador de la fase 2, marcos pequenos de la fase 3, marca, energia
+    torpe y cargadores), con casos negativos sinteticos."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.boss = load(os.path.join(ROOT, "data", "bosses", "curator.json"))
+        cls.result = vb.validate_arena(load(os.path.join(ROOT, "data", "levels", "3-boss.json")), ROOT)
+
+    def setUp(self):
+        self.level = load(os.path.join(ROOT, "data", "levels", "3-boss.json"))
+
+    def run_arena(self, boss=None, level=None):
+        return vb.validate_arena(level or self.level, ROOT, boss=boss or self.boss)
+
+    def messages(self, result):
+        return " | ".join(e["message"] for e in result["errors"])
+
+    def test_full_validator_passes_without_the_pending_warning(self):
+        self.assertEqual(vls.validate_level(self.level, ROOT), [])
+        result = vl.validate(self.level, ROOT)
+        self.assertTrue(result["ok"], result["errors"])
+        self.assertEqual(result["warnings"], [], "validador completo: sin el aviso del paso 15")
+        self.assertIn("cur_windows", result["boss"])
+
+    def test_energy_margins_of_the_clumsy_fight_in_every_access(self):
+        energy = self.result["boss"]["energy"]
+        self.assertEqual(sorted(energy), ["1", "2", "3"])
+        for lap, scenarios in energy.items():
+            self.assertEqual(sorted(scenarios), ["base", "todo al maximo", "tope del acceso"])
+            for name, e in scenarios.items():
+                self.assertGreaterEqual(e["min_margin"], 20.0, (lap, name))
+        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [45.0, 55.0, 50.0])
+
+    def test_windows_fit_by_phase_and_access(self):
+        windows = self.result["boss"]["cur_windows"]
+        self.assertEqual(len(windows), 13)
+        for w in windows:
+            self.assertLessEqual(w["need_s"], w["window_s"] + 1e-6, w)
+        froms = {(w["lap"], w["phase"], w["from"]): w["k"] for w in windows}
+        self.assertEqual(froms[("1", 1, "platform")], 2.0)
+        self.assertEqual(froms[("2", 1, "platforms")], 1.0, "Kernel: la lente puede bajar al otro lado")
+        self.assertEqual(froms[("3", 3, "after_close")], 1.0)
+
+    def test_hunter_route_through_the_corner_mirrors(self):
+        hunter = self.result["boss"]["cur_hunter"]
+        self.assertEqual(hunter["corners"], {"left": "nw", "right": "ne"})
+        self.assertEqual(sorted({tuple(c[0]) for c in hunter["cells"]}), [(7, 9), (8, 9), (10, 9), (11, 9)])
+        level = copy.deepcopy(self.level)
+        row = list(level["grid"][3])
+        row[3] = "#"
+        level["grid"][3] = "".join(row)
+        self.assertIn("el camino cazador -> espejo left -> espalda cruza terreno",
+                      self.messages(self.run_arena(level=level)))
+
+    def test_small_frame_free_on_every_close(self):
+        frames = self.result["boss"]["cur_frames"]
+        for side, f in frames["sides"].items():
+            self.assertLessEqual(f["worst_s"], frames["close_s"], side)
+        level = copy.deepcopy(self.level)
+        level["objects"].append({"type": "charger", "x": 1, "y": 9,
+                                 "params": {"id": "cargador_x", "amount": 50.0, "reusable": True, "cooldown_s": 4.0}})
+        row = list(level["grid"][9])
+        row[18] = "#"
+        level["grid"][9] = "".join(row)
+        msg = self.messages(self.run_arena(level=level))
+        self.assertIn("marco pequeno left ocupado en la fase 3: charger 'cargador_x'", msg)
+        self.assertIn("marco pequeno right ocupado: hay terreno", msg)
+
+    def test_frame_closing_too_fast_to_escape(self):
+        boss = copy.deepcopy(self.boss)
+        boss["phase3"]["frame_warn_frames"] = 6
+        boss["phase3"]["frame_close_s"] = 0.0
+        self.assertIn("marco que se cierra (left): desde", self.messages(self.run_arena(boss)))
+
+    def test_short_telegraphs(self):
+        boss = copy.deepcopy(self.boss)
+        boss["flash"]["warn_frames"] = 5
+        boss["phase3"]["frame_warn_frames"] = 13
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("aviso de 'flash': 5 cuadros", msg)
+        self.assertIn("aviso de 'marco que se cierra': 13 cuadros", msg)
+
+    def test_energy_margin_too_small(self):
+        boss = copy.deepcopy(self.boss)
+        boss["validation_model"]["laps"]["3"]["debug_s"] = [3.5, 12.0, 5.0]
+        self.assertIn("base, vuelta 3, fase 2: pico de la pelea torpe 95.0", self.messages(self.run_arena(boss)))
+
+    def test_short_window_and_two_hits_per_window(self):
+        boss = copy.deepcopy(self.boss)
+        boss["phase3"]["window_s"] = 2.5
+        boss["validation_model"]["laps"]["1"]["windows"][0] = [0, 2, 1]
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 1, fase 3: la ventana dura 2.50", msg)
+        self.assertIn("vuelta 1: la pelea torpe pide 2 golpes en una ventana", msg)
+
+    def test_short_mark_slow_chargers_and_few_likes(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["3"]["mark_duration_s"] = 0.5
+        boss["laps"]["3"]["charger_cooldown_s"] = 9.0
+        boss["respawn_min_likes"] = 3
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 3: en la marca de 0.50 s caben", msg)
+        self.assertIn("vuelta 3: los cargadores se enfrian 9.0", msg)
+        self.assertIn("likes al empezar cada fase 3 < umbral", msg)
+
+    def test_other_bosses_do_not_use_the_curator_model(self):
+        for name in ("1-boss", "2-boss"):
+            rep = vb.validate_arena(load(os.path.join(ROOT, "data", "levels", "%s.json" % name)), ROOT)["boss"]
+            self.assertNotIn("cur_windows", rep, name)
+
+
 if __name__ == "__main__":
     unittest.main()

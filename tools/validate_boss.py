@@ -52,6 +52,7 @@ opciones basicas: python3 tools/validate_boss.py [--json] [--upgrades ...] data/
 
 import argparse
 import copy
+import heapq
 import json
 import math
 import os
@@ -834,6 +835,8 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
         boss = load_json(os.path.join(root, "data", "bosses", "%s.json" % level["boss"]))
     if boss.get("id") == "autoplay":
         return validate_autoplay_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
+    if boss.get("id") == "curator":
+        return validate_curator_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
     if boss.get("id") != "alert_major":
         return validate_basic_arena(level, boss, root, physics_path, jump_efficiency, limit)
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
@@ -877,6 +880,20 @@ def validate_basic_arena(level, boss, root=ROOT, physics_path=None,
 
 def _basic_checks(arena, boss, root, errors, report):
     """Pantalla, carril del suelo, cargadores a arena.charger_max_tiles y avisos de los clips (6-12 cuadros)."""
+    _basic_geometry(arena, boss, errors, report)
+    banner = load_json(os.path.join(root, "data", "enemies", "spam_banner.json"))
+    clips = boss.get("clips", {})
+    tele = [("ola y barrido", int(banner.get("anticipation_frames", 9))),
+            ("rayos", int(clips.get("rays", {}).get("anticipation_frames", 9))),
+            ("cuenta atras", int(clips.get("shots", {}).get("warn_frames", 9)))]
+    for name, frames in tele:
+        if not 6 <= frames <= 12:
+            _err(errors, "aviso de %s de %d cuadros (regla: de 6 a 12)" % (name, frames))
+    report["telegraphs"] = [(n, "%d cuadros" % f) for n, f in tele]
+
+
+def _basic_geometry(arena, boss, errors, report):
+    """Pantalla, carril del suelo y cargadores a arena.charger_max_tiles (comun a Autoplay y la Curadora)."""
     w, h = arena.cols * arena.T, arena.rows * arena.T
     if w > SCREEN_PX[0] or h > SCREEN_PX[1]:
         _err(errors, "la arena mide %d x %d px y no cabe entera en %d x %d" % (w, h, SCREEN_PX[0], SCREEN_PX[1]))
@@ -903,15 +920,6 @@ def _basic_checks(arena, boss, root, errors, report):
             _err(errors, "cargador no alcanzable desde P", r, c)
     report["charger_worst_tiles"] = worst
     report["charger_second_worst_tiles"] = worst2
-    banner = load_json(os.path.join(root, "data", "enemies", "spam_banner.json"))
-    clips = boss.get("clips", {})
-    tele = [("ola y barrido", int(banner.get("anticipation_frames", 9))),
-            ("rayos", int(clips.get("rays", {}).get("anticipation_frames", 9))),
-            ("cuenta atras", int(clips.get("shots", {}).get("warn_frames", 9)))]
-    for name, frames in tele:
-        if not 6 <= frames <= 12:
-            _err(errors, "aviso de %s de %d cuadros (regla: de 6 a 12)" % (name, frames))
-    report["telegraphs"] = [(n, "%d cuadros" % f) for n, f in tele]
 
 
 # --- Autoplay (Mundo 2; paso 17 de docs/propuesta-mundo-2.md, §7.2) ---
@@ -1298,6 +1306,577 @@ def energy_lap_autoplay(arena, boss, lap, rules, laser_damage, errors, scenario,
             "total_detour_s": round(sum(ph["detour_s"] for ph in phases), 2)}
 
 
+# --- La Curadora (Mundo 3; paso 16 de docs/propuesta-mundo-3.md, §7.2) ---
+#
+# Valores de juego: data/bosses/curator.json (arena, ataques, fases, laps y validation_model), data/levels/3-boss.json
+# (geometria, plataformas de likes, marcos pequenos, espejos, cazador, cargadores, debug_drain_scale y
+# debug_world_scale), data/world3_objects.json (cazador, plataforma de likes), data/isak_abilities.json (Pellizcar) y
+# los de Rules (fisica, pulso, laser, Debug, dash y mejoras): nada se copia aqui. Recorridos: Dijkstra por tiempo
+# (travel_s de cada movimiento del modelo de validate_level) sobre la arena con las plataformas de likes como
+# plataformas de una via (Isak siempre tiene likes >= umbral: respawn_min_likes, regla J). Reglas:
+#   A. Basicas (_basic_geometry): pantalla, carril del suelo y cargadores a <= arena.charger_max_tiles.
+#   B. Avisos de 6-12 cuadros a arena.anim_fps (flash, filtro de suelo, recorte, marco que se cierra, salida del
+#      Reflejo); con el Debug duran 1 / debug_world_scale mas (escala <= 1). El giro del cazador (no dana) da al
+#      menos 6 cuadros por paso de 45 grados para pulsarlo mirando a la esquina.
+#   C. Un ataque a la vez y siempre un refugio: el flash tiene celdas tapadas (biombo, plataforma, terreno) desde
+#      cada fuente (lente; fase 2, cada espejo de esquina) a las que se llega desde todo el suelo en su aviso; el
+#      filtro deja celdas sin pincho a las que se llega en su entrada; del recorte se sale andando en su aviso.
+#   D. Ventanas de las fases 1 y 3 (nucleo en window_core_px del lado de la ventana): pulso y laser desde celdas de
+#      pie (las plataformas de likes); ventana (s del mundo) >= k x (recorrido + Debug + poses, _window_need) desde
+#      cada conjunto de salida [nombre, k] de validation_model.window_from.<fase> (window_from_laps.<vuelta> lo
+#      sustituye en un acceso): platform (la plataforma del lado: donde se espera), platforms (cualquiera: lado al
+#      azar), half (el suelo de la mitad de la ventana: el lado de Isak), floor (todo el suelo) y after_close (tras
+#      el cierre de un marco: comprimido en el marco pequeno, recien salido de la mitad o empujado).
+#   E. Fase 2 (de espaldas): cada espejo de esquina queda en una de las 8 orientaciones del cazador, el camino
+#      cazador -> esquina -> espalda no cruza terreno, hay celdas de pie desde las que el cazador, girando hacia
+#      Isak desde su reposo, pasa por una esquina y le llega el pulso y el laser; ventana >= k x (recorrido + giros
+#      del cazador + Debug + poses).
+#   F. Fase 3, marcos que se cierran: cada marco pequeno esta libre (hueco sin terreno ni objetos de la fase 3, con
+#      techo: Isak de pie no cabe y comprimido si) y desde cada celda de su mitad se sale de la mitad o se entra
+#      comprimido en el marco en aviso + cierre; el empujon cae fuera de la mitad.
+#   G. Marca (mark_duration_s, sin el Debug: caso peor; fase 2: el cazador congelado freeze_s): caben los laseres de
+#      la peor ventana torpe (golpes + fallados); un golpe por marca (mark_hits) y un golpe por ventana.
+#   H. Energia torpe por acceso (base, tope del acceso y todo al maximo): pico por ventana <= maximo - min_margin
+#      (energy_lap_autoplay) y <= respawn_min_energy + una carga; Debug del modelo >= el que pide la solucion.
+#   I. Cargadores: el enfriamiento del acceso cabe en CHARGER_ROTATION ciclos (los mas cortos entre ventanas:
+#      alternando los dos mas cercanos siempre hay uno listo) y las cargas de cada fase <= cargadores x ventanas.
+#   J. Likes: respawn_min_likes >= umbral de las plataformas (la ventana no depende de los corazones).
+
+CURATOR_SIDES = ("left", "right")
+HUNTER_FACINGS = ("e", "ne", "n", "nw", "w", "sw", "s", "se")
+# Cargadores que se alternan entre ventanas (los dos mas cercanos: charger_second_worst_tiles).
+CHARGER_ROTATION = 2
+
+
+def curator_level(level):
+    """Copia del nivel con las plataformas de likes como plataformas de una via '-' (en su fila)."""
+    g = copy.deepcopy(level)
+    grid = [list(row) for row in g["grid"]]
+    for o in level.get("objects", []):
+        if o.get("type") != "like_platform":
+            continue
+        r = int(o["y"])
+        for c in range(int(o["x"]), int(o["x"]) + int(o.get("params", {}).get("width_tiles", 1))):
+            if 0 <= r < len(grid) and 0 <= c < len(grid[r]) and grid[r][c] == ".":
+                grid[r][c] = "-"
+    g["grid"] = ["".join(row) for row in grid]
+    return g
+
+
+def _travel_times(arena, sources):
+    """Tiempo minimo (s reales) a cada celda de pie desde `sources` ({celda: t0}): Dijkstra con travel_s por
+    movimiento del modelo de validate_level (sin el Debug)."""
+    best = {n: float(t) for n, t in sources.items() if n in arena.reachable}
+    heap = [(t, n) for n, t in best.items()]
+    heapq.heapify(heap)
+    while heap:
+        t, n = heapq.heappop(heap)
+        if t > best.get(n, float("inf")) + EPS:
+            continue
+        for e in arena.model.edges(n, arena.model.initial, False):
+            if max(e["h"], e["v"]) > arena.rules.limit + EPS:
+                continue
+            to = e["to"]
+            nt = t + arena.travel_s(n, to)
+            if nt + EPS < best.get(to, float("inf")):
+                best[to] = nt
+                heapq.heappush(heap, (nt, to))
+    return best
+
+
+def _roundi(x):
+    return int(math.copysign(math.floor(abs(x) + 0.5), x))
+
+
+def _facing_index(vx, vy):
+    """Como HunterMirror.index_for_vector (0 = e, sentido antihorario, y hacia abajo)."""
+    if abs(vx) < EPS and abs(vy) < EPS:
+        return 0
+    return _roundi(math.atan2(-vy, vx) / (math.pi * 0.25)) % 8
+
+
+def _step_toward(index, target):
+    diff = (target - index) % 8
+    if diff == 0:
+        return index
+    return (index + (1 if diff <= 4 else -1)) % 8
+
+
+def _segment_blocked(arena, a, b, skip=()):
+    """El segmento a-b (px) cruza una celda de terreno (salvo las de `skip`)."""
+    steps = max(int(math.ceil(math.hypot(b[0] - a[0], b[1] - a[1]) / 8.0)), 1)
+    for i in range(1, steps):
+        f = float(i) / steps
+        c, r = int((a[0] + (b[0] - a[0]) * f) // arena.T), int((a[1] + (b[1] - a[1]) * f) // arena.T)
+        if (c, r) not in skip and arena.solid(c, r):
+            return True
+    return False
+
+
+def _laser_to_rect(arena, node, facing, rect):
+    """El laser de Isak en `node` mirando a `facing` da en `rect` (px: x, y, w, h) sin terreno en medio."""
+    return _laser_hits(arena, node, facing, [rect])
+
+
+def _pulse_to_rect(arena, node, facing, rect):
+    px, py = arena.phone(node, facing)
+    cx = min(max(px, rect[0]), rect[0] + rect[2])
+    cy = min(max(py, rect[1]), rect[1] + rect[3])
+    return math.hypot(px - cx, py - cy) <= arena.rules.pulse_radius + EPS
+
+
+def _body_center(arena, node):
+    fx, fy = arena.feet(node)
+    return (fx, fy - arena.rules.hitbox_h / 2.0)
+
+
+def _curator_telegraphs(boss, root, errors, report, world_scale):
+    fps = anim_fps(boss)
+    lo, hi = TELEGRAPH_FRAMES
+    p3 = boss.get("phase3", {})
+    items = [("flash", boss.get("flash", {}).get("warn_frames")),
+             ("filtro de suelo", boss.get("floor_filter", {}).get("enter_frames")),
+             ("recorte", boss.get("crop", {}).get("warn_frames")),
+             ("marco que se cierra", p3.get("frame_warn_frames")),
+             ("salida del Reflejo", float(p3.get("reflection_emerge_s", 0.0)) * fps)]
+    out = []
+    for name, frames in items:
+        if not isinstance(frames, (int, float)) or not lo - EPS <= frames <= hi + EPS:
+            _err(errors, "aviso de '%s': %s cuadros a %g fps (deben ser de %d a %d)" % (name, frames, fps, lo, hi))
+            continue
+        out.append((name, "%g cuadros (%.2f s)" % (frames, frames / fps)))
+    hunter = load_json(os.path.join(root, "data", "world3_objects.json")).get("hunter_mirror", {})
+    turn = float(hunter.get("turn_interval_s", 0.6))
+    if turn * fps + EPS < lo:
+        _err(errors, "giro del cazador: cada orientacion dura %.2f s (%.1f cuadros a %g fps < %d) para pulsarlo "
+                     "mirando a una esquina" % (turn, turn * fps, fps, lo))
+    out.append(("giro del cazador (no dana)", "%.1f cuadros por paso (%.2f s; brillo %d cuadros a %g fps)"
+                % (turn * fps, turn, int(hunter.get("warn_frames", 9)), float(hunter.get("anim_fps", 60.0)))))
+    if not 0.0 < world_scale <= 1.0 + EPS:
+        _err(errors, "con el Debug el mundo va a x%g: los avisos durarian menos que sin el Debug" % world_scale)
+    report["telegraphs"] = out
+    report["debug_world_scale"] = round(world_scale, 3)
+
+
+def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=None,
+                           jump_efficiency=vl.DEFAULT_JUMP_EFFICIENCY, limit=vl.DEFAULT_LIMIT):
+    errors, warnings = [], []
+    rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
+    plain = Arena(level, boss, rules)
+    report = {"boss": boss.get("id"), "reachable_cells": len(plain.reachable)}
+    _basic_geometry(plain, boss, errors, report)
+    _curator_telegraphs(boss, root, errors, report, rules.debug_world_scale)
+    arena = Arena(curator_level(level), boss, rules)
+    T = arena.T
+    ab = boss.get("arena", {})
+    model = boss.get("validation_model", {})
+    laps = boss.get("laps", {})
+    w3 = load_json(os.path.join(root, "data", "world3_objects.json"))
+    compress = load_json(os.path.join(root, "data", "isak_abilities.json")).get("compress", {})
+    weak_r = float(load_json(os.path.join(root, "data", "weak_point.json"))["radius_px"])
+    floor = [n for n in arena.lane_cells("floor") if n in arena.reachable] if "floor" in arena.lanes else []
+    halves = {s: tuple(int(v) for v in ab.get("halves", {}).get(s, [0, -1])) for s in CURATOR_SIDES}
+    half_floor = {s: [n for n in floor if halves[s][0] <= n[0] <= halves[s][1]] for s in CURATOR_SIDES}
+    times = {n: _travel_times(arena, {n: 0.0}) for n in arena.reachable}
+    platforms = [o for o in level.get("objects", []) if o.get("type") == "like_platform"]
+    plat_cells = {(c, int(o["y"]) - 1) for o in platforms
+                  for c in range(int(o["x"]), int(o["x"]) + int(o.get("params", {}).get("width_tiles", 1)))}
+    report["platform_cells"] = [len([n for n in plat_cells if n in arena.reachable]), len(plat_cells)]
+    if not plat_cells or not any(n in arena.reachable for n in plat_cells):
+        _err(errors, "las plataformas de likes no se alcanzan desde P (por las repisas)")
+    card_h = float(w3.get("like_platform", {}).get("card_height_px", 32))
+    covers = [tuple(float(v) * T for v in cells) for cells in ab.get("biombos", [])]
+    cards = [(float(o["x"]) * T, float(o["y"]) * T, float(o.get("params", {}).get("width_tiles", 1)) * T, card_h)
+             for o in platforms]
+
+    def worst_to(starts, targets):
+        """Peor (max) sobre `starts` ({celda: t0}) del minimo tiempo a `targets`."""
+        worst = None
+        for n, t0 in starts.items():
+            tt = times.get(n, {})
+            best = min((tt[g] for g in targets if g in tt), default=None)
+            if best is None:
+                return None
+            worst = max(worst or 0.0, t0 + best)
+        return worst
+
+    # C. Refugios: flash, filtro de suelo y recorte.
+    fps = anim_fps(boss)
+    flash = boss.get("flash", {})
+    flash_warn = float(flash.get("warn_frames", 9)) / fps
+    frame_cells = ab.get("frame", [6, 1, 8, 4])
+    lens = ab.get("lens_px", [256, 24])
+    sources = {"lente": (float(frame_cells[0]) * T + float(lens[0]), float(frame_cells[1]) * T + float(lens[1]))}
+    corners = {s: tuple(int(v) for v in ab.get("corner_mirrors", {}).get(s, [0, 0])) for s in CURATOR_SIDES}
+    for s in CURATOR_SIDES:
+        sources["espejo %s" % s] = ((corners[s][0] + 0.5) * T, (corners[s][1] + 0.5) * T)
+    flash_out = {}
+    for name, src in sources.items():
+        covered = []
+        for n in sorted(arena.reachable):
+            cx, cy = _body_center(arena, n)
+            top = cy - arena.rules.hitbox_h / 2.0
+            under = any(src[1] < y and top >= y + h - 0.5 and x <= cx <= x + w for x, y, w, h in cards)
+            line = any(x <= src[0] + (cx - src[0]) * f <= x + w and y <= src[1] + (cy - src[1]) * f <= y + h
+                       for f in (i / 64.0 for i in range(1, 64)) for x, y, w, h in covers + cards)
+            if under or line or _segment_blocked(arena, src, (cx, cy), skip={corners["left"], corners["right"]}):
+                covered.append(n)
+        worst = worst_to({n: 0.0 for n in floor}, covered) if covered else None
+        flash_out[name] = {"covered": len(covered), "worst_s": round(worst, 3) if worst is not None else None}
+        if not covered:
+            _err(errors, "flash desde %s: ninguna celda de pie queda tapada (biombo, plataforma o terreno)" % name)
+        elif worst is None or worst > flash_warn + EPS:
+            _err(errors, "flash desde %s: desde el suelo se tarda %s s en taparse y el aviso dura %.2f"
+                 % (name, "?" if worst is None else "%.2f" % worst, flash_warn))
+    report["cur_flash"] = {"warn_s": round(flash_warn, 3), "sources": flash_out}
+    ff = boss.get("floor_filter", {})
+    enter = float(ff.get("enter_frames", 9)) / fps
+    spikes = ff.get("spikes", {})
+    filter_rows = ab.get("floor_filter_rows", [7, 9])
+    filt = {}
+    for lap, entry in sorted(laps.items()):
+        mode = entry.get("floor_filter", "half")
+        zones = [("all", spikes.get("all", []), (1, arena.cols - 2))] if mode == "all_but_strip" else \
+            [(s, spikes.get(s, []), halves[s]) for s in CURATOR_SIDES]
+        worst = 0.0
+        for name, cols, (c0, c1) in zones:
+            cols = {int(c) for c in cols}
+            if any(not c0 <= c <= c1 for c in cols):
+                _err(errors, "vuelta %s: pinchos del filtro '%s' fuera de su zona (columnas %d-%d)" % (lap, name, c0, c1))
+            safe = [n for n in arena.reachable if not (n[0] in cols and int(filter_rows[0]) <= n[1] <= int(filter_rows[1]))]
+            inside = [n for n in floor if c0 <= n[0] <= c1]
+            w = worst_to({n: 0.0 for n in inside}, safe)
+            if w is None or w > enter + EPS:
+                _err(errors, "vuelta %s: del filtro '%s' no se llega a una celda sin pincho en su entrada (%.2f s)"
+                     % (lap, name, enter))
+            worst = max(worst, w or 0.0)
+        filt[lap] = {"mode": mode, "worst_s": round(worst, 3)}
+    report["cur_floor_filter"] = {"enter_s": round(enter, 3), "laps": filt}
+    crop = boss.get("crop", {})
+    crop_warn = float(crop.get("warn_frames", 9)) / fps
+    escape_px = float(crop.get("strip_cols", 3)) * T / 2.0 + arena.rules.hitbox_w / 2.0
+    crop_walk = escape_px / arena.rules.walk_speed
+    if crop_walk > crop_warn + EPS and arena.rules.dash_distance + EPS < escape_px:
+        _err(errors, "recorte: salir de la franja andando tarda %.2f s (aviso %.2f) y el dash no la cruza"
+             % (crop_walk, crop_warn))
+    report["cur_crop"] = {"warn_s": round(crop_warn, 3), "walk_s": round(crop_walk, 3),
+                          "dash_px": arena.rules.dash_distance, "escape_px": escape_px}
+    # D. Ventanas de las fases 1 y 3.
+    k = float(model.get("window_k", 2.0))
+    froms = model.get("window_from", {})
+    cores = {s: tuple(float(v) for v in ab.get("window_core_px", {}).get(s, [0, 0])) for s in CURATOR_SIDES}
+    reach = {}
+    for s in CURATOR_SIDES:
+        pulse, laser = [], []
+        for n in sorted(arena.reachable):
+            for f in (1.0, -1.0):
+                px, py = arena.phone(n, f)
+                if math.hypot(px - cores[s][0], py - cores[s][1]) <= arena.rules.pulse_radius + weak_r + EPS:
+                    pulse.append(n)
+                if _laser_to_rect(arena, n, f, (cores[s][0] - weak_r, cores[s][1] - weak_r, 2 * weak_r, 2 * weak_r)):
+                    laser.append(n)
+        reach[s] = (sorted(set(pulse)), sorted(set(laser)))
+        if not pulse:
+            _err(errors, "ventana %s: el nucleo (%g, %g) no se alcanza con el pulso desde ninguna celda de pie" % ((s,) + cores[s]))
+        if not laser:
+            _err(errors, "ventana %s: el nucleo (%g, %g) no se alcanza con el laser desde ninguna celda de pie" % ((s,) + cores[s]))
+    squash = float(compress.get("squash_s", 0.15))
+    crawl = float(compress.get("walk_speed_px_s", 160.0))
+    smalls = {s: [int(v) for v in ab.get("small_frames", {}).get(s, [0, 0, 0, 0])] for s in CURATOR_SIDES}
+
+    def frame_exit(s):
+        """(celda de entrada junto al marco pequeno de `s`, s para salir de el comprimido y recuperarse)."""
+        c, r, w, _ = smalls[s]
+        entry = (c + w, r) if s == "left" else (c - 1, r)
+        inner = (c + w) * T - arena.rules.hitbox_w / 2.0 if s == "left" else c * T + arena.rules.hitbox_w / 2.0
+        crawl_px = abs((entry[0] + 0.5) * T - inner)
+        return entry, crawl_px / max(crawl, 1.0) + squash
+
+    def other(s):
+        return "right" if s == "left" else "left"
+
+    def start_sets(name, side):
+        """Conjuntos de salida de una ventana en el lado `side`: {celda: t0}."""
+        if name == "half":
+            return {n: 0.0 for n in half_floor[side]}
+        if name == "floor":
+            return {n: 0.0 for n in floor}
+        if name == "platform":
+            return {n: 0.0 for n in plat_cells if n in arena.reachable and halves[side][0] <= n[0] <= halves[side][1]}
+        if name == "platforms":
+            return {n: 0.0 for n in plat_cells if n in arena.reachable}
+        if name == "after_close":
+            # Tras el cierre en `side` (Isak comprimido en su marco pequeno) o en el otro lado (Isak salio a la
+            # primera columna de `side` o lo empujo a push_col).
+            entry, t0 = frame_exit(side)
+            out = {entry: t0}
+            border = halves[side][0] if side == "right" else halves[side][1]
+            out[(border, entry[1])] = 0.0
+            push = int(ab.get("push_col", {}).get(other(side), border))
+            out[(push, entry[1])] = 0.0
+            return {n: t for n, t in out.items() if n in arena.reachable}
+        return {}
+
+    def specs(lap, p, default):
+        """[(conjunto de salida, k)] de la fase `p`: validation_model.window_from_laps.<vuelta>.<fase> o
+        window_from.<fase> (un nombre suelto usa window_k)."""
+        spec = model.get("window_from_laps", {}).get(str(lap), {}).get(str(p)) or froms.get(str(p)) or default
+        spec = [spec] if isinstance(spec, str) else spec
+        return [(item, k) if isinstance(item, str) else (item[0], float(item[1])) for item in spec]
+
+    cur_windows = []
+    for lap, entry in sorted(laps.items()):
+        for p, name, kk in [(p, n, kv) for p in (1, 3) for n, kv in specs(lap, p, "half" if p == 1 else "after_close")]:
+            window = float(entry.get("phase1_window_s", 5.0)) if p == 1 else float(boss.get("phase3", {}).get("window_s", 3.0))
+            worst_travel = 0.0
+            for s in CURATOR_SIDES:
+                starts = start_sets(name, s)
+                if not starts:
+                    _err(errors, "vuelta %s, fase %d: sin celdas de salida '%s' en el lado %s" % (lap, p, name, s))
+                    continue
+                t = worst_to(starts, reach[s][0])
+                if t is None:
+                    _err(errors, "vuelta %s, fase %d: desde '%s' no se llega a donde el pulso alcanza la lente (%s)"
+                         % (lap, p, name, s))
+                    continue
+                worst_travel = max(worst_travel, t)
+            need = kk * _window_need(arena, worst_travel)
+            if window + EPS < need:
+                _err(errors, "vuelta %s, fase %d: la ventana dura %.2f s del mundo y desde '%s' hacen falta %.2f "
+                             "(k = %g x (recorrido %.2f s + Debug + poses))" % (lap, p, window, name, need, kk,
+                                                                                worst_travel))
+            cur_windows.append({"lap": lap, "phase": p, "from": name, "k": kk, "window_s": window,
+                                "travel_s": round(worst_travel, 3), "need_s": round(need, 3)})
+    # E. Fase 2: el cazador.
+    hunter_id = ab.get("hunter", "")
+    hunter = next((o for o in level.get("objects", []) if o.get("type") == "hunter_mirror"
+                   and o.get("params", {}).get("id") == hunter_id), None)
+    hcfg = w3.get("hunter_mirror", {})
+    hunter_out = {}
+    if hunter is None:
+        _err(errors, "fase 2: no hay espejo cazador '%s' en la arena" % hunter_id)
+    else:
+        if 2 not in hunter.get("active_in_phase", [2]):
+            _err(errors, "fase 2: el cazador '%s' no esta activo en la fase 2" % hunter_id)
+        hc = ((int(hunter["x"]) + 0.5) * T, (int(hunter["y"]) + 0.5) * T)
+        hr = hcfg.get("hit_rect", [0, 0, 64, 64])
+        hrect = (int(hunter["x"]) * T + float(hr[0]), int(hunter["y"]) * T + float(hr[1]), float(hr[2]), float(hr[3]))
+        rest = HUNTER_FACINGS.index(hunter.get("params", {}).get("facing", "n"))
+        radius = float(hcfg.get("track_radius_tiles", 3.0)) * T
+        turn = float(hcfg.get("turn_interval_s", 0.6))
+        freeze = float(hcfg.get("freeze_s", 3.0))
+        back = tuple(float(v) for v in ab.get("back_core_px", [0, 0]))
+        corner_index = {}
+        for s in CURATOR_SIDES:
+            mirror = next((o for o in level.get("objects", []) if o.get("type") == "mirror"
+                           and (int(o["x"]), int(o["y"])) == corners[s]), None)
+            if mirror is None or 2 not in mirror.get("active_in_phase", [2]):
+                _err(errors, "fase 2: falta el espejo de esquina %s en %s (activo en la fase 2)" % (s, list(corners[s])))
+            cc = ((corners[s][0] + 0.5) * T, (corners[s][1] + 0.5) * T)
+            idx = _facing_index(cc[0] - hc[0], cc[1] - hc[1])
+            if idx % 2 == 0:
+                _err(errors, "fase 2: el espejo de esquina %s no queda en diagonal del cazador (%s)" % (s, HUNTER_FACINGS[idx]))
+            if idx == rest:
+                _err(errors, "fase 2: el cazador en reposo ya mira al espejo de esquina %s" % s)
+            skip = {corners[s], (int(hunter["x"]), int(hunter["y"]))}
+            if _segment_blocked(arena, hc, cc, skip) or _segment_blocked(arena, cc, back, skip):
+                _err(errors, "fase 2: el camino cazador -> espejo %s -> espalda cruza terreno" % s)
+            corner_index[idx] = s
+        cells = []
+        for n in sorted(arena.reachable):
+            bx, by = _body_center(arena, n)
+            to = (bx - hc[0], by - hc[1])
+            target = _facing_index(*to) if math.hypot(*to) <= radius + EPS else rest
+            idx, steps, hit = rest, 0, None
+            if rest in corner_index:
+                hit = corner_index[rest]
+            while hit is None and idx != target:
+                idx = _step_toward(idx, target)
+                steps += 1
+                hit = corner_index.get(idx)
+            if hit is None:
+                continue
+            f = 1.0 if hc[0] >= arena.feet(n)[0] else -1.0
+            if _pulse_to_rect(arena, n, f, hrect) and _laser_to_rect(arena, n, f, hrect):
+                cells.append((n, steps, hit))
+        hunter_out = {"cells": [[list(n), st, s] for n, st, s in cells], "turn_s": turn, "freeze_s": freeze,
+                      "rest": HUNTER_FACINGS[rest], "corners": {s: HUNTER_FACINGS[i] for i, s in corner_index.items()}}
+        if not cells:
+            _err(errors, "fase 2: no hay celda de pie desde la que el cazador, al girar hacia Isak, pase por un espejo "
+                         "de esquina y le lleguen el pulso y el laser")
+        window2 = float(boss.get("phase2", {}).get("window_s", 5.0))
+        for lap, name, kk in [(lap, n, kv) for lap in sorted(laps) for n, kv in specs(lap, 2, "floor")]:
+            starts = {n: 0.0 for n in floor} if name == "floor" else start_sets(name, "left")
+            worst_need, worst_travel, worst_turn = 0.0, 0.0, 0.0
+            for n, t0 in starts.items():
+                best = None
+                for c, st, _ in cells:
+                    if c not in times.get(n, {}):
+                        continue
+                    t = t0 + times[n][c]
+                    need = _window_need(arena, t) + st * turn
+                    if best is None or need < best[0]:
+                        best = (need, t, st * turn)
+                if best is None:
+                    _err(errors, "vuelta %s, fase 2: desde %s no se llega a una celda del cazador" % (lap, list(n)))
+                    continue
+                if best[0] > worst_need:
+                    worst_need, worst_travel, worst_turn = best
+            need = kk * worst_need
+            if window2 + EPS < need:
+                _err(errors, "vuelta %s, fase 2: la ventana dura %.2f s del mundo y desde '%s' hacen falta %.2f (k = %g x "
+                             "(recorrido %.2f s + giro del cazador %.2f s + Debug + poses))"
+                     % (lap, window2, name, need, kk, worst_travel, worst_turn))
+            cur_windows.append({"lap": lap, "phase": 2, "from": name, "k": kk, "window_s": window2,
+                                "travel_s": round(worst_travel, 3), "turn_s": round(worst_turn, 3),
+                                "need_s": round(need, 3)})
+    cur_windows.sort(key=lambda w: (w["lap"], w["phase"], -w["k"]))
+    report["cur_windows"] = cur_windows
+    report["cur_hunter"] = hunter_out
+    report["cur_reach"] = {s: {"pulse_cells": len(reach[s][0]), "laser_cells": len(reach[s][1])} for s in CURATOR_SIDES}
+    # F. Fase 3: marcos que se cierran.
+    p3 = boss.get("phase3", {})
+    close_s = float(p3.get("frame_warn_frames", 9)) / fps + float(p3.get("frame_close_s", 0.5))
+    frames_out = {}
+    phase3_things = [o for o in level.get("objects", []) + level.get("enemies", [])
+                     if o.get("type") != "small_frame" and 3 in o.get("active_in_phase", [1, 2, 3])]
+    for s in CURATOR_SIDES:
+        c, r, w, h = smalls[s]
+        rect_cells = [(cc, rr) for cc in range(c, c + w) for rr in range(r, r + h)]
+        sf = next((o for o in level.get("objects", []) if o.get("type") == "small_frame"
+                   and (int(o["x"]), int(o["y"])) in rect_cells), None)
+        if sf is None:
+            _err(errors, "marco pequeno %s: no hay objeto small_frame en %s" % (s, [c, r, w, h]))
+        if any(arena.solid(cc, rr) for cc, rr in rect_cells):
+            _err(errors, "marco pequeno %s ocupado: hay terreno en el hueco %s" % (s, [c, r, w, h]))
+        busy = [o for o in phase3_things if (int(o["x"]), int(o["y"])) in rect_cells]
+        for o in busy:
+            _err(errors, "marco pequeno %s ocupado en la fase 3: %s '%s' en (%d, %d)"
+                 % (s, o.get("type"), o.get("params", {}).get("id", o.get("id", "")), o["x"], o["y"]))
+        if not all(arena.solid(cc, r - 1) for cc in range(c, c + w)):
+            _err(errors, "marco pequeno %s: sin techo encima (Isak de pie cabria y no seria un marco pequeno)" % s)
+        if h * T + EPS < float(compress.get("height_px", 40)) or w * T + EPS < float(compress.get("width_px", 32)):
+            _err(errors, "marco pequeno %s: Isak comprimido no cabe en %d x %d tiles" % (s, w, h))
+        if h * T >= arena.rules.hitbox_h - EPS:
+            _err(errors, "marco pequeno %s: Isak de pie cabe (%d px de alto)" % (s, h * T))
+        if not (halves[s][0] <= c and c + w - 1 <= halves[s][1]):
+            _err(errors, "marco pequeno %s fuera de su mitad %s" % (s, list(halves[s])))
+        entry, crawl_s = frame_exit(s)
+        crawl_in = crawl_s  # entrar cuesta lo mismo que salir (pellizcarse + arrastrarse)
+        outside = [n for n in floor if not halves[s][0] <= n[0] <= halves[s][1]]
+        worst = 0.0
+        worst_cell = None
+        for n in half_floor[s]:
+            tt = times.get(n, {})
+            exit_t = min((tt[g] for g in outside if g in tt), default=float("inf"))
+            frame_t = tt[entry] + crawl_in if entry in tt else float("inf")
+            t = min(exit_t, frame_t)
+            if t > worst:
+                worst, worst_cell = t, n
+        if worst > close_s + EPS:
+            _err(errors, "marco que se cierra (%s): desde %s se tarda %.2f s en salir de la mitad o meterse en el marco "
+                         "pequeno y el aviso + cierre dura %.2f" % (s, list(worst_cell), worst, close_s))
+        push = int(ab.get("push_col", {}).get(s, -1))
+        if halves[s][0] <= push <= halves[s][1] or (push, entry[1]) not in arena.reachable:
+            _err(errors, "marco que se cierra (%s): el empujon (columna %d) no cae en el suelo de la otra mitad" % (s, push))
+        frames_out[s] = {"rect": [c, r, w, h], "worst_s": round(worst, 3),
+                         "worst_cell": list(worst_cell) if worst_cell else None,
+                         "max_tiles": max((abs(n[0] - entry[0]) for n in half_floor[s]), default=0)}
+    report["cur_frames"] = {"close_s": round(close_s, 3), "sides": frames_out}
+    # G. Marca.
+    misses = int(model.get("misses_per_window", 1))
+    mark_out = {}
+    for lap, entry in sorted(laps.items()):
+        mark = float(entry.get("mark_duration_s", 0.0))
+        cap = int(entry.get("mark_hits", 0))
+        lm = model.get("laps", {}).get(str(lap), {})
+        worst = max((h for ws in lm.get("windows", []) for h in ws), default=0)
+        if worst > 1:
+            _err(errors, "vuelta %s: la pelea torpe pide %d golpes en una ventana y cada ventana se cierra con su golpe"
+                 % (lap, worst))
+        if cap > 0 and worst > cap:
+            _err(errors, "vuelta %s: la pelea torpe pide %d golpe(s) por marca y la marca da %d (mark_hits)"
+                 % (lap, worst, cap))
+        if cap <= 0:
+            _err(errors, "vuelta %s: mark_hits debe ser >= 1 (un golpe por marca)" % lap)
+        need = min(worst, 1) + misses
+        shots = mark_shots(rules, mark)
+        freeze_s = float(hcfg.get("freeze_s", 3.0))
+        shots2 = mark_shots(rules, min(mark, freeze_s))
+        if shots < need:
+            _err(errors, "vuelta %s: en la marca de %.2f s caben %d laser(es) y la peor ventana torpe pide %d "
+                         "(%d golpe(s) + %d fallado(s))" % (lap, mark, shots, need, min(worst, 1), misses))
+        if shots2 < need:
+            _err(errors, "vuelta %s, fase 2: con el cazador congelado %.2f s y la marca de %.2f caben %d laser(es) y "
+                         "hacen falta %d" % (lap, freeze_s, mark, shots2, need))
+        scale = max(rules.debug_world_scale, EPS)
+        mark_out[lap] = {"mark_s": mark, "real_with_debug_s": round(mark / scale, 3), "shots": shots,
+                         "shots_with_debug": mark_shots(rules, mark / scale), "need": need, "mark_hits": cap,
+                         "phase2_shots": shots2}
+    report["mark"] = mark_out
+    # H. Energia (y Debug del modelo).
+    check_energy(arena, boss, rules, list(upgrades), errors, report, root, lap_fn=energy_lap_autoplay)
+    charge = max((float(pp.get("amount", 50.0)) for _, _, pp in arena.chargers), default=50.0)
+    respawn = float(boss.get("respawn_min_energy", 0.0))
+    for lap, scen in sorted(report["energy"].items()):
+        for name, e in scen.items():
+            for p, ph in enumerate(e["phases"]):
+                if ph["peak"] > respawn + charge + EPS:
+                    _err(errors, "%s, vuelta %s, fase %d: el pico torpe %.1f supera lo que hay al reaparecer (%.0f) mas "
+                                 "una carga (%.0f)" % (name, lap, p + 1, ph["peak"], respawn, charge))
+    turn_max = max((w.get("turn_s", 0.0) for w in cur_windows), default=0.0)
+    for lap in sorted(laps):
+        ds = model.get("laps", {}).get(str(lap), {}).get("debug_s", [])
+        needs = [rules.pulse_pose_s, turn_max / max(rules.debug_world_scale, EPS) + rules.pulse_pose_s,
+                 rules.pulse_pose_s]
+        for p, need in enumerate(needs):
+            if p < len(ds) and float(ds[p]) + EPS < need:
+                _err(errors, "validation_model vuelta %s fase %d: debug_s %.2f s y la solucion lleva el Debug %.2f s"
+                     % (lap, p + 1, float(ds[p]), need))
+    # I. Cargadores.
+    level_cd = sorted({float(pp.get("cooldown_s", 0.0)) for _, _, pp in arena.chargers})
+    gap = lambda p: float(boss.get("phase%d" % p, {}).get("attack_gap_s", 0.5))  # noqa: E731
+    durations = {"flash": flash_warn, "flash_reflected": flash_warn,
+                 "floor_filter": enter + float(ff.get("active_s", 4.0)),
+                 "crop": crop_warn + float(crop.get("cut_s", 0.4))}
+    charger_out = {}
+    for lap, entry in sorted(laps.items()):
+        cd = float(entry.get("charger_cooldown_s", level_cd[0] if level_cd else 0.0))
+        flashes = int(entry.get("flashes_per_session", 1))
+        cycles = []
+        for p in (1, 2):
+            total = 0.0
+            for a in boss.get("phase%d" % p, {}).get("attacks", []):
+                total += durations.get(a, 0.0) * (flashes if a.startswith("flash") else 1) + gap(p)
+            cycles.append(total)
+        cycles.append(float(entry.get("frame_interval_s", 6.0)))
+        shortest = min(cycles)
+        if cd > CHARGER_ROTATION * shortest + EPS:
+            _err(errors, "vuelta %s: los cargadores se enfrian %.1f s y entre ventanas hay %.2f s (alternando %d "
+                         "cargadores no hay uno listo en cada ventana)" % (lap, cd, shortest, CHARGER_ROTATION))
+        windows = model.get("laps", {}).get(str(lap), {}).get("windows", [])
+        for name, e in report["energy"].get(lap, {}).items():
+            for p, ph in enumerate(e["phases"]):
+                cap = len(arena.chargers) * (len(windows[p]) if p < len(windows) else 0)
+                if ph["charges"] > cap:
+                    _err(errors, "%s, vuelta %s, fase %d: %d cargas y solo hay %d (cargadores x ventanas)"
+                         % (name, lap, p + 1, ph["charges"], cap))
+        charger_out[lap] = {"cooldown_s": cd, "cycles_s": [round(c, 2) for c in cycles]}
+    if laps and level_cd and abs(level_cd[0] - float(laps.get("1", {}).get("charger_cooldown_s", level_cd[0]))) > EPS:
+        _err(errors, "los cargadores del nivel se enfrian %g s y Caché pide %g" % (level_cd[0],
+                                                                                float(laps["1"]["charger_cooldown_s"])))
+    report["cur_chargers"] = {"count": len(arena.chargers), "level_cooldown_s": level_cd, "laps": charger_out,
+                              "debug_drain_scale": float(level.get("debug_drain_scale", 1.0))}
+    # J. Likes.
+    thresholds = [int(o.get("params", {}).get("threshold", 0)) for o in platforms]
+    min_likes = int(boss.get("respawn_min_likes", 0))
+    if thresholds and min_likes < max(thresholds):
+        _err(errors, "likes al empezar cada fase %d < umbral de las plataformas %d" % (min_likes, max(thresholds)))
+    report["cur_likes"] = {"min_likes": min_likes, "thresholds": thresholds}
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+
+
 def format_text(path, result):
     out = []
     status = "OK" if result["ok"] else "FALLA"
@@ -1362,12 +1941,47 @@ def format_text(path, result):
                        "suelo %.2f (espera a la tarjeta %.2f s)%s" % (w["lap"], w["phase"], w["window_s"], w["need_bar_s"],
                                                                      w["travel_bar_s"], w["need_floor_s"], w["card_wait_s"],
                                                                      "" if w["floor_required"] else " [solo informa]"))
+        cf = rep.get("cur_flash")
+        if cf:
+            out.append("  flash (aviso %.2f s): %s" % (cf["warn_s"], "; ".join(
+                "desde %s %d celdas tapadas, %.2f s desde el peor suelo" % (n, v["covered"], v["worst_s"] or 0.0)
+                for n, v in cf["sources"].items())))
+            fl = rep["cur_floor_filter"]
+            out.append("  filtro de suelo (entra en %.2f s): %s" % (fl["enter_s"], "; ".join(
+                "vuelta %s %s, celda sin pincho a %.2f s" % (lap, v["mode"], v["worst_s"]) for lap, v in sorted(fl["laps"].items()))))
+            cr = rep["cur_crop"]
+            out.append("  recorte: salir andando %.2f s (aviso %.2f s); el dash cruza %g px de %g" % (
+                cr["walk_s"], cr["warn_s"], cr["dash_px"], cr["escape_px"]))
+            out.append("  plataformas de likes: %d de %d celdas alcanzables; lente %s" % (
+                rep["platform_cells"][0], rep["platform_cells"][1], "; ".join(
+                    "%s: pulso desde %d celdas, laser desde %d" % (s, v["pulse_cells"], v["laser_cells"])
+                    for s, v in sorted(rep["cur_reach"].items()))))
+        for w in rep.get("cur_windows", []):
+            out.append("  ventana vuelta %s fase %d desde %s (k = %g): %.2f s; hacen falta %.2f (recorrido %.2f s%s)" % (
+                w["lap"], w["phase"], w["from"], w["k"], w["window_s"], w["need_s"], w["travel_s"],
+                "; giro del cazador %.2f s" % w["turn_s"] if "turn_s" in w else ""))
+        ch = rep.get("cur_hunter")
+        if ch:
+            out.append("  cazador (fase 2): reposo %s, esquinas %s; %d celda(s) de pie (%s); giro %.2f s por paso, congelado "
+                       "%.2f s" % (ch["rest"], ", ".join("%s %s" % kv for kv in sorted(ch["corners"].items())),
+                                   len({tuple(c[0]) for c in ch["cells"]}),
+                                   ", ".join(sorted({"%s %s" % (c[2], c[0]) for c in ch["cells"]})), ch["turn_s"],
+                                   ch["freeze_s"]))
+        cfr = rep.get("cur_frames")
+        if cfr:
+            out.append("  marcos que se cierran (aviso + cierre %.2f s): %s" % (cfr["close_s"], "; ".join(
+                "%s, marco pequeno %s libre, peor celda %s a %.2f s (a %d tiles)" % (s, v["rect"], v["worst_cell"],
+                                                                                     v["worst_s"], v["max_tiles"])
+                for s, v in sorted(cfr["sides"].items()))))
         for lap, m in sorted((rep.get("mark") or {}).items()):
             out.append("  marca, vuelta %s: %g s del mundo (%g s reales con el Debug); caben %d laser(es) sin el Debug "
                        "y %d con el; la peor ventana torpe pide %d" % (lap, m["mark_s"], m["real_with_debug_s"],
                                                                       m["shots"], m["shots_with_debug"], m["need"]))
             if "pause_hits" in m:
                 out[-1] += "; cada pausa acaba tras %d impacto(s) de laser (pause_hits)" % m["pause_hits"]
+            if "mark_hits" in m:
+                out[-1] += "; %d golpe(s) por marca (mark_hits); fase 2, con el cazador congelado: %d" % (
+                    m["mark_hits"], m["phase2_shots"])
         rv = rep.get("ray_volleys")
         if rv:
             out.append("  rayos en tandas: %s (respiro de %g s del mundo entre tandas, /speed_scale)"
@@ -1381,6 +1995,15 @@ def format_text(path, result):
                                                                  e["laser_cost"], e["laser_damage"], e["dash_cost"],
                                                                  peaks, e["total_spend"], e["total_charges"],
                                                                  e["total_detour_s"]))
+    cc = rep.get("cur_chargers") if rep else None
+    if cc:
+        out.append("  cargadores: %d, %s; Debug x%g; ciclos entre ventanas por fase: %s" % (
+            cc["count"], ", ".join("vuelta %s %g s" % (lap, v["cooldown_s"]) for lap, v in sorted(cc["laps"].items())),
+            cc["debug_drain_scale"], "; ".join("vuelta %s %s s" % (lap, " / ".join("%g" % c for c in v["cycles_s"]))
+                                                for lap, v in sorted(cc["laps"].items()))))
+        li = rep["cur_likes"]
+        out.append("  likes al empezar cada fase >= %d (umbral de las plataformas %s)" % (
+            li["min_likes"], "/".join(str(t) for t in li["thresholds"])))
     for e in result["errors"]:
         where = ""
         if e.get("row") is not None and e.get("col") is not None:
