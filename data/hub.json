@@ -47,6 +47,18 @@
 			"fill_alt_offset": 2
 		},
 		"page_dot": "res://assets/sprites/hub/icons/page_dot_current_00.png",
+		"_pages_notes": "Hub de varias paginas (2026-10-27, paso 2 de docs/propuesta-hub-mundos-4-6.md §3.2): una sola sala de hasta 3 paginas de size_tiles (20 x 11) = 60 x 11; cada pagina tiene su camera_rect_px (la camara queda fija en la pagina) y su llegada (spawn_cell, spawn_facing: P en la 1, P2 y P3 al volver de un nivel de un mundo con carpeta en esa pagina). Estado de cada pagina (HubRoom.get_page_state): sin requires_upgrade, abierta; con el upgrade instalado, abierta; si no, while_pending = installing la deja «en instalacion» mientras el acertijo esta pendiente (HubWorlds.is_hub_upgrade_pending: 3-boss sin el upgrade); si no, no existe. Se construyen las paginas seguidas desde la 1 que existen: antes de La Curadora solo la 1, IDENTICA a la de siempre (pared derecha en 1280 y un punto PageDot). Al cruzar el borde de una pagina la camara se desliza (page_slide_s s, Isak en pausa). Indicador: page_dot (actual), page_dot_other (las demas), separados page_dot_spacing_px; la pagina en instalacion se ve como un punto apagado que se llena en bucle (page_dot_loading_s). edge_glitch: glitch del borde derecho de la pagina 1 (columna col, filas rows) mientras la 2 esta en instalacion; colores de las piezas encendidas (cian, ambar, verde acido), cambia un cuadro cada flicker_every_s s. page_background_color: fondo PROVISIONAL de las paginas 2 y 3 (base de hub.gpl) hasta el arte del paso 7.",
+		"page_slide_s": 0.35,
+		"page_dot_other": "res://assets/sprites/hub/icons/page_dot_other_00.png",
+		"page_dot_spacing_px": 16,
+		"page_dot_loading_s": 1.2,
+		"page_background_color": "#3a4862",
+		"pages": [
+			{"page": 1, "camera_rect_px": [0, 0, 1280, 720], "spawn_cell": [5, 8], "spawn_facing": -1.0},
+			{"page": 2, "camera_rect_px": [1280, 0, 1280, 720], "spawn_cell": [24, 8], "spawn_facing": -1.0, "requires_upgrade": "hub_update_4_6", "while_pending": "installing"},
+			{"page": 3, "camera_rect_px": [2560, 0, 1280, 720], "spawn_cell": [45, 8], "spawn_facing": 1.0, "requires_upgrade": "hub_update_4_6"}
+		],
+		"edge_glitch": {"col": 19, "rows": [5, 8], "colors": ["#3dfff5", "#ffa858", "#a6ff2e"], "flicker_every_s": 1.5},
 		"refill_on_enter": true,
 		"abilities_available": {"pulse": true, "debug": false},
 		"stations": [

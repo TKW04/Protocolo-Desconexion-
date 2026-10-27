@@ -161,6 +161,30 @@ func test_room_uses_final_background_dock_and_page_dot() -> void:
 	assert_not_null(room.get_node_or_null(^"PageDot"), "Indicador de pagina")
 
 
+## Hub de varias paginas (paso 2 de docs/propuesta-hub-mundos-4-6.md): antes de
+## La Curadora una pagina; despues, la pagina 1 sigue igual y la sala crece a la
+## derecha (casos completos en tests/test_hub_pages.gd).
+func test_page_one_keeps_its_layout_when_page_two_appears() -> void:
+	_spawn()
+	assert_eq(_hub.get_page_count(), 1, "Antes de La Curadora: una pagina")
+	var spawn: Vector2 = _hub.get_spawn_position()
+	var calc_x: float = _hub.get_calc().position.x
+	var folder_x: float = _hub.get_folder(&"m3").position.x
+	_hub.free()
+	GameState.mark_level_completed(&"3-boss")
+	_spawn()
+	assert_eq(_hub.get_page_count(), 2, "Con 3-boss: la pagina 2 en instalacion")
+	assert_eq(_hub.get_spawn_position(), spawn, "P igual")
+	assert_eq(_hub.get_calc().position.x, calc_x, "Calc igual")
+	assert_eq(_hub.get_folder(&"m3").position.x, folder_x, "Carpeta M3 igual")
+	var dock: Node = _hub.get_node(^"Room/Dock")
+	var top_row: int = 0
+	for tile: Node in dock.get_children():
+		if is_equal_approx((tile as Sprite2D).position.y, _hub.get_floor_y()):
+			top_row += 1
+	assert_eq(top_row, 40, "El dock sigue por la pagina 2")
+
+
 func test_background_lights_piece_one_when_world_1_is_completed() -> void:
 	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss"]:
 		GameState.mark_level_completed(id)

@@ -71,6 +71,19 @@
 ## over), si se llega de `after_level` (arrived_from_level, lo da LevelRunner) y
 ## Calc es conocida, Calc dice una vez por partida guardada su linea en el LCD
 ## (no importante: no pausa). Visto = GameState.mark_notice_seen("calc_remark_<id>").
+## VARIAS PAGINAS (2026-10-27, paso 2 de docs/propuesta-hub-mundos-4-6.md §3.2;
+## room.pages de data/hub.json): una sola sala de hasta 3 paginas de 20 x 11. Se
+## construyen las paginas seguidas desde la 1 que existen (get_page_state):
+## antes de vencer a La Curadora solo la 1, identica a la de siempre; con el
+## acertijo pendiente (3-boss sin hub_update_4_6) tambien la 2 «en instalacion»
+## (vacia hasta el paso 3), con el glitch del borde derecho de la pagina 1
+## (HubEdgeGlitch) y el indicador de 2 puntos; con el upgrade, las 3. La camara
+## queda fija en la pagina actual y, al cruzar Isak el borde, se desliza
+## (page_slide_s, Isak en pausa). La llegada es en la pagina de la carpeta del
+## mundo del que se vuelve (P2/P3), si esa pagina existe; si no, en P.
+## DEBUG (comprobado en el paso 2, tests/test_hub_pages.gd): el Debug obtenido
+## se puede usar en el hub (las habilidades obtenidas no se tocan; reset() solo
+## lo apaga al entrar).
 class_name HubRoom
 extends Node2D
 
@@ -85,6 +98,14 @@ signal arrived
 signal wallpaper_piece_lit(world: int)
 ## Se va a cargar el subnivel `level_id` (Isak ya se fue por el vortice).
 signal level_requested(level_id: StringName)
+## La camara termino de deslizarse a la pagina `page` (audio futuro:
+## sfx_hub_page_slide, paso 7).
+signal page_changed(page: int)
+
+## Estados de una pagina del hub (get_page_state).
+const PAGE_OPEN: StringName = &"open"
+const PAGE_INSTALLING: StringName = &"installing"
+const PAGE_CLOSED: StringName = &"closed"
 
 ## Si es valido, recibe la raiz preparada (LevelRunner de level_runner_scene con
 ## start_level_id) en lugar de sustituir la escena actual (pruebas).
@@ -136,6 +157,13 @@ var _piece_lighting: bool = false
 ## Piezas del fondo de otros mundos (room.pieces): capas encima del fondo con
 ## animaciones hidden (mundo bloqueado), off (desbloqueado, sin completar) y on.
 var _pieces: Dictionary[int, AnimatedSprite2D] = {}
+## Paginas construidas (seguidas desde la 1; 1 antes de La Curadora).
+var _page_count: int = 0
+var _current_page: int = 1
+var _sliding: bool = false
+var _slide_tween: Tween
+var _page_indicators: Dictionary[int, HubPageIndicator] = {}
+var _edge_glitch: HubEdgeGlitch
 
 
 func _enter_tree() -> void:
@@ -171,6 +199,8 @@ func _ready() -> void:
 	add_to_group(PauseMenu.BLOCKER_GROUP)
 	if PauseMenu.find_in(get_tree()) == null:
 		add_child(PauseMenu.new())
+	_page_count = _count_pages()
+	_current_page = get_arrival_page()
 	_build_room()
 	_build_dormant()
 	_build_papelera()
@@ -224,7 +254,7 @@ func can_save_now() -> bool:
 ## terminar, salida por el vortice, Isak sin control o de espaldas, o un panel
 ## de estacion o carpeta abierto.
 func blocks_pause_menu() -> bool:
-	if not _arrived or not _entering_level.is_empty():
+	if not _arrived or not _entering_level.is_empty() or _sliding:
 		return true
 	var calc_intro: CalcIntro = get_calc_intro()
 	if calc_intro != null and calc_intro.is_running():
@@ -352,20 +382,136 @@ func get_departure_vortex() -> WarpVortex:
 	return _departure if _departure != null and is_instance_valid(_departure) else null
 
 
-## Tamano de la sala en tiles y en px.
-func get_size_tiles() -> Vector2i:
+## Tamano de una pagina en tiles (room.size_tiles: 20 x 11).
+func get_page_size_tiles() -> Vector2i:
 	var s: Array = _room.get("size_tiles", [20, 11])
 	return Vector2i(int(s[0]), int(s[1]))
+
+
+## Ancho de una pagina en px.
+func get_page_width_px() -> float:
+	return float(get_page_size_tiles().x) * HubData.tile_size()
+
+
+## Tamano de la parte construida de la sala en tiles (las paginas que existen:
+## 20 x 11 antes de La Curadora, hasta 60 x 11) y en px.
+func get_size_tiles() -> Vector2i:
+	var page: Vector2i = get_page_size_tiles()
+	return Vector2i(page.x * get_page_count(), page.y)
 
 
 func get_size_px() -> Vector2:
 	return Vector2(get_size_tiles()) * HubData.tile_size()
 
 
-## Rectangulo que ve la camara (fijo).
-func get_camera_rect() -> Rect2i:
-	var r: Array = _room.get("camera_rect_px", [0, 0, 1280, 720])
+## Tamano de la sala completa (todas las paginas de room.pages: 60 x 11).
+func get_room_size_tiles() -> Vector2i:
+	var page: Vector2i = get_page_size_tiles()
+	return Vector2i(page.x * get_pages().size(), page.y)
+
+
+## Paginas de room.pages (o una sola con camera_rect_px y spawn_cell de room).
+func get_pages() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for entry: Variant in _room.get("pages", []):
+		if entry is Dictionary:
+			out.append(entry)
+	if out.is_empty():
+		out.append({"camera_rect_px": _room.get("camera_rect_px", [0, 0, 1280, 720]),
+			"spawn_cell": _room.get("spawn_cell", [5, 8]), "spawn_facing": _room.get("spawn_facing", 1.0)})
+	return out
+
+
+func _page_entry(page: int) -> Dictionary:
+	var pages: Array[Dictionary] = get_pages()
+	return pages[clampi(page, 1, pages.size()) - 1]
+
+
+## Estado de la pagina `page` (1-3) con el progreso actual: PAGE_OPEN (sin
+## requires_upgrade o con el upgrade instalado), PAGE_INSTALLING (while_pending
+## installing y el acertijo pendiente: 3-boss sin el upgrade) o PAGE_CLOSED (no
+## existe). La disponibilidad de las carpetas va aparte (HubWorlds).
+func get_page_state(page: int) -> StringName:
+	var pages: Array[Dictionary] = get_pages()
+	if page < 1 or page > pages.size():
+		return PAGE_CLOSED
+	var entry: Dictionary = pages[page - 1]
+	var upgrade := StringName(String(entry.get("requires_upgrade", "")))
+	if upgrade.is_empty() or GameState.has_hub_upgrade(upgrade):
+		return PAGE_OPEN
+	if String(entry.get("while_pending", "")) == String(PAGE_INSTALLING) and HubWorlds.is_hub_upgrade_pending(upgrade):
+		return PAGE_INSTALLING
+	return PAGE_CLOSED
+
+
+## Paginas que existen (seguidas desde la 1). Fijo desde que el hub entra al
+## arbol: se construyen al entrar.
+func get_page_count() -> int:
+	return _page_count if _page_count > 0 else _count_pages()
+
+
+func _count_pages() -> int:
+	var count: int = 0
+	for page: int in range(1, get_pages().size() + 1):
+		if get_page_state(page) == PAGE_CLOSED:
+			break
+		count = page
+	return maxi(count, 1)
+
+
+## Pagina en la que esta la camara (la de destino al terminar un deslizamiento).
+func get_current_page() -> int:
+	return _current_page
+
+
+## La camara se esta deslizando entre paginas (Isak en pausa).
+func is_page_sliding() -> bool:
+	return _sliding
+
+
+## Pagina de la llegada: la de la carpeta del mundo de arrived_from_level (P2/P3
+## al volver de un nivel de los Mundos 4-6) si existe; si no, la 1.
+func get_arrival_page() -> int:
+	if arrived_from_level.is_empty():
+		return 1
+	var entry: Dictionary = HubWorlds.world_of_level(StringName(arrived_from_level))
+	if entry.is_empty():
+		# Mundo sin subniveles registrados todavia: por el prefijo «<mundo>-».
+		var prefix: String = arrived_from_level.get_slice("-", 0)
+		if prefix.is_valid_int():
+			for world_entry: Dictionary in HubWorlds.worlds():
+				if int(world_entry.get("world", 0)) == int(prefix):
+					entry = world_entry
+	if entry.is_empty():
+		return 1
+	var page: int = HubWorlds.world_page(entry)
+	return page if page >= 1 and page <= get_page_count() else 1
+
+
+## Indicador de paginas de la pagina `page` (null con una sola pagina: PageDot).
+func get_page_indicator(page: int) -> HubPageIndicator:
+	return _page_indicators.get(page, null)
+
+
+## Glitch del borde derecho de la pagina 1 (null si la 2 no esta en instalacion).
+func get_edge_glitch() -> HubEdgeGlitch:
+	return _edge_glitch
+
+
+## Rectangulo que ve la camara en la pagina `page` (por defecto, la actual).
+func get_camera_rect(page: int = -1) -> Rect2i:
+	var entry: Dictionary = _page_entry(_current_page if page < 1 else page)
+	var r: Array = entry.get("camera_rect_px", _room.get("camera_rect_px", [0, 0, 1280, 720]))
 	return Rect2i(int(r[0]), int(r[1]), int(r[2]), int(r[3]))
+
+
+## Rectangulo que ve ahora la camara de Isak (sus limites).
+func get_view_rect() -> Rect2i:
+	var camera := _isak.get_node_or_null(^"Camera2D") as Camera2D if _isak != null else null
+	if camera == null:
+		return get_camera_rect()
+	return Rect2i(camera.limit_left, camera.limit_top, camera.limit_right - camera.limit_left,
+		camera.limit_bottom - camera.limit_top)
 
 
 ## Altura del suelo (borde superior del dock) en px.
@@ -373,9 +519,11 @@ func get_floor_y() -> float:
 	return float(_room.get("floor_row", 9)) * HubData.tile_size()
 
 
-## Posicion de P (pies de Isak).
-func get_spawn_position() -> Vector2:
-	var cell: Array = _room.get("spawn_cell", [5, 8])
+## Posicion de la llegada de la pagina `page` (pies de Isak; por defecto, la
+## pagina de la llegada: P en la 1).
+func get_spawn_position(page: int = -1) -> Vector2:
+	var entry: Dictionary = _page_entry(get_arrival_page() if page < 1 else page)
+	var cell: Array = entry.get("spawn_cell", _room.get("spawn_cell", [5, 8]))
 	var t: float = HubData.tile_size()
 	return Vector2((float(cell[0]) + 0.5) * t, (float(cell[1]) + 1.0) * t)
 
@@ -383,20 +531,72 @@ func get_spawn_position() -> Vector2:
 # --- Interno ---
 
 func _place_isak() -> void:
-	_isak.global_position = get_spawn_position()
+	_isak.global_position = get_spawn_position(_current_page)
 	_isak.velocity = Vector2.ZERO
-	_isak.facing = signf(float(_room.get("spawn_facing", 1.0)))
+	var facing: float = float(_page_entry(_current_page).get("spawn_facing", _room.get("spawn_facing", 1.0)))
+	_isak.facing = signf(facing)
 	var sprite := _isak.get_node_or_null(^"AnimatedSprite2D") as AnimatedSprite2D
 	if sprite != null:
 		sprite.flip_h = _isak.facing < 0.0
-	var camera := _isak.get_node_or_null(^"Camera2D") as Camera2D
-	if camera != null:
-		var rect: Rect2i = get_camera_rect()
-		camera.limit_left = rect.position.x
-		camera.limit_top = rect.position.y
-		camera.limit_right = rect.end.x
-		camera.limit_bottom = rect.end.y
-		camera.reset_smoothing()
+	_set_camera_left(float(get_camera_rect(_current_page).position.x))
+
+
+## Limites de la camara de Isak en una pagina cuyo borde izquierdo esta en `x`
+## (el ancho y la altura de camera_rect_px: la camara queda fija ahi).
+func _set_camera_left(x: float) -> void:
+	var camera := _isak.get_node_or_null(^"Camera2D") as Camera2D if _isak != null else null
+	if camera == null:
+		return
+	var rect: Rect2i = get_camera_rect(_current_page)
+	camera.limit_left = int(roundf(x))
+	camera.limit_top = rect.position.y
+	camera.limit_right = int(roundf(x)) + rect.size.x
+	camera.limit_bottom = rect.end.y
+	camera.reset_smoothing()
+
+
+func _physics_process(_delta: float) -> void:
+	if _sliding or get_page_count() <= 1 or _isak == null or not is_instance_valid(_isak):
+		return
+	if not _entering_level.is_empty() or _isak.is_warping():
+		return
+	var page: int = clampi(int(floorf(_isak.global_position.x / get_page_width_px())) + 1, 1, get_page_count())
+	if page != _current_page:
+		slide_to_page(page)
+
+
+## Desliza la camara a la pagina `page` (page_slide_s s; Isak en pausa) y emite
+## page_changed al terminar. Falso si no existe o ya se esta deslizando.
+func slide_to_page(page: int) -> bool:
+	if _sliding or page < 1 or page > get_page_count() or page == _current_page:
+		return false
+	var from: float = float(get_camera_rect(_current_page).position.x)
+	var to: float = float(get_camera_rect(page).position.x)
+	_current_page = page
+	_sliding = true
+	if _isak != null and is_instance_valid(_isak):
+		_isak.set_physics_process(false)
+	var duration: float = maxf(float(_room.get("page_slide_s", 0.35)), 0.01)
+	_slide_tween = create_tween()
+	_slide_tween.tween_method(_set_camera_left, from, to, duration) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_slide_tween.finished.connect(_end_slide)
+	return true
+
+
+## Termina al instante el deslizamiento en curso (pruebas y capturas).
+func finish_page_slide() -> void:
+	if _sliding and _slide_tween != null and _slide_tween.is_valid():
+		_slide_tween.custom_step(1000.0)
+
+
+func _end_slide() -> void:
+	_set_camera_left(float(get_camera_rect(_current_page).position.x))
+	_sliding = false
+	_slide_tween = null
+	if _isak != null and is_instance_valid(_isak):
+		_isak.set_physics_process(true)
+	page_changed.emit(_current_page)
 
 
 func _start_arrival() -> void:
@@ -485,6 +685,16 @@ func _build_room() -> void:
 	_background.centered = false
 	_background.sprite_frames = load(String(_room.get("background", ""))) as SpriteFrames
 	room.add_child(_background)
+	# Paginas 2 y 3: fondo PROVISIONAL de un color (el arte llega en el paso 7).
+	for page: int in range(2, get_page_count() + 1):
+		var page_rect: Rect2i = get_camera_rect(page)
+		var fill := ColorRect.new()
+		fill.name = "PageBackground%d" % page
+		fill.color = Color(String(_room.get("page_background_color", "#3a4862")))
+		fill.position = Vector2(page_rect.position)
+		fill.size = Vector2(page_rect.size)
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		room.add_child(fill)
 	for entry: Dictionary in _room.get("pieces", []):
 		var piece := AnimatedSprite2D.new()
 		var world: int = int(entry.get("world", 0))
@@ -497,13 +707,8 @@ func _build_room() -> void:
 		_pieces[world] = piece
 	refresh_background()
 	_build_dock(room, screen, floor_y)
-	var dot_path: String = String(_room.get("page_dot", ""))
-	if not dot_path.is_empty():
-		var dot := Sprite2D.new()
-		dot.name = "PageDot"
-		dot.texture = load(dot_path) as Texture2D
-		dot.position = Vector2(size.x * 0.5, (float(_room.get("page_dot_row", 10)) + 0.5) * t)
-		room.add_child(dot)
+	_build_page_indicators(room)
+	_build_edge_glitch(room)
 	var bodies := StaticBody2D.new()
 	bodies.name = "Collision"
 	bodies.collision_layer = 1
@@ -516,6 +721,64 @@ func _build_room() -> void:
 	_add_box(bodies, "WallLeft", Rect2(-thick, -thick, thick, height + thick * 2.0))
 	_add_box(bodies, "WallRight", Rect2(size.x, -thick, thick, height + thick * 2.0))
 	_add_box(bodies, "Ceiling", Rect2(0.0, -thick, size.x, thick))
+
+
+## Indicador de paginas en la fila page_dot_row de cada pagina: con una sola,
+## el PageDot de siempre; con varias, un HubPageIndicator por pagina (su punto
+## lleno y los demas en anillo; la 2 «en instalacion», cargando).
+func _build_page_indicators(room: Node2D) -> void:
+	var dot_path: String = String(_room.get("page_dot", ""))
+	if dot_path.is_empty():
+		return
+	var t: float = HubData.tile_size()
+	var y: float = (float(_room.get("page_dot_row", 10)) + 0.5) * t
+	var count: int = get_page_count()
+	if count <= 1:
+		var dot := Sprite2D.new()
+		dot.name = "PageDot"
+		dot.texture = load(dot_path) as Texture2D
+		dot.position = Vector2(get_page_width_px() * 0.5, y)
+		room.add_child(dot)
+		return
+	var loading: int = 0
+	for page: int in range(1, count + 1):
+		if get_page_state(page) == PAGE_INSTALLING:
+			loading = page
+	var other_path: String = String(_room.get("page_dot_other", ""))
+	for page: int in range(1, count + 1):
+		var indicator := HubPageIndicator.new()
+		indicator.name = "PageIndicator%d" % page
+		indicator.count = count
+		indicator.current = page
+		indicator.loading_page = loading
+		indicator.spacing_px = float(_room.get("page_dot_spacing_px", 16))
+		indicator.loading_s = float(_room.get("page_dot_loading_s", 1.2))
+		indicator.current_texture = load(dot_path) as Texture2D
+		indicator.other_texture = load(other_path) as Texture2D if not other_path.is_empty() else null
+		var rect: Rect2i = get_camera_rect(page)
+		indicator.position = Vector2(float(rect.position.x) + get_page_width_px() * 0.5, y)
+		room.add_child(indicator)
+		_page_indicators[page] = indicator
+
+
+## Glitch del borde derecho de la pagina 1 mientras la 2 esta «en instalacion».
+func _build_edge_glitch(room: Node2D) -> void:
+	var cfg: Dictionary = _room.get("edge_glitch", {})
+	if cfg.is_empty() or get_page_count() < 2 or get_page_state(2) != PAGE_INSTALLING:
+		return
+	var t: float = HubData.tile_size()
+	var rows: Array = cfg.get("rows", [5, 8])
+	_edge_glitch = HubEdgeGlitch.new()
+	_edge_glitch.name = "EdgeGlitch"
+	_edge_glitch.position = Vector2(float(cfg.get("col", 19)) * t, float(rows[0]) * t)
+	_edge_glitch.size = Vector2(t, float(int(rows[1]) - int(rows[0]) + 1) * t)
+	var colors: Array[Color] = []
+	for value: Variant in cfg.get("colors", []):
+		colors.append(Color(String(value)))
+	if not colors.is_empty():
+		_edge_glitch.colors = colors
+	_edge_glitch.flicker_every_s = float(cfg.get("flicker_every_s", 1.5))
+	room.add_child(_edge_glitch)
 
 
 ## La pieza del fondo se esta encendiendo (destello tras vencer al jefe).
