@@ -161,6 +161,12 @@ const CAMERA_AUTOSCROLL: StringName = &"autoscroll"
 ## pasiva de Sync 5 y Energia 5 (PassiveRegen) y el Ocultarte (Pulso 4). HubRoom
 ## lo apaga (el hub ya llena las barras y tiene cargador). Tanda M2.
 @export var level_mode: bool = true
+## Gestos en el hub (2026-10-27, paso 3 de docs/propuesta-hub-mundos-4-6.md
+## §2.3): con level_mode falso, el dash, el golpe al suelo y Pellizcar
+## obtenidos funcionan igual si esta bandera es verdadera. La pone
+## HubUpdatePuzzle mientras el acertijo del hub esta activo (y no inerte); la
+## regeneracion pasiva y el Ocultarte siguen solo en los niveles.
+@export var hub_gestures: bool = false
 
 var physics: PlayerPhysics
 var abilities: PlayerAbilities
@@ -917,7 +923,7 @@ func wants_dash() -> bool:
 ## dash, vortice, de espaldas), enfriamiento, sin dash aereo, Debug activo o
 ## cargando y energia insuficiente.
 func dash_denial() -> StringName:
-	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_DASH):
+	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_DASH):
 		return DASH_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
@@ -1061,7 +1067,7 @@ func wants_ground_pound() -> bool:
 ## dash, otro golpe, vortice, de espaldas), enfriamiento, sin soltar desde el
 ## anterior y energia (el golpe es gratis: energy_cost 0).
 func ground_pound_denial() -> StringName:
-	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND):
+	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND):
 		return POUND_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
@@ -1263,7 +1269,7 @@ func get_compress_effect() -> CompressEffect:
 ## al suelo, vortice, de espaldas); energia (si costara; hoy es gratis). Con el
 ## Debug si sale.
 func compress_denial() -> StringName:
-	if not _ready_ok or not level_mode or not GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS):
+	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS):
 		return COMPRESS_DENIED_LOCKED
 	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:

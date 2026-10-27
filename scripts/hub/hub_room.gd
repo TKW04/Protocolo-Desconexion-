@@ -84,6 +84,16 @@
 ## DEBUG (comprobado en el paso 2, tests/test_hub_pages.gd): el Debug obtenido
 ## se puede usar en el hub (las habilidades obtenidas no se tocan; reset() solo
 ## lo apaga al entrar).
+## ACERTIJO «ACTUALIZACION DEL SISTEMA» (2026-10-27, paso 3 de
+## docs/propuesta-hub-mundos-4-6.md §2; data/hub_update.json): con la pagina 2
+## «en instalacion» se monta en ella HubUpdatePuzzle (hijo "UpdatePuzzle",
+## verificaciones V1-V3 e instalador) y un segundo cargador junto a P2
+## (cargador_p2). Mientras esta activo y no inerte (Papelera llena), Isak puede
+## usar en el hub el dash, el golpe al suelo y Pellizcar obtenidos
+## (Isak.hub_gestures). Con 3/3, el pulso al instalador emite
+## update_install_requested (lo consumira el paso 5: la instalacion); hasta
+## entonces nada se instala. Las verificaciones no se guardan: cada visita
+## empieza en 0/3.
 class_name HubRoom
 extends Node2D
 
@@ -101,6 +111,10 @@ signal level_requested(level_id: StringName)
 ## La camara termino de deslizarse a la pagina `page` (audio futuro:
 ## sfx_hub_page_slide, paso 7).
 signal page_changed(page: int)
+## Con 3/3 se ha pulsado el instalador del acertijo de la pagina 2: se pide
+## instalar `upgrade_id` (paso 5 de docs/propuesta-hub-mundos-4-6.md; hoy nadie
+## lo instala todavia).
+signal update_install_requested(upgrade_id: StringName)
 
 ## Estados de una pagina del hub (get_page_state).
 const PAGE_OPEN: StringName = &"open"
@@ -164,6 +178,9 @@ var _sliding: bool = false
 var _slide_tween: Tween
 var _page_indicators: Dictionary[int, HubPageIndicator] = {}
 var _edge_glitch: HubEdgeGlitch
+var _update_puzzle: HubUpdatePuzzle
+var _charger_p2: Charger
+var _update_install_requested: StringName = &""
 
 
 func _enter_tree() -> void:
@@ -207,6 +224,7 @@ func _ready() -> void:
 	_build_charger()
 	_build_stations()
 	_build_folders()
+	_build_update_puzzle()
 	EventBus.ally_met.connect(_on_ally_met)
 	if not rollback_report.is_empty():
 		_game_over_intro = GameOverIntro.new()
@@ -236,6 +254,8 @@ func _ready() -> void:
 		_hud.enable_hub_mode(HubData.section("hud"))
 	_place_isak()
 	_papelera.isak = _isak
+	if _update_puzzle != null:
+		_update_puzzle.set_isak(_isak)
 	# Eco entra con Isak, atenuado (sin cobertura; no guarda ni compra).
 	_companion = EcoCompanion.attach(_isak, self, true)
 	_start_arrival()
@@ -496,6 +516,26 @@ func get_page_indicator(page: int) -> HubPageIndicator:
 ## Glitch del borde derecho de la pagina 1 (null si la 2 no esta en instalacion).
 func get_edge_glitch() -> HubEdgeGlitch:
 	return _edge_glitch
+
+
+## Acertijo de la pagina 2 (null si la pagina 2 no esta en instalacion).
+func get_update_puzzle() -> HubUpdatePuzzle:
+	return _update_puzzle
+
+
+## Cargador del acertijo junto a P2 (null sin acertijo).
+func get_update_charger() -> Charger:
+	return _charger_p2
+
+
+## Upgrade cuya instalacion se ha pedido en esta visita (&"" si ninguno). Lo
+## consumira el paso 5.
+func get_update_install_requested() -> StringName:
+	return _update_install_requested
+
+
+func is_update_install_requested() -> bool:
+	return not _update_install_requested.is_empty()
 
 
 ## Rectangulo que ve la camara en la pagina `page` (por defecto, la actual).
@@ -949,22 +989,57 @@ func _build_charger() -> void:
 	var cfg: Dictionary = HubData.section("charger")
 	if cfg.is_empty():
 		return
+	var t: float = HubData.tile_size()
+	_charger = _make_charger(String(cfg.get("node", "Charger")), StringName(String(cfg.get("id", "cargador_hub"))),
+		Vector2(float(cfg.get("col", 16)) * t, get_floor_y() - t))
+	add_child(_charger)
+	move_child(_charger, 2)
+
+
+## Cargador del hub (seccion charger) con su nombre, id y posicion.
+func _make_charger(node_name: String, id: StringName, at: Vector2) -> Charger:
+	var cfg: Dictionary = HubData.section("charger")
 	var scene := load(String(cfg.get("scene", "res://scenes/levels/charger.tscn"))) as PackedScene
-	_charger = scene.instantiate() as Charger
-	_charger.name = String(cfg.get("node", "Charger"))
-	_charger.object_id = StringName(String(cfg.get("id", "cargador_hub")))
+	var charger := scene.instantiate() as Charger
+	charger.name = node_name
+	charger.object_id = id
 	var catalog: Variant = JSON.parse_string(FileAccess.get_file_as_string(Charger.CONFIG_PATH))
 	if catalog is Dictionary:
 		var type_cfg: Variant = ((catalog as Dictionary).get("types", {}) as Dictionary).get("charger", {})
 		var defaults: Dictionary = (type_cfg as Dictionary).get("defaults", {}) if type_cfg is Dictionary else {}
-		_charger.amount = float(defaults.get("amount", _charger.amount))
-		_charger.reusable = bool(defaults.get("reusable", _charger.reusable))
-		_charger.cooldown_s = float(defaults.get("cooldown_s", _charger.cooldown_s))
-	_charger.frames_path = String(cfg.get("frames", ""))
-	var t: float = HubData.tile_size()
-	_charger.position = Vector2(float(cfg.get("col", 16)) * t, get_floor_y() - t)
-	add_child(_charger)
-	move_child(_charger, 2)
+		charger.amount = float(defaults.get("amount", charger.amount))
+		charger.reusable = bool(defaults.get("reusable", charger.reusable))
+		charger.cooldown_s = float(defaults.get("cooldown_s", charger.cooldown_s))
+	charger.frames_path = String(cfg.get("frames", ""))
+	charger.position = at
+	return charger
+
+
+## Acertijo «Actualizacion del sistema» en la pagina 2 «en instalacion» (paso 3).
+func _build_update_puzzle() -> void:
+	var data: Dictionary = HubUpdatePuzzle.load_data()
+	var page: int = int(data.get("page", 2))
+	if page > get_page_count() or get_page_state(page) != PAGE_INSTALLING:
+		return
+	var origin: Vector2 = Vector2(get_camera_rect(page).position)
+	_update_puzzle = HubUpdatePuzzle.new()
+	_update_puzzle.name = "UpdatePuzzle"
+	_update_puzzle.position = origin
+	add_child(_update_puzzle)
+	move_child(_update_puzzle, 2)
+	_update_puzzle.install_requested.connect(_on_update_install_requested)
+	var cfg: Dictionary = data.get("charger", {})
+	if not cfg.is_empty() and not HubData.section("charger").is_empty():
+		var t: float = HubData.tile_size()
+		_charger_p2 = _make_charger("ChargerP2", StringName(String(cfg.get("id", "cargador_p2"))),
+			origin + Vector2(float(cfg.get("col", 5)) * t, get_floor_y() - t))
+		add_child(_charger_p2)
+		move_child(_charger_p2, 2)
+
+
+func _on_update_install_requested(upgrade_id: StringName) -> void:
+	_update_install_requested = upgrade_id
+	update_install_requested.emit(upgrade_id)
 
 
 func _build_stations() -> void:

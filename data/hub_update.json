@@ -1,0 +1,67 @@
+{
+	"_notes": "Acertijo «Actualizacion del sistema» de la pagina 2 del hub (2026-10-27, paso 3 de docs/propuesta-hub-mundos-4-6.md §2.2-§2.6; lo monta HubUpdatePuzzle, scripts/hub/hub_update_puzzle.gd, cuando la pagina `page` esta «en instalacion»). Celdas [col, fila] LOCALES a la pagina (col 0 = borde izquierdo de la pagina 2, x 1280 de la sala; filas como en la pagina 1: suelo = dock en la fila 9). Posiciones fijadas en este paso con las medidas de data/isak_physics.json (salto 192 px, gravedad 2400 x 1,3 al caer, andar 220 y correr 360 px/s) y del dash (192 px en 0,2 s): desde la plataforma temporal (arriba en y 448) hasta el bloque de V2 (arriba en y 320) hay 5 tiles de hueco: corriendo sin dash llegan unos 253 px (con coyote) de los 288 que hacen falta; andando con dash aereo unos 325. El bloque esta a 256 px sobre el suelo (no se llega de un salto). El validador (paso 4) dara las cifras exactas. Las verificaciones no se guardan: se reinician en cada visita (§2.6). Con la Papelera llena todo queda inerte (§2.5). Textos: SOLO los minimos para depurar, PROVISIONALES (los definitivos y las pistas son del paso 6). Arte: PROVISIONAL por codigo (el definitivo es del paso 7).",
+	"upgrade": "hub_update_4_6",
+	"page": 2,
+	"colors": {
+		"_notes": "Color del Debug de cada mundo (CLAUDE.md): cian del hub (acento_cian), ambar del Mundo 2 y verde acido del Mundo 3. Sin rojo.",
+		"v1": "#3dfff5",
+		"v2": "#ffa858",
+		"v3": "#a6ff2e"
+	},
+	"texts": {
+		"_notes": "PROVISIONALES (para depurar; los textos finales y las pistas son del paso 6). {n} y {total}: verificaciones hechas y totales. trash: el mismo texto que las carpetas (folders.texts.trash_blocked_text).",
+		"title": "Actualización del sistema",
+		"progress": "Verificaciones {n}/{total}",
+		"missing": "Falta: {names}",
+		"ready": "Listo para instalar (provisional)",
+		"trash": "Recupera tus archivos de la papelera",
+		"names_separator": ", "
+	},
+	"checks": [
+		{"id": "v1", "name": "Integridad", "color": "v1", "mode": "linked", "cell": [2, 7]},
+		{"id": "v2", "name": "Búfer", "color": "v2", "mode": "pulse", "cell": [19, 3]},
+		{"id": "v3", "name": "Recorte", "color": "v3", "mode": "pulse", "cell": [19, 7]}
+	],
+	"installer": {
+		"_notes": "Estacion HubInstaller (HubStation de 2 x 3 tiles; celda de arriba a la izquierda). Con 3/3, un pulso pide la instalacion (HubInstaller.install_requested / HubRoom.update_install_requested); la instalacion la hace el paso 5. Con menos, el panel dice cuantas van y cuales faltan.",
+		"cell": [7, 6],
+		"size_tiles": [2, 3]
+	},
+	"charger": {
+		"_notes": "cargador_p2: el mismo cargador del hub (seccion charger de data/hub.json) junto a la llegada P2 (col 4).",
+		"id": "cargador_p2",
+		"col": 5
+	},
+	"v1": {
+		"_notes": "V1 cian «Integridad»: lector1 (laser_receiver con revealed_only_with_debug: solo se ve y se le apunta con el Debug) en la pared con glitch; su cable sube a RE (relay_receiver) sobre la repisa de una via de 160 px; ventana de 6 s. Cable: celdas locales (se suman al offset de la pagina).",
+		"reader_cell": [1, 8],
+		"window_s": 6.0,
+		"cable_cells": [[1, 4], [4, 4]],
+		"glitch_cell": [1, 7],
+		"glitch_size_tiles": [1, 2],
+		"shelf_cols": [3, 6],
+		"shelf_height_px": 160,
+		"relay_col": 4
+	},
+	"v2": {
+		"_notes": "V2 ambar «Bufer»: placa de golpe al suelo (pound_plate) en la celda plate_cell; la plataforma «Cargando...» sube en platform_cols con el borde de arriba en platform_top_px (128 px sobre el suelo) up_s s con aviso de warn_s; V2 en el bloque alto (block de terrain).",
+		"plate_cell": [9, 8],
+		"platform_cols": [10, 11],
+		"platform_top_px": 448,
+		"platform_thickness_px": 16,
+		"up_s": 3.0,
+		"warn_s": 0.5
+	},
+	"v3": {
+		"_notes": "V3 verde acido «Recorte»: laser desde el suelo (columna 15 o menos) al espejo «/» del suelo de la columna 16; rebota hacia ARRIBA a lector3 (desvio de §2.3, que decia hacia abajo: el laser solo sale de pie y en horizontal). Al darle, el marco pequeno del nicho se ilumina y quita la barrera del hueco (permanente durante la visita). Hueco de 1 tile en frame_cell (solo se pasa comprimido); el nicho mide 2 tiles de alto por dentro.",
+		"mirror_cell": [16, 8],
+		"mirror_orientation": "/",
+		"reader_cell": [16, 5],
+		"frame_cell": [17, 8]
+	},
+	"terrain": {
+		"_notes": "Terreno solido de la pagina (rectangulos de celdas [col, fila, ancho, alto]): block = bloque de arriba del nicho, cuya cara de arriba (y 320) es la repisa de V2; niche_wall = pared del nicho encima del hueco. La barrera del hueco (frame_cell de v3) existe hasta que lector3 recibe el laser.",
+		"block": [17, 5, 3, 2],
+		"niche_wall": [17, 7, 1, 1]
+	}
+}

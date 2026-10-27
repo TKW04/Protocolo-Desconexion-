@@ -6,7 +6,11 @@
 ##   02_pagina1_con_3boss.png     con 3-boss: glitch del borde derecho e indicador de 2 puntos
 ##                                (el segundo cargando); Isak junto al borde
 ##   03_deslizando.png            la camara a mitad del deslizamiento a la pagina 2
-##   04_pagina2_en_instalacion.png pagina 2 «en instalacion» (sala vacia, fondo provisional)
+##   04_pagina2_en_instalacion.png pagina 2 «en instalacion» con el acertijo montado (paso 3:
+##                                V1-V3, instalador 0/3, cargador; arte provisional)
+##   05_acertijo_en_marcha.png    (paso 3) con el Debug activo (lector1 visible), la
+##                                plataforma «Cargando...» arriba, el marco del nicho
+##                                iluminado y V1 encendida (instalador 1/3)
 ## Necesita ventana (no funciona con --headless).
 ## Uso: Godot --path . -s tools/render_hub_pages.gd [-- carpeta_salida]
 extends SceneTree
@@ -31,7 +35,8 @@ func _run() -> void:
 	state.call(&"use_save_path", SAVE_PATH, true)
 	state.call(&"meet_ally", &"eco")
 	state.call(&"meet_ally", &"notas")
-	state.call(&"obtain_ability", &"pulse")
+	for ability: StringName in [&"pulse", &"laser", &"debug", &"dash", &"ground_pound", &"compress"]:
+		state.call(&"obtain_ability", ability)
 	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss", &"2-1", &"2-2", &"2-3", &"2-boss",
 			&"3-1", &"3-2", &"3-3"]:
 		state.call(&"mark_level_completed", id)
@@ -59,6 +64,22 @@ func _run() -> void:
 	await _frames(40)
 	_check(int(hub.call(&"get_current_page")) == 2, "no llega a la pagina 2")
 	await _save(out_dir, "04_pagina2_en_instalacion.png")
+	# 5. Acertijo en marcha (paso 3).
+	var puzzle: Node = hub.call(&"get_update_puzzle")
+	_check(puzzle != null, "sin acertijo en la pagina 2")
+	if puzzle != null:
+		var debug: Node = root.get_node(^"DebugMode")
+		debug.set(&"input_enabled", false)
+		for i: int in 120:
+			debug.call(&"step", 1.0 / 60.0, true)
+		(puzzle.call(&"get_plate") as Node).call(&"press")
+		(puzzle.call(&"get_reader3") as Node).call(&"power")
+		(puzzle.call(&"get_check", &"v1") as Node).call(&"complete")
+		isak.global_position = Vector2(20.0 * TILE + 4.5 * TILE, isak.global_position.y)
+		await _frames(30)
+		await _save(out_dir, "05_acertijo_en_marcha.png")
+		debug.call(&"reset")
+		debug.set(&"input_enabled", true)
 	hub.free()
 	SaveFile.delete(SAVE_PATH)
 	quit(0 if _ok else 1)

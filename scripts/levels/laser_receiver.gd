@@ -13,6 +13,11 @@
 ##   lector vuelve a estar listo: lo temporal vuelve solo (sin castigo).
 ## - Cuando el receptor se activa (complete()), el lector queda HECHO: cable
 ##   encendido fijo, sin Q (lo usado no ayuda) y los impactos ya no hacen nada.
+## OCULTO (2026-10-27, revealed_only_with_debug; lector1 del acertijo del hub,
+## docs/propuesta-hub-mundos-4-6.md §2.3): solo se ve y solo es objetivo del
+## laser mientras el Debug revela (DebugMode.is_revealing(), como las
+## plataformas ocultas); el cable se ve siempre (es la pista). Por defecto
+## falso: los lectores de los niveles no cambian.
 ## El origen del nodo es la esquina superior izquierda de su celda.
 class_name LaserReceiver
 extends Area2D
@@ -38,6 +43,8 @@ signal completed
 ## Recorrido del cable en celdas del grid ([[col, fila], ...], absolutas): de
 ## la salida del lector a la entrada del receptor pasando por estos centros.
 @export var cable_cells: Array = []
+## Solo visible y alcanzable con el Debug (ver cabecera).
+@export var revealed_only_with_debug: bool = false
 
 var _config: Dictionary = World1ObjectsConfig.section("laser_receiver")
 var _state: State = State.READY
@@ -71,9 +78,11 @@ func _ready() -> void:
 	_update_sprite()
 	_cable.queue_redraw.call_deferred()
 	EventBus.laser_fired.connect(_on_laser_fired)
+	_update_reveal()
 
 
 func _process(delta: float) -> void:
+	_update_reveal()
 	advance(WorldTime.scaled_delta(delta))
 
 
@@ -128,7 +137,12 @@ func get_hit_count() -> int:
 
 ## Ayuda de Eco (HelpCatalog.is_help_live): lo usado no ayuda; con su receptor ya activado, no.
 func is_help_available() -> bool:
-	return _state != State.DONE
+	return _state != State.DONE and is_targetable()
+
+
+## Se ve y el laser lo alcanza (siempre, salvo un lector oculto sin el Debug).
+func is_targetable() -> bool:
+	return not revealed_only_with_debug or DebugMode.is_revealing()
 
 
 ## Zona de impacto en coordenadas locales.
@@ -155,6 +169,8 @@ func get_cable() -> LaserCable:
 
 ## Impacto del laser (LaserProjectile): da corriente (o rellena la ventana).
 func on_laser_hit(_damage: float, _source: Node) -> void:
+	if not is_targetable():
+		return
 	_hits += 1
 	power()
 
@@ -193,6 +209,16 @@ func _update_sprite() -> void:
 		_cable.queue_redraw()
 
 
+## Lector oculto: sprite y colision solo con el Debug revelando.
+func _update_reveal() -> void:
+	if not revealed_only_with_debug:
+		return
+	var shown: bool = is_targetable()
+	collision_layer = LAYER_WORLD if shown else 0
+	if _sprite != null:
+		_sprite.visible = shown
+
+
 static func _vec(raw: Variant) -> Vector2:
 	if raw is Array and (raw as Array).size() >= 2:
 		return Vector2(float(raw[0]), float(raw[1]))
@@ -202,6 +228,6 @@ static func _vec(raw: Variant) -> Vector2:
 ## Isak dispara pegado al objetivo (el celular ya esta dentro de el o de la
 ## pared de detras): el rayo no lo veria, asi que el proyectil choca ya.
 func _on_laser_fired(projectile: Node2D) -> void:
-	if _state != State.DONE and is_inside_tree() and projectile is LaserProjectile \
+	if _state != State.DONE and is_targetable() and is_inside_tree() and projectile is LaserProjectile \
 			and LaserProjectile.muzzle_crosses(projectile, get_hit_rect()):
 		(projectile as LaserProjectile).strike(self)
