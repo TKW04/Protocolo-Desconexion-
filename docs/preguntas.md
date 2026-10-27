@@ -1110,6 +1110,7 @@ El Mundo 3 «La Vitrina» se hizo con las decisiones delegadas al orquestador (`
 - Mensajes de secreto `msg_3_1` («La tele»), `msg_3_2` y `msg_3_3` («Fondo de pantalla»), de Mamá, y la capa Caché `boss_w3_l1` «Fragmento de imagen» (`data/memories.json`).
 - Línea de Calc la primera vez que se llega del 3-1: «Likes canjeables: 0. Ya lo sabía.» (`data/hub.json`).
 - Carteles (`feed_sign`): «Mi vida es increíble #bendecido» (3-1, lleva la Q del contador de likes) y «Tu mejor ángulo es el de otro» (3-3); línea del marco del 3-1.
+- Legibilidad de la fase 2 de La Curadora (2026-10-27, un jugador no la entendió; sin cambiar diseño ni números): línea de Eco sin pausa en la primera ventana de la fase 2, «El espejo del suelo te sigue. Cuando mire en diagonal a la esquina: Debug, pulso y láser.» (`texts.window2_hint` de `data/bosses/curator.json`, PROPUESTA; sale arriba para no tapar al cazador), y frase nueva en la Q del espejo cazador, «En diagonal a un espejo de esquina, lo que le mandes sube por él.» (`data/help.json`, PROPUESTA). Además, contorno dorado que late en el cazador solo con la ventana abierta y camino dorado solo dentro de la ventana; captura en `docs/capturas/curadora-fase2-2026-10-27/`.
 
 **Paleta**
 - Elegida la variante **B «Terciopelo de trastienda»** (`assets/palettes/mundo3.gpl`); A «Ciruela y oro viejo» y C «Lavanda gris y champán» quedan en la comparativa `docs/arte/mundo3_paleta_variantes.png` (métricas en `propuesta-mundo-3.md` §8.1, paso 9).

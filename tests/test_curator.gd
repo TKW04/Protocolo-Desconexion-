@@ -285,6 +285,38 @@ func test_phase2_mark_by_the_hunter_only_with_debug_and_aimed_at_a_corner() -> v
 	assert_true(core.is_marked(), "Tambien por la esquina derecha")
 
 
+# Legibilidad de la fase 2 (2026-10-27): contorno dorado del cazador y camino
+# dorado solo con la ventana abierta; Eco lo explica en la primera ventana.
+func test_phase2_window_glow_route_and_eco_hint() -> void:
+	await _setup()
+	var lines: Array[String] = []
+	var on_line := func(text: String, _d: float, important: bool) -> void:
+		assert_false(important, "La pista de Eco no pausa")
+		lines.append(text)
+	EventBus.eco_line_requested.connect(on_line)
+	_to_phase(2)
+	_debug_on()
+	_hunter.set_rest_facing("nw")
+	assert_false(_boss.is_window_open())
+	assert_false(_boss.is_window_glow_visible(), "Sin ventana, sin contorno")
+	_hunter.fire_beam()
+	assert_eq(_boss.get_route().size(), 0, "Sin ventana no se dibuja el camino")
+	var before: int = lines.size()
+	_boss.open_window(5.0)
+	assert_true(_boss.is_window_glow_visible(), "Ventana abierta: el cazador late")
+	assert_true(_boss.was_window2_hint_said())
+	assert_eq(lines.size(), before + 1, "Una linea de Eco al abrirse")
+	assert_true(lines[-1].contains("diagonal"), lines[-1])
+	_hunter.fire_beam()
+	assert_eq(_boss.get_route().size(), 3, "Con la ventana, el camino dorado")
+	_boss.close_window()
+	assert_false(_boss.is_window_glow_visible(), "Al cerrarse, sin contorno")
+	_boss.open_window(5.0)
+	assert_eq(lines.size(), before + 1, "Solo en la primera ventana")
+	_boss.close_window()
+	EventBus.eco_line_requested.disconnect(on_line)
+
+
 func test_phase2_laser_by_the_hunter_is_one_hit_per_mark() -> void:
 	await _setup()
 	_to_phase(2)

@@ -94,6 +94,8 @@ var _hint_time: float = 0.0
 var _hint: Label
 ## Quien dice la linea actual (vacio = Eco).
 var _speaker_id: StringName = &""
+## La linea en pantalla va arriba aunque haya un jefe (show_line con `top`).
+var _force_top: bool = false
 ## Iconos en linea de la linea actual: {node: TextureRect, index: posicion en _wrapped, id}.
 var _inline: Array[Dictionary] = []
 ## Estilo de la linea actual (vacio = Eco), su velocidad y sus caracteres de golpe.
@@ -150,9 +152,13 @@ func _exit_tree() -> void:
 ## normales (la normal en pantalla vuelve a la cola, a la cabeza de las normales).
 ## El marcador {apodo} (GameState.NICKNAME_TAG) se sustituye por el apodo.
 ## `speaker`: id de speakers de data/eco_text_box.json (vacio = Eco).
-func show_line(text: String, duration_s: float = -1.0, important: bool = false, speaker: StringName = &"") -> void:
+## `top`: arriba aunque haya un jefe activo (una pista que no debe tapar lo que
+## explica abajo; fase 2 de La Curadora, 2026-10-27).
+func show_line(text: String, duration_s: float = -1.0, important: bool = false, speaker: StringName = &"",
+		top: bool = false) -> void:
 	text = GameState.apply_nickname(text)
-	var item: Dictionary = {"text": text, "duration_s": duration_s, "important": important, "speaker": speaker}
+	var item: Dictionary = {"text": text, "duration_s": duration_s, "important": important, "speaker": speaker,
+		"top": top}
 	if not important:
 		_queue.append(item)
 	else:
@@ -439,6 +445,7 @@ func _start_next() -> void:
 		_release_pause()
 	_text = TextMarkers.apply(String(item["text"]), _config.inline_icons)
 	_apply_speaker(StringName(item.get("speaker", &"")))
+	_force_top = bool(item.get("top", false))
 	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
 	_wrapped = LINE_BREAK.join(_lines)
 	_build_steps()
@@ -489,7 +496,7 @@ func _preempt_current() -> void:
 	var speaker: StringName = _speaker_id
 	if _phase != Phase.CLOSING:
 		_queue.insert(_first_normal_index(), {"text": _text, "duration_s": _current_duration, "important": false,
-			"speaker": speaker})
+			"speaker": speaker, "top": _force_top})
 	_clear_line()
 	if speaker == &"":
 		EventBus.eco_line_finished.emit()
@@ -645,7 +652,7 @@ func _layout() -> void:
 		width = clampi(maxi(width, _text_left() + hint_w + c.padding_px), c.min_width_px, c.width_px)
 	_panel.size = Vector2(width, height)
 	var top: float = c.top_px
-	if is_boss_layout():
+	if is_boss_layout() and not _force_top:
 		top = _frame.size.y - height - c.boss_bottom_px
 	_panel.position = Vector2(floorf((_frame.size.x - width) * 0.5), top)
 	var left: int = _text_left()

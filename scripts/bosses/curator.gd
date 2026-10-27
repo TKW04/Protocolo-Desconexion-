@@ -156,6 +156,10 @@ var _reflection_wait: Array[float] = []
 # Camino del cazador (fase 2) que se dibuja un momento.
 var _route: PackedVector2Array = PackedVector2Array()
 var _route_left: float = 0.0
+## El camino se mostro con la ventana abierta (solo entonces se dibuja; legibilidad de la fase 2, 2026-10-27).
+var _route_in_window: bool = false
+## Ya se dijo la linea de Eco de la primera ventana de la fase 2 (una vez por pelea).
+var _window2_hint_said: bool = false
 # Ayudas Q de la lente y del marco que se cierra, y musica de la pelea (paso 19).
 var _lens_help: HelpMarker
 var _closing_help: HelpMarker
@@ -353,8 +357,16 @@ func get_hunter() -> HunterMirror:
 
 
 ## Camino que se dibuja (cazador -> espejo de esquina -> espalda); vacio si no.
+## Solo con la ventana abierta: fuera de ella el cazador no lleva a ninguna parte
+## (legibilidad de la fase 2, 2026-10-27).
 func get_route() -> PackedVector2Array:
-	return _route if _route_left > 0.0 else PackedVector2Array()
+	return _route if _route_left > 0.0 and _route_in_window else PackedVector2Array()
+
+
+## Fase 2 con la ventana abierta: el cazador late con un contorno dorado (lo unico
+## que dice, sin el Debug, que ahora el camino por la esquina vale; 2026-10-27).
+func is_window_glow_visible() -> bool:
+	return is_fighting() and not _off and get_phase() == 2 and is_window_open() and get_hunter() != null
 
 
 ## Lado del espejo de esquina al que mira el cazador ("" si a ninguno).
@@ -504,6 +516,7 @@ func _on_window_opened(_duration_s: float) -> void:
 	if phase_index == 2:
 		var back: Array = _arena.get("back_core_px", [640, 88])
 		_core.global_position = _to_global(Vector2(float(back[0]), float(back[1])))
+		_say_window2_hint()
 	else:
 		_window_side = _choose_window_side()
 		var at: Array = (_arena.get("window_core_px", {}) as Dictionary).get(_window_side, [448, 326])
@@ -833,11 +846,35 @@ func _show_route(side: String) -> void:
 	var hunter: HunterMirror = get_hunter()
 	if hunter == null:
 		return
+	# Antes de que el golpe cierre la ventana: la linea del golpe si se ve.
+	_route_in_window = is_window_open()
 	var back: Array = _arena.get("back_core_px", [640, 88])
 	_route = PackedVector2Array([hunter.get_center(), get_corner_center(side),
 		_to_global(Vector2(float(back[0]), float(back[1])))])
 	_route_left = 0.4
 	route_shown.emit(side)
+
+
+## Linea de Eco (Eco, no la Curadora; sin pausa) en la primera ventana de la
+## fase 2: texts.window2_hint de data/bosses/curator.json (PROPUESTO). Una vez por
+## pelea; sale aunque las ayudas esten ocultas (como los guiones de Eco).
+func _say_window2_hint() -> void:
+	if _window2_hint_said:
+		return
+	var text: String = String(_texts.get("window2_hint", ""))
+	if text.is_empty():
+		return
+	_window2_hint_said = true
+	var box: Node = _text_box()
+	if box != null:
+		# Arriba: abajo taparia justo al cazador (2026-10-27).
+		box.call(&"show_line", text, -1.0, false, &"", true)
+	else:
+		EventBus.eco_line_requested.emit(text, -1.0, false)
+
+
+func was_window2_hint_said() -> bool:
+	return _window2_hint_said
 
 
 # --- Fase 3: marcos que se cierran y Reflejos falsos ---
@@ -1301,6 +1338,11 @@ class CuratorFx extends Node2D:
 		var route: PackedVector2Array = boss.get_route()
 		if route.size() >= 2:
 			draw_polyline(route, Color(gold, 0.85), 6.0)
+		if boss.is_window_glow_visible():
+			# Ventana abierta de la fase 2: contorno dorado que late en el cazador.
+			var beat: float = 0.5 + 0.5 * sin(boss._art_t * TAU * 1.5)
+			var hr: Rect2 = boss.get_hunter().get_hit_rect().grow(6.0 + 3.0 * beat)
+			draw_rect(hr, Color(gold, 0.5 + 0.45 * beat), false, 3.0)
 		if boss.get_phase() == 3:
 			var p3b: Dictionary = boss.phase_data(3)
 			var vp: Rect2 = Rect2(boss._to_global(Vector2.ZERO), Vector2(20.0, 11.0) * boss._tile)
