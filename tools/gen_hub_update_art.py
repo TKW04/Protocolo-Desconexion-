@@ -5,8 +5,9 @@ docs/propuesta-hub-mundos-4-6.md §2.2, §3.1 y §5.1). Arte PROVISIONAL por scr
 Lo que solo usa los colores del hub (fondo de las paginas 2 y 3, carpetas M4-M6, candado de La Nube e
 instalador) va en tools/gen_hub_objects.py. Aqui va lo que lleva los colores del Debug de cada mundo:
 paleta del hub (assets/palettes/hub.gpl) + debug_ambar del Mundo 2 (#ffa858, mundo2.gpl) + debug_verde
-del Mundo 3 (#a6ff2e, mundo3.gpl) + el CORAL PROVISIONAL de la pieza 4 (#ff7f66: la paleta del Mundo 4
-sigue abierta, decision del usuario; al cerrarla se cambia CORAL y se regenera). Sin rojo (en el hub nada
+del Mundo 3 (#a6ff2e, mundo3.gpl) + el CORAL de la pieza 4 (#ff9f7a «coral melocoton», decidido por el
+usuario el 2026-10-27, docs/propuesta-mundo-4.md §10.1; antes #ff7f66 provisional; es el debug_coral de
+tools/palette_mundo4_provisional.py, que comprueba que coinciden). Sin rojo (en el hub nada
 hace dano). Arte a 1 px logico y x2 en pantalla, alfa 0 o 255. En assets/sprites/hub_update/:
 
   update_check_<v1|v2|v3>_<off_00|done_00|done_01|inert_00>.png   64x128  verificaciones (UpdateCheck):
@@ -22,7 +23,7 @@ hace dano). Arte a 1 px logico y x2 en pantalla, alfa 0 o 255. En assets/sprites
         hub_update_install.bar_size_px de data/hub.json) y install_bar_fill_<0|1|2>_00.png (un tercio de la
         barra en el color de cada verificacion).
   hub_piece_w4_<hidden_00|off_00|off_01|on_00>.png + hub_piece_w4_frames.tres   pieza 4 del fondo en
-        coral PROVISIONAL (capa encima del fondo con las piezas 1-3 encendidas, como
+        coral (capa encima del fondo con las piezas 1-3 encendidas, como
         tools/gen_hub_piece_w3.py: base = gen_hub_piece_w3.compose('on'), lo comprueba main).
 
 Uso: python3 -I tools/gen_hub_update_art.py [--check] [--preview <png>]
@@ -53,7 +54,7 @@ CLEAR = gh.CLEAR
 Canvas = gh.Canvas
 AMBAR = gh.load_gpl(os.path.join(REPO, "assets", "palettes", "mundo2.gpl"))["debug_ambar"]
 VERDE = gh.load_gpl(os.path.join(REPO, "assets", "palettes", "mundo3.gpl"))["debug_verde"]
-CORAL = (0xff, 0x7f, 0x66, 255)  # PROVISIONAL: hex del Mundo 4 sin decidir (decision del usuario)
+CORAL = (0xff, 0x9f, 0x7a, 255)  # Debug del Mundo 4 (decidido 2026-10-27; = debug_coral de palette_mundo4_provisional.py)
 PALETTE = {c[:3] for c in gh.PAL.values()} | {AMBAR[:3], VERDE[:3], CORAL[:3]}
 RESERVED = {(0xdc, 0x00, 0x00), (0xff, 0x38, 0x38)}
 CHECK_COLORS = {"v1": CA, "v2": AMBAR, "v3": VERDE}  # = colors de data/hub_update.json (lo comprueba main)
@@ -257,7 +258,7 @@ def install_bar_fill(index):
     return cv.x2()
 
 
-# ------------------------------------------------------------- pieza 4 del fondo (coral PROVISIONAL)
+# ------------------------------------------------------------- pieza 4 del fondo (coral #ff9f7a)
 PIECE4 = 3  # indice en gh.PIECES: la pieza grande de abajo a la izquierda
 LIT4 = {gh.GA: CORAL, gh.GF: TC, gh.BA: AS, gh.DK: AS}
 

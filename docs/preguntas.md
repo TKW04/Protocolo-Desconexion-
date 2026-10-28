@@ -179,12 +179,13 @@ Análisis de `docs/original/diseno.md` (v2), contrastado con `CLAUDE.md` y los s
 - **Propuesta:** 3 golpes al punto débil por fase, siempre con el pulso, salvo que la ficha diga otra cosa (por ejemplo, el Mundo 2 usa "mantener presionado").
 - **Por qué:** es una regla uniforme que se puede ajustar jugando.
 
-### V15 [APLAZADO] Responder o no en el 4-3
+### V15 [RESUELTO 2026-10-28] Responder o no en el 4-3
 - **Sección:** §9.6 (Cierre: "Isak atraviesa la puerta sin responder, o no") y §14.4 (el epílogo depende de las conversaciones secretas).
 - **Problema:** "o no" sugiere una elección del jugador que no tiene mecánica ni consecuencias definidas.
 - **Propuesta:** preguntar al usuario. No implementar nada hasta que se decida.
 - **Por qué:** es una decisión narrativa, no técnica.
 - **Decisión (2026-10-14):** [APLAZADO] "se decide al llegar al Mundo 4; probablemente cambie con el desarrollo".
+- **Decisión (2026-10-28, usuario):** en Caché no hay elección en el 4-3: al pulsar la puerta «Responder más tarde» el campo de respuesta parpadea y sale «Sin conexión» (Eco no deja enviar); Isak sale sin responder. La respuesta llega en Raíz, ligada al epílogo (`propuesta-mundo-4.md` §10.2).
 
 ### V16 [Fuera del slice] Recuerdos coleccionables frente a fragmentos
 - **Sección:** §6.4, §7.4, §8.5 y otras ("recuerdo coleccionable"), frente a los fragmentos de los jefes y a Notas (§13.3).
@@ -1181,7 +1182,7 @@ El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicie
 - Decisiones del orquestador de las pistas: ver «Hub Mundos 4-6, paso 6», arriba.
 
 **Arte y audio provisionales**
-- **Coral de la pieza 4: `#ff7f66`, PROVISIONAL** (la paleta del Mundo 4 sigue abierta; al decidirla se cambia `CORAL` en `tools/gen_hub_update_art.py` y se regenera).
+- ~~**Coral de la pieza 4: `#ff7f66`, PROVISIONAL**~~ **Decidido por el usuario el 2026-10-28: `#ff9f7a`** (opción B «Coral melocotón», `propuesta-mundo-4.md` §10.1); `CORAL` de `tools/gen_hub_update_art.py` cambiado y pieza regenerada (paso 0 del Mundo 4).
 - Arte por script: fondos de las páginas 2 y 3, carpetas M4-M6, candado, instalador y su decorado (`tools/gen_hub_objects.py`); verificaciones con sus **pictogramas** (V1 Debug + láser, V2 golpe al suelo + Deslizar, V3 láser + Pellizcar), placa, plataforma, glitch, barra y pieza 4 (`tools/gen_hub_update_art.py`). El destello es un velo blanco por código.
 - Audio provisional, 5 IDs nuevos (los definitivos, con el mismo nombre): `sfx_hub_update_check`, `sfx_hub_install_bar`, `sfx_hub_install`, `sfx_hub_page_slide` y `sfx_hub_folder_locked`. Reutilizados: `sfx_laser_denied` (verificación que rechaza) y `sfx_w3_pose_plate` (placa).
 

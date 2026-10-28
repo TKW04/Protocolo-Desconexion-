@@ -54,7 +54,7 @@ El fondo de pantalla del hub es una foto rota en cinco piezas, una por cada frag
 | **Primera llegada (Mundo 1)** | Hub apagado y casi vacío. Se ilumina una pieza del fondo, en cian. |
 | **Mundo 2 completado** | Segunda pieza, en ámbar. ~~Llega Notas~~ (Notas llega en la primera visita, 2026-10-15 (3)) y el hub tiene más vida. |
 | **Mundo 3 completado** | Tercera pieza, en verde ácido. |
-| **Mundo 4 completado** | Cuarta pieza, en coral. **[2026-10-27]:** desde la instalación del upgrade del hub la pieza 4 ya se ve como contorno que parpadea (M4 disponible) y se enciende al completar el Mundo 4; coral **provisional** `#ff7f66` mientras la paleta del Mundo 4 siga abierta. ~~Llegan Linterna y Papelera~~ (2026-10-15 (3): Linterna llega en el X-1 del mundo oscuro y Papelera en su primer uso) y el hub se llena de voces. |
+| **Mundo 4 completado** | Cuarta pieza, en coral. **[2026-10-27]:** desde la instalación del upgrade del hub la pieza 4 ya se ve como contorno que parpadea (M4 disponible) y se enciende al completar el Mundo 4; coral `#ff9f7a` (decidido por el usuario el 2026-10-28; antes `#ff7f66` provisional). ~~Llegan Linterna y Papelera~~ (2026-10-15 (3): Linterna llega en el X-1 del mundo oscuro y Papelera en su primer uso) y el hub se llena de voces. |
 | **Mundo 5 completado** | Quinta pieza, en blanco. El fondo está completo, y es la foto que Isak tenía antes de entrar al celular. |
 | **La Nube abierta** | El silencio se rompe: Eco intenta entrar, y empiezan a aparecer notificaciones en el borde de la pantalla. |
 

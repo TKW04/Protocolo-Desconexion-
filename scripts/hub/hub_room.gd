@@ -105,8 +105,8 @@
 ## de cada pagina salen de HubWorlds.folder_worlds(pagina) con su `col` local a
 ## la pagina; las ocultas (requires_upgrade sin instalar) no se construyen.
 ## Pieza 4: desde el paso 7, arte por script (frames de tools/gen_hub_update_art.py,
-## hub_piece_w4_frames.tres) en CORAL PROVISIONAL #ff7f66 (la paleta del Mundo 4
-## sigue abierta); el contorno por codigo (room.pieces con `provisional`) queda de
+## hub_piece_w4_frames.tres) en el coral del Mundo 4 #ff9f7a (decidido por el
+## usuario el 2026-10-27; antes #ff7f66 provisional); el contorno por codigo (room.pieces con `provisional`) queda de
 ## respaldo si faltan los frames.
 ## TEXTOS Y PISTAS (2026-10-27, paso 6 de docs/propuesta-hub-mundos-4-6.md):
 ## comentario de Calc al volver de 3-boss (calc.remarks con
@@ -853,7 +853,7 @@ func _make_provisional_piece(piece: AnimatedSprite2D, cfg: Dictionary) -> void:
 	var art := _ProvisionalPiece.new()
 	art.name = "ProvisionalArt"
 	art.piece = piece
-	art.color = Color(String(cfg.get("color", "#ff7f66")))
+	art.color = Color(String(cfg.get("color", "#ff9f7a")))
 	for p: Variant in cfg.get("polygon_px", []):
 		art.polygon.append(Vector2(float((p as Array)[0]), float((p as Array)[1])))
 	piece.add_child(art)
@@ -1400,7 +1400,7 @@ func _swap_to_level() -> void:
 class _ProvisionalPiece:
 	extends Node2D
 	var piece: AnimatedSprite2D
-	var color: Color = Color("#ff7f66")
+	var color: Color = Color("#ff9f7a")
 	var polygon: PackedVector2Array = PackedVector2Array()
 
 	func _draw() -> void:

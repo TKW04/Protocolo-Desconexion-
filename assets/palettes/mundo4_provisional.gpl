@@ -1,0 +1,39 @@
+GIMP Palette
+Name: Mundo 4 El Chat - PROVISIONAL (solo desarrollo, hex sin cerrar salvo el coral)
+Columns: 4
+# PROVISIONAL: colores de desarrollo del Mundo 4, sin cerrar (el usuario elige variante en el paso 10); el coral del Debug esta decidido (#ff9f7a).
+# Generado por tools/palette_mundo4_provisional.py
+# chat_noche: Contorno oscuro (puntos de atencion, siluetas), sombra profunda, velo del Modo oscuro
+ 15  20  34	chat_noche
+# marino_fondo: Fondo del chat: azul marino de madrugada (marino de referencia de §6.1)
+ 26  34  56	marino_fondo
+# marino_medio: Fondo medio: lista de chats en paralaje
+ 36  48  80	marino_medio
+# marino_luz: Luz de pantalla del fondo, avatares apagados
+ 52  68 106	marino_luz
+# gris_oscuro: Barra de escribir (suelo), paredes de la lista de chats; velo del congelado
+ 60  66  80	gris_oscuro
+# gris_medio: Bordes, sellos de hora
+107 114 128	gris_medio
+# gris_claro: Texto secundario, check gris «sin leer»
+169 174 187	gris_claro
+# blanco_pantalla: Brillos de la pantalla, destellos
+244 246 250	blanco_pantalla
+# crema: Burbujas de mensaje (plataformas) y puntos del «escribiendo…»
+238 228 204	crema
+# crema_sombra: Sombra y borde de las burbujas
+184 173 148	crema_sombra
+# verde_apagado: Acento: checks del «Visto», ola «Leído» (saturacion <= 40 %)
+125 154 128	verde_apagado
+# verde_sombra: Sombra del verde apagado
+ 77 100  82	verde_sombra
+# alerta: Rojo de dano (el del Mundo 1, reservado)
+255  74  42	alerta
+# alerta_sombra: Sombra de lo rojo; contorno de lo que dana en la oscuridad y bajo el congelado
+163  34  28	alerta_sombra
+# ambar: Puntos de atencion (el del Mundo 1, reservado)
+255 160   0	ambar
+# ambar_sombra: Sombra de los puntos de atencion (reservado)
+168  95   0	ambar_sombra
+# debug_coral: Debug del Mundo 4: coral melocotón (DECIDIDO; debug_colors["4"] de data/hud.json)
+255 159 122	debug_coral
