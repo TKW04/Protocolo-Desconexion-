@@ -64,9 +64,9 @@
 	"falling_bubbles": {"count": 3, "spread_cols": 3, "warn_frames": 9, "fall_s": 0.5, "damage": 10.0, "width_tiles": 1},
 	"seen_zones": {"count": 2, "width_tiles": 2, "warn_frames": 9, "active_s": 3.0, "freeze_s": 1.5},
 	"seen_sweep": {"interval_s": 7.0, "warn_frames": 9, "active_s": 2.0, "freeze_s": 1.5},
-	"phase1": {"first_delay_s": 1.5, "attacks": ["ghost_dash", "falling_bubbles", "ghost_dash", "seen_zones"], "attack_gap_s": 1.5, "window_s": 1.2},
-	"phase2": {"first_delay_s": 3.0, "sticker_interval_s": 6.0, "stickers_per_batch": 3, "max_stickers": 3, "window_s": 4.0},
-	"phase3": {"first_delay_s": 2.0, "dots": 3, "message_freeze_s": 2.5, "message_cross_s": 0.6, "typing_gap_s": 2.0, "window_s": 3.0, "ghost_respawn_s": 5.0},
+	"phase1": {"first_delay_s": 2.0, "attacks": ["ghost_dash", "falling_bubbles", "seen_zones", "falling_bubbles"], "attack_gap_s": 3.5, "window_s": 1.2},
+	"phase2": {"first_delay_s": 6.0, "sticker_interval_s": 6.0, "stickers_per_batch": 3, "max_stickers": 3, "window_s": 4.0},
+	"phase3": {"first_delay_s": 4.0, "dots": 3, "message_freeze_s": 2.5, "message_cross_s": 0.6, "typing_gap_s": 10.0, "window_s": 3.0, "ghost_respawn_s": 5.0},
 	"defeat": {"freeze_s": 0.3, "disarm_s": 1.6, "exit_wait_max_s": 2.0, "memory_world": 4, "pixels": {"step_px": 4, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 1028}},
 	"texts_status": "PROPUESTA del orquestador (paso 15, 2026-10-28; tono de §5.1: frio y tranquilo, nunca grita, nunca contesta del todo; Eco habla a traves de el, ya sin disimulo), revisar al jugar. intro (importante, pausa), phase_lines (sin pausa), final_system (texto del sistema en el golpe final) y defeat (importante, tras la recompensa).",
 	"texts": {

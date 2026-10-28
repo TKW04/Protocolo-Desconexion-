@@ -367,6 +367,21 @@ func test_phase2_shield_only_breaks_with_shockwave_and_clean_arena() -> void:
 	assert_true(_boss.is_shield_up(), "Al cerrarse, vuelve el escudo")
 
 
+## Paso 19 (el bot lo encontro): un Sticker que ya exploto (confeti) no cuenta
+## como vivo: no bloquea el escudo ni ocupa sitio en la tanda.
+func test_phase2_exploded_stickers_do_not_block_the_shield() -> void:
+	await _setup()
+	_to_phase(2)
+	var shield: Rect2 = _boss.get_shield_rect()
+	_advance_until(func() -> bool: return not _boss.get_stickers().is_empty())
+	assert_eq(_boss.get_stickers().size(), 3)
+	for s: Sticker in _boss.get_stickers():
+		s.call(&"_explode")
+	assert_true(_boss.get_stickers().is_empty(), "El confeti no cuenta")
+	var near: Vector2 = Vector2(shield.position.x - 8.0, shield.end.y + 40.0)
+	assert_true(_boss.receive_shockwave(near, 160.0), "Sin Stickers vivos: estalla")
+
+
 func test_kernel_shield_has_two_layers() -> void:
 	await _setup(2)
 	_to_phase(2)
@@ -427,8 +442,9 @@ func test_phase3_message_freezes_isak_and_nothing_attacks_while_frozen() -> void
 	_advance(DT)
 	for g: Ghost in _boss.get_ghosts():
 		assert_ne(g.process_mode, Node.PROCESS_MODE_DISABLED, "Se reanudan")
-	_advance_until(func() -> bool: return _boss.get_typing_state() == Seen.TYPING_ON, 5.0)
-	assert_eq(_boss.get_typing_state(), Seen.TYPING_ON, "Vuelve a escribir")
+	_advance_until(func() -> bool: return _boss.get_typing_state() == Seen.TYPING_ON,
+		float(_boss.phase_data(3).get("typing_gap_s", 2.0)) + 3.0)
+	assert_eq(_boss.get_typing_state(), Seen.TYPING_ON, "Vuelve a escribir (tras typing_gap_s)")
 
 
 func test_final_blow_and_reappearance_restart_the_phase() -> void:

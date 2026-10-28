@@ -180,6 +180,9 @@ rm -f "$IMPORT_LOG"
 # validador completo es el paso 17) y sus fases con el Isak real (tests/test_seen_arena.gd, GUT). Desde el paso 17
 # (2026-10-28): el validador completo de la arena de El Visto (validate_seen_arena; SeenArenaTest en
 # tests/test_boss_validator.py, con sus negativos).
+# Desde el paso 19 (2026-10-28) GUT lanza tambien el bot del jefe El Visto (tests/test_seen_bot.gd:
+# tools/play_boss_bot.gd -- --boss seen, logica en tools/seen_bot.gd, en procesos aparte: ideal y torpe en Caché,
+# Kernel y Raíz y el quieto que pierde; usa user://bot_save.json).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

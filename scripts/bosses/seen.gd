@@ -339,11 +339,12 @@ func get_sweep_side() -> String:
 	return _sweep_side
 
 
-## Stickers vivos que ha invocado.
+## Stickers vivos que ha invocado (sin los derrotados ni los que ya explotaron:
+## el confeti no cuenta para el escudo ni para el tope de la tanda; paso 19).
 func get_stickers() -> Array[Sticker]:
 	var out: Array[Sticker] = []
 	for s: Sticker in _stickers:
-		if is_instance_valid(s) and not s.is_defeated():
+		if is_instance_valid(s) and not s.is_defeated() and not s.is_exploded():
 			out.append(s)
 	return out
 
