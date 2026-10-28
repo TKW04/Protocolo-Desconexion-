@@ -55,14 +55,15 @@ object_id = &"cargador_visto"
 reusable = true
 metadata/help_id = "charger"
 
-[node name="visto_suelo" parent="Objects" instance=ExtResource("6_seen_zone")]
+[node name="visto_suelo" parent="Objects" instance=ExtResource("6_seen_zone") groups=["help_target"]]
 position = Vector2(576, 512)
 height_tiles = 2
 icon_side = &"left"
 object_id = &"visto_suelo"
 width_tiles = 1
+metadata/help_id = "seen_zone"
 
-[node name="visto_aire" parent="Objects" instance=ExtResource("6_seen_zone")]
+[node name="visto_aire" parent="Objects" instance=ExtResource("6_seen_zone") groups=["help_target"]]
 position = Vector2(1024, 384)
 height_tiles = 2
 icon_side = &"left"
@@ -70,8 +71,9 @@ object_id = &"visto_aire"
 off_s = 2.0
 on_s = 2.0
 width_tiles = 2
+metadata/help_id = "seen_zone"
 
-[node name="visto_ciclo" parent="Objects" instance=ExtResource("6_seen_zone")]
+[node name="visto_ciclo" parent="Objects" instance=ExtResource("6_seen_zone") groups=["help_target"]]
 position = Vector2(1472, 512)
 height_tiles = 2
 icon_side = &"right"
@@ -80,6 +82,7 @@ off_s = 2.0
 on_s = 2.0
 phase_s = 1.0
 width_tiles = 2
+metadata/help_id = "seen_zone"
 
 [node name="terminal_visto" parent="Objects" instance=ExtResource("7_exit_terminal") groups=["help_target"]]
 position = Vector2(2048, 512)

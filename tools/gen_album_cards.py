@@ -137,6 +137,19 @@ SOURCES = {
     "curator_boss": ("assets/sprites/bosses/curator_frame_placeholder.png", None, 1),
     "curator_lens": ("assets/sprites/bosses/curator_lens_card_placeholder.png", None, 1),
     "closing_frame": ("assets/sprites/bosses/curator_closing_frame_card_placeholder.png", None, 1),
+    # Mundo 4 (paso 10 de docs/propuesta-mundo-4.md): arte por script de tools/gen_world4_objects.py (el Troll,
+    # PROVISIONAL hasta AutoSprite, paso 24).
+    "chat_bubble": ("assets/sprites/props/world4/chat_bubble_00.png", None, 1),
+    "typing_bubble": ("assets/sprites/props/world4/typing_bubble_00.png", None, 1),
+    "seen_zone": ("assets/sprites/props/world4/seen_zone_00.png", None, 1),
+    "flashlight_pickup": ("assets/sprites/props/world4/flashlight_pickup_00.png", None, 2),
+    "autocorrect_bubble": ("assets/sprites/props/world4/autocorrect_bubble_00.png", None, 1),
+    "undo_prompt": ("assets/sprites/props/world4/undo_prompt_00.png", None, 1),
+    "typed_wall": ("assets/sprites/props/world4/typed_wall_00.png", None, 1),
+    "troll": ("assets/sprites/enemies/world4/troll_placeholder_00.png", None, 1),
+    "sticker": ("assets/sprites/enemies/world4/sticker_00.png", None, 1),
+    "ghost": ("assets/sprites/enemies/world4/ghost_00.png", None, 1),
+    "troll_mimic": ("assets/sprites/enemies/world4/troll_mimic_00.png", None, 1),
 }
 
 

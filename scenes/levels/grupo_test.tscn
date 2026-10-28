@@ -61,29 +61,35 @@ metadata/help_id = "exit_terminal"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="troll_suelo" parent="Enemies" instance=ExtResource("6_troll")]
+[node name="troll_suelo" parent="Enemies" instance=ExtResource("6_troll") groups=["help_target"]]
 position = Vector2(800, 640)
 metadata/params = {"facing": 1}
+metadata/help_id = "troll"
 
-[node name="troll_repisa" parent="Enemies" instance=ExtResource("6_troll")]
+[node name="troll_repisa" parent="Enemies" instance=ExtResource("6_troll") groups=["help_target"]]
 position = Vector2(864, 512)
 metadata/params = {"facing": 1}
+metadata/help_id = "troll"
 
-[node name="troll_bloque" parent="Enemies" instance=ExtResource("6_troll")]
+[node name="troll_bloque" parent="Enemies" instance=ExtResource("6_troll") groups=["help_target"]]
 position = Vector2(1056, 576)
 metadata/params = {"facing": -1}
+metadata/help_id = "troll"
 
-[node name="troll_lia" parent="Enemies" instance=ExtResource("7_troll_mimic")]
+[node name="troll_lia" parent="Enemies" instance=ExtResource("7_troll_mimic") groups=["help_target"]]
 position = Vector2(1440, 640)
 metadata/params = {"facing": -1, "friend": "lia", "text": "¿vienes?"}
+metadata/help_id = "troll_mimic"
 
-[node name="sticker_1" parent="Enemies" instance=ExtResource("8_sticker")]
+[node name="sticker_1" parent="Enemies" instance=ExtResource("8_sticker") groups=["help_target"]]
 position = Vector2(1824, 640)
 metadata/params = {}
+metadata/help_id = "sticker"
 
-[node name="sticker_2" parent="Enemies" instance=ExtResource("8_sticker")]
+[node name="sticker_2" parent="Enemies" instance=ExtResource("8_sticker") groups=["help_target"]]
 position = Vector2(2016, 640)
 metadata/params = {}
+metadata/help_id = "sticker"
 
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(2208, 640)

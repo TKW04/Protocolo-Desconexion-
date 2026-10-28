@@ -64,9 +64,10 @@ metadata/help_id = "sync_point"
 
 [node name="Objects" type="Node2D" parent="."]
 
-[node name="linterna_prueba" parent="Objects" instance=ExtResource("6_flashlight_pickup")]
+[node name="linterna_prueba" parent="Objects" instance=ExtResource("6_flashlight_pickup") groups=["help_target"]]
 position = Vector2(320, 576)
 object_id = &"linterna_prueba"
+metadata/help_id = "flashlight_pickup"
 
 [node name="modo_oscuro" parent="Objects" instance=ExtResource("7_dark_zone")]
 position = Vector2(640, 64)
@@ -74,28 +75,31 @@ height_tiles = 9
 object_id = &"modo_oscuro"
 width_tiles = 20
 
-[node name="burbuja_oscura" parent="Objects" instance=ExtResource("8_chat_bubble")]
+[node name="burbuja_oscura" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
 position = Vector2(1088, 448)
 object_id = &"burbuja_oscura"
 author_side = &"left"
 stamp = "03:52"
 text = "¿Sigues ahí?"
 width_tiles = 2
+metadata/help_id = "chat_bubble"
 
-[node name="escribiendo_oscuro" parent="Objects" instance=ExtResource("9_typing_bubble")]
+[node name="escribiendo_oscuro" parent="Objects" instance=ExtResource("9_typing_bubble") groups=["help_target"]]
 position = Vector2(1344, 448)
 object_id = &"escribiendo_oscuro"
 author_side = &"right"
 text = "aquí"
 trigger_id = &"burbuja_oscura"
 width_tiles = 1
+metadata/help_id = "typing_bubble"
 
-[node name="visto_oscuro" parent="Objects" instance=ExtResource("10_seen_zone")]
+[node name="visto_oscuro" parent="Objects" instance=ExtResource("10_seen_zone") groups=["help_target"]]
 position = Vector2(1536, 512)
 height_tiles = 2
 icon_side = &"left"
 object_id = &"visto_oscuro"
 width_tiles = 1
+metadata/help_id = "seen_zone"
 
 [node name="tinta_texto" parent="Objects" instance=ExtResource("11_ink_only")]
 position = Vector2(1216, 256)

@@ -47,33 +47,37 @@ position = Vector2(320, 576)
 object_id = &"papelera_prueba"
 story = "papelera_4_2"
 
-[node name="borrado_1" parent="Objects" instance=ExtResource("5_chat_bubble")]
+[node name="borrado_1" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 320)
 deleted = true
 object_id = &"borrado_1"
 author_side = &"left"
 text = "Se eliminó este mensaje"
 width_tiles = 4
+metadata/help_id = "chat_bubble"
 
-[node name="borrado_2" parent="Objects" instance=ExtResource("5_chat_bubble")]
+[node name="borrado_2" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
 position = Vector2(960, 256)
 deleted = true
 object_id = &"borrado_2"
 author_side = &"right"
 text = "Se eliminó este mensaje"
 width_tiles = 4
+metadata/help_id = "chat_bubble"
 
-[node name="deshacer_prueba" parent="Objects" instance=ExtResource("6_undo_prompt")]
+[node name="deshacer_prueba" parent="Objects" instance=ExtResource("6_undo_prompt") groups=["help_target"]]
 position = Vector2(768, 576)
 ability = &"shockwave"
 object_id = &"deshacer_prueba"
 story_line = "deshacer_4_2"
+metadata/help_id = "undo_prompt"
 
-[node name="muro_prueba" parent="Objects" instance=ExtResource("7_typed_wall")]
+[node name="muro_prueba" parent="Objects" instance=ExtResource("7_typed_wall") groups=["help_target"]]
 position = Vector2(1408, 448)
 height_tiles = 3
 object_id = &"muro_prueba"
 lines = ["y entonces", "le dije", "que…"]
+metadata/help_id = "typed_wall"
 
 [node name="terminal_borrados" parent="Objects" instance=ExtResource("8_exit_terminal") groups=["help_target"]]
 position = Vector2(2304, 512)

@@ -162,6 +162,9 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 0 de docs/propuesta-mundo-4.md (2026-10-27): la paleta provisional del Mundo 4 al dia, sus 5 reglas
 # de §6.1 y el coral decidido (#ff9f7a) igual en la paleta, data/hud.json y el hub
 # (tools/palette_mundo4_provisional.py --check, tests/test_palette_mundo4.py).
+# Desde el paso 10 (2026-10-28): las 3 variantes de paleta del Mundo 4 cumplen §6.1 y su comparativa esta al dia
+# (tools/palette_mundo4_variants.py --check; la elegida, la B, la escribe palette_mundo4_provisional.py) y el arte
+# por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -234,6 +237,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
 		&& python3 -I tools/palette_mundo3_provisional.py --check && python3 -I tools/palette_mundo3_preview.py --check \
 		&& python3 -I tools/gen_world3_exit_frame.py --check && python3 -I tools/palette_mundo4_provisional.py --check \
+		&& python3 -I tools/palette_mundo4_variants.py --check && python3 -I tools/gen_world4_objects.py --check \
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \

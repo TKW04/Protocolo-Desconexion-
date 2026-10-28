@@ -59,14 +59,16 @@ metadata/help_id = "exit_terminal"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="fantasma_pasillo" parent="Enemies" instance=ExtResource("6_ghost")]
+[node name="fantasma_pasillo" parent="Enemies" instance=ExtResource("6_ghost") groups=["help_target"]]
 position = Vector2(1184, 640)
 patrol_range_px = 384
 metadata/params = {"patrol_range_px": 384, "start_direction": -1}
+metadata/help_id = "ghost"
 
-[node name="fantasma_abierto" parent="Enemies" instance=ExtResource("6_ghost")]
+[node name="fantasma_abierto" parent="Enemies" instance=ExtResource("6_ghost") groups=["help_target"]]
 position = Vector2(2016, 640)
 metadata/params = {}
+metadata/help_id = "ghost"
 
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(2272, 640)

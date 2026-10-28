@@ -4,6 +4,7 @@
 	"types": {
 		"seen_zone": {
 			"scene": "res://scenes/levels/seen_zone.tscn",
+			"help_id": "seen_zone",
 			"description": "Zona «Visto» (2026-10-28, paso 2 de docs/propuesta-mundo-4.md §8, §3.5 y patrones 19 y 22 de §3.8; SeenZone). Rectangulo de width_tiles x height_tiles (1-4 x 1-3) desde (x, y), en el suelo o en el aire, SIN colision ni dano (rojo nunca), con un doble check a caballo de su borde `icon` (left o right, a media altura: se pulsa desde fuera). Activa, tocarla congela a Isak freeze_s (1,5 s; Isak.freeze con la inmunidad de 0,5 s tras descongelarse). El pulso al doble check la interrumpe interrupt_s (4 s del mundo; checks tachados). Siempre activa o con ciclo (on_s activa / off_s en espera, desfase phase_s) y aviso de warn_frames cuadros a anim_fps antes de activarse (los checks se rellenan de uno en uno). Tiempo del mundo; vuelve al estado inicial al reaparecer. Sin Q todavia: help_id seen_zone, ayuda y ficha del album en el paso 10. Validador de alcanzabilidad: aun no la modela (paso 9: arista pulse_seen y congelacion como coste de tiempo). Aspecto PROVISIONAL por codigo (seccion seen_zone, paleta provisional).",
 			"required": [],
 			"fields": {
@@ -69,6 +70,7 @@
 		},
 		"chat_bubble": {
 			"scene": "res://scenes/levels/chat_bubble.tscn",
+			"help_id": "chat_bubble",
 			"description": "Burbuja de chat (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §8 y §3.1; ChatBubble). Plataforma DE UNA VIA de width_tiles x 1 desde (x, y) (tarjeta de card_height_px arriba de la celda, como una '-') con el mensaje `text` (solo glifos de la fuente de textos), su autor `side` (left = otros, right = Isak; la cola del bocadillo hacia su lado) y un sello de hora pequeno `stamp`. LARGO = 1 tile por cada 6 caracteres de text, redondeo hacia arriba, entre 1 y 8: tools/build_level.py lo escribe en width_tiles y el esquema rechaza un width_tiles que no cuadre. `friend` (lia, marco, tomi; 4-3): avatar con la inicial a su lado; no se rompe ni dana. `deleted` true: «Se elimino este mensaje», contorno discontinuo SIN colision. La celda (y las de su largo) debe estar vacia en el grid. Senal stepped al pisarla (dispara un typing_bubble con trigger = su id). Sin Q todavia (paso 10). Validador de alcanzabilidad: aun no la modela (paso 9). Aspecto PROVISIONAL por codigo (seccion chat_bubble).",
 			"required": [
 				"text"
@@ -117,6 +119,7 @@
 		},
 		"typing_bubble": {
 			"scene": "res://scenes/levels/typing_bubble.tscn",
+			"help_id": "typing_bubble",
 			"description": "Burbuja «Escribiendo…» (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §8, §3.4 y patron 18; TypingBubble). Una chat_bubble (mismos text, side, stamp, friend y la regla del largo) que NO EXISTE hasta que se dispara: `trigger` (id de una chat_bubble: Isak la pisa) o `trigger_zone` ([x, y, ancho, alto] en celdas: Isak entra); una de las dos (o las dos). Al dispararse salen tres puntos crema en una burbuja con contorno (uno cada dot_s, 0,33 s) y a los type_s (1,0 s) aparece solida (de una via); no se materializa con Isak dentro. Por defecto se queda para siempre; con cycle_s y on_s: solida on_s, aviso de warn_frames cuadros a anim_fps, «Se elimino este mensaje» sin colision y vuelve a escribirse para estar solida otra vez a los cycle_s de aparecer (el esquema exige cycle_s >= on_s + aviso + type_s + 0,25 s). Tiempo del mundo; vuelve al estado inicial al reaparecer. Sin Q todavia (paso 10). Validador: plataforma solida desde t0 + 1,0 s (paso 9, wait_typing). Aspecto PROVISIONAL por codigo (seccion chat_bubble).",
 			"required": [
 				"text"
@@ -176,6 +179,7 @@
 		},
 		"autocorrect_bubble": {
 			"scene": "res://scenes/levels/autocorrect_bubble.tscn",
+			"help_id": "autocorrect_bubble",
 			"description": "Burbuja con autocorrector (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §8 y §3.4; AutocorrectBubble). Una chat_bubble con dos textos: `text` (antes) y `corrected` (despues; los dos con la regla del largo: width_tiles y corrected_width_tiles los escribe tools/build_level.py y el esquema rechaza los que no cuadren). Con Isak a <= trigger_tiles (3) de la tarjeta o al pisarla, el cursor parpadea warn_frames cuadros a anim_fps (0,75 s) y el texto cambia: cambia el largo y, segun `anchor` (left / right; por defecto el lado de `side`), el sitio dentro de su ranura (el mayor de los dos largos, que debe estar vacia en el grid). Una sola vez por intento; vuelve al estado inicial al reaparecer. «Engana, no mata» (decision 11 de §9): bajo cada columna que deja al descubierto hay suelo ('#' o '-') a <= max_drop_tiles (3) sin pinchos por medio. Tiempo del mundo. Sin Q todavia (paso 10). Validador: dos estados por posicion de Isak (paso 9, wait_autocorrect). Aspecto PROVISIONAL por codigo (seccion chat_bubble).",
 			"required": [
 				"text",
@@ -241,6 +245,7 @@
 		},
 		"flashlight_pickup": {
 			"scene": "res://scenes/levels/flashlight_pickup.tscn",
+			"help_id": "flashlight_pickup",
 			"description": "Linterna (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; FlashlightPickup). Objeto de 1 x 1 en (x, y) que se recoge al tocarlo: GameState.meet_ally(\"linterna\") (aliada de registro, como Calc: no marca «sin guardar» y un game over no la quita). Desde entonces una lucecita sigue a Isak (FlashlightCompanion, la crea LevelRunner) y abre la luz en las dark_zone; el hueco del hub (columna 13) se enciende. Con la Linterna ya conocida no aparece. Va en la sala de llegada del 4-1. Sin Q ni linea de Eco todavia (pasos 10 y 20). Aspecto PROVISIONAL por codigo (seccion flashlight).",
 			"required": [],
 			"fields": {
@@ -398,6 +403,7 @@
 		},
 		"undo_prompt": {
 			"scene": "res://scenes/levels/undo_prompt.tscn",
+			"help_id": "undo_prompt",
 			"description": "«¿Deshacer escritura?» (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §8, §3.7 y §4.2.2; UndoPrompt, que hereda de DndSwitch como CropTool; 4-2, sala «Mensajes borrados»). Panel de sistema en la pared del FONDO (no solido); el objeto (x, y) es la celda donde Isak se pone de pie. Un pulso que alcanza su zona (hit_rect de la seccion undo_prompt) con Isak de espaldas pose_s lo usa y da para siempre la habilidad `ability` (shockwave, gesto Agitar; GameState.obtain_ability: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice story_line (linea importante; «No necesitas a nadie más.», del doc) y despues sale el aviso de control «Agitar: U / LB (mando)» (data/ability_notices.json). Un solo uso (regla de unless_ability): con el gesto ya obtenido o desbloqueado al cargar arranca deshecho e inerte, sin linea, aviso ni Q; tras un rollback sin el vuelve. Sin tinte del nivel. Senal switched_on (sonido sfx_w4_undo, paso 20). Sin Q todavia (paso 10). Aspecto PROVISIONAL por codigo (seccion undo_prompt).",
 			"required": [
 				"id",
@@ -430,6 +436,7 @@
 		},
 		"typed_wall": {
 			"scene": "res://scenes/levels/typed_wall.tscn",
+			"help_id": "typed_wall",
 			"description": "Muro de texto (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §8 y §3.7; TypedWall; 4-2). Pared SOLIDA de 1 x height_tiles (3) desde su celda de arriba (x, y), sobre el suelo, hecha de lineas de texto escrito (lines, una por tile; sin lines, las de la seccion typed_wall: «y entonces / le dije / que…»). Agitar cuya onda la alcanza (circulo de 2,5 tiles alrededor del celular) la DESHACE PARA SIEMPRE: las letras se borran de atras adelante en erase_s (0,4 s del mundo) y despues deja de ser solida; no vuelve al reaparecer. El pulso y el laser rebotan (chispa gris). Senales erased (sonido sfx_w4_typed_wall_erase, paso 20) y cleared. Sin Q todavia (paso 10). Validador: exige Agitar para cruzarlo (paso 9b). Aspecto PROVISIONAL por codigo (seccion typed_wall).",
 			"required": [],
 			"fields": {
@@ -632,19 +639,19 @@
 		}
 	},
 	"palette": {
-		"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) salvo debug_coral (#ff9f7a, decidido el 2026-10-27).",
-		"chat_noche": "#0f1422",
-		"marino_fondo": "#1a2238",
-		"marino_medio": "#243050",
-		"marino_luz": "#34446a",
-		"gris_oscuro": "#3c4250",
-		"gris_medio": "#6b7280",
-		"gris_claro": "#a9aebb",
-		"blanco_pantalla": "#f4f6fa",
-		"crema": "#eee4cc",
-		"crema_sombra": "#b8ad94",
-		"verde_apagado": "#7d9a80",
-		"verde_sombra": "#4d6452",
+		"_notes": "Variante B «Pantalla a las 3:47» (paso 10; tools/palette_mundo4_variants.py, la escribe tools/palette_mundo4_provisional.py; no editar a mano): colores del Mundo 4 por nombre. debug_coral (#ff9f7a) lo decidio el usuario el 2026-10-28.",
+		"chat_noche": "#0a0e1a",
+		"marino_fondo": "#141a2e",
+		"marino_medio": "#1e2844",
+		"marino_luz": "#2e3c60",
+		"gris_oscuro": "#373d4b",
+		"gris_medio": "#666d7c",
+		"gris_claro": "#a6abb8",
+		"blanco_pantalla": "#f6f7fb",
+		"crema": "#f2e8d0",
+		"crema_sombra": "#bcb098",
+		"verde_apagado": "#7f9a84",
+		"verde_sombra": "#4c6152",
 		"alerta": "#ff4a2a",
 		"alerta_sombra": "#a3221c",
 		"ambar": "#ffa000",

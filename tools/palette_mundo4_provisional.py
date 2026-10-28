@@ -70,6 +70,17 @@ COLORS = [
 ## Decidido por el usuario el 2026-10-27 (docs/propuesta-mundo-4.md §10.1, opcion B «Coral melocotón»).
 DEBUG = ("debug_coral", "ff9f7a", "Debug del Mundo 4: coral melocotón (DECIDIDO; debug_colors[\"4\"] de data/hud.json)")
 
+## Paso 10: variante elegida (tools/palette_mundo4_variants.py). Sus hex sustituyen a los de arriba; BASE_COLORS
+## guarda la provisional (las variantes toman de ella los nombres y las funciones).
+BASE_COLORS = list(COLORS)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import palette_mundo4_variants as variants  # noqa: E402
+
+if variants.ACTIVE:
+    COLORS = variants.rows(variants.ACTIVE, BASE_COLORS)
+    GPL = os.path.join(ROOT, "assets", "palettes", "mundo4.gpl")
+    TITLE = "Mundo 4 El Chat - variante %s (%s)" % (variants.ACTIVE, variants.VARIANTS[variants.ACTIVE]["title"])
+
 ## Reservados del Mundo 1 (significan lo mismo en todo el juego).
 RESERVED = {"alerta": "ff4a2a", "alerta_sombra": "a3221c", "ambar": "ffa000", "ambar_sombra": "a85f00"}
 ## Carmin del punto debil (Mundo 1) y su brillo.
@@ -279,9 +290,11 @@ def metrics_line(m):
 
 # ------------------------------------------------------------------ salida
 def gpl_text():
-    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4",
-             "# PROVISIONAL: colores de desarrollo del Mundo 4, sin cerrar (el usuario elige variante en el paso 10);"
-             " el coral del Debug esta decidido (#ff9f7a).",
+    head = ("# Variante %s elegida en el paso 10 (tools/palette_mundo4_variants.py; cambiable con --apply); el coral "
+            "del Debug lo decidio el usuario (#ff9f7a)." % variants.ACTIVE if variants.ACTIVE else
+            "# PROVISIONAL: colores de desarrollo del Mundo 4, sin cerrar (el usuario elige variante en el paso 10);"
+            " el coral del Debug esta decidido (#ff9f7a).")
+    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4", head,
              "# Generado por tools/palette_mundo4_provisional.py"]
     for name, value, role in COLORS + [DEBUG]:
         r, g, b = hx(value)
@@ -291,9 +304,15 @@ def gpl_text():
 
 
 def palette_section():
-    out = {"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo "
-                     "del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) "
-                     "salvo debug_coral (#ff9f7a, decidido el 2026-10-27)."}
+    if variants.ACTIVE:
+        out = {"_notes": "Variante %s «%s» (paso 10; tools/palette_mundo4_variants.py, la escribe "
+                         "tools/palette_mundo4_provisional.py; no editar a mano): colores del Mundo 4 por nombre. "
+                         "debug_coral (#ff9f7a) lo decidio el usuario el 2026-10-28."
+                         % (variants.ACTIVE, variants.VARIANTS[variants.ACTIVE]["title"])}
+    else:
+        out = {"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo "
+                         "del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) "
+                         "salvo debug_coral (#ff9f7a, decidido el 2026-10-27)."}
     for name, value, _role in COLORS + [DEBUG]:
         out[name] = "#" + value
     return out

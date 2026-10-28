@@ -867,6 +867,131 @@
 			"radius_tiles": 4.0,
 			"center_px": [0, -48],
 			"prompt_px": [0, -104]
+		},
+		"chat_bubble": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Burbuja",
+			"text": "Un mensaje. Se pisa como una tabla y se sube por debajo. Cuanto más largo, más sitio. Las que dicen «Se eliminó este mensaje» no aguantan nada.",
+			"first_level": "4-1",
+			"world": 4,
+			"order": 1,
+			"center_px": [32, 16],
+			"prompt_px": [32, -12]
+		},
+		"typing_bubble": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Escribiendo…",
+			"text": "Alguien está escribiendo. La burbuja llega al segundo de salir los puntos. Espera a que esté antes de saltar.",
+			"first_level": "4-1",
+			"world": 4,
+			"order": 2,
+			"center_px": [32, 16],
+			"prompt_px": [32, -12]
+		},
+		"seen_zone": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Visto",
+			"text": "Te dejaron en visto. Si entras, te quedas congelado un momento. Un pulso al doble check lo apaga un rato; con Agitar, agitando te sueltas.",
+			"first_level": "4-1",
+			"world": 4,
+			"order": 3,
+			"center_px": [32, 32],
+			"prompt_px": [32, -8]
+		},
+		"flashlight_pickup": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Linterna",
+			"text": "Una linterna. Te sigue y, donde todo está a oscuras, alumbra a tu alrededor. Hay cosas escritas que solo se ven con su luz.",
+			"first_level": "4-1",
+			"world": 4,
+			"order": 4,
+			"center_px": [32, 32],
+			"prompt_px": [32, -8]
+		},
+		"autocorrect_bubble": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Autocorrector",
+			"text": "Cuando te acercas, el autocorrector cambia el mensaje y la burbuja cambia de largo. No te fíes del tamaño de antes.",
+			"first_level": "4-2",
+			"world": 4,
+			"order": 5,
+			"center_px": [32, 16],
+			"prompt_px": [32, -12]
+		},
+		"undo_prompt": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "¿Deshacer escritura?",
+			"text": "Una pregunta del sistema. Ponte de espaldas y dale un pulso.",
+			"first_level": "4-2",
+			"world": 4,
+			"order": 6,
+			"center_px": [32, -28],
+			"prompt_px": [32, -80]
+		},
+		"typed_wall": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Muro de texto",
+			"text": "Un muro de cosas escritas. El pulso y el láser rebotan. Si agitas cerca, se borra.",
+			"first_level": "4-2",
+			"world": 4,
+			"order": 7,
+			"center_px": [32, 96],
+			"prompt_px": [32, -8]
+		},
+		"troll": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Troll",
+			"text": "Un troll. Si estás a su altura, escribe y te lanza un mensaje que duele. Un pulso lo aturde; agitando aturdes a todos los que pilles y borras sus mensajes.",
+			"first_level": "4-1",
+			"world": 4,
+			"order": 1,
+			"radius_tiles": 4.0,
+			"center_px": [0, -28],
+			"prompt_px": [0, -72]
+		},
+		"sticker": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Sticker",
+			"text": "Un sticker. Cuando te ve, rebota hacia ti y explota al llegar. Un pulso lo para un rato; agitando se desinfla para siempre.",
+			"first_level": "4-2",
+			"world": 4,
+			"order": 2,
+			"radius_tiles": 4.0,
+			"center_px": [0, -20],
+			"prompt_px": [0, -56]
+		},
+		"ghost": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Fantasma",
+			"text": "Deja de hablarte y desaparece. Al rato vuelve por tu espalda y embiste. Con el Debug se ve por dónde va. Cuando reaparece, un pulso lo aturde.",
+			"first_level": "4-2",
+			"world": 4,
+			"order": 3,
+			"radius_tiles": 4.0,
+			"center_px": [0, -28],
+			"prompt_px": [0, -72]
+		},
+		"troll_mimic": {
+			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Troll disfrazado",
+			"text": "Parecía de un amigo y era un troll. Con el Debug se le ven las costuras. Si lo pisas, se hunde.",
+			"first_level": "4-3",
+			"world": 4,
+			"order": 4,
+			"radius_tiles": 4.0,
+			"center_px": [0, -16],
+			"prompt_px": [0, -48]
 		}
 	}
 }

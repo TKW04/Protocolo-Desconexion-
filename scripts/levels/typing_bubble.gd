@@ -121,6 +121,11 @@ func is_typing() -> bool:
 	return _phase == Phase.TYPING
 
 
+## Ayuda de Eco: antes de dispararse no existe (no hay nada que explicar todavia).
+func is_help_available() -> bool:
+	return is_triggered() and super.is_help_available()
+
+
 ## Puntos que se ven (0-3): uno cada dot_s mientras escribe.
 func get_dots() -> int:
 	if _phase != Phase.TYPING:

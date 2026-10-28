@@ -48,39 +48,43 @@ metadata/help_id = "sync_point"
 
 [node name="Objects" type="Node2D" parent="."]
 
-[node name="burbuja_fija" parent="Objects" instance=ExtResource("5_chat_bubble")]
+[node name="burbuja_fija" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 448)
 object_id = &"burbuja_fija"
 author_side = &"left"
 stamp = "03:47"
 text = "¿Sigues despierto?"
 width_tiles = 3
+metadata/help_id = "chat_bubble"
 
-[node name="escribiendo_1" parent="Objects" instance=ExtResource("6_typing_bubble")]
+[node name="escribiendo_1" parent="Objects" instance=ExtResource("6_typing_bubble") groups=["help_target"]]
 position = Vector2(640, 448)
 object_id = &"escribiendo_1"
 author_side = &"right"
 text = "sí, aquí"
 trigger_id = &"burbuja_fija"
 width_tiles = 2
+metadata/help_id = "typing_bubble"
 
-[node name="burbuja_lia" parent="Objects" instance=ExtResource("5_chat_bubble")]
+[node name="burbuja_lia" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
 position = Vector2(832, 320)
 friend_id = &"lia"
 object_id = &"burbuja_lia"
 author_side = &"left"
 text = "¿Mañana vienes?"
 width_tiles = 3
+metadata/help_id = "chat_bubble"
 
-[node name="burbuja_borrada" parent="Objects" instance=ExtResource("5_chat_bubble")]
+[node name="burbuja_borrada" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
 position = Vector2(1088, 320)
 deleted = true
 object_id = &"burbuja_borrada"
 author_side = &"right"
 text = "nada, olvídalo"
 width_tiles = 3
+metadata/help_id = "chat_bubble"
 
-[node name="escribiendo_ciclo" parent="Objects" instance=ExtResource("6_typing_bubble")]
+[node name="escribiendo_ciclo" parent="Objects" instance=ExtResource("6_typing_bubble") groups=["help_target"]]
 position = Vector2(1536, 448)
 cycle_s = 4.0
 object_id = &"escribiendo_ciclo"
@@ -89,8 +93,9 @@ author_side = &"left"
 text = "jaja"
 trigger_zone = [22, 6, 2, 4]
 width_tiles = 1
+metadata/help_id = "typing_bubble"
 
-[node name="autocorrector_1" parent="Objects" instance=ExtResource("7_autocorrect_bubble")]
+[node name="autocorrector_1" parent="Objects" instance=ExtResource("7_autocorrect_bubble") groups=["help_target"]]
 position = Vector2(1792, 448)
 corrected = "te echo"
 corrected_width_tiles = 2
@@ -98,6 +103,7 @@ object_id = &"autocorrector_1"
 author_side = &"left"
 text = "te echo de menos"
 width_tiles = 3
+metadata/help_id = "autocorrect_bubble"
 
 [node name="terminal_burbujas" parent="Objects" instance=ExtResource("8_exit_terminal") groups=["help_target"]]
 position = Vector2(2304, 512)

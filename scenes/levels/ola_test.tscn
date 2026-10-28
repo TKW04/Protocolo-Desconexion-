@@ -57,12 +57,13 @@ sections = [{"speed_tiles_s": 1.0, "x_from": 0, "x_to": 30}, {"speed_tiles_s": 1
 start_col = 6
 stops = [{"at_col": 28, "id": "sync_ola", "resume_col": 33}]
 
-[node name="visto_ola" parent="Objects" instance=ExtResource("6_seen_zone")]
+[node name="visto_ola" parent="Objects" instance=ExtResource("6_seen_zone") groups=["help_target"]]
 position = Vector2(1152, 512)
 height_tiles = 2
 icon_side = &"left"
 object_id = &"visto_ola"
 width_tiles = 1
+metadata/help_id = "seen_zone"
 
 [node name="cargador_ola" parent="Objects" instance=ExtResource("7_charger") groups=["help_target"]]
 position = Vector2(2560, 576)

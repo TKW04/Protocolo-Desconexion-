@@ -121,8 +121,9 @@ func get_friend_initial() -> String:
 
 
 ## Ayuda de Eco: siempre (no se destruye).
+## Ayuda de Eco: las eliminadas («Se eliminó este mensaje») son decorado y no ayudan.
 func is_help_available() -> bool:
-	return true
+	return not deleted
 
 
 ## Verdadero si unos pies en `feet` con ese ancho pisan la tarjeta (en el suelo).

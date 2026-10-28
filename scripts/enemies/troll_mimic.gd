@@ -98,6 +98,11 @@ func is_disguised() -> bool:
 	return _mask != MASK_OPEN
 
 
+## Ayuda de Eco: disfrazado no ayuda (la Q delataria el disfraz: las ayudas nunca mienten ni adelantan).
+func is_help_available() -> bool:
+	return not is_disguised() and super.is_help_available()
+
+
 func get_unmask_s() -> float:
 	return float(unmask_frames) / anim_fps
 

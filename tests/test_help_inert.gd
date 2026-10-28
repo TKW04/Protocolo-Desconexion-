@@ -992,7 +992,9 @@ func test_every_help_type_is_covered() -> void:
 		&"curator_boss", &"curator_lens", &"closing_frame",
 		&"heart_pickup", &"like_source", &"like_reset", &"like_platform", &"small_frame", &"mirror", &"mirror_wall",
 		&"mirror_only", &"crop_tool", &"filter_zone", &"hunter_mirror", &"pose_plate", &"frame_door", &"hud_likes",
-		&"influencer_bot", &"like_thief", &"false_reflection"]
+		&"influencer_bot", &"like_thief", &"false_reflection",
+		&"chat_bubble", &"typing_bubble", &"seen_zone", &"flashlight_pickup", &"autocorrect_bubble", &"undo_prompt",
+		&"typed_wall", &"troll", &"sticker", &"ghost", &"troll_mimic"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 
@@ -1034,3 +1036,116 @@ func test_armed_charge_dock_gives_no_help() -> void:
 		dock.required_ids = []
 		dock.advance(0.0), "punto de carga armado")
 	_assert_no_reread(dock, &"charge_dock", "punto de carga armado")
+
+
+# --- Mundo 4 (paso 10 de docs/propuesta-mundo-4.md) ---
+
+func _w4_scene(type: String) -> Node2D:
+	var types: Dictionary = World4ObjectsConfig.data().get("types", {})
+	var path: String = String((types.get(type, {}) as Dictionary).get("scene", ""))
+	return (load(path) as PackedScene).instantiate() as Node2D
+
+
+## Burbuja: la fija ayuda siempre; la eliminada es decorado y nunca ayuda.
+func test_chat_bubbles_help_unless_deleted() -> void:
+	var bubble := _w4_scene("chat_bubble") as ChatBubble
+	bubble.text = "¿Sigues despierto?"
+	_place(bubble, &"chat_bubble")
+	await _assert_keeps_helping(bubble, func() -> void: pass, "burbuja fija")
+	bubble.free()
+	var deleted := _w4_scene("chat_bubble") as ChatBubble
+	deleted.text = "nada"
+	deleted.deleted = true
+	_place(deleted, &"chat_bubble")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_false(HelpCatalog.is_help_live(deleted), "Eliminada: sin Q")
+	assert_null(_help.get_target())
+
+
+## «Escribiendo…»: antes de dispararse no existe y no ayuda; disparada, si.
+func test_typing_bubble_helps_once_triggered() -> void:
+	var typing := _w4_scene("typing_bubble") as TypingBubble
+	typing.text = "ya voy"
+	typing.trigger_zone = [0, 0, 1, 1]
+	_place(typing, &"typing_bubble")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_false(HelpCatalog.is_help_live(typing), "Sin disparar: sin Q")
+	typing.trigger()
+	await _assert_keeps_helping(typing, func() -> void: typing.advance(1.5), "escribiendo disparada")
+
+
+## Zona «Visto» y autocorrector: no se destruyen; ayudan siempre.
+func test_seen_zone_and_autocorrect_always_help() -> void:
+	var zone := _w4_scene("seen_zone") as SeenZone
+	_place(zone, &"seen_zone")
+	await _assert_keeps_helping(zone, func() -> void: zone.advance(1.0), "zona Visto")
+	zone.free()
+	var auto := _w4_scene("autocorrect_bubble") as AutocorrectBubble
+	auto.text = "te echo de menos"
+	auto.corrected = "te echo"
+	_place(auto, &"autocorrect_bubble")
+	await _assert_keeps_helping(auto, func() -> void: pass, "autocorrector")
+
+
+## Linterna: recogida no ayuda.
+func test_collected_flashlight_gives_no_help() -> void:
+	var lamp := _w4_scene("flashlight_pickup") as FlashlightPickup
+	_place(lamp, &"flashlight_pickup")
+	await _assert_inert_drops_help(lamp, func() -> void: lamp.collect(), "Linterna recogida")
+	GameState.allies_met.erase(&"linterna")
+
+
+## «¿Deshacer escritura?»: usado (Agitar ya dado) no ayuda, como la «Recortar».
+func test_switched_on_undo_prompt_gives_no_help() -> void:
+	var prompt := _w4_scene("undo_prompt") as UndoPrompt
+	_place(prompt, &"undo_prompt")
+	await _assert_inert_drops_help(prompt, func() -> void: prompt.switch_on(), "Deshacer escritura usado")
+	_assert_no_reread(prompt, &"undo_prompt", "Deshacer escritura usado")
+	GameState.reset_progress()
+
+
+## Muro de texto: borrado por Agitar no ayuda.
+func test_erased_typed_wall_gives_no_help() -> void:
+	var wall := _w4_scene("typed_wall") as TypedWall
+	_place(wall, &"typed_wall")
+	await _assert_inert_drops_help(wall, func() -> void:
+		assert_true(wall.receive_shockwave(wall.get_wall_rect().get_center(), 160.0)), "muro de texto borrado")
+
+
+## Troll, Sticker y Fantasma: aturdidos siguen ayudando; derrotados no.
+func test_defeated_world4_enemies_give_no_help() -> void:
+	for kind: String in ["troll", "sticker", "ghost"]:
+		var enemy := (load("res://scenes/enemies/%s.tscn" % kind) as PackedScene).instantiate() as Node2D
+		enemy.set_physics_process(false)
+		_place(enemy, StringName(kind))
+		enemy.set(&"target", _isak)
+		if kind == "ghost":
+			enemy.set(&"detect_tiles", 0.0)  # que no se esfume con Isak al lado
+		await wait_process_frames(1)
+		enemy.set_physics_process(false)
+		enemy.set(&"drops", {})
+		enemy.call(&"stun")
+		assert_true(HelpCatalog.is_help_live(enemy), "%s aturdido: sigue ayudando" % kind)
+		await _assert_inert_drops_help(enemy, func() -> void:
+			enemy.call(&"stun")
+			enemy.call(&"on_laser_hit", 10.0, null)
+			enemy.call(&"on_laser_hit", 10.0, null)
+			assert_true(bool(enemy.call(&"is_defeated")), "%s derrotado" % kind), "%s derrotado" % kind)
+		enemy.free()
+
+
+## Troll disfrazado: disfrazado no ayuda (la Q lo delataria); descubierto, si.
+func test_disguised_troll_mimic_gives_no_help() -> void:
+	var mimic := (load("res://scenes/enemies/troll_mimic.tscn") as PackedScene).instantiate() as TrollMimic
+	mimic.set_physics_process(false)
+	_place(mimic, &"troll_mimic")
+	await wait_process_frames(1)
+	_run(0.2)
+	assert_true(mimic.is_disguised())
+	assert_false(HelpCatalog.is_help_live(mimic), "Disfrazado: sin Q")
+	assert_true(mimic.receive_shockwave(mimic.global_position, 160.0, 3.0), "Agitar lo descubre")
+	assert_false(mimic.is_disguised())
+	assert_true(HelpCatalog.is_help_live(mimic), "Descubierto: ayuda")
+
