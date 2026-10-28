@@ -54,6 +54,8 @@ Sin reintentos: las 8 se aceptaron a la primera (los defectos se arreglan al imp
 
 ## 3. Etapa 3: Troll y pose de Agitar (2026-10-28)
 
+> **2026-10-28, tras la prueba del usuario:** Agitar se retiró del juego (`propuesta-mundo-4.md` §8.1). La pose `shockwave_shake` / `shockwave_hold` se conserva en `isak_frames.tres` sin uso (por si vuelve); `tools/render_troll_art.gd` la fuerza para verla.
+
 Plan de §6.2 (26-29 créditos, tope con reintentos 52-58), con parada tras el base del Troll.
 
 ### 3.1 Etapa 3a: base del Troll
