@@ -18,14 +18,23 @@ El hub se organiza en páginas, como una pantalla de inicio de celular. Isak cam
 | Zona | Contenido |
 |---|---|
 | **Página 1** | Carpetas de los mundos 1, 2 y 3. |
-| **Página 2** | Carpetas de los mundos 4 y 5. |
-| **Página 3** | La Nube, con un candado. Solo se abre con los cinco recuerdos recuperados. |
+| **Página 2** | Carpetas de los mundos 4 y 5. **[2026-10-27]:** antes del upgrade, la página «en instalación» con el acertijo (ver abajo). |
+| **Página 3** | La Nube, con un candado. Solo se abre con los cinco recuerdos recuperados. **[2026-10-27]:** el candado tiene 5 ranuras, una por recuerdo de jefe de Caché (ver abajo). |
 | **Dock (barra inferior)** | Los aliados. Es el centro del hub, siempre visible. Es también el **suelo** de la sala: Isak camina sobre él y los aliados están de pie en él (aprobado el 2026-10-15). |
 | **Esquina: Ajustes** | Opciones de accesibilidad, como reducir el ruido visual cuando el Sync Rate es bajo. Los ajustes viven en el menú de pausa (acción `pause`, también en los niveles); en el hub, el icono de la esquina lo abre. Se guardan al instante en `user://settings.cfg`, aparte del guardado manual (aprobado el 2026-10-15). Implementado el 2026-10-16: icono de engranaje en la esquina del HUD, delante del Modo Avión; hoy con «Ayudas de Eco: Mostrar / Ocultar». |
 
 Selección de zona y subnivel, compra de mejoras y guardado: ver 13.6.
 
 **Hub del Mundo 1 (aprobado el 2026-10-15):** una sola página, como sala 2D caminable de 20x11 tiles con paneles de menú en cada estación (copia local, carpetas, Calc y ajustes). **[2026-10-15 (3)]:** la copia local pasa a ser **Notas**, Calc está apagada hasta el final del 1-2 y la Papelera ocupa el hueco de la columna 10 del dock (`propuesta-asistentes-y-vidas.md` §8). **[2026-10-16]:** en la columna 16 del dock hay un **cargador de energía**, el mismo objeto `charger` de los niveles (50 de energía, reutilizable, 20 s de enfriamiento; se activa al tocarlo); no se guarda y se reinicia en cada visita. Mapa y detalle en `propuesta-hub-y-guardado.md` §2 y §3. Las páginas 2 y 3 llegan con los mundos 4 a 6.
+
+**[NUEVO 2026-10-27] Hub de tres páginas, acertijo «Actualización del sistema» y carpetas M4-M6** (`propuesta-hub-mundos-4-6.md`, aprobada e implementada el 2026-10-27; idea y decisiones del usuario en su §6.3; capturas en `docs/capturas/hub-4-6-2026-10-27/`). No contradice lo anterior: hasta vencer a La Curadora el hub es la misma sala de una página.
+
+- **Páginas:** una sala de 60 × 11 tiles con tres páginas de 20 × 11 (`room.pages` de `data/hub.json`). La cámara se queda fija en cada página y, al cruzar Isak el borde, se desliza en 0,35 s con Isak en pausa. El indicador de la fila 10 muestra de 1 a 3 puntos. Al volver de un nivel de los Mundos 4-6, la llegada es en la página de su carpeta (P2, P3).
+- **Aviso tras La Curadora:** con `3-boss` completado y sin el upgrade, el borde derecho de la página 1 (columna 19, filas 5-8) tiene un glitch en cian, ámbar y verde ácido y deja pasar; el segundo punto del indicador «carga» en bucle; al volver de la arena, Calc lo comenta. Sale también al cargar una partida que ya había vencido a la Curadora (el acertijo pendiente se calcula, no se guarda).
+- **Página 2 «en instalación» (el acertijo):** al entrar por primera vez, Eco habla (pausa). Un instalador con tres verificaciones, en cualquier orden, cada una con el color del Debug de su mundo y los pictogramas de lo que pide: **V1 «Integridad»** (cian: Debug para ver el lector oculto, láser y pulso al receptor de la repisa antes de 6 s), **V2 «Búfer»** (ámbar: golpe al suelo en la placa, plataforma «Cargando…» de 3 s, salto corriendo y dash aéreo al bloque alto, pulso) y **V3 «Recorte»** (verde ácido: láser al espejo, que sube al lector e ilumina el marco; Pellizcar para entrar al nicho, tamaño normal y pulso). Con 3/3, un pulso al instalador instala. Hay un cargador junto a la llegada. Nada hace daño ni gasta vidas; las verificaciones no se guardan (cada visita empieza en 0/3). Con la Papelera llena está inerte. Los gestos (dash, golpe al suelo y Pellizcar) solo se usan en el hub mientras el acertijo está activo. Pistas: el marco y los pictogramas, la línea «Actualización: n/3» en el resumen de Notas, Eco a los 90 s sin avance y la tecla que falta tras 2 fallos (estas dos, no con «Ayudas de Eco: Ocultar»).
+- **Instalación:** juego en pausa, barra «Instalando… No apagues el dispositivo» de 3 s, destello y línea de Notas. Se añade `hub_update_4_6` a `hub_upgrades` (guardado v6) y solo marca «sin guardar»: se guarda en Notas. Un game over sin guardar lo quita y el acertijo se repite; en Kernel y Raíz se conserva y no se repite.
+- **Carpetas M4-M6 y sus estados:** con el upgrade, la página 2 tiene **M4 «El Chat»** (columna 4) y **M5 «La Tienda»** (columna 14), y el instalador apagado como decorado; la página 3, **M6 «La Nube»** (columna 9). Las tres se ven a la vez. M4 está **disponible** (con `3-boss`; «Próximamente» mientras no tenga niveles). M5 (hasta `4-boss`) y M6 (hasta `5-boss`) están **bloqueadas**: candado y silueta gris, «Sin descargar» y debajo «Completa el mundo anterior». M6 lleva encima el candado de 5 ranuras, que se encienden con los recuerdos de jefe de Caché (`boss_w1_l1` … `boss_w5_l1`; 3 encendidas al instalar). Sin el upgrade, M4-M6 no se construyen (ocultas) y la carpeta «El Chat» del álbum de Notas sigue cerrada.
+- **Provisional:** arte por script, sonidos provisionales y textos propuestos (lista en `preguntas.md`).
 
 ## 13.3 Los aliados en el hub
 
@@ -45,7 +54,7 @@ El fondo de pantalla del hub es una foto rota en cinco piezas, una por cada frag
 | **Primera llegada (Mundo 1)** | Hub apagado y casi vacío. Se ilumina una pieza del fondo, en cian. |
 | **Mundo 2 completado** | Segunda pieza, en ámbar. ~~Llega Notas~~ (Notas llega en la primera visita, 2026-10-15 (3)) y el hub tiene más vida. |
 | **Mundo 3 completado** | Tercera pieza, en verde ácido. |
-| **Mundo 4 completado** | Cuarta pieza, en coral. ~~Llegan Linterna y Papelera~~ (2026-10-15 (3): Linterna llega en el X-1 del mundo oscuro y Papelera en su primer uso) y el hub se llena de voces. |
+| **Mundo 4 completado** | Cuarta pieza, en coral. **[2026-10-27]:** desde la instalación del upgrade del hub la pieza 4 ya se ve como contorno que parpadea (M4 disponible) y se enciende al completar el Mundo 4; coral **provisional** `#ff7f66` mientras la paleta del Mundo 4 siga abierta. ~~Llegan Linterna y Papelera~~ (2026-10-15 (3): Linterna llega en el X-1 del mundo oscuro y Papelera en su primer uso) y el hub se llena de voces. |
 | **Mundo 5 completado** | Quinta pieza, en blanco. El fondo está completo, y es la foto que Isak tenía antes de entrar al celular. |
 | **La Nube abierta** | El silencio se rompe: Eco intenta entrar, y empiezan a aparecer notificaciones en el borde de la pantalla. |
 

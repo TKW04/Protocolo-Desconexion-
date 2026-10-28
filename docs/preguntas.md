@@ -1120,7 +1120,7 @@ El Mundo 3 «La Vitrina» se hizo con las decisiones delegadas al orquestador (`
 - Arte `_placeholder` por script de la Curadora (`tools/gen_boss_curator.py`), del Influencer y de la pose `compress` (por escala) hasta el paso 23 con AutoSprite: 68-71 créditos (hasta ~142 con reintentos) de un saldo de 380; **requiere permiso y el total previo del usuario**, con parada tras cada base.
 - Audio provisional: los 21 IDs del Mundo 3 (`CuratorMusic`, `GalleryMusic`, ambiente de la galería…) suenan con provisionales hasta los sonidos del amigo del usuario; `sfx_charger` y `sfx_dash_through` no existen en `data/audio.json` (ni provisional).
 - Iconos de nivel del Mundo 3 en la carpeta del hub: genéricos.
-- **La suite completa no se ha corrido tras el paso 20** (solo las pruebas del Mundo 3); pendiente antes de dar el mundo por cerrado.
+- ~~**La suite completa no se ha corrido tras el paso 20** (solo las pruebas del Mundo 3); pendiente antes de dar el mundo por cerrado.~~ Corrida el 2026-10-27 (paso 9 del hub de los Mundos 4-6): en verde.
 
 ## Hub Mundos 4-6, paso 6: textos y pistas del acertijo (2026-10-27)
 
@@ -1138,3 +1138,50 @@ Paso 6 de `docs/propuesta-hub-mundos-4-6.md` (sección `hub_update_hints` de `da
 - Pista 4 (la tecla tras 2 fallos en la visita): V1 enseña la tecla del **pulso** (fallo = se acaba la corriente de lector1), V2 la de **Deslizar** (fallo = baja la plataforma), V3 la del **láser** mientras el marco sigue cerrado y la de **Pellizcar** después (fallo = chocar sin comprimir contra el marco del nicho). Los fallos no se guardan (cada visita, desde 0).
 - «Actualización: n/3» va en el resumen de Notas (§2.4); el instalador conserva «Verificaciones n/3» (§1).
 - La cuenta de la pista 3 solo avanza con Isak en la página 2 y se reinicia con cada verificación nueva; con las ayudas ocultas no sale ni se da por vista.
+
+## Hub: acertijo y Mundos 4-6: lo que el usuario debe revisar al probar (2026-10-27)
+
+El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicieron con las decisiones del usuario de `propuesta-hub-mundos-4-6.md` §6.3 y el resto delegado al orquestador (todo lo marcado PROPUESTA; avance y desvíos en su §5.3, resumen en `05-hub.md` §13.2). Lista corta para la primera prueba (paso 10); ninguna bloquea, todas se ajustan en datos (`data/hub.json`, `data/hub_update.json`).
+
+**Cómo probar**
+- Flujo real: vencer a La Curadora (fila «Jefe: La Curadora» de la carpeta M3, o directo con `$GODOT --path . -- --start-level=3-boss` en builds de depuración) y volver al hub.
+- Con una partida guardada que ya haya vencido a la Curadora, el juego arranca en el hub y el acertijo está pendiente (también un guardado v5 anterior a este cambio).
+- Para ver la solución: bot del hub, `$GODOT --headless --fixed-fps 60 --path . -s tools/play_hub_update_bot.gd` (sin `--headless` se ve jugar; `-- --profile idle|nosave|kept --lap 2|3` para los negativos). Usa su propio guardado.
+- Capturas ya hechas en `docs/capturas/hub-4-6-2026-10-27/` (01-11).
+
+**Qué ver en cada página**
+- **Página 1:** tras la pieza verde ácido, el glitch del borde derecho (columna 19, tres colores, parpadea cada 1,5 s), el indicador con un segundo punto que «carga» y el comentario de Calc al llegar de la arena. Después de instalar, la pieza 4 como contorno coral que parpadea.
+- **Página 2 «en instalación»:** el deslizamiento de 0,35 s, la línea de Eco (pausa), el instalador «Verificaciones n/3», las tres verificaciones con su marco y sus pictogramas, el cargador, la placa y la plataforma «Cargando…», el espejo y el nicho. ¿Se entiende qué pide cada una sin pistas?
+- **Instalación:** barra de 3 s con los tres colores, destello y línea de Notas; después «¡Apuntado!» y la página 2 final con M4 y M5 y el instalador apagado.
+- **Página 2 final:** M4 abre «Próximamente»; M5 dice «Sin descargar» + «Completa el mundo anterior».
+- **Página 3:** M6 «La Nube» con el candado de 5 ranuras (3 encendidas en Caché) y las dos líneas.
+- **Guardar:** volver a la página 1 y guardar en Notas; sin guardar, un game over devuelve la página 2 «en instalación».
+
+**Valores a ajustar jugando**
+- **Duración del acertijo (medirla jugando):** objetivo 60-90 s (§2.3). El bot, que sabe la solución, tarda **20,8 s** de juego en el acertijo (V1 a los 3,9 s, V3 a los 9,3 s, V2 a los 17,0 s) y **52,3 s** en todo el recorrido (llegada, líneas, instalación, guardado y M4). El de un jugador que lo descubre no se ha medido.
+- Ventanas: V1 6 s de corriente (el validador pide 0,97 s) y la plataforma de V2 3 s con aviso de 0,5 s (pide 1,08 s; 2,8× lo necesario, la fórmula del 1-2 pide 3×). Energía: el validador pide 56 de 100 sin el cargador; la mínima del bot es 66.
+- Pistas: Eco a los **90 s** sin verificación nueva y la tecla tras **2** fallos en la visita.
+
+**Puntos a vigilar (decisión del usuario)**
+- **V1 y V2 son exigentes:** el salto a la repisa de V1 pide el **91 %** del salto y el de V2 el **89 %** (límite de los niveles 85 %), y a V2 solo se llega con **salto corriendo + dash aéreo** (andando no llega). Para suavizarlo hay que mover piezas de `data/hub_update.json` (p. ej. acercar la plataforma al bloque o alargar `up_s`).
+- **Gestos del hub solo durante el acertijo:** el dash, el golpe al suelo y Pellizcar obtenidos solo funcionan en el hub mientras el acertijo está activo (y no con la Papelera llena); antes y después, el hub es como siempre. ¿Se echa de menos poder usarlos siempre en el hub?
+- **V3, el láser sube del espejo al lector:** el espejo está en el suelo (columna 16) y el láser rebota **hacia arriba** a `lector3` (la propuesta decía «hacia abajo»; el láser solo se dispara de pie y en horizontal). ¿Se lee el rebote?
+- La línea de Calc al llegar no es importante: **aceptar no la cierra**, se va sola, y tras la línea de Eco de la página 2 vuelve a salir porque el cuadro la reanuda.
+- En las capturas 08-09 la esfera de Eco queda encima de la placa «Completa el mundo anterior» (se lee, pero tapada en parte); en la 11 el contorno coral de la pieza 4 es fino y se ve poco.
+
+**Textos propuestos (paso 6; literal en los datos)**
+- Calc (`calc.remarks`, `update_3_boss`): «Actualización detectada. Tamaño: 3 apps. Precio: 0. Sospechoso.»
+- Eco al entrar a la página 2 (`hub_update_hints.intro`): «¿Una actualización? Instálala, {apodo}. Las actualizaciones siempre mejoran algo.»
+- Eco, pista a los 90 s (`hub_update_hints.eco_hint`): «Cada color es un sitio por el que ya pasaste. Usa lo que aprendiste allí.»
+- Notas, resumen (`hub_update_hints.notas_progress`): «Actualización: n/3 · Falta: Integridad, Búfer, Recorte»
+- Instalador (`texts` de `data/hub_update.json`): «Actualización del sistema», «Verificaciones n/3», «Falta: …», «Listo para instalar», «No apagues el dispositivo».
+- Barra (`hub_update_install.bar_text`): «Instalando… No apagues el dispositivo»; Notas tras el destello (`notas_line`): «¡Tres carpetas nuevas! Las apunto. Una ya se puede abrir.»
+- Notas al soltar el control (`hub_update_hints.saved_reminder`): «¡Apuntado! Guárdalo para que no se pierda.»
+- Carpetas bloqueadas (`folders.texts`): «Sin descargar» (ya existía) y «Completa el mundo anterior» (nueva).
+- Decisiones del orquestador de las pistas: ver «Hub Mundos 4-6, paso 6», arriba.
+
+**Arte y audio provisionales**
+- **Coral de la pieza 4: `#ff7f66`, PROVISIONAL** (la paleta del Mundo 4 sigue abierta; al decidirla se cambia `CORAL` en `tools/gen_hub_update_art.py` y se regenera).
+- Arte por script: fondos de las páginas 2 y 3, carpetas M4-M6, candado, instalador y su decorado (`tools/gen_hub_objects.py`); verificaciones con sus **pictogramas** (V1 Debug + láser, V2 golpe al suelo + Deslizar, V3 láser + Pellizcar), placa, plataforma, glitch, barra y pieza 4 (`tools/gen_hub_update_art.py`). El destello es un velo blanco por código.
+- Audio provisional, 5 IDs nuevos (los definitivos, con el mismo nombre): `sfx_hub_update_check`, `sfx_hub_install_bar`, `sfx_hub_install`, `sfx_hub_page_slide` y `sfx_hub_folder_locked`. Reutilizados: `sfx_laser_denied` (verificación que rechaza) y `sfx_w3_pose_plate` (placa).
+

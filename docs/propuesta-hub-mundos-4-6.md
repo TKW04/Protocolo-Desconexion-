@@ -1,6 +1,6 @@
 # Propuesta: acertijo del hub y entrada a los Mundos 4-6 («Actualización del sistema»)
 
-Estado: **APROBADA (2026-10-27)** con las respuestas del usuario a §6.2 (ver §6.3). **Paso 0 hecho (2026-10-27): datos y guardado**; **paso 2 hecho (2026-10-27): hub de varias páginas**; **paso 3 hecho (2026-10-27): acertijo**; **paso 5 hecho (2026-10-27): instalación y upgrade** (§5.3). El resto, sin implementar.
+Estado: **APROBADA (2026-10-27)** con las respuestas del usuario a §6.2 (ver §6.3). **Implementada entera el 2026-10-27: pasos 0-10 hechos** (avance y desvíos en §5.3). Lo que queda es del usuario: probarlo y revisar la lista de `preguntas.md` («Hub: acertijo y Mundos 4-6: lo que el usuario debe revisar al probar»).
 
 **Idea del usuario (se respeta tal cual):** al vencer a La Curadora (jefe del Mundo 3) se habilita en el hub un acertijo. Resolviéndolo con las habilidades que Isak tiene hasta ahora se hace un *upgrade* del hub y aparecen las entradas de los Mundos 4, 5 y 6, cada uno con sus subniveles.
 
@@ -343,6 +343,17 @@ Cada paso lleva sus pruebas y termina con la parte afectada de `tools/run_tests.
 - **Prueba:** `tests/test_hub_update_bot.gd` (5 casos en procesos aparte, unos 20 s de pared), comentada en `tools/run_tests.sh` (GUT la lanza con el resto). `tools/run_tests.sh` lanza además `python3 -I tools/gen_hub_update_art.py --check`.
 - **Cabos de los pasos 6-7:** `tools/render_hub_pages.gd` cierra tras instalar las líneas que queden (la de Notas, que pausa, y el recordatorio «¡Apuntado!») y llega a la página 3; su uso pide `--fixed-fps 60` (sin él las capturas 01-02 a veces decían «Isak no llega»); la cabecera de `scripts/hub/hub_room.gd` ya dice que la pieza 4 es arte por script en coral provisional; `tests/test_hub_boss_entry.gd`, `tests/test_notas_intro.gd` y `tests/test_notas_station.gd` pasan (fallaban solo por el archivo a medias del paso 7).
 - **Desvíos:** (1) el bot extiende `Node` como los bots de jefe, no `tools/dnd_bot.gd` (§2.7): el hub no tiene camino exportado; (2) la llegada se marca como vuelta de `3-boss` (`HubRoom.arrived_from_level`, lo único que se fija antes de que termine la llegada) para que salga el comentario de Calc, que solo sale al volver de esa arena; (3) el comentario de Calc no es importante: `ui_accept` no lo cierra y se va solo (tras la línea de Eco vuelve a salir, porque el cuadro lo reanuda); (4) orden V1 → V3 → V2 (§2.3 es libre); (5) el negativo del game over fuerza las muertes con el Sync Rate (precedente de `tools/level_bot.gd`).
+
+**Paso 9 «pruebas de conjunto» (2026-10-27, hecho por el orquestador):**
+
+- Suite completa `tools/run_tests.sh` (con `PATH=/usr/bin:$PATH`): **código 0**. **679 pruebas de Python** en verde (unos 41 min) y **1891 pruebas GUT en 160 scripts, 49998 asserts**, todas en verde (unos 25 min). No hizo falta ningún arreglo. Al cerrar Godot salen avisos de fugas (5 `ObjectDB`, 4 recursos) sin importancia.
+- La compatibilidad (guardado v5 con `3-boss` → acertijo pendiente) ya la cubren `tests/test_hub_legacy_unlocks.gd`, `tests/test_hub_worlds_4_6.gd` y `tests/test_hub_update_install.gd`.
+
+**Paso 10 «capturas y docs» (2026-10-27, hecho):**
+
+- **Capturas** 01-11 de `docs/capturas/hub-4-6-2026-10-27/` rehechas con el `tools/render_hub_pages.gd` del repo (`$GODOT --fixed-fps 60 --path . -s tools/render_hub_pages.gd -- <carpeta>`, con ventana): página 1 sin y con el glitch, deslizamiento, página 2 en instalación (con la línea de Eco entera), acertijo en marcha (Debug, plataforma «Cargando…» arriba, marco iluminado, 1/3), instalación, línea de Notas, página 2 final (M5 bloqueada), página 3 (M6 con el candado, 3 de 5 ranuras), M4 «Próximamente» y página 1 con la pieza 4. **Arreglo de la herramienta:** la línea de Eco de la página 2 pausa el juego y en las capturas anteriores seguía a medio escribir en las 04-06, tapando la parte de arriba del instalador (y con el árbol en pausa la plataforma de la 05 seguía abajo); ahora sale entera en la 04 y se cierra antes de la 05.
+- **Docs:** `05-hub.md` §13.2 y §13.4 (lo nuevo marcado), `CLAUDE.md` (estado, bot del hub, capturas), `INDEX.md`, `08-pendientes.md` y la lista de revisión del usuario en `preguntas.md` («Hub: acertijo y Mundos 4-6: lo que el usuario debe revisar al probar»).
+- **Visto en las capturas (no se cambia; en la lista de revisión):** en las 08-09 la esfera de Eco queda encima de la segunda placa «Completa el mundo anterior» (se lee, pero tapada en parte); en la 11 el contorno coral de la pieza 4 es fino y se ve poco.
 
 ---
 

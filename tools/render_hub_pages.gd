@@ -74,7 +74,12 @@ func _run() -> void:
 	fake.set(&"move_axis", 0.0)
 	await _frames(40)
 	_check(int(hub.call(&"get_current_page")) == 2, "no llega a la pagina 2")
+	# La linea de Eco de la pagina 2 (paso 6) sale entera en la 04 y se cierra antes
+	# de la 05 para que no tape el instalador en las 05-06.
+	(hub.call(&"get_text_box") as Node).call(&"finish_typing")
+	await _frames(10)
 	await _save(out_dir, "04_pagina2_en_instalacion.png")
+	await _close_lines(hub.call(&"get_text_box"))
 	# 5. Acertijo en marcha (paso 3).
 	var puzzle: Node = hub.call(&"get_update_puzzle")
 	_check(puzzle != null, "sin acertijo en la pagina 2")
