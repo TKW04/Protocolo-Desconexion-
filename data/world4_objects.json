@@ -395,6 +395,97 @@
 					]
 				}
 			}
+		},
+		"undo_prompt": {
+			"scene": "res://scenes/levels/undo_prompt.tscn",
+			"description": "«¿Deshacer escritura?» (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §8, §3.7 y §4.2.2; UndoPrompt, que hereda de DndSwitch como CropTool; 4-2, sala «Mensajes borrados»). Panel de sistema en la pared del FONDO (no solido); el objeto (x, y) es la celda donde Isak se pone de pie. Un pulso que alcanza su zona (hit_rect de la seccion undo_prompt) con Isak de espaldas pose_s lo usa y da para siempre la habilidad `ability` (shockwave, gesto Agitar; GameState.obtain_ability: se guarda, va a la Papelera en un game over y se pierde en un rollback sin guardar). La primera vez Eco dice story_line (linea importante; «No necesitas a nadie más.», del doc) y despues sale el aviso de control «Agitar: U / LB (mando)» (data/ability_notices.json). Un solo uso (regla de unless_ability): con el gesto ya obtenido o desbloqueado al cargar arranca deshecho e inerte, sin linea, aviso ni Q; tras un rollback sin el vuelve. Sin tinte del nivel. Senal switched_on (sonido sfx_w4_undo, paso 20). Sin Q todavia (paso 10). Aspecto PROVISIONAL por codigo (seccion undo_prompt).",
+			"required": [
+				"id",
+				"ability"
+			],
+			"fields": {
+				"id": "object_id",
+				"ability": "ability",
+				"story_line": "story_line"
+			},
+			"defaults": {},
+			"allowed": {
+				"ability": [
+					"shockwave"
+				],
+				"story_line": [
+					"deshacer_4_2"
+				]
+			},
+			"example": {
+				"type": "undo_prompt",
+				"x": 14,
+				"y": 9,
+				"params": {
+					"id": "deshacer_4_2",
+					"ability": "shockwave",
+					"story_line": "deshacer_4_2"
+				}
+			}
+		},
+		"typed_wall": {
+			"scene": "res://scenes/levels/typed_wall.tscn",
+			"description": "Muro de texto (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §8 y §3.7; TypedWall; 4-2). Pared SOLIDA de 1 x height_tiles (3) desde su celda de arriba (x, y), sobre el suelo, hecha de lineas de texto escrito (lines, una por tile; sin lines, las de la seccion typed_wall: «y entonces / le dije / que…»). Agitar cuya onda la alcanza (circulo de 2,5 tiles alrededor del celular) la DESHACE PARA SIEMPRE: las letras se borran de atras adelante en erase_s (0,4 s del mundo) y despues deja de ser solida; no vuelve al reaparecer. El pulso y el laser rebotan (chispa gris). Senales erased (sonido sfx_w4_typed_wall_erase, paso 20) y cleared. Sin Q todavia (paso 10). Validador: exige Agitar para cruzarlo (paso 9b). Aspecto PROVISIONAL por codigo (seccion typed_wall).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"height_tiles": "height_tiles",
+				"lines": "lines"
+			},
+			"defaults": {
+				"height_tiles": 3
+			},
+			"level_params": {
+				"height_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "typed_wall",
+				"x": 22,
+				"y": 8,
+				"params": {
+					"id": "muro_4_2",
+					"lines": [
+						"y entonces",
+						"le dije",
+						"que…"
+					]
+				}
+			}
+		},
+		"papelera_actor": {
+			"scene": "res://scenes/levels/papelera_actor.tscn",
+			"description": "La Papelera en el nivel (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §8, §3.7 y §4.2.2; PapeleraActor; 4-2, sala «Mensajes borrados»). Actor de historia sin colision ni Q con el arte de su estacion del hub (papelera_frames.tres), de pie en su celda (x, y). Habla como interlocutor papelera (data/eco_text_box.json). story (stories de la seccion papelera_actor): con Isak a talk_radius_tiles dice las lineas intro (importantes) y marca el aviso notice (seen_notices; un solo uso por partida guardada); cuando Isak obtiene `ability` (el «¿Deshacer escritura?» da Agitar con la frase de Eco y el aviso), la linea after (no importante). Con el aviso visto o la habilidad ya obtenida al cargar, calla. En el hub no cambia nada. Textos PROPUESTOS.",
+			"required": [
+				"story"
+			],
+			"fields": {
+				"id": "object_id",
+				"story": "story"
+			},
+			"defaults": {},
+			"allowed": {
+				"story": [
+					"papelera_4_2"
+				]
+			},
+			"example": {
+				"type": "papelera_actor",
+				"x": 4,
+				"y": 9,
+				"params": {
+					"id": "papelera_4_2",
+					"story": "papelera_4_2"
+				}
+			}
 		}
 	},
 	"seen_zone": {
@@ -468,6 +559,77 @@
 		"beat_hz": 2.0,
 		"label": "Leído 03:47",
 		"z_index": 30
+	},
+	"undo_prompt": {
+		"_notes": "PROPUESTA (2026-10-28, paso 8 de docs/propuesta-mundo-4.md; ajustable jugando). «¿Deshacer escritura?» (UndoPrompt = DndSwitch con otro aspecto; sin room_tint, asi que no tine el nivel). panel_rect: ventana [x, y, ancho, alto] en px desde la esquina de la celda donde Isak se pone de pie (en la pared del fondo, detras de el); phone_center_px: centro del celular que se sacude (shake_hz); hit_rect: zona que tiene que alcanzar el pulso; pose_s: Isak de espaldas; hit_s: destello al usarlo; title / subtitle / done_label: textos del panel. story_lines: id -> linea importante de Eco al obtener el gesto (admite {apodo}); la de deshacer_4_2 es la frase del doc. Colores por nombre de la paleta provisional.",
+		"panel_rect": [
+			-48,
+			-72,
+			160,
+			88
+		],
+		"phone_center_px": [
+			32,
+			-22
+		],
+		"shake_hz": 3.0,
+		"hit_rect": [
+			8,
+			-56,
+			48,
+			48
+		],
+		"pose_s": 0.45,
+		"story_duration_s": 4.0,
+		"hit_s": 0.25,
+		"title": "¿Deshacer escritura?",
+		"subtitle": "Agita el dispositivo",
+		"done_label": "Escritura deshecha",
+		"story_lines": {
+			"deshacer_4_2": "No necesitas a nadie más."
+		},
+		"frame": "marino_luz",
+		"screen": "marino_fondo",
+		"title_bar": "marino_medio",
+		"text": "blanco_pantalla",
+		"muted": "gris_claro",
+		"phone": "crema",
+		"flash": "blanco_pantalla"
+	},
+	"typed_wall": {
+		"_notes": "PROPUESTA (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §3.7). Muro de texto: lines (por defecto, una por tile de arriba abajo), erase_s (borrado de atras adelante al alcanzarlo Agitar, tiempo del mundo; despues deja de ser solido), deflect_s (chispa gris del pulso y el laser). Colores por nombre de la paleta provisional: fill (bloque, mas transparente al borrarse), edge, ink (letras), spark.",
+		"lines": [
+			"y entonces",
+			"le dije",
+			"que…"
+		],
+		"erase_s": 0.4,
+		"deflect_s": 0.25,
+		"fill": "crema",
+		"edge": "crema_sombra",
+		"ink": "marino_fondo",
+		"spark": "gris_medio"
+	},
+	"papelera_actor": {
+		"_notes": "PROPUESTA (2026-10-28, paso 8 de docs/propuesta-mundo-4.md §4.2.2; textos PROPUESTOS salvo lo que dice el doc). frames: arte de la estacion del hub (active mientras tiene algo que decir, empty despues); sprite_offset_px: esquina del sprite de 64 x 96 desde la de su celda (de pie sobre el suelo de la fila de abajo); talk_radius_tiles: distancia (horizontal y vertical, desde sus pies a los de Isak) a la que empieza a hablar; duration_s: tiempo de las lineas (-1, el del cuadro). stories: id -> {intro: lineas importantes al acercarse Isak, after: linea no importante al obtener `ability`, ability, notice: id de seen_notices de un solo uso}.",
+		"frames": "res://assets/sprites/hub/papelera_frames.tres",
+		"sprite_offset_px": [
+			0,
+			-32
+		],
+		"talk_radius_tiles": 3.0,
+		"duration_s": -1.0,
+		"stories": {
+			"papelera_4_2": {
+				"intro": [
+					"Aquí llega lo que él tira. No lo borra. Lo guarda donde no mires.",
+					"Si quieres deshacer algo, agita. Lo escrito no siempre se queda."
+				],
+				"after": "Él no soporta el silencio. Acuérdate.",
+				"ability": "shockwave",
+				"notice": "papelera_4_2"
+			}
+		}
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) salvo debug_coral (#ff9f7a, decidido el 2026-10-27).",

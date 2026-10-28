@@ -132,7 +132,7 @@ TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
                   "blink_platform", "fragile_card", "story_card", "loading_wall",
                   "like_platform", "mirror_only", "frame_door",
-                  "chat_bubble", "typing_bubble", "autocorrect_bubble"}
+                  "chat_bubble", "typing_bubble", "autocorrect_bubble", "typed_wall"}
 # Burbujas del Mundo 4 (paso 3 de docs/propuesta-mundo-4.md §3.1): largo por el texto.
 BUBBLE_TYPES = ("chat_bubble", "typing_bubble", "autocorrect_bubble")
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
@@ -142,7 +142,8 @@ NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "abilit
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
                     "alert_major", "pause_player", "autoplay", "curator",
                     "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror",
-                    "hunter_mirror", "pose_plate", "seen_zone", "flashlight_pickup"}
+                    "hunter_mirror", "pose_plate", "seen_zone", "flashlight_pickup", "undo_prompt",
+                    "papelera_actor"}
 # Espejos del Mundo 3 (2026-10-26): orientaciones del espejo fijo y ejes de la pared de espejo.
 MIRROR_ORIENTATIONS = ("/", "\\", "|")
 MIRROR_WALL_SIDES = ("center", "left", "right")
@@ -808,8 +809,9 @@ class LevelValidator:
             if kind == "autocorrect_bubble":
                 w = max(w, _bubble_width(params.get("corrected", ""), cfg))
             return [(x + i, y) for i in range(w)]
-        if kind == "loading_wall":
-            # Muro «Cargando mas...» (Mundo 2, paso 7): 1 x height_tiles desde su celda de arriba.
+        if kind in ("loading_wall", "typed_wall"):
+            # Muro «Cargando mas...» (Mundo 2, paso 7) y muro de texto (Mundo 4, paso 8): 1 x height_tiles
+            # desde su celda de arriba.
             h = get("height_tiles", 3)
             if not _is_int(h) or h < 1:
                 return None
@@ -824,7 +826,7 @@ class LevelValidator:
             # apoyado en (x, y): columnas x y x+1, filas y-1 e y.
             return [(x + i, y - j) for j in range(2) for i in range(2)]
         if kind in ("power_switch", "debug_switch", "laser_switch", "calc_actor", "eco_guide", "dnd_switch",
-                    "pause_player", "crop_tool"):
+                    "pause_player", "crop_tool", "undo_prompt", "papelera_actor"):
             return [(x, y)]
         if kind == "frame_door":
             # Puerta de marco (Mundo 3, paso 6): 1 x 3 desde su celda de arriba.
@@ -923,6 +925,8 @@ class LevelValidator:
                 self._check_bubble(what, kind, x, y, params, entry.get("defaults", {}), catalog)
             if kind == "ink_only":
                 self._check_ink_only(what, x, y, params, entry.get("defaults", {}))
+            if kind == "typed_wall":
+                self._check_typed_wall(what, x, y, params)
             if kind == "flashlight_pickup":
                 flashlights.append((what, x, y))
             if kind == "boss_dummy":
@@ -1210,12 +1214,12 @@ class LevelValidator:
         su fila de abajo en las dos columnas de los bordes (donde nacen los clones); loading_wall con la celda
         de debajo de la ultima solida (va sobre el suelo)."""
         for i, obj in enumerate(self.level["objects"]):
-            if not isinstance(obj, dict) or obj.get("type") not in ("clone_zone", "loading_wall"):
+            if not isinstance(obj, dict) or obj.get("type") not in ("clone_zone", "loading_wall", "typed_wall"):
                 continue
             kind, x, y = obj.get("type"), obj.get("x"), obj.get("y")
             p = obj.get("params") if isinstance(obj.get("params"), dict) else {}
             what = "objects[%d] (%s)" % (i, kind)
-            if kind == "loading_wall":
+            if kind in ("loading_wall", "typed_wall"):
                 h = p.get("height_tiles", 3)
                 if _is_int(x) and _is_int(y) and _is_int(h) and self.in_bounds(x, y + h) \
                         and self.cell(x, y + h) != "#":
@@ -1635,6 +1639,23 @@ class LevelValidator:
             for (c, r) in cells:
                 if self.in_bounds(c, r) and self.cell(c, r) != ".":
                     self.error("%s (step) ocupa una celda que el grid debe dejar vacia ('.')" % what, r, c)
+
+    def _check_typed_wall(self, what, x, y, params):
+        """Muro de texto (typed_wall, paso 8 de docs/propuesta-mundo-4.md §3.7): lines, si esta, es una lista
+        de textos (una por tile, como mucho height_tiles) con glifos de la fuente."""
+        lines = params.get("lines")
+        if lines is None:
+            return
+        h = params.get("height_tiles", 3)
+        if not isinstance(lines, list) or not all(isinstance(t, str) for t in lines):
+            self.error("%s: lines debe ser una lista de textos" % what, y, x)
+            return
+        if _is_int(h) and len(lines) > h:
+            self.error("%s: %d lineas para %d tiles (una por tile)" % (what, len(lines), h), y, x)
+        glyphs = _font_glyphs()
+        missing = sorted({c for t in lines for c in t if glyphs and c not in glyphs})
+        if missing:
+            self.error("%s: lines usa glifos que no estan en la fuente: %s" % (what, " ".join(missing)), y, x)
 
     def _check_seen_wave(self, what, x, y, params, cfg):
         """Ola de «Visto» (seen_wave, paso 7 de docs/propuesta-mundo-4.md §3.5): nivel horizontal; su

@@ -40,6 +40,9 @@ Salidas (assets/sprites/hub/):
                icon_notas_00 (quien habla en el cuadro de texto: Notas)
                icon_calc_00 (quien habla en el cuadro de texto: Calc,
                con su visor despierto; 2026-10-17, tanda H3)
+               icon_papelera_00 (quien habla en el cuadro de texto: la
+               Papelera del 4-2, su cubo con la tapa y un archivo;
+               2026-10-28, paso 8 de docs/propuesta-mundo-4.md)
                lcd_panel_00 (nine-patch del estilo LCD del cuadro de
                texto de Calc: bisel del cuerpo y pantalla cian_tenue
                con el texto en fondo_profundo; margen de 3 px)       16x16
@@ -1617,6 +1620,27 @@ def icon_calc():
     return cv.img
 
 
+def icon_papelera():
+    """Icono de la Papelera para el cuadro de texto (la del 4-2, paso 8 de
+    docs/propuesta-mundo-4.md): su cubo (base y contorno cian_tenue, como el arte
+    «empty» de la estacion) con la tapa gris_apagado y un archivo asomando."""
+    cv = Canvas(16, 16)
+    file_icon(cv, 5, 0)
+    cv.rect(2, 4, 13, 6, GA)
+    cv.hline(2, 13, 4, CT)
+    cv.hline(2, 13, 6, CT)
+    cv.rect(6, 3, 9, 3, CT)
+    for y in range(7, 16):
+        inset = (y - 7) // 4
+        cv.hline(3 + inset, 12 - inset, y, BA)
+        cv.p(3 + inset, y, CT)
+        cv.p(12 - inset, y, CT)
+    cv.hline(5, 10, 15, CT)
+    for x in (6, 9):
+        cv.vline(x, 9, 13, CT)
+    return cv.img
+
+
 def lcd_panel():
     """Panel del estilo LCD de Calc (nine-patch 16x16, margen 3): contorno
     fondo_profundo con esquinas cortadas, bisel del cuerpo de Calc (gris_foto
@@ -1937,6 +1961,7 @@ def outputs():
     out["icons/world_icon_m3_00.png"] = world_icon_photo()
     out["icons/icon_notas_00.png"] = icon_notas()
     out["icons/icon_calc_00.png"] = icon_calc()
+    out["icons/icon_papelera_00.png"] = icon_papelera()
     out["icons/lcd_panel_00.png"] = lcd_panel()
     out["album/album_cell_00.png"] = album_cell(False)
     out["album/album_cell_selected_00.png"] = album_cell(True)

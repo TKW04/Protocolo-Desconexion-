@@ -10,7 +10,9 @@ grupo_test: Troll con un ciclo sin reposo, Troll disfrazado sin texto, con un am
 sin suelo debajo, y params que no existen; desde el paso 6, sala fantasmas_test y params del
 Fantasma fuera de rango; desde el paso 7, sala ola_test y olas mal formadas: fuera de la fila 0,
 en una torre, con velocidades fuera de 1,0-1,6, secciones solapadas, paradas desordenadas o
-repetidas y dos olas en un nivel) y lo que genera
+repetidas y dos olas en un nivel; desde el paso 8, sala borrados_test: muro de texto en el aire, con
+mas lineas que tiles o glifos fuera de la fuente, «¿Deshacer escritura?» con otra habilidad y Papelera
+con una historia que no existe) y lo que genera
 tools/build_level.py (largo por el texto: 1 tile por cada 6 caracteres, entre 1 y 8).
 Uso: python3 -I tests/test_world4_schema.py
 """
@@ -32,6 +34,7 @@ OSCURO_TEST = os.path.join(ROOT, "data", "levels", "oscuro_test.json")
 GRUPO_TEST = os.path.join(ROOT, "data", "levels", "grupo_test.json")
 FANTASMAS_TEST = os.path.join(ROOT, "data", "levels", "fantasmas_test.json")
 OLA_TEST = os.path.join(ROOT, "data", "levels", "ola_test.json")
+BORRADOS_TEST = os.path.join(ROOT, "data", "levels", "borrados_test.json")
 
 
 def load(path):
@@ -341,6 +344,43 @@ class WaveSchemaTest(World4SchemaBase):
         extra["params"]["id"] = "ola_2"
         level["objects"].append(extra)
         self.assert_error(level, "una sola ola")
+
+
+class BorradosSchemaTest(World4SchemaBase):
+    def setUp(self):
+        self.base = load(BORRADOS_TEST)
+
+    def test_room_passes(self):
+        self.assertEqual(self.errors(self.base), [])
+
+    def test_scene_is_up_to_date(self):
+        self.assertEqual(build_level.main(["build_level", "--check", BORRADOS_TEST]), 0)
+
+    def test_typed_wall_stands_on_the_floor_and_blocks_its_cells(self):
+        level = copy.deepcopy(self.base)
+        by_id(level, "muro_prueba")["y"] = 6
+        self.assert_error(level, "el muro va sobre el suelo")
+        level = copy.deepcopy(self.base)
+        set_cell(level, 22, 8, "#")
+        self.assert_error(level, "typed_wall")
+
+    def test_typed_wall_lines(self):
+        level = copy.deepcopy(self.base)
+        by_id(level, "muro_prueba")["params"]["lines"] = ["a", "b", "c", "d"]
+        self.assert_error(level, "4 lineas para 3 tiles")
+        level = copy.deepcopy(self.base)
+        by_id(level, "muro_prueba")["params"]["lines"] = ["y entonces", "le dije", "que\u2603"]
+        self.assert_error(level, "glifos que no estan en la fuente")
+
+    def test_undo_prompt_only_gives_shockwave(self):
+        level = copy.deepcopy(self.base)
+        by_id(level, "deshacer_prueba")["params"]["ability"] = "dash"
+        self.assert_error(level, "ability")
+
+    def test_papelera_story_must_exist(self):
+        level = copy.deepcopy(self.base)
+        by_id(level, "papelera_prueba")["params"]["story"] = "otra"
+        self.assert_error(level, "story")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/papelera_actor.gd" id="1_papelera_actor"]
+
+[node name="PapeleraActor" type="Node2D"]
+script = ExtResource("1_papelera_actor")
