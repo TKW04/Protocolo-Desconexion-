@@ -24,9 +24,10 @@ de atencion, icono del HUD, brillo de Eco con la Q, «sin guardar»).
      tools/measure_tower_contrast.py; el cuerpo casi negro de Isak se informa, no se exige (criterio del Mundo 2);
   4. el verde apagado del «Visto» (y todo verde de la paleta) con saturacion <= 40 %, lejos del verde acido del
      Debug del Mundo 3 (#a6ff2e); el fondo es marino (tono 210-240);
-  5. bajo el velo del Modo oscuro (chat_noche al 60 %) el contorno de lo que dana (el mejor de alerta /
-     alerta_sombra), los puntos del «escribiendo…» (crema) y los checks del «Visto» (verde_apagado) contrastan
-     >= 3:1; bajo el velo del congelado (gris_oscuro al 50 %) el contorno de lo que dana tambien.
+  5. bajo el velo del Modo oscuro (chat_noche al 93 % desde el 2026-10-28; 60 % y 75 % antes) el contorno de lo que
+     dana (el mejor de alerta / alerta_sombra), los puntos del «escribiendo…» (crema) y los checks del «Visto»
+     (verde_apagado), que se dibujan por encima, contrastan >= 3:1, y cualquier color de la paleta que quede
+     DEBAJO del velo no pasa de 1,25:1 frente a el (sin la Linterna casi no se ve); bajo el velo del congelado (gris_oscuro al 50 %) el contorno de lo que dana tambien.
 
 Genera assets/palettes/mundo4_provisional.gpl y escribe la seccion palette de data/world4_objects.json.
 Con --check sale con 1 si algo no esta al dia o una regla falla (imprime las medidas con --verbose).
@@ -94,7 +95,7 @@ ECO_DOTS = "29defa"
 ## Verde acido del Debug del Mundo 3 (assets/palettes/mundo3.gpl).
 WORLD3_GREEN = "a6ff2e"
 ## Velos (§3.3 y §3.6; los valores definitivos se ajustan en los pasos 2 y 4).
-DARK_VEIL = 0.75    # chat_noche sobre el fondo en las zonas «Modo oscuro» (0,60 hasta el 2026-10-28)
+DARK_VEIL = 0.93    # chat_noche sobre el fondo en las zonas «Modo oscuro» (0,60 y 0,75 antes de la prueba del usuario del 2026-10-28)
 FROZEN_VEIL = 0.50  # gris_oscuro sobre la escena mientras Isak esta congelado
 
 # Umbrales de §6.1.
@@ -105,6 +106,9 @@ MIN_DE_GREEN_WORLD3 = 30.0
 GREEN_MAX_SAT = 0.40
 NAVY_HUE = (210.0, 240.0)
 MIN_CONTRAST = 3.0
+## Regla 5 (2026-10-28, prueba del usuario: «que solo se pueda ver con la lampara»): bajo el velo del Modo oscuro
+## cualquier color de la paleta queda a <= este contraste del propio velo (casi invisible sin la Linterna).
+MAX_DARK_HIDDEN = 1.25
 
 
 # ------------------------------------------------------------------ color
@@ -203,6 +207,7 @@ def metrics(colors=None, debug_hex=None):
         "cr_dark_outline": outline(dark),
         "cr_dark_dots": min(ratio(p["crema"], v) for v in dark),
         "cr_dark_checks": min(ratio(p["verde_apagado"], v) for v in dark),
+        "cr_dark_hidden": max(ratio(mix(c, p["chat_noche"], DARK_VEIL), v) for c in p.values() for v in dark),
         "cr_frozen_outline": outline(frozen),
     }
 
@@ -273,6 +278,9 @@ def check_rules(colors=None, debug_hex=None):
                       ("cr_dark_checks", "los checks del «Visto»")):
         if m[key] < MIN_CONTRAST:
             errors.append("regla 5: en el Modo oscuro %s < 3:1 (%.2f)" % (what, m[key]))
+    if m["cr_dark_hidden"] > MAX_DARK_HIDDEN:
+        errors.append("regla 5: el velo del Modo oscuro deja ver lo de debajo (%.2f:1 > %.2f:1)"
+                      % (m["cr_dark_hidden"], MAX_DARK_HIDDEN))
     if m["cr_frozen_outline"] < MIN_CONTRAST:
         errors.append("regla 5: bajo el velo del congelado el contorno de lo que dana < 3:1 (%.2f)"
                       % m["cr_frozen_outline"])
@@ -282,10 +290,10 @@ def check_rules(colors=None, debug_hex=None):
 def metrics_line(m):
     return ("coral dE rojo %.0f (con Debug %.0f), %.1f:1 sobre marino · crema-puntos dE %.0f · Isak cian %.1f:1 "
             "(cuerpo %.1f:1) · Eco %.1f:1 · puntos Eco/escribiendo dE %.0f · verde sat %.0f %% · oscuro: contorno "
-            "%.1f:1, puntos %.1f:1, checks %.1f:1 · congelado: contorno %.1f:1"
+            "%.1f:1, puntos %.1f:1, checks %.1f:1, lo de debajo %.2f:1 · congelado: contorno %.1f:1"
             % (m["de_coral_red"], m["de_coral_red_debug"], m["cr_coral_navy"], m["de_cream_amber"], m["cr_isak"],
                m["cr_isak_body"], m["cr_eco"], m["de_eco_typing_dots"], m["green_sat"] * 100, m["cr_dark_outline"],
-               m["cr_dark_dots"], m["cr_dark_checks"], m["cr_frozen_outline"]))
+               m["cr_dark_dots"], m["cr_dark_checks"], m["cr_dark_hidden"], m["cr_frozen_outline"]))
 
 
 # ------------------------------------------------------------------ salida

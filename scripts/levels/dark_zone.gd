@@ -1,10 +1,11 @@
 ## Zona «Modo oscuro» (tipo `dark_zone` del catalogo del Mundo 4; 2026-10-28, paso 4 de
 ## docs/propuesta-mundo-4.md §8 y §3.6): rectangulo de width_tiles x height_tiles desde
-## su celda con un VELO casi negro (chat_noche al veil_alpha; regla 5 de
+## su celda con un VELO casi negro (chat_noche al veil_alpha, 93 % desde la prueba del
+## usuario del 2026-10-28: fuera de la luz casi no se ve nada; regla 5 de
 ## tools/palette_mundo4_provisional.py) por encima del mundo (z_index veil_z). Sin
 ## colision ni dano.
 ## - Con la Linterna conocida (GameState.has_met_ally("linterna")) y el cuerpo de Isak
-##   dentro, el velo abre un CIRCULO DE LUZ de light_radius_tiles (3) alrededor de Isak
+##   dentro, el velo abre un CIRCULO DE LUZ de light_radius_tiles (3,5) alrededor de Isak
 ##   (shader del velo: hole_center / hole_radius, borde suave hole_soft_px). Sin
 ##   Linterna (no pasa en el Mundo 4) la zona se recorre igual, a oscuras.
 ## - Legibilidad (la exige el validador): por encima del velo siempre se ven el
@@ -143,7 +144,7 @@ func get_zone_rect() -> Rect2:
 
 
 func get_veil_alpha() -> float:
-	return float(_cfg.get("veil_alpha", 0.75))
+	return float(_cfg.get("veil_alpha", 0.93))
 
 
 ## La Linterna esta conocida (aliada de registro).
@@ -162,7 +163,7 @@ func is_hole_open() -> bool:
 
 ## Radio de la luz: light_radius_tiles (3) tiles.
 func get_light_radius() -> float:
-	return float(_cfg.get("light_radius_tiles", 3.0)) * World4ObjectsConfig.tile_size()
+	return float(_cfg.get("light_radius_tiles", 3.5)) * World4ObjectsConfig.tile_size()
 
 
 ## Centro de la luz (global): el centro del cuerpo de Isak.

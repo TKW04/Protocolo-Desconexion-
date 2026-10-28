@@ -136,10 +136,11 @@ def preview_image():
             im = enemies[name]
             img.alpha_composite(im, (x, y0 + 216 - im.height))
             x += im.width + 16
-        # Modo oscuro: velo chat_noche al 60 % con el contorno rojo y los checks por encima.
+        # Modo oscuro: velo chat_noche al DARK_VEIL (93 %) con el contorno rojo (alerta, el del juego) y los checks
+        # por encima.
         veil = Image.new("RGBA", (180, 140), hexes["chat_noche"] + (int(255 * pal.DARK_VEIL),))
         img.alpha_composite(veil, (W - 196, y0 + 76))
-        d.rectangle((W - 170, y0 + 150, W - 140, y0 + 180), outline=hexes["alerta_sombra"], width=2)
+        d.rectangle((W - 170, y0 + 150, W - 140, y0 + 180), outline=hexes["alerta"], width=2)
         d.text((W - 120, y0 + 160), "vv", fill=hexes["verde_apagado"])
     return img
 

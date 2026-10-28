@@ -83,6 +83,14 @@ class PaletteMundo4Test(unittest.TestCase):
             self.assertGreaterEqual(m[key], 3.0, key)
         self._fails("regla 5", _with(verde_apagado="3c4e40"))  # checks oscuros en el Modo oscuro
         self._fails("regla 5", _with(gris_oscuro="8890a0"))    # velo del congelado claro: contorno perdido
+        # 2026-10-28: el velo es casi negro; lo de debajo apenas se distingue (y con el de antes, 75 %, si).
+        self.assertLessEqual(m["cr_dark_hidden"], pal.MAX_DARK_HIDDEN)
+        old = pal.DARK_VEIL
+        try:
+            pal.DARK_VEIL = 0.75
+            self._fails("regla 5", None)
+        finally:
+            pal.DARK_VEIL = old
 
     def test_world4_catalog_has_types_of_worlds_1_to_3(self):
         catalog = level_catalog.load_catalog(ROOT, 4)
