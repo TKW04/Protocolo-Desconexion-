@@ -1,0 +1,175 @@
+{
+	"_notes": "ARENA DEL JEFE DEL MUNDO 4 «Chat vacío» (El Visto; paso 16 de docs/propuesta-mundo-4.md §8, 2026-10-28; diseño en §5.2). kind boss: sin meta G ni terminal (la pelea termina con el golpe final y la secuencia de derrota de BossBase); el jefe es el objeto seen (Seen, datos de la pelea en data/bosses/seen.json). 20 x 11 tiles = 1280 x 704 px: CABE ENTERA en pantalla (camara fija, camera.follow false del jefe), como la de la Curadora. Muros en las columnas 0 y 19, techo en la fila 0 y suelo en la 10 (Isak de pie en las filas 8-9). El jefe: doble check de 6 x 3 (columnas 7-12, filas 1-3; no solido) con el check gris «sin leer» debajo. BURBUJAS FIJAS de una via (chat_bubble) burbuja_izq y burbuja_der (columnas 3-6 y 13-16, superficie en la fila 6): desde su borde interior Agitar alcanza el escudo (fase 2) y el celular de Isak queda a la altura del check gris aturdido (fase 3). BURBUJAS BAJAS burbuja_baja_izq y burbuja_baja_der (columnas 1-2 y 17-18, superficie en la fila 8): se sube desde el suelo y desde ellas a las fijas (el salto de 3 tiles no llega del suelo a la fila 6). FASE 2 (active_in_phase [2]): dos Trolls, troll_izq sobre la burbuja fija izquierda (3, 5) mirando a la derecha y troll_der sobre la derecha (16, 5) mirando a la izquierda. Fase 3: el «escribiendo…» gigante (columnas 7-12, filas 6-7) lo dibuja El Visto: el rectangulo queda libre en el grid. CARGADORES de arena (§5.2): columnas 3, 7, 12 y 16 del suelo: +50, reutilizables, 4 s en Caché (El Visto los pone a 5 s en Kernel y 6 s en Raíz: laps.<n>.charger_cooldown_s); desde cualquier celda del suelo hay uno a 4 tiles o menos. Debug a un cuarto de gasto (debug_drain_scale 0.25) y mundo a x0,7 con el Debug (debug_world_scale 0.7), los de los otros jefes (los recalcula el validador de arenas del paso 17). Vortice de llegada (P) en (5, 9). Sin puntos, power banks, vida extra ni checkpoints. Se abre con $GODOT --path . -- --start-level=4-boss (build de depuracion); la fila «Jefe: El Visto» del hub sigue «Próximamente» hasta el paso 18. Validador: hoy solo las comprobaciones basicas de validate_basic_arena (el completo es el paso 17).",
+	"id": "4-boss",
+	"name": "Chat vacío",
+	"world": 4,
+	"kind": "boss",
+	"boss": "seen",
+	"tile_size": 64,
+	"debug_color": "coral",
+	"target_duration_s": 300,
+	"difficulty": 4,
+	"debug_drain_scale": 0.25,
+	"debug_world_scale": 0.7,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"shockwave": true
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"sections": [
+		{
+			"name": "Chat vacío",
+			"x_from": 0,
+			"x_to": 19,
+			"patterns": [
+				"ghosting",
+				"grupo",
+				"escribiendo"
+			]
+		}
+	],
+	"checkpoints": [],
+	"secrets": [],
+	"unlocks": [],
+	"grid": [
+		"####################",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#..E............E..#",
+		"#..................#",
+		"#..................#",
+		"#..................#",
+		"#....P.............#",
+		"####################"
+	],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 3,
+			"y": 9,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 12,
+			"y": 9,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 16,
+			"y": 9,
+			"params": {
+				"id": "cargador_4",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 4.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 3,
+			"y": 6,
+			"params": {
+				"id": "burbuja_izq",
+				"text": "Visto hoy a las 3:47",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 6,
+			"params": {
+				"id": "burbuja_der",
+				"text": "Nadie contestó. Visto.",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 8,
+			"params": {
+				"id": "burbuja_baja_izq",
+				"text": "¿Hola?…",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 17,
+			"y": 8,
+			"params": {
+				"id": "burbuja_baja_der",
+				"text": "¿Sigues ahí?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "seen",
+			"x": 7,
+			"y": 1,
+			"params": {
+				"id": "seen"
+			}
+		}
+	],
+	"enemies": [
+		{
+			"type": "troll",
+			"id": "troll_izq",
+			"x": 3,
+			"y": 5,
+			"params": {
+				"facing": 1
+			},
+			"active_in_phase": [
+				2
+			]
+		},
+		{
+			"type": "troll",
+			"id": "troll_der",
+			"x": 16,
+			"y": 5,
+			"params": {
+				"facing": -1
+			},
+			"active_in_phase": [
+				2
+			]
+		}
+	]
+}

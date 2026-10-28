@@ -1,0 +1,137 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="4_charger"]
+[ext_resource type="PackedScene" path="res://scenes/levels/chat_bubble.tscn" id="5_chat_bubble"]
+[ext_resource type="PackedScene" path="res://scenes/bosses/seen.tscn" id="6_seen"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="7_troll"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="8_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="9_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="10_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="11_help_system"]
+
+[node name="Level_4_boss" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "4-boss"
+level_name = "Chat vacío"
+world = 4
+tile_size = 64
+size_tiles = Vector2i(20, 11)
+debug_color = "coral"
+abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true, "shockwave": true}
+debug_drain_scale = 0.25
+debug_world_scale = 0.7
+source_path = "res://data/levels/4-boss.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 10, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 13, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="cargador_1" parent="Objects" instance=ExtResource("4_charger") groups=["help_target"]]
+position = Vector2(192, 576)
+amount = 50.0
+cooldown_s = 4.0
+object_id = &"cargador_1"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="cargador_2" parent="Objects" instance=ExtResource("4_charger") groups=["help_target"]]
+position = Vector2(448, 576)
+amount = 50.0
+cooldown_s = 4.0
+object_id = &"cargador_2"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="cargador_3" parent="Objects" instance=ExtResource("4_charger") groups=["help_target"]]
+position = Vector2(768, 576)
+amount = 50.0
+cooldown_s = 4.0
+object_id = &"cargador_3"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="cargador_4" parent="Objects" instance=ExtResource("4_charger") groups=["help_target"]]
+position = Vector2(1024, 576)
+amount = 50.0
+cooldown_s = 4.0
+object_id = &"cargador_4"
+reusable = true
+metadata/help_id = "charger"
+
+[node name="burbuja_izq" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
+position = Vector2(192, 384)
+object_id = &"burbuja_izq"
+author_side = &"left"
+text = "Visto hoy a las 3:47"
+width_tiles = 4
+metadata/help_id = "chat_bubble"
+
+[node name="burbuja_der" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
+position = Vector2(832, 384)
+object_id = &"burbuja_der"
+author_side = &"right"
+text = "Nadie contestó. Visto."
+width_tiles = 4
+metadata/help_id = "chat_bubble"
+
+[node name="burbuja_baja_izq" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
+position = Vector2(64, 512)
+object_id = &"burbuja_baja_izq"
+author_side = &"right"
+text = "¿Hola?…"
+width_tiles = 2
+metadata/help_id = "chat_bubble"
+
+[node name="burbuja_baja_der" parent="Objects" instance=ExtResource("5_chat_bubble") groups=["help_target"]]
+position = Vector2(1088, 512)
+object_id = &"burbuja_baja_der"
+author_side = &"right"
+text = "¿Sigues ahí?"
+width_tiles = 2
+metadata/help_id = "chat_bubble"
+
+[node name="seen" parent="Objects" instance=ExtResource("6_seen")]
+position = Vector2(448, 64)
+object_id = &"seen"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="troll_izq" parent="Enemies" instance=ExtResource("7_troll") groups=["help_target"]]
+position = Vector2(224, 384)
+metadata/params = {"facing": 1}
+metadata/help_id = "troll"
+metadata/active_in_phase = [2]
+
+[node name="troll_der" parent="Enemies" instance=ExtResource("7_troll") groups=["help_target"]]
+position = Vector2(1056, 384)
+metadata/params = {"facing": -1}
+metadata/help_id = "troll"
+metadata/active_in_phase = [2]
+
+[node name="Isak" parent="." instance=ExtResource("8_isak")]
+position = Vector2(352, 640)
+camera_limits = Rect2i(0, 0, 1280, 704)
+
+[node name="Hud" parent="." instance=ExtResource("9_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("10_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("11_help_system")
