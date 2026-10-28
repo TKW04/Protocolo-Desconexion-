@@ -7,13 +7,18 @@
 # se descubre; Agitar lo descubre y aturde; vuelve al disfraz al reaparecer) y
 # Sticker (persigue a 6 tiles, se infla 9 cuadros a 1,5 tiles y explota con -10;
 # el pulso lo para; Agitar lo desinfla con +5; laser vida 1; explotado vuelve al
-# reaparecer). La sala grupo_test carga. Delta fijo; los enemigos con step().
+# reaparecer). La sala grupo_test carga. Desde el paso 6, Fantasma (patrulla y
+# dana al contacto; a 3 tiles se esfuma en 0,3 s, 1,0 s despues reaparece 2 tiles
+# detras de Isak con aviso de 9 cuadros y 0,5 s despues embiste; con el Debug se
+# ve el rastro; el pulso al reaparecer lo aturde y aturdido el laser lo derrota)
+# y la sala fantasmas_test. Delta fijo; los enemigos con step().
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const TROLL_SCENE: PackedScene = preload("res://scenes/enemies/troll.tscn")
 const MIMIC_SCENE: PackedScene = preload("res://scenes/enemies/troll_mimic.tscn")
 const STICKER_SCENE: PackedScene = preload("res://scenes/enemies/sticker.tscn")
+const GHOST_SCENE: PackedScene = preload("res://scenes/enemies/ghost.tscn")
 const DT: float = 1.0 / 60.0
 const EPS: float = 0.01
 const T: float = 64.0
@@ -408,4 +413,155 @@ func test_grupo_test_room_loads() -> void:
 		elif e.scene_file_path.ends_with("sticker.tscn"):
 			stickers += 1
 	assert_eq([trolls, mimics, stickers], [3, 1, 2], "Tres Trolls, un disfrazado y dos Stickers")
+	level.free()
+
+
+# --- Fantasma ---
+
+func _ghost(col: float) -> Ghost:
+	var g := GHOST_SCENE.instantiate() as Ghost
+	g.position = Vector2((col + 0.5) * T, 0.0)
+	_world.add_child(g)
+	g.set_physics_process(false)
+	g.target = _isak
+	return g
+
+
+## Lleva al Fantasma de la patrulla hasta el aviso de reaparicion (Isak quieto).
+func _until(g: Ghost, state: StringName, max_s: float = 4.0) -> float:
+	var t: float = 0.0
+	while g.get_state() != state and t < max_s:
+		g.step(DT)
+		t += DT
+	return t
+
+
+func test_ghost_patrols_and_hurts_on_contact() -> void:
+	var g: Ghost = _ghost(20)
+	g.detect_tiles = 0.0
+	var x0: float = g.global_position.x
+	_run([g], 1.0)
+	assert_almost_eq(absf(g.global_position.x - x0), 60.0, 1.0, "Patrulla a 60 px/s")
+	_isak.global_position = g.global_position
+	_isak.velocity = Vector2.ZERO
+	_sim.settle()
+	var hits: Array = []
+	g.hit_player.connect(func(a: float) -> void: hits.append(a))
+	g.step(DT)
+	assert_eq(hits, [10.0], "Contacto: -10")
+
+
+func test_ghost_vanishes_and_reappears_two_tiles_behind_after_one_second() -> void:
+	var g: Ghost = _ghost(16)
+	g.speed_px_s = 0.0
+	_stand_at(14)
+	_isak.facing = 1.0
+	g.step(DT)
+	assert_eq(g.get_state(), Ghost.STATE_VANISH, "A <= 3 tiles se esfuma")
+	assert_false(g.is_visible_ghost() and g.get_alpha() >= 0.6)
+	var t_vanish: float = _until(g, Ghost.STATE_HIDDEN)
+	assert_almost_eq(t_vanish, 0.3, 0.03, "0,3 s esfumandose")
+	assert_false(g.is_visible_ghost(), "Oculto")
+	assert_false(g.receive_pulse(_fake_pulse(g.get_body_rect().get_center(), 300.0)), "Oculto, el pulso no lo toca")
+	var appeared: Array = []
+	g.appearing.connect(func(at: Vector2) -> void: appeared.append(at))
+	var t_hidden: float = _until(g, Ghost.STATE_WARN)
+	assert_almost_eq(t_hidden, 1.0, 0.03, "1,0 s despues reaparece")
+	assert_eq(appeared.size(), 1, "Aviso posicional")
+	assert_almost_eq(g.global_position.x, _isak.global_position.x - 2.0 * T, 0.5, "2 tiles detras (mira a la derecha)")
+	assert_almost_eq(g.global_position.y, _isak.global_position.y, 0.5, "A la altura de sus pies")
+	assert_almost_eq(g.get_warn_s(), 0.75, EPS, "Aviso de 9 cuadros a 12 fps")
+
+
+func test_ghost_charges_half_a_second_after_its_warning() -> void:
+	var g: Ghost = _ghost(16)
+	g.speed_px_s = 0.0
+	_stand_at(14)
+	_isak.facing = -1.0
+	_until(g, Ghost.STATE_WARN)
+	assert_almost_eq(g.global_position.x, _isak.global_position.x + 2.0 * T, 0.5, "Detras: mira a la izquierda")
+	var t_warn: float = _until(g, Ghost.STATE_READY)
+	assert_almost_eq(t_warn, 0.75, 0.03)
+	var hits: Array = []
+	g.hit_player.connect(func(a: float) -> void: hits.append(a))
+	var t_ready: float = _until(g, Ghost.STATE_CHARGE)
+	assert_almost_eq(t_ready, 0.5, 0.03, "0,5 s despues embiste")
+	assert_eq(hits.size(), 0, "Hasta embestir no dana")
+	for i: int in roundi(0.6 / DT):
+		g.step(DT)
+	assert_eq(hits, [10.0], "La embestida le da")
+
+
+func test_debug_shows_the_trail_to_the_reappearance_point() -> void:
+	var g: Ghost = _ghost(16)
+	g.speed_px_s = 0.0
+	_stand_at(14)
+	_isak.facing = 1.0
+	_until(g, Ghost.STATE_HIDDEN)
+	g.step(DT)
+	assert_false(g.is_trail_visible(), "Sin el Debug no hay rastro")
+	_activate_debug()
+	assert_true(g.is_trail_visible(), "Con el Debug, el rastro")
+	assert_almost_eq(g.get_vanish_point().x, (16.5) * T, 0.5, "Desde donde se esfumo")
+	assert_almost_eq(g.get_appear_point().x, _isak.global_position.x - 2.0 * T, 0.5, "Hasta donde va a reaparecer")
+	_isak.facing = -1.0
+	g.step(DT)
+	assert_almost_eq(g.get_appear_point().x, _isak.global_position.x + 2.0 * T, 0.5, "Sigue a donde mira Isak")
+
+
+func test_pulse_on_reappearing_stuns_and_the_laser_defeats_it() -> void:
+	var g: Ghost = _ghost(16)
+	g.speed_px_s = 0.0
+	_stand_at(14)
+	_until(g, Ghost.STATE_READY)
+	var deflects: Array = []
+	g.deflected.connect(func() -> void: deflects.append(1))
+	g.on_laser_hit(1.0, _isak)
+	assert_eq(deflects.size(), 1, "Despierto: chispa gris")
+	assert_true(g.receive_pulse(_fake_pulse(g.get_body_rect().get_center(), 96.0)))
+	assert_true(g.is_stunned())
+	assert_almost_eq(g.get_stun_left(), 3.0, EPS)
+	var before: int = _count_pickups()
+	g.on_laser_hit(1.0, _isak)
+	g.on_laser_hit(1.0, _isak)
+	assert_true(g.is_defeated(), "Vida 2")
+	assert_eq(_count_pickups(), before + 1)
+	g.reset_patrol()
+	assert_true(g.is_defeated(), "No vuelve")
+
+
+func test_ghost_appears_ahead_when_behind_is_terrain() -> void:
+	var wall := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(T, 3.0 * T)
+	shape.shape = rect
+	wall.add_child(shape)
+	wall.position = Vector2(12.5 * T, -1.5 * T)
+	_world.add_child(wall)
+	await wait_physics_frames(2)
+	var g: Ghost = _ghost(16)
+	_stand_at(14)
+	_isak.facing = 1.0
+	assert_almost_eq(g.compute_appear_point().x, _isak.global_position.x + 2.0 * T, 0.5, "Detras hay pared: delante")
+
+
+func test_ghost_reset_returns_it_to_its_spot() -> void:
+	var g: Ghost = _ghost(16)
+	_stand_at(14)
+	_until(g, Ghost.STATE_WARN)
+	g.reset_patrol()
+	assert_eq(g.get_state(), Ghost.STATE_PATROL)
+	assert_almost_eq(g.global_position.x, 16.5 * T, 0.5)
+
+
+func test_fantasmas_test_room_loads() -> void:
+	var scene := load("res://scenes/levels/fantasmas_test.tscn") as PackedScene
+	assert_not_null(scene, "Sala fantasmas_test generada")
+	var level: Node = scene.instantiate()
+	var ghosts: int = 0
+	for e: Node in level.get_node(^"Enemies").get_children():
+		if e.scene_file_path.ends_with("ghost.tscn"):
+			ghosts += 1
+	assert_eq(ghosts, 2)
 	level.free()

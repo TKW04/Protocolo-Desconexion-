@@ -1,0 +1,30 @@
+{
+	"_notes": "FANTASMA (ghost), Mundo 4 «El Chat» (paso 6 de docs/propuesta-mundo-4.md §8; comportamiento en §3.7 y patron 21 de §3.8). Script scripts/enemies/ghost.gd (Ghost), escena scenes/enemies/ghost.tscn. Avatar en blanco translucido que FLOTA (sin gravedad) y PATRULLA en horizontal a patrol_speed_px_s dentro de patrol_range_px alrededor de su sitio (origen en sus pies, abajo-centro de la celda E), girando en paredes. Con Isak a <= detect_tiles (3) tiles (de centro a centro) SE ESFUMA en vanish_s (0,3 s), desaparece hidden_s (1,0 s desde que termina de esfumarse) y REAPARECE behind_tiles (2) tiles DETRAS de Isak (al lado contrario de donde mira, a la altura de sus pies; si ahi hay terreno, delante) con un AVISO de anticipation_frames cuadros a anim_fps (9 a 12 fps = 0,75 s: la silueta se rellena y late en rojo; senal `appearing` para el sonido posicional sfx_w4_ghost_appear del paso 20); el punto se fija al empezar el aviso. ready_s (0,5 s) despues EMBISTE: cruza charge_tiles (4) tiles hacia donde estaba Isak a charge_speed_px_s (360) y su contacto quita contact_damage (10) con el retroceso (el dash protege). Despues patrulla alli y no vuelve a esfumarse hasta cooldown_s. Al patrullar tambien dana al contacto (contacto de la Burbuja); esfumandose, oculto o avisando no. CON EL DEBUG (DebugMode.is_revealing): el RASTRO, una linea de puntos coral desde donde se esfumo hasta donde va a reaparecer (mientras esta oculto o avisando), por encima del velo del Modo oscuro. PULSO (visible): aturde stun_s (3 s; x el Pulso 3; Pulso de retorno con el Pulso 5); la embestida en curso se para. AGITAR: aturde 3 s si la onda lo alcanza (visible). LASER: despierto, chispa gris; aturdido, dano: health 2, a 0 derrotado para siempre con drops (+20 de energia, como el Troll; PROPUESTA). Tiempo del mundo. Al reaparecer Isak vuelve a su sitio patrullando. Sin Q todavia (help_id ghost en el paso 10). Aspecto PROVISIONAL por codigo.",
+	"start_direction": 1,
+	"patrol_speed_px_s": 60.0,
+	"patrol_range_px": 256.0,
+	"detect_tiles": 3.0,
+	"vanish_s": 0.3,
+	"hidden_s": 1.0,
+	"behind_tiles": 2.0,
+	"anim_fps": 12.0,
+	"anticipation_frames": 9,
+	"ready_s": 0.5,
+	"charge_speed_px_s": 360.0,
+	"charge_tiles": 4.0,
+	"cooldown_s": 1.0,
+	"contact_damage": 10.0,
+	"stun_s": 3.0,
+	"health": 2,
+	"drops": {"_notes": "+20 de energia al derrotarlo (PROPUESTA, como el Troll).", "debug_energy": 20},
+	"body_size": [40.0, 56.0],
+	"deflect_s": 0.25,
+	"level_params": {
+		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max] o sus valores.",
+		"start_direction": {"values": [-1, 1]},
+		"patrol_speed_px_s": {"min": 0, "max": 160},
+		"patrol_range_px": {"min": 0, "max": 768},
+		"detect_tiles": {"min": 2, "max": 5},
+		"health": {"min": 1, "max": 6, "int": true}
+	}
+}

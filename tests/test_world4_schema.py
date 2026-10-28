@@ -7,7 +7,8 @@ disparo que no es una burbuja o con un ciclo demasiado corto, autocorrector que 
 pinchos al descubierto; desde el paso 4, sala oscuro_test: escrito en tinta fuera de una
 dark_zone, sin texto o sobre terreno, y dos Linternas en un nivel; desde el paso 5, sala
 grupo_test: Troll con un ciclo sin reposo, Troll disfrazado sin texto, con un amigo desconocido o
-sin suelo debajo, y params que no existen) y lo que genera
+sin suelo debajo, y params que no existen; desde el paso 6, sala fantasmas_test y params del
+Fantasma fuera de rango) y lo que genera
 tools/build_level.py (largo por el texto: 1 tile por cada 6 caracteres, entre 1 y 8).
 Uso: python3 -I tests/test_world4_schema.py
 """
@@ -27,6 +28,7 @@ VISTO_TEST = os.path.join(ROOT, "data", "levels", "visto_test.json")
 BURBUJAS_TEST = os.path.join(ROOT, "data", "levels", "burbujas_test.json")
 OSCURO_TEST = os.path.join(ROOT, "data", "levels", "oscuro_test.json")
 GRUPO_TEST = os.path.join(ROOT, "data", "levels", "grupo_test.json")
+FANTASMAS_TEST = os.path.join(ROOT, "data", "levels", "fantasmas_test.json")
 
 
 def load(path):
@@ -263,6 +265,26 @@ class GroupSchemaTest(World4SchemaBase):
         level = copy.deepcopy(self.base)
         enemy(level, "sticker_1")["params"] = {"blast_tiles": 3}
         self.assert_error(level, "params.blast_tiles no existe para sticker")
+
+
+
+class GhostSchemaTest(World4SchemaBase):
+    def setUp(self):
+        self.base = load(FANTASMAS_TEST)
+
+    def test_room_passes(self):
+        self.assertEqual(self.errors(self.base), [])
+
+    def test_scene_is_up_to_date(self):
+        self.assertEqual(build_level.main(["build_level", "--check", FANTASMAS_TEST]), 0)
+
+    def test_ghost_params_have_ranges(self):
+        level = copy.deepcopy(self.base)
+        enemy(level, "fantasma_pasillo")["params"]["detect_tiles"] = 9
+        self.assert_error(level, "params.detect_tiles = 9 fuera de [2, 5]")
+        level = copy.deepcopy(self.base)
+        enemy(level, "fantasma_pasillo")["params"]["start_direction"] = 0
+        self.assert_error(level, "params.start_direction debe ser uno de [-1, 1]")
 
 
 if __name__ == "__main__":

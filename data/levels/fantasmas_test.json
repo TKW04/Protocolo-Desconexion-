@@ -1,0 +1,69 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 38x12 del FANTASMA del Mundo 4 (§3.7 y patron 21 de §3.8). Isak llega por la izquierda (P, fila 9) con el pulso, el laser y el Debug; cargador en la columna 4. Patron 21 «Rastro»: pasillo de techo bajo (columnas 10-26, techo en la fila 7: 2 filas de alto) con un Fantasma en la columna 18 que patrulla; a 3 tiles se esfuma y 1,0 s despues reaparece 2 tiles detras de Isak con aviso de 9 cuadros y embiste 0,5 s despues; con el Debug (K) se ve el rastro coral hasta donde va a reaparecer: girarse y pulso (G) al reaparecer; aturdido, el laser (F) lo derrota. Segundo Fantasma en abierto (columna 31). Terminal en (35, 8). Sin Q (help_id previsto ghost, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela el Fantasma (paso 9b). Escena: scenes/levels/fantasmas_test.tscn (python3 tools/build_level.py data/levels/fantasmas_test.json).",
+	"id": "fantasmas_test",
+	"name": "Fantasmas (prueba)",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "fantasma_pasillo",
+			"type": "ghost",
+			"x": 18,
+			"y": 9,
+			"params": {
+				"start_direction": -1,
+				"patrol_range_px": 384
+			}
+		},
+		{
+			"id": "fantasma_abierto",
+			"type": "ghost",
+			"x": 31,
+			"y": 9
+		}
+	],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"id": "cargador_fantasmas"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 35,
+			"y": 8,
+			"params": {
+				"id": "terminal_fantasmas",
+				"text": "Responder",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"######################################",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#.........#################..........#",
+		"#....................................#",
+		"#.P...............E............E...G.#",
+		"######################################",
+		"######################################"
+	]
+}
