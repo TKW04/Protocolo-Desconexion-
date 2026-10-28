@@ -1198,6 +1198,8 @@ El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicie
 - Junto a la última burbuja de Tomi, antes de la puerta «Responder más tarde» (no importante): «No hace falta contestar ahora, {apodo}. Ya habrá tiempo.» (`eco_cierre`). La puerta muestra «Sin conexión» (V15).
 - 14 ayudas con Q del Mundo 4 (`data/help.json`, `world: 4`): burbuja, «Escribiendo…», «Visto», Linterna, autocorrector, «¿Deshacer escritura?», muro de texto, Troll, Sticker, Fantasma, Troll disfrazado y, desde el paso 20, El Visto («Te lee y no contesta. Con el Debug se ve el check que no ha leído. Márcalo con el pulso y dispárale.»), su escudo («Mucha gente alrededor. Agita cuando no quede nadie.») y su «escribiendo…» gigante («Está a punto de mandarlo. Si lo interrumpes con un pulso, se queda callado.»).
 
+- Ayuda con Q del **Acechador** (2026-10-28, peligros ocultos del Modo oscuro; `lurker` de `data/help.json`, solo cuando se ve): «Ojos en la oscuridad. Algo espera a que pases. La Linterna lo enseña entero y el Debug, su silueta. Cuando se pone rojo va a atacar: un pulso a tiempo.» (propuesto).
+
 **El Visto** (Eco habla por él; `data/bosses/seen.json`, `texts`)
 - Intro (importante): «Ya lo leí, {apodo}. No hace falta que contestes.»
 - Fase 2: «Mira cuánta gente. Ninguno te escribe.» · Fase 3: «Escribiendo… para ti. Solo para ti.»

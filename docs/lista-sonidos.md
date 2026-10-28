@@ -291,6 +291,7 @@ Todos **F** (sin construir). Lista orientativa para no olvidar familias; se deta
 | `sfx_w4_seen_freeze` / `sfx_w4_seen_break` | Zona «Visto»: congelar / romper | M4 | P1 | |
 | `sfx_w4_troll_shot` | Proyectil de texto | M4 | P1 | |
 | `sfx_w4_ghost_vanish` / `sfx_w4_ghost_appear` | Fantasma | M4 | P1 | Aparición posicional (detrás de Isak) |
+| `sfx_w4_lurker_wake` | Acechador del Modo oscuro que se delata (2026-10-28) | M4 | P2 | Dos notas graves que suben (unos ojos que se abren); posicional |
 | `sfx_w4_autocorrect` | Autocorrector reescribe | M4 | P2 | Cursor que parpadea antes |
 | `sfx_w4_sticker_explode` | Sticker | M4 | P2 | |
 | `sfx_w5_temptation_pull` | Tirón de la tentación | M5 | P1 | Bucle |
@@ -483,6 +484,7 @@ Los 24 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (fu
 | `sfx_w4_seen_wave` | `SeenWave.state_changed` (`MOVING`) | `cue`. **Desvío:** golpe largo al arrancar o reanudar la ola, no un bucle por nodo que sube al acercarse (un solo bucle de fondo a la vez; el frente se mueve y el nodo no) |
 | `sfx_w4_troll_shot` | `Troll.shot_fired` | Posicional; también el Troll disfrazado |
 | `sfx_w4_ghost_vanish` / `sfx_w4_ghost_appear` | `Ghost.state_changed` (`vanish`) / `Ghost.appearing` | Posicionales (la aparición, detrás de Isak) |
+| `sfx_w4_lurker_wake` | `Troll.lurk_woke` / `Sticker.lurk_woke` | Posicional; una vez por intento y acechador |
 | `sfx_w4_autocorrect` | `AutocorrectBubble.cursor_started` | Posicional |
 | `sfx_w4_sticker_explode` | `Sticker.exploded` | Posicional |
 | `sfx_w4_undo` | `UndoPrompt.switched_on` | Hereda de `DndSwitch`: suena también `sfx_dnd_switch` |
