@@ -235,6 +235,43 @@ class DarkSchemaTest(World4SchemaBase):
         set_cell(level, 5, 9, "#")
         self.assert_error(level, "dentro de terreno")
 
+    # Acecho (2026-10-28, peligros ocultos del Modo oscuro): params.lurk de Troll y Sticker solo dentro de una
+    # dark_zone; es booleano; los niveles reales lo usan con la ayuda «Acechador».
+    def _lurker(self, level, x, kind="sticker", value=True):
+        set_cell(level, x, 8, "E")
+        level["enemies"].append({"id": "acechador_prueba", "type": kind, "x": x, "y": 8, "help_id": "lurker",
+                                 "params": {"lurk": value}})
+
+    def test_lurker_inside_a_dark_zone_passes(self):
+        level = copy.deepcopy(self.base)
+        self._lurker(level, 14)
+        self.assertEqual(self.errors(level), [])
+        level = copy.deepcopy(self.base)
+        self._lurker(level, 14, "troll")
+        self.assertEqual(self.errors(level), [])
+
+    def test_lurker_must_be_inside_a_dark_zone(self):
+        level = copy.deepcopy(self.base)
+        self._lurker(level, 33)
+        self.assert_error(level, "solo dentro de una dark_zone")
+
+    def test_lurk_must_be_boolean(self):
+        level = copy.deepcopy(self.base)
+        self._lurker(level, 14, value=1)
+        self.assert_error(level, "params.lurk debe ser true o false")
+
+    def test_real_levels_hide_lurkers_in_the_dark(self):
+        counts = {}
+        for lid in ("4-1", "4-2", "4-3"):
+            level = load(os.path.join(ROOT, "data", "levels", "%s.json" % lid))
+            lurkers = [e for e in level["enemies"] if e.get("params", {}).get("lurk") is True]
+            for e in lurkers:
+                self.assertEqual(e.get("help_id"), "lurker", e["id"])
+                self.assertIn(e["type"], ("troll", "sticker"))
+            counts[lid] = len(lurkers)
+            self.assertEqual(self.errors(level), [], lid)
+        self.assertEqual(counts, {"4-1": 1, "4-2": 3, "4-3": 2})
+
 
 
 def enemy(level, eid):

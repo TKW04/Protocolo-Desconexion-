@@ -27,6 +27,8 @@ Enemigos (assets/sprites/enemies/world4/; el Troll, PROVISIONAL hasta AutoSprite
   troll_message_00.png        mensaje del Troll (64 x 32): bocadillo crema con contorno rojo (dana)
   ghost_00.png                Fantasma (64 x 64): sabana blanca con ojos huecos
   sticker_00.png              Sticker (48 x 48): cara redonda crema con mejillas
+  lurker_00.png               Acechador (64 x 64; 2026-10-28, peligros ocultos del Modo oscuro): velo
+                              chat_noche con dos ojos crema y la silueta en coral del Debug
   seen_boss_placeholder_00.png  El Visto (192 x 96, a media escala; paso 20): dos checks blancos y el gris «sin leer»
   seen_shield_00.png          escudo de El Visto (160 x 112): anillo de burbujas crema alrededor del doble check
   seen_typing_00.png          «escribiendo…» gigante (192 x 64): burbuja marino_luz con tres puntos, uno apagado
@@ -286,6 +288,17 @@ def sticker():
     return img
 
 
+def lurker():
+    """Acechador (ficha del album; DarkOverlay.draw_lurk_eyes): a oscuras solo los ojos; la silueta en
+    coral es lo que enseña el Debug."""
+    img, d = canvas(64, 64)
+    d.rectangle((0, 0, 63, 63), fill=C("chat_noche"))
+    d.rectangle((18, 12, 45, 55), outline=C("debug_coral"), width=2)
+    d.rectangle((24, 24, 27, 26), fill=C("crema"))
+    d.rectangle((35, 24, 38, 26), fill=C("crema"))
+    return img
+
+
 def _check_blocks(d, x0, y0, block, color, small=False):
     """El check de bloques de Seen._make_body_texture (brazo corto y largo)."""
     short, long_, size = (2, 5, block) if small else (5, 12, block * 2)
@@ -341,6 +354,7 @@ OBJECTS = {
 ENEMIES = {
     "troll_placeholder_00.png": troll_placeholder, "troll_mimic_00.png": troll_mimic,
     "troll_message_00.png": troll_message, "ghost_00.png": ghost, "sticker_00.png": sticker,
+    "lurker_00.png": lurker,
     "seen_boss_placeholder_00.png": seen_boss_placeholder, "seen_shield_00.png": seen_shield,
     "seen_typing_00.png": seen_typing,
 }

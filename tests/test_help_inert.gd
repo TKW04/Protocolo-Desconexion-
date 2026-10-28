@@ -1009,7 +1009,7 @@ func test_every_help_type_is_covered() -> void:
 		&"mirror_only", &"crop_tool", &"filter_zone", &"hunter_mirror", &"pose_plate", &"frame_door", &"hud_likes",
 		&"influencer_bot", &"like_thief", &"false_reflection",
 		&"chat_bubble", &"typing_bubble", &"seen_zone", &"flashlight_pickup", &"autocorrect_bubble", &"undo_prompt",
-		&"typed_wall", &"troll", &"sticker", &"ghost", &"troll_mimic",
+		&"typed_wall", &"troll", &"sticker", &"ghost", &"troll_mimic", &"lurker",
 		&"seen_boss", &"seen_shield", &"seen_typing"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
@@ -1150,6 +1150,38 @@ func test_defeated_world4_enemies_give_no_help() -> void:
 			enemy.call(&"on_laser_hit", 10.0, null)
 			assert_true(bool(enemy.call(&"is_defeated")), "%s derrotado" % kind), "%s derrotado" % kind)
 		enemy.free()
+
+
+## Acechador (2026-10-28, peligros ocultos del Modo oscuro): el Sticker con lurk que
+## duerme a oscuras no ayuda (la Q lo delataria); en cuanto se despierta, si.
+func test_lurking_sticker_gives_help_only_once_seen() -> void:
+	GameState.allies_met.erase(&"linterna")  # sin Linterna: a oscuras de verdad (con ella, a 1 tile se veria)
+	var zone := (load("res://scenes/levels/dark_zone.tscn") as PackedScene).instantiate() as DarkZone
+	zone.position = FEET + Vector2(-6.0 * TILE, -6.0 * TILE)
+	zone.width_tiles = 14
+	zone.height_tiles = 7
+	zone.auto_process = false
+	_root.add_child(zone)
+	var sticker := (load("res://scenes/enemies/sticker.tscn") as PackedScene).instantiate() as Sticker
+	sticker.set_physics_process(false)
+	_place(sticker, &"lurker")
+	sticker.target = _isak
+	sticker.lurk = true
+	sticker.detect_tiles = 0.0  # que no se despierte solo con Isak al lado
+	sticker.trigger_tiles = 0.0
+	await wait_process_frames(2)
+	sticker.set_physics_process(false)
+	_run(0.2)
+	assert_true(sticker.is_lurking(), "Acecha a oscuras")
+	assert_false(HelpCatalog.is_help_live(sticker), "Acechando: sin Q")
+	assert_null(_help.get_target(), "Sin candidato")
+	sticker._change_state(Sticker.STATE_CHASE)
+	_run(0.2)
+	assert_false(sticker.is_lurking())
+	assert_true(HelpCatalog.is_help_live(sticker), "Despierto: ayuda")
+	assert_eq(_help.get_target(), sticker, "Candidato con Q en cuanto se ve")
+	sticker.free()
+	zone.free()
 
 
 ## Troll disfrazado: disfrazado no ayuda (la Q lo delataria); descubierto, si.

@@ -14,6 +14,8 @@
 ##   (ChatBubble crea su DarkOutline) y los checks del «Visto» (SeenZone sube su
 ##   z_index). Lo que la Linterna anade es el texto, el largo exacto y lo escrito «en
 ##   tinta» (InkOnly: solo bajo su luz).
+## - Acechadores (2026-10-28): un Troll o Sticker con `lurk` dentro de la zona no
+##   dibuja su contorno mientras acecha (aun no dana) sino sus ojos (DarkOverlay).
 ## Estatica: DarkZone.covering(tree, punto) y DarkZone.lit_by_flashlight(tree, punto)
 ## para quien necesite saber si un punto esta a oscuras o bajo la luz. Aspecto
 ## PROVISIONAL por codigo (seccion dark_zone de data/world4_objects.json). El origen es

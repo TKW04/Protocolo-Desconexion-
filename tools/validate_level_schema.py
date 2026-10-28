@@ -537,10 +537,29 @@ class LevelValidator:
                 self._check_commenter(entry, params, data)
             if kind in ("troll", "troll_mimic") and isinstance(data, dict):
                 self._check_troll(entry, params, data)
+            if params.get("lurk") is True:
+                self._check_lurk(entry)
             if kind == "influencer_bot":
                 self._check_influencer(entry)
             if kind == "false_reflection":
                 self._check_false_reflection(entry, params)
+
+    def _check_lurk(self, entry):
+        """Acecho (params.lurk de troll y sticker; 2026-10-28, peligros ocultos del Modo oscuro de
+        docs/propuesta-mundo-4.md §8.1): el enemigo que espera a oscuras solo tiene sentido dentro de una
+        dark_zone (sin velo no hay nada que lo oculte)."""
+        x, y = entry.get("x"), entry.get("y")
+        if not (_is_int(x) and _is_int(y)):
+            return
+        for o in self.level.get("objects", []):
+            if not (isinstance(o, dict) and o.get("type") == "dark_zone" and isinstance(o.get("params"), dict)):
+                continue
+            ox, oy = o.get("x"), o.get("y")
+            w, h = o["params"].get("width_tiles", 8), o["params"].get("height_tiles", 4)
+            if _is_int(ox) and _is_int(oy) and _is_int(w) and _is_int(h) \
+                    and ox <= x < ox + w and oy <= y < oy + h:
+                return
+        self.error("enemigo '%s': params.lurk (acecho) solo dentro de una dark_zone" % entry.get("id"), y, x)
 
     def _check_false_reflection(self, entry, params):
         """Reflejo falso (false_reflection, paso 6 de docs/propuesta-mundo-3.md §3.6): mirror_wall y zone

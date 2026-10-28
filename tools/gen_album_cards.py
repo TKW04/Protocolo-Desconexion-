@@ -149,6 +149,8 @@ SOURCES = {
     "troll": ("assets/sprites/enemies/world4/troll_placeholder_00.png", None, 1),
     "sticker": ("assets/sprites/enemies/world4/sticker_00.png", None, 1),
     "ghost": ("assets/sprites/enemies/world4/ghost_00.png", None, 1),
+    # Acechador (2026-10-28, peligros ocultos del Modo oscuro): ojos a oscuras, por script.
+    "lurker": ("assets/sprites/enemies/world4/lurker_00.png", None, 1),
     "troll_mimic": ("assets/sprites/enemies/world4/troll_mimic_00.png", None, 1),
     # Jefe El Visto (paso 20 de docs/propuesta-mundo-4.md): arte PROVISIONAL por script del mismo
     # tools/gen_world4_objects.py (el cuerpo, a media escala) hasta el arte final (paso 24).

@@ -415,6 +415,12 @@ def world4(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
         * np.sin(np.pi * t_axis(d) / d) ** 2
     s["sfx_w4_ghost_appear"] = (0.6 * lowpass(noise(d, rng), 900) + 0.3 * sine(sweep(220, 440, d), d)) \
         * np.sin(np.pi * t_axis(d) / d) ** 2
+    # Acechador que se delata (2026-10-28, Modo oscuro): dos notas graves que suben, como unos ojos que se abren.
+    d = 0.3
+    lw = np.zeros(len(t_axis(d)))
+    lw = mix_at(lw, 0.5 * note(147, 0.12, tri, 4), 0.0)
+    lw = mix_at(lw, 0.6 * note(220, 0.16, tri, 3), 0.11)
+    s["sfx_w4_lurker_wake"] = lw
     # Autocorrector: dos tics de cursor y un borrado rapido.
     d = 0.3
     ac = np.zeros(len(t_axis(d)))

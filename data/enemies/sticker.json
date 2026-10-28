@@ -23,6 +23,7 @@
 		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max].",
 		"detect_tiles": {"min": 2, "max": 10},
 		"chase_speed_px_s": {"min": 60, "max": 200},
-		"health": {"min": 1, "max": 3, "int": true}
+		"health": {"min": 1, "max": 3, "int": true},
+		"lurk": {"bool": true}
 	}
 }

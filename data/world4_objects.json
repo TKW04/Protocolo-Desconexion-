@@ -557,7 +557,15 @@
 		"veil_z": 40,
 		"light_radius_tiles": 3.5,
 		"hole_soft_px": 16,
-		"hazard_outline_px": 2.0
+		"hazard_outline_px": 2.0,
+		"lurk": {
+			"_notes": "Acecho (2026-10-28, peligros ocultos del Modo oscuro; docs/propuesta-mundo-4.md §8.1): un Troll o Sticker con params.lurk (solo dentro de una dark_zone, lo exige el esquema) que espera a oscuras no dibuja su contorno rojo por encima del velo (aun no dana) sino dos OJOS (eye_color al eye_alpha, separados eye_gap_px, cerrados blink_s cada blink_every_s). Bajo la Linterna se ve entero con su contorno; en cuanto se despierta (el Troll empieza a escribir, el Sticker salta hacia Isak) vuelve el contorno rojo y ya no se esconde hasta reaparecer Isak. Con el Debug, silueta en debug_coral por encima del velo. Mismo comportamiento y tiempos que sin acecho (el aviso de 9 cuadros no cambia). PROVISIONAL.",
+			"eye_color": "crema",
+			"eye_alpha": 0.6,
+			"eye_gap_px": 7.0,
+			"blink_every_s": 2.6,
+			"blink_s": 0.15
+		}
 	},
 	"ink_only": {
 		"_notes": "Escrito en tinta (§3.6; PROVISIONAL): font / font_size / line_height_px (decor), step_height_px (paso), fade_s (fundido al entrar y salir de la luz).",

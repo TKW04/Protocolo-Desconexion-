@@ -30,6 +30,8 @@ signal defeated
 signal deflected
 ## Agitar borro `count` mensajes suyos.
 signal messages_erased(count: int)
+## Acecho: el Troll que esperaba a oscuras (lurk) empieza a escribir por primera vez.
+signal lurk_woke
 
 const STATE_IDLE: StringName = &"idle"
 const STATE_WARN: StringName = &"warn"
@@ -84,6 +86,11 @@ var shot_range_tiles: int = 10
 var shot_height_px: float = 28.0
 var shot_min_width_px: float = 48.0
 var deflect_s: float = 0.25
+## Acecho (2026-10-28, peligros ocultos del Modo oscuro): dentro de una dark_zone, en
+## reposo y fuera de la Linterna, solo se le ven los ojos (DarkOverlay.draw_lurk_eyes);
+## al empezar a escribir por primera vez se delata (contorno rojo) hasta reaparecer
+## Isak. El comportamiento no cambia. params.lurk del nivel.
+var lurk: bool = false
 var drops: Dictionary = {}
 var max_health: float = 2.0:
 	set(value):
@@ -109,6 +116,7 @@ var _health: EnemyHealth
 var _body: StaticBody2D
 var _shots: Array[TrollMessage] = []
 var _dark: DarkOverlay
+var _lurk_woke: bool = false
 
 
 func _ready() -> void:
@@ -182,8 +190,10 @@ func is_combat_active() -> bool:
 	return _state == STATE_WARN or is_dangerous()
 
 
+## Acechando a oscuras no ayuda (la Q lo delataria): solo cuando se ve (bajo la
+## Linterna, despierto o revelado por el Debug).
 func is_help_available() -> bool:
-	return _state != STATE_DEFEATED
+	return _state != STATE_DEFEATED and (not is_lurking() or DebugMode.is_revealing())
 
 
 func is_laser_vulnerable() -> bool:
@@ -386,6 +396,7 @@ func reset_patrol() -> void:
 	_rest_left = 0.0
 	_shots_fired = 0
 	_dir = facing
+	_lurk_woke = false
 	if _state != STATE_DEFEATED:
 		_change_state(STATE_IDLE)
 	queue_redraw()
@@ -439,6 +450,9 @@ func _change_state(next: StringName) -> void:
 	var previous: StringName = _state
 	_state = next
 	state_changed.emit(previous, next)
+	if next == STATE_WARN and lurk and not _lurk_woke:
+		_lurk_woke = true
+		lurk_woke.emit()
 
 
 func _shoot() -> void:
@@ -516,9 +530,28 @@ func is_in_dark() -> bool:
 	return _dark != null
 
 
-## Por encima del velo: contorno rojo del cuerpo (despierto) y el aviso.
+## Acecha: con lurk, a oscuras, sin haberse delatado en este intento, en reposo y
+## fuera de la luz de la Linterna (bajo la luz se ve entero).
+func is_lurking() -> bool:
+	return lurk and is_in_dark() and not _lurk_woke and _state == STATE_IDLE \
+			and not DarkOverlay.lit_at(self, get_body_rect().get_center())
+
+
+## Ya se delato en este intento (empezo a escribir).
+func has_lurk_woken() -> bool:
+	return _lurk_woke
+
+
+## Por encima del velo: contorno rojo del cuerpo (despierto) y el aviso; acechando,
+## solo los ojos (y su silueta en coral con el Debug).
 func draw_dark_overlay(canvas: CanvasItem) -> void:
 	if _state == STATE_DEFEATED:
+		return
+	if is_lurking():
+		if DebugMode.is_revealing():
+			DarkOverlay.draw_debug_reveal(canvas, get_visual_rect().grow(2.0))
+		var vr: Rect2 = get_visual_rect()
+		DarkOverlay.draw_lurk_eyes(canvas, Vector2(0.0, vr.position.y + vr.size.y * 0.3), _dir, _time)
 		return
 	if _state != STATE_STUNNED:
 		canvas.draw_rect(get_visual_rect().grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
@@ -610,4 +643,5 @@ func _load_data() -> bool:
 	shot_height_px = float(d.get("shot_height_px", 28.0))
 	shot_min_width_px = float(d.get("shot_min_width_px", 48.0))
 	deflect_s = float(d.get("deflect_s", 0.25))
+	lurk = bool(d.get("lurk", false))
 	return true

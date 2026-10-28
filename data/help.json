@@ -993,6 +993,18 @@
 			"center_px": [0, -16],
 			"prompt_px": [0, -48]
 		},
+		"lurker": {
+			"_notes": "Acechador (2026-10-28, peligros ocultos del Modo oscuro, docs/propuesta-mundo-4.md §8.1): help_id propio de los Troll y Sticker con params.lurk de las dark_zone (4-1, 4-2, 4-3). Solo hay Q cuando se ve (bajo la Linterna, despierto o con el Debug): acechando a oscuras no ayuda, la Q lo delataria. Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Acechador",
+			"text": "Ojos en la oscuridad. Algo espera a que pases. La Linterna lo enseña entero y el Debug, su silueta. Cuando se pone rojo va a atacar: un pulso a tiempo.",
+			"first_level": "4-1",
+			"world": 4,
+			"order": 6,
+			"radius_tiles": 4.0,
+			"center_px": [0, -24],
+			"prompt_px": [0, -64]
+		},
 		"seen_boss": {
 			"_notes": "Jefe El Visto (paso 20 de docs/propuesta-mundo-4.md §8, §5.10; arena 4-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en el centro del doble check (Seen.get_body_help_point; en la fase 1, la silueta mientras se ve; oculto, sin ayuda).",
 			"category": "enemy",

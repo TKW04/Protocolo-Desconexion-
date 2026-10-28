@@ -106,8 +106,8 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 			&"typed_wall", &"seen_shield", &"seen_typing"] as Array[StringName],
 		"Mundo 4: burbujas, «Visto» y Linterna (4-1), lo del 4-2 y el escudo y el «escribiendo…» de El Visto (paso 20)")
 	assert_eq(NotasAlbum.album_ids(4, HelpCatalog.CATEGORY_ENEMY),
-		[&"troll", &"sticker", &"ghost", &"troll_mimic", &"seen_boss"] as Array[StringName],
-		"Mundo 4: Troll (4-1), Sticker y Fantasma (4-2), Troll disfrazado (4-3) y El Visto (paso 20)")
+		[&"troll", &"sticker", &"ghost", &"troll_mimic", &"seen_boss", &"lurker"] as Array[StringName],
+		"Mundo 4: Troll (4-1), Sticker y Fantasma (4-2), Troll disfrazado (4-3), El Visto (paso 20) y el Acechador (2026-10-28)")
 	for world: int in range(5, 7):
 		assert_eq(NotasAlbum.album_ids(world).size(), 0, "Mundo %d aun sin tipos" % world)
 
@@ -173,7 +173,7 @@ func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
 	_album.open()
 	var texts: PackedStringArray = _album.get_folder_texts(3)
 	m4["unlocked"] = false
-	assert_eq(texts, PackedStringArray(["El Chat", "0/14"]), "Alcanzado: su nombre y sus 14 tipos (11 del paso 10 y los 3 de El Visto, paso 20)")
+	assert_eq(texts, PackedStringArray(["El Chat", "0/15"]), "Alcanzado: su nombre y sus 15 tipos (11 del paso 10, los 3 de El Visto, paso 20, y el Acechador del Modo oscuro, 2026-10-28)")
 	_album.close()
 	_album.open()
 	assert_eq(_album.get_folder_texts(3), PackedStringArray(["???", ""]), "Sin alcanzar: «???»")

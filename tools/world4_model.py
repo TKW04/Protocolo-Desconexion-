@@ -44,6 +44,9 @@ validador lo usa. Sobre el camino principal:
     (error si no lo tiene). Fantasma: al entrar en su detect_tiles (3), el plan espera a que reaparezca
     (`wait_ghost`, vanish_s + hidden_s + anticipacion) y lo aturde con un pulso. Sticker: a detect_tiles (6) o
     menos, un pulso lo desinfla para siempre (+5; pulse_deflates de data/enemies/sticker.json).
+    Acecho (params.lurk de Troll y Sticker, 2026-10-28, peligros ocultos del Modo oscuro): solo cambia lo que
+    se ve (ojos a oscuras hasta que ataca), no el comportamiento ni los tiempos: el plan lo trata igual y la
+    salida lo marca «(acecha a oscuras)»; el esquema exige que este dentro de una dark_zone.
   - Ola de «Visto» (seen_wave): amenaza movil en X (generaliza el borde del scroll de tools/scroll_model.py):
     arranca al cruzar Isak start_col, avanza con la velocidad de la seccion del frente, espera en cada parada
     hasta que Isak cruza resume_col (una vez) y se apaga en end_col. Se simula sobre la linea de tiempo del plan
@@ -529,6 +532,8 @@ class World4:
                         continue
                     engaged.add(en["id"])
                     entry = {"id": en["id"], "type": en["kind"], "at": [s["from"][1], s["from"][0]]}
+                    if d.get("lurk") is True:
+                        entry["lurk"] = True
                     target_rect = b
                     if en["kind"] == "ghost":
                         direction = 1.0 if s["to"][0] >= s["from"][0] else -1.0
@@ -713,7 +718,7 @@ def format_lines(result):
         out.append("  %s %s: %s desde (fila %d, columna %d)%s" % (
             _enemy_name(e["type"]), e["id"], "pulso", e["at"][0], e["at"][1],
             (", tras esperar %.2f s a que llegue" if e["type"] == "sticker" else ", tras esperar %.2f s a que reaparezca")
-            % e["wait_s"] if "wait_s" in e else ""))
+            % e["wait_s"] if "wait_s" in e else "") + (" (acecha a oscuras)" if e.get("lurk") else ""))
     for mm in w4.get("mimics", []):
         if mm["near_path"]:
             out.append("  Troll disfrazado %s: junto al camino (el Debug lo distingue)" % mm["id"])

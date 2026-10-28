@@ -23,6 +23,8 @@ signal damaged(amount: float, health_left: float)
 signal defeated
 ## Lo desinflo el pulso (o, antes del 2026-10-28, Agitar).
 signal deflated
+## Acecho: el Sticker que dormia a oscuras (lurk) se despierta por primera vez.
+signal lurk_woke
 
 const STATE_SLEEP: StringName = &"sleep"
 const STATE_CHASE: StringName = &"chase"
@@ -54,6 +56,11 @@ var stun_s: float = 3.0
 ## El pulso lo desinfla para siempre (drops) en vez de aturdirlo (2026-10-28: sustituye
 ## a Agitar, retirado; data pulse_deflates).
 var pulse_deflates: bool = true
+## Acecho (2026-10-28, peligros ocultos del Modo oscuro): dentro de una dark_zone,
+## dormido y fuera de la Linterna, solo se le ven los ojos (DarkOverlay.draw_lurk_eyes);
+## al despertarse por primera vez se delata (contorno rojo) hasta reaparecer Isak. El
+## comportamiento no cambia. params.lurk del nivel.
+var lurk: bool = false
 var body_size: Vector2 = Vector2(40.0, 40.0)
 var gravity: float = 2400.0
 var max_fall_speed_px_s: float = 1200.0
@@ -76,6 +83,7 @@ var _vy: float = 0.0
 var _direction: float = 1.0
 var _spawn: Vector2
 var _ready_ok: bool = false
+var _lurk_woke: bool = false
 var _health: EnemyHealth
 var _shape: CollisionShape2D
 var _dark: DarkOverlay
@@ -186,8 +194,11 @@ func is_combat_active() -> bool:
 	return _state == STATE_CHASE or _state == STATE_INFLATE
 
 
+## Acechando a oscuras no ayuda (la Q lo delataria): solo cuando se ve (bajo la
+## Linterna, despierto o revelado por el Debug).
 func is_help_available() -> bool:
-	return _state != STATE_DEFEATED and _state != STATE_EXPLODED
+	return _state != STATE_DEFEATED and _state != STATE_EXPLODED \
+			and (not is_lurking() or DebugMode.is_revealing())
 
 
 func get_warn_s() -> float:
@@ -269,6 +280,7 @@ func reset_patrol() -> void:
 	_vy = 0.0
 	_t = 0.0
 	_stun_left = 0.0
+	_lurk_woke = false
 	_shape.set_deferred(&"disabled", false)
 	_change_state(STATE_SLEEP)
 	queue_redraw()
@@ -286,6 +298,9 @@ func _change_state(next: StringName) -> void:
 	var previous: StringName = _state
 	_state = next
 	state_changed.emit(previous, next)
+	if previous == STATE_SLEEP and next != STATE_SLEEP and lurk and not _lurk_woke:
+		_lurk_woke = true
+		lurk_woke.emit()
 
 
 ## Mueve con velocidad en tiempo del mundo (move_and_slide usa el delta real).
@@ -368,9 +383,28 @@ func is_in_dark() -> bool:
 	return _dark != null
 
 
-## Por encima del velo: contorno rojo (vivo), el inflado y la explosion.
+## Acecha: con lurk, a oscuras, dormido sin haberse despertado en este intento y
+## fuera de la luz de la Linterna (bajo la luz se ve entero).
+func is_lurking() -> bool:
+	return lurk and is_in_dark() and not _lurk_woke and _state == STATE_SLEEP \
+			and not DarkOverlay.lit_at(self, get_center())
+
+
+## Ya se desperto en este intento.
+func has_lurk_woken() -> bool:
+	return _lurk_woke
+
+
+## Por encima del velo: contorno rojo (vivo), el inflado y la explosion; acechando,
+## solo los ojos (y su silueta en coral con el Debug).
 func draw_dark_overlay(canvas: CanvasItem) -> void:
 	var red: Color = World4ObjectsConfig.color("alerta", Color("#e8473c"))
+	if is_lurking():
+		var c: Vector2 = get_center() - global_position
+		if DebugMode.is_revealing():
+			DarkOverlay.draw_debug_reveal(canvas, Rect2(c - body_size * 0.5, body_size).grow(2.0))
+		DarkOverlay.draw_lurk_eyes(canvas, c + Vector2(0.0, -body_size.y * 0.1), int(_direction), _time)
+		return
 	match _state:
 		STATE_DEFEATED:
 			return
@@ -448,6 +482,7 @@ func _load_data() -> bool:
 	confetti_s = float(d.get("confetti_s", 0.8))
 	stun_s = float(d["stun_s"])
 	pulse_deflates = bool(d.get("pulse_deflates", true))
+	lurk = bool(d.get("lurk", false))
 	max_health = float(d["health"])
 	drops = EnemyHealth.parse_drops(d.get("drops", {}))
 	var bs: Array = d.get("body_size", [40.0, 40.0])
