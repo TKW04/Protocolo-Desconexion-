@@ -31,9 +31,13 @@
 ##   quedan quietos («te esta mirando»).
 ## - Llegada, intro, reaparicion por fase (energia >= 50), golpe final y secuencia
 ##   de derrota como la Curadora (BossBase, BossDefeat). Sin rollback.
-## Arte PROVISIONAL por codigo (cuerpo en una ImageTexture hecha aqui, efectos en
-## SeenFx) hasta el paso 24 (AutoSprite, con permiso del usuario). Tiempo del
-## mundo (advance; las pruebas lo llaman a mano con auto_process falso).
+## Arte final del doble check con AutoSprite (paso 24, etapa 2, 2026-10-28;
+## tools/import_boss_seen.py, seen_<anim>_NN.png y seen_small_<anim>_NN.png,
+## ART_ANIMS; docs/plan-arte-mundo-4.md): cuerpo y silueta de la fase 1. Si
+## faltan los cuadros vuelve al PROVISIONAL por codigo (el doble check en una
+## ImageTexture hecha aqui). Aura, escudo, rastro, burbujas, zonas,
+## «escribiendo…» y mensaje siguen por codigo (SeenFx). Tiempo del mundo
+## (advance; las pruebas lo llaman a mano con auto_process falso).
 class_name Seen
 extends BossBase
 
@@ -98,6 +102,39 @@ const HELP_BOSS: StringName = &"seen_boss"
 const HELP_SHIELD: StringName = &"seen_shield"
 const HELP_TYPING: StringName = &"seen_typing"
 
+## Arte final (tools/import_boss_seen.py): anim -> [cuadros, fps, bucle]. Las
+## que no van en bucle siguen el progreso de su estado (vanish: vanish_s;
+## reappear: return_s en el cuerpo y el aviso en la silueta) o, defeat, 12 fps
+## desde el golpe final (se queda en el ultimo). Cuerpo: idle por defecto;
+## fase 1 vanish / reappear (oculto entre medias); fase 2 shield con el escudo
+## levantado y stunned en el suelo; fase 3 typing mientras se llenan los
+## puntos y stunned aturdido; defeat desde el golpe final. Silueta (fase 1):
+## reappear en el aviso (y su ultimo cuadro en la ventana), charge al embestir
+## (reflejada hacia la izquierda).
+const ART_ANIMS: Dictionary = {
+	"idle": [24, 12.0, true],
+	"vanish": [23, 12.0, false],
+	"reappear": [25, 12.0, false],
+	"charge": [8, 16.0, true],
+	"shield": [24, 12.0, true],
+	"typing": [24, 12.0, true],
+	"stunned": [24, 12.0, true],
+	"defeat": [25, 12.0, false],
+}
+const ART_SMALL: Array[String] = ["reappear", "charge"]
+## Cuadro de defeat con el que se queda al golpe final (ya agrietado); el
+## desarme en pixeles toma el ultimo (gris y roto).
+const ART_DEFEAT_FROM: int = 8
+## El lienzo del cuerpo (336 x 256) va ART_BODY_OFFSET de la esquina de la caja
+## (arena.body): el check gris cae en ART_CHECK_PX de la caja (perch_core_px
+## centrado, 2 px a la izquierda por la rejilla de 4). El de la silueta (112 x 86),
+## ART_SILHOUETTE_OFFSET del punto debil (su check gris, encima). Los fija
+## tools/import_boss_seen.py (BODY_OFFSET_PX, SILHOUETTE_OFFSET_PX).
+const ART_BODY_OFFSET: Vector2 = Vector2(24.0, -48.0)
+const ART_CHECK_PX: Vector2 = Vector2(190.0, 160.0)
+const ART_SILHOUETTE_OFFSET: Vector2 = Vector2(-56.0, -70.0)
+const ART_DIR: String = "res://assets/sprites/bosses/"
+
 const SIDE_LEFT: String = "left"
 const SIDE_RIGHT: String = "right"
 const ARENA_COLS: int = 20
@@ -118,6 +155,12 @@ var _core: WeakPoint
 var _attacks: Node2D
 var _body_sprite: Sprite2D
 var _body_tex: Texture2D
+var _sil_sprite: Sprite2D
+var _decoy_sprite: Sprite2D
+var _textures: Dictionary = {}
+var _art_on: bool = false
+var _art_key: String = ""
+var _art_since: float = 0.0
 var _fx: SeenFx
 var _burst: PixelBurst
 var _off: bool = false
@@ -198,6 +241,7 @@ func _physics_process(delta: float) -> void:
 
 func advance(dt: float) -> void:
 	_time += dt
+	_art_since += dt
 	if not is_fighting():
 		_refresh()
 		return
@@ -423,6 +467,83 @@ func is_screen_off() -> bool:
 	return _off
 
 
+## El cuerpo se ve con el arte final (cuadros de tools/import_boss_seen.py).
+func has_final_art() -> bool:
+	return _art_on
+
+
+## [animacion, cuadro] del arte final del cuerpo que toca ahora (ART_ANIMS);
+## ["", -1] si el cuerpo no se ve (fase 1, oculto).
+func get_art_frame() -> Array:
+	var key: String = "idle"
+	var gd: Dictionary = section("ghost_dash")
+	var stage: StringName = get_dash_stage()
+	if _off:
+		key = "defeat"
+	elif stage == DASH_VANISH:
+		return ["vanish", _art_progress("vanish", _dash_t / maxf(float(gd.get("vanish_s", 0.5)), 0.01))]
+	elif stage in [DASH_HIDDEN, DASH_WARN, DASH_READY, DASH_CHARGE]:
+		return ["", -1]
+	elif stage == DASH_RETURN:
+		return ["reappear", _art_progress("reappear", _dash_t / maxf(float(gd.get("return_s", 0.6)), 0.01))]
+	elif is_fighting() and get_phase() == 2:
+		if is_window_open() or _drop > 0.0:
+			key = "stunned"
+		elif is_shield_up():
+			key = "shield"
+	elif is_fighting() and get_phase() == 3:
+		if is_window_open() or _lower > 0.0:
+			key = "stunned"
+		elif get_typing_state() == TYPING_ON:
+			key = "typing"
+	if key != _art_key:
+		_art_key = key
+		_art_since = 0.0
+	var spec: Array = ART_ANIMS[key]
+	if key == "defeat":
+		# Empieza ya agrietado (ART_DEFEAT_FROM): la congelacion del golpe final
+		# pausa el arbol y el desarme llega enseguida.
+		return [key, clampi(ART_DEFEAT_FROM + floori(_art_since * float(spec[1])), 0, int(spec[0]) - 1)]
+	return [key, posmod(floori(_time * float(spec[1])), int(spec[0]))]
+
+
+## [animacion, cuadro] de la silueta de la fase 1 (["", -1] si no se ve).
+func get_silhouette_art_frame() -> Array:
+	match get_dash_stage():
+		DASH_WARN:
+			var warn: float = frames_s(section("ghost_dash").get("warn_frames", 9))
+			return ["reappear", _art_progress("reappear", _dash_t / maxf(warn, 0.01))]
+		DASH_READY:
+			return ["reappear", int(ART_ANIMS["reappear"][0]) - 1]
+		DASH_CHARGE:
+			var spec: Array = ART_ANIMS["charge"]
+			return ["charge", posmod(floori(_dash_t * float(spec[1])), int(spec[0]))]
+	return ["", -1]
+
+
+## Esquina de arriba a la izquierda del lienzo del cuerpo (global). En las
+## ventanas de las fases 2 y 3 el dibujo se desliza (con la caida o la bajada)
+## hasta que su check gris cae en el punto debil; la caja no cambia.
+func get_art_position() -> Vector2:
+	var base: Vector2 = get_body_rect().position
+	var k: float = 0.0
+	if is_fighting() and get_phase() == 2:
+		k = _drop
+	elif is_fighting() and get_phase() == 3:
+		k = _lower
+	var shift := Vector2.ZERO
+	if k > 0.0:
+		shift = (get_window_core_point(get_phase()) - (base + ART_CHECK_PX)) * k
+	return (base + ART_BODY_OFFSET + shift).round()
+
+
+## Rectangulo global del dibujo del cuerpo (lienzo del arte final o la caja).
+func get_art_rect() -> Rect2:
+	if _art_on and _body_sprite != null and _body_sprite.texture != null:
+		return Rect2(_body_sprite.global_position, _body_sprite.texture.get_size())
+	return get_body_rect()
+
+
 func get_attacks_root() -> Node2D:
 	return _attacks
 
@@ -586,12 +707,15 @@ func get_defeat() -> BossDefeat:
 
 ## Desarme en pixeles (BossDefeat): el doble check tachado se suelta.
 func play_disarm() -> PixelBurst:
-	var at: Vector2 = get_body_rect().get_center()
+	var at: Vector2 = get_art_rect().get_center()
 	var cfg: Dictionary = section("defeat").get("pixels", {})
+	var last: Texture2D = _art_texture(["defeat", int(ART_ANIMS["defeat"][0]) - 1])
+	var tex: Texture2D = last if _art_on and last != null else _body_tex
 	_body_sprite.visible = false
 	_core.set_enabled(false)
 	var root: Node = _level_root()
-	_burst = PixelBurst.spawn(_body_tex, at, 1.0, root if root != null else self, cfg)
+	# Con el arte final, el desarme suelta el doble check gris y roto.
+	_burst = PixelBurst.spawn(tex, at, 1.0, root if root != null else self, cfg)
 	disarmed.emit()
 	return _burst
 
@@ -1098,6 +1222,8 @@ func _build() -> void:
 	_body_sprite.z_index = -1
 	_body_sprite.texture = _body_tex
 	add_child(_body_sprite)
+	_sil_sprite = _make_silhouette_sprite("Silhouette")
+	_decoy_sprite = _make_silhouette_sprite("DecoySilhouette")
 	_core = WEAK_POINT_SCENE.instantiate() as WeakPoint
 	_core.name = "UnreadCheck"
 	_core.top_level = true
@@ -1118,6 +1244,75 @@ func _build() -> void:
 	_shield_help = _make_help_marker("ShieldHelp", is_shield_help_available, help_id("shield"))
 	_typing_help = _make_help_marker("TypingHelp", is_typing_help_available, help_id("typing"))
 	_refresh()
+
+
+func _make_silhouette_sprite(node_name: String) -> Sprite2D:
+	var sprite := Sprite2D.new()
+	sprite.name = node_name
+	sprite.top_level = true
+	sprite.centered = false
+	sprite.z_index = 39
+	sprite.visible = false
+	add_child(sprite)
+	return sprite
+
+
+func _texture(file_name: String) -> Texture2D:
+	if not _textures.has(file_name):
+		var path: String = ART_DIR + file_name
+		_textures[file_name] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _textures[file_name]
+
+
+func _art_texture(frame: Array, small: bool = false) -> Texture2D:
+	if String(frame[0]).is_empty():
+		return null
+	return _texture("seen_%s%s_%02d.png" % ["small_" if small else "", frame[0], int(frame[1])])
+
+
+func _art_progress(anim: String, f: float) -> int:
+	var n: int = int(ART_ANIMS[anim][0])
+	return clampi(floori(clampf(f, 0.0, 1.0) * float(n)), 0, n - 1)
+
+
+## Pone el cuadro del cuerpo y de la silueta (arte final; si falta, el provisional).
+func _refresh_art() -> void:
+	var frame: Array = get_art_frame()
+	var tex: Texture2D = _art_texture(frame) if frame[1] >= 0 else _art_texture(["idle", 0])
+	_art_on = tex != null
+	if _art_on:
+		if frame[1] >= 0:
+			_body_sprite.texture = tex
+		_body_sprite.global_position = get_art_position()
+	else:
+		_body_sprite.texture = _body_tex
+		_body_sprite.global_position = get_body_rect().position
+	var sframe: Array = get_silhouette_art_frame()
+	var stex: Texture2D = _art_texture(sframe, true) if _art_on else null
+	_place_silhouette(_sil_sprite, stex, get_silhouette_rect())
+	var decoy: Vector2 = get_decoy_point()
+	var drect: Rect2 = _silhouette_at(decoy) if decoy != Vector2.INF and get_dash_stage() in [DASH_WARN, DASH_READY] else Rect2()
+	_place_silhouette(_decoy_sprite, stex, drect)
+
+
+func _place_silhouette(sprite: Sprite2D, tex: Texture2D, rect: Rect2) -> void:
+	if sprite == null:
+		return
+	sprite.visible = tex != null and rect.has_area()
+	if not sprite.visible:
+		return
+	sprite.texture = tex
+	var flip: bool = get_dash_stage() == DASH_CHARGE and _charge_dir < 0.0
+	sprite.flip_h = flip
+	var off := ART_SILHOUETTE_OFFSET
+	if flip:
+		off.x = -off.x - tex.get_size().x
+	sprite.global_position = (rect.get_center() + off).round()
+	var fade: float = 1.0
+	if get_dash_stage() == DASH_WARN:
+		var gd: Dictionary = section("ghost_dash")
+		fade = clampf(_dash_t / maxf(frames_s(gd.get("warn_frames", 9)), 0.01), 0.2, 1.0)
+	sprite.modulate = Color(1, 1, 1, 0.8 * fade)
 
 
 func _make_help_marker(node_name: String, available: Callable, id: StringName) -> HelpMarker:
@@ -1225,11 +1420,13 @@ func _fill_block(img: Image, at: Vector2i, size: int, color: Color) -> void:
 func _refresh() -> void:
 	if _body_sprite == null:
 		return
-	_body_sprite.global_position = get_body_rect().position
+	_refresh_art()
 	var alpha: float = 1.0
 	match get_dash_stage():
 		DASH_VANISH:
-			alpha = 1.0 - clampf(_dash_t / maxf(float(section("ghost_dash").get("vanish_s", 0.5)), 0.01), 0.0, 1.0)
+			# El arte final se deshace en humo el solo: el alfa baja menos.
+			var f: float = clampf(_dash_t / maxf(float(section("ghost_dash").get("vanish_s", 0.5)), 0.01), 0.0, 1.0)
+			alpha = 1.0 - (f * f if _art_on else f)
 		DASH_HIDDEN, DASH_WARN, DASH_READY, DASH_CHARGE:
 			alpha = 0.0
 		DASH_RETURN:
@@ -1308,16 +1505,20 @@ class HelpMarker extends Node2D:
 		return available.is_valid() and bool(available.call())
 
 
-## Efectos por codigo (PROVISIONALES): aura, escudo, silueta y rastro (con el
-## Debug), burbujas que caen, zonas «Visto», «escribiendo…» gigante y mensaje.
-## Rojo = lo que dana.
+## Efectos por codigo: aura, escudo, silueta (sin el arte final) y rastro (con
+## el Debug), burbujas que caen, zonas «Visto», «escribiendo…» gigante y
+## mensaje. Rojo = lo que dana. Con el arte final el aura es un halo eliptico
+## translucido alrededor del dibujo (el base de AutoSprite traia un halo opaco
+## que se quito) y la silueta la dibuja el sprite (aqui solo el contorno rojo
+## de la embestida).
 class SeenFx extends Node2D:
 	var boss: Seen
 
 	func _draw() -> void:
 		if boss == null or not boss.is_fighting() or boss.is_screen_off():
-			if boss != null and boss.is_screen_off() and boss._body_sprite != null and boss._body_sprite.visible:
-				# Golpe final: el doble check se tacha.
+			if boss != null and boss.is_screen_off() and boss._body_sprite != null and boss._body_sprite.visible \
+					and not boss.has_final_art():
+				# Golpe final (provisional): el doble check se tacha. El arte final se agrieta.
 				var r: Rect2 = boss.get_body_rect()
 				var red := boss._color("warn_color", Color.RED)
 				draw_line(r.position + Vector2(16, 16), r.end - Vector2(16, 16), red, 8.0)
@@ -1331,8 +1532,12 @@ class SeenFx extends Node2D:
 		var t: float = boss.get_time()
 		var stage: StringName = boss.get_dash_stage()
 		if stage in [Seen.DASH_NONE, Seen.DASH_VANISH, Seen.DASH_RETURN]:
-			var body: Rect2 = boss.get_body_rect()
-			draw_rect(body.grow(6.0 + 3.0 * sin(t * TAU * 0.8)), Color(aura, 0.25), false, 6.0)
+			if boss.has_final_art():
+				# El halo se esfuma y vuelve con el cuerpo (su alfa).
+				_draw_aura(boss.get_art_rect(), Color(aura, aura.a * boss._body_sprite.modulate.a), t)
+			else:
+				var body: Rect2 = boss.get_body_rect()
+				draw_rect(body.grow(6.0 + 3.0 * sin(t * TAU * 0.8)), Color(aura, 0.25), false, 6.0)
 		if boss.is_shield_up():
 			var sr: Rect2 = boss.get_shield_rect()
 			var n: int = 14
@@ -1348,10 +1553,11 @@ class SeenFx extends Node2D:
 			if stage == Seen.DASH_WARN:
 				var gd: Dictionary = boss.section("ghost_dash")
 				fade = clampf(boss._dash_t / maxf(boss.frames_s(gd.get("warn_frames", 9)), 0.01), 0.2, 1.0)
-			draw_rect(sil, Color(aura, 0.45 * fade))
-			draw_rect(sil, Color(check, 0.8 * fade), false, 3.0)
+			if not boss.has_final_art():
+				draw_rect(sil, Color(aura, 0.45 * fade))
+				draw_rect(sil, Color(check, 0.8 * fade), false, 3.0)
 			var decoy: Vector2 = boss.get_decoy_point()
-			if decoy != Vector2.INF:
+			if decoy != Vector2.INF and not boss.has_final_art():
 				var dr: Rect2 = boss._silhouette_at(decoy)
 				draw_rect(dr, Color(aura, 0.45 * fade))
 				draw_rect(dr, Color(check, 0.8 * fade), false, 3.0)
@@ -1396,3 +1602,15 @@ class SeenFx extends Node2D:
 				var x: float = boss._to_global(Vector2(-6.0 * boss._tile + f * (w + 6.0 * boss._tile), 0.0)).x
 				var y: float = boss.get_typing_rect().position.y
 				draw_rect(Rect2(x, y, 6.0 * boss._tile, 2.0 * boss._tile), Color(check, 0.9))
+
+	## Halo eliptico translucido (dos anillos que laten) alrededor del dibujo.
+	func _draw_aura(art: Rect2, aura: Color, t: float) -> void:
+		# Lienzo de 336 x 256: el doble check ocupa ~280 x 208 en su centro.
+		var center: Vector2 = art.get_center() + Vector2(0.0, -4.0)
+		var radius: Vector2 = Vector2(art.size.x * 0.5 - 8.0, art.size.y * 0.5 - 20.0)
+		var pulse: float = 3.0 * sin(t * TAU * 0.8)
+		for ring: int in 2:
+			var r: Vector2 = radius + Vector2.ONE * (pulse + 10.0 * float(ring))
+			draw_set_transform(center, 0.0, Vector2(1.0, r.y / maxf(r.x, 1.0)))
+			draw_arc(Vector2.ZERO, r.x, 0.0, TAU, 48, Color(aura, aura.a * (0.22 - 0.1 * float(ring))), 6.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

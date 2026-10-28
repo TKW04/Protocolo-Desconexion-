@@ -462,3 +462,70 @@ func test_final_blow_and_reappearance_restart_the_phase() -> void:
 	assert_eq(blows.size(), 1, "Golpe final")
 	assert_true(_boss.is_screen_off())
 	assert_true(_boss.get_ghosts().is_empty(), "Sin Fantasmas tras el golpe final")
+
+
+# --- Arte final (paso 24, etapa 2: tools/import_boss_seen.py) ---
+
+func test_final_art_follows_its_state() -> void:
+	await _setup()
+	assert_true(_boss.has_final_art(), "Cuadros de tools/import_boss_seen.py")
+	assert_eq(String(_boss.get_art_frame()[0]), "idle", "Fase 1 entre ataques")
+	var body := _boss.get_node(^"Body") as Sprite2D
+	var box: Rect2 = _boss.get_perch_rect()
+	assert_eq(box.size, Vector2(384.0, 192.0), "La caja no cambia (6 x 3 tiles)")
+	assert_eq(body.global_position, box.position + Seen.ART_BODY_OFFSET, "Lienzo en su sitio")
+	assert_eq(body.texture.get_size(), Vector2(336.0, 256.0))
+	var perch: Array = _boss.get_config()["arena"]["perch_core_px"]
+	assert_almost_eq(Seen.ART_CHECK_PX.x, float(perch[0]), 4.0, "Check gris centrado (perch_core_px)")
+	assert_almost_eq(Seen.ART_CHECK_PX.y, float(perch[1]), 0.5)
+	# Fase 1: se esfuma, oculto, silueta con su arte y vuelve.
+	_boss.start_attack(Seen.ATTACK_GHOST_DASH)
+	_advance(DT)
+	assert_eq(String(_boss.get_art_frame()[0]), "vanish")
+	_advance_until(func() -> bool: return _boss.get_dash_stage() == Seen.DASH_HIDDEN)
+	assert_eq(int(_boss.get_art_frame()[1]), -1, "Oculto: sin cuerpo")
+	_advance_until(func() -> bool: return _boss.get_dash_stage() == Seen.DASH_WARN)
+	_advance(DT)
+	var sil := _boss.get_node(^"Silhouette") as Sprite2D
+	assert_true(sil.visible, "La silueta es el doble check pequeno")
+	assert_eq(String(_boss.get_silhouette_art_frame()[0]), "reappear")
+	var sil_rect: Rect2 = _boss.get_silhouette_rect()
+	assert_eq(sil.global_position, (sil_rect.get_center() + Seen.ART_SILHOUETTE_OFFSET).round(),
+		"El check gris de la silueta en el punto debil")
+	_advance_until(func() -> bool: return _boss.get_dash_stage() == Seen.DASH_CHARGE)
+	_advance(DT)
+	assert_eq(String(_boss.get_silhouette_art_frame()[0]), "charge", "Embiste")
+	_advance_until(func() -> bool: return _boss.get_dash_stage() == Seen.DASH_RETURN)
+	_advance(DT)
+	assert_false(sil.visible, "Sin silueta al volver")
+	assert_eq(String(_boss.get_art_frame()[0]), "reappear", "Vuelve arriba con el glitch")
+	# Fase 2: escudo y, en el suelo, aturdido con el check gris en el punto debil.
+	_to_phase(2)
+	_advance(DT)
+	assert_eq(String(_boss.get_art_frame()[0]), "shield")
+	var shield: Rect2 = _boss.get_shield_rect()
+	for s: Sticker in _boss.get_stickers():
+		s.receive_shockwave(s.get_center(), 160.0, 3.0)
+	assert_true(_boss.receive_shockwave(Vector2(shield.position.x - 8.0, shield.end.y + 40.0), 160.0))
+	_advance(1.0)
+	assert_eq(String(_boss.get_art_frame()[0]), "stunned", "En el suelo")
+	assert_lt((body.global_position + Seen.ART_CHECK_PX - Seen.ART_BODY_OFFSET).distance_to(_boss.get_core().global_position), 3.0,
+		"El check gris del dibujo cae en el punto debil")
+	# Fase 3: escribiendo y aturdido del lado de Isak.
+	_to_phase(3)
+	_advance_until(func() -> bool: return _boss.get_typing_state() == Seen.TYPING_ON)
+	_advance(DT)
+	assert_eq(String(_boss.get_art_frame()[0]), "typing")
+	assert_true(_boss.receive_pulse(_pulse_area(_phone())))
+	_advance(1.0)
+	assert_eq(String(_boss.get_art_frame()[0]), "stunned", "Aturdido")
+	assert_lt((body.global_position + Seen.ART_CHECK_PX - Seen.ART_BODY_OFFSET).distance_to(_boss.get_core().global_position), 3.0,
+		"Aturdido a un lado: el dibujo se desliza hasta el punto debil")
+	assert_eq(_boss.get_body_rect().size, Vector2(384.0, 192.0), "La caja sigue igual")
+	# Golpe final: agrietado y gris.
+	while not _boss.is_defeated():
+		_boss.take_core_hit(1)
+	_advance(DT)
+	assert_eq(_boss.get_art_frame(), ["defeat", Seen.ART_DEFEAT_FROM], "Golpe final: ya agrietado")
+	_advance(3.0)
+	assert_eq(_boss.get_art_frame(), ["defeat", 24], "Se queda gris y roto")

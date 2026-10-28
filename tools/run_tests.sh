@@ -132,6 +132,8 @@ rm -f "$IMPORT_LOG"
 # (tools/import_boss_autoplay.py --check, tools/import_commenter.py --check).
 # Desde el paso 23 del Mundo 3 (2026-10-27): el arte final de La Curadora y del Influencer bot al dia
 # (tools/import_boss_curator.py --check, tools/import_influencer_bot.py --check).
+# Desde el paso 24 del Mundo 4, etapa 2 (2026-10-28): el arte final de El Visto al dia
+# (tools/import_boss_seen.py --check, tests/test_import_boss_seen.py).
 # Desde el paso 0 de docs/propuesta-mundo-3.md (2026-10-26): la paleta provisional del Mundo 3 al dia y sus 5 reglas
 # de §6.1 (tools/palette_mundo3_provisional.py --check, tests/test_palette_mundo3.py).
 # Desde el paso 9 (2026-10-26): las 3 variantes de paleta del Mundo 3 cumplen las 5 reglas
@@ -232,7 +234,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_world4_schema.py tests/test_world4_validator.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py tests/test_world4_negatives.py \
-		tests/test_hub_update_validator.py \
+		tests/test_hub_update_validator.py tests/test_import_boss_seen.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \
 		&& python3 tools/build_level.py --check data/levels/*.json \
@@ -268,6 +270,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/gen_hub_update_art.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/import_boss_curator.py --check >/dev/null && python3 -I tools/import_influencer_bot.py --check >/dev/null \
+		&& python3 -I tools/import_boss_seen.py --check >/dev/null \
 		&& python3 -I tools/palette_mundo2_preview.py --check); then
 		echo "run_tests.sh: fallaron las pruebas Python (niveles: esquema, alcanzabilidad o escena; o fuente de textos)." >&2
 		echo "run_tests.sh: detalle con python3 tools/validate_level.py data/levels/<id>.json" >&2
