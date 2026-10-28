@@ -469,6 +469,36 @@ Los 21 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (fu
 
 Reutilizados sin cambios: la marca (`sfx_weak_point_*`), `sfx_boss_phase_change`, `sfx_boss_defeat` → `stg_boss_defeated` → `mus_memory`, `mus_eco_motif` en la intro y la derrota (`Curator.line_said`), `vox_boss_eco_filter`, `sfx_hub_wallpaper_piece` y `sfx_memory_pickup` (`sfx_charger` y `sfx_dash_through`, que §6.4 también lista, aún no están en el catálogo). `python3 tools/validate_audio.py`: 107 sonidos. Prueba `tests/test_curator_help.gd`.
 
+### Mundo 4 «El Chat» y El Visto (2026-10-28, paso 20 de `docs/propuesta-mundo-4.md`)
+
+Los 24 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (función `world4`, después de `hub_4_6`: los anteriores no cambian; se generan con `--only <prefijo>`) y enganchados en `data/audio.json` sin tocar la lógica (la única señal nueva es `Seen.dot_added`):
+
+| ID | Señal | Notas |
+|---|---|---|
+| `sfx_gesture_shake` | `EventBus.shockwave_fired` | Agitar |
+| `sfx_w4_typing` | `TypingBubble.typing_started` | `cue`; posicional. **Desvío:** un solo sonido de tres toques a 0,33 s (el `dot_s` de los puntos) al empezar, no un evento por punto |
+| `sfx_w4_bubble_pop_in` / `sfx_w4_message_deleted` | `TypingBubble.appeared` / `vanished` | Posicionales |
+| `sfx_w4_seen_freeze` / `sfx_w4_seen_break` | `Isak.frozen_started` / `Isak.frozen_ended` (`true`: roto con Agitar) | Zonas, ola y mensaje del jefe |
+| `sfx_w4_seen_interrupt` | `SeenZone.interrupted`; `Seen.typing_interrupted` | Pulso al doble check o al «escribiendo…» del jefe |
+| `sfx_w4_seen_wave` | `SeenWave.state_changed` (`MOVING`) | `cue`. **Desvío:** golpe largo al arrancar o reanudar la ola, no un bucle por nodo que sube al acercarse (un solo bucle de fondo a la vez; el frente se mueve y el nodo no) |
+| `sfx_w4_troll_shot` | `Troll.shot_fired` | Posicional; también el Troll disfrazado |
+| `sfx_w4_ghost_vanish` / `sfx_w4_ghost_appear` | `Ghost.state_changed` (`vanish`) / `Ghost.appearing` | Posicionales (la aparición, detrás de Isak) |
+| `sfx_w4_autocorrect` | `AutocorrectBubble.cursor_started` | Posicional |
+| `sfx_w4_sticker_explode` | `Sticker.exploded` | Posicional |
+| `sfx_w4_undo` | `UndoPrompt.switched_on` | Hereda de `DndSwitch`: suena también `sfx_dnd_switch` |
+| `sfx_w4_typed_wall_erase` | `TypedWall.erased` | Posicional |
+| `sfx_w4_flashlight_on` | `FlashlightPickup.collected` | |
+| `amb_w4_chat_night` | ambiente de `World4Background` (prioridad 0) | Clase nueva: el fondo de los niveles del Mundo 4 (mismo arte que el del Mundo 1) |
+| `mus_w4_level` | ambiente de `ChatMusic` (prioridad 10) | Lo crea `World4Background` fuera de las arenas y lo quita cuando la ola se apaga (cierre del 4-3: silencio) |
+| `mus_boss4` | ambiente de `SeenMusic` (prioridad 20) | El Visto lo crea al empezar cada fase y lo quita en el golpe final |
+| `sfx_boss4_intro` | `EventBus.boss_started` (`seen`) | |
+| `sfx_boss4_vanish` | `Seen.attack_started` (`ghost_dash`) | No posicional (la arena cabe en pantalla) |
+| `sfx_boss4_shield_break` | `Seen.shield_broken` | |
+| `sfx_boss4_typing` | `Seen.dot_added` (nueva) | `cue`; un aviso por punto |
+| `sfx_boss4_send` | `Seen.message_sent` | |
+
+Reutilizados sin cambios: la marca (`sfx_weak_point_*`), `sfx_boss_phase_change`, `sfx_boss_defeat` → `stg_boss_defeated` → `mus_memory`, `mus_eco_motif` en la intro y la derrota (`Seen.line_said`), `vox_boss_eco_filter`, `sfx_hub_wallpaper_piece` y `sfx_memory_pickup`. **Pendiente:** la «capa de silencio» de la música cerca de las burbujas de amigos y la música baja del Tramo 1 del 4-3 (necesitan control de volumen por zona; hoy la música provisional suena igual en todo el nivel); la Papelera habla con su blip (`vox_papelera_blip`, nuevo: `text_blips` del interlocutor `papelera`). `python3 tools/validate_audio.py`: 137 sonidos. Prueba `tests/test_seen_help.gd`.
+
 ### Pendiente
 
 - Música (`mus_*`) y la mayoría de los stingers: sin archivo; el hub no lleva música.

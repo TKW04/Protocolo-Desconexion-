@@ -774,6 +774,21 @@ func test_curator_lens_and_closing_frame_only_while_shown() -> void:
 	await _assert_inert_drops_help(closing, func() -> void: state["closing"] = false, "marco ya abierto")
 
 
+# --- El Visto (paso 20 de docs/propuesta-mundo-4.md, 2026-10-28) ---
+
+## El cuerpo solo ayuda mientras se ve (oculto o tras el golpe final, no); el escudo,
+## mientras esta levantado; el «escribiendo…» gigante, mientras se llenan los puntos.
+func test_seen_body_shield_and_typing_only_while_shown() -> void:
+	var state: Dictionary = {"seen_boss": true, "seen_shield": true, "seen_typing": true}
+	var whys: Dictionary = {"seen_boss": "El Visto oculto", "seen_shield": "escudo caido", "seen_typing": "«escribiendo…» en silencio"}
+	for id: String in state:
+		var marker := Seen.HelpMarker.new()
+		marker.available = func() -> bool: return bool(state[id])
+		_place(marker, StringName(id))
+		await _assert_inert_drops_help(marker, func() -> void: state[id] = false, String(whys[id]))
+		marker.free()
+
+
 # --- Mundo 3: niveles (paso 20 de docs/propuesta-mundo-3.md, 2026-10-27) ---
 
 func _w3_scene(type: String) -> Node2D:
@@ -994,7 +1009,8 @@ func test_every_help_type_is_covered() -> void:
 		&"mirror_only", &"crop_tool", &"filter_zone", &"hunter_mirror", &"pose_plate", &"frame_door", &"hud_likes",
 		&"influencer_bot", &"like_thief", &"false_reflection",
 		&"chat_bubble", &"typing_bubble", &"seen_zone", &"flashlight_pickup", &"autocorrect_bubble", &"undo_prompt",
-		&"typed_wall", &"troll", &"sticker", &"ghost", &"troll_mimic"]
+		&"typed_wall", &"troll", &"sticker", &"ghost", &"troll_mimic",
+		&"seen_boss", &"seen_shield", &"seen_typing"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

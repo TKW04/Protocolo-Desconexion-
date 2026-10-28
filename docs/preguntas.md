@@ -1186,3 +1186,31 @@ El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicie
 - Arte por script: fondos de las páginas 2 y 3, carpetas M4-M6, candado, instalador y su decorado (`tools/gen_hub_objects.py`); verificaciones con sus **pictogramas** (V1 Debug + láser, V2 golpe al suelo + Deslizar, V3 láser + Pellizcar), placa, plataforma, glitch, barra y pieza 4 (`tools/gen_hub_update_art.py`). El destello es un velo blanco por código.
 - Audio provisional, 5 IDs nuevos (los definitivos, con el mismo nombre): `sfx_hub_update_check`, `sfx_hub_install_bar`, `sfx_hub_install`, `sfx_hub_page_slide` y `sfx_hub_folder_locked`. Reutilizados: `sfx_laser_denied` (verificación que rechaza) y `sfx_w3_pose_plate` (placa).
 
+
+## Mundo 4: textos propuestos (2026-10-28, paso 20 de `docs/propuesta-mundo-4.md`)
+
+**Todos los textos del Mundo 4 son PROPUESTOS** por el orquestador (con la autoridad delegada): revisar al jugar. Los de las burbujas de los niveles (mensajes de Lía, Marco, Tomi y los demás, sellos «hace N días») están en `data/levels/4-1.json`, `4-2.json` y `4-3.json`; aquí, las voces de los personajes y del sistema.
+
+**Eco**
+- Al recoger la Linterna en el 4-1 (no importante): «Una linterna. Qué antigüedad. Yo ilumino mejor, {apodo}.» (`eco_linterna`).
+- Al obtener Agitar en el «¿Deshacer escritura?» del 4-2 (importante): «No necesitas a nadie más.» (frase del diseño).
+- Antes de que arranque la ola en el 4-3 (no importante): «Lo de atrás ya lo ha leído todo. No corre, pero no se para. Tú tampoco, {apodo}.» (`eco_ola`).
+- Junto a la última burbuja de Tomi, antes de la puerta «Responder más tarde» (no importante): «No hace falta contestar ahora, {apodo}. Ya habrá tiempo.» (`eco_cierre`). La puerta muestra «Sin conexión» (V15).
+- 14 ayudas con Q del Mundo 4 (`data/help.json`, `world: 4`): burbuja, «Escribiendo…», «Visto», Linterna, autocorrector, «¿Deshacer escritura?», muro de texto, Troll, Sticker, Fantasma, Troll disfrazado y, desde el paso 20, El Visto («Te lee y no contesta. Con el Debug se ve el check que no ha leído. Márcalo con el pulso y dispárale.»), su escudo («Mucha gente alrededor. Agita cuando no quede nadie.») y su «escribiendo…» gigante («Está a punto de mandarlo. Si lo interrumpes con un pulso, se queda callado.»).
+
+**El Visto** (Eco habla por él; `data/bosses/seen.json`, `texts`)
+- Intro (importante): «Ya lo leí, {apodo}. No hace falta que contestes.»
+- Fase 2: «Mira cuánta gente. Ninguno te escribe.» · Fase 3: «Escribiendo… para ti. Solo para ti.»
+- Golpe final (sistema): «Visto: retirado.» · Derrota (importante, tras la recompensa): «Me quedo yo. Siempre me quedo yo.»
+
+**Papelera** (4-2, importante al acercarse): «Aquí llega lo que él tira. No lo borra. Lo guarda donde no mires.» · «Si quieres deshacer algo, agita. Lo escrito no siempre se queda.»; tras obtener Agitar (no importante): «Él no soporta el silencio. Acuérdate.»
+
+**Calc** (al volver al hub, no importante)
+- Tras el 4-1: «Mensajes enviados: 0. Recibidos: 37. Saldo: preocupante.»
+- Tras el 4-3: «Respuestas pendientes: 1. Esa cuenta no la llevo yo.» (`chats_4_3`, nueva en el paso 20).
+
+**Sistema y carteles**
+- «¿Deshacer escritura?» · «Agita el dispositivo» · «Escritura deshecha» (panel del 4-2).
+- Cartel del vestíbulo del 4-1: «En línea hace 3 h» (nuevo en el paso 20). Puertas: «Enviar» (4-1) y «Responder más tarde» / «Sin conexión» (4-3).
+
+**Sonido (decisiones del orquestador a revisar):** el «escribiendo…» de las burbujas es un solo sonido de tres toques al empezar los puntos (el del jefe, uno por punto); la ola suena con un golpe largo al arrancar y al reanudar (no un bucle que sube al acercarse); la música del nivel se calla al apagarse la ola en el cierre del 4-3; quedan pendientes la música baja del Tramo 1 del 4-3 y la «capa de silencio» cerca de los amigos (`docs/lista-sonidos.md`, «Mundo 4»).

@@ -99,13 +99,15 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	assert_eq(NotasAlbum.album_ids(3, HelpCatalog.CATEGORY_ENEMY),
 		[&"influencer_bot", &"like_thief", &"false_reflection", &"curator_boss"] as Array[StringName],
 		"Mundo 3: Influencer bot y Ladron de likes (3-1), Reflejo falso (3-3) y La Curadora (paso 19)")
-	# Mundo 4 (paso 10 de docs/propuesta-mundo-4.md): 7 objetos y 4 enemigos, en el orden de help.json.
+	# Mundo 4 (paso 10 de docs/propuesta-mundo-4.md): 7 objetos y 4 enemigos, en el orden de help.json; desde el
+	# paso 20, El Visto, su escudo y su «escribiendo…» gigante.
 	assert_eq(NotasAlbum.album_ids(4, HelpCatalog.CATEGORY_OBJECT),
 		[&"chat_bubble", &"typing_bubble", &"seen_zone", &"flashlight_pickup", &"autocorrect_bubble", &"undo_prompt",
-			&"typed_wall"] as Array[StringName], "Mundo 4: burbujas, «Visto» y Linterna (4-1) y lo del 4-2")
+			&"typed_wall", &"seen_shield", &"seen_typing"] as Array[StringName],
+		"Mundo 4: burbujas, «Visto» y Linterna (4-1), lo del 4-2 y el escudo y el «escribiendo…» de El Visto (paso 20)")
 	assert_eq(NotasAlbum.album_ids(4, HelpCatalog.CATEGORY_ENEMY),
-		[&"troll", &"sticker", &"ghost", &"troll_mimic"] as Array[StringName],
-		"Mundo 4: Troll (4-1), Sticker y Fantasma (4-2) y Troll disfrazado (4-3)")
+		[&"troll", &"sticker", &"ghost", &"troll_mimic", &"seen_boss"] as Array[StringName],
+		"Mundo 4: Troll (4-1), Sticker y Fantasma (4-2), Troll disfrazado (4-3) y El Visto (paso 20)")
 	for world: int in range(5, 7):
 		assert_eq(NotasAlbum.album_ids(world).size(), 0, "Mundo %d aun sin tipos" % world)
 
@@ -171,7 +173,7 @@ func test_reached_world_shows_its_name_and_locked_ones_hide_it() -> void:
 	_album.open()
 	var texts: PackedStringArray = _album.get_folder_texts(3)
 	m4["unlocked"] = false
-	assert_eq(texts, PackedStringArray(["El Chat", "0/11"]), "Alcanzado: su nombre y sus 11 tipos (paso 10 del Mundo 4)")
+	assert_eq(texts, PackedStringArray(["El Chat", "0/14"]), "Alcanzado: su nombre y sus 14 tipos (11 del paso 10 y los 3 de El Visto, paso 20)")
 	_album.close()
 	_album.open()
 	assert_eq(_album.get_folder_texts(3), PackedStringArray(["???", ""]), "Sin alcanzar: «???»")

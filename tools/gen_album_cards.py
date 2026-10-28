@@ -150,6 +150,11 @@ SOURCES = {
     "sticker": ("assets/sprites/enemies/world4/sticker_00.png", None, 1),
     "ghost": ("assets/sprites/enemies/world4/ghost_00.png", None, 1),
     "troll_mimic": ("assets/sprites/enemies/world4/troll_mimic_00.png", None, 1),
+    # Jefe El Visto (paso 20 de docs/propuesta-mundo-4.md): arte PROVISIONAL por script del mismo
+    # tools/gen_world4_objects.py (el cuerpo, a media escala) hasta el arte final (paso 24).
+    "seen_boss": ("assets/sprites/enemies/world4/seen_boss_placeholder_00.png", None, 1),
+    "seen_shield": ("assets/sprites/enemies/world4/seen_shield_00.png", None, 1),
+    "seen_typing": ("assets/sprites/enemies/world4/seen_typing_00.png", None, 1),
 }
 
 

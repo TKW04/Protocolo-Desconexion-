@@ -1,28 +1,30 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
-[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world4_background.tscn" id="2_world4_background"]
 [ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
 [ext_resource type="PackedScene" path="res://scenes/levels/hidden_platform.tscn" id="4_hidden_platform"]
 [ext_resource type="PackedScene" path="res://scenes/levels/attention_point.tscn" id="5_attention_point"]
 [ext_resource type="Script" path="res://scripts/levels/checkpoint.gd" id="6_checkpoint"]
 [ext_resource type="PackedScene" path="res://scenes/levels/flashlight_pickup.tscn" id="7_flashlight_pickup"]
-[ext_resource type="PackedScene" path="res://scenes/levels/chat_bubble.tscn" id="8_chat_bubble"]
-[ext_resource type="PackedScene" path="res://scenes/levels/dark_zone.tscn" id="9_dark_zone"]
-[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="10_charger"]
-[ext_resource type="PackedScene" path="res://scenes/levels/typing_bubble.tscn" id="11_typing_bubble"]
-[ext_resource type="PackedScene" path="res://scenes/levels/memory_pickup.tscn" id="12_memory_pickup"]
-[ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="13_glitch_wall"]
-[ext_resource type="PackedScene" path="res://scenes/levels/extra_life_pickup.tscn" id="14_extra_life_pickup"]
-[ext_resource type="PackedScene" path="res://scenes/levels/small_frame.tscn" id="15_small_frame"]
-[ext_resource type="PackedScene" path="res://scenes/levels/power_bank_pickup.tscn" id="16_power_bank_pickup"]
-[ext_resource type="PackedScene" path="res://scenes/levels/seen_zone.tscn" id="17_seen_zone"]
-[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="18_exit_terminal"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="19_troll"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="20_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="21_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="22_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="23_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/eco_line.tscn" id="8_eco_line"]
+[ext_resource type="PackedScene" path="res://scenes/levels/feed_sign.tscn" id="9_feed_sign"]
+[ext_resource type="PackedScene" path="res://scenes/levels/chat_bubble.tscn" id="10_chat_bubble"]
+[ext_resource type="PackedScene" path="res://scenes/levels/dark_zone.tscn" id="11_dark_zone"]
+[ext_resource type="PackedScene" path="res://scenes/levels/charger.tscn" id="12_charger"]
+[ext_resource type="PackedScene" path="res://scenes/levels/typing_bubble.tscn" id="13_typing_bubble"]
+[ext_resource type="PackedScene" path="res://scenes/levels/memory_pickup.tscn" id="14_memory_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/glitch_wall.tscn" id="15_glitch_wall"]
+[ext_resource type="PackedScene" path="res://scenes/levels/extra_life_pickup.tscn" id="16_extra_life_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/small_frame.tscn" id="17_small_frame"]
+[ext_resource type="PackedScene" path="res://scenes/levels/power_bank_pickup.tscn" id="18_power_bank_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/seen_zone.tscn" id="19_seen_zone"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="20_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="21_troll"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="22_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="23_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="24_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="25_help_system"]
 
 [node name="Level_4_1" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -35,7 +37,7 @@ debug_color = "coral"
 abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true, "shockwave": false}
 source_path = "res://data/levels/4-1.json"
 
-[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+[node name="Background" parent="." instance=ExtResource("2_world4_background")]
 vertical = true
 
 [node name="Tiles" type="TileMapLayer" parent="."]
@@ -116,7 +118,26 @@ position = Vector2(448, 6016)
 object_id = &"linterna_4_1"
 metadata/help_id = "flashlight_pickup"
 
-[node name="b1_sigues" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="eco_linterna" parent="Objects" instance=ExtResource("8_eco_line")]
+position = Vector2(448, 5952)
+duration_s = 4.0
+height_tiles = 1
+object_id = &"eco_linterna"
+important = false
+once = true
+text = "Una linterna. Qué antigüedad. Yo ilumino mejor, {apodo}."
+trigger_event = &"ally_met"
+width_tiles = 1
+
+[node name="cartel_en_linea" parent="Objects" instance=ExtResource("9_feed_sign")]
+position = Vector2(512, 5952)
+accent = "gris"
+height_tiles = 1
+object_id = &"cartel_en_linea"
+text = "En línea hace 3 h"
+width_tiles = 4
+
+[node name="b1_sigues" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 5056)
 object_id = &"b1_sigues"
 author_side = &"left"
@@ -125,7 +146,7 @@ text = "¿Sigues por ahí?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b1_78_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_78_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 4992)
 object_id = &"b1_78_0"
 author_side = &"left"
@@ -133,7 +154,7 @@ text = "¿Y si vamos al garaje?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_78_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_78_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 4992)
 object_id = &"b1_78_1"
 author_side = &"right"
@@ -141,7 +162,7 @@ text = "¿Me oyes? Te escribo desde el bus"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b1_78_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_78_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(704, 4992)
 object_id = &"b1_78_2"
 author_side = &"left"
@@ -149,7 +170,7 @@ text = "¿Sigues por ahí?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b1_78_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_78_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(896, 4992)
 object_id = &"b1_78_3"
 author_side = &"right"
@@ -157,7 +178,7 @@ text = "No sé qué contestar a eso"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b1_78_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_78_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 4992)
 object_id = &"b1_78_4"
 author_side = &"left"
@@ -165,7 +186,7 @@ text = "No, ya la trajo Marco"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_hora" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_hora" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 4864)
 object_id = &"b1_hora"
 author_side = &"left"
@@ -173,7 +194,7 @@ text = "¿a qué hora?"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b1_75_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_75_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 4800)
 object_id = &"b1_75_0"
 author_side = &"left"
@@ -181,7 +202,7 @@ text = "Mañana a las cinco en lo de Lía"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b1_75_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_75_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 4800)
 object_id = &"b1_75_1"
 author_side = &"right"
@@ -189,7 +210,7 @@ text = "¿hola? ¿hay alguien?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_jaja" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_jaja" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(768, 4800)
 object_id = &"b1_jaja"
 author_side = &"right"
@@ -197,7 +218,7 @@ text = "jajajajaja"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b1_puente" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_puente" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(960, 4800)
 object_id = &"b1_puente"
 author_side = &"left"
@@ -205,7 +226,7 @@ text = "Te mandé el meme del perro con casco ya"
 width_tiles = 7
 metadata/help_id = "chat_bubble"
 
-[node name="b1_75_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_75_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1408, 4800)
 object_id = &"b1_75_4"
 author_side = &"left"
@@ -213,7 +234,7 @@ text = "ok"
 width_tiles = 1
 metadata/help_id = "chat_bubble"
 
-[node name="b1_otra" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_otra" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 4672)
 object_id = &"b1_otra"
 author_side = &"right"
@@ -221,7 +242,7 @@ text = "mándamelo otra vez"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b1_72_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_72_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 4608)
 object_id = &"b1_72_0"
 author_side = &"left"
@@ -229,7 +250,7 @@ text = "nada, mirar el techo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_72_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_72_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 4608)
 object_id = &"b1_72_1"
 author_side = &"right"
@@ -237,7 +258,7 @@ text = "Son las tres y no puedo dormir"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b1_borrado" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_borrado" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(640, 4608)
 deleted = true
 object_id = &"b1_borrado"
@@ -246,7 +267,7 @@ text = "olvídalo"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b1_72_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_72_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(768, 4608)
 object_id = &"b1_72_3"
 author_side = &"right"
@@ -254,7 +275,7 @@ text = "yo tampoco, qué raro"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_72_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_72_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1024, 4608)
 object_id = &"b1_72_4"
 author_side = &"left"
@@ -262,7 +283,7 @@ text = "Te mandé el meme del perro con casco ya"
 width_tiles = 7
 metadata/help_id = "chat_bubble"
 
-[node name="b1_vemos" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_vemos" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 4480)
 object_id = &"b1_vemos"
 author_side = &"right"
@@ -270,7 +291,7 @@ text = "nos vemos allí"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b1_68_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_68_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 4352)
 object_id = &"b1_68_0"
 author_side = &"left"
@@ -278,7 +299,7 @@ text = "Sé que estás ahí, te veo en línea"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b1_68_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_68_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 4352)
 object_id = &"b1_68_1"
 author_side = &"right"
@@ -286,7 +307,7 @@ text = "mándamelo otra vez"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b1_68_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_68_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(640, 4352)
 object_id = &"b1_68_2"
 author_side = &"left"
@@ -294,7 +315,7 @@ text = "¿te acuerdas de eso?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_68_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_68_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(896, 4352)
 object_id = &"b1_68_3"
 author_side = &"right"
@@ -302,7 +323,7 @@ text = "y pensar en lo del garaje"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b1_68_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_68_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 4352)
 object_id = &"b1_68_4"
 author_side = &"left"
@@ -310,7 +331,7 @@ text = "escribe algo, lo que sea"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b1_llego" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b1_llego" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 4224)
 object_id = &"b1_llego"
 author_side = &"left"
@@ -318,13 +339,13 @@ text = "ya llegué"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="modo_oscuro" parent="Objects" instance=ExtResource("9_dark_zone")]
+[node name="modo_oscuro" parent="Objects" instance=ExtResource("11_dark_zone")]
 position = Vector2(64, 3200)
 height_tiles = 14
 object_id = &"modo_oscuro"
 width_tiles = 22
 
-[node name="cargador_1" parent="Objects" instance=ExtResource("10_charger") groups=["help_target"]]
+[node name="cargador_1" parent="Objects" instance=ExtResource("12_charger") groups=["help_target"]]
 position = Vector2(960, 4032)
 amount = 50.0
 cooldown_s = 10.0
@@ -332,7 +353,7 @@ object_id = &"cargador_1"
 reusable = true
 metadata/help_id = "charger"
 
-[node name="t1" parent="Objects" instance=ExtResource("11_typing_bubble") groups=["help_target"]]
+[node name="t1" parent="Objects" instance=ExtResource("13_typing_bubble") groups=["help_target"]]
 position = Vector2(64, 3968)
 object_id = &"t1"
 author_side = &"left"
@@ -341,7 +362,7 @@ trigger_zone = [2, 62, 3, 2]
 width_tiles = 3
 metadata/help_id = "typing_bubble"
 
-[node name="b2_hoy" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_hoy" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 3840)
 object_id = &"b2_hoy"
 author_side = &"left"
@@ -350,7 +371,7 @@ text = "Son las tres y no puedo dormir"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b2_60_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_60_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(384, 3840)
 object_id = &"b2_60_1"
 author_side = &"right"
@@ -358,7 +379,7 @@ text = "jaja"
 width_tiles = 1
 metadata/help_id = "chat_bubble"
 
-[node name="b2_tomi" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_tomi" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 3840)
 object_id = &"b2_tomi"
 author_side = &"left"
@@ -367,7 +388,7 @@ text = "Tomi: te mandé un meme, ¿lo viste o qué?"
 width_tiles = 7
 metadata/help_id = "chat_bubble"
 
-[node name="t2" parent="Objects" instance=ExtResource("11_typing_bubble") groups=["help_target"]]
+[node name="t2" parent="Objects" instance=ExtResource("13_typing_bubble") groups=["help_target"]]
 position = Vector2(640, 3712)
 object_id = &"t2"
 author_side = &"right"
@@ -376,13 +397,13 @@ trigger_zone = [8, 58, 2, 2]
 width_tiles = 4
 metadata/help_id = "typing_bubble"
 
-[node name="mensaje_4_1" parent="Objects" instance=ExtResource("12_memory_pickup") groups=["help_target"]]
+[node name="mensaje_4_1" parent="Objects" instance=ExtResource("14_memory_pickup") groups=["help_target"]]
 position = Vector2(1344, 3648)
 object_id = &"mensaje_4_1"
 memory_id = &"msg_4_1"
 metadata/help_id = "memory_pickup"
 
-[node name="b2_hola" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_hola" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 3584)
 object_id = &"b2_hola"
 author_side = &"left"
@@ -390,7 +411,7 @@ text = "¿hola? ¿hay alguien?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b2_56_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_56_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 3584)
 object_id = &"b2_56_1"
 author_side = &"right"
@@ -398,7 +419,7 @@ text = "bueno, como quieras"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b2_vi" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_vi" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(576, 3584)
 object_id = &"b2_vi"
 author_side = &"right"
@@ -406,7 +427,7 @@ text = "lo vi, me reí mucho, de verdad"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="t3" parent="Objects" instance=ExtResource("11_typing_bubble") groups=["help_target"]]
+[node name="t3" parent="Objects" instance=ExtResource("13_typing_bubble") groups=["help_target"]]
 position = Vector2(64, 3456)
 object_id = &"t3"
 author_side = &"left"
@@ -415,7 +436,7 @@ trigger_id = &"b2_hola"
 width_tiles = 3
 metadata/help_id = "typing_bubble"
 
-[node name="b2_techo" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_techo" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 3328)
 object_id = &"b2_techo"
 author_side = &"right"
@@ -423,7 +444,7 @@ text = "nada, mirar el techo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b2_52_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_52_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 3328)
 object_id = &"b2_52_1"
 author_side = &"right"
@@ -431,7 +452,7 @@ text = "hola otra vez, soy yo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b2_garaje" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b2_garaje" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(576, 3328)
 object_id = &"b2_garaje"
 author_side = &"right"
@@ -439,7 +460,7 @@ text = "y pensar en lo del garaje"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="t4" parent="Objects" instance=ExtResource("11_typing_bubble") groups=["help_target"]]
+[node name="t4" parent="Objects" instance=ExtResource("13_typing_bubble") groups=["help_target"]]
 position = Vector2(640, 3200)
 object_id = &"t4"
 author_side = &"left"
@@ -448,7 +469,7 @@ trigger_zone = [9, 50, 2, 2]
 width_tiles = 4
 metadata/help_id = "typing_bubble"
 
-[node name="pared_vida_extra" parent="Objects" instance=ExtResource("13_glitch_wall") groups=["help_target"]]
+[node name="pared_vida_extra" parent="Objects" instance=ExtResource("15_glitch_wall") groups=["help_target"]]
 position = Vector2(1408, 3200)
 height_tiles = 2
 object_id = &"pared_vida_extra"
@@ -457,13 +478,13 @@ visible_only_with_debug = true
 width_tiles = 1
 metadata/help_id = "glitch_wall"
 
-[node name="vida_extra_4_1" parent="Objects" instance=ExtResource("14_extra_life_pickup") groups=["help_target"]]
+[node name="vida_extra_4_1" parent="Objects" instance=ExtResource("16_extra_life_pickup") groups=["help_target"]]
 position = Vector2(1408, 3264)
 object_id = &"vida_extra_4_1"
 secret_id = &"C"
 metadata/help_id = "extra_life"
 
-[node name="cargador_2" parent="Objects" instance=ExtResource("10_charger") groups=["help_target"]]
+[node name="cargador_2" parent="Objects" instance=ExtResource("12_charger") groups=["help_target"]]
 position = Vector2(1344, 3008)
 amount = 50.0
 cooldown_s = 10.0
@@ -471,19 +492,19 @@ object_id = &"cargador_2"
 reusable = true
 metadata/help_id = "charger"
 
-[node name="marco_archivado" parent="Objects" instance=ExtResource("15_small_frame") groups=["help_target"]]
+[node name="marco_archivado" parent="Objects" instance=ExtResource("17_small_frame") groups=["help_target"]]
 position = Vector2(384, 3008)
 object_id = &"marco_archivado"
 length_tiles = 1
 orientation = "wall"
 metadata/help_id = "small_frame"
 
-[node name="power_bank_4_1" parent="Objects" instance=ExtResource("16_power_bank_pickup") groups=["help_target"]]
+[node name="power_bank_4_1" parent="Objects" instance=ExtResource("18_power_bank_pickup") groups=["help_target"]]
 position = Vector2(128, 3008)
 object_id = &"power_bank_4_1"
 metadata/help_id = "power_bank_pickup"
 
-[node name="b3_linea" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_linea" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1280, 2944)
 object_id = &"b3_linea"
 author_side = &"left"
@@ -491,7 +512,7 @@ text = "en línea"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b3_45_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_45_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 2880)
 object_id = &"b3_45_0"
 author_side = &"left"
@@ -499,7 +520,7 @@ text = "¿por qué no contestas?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b3_45_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_45_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(704, 2880)
 object_id = &"b3_45_1"
 author_side = &"right"
@@ -507,7 +528,7 @@ text = "vale, mañana"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b3_45_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_45_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(832, 2880)
 object_id = &"b3_45_2"
 author_side = &"left"
@@ -515,7 +536,7 @@ text = "No pasa nada, en serio, tranquilo"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b3_45_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_45_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 2880)
 object_id = &"b3_45_3"
 author_side = &"right"
@@ -523,7 +544,7 @@ text = "no me ignores"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b3_ignores" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_ignores" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 2752)
 object_id = &"b3_ignores"
 author_side = &"left"
@@ -531,7 +552,7 @@ text = "no me ignores"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b3_42_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_42_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 2688)
 object_id = &"b3_42_0"
 author_side = &"left"
@@ -539,7 +560,7 @@ text = "Tomi: te mandé un meme, ¿lo viste o qué?"
 width_tiles = 7
 metadata/help_id = "chat_bubble"
 
-[node name="b3_42_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_42_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(512, 2688)
 object_id = &"b3_42_1"
 author_side = &"right"
@@ -547,7 +568,7 @@ text = "¿a qué hora?"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b3_42_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_42_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(640, 2688)
 object_id = &"b3_42_2"
 author_side = &"left"
@@ -555,7 +576,7 @@ text = "en línea"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b3_42_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_42_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(768, 2688)
 object_id = &"b3_42_3"
 author_side = &"right"
@@ -563,7 +584,7 @@ text = "lo vi, me reí mucho, de verdad"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b3_42_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_42_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1088, 2688)
 object_id = &"b3_42_4"
 author_side = &"left"
@@ -571,7 +592,7 @@ text = "¿Te pasó algo? Dime algo, lo que sea"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b3_estas" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_estas" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 2560)
 object_id = &"b3_estas"
 author_side = &"left"
@@ -579,7 +600,7 @@ text = "¿estás ahí, Isak?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b3_39_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_39_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 2496)
 object_id = &"b3_39_0"
 author_side = &"left"
@@ -587,7 +608,7 @@ text = "¿Enviar o no enviar?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b3_39_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_39_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 2496)
 object_id = &"b3_39_1"
 author_side = &"right"
@@ -595,7 +616,7 @@ text = "buenas noches"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b3_39_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_39_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(512, 2496)
 object_id = &"b3_39_2"
 author_side = &"left"
@@ -603,7 +624,7 @@ text = "Marco trajo pizza y sobró un montón"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b3_39_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_39_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(896, 2496)
 object_id = &"b3_39_3"
 author_side = &"right"
@@ -611,7 +632,7 @@ text = "Ya no te escribo más"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b3_39_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_39_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1152, 2496)
 object_id = &"b3_39_4"
 author_side = &"left"
@@ -619,7 +640,7 @@ text = "Último mensaje de la noche"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b3_nada" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_nada" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 2368)
 object_id = &"b3_nada"
 author_side = &"left"
@@ -627,7 +648,7 @@ text = "nada, nada"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b3_35_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_35_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 2240)
 object_id = &"b3_35_0"
 author_side = &"left"
@@ -635,7 +656,7 @@ text = "Te escribo largo porque nunca contestas corto"
 width_tiles = 8
 metadata/help_id = "chat_bubble"
 
-[node name="b3_35_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_35_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(576, 2240)
 object_id = &"b3_35_1"
 author_side = &"right"
@@ -643,7 +664,7 @@ text = "¿Llevo la cadena?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b3_35_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_35_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(768, 2240)
 object_id = &"b3_35_2"
 author_side = &"left"
@@ -651,7 +672,7 @@ text = "Mañana te cuento lo del bus"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b3_35_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_35_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1088, 2240)
 object_id = &"b3_35_3"
 author_side = &"right"
@@ -659,7 +680,7 @@ text = "¿Me oyes? Te escribo desde el bus"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b3_fin" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b3_fin" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 2112)
 object_id = &"b3_fin"
 author_side = &"left"
@@ -667,7 +688,7 @@ text = "contesta ya"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="visto_suelo" parent="Objects" instance=ExtResource("17_seen_zone") groups=["help_target"]]
+[node name="visto_suelo" parent="Objects" instance=ExtResource("19_seen_zone") groups=["help_target"]]
 position = Vector2(768, 1920)
 height_tiles = 1
 icon_side = &"right"
@@ -675,7 +696,7 @@ object_id = &"visto_suelo"
 width_tiles = 1
 metadata/help_id = "seen_zone"
 
-[node name="b4_visto" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_visto" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1856)
 object_id = &"b4_visto"
 author_side = &"left"
@@ -683,7 +704,7 @@ text = "Visto a las 03:47"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_hola" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_hola" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1792)
 object_id = &"b4_hola"
 author_side = &"left"
@@ -691,7 +712,7 @@ text = "hola otra vez, soy yo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_28_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_28_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 1792)
 object_id = &"b4_28_1"
 author_side = &"right"
@@ -699,7 +720,7 @@ text = "o hasta cuando sea, ya"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_porque" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_porque" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(576, 1792)
 object_id = &"b4_porque"
 author_side = &"left"
@@ -707,7 +728,7 @@ text = "¿por qué no contestas?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_28_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_28_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(832, 1792)
 object_id = &"b4_28_3"
 author_side = &"right"
@@ -715,7 +736,7 @@ text = "Si no puedes hablar, manda un emoji y ya está"
 width_tiles = 8
 metadata/help_id = "chat_bubble"
 
-[node name="b4_28_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_28_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1344, 1792)
 object_id = &"b4_28_4"
 author_side = &"left"
@@ -723,7 +744,7 @@ text = "jajaja ok"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="visto_aire" parent="Objects" instance=ExtResource("17_seen_zone") groups=["help_target"]]
+[node name="visto_aire" parent="Objects" instance=ExtResource("19_seen_zone") groups=["help_target"]]
 position = Vector2(832, 1664)
 height_tiles = 2
 icon_side = &"left"
@@ -731,7 +752,7 @@ object_id = &"visto_aire"
 width_tiles = 2
 metadata/help_id = "seen_zone"
 
-[node name="b4_sigo" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_sigo" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 1664)
 object_id = &"b4_sigo"
 author_side = &"left"
@@ -739,7 +760,7 @@ text = "sigo aquí"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1600)
 object_id = &"b4_25_0"
 author_side = &"left"
@@ -747,7 +768,7 @@ text = "Visto a las 03:47"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(256, 1600)
 object_id = &"b4_25_1"
 author_side = &"right"
@@ -755,7 +776,7 @@ text = "Leído a las 03:48"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 1600)
 object_id = &"b4_25_2"
 author_side = &"left"
@@ -763,7 +784,7 @@ text = "¿estás despierto?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(640, 1600)
 object_id = &"b4_25_3"
 author_side = &"right"
@@ -771,7 +792,7 @@ text = "¿y tú qué haces?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(832, 1600)
 object_id = &"b4_25_4"
 author_side = &"left"
@@ -779,7 +800,7 @@ text = "me voy a dormir"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_5" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_5" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1024, 1600)
 object_id = &"b4_25_5"
 author_side = &"right"
@@ -787,7 +808,7 @@ text = "nos vemos allí"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_25_6" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_25_6" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 1600)
 object_id = &"b4_25_6"
 author_side = &"left"
@@ -795,7 +816,7 @@ text = "te dejé un audio largo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="visto_ciclo" parent="Objects" instance=ExtResource("17_seen_zone") groups=["help_target"]]
+[node name="visto_ciclo" parent="Objects" instance=ExtResource("19_seen_zone") groups=["help_target"]]
 position = Vector2(576, 1472)
 height_tiles = 2
 icon_side = &"right"
@@ -805,7 +826,7 @@ on_s = 4.0
 width_tiles = 2
 metadata/help_id = "seen_zone"
 
-[node name="b4_vale" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_vale" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1472)
 object_id = &"b4_vale"
 author_side = &"left"
@@ -813,7 +834,7 @@ text = "vale"
 width_tiles = 1
 metadata/help_id = "chat_bubble"
 
-[node name="b4_22_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_22_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1408)
 object_id = &"b4_22_0"
 author_side = &"left"
@@ -821,7 +842,7 @@ text = "Lía dice que vengas el sábado"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b4_22_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_22_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(384, 1408)
 object_id = &"b4_22_1"
 author_side = &"right"
@@ -829,7 +850,7 @@ text = "¿Y si vamos al garaje?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_22_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_22_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(640, 1408)
 object_id = &"b4_22_2"
 author_side = &"left"
@@ -837,7 +858,7 @@ text = "No, ya la trajo Marco"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_22_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_22_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(896, 1408)
 object_id = &"b4_22_3"
 author_side = &"right"
@@ -845,7 +866,7 @@ text = "¿hola? ¿hay alguien?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_22_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_22_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1152, 1408)
 object_id = &"b4_22_4"
 author_side = &"left"
@@ -853,7 +874,7 @@ text = "No sé qué contestar a eso"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="visto_ciclo_2" parent="Objects" instance=ExtResource("17_seen_zone") groups=["help_target"]]
+[node name="visto_ciclo_2" parent="Objects" instance=ExtResource("19_seen_zone") groups=["help_target"]]
 position = Vector2(768, 1280)
 height_tiles = 2
 icon_side = &"left"
@@ -864,7 +885,7 @@ phase_s = 2.0
 width_tiles = 2
 metadata/help_id = "seen_zone"
 
-[node name="b4_ultimo" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_ultimo" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 1280)
 object_id = &"b4_ultimo"
 author_side = &"left"
@@ -872,7 +893,7 @@ text = "último aviso"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b4_19_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_19_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1216)
 object_id = &"b4_19_0"
 author_side = &"left"
@@ -880,7 +901,7 @@ text = "nada, mirar el techo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_19_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_19_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 1216)
 object_id = &"b4_19_1"
 author_side = &"right"
@@ -888,7 +909,7 @@ text = "¿Sigues en línea?"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_19_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_19_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(512, 1216)
 object_id = &"b4_19_2"
 author_side = &"left"
@@ -896,7 +917,7 @@ text = "Lía dice que si no vienes te traemos a rastras"
 width_tiles = 8
 metadata/help_id = "chat_bubble"
 
-[node name="b4_19_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_19_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1024, 1216)
 object_id = &"b4_19_3"
 author_side = &"right"
@@ -904,7 +925,7 @@ text = "Bueno, sí. Mañana."
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_19_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_19_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 1216)
 object_id = &"b4_19_4"
 author_side = &"left"
@@ -912,7 +933,7 @@ text = "yo tampoco, qué raro"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="visto_ciclo_3" parent="Objects" instance=ExtResource("17_seen_zone") groups=["help_target"]]
+[node name="visto_ciclo_3" parent="Objects" instance=ExtResource("19_seen_zone") groups=["help_target"]]
 position = Vector2(512, 1024)
 height_tiles = 3
 icon_side = &"right"
@@ -923,7 +944,7 @@ phase_s = 4.0
 width_tiles = 2
 metadata/help_id = "seen_zone"
 
-[node name="b4_fin" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_fin" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 1088)
 object_id = &"b4_fin"
 author_side = &"left"
@@ -931,7 +952,7 @@ text = "en línea"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b4_15_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_15_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 960)
 object_id = &"b4_15_0"
 author_side = &"left"
@@ -939,7 +960,7 @@ text = "Mañana a las cinco en lo de Lía"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b4_15_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_15_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 960)
 object_id = &"b4_15_1"
 author_side = &"right"
@@ -947,7 +968,7 @@ text = "¿te acuerdas de eso?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b4_15_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_15_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(704, 960)
 object_id = &"b4_15_2"
 author_side = &"left"
@@ -955,7 +976,7 @@ text = "Leído a las 03:49"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b4_15_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_15_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(896, 960)
 object_id = &"b4_15_3"
 author_side = &"right"
@@ -963,7 +984,7 @@ text = "Son las tres y no puedo dormir"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b4_15_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_15_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 960)
 object_id = &"b4_15_4"
 author_side = &"left"
@@ -971,7 +992,7 @@ text = "escribe algo, lo que sea"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="visto_ciclo_4" parent="Objects" instance=ExtResource("17_seen_zone") groups=["help_target"]]
+[node name="visto_ciclo_4" parent="Objects" instance=ExtResource("19_seen_zone") groups=["help_target"]]
 position = Vector2(768, 768)
 height_tiles = 3
 icon_side = &"left"
@@ -982,7 +1003,7 @@ phase_s = 6.0
 width_tiles = 2
 metadata/help_id = "seen_zone"
 
-[node name="b4_casi" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b4_casi" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 832)
 object_id = &"b4_casi"
 author_side = &"right"
@@ -990,7 +1011,7 @@ text = "casi"
 width_tiles = 1
 metadata/help_id = "chat_bubble"
 
-[node name="b5_escalon" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_escalon" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 576)
 object_id = &"b5_escalon"
 author_side = &"left"
@@ -998,7 +1019,7 @@ text = "escribiendo"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b5_8_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_8_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 512)
 object_id = &"b5_8_0"
 author_side = &"left"
@@ -1006,7 +1027,7 @@ text = "Sé que estás ahí, te veo en línea"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b5_8_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_8_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(448, 512)
 object_id = &"b5_8_1"
 author_side = &"right"
@@ -1014,7 +1035,7 @@ text = "bueno, como quieras"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b5_8_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_8_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(704, 512)
 object_id = &"b5_8_2"
 author_side = &"left"
@@ -1022,7 +1043,7 @@ text = "contesta ya"
 width_tiles = 2
 metadata/help_id = "chat_bubble"
 
-[node name="b5_8_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_8_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(832, 512)
 object_id = &"b5_8_3"
 author_side = &"right"
@@ -1030,7 +1051,7 @@ text = "y pensar en lo del garaje"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b5_8_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_8_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1152, 512)
 object_id = &"b5_8_4"
 author_side = &"left"
@@ -1038,7 +1059,7 @@ text = "lo vi, me reí mucho, de verdad"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b5_casi" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_casi" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 384)
 object_id = &"b5_casi"
 author_side = &"right"
@@ -1046,7 +1067,7 @@ text = "casi lo envío"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b5_5_0" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_5_0" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(64, 320)
 object_id = &"b5_5_0"
 author_side = &"left"
@@ -1054,7 +1075,7 @@ text = "hola otra vez, soy yo"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="b5_5_1" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_5_1" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(320, 320)
 object_id = &"b5_5_1"
 author_side = &"right"
@@ -1062,7 +1083,7 @@ text = "No pasa nada, en serio, tranquilo"
 width_tiles = 6
 metadata/help_id = "chat_bubble"
 
-[node name="b5_5_2" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_5_2" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(704, 320)
 object_id = &"b5_5_2"
 author_side = &"left"
@@ -1070,7 +1091,7 @@ text = "Leído a las 03:50"
 width_tiles = 3
 metadata/help_id = "chat_bubble"
 
-[node name="b5_5_3" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_5_3" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(896, 320)
 object_id = &"b5_5_3"
 author_side = &"right"
@@ -1078,7 +1099,7 @@ text = "Último mensaje de la noche"
 width_tiles = 5
 metadata/help_id = "chat_bubble"
 
-[node name="b5_5_4" parent="Objects" instance=ExtResource("8_chat_bubble") groups=["help_target"]]
+[node name="b5_5_4" parent="Objects" instance=ExtResource("10_chat_bubble") groups=["help_target"]]
 position = Vector2(1216, 320)
 object_id = &"b5_5_4"
 author_side = &"left"
@@ -1086,7 +1107,7 @@ text = "¿por qué no contestas?"
 width_tiles = 4
 metadata/help_id = "chat_bubble"
 
-[node name="terminal_enviar" parent="Objects" instance=ExtResource("18_exit_terminal") groups=["help_target"]]
+[node name="terminal_enviar" parent="Objects" instance=ExtResource("20_exit_terminal") groups=["help_target"]]
 position = Vector2(192, 192)
 height_tiles = 2
 object_id = &"terminal_enviar"
@@ -1097,7 +1118,7 @@ metadata/help_id = "exit_terminal"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="troll_1" parent="Enemies" instance=ExtResource("19_troll") groups=["help_target"]]
+[node name="troll_1" parent="Enemies" instance=ExtResource("21_troll") groups=["help_target"]]
 position = Vector2(1440, 2944)
 metadata/params = {"facing": -1}
 metadata/help_id = "troll"
@@ -1105,15 +1126,15 @@ metadata/help_id = "troll"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(224, 320)
 
-[node name="Isak" parent="." instance=ExtResource("20_isak")]
+[node name="Isak" parent="." instance=ExtResource("22_isak")]
 position = Vector2(160, 6080)
 camera_limits = Rect2i(0, 0, 1536, 6144)
 camera_mode = &"tower"
 camera_bands = PackedVector2Array(0, 768, 768, 2048, 2048, 3008, 3008, 3136, 3136, 4160, 4160, 5248, 5248, 6144)
 
-[node name="Hud" parent="." instance=ExtResource("21_hud")]
+[node name="Hud" parent="." instance=ExtResource("23_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("22_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("24_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("23_help_system")
+script = ExtResource("25_help_system")

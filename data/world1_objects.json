@@ -126,7 +126,7 @@
 		},
 		"eco_line": {
 			"scene": "res://scenes/levels/eco_line.tscn",
-			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Al entrar Isak emite EventBus.eco_line_requested(text, duration_s) y la muestra el cuadro de texto de Eco (scenes/ui/eco_text_box.tscn, data/eco_text_box.json), que el nivel debe incluir; duration_s es el tiempo minimo con el texto completo (el cuadro alarga los textos largos). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida. trigger_event (rediseno del 1-1, 2026-10-15): en vez de la zona, la linea salta al emitirse esa senal de EventBus (laser_fired: primera vez que Isak dispara el laser en el nivel). important (decision 2026-10-15; por defecto false): linea importante (habilidad adquirida, historia), el cuadro pausa el juego hasta que el jugador la cierra (Espacio / A / Intro) y pasa delante de las normales en cola. unless_ability (2026-10-16): linea de historia ligada a una habilidad (eco_laser: laser); si Isak ya la tiene al empezar el nivel (obtenida o desbloqueada) no sale, como el ability_pickup que la da, que tampoco aparece: objetos de historia de un solo uso.",
+			"description": "Zona que dispara una linea de Eco (PROPUESTA V6: notificacion con la esfera de Eco arriba, solo texto, no pausa, desaparece a los duration_s). Al entrar Isak emite EventBus.eco_line_requested(text, duration_s) y la muestra el cuadro de texto de Eco (scenes/ui/eco_text_box.tscn, data/eco_text_box.json), que el nivel debe incluir; duration_s es el tiempo minimo con el texto completo (el cuadro alarga los textos largos). Area de width_tiles x height_tiles desde (x, y); once: solo la primera vez. No es solida. trigger_event (rediseno del 1-1, 2026-10-15): en vez de la zona, la linea salta al emitirse esa senal de EventBus (laser_fired: primera vez que Isak dispara el laser en el nivel; ally_met, 2026-10-28: al conocer un aliado en el nivel, la Linterna del 4-1). important (decision 2026-10-15; por defecto false): linea importante (habilidad adquirida, historia), el cuadro pausa el juego hasta que el jugador la cierra (Espacio / A / Intro) y pasa delante de las normales en cola. unless_ability (2026-10-16): linea de historia ligada a una habilidad (eco_laser: laser); si Isak ya la tiene al empezar el nivel (obtenida o desbloqueada) no sale, como el ability_pickup que la da, que tampoco aparece: objetos de historia de un solo uso.",
 			"required": ["text"],
 			"fields": {
 				"id": "object_id",
@@ -147,7 +147,7 @@
 				"important": false
 			},
 			"allowed": {
-				"trigger_event": ["laser_fired"],
+				"trigger_event": ["laser_fired", "ally_met"],
 				"unless_ability": ["pulse", "debug", "laser", "dash", "compress", "shockwave"]
 			},
 			"example": {"type": "eco_line", "x": 6, "y": 6, "params": {"id": "eco_1", "text": "Bienvenido. He optimizado tu espacio."}}

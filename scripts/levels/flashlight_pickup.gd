@@ -5,8 +5,9 @@
 ## ("linterna"): aliada de registro como Calc, no marca «sin guardar» y un game over no
 ## la quita) y desde entonces es una lucecita que sigue a Isak (FlashlightCompanion)
 ## y abre la luz en las zonas «Modo oscuro» (DarkZone). Con la Linterna ya conocida no
-## aparece (como el ability_pickup con la habilidad obtenida). Sin Q ni linea de Eco
-## todavia (textos propuestos en el paso 20; ayuda en el paso 10). Aspecto PROVISIONAL
+## aparece (como el ability_pickup con la habilidad obtenida). Ayuda Q desde el paso 10;
+## la linea de Eco al recogerla (paso 20, texto propuesto) es un eco_line del nivel con
+## trigger_event ally_met (GameState.meet_ally emite EventBus.ally_met). Aspecto PROVISIONAL
 ## por codigo (seccion flashlight de data/world4_objects.json). El origen es la esquina
 ## superior izquierda de su celda.
 class_name FlashlightPickup

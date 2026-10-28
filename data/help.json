@@ -992,6 +992,42 @@
 			"radius_tiles": 4.0,
 			"center_px": [0, -16],
 			"prompt_px": [0, -48]
+		},
+		"seen_boss": {
+			"_notes": "Jefe El Visto (paso 20 de docs/propuesta-mundo-4.md §8, §5.10; arena 4-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en el centro del doble check (Seen.get_body_help_point; en la fase 1, la silueta mientras se ve; oculto, sin ayuda).",
+			"category": "enemy",
+			"title": "El Visto",
+			"text": "Te lee y no contesta. Con el Debug se ve el check que no ha leído. Márcalo con el pulso y dispárale.",
+			"first_level": "4-boss",
+			"world": 4,
+			"order": 5,
+			"radius_tiles": 7.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -120]
+		},
+		"seen_shield": {
+			"_notes": "Jefe El Visto (paso 20 de docs/propuesta-mundo-4.md §8, §5.10). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en el centro del escudo (Seen.get_shield_rect); solo mientras está levantado (fase 2, fuera de la ventana).",
+			"category": "object",
+			"title": "Escudo de gente",
+			"text": "Mucha gente alrededor. Agita cuando no quede nadie.",
+			"first_level": "4-boss",
+			"world": 4,
+			"order": 8,
+			"radius_tiles": 7.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -140]
+		},
+		"seen_typing": {
+			"_notes": "Jefe El Visto (paso 20 de docs/propuesta-mundo-4.md §8, §5.10). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en el centro del «escribiendo…» gigante (Seen.get_typing_rect); solo mientras se llenan los puntos (fase 3).",
+			"category": "object",
+			"title": "Escribiendo… gigante",
+			"text": "Está a punto de mandarlo. Si lo interrumpes con un pulso, se queda callado.",
+			"first_level": "4-boss",
+			"world": 4,
+			"order": 9,
+			"radius_tiles": 7.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -80]
 		}
 	}
 }

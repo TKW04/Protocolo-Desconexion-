@@ -246,7 +246,7 @@
 		"flashlight_pickup": {
 			"scene": "res://scenes/levels/flashlight_pickup.tscn",
 			"help_id": "flashlight_pickup",
-			"description": "Linterna (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; FlashlightPickup). Objeto de 1 x 1 en (x, y) que se recoge al tocarlo: GameState.meet_ally(\"linterna\") (aliada de registro, como Calc: no marca «sin guardar» y un game over no la quita). Desde entonces una lucecita sigue a Isak (FlashlightCompanion, la crea LevelRunner) y abre la luz en las dark_zone; el hueco del hub (columna 13) se enciende. Con la Linterna ya conocida no aparece. Va en la sala de llegada del 4-1. Sin Q ni linea de Eco todavia (pasos 10 y 20). Aspecto PROVISIONAL por codigo (seccion flashlight).",
+			"description": "Linterna (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; FlashlightPickup). Objeto de 1 x 1 en (x, y) que se recoge al tocarlo: GameState.meet_ally(\"linterna\") (aliada de registro, como Calc: no marca «sin guardar» y un game over no la quita). Desde entonces una lucecita sigue a Isak (FlashlightCompanion, la crea LevelRunner) y abre la luz en las dark_zone; el hueco del hub (columna 13) se enciende. Con la Linterna ya conocida no aparece. Va en la sala de llegada del 4-1. Ayuda Q flashlight_pickup (paso 10); la linea de Eco al recogerla es un eco_line del nivel con trigger_event ally_met (paso 20). Aspecto PROVISIONAL por codigo (seccion flashlight).",
 			"required": [],
 			"fields": {
 				"id": "object_id"

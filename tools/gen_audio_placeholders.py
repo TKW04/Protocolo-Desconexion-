@@ -183,6 +183,7 @@ def build(rng: np.random.Generator) -> dict[str, np.ndarray]:
     world2(s, rng)
     world3(s, rng)
     hub_4_6(s, rng)
+    world4(s, rng)
     return s
 
 
@@ -377,6 +378,112 @@ def hub_4_6(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
     d = 0.15
     s["sfx_hub_folder_locked"] = (0.6 * sine(sweep(900, 600, d), d) * np.exp(-t_axis(d) * 30)
         + 0.3 * lowpass(noise(d, rng), 3000) * env(len(t_axis(d)), 0.001, 0.03, 4))
+
+
+def world4(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
+    """Mundo 4 «El Chat» y El Visto (paso 20 de docs/propuesta-mundo-4.md, §6.4): provisionales con los IDs de
+    data/audio.json; los definitivos los hace el amigo del usuario con el mismo nombre. Va despues de hub_4_6
+    (el generador de ruido es comun: asi los anteriores no cambian). Tono de chat de madrugada: blando, frio,
+    sin agudos estridentes."""
+    # Agitar: sacudida (ruido grave que tiembla) con un golpe que se abre.
+    d = 0.35
+    t = t_axis(d)
+    rattle = lowpass(noise(d, rng), 1200) * (0.6 + 0.4 * np.sin(2 * np.pi * 22 * t) ** 2)
+    s["sfx_gesture_shake"] = (0.7 * rattle + 0.5 * sine(sweep(180, 90, d), d)) * env(len(t), 0.004, 0.12, 1.2)
+    # «Escribiendo…»: tres toques suaves a 0,33 s (los tres puntos de dot_s; un solo sonido por burbuja).
+    d = 0.9
+    taps = np.zeros(len(t_axis(d)))
+    for k in range(3):
+        taps = mix_at(taps, note(1046 + 120 * k, 0.05, tri, 2.2), k * 0.33)
+    s["sfx_w4_typing"] = taps
+    # Burbuja que aparece: «pop» corto que sube.
+    d = 0.12
+    s["sfx_w4_bubble_pop_in"] = sine(sweep(520, 880, d), d) * env(len(t_axis(d)), 0.002, 0.05, 1.6)
+    # Congelarse (cristal que se cierra, baja) y romper la congelacion (cristal que salta, sube con chasquido).
+    d = 0.4
+    s["sfx_w4_seen_freeze"] = (0.6 * sine(sweep(1318, 659, d), d) + 0.3 * sine(sweep(1975, 988, d), d)) \
+        * env(len(t_axis(d)), 0.01, 0.15, 1.0)
+    d = 0.25
+    s["sfx_w4_seen_break"] = mix_at(0.5 * tri(sweep(659, 1318, d), d) * env(len(t_axis(d)), 0.002, 0.1, 1.4),
+        0.5 * lowpass(noise(0.08, rng), 5000) * env(len(t_axis(0.08)), 0.001, 0.03, 3), 0.0)
+    # Proyectil de texto del Troll: «fiu» de mensaje enviado.
+    d = 0.16
+    s["sfx_w4_troll_shot"] = tri(sweep(880, 1318, d), d) * env(len(t_axis(d)), 0.002, 0.06, 1.5)
+    # Fantasma: se esfuma (soplido que baja) y aparece (soplido que sube, posicional).
+    d = 0.35
+    s["sfx_w4_ghost_vanish"] = (0.6 * lowpass(noise(d, rng), 900) + 0.3 * sine(sweep(440, 220, d), d)) \
+        * np.sin(np.pi * t_axis(d) / d) ** 2
+    s["sfx_w4_ghost_appear"] = (0.6 * lowpass(noise(d, rng), 900) + 0.3 * sine(sweep(220, 440, d), d)) \
+        * np.sin(np.pi * t_axis(d) / d) ** 2
+    # Autocorrector: dos tics de cursor y un borrado rapido.
+    d = 0.3
+    ac = np.zeros(len(t_axis(d)))
+    ac = mix_at(ac, note(1568, 0.03, tri, 2), 0.0)
+    ac = mix_at(ac, note(1568, 0.03, tri, 2), 0.09)
+    ac = mix_at(ac, 0.4 * lowpass(noise(0.1, rng), 3000) * env(len(t_axis(0.1)), 0.002, 0.04, 2), 0.18)
+    s["sfx_w4_autocorrect"] = ac
+    # Sticker que explota: confeti (ruido brillante) con un «plop».
+    d = 0.3
+    s["sfx_w4_sticker_explode"] = (0.5 * lowpass(noise(d, rng), 5000) + 0.6 * sine(sweep(300, 120, d), d)) \
+        * env(len(t_axis(d)), 0.001, 0.12, 2.0)
+    # Pulso que interrumpe una zona «Visto»: el doble check que se apaga (dos notas que bajan).
+    s["sfx_w4_seen_interrupt"] = np.concatenate([note(988, 0.05, sine, 2), note(740, 0.1, sine, 1.4)])
+    # Ola de «Visto»: rumor grave que avanza (golpe largo al arrancar o reanudar; posicional).
+    d = 1.2
+    t = t_axis(d)
+    s["sfx_w4_seen_wave"] = (0.7 * lowpass(noise(d, rng), 300) + 0.4 * sine(82, d)) \
+        * (0.7 + 0.3 * np.sin(2 * np.pi * 3 * t)) * np.sin(np.pi * t / d)
+    # «¿Deshacer escritura?»: Agitar obtenido (sacudida y acorde que se abre).
+    d = 0.6
+    chord = sum(a * note(f, d, sine, 0.8) for f, a in ((392, 0.5), (494, 0.4), (587, 0.4)))
+    s["sfx_w4_undo"] = mix_at(chord, 0.3 * lowpass(noise(0.2, rng), 1500) * env(len(t_axis(0.2)), 0.002, 0.08, 2), 0.0)
+    # Muro de texto que se borra: tecla de borrar repetida.
+    d = 0.4
+    er = np.zeros(len(t_axis(d)))
+    for k in range(5):
+        er = mix_at(er, 0.5 * lowpass(noise(0.04, rng), 2500) * env(len(t_axis(0.04)), 0.001, 0.02, 3), k * 0.07)
+    s["sfx_w4_typed_wall_erase"] = er + 0.2 * tri(sweep(660, 330, d), d) * env(len(t_axis(d)), 0.01, 0.1)
+    # «Se elimino este mensaje»: nota hueca que se apaga.
+    s["sfx_w4_message_deleted"] = note(587, 0.25, tri, 1.8) * 0.7
+    # Linterna recogida: clic y zumbido que se enciende.
+    d = 0.3
+    click = lowpass(noise(0.02, rng), 4000) * env(len(t_axis(0.02)), 0.001, 0.01, 3)
+    s["sfx_w4_flashlight_on"] = mix_at(0.4 * sine(sweep(220, 330, d), d) * env(len(t_axis(d)), 0.05, 0.1, 0.8),
+        click, 0.0)
+    # Ambiente: madrugada fria, aire bajo con tecleo lejano, en bucle sin costura (8 s).
+    d = 8.0
+    t = t_axis(d)
+    air = lowpass(noise(d, rng), 350)
+    fade = int(0.5 * RATE)
+    ramp = np.linspace(0, 1, fade)
+    air[:fade] = air[:fade] * ramp + air[-fade:] * (1 - ramp)
+    air = air[: len(t) - fade]
+    keys = np.zeros(len(air))
+    for k in range(9):
+        keys = mix_at(keys, 0.08 * lowpass(noise(0.03, rng), 2500) * env(len(t_axis(0.03)), 0.001, 0.02, 3),
+            0.4 + k * 0.81)
+    hum = 0.08 * sine(98, len(air) / RATE)
+    s["amb_w4_chat_night"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.7 + keys + hum, 10 ** (-18 / 20))
+    # Musica del nivel (bucle de 8 s, menor y lenta, el tecleo como ritmo) y del jefe (mas fria y con pulso).
+    s["mus_w4_level"] = normalize(loop_bars([440, 523, 659, 523], 0.25, sine, [110, 87, 131, 98], 0.5),
+        10 ** (-14 / 20))
+    s["mus_boss4"] = normalize(loop_bars([440, 659, 523, 784, 659, 523], 0.125, tri, [110, 110, 87, 98], 0.375),
+        10 ** (-14 / 20))
+    # El Visto: intro (doble check que se ilumina), se esfuma, escudo que estalla, cada punto y el mensaje.
+    s["sfx_boss4_intro"] = np.concatenate([note(659, 0.08, sine, 1.4), note(880, 0.08, sine, 1.4),
+        note(440, 0.4, tri, 0.7)])
+    d = 0.45
+    s["sfx_boss4_vanish"] = (0.5 * lowpass(noise(d, rng), 700) + 0.4 * sine(sweep(330, 147, d), d)) \
+        * np.sin(np.pi * t_axis(d) / d) ** 2
+    d = 0.5
+    s["sfx_boss4_shield_break"] = (0.6 * lowpass(noise(d, rng), 4500) + 0.4 * tri(sweep(784, 196, d), d)) \
+        * env(len(t_axis(d)), 0.001, 0.2, 1.6)
+    s["sfx_boss4_typing"] = note(784, 0.06, tri, 2.2)
+    # Blip de la Papelera (interlocutor papelera del 4-2): un «tac» hueco y grave, de papel arrugado.
+    s["vox_papelera_blip"] = 0.5 * note(247, 0.035, tri, 1.6) \
+        + 0.3 * lowpass(noise(0.035, rng), 1200) * env(len(t_axis(0.035)), 0.002, 0.015, 2)
+    d = 0.3
+    s["sfx_boss4_send"] = soft_square(sweep(392, 784, d), d, 2) * env(len(t_axis(d)), 0.005, 0.1, 1.0) * 0.7
 
 
 def write_wav(path: str, data: np.ndarray) -> None:

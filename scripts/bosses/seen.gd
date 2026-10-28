@@ -52,6 +52,9 @@ signal shield_broken
 signal typing_interrupted
 ## El ultimo punto: el mensaje sale (`frozen`: congelo a Isak).
 signal message_sent(frozen: bool)
+## Sale un punto del «escribiendo…» gigante (`dots`: los que hay ya; paso 20:
+## sfx_boss4_typing, senal de ritmo).
+signal dot_added(dots: int)
 ## Golpe final (contador a 0).
 signal final_blow
 signal disarmed
@@ -88,6 +91,12 @@ const TYPING_SENT: StringName = &"sent"
 const ZONE_WARN: StringName = &"warn"
 const ZONE_ACTIVE: StringName = &"active"
 const ZONE_OFF: StringName = &"off"
+
+## Ayudas de Eco con Q (paso 20 de docs/propuesta-mundo-4.md, §5.10; data/help.json):
+## por defecto de help_id (la seccion help de data/bosses/seen.json manda).
+const HELP_BOSS: StringName = &"seen_boss"
+const HELP_SHIELD: StringName = &"seen_shield"
+const HELP_TYPING: StringName = &"seen_typing"
 
 const SIDE_LEFT: String = "left"
 const SIDE_RIGHT: String = "right"
@@ -157,6 +166,11 @@ var _ghosts: Array[Ghost] = []
 var _ghost_wait: Array[float] = []
 # Esbirros quietos mientras Isak esta congelado.
 var _paused_minions: Array[Node] = []
+# Ayudas Q del cuerpo, del escudo y del «escribiendo…», y musica de la pelea (paso 20).
+var _body_help: HelpMarker
+var _shield_help: HelpMarker
+var _typing_help: HelpMarker
+var _music: SeenMusic
 
 
 func _ready() -> void:
@@ -451,6 +465,7 @@ func begin_intro() -> void:
 
 
 func _on_phase_started(phase_index: int) -> void:
+	_start_music()
 	_clear_attacks()
 	_apply_lap_settings()
 	BossBase.apply_phase_nodes(_level_root(), phase_index)
@@ -543,6 +558,7 @@ func _on_core_hit(_remaining_hits: int) -> void:
 
 
 func _on_defeated() -> void:
+	_stop_music()
 	_clear_attacks()
 	_attack = &""
 	_core.set_enabled(false)
@@ -874,6 +890,7 @@ func _advance_phase3(dt: float, frozen: bool) -> void:
 			if _typing_t >= every - 0.0001:
 				_typing_t = 0.0
 				_dots += 1
+				dot_added.emit(_dots)
 				if _dots >= get_dots_total():
 					_send_message()
 		TYPING_SENT:
@@ -1096,7 +1113,73 @@ func _build() -> void:
 	_fx.z_index = 40
 	_fx.boss = self
 	add_child(_fx)
+	_body_help = _make_help_marker("BodyHelp", is_body_help_available, help_id("boss"))
+	_shield_help = _make_help_marker("ShieldHelp", is_shield_help_available, help_id("shield"))
+	_typing_help = _make_help_marker("TypingHelp", is_typing_help_available, help_id("typing"))
 	_refresh()
+
+
+func _make_help_marker(node_name: String, available: Callable, id: StringName) -> HelpMarker:
+	var marker := HelpMarker.new()
+	marker.name = node_name
+	marker.top_level = true
+	marker.available = available
+	add_child(marker)
+	HelpCatalog.tag(marker, id)
+	return marker
+
+
+# --- Ayudas Q y musica (paso 20 de docs/propuesta-mundo-4.md) ---
+
+## help_id de la pieza `key` (boss, shield, typing): seccion help de
+## data/bosses/seen.json.
+func help_id(key: String) -> StringName:
+	var defaults: Dictionary = {"boss": HELP_BOSS, "shield": HELP_SHIELD, "typing": HELP_TYPING}
+	return StringName(String((get_config().get("help", {}) as Dictionary).get(key, defaults.get(key, ""))))
+
+
+## El cuerpo ayuda mientras se ve: el doble check o, en la fase 1, su silueta
+## (oculto, sin silueta, no). Tras el golpe final, no.
+func is_body_help_available() -> bool:
+	if _off or is_defeated():
+		return false
+	if get_dash_stage() in [DASH_HIDDEN, DASH_WARN, DASH_READY, DASH_CHARGE]:
+		return get_silhouette_rect().has_area()
+	return true
+
+
+## El escudo ayuda mientras esta levantado (fase 2, fuera de la ventana).
+func is_shield_help_available() -> bool:
+	return not _off and is_shield_up()
+
+
+## El «escribiendo…» gigante ayuda mientras se llenan los puntos.
+func is_typing_help_available() -> bool:
+	return not _off and get_typing_state() == TYPING_ON
+
+
+## Punto de la ayuda del cuerpo: la silueta si se ve, si no el cuerpo.
+func get_body_help_point() -> Vector2:
+	var sil: Rect2 = get_silhouette_rect()
+	return sil.get_center() if sil.has_area() else get_body_rect().get_center()
+
+
+## Musica de la pelea (mus_boss4 mientras exista; null fuera de ella).
+func get_music() -> SeenMusic:
+	return _music if _music != null and is_instance_valid(_music) else null
+
+
+func _start_music() -> void:
+	if _music == null or not is_instance_valid(_music):
+		_music = SeenMusic.new()
+		_music.name = "SeenMusic"
+		add_child(_music)
+
+
+func _stop_music() -> void:
+	if _music != null and is_instance_valid(_music):
+		_music.queue_free()
+	_music = null
 
 
 ## Doble check de 6 x 3 tiles (PROVISIONAL por codigo, pixel art en bloques de 8
@@ -1151,6 +1234,12 @@ func _refresh() -> void:
 		DASH_RETURN:
 			alpha = clampf(_dash_t / maxf(float(section("ghost_dash").get("return_s", 0.6)), 0.01), 0.0, 1.0)
 	_body_sprite.modulate = Color(1, 1, 1, alpha * (0.85 + 0.15 * sin(_time * TAU * 0.5)))
+	if _body_help != null:
+		_body_help.global_position = get_body_help_point()
+	if _shield_help != null:
+		_shield_help.global_position = get_shield_rect().get_center()
+	if _typing_help != null:
+		_typing_help.global_position = get_typing_rect().get_center()
 	if _fx != null:
 		_fx.queue_redraw()
 
@@ -1206,6 +1295,16 @@ func _cells_rect(cells: Variant) -> Rect2:
 	var c: Array = cells
 	var pos: Vector2 = _to_global(Vector2(float(c[0]) * _tile, float(c[1]) * _tile))
 	return Rect2(pos, Vector2(float(c[2]) * _tile, float(c[3]) * _tile))
+
+
+## Marca de una ayuda Q de una pieza del jefe sin nodo propio (el cuerpo, el
+## escudo, el «escribiendo…»): un punto que solo ayuda mientras `available` diga
+## que se ve (paso 20; como Curator.HelpMarker).
+class HelpMarker extends Node2D:
+	var available: Callable
+
+	func is_help_available() -> bool:
+		return available.is_valid() and bool(available.call())
 
 
 ## Efectos por codigo (PROVISIONALES): aura, escudo, silueta y rastro (con el

@@ -68,9 +68,11 @@
 	"phase2": {"first_delay_s": 6.0, "sticker_interval_s": 6.0, "stickers_per_batch": 3, "max_stickers": 3, "window_s": 4.0},
 	"phase3": {"first_delay_s": 4.0, "dots": 3, "message_freeze_s": 2.5, "message_cross_s": 0.6, "typing_gap_s": 10.0, "window_s": 3.0, "ghost_respawn_s": 5.0},
 	"defeat": {"freeze_s": 0.3, "disarm_s": 1.6, "exit_wait_max_s": 2.0, "memory_world": 4, "pixels": {"step_px": 4, "duration_s": 1.5, "speed_px_s": [60.0, 240.0], "gravity_px_s2": 420.0, "fade_steps": 4, "seed": 1028}},
-	"texts_status": "PROPUESTA del orquestador (paso 15, 2026-10-28; tono de §5.1: frio y tranquilo, nunca grita, nunca contesta del todo; Eco habla a traves de el, ya sin disimulo), revisar al jugar. intro (importante, pausa), phase_lines (sin pausa), final_system (texto del sistema en el golpe final) y defeat (importante, tras la recompensa).",
+	"_help_notes": "AYUDAS DE ECO CON Q (paso 20 de docs/propuesta-mundo-4.md §8, 2026-10-28; §5.10; textos en data/help.json, world 4, first_level 4-boss, PROPUESTOS): pieza -> help_id. boss = un punto en el doble check (en la fase 1, en la silueta mientras se ve; oculto, sin ayuda); shield = el centro del escudo, solo mientras esta levantado (fase 2); typing = el centro del «escribiendo…» gigante, solo mientras se llenan los puntos (fase 3). Lo que no se ve no ayuda.",
+	"help": {"boss": "seen_boss", "shield": "seen_shield", "typing": "seen_typing"},
+	"texts_status": "PROPUESTA del orquestador (paso 15, 2026-10-28; la intro lleva el apodo desde el paso 20; tono de §5.1: frio y tranquilo, nunca grita, nunca contesta del todo; Eco habla a traves de el, ya sin disimulo), revisar al jugar. intro (importante, pausa), phase_lines (sin pausa), final_system (texto del sistema en el golpe final) y defeat (importante, tras la recompensa).",
 	"texts": {
-		"intro": "Ya lo leí. No hace falta que contestes.",
+		"intro": "Ya lo leí, {apodo}. No hace falta que contestes.",
 		"phase_lines": {"2": "Mira cuánta gente. Ninguno te escribe.", "3": "Escribiendo… para ti. Solo para ti."},
 		"final_system": "Visto: retirado.",
 		"defeat": "Me quedo yo. Siempre me quedo yo."

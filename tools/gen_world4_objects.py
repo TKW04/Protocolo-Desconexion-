@@ -27,9 +27,13 @@ Enemigos (assets/sprites/enemies/world4/; el Troll, PROVISIONAL hasta AutoSprite
   troll_message_00.png        mensaje del Troll (64 x 32): bocadillo crema con contorno rojo (dana)
   ghost_00.png                Fantasma (64 x 64): sabana blanca con ojos huecos
   sticker_00.png              Sticker (48 x 48): cara redonda crema con mejillas
+  seen_boss_placeholder_00.png  El Visto (192 x 96, a media escala; paso 20): dos checks blancos y el gris «sin leer»
+  seen_shield_00.png          escudo de El Visto (160 x 112): anillo de burbujas crema alrededor del doble check
+  seen_typing_00.png          «escribiendo…» gigante (192 x 64): burbuja marino_luz con tres puntos, uno apagado
 
 Uso: python3 -I tools/gen_world4_objects.py [--check]   (--check: 1 si algun PNG no esta al dia)
 """
+import math
 import os
 import site
 import sys
@@ -281,6 +285,51 @@ def sticker():
     return img
 
 
+def _check_blocks(d, x0, y0, block, color, small=False):
+    """El check de bloques de Seen._make_body_texture (brazo corto y largo)."""
+    short, long_, size = (2, 5, block) if small else (5, 12, block * 2)
+    for i in range(short):
+        x, y = x0 + i * block, y0 + i * block
+        d.rectangle((x, y, x + size - 1, y + size - 1), fill=C(color))
+    for i in range(long_):
+        x, y = x0 + (short + i) * block, y0 + (short - 1 - i) * block
+        if y >= 0:
+            d.rectangle((x, y, x + size - 1, y + size - 1), fill=C(color))
+
+
+def seen_boss_body(d, ox=0, oy=0):
+    """El cuerpo de 384 x 192 de Seen a media escala (bloques de 4 px)."""
+    for k in range(2):
+        _check_blocks(d, ox + 20 + k * 56, oy + 36, 4, "blanco_pantalla")
+    _check_blocks(d, ox + 80, oy + 68, 4, "gris_medio", small=True)
+
+
+def seen_boss_placeholder():
+    img, d = canvas(192, 96)
+    d.rectangle((2, 2, 189, 93), outline=C("gris_claro"), width=2)
+    seen_boss_body(d)
+    return img
+
+
+def seen_shield():
+    img, d = canvas(160, 112)
+    seen_boss_body(d, -16, 8)
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        cx, cy = 80 + math.cos(a) * 66, 56 + math.sin(a) * 42
+        d.rounded_rectangle((cx - 10, cy - 6, cx + 10, cy + 6), radius=3, fill=C("crema"), outline=C("crema_sombra"))
+    return img
+
+
+def seen_typing():
+    img, d = canvas(192, 64)
+    d.rounded_rectangle((4, 4, 187, 59), radius=10, fill=C("marino_luz"), outline=C("gris_claro"), width=2)
+    for k, color in enumerate(("blanco_pantalla", "blanco_pantalla", "gris_medio")):
+        x = 48 + k * 48
+        d.ellipse((x - 12, 20, x + 12, 44), fill=C(color))
+    return img
+
+
 OBJECTS = {
     "chat_bubble_00.png": chat_bubble, "chat_bubble_friend_00.png": chat_bubble_friend,
     "chat_bubble_deleted_00.png": chat_bubble_deleted, "typing_bubble_00.png": typing_bubble,
@@ -291,6 +340,8 @@ OBJECTS = {
 ENEMIES = {
     "troll_placeholder_00.png": troll_placeholder, "troll_mimic_00.png": troll_mimic,
     "troll_message_00.png": troll_message, "ghost_00.png": ghost, "sticker_00.png": sticker,
+    "seen_boss_placeholder_00.png": seen_boss_placeholder, "seen_shield_00.png": seen_shield,
+    "seen_typing_00.png": seen_typing,
 }
 
 

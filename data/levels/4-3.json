@@ -223,6 +223,18 @@
 			}
 		},
 		{
+			"type": "eco_line",
+			"x": 17,
+			"y": 1,
+			"params": {
+				"id": "eco_ola",
+				"text": "Lo de atrás ya lo ha leído todo. No corre, pero no se para. Tú tampoco, {apodo}.",
+				"width_tiles": 1,
+				"height_tiles": 11,
+				"duration_s": 4.5
+			}
+		},
+		{
 			"type": "seen_zone",
 			"x": 40,
 			"y": 10,
@@ -1906,6 +1918,18 @@
 				"side": "left",
 				"friend": "tomi",
 				"stamp": "3 mes"
+			}
+		},
+		{
+			"type": "eco_line",
+			"x": 291,
+			"y": 1,
+			"params": {
+				"id": "eco_cierre",
+				"text": "No hace falta contestar ahora, {apodo}. Ya habrá tiempo.",
+				"width_tiles": 1,
+				"height_tiles": 11,
+				"duration_s": 4.0
 			}
 		},
 		{

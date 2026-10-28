@@ -83,7 +83,8 @@ def game_strings():
     for path in sorted(glob.glob(os.path.join(ROOT, "data", "levels", "*.json"))):
         level = load_json(path)
         texts.append(level.get("name", ""))
-        collect_texts(level, texts)
+        # Lineas de Eco del nivel (eco_line): el cuadro de Eco sustituye {apodo} (2026-10-28, 4-1 y 4-3).
+        texts.extend(t.replace("{apodo}", "") for t in collect_texts(level, []))
     collect_texts(load_json(os.path.join(ROOT, "data", "world1_objects.json")), texts)
     eco_path = os.path.join(ROOT, "data", "eco_text_box.json")
     if os.path.exists(eco_path):

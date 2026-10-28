@@ -240,6 +240,31 @@
 			}
 		},
 		{
+			"type": "eco_line",
+			"x": 7,
+			"y": 93,
+			"params": {
+				"id": "eco_linterna",
+				"text": "Una linterna. Qué antigüedad. Yo ilumino mejor, {apodo}.",
+				"trigger_event": "ally_met",
+				"duration_s": 4.0,
+				"height_tiles": 1
+			}
+		},
+		{
+			"type": "feed_sign",
+			"x": 8,
+			"y": 93,
+			"help_id": "",
+			"params": {
+				"id": "cartel_en_linea",
+				"text": "En línea hace 3 h",
+				"width_tiles": 4,
+				"height_tiles": 1,
+				"accent": "gris"
+			}
+		},
+		{
 			"type": "chat_bubble",
 			"x": 19,
 			"y": 79,
