@@ -83,7 +83,8 @@ START_S = 0.06
 # Pasos que dejan a Isak parado (el siguiente movimiento arranca acelerando con el arco real; tambien los
 # saltos, caidas y dashes: el bot frena en el centro de la celda de llegada).
 REST_ACTIONS = ("wait", "wait_phase", "wait_beat", "hop", "pulse", "laser", "debug_on", "debug_off", "ground_pound",
-                "wait_scroll", "like_reset", "wait_hunter", "wait_reflection")
+                "wait_scroll", "like_reset", "wait_hunter", "wait_reflection",
+                "shake", "pulse_seen", "wait_typing", "wait_autocorrect", "wait_ghost", "wait_wave")
 # Scroll forzado (Mundo 2, paso 9 de docs/propuesta-mundo-2.md §7.1): espera maxima por el techo de carga (s) y
 # margen frente al borde que dana por defecto (tiles; 3 en dificultad 2-3 y 2 en dificultad 4).
 SCROLL_MAX_WAIT_S = 120.0
@@ -204,6 +205,14 @@ class Planner:
                               "target": target,
                               "relay": {"gate": g.obj_id, "lector": lector["id"], "window_s": lector["window"],
                                         "time_s": relay["time"]}})
+                continue
+            if g.kind == "pound" and getattr(g, "shake", False):
+                # Muro de texto (Mundo 4, paso 9): Agitar desde la celda de pie cuya onda lo alcanza; se espera su
+                # borrado (erase_s) antes de pasar.
+                x = self.m.w4.shake_x(g.openers[0], n, state)
+                steps.append({"action": "shake", "at": n, "shot": {"x": x, "facing": 1}, "state": state,
+                              "breaks": [g.obj_id], "erase_s": self.m.w4.typed_erase_s,
+                              "target": {"type": "typed_wall", "id": g.obj_id}})
                 continue
             if g.kind == "pound":
                 # Golpe al suelo (Mundo 2, paso 9): desde la celda de pie la onda alcanza la tarjeta fragil; la
@@ -383,8 +392,14 @@ class Planner:
                 # Isak vuelve de perfil) y un cuadro.
                 return max(r.pulse_pose_s, s.get("pose_s", 0.0)) + DT
             return r.pulse_pose_s
-        if a in ("wait", "wait_phase", "wait_beat", "wait_scroll", "wait_hunter", "wait_reflection"):
+        if a in ("wait", "wait_phase", "wait_beat", "wait_scroll", "wait_hunter", "wait_reflection",
+                 "wait_typing", "wait_autocorrect", "wait_ghost", "wait_wave"):
             return s.get("seconds", 0.0)
+        if a == "shake":
+            # Mundo 4 (paso 9): sacudida y exposicion de Agitar (y, si deshace un muro de texto, su borrado).
+            return self.m.w4.shake_s + s.get("erase_s", 0.0)
+        if a == "pulse_seen":
+            return r.pulse_pose_s
         if a == "ground_pound":
             return r.pound_s + (r.pound_cooldown_s if s.get("cooldown_before") else 0.0)
         if a == "debug_on":
@@ -618,6 +633,9 @@ class Planner:
         steps = self.check_scroll(steps)
         # Mundo 3 (paso 8b): Influencer, Ladron, Reflejo falso y puertas de marco (pulsos y esperas wait_reflection).
         steps = world3_model.plan_enemies(self, steps)
+        if self.m.w4 is not None:
+            # Mundo 4 (paso 9; tools/world4_model.py): zonas «Visto», burbujas, enemigos y ola.
+            steps = self.m.w4.plan(self, steps)
         steps = self.check_energy(steps)
         self.check_loop_energy(steps)
         self.info["bars"] = []
@@ -2915,6 +2933,8 @@ class Planner:
                 need = r.laser_cost
             elif a == "move" and s["edge"].get("dash"):
                 need = r.dash_cost
+            elif a == "shake":
+                need = self.m.w4.shake_cost
             elif a == "debug_on":
                 k = i + 1
                 active = 0.0
@@ -3266,10 +3286,17 @@ class Planner:
                     if "rect" in s["target"]:
                         tgt["rect_px"] = [round(v, 1) for v in s["target"]["rect"]]
                     item["target"] = tgt
-                if a in ("wait", "wait_phase", "wait_beat", "wait_scroll", "wait_hunter", "wait_reflection"):
+                if a in ("wait", "wait_phase", "wait_beat", "wait_scroll", "wait_hunter", "wait_reflection",
+                         "wait_typing", "wait_autocorrect", "wait_ghost", "wait_wave"):
                     item["seconds"] = round(s.get("seconds", 0.0), 3)
                     if s.get("reason"):
                         item["reason"] = s["reason"]
+                if a == "shake":
+                    # Mundo 4 (paso 9): pulsar gesture_shake en el suelo; deshace `breaks` (muros de texto).
+                    item["radius_px"] = self.m.w4.shake_radius
+                    if s.get("breaks"):
+                        item["breaks"] = list(s["breaks"])
+                        item["erase_s"] = s.get("erase_s", 0.0)
                 if a == "wait_phase":
                     item["period_s"] = round(s["period_s"], 3)
                     item["phase_s"] = round(s["phase_s"], 3)

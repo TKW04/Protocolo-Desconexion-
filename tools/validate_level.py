@@ -156,6 +156,7 @@ import upgrade_catalog  # noqa: E402
 import level_catalog  # noqa: E402
 import world2_model  # noqa: E402
 import world3_model  # noqa: E402
+import world4_model  # noqa: E402
 
 DEFAULT_LIMIT = 0.85
 DEFAULT_JUMP_EFFICIENCY = 0.92
@@ -523,6 +524,10 @@ class Gate:
             return "encuentro con Eco %s" % self.obj_id
         if self.kind == "switch" and getattr(self, "hidden", False):
             return "panel oculto %s" % self.obj_id
+        if self.kind == "pound" and getattr(self, "shake", False):
+            return "muro de texto %s" % self.obj_id
+        if self.kind == "dnd" and getattr(self, "undo", False):
+            return "«¿Deshacer escritura?» %s" % self.obj_id
         if self.kind == "pound" and getattr(self, "wall", False):
             return "muro Cargando mas %s" % self.obj_id
         if self.kind == "dnd" and getattr(self, "player", False):
@@ -593,6 +598,9 @@ class LevelModel:
         self.terminal_power = []  # {"id", "source", "cell"}
         # Mundo 3 (paso 8a): Pellizcar, likes, filtros y espejos (tools/world3_model.py); None sin nada del Mundo 3.
         self.w3 = None
+        # Mundo 4 (paso 9): Agitar, zonas «Visto», burbujas, enemigos y ola (tools/world4_model.py); None sin nada
+        # del Mundo 4.
+        self.w4 = None
         self._build_objects()
         self._door_gids = set(self.glitch_doors.values())
         self.has_pound_gates = any(g.kind == "pound" for g in self.gates)
@@ -623,6 +631,8 @@ class LevelModel:
         self.dash_corridors = self._dash_corridors()
         if world3_model.has_world3(level):
             self.w3 = world3_model.World3(self, Gate)
+        if world4_model.has_world4(level):
+            self.w4 = world4_model.World4(self, Gate)
 
     # Objetos.
     def _params(self, obj):
@@ -832,6 +842,8 @@ class LevelModel:
                 # Muro «Cargando mas...» (paso 9b): `pounds` golpes (3), cada uno desde una celda de pie.
                 gate.pounds = max(1, int(p.get("pounds", 1)))
                 gate.wall = bool(p.get("wall", False))
+                # Muro de texto (Mundo 4, paso 9; tools/world4_model.py): lo abre Agitar, no el golpe al suelo.
+                gate.shake = bool(p.get("_shake", False))
                 self.gates.append(gate)
             elif obj["type"] == "dnd_switch":
                 # Interruptor «No molestar» (1-3, paso 3; modelado en el paso 9): un pulso que alcanza su
@@ -842,13 +854,16 @@ class LevelModel:
                 cfg = self.catalog.get(config, {})
                 sid = str(p.get("id", "dnd_%d_%d" % (obj["x"], obj["y"])))
                 what = "reproductor" if config == "pause_player" else (
-                    "herramienta Recortar" if config == "crop_tool" else "interruptor No molestar")
+                    "herramienta Recortar" if config == "crop_tool" else (
+                        "«¿Deshacer escritura?»" if config == "undo_prompt" else "interruptor No molestar"))
                 gate = Gate("dnd:" + sid, "dnd", sid, openers=[cell_rect(obj, cfg.get("hit_rect", [8, -14, 48, 48]),
                                                                           "%s %s" % (what, sid))],
                             col=obj["x"], row=obj["y"], tile=T)
                 gate.player = config == "pause_player"
                 # Herramienta «Recortar» (Mundo 3, paso 8a; tools/world3_model.py): da Pellizcar (compress).
                 gate.crop = config == "crop_tool"
+                # «¿Deshacer escritura?» (Mundo 4, paso 9; tools/world4_model.py): da Agitar (shockwave).
+                gate.undo = config == "undo_prompt"
                 gate.ability = str(p.get("ability", "dash"))
                 gate.pulses = 1
                 gate.pose_s = float(cfg.get("pose_s", 0.45))
@@ -1210,6 +1225,9 @@ class LevelModel:
             return False  # comprimido no hay pulso, laser ni golpe al suelo
         if gate.kind == "pickup":
             return bool(body_cells(node) & set(gate.cells))
+        if gate.kind == "pound" and getattr(gate, "shake", False):
+            # Muro de texto (Mundo 4, paso 9): la onda de Agitar lo alcanza desde la celda de pie.
+            return self.w4 is not None and self.w4.shake_opens(gate, node, state)
         if gate.kind == "pound":
             # Golpe al suelo (Mundo 2): la onda alcanza la tarjeta; la oculta, solo con el Debug activo.
             if not self.has_pound(state):
@@ -2308,6 +2326,8 @@ class Validator:
             self.result["path"] = []
             if model.w3 is not None:
                 model.w3.check(self, start, goal_cells)
+            if model.w4 is not None:
+                model.w4.check(self, start, goal_cells)
         else:
             self._describe_path(main)
         # Regla 2.
@@ -2333,6 +2353,9 @@ class Validator:
             if model.w3 is not None:
                 # Mundo 3 (paso 8a): Pellizcar, likes, filtros y espejos sobre el camino principal.
                 model.w3.check(self, start, goal_cells)
+            if model.w4 is not None:
+                # Mundo 4 (paso 9): regla del congelado, autocorrector y Troll disfrazado sobre el camino.
+                model.w4.check(self, start, goal_cells)
             if self.is_advanced() or self.export_requested:
                 self._check_plan()
         return self.finish()
@@ -2353,6 +2376,9 @@ class Validator:
                  "dnd_switch", "blink_platform", "rhythm_zone", "alarm_tunnel", "clone_zone"}
         if self.model.w3 is not None:
             # Mundo 3 (paso 8a): plan del camino con los likes, el Debug de los filtros y Pellizcar.
+            return True
+        if self.model.w4 is not None:
+            # Mundo 4 (paso 9): plan del camino con las zonas «Visto», las burbujas, Agitar y la ola.
             return True
         if any(o["type"] in kinds for o in self.level.get("objects", [])):
             return True
@@ -2671,6 +2697,9 @@ class Validator:
         """Explicacion de una puerta del paso 10 que no se abre (anuncio, barra, lector -> receptor
         enlazado). None: la puerta es de las de siempre; "": nada que decir (lejos)."""
         m = self.model
+        if g.kind == "pound" and getattr(g, "shake", False):
+            # Muro de texto (Mundo 4, paso 9).
+            return m.w4.explain_shake(g, state) if is_near and m.w4 is not None else ""
         if g.kind == "pound":
             # Golpe al suelo (Mundo 2, paso 9 de docs/propuesta-mundo-2.md).
             if not is_near:
@@ -2836,6 +2865,11 @@ class Validator:
                                     "face_back": True,
                                     "text": "pulso de espaldas desde (fila %d, columna %d) -> %s (da el %s)"
                                             % (n[1], n[0], g.label(), g.ability)})
+                    continue
+                if g.kind == "pound" and getattr(g, "shake", False):
+                    # Mundo 4 (paso 9): Agitar cuya onda deshace el muro de texto.
+                    actions.append({"action": "shake", "from": [n[1], n[0]], "object": g.label(),
+                                    "text": "Agitar en (fila %d, columna %d) -> deshace %s" % (n[1], n[0], g.label())})
                     continue
                 if g.kind == "pound":
                     # Mundo 2 (paso 9): golpe al suelo cuya onda rompe la tarjeta fragil (el muro «Cargando
@@ -3486,6 +3520,10 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     # Mundo 3 (paso 8a de docs/propuesta-mundo-3.md): la herramienta Recortar como interruptor que da Pellizcar
     # (tools/world3_model.py); sin ella el nivel no cambia.
     level = world3_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
+    # Mundo 4 (paso 9 de docs/propuesta-mundo-4.md): burbujas y pasos en tinta como tablas de una via, el
+    # «¿Deshacer escritura?» como interruptor que da Agitar y el muro de texto como pared que abre Agitar
+    # (tools/world4_model.py); sin nada del Mundo 4 el nivel no cambia.
+    level = world4_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))), allies or ())
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin
@@ -3668,6 +3706,7 @@ def format_text(path, result):
             "" if known.get("duration_s") is None else ", unos %.1f s" % known["duration_s"],
             "" if known.get("energy_min") is None else ", energia minima %.0f" % known["energy_min"]))
     out.extend(world3_model.format_lines(result))
+    out.extend(world4_model.format_lines(result))
     out.extend(format_plan(result.get("plan")))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
