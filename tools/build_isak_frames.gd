@@ -78,6 +78,14 @@ const RUN_FPS: float = 14.0
 ##   celdas 5-8 y 9-21 de hojas/compress_right/spritesheet.png (AutoSprite;
 ##   comandos en docs/guia-sprites-ia.md). Sustituyen a la pose provisional por
 ##   escala (Isak._update_compress_pose).
+## shockwave_shake / shockwave_hold (2026-10-28, paso 24 del Mundo 4): pose del
+##   gesto Agitar, 4 cuadros (sacude el celular: cerca de la cara / adelante) y
+##   2 (brazo extendido con el celular), sin bucle, celdas 7,9,11,13 y 22,23 de
+##   hojas/shockwave_right/spritesheet.png (AutoSprite; comandos en
+##   docs/guia-sprites-ia.md). shake no se reproduce en el tiempo: Isak elige el
+##   cuadro por el progreso de la anticipacion (windup_s 0,15 s); hold dura la
+##   exposicion (2 cuadros a 8 fps = 0,25 s = exposed_s). Sustituyen a la
+##   sacudida provisional del sprite (ShockwaveEffect.shake_offset).
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
 	"walk": [WALK_FPS, true, false],
@@ -98,6 +106,8 @@ const ANIMATIONS: Dictionary[String, Array] = {
 	"ground_pound_land": [12.0, false, false],
 	"compress_idle": [8.0, true, false],
 	"compress_walk": [12.0, true, false],
+	"shockwave_shake": [24.0, false, false],
+	"shockwave_hold": [8.0, false, false],
 }
 
 ## Animaciones hechas con cuadros de otra (sin PNG propios):

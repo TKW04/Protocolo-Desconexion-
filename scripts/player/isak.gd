@@ -81,6 +81,10 @@ const ANIM_BACK_IDLE: StringName = &"back_idle"
 const ANIM_DASH: StringName = &"dash"
 const ANIM_GROUND_POUND_AIR: StringName = &"ground_pound_air"
 const ANIM_GROUND_POUND_LAND: StringName = &"ground_pound_land"
+## Pose de Agitar con AutoSprite (2026-10-28): sacudida (por el progreso de la
+## anticipacion) y brazo extendido (la exposicion).
+const ANIM_SHOCKWAVE_SHAKE: StringName = &"shockwave_shake"
+const ANIM_SHOCKWAVE_HOLD: StringName = &"shockwave_hold"
 ## Pose del gesto Pellizcar (AutoSprite, 2026-10-27): comprimido quieto / andando.
 const ANIM_COMPRESS_IDLE: StringName = &"compress_idle"
 const ANIM_COMPRESS_WALK: StringName = &"compress_walk"
@@ -1347,19 +1351,37 @@ func get_shockwave_center() -> Vector2:
 	return global_position + get_pulse_origin()
 
 
-## Lo llama ShockwaveState al entrar: cobra la energia y empieza la pose
-## provisional (la del pulso, que sube el celular, con la sacudida).
+## Lo llama ShockwaveState al entrar: cobra la energia y empieza la pose (con la
+## hoja de AutoSprite, shockwave_shake; sin ella, la PROVISIONAL: la del pulso,
+## que sube el celular, con la sacudida del sprite).
 func begin_shockwave() -> void:
 	_shockwave_requested = false
 	_jump_buffer_left = 0.0
 	GameState.debug_energy -= abilities.shockwave_energy_cost
 	reset_idle_time()
-	restart_animation(ANIM_PULSE)
+	if not has_shockwave_art():
+		restart_animation(ANIM_PULSE)
 	update_shockwave_pose(0.0)
 
 
-## Sacudida del sprite durante la anticipacion (`t` s desde el inicio).
+## Hay cuadros de AutoSprite para la pose de Agitar.
+func has_shockwave_art() -> bool:
+	var frames: SpriteFrames = _sprite.sprite_frames
+	return frames != null and frames.has_animation(ANIM_SHOCKWAVE_SHAKE) and frames.has_animation(ANIM_SHOCKWAVE_HOLD)
+
+
+## Pose durante la anticipacion (`t` s desde el inicio): el cuadro de la sacudida
+## por el progreso de windup_s, sin mover el sprite; sin la hoja, la sacudida
+## provisional del sprite (ShockwaveEffect.shake_offset).
 func update_shockwave_pose(t: float) -> void:
+	if has_shockwave_art():
+		_restore_sprite_shape()
+		var n: int = _sprite.sprite_frames.get_frame_count(ANIM_SHOCKWAVE_SHAKE)
+		var k: float = t / maxf(abilities.shockwave_windup_s, 0.001)
+		_sprite.animation = ANIM_SHOCKWAVE_SHAKE
+		_sprite.pause()
+		_sprite.frame = clampi(floori(k * float(n)), 0, n - 1)
+		return
 	if _shockwave_effect == null:
 		return
 	_sprite.position = Vector2(_sprite_base_position.x + _shockwave_effect.shake_offset(t), _sprite_base_position.y)
@@ -1370,6 +1392,9 @@ func update_shockwave_pose(t: float) -> void:
 ## Devuelve cuantos enemigos alcanzo.
 func fire_shockwave() -> int:
 	_restore_sprite_shape()
+	if has_shockwave_art():
+		# Exposicion: brazo extendido con el celular (de donde nace la onda).
+		restart_animation(ANIM_SHOCKWAVE_HOLD)
 	var center: Vector2 = get_shockwave_center()
 	var radius: float = abilities.shockwave_radius_px
 	_shockwave_effect.show_wave(center, radius)

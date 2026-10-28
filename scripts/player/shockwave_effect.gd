@@ -1,12 +1,13 @@
-## Efecto PROVISIONAL de Agitar (gesto Agitar, 2026-10-28; docs/propuesta-mundo-4.md
-## §3.2), dibujado por codigo con shockwave.visual de data/isak_abilities.json:
-## - Anticipacion: Isak sacude el celular (el sprite oscila shake_px a izquierda y
-##   derecha a shake_hz; lo aplica Isak con shake_offset()).
+## Efecto de Agitar (gesto Agitar, 2026-10-28; docs/propuesta-mundo-4.md §3.2),
+## dibujado por codigo con shockwave.visual de data/isak_abilities.json:
+## - Anticipacion: la pose final es de AutoSprite (paso 24, 2026-10-28:
+##   shockwave_shake / shockwave_hold de isak_frames.tres, Isak.update_shockwave_pose).
+##   Solo sin esa hoja, la sacudida PROVISIONAL: el sprite oscila shake_px a
+##   izquierda y derecha a shake_hz (lo aplica Isak con shake_offset()).
 ## - Onda: un anillo que nace en el celular y crece hasta el radio de la onda en
-##   ring_s, con un relleno tenue, y se apaga.
+##   ring_s, con un relleno tenue, y se apaga (sigue por codigo).
 ## Hijo de Isak, top_level (la onda se queda donde nacio); tiempo real (lo avanza
-## Isak.step). La pose final con AutoSprite llega en el paso 24 (decision del
-## usuario 2026-10-28: placeholders por script hasta tener los niveles y el jefe).
+## Isak.step).
 class_name ShockwaveEffect
 extends Node2D
 

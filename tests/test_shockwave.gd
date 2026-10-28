@@ -194,6 +194,29 @@ func test_exposed_without_moving_or_jumping_then_rests() -> void:
 	_sim.input.move_axis = 0.0
 
 
+## Pose final con AutoSprite (paso 24 del Mundo 4, 2026-10-28): sacude el celular
+## (shockwave_shake, cuadro por el progreso de windup_s) sin mover el sprite y, al
+## nacer la onda, el brazo extendido (shockwave_hold) durante la exposicion.
+func test_pose_uses_the_autosprite_frames_without_the_provisional_shake() -> void:
+	assert_true(_isak.has_shockwave_art(), "shockwave_shake / shockwave_hold en isak_frames.tres")
+	var sprite: AnimatedSprite2D = _isak.get_sprite()
+	var base: Vector2 = sprite.position
+	_shake()
+	assert_true(_isak.is_shockwaving())
+	assert_eq(sprite.animation, Isak.ANIM_SHOCKWAVE_SHAKE, "Sacude el celular")
+	var seen: Dictionary = {}
+	while _fired.is_empty():
+		seen[sprite.frame] = true
+		assert_eq(sprite.position, base, "Sin la sacudida provisional del sprite")
+		_sim.step()
+	assert_gt(seen.size(), 1, "Los cuadros avanzan con la anticipacion")
+	assert_eq(sprite.animation, Isak.ANIM_SHOCKWAVE_HOLD, "Onda: brazo extendido")
+	assert_almost_eq(sprite.sprite_frames.get_frame_count(Isak.ANIM_SHOCKWAVE_HOLD) / sprite.sprite_frames.get_animation_speed(Isak.ANIM_SHOCKWAVE_HOLD),
+		_isak.abilities.shockwave_exposed_s, 0.001, "Dura la exposicion")
+	_sim.step_until(func() -> bool: return not _isak.is_shockwaving(), _sim.steps_for(1.0))
+	assert_ne(sprite.animation, Isak.ANIM_SHOCKWAVE_HOLD, "Al terminar vuelve a su animacion")
+
+
 func test_hurt_during_the_pose_cuts_it() -> void:
 	_shake_until_fired()
 	assert_true(_isak.take_hit(1.0), "Expuesto: el golpe entra")
