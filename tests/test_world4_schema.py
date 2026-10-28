@@ -317,10 +317,13 @@ class WaveSchemaTest(World4SchemaBase):
         level["camera"] = {"vertical": "tower"}
         self.assert_error(level, "solo va en niveles horizontales")
 
-    def test_speeds_between_one_and_one_point_six(self):
+    def test_speeds_between_one_and_two(self):
+        # 2026-10-28 (prueba del usuario): la ola va un 20-25 % mas rapida; el rango sube de 1,0-1,6 a 1,0-2,0.
         level = copy.deepcopy(self.base)
-        self.wave(level)["params"]["sections"][1]["speed_to_tiles_s"] = 2.0
-        self.assert_error(level, "speed_to_tiles_s debe estar en [1.0, 1.6]")
+        self.wave(level)["params"]["sections"][1]["speed_to_tiles_s"] = 1.95
+        self.assertEqual(self.errors(level), [])
+        self.wave(level)["params"]["sections"][1]["speed_to_tiles_s"] = 2.2
+        self.assert_error(level, "speed_to_tiles_s debe estar en [1.0, 2.0]")
 
     def test_sections_do_not_overlap(self):
         level = copy.deepcopy(self.base)

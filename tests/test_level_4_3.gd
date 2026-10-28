@@ -190,7 +190,7 @@ func test_wave_waits_for_column_20_then_moves() -> void:
 	await wait_physics_frames(2)
 	wave.advance(2.0)
 	assert_eq(wave.get_state(), SeenWave.State.MOVING, "Al cruzarla, avanza")
-	assert_almost_eq(wave.get_front_x() - front, 2.0 * TILE, 8.0, "A 1,0 tiles/s en el Tramo 1")
+	assert_almost_eq(wave.get_front_x() - front, 2.5 * TILE, 8.0, "A 1,25 tiles/s en el Tramo 1 (1,0 hasta el 2026-10-28)")
 
 
 func test_mimics_look_like_marco_until_the_debug_reveals_them() -> void:

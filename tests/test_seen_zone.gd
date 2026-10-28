@@ -106,7 +106,7 @@ func test_touching_active_zone_freezes_without_damage() -> void:
 	assert_eq(_isak.get_frozen_source(), Isak.FREEZE_SOURCE_ZONE)
 	assert_almost_eq(_isak.get_frozen_total(), 1.5, EPS)
 	assert_eq(frozen, [_isak])
-	assert_almost_eq(GameState.sync_rate, sync, EPS, "Rojo nunca: no hace dano")
+	assert_almost_eq(GameState.sync_rate, sync, EPS, "Congelarse no hace dano (el golpe llega al liberarse)")
 
 
 func test_immunity_avoids_chain_then_refreezes() -> void:
@@ -118,10 +118,16 @@ func test_immunity_avoids_chain_then_refreezes() -> void:
 		_step(zone)
 		steps += 1
 	assert_false(_isak.is_frozen(), "Se descongela a los 1,5 s")
+	# 2026-10-28: al liberarse, el golpe (como un enemigo) lo saca de la zona, desde su centro.
+	assert_eq(_sim.state(), PlayerState.HURT, "Golpe al liberarse")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max() - 10.0, EPS, "-10 al liberarse")
+	var x: float = _isak.global_position.x
 	_step(zone, _sim.frames(0.3))
-	assert_false(_isak.is_frozen(), "Dentro de la zona, 0,5 s sin volver a congelarse")
+	assert_false(_isak.is_frozen(), "0,5 s sin volver a congelarse")
+	assert_ne(_isak.global_position.x, x, "El retroceso lo mueve")
+	_isak.global_position.x = zone.get_zone_rect().get_center().x
 	_step(zone, _sim.frames(0.3))
-	assert_true(_isak.is_frozen(), "Si sigue dentro, se congela otra vez")
+	assert_true(_isak.is_frozen(), "Si vuelve a entrar, se congela otra vez")
 
 
 func test_shake_no_longer_frees_from_zone() -> void:

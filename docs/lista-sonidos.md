@@ -478,7 +478,7 @@ Los 24 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (fu
 | `sfx_gesture_shake` | `EventBus.shockwave_fired` | Agitar (**sin uso** desde el 2026-10-28: retirado; el ID y el enganche se conservan) |
 | `sfx_w4_typing` | `TypingBubble.typing_started` | `cue`; posicional. **Desvío:** un solo sonido de tres toques a 0,33 s (el `dot_s` de los puntos) al empezar, no un evento por punto |
 | `sfx_w4_bubble_pop_in` / `sfx_w4_message_deleted` | `TypingBubble.appeared` / `vanished` | Posicionales |
-| `sfx_w4_seen_freeze` / `sfx_w4_seen_break` | `Isak.frozen_started` / `Isak.frozen_ended` (`true`: roto con Agitar) | Zonas, ola y mensaje del jefe |
+| `sfx_w4_seen_freeze` / `sfx_w4_seen_break` | `Isak.frozen_started` / `Isak.frozen_released` (2026-10-28: al liberarse, con el golpe; antes `frozen_ended(true)`, roto con Agitar) | Zonas, ola y mensaje del jefe |
 | `sfx_w4_seen_interrupt` | `SeenZone.interrupted`; `Seen.typing_interrupted` | Pulso al doble check o al «escribiendo…» del jefe |
 | `sfx_w4_seen_wave` | `SeenWave.state_changed` (`MOVING`) | `cue`. **Desvío:** golpe largo al arrancar o reanudar la ola, no un bucle por nodo que sube al acercarse (un solo bucle de fondo a la vez; el frente se mueve y el nodo no) |
 | `sfx_w4_troll_shot` | `Troll.shot_fired` | Posicional; también el Troll disfrazado |

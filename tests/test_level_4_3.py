@@ -87,19 +87,21 @@ class Level43Test(unittest.TestCase):
         p = waves[0]["params"]
         self.assertEqual((p["start_col"], p["end_col"]), (20, 280), "Arranca al cruzar la 20 y se apaga a 6 del cierre")
         speeds = [(s["speed_tiles_s"], s.get("speed_to_tiles_s")) for s in p["sections"]]
-        self.assertEqual(speeds, [(1.0, None), (1.2, None), (1.2, 1.6)], "1,0 / 1,2 / 1,2 -> 1,6 tiles/s (doc)")
+        self.assertEqual(speeds, [(1.25, None), (1.45, None), (1.45, 1.95)],
+                         "Un 20-25 %% mas rapida que el doc (1,0 / 1,2 / 1,2 -> 1,6): prueba del usuario del 2026-10-28")
         stops = {s["id"]: s for s in p["stops"]}
-        self.assertEqual(sorted(stops), ["parada_sync_1", "parada_sync_2"])
+        self.assertEqual(sorted(stops), ["parada_sync_1", "parada_sync_2", "parada_vuelta_1", "parada_vuelta_2",
+                                         "parada_vuelta_3"], "Y paradas en las vueltas de las bandas")
         self.assertLess(stops["parada_sync_1"]["at_col"], 101, "La ola espera antes de la Pausa 1 (secreto A)")
         info = self.result["world4"]["wave"]
         self.assertGreaterEqual(info["closest_tiles"], 3.0, "El camino nunca queda a menos de 3 tiles de la ola")
-        self.assertEqual(sorted(info["stops_passed"]), ["parada_sync_1", "parada_sync_2"])
+        self.assertEqual(sorted(info["stops_passed"]), sorted(stops))
 
         def slow(l):
             for o in l["objects"]:
                 if o["type"] == "seen_wave":
                     o["params"]["start_col"] = 4
-                    o["params"]["sections"][0]["speed_tiles_s"] = 1.6
+                    o["params"]["sections"][0]["speed_tiles_s"] = 2.0
         caught = variant(self.level, slow)
         self.assertTrue(any("ola" in e["message"] for e in caught["errors"]), "Mas rapida, la ola alcanza al camino")
 

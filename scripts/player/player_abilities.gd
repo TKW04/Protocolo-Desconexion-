@@ -42,7 +42,7 @@ const SHOCKWAVE_KEYS: PackedStringArray = ["radius_px", "windup_s", "exposed_s",
 	"cooldown_s"]
 ## Claves numericas de la seccion opcional frozen (propiedad frozen_<clave>;
 ## Congelado, docs/propuesta-mundo-4.md §3.3).
-const FROZEN_KEYS: PackedStringArray = ["seen_immunity_s"]
+const FROZEN_KEYS: PackedStringArray = ["seen_immunity_s", "release_damage", "release_warn_s"]
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -138,6 +138,12 @@ var shockwave_visual: Dictionary = {}
 ## §3.3, valores provisionales): tras descongelarse, otra zona «Visto» no lo
 ## vuelve a congelar durante seen_immunity_s.
 var frozen_seen_immunity_s: float = 0.5
+## Golpe al liberarse (2026-10-28, prueba del usuario): al terminar SOLA una congelacion,
+## Isak recibe un golpe de enemigo (take_hit: retroceso e invulnerabilidad) que resta
+## release_damage de Sync SIN MATAR (nunca baja de 1); release_warn_s antes la barra
+## avisa en rojo.
+var frozen_release_damage: float = 10.0
+var frozen_release_warn_s: float = 0.75
 ## Aspecto provisional (frozen.visual): velo, doble check y barra de segmentos.
 var frozen_visual: Dictionary = {}
 

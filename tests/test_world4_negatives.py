@@ -75,12 +75,15 @@ class WaveNeverKillsTest(unittest.TestCase):
 
 
 class FreezingNeverKillsTest(unittest.TestCase):
-    def test_no_damage_in_the_seen_zone_nor_in_the_frozen_state(self):
+    def test_no_damage_in_the_seen_zone_and_only_the_release_hit_in_the_frozen_state(self):
         objects = load(os.path.join(ROOT, "data", "world4_objects.json"))
         abilities = load(os.path.join(ROOT, "data", "isak_abilities.json"))
-        for section in (objects["seen_zone"], abilities.get("frozen", {})):
-            self.assertFalse([k for k in section if "damage" in k and not k.startswith("_")], section)
-        self.assertTrue(abilities.get("frozen"), "Seccion frozen de data/isak_abilities.json")
+        self.assertFalse([k for k in objects["seen_zone"] if "damage" in k and not k.startswith("_")])
+        frozen = abilities.get("frozen", {})
+        self.assertTrue(frozen, "Seccion frozen de data/isak_abilities.json")
+        # 2026-10-28: el unico dano es el golpe al liberarse (sin matar, lo prueba tests/test_frozen.gd).
+        self.assertEqual([k for k in frozen if "damage" in k and not k.startswith("_")], ["release_damage"])
+        self.assertLess(float(frozen["release_damage"]), SYNC_RATE_MAX)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,9 @@
 ## - Velo de la escena: gris_oscuro al veil_alpha sobre lo que se ve (la regla 5 de
 ##   tools/palette_mundo4_provisional.py mide el contorno de lo que dana bajo el).
 ## - Doble check sobre la cabeza de Isak (verde_apagado, el color del «Visto»).
-## - Barra de bar_segments segmentos (crema) que se vacia con la cuenta.
+## - Barra de bar_segments segmentos (crema) que se vacia con la cuenta. En el aviso
+##   del golpe al liberarse (2026-10-28: los ultimos release_warn_s, 9 cuadros) la barra
+##   y su marco pasan a rojo (alerta) y laten: lo que va a danar se anticipa en rojo.
 ## Hijo de Isak, top_level (dibuja en coordenadas globales); lo actualiza Isak.step
 ## con su posicion y lo que queda. El arte final, si lo hay, es del paso 24.
 class_name FrozenEffect
@@ -22,6 +24,10 @@ var _veil_color := Color("#3c4250")
 var _check_color := Color("#7d9a80")
 var _bar_color := Color("#eee4cc")
 var _bar_back := Color("#0f1422")
+var _warn_color := Color("#ff4a2a")
+## Aviso del golpe al liberarse (los ultimos release_warn_s de la cuenta).
+var _warning: bool = false
+var _warn_time: float = 0.0
 var _showing: bool = false
 ## Fraccion que queda (1 = recien congelado, 0 = se acaba).
 var _left: float = 0.0
@@ -42,14 +48,21 @@ func configure(visual: Dictionary) -> void:
 	_check_color = World4ObjectsConfig.color("verde_apagado", _check_color)
 	_bar_color = World4ObjectsConfig.color("crema", _bar_color)
 	_bar_back = World4ObjectsConfig.color("chat_noche", _bar_back)
+	_warn_color = World4ObjectsConfig.color("alerta", _warn_color)
 	top_level = true
 	z_index = 50
 	visible = false
 
 
 ## Muestra o actualiza el efecto: `head` = tope de la caja de Isak (global) y
-## `left` = fraccion de la congelacion que queda.
-func show_frozen(head: Vector2, left: float) -> void:
+## `left` = fraccion de la congelacion que queda; `warning` = aviso del golpe al
+## liberarse (barra en rojo que late).
+func show_frozen(head: Vector2, left: float, warning: bool = false) -> void:
+	if warning and not _warning:
+		_warn_time = 0.0
+	elif warning:
+		_warn_time += get_process_delta_time()
+	_warning = warning
 	_showing = true
 	_head = head
 	_left = clampf(left, 0.0, 1.0)
@@ -60,6 +73,7 @@ func show_frozen(head: Vector2, left: float) -> void:
 
 func clear() -> void:
 	_showing = false
+	_warning = false
 	visible = false
 	queue_redraw()
 
@@ -83,6 +97,11 @@ func get_veil_alpha() -> float:
 	return _veil_alpha
 
 
+## Esta avisando del golpe al liberarse (barra en rojo).
+func is_warning() -> bool:
+	return _showing and _warning
+
+
 func _draw() -> void:
 	if not _showing:
 		return
@@ -102,10 +121,15 @@ func _draw() -> void:
 	var seg_w: float = (_bar_width - _bar_gap * float(_segments - 1)) / float(_segments)
 	var x0: float = _head.x - _bar_width * 0.5
 	draw_rect(Rect2(x0 - 1.0, top - 1.0, _bar_width + 2.0, _bar_height + 2.0), _bar_back)
+	var fill: Color = _bar_color
+	if _warning:
+		var pulse: float = 0.6 + 0.4 * absf(sin(_warn_time * TAU * 4.0))
+		fill = Color(_warn_color, pulse)
+		draw_rect(Rect2(x0 - 2.0, top - 2.0, _bar_width + 4.0, _bar_height + 4.0), _warn_color, false, 2.0)
 	var full: int = get_segments_left()
 	for i: int in _segments:
 		var r := Rect2(x0 + float(i) * (seg_w + _bar_gap), top, seg_w, _bar_height)
 		if i < full:
-			draw_rect(r, _bar_color)
+			draw_rect(r, fill)
 		else:
-			draw_rect(r, Color(_bar_color, 0.25))
+			draw_rect(r, Color(fill, 0.25))

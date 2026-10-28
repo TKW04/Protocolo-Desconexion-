@@ -1030,7 +1030,9 @@ func _send_message() -> void:
 	var isak: Isak = find_isak()
 	var frozen: bool = false
 	if isak != null and not isak.is_dead():
-		frozen = isak.freeze(float(phase_data(3).get("message_freeze_s", 2.5)), Isak.FREEZE_SOURCE_BOSS)
+		# Al liberarse (2026-10-28), el golpe lo empuja lejos de El Visto.
+		frozen = isak.freeze(float(phase_data(3).get("message_freeze_s", 2.5)), Isak.FREEZE_SOURCE_BOSS,
+			signf(isak.global_position.x - get_body_rect().get_center().x))
 	attack_started.emit(ATTACK_MESSAGE)
 	message_sent.emit(frozen)
 
@@ -1136,7 +1138,7 @@ func _check_hazards() -> void:
 		var freeze_s: float = float(section("seen_zones" if get_phase() == 1 else "seen_sweep").get("freeze_s", 1.5))
 		for rect: Rect2 in get_zone_rects():
 			if rect.has_point(feet):
-				isak.freeze(freeze_s, Isak.FREEZE_SOURCE_ZONE)
+				isak.freeze(freeze_s, Isak.FREEZE_SOURCE_ZONE, signf(feet.x - rect.get_center().x))
 				break
 
 

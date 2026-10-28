@@ -204,7 +204,9 @@ func _try_freeze() -> void:
 		return
 	if not LevelLookup.isak_body_rect(isak).intersects(get_zone_rect()):
 		return
-	if isak.freeze(freeze_s, Isak.FREEZE_SOURCE_ZONE):
+	# Al liberarse, el golpe (2026-10-28) lo empuja fuera de la zona, desde su centro.
+	var away: float = signf(isak.global_position.x - get_zone_rect().get_center().x)
+	if isak.freeze(freeze_s, Isak.FREEZE_SOURCE_ZONE, away):
 		froze_isak.emit(isak)
 
 

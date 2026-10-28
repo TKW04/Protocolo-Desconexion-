@@ -1258,4 +1258,6 @@ Pedidos del usuario tras jugar el Mundo 4 (textual): Modo oscuro «que solo se p
 
 - **Modo oscuro** al 93 % y Linterna de 3,5 tiles: ¿se lee bien lo justo (siguiente burbuja, huecos) sin ver de más?
 - **Sin Agitar:** ¿se echa de menos algo en el 4-2 (grupos de Trolls uno a uno, Stickers que el pulso desinfla) o en la fase 2 de El Visto (pulso al escudo desde la burbuja con la arena limpia)? Textos nuevos **propuestos**: Papelera «Si quieres deshacer algo, díselo a ese panel. Lo escrito no siempre se queda.», panel «Toca para deshacer» y las ayudas Q de la zona «Visto», el muro de texto, el Troll, el Sticker y el escudo.
+- **Golpe al liberarse** de toda congelación (zona, ola, mensaje de El Visto): −10 como un golpe de enemigo, sin matar, avisado con la barra en rojo 0,75 s antes. ¿Se entiende? ¿Debería poder matar fuera de la ola? (Hoy nunca mata.)
+- **La «pared que te sigue» es la ola del 4-3** (en el 4-1 no hay ninguna): va un 20-25 % más rápida (1,25 / 1,45 / 1,45-1,95 tiles/s), daña al liberarte (ya no al tocar) y espera en las tres vueltas de las bandas. ¿Presiona lo justo?
 - **Pendiente para el Mundo 5:** la combinación Sismo («golpe al suelo con onda», `02-isak-habilidades.md`) partía de Agitar; habrá que redefinirla.

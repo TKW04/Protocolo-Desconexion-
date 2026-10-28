@@ -53,7 +53,7 @@ position = Vector2(64, 0)
 default_speed_tiles_s = 1.0
 end_col = 58
 object_id = &"ola_prueba"
-sections = [{"speed_tiles_s": 1.0, "x_from": 0, "x_to": 30}, {"speed_tiles_s": 1.2, "speed_to_tiles_s": 1.6, "x_from": 30, "x_to": 58}]
+sections = [{"speed_tiles_s": 1.25, "x_from": 0, "x_to": 30}, {"speed_tiles_s": 1.45, "speed_to_tiles_s": 1.95, "x_from": 30, "x_to": 58}]
 start_col = 6
 stops = [{"at_col": 28, "id": "sync_ola", "resume_col": 33}]
 

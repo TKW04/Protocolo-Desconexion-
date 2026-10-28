@@ -11,15 +11,17 @@
 ##   - STOPPED: parada (`stops`: {id, at_col, resume_col}); el frente se queda en
 ##     at_col hasta que Isak cruza resume_col (sale de la parada). Cada parada se
 ##     usa una vez por recorrido.
-##   - HOLDING: alcanzo a Isak: -edge_damage de Sync SIN MATAR (nunca baja de 1) y
-##     Isak congelado freeze_s (Isak.freeze, FREEZE_SOURCE_WAVE); el frente espera.
-##     Al descongelarse SOLO retrocede retreat_tiles (4) desde la espalda de Isak;
-##     con Agitar (frozen_ended con broken) se queda a shake_gap_tiles (1).
+##   - HOLDING: alcanzo a Isak: lo congela freeze_s (Isak.freeze, FREEZE_SOURCE_WAVE,
+##     empujando hacia la derecha al liberarse); el frente espera. Desde el 2026-10-28
+##     (prueba del usuario) el dano llega AL LIBERARSE: el golpe de Isak
+##     (Isak.frozen_released: -frozen.release_damage, 10, como un enemigo, SIN MATAR:
+##     nunca baja de 1), y al tocar ya no quita nada; la ola retrocede entonces
+##     retreat_tiles (4) desde la espalda de Isak. (Agitar, que la dejaba a 1, se retiro.)
 ##   - OFF: al llegar a end_col se para y se apaga para siempre.
-## Si Isak muere o reaparece (EventBus.player_respawned) la ola vuelve a la parada
-## de su seccion (la ultima en la que se paro; sin ninguna, a WAITING en su sitio).
-## El frozen_ended que Isak emite al morir congelado se ignora (lo resuelve la
-## reaparicion). Aspecto PROVISIONAL por codigo: velo gris, columna de checks que
+## Si Isak muere o reaparece (EventBus.player_respawned) la ola vuelve a la ultima
+## parada usada que queda detras de el (sin ninguna, a WAITING en su sitio).
+## Escucha Isak.frozen_released, que no salta al morir congelado (frozen_ended si:
+## leccion del paso 7; lo resuelve la reaparicion). Aspecto PROVISIONAL por codigo: velo gris, columna de checks que
 ## laten y la linea roja del frente (dana). Origen: esquina superior izquierda de
 ## su celda (su columna es la del frente al empezar).
 class_name SeenWave
@@ -30,10 +32,10 @@ const GROUP: StringName = &"seen_wave"
 enum State { WAITING, MOVING, STOPPED, HOLDING, OFF }
 
 signal state_changed(state: State)
-## Alcanzo a Isak (danado: si quito Sync).
+## Alcanzo a Isak (`damaged` es siempre false desde el 2026-10-28: el dano llega al liberarse).
 signal caught_isak(damaged: bool)
-## Isak se descongelo: `broken` = con Agitar; el frente queda en front_x.
-signal released(broken: bool, front_x: float)
+## Isak se libero (`hit` = el golpe al liberarse entro); el frente queda en front_x.
+signal released(hit: bool, front_x: float)
 signal stopped_at(stop_id: StringName)
 signal resumed(stop_id: StringName)
 
@@ -58,6 +60,8 @@ var _cfg: Dictionary = World4ObjectsConfig.section("seen_wave")
 ## Rotulo del frente: tamaño y margen sobre el borde de abajo de la vista (px).
 const LABEL_FONT_PX: int = 16
 const LABEL_MARGIN_PX: float = 120.0
+## Al reaparecer, la parada a la que vuelve queda al menos a esto por detras de Isak.
+const RESPAWN_GAP_TILES: float = 3.0
 var _font: Font
 var _state: State = State.WAITING
 var _front_x: float = 0.0
@@ -70,7 +74,8 @@ var _anim_t: float = 0.0
 
 const THAW_NONE: int = 0
 const THAW_SOLO: int = 1
-const THAW_SHAKE: int = 2
+## El golpe al liberarse entro (lo que dijo Isak.frozen_released).
+var _thaw_hit: bool = false
 
 
 func _ready() -> void:
@@ -165,6 +170,8 @@ func get_freeze_s() -> float:
 	return float(_cfg.get("freeze_s", 2.0))
 
 
+## Dano del golpe al liberarse (desde el 2026-10-28 lo aplica Isak: frozen.release_damage;
+## edge_damage queda como referencia del valor de antes, al tocar).
 func get_damage() -> float:
 	return float(_cfg.get("edge_damage", 10.0))
 
@@ -173,8 +180,6 @@ func get_retreat_tiles() -> float:
 	return float(_cfg.get("retreat_tiles", 4.0))
 
 
-func get_shake_gap_tiles() -> float:
-	return float(_cfg.get("shake_gap_tiles", 1.0))
 
 
 ## Distancia (px) del frente a la espalda de Isak (negativa si lo alcanza).
@@ -225,13 +230,10 @@ func _check_contact(target: Isak) -> void:
 		return
 	if LevelLookup.isak_body_rect(target).position.x > _front_x:
 		return
-	var damaged: bool = not target.is_invulnerable()
-	if damaged:
-		# Sin matar: nunca baja de 1 (decision 4 de §9).
-		GameState.apply_sync_damage(minf(get_damage(), maxf(GameState.sync_rate - 1.0, 0.0)))
+	# Al tocar ya no hay dano (2026-10-28): llega al liberarse (golpe de Isak, sin matar).
 	_state_before_hold = State.STOPPED if _state == State.STOPPED else State.MOVING
-	var frozen_now: bool = target.freeze(get_freeze_s(), Isak.FREEZE_SOURCE_WAVE) or target.is_frozen()
-	caught_isak.emit(damaged)
+	var frozen_now: bool = target.freeze(get_freeze_s(), Isak.FREEZE_SOURCE_WAVE, 1.0) or target.is_frozen()
+	caught_isak.emit(false)
 	if frozen_now:
 		_thaw_pending = THAW_NONE
 		_set_state(State.HOLDING)
@@ -241,15 +243,13 @@ func _check_contact(target: Isak) -> void:
 
 
 func _resolve_thaw(target: Isak) -> void:
-	var pending: int = _thaw_pending
 	_thaw_pending = THAW_NONE
 	if _state != State.HOLDING or target == null or target.is_dead():
 		# Al morir congelado: lo resuelve la reaparicion (vuelta a la parada).
 		return
-	var broken: bool = pending == THAW_SHAKE
-	_retreat(target, get_shake_gap_tiles() if broken else get_retreat_tiles())
+	_retreat(target, get_retreat_tiles())
 	_set_state(_state_before_hold)
-	released.emit(broken, _front_x)
+	released.emit(_thaw_hit, _front_x)
 
 
 func _retreat(target: Isak, tiles: float) -> void:
@@ -272,28 +272,49 @@ func _find_isak() -> Isak:
 func _connect(target: Isak) -> void:
 	if target == _connected:
 		return
-	if _connected != null and is_instance_valid(_connected) and _connected.frozen_ended.is_connected(_on_frozen_ended):
-		_connected.frozen_ended.disconnect(_on_frozen_ended)
+	if _connected != null and is_instance_valid(_connected) \
+			and _connected.frozen_released.is_connected(_on_frozen_released):
+		_connected.frozen_released.disconnect(_on_frozen_released)
 	_connected = target
 	if target != null:
-		target.frozen_ended.connect(_on_frozen_ended)
+		target.frozen_released.connect(_on_frozen_released)
 
 
-func _on_frozen_ended(broken: bool) -> void:
+func _on_frozen_released(hit: bool) -> void:
 	if _state == State.HOLDING:
-		_thaw_pending = THAW_SHAKE if broken else THAW_SOLO
+		_thaw_pending = THAW_SOLO
+		_thaw_hit = hit
 
 
-## Muerte o reaparicion: a la parada de su seccion (o a esperar en su sitio).
-func _on_player_respawned(_at: Vector2, _after_death: bool) -> void:
+## Muerte o reaparicion: a la ultima parada usada que queda detras del punto de
+## reaparicion `at` (a RESPAWN_GAP_TILES o mas de el; desde el 2026-10-28 hay paradas en
+## las vueltas de las bandas, por delante del punto de sincronizacion); las paradas
+## posteriores vuelven a valer. Sin ninguna, a esperar en su sitio.
+func _on_player_respawned(at: Vector2, _after_death: bool) -> void:
 	_thaw_pending = THAW_NONE
 	if _state == State.OFF:
 		return
-	if _stop_idx < 0:
+	var best: int = -1
+	for i: int in stops.size():
+		if not _used_stops.has(i) or not stops[i] is Dictionary:
+			continue
+		var x: float = _col_x(int((stops[i] as Dictionary).get("at_col", 0)))
+		if x <= at.x - RESPAWN_GAP_TILES * _tile() and (best < 0 or x > _col_x(int((stops[best] as Dictionary).get("at_col", 0)))):
+			best = i
+	if best >= 0:
+		var best_x: float = _col_x(int((stops[best] as Dictionary).get("at_col", 0)))
+		for i: int in stops.size():
+			if _used_stops.has(i) and stops[i] is Dictionary \
+					and _col_x(int((stops[i] as Dictionary).get("at_col", 0))) > best_x:
+				_used_stops.erase(i)
+	if best < 0:
+		_stop_idx = -1
+		_used_stops.clear()
 		_front_x = global_position.x
 		_set_state(State.WAITING)
 	else:
-		_front_x = _col_x(int((stops[_stop_idx] as Dictionary).get("at_col", 0)))
+		_stop_idx = best
+		_front_x = _col_x(int((stops[best] as Dictionary).get("at_col", 0)))
 		_set_state(State.STOPPED)
 	queue_redraw()
 

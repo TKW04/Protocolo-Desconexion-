@@ -7,7 +7,7 @@
 #   activa receptores ni terminales, no completa el nivel, no da habilidades, no toca
 #   el Sync Rate de Isak ni el contador del jefe y no abre su ventana;
 # - congelarse no mata: Isak congelado mucho mas que una zona «Visto» sigue con su
-#   Sync Rate y vivo;
+#   Sync Rate y vivo; y el golpe al liberarse (2026-10-28) tampoco: deja el Sync en 1;
 # Los otros negativos de §7.4: la ola no mata sola (tests/test_seen_wave.gd), quieto pierde (tests/test_seen_bot.gd, perfil idle), sin
 # usar el «¿Deshacer escritura?» no se sale de «Mensajes borrados» (tests/test_level_4_2.py y
 # tests/test_world4_validator.py), salidas del validador de los Mundos 1-3 identicas
@@ -106,4 +106,13 @@ func test_freezing_never_kills() -> void:
 	assert_true(sim.isak.is_frozen(), "Sigue congelado")
 	assert_eq(GameState.sync_rate, 5.0, "Congelado no pierde Sync Rate")
 	assert_false(sim.isak.is_dead(), "Congelarse no mata")
+	# 2026-10-28: al liberarse duele (como un golpe de enemigo), pero tampoco mata. Una y otra vez.
+	for i: int in 6:
+		sim.step(sim.steps_for(21.0) if i == 0 else 1)
+		if i > 0:
+			sim.isak.freeze(1.5, Isak.FREEZE_SOURCE_ZONE)
+			sim.step(sim.steps_for(3.0))
+	assert_false(sim.isak.is_frozen())
+	assert_almost_eq(GameState.sync_rate, 1.0, 0.01, "El golpe al liberarse deja el Sync en 1")
+	assert_false(sim.isak.is_dead(), "Liberarse tampoco mata")
 

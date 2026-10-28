@@ -1,10 +1,12 @@
 # Ola de «Visto» (seen_wave; paso 7 del plan de docs/propuesta-mundo-4.md §8, §3.5 y
 # decision 4 de §9): espera a que Isak cruce start_col; avanza con la velocidad de
 # su seccion (y acelera dentro de una con speed_to); se para en sus paradas hasta
-# que Isak sale de ellas; al alcanzar a Isak quita 10 sin matar y lo congela 2,0 s
-# con el frente quieto; al descongelarse retrocede 4 tiles (Agitar, que la dejaba a
-# 1, se retiro el 2026-10-28); morir congelado no cuenta como descongelarse y al reaparecer vuelve a
-# la parada de su seccion; en end_col se apaga; la sala ola_test carga. Isak y la
+# que Isak sale de ellas; al alcanzar a Isak lo congela 2,0 s con el frente quieto y
+# (desde el 2026-10-28, prueba del usuario) el dano llega AL LIBERARSE: el golpe de
+# Isak (-10 sin matar, con retroceso, como un enemigo), y la ola retrocede 4 tiles
+# (Agitar, que la dejaba a 1, se retiro); morir congelado no cuenta como liberarse
+# (sin golpe) y al reaparecer vuelve a la ultima parada que queda detras de Isak; en
+# end_col se apaga; la sala ola_test carga (la ola va un 20-25 % mas rapida). Isak y la
 # ola avanzan con delta fijo.
 extends GutTest
 
@@ -133,14 +135,14 @@ func test_stops_until_isak_leaves_the_stop() -> void:
 	assert_gt(wave.get_front_x(), 2.0 * T, "Cada parada una vez")
 
 
-func test_catching_isak_takes_ten_freezes_two_seconds_and_holds() -> void:
+func test_catching_isak_freezes_two_seconds_and_holds_without_damage_yet() -> void:
 	var wave: SeenWave = _wave()
 	_stand_at(6)
 	var caught: Array = []
 	wave.caught_isak.connect(func(d: bool) -> void: caught.append(d))
 	_catch(wave)
-	assert_eq(caught, [true])
-	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max() - 10.0, EPS, "-10 de Sync")
+	assert_eq(caught, [false], "Al tocar ya no dana (2026-10-28)")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max(), EPS, "El dano llega al liberarse")
 	assert_true(_isak.is_frozen(), "Congelado")
 	assert_eq(_isak.get_frozen_source(), Isak.FREEZE_SOURCE_WAVE)
 	assert_almost_eq(_isak.get_frozen_total(), 2.0, EPS, "2,0 s")
@@ -156,7 +158,9 @@ func test_the_wave_never_kills_alone() -> void:
 	_stand_at(6)
 	GameState.sync_rate = 8.0
 	_catch(wave)
-	assert_almost_eq(GameState.sync_rate, 1.0, EPS, "Sin matar: se queda en 1")
+	_step(wave, roundi(2.2 / DT))
+	assert_false(_isak.is_frozen())
+	assert_almost_eq(GameState.sync_rate, 1.0, EPS, "El golpe al liberarse no mata: se queda en 1")
 	assert_false(_isak.is_dead())
 
 
@@ -173,8 +177,12 @@ func test_thawing_alone_pushes_the_wave_back_four_tiles() -> void:
 	_step(wave)
 	assert_almost_eq(float(steps) * DT, 2.0, 0.05, "Se descongela solo a los 2,0 s")
 	assert_eq(released.size(), 1)
-	assert_false(released[0][0], "Sin Agitar")
-	assert_almost_eq(_isak_back() - wave.get_front_x(), 4.0 * T, 3.0, "«Ya te leyo»: 4 tiles detras")
+	assert_true(released[0][0], "El golpe al liberarse entra")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max() - 10.0, EPS, "-10 al liberarse")
+	assert_eq(_sim.state(), PlayerState.HURT, "Como un golpe de enemigo: Hurt")
+	assert_true(_isak.is_invulnerable(), "Con su invulnerabilidad")
+	assert_gt(_isak.velocity.x, 0.0, "Retroceso hacia delante, lejos de la ola")
+	assert_almost_eq(_isak_back() - wave.get_front_x(), 4.0 * T, 8.0, "«Ya te leyo»: 4 tiles detras")
 	assert_eq(wave.get_state(), SeenWave.State.MOVING, "Y sigue avanzando")
 
 
@@ -186,7 +194,8 @@ func test_dying_frozen_is_ignored_and_respawn_returns_to_the_start() -> void:
 	_catch(wave)
 	_isak.die()
 	wave.advance(DT)
-	assert_eq(released.size(), 0, "Morir congelado no es descongelarse")
+	assert_eq(released.size(), 0, "Morir congelado no es liberarse")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max(), EPS, "Ni golpe al liberarse")
 	assert_eq(wave.get_state(), SeenWave.State.HOLDING)
 	_isak.respawn(Vector2(1.5 * T, 0.0))
 	EventBus.player_respawned.emit(_isak.global_position, true)
@@ -247,3 +256,36 @@ func test_label_stays_inside_the_view() -> void:
 	wave.set_front_x(60.0)
 	at = wave.label_position(view, 100.0)
 	assert_gt(at.x, 60.0, "Frente pegado al borde: a la derecha")
+
+
+func test_respawn_goes_back_to_the_last_stop_behind_isak() -> void:
+	# 2026-10-28: paradas tambien en las vueltas de las bandas, por delante del punto de sincronizacion.
+	var wave: SeenWave = _wave([{"id": "sync_1", "at_col": 2, "resume_col": 8},
+		{"id": "vuelta", "at_col": 14, "resume_col": 20}])
+	_stand_at(5)
+	_step(wave, roundi(2.2 / DT))
+	_stand_at(18)
+	_step(wave, roundi(13.0 / DT))
+	assert_eq(wave.get_stop_id(), &"vuelta", "Se paro en la de la vuelta")
+	_isak.respawn(Vector2(5.5 * T, 0.0))
+	EventBus.player_respawned.emit(_isak.global_position, true)
+	assert_eq(wave.get_stop_id(), &"sync_1", "La de la vuelta esta por delante de Isak: vuelve a la de su punto")
+	assert_almost_eq(wave.get_front_x(), 2.0 * T, EPS)
+	_stand_at(9)
+	_step(wave)
+	assert_eq(wave.get_state(), SeenWave.State.MOVING)
+	_stand_at(16)
+	_step(wave, roundi(13.0 / DT))
+	assert_eq(wave.get_stop_id(), &"vuelta", "La de la vuelta vuelve a valer")
+
+
+func test_level_4_3_wave_is_faster() -> void:
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/4-3.json"))
+	var params: Dictionary = {}
+	for o: Dictionary in data["objects"]:
+		if o["type"] == "seen_wave":
+			params = o["params"]
+	var speeds: Array = params["sections"].map(func(s: Dictionary) -> float: return float(s["speed_tiles_s"]))
+	assert_eq(speeds, [1.25, 1.45, 1.45], "Un 20-25 % mas rapida (antes 1,0 / 1,2 / 1,2)")
+	assert_almost_eq(float(params["sections"][2]["speed_to_tiles_s"]), 1.95, EPS, "Hasta 1,95 (antes 1,6)")
+	assert_eq(params["stops"].size(), 5, "Las dos de sincronizacion y tres en las vueltas")

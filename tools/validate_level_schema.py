@@ -1673,7 +1673,7 @@ class LevelValidator:
             self.error("%s: start_col %s debe estar entre su columna (%d) y el borde del grid" % (what, start, x), y, x)
         if _is_int(end) and (not _is_int(start) or not start < end < width):
             self.error("%s: end_col %s debe estar por delante de start_col y dentro del grid" % (what, end), y, x)
-        lo, hi = float(cfg.get("speed_min", 1.0)), float(cfg.get("speed_max", 1.6))
+        lo, hi = float(cfg.get("speed_min", 1.0)), float(cfg.get("speed_max", 2.0))
         sections = params.get("sections", [])
         if not isinstance(sections, list):
             self.error("%s: sections debe ser una lista" % what, y, x)

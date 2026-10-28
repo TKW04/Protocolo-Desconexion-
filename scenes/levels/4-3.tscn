@@ -174,9 +174,9 @@ position = Vector2(64, 0)
 default_speed_tiles_s = 1.0
 end_col = 280
 object_id = &"ola_leido"
-sections = [{"speed_tiles_s": 1.0, "x_from": 0, "x_to": 101}, {"speed_tiles_s": 1.2, "x_from": 101, "x_to": 207}, {"speed_tiles_s": 1.2, "speed_to_tiles_s": 1.6, "x_from": 207, "x_to": 281}]
+sections = [{"speed_tiles_s": 1.25, "x_from": 0, "x_to": 101}, {"speed_tiles_s": 1.45, "x_from": 101, "x_to": 207}, {"speed_tiles_s": 1.45, "speed_to_tiles_s": 1.95, "x_from": 207, "x_to": 281}]
 start_col = 20
-stops = [{"at_col": 96, "id": "parada_sync_1", "resume_col": 114}, {"at_col": 198, "id": "parada_sync_2", "resume_col": 207}]
+stops = [{"at_col": 22, "id": "parada_vuelta_1", "resume_col": 63}, {"at_col": 96, "id": "parada_sync_1", "resume_col": 114}, {"at_col": 115, "id": "parada_vuelta_2", "resume_col": 157}, {"at_col": 160, "id": "parada_vuelta_3", "resume_col": 201}, {"at_col": 198, "id": "parada_sync_2", "resume_col": 207}]
 
 [node name="eco_ola" parent="Objects" instance=ExtResource("10_eco_line")]
 position = Vector2(1088, 64)

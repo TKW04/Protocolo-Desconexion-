@@ -894,7 +894,7 @@
 			"_notes": "Mundo 4 (paso 10 de docs/propuesta-mundo-4.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
 			"category": "object",
 			"title": "Visto",
-			"text": "Te dejaron en visto. Si entras, te quedas congelado un momento. Un pulso al doble check lo apaga un rato.",
+			"text": "Te dejaron en visto. Si entras, te quedas congelado un momento y, al soltarte, duele. Un pulso al doble check lo apaga un rato.",
 			"first_level": "4-1",
 			"world": 4,
 			"order": 3,

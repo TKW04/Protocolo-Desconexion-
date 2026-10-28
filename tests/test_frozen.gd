@@ -2,7 +2,10 @@
 # de §3.3 y decision 3 de §9): Isak queda quieto donde esta (tambien en el aire) con
 # su velocidad guardada y al terminar sigue con ella; la cuenta va en tiempo del mundo
 # (el Debug la alarga); nada la rompe antes (Agitar, que la rompia, se retiro el
-# 2026-10-28: gesture_shake no hace nada); un golpe congelado resta pero no descongela;
+# 2026-10-28: gesture_shake no hace nada); AL LIBERARSE (2026-10-28, prueba del
+# usuario) recibe un golpe de enemigo (Hurt, retroceso hacia donde dijo quien congela,
+# invulnerabilidad) de 10 SIN MATAR, avisado 0,75 s antes con la barra en rojo; morir,
+# un vortice o reaparecer la cortan sin golpe (frozen_ended(true)); un golpe congelado resta pero no descongela;
 # inmunidad de 0,5 s solo frente a otra zona «Visto»; morir y reaparecer lo cortan;
 # sin pulso, laser, dash ni Pellizcar mientras dura. Isak avanza con delta fijo.
 extends GutTest
@@ -20,6 +23,7 @@ var _saved: Dictionary = {}
 var _started: Array = []
 var _ended: Array = []
 var _fired: Array = []
+var _released: Array = []
 
 
 func before_each() -> void:
@@ -38,13 +42,15 @@ func before_each() -> void:
 	_started = []
 	_ended = []
 	_fired = []
+	_released = []
 	_sim = IsakSim.new(DT)
 	_world = _sim.build_flat_world()
 	add_child_autofree(_world)
 	_sim.take_manual_control()
 	_isak = _sim.isak
 	_isak.frozen_started.connect(func(s: float, src: StringName) -> void: _started.append([s, src]))
-	_isak.frozen_ended.connect(func(broken: bool) -> void: _ended.append(broken))
+	_isak.frozen_ended.connect(func(cut: bool) -> void: _ended.append(cut))
+	_isak.frozen_released.connect(func(hit: bool) -> void: _released.append(hit))
 	_isak.shockwave_fired.connect(func(c: Vector2, r: float) -> void: _fired.append([c, r]))
 	await wait_physics_frames(1)
 	_sim.settle()
@@ -109,7 +115,7 @@ func test_freeze_on_floor_holds_still_and_ends_on_time() -> void:
 	assert_almost_eq((_sim.frames(0.8) + steps) * DT, 1.5, 0.05, "1,5 s")
 	assert_eq(_ended, [false], "Se descongela solo")
 	assert_false(_isak.get_frozen_effect().is_showing())
-	assert_eq(_sim.state(), PlayerState.RUN, "Sigue con el control")
+	assert_eq(_sim.state(), PlayerState.HURT, "Al liberarse, el golpe (2026-10-28)")
 
 
 func test_freeze_in_the_air_keeps_velocity() -> void:
@@ -122,9 +128,12 @@ func test_freeze_in_the_air_keeps_velocity() -> void:
 	assert_true(_isak.is_frozen())
 	assert_almost_eq(_isak.global_position.y, pos.y, 0.5, "Sin gravedad: quieto en el aire")
 	assert_eq(_isak.get_frozen_velocity(), vel, "Velocidad guardada")
+	_sim.step(_sim.frames(0.5))
+	_isak.take_hit(1.0)  # invulnerable: el golpe al liberarse no entra y se ve la velocidad devuelta
 	_sim.step_until(func() -> bool: return not _isak.is_frozen(), _sim.steps_for(1.5))
 	assert_lt(_isak.global_position.y, pos.y, "Sigue subiendo con la velocidad que llevaba")
 	assert_eq(_sim.state(), PlayerState.FALL)
+	assert_eq(_released, [false], "Invulnerable: sin golpe al liberarse")
 
 
 func test_freeze_counts_world_time_with_debug() -> void:
@@ -167,6 +176,52 @@ func test_shake_no_longer_breaks_freeze() -> void:
 	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS, "Sin gasto")
 	_sim.step_until(func() -> bool: return not _isak.is_frozen(), _sim.steps_for(2.0))
 	assert_eq(_ended, [false], "Termina sola, a su tiempo")
+
+
+# --- Golpe al liberarse (2026-10-28) ---
+
+func test_release_hits_like_an_enemy() -> void:
+	assert_almost_eq(_isak.abilities.frozen_release_damage, 10.0, EPS)
+	assert_true(_isak.freeze(1.5, Isak.FREEZE_SOURCE_ZONE, 1.0))
+	_sim.step_until(func() -> bool: return not _isak.is_frozen(), _sim.steps_for(2.0))
+	assert_eq(_released, [true], "Al liberarse, el golpe entra")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max() - 10.0, EPS, "-10 de Sync")
+	assert_eq(_sim.state(), PlayerState.HURT, "Hurt, como un golpe de enemigo")
+	assert_true(_isak.is_invulnerable(), "Con su invulnerabilidad")
+	_sim.step(2)
+	assert_gt(_isak.velocity.x, 0.0, "Retroceso hacia donde dijo quien congela")
+
+
+func test_release_hit_never_kills() -> void:
+	GameState.sync_rate = 5.0
+	_isak.freeze(1.5, Isak.FREEZE_SOURCE_BOSS)
+	_sim.step_until(func() -> bool: return not _isak.is_frozen(), _sim.steps_for(3.0))
+	_sim.step(2)
+	assert_almost_eq(GameState.sync_rate, 1.0, EPS, "Sin matar: se queda en 1")
+	assert_false(_isak.is_dead())
+
+
+func test_release_is_warned_in_red() -> void:
+	_isak.freeze(1.5)
+	_sim.step(_sim.frames(0.5))
+	assert_false(_isak.get_frozen_effect().is_warning(), "Al principio, sin aviso")
+	_sim.step(_sim.frames(0.4))
+	assert_true(_isak.get_frozen_effect().is_warning(), "Los ultimos 0,75 s (9 cuadros) la barra avisa en rojo")
+	assert_almost_eq(_isak.abilities.frozen_release_warn_s, 0.75, EPS)
+
+
+func test_dying_or_respawning_frozen_cuts_without_the_hit() -> void:
+	_isak.freeze(1.5)
+	_isak.die()
+	assert_eq(_ended, [true], "Morir la corta (frozen_ended(true))")
+	_sim.step(3)
+	assert_eq(_released, [], "Sin golpe al liberarse")
+	assert_almost_eq(GameState.sync_rate, GameState.get_sync_rate_max(), EPS)
+	_isak.respawn(Vector2.ZERO)
+	_isak.freeze(1.5)
+	_isak.respawn(Vector2.ZERO)
+	_sim.step(3)
+	assert_eq(_released, [], "Reaparecer tampoco")
 
 
 # --- Dano, inmunidad, muerte ---

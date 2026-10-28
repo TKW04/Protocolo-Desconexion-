@@ -51,9 +51,15 @@ signal shockwave_denied(reason: StringName)
 ## Empieza una congelacion (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md
 ## §3.3): `seconds` de tiempo del mundo y quien congela (FREEZE_SOURCE_*).
 signal frozen_started(seconds: float, source: StringName)
-## Termina la congelacion: `broken` = la rompio Agitar (la ola de «Visto» lo
-## distingue: solo retrocede si Isak se descongela solo).
-signal frozen_ended(broken: bool)
+## Termina la congelacion: `cut` = la corto algo (morir, un vortice, la pose de
+## espaldas, reaparecer) y no hay golpe al liberarse; false = se acabo la cuenta
+## (desde el 2026-10-28 nada la rompe antes: Agitar se retiro). Quien escucha debe
+## ignorar `cut` (p. ej. al morir congelado; lo resuelve la reaparicion).
+signal frozen_ended(cut: bool)
+## Se libero sola (la cuenta llego a 0) y recibio el golpe al liberarse (2026-10-28,
+## prueba del usuario: «que cuando te libere te haga dano como si fuera un ataque de
+## enemigo»): `damaged` = el golpe entro (false si era invulnerable).
+signal frozen_released(damaged: bool)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -291,6 +297,11 @@ var _frozen_left: float = 0.0
 var _frozen_total: float = 0.0
 var _frozen_source: StringName = &""
 var _frozen_velocity := Vector2.ZERO
+## Hacia donde empuja el golpe al liberarse (-1/1; 0 = hacia atras), lo da quien congela.
+var _frozen_release_dir: float = 0.0
+## Golpe al liberarse pendiente: se aplica tras las transiciones del paso (fuera de
+## FrozenState.exit, para no cambiar de estado dentro de otro cambio).
+var _release_hit_pending: bool = false
 ## Inmunidad frente a otra zona «Visto» tras descongelarse (tiempo del mundo).
 var _seen_immunity_left: float = 0.0
 var _frozen_effect: FrozenEffect
@@ -394,6 +405,8 @@ func step(delta: float) -> void:
 		if next == PlayerState.NONE:
 			break
 		change_state(next)
+	if _release_hit_pending:
+		_apply_release_hit()
 	_state.physics_update(delta)
 	move_and_slide()
 	_update_coyote(delta)
@@ -1461,20 +1474,24 @@ func consume_shockwave_instant() -> bool:
 # --- Congelado (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md §3.3) ---
 
 ## Congela a Isak `seconds` de tiempo del mundo (zona «Visto» 1,5 s, ola 2,0 s,
-## mensaje de El Visto 2,5 s; FREEZE_SOURCE_*). Congelarse no hace dano. Devuelve
+## mensaje de El Visto 2,5 s; FREEZE_SOURCE_*). Congelarse no hace dano; LIBERARSE
+## si (2026-10-28): al acabarse la cuenta, un golpe de enemigo hacia `release_dir`
+## (-1/1; 0 = hacia atras) que resta frozen.release_damage sin matar. Devuelve
 ## false si no se congela: muerto, sin datos, en un vortice, de espaldas, ya
 ## congelado (solo alarga la cuenta si `seconds` es mayor) o, para una zona, en la
 ## inmunidad de frozen.seen_immunity_s tras descongelarse.
-func freeze(seconds: float, source: StringName = FREEZE_SOURCE_ZONE) -> bool:
+func freeze(seconds: float, source: StringName = FREEZE_SOURCE_ZONE, release_dir: float = 0.0) -> bool:
 	if not _ready_ok or is_dead() or _warping or _facing_back or seconds <= 0.0:
 		return false
 	if is_frozen():
 		if seconds > _frozen_left:
 			_frozen_left = seconds
 			_frozen_total = seconds
+			_frozen_release_dir = release_dir
 		return false
 	if source == FREEZE_SOURCE_ZONE and _seen_immunity_left > 0.0:
 		return false
+	_frozen_release_dir = release_dir
 	_frozen_left = seconds
 	_frozen_total = seconds
 	_frozen_source = source
@@ -1529,16 +1546,31 @@ func begin_freeze() -> void:
 
 
 ## Lo llama FrozenState al salir: devuelve la velocidad, empieza la inmunidad
-## frente a otra zona y avisa (rota = por Agitar).
+## frente a otra zona y avisa (cortada = morir, vortice, espaldas o reaparecer). Si
+## la cuenta se acabo sola, deja pendiente el golpe al liberarse.
 func end_freeze() -> void:
-	var broken: bool = _shockwave_instant
+	var cut: bool = is_dead() or _warping or _facing_back or _frozen_left > 0.0
 	velocity = _frozen_velocity
 	_frozen_velocity = Vector2.ZERO
 	_frozen_left = 0.0
 	_seen_immunity_left = abilities.frozen_seen_immunity_s
 	if _frozen_effect != null:
 		_frozen_effect.clear()
-	frozen_ended.emit(broken)
+	_release_hit_pending = not cut
+	frozen_ended.emit(cut)
+
+
+## Golpe al liberarse (2026-10-28): el de un enemigo (take_hit: Hurt con retroceso e
+## invulnerabilidad) con frozen.release_damage de Sync SIN MATAR (nunca baja de 1:
+## congelarse nunca mata, como el borde del scroll). Invulnerable, no entra.
+func _apply_release_hit() -> void:
+	_release_hit_pending = false
+	if is_dead() or not _ready_ok:
+		return
+	var damaged: bool = take_hit(_frozen_release_dir)
+	if damaged:
+		GameState.apply_sync_damage(minf(abilities.frozen_release_damage, maxf(GameState.sync_rate - 1.0, 0.0)))
+	frozen_released.emit(damaged)
 
 
 ## Lo llama FrozenState con el delta del mundo.
@@ -1550,7 +1582,8 @@ func _show_frozen_effect() -> void:
 	if _frozen_effect == null:
 		return
 	var left: float = _frozen_left / _frozen_total if _frozen_total > 0.0 else 0.0
-	_frozen_effect.show_frozen(global_position - Vector2(0.0, get_hitbox_size().y), left)
+	_frozen_effect.show_frozen(global_position - Vector2(0.0, get_hitbox_size().y), left,
+		_frozen_left <= abilities.frozen_release_warn_s)
 
 
 ## Inmunidad (tiempo del mundo) y efecto que sigue a Isak.
@@ -1567,6 +1600,8 @@ func _reset_freeze() -> void:
 	_frozen_total = 0.0
 	_frozen_source = &""
 	_frozen_velocity = Vector2.ZERO
+	_frozen_release_dir = 0.0
+	_release_hit_pending = false
 	_seen_immunity_left = 0.0
 	_shockwave_instant = false
 	velocity = Vector2.ZERO

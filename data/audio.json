@@ -261,7 +261,7 @@
 		{"class": "TypingBubble", "signal": "appeared", "sound": "sfx_w4_bubble_pop_in", "positional": true},
 		{"class": "TypingBubble", "signal": "vanished", "sound": "sfx_w4_message_deleted", "positional": true},
 		{"class": "Isak", "signal": "frozen_started", "sound": "sfx_w4_seen_freeze"},
-		{"class": "Isak", "signal": "frozen_ended", "when": {"0": true}, "sound": "sfx_w4_seen_break"},
+		{"class": "Isak", "signal": "frozen_released", "sound": "sfx_w4_seen_break"},
 		{"class": "SeenZone", "signal": "interrupted", "sound": "sfx_w4_seen_interrupt", "positional": true},
 		{"class": "SeenWave", "signal": "state_changed", "when": {"0": "1"}, "sound": "sfx_w4_seen_wave"},
 		{"class": "Troll", "signal": "shot_fired", "sound": "sfx_w4_troll_shot", "positional": true},

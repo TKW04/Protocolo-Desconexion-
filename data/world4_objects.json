@@ -5,7 +5,7 @@
 		"seen_zone": {
 			"scene": "res://scenes/levels/seen_zone.tscn",
 			"help_id": "seen_zone",
-			"description": "Zona «Visto» (2026-10-28, paso 2 de docs/propuesta-mundo-4.md §8, §3.5 y patrones 19 y 22 de §3.8; SeenZone). Rectangulo de width_tiles x height_tiles (1-4 x 1-3) desde (x, y), en el suelo o en el aire, SIN colision ni dano (rojo nunca), con un doble check a caballo de su borde `icon` (left o right, a media altura: se pulsa desde fuera). Activa, tocarla congela a Isak freeze_s (1,5 s; Isak.freeze con la inmunidad de 0,5 s tras descongelarse). El pulso al doble check la interrumpe interrupt_s (4 s del mundo; checks tachados). Siempre activa o con ciclo (on_s activa / off_s en espera, desfase phase_s) y aviso de warn_frames cuadros a anim_fps antes de activarse (los checks se rellenan de uno en uno). Tiempo del mundo; vuelve al estado inicial al reaparecer. Sin Q todavia: help_id seen_zone, ayuda y ficha del album en el paso 10. Validador de alcanzabilidad: aun no la modela (paso 9: arista pulse_seen y congelacion como coste de tiempo). Aspecto PROVISIONAL por codigo (seccion seen_zone, paleta provisional).",
+			"description": "Zona «Visto» (2026-10-28, paso 2 de docs/propuesta-mundo-4.md §8, §3.5 y patrones 19 y 22 de §3.8; SeenZone). Rectangulo de width_tiles x height_tiles (1-4 x 1-3) desde (x, y), en el suelo o en el aire, SIN colision ni dano al tocarla (desde el 2026-10-28 el golpe llega al LIBERARSE: Isak recibe un golpe de enemigo de frozen.release_damage, 10, sin matar, empujado fuera de la zona, y la barra del congelado avisa en rojo 0,75 s antes), con un doble check a caballo de su borde `icon` (left o right, a media altura: se pulsa desde fuera). Activa, tocarla congela a Isak freeze_s (1,5 s; Isak.freeze con la inmunidad de 0,5 s tras descongelarse). El pulso al doble check la interrumpe interrupt_s (4 s del mundo; checks tachados). Siempre activa o con ciclo (on_s activa / off_s en espera, desfase phase_s) y aviso de warn_frames cuadros a anim_fps antes de activarse (los checks se rellenan de uno en uno). Tiempo del mundo; vuelve al estado inicial al reaparecer. Sin Q todavia: help_id seen_zone, ayuda y ficha del album en el paso 10. Validador de alcanzabilidad: aun no la modela (paso 9: arista pulse_seen y congelacion como coste de tiempo). Aspecto PROVISIONAL por codigo (seccion seen_zone, paleta provisional).",
 			"required": [],
 			"fields": {
 				"id": "object_id",
@@ -339,7 +339,7 @@
 		},
 		"seen_wave": {
 			"scene": "res://scenes/levels/seen_wave.tscn",
-			"description": "Ola de «Visto» (2026-10-28, paso 7 de docs/propuesta-mundo-4.md §8, §3.5 y decision 4 de §9; SeenWave). Una por nivel horizontal. Frente vertical de toda la altura que avanza desde la columna de su celda (x; y = 0) hacia la derecha en tiempo del mundo cuando Isak cruza start_col, con la velocidad de la seccion en la que esta el frente (sections: lista de {x_from, x_to, speed_tiles_s[, speed_to_tiles_s]}, de 1,0 a 1,6 tiles/s; fuera de ellas default_speed_tiles_s) y paradas (stops: {id, at_col, resume_col}: el frente espera en at_col hasta que Isak cruza resume_col). Si alcanza a Isak (frente en su espalda): -edge_damage (10) SIN MATAR y congelado freeze_s (2,0 s); al descongelarse solo retrocede retreat_tiles (4) desde su espalda; con Agitar se queda a shake_gap_tiles (1). Al morir o reaparecer Isak vuelve a la parada de su seccion. En end_col se para y se apaga. Sin Q todavia (paso 10). Validador: aun no la modela (paso 9b: wait_wave y validation.wave_margin_tiles). Aspecto PROVISIONAL por codigo (seccion seen_wave).",
+			"description": "Ola de «Visto» (2026-10-28, paso 7 de docs/propuesta-mundo-4.md §8, §3.5 y decision 4 de §9; SeenWave). Una por nivel horizontal. Frente vertical de toda la altura que avanza desde la columna de su celda (x; y = 0) hacia la derecha en tiempo del mundo cuando Isak cruza start_col, con la velocidad de la seccion en la que esta el frente (sections: lista de {x_from, x_to, speed_tiles_s[, speed_to_tiles_s]}, de 1,0 a 2,0 tiles/s —1,6 hasta el 2026-10-28—; fuera de ellas default_speed_tiles_s) y paradas (stops: {id, at_col, resume_col}: el frente espera en at_col hasta que Isak cruza resume_col). Si alcanza a Isak (frente en su espalda): congelado freeze_s (2,0 s) y, AL LIBERARSE (2026-10-28; antes -10 al tocar), el golpe de Isak (-10 sin matar, empujado hacia delante); entonces retrocede retreat_tiles (4) desde su espalda (Agitar, que la dejaba a 1, se retiro). Al morir o reaparecer Isak vuelve a la ultima parada usada que queda detras de el. En end_col se para y se apaga. Sin Q todavia (paso 10). Validador: aun no la modela (paso 9b: wait_wave y validation.wave_margin_tiles). Aspecto PROVISIONAL por codigo (seccion seen_wave).",
 			"required": [
 				"start_col"
 			],
@@ -568,13 +568,12 @@
 		"fade_s": 0.25
 	},
 	"seen_wave": {
-		"_notes": "Ajustes de la ola de «Visto» (§3.5 y decision 4 de §9; PROVISIONAL): edge_damage (Sync que quita al alcanzar, sin matar: nunca baja de 1), freeze_s (congelado de la ola, 2,0 s), retreat_tiles (retroceso al descongelarse solo, 4) y shake_gap_tiles (distancia al romper la congelacion con Agitar, 1); speed_min / speed_max (rango de las secciones que admite el esquema: 1,0-1,6 tiles/s); veil_alpha (velo gris_oscuro detras del frente), beat_hz (latido de los checks del borde), label («Leido 03:47») y z_index (por debajo del velo del Modo oscuro, 40).",
+		"_notes": "Ajustes de la ola de «Visto» (§3.5 y decision 4 de §9; PROVISIONAL; cambiados el 2026-10-28 tras la prueba del usuario, §8.1): freeze_s (congelado de la ola, 2,0 s); el DANO llega al liberarse (golpe de Isak, frozen.release_damage de data/isak_abilities.json, 10, sin matar: nunca baja de 1) y al tocar ya no quita nada (edge_damage queda como el valor de antes); retreat_tiles (retroceso al liberarse, 4; Agitar, que la dejaba a 1, se retiro); speed_min / speed_max (rango de las secciones que admite el esquema: 1,0-2,0 tiles/s desde que la ola va un 20-25 % mas rapida; antes 1,0-1,6); veil_alpha (velo gris_oscuro detras del frente), beat_hz (latido de los checks del borde), label («Leido 03:47») y z_index (por debajo del velo del Modo oscuro, 40).",
 		"edge_damage": 10.0,
 		"freeze_s": 2.0,
 		"retreat_tiles": 4.0,
-		"shake_gap_tiles": 1.0,
-		"speed_min": 1.0,
-		"speed_max": 1.6,
+				"speed_min": 1.0,
+		"speed_max": 2.0,
 		"veil_alpha": 0.45,
 		"beat_hz": 2.0,
 		"label": "Leído 03:47",
