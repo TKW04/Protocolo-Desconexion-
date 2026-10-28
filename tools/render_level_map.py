@@ -62,6 +62,12 @@ def is_vertical(level):
     return any("y_from" in sec or "y_to" in sec for sec in level.get("sections", []))
 
 
+def bubble_tiles(text):
+    """Largo en tiles de una burbuja del Mundo 4: la regla de bubble_width de tools/build_level.py
+    (1 tile cada 6 caracteres, entre 1 y 8; valores por defecto de la seccion chat_bubble)."""
+    return max(1, min(8, -(-len(text) // 6)))
+
+
 def render(level, palette):
     grid = level["grid"]
     rows, cols = len(grid), len(grid[0])
@@ -390,6 +396,65 @@ def render(level, palette):
             x0, y0, x1, y1 = box(x, y, 8, 4)
             d.rectangle((x0, y0, x1, y1), outline=palette["borde_luz"], width=2)
             label((x0 + x1) // 2, (y0 + y1) // 2, "La Curadora", palette["banner_blanco"], normal)
+        # Mundo 4 «El Chat» (paso 22 de docs/propuesta-mundo-4.md; 2026-10-28).
+        elif kind in ("chat_bubble", "typing_bubble", "autocorrect_bubble"):
+            w = bubble_tiles(p.get("text", ""))
+            if kind == "autocorrect_bubble":
+                w = max(w, bubble_tiles(p.get("corrected", "")))
+            x0, y0, x1, y1 = box(x, y, w, 1)
+            color = {"chat_bubble": palette["banner_blanco"], "typing_bubble": palette["resplandor"],
+                     "autocorrect_bubble": palette["ambar"]}[kind]
+            if p.get("side", "left") == "right":
+                d.rectangle((x0 + 1, y0 + 1, x1 - 1, y0 + 6), fill=palette["fondo_medio"], outline=color)
+            else:
+                d.rectangle((x0 + 1, y0 + 1, x1 - 1, y0 + 6), outline=color)
+            if kind == "typing_bubble":
+                label((x0 + x1) // 2, y0 - 7, "escribiendo", color)
+            elif kind == "autocorrect_bubble":
+                label((x0 + x1) // 2, y0 - 7, "autocorrector", color)
+        elif kind == "seen_zone":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 2), p.get("height_tiles", 1))
+            d.rectangle((x0, y0, x1, y1), outline=palette["alerta"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "Visto", palette["alerta"])
+        elif kind == "dark_zone":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 4), p.get("height_tiles", 4))
+            for xx in range(x0, x1, 8):
+                d.line((xx, y0, min(xx + 3, x1), y0), fill=palette["banner_gris"])
+                d.line((xx, y1, min(xx + 3, x1), y1), fill=palette["banner_gris"])
+            for yy in range(y0, y1, 8):
+                d.line((x0, yy, x0, min(yy + 3, y1)), fill=palette["banner_gris"])
+                d.line((x1, yy, x1, min(yy + 3, y1)), fill=palette["banner_gris"])
+            label(x0 + 4, y0 + 8, "Modo oscuro", palette["banner_gris"], anchor="lm")
+        elif kind == "ink_only":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), 1)
+            for xx in range(x0, x1, 4):
+                d.line((xx, y0, min(xx + 2, x1), y0), fill=palette["ambar"], width=3)
+            label((x0 + x1) // 2, y0 + 9, "tinta", palette["ambar"])
+        elif kind == "flashlight_pickup":
+            x0, y0, x1, y1 = box(x, y)
+            d.polygon([(x0 + 4, y0 + 6), (x1 - 2, y0 + 2), (x1 - 2, y1 - 2), (x0 + 4, y1 - 6)],
+                      outline=palette["ambar"])
+            label((x0 + x1) // 2, y0 - 7, "Linterna", palette["ambar"])
+        elif kind == "seen_wave":
+            start, end = p.get("start_col", 0), p.get("end_col", cols - 1)
+            sx0, _, sx1, _ = box(start, 0, end - start + 1, 1)
+            yy = TOP + rows * CELL - 4
+            d.line((sx0, yy, sx1, yy), fill=palette["alerta"], width=2)
+            label(sx0 + 4, yy - 8, "ola de Visto (col %d-%d)" % (start, end), palette["alerta"], anchor="lm")
+            for stop in p.get("stops", []):
+                px = box(stop["at_col"], 0)[0]
+                d.line((px, TOP, px, TOP + rows * CELL), fill=palette["alerta_sombra"])
+                label(px + 3, TOP + 18, "parada", palette["alerta"], anchor="lm")
+        elif kind in ("papelera_actor", "undo_prompt", "typed_wall"):
+            hh = 3 if kind == "typed_wall" else 1
+            x0, y0, x1, y1 = box(x, y, 1, hh)
+            d.rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), outline=palette["banner_blanco"], width=2)
+            tag = {"papelera_actor": "Papelera", "undo_prompt": "Deshacer (Agitar)", "typed_wall": "muro de texto"}[kind]
+            label((x0 + x1) // 2, y0 - 7, tag, palette["banner_blanco"])
+        elif kind == "seen":
+            x0, y0, x1, y1 = box(x, y, 6, 3)
+            d.rectangle((x0, y0, x1, y1), outline=palette["alerta"], width=2)
+            label((x0 + x1) // 2, (y0 + y1) // 2, "El Visto", palette["banner_blanco"], normal)
         elif kind == "alert_major":
             # Jefe: caja de su badge de 256 px (4 x 4 tiles) centrada en su celda.
             x0, y0, x1, y1 = box(x - 2, y, 4, 4)
@@ -559,7 +624,15 @@ def render(level, palette):
              ("alarm_bell", "campana y su onda", palette["alerta"]),
              ("memory_pickup", "mensaje (recuerdo)", palette["banner_blanco"]),
              ("power_bank_pickup", "power bank", palette["debug_cian"]),
-             ("alert_major", "jefe", palette["alerta"])]
+             ("alert_major", "jefe", palette["alerta"]),
+             ("chat_bubble", "burbuja (relleno = de Isak)", palette["banner_blanco"]),
+             ("typing_bubble", "«escribiendo…»", palette["resplandor"]),
+             ("autocorrect_bubble", "autocorrector", palette["ambar"]),
+             ("seen_zone", "zona «Visto»", palette["alerta"]),
+             ("dark_zone", "Modo oscuro", palette["banner_gris"]),
+             ("ink_only", "tinta (con la Linterna)", palette["ambar"]),
+             ("seen_wave", "ola de «Visto» y paradas", palette["alerta"]),
+             ("seen", "jefe El Visto", palette["alerta"])]
     items += [(k, text, color) for k, text, color in extra
               if k in present or (k == "rhythm_zone" and "alarm_tunnel" in present)]
     lx = SIDE

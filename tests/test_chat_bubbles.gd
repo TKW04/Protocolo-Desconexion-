@@ -140,6 +140,26 @@ func test_deleted_bubble_has_no_collision() -> void:
 	assert_gt(_isak.global_position.y, -3.0 * TILE + 4.0, "Cae a traves")
 
 
+## Paso 22 (capturas): en una tarjeta corta el aviso de eliminada salia cortado
+## («Se eliminó este me»); si no cabe se dibuja «Eliminado» y, en 1 tile, nada.
+func test_deleted_text_fits_its_card() -> void:
+	var short := CHAT_SCENE.instantiate() as ChatBubble
+	_setup(short, 2.0, -3.0, "Lía: ¿estás?")
+	short.deleted = true
+	_world.add_child(short)
+	var width: float = short.get_card_size().x - 12.0
+	assert_eq(short.fit_text(short.get_shown_text(), width), ChatBubble.DELETED_SHORT_TEXT, "2 tiles: no cabe")
+	assert_eq(short.get_shown_text(), ChatBubble.DELETED_TEXT, "El texto de la burbuja no cambia")
+	var wide := CHAT_SCENE.instantiate() as ChatBubble
+	_setup(wide, 2.0, -6.0, ChatBubble.DELETED_TEXT)
+	wide.deleted = true
+	_world.add_child(wide)
+	assert_eq(wide.fit_text(wide.get_shown_text(), wide.get_card_size().x - 12.0), ChatBubble.DELETED_TEXT,
+		"4 tiles: cabe entero")
+	assert_eq(short.fit_text(ChatBubble.DELETED_TEXT, 64.0 - 12.0), "", "1 tile: solo el contorno")
+	assert_eq(short.fit_text("¿Sigues despierto?", 10.0), "¿Sigues despierto?", "Los demas textos no cambian")
+
+
 func test_friend_initial() -> void:
 	var bubble := CHAT_SCENE.instantiate() as ChatBubble
 	_setup(bubble, 2.0, -3.0, "¿Mañana vienes?")
@@ -318,3 +338,14 @@ func test_burbujas_test_room_loads() -> void:
 	assert_eq(auto.author_side, &"left")
 	var lia := level.get_node(^"Objects/burbuja_lia") as ChatBubble
 	assert_eq(lia.friend_id, &"lia")
+
+
+## Paso 22 (capturas): el sello «3 meses» salia cortado; ahora se coloca por su ancho.
+func test_long_stamp_fits_inside_the_card() -> void:
+	var bubble := _chat(2.0, -3.0, "Ok, cuando quieras hablar, aquí estoy.")
+	bubble.stamp = "3 meses"
+	var short := _chat(2.0, -6.0, "¿Sigues por ahí?")
+	short.stamp = "22:40"
+	assert_gt(bubble.stamp_width(), 34.0, "«3 meses» no cabia en el hueco fijo de 34 px")
+	assert_lt(bubble.stamp_width() + 6.0, bubble.get_card_size().x, "Cabe dentro de la tarjeta")
+	assert_gt(short.stamp_width(), 0.0)

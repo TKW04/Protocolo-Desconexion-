@@ -8,7 +8,7 @@
 ##   (shader del velo: hole_center / hole_radius, borde suave hole_soft_px). Sin
 ##   Linterna (no pasa en el Mundo 4) la zona se recorre igual, a oscuras.
 ## - Legibilidad (la exige el validador): por encima del velo siempre se ven el
-##   contorno de lo que dana (los pinchos: alerta_sombra, dibujado por la capa
+##   contorno de lo que dana (los pinchos: alerta desde el paso 22, dibujado por la capa
 ##   Outlines), los puntos del «escribiendo…» y el borde de las burbujas al 30 %
 ##   (ChatBubble crea su DarkOutline) y los checks del «Visto» (SeenZone sube su
 ##   z_index). Lo que la Linterna anade es el texto, el largo exacto y lo escrito «en
@@ -202,7 +202,14 @@ func get_hazard_rects() -> Array[Rect2]:
 	return out
 
 
-## Capa por encima del velo: contorno de lo que dana (alerta_sombra), siempre visible.
+## Color del contorno de lo que dana por encima del velo: `alerta` (2026-10-28,
+## paso 22: con alerta_sombra quedaba a 1,6:1 sobre el velo en las capturas; la
+## regla 5 de tools/palette_mundo4_provisional.py ya media el 3:1 con alerta).
+func get_hazard_outline_color() -> Color:
+	return World4ObjectsConfig.color(String(_cfg.get("hazard_outline_color", "alerta")), Color("#ff4a2a"))
+
+
+## Capa por encima del velo: contorno de lo que dana (alerta), siempre visible.
 class _DarkOutlines:
 	extends Node2D
 	var zone: DarkZone
@@ -210,7 +217,7 @@ class _DarkOutlines:
 	func _draw() -> void:
 		if zone == null:
 			return
-		var color: Color = World4ObjectsConfig.color("alerta_sombra", Color("#a3221c"))
+		var color: Color = zone.get_hazard_outline_color()
 		var width: float = float(zone._cfg.get("hazard_outline_px", 2.0))
 		for rect: Rect2 in zone.get_hazard_rects():
 			draw_rect(Rect2(rect.position - zone.global_position, rect.size), color, false, width)

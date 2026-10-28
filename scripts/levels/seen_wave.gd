@@ -55,6 +55,10 @@ var isak: Isak
 var height_px: float = 0.0
 
 var _cfg: Dictionary = World4ObjectsConfig.section("seen_wave")
+## Rotulo del frente: tamaño y margen sobre el borde de abajo de la vista (px).
+const LABEL_FONT_PX: int = 16
+const LABEL_MARGIN_PX: float = 120.0
+var _font: Font
 var _state: State = State.WAITING
 var _front_x: float = 0.0
 var _stop_idx: int = -1
@@ -334,5 +338,30 @@ func _draw() -> void:
 		draw_polyline(PackedVector2Array([c + Vector2(-2, 0), c + Vector2(2, 5), c + Vector2(9, -6)]), col, 2.0)
 		y += step_px
 	var label: String = String(_cfg.get("label", "Leído 03:47"))
-	draw_string(ThemeDB.fallback_font, Vector2(front - 110.0, top + h - 20.0), label,
-		HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color(cream, 0.8))
+	var font: Font = _label_font()
+	var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_PX).x
+	var view: Rect2 = get_canvas_transform().affine_inverse() * get_viewport_rect()
+	var at: Vector2 = label_position(view, width) - global_position
+	draw_string(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_FONT_PX, Color(cream, 0.8))
+
+
+## Donde se escribe el rotulo «Leído 03:47» (global, linea base): a la izquierda
+## del frente y dentro de la vista, sobre su borde de abajo; si a la izquierda no
+## cabe (frente pegado al borde de la pantalla), a la derecha del frente.
+## (2026-10-28, paso 22: en las capturas salia al pie del nivel, fuera de la
+## vista, y cortado por el borde izquierdo.)
+func label_position(view: Rect2, width: float) -> Vector2:
+	var y: float = clampf(view.end.y - LABEL_MARGIN_PX, view.position.y + LABEL_MARGIN_PX, view.end.y)
+	var x: float = _front_x - width - 24.0
+	if x < view.position.x + 8.0:
+		x = _front_x + 12.0
+	return Vector2(x, y)
+
+
+func _label_font() -> Font:
+	if _font == null:
+		var path: String = String(World4ObjectsConfig.section("chat_bubble").get("font", "res://assets/sprites/ui/text_font.fnt"))
+		_font = load(path) as Font if ResourceLoader.exists(path) else null
+		if _font == null:
+			_font = ThemeDB.fallback_font
+	return _font

@@ -221,6 +221,19 @@ func test_always_visible_above_veil() -> void:
 	assert_false(outside.is_in_dark(), "Fuera de la zona, nada")
 	assert_eq(zone.get_hazard_rects().size(), 1, "Contorno de lo que dana dentro")
 	assert_almost_eq(float(World4ObjectsConfig.section("chat_bubble")["dark_border_alpha"]), 0.3, EPS, "Borde al 30 %")
+	# Paso 22 (capturas): el contorno en alerta_sombra quedaba a ~1,6:1 sobre el velo;
+	# en alerta, >= 3:1 sobre el fondo mas claro del Mundo 4 tapado por el velo.
+	var outline: Color = zone.get_hazard_outline_color()
+	assert_eq(outline, World4ObjectsConfig.color("alerta"), "Contorno en alerta")
+	var veil: Color = World4ObjectsConfig.color("fondo_claro", Color("#4a6fc4")).lerp(
+		World4ObjectsConfig.color("chat_noche"), float(World4ObjectsConfig.section("dark_zone").get("veil_alpha", 0.6)))
+	assert_gt(_contrast(outline, veil), 3.0, "Contraste del contorno sobre el velo")
+
+
+func _contrast(a: Color, b: Color) -> float:
+	var la: float = a.srgb_to_linear().get_luminance()
+	var lb: float = b.srgb_to_linear().get_luminance()
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
 
 
 # --- Hub ---

@@ -248,3 +248,18 @@ func test_ola_test_room_loads() -> void:
 	assert_eq(wave.stops.size(), 1)
 	assert_eq(wave.sections.size(), 2)
 	level.free()
+
+
+## Paso 22 (capturas): el rotulo «Leído 03:47» salia al pie del nivel, fuera de
+## la vista, y cortado por el borde izquierdo; ahora queda dentro de la vista.
+func test_label_stays_inside_the_view() -> void:
+	var wave := _wave()
+	var view := Rect2(Vector2(0.0, 0.0), Vector2(1280.0, 720.0))
+	wave.set_front_x(600.0)
+	var at: Vector2 = wave.label_position(view, 100.0)
+	assert_lt(at.x + 100.0, 600.0, "A la izquierda del frente")
+	assert_gt(at.y, view.position.y, "Dentro de la vista")
+	assert_lt(at.y, view.end.y, "Dentro de la vista")
+	wave.set_front_x(60.0)
+	at = wave.label_position(view, 100.0)
+	assert_gt(at.x, 60.0, "Frente pegado al borde: a la derecha")

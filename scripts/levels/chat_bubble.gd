@@ -24,6 +24,9 @@ const CHARS_PER_TILE: int = 6
 const MIN_TILES: int = 1
 const MAX_TILES: int = 8
 const DELETED_TEXT: String = "Se eliminó este mensaje"
+## Lo que se dibuja si DELETED_TEXT no cabe en la tarjeta (2026-10-28, paso 22:
+## en las capturas salia cortado, «Se eliminó este me»).
+const DELETED_SHORT_TEXT: String = "Eliminado"
 const FRIEND_INITIALS: Dictionary = {&"lia": "L", &"marco": "M", &"tomi": "T"}
 
 ## Isak la empieza a pisar (pies encima, en el suelo).
@@ -270,9 +273,31 @@ func draw_bubble(shown: String, solid: bool, alpha: float) -> void:
 	if _font == null or shown.is_empty():
 		return
 	var text_color: Color = Color(ink, alpha) if solid else Color(gray, alpha)
+	shown = fit_text(shown, rect.size.x - 12.0)
 	_draw_text(shown, rect.position + Vector2(6.0, rect.size.y * 0.5 + 5.0), text_color, rect.size.x - 12.0)
 	if not stamp.is_empty() and solid:
-		_draw_text(stamp, Vector2(rect.end.x - 34.0, rect.end.y - 2.0), Color(shade, alpha))
+		_draw_text(stamp, Vector2(rect.end.x - stamp_width() - 6.0, rect.end.y - 2.0), Color(shade, alpha))
+
+
+## Ancho del sello de hora en px (2026-10-28, paso 22: con un ancho fijo de 34 px
+## los sellos largos, «3 meses», salian cortados por el borde de la tarjeta).
+func stamp_width() -> float:
+	if _font == null or stamp.is_empty():
+		return 0.0
+	return _font.get_string_size(stamp, HORIZONTAL_ALIGNMENT_LEFT, -1, int(_cfg.get("font_size", 16))).x
+
+
+## Texto que se dibuja en `width` px: el aviso de eliminada se acorta a
+## DELETED_SHORT_TEXT si no cabe entero y, si tampoco cabe (1 tile), queda solo
+## el contorno discontinuo; los demas textos no cambian.
+func fit_text(shown: String, width: float) -> String:
+	if shown != DELETED_TEXT or _font == null:
+		return shown
+	var px: int = int(_cfg.get("font_size", 16))
+	for candidate: String in [shown, DELETED_SHORT_TEXT]:
+		if _font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= width:
+			return candidate
+	return ""
 
 
 func _draw_text(value: String, at: Vector2, color: Color, max_width: float = -1.0) -> void:
