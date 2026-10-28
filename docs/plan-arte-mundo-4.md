@@ -1,6 +1,6 @@
 # Arte del Mundo 4 con AutoSprite (paso 24 de `propuesta-mundo-4.md`)
 
-Presupuesto de `propuesta-mundo-4.md` §6.2 (68-71 créditos en una pasada, hasta ~142 con reintentos, de un saldo de 315), en tres etapas con **parada tras cada personaje base** (regla de los Mundos 2 y 3). Flujo y lecciones de la Curadora (`plan-arte-mundo-3.md`).
+Presupuesto de `propuesta-mundo-4.md` §6.2 (68-71 créditos en una pasada, hasta ~142 con reintentos, de un saldo de 315; gastados 66, saldo final 249, §3.2), en tres etapas con **parada tras cada personaje base** (regla de los Mundos 2 y 3). Flujo y lecciones de la Curadora (`plan-arte-mundo-3.md`).
 
 ## 1. Etapa 1: base de El Visto (2026-10-28)
 
@@ -52,16 +52,61 @@ Sin reintentos: las 8 se aceptaron a la primera (los defectos se arreglan al imp
 - El dibujo sobresale 24 px por encima de la caja y en reposo pisa la franja del techo de la arena.
 - **Captura 02** (`juego_02_fase1`): la toma cae al final del `vanish` y El Visto no se ve (es la temporización de la captura, no del arte). En la primera tanda de capturas el proceso dejó de guardar las 12-15 una vez; al repetir salieron las 15.
 
-## 3. Etapa 3 (pendiente, sin gastar): Troll y pose de Agitar
+## 3. Etapa 3: Troll y pose de Agitar (2026-10-28)
 
-Plan de §6.2, con parada tras el base del Troll:
+Plan de §6.2 (26-29 créditos, tope con reintentos 52-58), con parada tras el base del Troll.
 
-| Pieza | Qué | Créditos | Con un reintento |
-|---|---|---|---|
-| Troll | Base (`create_character`, `pixelArt`, no humanoide: perfil anónimo con capucha y sonrisa) | 3 (puede no cobrarse) | 6 |
-| Troll | Una pose (`Typing`: escribiendo con el bocadillo listo) | 3 | 6 |
-| Troll | Animaciones turbo `idle`, `typing_shot` y `stunned` (una llamada, `first_frame`, `raw_prompt`) | 15 | 30 |
-| Isak | Pose `shockwave` (sacudir el celular; `generate_spritesheet` turbo sobre «Isak», +3 si hace falta una pose) | 5-8 | 10-16 |
-| **Total** | | **26-29** | 52-58 |
+### 3.1 Etapa 3a: base del Troll
 
-Saldo previsto al terminar el Mundo 4: **~246-249** (desde 275). Después: `tools/import_troll.py` (como `import_influencer_bot.py`: alto de la caja del Troll, pies abajo) y la pose en `tools/build_isak_frames.gd` con `tools/import_sheet.py` (sustituye la sacudida por código de `ShockwaveEffect`).
+- `create_character` (`pixelArt`, `isHumanoid: false`): «Troll» (`cmvs9hq0d00496q4bz7clykge`), figura chibi con capucha gris, cara en sombra y sonrisa blanca, manos en el bolsillo; copia en `docs/capturas/arte-autosprite-2026-10-28/troll_base.png` (commit `9dad3ba`). **Sí se cobró** (3): el saldo pasó de 275 a 272.
+- Aprobado por el usuario, con la **opción b de tamaño**: el Troll sobresale por encima de su caja (~76 px de alto sobre la caja de 40 × 56), como El Visto.
+
+### 3.2 Etapa 3b: créditos
+
+Autorizado: pose Typing 3 + animaciones `idle`, `typing_shot`, `stunned` 15 + pose `shockwave` de Isak 5 (+3 si hacía falta una pose); previsto 23-26, tope 58.
+
+| # | Llamada | Pieza | Créditos | Saldo tras la llamada |
+|---|---|---|---|---|
+| — | `get_account` | | 0 | **272** |
+| 1 | `generate_pose` | Troll `Typing` (el móvil con las dos manos a la altura de la barriga, los pulgares en la pantalla) | 3 | 269 |
+| 2 | `generate_spritesheet` turbo (`custom`, modo `reference`, 25 cuadros de 512, sin `raw_prompt`: vista lateral de Isak) | Isak `shockwave` (sacude el celular y lo extiende) | 5 | 264 |
+| 3 | `generate_spritesheet` turbo (una llamada, 3 × 5; `first_frame`, `raw_prompt`, 25 cuadros de 512, vista de frente) | Troll `idle`, `typing_shot`, `stunned` | 15 | **249** (respuesta de la llamada) |
+| | | **Esta etapa** | **23** (tope 58) | |
+
+Sin reintentos ni pose extra de Isak: todo se aceptó a la primera. Total del Troll: 3 + 3 + 15 = **21**; total del Mundo 4: 40 (El Visto) + 21 + 5 = **66** (dentro de los 68-71 de §6.2). Saldo final **249**.
+
+### 3.3 Prompts y hojas
+
+- En inglés, describiendo solo lo que debe verse, con la vista y la cara fijadas («Front view, flat 16-bit pixel art on a plain white background…») y, para prohibir rótulos inventados sin nombrarlos, «Only the character on a plain white background, nothing else in the picture» (en `typing_shot`, además, «The phone screen is plain dark»). `idle` y `stunned` de la base a la base (bucle); `typing_shot` desde la pose `Typing` (escribe rápido con los pulgares, sube el móvil de golpe con la sonrisa más grande «como al enviar» y lo baja); `stunned`: se tambalea, la sonrisa en zigzag y tres estrellas grises alrededor de la capucha.
+- **Orden de las hojas**: esta vez coincidía con el pedido, pero se identificaron mirándolas (`4yx5` idle, `52x5` typing_shot, `56x5` stunned). **Sin rótulos inventados**: ninguna hoja trae texto ni bocadillos (el móvil tiene la pantalla lisa), así que el importador no limpia nada.
+- Hojas guardadas a 512 por cuadro (las devueltas): `hojas/troll/<hoja>/spritesheet.png`; la pose en `hojas/troll/pose_typing.png` (copia en `docs/capturas/arte-autosprite-2026-10-28/troll_pose_typing.png`). Isak reducida a 256 por cuadro (la escala de sus demás hojas): `hojas/shockwave_right/spritesheet.png`.
+
+### 3.4 Integración del Troll
+
+- `python3 -I tools/import_troll.py` (57 PNG `assets/sprites/enemies/world4/troll_<anim>_NN.png`; `--check` en `tools/run_tests.sh`; prueba `tests/test_import_troll.py`): misma escala en x e y, **76 píxeles de arte de alto a rejilla 1** (a rejilla 2, con 38 de arte, la sonrisa, el móvil y las estrellas no se leían), pies abajo, lienzo de 80 × 108 en (−40, −92) de los pies (`Troll.ART_OFFSET`). Paleta `mundo4.gpl` sin rojos, ámbares, coral, marinos, cremas ni verdes: rampa `chat_noche` → `gris_oscuro` → `gris_medio` → `gris_claro` → `blanco_pantalla`, contorno `chat_noche`. `tools/gen_world4_objects.py --check` deja pasar estos PNG (no los produce él).
+- Celdas: `idle` 0-23 (bucle, 8 fps), `typing` 0, 2, …, 16 de `typing_shot` (9 = `anticipation_frames`, por el progreso del aviso), `shot` 18-23 (la subida del móvil, 12 fps, una vez tras lanzar), `stunned` 3-20 (con estrellas, bucle a 10 fps).
+- **Cuándo** (`Troll.get_art_frame()`, `ART_ANIMS`): reposo `idle`; aviso `typing`; al lanzar, `shot` durante 0,5 s (o hasta el siguiente estado); aturdido `stunned` (las estrellas del código se quitan si hay arte); derrotado, `idle` 0 apagado (gris al 45 %). Frontal: no se refleja con `facing`.
+- **Lo que sigue por código:** el bocadillo «escribiendo…» (ahora 6 px por encima de la capucha, `get_visual_rect`), los chispazos del láser, los mensajes y el **contorno rojo del Modo oscuro**, que ahora rodea el dibujo entero (40 × 76) y no solo la caja.
+- **Troll disfrazado:** reutiliza el arte: al descubrirse el avatar que aparece es el primer cuadro de `idle` (antes la silueta provisional) y, descubierto, es un Troll normal; la burbuja, las costuras rojas y el avatar anónimo del Debug siguen por código; se sigue descubriendo con el Debug (se ve), al acercarse, al pisarlo y con Agitar.
+- **Caja (`body_size` 40 × 56), tiempos, daño y datos sin cambios**; `art_placeholder: false` en `data/enemies/troll.json`. Sin los cuadros vuelve a la silueta provisional.
+- Pruebas: `test_troll_art_follows_its_state` (`tests/test_world4_enemies.gd`, 28/28), `tests/test_import_troll.py` (4), `test_help_inert` 85/85.
+
+### 3.5 Integración de la pose de Agitar
+
+- `tools/import_sheet.py` (comandos en `docs/guia-sprites-ia.md`): `shockwave_shake` (celdas 7, 9, 11, 13: el celular junto a la cara / adelante) y `shockwave_hold` (22, 23: brazo extendido), escala 0,539326, ~97 px visibles, en `tools/build_isak_frames.gd` → `scenes/player/isak_frames.tres`.
+- `Isak.update_shockwave_pose` elige el cuadro de la sacudida por el progreso de `windup_s` (0,15 s) **sin mover el sprite**; `fire_shockwave` pasa a `shockwave_hold` (2 cuadros a 8 fps = 0,25 s = `exposed_s`). La sacudida por código de `ShockwaveEffect` (`shake_offset`) queda solo de respaldo sin la hoja; la onda sigue por código. Tiempos sin cambios.
+- Pruebas: `test_pose_uses_the_autosprite_frames_without_the_provisional_shake` (`tests/test_shockwave.gd`, 19/19), `test_isak_animations` 19/19, `test_frozen` 15/15.
+
+### 3.6 Capturas
+
+- `$GODOT --fixed-fps 60 --path . -s tools/render_troll_art.gd -- <carpeta>` (con ventana): en `grupo_test` reposo, aviso, lanzamiento, Agitar (sacude y onda), los tres aturdidos, el disfrazado (también con el Debug), descubriéndose y descubierto; en `oscuro_test` (con un Troll añadido bajo el velo, sin Linterna) reposo y aviso. Copias en `docs/capturas/arte-autosprite-2026-10-28/juego_troll_*.png`; el 4-1 real (`tools/render_level_4_x.gd -- --level 4-1`) en `juego_4-1_08_troll.png`; hojas de contacto `troll_cuadros.png` e `isak_agitar_cuadros.png`.
+
+### 3.7 Calidad y defectos vistos
+
+- El Troll se reconoce (capucha, sonrisa, bolsillo, móvil) y es coherente entre animaciones; sin rojos ni coral. Sobre los fondos claros de `grupo_test` el gris se separa bien; **sobre el marino del 4-1 el contorno `chat_noche` se funde con el fondo** y la silueta se lee solo por el gris medio de la capucha.
+- **La cara es `chat_noche`, el mismo color que el velo del Modo oscuro:** bajo el velo el Troll es casi una mancha y se lee por el contorno rojo (y la sonrisa, apagada). Es lo que pide el diseño (el contorno lo delata), pero sin Linterna la sonrisa no se ve.
+- **Estética chibi** (cabeza grande, cuerpo corto) más mona que inquietante; encaja con El Visto pero no da miedo.
+- **Aviso legible**: el bocadillo sale por encima de la capucha; con el Troll arriba del encuadre (captura del 4-1) el bocadillo queda en parte detrás del contador de power bank del HUD (pregunta ya abierta en `preguntas.md`).
+- `typing`: el movimiento de los pulgares es sutil a 76 px; se lee el móvil, no tanto el «escribir». `shot`: la subida del móvil es pequeña y se nota sobre todo por la sonrisa más grande.
+- `stunned`: las estrellas salen como puntos blancos de 3-5 px; la sonrisa en zigzag se lee de cerca.
+- Isak (Agitar): la sacudida se lee como «acerca y aleja el celular», no como un temblor rápido (0,15 s = 4 cuadros); el brazo extendido apunta hacia delante y la onda nace en el celular. Lleva la mochila, como el resto de las hojas de AutoSprite.

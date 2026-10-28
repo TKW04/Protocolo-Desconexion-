@@ -1248,6 +1248,6 @@ El Mundo 4 «El Chat» se hizo con las decisiones delegadas al orquestador (`pro
 - Variante **B «Pantalla a las 3:47»** (`assets/palettes/mundo4.gpl`; Debug coral `#ff9f7a`), elegida por el orquestador; comparativa en `docs/arte/mundo4_paleta_variantes.png`; se cambia con `tools/palette_mundo4_variants.py --apply A|C`.
 
 **Limitaciones conocidas (no son fallos; decidir si importan)**
-- Arte por script de todo el mundo hasta el paso 24 (AutoSprite: El Visto, Troll y pose `shockwave`; **requiere permiso y el total previo**, parada tras cada base).
+- ~~Arte por script de todo el mundo hasta el paso 24~~ (2026-10-28: El Visto, el Troll y la pose `shockwave` ya tienen arte final de AutoSprite, `plan-arte-mundo-4.md`; objetos y efectos siguen por script). Revisar al jugar: el Troll sobre el fondo marino (su contorno oscuro se funde), bajo el Modo oscuro (cara del color del velo: solo lo delata el contorno rojo), su aire chibi y si el aviso «escribiendo…» se lee sobre la capucha; y si la sacudida de Agitar (4 cuadros en 0,15 s) se lee como «agitar».
 - Audio provisional: los 24 IDs del Mundo 4 suenan con provisionales hasta los sonidos del amigo del usuario.
 - La congelación de la captura 10 del jefe está escenificada (el bot real no se congela).
