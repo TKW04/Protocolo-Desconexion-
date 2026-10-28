@@ -534,6 +534,8 @@ class LevelValidator:
                 self._check_autoplay(entry, params, data)
             if kind == "commenter" and isinstance(data, dict):
                 self._check_commenter(entry, params, data)
+            if kind in ("troll", "troll_mimic") and isinstance(data, dict):
+                self._check_troll(entry, params, data)
             if kind == "influencer_bot":
                 self._check_influencer(entry)
             if kind == "false_reflection":
@@ -1254,6 +1256,40 @@ class LevelValidator:
         if _is_number(interval) and float(interval) < need - 1e-9:
             self.error("comentarista '%s': interval_s %.2f menor que aviso + reposo minimo (%.2f s)"
                        % (eid, float(interval), need))
+
+    def _check_troll(self, entry, params, data):
+        """Troll y Troll disfrazado (paso 5 de docs/propuesta-mundo-4.md §3.7): el ciclo deja reposo
+        (interval_s >= aviso + min_rest_s, con los datos del Troll); el disfrazado lleva un texto no
+        vacio con glifos de la fuente, un amigo conocido (lia, marco, tomi) y suelo solido bajo su celda
+        (al pisarlo se hunde 1 tile: «engana, no mata»)."""
+        eid = entry.get("id")
+        x, y = entry.get("x"), entry.get("y")
+        troll = data if entry.get("type") == "troll" else (self._load_json("data/enemies/troll.json") or {})
+        try:
+            need = float(troll["anticipation_frames"]) / float(troll["anim_fps"]) + float(troll.get("min_rest_s", 0.0))
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            self.error("troll '%s': datos incompletos" % eid)
+            return
+        interval = params.get("interval_s", troll.get("interval_s"))
+        if _is_number(interval) and float(interval) < need - 1e-9:
+            self.error("troll '%s': interval_s %.2f menor que aviso + reposo minimo (%.2f s)"
+                       % (eid, float(interval), need))
+        if entry.get("type") != "troll_mimic":
+            return
+        text = params.get("text", data.get("text"))
+        if not isinstance(text, str) or not text.strip():
+            self.error("troll disfrazado '%s': 'text' debe ser un texto no vacio" % eid, y, x)
+        else:
+            glyphs = _font_glyphs()
+            missing = sorted({c for c in text if glyphs and c not in glyphs})
+            if missing:
+                self.error("troll disfrazado '%s': 'text' usa glifos que no estan en la fuente: %s"
+                           % (eid, " ".join(missing)), y, x)
+        if params.get("friend", data.get("friend")) not in ("lia", "marco", "tomi"):
+            self.error("troll disfrazado '%s': friend debe ser lia, marco o tomi" % eid, y, x)
+        if _is_int(x) and _is_int(y) and (not self.in_bounds(x, y + 1) or self.cell(x, y + 1) not in ("#", "-")):
+            self.error("troll disfrazado '%s': necesita suelo solido ('#' o '-') bajo su celda (se hunde 1 tile)"
+                       % eid, y, x)
 
     def _check_loops(self):
         """Secciones en bucle (2026-10-22, paso 5 de docs/propuesta-mundo-2.md §8, §3.5): solo con scroll

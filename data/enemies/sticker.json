@@ -1,0 +1,26 @@
+{
+	"_notes": "STICKER (sticker), Mundo 4 «El Chat» (paso 5 de docs/propuesta-mundo-4.md §8; §3.7). Script scripts/enemies/sticker.gd (Sticker), escena scenes/enemies/sticker.tscn. Cara redonda inventada (sin marcas) que va por el suelo de su celda E (origen en sus pies, abajo-centro; gravedad, no cae por los bordes ni cruza paredes). DORMIDO hasta que Isak esta a <= detect_tiles (6) tiles (de centro a centro); entonces REBOTA HACIA ISAK a chase_speed_px_s (120; saltitos de hop_px cada hop_s, solo dibujo). A <= trigger_tiles (1,5) tiles SE INFLA anticipation_frames cuadros a anim_fps (9 a 12 fps = 0,75 s; quieto, contorno rojo que late, el aviso) y EXPLOTA: Isak a <= blast_tiles (1,5) tiles del centro pierde blast_damage (10) con el retroceso (el dash protege); queda como confeti sin dano (confetti_s) y vuelve al reaparecer Isak. El cuerpo no dana al contacto: solo la explosion. PULSO: aturde stun_s (3 s; se para y el inflado se cancela; x el Pulso 3, Pulso de retorno con el Pulso 5); al despertar, si Isak sigue a <= trigger_tiles, vuelve a inflarse; si no, persigue. AGITAR (receive_shockwave): si la onda lo alcanza se desinfla y desaparece para siempre con sus drops (+5 de energia). LASER: vida 1 (decision tomada: vulnerable siempre, el doc no lo limita al aturdido como al Troll), derrotado para siempre con los mismos drops. Tiempo del mundo. En el Modo oscuro dibuja su contorno rojo, el inflado y la explosion por encima del velo (DarkOverlay). Sin Q todavia (help_id sticker en el paso 10). Aspecto PROVISIONAL por codigo.",
+	"detect_tiles": 6.0,
+	"trigger_tiles": 1.5,
+	"blast_tiles": 1.5,
+	"chase_speed_px_s": 120.0,
+	"hop_s": 0.4,
+	"hop_px": 10.0,
+	"anim_fps": 12.0,
+	"anticipation_frames": 9,
+	"blast_damage": 10.0,
+	"confetti_s": 0.8,
+	"stun_s": 3.0,
+	"health": 1,
+	"drops": {"_notes": "+5 de energia al desinflarlo con Agitar (docs/propuesta-mundo-4.md §3.7) o derrotarlo con el laser.", "debug_energy": 5},
+	"body_size": [40.0, 40.0],
+	"gravity": 2400.0,
+	"max_fall_speed_px_s": 1200.0,
+	"edge_probe_depth_px": 16.0,
+	"level_params": {
+		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max].",
+		"detect_tiles": {"min": 2, "max": 10},
+		"chase_speed_px_s": {"min": 60, "max": 200},
+		"health": {"min": 1, "max": 3, "int": true}
+	}
+}

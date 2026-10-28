@@ -5,7 +5,9 @@ el doble check contra el terreno o con medio ciclo; burbuja con un width_tiles q
 el texto, texto vacio o con glifos fuera de la fuente, «escribiendo…» sin disparo, con un
 disparo que no es una burbuja o con un ciclo demasiado corto, autocorrector que deja un pozo o
 pinchos al descubierto; desde el paso 4, sala oscuro_test: escrito en tinta fuera de una
-dark_zone, sin texto o sobre terreno, y dos Linternas en un nivel) y lo que genera
+dark_zone, sin texto o sobre terreno, y dos Linternas en un nivel; desde el paso 5, sala
+grupo_test: Troll con un ciclo sin reposo, Troll disfrazado sin texto, con un amigo desconocido o
+sin suelo debajo, y params que no existen) y lo que genera
 tools/build_level.py (largo por el texto: 1 tile por cada 6 caracteres, entre 1 y 8).
 Uso: python3 -I tests/test_world4_schema.py
 """
@@ -24,6 +26,7 @@ import build_level  # noqa: E402
 VISTO_TEST = os.path.join(ROOT, "data", "levels", "visto_test.json")
 BURBUJAS_TEST = os.path.join(ROOT, "data", "levels", "burbujas_test.json")
 OSCURO_TEST = os.path.join(ROOT, "data", "levels", "oscuro_test.json")
+GRUPO_TEST = os.path.join(ROOT, "data", "levels", "grupo_test.json")
 
 
 def load(path):
@@ -221,6 +224,45 @@ class DarkSchemaTest(World4SchemaBase):
         level = copy.deepcopy(self.base)
         set_cell(level, 5, 9, "#")
         self.assert_error(level, "dentro de terreno")
+
+
+
+def enemy(level, eid):
+    return next(e for e in level["enemies"] if e["id"] == eid)
+
+
+class GroupSchemaTest(World4SchemaBase):
+    def setUp(self):
+        self.base = load(GRUPO_TEST)
+
+    def test_room_passes(self):
+        self.assertEqual(self.errors(self.base), [])
+
+    def test_scene_is_up_to_date(self):
+        self.assertEqual(build_level.main(["build_level", "--check", GRUPO_TEST]), 0)
+
+    def test_troll_cycle_needs_rest(self):
+        level = copy.deepcopy(self.base)
+        enemy(level, "troll_suelo")["params"]["interval_s"] = 0.5
+        self.assert_error(level, "fuera de [1.5, 6.0]")
+
+    def test_mimic_needs_text_and_known_friend(self):
+        level = copy.deepcopy(self.base)
+        enemy(level, "troll_lia")["params"]["text"] = " "
+        self.assert_error(level, "'text' debe ser un texto no vacio")
+        level = copy.deepcopy(self.base)
+        enemy(level, "troll_lia")["params"]["friend"] = "mama"
+        self.assert_error(level, "friend debe ser lia, marco o tomi")
+
+    def test_mimic_needs_ground_below(self):
+        level = copy.deepcopy(self.base)
+        set_cell(level, 22, 10, ".")
+        self.assert_error(level, "necesita suelo solido")
+
+    def test_unknown_param_is_rejected(self):
+        level = copy.deepcopy(self.base)
+        enemy(level, "sticker_1")["params"] = {"blast_tiles": 3}
+        self.assert_error(level, "params.blast_tiles no existe para sticker")
 
 
 if __name__ == "__main__":

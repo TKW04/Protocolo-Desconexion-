@@ -1,0 +1,104 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 5 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 38x12 de los ENEMIGOS DEL GRUPO del Mundo 4 (§3.7 y patron 20 de §3.8). Isak llega por la izquierda (P, fila 9) con el pulso, el laser, el Debug y Agitar (U / LB); cargador en la columna 4. Patron 20 «Limpiar el grupo»: tres Trolls a distintas alturas alrededor de la columna 14 (suelo en la 12, repisa de una via en la 13 y bloque en la 16): el pulso solo llega a uno; Agitar desde la columna 14 los aturde a todos y borra sus mensajes; aturdidos, el laser los derrota (vida 2, +20 de energia). Troll disfrazado en la columna 22 (burbuja de Lia «¿vienes?»; con el Debug, avatar anonimo y costuras rojas; a 2 tiles se descubre; si se pisa, se hunde 1 tile). Dos Stickers en las columnas 28 y 31: persiguen a 6 tiles, se inflan a 1,5 y explotan; el pulso los para, Agitar los desinfla (+5). Terminal en (34, 8). Sin Q (help_id previstos troll, troll_mimic y sticker, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela los enemigos del Mundo 4 (paso 9b). Escena: scenes/levels/grupo_test.tscn (python3 tools/build_level.py data/levels/grupo_test.json).",
+	"id": "grupo_test",
+	"name": "Grupo (prueba)",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"shockwave": true
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "troll_suelo",
+			"type": "troll",
+			"x": 12,
+			"y": 9,
+			"params": {
+				"facing": 1
+			}
+		},
+		{
+			"id": "troll_repisa",
+			"type": "troll",
+			"x": 13,
+			"y": 7,
+			"params": {
+				"facing": 1
+			}
+		},
+		{
+			"id": "troll_bloque",
+			"type": "troll",
+			"x": 16,
+			"y": 8,
+			"params": {
+				"facing": -1
+			}
+		},
+		{
+			"id": "troll_lia",
+			"type": "troll_mimic",
+			"x": 22,
+			"y": 9,
+			"params": {
+				"text": "¿vienes?",
+				"friend": "lia",
+				"facing": -1
+			}
+		},
+		{
+			"id": "sticker_1",
+			"type": "sticker",
+			"x": 28,
+			"y": 9
+		},
+		{
+			"id": "sticker_2",
+			"type": "sticker",
+			"x": 31,
+			"y": 9
+		}
+	],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 4,
+			"y": 9,
+			"params": {
+				"id": "cargador_grupo"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 34,
+			"y": 8,
+			"params": {
+				"id": "terminal_grupo",
+				"text": "Responder",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"######################################",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#....................................#",
+		"#............E.......................#",
+		"#............-..E....................#",
+		"#.P.........E...#.....E.....E..E..G..#",
+		"######################################",
+		"######################################"
+	]
+}
