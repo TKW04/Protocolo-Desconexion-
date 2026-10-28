@@ -12,6 +12,9 @@ Contenido de la escena (raiz GeneratedLevel, scripts/levels/generated_level.gd):
     solidas para los bordes), '-' una via, '^' pinchos (solo dibujo).
   - Hazards: un Area2D (scripts/levels/spike_hazard.gd) por tramo horizontal de
     '^', forma y capas de data/hazards.json.
+  - Burbujas del Mundo 4 (chat_bubble, typing_bubble, autocorrect_bubble; 2026-10-28, paso 3 de
+    docs/propuesta-mundo-4.md §3.1): width_tiles (y corrected_width_tiles) salen del texto
+    (bubble_width: 1 tile por cada 6 caracteres, entre 1 y 8).
   - Filtros del Mundo 3 (filter_zone, 2026-10-26, paso 3 de docs/propuesta-mundo-3.md §3.2):
     los '^' dentro de un filtro (de cualquiera de sus positions) no van en Tiles sino en un
     hijo «HiddenSpikes» del filtro (TileMapLayer que el filtro dibuja a su manera) y su
@@ -85,7 +88,8 @@ HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
 STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id", "unless_ability",
                           "done_if_ally", "door_when", "power_source", "switch_id", "dock_id", "guide_id",
-                          "memory_id", "art", "skin", "icon_side"}
+                          "memory_id", "art", "skin", "icon_side", "author_side",
+                          "friend_id", "anchor_side", "trigger_id"}
 # Propiedades que son listas aunque tengan dos numeros (no un Vector2): los ciclos del metronomo
 # (rhythm_zone, 2026-10-19, paso 5 de docs/propuesta-1-3.md).
 ARRAY_PROPERTIES = {"tempo_steps_s", "contacts", "cover_tiles", "band_rows"}
@@ -327,6 +331,19 @@ def spike_runs(level, tilemap, key=None):
     return runs
 
 
+BUBBLE_TYPES = ("chat_bubble", "typing_bubble", "autocorrect_bubble")
+
+
+def bubble_width(text, cfg=None):
+    """Largo en tiles de una burbuja del Mundo 4 (2026-10-28, §3.1 de docs/propuesta-mundo-4.md):
+    1 tile por cada chars_per_tile (6) caracteres, redondeo hacia arriba, entre min_tiles (1) y
+    max_tiles (8). La misma regla que ChatBubble.width_for_text."""
+    cfg = cfg or {}
+    per = int(cfg.get("chars_per_tile", 6))
+    tiles = -(-len(text) // per)
+    return max(int(cfg.get("min_tiles", 1)), min(int(cfg.get("max_tiles", 8)), tiles))
+
+
 def object_params(catalog, obj):
     params = dict(catalog["types"][obj["type"]].get("defaults", {}))
     params.update(obj.get("params", {}))
@@ -559,6 +576,13 @@ def build_scene(level, root=ROOT, warnings=None):
                                 "(se usa el calculado)" % (obj["x"], obj["y"], obj["params"]["solid_neighbors"],
                                                            computed))
             params["solid_neighbors"] = computed
+        if obj["type"] in BUBBLE_TYPES:
+            # Burbujas del Mundo 4 (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §3.1): el
+            # largo sale del texto (el esquema rechaza un width_tiles que no cuadre).
+            cfg = catalog.get("chat_bubble", {})
+            params["width_tiles"] = bubble_width(params.get("text", ""), cfg)
+            if obj["type"] == "autocorrect_bubble":
+                params["corrected_width_tiles"] = bubble_width(params.get("corrected", ""), cfg)
         for field in sorted(params):
             prop = entry["fields"].get(field)
             if prop is None:

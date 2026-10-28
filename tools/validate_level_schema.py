@@ -131,7 +131,10 @@ TEST_LEVEL_ID = re.compile(r"[a-z][a-z0-9_]*_test")
 # Objetos que ocupan celdas que el grid debe dejar vacias ('.'): son solidos o lo seran.
 BLOCKING_TYPES = {"bridge_inactive", "glitch_wall", "popup_blocker", "reminder_platform", "update_bar",
                   "blink_platform", "fragile_card", "story_card", "loading_wall",
-                  "like_platform", "mirror_only", "frame_door"}
+                  "like_platform", "mirror_only", "frame_door",
+                  "chat_bubble", "typing_bubble", "autocorrect_bubble"}
+# Burbujas del Mundo 4 (paso 3 de docs/propuesta-mundo-4.md §3.1): largo por el texto.
+BUBBLE_TYPES = ("chat_bubble", "typing_bubble", "autocorrect_bubble")
 # Objetos que no pueden estar dentro de terreno solido ni de pinchos.
 NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "ability_pickup", "extra_life_pickup",
                     "memory_pickup",
@@ -176,6 +179,36 @@ UPDATE_BAR_WARN_S = 9 / 12.0
 def _is_int(value):
     return isinstance(value, int) and not isinstance(value, bool)
 
+
+
+def _bubble_width(text, cfg=None):
+    """Largo en tiles de una burbuja (la regla de tools/build_level.py bubble_width)."""
+    cfg = cfg or {}
+    per = int(cfg.get("chars_per_tile", 6))
+    tiles = -(-len(text if isinstance(text, str) else "") // per)
+    return max(int(cfg.get("min_tiles", 1)), min(int(cfg.get("max_tiles", 8)), tiles))
+
+
+_GLYPHS = {}
+
+
+def _font_glyphs():
+    """Caracteres de la fuente de textos (data/text_font.json -> .fnt), o None."""
+    if "set" not in _GLYPHS:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        chars = set()
+        try:
+            with open(os.path.join(root, "data", "text_font.json"), encoding="utf-8") as fh:
+                font = json.load(fh)["font"]
+            with open(os.path.join(root, font.replace("res://", "", 1)), encoding="utf-8") as fh:
+                for line in fh:
+                    found = re.match(r"\s*char\s+id=(\d+)", line)
+                    if found:
+                        chars.add(chr(int(found.group(1))))
+        except (OSError, KeyError, ValueError):
+            chars = set()
+        _GLYPHS["set"] = chars or None
+    return _GLYPHS["set"]
 
 def _is_number(value):
     return (isinstance(value, (int, float))) and not isinstance(value, bool)
@@ -765,6 +798,14 @@ class LevelValidator:
             return [(x + i, y + j) for j in range(rows) for i in range(w)]
         if kind == "update_bar":
             return [(x, y + j) for j in range(UPDATE_BAR_HEIGHT)]
+        if kind in BUBBLE_TYPES:
+            # Burbuja del Mundo 4 (paso 3): su largo por el texto; el autocorrector, su ranura
+            # (el mayor de los dos largos).
+            cfg = getattr(self, "_bubble_cfg", {})
+            w = _bubble_width(params.get("text", ""), cfg)
+            if kind == "autocorrect_bubble":
+                w = max(w, _bubble_width(params.get("corrected", ""), cfg))
+            return [(x + i, y) for i in range(w)]
         if kind == "loading_wall":
             # Muro «Cargando mas...» (Mundo 2, paso 7): 1 x height_tiles desde su celda de arriba.
             h = get("height_tiles", 3)
@@ -803,6 +844,7 @@ class LevelValidator:
         catalog = self._load_catalog()
         if catalog is None:
             return
+        self._bubble_cfg = catalog.get("chat_bubble", {})
         types = catalog.get("types", {})
         bridges = set()
         receivers = []
@@ -870,6 +912,8 @@ class LevelValidator:
                 self._check_filter_zone(what, x, y, params, entry.get("defaults", {}), catalog)
             if kind == "seen_zone":
                 self._check_seen_zone(what, x, y, params, entry.get("defaults", {}))
+            if kind in BUBBLE_TYPES:
+                self._check_bubble(what, kind, x, y, params, entry.get("defaults", {}), catalog)
             if kind == "boss_dummy":
                 for cx in (x, x + 1):
                     if not self.in_bounds(cx, y + 1) or self.cell(cx, y + 1) != "#":
@@ -1424,6 +1468,91 @@ class LevelValidator:
                 isinstance(p, list) and len(p) == 2 and all(_is_int(v) for v in p) for p in positions)):
             return None
         return [(p[0], p[1], w, h) for p in positions]
+
+    def _check_bubble(self, what, kind, x, y, params, defaults, catalog):
+        """Burbujas del Mundo 4 (paso 3 de docs/propuesta-mundo-4.md §3.1 y §3.4): textos no
+        vacios con solo glifos de la fuente, largo que cuadra con el texto, el disparo del
+        «escribiendo…» (id de otra burbuja o zona en el grid) y su ciclo, y el autocorrector
+        «engana, no mata» (decision 11 de §9)."""
+        cfg = catalog.get("chat_bubble", {})
+        glyphs = _font_glyphs()
+        pairs = [("text", "width_tiles")]
+        if kind == "autocorrect_bubble":
+            pairs.append(("corrected", "corrected_width_tiles"))
+        for text_key, width_key in pairs:
+            value = params.get(text_key)
+            if not isinstance(value, str) or not value.strip():
+                self.error("%s: '%s' debe ser un texto no vacio" % (what, text_key), y, x)
+                return
+            if glyphs:
+                missing = sorted({c for c in value if c not in glyphs})
+                if missing:
+                    self.error("%s: '%s' usa glifos que no estan en la fuente: %s"
+                               % (what, text_key, " ".join(missing)), y, x)
+            if width_key in params and params[width_key] != _bubble_width(value, cfg):
+                self.error("%s: %s %s no cuadra con el texto (%d caracteres: %d tiles; 1 por cada %d)"
+                           % (what, width_key, params[width_key], len(value), _bubble_width(value, cfg),
+                              int(cfg.get("chars_per_tile", 6))), y, x)
+        if "stamp" in params and (not isinstance(params["stamp"], str) or len(params["stamp"]) > 5):
+            self.error("%s: stamp debe ser un texto corto («03:47»)" % what, y, x)
+        if "deleted" in params and not isinstance(params["deleted"], bool):
+            self.error("%s: deleted debe ser true o false" % what, y, x)
+        if kind == "typing_bubble":
+            self._check_typing_bubble(what, x, y, params, cfg)
+        if kind == "autocorrect_bubble":
+            self._check_autocorrect(what, x, y, params, defaults, cfg)
+
+    def _check_typing_bubble(self, what, x, y, params, cfg):
+        trigger, zone = params.get("trigger"), params.get("trigger_zone")
+        if trigger is None and zone is None:
+            self.error("%s: necesita trigger (id de una burbuja) o trigger_zone" % what, y, x)
+        if trigger is not None:
+            bubbles = {o.get("params", {}).get("id") for o in self.level["objects"]
+                       if isinstance(o, dict) and o.get("type") in BUBBLE_TYPES
+                       and isinstance(o.get("params"), dict)}
+            if trigger == params.get("id") or trigger not in bubbles:
+                self.error("%s: trigger '%s' no es el id de otra burbuja" % (what, trigger), y, x)
+        if zone is not None:
+            if not (isinstance(zone, list) and len(zone) == 4 and all(_is_int(v) for v in zone)) \
+                    or zone[2] < 1 or zone[3] < 1:
+                self.error("%s: trigger_zone debe ser [x, y, ancho, alto] en celdas (ancho y alto >= 1)" % what, y, x)
+            elif not (self.in_bounds(zone[0], zone[1]) and self.in_bounds(zone[0] + zone[2] - 1, zone[1] + zone[3] - 1)):
+                self.error("%s: trigger_zone se sale del grid" % what, y, x)
+        if ("cycle_s" in params) != ("on_s" in params):
+            self.error("%s: cycle_s y on_s van juntos (sin los dos, se queda para siempre)" % what, y, x)
+        elif "cycle_s" in params:
+            warn = float(cfg.get("warn_frames", 9)) / float(cfg.get("anim_fps", 12.0))
+            need = float(params["on_s"]) + warn + float(cfg.get("type_s", 1.0)) + 0.25
+            if float(params["cycle_s"]) + 1e-9 < need:
+                self.error("%s: cycle_s %.2f < on_s + aviso + escribiendo + 0,25 s (%.2f)"
+                           % (what, float(params["cycle_s"]), need), y, x)
+
+    def _check_autocorrect(self, what, x, y, params, defaults, cfg):
+        """Lo que el autocorrector deja al descubierto cae como mucho max_drop_tiles sobre
+        suelo ('#' o '-'), sin pinchos por medio."""
+        before = _bubble_width(params.get("text", ""), cfg)
+        after = _bubble_width(params.get("corrected", ""), cfg)
+        if after >= before:
+            return
+        side = params.get("anchor", params.get("side", defaults.get("side", "left")))
+        slot = max(before, after)
+        before_cols = set(range(x, x + before)) if side == "left" else set(range(x + slot - before, x + slot))
+        after_cols = set(range(x, x + after)) if side == "left" else set(range(x + slot - after, x + slot))
+        drop = int(cfg.get("max_drop_tiles", 3))
+        for cx in sorted(before_cols - after_cols):
+            landed = False
+            for r in range(y + 1, y + 2 + drop):
+                if not self.in_bounds(cx, r):
+                    break
+                ch = self.cell(cx, r)
+                if ch == "^":
+                    break
+                if ch in "#-":
+                    landed = r - y - 1 <= drop
+                    break
+            if not landed:
+                self.error("%s: el autocorrector deja la columna %d al descubierto sin suelo a <= %d tiles "
+                           "(o con pinchos): engana, no mata" % (what, cx, drop), y, cx)
 
     def _check_seen_zone(self, what, x, y, params, defaults):
         """Zona «Visto» (Mundo 4, paso 2 de docs/propuesta-mundo-4.md §3.5): el ciclo lleva

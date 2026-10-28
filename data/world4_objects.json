@@ -1,5 +1,5 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 4 «El Chat» (docs/propuesta-mundo-4.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 4 usa los tipos de los Mundos 1-3 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo4_provisional.py). Los tipos llegan desde el paso 2 (seen_zone).",
+	"_notes": "Catalogo de objetos del Mundo 4 «El Chat» (docs/propuesta-mundo-4.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 4 usa los tipos de los Mundos 1-3 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo4_provisional.py). Los tipos llegan desde el paso 2 (seen_zone; burbujas en el paso 3).",
 	"tile_size": 64,
 	"types": {
 		"seen_zone": {
@@ -66,6 +66,178 @@
 					"icon": "left"
 				}
 			}
+		},
+		"chat_bubble": {
+			"scene": "res://scenes/levels/chat_bubble.tscn",
+			"description": "Burbuja de chat (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §8 y §3.1; ChatBubble). Plataforma DE UNA VIA de width_tiles x 1 desde (x, y) (tarjeta de card_height_px arriba de la celda, como una '-') con el mensaje `text` (solo glifos de la fuente de textos), su autor `side` (left = otros, right = Isak; la cola del bocadillo hacia su lado) y un sello de hora pequeno `stamp`. LARGO = 1 tile por cada 6 caracteres de text, redondeo hacia arriba, entre 1 y 8: tools/build_level.py lo escribe en width_tiles y el esquema rechaza un width_tiles que no cuadre. `friend` (lia, marco, tomi; 4-3): avatar con la inicial a su lado; no se rompe ni dana. `deleted` true: «Se elimino este mensaje», contorno discontinuo SIN colision. La celda (y las de su largo) debe estar vacia en el grid. Senal stepped al pisarla (dispara un typing_bubble con trigger = su id). Sin Q todavia (paso 10). Validador de alcanzabilidad: aun no la modela (paso 9). Aspecto PROVISIONAL por codigo (seccion chat_bubble).",
+			"required": [
+				"text"
+			],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"side": "author_side",
+				"width_tiles": "width_tiles",
+				"stamp": "stamp",
+				"friend": "friend_id",
+				"deleted": "deleted"
+			},
+			"defaults": {
+				"side": "left"
+			},
+			"allowed": {
+				"side": [
+					"left",
+					"right"
+				],
+				"friend": [
+					"lia",
+					"marco",
+					"tomi"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 8,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "chat_bubble",
+				"x": 4,
+				"y": 7,
+				"params": {
+					"id": "burbuja_1",
+					"text": "¿Sigues despierto?",
+					"side": "left",
+					"stamp": "03:47"
+				}
+			}
+		},
+		"typing_bubble": {
+			"scene": "res://scenes/levels/typing_bubble.tscn",
+			"description": "Burbuja «Escribiendo…» (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §8, §3.4 y patron 18; TypingBubble). Una chat_bubble (mismos text, side, stamp, friend y la regla del largo) que NO EXISTE hasta que se dispara: `trigger` (id de una chat_bubble: Isak la pisa) o `trigger_zone` ([x, y, ancho, alto] en celdas: Isak entra); una de las dos (o las dos). Al dispararse salen tres puntos crema en una burbuja con contorno (uno cada dot_s, 0,33 s) y a los type_s (1,0 s) aparece solida (de una via); no se materializa con Isak dentro. Por defecto se queda para siempre; con cycle_s y on_s: solida on_s, aviso de warn_frames cuadros a anim_fps, «Se elimino este mensaje» sin colision y vuelve a escribirse para estar solida otra vez a los cycle_s de aparecer (el esquema exige cycle_s >= on_s + aviso + type_s + 0,25 s). Tiempo del mundo; vuelve al estado inicial al reaparecer. Sin Q todavia (paso 10). Validador: plataforma solida desde t0 + 1,0 s (paso 9, wait_typing). Aspecto PROVISIONAL por codigo (seccion chat_bubble).",
+			"required": [
+				"text"
+			],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"side": "author_side",
+				"width_tiles": "width_tiles",
+				"stamp": "stamp",
+				"friend": "friend_id",
+				"trigger": "trigger_id",
+				"trigger_zone": "trigger_zone",
+				"cycle_s": "cycle_s",
+				"on_s": "on_s"
+			},
+			"defaults": {
+				"side": "left"
+			},
+			"allowed": {
+				"side": [
+					"left",
+					"right"
+				],
+				"friend": [
+					"lia",
+					"marco",
+					"tomi"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 8,
+					"int": true
+				},
+				"cycle_s": {
+					"min": 3.0,
+					"max": 12.0
+				},
+				"on_s": {
+					"min": 1.0,
+					"max": 8.0
+				}
+			},
+			"example": {
+				"type": "typing_bubble",
+				"x": 9,
+				"y": 5,
+				"params": {
+					"id": "escribiendo_1",
+					"text": "ya voy",
+					"side": "right",
+					"trigger": "burbuja_1"
+				}
+			}
+		},
+		"autocorrect_bubble": {
+			"scene": "res://scenes/levels/autocorrect_bubble.tscn",
+			"description": "Burbuja con autocorrector (2026-10-28, paso 3 de docs/propuesta-mundo-4.md §8 y §3.4; AutocorrectBubble). Una chat_bubble con dos textos: `text` (antes) y `corrected` (despues; los dos con la regla del largo: width_tiles y corrected_width_tiles los escribe tools/build_level.py y el esquema rechaza los que no cuadren). Con Isak a <= trigger_tiles (3) de la tarjeta o al pisarla, el cursor parpadea warn_frames cuadros a anim_fps (0,75 s) y el texto cambia: cambia el largo y, segun `anchor` (left / right; por defecto el lado de `side`), el sitio dentro de su ranura (el mayor de los dos largos, que debe estar vacia en el grid). Una sola vez por intento; vuelve al estado inicial al reaparecer. «Engana, no mata» (decision 11 de §9): bajo cada columna que deja al descubierto hay suelo ('#' o '-') a <= max_drop_tiles (3) sin pinchos por medio. Tiempo del mundo. Sin Q todavia (paso 10). Validador: dos estados por posicion de Isak (paso 9, wait_autocorrect). Aspecto PROVISIONAL por codigo (seccion chat_bubble).",
+			"required": [
+				"text",
+				"corrected"
+			],
+			"fields": {
+				"id": "object_id",
+				"text": "text",
+				"side": "author_side",
+				"width_tiles": "width_tiles",
+				"stamp": "stamp",
+				"friend": "friend_id",
+				"corrected": "corrected",
+				"corrected_width_tiles": "corrected_width_tiles",
+				"anchor": "anchor_side",
+				"trigger_tiles": "trigger_tiles"
+			},
+			"defaults": {
+				"side": "left"
+			},
+			"allowed": {
+				"side": [
+					"left",
+					"right"
+				],
+				"friend": [
+					"lia",
+					"marco",
+					"tomi"
+				],
+				"anchor": [
+					"left",
+					"right"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 8,
+					"int": true
+				},
+				"corrected_width_tiles": {
+					"min": 1,
+					"max": 8,
+					"int": true
+				},
+				"trigger_tiles": {
+					"min": 1.0,
+					"max": 6.0
+				}
+			},
+			"example": {
+				"type": "autocorrect_bubble",
+				"x": 12,
+				"y": 7,
+				"params": {
+					"id": "autocorrector_1",
+					"text": "te quiero mucho",
+					"corrected": "te quiero",
+					"side": "left"
+				}
+			}
 		}
 	},
 	"seen_zone": {
@@ -80,6 +252,26 @@
 		"active_fill_alpha": 0.22,
 		"outline_px": 2.0,
 		"dash_px": 8.0
+	},
+	"chat_bubble": {
+		"_notes": "Ajustes de las burbujas (§3.1 y §3.4; PROVISIONAL): chars_per_tile (6, regla del largo; la misma constante en ChatBubble.CHARS_PER_TILE y tools/build_level.py), min_tiles / max_tiles, card_height_px (tarjeta arriba de la celda, como una '-'), step_tolerance_px (pisada), font / font_size (fuente de textos), tail_px (cola), dash_px (contorno discontinuo eliminada), avatar_radius_px (amigo), escribiendo: type_s (1,0 s hasta aparecer), dot_s (un punto cada 0,33 s), dot_radius_px, typing_width_px; aviso warn_frames a anim_fps (cursor del autocorrector y aviso de eliminarse, 9 a 12 fps = 0,75 s); max_drop_tiles (autocorrector: caida maxima de lo que deja al descubierto).",
+		"chars_per_tile": 6,
+		"min_tiles": 1,
+		"max_tiles": 8,
+		"card_height_px": 32,
+		"step_tolerance_px": 6,
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 16,
+		"tail_px": 8,
+		"dash_px": 6,
+		"avatar_radius_px": 10,
+		"type_s": 1.0,
+		"dot_s": 0.33,
+		"dot_radius_px": 4,
+		"typing_width_px": 64,
+		"warn_frames": 9,
+		"anim_fps": 12.0,
+		"max_drop_tiles": 3
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) salvo debug_coral (#ff9f7a, decidido el 2026-10-27).",

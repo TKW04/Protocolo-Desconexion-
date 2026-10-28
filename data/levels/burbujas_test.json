@@ -1,0 +1,123 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 3 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 40x12 de las BURBUJAS del Mundo 4 (§3.1 y §3.4). Isak llega por la izquierda (P, fila 9) con el pulso y el Debug; el suelo llega solo a la terminal (36, 8), las burbujas son para probarlas. Burbuja fija «¿Sigues despierto?» (18 caracteres = 3 tiles; columnas 5-7, fila 7, sello 03:47) y, patron 18, el «escribiendo…» «sí, aquí» (2 tiles, columnas 10-11) sobre un hueco de 2 tiles que se dispara al pisar la fija: saltar con el segundo punto. Burbuja de amiga (Lía, «¿Mañana vienes?», columnas 13-15, fila 5) y «Se eliminó este mensaje» sin colision (columnas 17-19, fila 5). Punto de sincronizacion sync_burbujas (columna 20). «Escribiendo…» con ciclo (columna 24, fila 7: 2 s solida, aviso, eliminada y vuelve a escribirse cada 4 s) que se dispara al entrar en la zona de las columnas 22-23. Autocorrector «te echo de menos» -> «te echo» (3 -> 2 tiles, columnas 28-30, fila 7): al acercarse, el cursor parpadea 0,75 s y la columna 30 queda al descubierto (cae 2 tiles al suelo: engana, no mata). Sin Q (help_id previsto en el paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela el Mundo 4 (paso 9). Escena: scenes/levels/burbujas_test.tscn (python3 tools/build_level.py data/levels/burbujas_test.json).",
+	"id": "burbujas_test",
+	"name": "Burbujas (prueba)",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": true
+	},
+	"checkpoints": [
+		{
+			"id": "sync_burbujas",
+			"x": 20,
+			"y": 9
+		}
+	],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 7,
+			"params": {
+				"id": "burbuja_fija",
+				"text": "¿Sigues despierto?",
+				"side": "left",
+				"stamp": "03:47"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 10,
+			"y": 7,
+			"params": {
+				"id": "escribiendo_1",
+				"text": "sí, aquí",
+				"side": "right",
+				"trigger": "burbuja_fija"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 5,
+			"params": {
+				"id": "burbuja_lia",
+				"text": "¿Mañana vienes?",
+				"side": "left",
+				"friend": "lia"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 17,
+			"y": 5,
+			"params": {
+				"id": "burbuja_borrada",
+				"text": "nada, olvídalo",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 24,
+			"y": 7,
+			"params": {
+				"id": "escribiendo_ciclo",
+				"text": "jaja",
+				"side": "left",
+				"trigger_zone": [
+					22,
+					6,
+					2,
+					4
+				],
+				"cycle_s": 4.0,
+				"on_s": 2.0
+			}
+		},
+		{
+			"type": "autocorrect_bubble",
+			"x": 28,
+			"y": 7,
+			"params": {
+				"id": "autocorrector_1",
+				"text": "te echo de menos",
+				"corrected": "te echo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 36,
+			"y": 8,
+			"params": {
+				"id": "terminal_burbujas",
+				"text": "Responder",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"########################################",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#.P.................C...............G..#",
+		"########################################",
+		"########################################"
+	]
+}
