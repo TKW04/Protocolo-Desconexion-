@@ -23,6 +23,9 @@
 ##   17_disfrazado         un Troll disfrazado de burbuja a la vista
 ##   18_tinta              un escrito «en tinta» iluminado por la Linterna
 ##   19_salida             la salida en marcha (en el 4-3, «Responder más tarde»)
+##   21_acechador          un acechador del Modo oscuro (2026-10-28) a oscuras cerca de
+##                         Isak: solo sus ojos y el contorno de lo que dana
+##   22_acechador_ataca    un acechador que acaba de delatarse (escribe o se infla)
 ## Con --headless no hay imagen: modo de prueba (anota los nombres y el cuadro en
 ## que se habrian capturado). Lo lanza tools/render_level_4_x.gd (uso alli).
 extends "res://tools/chat_bot.gd"
@@ -150,6 +153,8 @@ func _watch_shots() -> void:
 				_own_shot("17_disfrazado", 2)
 		elif node is Troll:
 			var troll := node as Troll
+			_watch_lurker(troll.lurk, troll.is_lurking(), troll.has_lurk_woken() and troll.is_warning(),
+				troll.get_body_rect(), view, feet)
 			if view.encloses(troll.get_body_rect()) and (troll.is_warning() or troll.is_stunned()):
 				_own_shot("08_troll", 4)
 		elif node is Ghost:
@@ -158,6 +163,8 @@ func _watch_shots() -> void:
 				_own_shot("10_fantasma", 4)
 		elif node is Sticker:
 			var sticker := node as Sticker
+			_watch_lurker(sticker.lurk, sticker.is_lurking(), sticker.has_lurk_woken() and sticker.is_inflating(),
+				sticker.get_body_rect(), view, feet)
 			if view.encloses(sticker.get_body_rect()) and (sticker.is_inflating() or sticker.is_stunned()):
 				_own_shot("11_sticker", 4)
 		elif node is UndoPrompt:
@@ -173,6 +180,17 @@ func _watch_shots() -> void:
 			var state: int = (node as ExitTerminal).get_state()
 			if state == ExitTerminal.State.BOOT or state == ExitTerminal.State.COUNTDOWN or state == ExitTerminal.State.TURN:
 				_own_shot("19_salida", 30)
+
+
+## Acechador: a oscuras a 3-6 tiles de Isak (fuera de su luz) y al delatarse.
+func _watch_lurker(lurk: bool, lurking: bool, attacking: bool, body: Rect2, view: Rect2, feet: Vector2) -> void:
+	if not lurk or not view.grow(-64.0).encloses(body):
+		return
+	var d: float = body.get_center().distance_to(feet)
+	if lurking and d > 3.6 * TILE and d < 6.5 * TILE:
+		_own_shot("21_acechador", 0)
+	elif attacking:
+		_own_shot("22_acechador_ataca", 2)
 
 
 func _collect(node: Node) -> void:

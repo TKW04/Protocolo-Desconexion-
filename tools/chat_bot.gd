@@ -28,6 +28,12 @@
 ##   el mismo paso que los del Mundo 3 (en la x del camino, mirando hacia el,
 ##   espera a tenerlo al alcance y pulsa; hecho aturdido o derrotado). La defensa
 ##   de cada cuadro pulsa ademas al Troll que avisa si se pone al alcance.
+## - Sticker (2026-10-28, peligros ocultos del Modo oscuro: los acechadores): la
+##   espera del camino a que llegue (`wait` con target sticker) termina en cuanto se
+##   infla o ya esta al alcance (si el bot llega tarde, p. ej. tras el cargador, el
+##   Sticker no explota mientras espera); si ya esta al alcance al empezar el pulso,
+##   el bot se gira y pulsa sin volver a la x del camino; y la defensa pulsa al
+##   Sticker que se infla delante.
 ## Comprobaciones (§7.3): completa el nivel y vuelve al hub con el en
 ## completed_levels; 0 muertes; 0 congelaciones (en el 4-1 no hay ninguna
 ## obligatoria); recoge la Linterna si el nivel la tiene; anota golpes, energia
@@ -218,6 +224,13 @@ func _refresh() -> void:
 func _guard() -> void:
 	if _guard_lock == 0 and _has_control() and _can_pulse_now() and is_instance_valid(_level):
 		for node: Node in _level.get_node(^"Enemies").get_children():
+			if node is Sticker and (node as Sticker).is_inflating() \
+					and _in_pulse_range((node as Sticker).get_body_rect(), 0.9, _isak.facing):
+				_tap(A_PULSE)
+				_guard_lock = 4
+				_guard_pulses += 1
+				_note("defensa: pulso a %s que se infla (%s)" % [node.name, _where()])
+				return
 			if not node is Troll or not (node as Troll).is_warning():
 				continue
 			if _in_pulse_range((node as Troll).get_body_rect(), 0.9, _isak.facing):
@@ -257,6 +270,10 @@ func _pulse_step(s: Dictionary) -> bool:
 		return done
 	if kind == "ghost":
 		return await _ghost_step(s)
+	if kind == "sticker":
+		var sticker := _object(String(target.get("id", ""))) as Sticker
+		if sticker != null and await _sticker_pulse_now(sticker):
+			return true
 	if kind in WORLD4_ENEMIES:
 		return await _enemy_pulse_step(s, _object(String(target.get("id", ""))))
 	return await super._pulse_step(s)
@@ -293,6 +310,30 @@ func _troll_pulse_step(s: Dictionary, troll: Troll) -> bool:
 	if ok:
 		_enemy_pulses += 1
 	_note("pulso a troll %s: %s (%s)" % [troll.name, String(troll.get_state()) if ok else "SIN EFECTO", _where()])
+	return ok
+
+
+## Sticker ya al alcance del pulso (por cualquier lado): se gira y pulsa sin volver a la
+## x del camino (si el dash lo dejo una celda mas alla, volver lo saca del alcance y
+## el Sticker explota). Falso si no esta al alcance o no queda aturdido / derrotado.
+func _sticker_pulse_now(sticker: Sticker) -> bool:
+	if sticker.is_stunned() or sticker.is_defeated():
+		return true
+	var rect: Rect2 = sticker.get_body_rect()
+	var dir: float = signf(rect.get_center().x - _isak.global_position.x)
+	if dir == 0.0 or not _in_pulse_range(rect, 0.9, dir):
+		return false
+	_set_axis(0.0)
+	await _face(dir)
+	await _wait_can_pulse()
+	if not _in_pulse_range(sticker.get_body_rect(), 0.9, _isak.facing):
+		return false
+	_tap(A_PULSE)
+	await _wait_until(func() -> bool: return sticker.is_stunned() or sticker.is_defeated(), 0.5)
+	var ok: bool = sticker.is_stunned() or sticker.is_defeated()
+	if ok:
+		_enemy_pulses += 1
+		_note("pulso a sticker %s al alcance: %s (%s)" % [sticker.name, String(sticker.get_state()), _where()])
 	return ok
 
 
@@ -358,6 +399,16 @@ func _pulse_done(kind: String, node: Node, s: Dictionary) -> bool:
 ## espera en el sitio a que la zona SE APAGUE (flanco de bajada: queda todo el hueco, off_s menos el aviso, para
 ## cruzarla); si ya estaba apagada, a que se encienda y se vuelva a apagar. Las demas esperas, las de siempre.
 func _wait_step(s: Dictionary) -> bool:
+	var target: Dictionary = s.get("target", {})
+	if String(target.get("type", "")) == "sticker":
+		var sticker := _object(String(target.get("id", ""))) as Sticker
+		if sticker != null:
+			_set_axis(0.0)
+			await _wait_until(func() -> bool:
+				return sticker.is_inflating() or sticker.is_stunned() or sticker.is_defeated() \
+					or _in_pulse_range(sticker.get_body_rect(), 0.9, signf(sticker.get_body_rect().get_center().x - _isak.global_position.x)),
+				float(s.get("seconds", 0.0)) + WAIT_SLACK_S)
+			return true
 	var zone := _zone_for_wait(s)
 	if zone == null:
 		return await super._wait_step(s)

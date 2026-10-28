@@ -142,12 +142,26 @@ class Level41Test(unittest.TestCase):
         self.assertTrue(self.result["world4"]["dark"]["flashlight"])
 
     def test_troll_is_stunned_on_the_path(self):
-        enemies = {e["id"]: e for e in self.level["enemies"]}
+        # Los acechadores del Modo oscuro (2026-10-28) van aparte (test_lurker_in_the_dark_floor_2).
+        enemies = {e["id"]: e for e in self.level["enemies"] if not e.get("params", {}).get("lurk")}
         self.assertEqual([(e["type"], e["x"], e["y"]) for e in enemies.values()], [("troll", 22, 45)])
         report = {e["id"]: e for e in self.result["world4"]["enemies"]}
         self.assertEqual(report["troll_1"]["with"], "pulse", "El camino lo aturde con el pulso")
         self.assertEqual(report["troll_1"]["at"], [45, 20], "Desde la burbuja a su altura (el escalon de la banda 48)")
         self.assertEqual(section_of(self.level, 45), "Piso 3 «Troll»")
+
+    def test_lurker_in_the_dark_floor_2(self):
+        """Peligros ocultos del Modo oscuro (2026-10-28, docs/propuesta-mundo-4.md §8.1): un Sticker que acecha en
+        el suelo del Piso 2 a oscuras (el camino lo espera y lo desinfla con el pulso) y dos pinchos bajo la primera
+        «escribiendo…»."""
+        lurkers = [e for e in self.level["enemies"] if e.get("params", {}).get("lurk")]
+        self.assertEqual([(e["id"], e["type"], e["x"], e["y"]) for e in lurkers], [("acechador_piso2", "sticker", 9, 63)])
+        self.assertEqual(lurkers[0]["help_id"], "lurker")
+        self.assertEqual(section_of(self.level, 63), "Piso 2 «Escribiendo…»")
+        report = {e["id"]: e for e in self.result["world4"]["enemies"]}
+        self.assertEqual(report["acechador_piso2"]["with"], "pulse")
+        self.assertTrue(report["acechador_piso2"].get("lurk"))
+        self.assertEqual(self.level["grid"][63][1:3], "^^", "Pinchos bajo t1, a oscuras")
 
     def test_seen_zones_of_floor_4(self):
         zones = {o["params"]["id"]: o for o in of_type(self.level, "seen_zone")}

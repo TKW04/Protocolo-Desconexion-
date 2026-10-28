@@ -172,7 +172,8 @@ class Level42Test(unittest.TestCase):
         self.assertNotIn("shake", self.result["world4"], "Sin Agitar")
 
     def test_sticker_swarms_in_tramo_4(self):
-        stickers = [e for e in self.level["enemies"] if e["type"] == "sticker"]
+        # Los acechadores del Modo oscuro del Tramo 2 (2026-10-28) van aparte (test_lurkers_in_the_dark_tramo_2).
+        stickers = [e for e in self.level["enemies"] if e["type"] == "sticker" and not e.get("params", {}).get("lurk")]
         self.assertEqual(len(stickers), 12)
         self.assertTrue(all(section_of(self.level, s["x"]) == "Tramo 4 «Stickers»" for s in stickers))
         report = {e["id"]: e for e in self.result["world4"]["enemies"]}
@@ -183,6 +184,22 @@ class Level42Test(unittest.TestCase):
         self.assertEqual(len(landing), 3, "Tres alrededor de la llegada a B2")
         self.assertEqual(len({tuple(report[s["id"]]["at"]) for s in landing}), 1, "La tanda de B2, de un pulso")
         self.assertEqual(report["troll_stickers"]["type"], "troll")
+
+    def test_lurkers_in_the_dark_tramo_2(self):
+        """Peligros ocultos del Modo oscuro (2026-10-28, docs/propuesta-mundo-4.md §8.1): zona oscura nueva en el
+        camino del Tramo 2 (columnas 94-104) con un Troll y dos Stickers que acechan; el camino los aturde o
+        desinfla a todos con el pulso."""
+        zones = {o["params"]["id"]: o for o in self.level["objects"] if o["type"] == "dark_zone"}
+        self.assertEqual(sorted(zones), ["grupo_a_oscuras", "silenciado_oscuro"])
+        z = zones["grupo_a_oscuras"]
+        self.assertEqual((z["x"], z["y"], z["params"]["width_tiles"], z["params"]["height_tiles"]), (94, 1, 11, 11))
+        lurkers = {e["id"]: e for e in self.level["enemies"] if e.get("params", {}).get("lurk")}
+        self.assertEqual(sorted(lurkers), ["acechador_banda_media", "acechador_suelo", "acechador_troll_t2"])
+        report = {e["id"]: e for e in self.result["world4"]["enemies"]}
+        for eid, e in lurkers.items():
+            self.assertEqual(section_of(self.level, e["x"]), "Tramo 2 «Fantasmas»", eid)
+            self.assertEqual(e["help_id"], "lurker", eid)
+            self.assertEqual(report[eid]["with"], "pulse", eid)
 
     def test_economy(self):
         lvl = self.level

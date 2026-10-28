@@ -1390,6 +1390,12 @@ width_tiles = 1
 level_id = "4-2"
 metadata/help_id = "exit_terminal"
 
+[node name="grupo_a_oscuras" parent="Objects" instance=ExtResource("15_dark_zone")]
+position = Vector2(6016, 64)
+height_tiles = 11
+object_id = &"grupo_a_oscuras"
+width_tiles = 11
+
 [node name="Enemies" type="Node2D" parent="."]
 
 [node name="troll_grupo_1a" parent="Enemies" instance=ExtResource("22_troll") groups=["help_target"]]
@@ -1532,6 +1538,21 @@ metadata/help_id = "sticker"
 position = Vector2(15136, 768)
 metadata/params = {"detect_tiles": 4, "facing": -1}
 metadata/help_id = "troll"
+
+[node name="acechador_troll_t2" parent="Enemies" instance=ExtResource("22_troll") groups=["help_target"]]
+position = Vector2(6368, 384)
+metadata/params = {"detect_tiles": 3, "facing": -1, "lurk": true}
+metadata/help_id = "lurker"
+
+[node name="acechador_banda_media" parent="Enemies" instance=ExtResource("24_sticker") groups=["help_target"]]
+position = Vector2(6176, 576)
+metadata/params = {"detect_tiles": 2, "lurk": true}
+metadata/help_id = "lurker"
+
+[node name="acechador_suelo" parent="Enemies" instance=ExtResource("24_sticker") groups=["help_target"]]
+position = Vector2(6368, 768)
+metadata/params = {"detect_tiles": 2, "lurk": true}
+metadata/help_id = "lurker"
 
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(16416, 768)

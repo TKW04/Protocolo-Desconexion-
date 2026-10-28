@@ -157,6 +157,19 @@ class Level43Test(unittest.TestCase):
         self.assertEqual(len(chain), 2, "«hace 3 meses»: dos «escribiendo…» encadenadas")
         self.assertTrue(self.result["world4"]["dark"]["flashlight"])
 
+    def test_lurkers_in_the_dark_of_tramo_3(self):
+        """Peligros ocultos del Modo oscuro (2026-10-28, docs/propuesta-mundo-4.md §8.1): en la madrugada, un Troll
+        que acecha en la repisa de las «escribiendo…» y un Sticker en la ultima repisa; el camino los aturde o
+        desinfla con el pulso al aterrizar y la ola no alcanza a Isak."""
+        lurkers = {e["id"]: e for e in self.level["enemies"] if e.get("params", {}).get("lurk")}
+        self.assertEqual({k: (e["type"], e["x"], e["y"]) for k, e in lurkers.items()},
+                         {"acechador_troll_t3": ("troll", 275, 8), "acechador_sticker_t3": ("sticker", 285, 8)})
+        report = {e["id"]: e for e in self.result["world4"]["enemies"]}
+        for eid, e in lurkers.items():
+            self.assertEqual(section_of(self.level, e["x"]), "Tramo 3 «Cada vez más lejos»", eid)
+            self.assertEqual(report[eid]["with"], "pulse", eid)
+            self.assertTrue(report[eid].get("lurk"), eid)
+
     def test_economy(self):
         lvl = self.level
         points = "".join(lvl["grid"]).count("o")

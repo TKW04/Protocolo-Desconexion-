@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL 4-2 «Grupo sin respuesta» (paso 13 de docs/propuesta-mundo-4.md §8, 2026-10-28; diseño en su §4.2, §4.2.1 y §4.2.2, desvíos en §8.1). Horizontal de 260 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Llega con todo el kit del Mundo 3 y la Linterna del 4-1, (sin Agitar, retirado el 2026-10-28). ESTRUCTURA (decisión tomada: el mapa orientativo de §4.2 daba un camino de unos 80 s frente a los 192-264 pedidos): BANDAS. Cada tramo se recorre en TRES PASADAS: el suelo (B1, fila 11), una banda de una vía en la fila 9 (B2, de pie en la 8) y otra en la fila 6 (B3, de pie en la 5), de burbujas de chat contiguas; entre bandas hay 3 filas (192 px; el salto real llega a 177: sin atajos) y se sube por un escalón de una vía 2 filas por encima en el extremo de salida. Los tramos alternan: el 1 y el 3 SUBEN (suelo hacia la derecha, B2 hacia la izquierda, B3 hacia la derecha y salida por el hueco de las filas 4-5 de la pared derecha; bajo B2 el suelo es llano y en las bandas que suben puede haber huecos) y el 2 y el 4 BAJAN (entrada por ese hueco a B3, caída a B2 al final, B2 hacia la izquierda, pozo de 1 columna a B1 y salida por abajo, filas 10-11; sus bandas no tienen huecos). INICIO «Mensajes borrados» (0-24): vórtice (3, 11), la Linterna del 4-1 (linterna_4_2, 1, 11; no sale si ya es conocida: la ve el validador para los pasos en tinta), la Papelera (papelera_4_2, 5, 11; momento de historia de §4.2.2), burbujas eliminadas de decorado, una burbuja fija con 1 punto encima, el «¿Deshacer escritura?» (deshacer_4_2, 14, 11; pulso de espaldas: deshace el muro de texto, Eco «No necesitas a nadie más.» y el aviso) y el muro de texto (muro_4_2, 22, 9; se deshace al usar el panel, a 8 tiles). TRAMO 1 «Grupo» (25-80, sube): tres grupos de Trolls apilados en una columna a distintas alturas (patrón 20; detect_tiles 3: antes los aturdía UN Agitar; desde el 2026-10-28 el camino aturde con el pulso a los que pisa su línea): en el suelo (40), en B2 (55, mirando a la derecha) y en B3 (62, tres); una «escribiendo…» en un hueco de B2 y otra en B3; 1 punto en B3. TRAMO 2 «Fantasmas» (81-130, baja): seis Fantasmas (detect_tiles 2, patrulla 128 px), dos por pasada (B2 es el pasillo de techo bajo bajo B3); cargador_1 (84, 5); 1 punto. Secreto A «Silenciado»: la burbuja «Garaje · Silenciado» (eliminada: parece decorado) junto al marco pequeño (92, 11; Pellizcar) de una sala a oscuras (81-91, filas 7-11) con los avatares apagados de Lía y Tomi, pinchos y un puente en tinta (solo con la Linterna) hasta msg_4_2 (Marco) y 2 puntos; sin dash. PAUSA (131-135): sync_1 (133, 11). TRAMO 3 «Autocorrector» (136-195, sube): zona «Visto» en el suelo con un Troll en su línea (pulso al check y pulso al Troll; el Troll queda a 4 tiles de la zona —columna 158— para que no alcance a Isak congelado), zona con ciclo en el suelo y cargador_2 (160, 11); en B2 el autocorrector largo «espera, que te explico» que se corrige a «nada más» y abre un hueco justo bajo la zona en el aire (visto_aire: pulso al check desde la burbuja corregida y pasar; patrón 19) y una zona con ciclo; en B3 dos zonas con ciclo y una «escribiendo…»; 1 punto. Secreto B «Ok, ¿y tú?»: el autocorrector al revés «ok» (140, 10), que al acercarse se corrige a «ok, ¿y tú qué tal? cuéntame» (5 tiles) y hace de puente a la repisa (146-147, fila 9) con el power bank y 1 punto; sin dash. TRAMO 4 «Stickers» (196-250, baja): tandas de Stickers (detect_tiles 2): dos parejas en B3, tres alrededor de donde Isak cae a B2 (un pulso los desinfla) y uno más adelante (243) y dos donde cae a B1 (el pulso los desinfla: uno a uno o los que pille su radio), otra pareja en B1 y un Troll en su línea; cargador_3 (203, 8); 1 punto. Secreto C: desde el final de B3, una «escribiendo…» sobre el hueco (escribiendo_c) y, con salto y dash aéreo, la burbuja alta «¿sigues?» con 1 punto. CIERRE «Salir del chat» (251-259): 1 punto y la terminal (terminal_salir, 256, 10; pulso) que vuelve al hub. 10 puntos (6 + 4), 3 cargadores, 1 power bank, sin vida extra, 1 punto de sincronización. Valida sin avisos; camino exportado de unos 231 s (48 % de 480); bot del chat, unos 204 s (42 %). Textos de las burbujas PROPUESTOS.",
+	"_notes": "NIVEL 4-2 «Grupo sin respuesta» (paso 13 de docs/propuesta-mundo-4.md §8, 2026-10-28; diseño en su §4.2, §4.2.1 y §4.2.2, desvíos en §8.1). Horizontal de 260 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Llega con todo el kit del Mundo 3 y la Linterna del 4-1, (sin Agitar, retirado el 2026-10-28). ESTRUCTURA (decisión tomada: el mapa orientativo de §4.2 daba un camino de unos 80 s frente a los 192-264 pedidos): BANDAS. Cada tramo se recorre en TRES PASADAS: el suelo (B1, fila 11), una banda de una vía en la fila 9 (B2, de pie en la 8) y otra en la fila 6 (B3, de pie en la 5), de burbujas de chat contiguas; entre bandas hay 3 filas (192 px; el salto real llega a 177: sin atajos) y se sube por un escalón de una vía 2 filas por encima en el extremo de salida. Los tramos alternan: el 1 y el 3 SUBEN (suelo hacia la derecha, B2 hacia la izquierda, B3 hacia la derecha y salida por el hueco de las filas 4-5 de la pared derecha; bajo B2 el suelo es llano y en las bandas que suben puede haber huecos) y el 2 y el 4 BAJAN (entrada por ese hueco a B3, caída a B2 al final, B2 hacia la izquierda, pozo de 1 columna a B1 y salida por abajo, filas 10-11; sus bandas no tienen huecos). INICIO «Mensajes borrados» (0-24): vórtice (3, 11), la Linterna del 4-1 (linterna_4_2, 1, 11; no sale si ya es conocida: la ve el validador para los pasos en tinta), la Papelera (papelera_4_2, 5, 11; momento de historia de §4.2.2), burbujas eliminadas de decorado, una burbuja fija con 1 punto encima, el «¿Deshacer escritura?» (deshacer_4_2, 14, 11; pulso de espaldas: deshace el muro de texto, Eco «No necesitas a nadie más.» y el aviso) y el muro de texto (muro_4_2, 22, 9; se deshace al usar el panel, a 8 tiles). TRAMO 1 «Grupo» (25-80, sube): tres grupos de Trolls apilados en una columna a distintas alturas (patrón 20; detect_tiles 3: antes los aturdía UN Agitar; desde el 2026-10-28 el camino aturde con el pulso a los que pisa su línea): en el suelo (40), en B2 (55, mirando a la derecha) y en B3 (62, tres); una «escribiendo…» en un hueco de B2 y otra en B3; 1 punto en B3. TRAMO 2 «Fantasmas» (81-130, baja): seis Fantasmas (detect_tiles 2, patrulla 128 px), dos por pasada (B2 es el pasillo de techo bajo bajo B3); cargador_1 (84, 5); 1 punto. Secreto A «Silenciado»: la burbuja «Garaje · Silenciado» (eliminada: parece decorado) junto al marco pequeño (92, 11; Pellizcar) de una sala a oscuras (81-91, filas 7-11) con los avatares apagados de Lía y Tomi, pinchos y un puente en tinta (solo con la Linterna) hasta msg_4_2 (Marco) y 2 puntos; sin dash. PAUSA (131-135): sync_1 (133, 11). TRAMO 3 «Autocorrector» (136-195, sube): zona «Visto» en el suelo con un Troll en su línea (pulso al check y pulso al Troll; el Troll queda a 4 tiles de la zona —columna 158— para que no alcance a Isak congelado), zona con ciclo en el suelo y cargador_2 (160, 11); en B2 el autocorrector largo «espera, que te explico» que se corrige a «nada más» y abre un hueco justo bajo la zona en el aire (visto_aire: pulso al check desde la burbuja corregida y pasar; patrón 19) y una zona con ciclo; en B3 dos zonas con ciclo y una «escribiendo…»; 1 punto. Secreto B «Ok, ¿y tú?»: el autocorrector al revés «ok» (140, 10), que al acercarse se corrige a «ok, ¿y tú qué tal? cuéntame» (5 tiles) y hace de puente a la repisa (146-147, fila 9) con el power bank y 1 punto; sin dash. TRAMO 4 «Stickers» (196-250, baja): tandas de Stickers (detect_tiles 2): dos parejas en B3, tres alrededor de donde Isak cae a B2 (un pulso los desinfla) y uno más adelante (243) y dos donde cae a B1 (el pulso los desinfla: uno a uno o los que pille su radio), otra pareja en B1 y un Troll en su línea; cargador_3 (203, 8); 1 punto. Secreto C: desde el final de B3, una «escribiendo…» sobre el hueco (escribiendo_c) y, con salto y dash aéreo, la burbuja alta «¿sigues?» con 1 punto. CIERRE «Salir del chat» (251-259): 1 punto y la terminal (terminal_salir, 256, 10; pulso) que vuelve al hub. 10 puntos (6 + 4), 3 cargadores, 1 power bank, sin vida extra, 1 punto de sincronización. Valida sin avisos; camino exportado de unos 231 s (48 % de 480); bot del chat, unos 204 s (42 %). Textos de las burbujas PROPUESTOS. Peligros ocultos del Modo oscuro (2026-10-28, docs/propuesta-mundo-4.md §8.1, decisión tomada): zona oscura nueva en el camino del Tramo 2 «Fantasmas» (grupo_a_oscuras, columnas 94-104, filas 1-11; hasta entonces la única era la del secreto A) con tres acechadores: un Troll en la banda alta (99, 5) y dos Stickers en la media (96, 8) y en el suelo (99, 11); el Fantasma fantasma_pasillo_2 queda también a oscuras.",
 	"id": "4-2",
 	"name": "Grupo sin respuesta",
 	"world": 4,
@@ -134,13 +134,13 @@
 		"#.....................#.........................................................#.................................................#................................................................#......................................................#........#",
 		"#.....................#.......................................E.................#.................................................#................................................................#......................................................#........#",
 		"#.....................#.......................................E...................................................................#....................................................................................................................oS.#........#",
-		"#.....................#.......................................E.......o.....................................E.........E...........#...............................................o....................................EE.........EE......................#........#",
+		"#.....................#.......................................E.......o............................E........E.........E...........#...............................................o....................................EE.........EE......................#........#",
 		"#.....................#.........................................................#############.....................................#................................................................#......................................................#........#",
 		"#.....................#..--............................E........................#...........#.....................................#...........................--...................................####...................................................#........#",
-		"#.....................#................................E........................#...........#.........E.........E.................#...............o................................................####......................................EE.E..E......#........#",
+		"#.....................#................................E........................#...........#...E.....E.........E.................#...............o................................................####......................................EE.E..E......#........#",
 		"#.........o.....................................................................#...........#.....................................#...............##...............................................####...................................................#........#",
 		"#.......................................E....................................--.#...........#...................................................................................................--.####............................................................#",
-		"#..P....................................E.......................................#oSo^^^^^^......................E.....o.....E........C........................E....................................####..EE.........................EE..o...E................o..G..#",
+		"#..P....................................E.......................................#oSo^^^^^^.........E............E.....o.....E........C........................E....................................####..EE.........................EE..o...E................o..G..#",
 		"####################################################################################################################################################################################################################################################################",
 		"####################################################################################################################################################################################################################################################################"
 	],
@@ -1770,6 +1770,16 @@
 				"width_tiles": 1,
 				"height_tiles": 2
 			}
+		},
+		{
+			"type": "dark_zone",
+			"x": 94,
+			"y": 1,
+			"params": {
+				"id": "grupo_a_oscuras",
+				"width_tiles": 11,
+				"height_tiles": 11
+			}
 		}
 	],
 	"enemies": [
@@ -2029,6 +2039,40 @@
 			"params": {
 				"facing": -1,
 				"detect_tiles": 4
+			}
+		},
+		{
+			"id": "acechador_troll_t2",
+			"type": "troll",
+			"x": 99,
+			"y": 5,
+			"help_id": "lurker",
+			"params": {
+				"facing": -1,
+				"detect_tiles": 3,
+				"lurk": true
+			}
+		},
+		{
+			"id": "acechador_banda_media",
+			"type": "sticker",
+			"x": 96,
+			"y": 8,
+			"help_id": "lurker",
+			"params": {
+				"detect_tiles": 2,
+				"lurk": true
+			}
+		},
+		{
+			"id": "acechador_suelo",
+			"type": "sticker",
+			"x": 99,
+			"y": 11,
+			"help_id": "lurker",
+			"params": {
+				"detect_tiles": 2,
+				"lurk": true
 			}
 		}
 	]

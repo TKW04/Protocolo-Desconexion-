@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world4_background.tscn" id="2_world4_background"]
@@ -21,10 +21,12 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="19_exit_terminal"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ghost.tscn" id="20_ghost"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/troll_mimic.tscn" id="21_troll_mimic"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="22_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="23_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="24_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="25_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/troll.tscn" id="22_troll"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/sticker.tscn" id="23_sticker"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="24_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="25_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="26_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="27_help_system"]
 
 [node name="Level_4_3" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -1577,16 +1579,26 @@ patrol_range_px = 128
 metadata/params = {"detect_tiles": 2, "patrol_range_px": 128}
 metadata/help_id = "ghost"
 
+[node name="acechador_troll_t3" parent="Enemies" instance=ExtResource("22_troll") groups=["help_target"]]
+position = Vector2(17632, 576)
+metadata/params = {"detect_tiles": 3, "facing": -1, "lurk": true}
+metadata/help_id = "lurker"
+
+[node name="acechador_sticker_t3" parent="Enemies" instance=ExtResource("23_sticker") groups=["help_target"]]
+position = Vector2(18272, 576)
+metadata/params = {"detect_tiles": 2, "lurk": true}
+metadata/help_id = "lurker"
+
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(18976, 576)
 
-[node name="Isak" parent="." instance=ExtResource("22_isak")]
+[node name="Isak" parent="." instance=ExtResource("24_isak")]
 position = Vector2(224, 768)
 camera_limits = Rect2i(0, 0, 19200, 896)
 
-[node name="Hud" parent="." instance=ExtResource("23_hud")]
+[node name="Hud" parent="." instance=ExtResource("25_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("24_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("26_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("25_help_system")
+script = ExtResource("27_help_system")
