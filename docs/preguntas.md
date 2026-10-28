@@ -1214,3 +1214,45 @@ El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicie
 - Cartel del vestíbulo del 4-1: «En línea hace 3 h» (nuevo en el paso 20). Puertas: «Enviar» (4-1) y «Responder más tarde» / «Sin conexión» (4-3).
 
 **Sonido (decisiones del orquestador a revisar):** el «escribiendo…» de las burbujas es un solo sonido de tres toques al empezar los puntos (el del jefe, uno por punto); la ola suena con un golpe largo al arrancar y al reanudar (no un bucle que sube al acercarse); la música del nivel se calla al apagarse la ola en el cierre del 4-3; quedan pendientes la música baja del Tramo 1 del 4-3 y la «capa de silencio» cerca de los amigos (`docs/lista-sonidos.md`, «Mundo 4»).
+
+## Mundo 4: lo que el usuario debe revisar al probar (2026-10-28)
+
+El Mundo 4 «El Chat» se hizo con las decisiones delegadas al orquestador (`propuesta-mundo-4.md` §9) y las cuatro del usuario del 2026-10-28 (§10); avance y desvíos en su §8.1, resumen en `mundo-4-chat.md` §9.8. Lista corta para la primera prueba (adelanta el paso 23); ninguna bloquea, todas se ajustan en datos. **Todo el arte es placeholder por script** (El Visto y el Troll con `_placeholder`; Eco de tres puntos) y **todos los textos son propuestos** (lista en «Mundo 4: textos propuestos», arriba).
+
+**Cómo probar**
+- Desde el hub: tras instalar la actualización (página 2), carpeta M4 → 4-1 → 4-2 (tras el 4-1) → 4-3 (tras el 4-2) → fila «Jefe: El Visto» (tras el 4-3). Al vencerlo: «Fragmento de amistades» sin guardar, pieza coral, cuarta ranura del candado de M6 y M5 disponible («Próximamente»).
+- Directo (builds de depuración): `$GODOT --path . -- --start-level=4-1` (igual con `4-2`, `4-3` y `4-boss`).
+- El Visto en los tres accesos: jugarlo o mirarlo con el bot, `$GODOT --headless --fixed-fps 60 --path . -s tools/play_boss_bot.gd -- --boss seen --profile ideal|clumsy --lap 1|2|3`.
+- Bot de los niveles: `$GODOT --headless --fixed-fps 60 --path . -s tools/play_chat_bot.gd -- --level 4-1|4-2|4-3` (sin `--headless` se ve jugar).
+- Capturas en `docs/capturas/mundo-4-2026-10-28/` y `assets/levels_preview/4-x/`; mapas (con los secretos) en `assets/levels_preview/4-x_mapa.png`.
+- **Suite completa sin correr** desde el paso 21 (a petición del usuario): `tools/run_tests.sh` cuando se decida.
+
+**Valores a ajustar jugando**
+- Ritmo de cada nivel y si el 4-1 en torre se siente un paso por encima del 3-1. Bot (sin golpes ni congelaciones): **4-1 180,6 s, 4-2 203,9 s, 4-3 197,2 s** (41-43 % de los objetivos de 420 / 480 / 480 s).
+- Agitar (U / LB): radio 160 px, 10 de energía, 0,25 s expuesto, enfriamiento 1 s; ¿es cómoda la tecla?
+- Congelado: 1,5 s (zona) / 2,0 s (ola) / 2,5 s (El Visto); ¿se entiende que conserva la velocidad?
+- «Escribiendo…» (1,0 s hasta ser sólida, un punto cada 0,33 s): ¿se aprende a saltar con el segundo punto?
+- Autocorrector: ¿avisa a tiempo el cursor (0,75 s)? ¿Hacen gracia los textos?
+- Ola del 4-3: 1,0 / 1,2 / 1,2 → 1,6 tiles/s, paradas en los puntos de sincronización, retroceso de 4 tiles (1 con Agitar). ¿Presiona sin frustrar?
+- Linterna y Modo oscuro: radio de luz 3 tiles, velo al 60 %; **en las capturas el texto de las burbujas se lee sin la Linterna** (ver «Puntos a vigilar»).
+- Fantasma: ¿se entiende el rastro con el Debug y la reaparición 2 tiles detrás?
+- El Visto (objetivo 100-150 s en Caché): bot ideal **112,6 / 185,8 / 161,6 s**, torpe **148,4 / 244,6 / 202,7 s** (Caché / Kernel / Raíz). El escudo con Agitar desde la burbuja fija, la interrupción del «escribiendo…» y si los huecos entre ataques alargados (y `typing_gap_s` 10 s) hacen lenta la pelea.
+
+**Puntos a vigilar (vistos en las capturas del paso 22; detalle en `08-pendientes.md`)**
+- Los **tres puntos de Eco** se confunden con los del **«escribiendo…»** (blancos los dos), sobre todo en el Modo oscuro y bajo el «escribiendo…» gigante del jefe. ¿Se distinguen jugando?
+- El **velo del Modo oscuro** deja leer el texto de las burbujas sin la Linterna: ¿basta como «oscuro» o hay que oscurecerlo más?
+- El cuadro de Eco sigue con el **icono de la esfera** en el Mundo 4.
+- La **barra de El Visto** tapa el borde de arriba de su cuerpo, y en la ventana de la fase 2 el **cuadro de Eco** de abajo tapa el check gris del suelo.
+- En lo alto de la torre del 4-1 un Troll queda **detrás del contador de power bank** del HUD.
+- En la página 3 del hub, Eco tapa «Completa el mundo anterior».
+- La «j» de la fuente deja un hueco («Mensa jes», «ja ja»), en todo el juego.
+- El sello «3 mes» de la última burbuja de Tomi parece cortado (es abreviatura).
+- Arreglado ya en el paso 22: «Se eliminó este mensaje» cortado, sello de hora con ancho fijo, rótulo «Leído 03:47» fuera de la vista y contorno de los pinchos en el Modo oscuro poco visible (ahora en `alerta`).
+
+**Paleta**
+- Variante **B «Pantalla a las 3:47»** (`assets/palettes/mundo4.gpl`; Debug coral `#ff9f7a`), elegida por el orquestador; comparativa en `docs/arte/mundo4_paleta_variantes.png`; se cambia con `tools/palette_mundo4_variants.py --apply A|C`.
+
+**Limitaciones conocidas (no son fallos; decidir si importan)**
+- Arte por script de todo el mundo hasta el paso 24 (AutoSprite: El Visto, Troll y pose `shockwave`; **requiere permiso y el total previo**, parada tras cada base).
+- Audio provisional: los 24 IDs del Mundo 4 suenan con provisionales hasta los sonidos del amigo del usuario.
+- La congelación de la captura 10 del jefe está escenificada (el bot real no se congela).
