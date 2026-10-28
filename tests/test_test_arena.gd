@@ -8,7 +8,7 @@ const ArenaScript = preload("res://scripts/levels/test_arena.gd")
 const SETTLE_FRAMES: int = 60
 
 var _pulse_was_unlocked: bool
-## La arena desbloquea Agitar (paso 1 del Mundo 4): se devuelve para no dar su aviso a otras pruebas.
+## La arena desbloqueaba Agitar (paso 1 del Mundo 4; retirado el 2026-10-28, ya no): se devuelve por si acaso.
 var _shockwave_was_unlocked: bool
 
 

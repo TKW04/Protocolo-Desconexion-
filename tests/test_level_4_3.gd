@@ -1,6 +1,6 @@
 # Nivel 4-3 «Mensajes sin leer» con el flujo real (scenes/main.tscn, LevelRunner;
 # paso 14 de docs/propuesta-mundo-4.md §8, 2026-10-28): carga por el atajo de
-# depuracion (--start-level=4-3) con Agitar ya obtenido, objetos y economia
+# depuracion (--start-level=4-3) sin Agitar (retirado el 2026-10-28), objetos y economia
 # (9 puntos, 3 cargadores, la ola, zonas «Visto», «escribiendo…», Fantasmas,
 # Trolls disfrazados de Marco, Modo oscuro, power bank y msg_4_3), la ola que
 # espera hasta la columna 20 y se mueve despues, los disfrazados que el Debug
@@ -46,13 +46,12 @@ func before_each() -> void:
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
 	DebugMode.input_enabled = false
-	# Se llega al 4-3 tras el 4-2: todo el kit del Mundo 3, la Linterna y Agitar.
+	# Se llega al 4-3 tras el 4-2: todo el kit del Mundo 3 y la Linterna (Agitar, retirado).
 	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	EcoProgress.meet_calc()
 	GameState.meet_ally(GameState.ALLY_LINTERNA)
-	for ability: StringName in [GameState.ABILITY_LASER, GameState.ABILITY_DASH, POUND, GameState.ABILITY_COMPRESS,
-			SHAKE]:
+	for ability: StringName in [GameState.ABILITY_LASER, GameState.ABILITY_DASH, POUND, GameState.ABILITY_COMPRESS]:
 		GameState.obtained_abilities[ability] = true
 		GameState.seen_notices[ability] = true
 		GameState.set_ability_unlocked(ability, true)
@@ -134,17 +133,27 @@ func _count(parent: String, cls: Variant) -> int:
 	return n
 
 
-## Agitar desde la celda (col, fila) mirando a `facing`, con el centro y el radio de la onda del Isak real.
-func _shake_from(col: int, row: int, facing: int) -> void:
+## Pulso desde la celda (col, fila) mirando a `facing`, con el origen y el radio del pulso del Isak real
+## (a todo lo que escucha EventBus.pulse_fired).
+func _pulse_from(col: int, row: int, facing: int) -> void:
 	_teleport(col, row)
 	_isak.facing = facing
-	ShockwaveWave.apply_to_enemies(get_tree(), _isak.get_shockwave_center(), _isak.abilities.shockwave_radius_px,
-		_isak.abilities.shockwave_stun_s)
+	var phone: Vector2 = _isak.global_position + Vector2(absf(_isak.pulse_effect_origin.x) * float(facing),
+		_isak.pulse_effect_origin.y)
+	var area := Area2D.new()
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = _isak.abilities.pulse_radius_px
+	shape.shape = circle
+	area.add_child(shape)
+	area.position = phone
+	add_child_autofree(area)
+	EventBus.pulse_fired.emit(area)
 
 
 # --- Pruebas ---
 
-func test_debug_shortcut_loads_the_4_3_with_shockwave() -> void:
+func test_debug_shortcut_loads_the_4_3_without_shockwave() -> void:
 	assert_eq(LevelRunner.debug_start_arg(PackedStringArray(["--start-level=4-3"])), "4-3")
 	_start()
 	await _arrive()
@@ -152,7 +161,7 @@ func test_debug_shortcut_loads_the_4_3_with_shockwave() -> void:
 	assert_eq(_level().world, 4)
 	assert_ne(_isak.camera_mode, Isak.CAMERA_TOWER, "Nivel horizontal")
 	assert_almost_eq(_isak.global_position.x, 3.5 * TILE, TILE, "Llega por el vortice de (3, 11)")
-	assert_true(GameState.is_ability_unlocked(SHAKE), "Con Agitar (del 4-2)")
+	assert_false(GameState.is_ability_unlocked(SHAKE), "Sin Agitar (retirado el 2026-10-28)")
 	assert_true((_obj("linterna_4_3") as FlashlightPickup).is_taken(), "La Linterna ya es de Isak")
 
 
@@ -222,6 +231,9 @@ func test_secret_b_draft_in_ink_and_secret_c_in_an_air_zone() -> void:
 	var zone := _obj("visto_alto") as SeenZone
 	assert_not_null(zone)
 	assert_true((_obj("tres_meses_alta") as ChatBubble) != null, "La burbuja alta del secreto C")
+	# Secreto C sin Agitar (2026-10-28): pulso al doble check desde «hace 2 semanas» (211, 6) y bajar a por el punto.
+	_pulse_from(211, 5, -1)
+	assert_true(zone.is_interrupted(), "El pulso desde la burbuja de al lado alcanza su doble check")
 
 
 func test_sync_points() -> void:

@@ -4,7 +4,8 @@
 # con el Debug activo lo marca y el laser es UN golpe por marca (laps.<n>.mark_hits
 # = 1) sin necesitar el Debug; el golpe cierra la ventana. Cada fase lo pone a
 # tiro con su mecanica: fase 1, la reaparicion detras de Isak; fase 2, en el
-# suelo al romperse el escudo (solo con Agitar y la arena limpia); fase 3,
+# suelo al romperse el escudo (solo con un pulso y la arena limpia; Agitar se
+# retiro el 2026-10-28); fase 3,
 # aturdido junto a una burbuja fija al interrumpirle el «escribiendo…». Si el
 # mensaje sale, Isak se congela y El Visto no ataca mientras dura. Sin arena: el
 # jefe sobre un suelo llano con el Isak real (IsakSim), con el tiempo a mano.
@@ -43,8 +44,7 @@ func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_lap = GameState.lap
 	_saved = {}
-	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG,
-			GameState.ABILITY_SHOCKWAVE]:
+	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG]:
 		_saved[ability] = GameState.is_ability_unlocked(ability)
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
@@ -159,6 +159,13 @@ func _mark_and_shoot() -> void:
 
 
 ## Celular de Isak (centro del pulso), global.
+## Quita los Stickers vivos de la tanda con el laser (vida 1), sin depender del pulso.
+func _clear_stickers() -> void:
+	for s: Sticker in _boss.get_stickers():
+		s.on_laser_hit(1.0, null)
+	assert_true(_boss.get_stickers().is_empty(), "Sin Stickers vivos")
+
+
 func _phone() -> Vector2:
 	return _isak.global_position + _isak.get_pulse_origin()
 
@@ -337,26 +344,26 @@ func test_phase1_falling_bubbles_warn_then_hurt() -> void:
 
 # --- Fase 2: Grupo ---
 
-func test_phase2_shield_only_breaks_with_shockwave_and_clean_arena() -> void:
+func test_phase2_shield_only_breaks_with_a_pulse_and_clean_arena() -> void:
 	await _setup()
 	_to_phase(2)
 	assert_true(_boss.is_shield_up(), "Escudo")
 	var shield: Rect2 = _boss.get_shield_rect()
-	# Desde el suelo la onda (160 px) no llega al escudo.
-	assert_false(_boss.receive_shockwave(_phone(), 160.0), "Desde el suelo no llega")
+	# Desde el suelo el pulso (96 px) no llega al escudo.
+	assert_false(_boss.receive_pulse(_pulse_area(_phone())), "Desde el suelo no llega")
+	assert_true(_boss.is_shield_up())
 	# Stickers vivos: no cede.
 	_advance_until(func() -> bool: return not _boss.get_stickers().is_empty())
 	assert_eq(_boss.get_stickers().size(), 3, "Tanda de 3 Stickers")
 	var near: Vector2 = Vector2(shield.position.x - 8.0, shield.end.y + 40.0)
 	var blocked: Array = []
 	_boss.shield_blocked.connect(func() -> void: blocked.append(true))
-	assert_false(_boss.receive_shockwave(near, 160.0), "Con Stickers no cede")
+	assert_false(_boss.receive_pulse(_pulse_area(near)), "Con Stickers no cede")
 	assert_eq(blocked.size(), 1)
+	assert_true(_boss.is_shield_up())
 	assert_false(_boss.get_core().is_enabled())
-	for s: Sticker in _boss.get_stickers():
-		s.receive_shockwave(s.get_center(), 160.0, 3.0)
-	assert_true(_boss.get_stickers().is_empty(), "Agitar se lleva los Stickers")
-	assert_true(_boss.receive_shockwave(near, 160.0), "Arena limpia y la onda cerca: estalla")
+	_clear_stickers()
+	assert_true(_boss.receive_pulse(_pulse_area(near)), "Arena limpia y el pulso cerca: estalla")
 	assert_false(_boss.is_shield_up())
 	assert_true(_boss.is_window_open(), "Cae al suelo: ventana")
 	assert_almost_eq(_boss.get_window_time_left(), 4.0, 0.02, "4 s del mundo")
@@ -379,7 +386,7 @@ func test_phase2_exploded_stickers_do_not_block_the_shield() -> void:
 		s.call(&"_explode")
 	assert_true(_boss.get_stickers().is_empty(), "El confeti no cuenta")
 	var near: Vector2 = Vector2(shield.position.x - 8.0, shield.end.y + 40.0)
-	assert_true(_boss.receive_shockwave(near, 160.0), "Sin Stickers vivos: estalla")
+	assert_true(_boss.receive_pulse(_pulse_area(near)), "Sin Stickers vivos: estalla")
 
 
 func test_kernel_shield_has_two_layers() -> void:
@@ -387,10 +394,10 @@ func test_kernel_shield_has_two_layers() -> void:
 	_to_phase(2)
 	var shield: Rect2 = _boss.get_shield_rect()
 	var near: Vector2 = Vector2(shield.get_center().x, shield.end.y + 40.0)
-	assert_true(_boss.receive_shockwave(near, 160.0), "Primera capa")
+	assert_true(_boss.receive_pulse(_pulse_area(near)), "Primera capa")
 	assert_true(_boss.is_shield_up(), "Queda otra")
 	assert_eq(_boss.get_shield_layers_left(), 1)
-	assert_true(_boss.receive_shockwave(near, 160.0), "Segunda capa")
+	assert_true(_boss.receive_pulse(_pulse_area(near)), "Segunda capa")
 	assert_true(_boss.is_window_open())
 
 
@@ -436,7 +443,7 @@ func test_phase3_message_freezes_isak_and_nothing_attacks_while_frozen() -> void
 	_advance(1.5)
 	assert_eq(_boss.get_typing_state(), Seen.TYPING_SENT, "No vuelve a escribir mientras dura")
 	assert_eq(_boss.get_attack_state(), Seen.ATTACK_MESSAGE)
-	# Se descongela (Agitar o el tiempo): se reanudan y vuelve a escribir.
+	# Se descongela (sin Agitar: el tiempo): se reanudan y vuelve a escribir.
 	_sim.step(_sim.steps_for(2.6))
 	assert_false(_isak.is_frozen())
 	_advance(DT)
@@ -504,9 +511,8 @@ func test_final_art_follows_its_state() -> void:
 	_advance(DT)
 	assert_eq(String(_boss.get_art_frame()[0]), "shield")
 	var shield: Rect2 = _boss.get_shield_rect()
-	for s: Sticker in _boss.get_stickers():
-		s.receive_shockwave(s.get_center(), 160.0, 3.0)
-	assert_true(_boss.receive_shockwave(Vector2(shield.position.x - 8.0, shield.end.y + 40.0), 160.0))
+	_clear_stickers()
+	assert_true(_boss.receive_pulse(_pulse_area(Vector2(shield.position.x - 8.0, shield.end.y + 40.0))))
 	_advance(1.0)
 	assert_eq(String(_boss.get_art_frame()[0]), "stunned", "En el suelo")
 	assert_lt((body.global_position + Seen.ART_CHECK_PX - Seen.ART_BODY_OFFSET).distance_to(_boss.get_core().global_position), 3.0,

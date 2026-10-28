@@ -2,8 +2,8 @@
 # decision 4 de §9): espera a que Isak cruce start_col; avanza con la velocidad de
 # su seccion (y acelera dentro de una con speed_to); se para en sus paradas hasta
 # que Isak sale de ellas; al alcanzar a Isak quita 10 sin matar y lo congela 2,0 s
-# con el frente quieto; al descongelarse solo retrocede 4 tiles y con Agitar se
-# queda a 1; morir congelado no cuenta como descongelarse y al reaparecer vuelve a
+# con el frente quieto; al descongelarse retrocede 4 tiles (Agitar, que la dejaba a
+# 1, se retiro el 2026-10-28); morir congelado no cuenta como descongelarse y al reaparecer vuelve a
 # la parada de su seccion; en end_col se apaga; la sala ola_test carga. Isak y la
 # ola avanzan con delta fijo.
 extends GutTest
@@ -28,7 +28,7 @@ func before_each() -> void:
 	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_SHOCKWAVE]:
 		_saved[ability] = GameState.is_ability_unlocked(ability)
 	GameState.use_save_path(PATH, true)
-	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, true)
+	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, false)
 	GameState.sync_rate = GameState.get_sync_rate_max()
 	GameState.debug_energy = GameState.get_debug_energy_max()
 	DebugMode.input_enabled = false
@@ -176,22 +176,6 @@ func test_thawing_alone_pushes_the_wave_back_four_tiles() -> void:
 	assert_false(released[0][0], "Sin Agitar")
 	assert_almost_eq(_isak_back() - wave.get_front_x(), 4.0 * T, 3.0, "«Ya te leyo»: 4 tiles detras")
 	assert_eq(wave.get_state(), SeenWave.State.MOVING, "Y sigue avanzando")
-
-
-func test_shake_breaks_free_but_leaves_the_wave_one_tile_away() -> void:
-	var wave: SeenWave = _wave()
-	_stand_at(8)
-	var released: Array = []
-	wave.released.connect(func(b: bool, x: float) -> void: released.append([b, x]))
-	_catch(wave)
-	_step(wave, 10)
-	_sim.input.shake_pressed = true
-	_step(wave)
-	_step(wave)
-	assert_false(_isak.is_frozen(), "Agitar rompe la congelacion")
-	assert_eq(released.size(), 1)
-	assert_true(released[0][0], "Con Agitar")
-	assert_almost_eq(_isak_back() - wave.get_front_x(), 1.0 * T, 3.0, "La ola se queda a 1 tile")
 
 
 func test_dying_frozen_is_ignored_and_respawn_returns_to_the_start() -> void:

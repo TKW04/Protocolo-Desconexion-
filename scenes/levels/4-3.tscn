@@ -34,7 +34,7 @@ world = 4
 tile_size = 64
 size_tiles = Vector2i(300, 14)
 debug_color = "coral"
-abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true, "shockwave": true}
+abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true}
 source_path = "res://data/levels/4-3.json"
 
 [node name="Background" parent="." instance=ExtResource("2_world4_background")]
@@ -1572,7 +1572,7 @@ metadata/params = {"detect_tiles": 2, "patrol_range_px": 128}
 metadata/help_id = "ghost"
 
 [node name="fantasma_voces_6" parent="Enemies" instance=ExtResource("20_ghost") groups=["help_target"]]
-position = Vector2(12256, 576)
+position = Vector2(12000, 576)
 patrol_range_px = 128
 metadata/params = {"detect_tiles": 2, "patrol_range_px": 128}
 metadata/help_id = "ghost"

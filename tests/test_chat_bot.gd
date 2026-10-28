@@ -4,9 +4,9 @@
 # Modo oscuro, el Troll del escalon del Piso 3 aturdido con el pulso, los dos pulsos al doble check y las cuatro esperas de las
 # zonas «Visto» con ciclo, y la terminal «Enviar»), vuelve al hub con el nivel completado, sin morir ni
 # congelarse, y con la duracion de juego entre el 40 y el 55 % del objetivo (§4). Desde el paso 13 tambien el
-# 4-2 «Grupo sin respuesta» (obtiene Agitar en el «¿Deshacer escritura?», deshace el muro de texto, aturde los
-# grupos de Trolls y las tandas de Stickers con Agitar, pulsa a los Fantasmas y cruza las zonas «Visto») y desde el
-# paso 14 el 4-3 «Mensajes sin leer» (con Agitar, por delante de la ola de «Visto» sin que lo alcance, y la puerta
+# 4-2 «Grupo sin respuesta» (el «¿Deshacer escritura?» deshace el muro de texto; desde el 2026-10-28, sin Agitar:
+# aturde a los Trolls y desinfla a los Stickers con el pulso, pulsa a los Fantasmas y cruza las zonas «Visto») y
+# desde el paso 14 el 4-3 «Mensajes sin leer» (por delante de la ola de «Visto» sin que lo alcance, y la puerta
 # «Responder más tarde» con «Sin conexión»). Usa su propio guardado (ISAK_SAVE_PATH).
 extends GutTest
 
@@ -42,18 +42,19 @@ func test_chat_bot_completes_level_4_1() -> void:
 		assert_string_contains(text, piece)
 
 
-func test_chat_bot_completes_level_4_2_and_obtains_shockwave() -> void:
+func test_chat_bot_completes_level_4_2_without_shockwave() -> void:
 	var run: Dictionary = _play("4-2")
 	var text: String = run["text"]
 	assert_eq(run["code"], 0, "El bot del 4-2 termina con 0:\n%s" % run["summary"])
 	assert_string_contains(text, "play_chat_bot (4-2): OK")
 	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % run["summary"])
-	for piece: String in ["linea importante (Papelera)", "«No necesitas a nadie más.»", "Agitar: U / LB (mando)",
+	for piece: String in ["linea importante (Papelera)", "«No necesitas a nadie más.»", "Agitar 0",
+			"pulso a sticker sticker_b2_0: defeated",
 			"interruptor deshacer_4_2 encendido", "hub cargado tras completar el 4-2", "CHAT: muertes 0",
 			"congelaciones 0", "pulsos al doble check 2", "esperas de «escribiendo…» 3", "esperas de zonas con ciclo 4",
 			"Linterna conocida", "Fantasma fantasma_pasillo: stunned", "hub: carpeta M4"]:
 		assert_string_contains(text, piece)
-	assert_false(text.contains("Agitar NO SALE"), "Cada Agitar del camino sale")
+	assert_false(text.contains("Agitar: U / LB"), "Sin aviso de Agitar (retirado)")
 	assert_false(text.contains("SIN ATURDIR"), "Cada Fantasma que se activa queda aturdido")
 
 

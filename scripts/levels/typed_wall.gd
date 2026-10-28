@@ -4,9 +4,10 @@
 ##
 ## Pared solida de 1 x height_tiles (3) sobre el suelo hecha de lineas de texto
 ## escrito («y entonces le dije que…»; `lines`, una por tile). Es el muro «Cargando
-## mas…» del Mundo 2 (LoadingWall) con otra llave: AGITAR (EventBus.shockwave_fired)
-## cuya onda lo alcanza (ShockwaveWave.reaches: el circulo de 2,5 tiles toca la
-## pared) lo DESHACE PARA SIEMPRE: las letras se borran de atras adelante en
+## mas…» del Mundo 2 (LoadingWall) con otra llave: el «¿DESHACER ESCRITURA?» del
+## nivel (UndoPrompt; desde el 2026-10-28, al retirarse Agitar, que lo deshacia con
+## su onda): al usarlo (EventBus.writing_undone) todos los muros de texto del nivel
+## se DESHACEN PARA SIEMPRE (undo()): las letras se borran de atras adelante en
 ## erase_s (0,4 s de tiempo del mundo) y al terminar deja de ser solido; no vuelve
 ## al reaparecer Isak. El pulso y el laser rebotan (chispa gris; el disparo se
 ## consume). El origen del nodo es la esquina superior izquierda de su celda de
@@ -15,7 +16,7 @@
 class_name TypedWall
 extends StaticBody2D
 
-## Agitar lo ha alcanzado: empieza a borrarse.
+## Lo han deshecho (el «¿Deshacer escritura?»): empieza a borrarse.
 signal erased
 ## Ya no queda texto: deja de ser solido.
 signal cleared
@@ -23,6 +24,7 @@ signal cleared
 signal deflected
 
 const LAYER_WORLD: int = 1
+const GROUP: StringName = &"typed_wall"
 
 @export var object_id: StringName = &""
 @export var height_tiles: int = 3
@@ -47,7 +49,8 @@ func _ready() -> void:
 	_shape.shape = rect
 	_shape.position = get_wall_size() * 0.5
 	add_child(_shape)
-	EventBus.shockwave_fired.connect(receive_shockwave)
+	add_to_group(GROUP)
+	EventBus.writing_undone.connect(_on_writing_undone)
 	EventBus.pulse_fired.connect(_on_pulse_fired)
 
 
@@ -116,14 +119,21 @@ func is_help_available() -> bool:
 
 # --- Acciones ---
 
-## Onda de Agitar (EventBus.shockwave_fired). Verdadero si empieza a borrarlo.
-func receive_shockwave(center: Vector2, radius: float, _source: Node2D = null) -> bool:
-	if _erase_time >= 0.0 or not ShockwaveWave.reaches(center, radius, get_wall_rect()):
+## Empieza a borrarlo (lo llama el «¿Deshacer escritura?»). Verdadero si empieza.
+func undo() -> bool:
+	if _erase_time >= 0.0:
 		return false
 	_erase_time = 0.0
 	erased.emit()
 	queue_redraw()
 	return true
+
+
+## Onda de Agitar (retirado el 2026-10-28; ya no se conecta a EventBus.shockwave_fired).
+func receive_shockwave(center: Vector2, radius: float, _source: Node2D = null) -> bool:
+	if not ShockwaveWave.reaches(center, radius, get_wall_rect()):
+		return false
+	return undo()
 
 
 ## Interfaz del laser: rebota (chispa gris; el disparo se consume).
@@ -145,6 +155,10 @@ func _deflect() -> void:
 	_deflect_left = float(_cfg.get("deflect_s", 0.25))
 	deflected.emit()
 	queue_redraw()
+
+
+func _on_writing_undone(_id: StringName) -> void:
+	undo()
 
 
 func _on_pulse_fired(area: Area2D) -> void:

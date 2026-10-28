@@ -1,14 +1,14 @@
 # «¿Deshacer escritura?» (undo_prompt), muro de texto (typed_wall) y la Papelera en
 # el nivel (papelera_actor); 2026-10-28, paso 8 de docs/propuesta-mundo-4.md §8, §3.7
-# y §4.2.2. Un pulso de espaldas al panel lo usa una sola vez y da Agitar
-# (shockwave) para siempre (se guarda); Eco dice «No necesitas a nadie más.»
-# (importante) y despues sale el aviso «Agitar: U / LB (mando)»; con el gesto ya
-# obtenido arranca deshecho e inerte; un game over sin guardar lo pierde y el panel
-# vuelve; guardado, va a la Papelera y se recupera. La Papelera habla al acercarse
-# Isak (dos lineas importantes, una sola vez: seen_notices papelera_4_2) y, al
-# obtener Agitar, su ultima linea en voz baja (no importante, detras de la de Eco y
-# el aviso). El muro de texto solo cae con Agitar (0,4 s, para siempre); el pulso y
-# el laser rebotan. Ademas la sala borrados_test con el Isak real.
+# y §4.2.2. Desde la prueba del usuario del 2026-10-28 (Agitar retirado): un pulso
+# de espaldas al panel DESHACE LOS MUROS DE TEXTO del nivel (0,4 s, para siempre en
+# el intento) y no da ninguna habilidad ni aviso de control; Eco dice «No necesitas
+# a nadie más.» (importante) la primera vez por partida guardada; el panel vale en
+# cada intento (no queda inerte). La Papelera habla al acercarse Isak (dos lineas
+# importantes, una sola vez: seen_notices papelera_4_2) y, al usarse el panel, su
+# ultima linea en voz baja (no importante, detras de la de Eco). El muro de texto
+# solo cae con el panel; el pulso y el laser rebotan; Agitar (aunque se forzara la
+# onda) ya no lo toca. Ademas la sala borrados_test con el Isak real.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -18,9 +18,9 @@ const PATH: String = "user://test_undo_prompt_save.json"
 const TILE: float = 64.0
 const DT: float = 1.0 / 60.0
 const SHAKE: StringName = GameState.ABILITY_SHOCKWAVE
-const NOTICE: String = "Agitar: U / LB (mando)"
 const ECO_LINE: String = "No necesitas a nadie más."
 const STORY_NOTICE: StringName = &"papelera_4_2"
+const UNDO_NOTICE: StringName = &"undo_deshacer_4_2"
 
 var _root: Node2D
 var _isak: Isak
@@ -88,7 +88,6 @@ func _scene(kind: String) -> Node:
 func _prompt(cell: Vector2i = Vector2i(4, 9)) -> UndoPrompt:
 	var node := _scene("undo_prompt") as UndoPrompt
 	node.object_id = &"deshacer_prueba"
-	node.ability = SHAKE
 	node.story_line = "deshacer_4_2"
 	node.position = Vector2(cell) * TILE
 	_root.add_child(node)
@@ -141,15 +140,13 @@ func _texts() -> Array[String]:
 func test_catalog_entries() -> void:
 	var entry: Dictionary = _types().get("undo_prompt", {})
 	assert_eq(entry.get("scene"), "res://scenes/levels/undo_prompt.tscn")
-	assert_eq(entry.get("allowed", {}).get("ability"), ["shockwave"])
+	assert_false((entry.get("fields", {}) as Dictionary).has("ability"), "Ya no da ninguna habilidad")
 	var section: Dictionary = World4ObjectsConfig.section("undo_prompt")
 	assert_eq(String(section.get("story_lines", {}).get("deshacer_4_2", "")), ECO_LINE, "La frase del doc")
+	assert_eq(String(section.get("subtitle", "")), "Toca para deshacer", "Sin «Agita el dispositivo»")
 	assert_false(section.has("room_tint"), "Sin tinte del nivel")
 	assert_eq(_types().get("typed_wall", {}).get("scene"), "res://scenes/levels/typed_wall.tscn")
 	assert_eq(_types().get("papelera_actor", {}).get("scene"), "res://scenes/levels/papelera_actor.tscn")
-	var eco_line: Dictionary = World1ObjectsConfig.data().get("types", {}).get("eco_line", {})
-	assert_true((eco_line.get("allowed", {}).get("unless_ability", []) as Array).has("shockwave"),
-		"eco_line admite unless_ability shockwave")
 	var box_data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/eco_text_box.json"))
 	var papelera: Dictionary = box_data.get("speakers", {}).get("papelera", {})
 	assert_eq(String(papelera.get("name", "")), "Papelera", "Interlocutor nuevo papelera")
@@ -157,11 +154,12 @@ func test_catalog_entries() -> void:
 	assert_true(ResourceLoader.exists(String(papelera.get("icon", ""))), "Con su icono propio")
 
 
-# --- «¿Deshacer escritura?»: una sola vez ---
+# --- «¿Deshacer escritura?» ---
 
-func test_one_pulse_gives_shockwave_then_eco_then_notice() -> void:
+func test_one_pulse_undoes_the_walls_with_the_eco_line_and_no_ability() -> void:
 	var notices := _notices()
 	var prompt := _prompt()
+	var wall := _wall()
 	await wait_process_frames(1)
 	assert_false(prompt.is_on())
 	assert_true(prompt.is_help_available())
@@ -173,14 +171,14 @@ func test_one_pulse_gives_shockwave_then_eco_then_notice() -> void:
 	watch_signals(prompt)
 	_fire_pulse()
 	assert_true(prompt.is_on(), "Un pulso de espaldas lo usa")
-	assert_signal_emitted_with_parameters(prompt, "switched_on", [&"deshacer_prueba", true])
+	assert_signal_emitted(prompt, "switched_on")
 	assert_true(_isak.is_facing_back(), "Isak de espaldas")
-	assert_true(GameState.is_ability_obtained(SHAKE), "Obtiene Agitar para siempre")
-	assert_true(GameState.is_ability_unlocked(SHAKE))
-	assert_true(GameState.has_unsaved_changes(), "Queda «sin guardar», como toda habilidad")
-	assert_eq(_texts(), [ECO_LINE, NOTICE], "Primero la frase de Eco y despues el aviso")
-	assert_true(_lines[0].important and _lines[1].important, "Las dos importantes (pausan)")
-	assert_true(GameState.is_notice_seen(SHAKE))
+	assert_true(wall.is_erasing(), "El muro de texto se deshace")
+	assert_false(GameState.is_ability_obtained(SHAKE), "Ya no da Agitar")
+	assert_false(GameState.is_ability_unlocked(SHAKE))
+	assert_eq(_texts(), [ECO_LINE], "Solo la frase de Eco, sin aviso de control")
+	assert_true(_lines[0].important, "Importante (pausa)")
+	assert_true(GameState.is_notice_seen(UNDO_NOTICE), "La linea, una vez por partida")
 	assert_eq(prompt.get_animation(), UndoPrompt.ANIM_HIT)
 	assert_false(prompt.is_room_tinted(), "No tine el nivel")
 	prompt.advance(0.5)
@@ -188,73 +186,26 @@ func test_one_pulse_gives_shockwave_then_eco_then_notice() -> void:
 	assert_eq(prompt.get_animation(), UndoPrompt.ANIM_ON)
 	assert_false(prompt.is_help_available(), "Usado no ayuda")
 	_lines.clear()
-	assert_false(prompt.receive_pulse(_pulse), "Se usa una sola vez")
+	assert_false(prompt.receive_pulse(_pulse), "En el intento se usa una vez")
 	assert_eq(_lines.size(), 0)
 	notices.free()
 
 
-func test_with_shockwave_already_obtained_it_starts_used_and_inert() -> void:
-	GameState.obtain_ability(SHAKE)
-	GameState.mark_notice_seen(SHAKE)
-	_lines.clear()
-	var prompt := _prompt()
-	await wait_process_frames(1)
-	assert_true(prompt.is_on(), "Arranca deshecho")
-	assert_true(prompt.is_inert())
-	assert_false(HelpCatalog.is_help_live(prompt), "Sin Q")
-	_isak_at(4, 9)
-	_fire_pulse()
-	assert_false(_isak.is_facing_back(), "No responde")
-	assert_eq(_lines.size(), 0, "Ni linea ni aviso")
-
-
-# --- Guardado, game over y Papelera ---
-
-func test_saved_and_reloaded() -> void:
+func test_each_attempt_it_is_ready_again_and_the_line_is_said_once() -> void:
 	_prompt().switch_on()
-	assert_true(GameState.save_game())
-	assert_true(SaveFile.read(PATH).get("abilities_obtained", []).has("shockwave"))
-	GameState.reset_progress()
-	assert_false(GameState.is_ability_unlocked(SHAKE))
-	assert_true(GameState.load_game())
-	assert_true(GameState.is_ability_obtained(SHAKE), "Tras cargar sigue obtenido")
+	_lines.clear()
 	var again := _prompt(Vector2i(8, 9))
 	await wait_process_frames(1)
-	assert_true(again.is_inert(), "Con la partida cargada no se repite")
-
-
-func test_game_over_without_saving_loses_the_gesture_and_the_prompt_comes_back() -> void:
-	assert_true(GameState.save_game(), "Copia sin el gesto")
-	_prompt().switch_on()
-	GameState.apply_rollback(GameState.ROLLBACK_GAME_OVER)
-	assert_false(GameState.is_ability_obtained(SHAKE), "Lo no guardado se pierde")
-	assert_false(GameState.get_trash().get(GameState.TRASH_ABILITIES, []).has("shockwave"), "No estaba guardado")
-	var again := _prompt(Vector2i(8, 9))
-	await wait_process_frames(1)
-	assert_false(again.is_on(), "Tras el rollback sin el gesto, vuelve")
-	_lines.clear()
+	assert_false(again.is_on(), "Otro intento: listo otra vez (no queda inerte)")
+	assert_false(again.is_inert())
+	assert_true(HelpCatalog.is_help_live(again))
 	assert_true(again.switch_on())
-	assert_true(GameState.is_ability_obtained(SHAKE), "Se obtiene otra vez")
-	assert_eq(_texts(), [ECO_LINE], "Con la linea de Eco")
-
-
-func test_saved_gesture_goes_to_the_trash_and_comes_back() -> void:
-	_prompt().switch_on()
-	assert_true(GameState.save_game())
-	GameState.apply_rollback(GameState.ROLLBACK_GAME_OVER)
-	assert_true(GameState.get_trash().get(GameState.TRASH_ABILITIES, []).has("shockwave"),
-		"Eco lo desecha a la Papelera")
-	assert_false(GameState.is_ability_unlocked(SHAKE), "Hasta recuperarlo no hay Agitar")
-	assert_true(GameState.recover_trash())
-	assert_true(GameState.is_ability_obtained(SHAKE), "Recuperado de la Papelera")
-	var again := _prompt(Vector2i(8, 9))
-	await wait_process_frames(1)
-	assert_true(again.is_inert())
+	assert_eq(_lines.size(), 0, "La linea de Eco no se repite")
 
 
 # --- La Papelera en el nivel ---
 
-func test_papelera_speaks_when_isak_comes_close_then_whispers_after_the_gesture() -> void:
+func test_papelera_speaks_when_isak_comes_close_then_whispers_after_the_undo() -> void:
 	var notices := _notices()
 	_isak_at(20, 9)
 	var papelera := _papelera()
@@ -273,16 +224,15 @@ func test_papelera_speaks_when_isak_comes_close_then_whispers_after_the_gesture(
 	assert_eq(_lines.size(), 2, "Las dos lineas de la presentacion")
 	assert_true(_lines[0].important and _lines[1].important, "Importantes: pausan")
 	assert_string_starts_with(String(_lines[0].text), "Aquí llega lo que él tira.")
-	assert_string_starts_with(String(_lines[1].text), "Si quieres deshacer algo, agita.")
+	assert_string_starts_with(String(_lines[1].text), "Si quieres deshacer algo, díselo a ese panel.")
 	assert_true(GameState.is_notice_seen(STORY_NOTICE), "Un solo uso (seen_notices)")
 	papelera.advance(1.0)
 	assert_eq(_lines.size(), 2, "No se repite")
 	_lines.clear()
 	_fire_pulse()
 	assert_true(prompt.is_on())
-	assert_eq(_texts(), [ECO_LINE, NOTICE, "Él no soporta el silencio. Acuérdate."],
-		"Eco, el aviso y despues la Papelera en voz baja")
-	assert_false(_lines[2].important, "La ultima no pausa")
+	assert_eq(_texts(), [ECO_LINE, "Él no soporta el silencio. Acuérdate."], "Eco y despues la Papelera en voz baja")
+	assert_false(_lines[1].important, "La ultima no pausa")
 	assert_eq(papelera.get_state(), PapeleraActor.State.DONE)
 	papelera.advance(0.1)
 	assert_eq(papelera.get_animation(), &"empty")
@@ -303,7 +253,7 @@ func test_papelera_speaks_through_the_level_text_box_as_papelera() -> void:
 	assert_eq(box.get_speaker_text(), "Papelera")
 
 
-func test_papelera_is_silent_when_already_told_or_with_the_gesture() -> void:
+func test_papelera_is_silent_when_already_told() -> void:
 	GameState.mark_notice_seen(STORY_NOTICE)
 	_isak_at(4, 9)
 	var told := _papelera()
@@ -311,20 +261,12 @@ func test_papelera_is_silent_when_already_told_or_with_the_gesture() -> void:
 	told.advance(0.1)
 	assert_eq(told.get_state(), PapeleraActor.State.DONE, "Aviso visto: calla")
 	assert_eq(told.get_animation(), &"empty")
-	told.free()
-	GameState.reset_progress()
-	GameState.obtain_ability(SHAKE)
-	_lines.clear()
-	var owned := _papelera()
-	await wait_process_frames(1)
-	owned.advance(0.1)
-	assert_eq(owned.get_state(), PapeleraActor.State.DONE, "Con Agitar ya obtenido: calla")
 	assert_eq(_lines.size(), 0)
 
 
 # --- Muro de texto ---
 
-func test_typed_wall_only_falls_to_shockwave_and_for_good() -> void:
+func test_typed_wall_only_falls_to_the_prompt_and_for_good() -> void:
 	var wall := _wall()
 	await wait_process_frames(1)
 	assert_true(wall.is_solid())
@@ -338,14 +280,12 @@ func test_typed_wall_only_falls_to_shockwave_and_for_good() -> void:
 	wall.on_laser_hit(10.0, _isak)
 	assert_signal_emit_count(wall, "deflected", 2, "El laser rebota")
 	assert_true(wall.is_solid())
-	# Agitar lejos (a mas de 2,5 tiles) no lo toca.
-	var center := Vector2(640.0 - 170.0, 600.0)
-	assert_false(wall.receive_shockwave(center, 160.0), "Fuera del radio")
-	EventBus.shockwave_fired.emit(center, 160.0, _isak)
-	assert_false(wall.is_erasing())
-	# A 2,5 tiles o menos lo deshace: se borra de atras adelante en 0,4 s.
-	EventBus.shockwave_fired.emit(Vector2(640.0 - 150.0, 600.0), 160.0, _isak)
-	assert_true(wall.is_erasing(), "Agitar lo alcanza")
+	# Una onda de Agitar (retirado) ya no lo toca.
+	EventBus.shockwave_fired.emit(Vector2(640.0 - 50.0, 600.0), 160.0, _isak)
+	assert_false(wall.is_erasing(), "Agitar ya no lo deshace")
+	# El «¿Deshacer escritura?» del nivel lo deshace: se borra de atras adelante en 0,4 s.
+	EventBus.writing_undone.emit(&"deshacer_prueba")
+	assert_true(wall.is_erasing(), "El panel lo deshace")
 	assert_signal_emitted(wall, "erased")
 	assert_true(wall.is_solid(), "Mientras se borra sigue siendo pared")
 	assert_false(wall.is_help_available())
@@ -385,8 +325,8 @@ func test_borrados_test_room_with_the_real_isak() -> void:
 	assert_not_null(prompt, "El panel de la sala")
 	assert_not_null(wall, "El muro de la sala")
 	assert_not_null(papelera, "La Papelera de la sala")
-	assert_false(GameState.is_ability_unlocked(SHAKE), "La sala empieza sin Agitar")
-	# Sin el gesto, el muro no se cruza.
+	assert_eq(prompt.ability, &"", "El panel no da ninguna habilidad")
+	# Sin usar el panel, el muro no se cruza (y gesture_shake no hace nada).
 	sim.isak.global_position = Vector2(18.5 * TILE, 10 * TILE)
 	sim.settle()
 	_walk(sim, 1.0, 2.0)
@@ -394,32 +334,28 @@ func test_borrados_test_room_with_the_real_isak() -> void:
 	sim.input.shake_pressed = true
 	sim.step()
 	sim.step(sim.steps_for(0.5))
-	assert_true(wall.is_solid(), "Sin la habilidad no hay Agitar")
+	assert_true(wall.is_solid(), "Agitar no existe")
 	# La Papelera habla al acercarse.
 	sim.isak.global_position = Vector2(5.5 * TILE, 10 * TILE)
 	sim.settle()
 	papelera.advance(0.1)
 	assert_eq(papelera.get_state(), PapeleraActor.State.TOLD, "Junto a la Papelera, su presentacion")
-	# Pulso de espaldas al panel.
+	# Pulso de espaldas al panel: el muro se deshace.
 	sim.isak.global_position = Vector2(12.5 * TILE, 10 * TILE)
 	sim.settle()
 	sim.input.pulse_pressed = true
 	sim.step()
 	assert_true(prompt.is_on(), "El pulso de espaldas lo usa")
-	assert_true(GameState.is_ability_obtained(SHAKE))
+	assert_false(GameState.is_ability_obtained(SHAKE), "Sin Agitar")
 	assert_eq(papelera.get_state(), PapeleraActor.State.DONE, "La Papelera ya dijo todo")
+	assert_true(wall.is_erasing(), "El muro se deshace")
 	prompt.advance(0.5)
+	wall.advance(0.5)
+	assert_true(wall.is_cleared(), "Y queda deshecho")
 	sim.step_until(func() -> bool: return sim.state() == PlayerState.IDLE and not sim.isak.is_facing_back(),
 		sim.steps_for(1.5))
-	# Agitar junto al muro lo deshace y se pasa.
-	sim.isak.global_position = Vector2(20.5 * TILE, 10 * TILE)
-	sim.settle()
-	sim.input.shake_pressed = true
-	sim.step()
-	sim.step(sim.steps_for(0.8))
-	assert_true(wall.is_erasing(), "Agitar a menos de 2,5 tiles lo alcanza")
-	wall.advance(0.5)
-	assert_true(wall.is_cleared(), "Y lo deshace")
 	await wait_physics_frames(1)
+	sim.isak.global_position = Vector2(18.5 * TILE, 10 * TILE)
+	sim.settle()
 	_walk(sim, 1.0, 3.0)
 	assert_gt(sim.isak.global_position.x, 24.0 * TILE, "Ya se pasa")

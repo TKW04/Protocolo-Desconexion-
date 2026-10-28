@@ -494,9 +494,10 @@ class CuratorArenaTest(unittest.TestCase):
 
 class SeenArenaTest(unittest.TestCase):
     """Arena 4-boss de El Visto (paso 17 de docs/propuesta-mundo-4.md, §7.2, 2026-10-28): validador completo (avisos y
-    esquivar, reaparicion de la fase 1 a tiro, escudo a tiro de Agitar desde las burbujas fijas y no desde el suelo,
-    Stickers que se limpian con un Agitar, «escribiendo…» a tiro de pulso desde el suelo, ventanas por fase y acceso,
-    marca, energia torpe y cargadores), con casos negativos sinteticos."""
+    esquivar, reaparicion de la fase 1 a tiro, escudo a tiro de pulso desde las burbujas fijas y no desde el suelo,
+    Stickers a tiro de pulso desde el suelo y tiempo entre tandas para desinflarlos, subir y pulsar el escudo,
+    «escribiendo…» a tiro de pulso desde el suelo, ventanas por fase y acceso, marca, energia torpe sin Agitar
+    —retirado el 2026-10-28— y cargadores), con casos negativos sinteticos."""
 
     @classmethod
     def setUpClass(cls):
@@ -527,7 +528,8 @@ class SeenArenaTest(unittest.TestCase):
             self.assertEqual(sorted(scenarios), ["base", "todo al maximo", "tope del acceso"])
             for name, e in scenarios.items():
                 self.assertGreaterEqual(e["min_margin"], 20.0, (lap, name))
-        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [47.5, 65.0, 60.0])
+        # Sin Agitar (2026-10-28): la fase 2 ya no paga 2 Agitares por ventana ni la 3 uno por mensaje.
+        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [47.5, 45.0, 50.0])
 
     def test_windows_fit_by_phase_and_access(self):
         windows = self.result["boss"]["seen_windows"]
@@ -541,17 +543,29 @@ class SeenArenaTest(unittest.TestCase):
 
     def test_shield_from_the_fixed_bubbles_and_never_from_the_floor(self):
         p2 = self.result["boss"]["seen_phase2"]
-        self.assertEqual(sorted(tuple(c) for c in p2["shield_cells"]),
-                         [(4, 5), (5, 5), (6, 5), (13, 5), (14, 5), (15, 5)])
+        # Pulso (96 px) desde el borde interior de las burbujas fijas (columnas 5-6 y 13-14).
+        self.assertEqual(sorted(tuple(c) for c in p2["shield_cells"]), [(5, 5), (6, 5), (13, 5), (14, 5)])
         self.assertEqual(p2["floor_cells"], 0)
-        self.assertTrue(p2["clean_cells"], "un Agitar desde el suelo limpia la tanda")
+        self.assertTrue(p2["clean_cells"], "los Stickers quedan a tiro de pulso desde el suelo")
+        self.assertEqual(p2["shield_layers"], 2, "Kernel: dos capas, dos pulsos")
+        self.assertLessEqual(p2["climb_s"] + p2["pulse_cycle_s"], p2["sticker_interval_s"])
         boss = copy.deepcopy(self.boss)
-        boss["arena"]["shield_margin_px"] = 200.0
-        self.assertIn("fase 2: el escudo se alcanza con Agitar desde el suelo", self.messages(self.run_arena(boss)))
+        boss["arena"]["shield_margin_px"] = 300.0
+        self.assertIn("fase 2: el escudo se alcanza con el pulso desde el suelo", self.messages(self.run_arena(boss)))
         boss = copy.deepcopy(self.boss)
-        boss["arena"]["sticker_cols"] = [2, 10, 17]
-        self.assertIn("fase 2: ningun Agitar desde el suelo alcanza toda una tanda de Stickers",
-                      self.messages(self.run_arena(boss)))
+        boss["arena"]["shield_margin_px"] = 0.0
+        boss["arena"]["body"] = [7, 1, 6, 1]
+        self.assertIn("fase 2: el escudo no queda a tiro de pulso", self.messages(self.run_arena(boss)))
+        boss = copy.deepcopy(self.boss)
+        boss["phase2"]["sticker_interval_s"] = 2.0
+        self.assertIn("fase 2: entre tandas de Stickers hay 2.00 s", self.messages(self.run_arena(boss)))
+
+    def test_the_arena_does_not_use_shockwave(self):
+        level = copy.deepcopy(self.level)
+        self.assertNotIn("shockwave", level["abilities_available"])
+        level["abilities_available"]["shockwave"] = True
+        self.assertIn("la arena no usa Agitar", self.messages(self.run_arena(level=level)))
+        self.assertNotIn("shakes", json.dumps(self.boss["validation_model"]))
 
     def test_typing_bubble_within_pulse_from_the_floor(self):
         self.assertGreater(self.result["boss"]["seen_phase3"]["typing_floor_cells"], 0)
@@ -582,7 +596,7 @@ class SeenArenaTest(unittest.TestCase):
 
     def test_energy_margin_too_small_and_slow_chargers(self):
         boss = copy.deepcopy(self.boss)
-        boss["validation_model"]["laps"]["2"]["debug_s"] = [4.0, 8.0, 4.5]
+        boss["validation_model"]["laps"]["2"]["debug_s"] = [4.0, 14.0, 4.5]
         boss["laps"]["3"]["charger_cooldown_s"] = 13.0
         msg = self.messages(self.run_arena(boss))
         self.assertIn("base, vuelta 2, fase 2: pico de la pelea torpe 100.0", msg)

@@ -1,13 +1,15 @@
 # Pruebas de conjunto del Mundo 4 (paso 21 de docs/propuesta-mundo-4.md §8, 2026-10-28;
 # §7.4) con las escenas reales y el Isak real:
-# - rejugar los Mundos 1-3 con Agitar: en cada nivel y arena real de los Mundos 1-3,
+# - rejugar los Mundos 1-3 con Agitar (retirado el 2026-10-28: ya no sale nunca,
+#   tests/test_shockwave.gd; la prueba sigue con la logica conservada, por si vuelve):
+#   en cada nivel y arena real de los Mundos 1-3,
 #   una onda de Agitar que alcanza TODO el nivel solo aturde enemigos (sin dano): no
 #   activa receptores ni terminales, no completa el nivel, no da habilidades, no toca
 #   el Sync Rate de Isak ni el contador del jefe y no abre su ventana;
 # - congelarse no mata: Isak congelado mucho mas que una zona «Visto» sigue con su
 #   Sync Rate y vivo;
 # Los otros negativos de §7.4: la ola no mata sola (tests/test_seen_wave.gd), quieto pierde (tests/test_seen_bot.gd, perfil idle), sin
-# Agitar no se sale de «Mensajes borrados» (tests/test_level_4_2.py y
+# usar el «¿Deshacer escritura?» no se sale de «Mensajes borrados» (tests/test_level_4_2.py y
 # tests/test_world4_validator.py), salidas del validador de los Mundos 1-3 identicas
 # y Kernel/Raiz sin cambios (comparacion del paso 21 en §8.1) y los del modelo en
 # tests/test_world4_negatives.py.

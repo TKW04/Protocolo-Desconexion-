@@ -8,12 +8,13 @@
 ##   04_fase1_ventana         ventana de la fase 1 (reaparece detras de Isak)
 ##   05_fase1_marca           marca «sin leer» en el check gris (Debug -> pulso)
 ##   06_fase2                 fase 2 «Grupo» (Trolls y Stickers, escudo)
-##   07_fase2_agitar          Agitar con el escudo levantado
+##   07_fase2_escudo          pulso al escudo desde la burbuja fija (sin Agitar,
+##                            retirado el 2026-10-28)
 ##   08_fase2_ventana         ventana de la fase 2 (El Visto en el suelo)
 ##   09_fase3_escribiendo     el «escribiendo…» gigante con dos puntos o mas
 ##   10_fase3_congelado       Isak congelado por el mensaje (ESCENIFICADO: en el
 ##                            primer «escribiendo…» de la fase 3 el bot no lo
-##                            interrumpe; despues Agita para soltarse y sigue)
+##                            interrumpe; espera a que se acabe y sigue)
 ##   11_fase3_ventana         ventana tras interrumpir el «escribiendo…»
 ##   12_golpe_final           golpe final
 ##   13_desarme               desarme en pixeles
@@ -39,9 +40,10 @@ func _ready() -> void:
 	dry_run = DisplayServer.get_name() == "headless"
 	if not shots_dir.is_empty():
 		DirAccess.make_dir_recursive_absolute(shots_dir)
-	EventBus.shockwave_fired.connect(func(_c: Vector2, _r: float, _s: Node2D) -> void:
-		if _boss != null and is_instance_valid(_boss) and _boss.get_phase() == 2 and _boss.is_shield_up():
-			_req("07_fase2_agitar", 5))
+	EventBus.pulse_fired.connect(func(_a: Area2D) -> void:
+		if _boss != null and is_instance_valid(_boss) and _boss.get_phase() == 2 and _boss.is_shield_up() \
+				and _boss.get_stickers().is_empty() and _isak != null and _isak.global_position.y < 7.0 * _tile:
+			_req("07_fase2_escudo", 3))
 	super._ready()
 
 
@@ -89,7 +91,7 @@ func _physics_process(delta: float) -> void:
 
 
 ## Politica: en el primer «escribiendo…» de la fase 3 se queda quieto (sin
-## pulso) para que el mensaje salga y lo congele; congelado, la del bot (Agitar).
+## pulso) para que el mensaje salga y lo congele; congelado, la del bot (espera).
 func _fight() -> void:
 	if _active() and _freeze_stage < 2 and _boss.get_phase() == 3 and not _isak.is_frozen():
 		var typing: StringName = _boss.get_typing_state()
@@ -104,8 +106,8 @@ func _fight() -> void:
 				return
 	if _freeze_stage == 1 and _isak.is_frozen():
 		_freeze_stage = 2
-	# Congelado por el mensaje escenificado: espera FREEZE_HOLD_FRAMES antes de
-	# Agitar para que la captura 10 muestre a Isak congelado (no ya soltandose).
+	# Congelado por el mensaje escenificado: FREEZE_HOLD_FRAMES quieto (la captura
+	# 10 muestra a Isak congelado); despues, la politica del bot (sigue esperando).
 	if _active() and _freeze_stage == 2 and _isak.is_frozen() and _frozen_frames < FREEZE_HOLD_FRAMES:
 		_frozen_frames += 1
 		_debug_want = false

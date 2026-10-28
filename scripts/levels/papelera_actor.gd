@@ -13,10 +13,10 @@
 ##    las lineas `intro` (importantes: pausan) y marca el aviso `notice`
 ##    (seen_notices, un solo uso por partida guardada, sin subir la version del
 ##    guardado).
-## 2. Cuando Isak obtiene la habilidad `ability` (EventBus.ability_obtained; la da
-##    el «¿Deshacer escritura?», que dice la frase de Eco y el aviso de control),
-##    la linea `after` en voz baja (no importante, ya sin pausa: va detras de las
-##    importantes en la cola).
+## 2. Cuando Isak usa el «¿Deshacer escritura?» (EventBus.writing_undone, si la
+##    historia tiene `after_undo`; desde el 2026-10-28, al retirarse Agitar) o
+##    obtiene la habilidad `ability` (EventBus.ability_obtained), la linea `after`
+##    en voz baja (no importante, ya sin pausa: va detras de las importantes).
 ## Con el aviso ya visto o la habilidad ya obtenida al cargar, calla (arte
 ## «empty»). En el hub no cambia nada de la Papelera. Tiempo del mundo.
 class_name PapeleraActor
@@ -56,6 +56,7 @@ func _ready() -> void:
 			or (ability != &"" and GameState.is_ability_obtained(ability)):
 		_state = State.DONE
 	EventBus.ability_obtained.connect(_on_ability_obtained)
+	EventBus.writing_undone.connect(_on_writing_undone)
 	_update_sprite()
 
 
@@ -143,9 +144,20 @@ func _in_range(isak: Isak) -> bool:
 		and absf(isak.global_position.y - get_feet().y) <= radius
 
 
-func _on_ability_obtained(ability: StringName) -> void:
-	if _state != State.TOLD or ability != StringName(String(get_story().get("ability", ""))):
+func _on_writing_undone(_id: StringName) -> void:
+	if _state != State.TOLD or not bool(get_story().get("after_undo", false)):
 		return
+	_finish()
+
+
+func _on_ability_obtained(ability: StringName) -> void:
+	if _state != State.TOLD or ability == &"" or ability != StringName(String(get_story().get("ability", ""))):
+		return
+	_finish()
+
+
+## La linea `after` y en silencio para siempre.
+func _finish() -> void:
 	_state = State.DONE
 	var after: String = get_after_line()
 	if not after.is_empty():

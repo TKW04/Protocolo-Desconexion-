@@ -25,7 +25,7 @@ El hub es la Pantalla de Inicio, un lugar seguro donde las carpetas son las puer
 | **1** | Notificaciones | Concentración | Deslizar | Puntos rojos que persiguen, pop-ups que bloquean el paso y la vista. |
 | **2** | El Feed | Tiempo | Mantener presionado | Scroll vertical forzado, el nivel avanza solo. |
 | **3** | La Vitrina | Imagen | Pellizcar | Plataformas que solo existen si tienes likes. Espejos y filtros que distorsionan. |
-| **4** | El Chat | Amistades | Agitar | Burbujas de texto como plataformas. El "visto" te congela. |
+| **4** | El Chat | Amistades | ~~Agitar~~ (retirado el 2026-10-28, `propuesta-mundo-4.md` §8.1) | Burbujas de texto como plataformas. El "visto" te congela. |
 | **5** | La Tienda | Voluntad | Combinación | Todo tiene un precio y los atajos tienen trampa. |
 | **6** | La Nube | Todo | Todos | Todo lo anterior mezclado. Núcleo de Eco y jefe final. |
 

@@ -1,5 +1,4 @@
-"""Mundo 4 «El Chat» en el validador (2026-10-28, paso 9 de docs/propuesta-mundo-4.md §7.1 y §8): Agitar,
-congelado y zonas «Visto», burbujas, «escribiendo…», autocorrector, Linterna y oscuridad, Troll, Troll
+"""Mundo 4 «El Chat» en el validador (2026-10-28, paso 9 de docs/propuesta-mundo-4.md §7.1 y §8): congelado y zonas «Visto», burbujas, «escribiendo…», autocorrector, Linterna y oscuridad, Troll, Troll
 disfrazado, Fantasma, Sticker, muro de texto y ola de «Visto» para tools/validate_level.py y
 tools/level_plan.py.
 
@@ -13,21 +12,22 @@ arenas es identica byte a byte):
     de la celda, como una '-'). Las eliminadas no existen para el grafo;
   - los pasos en tinta (ink_only con kind step) son '-' solo con la Linterna (un flashlight_pickup en el nivel o
     `linterna` en --allies); sin ella, nada;
-  - «¿Deshacer escritura?» (undo_prompt; UndoPrompt hereda de DndSwitch) es un `dnd_switch` que da `ability`
-    (shockwave) con la configuracion de su seccion (`_config`), como la herramienta «Recortar» del Mundo 3;
-  - el muro de texto (typed_wall) es una pieza `_pound_card` de 1 x height_tiles con `wall` y `_shake`: una
-    pared que abre AGITAR (no el golpe al suelo) desde una celda de pie cuya onda (circulo de radius_px, 160,
-    alrededor del celular) la alcanza; el plan le pone el paso `shake` y espera su borrado (erase_s).
+  - «¿Deshacer escritura?» (undo_prompt; UndoPrompt hereda de DndSwitch) es un `dnd_switch` (pulso de espaldas)
+    con la configuracion de su seccion (`_config`) y la marca TYPED_UNDO como `ability` (no da ninguna habilidad:
+    desde el 2026-10-28, al retirarse Agitar, solo deshace los muros de texto del nivel);
+  - el muro de texto (typed_wall) es una pieza `_pound_card` de 1 x height_tiles con `wall` y `_typed`: una
+    pared que se abre en cuanto el «¿Deshacer escritura?» esta usado (desde cualquier celda junto a ella; antes la
+    abria la onda de Agitar); el plan espera su borrado (erase_s) si llega a la vez.
 
-World4(model, Gate) se crea solo con algo del Mundo 4 (LevelModel.w4). Agitar es una habilidad del grafo
-(abilities_available.shockwave o el «¿Deshacer escritura?» ya usado). Sobre el camino principal:
+World4(model, Gate) se crea solo con algo del Mundo 4 (LevelModel.w4). Agitar (shockwave) esta retirado: nada del
+validador lo usa. Sobre el camino principal:
 
   - Zonas «Visto» (seen_zone): peligro de TIEMPO (la congelacion cuesta freeze_s, sin dano). Toda zona siempre
     activa que el camino cruza tiene su doble check a tiro de pulso desde una celda de pie del camino antes de
     entrar (paso `pulse_seen`, que la interrumpe interrupt_s, 4 s); si no, error. Con ciclo, el plan espera el
-    hueco (`wait`, como mucho off_s + on_s). Regla del 4-1 (§3.3): sin Agitar en el nivel, ningun peligro
-    (pinchos, linea de un Troll, Fantasma o Sticker) alcanza a Isak congelado en una zona: error si uno queda a
-    FROZEN_REACH_TILES (1) o menos de ella.
+    hueco (`wait`, como mucho off_s + on_s). Regla de §3.3 (la del 4-1, en todo el Mundo 4 desde que no hay
+    Agitar que libere): ningun peligro (pinchos, linea de un Troll, Fantasma o Sticker) alcanza a Isak congelado
+    en una zona: error si uno queda a FROZEN_REACH_TILES (1) o menos de ella.
   - «Escribiendo…»: la burbuja existe desde type_s (1,0 s) despues de su disparo (`trigger`: otra burbuja que el
     camino pisa antes; `trigger_zone`: celdas que el camino toca antes). Si el camino aterriza en ella, el plan
     espera lo que falte en la celda de despegue (`wait_typing`); si el disparo no ocurre antes de despegar, o la
@@ -39,12 +39,11 @@ World4(model, Gate) se crea solo con algo del Mundo 4 (LevelModel.w4). Agitar es
   - Linterna y Modo oscuro: los pasos en tinta solo con ella (arriba); la legibilidad de §3.6 la comprueba el
     esquema. Salida: zonas oscuras y si hay Linterna.
   - Troll: si el camino entra en su linea (cuerpos solapados en vertical y a detect_tiles o menos), el plan lo
-    aturde antes con un pulso (si lo alcanza desde esa celda) o con Agitar (si lo alcanza la onda); si no, error.
+    aturde antes con un pulso (si lo alcanza desde esa celda); si no, error.
     Troll disfrazado: si el camino pasa a unmask_tiles (2) o menos, el nivel necesita el Debug para distinguirlo
     (error si no lo tiene). Fantasma: al entrar en su detect_tiles (3), el plan espera a que reaparezca
-    (`wait_ghost`, vanish_s + hidden_s + anticipacion) y lo aturde con un pulso (o Agitar). Sticker: a
-    detect_tiles (6) o menos, Agitar lo desinfla para siempre (+5) o, sin Agitar, un pulso lo para 3 s.
-    Los pasos `shake` gastan energy_cost (10) en el presupuesto y duran windup_s + exposed_s.
+    (`wait_ghost`, vanish_s + hidden_s + anticipacion) y lo aturde con un pulso. Sticker: a detect_tiles (6) o
+    menos, un pulso lo desinfla para siempre (+5; pulse_deflates de data/enemies/sticker.json).
   - Ola de «Visto» (seen_wave): amenaza movil en X (generaliza el borde del scroll de tools/scroll_model.py):
     arranca al cruzar Isak start_col, avanza con la velocidad de la seccion del frente, espera en cada parada
     hasta que Isak cruza resume_col (una vez) y se apaga en end_col. Se simula sobre la linea de tiempo del plan
@@ -52,8 +51,8 @@ World4(model, Gate) se crea solo con algo del Mundo 4 (LevelModel.w4). Agitar es
     de Isak; si no, error («la ola alcanza a Isak»). Las paradas que el camino pasa salen en la salida
     (`wait_wave` queda reservado para los niveles reales: hoy ninguna sala necesita esperar en una parada).
 
-Camino exportado (isak-path/1): pasos nuevos shake, pulse_seen, wait_typing, wait_autocorrect, wait_ghost y
-wait_wave (este ultimo, reservado).
+Camino exportado (isak-path/1): pasos nuevos pulse_seen, wait_typing, wait_autocorrect, wait_ghost y wait_wave
+(este ultimo, reservado). El paso `shake` (Agitar) ya no se genera; level_plan lo sigue entendiendo.
 """
 import copy
 import math
@@ -67,6 +66,8 @@ WAIT_ACTIONS = ("wait_typing", "wait_autocorrect", "wait_ghost", "wait_wave")
 ACTIONS = ("shake", "pulse_seen") + WAIT_ACTIONS
 # Distancia (tiles) a la que un peligro alcanza a Isak congelado en una zona «Visto» (regla del 4-1).
 FROZEN_REACH_TILES = 1
+# Marca del «¿Deshacer escritura?» en el grafo (no es una habilidad: deshace los muros de texto).
+TYPED_UNDO = "typed_undo"
 # Margen de la ola por defecto (tiles; validation.wave_margin_tiles, §7.1: 3 en Caché).
 WAVE_MARGIN_TILES = 3.0
 PULSE_SAMPLE_PX = 4.0
@@ -147,7 +148,7 @@ def lower(level, catalog, allies=()):
             one_way([(x + i, y) for i in range(int(p.get("width_tiles", 1)))])
         elif kind == "undo_prompt":
             params = dict(obj.get("params", {}))
-            params["ability"] = str(p.get("ability", "shockwave"))
+            params["ability"] = TYPED_UNDO
             params["_config"] = "undo_prompt"
             objects.append({"type": "dnd_switch", "x": x, "y": y, "params": params})
             continue
@@ -155,7 +156,7 @@ def lower(level, catalog, allies=()):
             h = int(p.get("height_tiles", 3))
             objects.append({"type": "_pound_card", "x": x, "y": y, "params": {
                 "id": str(p.get("id", "typed_wall_%d_%d" % (x, y))), "width_tiles": 1, "rows": h, "one_way": False,
-                "hidden": False, "card_height_px": h * 64.0, "pounds": 1, "wall": True, "_shake": True}})
+                "hidden": False, "card_height_px": h * 64.0, "pounds": 1, "wall": True, "_typed": True}})
             continue
         objects.append(obj)
     out["objects"] = objects
@@ -185,11 +186,11 @@ class World4:
         self.cfg_wave = catalog.get("seen_wave", {})
         abilities = self._load_abilities(model)
         sw = abilities.get("shockwave", {}) if isinstance(abilities.get("shockwave"), dict) else {}
+        # Agitar retirado (2026-10-28): solo se guardan sus cifras para el paso `shake` de level_plan (que ya no
+        # se genera).
         self.shake_radius = float(sw.get("radius_px", 160.0))
         self.shake_cost = float(sw.get("energy_cost", 10.0))
         self.shake_s = float(sw.get("windup_s", 0.15)) + float(sw.get("exposed_s", 0.25))
-        self.shake_cooldown = float(sw.get("cooldown_s", 1.0))
-        self.shake_base = bool(level.get("abilities_available", {}).get("shockwave", False))
         self.typed_erase_s = float(catalog.get("typed_wall", {}).get("erase_s", 0.4))
         self.lamp = flashlight_possible(level, getattr(model.rules, "allies", ()))
         self.zones = []
@@ -276,63 +277,28 @@ class World4:
         except (OSError, ValueError):
             return {}
 
-    # --- Agitar ---
+    # --- Muro de texto («¿Deshacer escritura?») ---
 
-    def shake_possible(self):
-        return self.shake_base or any(g.kind == "dnd" and g.ability == "shockwave" for g in self.m.gates)
+    def typed_opens(self, gate, node, state):
+        """El muro de texto (pieza _pound_card con _typed) esta deshecho: el «¿Deshacer escritura?» ya se uso."""
+        return any(g.kind == "dnd" and g.ability == TYPED_UNDO and g.gid in state for g in self.m.gates)
 
-    def has_shake(self, state):
-        if "shockwave" in self.m.forbidden:
-            return False
-        return self.shake_base or any(g.kind == "dnd" and g.ability == "shockwave" and g.gid in state
-                                      for g in self.m.gates)
-
-    def shake_x(self, rect, node, state):
-        """x de los pies (dentro de la celda de pie) desde la que la onda de Agitar alcanza `rect`, o None."""
-        m = self.m
-        rules = m.rules
-        w = m.world(state, False)
-        c, r = node
-        feet = (r + 1) * m.T
-        x = c * m.T
-        best = None
-        while x <= (c + 1) * m.T + EPS:
-            if not w.collides(x, feet) and not w.in_hazard(x, feet):
-                for facing in (1.0, -1.0):
-                    px, py = x + rules.phone_x * facing, feet + rules.phone_y
-                    qx = min(max(px, rect[0]), rect[2])
-                    qy = min(max(py, rect[1]), rect[3])
-                    if math.hypot(px - qx, py - qy) <= self.shake_radius + EPS:
-                        if best is None or abs(x - (c + 0.5) * m.T) < abs(best - (c + 0.5) * m.T):
-                            best = x
-            x += PULSE_SAMPLE_PX
-        return best
-
-    def shake_opens(self, gate, node, state):
-        """El muro de texto (pieza _pound_card con _shake) se abre con Agitar desde `node` (de pie)."""
-        return self.has_shake(state) and self.shake_x(gate.openers[0], node, state) is not None
-
-    def explain_shake(self, gate, state):
-        if not self.shake_possible():
-            return "%s solo lo deshace Agitar y el nivel no lo tiene (abilities_available.shockwave ni un " \
-                   "«¿Deshacer escritura?»)" % gate.label()
-        if not self.has_shake(state):
-            return "%s solo lo deshace Agitar y el «¿Deshacer escritura?» que lo da no se alcanza antes" % gate.label()
-        return "%s: la onda de Agitar no lo alcanza desde ninguna celda alcanzable" % gate.label()
+    def explain_typed(self, gate, state):
+        if not any(g.kind == "dnd" and g.ability == TYPED_UNDO for g in self.m.gates):
+            return "%s solo lo deshace un «¿Deshacer escritura?» y el nivel no tiene ninguno" % gate.label()
+        return "%s solo lo deshace el «¿Deshacer escritura?» y no se alcanza antes" % gate.label()
 
     # --- Comprobaciones sobre el camino principal (sin tiempo) ---
 
     def check(self, validator, start, goal_cells):
         rep = validator.report
-        info = {"shake": {"available": self.shake_base, "possible": self.shake_possible(),
-                          "radius_px": self.shake_radius, "energy_cost": self.shake_cost},
-                "zones": [], "autocorrect": [], "dark": {"zones": len(self.darks), "flashlight": self.lamp},
+        info = {"zones": [], "autocorrect": [], "dark": {"zones": len(self.darks), "flashlight": self.lamp},
                 "mimics": []}
         validator.result["world4"] = info
         m = self.m
         T = m.T
-        # Regla del 4-1: sin Agitar en el nivel, nada alcanza a Isak congelado.
-        if self.zones and not self.shake_possible():
+        # Regla de §3.3 (la del 4-1; en todo el Mundo 4 desde que no hay Agitar): nada alcanza a Isak congelado.
+        if self.zones:
             for z in self.zones:
                 reach = FROZEN_REACH_TILES * T
                 near = [s[4] for s in m.spike_rects if _rect_dist(z["rect"], s) <= reach]
@@ -346,8 +312,8 @@ class World4:
                     elif _rect_dist(z["rect"], en["body"]) <= (float(d.get("detect_tiles", 3.0)) + FROZEN_REACH_TILES) * T:
                         near.append("%s %s" % ("Fantasma" if en["kind"] == "ghost" else "Sticker", en["id"]))
                 if near:
-                    rep.error("zona «Visto» %s: un peligro alcanza a Isak congelado y el nivel no tiene Agitar "
-                              "(regla del 4-1): %s" % (z["id"], ", ".join(near)), z["cell"][1], z["cell"][0], z["id"])
+                    rep.error("zona «Visto» %s: un peligro alcanza a Isak congelado (no hay nada que lo libere "
+                              "antes: regla de §3.3): %s" % (z["id"], ", ".join(near)), z["cell"][1], z["cell"][0], z["id"])
         # Autocorrector: engaña, no mata.
         cfg_drop = int(self.cfg_bubble.get("max_drop_tiles", 3))
         for a in self.autocorrect:
@@ -391,7 +357,7 @@ class World4:
     # --- Plan del camino (con tiempo) ---
 
     def plan(self, planner, steps):
-        """Inserta los pasos del Mundo 4 (pulse_seen, esperas, Agitar y pulsos a enemigos), comprueba la ola y
+        """Inserta los pasos del Mundo 4 (pulse_seen, esperas y pulsos a enemigos), comprueba la ola y
         devuelve los pasos."""
         info = planner.v.result.setdefault("world4", {})
         steps = self._plan_zones(planner, steps, info)
@@ -537,9 +503,8 @@ class World4:
 
     def _plan_enemies(self, planner, steps, info):
         """Troll, Fantasma y Sticker: al entrar el camino en su alcance (el Troll, en su linea), el plan lo aturde
-        desde la primera celda de pie desde la que llega el pulso o Agitar (el Sticker, Agitar primero: lo desinfla
-        para siempre; un Agitar alcanza a todos los que pilla). El Fantasma antes se esfuma y reaparece detras:
-        wait_ghost y el pulso (o Agitar) a su sitio de reaparicion. Si el camino llega a pasar junto al enemigo
+        desde la primera celda de pie desde la que llega el pulso (al Sticker lo desinfla para siempre). El Fantasma
+        antes se esfuma y reaparece detras: wait_ghost y el pulso a su sitio de reaparicion. Si el camino llega a pasar junto al enemigo
         (a trigger_tiles: 1,5 el Sticker, 1 los demas) sin haberlo aturdido, es un error."""
         m = self.m
         T = m.T
@@ -572,17 +537,38 @@ class World4:
                         feet = (s["from"][1] + 1) * T
                         target_rect = (fx - bw * 0.5, feet - bh, fx + bw * 0.5, feet)
                     use = self._stun_step(s, en, target_rect)
+                    if use is None and en["kind"] == "sticker":
+                        # El Sticker persigue a Isak por su suelo y se para a trigger_tiles para inflarse: si
+                        # esta en el mismo suelo, el plan lo espera quieto (lo que tarda en llegar) y lo desinfla
+                        # con el pulso cuando se infla a su lado (2026-10-28, sin Agitar que llegaba de lejos).
+                        feet_y = (s["from"][1] + 1) * T
+                        if abs(b[3] - feet_y) <= T * 0.5:
+                            cx = (s["from"][0] + 0.5) * T
+                            direction = 1.0 if (b[0] + b[2]) * 0.5 >= cx else -1.0
+                            bw, bh = d.get("body_size", [40.0, 40.0])
+                            fx = cx + direction * float(d.get("trigger_tiles", 1.5)) * T
+                            near = (fx - bw * 0.5, feet_y - bh, fx + bw * 0.5, feet_y)
+                            use = self._stun_step(s, en, near)
+                            if use is not None:
+                                gap = max(0.0, abs((b[0] + b[2]) * 0.5 - fx))
+                                wait = gap / max(float(d.get("chase_speed_px_s", 120.0)), 1.0)
+                                if wait > EPS:
+                                    out.append({"action": "wait", "at": s["from"], "seconds": round(wait, 3),
+                                                "state": s["state"],
+                                                "reason": "Sticker %s: esperar a que llegue" % en["id"],
+                                                "target": {"type": "sticker", "id": en["id"]}})
+                                    entry["wait_s"] = round(wait, 2)
                     if use is None:
                         close = float(d.get("trigger_tiles", 1.0)) * T
                         if _rect_dist(_body_rect(m, s["to"]), b) <= close and en["kind"] != "ghost":
                             handled.add(en["id"])
-                            planner.error("%s %s: el camino pasa junto a el sin poder aturdirlo antes (ni el pulso ni "
-                                          "Agitar lo alcanzan desde una celda de pie)" % (_enemy_name(en["kind"]),
+                            planner.error("%s %s: el camino pasa junto a el sin poder aturdirlo antes (el pulso no lo "
+                                          "alcanza desde ninguna celda de pie)" % (_enemy_name(en["kind"]),
                                                                                          en["id"]), s["to"], en["id"])
                         elif en["kind"] == "ghost":
                             handled.add(en["id"])
-                            planner.error("Fantasma %s: reaparece detras de Isak en (fila %d, columna %d) y ni el pulso "
-                                          "ni Agitar llegan a su sitio" % (en["id"], s["from"][1], s["from"][0]),
+                            planner.error("Fantasma %s: reaparece detras de Isak en (fila %d, columna %d) y el pulso "
+                                          "no llega a su sitio" % (en["id"], s["from"][1], s["from"][0]),
                                           s["from"], en["id"])
                         continue
                     if en["kind"] == "ghost":
@@ -596,32 +582,17 @@ class World4:
                     handled.add(en["id"])
                     entry["with"] = use["action"]
                     einfo.append(entry)
-                    if use["action"] == "shake":
-                        # La misma onda alcanza a los demas que pilla.
-                        for other in self.enemies:
-                            if other["id"] not in handled and other["kind"] != "troll_mimic" and \
-                                    self.shake_x(other["body"], s["from"], s["state"]) is not None:
-                                handled.add(other["id"])
-                                einfo.append({"id": other["id"], "type": other["kind"],
-                                              "at": [s["from"][1], s["from"][0]], "with": "shake"})
             out.append(s)
         return out
 
     def _stun_step(self, s, en, rect):
         node, state = s["from"], s["state"]
         target = {"type": en["kind"], "id": en["id"]}
-        order = ("shake", "pulse") if en["kind"] == "sticker" else ("pulse", "shake")
-        for how in order:
-            if how == "pulse" and self.m.has_pulse(state):
-                hit = self._pulse_x(rect, node, state)
-                if hit is not None:
-                    return {"action": "pulse", "at": node, "state": state, "shot": {"x": hit[0], "facing": hit[1]},
-                            "target": target}
-            if how == "shake" and self.has_shake(state):
-                x = self.shake_x(rect, node, state)
-                if x is not None:
-                    return {"action": "shake", "at": node, "state": state, "shot": {"x": x, "facing": 1},
-                            "target": target}
+        if self.m.has_pulse(state):
+            hit = self._pulse_x(rect, node, state)
+            if hit is not None:
+                return {"action": "pulse", "at": node, "state": state, "shot": {"x": hit[0], "facing": hit[1]},
+                        "target": target}
         return None
 
     def _plan_wave(self, planner, steps, info):
@@ -724,11 +695,6 @@ def format_lines(result):
     if not w4:
         return []
     out = []
-    sh = w4.get("shake")
-    if sh:
-        out.append("  Agitar: %s; onda de %.0f px, %.0f de energia" % (
-            "disponible" if sh["available"] else ("se obtiene en el nivel" if sh["possible"] else "no hay"),
-            sh["radius_px"], sh["energy_cost"]))
     for z in w4.get("zones", []):
         if "wait_s" in z:
             out.append("  zona «Visto» %s: con ciclo; el camino espera %.1f s antes de cruzarla" % (z["id"], z["wait_s"]))
@@ -745,8 +711,9 @@ def format_lines(result):
         out.append("  Modo oscuro: %d zona(s); Linterna %s" % (dark["zones"], "si" if dark["flashlight"] else "no"))
     for e in w4.get("enemies", []):
         out.append("  %s %s: %s desde (fila %d, columna %d)%s" % (
-            _enemy_name(e["type"]), e["id"], "Agitar" if e.get("with") == "shake" else "pulso", e["at"][0], e["at"][1],
-            ", tras esperar %.2f s a que reaparezca" % e["wait_s"] if "wait_s" in e else ""))
+            _enemy_name(e["type"]), e["id"], "pulso", e["at"][0], e["at"][1],
+            (", tras esperar %.2f s a que llegue" if e["type"] == "sticker" else ", tras esperar %.2f s a que reaparezca")
+            % e["wait_s"] if "wait_s" in e else ""))
     for mm in w4.get("mimics", []):
         if mm["near_path"]:
             out.append("  Troll disfrazado %s: junto al camino (el Debug lo distingue)" % mm["id"])

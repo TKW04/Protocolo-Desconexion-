@@ -27,7 +27,7 @@ func before_each() -> void:
 		_saved[ability] = GameState.is_ability_unlocked(ability)
 	GameState.use_save_path(PATH, true)
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, true)
-	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, true)
+	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, false)
 	GameState.sync_rate = GameState.get_sync_rate_max()
 	GameState.debug_energy = GameState.get_debug_energy_max()
 	DebugMode.input_enabled = false
@@ -124,13 +124,13 @@ func test_immunity_avoids_chain_then_refreezes() -> void:
 	assert_true(_isak.is_frozen(), "Si sigue dentro, se congela otra vez")
 
 
-func test_shake_frees_from_zone() -> void:
+func test_shake_no_longer_frees_from_zone() -> void:
 	var zone := _zone(0.0, -2.0)
 	_step(zone)
 	_sim.input.shake_pressed = true
 	_step(zone)
-	assert_false(_isak.is_frozen(), "Agitar libera al instante")
-	assert_true(_isak.is_shockwaving())
+	assert_true(_isak.is_frozen(), "Agitar (retirado el 2026-10-28) ya no libera: se espera")
+	assert_false(_isak.is_shockwaving())
 
 
 func test_outside_does_not_freeze() -> void:
@@ -257,4 +257,4 @@ func test_visto_test_room_loads() -> void:
 	var cycle := level.get_node(^"Objects/visto_ciclo") as SeenZone
 	assert_eq(cycle.icon_side, &"right")
 	assert_almost_eq(cycle.phase_s, 1.0, EPS)
-	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE), "Agitar en la sala")
+	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE), "Sin Agitar en la sala (retirado)")

@@ -1,11 +1,12 @@
 # Bot del jefe El Visto (paso 19 de docs/propuesta-mundo-4.md §8, 2026-10-28):
 # lanza tools/play_boss_bot.gd -- --boss seen (logica en tools/seen_bot.gd) en
 # procesos aparte (--headless --fixed-fps 60) y comprueba la pelea real en la
-# arena 4-boss con el Isak real y solo acciones del Input Map (Agitar =
-# gesture_shake), en los tres accesos (Caché, Kernel y Raíz por GameState.lap: El
+# arena 4-boss con el Isak real y solo acciones del Input Map (sin Agitar,
+# retirado el 2026-10-28), en los tres accesos (Caché, Kernel y Raíz por GameState.lap: El
 # Visto lee laps.<n> de su JSON):
 # - ideal: vence sin morir, sin golpes ni congelaciones (Debug al esfumarse y
-#   pulso + laser en la reaparicion; Agitar en el suelo y desde la burbuja fija;
+#   pulso + laser en la reaparicion; pulso a los Stickers en el suelo y al escudo
+#   desde la burbuja fija;
 #   pulso al «escribiendo…» y al check gris aturdido); en Caché tarda entre 100 y
 #   150 s;
 # - torpe (validation_model de data/bosses/seen.json): vence sin morir y sin que

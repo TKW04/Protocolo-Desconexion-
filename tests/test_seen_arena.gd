@@ -3,10 +3,11 @@
 # burbujas fijas y bajas de una via, dos Trolls de la fase 2, 4 cargadores, Debug
 # x0,25 / x0,7) y las fases 1-3 con el tiempo avanzado a mano (advance) y el Isak
 # real de la arena con entrada falsa (IsakSim): la reaparicion detras de Isak que
-# es la ventana; el escudo que cae con un Agitar desde el borde interior de una
-# burbuja fija (no desde el suelo); el pulso que deja en silencio el
-# «escribiendo…» y el check gris aturdido a tiro desde una burbuja fija; el
-# mensaje que congela sin que nada ataque y Agitar que libera. Reaparicion por fase.
+# es la ventana; el escudo que cae con un pulso desde el borde interior de una
+# burbuja fija (no desde el suelo) con la arena limpia; el pulso que deja en
+# silencio el «escribiendo…» y el check gris aturdido a tiro desde una burbuja
+# fija; el mensaje que congela sin que nada ataque y la congelacion que se espera
+# (Agitar se retiro el 2026-10-28). Reaparicion por fase.
 extends GutTest
 
 const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/4-boss.tscn")
@@ -37,8 +38,7 @@ func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_lap = GameState.lap
 	_saved = {}
-	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG,
-			GameState.ABILITY_SHOCKWAVE]:
+	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG]:
 		_saved[ability] = GameState.is_ability_unlocked(ability)
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
@@ -149,18 +149,10 @@ func _real_pulse() -> Area2D:
 	return got[0] if not got.is_empty() else null
 
 
-## Agitar real de Isak: devuelve [centro, radio] de la onda o [].
-func _real_shake() -> Array:
-	var got: Array = []
-	var on_wave := func(center: Vector2, radius: float, _src: Node2D) -> void: got.append([center, radius])
-	EventBus.shockwave_fired.connect(on_wave)
-	_sim.input.shake_pressed = true
-	for i: int in 30:
-		_sim.step()
-		if not got.is_empty():
-			break
-	EventBus.shockwave_fired.disconnect(on_wave)
-	return got[0] if not got.is_empty() else []
+## Quita los Stickers vivos con el laser (vida 1).
+func _clear_stickers() -> void:
+	for s: Sticker in _boss.get_stickers():
+		s.on_laser_hit(1.0, null)
 
 
 func _mark_and_shoot() -> void:
@@ -250,44 +242,45 @@ func test_phase1_reappears_behind_and_the_window_is_in_reach() -> void:
 
 # --- Fase 2 ---
 
-func test_phase2_shockwave_from_the_inner_edge_breaks_the_shield() -> void:
+func test_phase2_pulse_from_the_inner_edge_breaks_the_shield() -> void:
 	await _arena()
 	_boss.start()
 	_to_phase(2)
-	# Desde el suelo, bajo el escudo: no llega.
+	# Desde el suelo, bajo el escudo: el pulso no llega.
 	_place_isak(9, 9, 1.0)
-	var wave: Array = _real_shake()
-	assert_false(wave.is_empty(), "Agitar en el suelo")
+	assert_not_null(_real_pulse(), "Pulso en el suelo")
 	assert_true(_boss.is_shield_up(), "Desde el suelo no rompe el escudo")
-	_advance(1.6)
+	_advance(1.0)
 	# Desde el borde interior de la burbuja fija izquierda (columna 6): estalla.
 	_place_isak(6, 5, 1.0)
 	assert_true(_isak().is_on_floor(), "De pie en la burbuja fija")
-	wave = _real_shake()
-	assert_false(wave.is_empty(), "Agitar en la burbuja")
-	assert_false(_boss.is_shield_up(), "Arena limpia y la onda cerca: el escudo estalla")
+	_clear_stickers()
+	assert_not_null(_real_pulse(), "Pulso en la burbuja")
+	assert_false(_boss.is_shield_up(), "Arena limpia y el pulso cerca: el escudo estalla")
 	assert_true(_boss.is_window_open(), "Cae al suelo")
 	_advance(0.5)
 	assert_almost_eq(_boss.get_body_rect().end.y, 10.0 * TILE, 0.5, "En el suelo")
 	assert_almost_eq(_boss.get_core().global_position.y, 10.0 * TILE - 58.0, 0.5, "A la altura del celular en el suelo")
 
 
-func test_phase2_stickers_block_the_shield_until_shaken_off() -> void:
+func test_phase2_stickers_block_the_shield_until_cleared() -> void:
 	await _arena()
 	_boss.start()
 	_to_phase(2)
 	_place_isak(6, 5, 1.0)
 	_advance_until(func() -> bool: return not _boss.get_stickers().is_empty())
 	assert_eq(_boss.get_stickers().size(), 3, "Tanda de 3 Stickers por el suelo")
-	_real_shake()
-	assert_true(_boss.is_shield_up(), "Con Stickers en el suelo no cede")
-	# Agitar en el suelo junto a ellos (uno a uno, como haria el jugador moviendose).
-	for s: Sticker in _boss.get_stickers():
-		s.receive_shockwave(s.get_center(), 160.0, 3.0)
-	assert_true(_boss.get_stickers().is_empty())
-	_advance(1.6)
+	var blocked: Array = []
+	_boss.shield_blocked.connect(func() -> void: blocked.append(true))
 	_place_isak(6, 5, 1.0)
-	_real_shake()
+	_real_pulse()
+	assert_true(_boss.is_shield_up(), "Con Stickers en el suelo no cede")
+	assert_eq(blocked.size(), 1, "El pulso rebota en el escudo")
+	_clear_stickers()
+	assert_true(_boss.get_stickers().is_empty())
+	_advance(1.0)
+	_place_isak(6, 5, 1.0)
+	_real_pulse()
 	assert_false(_boss.is_shield_up(), "Limpia: estalla")
 
 
@@ -315,7 +308,7 @@ func test_phase3_pulse_from_the_floor_then_the_core_from_a_fixed_bubble() -> voi
 	assert_true(core.is_marked(), "Desde la burbuja fija: marcado")
 
 
-func test_phase3_message_freezes_nothing_attacks_and_shockwave_frees() -> void:
+func test_phase3_message_freezes_nothing_attacks_and_the_freeze_is_waited_out() -> void:
 	await _arena()
 	_boss.start()
 	_to_phase(3)
@@ -328,9 +321,10 @@ func test_phase3_message_freezes_nothing_attacks_and_shockwave_frees() -> void:
 	for g: Ghost in _boss.get_ghosts():
 		assert_eq(g.process_mode, Node.PROCESS_MODE_DISABLED, "Los Fantasmas, quietos")
 	assert_almost_eq(GameState.sync_rate, sync_before, EPS, "Nada dana a Isak congelado")
-	var wave: Array = _real_shake()
-	assert_false(wave.is_empty(), "Agitar congelado sale al instante")
-	assert_false(_isak().is_frozen(), "Agitar libera")
+	# Sin Agitar: se espera la congelacion (2,5 s del mundo en total).
+	assert_true(_isak().is_frozen(), "Sigue congelado al segundo")
+	_advance(1.6)
+	assert_false(_isak().is_frozen(), "Se descongela solo")
 	_advance(DT)
 	for g: Ghost in _boss.get_ghosts():
 		assert_ne(g.process_mode, Node.PROCESS_MODE_DISABLED, "Se reanudan")

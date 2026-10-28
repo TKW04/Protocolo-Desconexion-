@@ -6,8 +6,10 @@
 # Debug lo revela; a 2 tiles se descubre en 9 cuadros; pisado se hunde 1 tile y
 # se descubre; Agitar lo descubre y aturde; vuelve al disfraz al reaparecer) y
 # Sticker (persigue a 6 tiles, se infla 9 cuadros a 1,5 tiles y explota con -10;
-# el pulso lo para; Agitar lo desinfla con +5; laser vida 1; explotado vuelve al
-# reaparecer). La sala grupo_test carga. Desde el paso 6, Fantasma (patrulla y
+# desde el 2026-10-28 el pulso lo desinfla para siempre con +5 —con pulse_deflates
+# false, lo de antes: lo para 3 s—; laser vida 1; explotado vuelve al reaparecer).
+# Agitar esta retirado (2026-10-28): las pruebas de receive_shockwave siguen porque
+# la logica se conserva (ShockwaveWave.apply_to_enemies), aunque el juego no la use. La sala grupo_test carga. Desde el paso 6, Fantasma (patrulla y
 # dana al contacto; a 3 tiles se esfuma en 0,3 s, 1,0 s despues reaparece 2 tiles
 # detras de Isak con aviso de 9 cuadros y 0,5 s despues embiste; con el Debug se
 # ve el rastro; el pulso al reaparecer lo aturde y aturdido el laser lo derrota)
@@ -395,9 +397,29 @@ func test_sticker_inflates_nine_frames_and_explodes_for_ten() -> void:
 	assert_eq(s.get_state(), Sticker.STATE_SLEEP, "Vuelve al reaparecer")
 
 
+func test_pulse_deflates_the_sticker_for_good_with_five_energy() -> void:
+	var s: Sticker = _sticker(14)
+	await wait_physics_frames(2)
+	assert_true(s.pulse_deflates, "Datos: el pulso lo desinfla (sustituye a Agitar)")
+	_stand_at(13)
+	_run([s], 0.3)
+	assert_true(s.is_inflating())
+	var before: int = _count_pickups()
+	watch_signals(s)
+	assert_true(s.receive_pulse(_fake_pulse(s.get_body_rect().get_center(), 96.0)))
+	assert_true(s.is_defeated(), "Se desinfla y desaparece")
+	assert_signal_emitted(s, "deflated")
+	assert_eq(_count_pickups(), before + 1, "+5 de energia")
+	_run([s], 1.0)
+	assert_almost_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, EPS, "Ya no explota")
+	s.reset_patrol()
+	assert_true(s.is_defeated(), "No vuelve")
+
+
 func test_pulse_stops_the_sticker_and_it_reinflates_if_still_close() -> void:
 	var s: Sticker = _sticker(14)
 	await wait_physics_frames(2)
+	s.pulse_deflates = false  # lo de antes del 2026-10-28
 	_stand_at(13)
 	_run([s], 0.3)
 	assert_true(s.receive_pulse(_fake_pulse(s.get_body_rect().get_center(), 96.0)))

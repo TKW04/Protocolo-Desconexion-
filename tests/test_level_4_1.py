@@ -71,7 +71,7 @@ class Level41Test(unittest.TestCase):
         self.assertEqual(lvl["debug_color"], "coral", "Debug coral en el Mundo 4")
         self.assertEqual(lvl["abilities_available"],
                          {"pulse": True, "laser": True, "debug": True, "dash": True, "ground_pound": True,
-                          "compress": True, "shockwave": False}, "Todo el kit del Mundo 3; Agitar, no (llega en el 4-2)")
+                          "compress": True}, "Todo el kit del Mundo 3 (Agitar, retirado el 2026-10-28)")
         self.assertEqual([(s["name"], s["y_from"], s["y_to"]) for s in lvl["sections"]], SECTIONS)
         start = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "P")
         goal = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "G")
@@ -161,8 +161,8 @@ class Level41Test(unittest.TestCase):
         for zid in ("visto_ciclo", "visto_ciclo_2", "visto_ciclo_3", "visto_ciclo_4"):
             self.assertTrue(info[zid]["cycle"])
             self.assertEqual(info[zid]["wait_s"], 9.0)
-        self.assertFalse(self.level["abilities_available"]["shockwave"],
-                         "Regla del 4-1: sin Agitar, ningun peligro junto a una zona (la comprueba el validador)")
+        self.assertNotIn("shockwave", self.level["abilities_available"],
+                         "Regla de §3.3: ningun peligro junto a una zona (la comprueba el validador)")
 
     def test_secret_a_old_message_needs_the_debug_without_dash(self):
         a = next(s for s in self.level["secrets"] if s["id"] == "secreto_mensaje_antiguo")

@@ -6,11 +6,11 @@
 ##                   llegada, burbujas, Linterna y Modo oscuro, «escribiendo…»,
 ##                   zonas «Visto» y su pulso, Troll, autocorrector, Fantasma,
 ##                   Sticker, Papelera, «¿Deshacer escritura?», muro de texto,
-##                   Agitar, ola, Troll disfrazado, tinta, salida y hub (lista
+##                   ola, Troll disfrazado, tinta, salida y hub (lista
 ##                   completa en ese archivo; solo las que tiene el nivel y su camino)
 ##   4-boss          tools/render_level_4_x_boss.gd (extiende tools/seen_bot.gd,
 ##                   perfil ideal, Caché): intro, las tres fases con su ataque y su
-##                   ventana, rastro, marca, escudo con Agitar, «escribiendo…»
+##                   ventana, rastro, marca, escudo con el pulso, «escribiendo…»
 ##                   gigante, congelacion (escenificada), golpe final, desarme,
 ##                   recompensa y hub con la pieza coral
 ## El hub con las carpetas M4/M5 y sus filas: tools/render_hub_m4.gd.

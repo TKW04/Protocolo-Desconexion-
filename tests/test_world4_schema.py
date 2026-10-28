@@ -72,8 +72,10 @@ class SeenZoneSchemaTest(World4SchemaBase):
         self.assertEqual(build_level.main(["build_level", "--check", VISTO_TEST]), 0)
 
     def test_shockwave_is_a_known_ability(self):
+        # Agitar esta retirado (2026-10-28): el esquema aun lo admite (guardados y niveles viejos), pero ningun nivel
+        # lo lleva.
         self.assertIn("shockwave", vls.KNOWN_ABILITIES)
-        self.assertTrue(self.base["abilities_available"]["shockwave"])
+        self.assertNotIn("shockwave", self.base["abilities_available"])
 
     def test_icon_must_face_free_cell(self):
         level = copy.deepcopy(self.base)
@@ -372,10 +374,10 @@ class BorradosSchemaTest(World4SchemaBase):
         by_id(level, "muro_prueba")["params"]["lines"] = ["y entonces", "le dije", "que\u2603"]
         self.assert_error(level, "glifos que no estan en la fuente")
 
-    def test_undo_prompt_only_gives_shockwave(self):
+    def test_undo_prompt_gives_no_ability(self):
         level = copy.deepcopy(self.base)
-        by_id(level, "deshacer_prueba")["params"]["ability"] = "dash"
-        self.assert_error(level, "ability")
+        by_id(level, "deshacer_prueba")["params"]["ability"] = "shockwave"
+        self.assert_error(level, "param desconocido 'ability'")
 
     def test_papelera_story_must_exist(self):
         level = copy.deepcopy(self.base)

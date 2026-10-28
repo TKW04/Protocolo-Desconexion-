@@ -20,7 +20,7 @@ world = 4
 tile_size = 64
 size_tiles = Vector2i(36, 12)
 debug_color = "coral"
-abilities_available = {"debug": true, "laser": false, "pulse": true, "shockwave": true}
+abilities_available = {"debug": true, "laser": false, "pulse": true}
 source_path = "res://data/levels/visto_test.json"
 
 [node name="Background" parent="." instance=ExtResource("2_world4_background")]

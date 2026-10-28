@@ -70,7 +70,9 @@ func _grupo() -> void:
 	await _until(func() -> bool: return String(suelo.call(&"get_art_frame")[0]) == "shot", 60, "lanza")
 	await _frames(3)
 	await _save("03_troll_lanza.png")
-	# Agitar entre los tres Trolls (radio 160).
+	# Agitar entre los tres Trolls (radio 160). Agitar esta retirado (2026-10-28): para ver la pose conservada se
+	# fuerza en este Isak.
+	_isak.get(&"abilities").set(&"shockwave_enabled", true)
 	_state.set(&"debug_energy", 100.0)
 	await _place(13.0, 9)
 	for e: Node in _level.get_node(^"Enemies").get_children():

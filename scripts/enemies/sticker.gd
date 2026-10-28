@@ -7,8 +7,10 @@
 ## - inflate: a <= trigger_tiles se para y se infla anticipation_frames cuadros
 ##   (el aviso) y EXPLOTA: Isak a <= blast_tiles pierde blast_damage.
 ## - exploded: confeti sin dano; vuelve al reaparecer Isak.
-## - stunned: el pulso lo para stun_s; al despertar, inflate si Isak sigue cerca.
-## - defeated: Agitar (se desinfla) o el laser (vida 1): drops y no vuelve.
+## - stunned: (con pulse_deflates false) el pulso lo para stun_s; al despertar,
+##   inflate si Isak sigue cerca.
+## - defeated: el PULSO lo desinfla (pulse_deflates, desde que se retiro Agitar el
+##   2026-10-28) o el laser (vida 1): drops y no vuelve.
 ## El cuerpo no dana al contacto. Aspecto PROVISIONAL por codigo.
 class_name Sticker
 extends CharacterBody2D
@@ -19,7 +21,7 @@ signal hit_player(amount: float)
 signal stunned
 signal damaged(amount: float, health_left: float)
 signal defeated
-## Agitar lo desinflo.
+## Lo desinflo el pulso (o, antes del 2026-10-28, Agitar).
 signal deflated
 
 const STATE_SLEEP: StringName = &"sleep"
@@ -49,6 +51,9 @@ var anticipation_frames: int = 9
 var blast_damage: float = 10.0
 var confetti_s: float = 0.8
 var stun_s: float = 3.0
+## El pulso lo desinfla para siempre (drops) en vez de aturdirlo (2026-10-28: sustituye
+## a Agitar, retirado; data pulse_deflates).
+var pulse_deflates: bool = true
 var body_size: Vector2 = Vector2(40.0, 40.0)
 var gravity: float = 2400.0
 var max_fall_speed_px_s: float = 1200.0
@@ -233,6 +238,12 @@ func stun(duration_scale: float = 1.0) -> void:
 func receive_pulse(area: Area2D) -> bool:
 	if not _alive() or not PulseReceiver.pulse_reaches(area, get_body_rect()):
 		return false
+	if pulse_deflates:
+		if GameState.claim_pulse_return(self) > 0.0:
+			UpgradeFx.spawn(get_parent(), UpgradeFx.ENERGY_RETURN, get_body_rect().get_center())
+		deflated.emit()
+		_defeat()
+		return true
 	stun(GameState.get_pulse_stun_multiplier())
 	if GameState.claim_pulse_return(self) > 0.0:
 		UpgradeFx.spawn(get_parent(), UpgradeFx.ENERGY_RETURN, get_body_rect().get_center())
@@ -436,6 +447,7 @@ func _load_data() -> bool:
 	blast_damage = float(d["blast_damage"])
 	confetti_s = float(d.get("confetti_s", 0.8))
 	stun_s = float(d["stun_s"])
+	pulse_deflates = bool(d.get("pulse_deflates", true))
 	max_health = float(d["health"])
 	drops = EnemyHealth.parse_drops(d.get("drops", {}))
 	var bs: Array = d.get("body_size", [40.0, 40.0])

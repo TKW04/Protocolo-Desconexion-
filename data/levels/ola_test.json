@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 7 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 64x12 de la OLA DE «VISTO» del Mundo 4 (§3.5, decision 4 de §9 y patron 22 de §3.8). Isak llega por la izquierda (P, columna 3) con el pulso, el Debug y Agitar (U / LB). La ola (frente en la columna 1) arranca al cruzar la columna 6 y avanza a 1,0 tiles/s hasta la 30 y despues acelera de 1,2 a 1,6 tiles/s; se para en la columna 28 (parada sync_ola, junto al punto de sincronizacion de la columna 32) hasta que Isak cruza la 33, y en la 58 se apaga. Patron 22: zona «Visto» obligatoria en la columna 18 con la ola a la espalda (esperar 1,5 s, pulso al doble check desde la 16 o Agitar congelado). Si la ola alcanza a Isak: -10 de Sync sin matar y congelado 2,0 s; al descongelarse solo, la ola retrocede 4 tiles; con Agitar se queda a 1. Al morir o reaparecer vuelve a su parada. Cargador en la columna 40; repisa de una via en las columnas 44-45. Terminal en (61, 8). Sin Q (help_id previsto seen_wave, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela la ola (paso 9b). Escena: scenes/levels/ola_test.tscn (python3 tools/build_level.py data/levels/ola_test.json).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 7 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 64x12 de la OLA DE «VISTO» del Mundo 4 (§3.5, decision 4 de §9 y patron 22 de §3.8). Isak llega por la izquierda (P, columna 3) con el pulso y el Debug. La ola (frente en la columna 1) arranca al cruzar la columna 6 y avanza a 1,0 tiles/s hasta la 30 y despues acelera de 1,2 a 1,6 tiles/s; se para en la columna 28 (parada sync_ola, junto al punto de sincronizacion de la columna 32) hasta que Isak cruza la 33, y en la 58 se apaga. Patron 22: zona «Visto» obligatoria en la columna 18 con la ola a la espalda (esperar 1,5 s y el golpe al liberarse, o pulso al doble check desde la 16). Si la ola alcanza a Isak: -10 de Sync sin matar y congelado 2,0 s; al descongelarse solo, la ola retrocede 4 tiles; (Agitar, que la dejaba a 1, se retiró el 2026-10-28). Al morir o reaparecer vuelve a su parada. Cargador en la columna 40; repisa de una via en las columnas 44-45. Terminal en (61, 8). Sin Q (help_id previsto seen_wave, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela la ola (paso 9b). Escena: scenes/levels/ola_test.tscn (python3 tools/build_level.py data/levels/ola_test.json).",
 	"id": "ola_test",
 	"name": "Ola (prueba)",
 	"world": 4,
@@ -8,8 +8,7 @@
 	"abilities_available": {
 		"pulse": true,
 		"laser": false,
-		"debug": true,
-		"shockwave": true
+		"debug": true
 	},
 	"checkpoints": [
 		{

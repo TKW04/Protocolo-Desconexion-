@@ -18,7 +18,7 @@
 ##   12_papelera           la Papelera hablando (con el juego en pausa)
 ##   13_deshacer           el «¿Deshacer escritura?» a la vista
 ##   14_muro_texto         el muro de texto borrandose
-##   15_agitar             la onda de Agitar
+##   (15_agitar, la onda de Agitar: retirada el 2026-10-28)
 ##   16_ola                la ola de «Visto» a la vista
 ##   17_disfrazado         un Troll disfrazado de burbuja a la vista
 ##   18_tinta              un escrito «en tinta» iluminado por la Linterna
@@ -40,8 +40,6 @@ var _had_lamp: bool = false
 
 func _ready() -> void:
 	dry_run = DisplayServer.get_name() == "headless"
-	EventBus.shockwave_fired.connect(func(_c: Vector2, _r: float, _s: Node2D) -> void:
-		_own_shot("15_agitar", 5))
 	super._ready()
 
 

@@ -34,7 +34,7 @@ world = 4
 tile_size = 64
 size_tiles = Vector2i(24, 96)
 debug_color = "coral"
-abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true, "shockwave": false}
+abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true}
 source_path = "res://data/levels/4-1.json"
 
 [node name="Background" parent="." instance=ExtResource("2_world4_background")]

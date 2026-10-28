@@ -8,6 +8,10 @@
 # sin la habilidad ni en el hub, apaga el Ocultarte, un golpe lo corta, senales,
 # aviso de control y fila reasignable en Ajustes > Controles. Isak avanza paso a
 # paso con delta fijo.
+# RETIRADO (2026-10-28, prueba del usuario: «hace lo mismo que el pulso»): con
+# shockwave.enabled false (data/isak_abilities.json) Agitar no sale nunca, sin
+# aviso ni fila en Ajustes (test_retired_*). La logica se conserva: el resto de
+# estas pruebas la fuerza con abilities.shockwave_enabled = true en este Isak.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -70,6 +74,8 @@ func before_each() -> void:
 	_isak.shockwave_fired.connect(func(center: Vector2, radius: float) -> void: _fired.append([center, radius]))
 	await wait_physics_frames(1)
 	_sim.settle()
+	assert_false(_isak.abilities.shockwave_enabled, "Retirado por datos")
+	_isak.abilities.shockwave_enabled = true
 
 
 func after_each() -> void:
@@ -380,20 +386,23 @@ func test_respawn_clears_pose_and_cooldown() -> void:
 	assert_false(_isak.get_shockwave_effect().is_wave_visible())
 
 
-# --- Aviso y Ajustes > Controles ---
+# --- Retirado (2026-10-28) ---
 
-func test_notice_and_remappable_row() -> void:
+func test_retired_by_data_never_fires_even_with_the_ability() -> void:
+	_isak.abilities.shockwave_enabled = false
+	assert_true(GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE), "Aunque este desbloqueado")
+	assert_eq(_isak.shockwave_denial(), Isak.SHOCKWAVE_DENIED_LOCKED)
+	_shake()
+	_sim.step(_sim.steps_for(0.5))
+	assert_ne(_sim.state(), PlayerState.SHOCKWAVE, "No entra en Agitar")
+	assert_eq(_fired.size(), 0, "Sin onda")
+	assert_eq(_bus_fired.size(), 0)
+	assert_eq(_denied.size(), 0, "Sin chispa ni aviso")
+	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS, "No gasta energia")
+
+
+func test_retired_without_notice_nor_controls_row() -> void:
 	var notices: Dictionary = AbilityNotices.load_data()
-	assert_eq(AbilityNotices.notice_text(&"shockwave", notices), "Agitar: U / LB (mando)")
-	assert_true(ControlBindings.actions().has(&"gesture_shake"), "Fila en Ajustes > Controles")
-	assert_eq(ControlBindings.action_name(&"gesture_shake"), "Agitar")
-	var actions: Array[StringName] = ControlBindings.actions()
-	assert_eq(actions.find(&"gesture_shake"), actions.find(&"gesture_pinch") + 1, "Tras Pellizcar")
-	GameSettings.use_path(GameSettings.settings_path(), true)
-	var key := InputEventKey.new()
-	key.physical_keycode = KEY_O
-	assert_eq(ControlBindings.assign(&"gesture_shake", key), ControlBindings.Result.OK)
-	assert_eq(AbilityNotices.notice_text(&"shockwave", notices), "Agitar: O / LB (mando)", "El aviso sigue la tecla")
-	ControlBindings.restore_defaults()
-	assert_eq(AbilityNotices.notice_text(&"shockwave", notices), "Agitar: U / LB (mando)")
-	GameSettings.use_path(GameSettings.settings_path(), true)
+	assert_false((notices.get("abilities", {}) as Dictionary).has("shockwave"), "Sin aviso de control")
+	assert_false(ControlBindings.actions().has(&"gesture_shake"), "Sin fila en Ajustes > Controles")
+	assert_true(InputMap.has_action(&"gesture_shake"), "La accion sigue en el Input Map (gestos del port a movil)")

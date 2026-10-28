@@ -4,9 +4,9 @@
 # borrados», objetos y economia (10 puntos, 3 cargadores, Trolls, Fantasmas,
 # Stickers, zonas «Visto», autocorrectores, «escribiendo…», power bank y
 # msg_4_2), la Linterna del 4-1 que no vuelve a salir, la Papelera que habla al
-# llegar, el «¿Deshacer escritura?» que da Agitar y el muro de texto que solo cae
-# con Agitar, un grupo de Trolls y una tanda de Stickers que caen con un Agitar
-# desde el sitio del camino, los secretos (A tras el marco pequeno a oscuras, B
+# llegar, el «¿Deshacer escritura?» que deshace el muro de texto (desde el
+# 2026-10-28, sin Agitar), un grupo de Trolls que el pulso aturde y una tanda de
+# Stickers que un pulso desinfla desde el sitio del camino, los secretos (A tras el marco pequeno a oscuras, B
 # con el autocorrector que crece, C la burbuja alta), el punto de sincronizacion,
 # la terminal «Salir del chat» -> hub con el 4-2 completado y el 4-2 jugable
 # desde la carpeta del Mundo 4. La ruta completa la comprueba
@@ -135,12 +135,22 @@ func _count(parent: String, cls: Variant) -> int:
 	return n
 
 
-## Agitar desde la celda (col, fila) mirando a `facing`, con el centro y el radio de la onda del Isak real.
-func _shake_from(col: int, row: int, facing: int) -> void:
+## Pulso desde la celda (col, fila) mirando a `facing`, con el origen y el radio del pulso del Isak real
+## (a todo lo que escucha EventBus.pulse_fired).
+func _pulse_from(col: int, row: int, facing: int) -> void:
 	_teleport(col, row)
 	_isak.facing = facing
-	ShockwaveWave.apply_to_enemies(get_tree(), _isak.get_shockwave_center(), _isak.abilities.shockwave_radius_px,
-		_isak.abilities.shockwave_stun_s)
+	var phone: Vector2 = _isak.global_position + Vector2(absf(_isak.pulse_effect_origin.x) * float(facing),
+		_isak.pulse_effect_origin.y)
+	var area := Area2D.new()
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = _isak.abilities.pulse_radius_px
+	shape.shape = circle
+	area.add_child(shape)
+	area.position = phone
+	add_child_autofree(area)
+	EventBus.pulse_fired.emit(area)
 
 
 # --- Pruebas ---
@@ -153,7 +163,7 @@ func test_debug_shortcut_loads_the_4_2_in_the_deleted_messages_room() -> void:
 	assert_eq(_level().world, 4)
 	assert_ne(_isak.camera_mode, Isak.CAMERA_TOWER, "Nivel horizontal")
 	assert_almost_eq(_isak.global_position.x, 3.5 * TILE, TILE, "Llega por el vortice de (3, 11)")
-	assert_false(GameState.is_ability_unlocked(SHAKE), "Empieza sin Agitar")
+	assert_false(GameState.is_ability_unlocked(SHAKE), "Sin Agitar (retirado)")
 	var lamp := _obj("linterna_4_2") as FlashlightPickup
 	assert_true(lamp.is_taken(), "La Linterna del 4-1 ya es de Isak: no vuelve a salir")
 
@@ -177,7 +187,7 @@ func test_objects_enemies_and_economy() -> void:
 	assert_not_null(_obj("mensaje_4_2"), "msg_4_2 del secreto A")
 
 
-func test_papelera_speaks_and_the_prompt_gives_shockwave_for_the_typed_wall() -> void:
+func test_papelera_speaks_and_the_prompt_undoes_the_typed_wall() -> void:
 	_start()
 	await _arrive()
 	var papelera := _obj("papelera_4_2") as PapeleraActor
@@ -188,18 +198,14 @@ func test_papelera_speaks_and_the_prompt_gives_shockwave_for_the_typed_wall() ->
 	assert_true(wall.is_solid())
 	var prompt := _obj("deshacer_4_2") as UndoPrompt
 	assert_true(prompt.switch_on(), "El «¿Deshacer escritura?» se usa")
-	assert_true(GameState.is_ability_obtained(SHAKE), "Agitar obtenido")
+	assert_false(GameState.is_ability_obtained(SHAKE), "Ya no da Agitar (retirado)")
 	assert_eq(papelera.get_state(), PapeleraActor.State.DONE, "La Papelera dice su ultima linea")
-	# Agitar desde la celda 19 del camino (mirando al muro) lo deshace.
-	_teleport(19, 11)
-	_isak.facing = 1
-	EventBus.shockwave_fired.emit(_isak.get_shockwave_center(), _isak.abilities.shockwave_radius_px, _isak)
-	assert_true(wall.is_erasing(), "La onda alcanza el muro")
+	assert_true(wall.is_erasing(), "El muro de texto, a 8 tiles, se deshace")
 	wall.advance(0.41)
 	assert_false(wall.is_solid(), "Deshecho para siempre")
 
 
-func test_troll_group_falls_to_one_shake_from_the_path() -> void:
+func test_troll_group_is_stunned_by_the_pulse_from_the_path() -> void:
 	_start()
 	await _arrive()
 	var a := _enemy("troll_grupo_1a") as Troll
@@ -209,23 +215,22 @@ func test_troll_group_falls_to_one_shake_from_the_path() -> void:
 	assert_false(a.sees_isak() or b.sees_isak(), "A 5 tiles el grupo aun no lo ve (detect_tiles 3)")
 	_teleport(37, 11)
 	await wait_physics_frames(2)
-	assert_true(a.sees_isak() and b.sees_isak(), "A 3 tiles empieza a escribir: el Agitar sale antes del mensaje")
-	_shake_from(37, 11, 1)
-	assert_true(a.is_stunned() and b.is_stunned(), "Un Agitar desde la celda 37 aturde a los dos")
-	var g3 := ["troll_grupo_3a", "troll_grupo_3b", "troll_grupo_3c"]
-	_shake_from(59, 5, 1)
-	for id: String in g3:
-		assert_true((_enemy(id) as Troll).is_stunned(), "%s aturdido por el mismo Agitar" % id)
+	assert_true(a.sees_isak() and b.sees_isak(), "A 3 tiles empieza a escribir")
+	# tools/validate_level.py los aturde con un pulso desde la celda 38 (sin Agitar desde el 2026-10-28).
+	_pulse_from(38, 11, 1)
+	assert_true(a.is_stunned() and b.is_stunned(), "Un pulso desde la celda 38 aturde a los dos")
 
 
-func test_sticker_swarm_falls_to_one_shake_where_isak_lands() -> void:
+func test_sticker_swarm_falls_to_one_pulse_where_isak_lands() -> void:
 	_start()
 	await _arrive()
-	_shake_from(239, 8, 1)
-	for i: int in 4:
+	_pulse_from(239, 8, -1)
+	for i: int in 3:
 		var sticker := _enemy("sticker_b2_%d" % i) as Sticker
 		assert_true(sticker == null or not is_instance_valid(sticker) or sticker.is_defeated(),
-			"sticker_b2_%d desinflado por el Agitar de la llegada" % i)
+			"sticker_b2_%d desinflado por el pulso de la llegada" % i)
+	var far := _enemy("sticker_b2_3") as Sticker
+	assert_true(far != null and not far.is_defeated(), "El cuarto, en la 243, fuera del radio (otro pulso)")
 
 
 func test_secret_a_muted_room_in_the_dark() -> void:

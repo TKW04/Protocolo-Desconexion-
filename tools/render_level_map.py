@@ -449,7 +449,7 @@ def render(level, palette):
             hh = 3 if kind == "typed_wall" else 1
             x0, y0, x1, y1 = box(x, y, 1, hh)
             d.rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), outline=palette["banner_blanco"], width=2)
-            tag = {"papelera_actor": "Papelera", "undo_prompt": "Deshacer (Agitar)", "typed_wall": "muro de texto"}[kind]
+            tag = {"papelera_actor": "Papelera", "undo_prompt": "Deshacer", "typed_wall": "muro de texto"}[kind]
             label((x0 + x1) // 2, y0 - 7, tag, palette["banner_blanco"])
         elif kind == "seen":
             x0, y0, x1, y1 = box(x, y, 6, 3)

@@ -1251,3 +1251,11 @@ El Mundo 4 «El Chat» se hizo con las decisiones delegadas al orquestador (`pro
 - ~~Arte por script de todo el mundo hasta el paso 24~~ (2026-10-28: El Visto, el Troll y la pose `shockwave` ya tienen arte final de AutoSprite, `plan-arte-mundo-4.md`; objetos y efectos siguen por script). Revisar al jugar: el Troll sobre el fondo marino (su contorno oscuro se funde), bajo el Modo oscuro (cara del color del velo: solo lo delata el contorno rojo), su aire chibi y si el aviso «escribiendo…» se lee sobre la capucha; y si la sacudida de Agitar (4 cuadros en 0,15 s) se lee como «agitar».
 - Audio provisional: los 24 IDs del Mundo 4 suenan con provisionales hasta los sonidos del amigo del usuario.
 - La congelación de la captura 10 del jefe está escenificada (el bot real no se congela).
+
+## Mundo 4: cambios tras la prueba del usuario (2026-10-28)
+
+Pedidos del usuario tras jugar el Mundo 4 (textual): Modo oscuro «que solo se pueda ver con la lámpara»; quitar «el vibrador» (Agitar); que al soltarte de un «te dejaron en visto» te haga daño como un ataque; y «la pared que te sigue» (la ola de «Visto», que está en el 4-3) un poco más rápida y que dañe al liberar. Decisiones tomadas por el orquestador con la autoridad delegada; detalle en `propuesta-mundo-4.md` §8.1 («Prueba del usuario (2026-10-28)», cambios 1-3). A revisar al jugar:
+
+- **Modo oscuro** al 93 % y Linterna de 3,5 tiles: ¿se lee bien lo justo (siguiente burbuja, huecos) sin ver de más?
+- **Sin Agitar:** ¿se echa de menos algo en el 4-2 (grupos de Trolls uno a uno, Stickers que el pulso desinfla) o en la fase 2 de El Visto (pulso al escudo desde la burbuja con la arena limpia)? Textos nuevos **propuestos**: Papelera «Si quieres deshacer algo, díselo a ese panel. Lo escrito no siempre se queda.», panel «Toca para deshacer» y las ayudas Q de la zona «Visto», el muro de texto, el Troll, el Sticker y el escudo.
+- **Pendiente para el Mundo 5:** la combinación Sismo («golpe al suelo con onda», `02-isak-habilidades.md`) partía de Agitar; habrá que redefinirla.

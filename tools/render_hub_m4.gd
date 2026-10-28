@@ -53,7 +53,6 @@ func _run() -> void:
 	for id: StringName in [&"4-1", &"4-2", &"4-3"]:
 		state.call(&"unlock_level", id)
 		state.call(&"mark_level_completed", id)
-	state.call(&"obtain_ability", &"shockwave")
 	state.call(&"meet_ally", &"linterna")
 	state.call(&"unlock_level", &"4-boss")
 	hub = await _open()

@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 8 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 40x12 de «MENSAJES BORRADOS» del 4-2 (§3.7 y §4.2.2). Isak llega por la izquierda (P, columna 3) con el pulso y el Debug y SIN Agitar. La Papelera (papelera_actor, columna 5) habla al acercarse Isak (dos lineas importantes, un solo uso: seen_notices papelera_4_2). «¿Deshacer escritura?» (undo_prompt, columna 12, panel en la pared del fondo): pulso de espaldas -> Agitar, Eco «No necesitas a nadie más.» (importante), el aviso «Agitar: U / LB (mando)» y la ultima linea de la Papelera (no importante). Dos burbujas eliminadas de decorado (sin colision). Muro de texto (typed_wall, columna 22, filas 7-9, con la pared hasta el techo encima): solo Agitar a 2,5 tiles o menos lo deshace; el pulso y el laser rebotan. Terminal en (36, 8). Sin Q (help_id previstos undo_prompt y typed_wall, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela el muro ni el gesto (paso 9b). Escena: scenes/levels/borrados_test.tscn (python3 tools/build_level.py data/levels/borrados_test.json).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 8 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 40x12 de «MENSAJES BORRADOS» del 4-2 (§3.7 y §4.2.2). Isak llega por la izquierda (P, columna 3) con el pulso y el Debug. La Papelera (papelera_actor, columna 5) habla al acercarse Isak (dos lineas importantes, un solo uso: seen_notices papelera_4_2). «¿Deshacer escritura?» (undo_prompt, columna 12, panel en la pared del fondo): pulso de espaldas -> deshace el muro de texto, Eco «No necesitas a nadie más.» (importante, la primera vez) y la ultima linea de la Papelera (no importante). Dos burbujas eliminadas de decorado (sin colision). Muro de texto (typed_wall, columna 22, filas 7-9, con la pared hasta el techo encima): solo lo deshace el «¿Deshacer escritura?» (antes, Agitar); el pulso y el laser rebotan. Terminal en (36, 8). Sin Q (help_id previstos undo_prompt y typed_wall, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela el muro ni el gesto (paso 9b). Escena: scenes/levels/borrados_test.tscn (python3 tools/build_level.py data/levels/borrados_test.json).",
 	"id": "borrados_test",
 	"name": "Mensajes borrados (prueba)",
 	"world": 4,
@@ -51,7 +51,6 @@
 			"y": 9,
 			"params": {
 				"id": "deshacer_prueba",
-				"ability": "shockwave",
 				"story_line": "deshacer_4_2"
 			}
 		},

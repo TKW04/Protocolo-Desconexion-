@@ -162,6 +162,10 @@ signal ground_pound_landed(rect: Rect2, source: Node2D)
 ## texto y lo que se borra con la onda (desde el paso 5) y los sonidos (paso 20).
 @warning_ignore("unused_signal")
 signal shockwave_fired(center: Vector2, radius: float, source: Node2D)
+## Un «¿Deshacer escritura?» se ha usado (2026-10-28, al retirarse Agitar): los muros
+## de texto del nivel se borran y la Papelera dice su ultima linea.
+@warning_ignore("unused_signal")
+signal writing_undone(id: StringName)
 ## Agitar pedido sin energia (Isak.SHOCKWAVE_DENIED_ENERGY): chispa gris, no sale.
 @warning_ignore("unused_signal")
 signal shockwave_denied(reason: StringName)

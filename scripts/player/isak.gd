@@ -1312,7 +1312,9 @@ func wants_shockwave() -> bool:
 ## enfriamiento; en el aire (salvo congelado: rompe la congelacion tambien en el
 ## aire, paso 2) y energia. Con el Debug si sale.
 func shockwave_denial() -> StringName:
-	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE):
+	# Agitar retirado (2026-10-28): con shockwave.enabled false no sale nunca.
+	if not _ready_ok or not abilities.shockwave_enabled or not (level_mode or hub_gestures) \
+			or not GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE):
 		return SHOCKWAVE_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,

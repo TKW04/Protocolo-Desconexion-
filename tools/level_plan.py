@@ -206,12 +206,11 @@ class Planner:
                               "relay": {"gate": g.obj_id, "lector": lector["id"], "window_s": lector["window"],
                                         "time_s": relay["time"]}})
                 continue
-            if g.kind == "pound" and getattr(g, "shake", False):
-                # Muro de texto (Mundo 4, paso 9): Agitar desde la celda de pie cuya onda lo alcanza; se espera su
-                # borrado (erase_s) antes de pasar.
-                x = self.m.w4.shake_x(g.openers[0], n, state)
-                steps.append({"action": "shake", "at": n, "shot": {"x": x, "facing": 1}, "state": state,
-                              "breaks": [g.obj_id], "erase_s": self.m.w4.typed_erase_s,
+            if g.kind == "pound" and getattr(g, "typed", False):
+                # Muro de texto (Mundo 4): lo deshizo el «¿Deshacer escritura?» (desde el 2026-10-28; antes, Agitar);
+                # el plan espera su borrado (erase_s) por si llega a la vez.
+                steps.append({"action": "wait", "at": n, "seconds": self.m.w4.typed_erase_s, "state": state,
+                              "reason": "muro de texto %s deshaciendose" % g.obj_id,
                               "target": {"type": "typed_wall", "id": g.obj_id}})
                 continue
             if g.kind == "pound":

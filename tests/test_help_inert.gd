@@ -1113,7 +1113,7 @@ func test_collected_flashlight_gives_no_help() -> void:
 	GameState.allies_met.erase(&"linterna")
 
 
-## «¿Deshacer escritura?»: usado (Agitar ya dado) no ayuda, como la «Recortar».
+## «¿Deshacer escritura?»: usado (muro deshecho) no ayuda, como la «Recortar».
 func test_switched_on_undo_prompt_gives_no_help() -> void:
 	var prompt := _w4_scene("undo_prompt") as UndoPrompt
 	_place(prompt, &"undo_prompt")
@@ -1122,12 +1122,12 @@ func test_switched_on_undo_prompt_gives_no_help() -> void:
 	GameState.reset_progress()
 
 
-## Muro de texto: borrado por Agitar no ayuda.
+## Muro de texto: borrado por el «¿Deshacer escritura?» no ayuda.
 func test_erased_typed_wall_gives_no_help() -> void:
 	var wall := _w4_scene("typed_wall") as TypedWall
 	_place(wall, &"typed_wall")
 	await _assert_inert_drops_help(wall, func() -> void:
-		assert_true(wall.receive_shockwave(wall.get_wall_rect().get_center(), 160.0)), "muro de texto borrado")
+		assert_true(wall.undo()), "muro de texto borrado")
 
 
 ## Troll, Sticker y Fantasma: aturdidos siguen ayudando; derrotados no.
@@ -1161,6 +1161,7 @@ func test_disguised_troll_mimic_gives_no_help() -> void:
 	_run(0.2)
 	assert_true(mimic.is_disguised())
 	assert_false(HelpCatalog.is_help_live(mimic), "Disfrazado: sin Q")
+	# Agitar esta retirado (2026-10-28); su logica conservada sigue descubriendolo (aqui, como atajo de la prueba).
 	assert_true(mimic.receive_shockwave(mimic.global_position, 160.0, 3.0), "Agitar lo descubre")
 	assert_false(mimic.is_disguised())
 	assert_true(HelpCatalog.is_help_live(mimic), "Descubierto: ayuda")

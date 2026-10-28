@@ -17,15 +17,17 @@
 ##   front_every; Kernel: una silueta falsa (decoys) sin punto debil.
 ## - Fase 2 «Grupo»: escudo de shield_layers capas; invoca tandas de Stickers por
 ##   el suelo y los Trolls de la arena (objetos con active_in_phase [2]) disparan
-##   desde las burbujas fijas. El escudo solo cede a un Agitar que lo alcanza con
-##   la arena limpia (sin Stickers vivos que la onda no se lleve): con la ultima
-##   capa, cae al suelo phase2.window_s (ventana). Una zona «Visto» barre una
-##   burbuja fija cada seen_sweep.interval_s.
+##   desde las burbujas fijas. El escudo solo cede a un PULSO que lo alcanza (desde
+##   el borde interior de una burbuja fija; desde el suelo no llega) con la arena
+##   limpia (sin Stickers vivos que ese mismo pulso no desinfle); una capa por
+##   pulso (Kernel: dos). Con la ultima capa, cae al suelo phase2.window_s
+##   (ventana). Agitar se retiro el 2026-10-28 (prueba del usuario). Una zona
+##   «Visto» barre una burbuja fija cada seen_sweep.interval_s.
 ## - Fase 3 «Escribiendo…»: la burbuja «escribiendo…» gigante se llena de puntos
 ##   (uno cada laps.<n>.dot_interval_s); un pulso que la alcanza antes del ultimo
 ##   la deja en silencio y El Visto queda aturdido phase3.window_s a la altura de
 ##   las burbujas fijas (ventana, del lado de Isak). Si llega el ultimo punto, el
-##   mensaje congela a Isak message_freeze_s (Agitar libera). Dos Fantasmas
+##   mensaje congela a Isak message_freeze_s (se espera; nada ataca). Dos Fantasmas
 ##   pequenos reaparecen por la espalda (vuelven si se derrotan).
 ## - Isak congelado (por cualquier causa): El Visto no ataca y sus esbirros se
 ##   quedan quietos («te esta mirando»).
@@ -46,9 +48,9 @@ extends BossBase
 signal attack_started(attack: StringName)
 ## Reaparece en `at` (pies, global) tras esfumarse (fase 1).
 signal reappeared(at: Vector2)
-## Un Agitar alcanzo el escudo con la arena limpia; quedan `layers_left` capas.
+## Un pulso alcanzo el escudo con la arena limpia; quedan `layers_left` capas.
 signal shield_hit(layers_left: int)
-## Un Agitar alcanzo el escudo con Stickers vivos: no cede.
+## Un pulso alcanzo el escudo con Stickers vivos: no cede (rebota).
 signal shield_blocked
 ## El escudo estalla y El Visto cae al suelo (ventana).
 signal shield_broken
@@ -229,7 +231,6 @@ func _ready() -> void:
 	# Despues de _build: el WeakPoint (hijo) recibe el pulso antes que el jefe, asi
 	# el pulso que deja en silencio el «escribiendo…» no marca a la vez.
 	EventBus.pulse_fired.connect(_on_pulse_fired)
-	EventBus.shockwave_fired.connect(_on_shockwave_fired)
 	_apply_lap_settings.call_deferred()
 
 
@@ -968,18 +969,14 @@ func _spawn_stickers() -> void:
 	attack_started.emit(&"stickers")
 
 
-## Agitar (EventBus.shockwave_fired): con el escudo arriba y la onda tocandolo,
-## cede una capa si no quedan Stickers vivos que la onda no alcance.
-func _on_shockwave_fired(center: Vector2, radius: float, _source: Node2D) -> void:
-	receive_shockwave(center, radius)
-
-
-## Verdadero si la onda rompio una capa del escudo.
-func receive_shockwave(center: Vector2, radius: float) -> bool:
-	if not is_shield_up() or not ShockwaveWave.reaches(center, radius, get_shield_rect()):
+## Pulso al escudo (desde receive_pulse): con el escudo arriba y el pulso
+## tocandolo, cede una capa si no quedan Stickers vivos que ese pulso no alcance
+## (los que alcanza, el pulso los desinfla). Verdadero si rompio una capa.
+func receive_shield_pulse(area: Area2D) -> bool:
+	if not is_shield_up() or area == null or not PulseReceiver.pulse_reaches(area, get_shield_rect()):
 		return false
 	for s: Sticker in get_stickers():
-		if not ShockwaveWave.reaches(center, radius, s.get_body_rect()):
+		if not PulseReceiver.pulse_reaches(area, s.get_body_rect()):
 			shield_blocked.emit()
 			return false
 	_shield_layers_left -= 1
@@ -1019,7 +1016,7 @@ func _advance_phase3(dt: float, frozen: bool) -> void:
 				if _dots >= get_dots_total():
 					_send_message()
 		TYPING_SENT:
-			# Espera a que Isak se descongele (Agitar libera) y al cruce del mensaje.
+			# Espera a que Isak se descongele (sin Agitar: la congelacion se espera) y al cruce del mensaje.
 			if _message_t >= float(phase_data(3).get("message_cross_s", 0.6)):
 				_typing = TYPING_IDLE
 				_typing_wait = float(phase_data(3).get("typing_gap_s", 2.0))
@@ -1038,12 +1035,13 @@ func _send_message() -> void:
 	message_sent.emit(frozen)
 
 
-## Pulso de Isak (EventBus.pulse_fired): apaga zonas «Visto» y deja en silencio el «escribiendo…».
+## Pulso de Isak (EventBus.pulse_fired): apaga zonas «Visto», rompe una capa del
+## escudo con la arena limpia y deja en silencio el «escribiendo…».
 func _on_pulse_fired(area: Area2D) -> void:
 	receive_pulse(area)
 
 
-## Verdadero si el pulso hizo algo (zona apagada o «escribiendo…» interrumpido).
+## Verdadero si el pulso hizo algo (zona apagada, capa del escudo o «escribiendo…» interrumpido).
 func receive_pulse(area: Area2D) -> bool:
 	if not is_fighting() or area == null:
 		return false
@@ -1057,6 +1055,8 @@ func receive_pulse(area: Area2D) -> bool:
 		_sweep_t = -1.0
 		_sweep_side = SIDE_RIGHT if _sweep_side == SIDE_LEFT else SIDE_LEFT
 		_sweep_wait = float(section("seen_sweep").get("interval_s", 7.0))
+		done = true
+	if receive_shield_pulse(area):
 		done = true
 	if get_typing_state() == TYPING_ON and _dots < get_dots_total() \
 			and PulseReceiver.pulse_reaches(area, get_typing_rect()):

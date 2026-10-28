@@ -267,7 +267,7 @@ Todos **F** (sin construir). Lista orientativa para no olvidar familias; se deta
 |---|---|---|---|---|
 | `sfx_gesture_ground_pound` | Golpe al suelo (Mantener presionado) | M2 | P1 | Impacto + onda |
 | `sfx_gesture_pinch` / `sfx_gesture_unpinch` | Pellizcar: comprimirse y recuperar el tamaño | M3 | P1 | |
-| `sfx_gesture_shake` | Agitar: onda que aturde | M4 | P1 | |
+| `sfx_gesture_shake` | Agitar: onda que aturde (**sin uso**: Agitar retirado el 2026-10-28) | M4 | P1 | |
 | `sfx_combo_embestida` / `sfx_combo_filo` / `sfx_combo_sismo` | Combinaciones | M5 | P1 | Mezcla de las familias de cada gesto |
 | `sfx_w2_autoplay_start` | Video en autoplay que arranca | M2 | P1 | Aviso del ataque |
 | `sfx_w2_card_crack` / `sfx_w2_card_break` | Tarjeta frágil | M2 | P1 | |
@@ -475,7 +475,7 @@ Los 24 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (fu
 
 | ID | Señal | Notas |
 |---|---|---|
-| `sfx_gesture_shake` | `EventBus.shockwave_fired` | Agitar |
+| `sfx_gesture_shake` | `EventBus.shockwave_fired` | Agitar (**sin uso** desde el 2026-10-28: retirado; el ID y el enganche se conservan) |
 | `sfx_w4_typing` | `TypingBubble.typing_started` | `cue`; posicional. **Desvío:** un solo sonido de tres toques a 0,33 s (el `dot_s` de los puntos) al empezar, no un evento por punto |
 | `sfx_w4_bubble_pop_in` / `sfx_w4_message_deleted` | `TypingBubble.appeared` / `vanished` | Posicionales |
 | `sfx_w4_seen_freeze` / `sfx_w4_seen_break` | `Isak.frozen_started` / `Isak.frozen_ended` (`true`: roto con Agitar) | Zonas, ola y mensaje del jefe |

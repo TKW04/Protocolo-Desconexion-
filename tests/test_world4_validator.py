@@ -1,6 +1,7 @@
 """Paso 9 de docs/propuesta-mundo-4.md §7.1 y §8 (2026-10-28): el validador modela el Mundo 4 «El Chat»
-(tools/world4_model.py): Agitar (habilidad del grafo, el «¿Deshacer escritura?» que la da y el muro de texto que
-solo ella abre), zonas «Visto» (pulse_seen o la espera del ciclo; regla del congelado del 4-1), burbujas,
+(tools/world4_model.py): el «¿Deshacer escritura?» y el muro de texto que solo el abre (desde el 2026-10-28, al
+retirarse Agitar, que ya no existe en el grafo), zonas «Visto» (pulse_seen o la espera del ciclo; regla del
+congelado de §3.3 en todo el Mundo 4), burbujas,
 «escribiendo…» (wait_typing), autocorrector (wait_autocorrect; engaña, no mata), pasos en tinta con la Linterna,
 Troll, Troll disfrazado (Debug), Fantasma (wait_ghost), Sticker y la ola de «Visto». Las salas de los pasos 2-8
 validan con el camino exportado y los negativos sinteticos de §7.1 fallan como deben; un nivel sin nada del
@@ -80,9 +81,9 @@ class LowerTest(unittest.TestCase):
         low = world4_model.lower(level, catalog(level))
         switch = next(o for o in low["objects"] if o["type"] == "dnd_switch")
         self.assertEqual(switch["params"]["_config"], "undo_prompt")
-        self.assertEqual(switch["params"]["ability"], "shockwave")
+        self.assertEqual(switch["params"]["ability"], world4_model.TYPED_UNDO, "No da ninguna habilidad")
         wall = next(o for o in low["objects"] if o["type"] == "_pound_card")
-        self.assertTrue(wall["params"]["_shake"])
+        self.assertTrue(wall["params"]["_typed"])
         self.assertEqual(wall["params"]["rows"], 3)
 
 
@@ -102,16 +103,20 @@ class RoomsTest(unittest.TestCase):
             self.assertTrue(result["ok"], "%s: %s" % (name, messages(result)))
             self.assertTrue(export and export[0]["steps"], name)
 
-    def test_borrados_gets_shockwave_and_shakes_the_wall(self):
+    def test_borrados_prompt_undoes_the_wall(self):
         result, export = self.results["borrados_test"]
         steps = export[0]["steps"]
         dnd = next(s for s in steps if s["action"] == "pulse" and s.get("face_back"))
-        self.assertEqual(dnd["target"], {"type": "dnd_switch", "id": "deshacer_prueba", "ability": "shockwave"})
-        shake = next(s for s in steps if s["action"] == "shake")
-        self.assertEqual(shake["breaks"], ["muro_prueba"])
-        self.assertAlmostEqual(shake["erase_s"], 0.4)
-        self.assertLess(steps.index(dnd), steps.index(shake), "Primero el gesto, despues el muro")
-        self.assertIn("Agitar: se obtiene en el nivel", validate_level.format_text("borrados_test", result))
+        self.assertEqual(dnd["target"], {"type": "dnd_switch", "id": "deshacer_prueba",
+                                         "ability": world4_model.TYPED_UNDO})
+        self.assertNotIn("shake", [s["action"] for s in steps], "Sin Agitar")
+        wall = next(s for s in steps if s.get("target", {}).get("id") == "muro_prueba")
+        self.assertEqual(wall["action"], "wait")
+        self.assertAlmostEqual(wall["seconds"], 0.4, msg="Espera su borrado si llega a la vez")
+        self.assertLess(steps.index(dnd), steps.index(wall), "Primero el panel, despues el muro")
+        text = validate_level.format_text("borrados_test", result)
+        self.assertIn("deshace los muros de texto", text)
+        self.assertNotIn("Agitar", text)
 
     def test_visto_pulses_the_check_and_waits_the_cycle(self):
         result, export = self.results["visto_test"]
@@ -127,12 +132,16 @@ class RoomsTest(unittest.TestCase):
         acts = actions(export)
         self.assertIn("wait_ghost", acts)
         k = acts.index("wait_ghost")
-        self.assertIn(acts[k + 1], ("pulse", "shake"), "Tras esperar, el pulso a su reaparicion")
+        self.assertEqual(acts[k + 1], "pulse", "Tras esperar, el pulso a su reaparicion")
 
     def test_group_is_stunned(self):
         result, _export = self.results["grupo_test"]
         stunned = {e["id"] for e in result["world4"]["enemies"]}
-        self.assertTrue({"troll_suelo", "troll_bloque", "troll_repisa", "sticker_1", "sticker_2"} <= stunned, stunned)
+        # Sin Agitar (2026-10-28) el de la repisa, fuera de la linea de Isak, ya no cae de rebote; los Stickers se
+        # esperan en el suelo y se desinflan con el pulso al llegar.
+        self.assertTrue({"troll_suelo", "troll_bloque", "sticker_1", "sticker_2"} <= stunned, stunned)
+        waits = {e["id"]: e.get("wait_s") for e in result["world4"]["enemies"]}
+        self.assertGreater(waits["sticker_1"], 0.0, "Espera a que el Sticker llegue")
 
     def test_wave_keeps_its_margin(self):
         result, _export = self.results["ola_test"]
@@ -144,12 +153,16 @@ class RoomsTest(unittest.TestCase):
 class NegativesTest(unittest.TestCase):
     """Negativos sinteticos de §7.1."""
 
-    def test_without_shockwave_the_typed_wall_is_not_crossed(self):
+    def test_without_the_prompt_the_typed_wall_is_not_crossed(self):
         level = load("borrados_test")
         level["objects"] = [o for o in level["objects"] if o["type"] != "undo_prompt"]
         result = run(level, schema=False)
         self.assertFalse(result["ok"])
-        self.assertTrue(any("solo lo deshace Agitar" in m for m in messages(result)), messages(result))
+        self.assertTrue(any("solo lo deshace un «¿Deshacer escritura?»" in m for m in messages(result)),
+                        messages(result))
+        # Con Agitar en abilities_available (retirado) tampoco: ya no existe en el grafo.
+        level["abilities_available"]["shockwave"] = True
+        self.assertFalse(run(level, schema=False)["ok"])
 
     def test_typing_bubble_that_asks_to_jump_before_one_second(self):
         # Escalera de dos «escribiendo…» hasta la repisa de la meta: la primera (A, cols. 4-5) se escribe al salir
@@ -187,16 +200,15 @@ class NegativesTest(unittest.TestCase):
         self.assertTrue(any("su doble check no esta a tiro de pulso" in m for m in messages(result)),
                         messages(result))
 
-    def test_hazard_reaching_the_frozen_isak_without_shockwave(self):
+    def test_hazard_reaching_the_frozen_isak(self):
         level = load("visto_test")
-        level["abilities_available"]["shockwave"] = False
         set_cell(level, 11, 9, "^")
         result = run(level, schema=False)
         self.assertTrue(any("alcanza a Isak congelado" in m for m in messages(result)), messages(result))
-        # Con Agitar en el nivel la misma sala no tiene ese error.
+        # Desde el 2026-10-28 la regla vale en todo el Mundo 4: con Agitar en abilities_available (retirado), igual.
         level["abilities_available"]["shockwave"] = True
         result = run(level, schema=False)
-        self.assertFalse(any("alcanza a Isak congelado" in m for m in messages(result)), messages(result))
+        self.assertTrue(any("alcanza a Isak congelado" in m for m in messages(result)), messages(result))
 
     def test_wave_catches_up_when_the_path_stops(self):
         level = load("ola_test")

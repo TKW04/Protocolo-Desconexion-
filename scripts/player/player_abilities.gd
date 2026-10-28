@@ -128,6 +128,10 @@ var shockwave_exposed_s: float = 0.25
 var shockwave_stun_s: float = 3.0
 var shockwave_energy_cost: float = 10.0
 var shockwave_cooldown_s: float = 1.0
+## Agitar RETIRADO del juego (2026-10-28, prueba del usuario: «hace lo mismo que el
+## pulso»): shockwave.enabled false. La logica, la pose y los datos se conservan,
+## pero Isak.shockwave_denial() lo niega siempre (nunca sale, ni con la habilidad).
+var shockwave_enabled: bool = true
 ## Aspecto provisional (shockwave.visual): sacudida del sprite y anillo de la onda.
 var shockwave_visual: Dictionary = {}
 ## Congelado (seccion frozen, opcional; 2026-10-28, docs/propuesta-mundo-4.md
@@ -226,6 +230,7 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
 			return _fail("PlayerAbilities: la clave 'shockwave.%s' en '%s' debe ser numerica." % [key, source])
 		abilities.set("shockwave_" + key, float(value))
+	abilities.shockwave_enabled = bool((shockwave as Dictionary).get("enabled", true))
 	var shockwave_visual: Variant = (shockwave as Dictionary).get("visual", {})
 	if shockwave_visual is Dictionary:
 		abilities.shockwave_visual = shockwave_visual

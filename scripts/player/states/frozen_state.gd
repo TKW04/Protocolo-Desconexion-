@@ -5,8 +5,7 @@
 ## va en tiempo del mundo (el Debug la alarga, no la rompe).
 ## Salidas:
 ##   - se acaba la cuenta: reposo con la velocidad que llevaba;
-##   - Agitar (Isak.wants_shockwave, tambien en el aire): ShockwaveState con la onda
-##     al instante;
+##   - (Agitar la rompia; retirado el 2026-10-28: la congelacion dura su tiempo);
 ##   - un vortice o la pose de espaldas; morir (Isak.die) cambia a Dead directamente.
 ## Un golpe recibido congelado resta Sync pero no lo saca de aqui (Isak.take_hit).
 class_name FrozenState
@@ -22,9 +21,6 @@ func exit() -> void:
 
 
 func get_transition() -> StringName:
-	if isak.wants_shockwave():
-		isak.mark_shockwave_instant()
-		return SHOCKWAVE
 	if isak.is_warping() or isak.is_facing_back() or isak.get_frozen_left() <= 0.0:
 		return _after_freeze()
 	return NONE

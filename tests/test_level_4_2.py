@@ -1,9 +1,9 @@
 """Nivel 4-2 «Grupo sin respuesta» (data/levels/4-2.json; paso 13 de docs/propuesta-mundo-4.md §8, 2026-10-28):
 esquema y alcanzabilidad sin avisos, nivel horizontal de 260 x 14 en bandas (cada tramo se recorre en tres pasadas:
 suelo, banda de la fila 9 y banda de la fila 6, que suben o bajan alternando), inicio «Mensajes borrados» con la
-Papelera, el «¿Deshacer escritura?» que da Agitar y el muro de texto a 8 tiles, los grupos de Trolls que se
-aturden con un Agitar (patron 20), los Fantasmas, el autocorrector junto a las zonas «Visto», los enjambres de
-Stickers, los secretos (A con Pellizcar y la Linterna, B con el autocorrector al reves, C con «escribiendo…» y el
+Papelera, el «¿Deshacer escritura?» que deshace el muro de texto a 8 tiles, los grupos de Trolls que se
+aturden con el pulso (patron 20; sin Agitar desde el 2026-10-28), los Fantasmas, el autocorrector junto a las zonas
+«Visto», los enjambres de Stickers que el pulso desinfla, los secretos (A con Pellizcar y la Linterna, B con el autocorrector al reves, C con «escribiendo…» y el
 dash aereo), economia, camino exportado y su duracion frente al objetivo (40-55 %), escena y subidas al dia, y el
 4-2 jugable desde la carpeta del Mundo 4. Las pasadas con mejoras, con todo al maximo y con el tope del acceso las
 hace tools/run_tests.sh sobre data/levels/*.json.
@@ -76,7 +76,7 @@ class Level42Test(unittest.TestCase):
         self.assertEqual(lvl["debug_color"], "coral")
         self.assertEqual(lvl["abilities_available"],
                          {"pulse": True, "laser": True, "debug": True, "dash": True, "ground_pound": True,
-                          "compress": True, "shockwave": False}, "Todo el kit; Agitar se obtiene en el inicio")
+                          "compress": True}, "Todo el kit (sin Agitar, retirado el 2026-10-28)")
         self.assertEqual([(s["name"], s["x_from"], s["x_to"]) for s in lvl["sections"]], SECTIONS)
         start = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "P")
         goal = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "G")
@@ -97,29 +97,30 @@ class Level42Test(unittest.TestCase):
         rows = {s["to"]["cell"][1] for s in self.exported[0]["steps"] if s["action"] == "walk"}
         self.assertTrue({11, 8, 5} <= rows, "Pasa por el suelo y por las dos bandas: %s" % sorted(rows))
 
-    def test_start_room_gives_shockwave_and_the_wall_needs_it(self):
+    def test_start_room_prompt_undoes_the_wall(self):
         lvl = self.level
         papelera = obj(lvl, "papelera_4_2")
         self.assertEqual((papelera["type"], papelera["x"], papelera["params"]["story"]), ("papelera_actor", 5, "papelera_4_2"))
         prompt = obj(lvl, "deshacer_4_2")
-        self.assertEqual((prompt["type"], prompt["x"], prompt["params"]["ability"], prompt["params"]["story_line"]),
-                         ("undo_prompt", 14, "shockwave", "deshacer_4_2"))
+        self.assertEqual((prompt["type"], prompt["x"], prompt["params"]["story_line"]),
+                         ("undo_prompt", 14, "deshacer_4_2"))
+        self.assertNotIn("ability", prompt["params"], "Ya no da ninguna habilidad")
         wall = obj(lvl, "muro_4_2")
         self.assertEqual((wall["type"], wall["x"]), ("typed_wall", 22))
-        self.assertEqual(wall["x"] - prompt["x"], 8, "Uso obligatorio a 8 tiles de la obtencion (doc)")
+        self.assertEqual(wall["x"] - prompt["x"], 8, "El muro, a 8 tiles del panel que lo deshace")
         self.assertTrue(all(lvl["grid"][r][22] == "#" for r in range(1, 9)), "Sobre el muro, pared hasta el techo")
         deleted = [o for o in of_type(lvl, "chat_bubble") if o["params"].get("deleted") and o["x"] < 22]
         self.assertGreaterEqual(len(deleted), 3, "Sala llena de «Se eliminó este mensaje»")
-        actions = [s["action"] for s in self.exported[0]["steps"]]
-        first_shake = actions.index("shake")
-        dnd = next(i for i, s in enumerate(self.exported[0]["steps"])
-                   if s["action"] == "pulse" and s["target"]["type"] == "dnd_switch")
-        self.assertLess(dnd, first_shake, "Primero el panel, despues Agitar en el muro")
-        self.assertEqual(self.exported[0]["steps"][first_shake]["target"]["id"], "muro_4_2")
+        steps = self.exported[0]["steps"]
+        self.assertNotIn("shake", [s["action"] for s in steps], "Sin Agitar en el camino")
+        dnd = next(i for i, s in enumerate(steps) if s["action"] == "pulse" and s["target"]["type"] == "dnd_switch")
+        wall_step = next(i for i, s in enumerate(steps) if s.get("target", {}).get("id") == "muro_4_2")
+        self.assertLess(dnd, wall_step, "Primero el panel, despues se pasa el muro deshecho")
+        self.assertEqual(steps[wall_step]["action"], "wait", "Solo espera su borrado si llega a la vez")
         no_prompt = variant(lvl, lambda l: l.__setitem__("objects", [o for o in l["objects"] if o["type"] != "undo_prompt"]))
         self.assertFalse(no_prompt["ok"], "Sin el «¿Deshacer escritura?» el muro no se cruza")
 
-    def test_troll_groups_fall_to_one_shake_each(self):
+    def test_troll_groups_fall_to_pulses(self):
         enemies = [e for e in self.level["enemies"] if e["type"] == "troll"]
         groups = {}
         for e in enemies:
@@ -132,9 +133,9 @@ class Level42Test(unittest.TestCase):
             self.assertTrue(all(section_of(self.level, m["x"]) == "Tramo 1 «Grupo»" for m in members))
         report = {e["id"]: e for e in self.result["world4"]["enemies"]}
         for name, members in groups.items():
-            used = {(report[m["id"]]["with"], tuple(report[m["id"]]["at"])) for m in members}
-            self.assertEqual(len(used), 1, "Grupo %s: un solo Agitar los aturde a todos (%s)" % (name, used))
-            self.assertEqual(next(iter(used))[0], "shake")
+            used = [report[m["id"]]["with"] for m in members if m["id"] in report]
+            self.assertTrue(used, "Grupo %s: el camino aturde a los de su linea" % name)
+            self.assertTrue(all(w == "pulse" for w in used), "Con el pulso (sin Agitar): %s" % used)
 
     def test_ghosts_in_tramo_2(self):
         ghosts = [e for e in self.level["enemies"] if e["type"] == "ghost"]
@@ -166,19 +167,21 @@ class Level42Test(unittest.TestCase):
         self.assertIn("autocorrector_1", waits, "El camino espera el cursor")
         troll = next(e for e in lvl["enemies"] if e["id"] == "troll_visto")
         zone = zones["visto_suelo"]
-        self.assertEqual(troll["y"], zone["y"] + zone["params"]["height_tiles"] - 1, "El Troll, en la linea de la zona")
-        self.assertTrue(self.result["world4"]["shake"]["possible"])
+        self.assertEqual(troll["y"], zone["y"] + zone["params"]["height_tiles"] - 1, "El Troll, a la altura de la zona")
+        self.assertGreaterEqual(troll["x"] - zone["x"], 6, "Lejos de la zona: no alcanza a Isak congelado (§3.3)")
+        self.assertNotIn("shake", self.result["world4"], "Sin Agitar")
 
     def test_sticker_swarms_in_tramo_4(self):
         stickers = [e for e in self.level["enemies"] if e["type"] == "sticker"]
         self.assertEqual(len(stickers), 12)
         self.assertTrue(all(section_of(self.level, s["x"]) == "Tramo 4 «Stickers»" for s in stickers))
         report = {e["id"]: e for e in self.result["world4"]["enemies"]}
-        shakes = {tuple(report[s["id"]]["at"]) for s in stickers}
-        self.assertTrue(all(report[s["id"]]["with"] == "shake" for s in stickers), "Agitar los desinfla")
-        self.assertLessEqual(len(shakes), 5, "En tandas: %d Agitar para 12 Stickers" % len(shakes))
-        landing = [s for s in stickers if s["y"] == 8]
-        self.assertEqual(len({tuple(report[s["id"]]["at"]) for s in landing}), 1, "La tanda de B2, de un Agitar")
+        engaged = [s for s in stickers if s["id"] in report]
+        self.assertGreaterEqual(len(engaged), 11, "El camino desinfla a los que despierta")
+        self.assertTrue(all(report[s["id"]]["with"] == "pulse" for s in engaged), "El pulso los desinfla")
+        landing = [s for s in stickers if s["y"] == 8 and s["x"] <= 240]
+        self.assertEqual(len(landing), 3, "Tres alrededor de la llegada a B2")
+        self.assertEqual(len({tuple(report[s["id"]]["at"]) for s in landing}), 1, "La tanda de B2, de un pulso")
         self.assertEqual(report["troll_stickers"]["type"], "troll")
 
     def test_economy(self):
@@ -246,9 +249,10 @@ class Level42Test(unittest.TestCase):
         path = self.exported[0]
         self.assertEqual((path["format"], path["level"]), ("isak-path/1", "4-2"))
         actions = [s["action"] for s in path["steps"]]
-        for action in ("walk", "jump", "fall", "pulse", "shake", "pulse_seen", "wait_typing", "wait_autocorrect",
+        for action in ("walk", "jump", "fall", "pulse", "pulse_seen", "wait_typing", "wait_autocorrect",
                        "wait_ghost", "wait", "goal"):
             self.assertIn(action, actions)
+        self.assertNotIn("shake", actions, "Sin Agitar (retirado el 2026-10-28)")
         self.assertEqual(actions.count("wait_ghost"), 6)
         self.assertNotIn("pinch", actions, "El camino no va comprimido (pozos de 1 columna)")
         finals = [s for s in path["steps"] if s.get("final")]

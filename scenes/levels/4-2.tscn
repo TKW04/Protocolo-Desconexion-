@@ -40,7 +40,7 @@ world = 4
 tile_size = 64
 size_tiles = Vector2i(260, 14)
 debug_color = "coral"
-abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true, "shockwave": false}
+abilities_available = {"compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true}
 source_path = "res://data/levels/4-2.json"
 
 [node name="Background" parent="." instance=ExtResource("2_world4_background")]
@@ -181,7 +181,6 @@ metadata/help_id = "chat_bubble"
 
 [node name="deshacer_4_2" parent="Objects" instance=ExtResource("10_undo_prompt") groups=["help_target"]]
 position = Vector2(896, 704)
-ability = &"shockwave"
 object_id = &"deshacer_4_2"
 story_line = "deshacer_4_2"
 metadata/help_id = "undo_prompt"
@@ -1465,7 +1464,7 @@ metadata/params = {"detect_tiles": 2, "patrol_range_px": 128}
 metadata/help_id = "ghost"
 
 [node name="troll_visto" parent="Enemies" instance=ExtResource("22_troll") groups=["help_target"]]
-position = Vector2(10016, 768)
+position = Vector2(10144, 768)
 metadata/params = {"detect_tiles": 4, "facing": -1}
 metadata/help_id = "troll"
 
@@ -1505,7 +1504,7 @@ metadata/params = {"detect_tiles": 2}
 metadata/help_id = "sticker"
 
 [node name="sticker_b2_3" parent="Enemies" instance=ExtResource("24_sticker") groups=["help_target"]]
-position = Vector2(15456, 576)
+position = Vector2(15584, 576)
 metadata/params = {"detect_tiles": 2}
 metadata/help_id = "sticker"
 

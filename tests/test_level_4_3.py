@@ -73,7 +73,7 @@ class Level43Test(unittest.TestCase):
                          ("4-3", "Mensajes sin leer", 4, 5, 480))
         self.assertEqual((len(lvl["grid"][0]), len(lvl["grid"])), (300, 14), "Horizontal de 300 x 14 (§4.3)")
         self.assertEqual(lvl["camera"]["vertical"], "simple")
-        self.assertTrue(lvl["abilities_available"]["shockwave"], "Todo el kit, con Agitar")
+        self.assertNotIn("shockwave", lvl["abilities_available"], "Todo el kit, sin Agitar (retirado el 2026-10-28)")
         self.assertEqual([(s["name"], s["x_from"], s["x_to"]) for s in lvl["sections"]], SECTIONS)
         self.assertEqual(lvl["unlocks"], [{"type": "level", "id": "4-boss"}], "Desbloquea la fila del jefe")
         self.assertEqual({c["id"]: (c["x"], c["y"]) for c in lvl["checkpoints"]},
@@ -192,7 +192,9 @@ class Level43Test(unittest.TestCase):
         zone = obj(self.level, "visto_alto")
         bubble = obj(self.level, "tres_meses_alta")
         self.assertEqual(zone["y"] + zone["params"]["height_tiles"], bubble["y"], "La zona cubre la burbuja alta")
-        self.assertNotIn("on_s", zone["params"], "Siempre activa: se sube congelado y Agitar suelta")
+        self.assertNotIn("on_s", zone["params"], "Siempre activa")
+        self.assertEqual(zone["params"]["icon"], "right", "Su check, junto a «hace 2 semanas»: el pulso llega desde alli")
+        self.assertEqual(obj(self.level, "sello_0")["x"], zone["x"] + zone["params"]["width_tiles"])
 
     def test_closing_v15_reply_later_without_connection(self):
         terminal = obj(self.level, "terminal_responder")["params"]

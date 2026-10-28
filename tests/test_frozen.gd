@@ -1,8 +1,8 @@
 # Congelado (estado Frozen; paso 2 del plan de docs/propuesta-mundo-4.md §8, valores
 # de §3.3 y decision 3 de §9): Isak queda quieto donde esta (tambien en el aire) con
 # su velocidad guardada y al terminar sigue con ella; la cuenta va en tiempo del mundo
-# (el Debug la alarga); Agitar la rompe al instante tambien en el aire (onda sin la
-# anticipacion, 10 de energia); un golpe congelado resta pero no descongela;
+# (el Debug la alarga); nada la rompe antes (Agitar, que la rompia, se retiro el
+# 2026-10-28: gesture_shake no hace nada); un golpe congelado resta pero no descongela;
 # inmunidad de 0,5 s solo frente a otra zona «Visto»; morir y reaparecer lo cortan;
 # sin pulso, laser, dash ni Pellizcar mientras dura. Isak avanza con delta fijo.
 extends GutTest
@@ -155,50 +155,18 @@ func test_already_frozen_only_extends() -> void:
 	assert_eq(_started.size(), 1)
 
 
-# --- Agitar libera ---
+# --- Nada la rompe (Agitar retirado el 2026-10-28) ---
 
-func test_shake_breaks_freeze_on_floor() -> void:
+func test_shake_no_longer_breaks_freeze() -> void:
 	_isak.freeze(1.5)
 	_sim.step(3)
 	_shake()
-	assert_eq(_sim.state(), PlayerState.SHOCKWAVE, "Agitar rompe la congelacion")
-	assert_eq(_fired.size(), 1, "La onda sale al instante (sin la anticipacion)")
-	assert_eq(_ended, [true], "Rota por Agitar")
-	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max() - 10.0, EPS, "10 de energia")
-	assert_eq(_isak.get_shockwave_phase(), ShockwaveState.Phase.EXPOSED, "Sigue la exposicion")
-	_sim.step_until(func() -> bool: return not _isak.is_shockwaving(), _sim.steps_for(1.0))
-	assert_eq(_sim.state(), PlayerState.IDLE)
-
-
-func test_shake_breaks_freeze_in_the_air() -> void:
-	_jump_and_rise(6)
-	_shake()
-	assert_ne(_sim.state(), PlayerState.SHOCKWAVE, "En el aire sin congelar, no")
-	assert_eq(_isak.shockwave_denial(), Isak.SHOCKWAVE_DENIED_AIR)
-	_isak.freeze(2.0, Isak.FREEZE_SOURCE_WAVE)
-	assert_eq(_isak.shockwave_denial(), &"", "Congelado sale tambien en el aire")
-	_shake()
-	assert_eq(_sim.state(), PlayerState.SHOCKWAVE)
-	assert_eq(_fired.size(), 1)
-	assert_eq(_ended, [true])
-	_sim.step_until(func() -> bool: return _isak.is_on_floor() and not _isak.is_shockwaving(), _sim.steps_for(3.0))
-	assert_true(_isak.is_on_floor(), "Cae despues")
-
-
-func test_shake_without_energy_keeps_frozen() -> void:
-	GameState.debug_energy = 5.0
-	_isak.freeze(1.5)
-	_shake()
-	assert_true(_isak.is_frozen(), "Sin energia no libera")
-	assert_eq(_isak.shockwave_denial(), Isak.SHOCKWAVE_DENIED_ENERGY)
-	assert_eq(_fired.size(), 0)
-
-
-func test_shake_locked_keeps_frozen() -> void:
-	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, false)
-	_isak.freeze(1.5)
-	_shake()
-	assert_true(_isak.is_frozen(), "Sin Agitar (4-1) se espera")
+	assert_true(_isak.is_frozen(), "gesture_shake no libera: se espera")
+	assert_eq(_fired.size(), 0, "Sin onda")
+	assert_eq(_isak.shockwave_denial(), Isak.SHOCKWAVE_DENIED_LOCKED, "Retirado por datos")
+	assert_almost_eq(GameState.debug_energy, GameState.get_debug_energy_max(), EPS, "Sin gasto")
+	_sim.step_until(func() -> bool: return not _isak.is_frozen(), _sim.steps_for(2.0))
+	assert_eq(_ended, [false], "Termina sola, a su tiempo")
 
 
 # --- Dano, inmunidad, muerte ---
@@ -218,9 +186,8 @@ func test_seen_immunity_only_against_zones() -> void:
 	assert_false(_isak.freeze(1.5, Isak.FREEZE_SOURCE_ZONE), "Otra zona no lo congela en 0,5 s")
 	_sim.step(_sim.frames(0.55))
 	assert_true(_isak.freeze(1.5, Isak.FREEZE_SOURCE_ZONE), "Despues si")
-	_shake()
-	assert_false(_isak.is_frozen())
-	assert_true(_isak.get_seen_immunity_left() > 0.0, "Tambien tras romperla con Agitar")
+	_sim.step_until(func() -> bool: return not _isak.is_frozen(), _sim.steps_for(2.0))
+	assert_true(_isak.get_seen_immunity_left() > 0.0, "Otra vez la inmunidad")
 	assert_true(_isak.freeze(2.0, Isak.FREEZE_SOURCE_WAVE), "La ola no respeta la inmunidad")
 
 

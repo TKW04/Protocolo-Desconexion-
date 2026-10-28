@@ -4,15 +4,15 @@
 ##
 ## Es el interruptor «No molestar» del 1-3 (DndSwitch) con otro aspecto, como la
 ## herramienta «Recortar» del 3-2 (CropTool): panel de sistema en la pared del
-## FONDO («¿Deshacer escritura? Agita el dispositivo»); un PULSO que alcanza su zona
-## (hit_rect) con Isak de espaldas pose_s lo usa y da para siempre la habilidad
-## `ability` (shockwave, gesto Agitar) con GameState.obtain_ability: se guarda, va a
-## la Papelera en un game over y se pierde en un rollback sin guardar. La primera vez
-## Eco dice su frase del mundo (story_line, linea importante; «No necesitas a nadie
-## más.», del doc) y despues sale el aviso «Agitar: U / LB (mando)» (AbilityNotices).
-## Un solo uso: con el gesto ya obtenido arranca deshecho e inerte, sin linea, aviso
-## ni Q. Sin tinte del nivel. Su senal switched_on (heredada) es la del sonido
-## sfx_w4_undo (paso 20).
+## FONDO («¿Deshacer escritura? Toca para deshacer»); un PULSO que alcanza su zona
+## (hit_rect) con Isak de espaldas pose_s lo usa y DESHACE LOS MUROS DE TEXTO del
+## nivel (EventBus.writing_undone -> TypedWall.undo). Desde el 2026-10-28 (prueba del
+## usuario: Agitar retirado) ya no da ninguna habilidad (ability vacia): vale para
+## cada intento (vuelve a estar listo al reaparecer el nivel, como el muro). La
+## primera vez por partida guardada (seen_notices `notice_id`) Eco dice su frase del
+## mundo (story_line, linea importante; «No necesitas a nadie más.», del doc); sin
+## aviso de control. Sin tinte del nivel. Su senal switched_on (heredada) es la del
+## sonido sfx_w4_undo (paso 20).
 ## El origen es la esquina superior izquierda de la celda donde Isak se pone de pie.
 ## Aspecto PROVISIONAL por codigo (paleta provisional del Mundo 4): ventana de sistema
 ## con el texto y un celular que se sacude; usado, «Escritura deshecha».
@@ -26,7 +26,26 @@ const ANIM_ON: StringName = &"undo_prompt_on"
 
 func _init() -> void:
 	_config = World4ObjectsConfig.section("undo_prompt")
-	ability = GameState.ABILITY_SHOCKWAVE
+	ability = &""
+
+
+## Aviso de un solo uso de la linea de Eco (seen_notices).
+func get_notice_id() -> StringName:
+	return StringName("undo_" + (story_line if not story_line.is_empty() else String(object_id)))
+
+
+## Lo usa: deshace los muros de texto y, la primera vez, Eco dice su linea.
+func switch_on() -> bool:
+	var first: bool = not story_line.is_empty() and not GameState.is_notice_seen(get_notice_id())
+	if not super.switch_on():
+		return false
+	if first:
+		GameState.mark_notice_seen(get_notice_id())
+		var story: String = get_story_text()
+		if not story.is_empty():
+			EventBus.eco_line_requested.emit(story, float(_config.get("story_duration_s", 4.0)), true)
+	EventBus.writing_undone.emit(object_id)
+	return true
 
 
 func advance(dt: float) -> void:
@@ -78,9 +97,9 @@ func _draw() -> void:
 	draw_string(font, Vector2(inner.position.x, inner.position.y + 26.0),
 		String(_config.get("title", "¿Deshacer escritura?")), HORIZONTAL_ALIGNMENT_CENTER, inner.size.x, 11, text)
 	draw_string(font, Vector2(inner.position.x, inner.position.y + 40.0),
-		String(_config.get("subtitle", "Agita el dispositivo")), HORIZONTAL_ALIGNMENT_CENTER, inner.size.x, 9,
+		String(_config.get("subtitle", "Toca para deshacer")), HORIZONTAL_ALIGNMENT_CENTER, inner.size.x, 9,
 		_col("muted", "gris_claro"))
-	# Celular que se sacude (forma, ademas del texto).
+	# Celular (forma, ademas del texto; shake_hz 0 desde que no hay Agitar: quieto).
 	var c: Vector2 = LaserReceiver._vec(_config.get("phone_center_px", [32, -22]))
 	var shake: float = sin(_time * TAU * float(_config.get("shake_hz", 3.0))) * 2.0
 	var phone := Rect2(c + Vector2(-6.0 + shake, -10.0), Vector2(12.0, 20.0))

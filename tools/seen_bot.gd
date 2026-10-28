@@ -1,9 +1,9 @@
 ## Bot del jefe El Visto (paso 19 de docs/propuesta-mundo-4.md §8, 2026-10-28;
 ## §7.3). Carga la escena principal (scenes/main.tscn, LevelRunner) en la arena
 ## 4-boss real y pelea con el Isak real pulsando SOLO acciones del Input Map
-## (move_left / move_right, jump, run, pulse, laser, debug, gesture_swipe,
-## gesture_shake —Agitar— y ui_accept para cerrar las lineas importantes y la
-## recompensa); nunca Q ni pause, nunca teletransporta, no toca GameState durante
+## (move_left / move_right, jump, run, pulse, laser, debug, gesture_swipe y
+## ui_accept para cerrar las lineas importantes y la recompensa; sin Agitar,
+## retirado el 2026-10-28); nunca Q ni pause, nunca teletransporta, no toca GameState durante
 ## la pelea ni llama a la API de dano del jefe. Como los bots de Alerta Mayor,
 ## Autoplay y La Curadora (tools/boss_bot.gd, tools/autoplay_bot.gd,
 ## tools/curator_bot.gd) es REACTIVO: una politica por fase que cada cuadro lee la
@@ -21,16 +21,17 @@
 ##   Debug y laser. Sale de la columna de las burbujas que caen y apaga con el
 ##   pulso la zona «Visto» que tiene bajo los pies. Si la ventana se pierde, dash
 ##   a traves de la embestida.
-## - Fase 2 «Grupo»: con Stickers en el suelo, Agitar en la columna 10 (los alcanza
-##   a todos); con la arena limpia, sube a la burbuja fija de su lado y Agita en
-##   la columna 5 (alcanza el escudo y aturde al Troll de esa burbuja); el escudo
-##   estalla y El Visto cae al suelo: baja, Debug, pulso, suelta el Debug y laser.
+## - Fase 2 «Grupo»: con Stickers en el suelo, va hacia el que se infla (o el mas
+##   cercano) y lo desinfla con un pulso, uno a uno; con la arena limpia, sube a la
+##   burbuja fija de su lado y, desde su borde interior y mirando al centro, pulsa
+##   el escudo (una capa por pulso; Kernel, dos); el escudo estalla y El Visto cae
+##   al suelo: baja, Debug, pulso, suelta el Debug y laser.
 ##   Apaga con el pulso el barrido «Visto» de su burbuja.
 ## - Fase 3 «Escribiendo…»: espera en el borde interior de la burbuja fija de su
 ##   lado; con el «escribiendo…» enciende el Debug y lo deja en silencio con un
 ##   pulso (desde ahi le llega); aturdido, otro pulso marca el check gris, suelta
 ##   el Debug y laser. Aturde con el pulso a los Fantasmas que reaparecen y los
-##   remata con el laser; congelado, Agitar libera.
+##   remata con el laser; congelado, espera a que se acabe (sin Agitar).
 ##
 ## Perfiles (--profile):
 ## - ideal: pelea limpia (Debug solo hasta la marca, un golpe por ventana).
@@ -47,7 +48,7 @@
 ## 100-150 s), golpes, muertes, congelaciones (y cuantas por el mensaje), energia
 ## minima (toda la pelea, en ventana y por fase) y gasto por ventana frente al
 ## margen del validador, mensajes enviados, «escribiendo…» interrumpidos, escudos
-## bloqueados, pulsos, laseres, Agitares y dashes; al final, la recompensa
+## bloqueados, pulsos, laseres y dashes; al final, la recompensa
 ## (boss_w4_l<n> sin guardar) y la vuelta al hub con 4-boss completado, el Mundo 5
 ## disponible y, en Caché, la pieza coral encendida y la cuarta ranura del candado
 ## de M6. Usa user://bot_save.json (borrado al empezar). Lo lanza
@@ -70,15 +71,15 @@ const A_PULSE: StringName = &"pulse"
 const A_LASER: StringName = &"laser"
 const A_DEBUG: StringName = &"debug"
 const A_DASH: StringName = &"gesture_swipe"
-const A_SHAKE: StringName = &"gesture_shake"
 const A_ACCEPT: StringName = &"ui_accept"
-const ALL_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_JUMP, A_RUN, A_PULSE, A_LASER, A_DEBUG, A_DASH, A_SHAKE]
+const ALL_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_JUMP, A_RUN, A_PULSE, A_LASER, A_DEBUG, A_DASH]
 const ACCESS_NAMES: Dictionary = {1: "Caché", 2: "Kernel", 3: "Raíz"}
 const LEFT: String = "left"
 const RIGHT: String = "right"
 ## Margen de energia del validador de arenas (tools/validate_boss.py, pelea
-## torpe, paso 17: el minimo de las tres fases por acceso). Solo informe.
-const VALIDATOR_MARGIN: Dictionary = {1: 35.0, 2: 22.5, 3: 32.5}
+## torpe, paso 17; sin Agitar desde el 2026-10-28: el minimo de las tres fases por
+## acceso). Solo informe.
+const VALIDATOR_MARGIN: Dictionary = {1: 50.0, 2: 47.5, 3: 47.5}
 ## Duracion pedida al bot ideal en Caché (paso 19, s de juego).
 const IDEAL_CACHE_S: Vector2 = Vector2(100.0, 150.0)
 const MAX_FIGHT_S: float = 600.0
@@ -93,9 +94,11 @@ const RECHARGE_BELOW: Dictionary = {"ideal": 45.0, "clumsy": 60.0}
 ## Margen (px) a cada lado del cuerpo frente a las burbujas que caen.
 const FALL_MARGIN_PX: float = 10.0
 const BODY_HALF_PX: float = 20.0
-## Columna de espera en la fase 1 (sobre el cargador) y del Agitar en el suelo.
+## Columna de espera en la fase 1 (sobre el cargador) y en el suelo con Stickers.
 const HOME_COL_P1: float = 7.5
-const SHAKE_FLOOR_COL: float = 10.5
+const STICKER_FLOOR_COL: float = 10.5
+## Distancia (px) a la que se planta frente a un Sticker para pulsarlo.
+const STICKER_PULSE_PX: float = 96.0
 
 var _profile: String = "ideal"
 var _lap: int = 1
@@ -113,7 +116,7 @@ var _tile: float = 64.0
 var _floor_y: float = 640.0
 ## Geometria por lado: ledge (burbuja baja x0, x1), ledge_y, plat (burbuja fija
 ## x0, x1), plat_y, inner (+1 / -1: de la pared al centro), launch_x (suelo),
-## ledge_jump_x, shake_x (burbuja fija: escudo y Troll), wait_x (fase 3).
+## ledge_jump_x, shield_x (burbuja fija: pulso al escudo), wait_x (fase 3).
 var _geo: Dictionary = {}
 
 # --- Entrada que se aplica al final de cada cuadro ---
@@ -128,7 +131,6 @@ var _debug_tap_cd: int = 0
 var _laser_cd: int = 0
 var _pulse_cd: int = 0
 var _dash_tap_cd: int = 0
-var _shake_cd: int = 0
 
 # --- Estado ---
 var _frame: int = 0
@@ -170,7 +172,6 @@ var _debug_cut_in_window: int = 0
 var _dashes: int = 0
 var _lasers: int = 0
 var _pulses: int = 0
-var _shakes: int = 0
 var _debug_frames: int = 0
 var _charges: int = 0
 var _freezes: int = 0
@@ -218,7 +219,6 @@ func _ready() -> void:
 	EventBus.dash_started.connect(func(_d: float) -> void: _dashes += 1)
 	EventBus.laser_fired.connect(func(_p: Node2D) -> void: _lasers += 1)
 	EventBus.pulse_fired.connect(func(_a: Area2D) -> void: _pulses += 1)
-	EventBus.shockwave_fired.connect(func(_c: Vector2, _r: float, _s: Node2D) -> void: _shakes += 1)
 	_runner = (load(MAIN_SCENE) as PackedScene).instantiate() as LevelRunner
 	_runner.start_level_id = LEVEL_ID
 	add_child(_runner)
@@ -226,7 +226,7 @@ func _ready() -> void:
 
 
 ## Progreso de quien acaba de completar el 4-3: Eco, Notas, Calc y la Linterna
-## conocidos, las siete habilidades (con Agitar), los avisos vistos, la
+## conocidos, las seis habilidades (sin Agitar, retirado), los avisos vistos, la
 ## actualizacion del hub instalada, los recuerdos de los jefes 1-3 y la fila de
 ## El Visto desbloqueada, en la vuelta pedida.
 func _setup_progress() -> void:
@@ -234,8 +234,7 @@ func _setup_progress() -> void:
 	for ally: StringName in [GameState.ALLY_ECO, GameState.ALLY_NOTAS, GameState.ALLY_CALC, GameState.ALLY_LINTERNA]:
 		GameState.meet_ally(ally)
 	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG,
-			GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND, GameState.ABILITY_COMPRESS,
-			GameState.ABILITY_SHOCKWAVE]:
+			GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND, GameState.ABILITY_COMPRESS]:
 		GameState.obtain_ability(ability)
 		GameState.seen_notices[ability] = true
 	for id: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss", &"2-1", &"2-2", &"2-3", &"2-boss", &"3-1", &"3-2",
@@ -363,7 +362,7 @@ func _hook_boss() -> void:
 			"launch_x": ledge_inner + inner * 24.0,
 			"ledge_jump_x": ledge_inner - inner * 20.0,
 			"ledge_home_x": ledge_inner - inner * 20.0,
-			"shake_x": plat_outer + inner * 160.0,
+			"shield_x": plat_inner - inner * 26.0,
 			"wait_x": plat_inner - inner * 26.0,
 		}
 		if _verbose:
@@ -390,7 +389,7 @@ func _hook_boss() -> void:
 	_boss.shield_blocked.connect(func() -> void:
 		_shield_blocked += 1
 		if _verbose:
-			_note("Agitar al escudo con Stickers vivos: no cede"))
+			_note("pulso al escudo con Stickers vivos: no cede"))
 	_boss.final_blow.connect(_on_final_blow)
 
 
@@ -522,9 +521,9 @@ func _fight() -> void:
 		_debug_hold = false
 		_air = {}
 		return
-	# Congelado: Agitar libera (sale tambien en el aire).
+	# Congelado: sin Agitar, se espera a que se acabe.
 	if _isak.is_frozen():
-		_try_shake()
+		_axis = 0.0
 		_debug_want = DebugMode.is_active() or DebugMode.is_engaged()
 		return
 	var window: bool = _boss.is_window_open()
@@ -778,42 +777,53 @@ func _phase2(window: bool) -> void:
 	var stickers: Array[Sticker] = _boss.get_stickers()
 	if not stickers.is_empty():
 		_debug_off()
-		var on_floor: bool = _surface() == &"floor"
-		if on_floor and (_all_stickers_in_reach(stickers) or _sticker_inflating_near(stickers)):
-			_axis = 0.0
-			_try_shake()
+		if _surface() != &"floor":
+			_go(&"floor", _home, STICKER_FLOOR_COL * _tile, 10.0)
 			return
-		_go(&"floor", _home, SHAKE_FLOOR_COL * _tile, 10.0)
+		# Uno a uno: el que se infla primero, si no el mas cercano; el pulso lo desinfla.
+		var target: Sticker = _sticker_target(stickers)
+		var r: Rect2 = target.get_body_rect()
+		var dx: float = r.get_center().x - _isak.global_position.x
+		var dir: float = signf(dx) if dx != 0.0 else _isak.facing
+		if _rect_in_pulse(r):
+			_axis = 0.0
+			if _isak.facing != dir:
+				_face_x(r.get_center().x)
+				return
+			_try_pulse()
+			return
+		_walk_to(clampf(r.get_center().x - dir * STICKER_PULSE_PX, 1.5 * _tile, 18.5 * _tile), 10.0)
 		return
 	if _need_recharge() and _surface() == &"floor" and _try_recharge():
 		return
-	# Arena limpia: a la burbuja fija y Agitar junto al escudo.
-	var sx: float = _g(_home, "shake_x")
+	# Arena limpia: a la burbuja fija y pulso al escudo desde su borde interior.
+	var sx: float = _g(_home, "shield_x")
 	if _surface() == &"plat" and _side_here() == _home and absf(_isak.global_position.x - sx) <= 14.0:
 		_axis = 0.0
+		var shield: Rect2 = _boss.get_shield_rect()
+		if _isak.facing != signf(shield.get_center().x - _isak.global_position.x):
+			_face_x(shield.get_center().x)
+			return
 		# El Debug ya cargando para la ventana que viene (k = 2 con el Debug activo).
 		_want_debug(_profile != "clumsy" or _window_goal_next() != 0)
-		_try_shake()
+		if _rect_in_pulse(shield):
+			_try_pulse()
 		return
 	_debug_off()
 	_go(&"plat", _home, sx, 6.0)
 
 
-func _all_stickers_in_reach(stickers: Array[Sticker]) -> bool:
-	var c: Vector2 = _isak.get_shockwave_center()
+## Sticker al que ir: el que se infla (el mas cercano de ellos) o el mas cercano.
+func _sticker_target(stickers: Array[Sticker]) -> Sticker:
+	var best: Sticker = null
+	var best_key: float = INF
 	for s: Sticker in stickers:
-		if not ShockwaveWave.reaches(c, 160.0 - 8.0, s.get_body_rect()):
-			return false
-	return true
-
-
-## Un Sticker se infla a tiro de Agitar: Agitar ya (lo desinfla antes de que explote).
-func _sticker_inflating_near(stickers: Array[Sticker]) -> bool:
-	var c: Vector2 = _isak.get_shockwave_center()
-	for s: Sticker in stickers:
-		if s.is_inflating() and ShockwaveWave.reaches(c, 160.0 - 8.0, s.get_body_rect()):
-			return true
-	return false
+		var d: float = absf(s.get_body_rect().get_center().x - _isak.global_position.x)
+		var key: float = d - (10000.0 if s.is_inflating() else 0.0)
+		if key < best_key:
+			best_key = key
+			best = s
+	return best
 
 
 ## El barrido «Visto» de la burbuja fija de su lado: el pulso lo apaga (desde la
@@ -905,7 +915,7 @@ func _phase3(window: bool) -> void:
 		_axis = 0.0
 		var lost_next: bool = _profile == "clumsy" and _window_goal_next() == 0
 		if lost_next:
-			# El torpe pierde la ventana: deja que llegue el mensaje (Agitar libera).
+			# El torpe pierde la ventana: deja que llegue el mensaje (se espera la congelacion).
 			_want_debug(_boss.get_dots() >= 1)
 			return
 		_want_debug(true)
@@ -1181,8 +1191,7 @@ func _pulse_center() -> Vector2:
 
 func _can_pulse_now() -> bool:
 	return _pulse_cd <= 0 and _isak.can_pulse() and not _isak.is_dashing() and not _isak.is_laser_posing() \
-		and _isak.get_state_name() != PlayerState.PULSE and _isak.get_state_name() != PlayerState.HURT \
-		and not _isak.is_shockwaving()
+		and _isak.get_state_name() != PlayerState.PULSE and _isak.get_state_name() != PlayerState.HURT
 
 
 func _try_pulse() -> bool:
@@ -1201,14 +1210,6 @@ func _try_laser() -> bool:
 		return false
 	_tap(A_LASER)
 	_laser_cd = 6
-	return true
-
-
-func _try_shake() -> bool:
-	if _shake_cd > 0 or _isak.shockwave_denial() != &"":
-		return false
-	_tap(A_SHAKE)
-	_shake_cd = 8
 	return true
 
 
@@ -1264,7 +1265,6 @@ func _release_taps() -> void:
 	_pulse_cd = maxi(_pulse_cd - 1, 0)
 	_dash_tap_cd = maxi(_dash_tap_cd - 1, 0)
 	_debug_tap_cd = maxi(_debug_tap_cd - 1, 0)
-	_shake_cd = maxi(_shake_cd - 1, 0)
 
 
 func _apply_inputs() -> void:
@@ -1419,8 +1419,8 @@ func _finish(ok: bool) -> void:
 			(" (" + ", ".join(causes) + ")") if not causes.is_empty() else "", _deaths, _freezes, _freezes_message,
 			_min_energy if _min_energy != INF else -1.0, _min_energy_window if _min_energy_window != INF else -1.0,
 			VALIDATOR_MARGIN.get(_lap, 0.0), _debug_cut_in_window])
-		print("  ACCIONES: pulsos %d, laseres %d, Agitar %d, dashes %d, Debug %.1f s, cargas %d, mensajes enviados %d, «escribiendo…» interrumpidos %d, escudos bloqueados %d, fantasmas aturdidos %d" % [
-			_pulses, _lasers, _shakes, _dashes, float(_debug_frames) / 60.0, _charges, _messages, _interrupts,
+		print("  ACCIONES: pulsos %d, laseres %d, dashes %d, Debug %.1f s, cargas %d, mensajes enviados %d, «escribiendo…» interrumpidos %d, escudos bloqueados %d, fantasmas aturdidos %d" % [
+			_pulses, _lasers, _dashes, float(_debug_frames) / 60.0, _charges, _messages, _interrupts,
 			_shield_blocked, _ghost_stuns])
 		print("  FASES: " + "; ".join(phases))
 	finished.emit(0 if ok else 1)

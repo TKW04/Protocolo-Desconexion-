@@ -21,8 +21,9 @@
 ##   pulso; si patrulla cerca de la fila de Isak, se acerca andando hasta que se
 ##   esfuma; oculto, espera; al reaparecer (aviso), se gira y pulsa. Si patrulla
 ##   lejos o en otra banda, no se ha activado y el bot sigue (paso 13).
-## - `shake` (Agitar, U / LB): en la x del camino pulsa gesture_shake; hecho cuando
-##   sale la onda.
+## - `shake` (Agitar, U / LB): el validador ya no lo genera (Agitar retirado el
+##   2026-10-28); si llegara, el bot pulsa gesture_shake y lo da por hecho aunque no
+##   salga la onda.
 ## - pulso a un enemigo del Mundo 4 (`troll`, `ghost`, `sticker`, `troll_mimic`):
 ##   el mismo paso que los del Mundo 3 (en la x del camino, mirando hacia el,
 ##   espera a tenerlo al alcance y pulsa; hecho aturdido o derrotado). La defensa
@@ -34,8 +35,8 @@
 ## (target_duration_s): debe quedar entre el 40 y el 55 % (§4). Progreso de
 ## partida: La Curadora vencida, la actualizacion del hub instalada y todo el kit
 ## del Mundo 3 (pulso, laser, Debug, dash, golpe al suelo y Pellizcar; Eco, Notas y
-## Calc conocidos; desde el 4-2 tambien la Linterna, que se recoge en el 4-1); Agitar
-## solo desde el 4-3 (el 4-2 lo da «¿Deshacer escritura?»).
+## Calc conocidos; desde el 4-2 tambien la Linterna, que se recoge en el 4-1); sin
+## Agitar (retirado el 2026-10-28) en ningun nivel: el bot falla si sale una onda.
 ## Lo lanza tools/play_chat_bot.gd (uso y argumentos alli).
 extends "res://tools/gallery_bot.gd"
 
@@ -59,6 +60,8 @@ var _typing_waits: int = 0
 var _zone_waits: int = 0
 var _zone_wait_s: float = 0.0
 var _shakes: int = 0
+## Ondas de Agitar que han salido (debe ser 0: Agitar esta retirado).
+var _stray_shakes: int = 0
 var _troll_pulses: int = 0
 var _target_s: float = 0.0
 var _has_lamp: bool = false
@@ -104,8 +107,6 @@ func _setup_progress() -> void:
 		GameState.meet_ally(GameState.ALLY_LINTERNA)
 	var abilities: Array[StringName] = [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG,
 		GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND, GameState.ABILITY_COMPRESS]
-	if _gallery_level == "4-3":
-		abilities.append(GameState.ABILITY_SHOCKWAVE)
 	for ability: StringName in abilities:
 		GameState.obtained_abilities[ability] = true
 		GameState.seen_notices[ability] = true
@@ -129,8 +130,9 @@ func _check_level_loaded() -> bool:
 		return _fail("el %s no carga" % _gallery_level)
 	if _gallery_level == "4-1" and _isak.camera_mode != Isak.CAMERA_TOWER:
 		return _fail("el 4-1 no carga con la camara de torre")
-	if _gallery_level in ["4-1", "4-2"] and GameState.is_ability_obtained(GameState.ABILITY_SHOCKWAVE):
-		return _fail("el bot empieza el %s con Agitar ya obtenido" % _gallery_level)
+	if GameState.is_ability_obtained(GameState.ABILITY_SHOCKWAVE):
+		return _fail("el bot empieza el %s con Agitar ya obtenido (retirado)" % _gallery_level)
+	EventBus.shockwave_fired.connect(func(_c: Vector2, _r: float, _s: Node2D) -> void: _stray_shakes += 1)
 	_has_lamp = _level_has(FlashlightPickup)
 	return true
 
@@ -149,6 +151,8 @@ func _check_completed() -> bool:
 		return _fail("Isak muere %d vez/veces" % _deaths)
 	if _freezes > 0:
 		return _fail("Isak se congela %d vez/veces (ninguna es obligatoria)" % _freezes)
+	if _stray_shakes > 0:
+		return _fail("sale %d onda(s) de Agitar (retirado el 2026-10-28)" % _stray_shakes)
 	if lamp and not GameState.has_met_ally(GameState.ALLY_LINTERNA):
 		return _fail("el bot no recoge la Linterna")
 	if not _is_test_room() and _target_s > 0.0 and (ratio < RATIO_MIN or ratio > RATIO_MAX):

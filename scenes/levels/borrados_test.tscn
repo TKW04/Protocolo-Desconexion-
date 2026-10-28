@@ -67,7 +67,6 @@ metadata/help_id = "chat_bubble"
 
 [node name="deshacer_prueba" parent="Objects" instance=ExtResource("6_undo_prompt") groups=["help_target"]]
 position = Vector2(768, 576)
-ability = &"shockwave"
 object_id = &"deshacer_prueba"
 story_line = "deshacer_4_2"
 metadata/help_id = "undo_prompt"
