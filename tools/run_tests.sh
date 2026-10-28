@@ -177,7 +177,9 @@ rm -f "$IMPORT_LOG"
 # Debug, un golpe por marca, el punto debil a tiro en cada fase, el escudo con Agitar y la arena limpia y el
 # mensaje que congela sin ataques mientras dura). Desde el paso 16 (2026-10-28): la arena 4-boss «Chat vacío» (se
 # valida y construye con las demas: esquema, comprobaciones basicas de validate_basic_arena y escena al dia; el
-# validador completo es el paso 17) y sus fases con el Isak real (tests/test_seen_arena.gd, GUT).
+# validador completo es el paso 17) y sus fases con el Isak real (tests/test_seen_arena.gd, GUT). Desde el paso 17
+# (2026-10-28): el validador completo de la arena de El Visto (validate_seen_arena; SeenArenaTest en
+# tests/test_boss_validator.py, con sus negativos).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

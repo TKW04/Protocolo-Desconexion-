@@ -837,6 +837,8 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
         return validate_autoplay_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
     if boss.get("id") == "curator":
         return validate_curator_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
+    if boss.get("id") == "seen":
+        return validate_seen_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
     if boss.get("id") != "alert_major":
         return validate_basic_arena(level, boss, root, physics_path, jump_efficiency, limit)
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
@@ -1877,6 +1879,458 @@ def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=Non
     return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
 
 
+# --- El Visto (Mundo 4; paso 17 de docs/propuesta-mundo-4.md, §7.2) ---
+#
+# Valores de juego: data/bosses/seen.json (arena, ataques, fases, laps y validation_model), data/levels/4-boss.json
+# (geometria, burbujas de una via, Trolls de la fase 2, cargadores, debug_drain_scale y debug_world_scale),
+# data/isak_abilities.json (Agitar), data/enemies/{troll,sticker,ghost}.json (avisos) y los de Rules (fisica, pulso,
+# laser, Debug, dash y mejoras): nada se copia aqui. Recorridos: Dijkstra por tiempo (travel_s de cada movimiento
+# del modelo de validate_level) sobre la arena con las burbujas de chat (chat_bubble) como plataformas de una via.
+# Reglas:
+#   A. Basicas (_basic_geometry): pantalla, carril del suelo y cargadores a <= arena.charger_max_tiles; las
+#      burbujas fijas se alcanzan desde P (por las bajas).
+#   B. Avisos de 6-12 cuadros a arena.anim_fps (reaparicion, burbujas que caen, zonas «Visto» del suelo y del
+#      barrido, Troll, Sticker y Fantasma) y cada punto del «escribiendo…» de cada acceso >= 6 cuadros; con el Debug
+#      duran 1 / debug_world_scale mas (escala <= 1). Se esquivan: de la columna de una burbuja que cae y de una zona
+#      se sale andando en su aviso; la embestida se atraviesa con el dash (lo que tarda en pasar <= invulnerabilidad)
+#      o se salta.
+#   C. Fase 1: desde cada celda de pie y mirando a cada lado, la reaparicion (behind_tiles detras, o delante en los
+#      accesos con front_every; al otro lado si cae fuera) deja el punto debil a tiro de pulso y de laser desde una
+#      celda a la que se llega en la ventana: phase1.window_s >= k x (recorrido + poses), con el Debug ya activo
+#      (leyendo el rastro: la ventana es demasiado corta para cargarlo; estrategia debug_on).
+#   D. Fase 2: el escudo queda a tiro de Agitar (radio de la onda) desde celdas de las burbujas fijas y nunca desde el
+#      carril del suelo; un Agitar desde una celda del suelo alcanza los Stickers de una tanda recien salidos
+#      (sticker_cols); entre tandas cabe limpiar el suelo y subir a Agitar junto al escudo (recorrido + enfriamiento
+#      + anticipacion); ventana en el suelo >= k x (recorrido desde la celda del escudo + Debug + poses).
+#   E. Fase 3: el «escribiendo…» queda a tiro de pulso desde el suelo; el punto debil aturdido de cada lado, a tiro de
+#      pulso y de laser desde celdas de pie; ventana >= k x (recorrido desde las celdas que interrumpen + Debug +
+#      poses) con el lado de la celda que interrumpe; Agitar disponible en la arena (libera del mensaje).
+#   F. Marca (mark_duration_s, sin el Debug: caso peor): caben los laseres de la peor ventana torpe; un golpe por
+#      marca (mark_hits >= 1) y un golpe por ventana.
+#   G. Energia torpe por acceso (base, tope del acceso y todo al maximo; energy_lap_seen: Debug, dashes, laseres y
+#      Agitares por ventana): pico <= maximo - min_margin y <= respawn_min_energy + una carga.
+#   H. Cargadores: el enfriamiento del acceso cabe en CHARGER_ROTATION ciclos (los mas cortos entre ventanas) y las
+#      cargas de cada fase <= cargadores x ventanas.
+
+SEEN_SIDES = ("left", "right")
+
+
+def seen_level(level, root=ROOT):
+    """Copia del nivel con las burbujas de chat (no eliminadas) como plataformas de una via '-' en su fila."""
+    import world4_model as w4  # noqa: E402
+    cfg = load_json(os.path.join(root, "data", "world4_objects.json")).get("chat_bubble", {})
+    g = copy.deepcopy(level)
+    grid = [list(row) for row in g["grid"]]
+    for o in level.get("objects", []):
+        p = o.get("params", {})
+        if o.get("type") != "chat_bubble" or p.get("deleted"):
+            continue
+        for c, r in w4.bubble_cells("chat_bubble", int(o["x"]), int(o["y"]), p, cfg):
+            if 0 <= r < len(grid) and 0 <= c < len(grid[r]) and grid[r][c] == ".":
+                grid[r][c] = "-"
+    g["grid"] = ["".join(row) for row in grid]
+    return g
+
+
+def _window_need_debug_on(rules, travel):
+    """Ventana (s del mundo) con el Debug ya activo al abrirse: el recorrido y las poses del pulso y del primer
+    laser van con el mundo a la escala de la arena."""
+    return rules.debug_world_scale * (travel + rules.pulse_pose_s + rules.laser_pose_s)
+
+
+def _seen_telegraphs(boss, root, errors, report, world_scale):
+    fps = anim_fps(boss)
+    lo, hi = TELEGRAPH_FRAMES
+    items = [("reaparicion", boss.get("ghost_dash", {}).get("warn_frames")),
+             ("burbujas que caen", boss.get("falling_bubbles", {}).get("warn_frames")),
+             ("zonas «Visto»", boss.get("seen_zones", {}).get("warn_frames")),
+             ("barrido de la burbuja", boss.get("seen_sweep", {}).get("warn_frames"))]
+    for name in ("troll", "sticker", "ghost"):
+        enemy = load_json(os.path.join(root, "data", "enemies", "%s.json" % name))
+        frames = enemy.get("anticipation_frames")
+        efps = float(enemy.get("anim_fps", fps))
+        items.append(("%s" % name, None if frames is None else float(frames) * fps / max(efps, EPS)))
+    out = []
+    for name, frames in items:
+        if not isinstance(frames, (int, float)) or not lo - EPS <= frames <= hi + EPS:
+            _err(errors, "aviso de '%s': %s cuadros a %g fps (deben ser de %d a %d)" % (name, frames, fps, lo, hi))
+            continue
+        out.append((name, "%g cuadros (%.2f s)" % (frames, frames / fps)))
+    for lap, entry in sorted(boss.get("laps", {}).items()):
+        dot = float(entry.get("dot_interval_s", 1.5))
+        if dot * fps + EPS < lo:
+            _err(errors, "vuelta %s: cada punto del «escribiendo…» dura %.2f s (%.1f cuadros < %d)" % (lap, dot, dot * fps, lo))
+        out.append(("punto del «escribiendo…», vuelta %s" % lap, "%.1f cuadros (%.2f s)" % (dot * fps, dot)))
+    if not 0.0 < world_scale <= 1.0 + EPS:
+        _err(errors, "con el Debug el mundo va a x%g: los avisos durarian menos que sin el Debug" % world_scale)
+    report["telegraphs"] = out
+    report["debug_world_scale"] = round(world_scale, 3)
+
+
+def energy_lap_seen(arena, boss, lap, rules, laser_damage, errors, scenario, root):
+    """Pelea torpe de El Visto por fase (validation_model): ventanas con sus golpes, Debug por ventana (debug_s, mas
+    early_debug_s en la ventana perdida) al gasto de la arena, dashes, un laser fallado y los Agitares por ventana
+    (laps.<n>.shakes; la fase 2 limpia el suelo y rompe el escudo, la 3 se suelta del mensaje). Sin drops: solo
+    cargadores y el relleno del cambio de fase."""
+    model = boss.get("validation_model", {})
+    lm = model.get("laps", {}).get(str(lap))
+    entry = boss.get("laps", {}).get(str(lap), {})
+    if lm is None:
+        _err(errors, "validation_model.laps sin la vuelta %s" % lap)
+        return None
+    drain = rules.debug_drain * float(arena.level.get("debug_drain_scale", 1.0))
+    margin = float(model.get("min_margin", 20.0))
+    emax = rules.energy_max
+    misses = int(model.get("misses_per_window", 1))
+    dashes = model.get("dashes_per_window", [1, 1, 1])
+    early = model.get("early_debug_s", [0, 0, 0])
+    shakes = lm.get("shakes", [0, 0, 0])
+    shake_cost = float(load_json(os.path.join(root, "data", "isak_abilities.json")).get("shockwave", {})
+                       .get("energy_cost", 10.0))
+    hits = entry.get("hits_per_phase", [])
+    refill = float(boss.get("phase_change_refill", {}).get("energy", 0.0))
+    charge = max((float(p.get("amount", 50.0)) for _, _, p in arena.chargers), default=50.0)
+    detour = float(model.get("detour_s_per_charge", 1.3))
+    energy = emax
+    phases = []
+    for p, windows in enumerate(lm.get("windows", [])):
+        if p < len(hits) and sum(windows) != hits[p]:
+            _err(errors, "validation_model vuelta %s fase %d: las ventanas suman %d golpes y la fase tiene %d"
+                 % (lap, p + 1, sum(windows), hits[p]))
+        peaks = []
+        for h in windows:
+            debug_s = float(lm["debug_s"][p]) + (float(early[p] if p < len(early) else 0.0) if h == 0 else 0.0)
+            lasers = math.ceil(h / laser_damage) + misses
+            peaks.append(debug_s * drain + int(dashes[p] if p < len(dashes) else 0) * rules.dash_cost
+                         + lasers * rules.laser_cost + int(shakes[p] if p < len(shakes) else 0) * shake_cost)
+        peak = max(peaks) if peaks else 0.0
+        spend = sum(peaks)
+        income = refill if p > 0 else 0.0
+        need = max(0.0, spend - energy - income)
+        charges = int(math.ceil(need / charge - EPS)) if need > 0 else 0
+        energy = min(emax, energy + income + charges * charge - spend)
+        if peak > emax - margin + EPS:
+            _err(errors, "%s, vuelta %s, fase %d: pico de la pelea torpe %.1f con %.0f de energia (margen %.1f < %.0f)"
+                 % (scenario, lap, p + 1, peak, emax, emax - peak, margin))
+        phases.append({"peak": round(peak, 2), "margin": round(emax - peak, 2), "spend": round(spend, 2),
+                       "charges": charges, "detour_s": round(charges * detour, 2), "end_energy": round(energy, 2)})
+    return {"energy_max": emax, "debug_drain_per_s": round(drain, 3), "laser_cost": rules.laser_cost,
+            "laser_damage": laser_damage, "dash_cost": rules.dash_cost, "shake_cost": shake_cost, "phases": phases,
+            "min_margin": round(min((ph["margin"] for ph in phases), default=0.0), 2),
+            "total_spend": round(sum(ph["spend"] for ph in phases), 2),
+            "total_charges": sum(ph["charges"] for ph in phases),
+            "total_detour_s": round(sum(ph["detour_s"] for ph in phases), 2)}
+
+
+def validate_seen_arena(level, boss, root=ROOT, upgrades=(), physics_path=None,
+                        jump_efficiency=vl.DEFAULT_JUMP_EFFICIENCY, limit=vl.DEFAULT_LIMIT):
+    errors, warnings = [], []
+    rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
+    arena = Arena(seen_level(level, root), boss, rules)
+    T = arena.T
+    report = {"boss": boss.get("id"), "reachable_cells": len(arena.reachable)}
+    _basic_geometry(arena, boss, errors, report)
+    _seen_telegraphs(boss, root, errors, report, rules.debug_world_scale)
+    ab = boss.get("arena", {})
+    model = boss.get("validation_model", {})
+    laps = boss.get("laps", {})
+    fps = anim_fps(boss)
+    weak_r = float(load_json(os.path.join(root, "data", "weak_point.json"))["radius_px"])
+    shock = load_json(os.path.join(root, "data", "isak_abilities.json")).get("shockwave", {})
+    shock_r = float(shock.get("radius_px", 160.0))
+    floor = [n for n in arena.lane_cells("floor") if n in arena.reachable] if "floor" in arena.lanes else []
+    floor_set = set(floor)
+    times = {n: _travel_times(arena, {n: 0.0}) for n in arena.reachable}
+    phone_dy = float(ab.get("phone_dy_px", 58.0))
+    mid_x = (float(ab.get("body", [7, 1, 6, 3])[0]) + float(ab.get("body", [7, 1, 6, 3])[2]) / 2.0) * T
+    fixed = {s: [int(v) for v in ab.get("fixed_bubbles", {}).get(s, [0, 0, 0])] for s in SEEN_SIDES}
+    fixed_cells = {s: [(c, fixed[s][1] - 1) for c in range(fixed[s][0], fixed[s][0] + fixed[s][2])] for s in SEEN_SIDES}
+    report["seen_bubble_cells"] = {s: len([n for n in fixed_cells[s] if n in arena.reachable]) for s in SEEN_SIDES}
+    for s in SEEN_SIDES:
+        if not any(n in arena.reachable for n in fixed_cells[s]):
+            _err(errors, "la burbuja fija %s (%s) no se alcanza desde P" % (s, fixed[s]))
+    k_default = float(model.get("window_k", 2.0))
+
+    def specs(lap, p, default):
+        """[(conjunto de salida, k, estrategia)] de la fase `p` (validation_model.window_from_laps.<vuelta> o
+        window_from); la estrategia debug_on cuenta el Debug ya activo al abrirse la ventana."""
+        spec = model.get("window_from_laps", {}).get(str(lap), {}).get(str(p)) or \
+            model.get("window_from", {}).get(str(p)) or default
+        out = []
+        for item in spec:
+            if isinstance(item, str):
+                out.append((item, k_default, ""))
+            else:
+                out.append((item[0], float(item[1]) if len(item) > 1 else k_default, item[2] if len(item) > 2 else ""))
+        return out
+
+    def need_for(strategy, travel):
+        return _window_need_debug_on(rules, travel) if strategy == "debug_on" else _window_need(arena, travel)
+
+    def reach_cells(core):
+        """Celdas de pie (y su orientacion) desde las que el pulso y el laser alcanzan el nucleo en `core`."""
+        out = []
+        box = (core[0] - weak_r, core[1] - weak_r, 2 * weak_r, 2 * weak_r)
+        for n in arena.reachable:
+            for f in (1.0, -1.0):
+                px, py = arena.phone(n, f)
+                if math.hypot(px - core[0], py - core[1]) <= rules.pulse_radius + weak_r + EPS \
+                        and _laser_to_rect(arena, n, f, box):
+                    out.append(n)
+                    break
+        return out
+
+    def best_travel(start, targets):
+        tt = times.get(start, {})
+        return min((tt[g] for g in targets if g in tt), default=None)
+
+    windows_out = []
+    # B. Esquivar: burbujas que caen, zonas y embestida.
+    fb = boss.get("falling_bubbles", {})
+    fb_warn = float(fb.get("warn_frames", 9)) / fps
+    fb_px = float(fb.get("width_tiles", 1)) * T / 2.0 + rules.hitbox_w / 2.0
+    sz = boss.get("seen_zones", {})
+    sz_warn = float(sz.get("warn_frames", 9)) / fps
+    sz_px = 0.5 * T
+    gd = boss.get("ghost_dash", {})
+    sil = [float(v) for v in ab.get("silhouette_px", [96.0, 96.0])]
+    charge_v = float(gd.get("charge_speed_px_s", 640.0))
+    pass_s = (sil[0] + rules.hitbox_w) / max(charge_v, 1.0)
+    sil_top = phone_dy + sil[1] / 2.0
+    dodge = {"bubble_walk_s": round(fb_px / rules.walk_speed, 3), "bubble_warn_s": round(fb_warn, 3),
+             "zone_walk_s": round(sz_px / rules.walk_speed, 3), "zone_warn_s": round(sz_warn, 3),
+             "charge_pass_s": round(pass_s, 3), "dash_invulnerable_s": rules.dash_invulnerable_s,
+             "charge_top_px": sil_top, "jump_px": rules.jump_height}
+    if fb_px / rules.walk_speed > fb_warn + EPS:
+        _err(errors, "burbujas que caen: salir de la columna andando tarda %.2f s y el aviso dura %.2f"
+             % (fb_px / rules.walk_speed, fb_warn))
+    if sz_px / rules.walk_speed > sz_warn + EPS:
+        _err(errors, "zonas «Visto»: salir de la zona andando tarda %.2f s y el aviso dura %.2f" % (sz_px / rules.walk_speed, sz_warn))
+    if pass_s > rules.dash_invulnerable_s + EPS and rules.jump_height + EPS < sil_top:
+        _err(errors, "embestida: tarda %.2f s en pasar por Isak (dash invulnerable %.2f s) y no se salta (%.0f px)"
+             % (pass_s, rules.dash_invulnerable_s, sil_top))
+    report["seen_dodge"] = dodge
+    # C. Fase 1: la reaparicion.
+    behind = float(gd.get("behind_tiles", 2.0)) * T
+    lo_x, hi_x = T + sil[0] / 2.0, (arena.cols - 1) * T - sil[0] / 2.0
+    window1 = float(boss.get("phase1", {}).get("window_s", 1.2))
+    core_cache = {}
+    phase1 = {}
+    for lap, entry in sorted(laps.items()):
+        sides = [-1.0] + ([1.0] if int(entry.get("front_every", 0)) > 0 else [])
+        for name, kk, strat in specs(lap, 1, [["floor", 2.0, "debug_on"], ["any", 1.0, "debug_on"]]):
+            starts = floor if name == "floor" else sorted(arena.reachable)
+            worst = (0.0, None)
+            for n in starts:
+                fx, fy = arena.feet(n)
+                for face in (1.0, -1.0):
+                    for side in sides:
+                        x = fx + side * face * behind
+                        if not lo_x <= x <= hi_x:
+                            x = fx - side * face * behind
+                        core = (x, fy - phone_dy)
+                        key = (round(core[0], 1), round(core[1], 1))
+                        if key not in core_cache:
+                            core_cache[key] = reach_cells(core)
+                        t = best_travel(n, core_cache[key])
+                        if t is None:
+                            _err(errors, "vuelta %s, fase 1: desde %s la reaparicion en (%g, %g) no queda a tiro de pulso "
+                                         "y laser" % (lap, list(n), core[0], core[1]))
+                            continue
+                        if t > worst[0]:
+                            worst = (t, n)
+            need = kk * need_for(strat, worst[0])
+            if window1 + EPS < need:
+                _err(errors, "vuelta %s, fase 1: la ventana dura %.2f s del mundo y desde '%s' (%s) hacen falta %.2f "
+                             "(k = %g x (recorrido %.2f s + poses%s))" % (lap, window1, name, list(worst[1] or ()), need,
+                                                                         kk, worst[0], "" if strat else " + Debug"))
+            windows_out.append({"lap": lap, "phase": 1, "from": name, "k": kk, "strategy": strat or "debug",
+                                "window_s": window1, "travel_s": round(worst[0], 3), "need_s": round(need, 3)})
+        phase1[lap] = {"sides": ["detras" if s < 0 else "delante" for s in sides]}
+    report["seen_phase1"] = {"behind_px": behind, "laps": phase1, "core_spots": len(core_cache)}
+    # D. Fase 2: escudo, Stickers y ventana en el suelo.
+    body = [float(v) for v in ab.get("body", [7, 1, 6, 3])]
+    margin_px = float(ab.get("shield_margin_px", 24.0))
+    shield = (body[0] * T - margin_px, body[1] * T - margin_px, body[2] * T + 2 * margin_px, body[3] * T + 2 * margin_px)
+
+    def wave_reaches(n, rect):
+        for f in (1.0, -1.0):
+            px, py = arena.phone(n, f)
+            cx = min(max(px, rect[0]), rect[0] + rect[2])
+            cy = min(max(py, rect[1]), rect[1] + rect[3])
+            if math.hypot(px - cx, py - cy) <= shock_r + EPS:
+                return True
+        return False
+
+    shield_cells = sorted(n for n in arena.reachable if wave_reaches(n, shield))
+    on_bubbles = [n for n in shield_cells if any(n in fixed_cells[s] for s in SEEN_SIDES)]
+    from_floor = [n for n in shield_cells if n in floor_set]
+    if not on_bubbles:
+        _err(errors, "fase 2: el escudo no queda a tiro de Agitar (%g px) desde ninguna burbuja fija" % shock_r)
+    if from_floor:
+        _err(errors, "fase 2: el escudo se alcanza con Agitar desde el suelo (%s): no haria falta subir" % list(from_floor[0]))
+    p2 = boss.get("phase2", {})
+    floor_row = int(ab.get("floor_row", 9))
+    sticker = load_json(os.path.join(root, "data", "enemies", "sticker.json"))
+    sw, sh = [float(v) for v in sticker.get("body_size", [40.0, 40.0])]
+    batch = int(p2.get("stickers_per_batch", 3))
+    stick_rects = [((float(c) + 0.5) * T - sw / 2.0, (floor_row + 1) * T - sh, sw, sh)
+                   for c in ab.get("sticker_cols", [])[:batch]]
+    clean_cells = [n for n in floor if all(wave_reaches(n, r) for r in stick_rects)]
+    if not stick_rects:
+        _err(errors, "fase 2: sin columnas de Stickers (sticker_cols)")
+    elif not clean_cells:
+        _err(errors, "fase 2: ningun Agitar desde el suelo alcanza toda una tanda de Stickers (columnas %s)"
+             % ab.get("sticker_cols"))
+    interval = float(p2.get("sticker_interval_s", 6.0))
+    climb = min((times[a][b] for a in clean_cells for b in on_bubbles if b in times.get(a, {})), default=None)
+    shake_cycle = float(shock.get("windup_s", 0.15)) + float(shock.get("exposed_s", 0.25)) + float(shock.get("cooldown_s", 1.0))
+    if climb is None:
+        if clean_cells and on_bubbles:
+            _err(errors, "fase 2: de donde se limpia el suelo no se llega a una burbuja junto al escudo")
+    elif climb + shake_cycle + float(shock.get("windup_s", 0.15)) > interval + EPS:
+        _err(errors, "fase 2: entre tandas de Stickers hay %.2f s y limpiar el suelo y subir a Agitar junto al escudo "
+                     "lleva %.2f" % (interval, climb + shake_cycle + float(shock.get("windup_s", 0.15))))
+    fcore = tuple(float(v) for v in ab.get("floor_core_px", [640, 582]))
+    floor_reach = reach_cells(fcore)
+    if not floor_reach:
+        _err(errors, "fase 2: el punto debil en el suelo (%g, %g) no se alcanza con pulso y laser" % fcore)
+    window2 = float(p2.get("window_s", 4.0))
+    for lap in sorted(laps):
+        for name, kk, strat in specs(lap, 2, [["shield", 2.0, "debug_on"], ["shield", 1.0]]):
+            starts = on_bubbles if name == "shield" else shield_cells
+            worst = 0.0
+            for n in starts:
+                t = best_travel(n, floor_reach)
+                if t is None:
+                    _err(errors, "vuelta %s, fase 2: desde %s no se llega a donde el punto debil del suelo se alcanza"
+                         % (lap, list(n)))
+                    continue
+                worst = max(worst, t)
+            need = kk * need_for(strat, worst)
+            if window2 + EPS < need:
+                _err(errors, "vuelta %s, fase 2: la ventana dura %.2f s del mundo y desde '%s' hacen falta %.2f (k = %g x "
+                             "(recorrido %.2f s + poses%s))" % (lap, window2, name, need, kk, worst,
+                                                                "" if strat else " + Debug"))
+            windows_out.append({"lap": lap, "phase": 2, "from": name, "k": kk, "strategy": strat or "debug",
+                                "window_s": window2, "travel_s": round(worst, 3), "need_s": round(need, 3)})
+    report["seen_phase2"] = {"shield_px": [round(v, 1) for v in shield], "shield_cells": [list(n) for n in on_bubbles],
+                             "floor_cells": len(from_floor), "clean_cells": [list(n) for n in clean_cells],
+                             "climb_s": None if climb is None else round(climb, 3), "sticker_interval_s": interval,
+                             "shake_cycle_s": round(shake_cycle, 3), "core_cells": len(floor_reach)}
+    # E. Fase 3: «escribiendo…» y el aturdido.
+    p3 = boss.get("phase3", {})
+    tr = [float(v) * T for v in ab.get("typing_rect", [7, 6, 6, 2])]
+    typing_cells = sorted(n for n in arena.reachable if any(_pulse_to_rect(arena, n, f, tr) for f in (1.0, -1.0)))
+    typing_floor = [n for n in typing_cells if n in floor_set]
+    typing_bubble = [n for n in typing_cells if any(n in fixed_cells[s] for s in SEEN_SIDES)]
+    if not typing_floor:
+        _err(errors, "fase 3: el «escribiendo…» no queda a tiro de pulso desde el suelo")
+    stun = {s: tuple(float(v) for v in ab.get("stunned_core_px", {}).get(s, [0, 0])) for s in SEEN_SIDES}
+    stun_reach = {s: reach_cells(stun[s]) for s in SEEN_SIDES}
+    for s in SEEN_SIDES:
+        if not stun_reach[s]:
+            _err(errors, "fase 3: el punto debil aturdido %s (%g, %g) no se alcanza con pulso y laser" % ((s,) + stun[s]))
+    window3 = float(p3.get("window_s", 3.0))
+    for lap in sorted(laps):
+        for name, kk, strat in specs(lap, 3, [["typing_bubble", 2.0], ["typing", 1.0, "debug_on"]]):
+            starts = typing_bubble if name == "typing_bubble" else typing_floor if name == "typing_floor" else typing_cells
+            if not starts:
+                _err(errors, "vuelta %s, fase 3: sin celdas de salida '%s'" % (lap, name))
+                continue
+            worst = (0.0, None)
+            for n in starts:
+                side = "left" if arena.feet(n)[0] < mid_x else "right"
+                t = best_travel(n, stun_reach[side])
+                if t is None:
+                    _err(errors, "vuelta %s, fase 3: desde %s no se llega a donde el punto debil aturdido se alcanza"
+                         % (lap, list(n)))
+                    continue
+                if t > worst[0]:
+                    worst = (t, n)
+            need = kk * need_for(strat, worst[0])
+            if window3 + EPS < need:
+                _err(errors, "vuelta %s, fase 3: la ventana dura %.2f s del mundo y desde '%s' (%s) hacen falta %.2f "
+                             "(k = %g x (recorrido %.2f s + poses%s))" % (lap, window3, name, list(worst[1] or ()), need,
+                                                                         kk, worst[0], "" if strat else " + Debug"))
+            windows_out.append({"lap": lap, "phase": 3, "from": name, "k": kk, "strategy": strat or "debug",
+                                "window_s": window3, "travel_s": round(worst[0], 3), "need_s": round(need, 3)})
+    if not level.get("abilities_available", {}).get("shockwave", False):
+        _err(errors, "fase 3: sin Agitar en la arena (abilities_available.shockwave) nada libera del mensaje")
+    report["seen_phase3"] = {"typing_floor_cells": len(typing_floor), "typing_bubble_cells": len(typing_bubble),
+                             "stun_cells": {s: len(v) for s, v in stun_reach.items()},
+                             "message_freeze_s": float(p3.get("message_freeze_s", 2.5))}
+    windows_out.sort(key=lambda w: (w["lap"], w["phase"], -w["k"]))
+    report["seen_windows"] = windows_out
+    # F. Marca.
+    misses = int(model.get("misses_per_window", 1))
+    mark_out = {}
+    for lap, entry in sorted(laps.items()):
+        mark = float(entry.get("mark_duration_s", 0.0))
+        cap = int(entry.get("mark_hits", 0))
+        lm = model.get("laps", {}).get(str(lap), {})
+        worst = max((h for ws in lm.get("windows", []) for h in ws), default=0)
+        if worst > 1:
+            _err(errors, "vuelta %s: la pelea torpe pide %d golpes en una ventana y cada ventana se cierra con su golpe"
+                 % (lap, worst))
+        if cap <= 0:
+            _err(errors, "vuelta %s: mark_hits debe ser >= 1 (un golpe por marca)" % lap)
+        need = min(worst, 1) + misses
+        shots = mark_shots(rules, mark)
+        if shots < need:
+            _err(errors, "vuelta %s: en la marca de %.2f s caben %d laser(es) y la peor ventana torpe pide %d "
+                         "(%d golpe(s) + %d fallado(s))" % (lap, mark, shots, need, min(worst, 1), misses))
+        scale = max(rules.debug_world_scale, EPS)
+        mark_out[lap] = {"mark_s": mark, "real_with_debug_s": round(mark / scale, 3), "shots": shots,
+                         "shots_with_debug": mark_shots(rules, mark / scale), "need": need}
+    report["mark"] = mark_out
+    # G. Energia.
+    check_energy(arena, boss, rules, list(upgrades), errors, report, root, lap_fn=energy_lap_seen)
+    charge = max((float(pp.get("amount", 50.0)) for _, _, pp in arena.chargers), default=50.0)
+    respawn = float(boss.get("respawn_min_energy", 0.0))
+    for lap, scen in sorted(report["energy"].items()):
+        for name, e in scen.items():
+            for p, ph in enumerate(e["phases"]):
+                if ph["peak"] > respawn + charge + EPS:
+                    _err(errors, "%s, vuelta %s, fase %d: el pico torpe %.1f supera lo que hay al reaparecer (%.0f) mas "
+                                 "una carga (%.0f)" % (name, lap, p + 1, ph["peak"], respawn, charge))
+    # H. Cargadores.
+    level_cd = sorted({float(pp.get("cooldown_s", 0.0)) for _, _, pp in arena.chargers})
+    p1 = boss.get("phase1", {})
+    gap1 = float(p1.get("attack_gap_s", 1.5))
+    dur = {"ghost_dash": float(gd.get("vanish_s", 0.5)) + float(gd.get("hidden_s", 1.0))
+           + float(gd.get("warn_frames", 9)) / fps + float(gd.get("return_s", 0.6)),
+           "falling_bubbles": fb_warn + float(fb.get("fall_s", 0.5)),
+           "seen_zones": sz_warn + float(sz.get("active_s", 3.0))}
+    attacks1 = p1.get("attacks", [])
+    dashes1 = max(sum(1 for a in attacks1 if a == "ghost_dash"), 1)
+    cycle1 = (sum(dur.get(a, 0.0) for a in attacks1) + gap1 * len(attacks1)) / dashes1
+    charger_out = {}
+    for lap, entry in sorted(laps.items()):
+        cd = float(entry.get("charger_cooldown_s", level_cd[0] if level_cd else 0.0))
+        cycle3 = float(p3.get("dots", 3)) * float(entry.get("dot_interval_s", 1.5)) + float(p3.get("typing_gap_s", 2.0))
+        cycles = [cycle1, interval, cycle3]
+        shortest = min(cycles)
+        if cd > CHARGER_ROTATION * shortest + EPS:
+            _err(errors, "vuelta %s: los cargadores se enfrian %.1f s y entre ventanas hay %.2f s (alternando %d "
+                         "cargadores no hay uno listo en cada ventana)" % (lap, cd, shortest, CHARGER_ROTATION))
+        windows = model.get("laps", {}).get(str(lap), {}).get("windows", [])
+        for name, e in report["energy"].get(lap, {}).items():
+            for p, ph in enumerate(e["phases"]):
+                cap = len(arena.chargers) * (len(windows[p]) if p < len(windows) else 0)
+                if ph["charges"] > cap:
+                    _err(errors, "%s, vuelta %s, fase %d: %d cargas y solo hay %d (cargadores x ventanas)"
+                         % (name, lap, p + 1, ph["charges"], cap))
+        charger_out[lap] = {"cooldown_s": cd, "cycles_s": [round(c, 2) for c in cycles]}
+    if laps and level_cd and abs(level_cd[0] - float(laps.get("1", {}).get("charger_cooldown_s", level_cd[0]))) > EPS:
+        _err(errors, "los cargadores del nivel se enfrian %g s y Caché pide %g" % (level_cd[0],
+                                                                                float(laps["1"]["charger_cooldown_s"])))
+    report["seen_chargers"] = {"count": len(arena.chargers), "level_cooldown_s": level_cd, "laps": charger_out,
+                               "debug_drain_scale": float(level.get("debug_drain_scale", 1.0))}
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+
+
 def format_text(path, result):
     out = []
     status = "OK" if result["ok"] else "FALLA"
@@ -1973,6 +2427,27 @@ def format_text(path, result):
                 "%s, marco pequeno %s libre, peor celda %s a %.2f s (a %d tiles)" % (s, v["rect"], v["worst_cell"],
                                                                                      v["worst_s"], v["max_tiles"])
                 for s, v in sorted(cfr["sides"].items()))))
+        sd = rep.get("seen_dodge")
+        if sd:
+            out.append("  esquivar: columna de una burbuja que cae %.2f s andando (aviso %.2f); zona %.2f s (aviso %.2f); "
+                       "embestida pasa en %.2f s (dash %.2f s) y su borde de arriba a %g px (salto %g)" % (
+                           sd["bubble_walk_s"], sd["bubble_warn_s"], sd["zone_walk_s"], sd["zone_warn_s"],
+                           sd["charge_pass_s"], sd["dash_invulnerable_s"], sd["charge_top_px"], sd["jump_px"]))
+            s2 = rep["seen_phase2"]
+            out.append("  fase 2: escudo a tiro de Agitar desde %d celda(s) de burbuja fija %s y %d del suelo; limpiar el "
+                       "suelo desde %s; subir %s s + Agitar %.2f s (tandas cada %g s)" % (
+                           len(s2["shield_cells"]), s2["shield_cells"], s2["floor_cells"], s2["clean_cells"],
+                           "?" if s2["climb_s"] is None else "%.2f" % s2["climb_s"], s2["shake_cycle_s"],
+                           s2["sticker_interval_s"]))
+            s3 = rep["seen_phase3"]
+            out.append("  fase 3: «escribiendo…» a tiro de pulso desde %d celda(s) del suelo y %d de burbuja fija; "
+                       "aturdido a tiro desde %s; mensaje %g s (Agitar libera)" % (
+                           s3["typing_floor_cells"], s3["typing_bubble_cells"],
+                           ", ".join("%s %d" % kv for kv in sorted(s3["stun_cells"].items())), s3["message_freeze_s"]))
+        for w in rep.get("seen_windows", []):
+            out.append("  ventana vuelta %s fase %d desde %s (k = %g, %s): %.2f s; hacen falta %.2f (recorrido %.2f s)" % (
+                w["lap"], w["phase"], w["from"], w["k"], "Debug ya activo" if w["strategy"] == "debug_on" else "con el Debug",
+                w["window_s"], w["need_s"], w["travel_s"]))
         for lap, m in sorted((rep.get("mark") or {}).items()):
             out.append("  marca, vuelta %s: %g s del mundo (%g s reales con el Debug); caben %d laser(es) sin el Debug "
                        "y %d con el; la peor ventana torpe pide %d" % (lap, m["mark_s"], m["real_with_debug_s"],
@@ -1995,6 +2470,12 @@ def format_text(path, result):
                                                                  e["laser_cost"], e["laser_damage"], e["dash_cost"],
                                                                  peaks, e["total_spend"], e["total_charges"],
                                                                  e["total_detour_s"]))
+    sc = rep.get("seen_chargers") if rep else None
+    if sc:
+        out.append("  cargadores: %d, %s; Debug x%g; ciclos entre ventanas por fase: %s" % (
+            sc["count"], ", ".join("vuelta %s %g s" % (lap, v["cooldown_s"]) for lap, v in sorted(sc["laps"].items())),
+            sc["debug_drain_scale"], "; ".join("vuelta %s %s s" % (lap, " / ".join("%g" % c for c in v["cycles_s"]))
+                                                for lap, v in sorted(sc["laps"].items()))))
     cc = rep.get("cur_chargers") if rep else None
     if cc:
         out.append("  cargadores: %d, %s; Debug x%g; ciclos entre ventanas por fase: %s" % (

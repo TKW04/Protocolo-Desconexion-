@@ -492,5 +492,112 @@ class CuratorArenaTest(unittest.TestCase):
             self.assertNotIn("cur_windows", rep, name)
 
 
+class SeenArenaTest(unittest.TestCase):
+    """Arena 4-boss de El Visto (paso 17 de docs/propuesta-mundo-4.md, §7.2, 2026-10-28): validador completo (avisos y
+    esquivar, reaparicion de la fase 1 a tiro, escudo a tiro de Agitar desde las burbujas fijas y no desde el suelo,
+    Stickers que se limpian con un Agitar, «escribiendo…» a tiro de pulso desde el suelo, ventanas por fase y acceso,
+    marca, energia torpe y cargadores), con casos negativos sinteticos."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.boss = load(os.path.join(ROOT, "data", "bosses", "seen.json"))
+        cls.result = vb.validate_arena(load(os.path.join(ROOT, "data", "levels", "4-boss.json")), ROOT)
+
+    def setUp(self):
+        self.level = load(os.path.join(ROOT, "data", "levels", "4-boss.json"))
+
+    def run_arena(self, boss=None, level=None):
+        return vb.validate_arena(level or self.level, ROOT, boss=boss or self.boss)
+
+    def messages(self, result):
+        return " | ".join(e["message"] for e in result["errors"])
+
+    def test_full_validator_passes_without_the_pending_warning(self):
+        self.assertEqual(vls.validate_level(self.level, ROOT), [])
+        result = vl.validate(self.level, ROOT)
+        self.assertTrue(result["ok"], result["errors"])
+        self.assertEqual(result["warnings"], [], "validador completo: sin el aviso del paso 16")
+        self.assertIn("seen_windows", result["boss"])
+        self.assertGreater(result["boss"]["reachable_cells"], 36, "las burbujas de una via cuentan")
+
+    def test_energy_margins_of_the_clumsy_fight_in_every_access(self):
+        energy = self.result["boss"]["energy"]
+        self.assertEqual(sorted(energy), ["1", "2", "3"])
+        for lap, scenarios in energy.items():
+            self.assertEqual(sorted(scenarios), ["base", "todo al maximo", "tope del acceso"])
+            for name, e in scenarios.items():
+                self.assertGreaterEqual(e["min_margin"], 20.0, (lap, name))
+        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [47.5, 65.0, 60.0])
+
+    def test_windows_fit_by_phase_and_access(self):
+        windows = self.result["boss"]["seen_windows"]
+        self.assertEqual(len(windows), 18)
+        for w in windows:
+            self.assertLessEqual(w["need_s"], w["window_s"] + 1e-6, w)
+        froms = {(w["lap"], w["phase"], w["from"], w["k"]): w["strategy"] for w in windows}
+        self.assertEqual(froms[("1", 1, "floor", 2.0)], "debug_on", "Fase 1: el Debug se enciende leyendo el rastro")
+        self.assertEqual(froms[("1", 3, "typing_bubble", 2.0)], "debug")
+        self.assertEqual(froms[("3", 3, "typing", 1.0)], "debug_on")
+
+    def test_shield_from_the_fixed_bubbles_and_never_from_the_floor(self):
+        p2 = self.result["boss"]["seen_phase2"]
+        self.assertEqual(sorted(tuple(c) for c in p2["shield_cells"]),
+                         [(4, 5), (5, 5), (6, 5), (13, 5), (14, 5), (15, 5)])
+        self.assertEqual(p2["floor_cells"], 0)
+        self.assertTrue(p2["clean_cells"], "un Agitar desde el suelo limpia la tanda")
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["shield_margin_px"] = 200.0
+        self.assertIn("fase 2: el escudo se alcanza con Agitar desde el suelo", self.messages(self.run_arena(boss)))
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["sticker_cols"] = [2, 10, 17]
+        self.assertIn("fase 2: ningun Agitar desde el suelo alcanza toda una tanda de Stickers",
+                      self.messages(self.run_arena(boss)))
+
+    def test_typing_bubble_within_pulse_from_the_floor(self):
+        self.assertGreater(self.result["boss"]["seen_phase3"]["typing_floor_cells"], 0)
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["typing_rect"] = [7, 3, 6, 2]
+        self.assertIn("fase 3: el «escribiendo…» no queda a tiro de pulso desde el suelo",
+                      self.messages(self.run_arena(boss)))
+
+    def test_without_fixed_bubbles_the_shield_cannot_be_reached(self):
+        level = copy.deepcopy(self.level)
+        level["objects"] = [o for o in level["objects"] if o.get("params", {}).get("id") not in ("burbuja_baja_izq",
+                                                                                                  "burbuja_baja_der")]
+        msg = self.messages(self.run_arena(level=level))
+        self.assertIn("la burbuja fija left", msg)
+        self.assertIn("no se alcanza desde P", msg)
+
+    def test_short_telegraphs_window_and_mark(self):
+        boss = copy.deepcopy(self.boss)
+        boss["ghost_dash"]["warn_frames"] = 5
+        boss["laps"]["3"]["dot_interval_s"] = 0.4
+        boss["phase3"]["window_s"] = 2.5
+        boss["laps"]["2"]["mark_duration_s"] = 0.2
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("aviso de 'reaparicion': 5 cuadros", msg)
+        self.assertIn("vuelta 3: cada punto del «escribiendo…» dura 0.40 s", msg)
+        self.assertIn("vuelta 1, fase 3: la ventana dura 2.50", msg)
+        self.assertIn("vuelta 2: en la marca de 0.20 s caben", msg)
+
+    def test_energy_margin_too_small_and_slow_chargers(self):
+        boss = copy.deepcopy(self.boss)
+        boss["validation_model"]["laps"]["2"]["debug_s"] = [4.0, 8.0, 4.5]
+        boss["laps"]["3"]["charger_cooldown_s"] = 13.0
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("base, vuelta 2, fase 2: pico de la pelea torpe 100.0", msg)
+        self.assertIn("vuelta 3: los cargadores se enfrian 13.0", msg)
+
+    def test_two_hits_per_window_fail(self):
+        boss = copy.deepcopy(self.boss)
+        boss["validation_model"]["laps"]["1"]["windows"][0] = [0, 2, 1]
+        self.assertIn("vuelta 1: la pelea torpe pide 2 golpes en una ventana", self.messages(self.run_arena(boss)))
+
+    def test_other_bosses_do_not_use_the_seen_model(self):
+        for name in ("1-boss", "2-boss", "3-boss"):
+            rep = vb.validate_arena(load(os.path.join(ROOT, "data", "levels", "%s.json" % name)), ROOT)["boss"]
+            self.assertNotIn("seen_windows", rep, name)
+
+
 if __name__ == "__main__":
     unittest.main()
