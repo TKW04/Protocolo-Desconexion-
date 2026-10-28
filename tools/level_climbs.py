@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import validate_level as vl  # noqa: E402
 import level_catalog  # noqa: E402
 import world3_model  # noqa: E402
+import world4_model  # noqa: E402
 
 FORMAT = "isak-climbs/1"
 
@@ -63,6 +64,10 @@ def climbs(level, root=ROOT):
     # interruptor que da Pellizcar, igual que en validate_level.validate (sin crop_tool el nivel no cambia); sin
     # esto el marco pequeno de la salida del Estudio cerraba el paso y el 3-2 salia con 0 subidas.
     level = world3_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
+    # Mundo 4 (paso 11 de docs/propuesta-mundo-4.md, el 4-1 real, 2026-10-28): las burbujas (fijas, «escribiendo…»
+    # ya escritas y el autocorrector corregido) son plataformas de una via, como en validate_level.validate; sin
+    # esto el 4-1 solo tenia las subidas del vestibulo. Sin objetos del Mundo 4 el nivel no cambia.
+    level = world4_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     validator = vl.Validator(level, rules)
     model = validator.model
     # Acertijo de Calc (tanda H2 del paso 14, 2026-10-17): con sus piezas hechas la pared con glitch es

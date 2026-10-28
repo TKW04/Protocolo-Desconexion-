@@ -40,7 +40,7 @@ func test_ideal_solves_installs_saves_and_opens_world_4() -> void:
 	assert_string_contains(r["text"], "instalacion vista: barra y destello")
 	assert_string_contains(r["text"], "guardado en Notas con el upgrade")
 	assert_string_contains(r["text"], "M4 disponible: Mundo 4 - El Chat")
-	assert_string_contains(r["text"], "Próximamente")
+	assert_string_contains(r["text"], "4-1 Chats recientes - Nuevo")
 	assert_string_contains(r["text"], "m5 bloqueada: «Sin descargar»")
 	assert_string_contains(r["text"], "m6 bloqueada: «Sin descargar»")
 	assert_string_contains(r["text"], "ACCIONES:")

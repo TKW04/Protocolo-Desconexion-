@@ -38,6 +38,16 @@ scripts/levels/eco_companion.gd), no los cuadros.
   animacion: EcoCompanion lo superpone (world_frames de data/eco_companion.json) en los niveles de ese mundo
   mientras la esfera esta entera (idle, talk, notice y sus _amber).
 
+- Eco del Mundo 4 (2026-10-28, paso 11 de docs/propuesta-mundo-4.md §6.3; docs/04-personajes.md §12.1: «tres
+  puntos de escribiendo…, sin cuerpo»): eco_w4_<anim>[_amber]_NN.png, tres puntos en fila (sin esfera, sin
+  burbuja) con los mismos papeles de color que la esfera (nucleo blanco, borde azul luz del Mundo 1, contorno
+  noche) y la misma variante ambar de la Q. idle: los puntos laten de uno en uno (el 4.º cuadro, quietos);
+  talk: botan por turnos; notice: los tres grandes con destello; appear: chispa y los puntos de uno en uno;
+  glow_in: como el de la esfera. Sin variante _dim (el hub sigue con la esfera atenuada). Escribe ademas
+  assets/sprites/eco_companion_w4_frames.tres con las mismas animaciones (las _dim apuntan a las de la
+  esfera); EcoCompanion lo carga en los niveles del Mundo 4 (world_sprite_frames de data/eco_companion.json).
+  Se distinguen del «escribiendo…» del nivel: aquellos son crema dentro de una burbuja con contorno.
+
 Colores: normal solo de assets/palettes/mundo1.gpl (noche_profunda, cielo,
 resplandor, borde_luz, banner_blanco; sin rojos, carmin ni ambar), _amber y
 glow_in de mundo1.gpl con ambar y ambar_sombra (los dorados de los puntos de
@@ -76,6 +86,10 @@ M1 = load_gpl(os.path.join(REPO, "assets/palettes/mundo1.gpl"))
 HUB = load_gpl(os.path.join(REPO, "assets/palettes/hub.gpl"))
 M3_GPL = "assets/palettes/mundo3.gpl"
 FRAME_W3 = "%s/eco_frame_w3_00.png" % OUT_DIR
+FRAMES_TRES_W4 = "assets/sprites/eco_companion_w4_frames.tres"
+# Tres puntos del Mundo 4: centros (x) a la altura CY, radio normal y radio del que late.
+W4_DOTS_X = (8.0, 16.0, 24.0)
+W4_R, W4_R_BIG = 2.6, 3.6
 
 # Papeles de color -> color de la paleta (normal: Mundo 1; dim: hub, apagado).
 ROLES = {
@@ -354,6 +368,85 @@ def frame_w3():
     return cv.img
 
 
+def _dot(cv, col, cx, cy, r):
+    for y in range(SIZE):
+        for x in range(SIZE):
+            d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+            if d < r - 1.0:
+                cv.p(x, y, col["core"])
+            elif d < r:
+                cv.p(x, y, col["rim"])
+            elif d < r + 1.0 and cv.get(x, y)[3] == 0:
+                cv.p(x, y, col["outline"])
+
+
+def _dot_halo(cv, color, cx, cy, r):
+    for y in range(SIZE):
+        for x in range(SIZE):
+            d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+            if r + 1.0 <= d < r + 2.0 and cv.get(x, y)[3] == 0:
+                cv.p(x, y, color)
+
+
+def frame_w4(anim, f, variant):
+    """Eco del Mundo 4: tres puntos en fila (ver el encabezado)."""
+    col = ROLES[variant]
+    cv = Canvas(SIZE, SIZE)
+    if anim == "glow_in":
+        normal = frame_w4("idle", 0, "normal")
+        amber = frame_w4("idle", 2, "amber")
+        if f == 0:
+            cv.img.alpha_composite(normal)
+            cv.px = cv.img.load()
+            for x, y in ((4, 9), (27, 9), (4, 23), (27, 23)):
+                spark(cv, ROLES["amber"], x, y, 1)
+            return cv.img
+        if f == 1:
+            return blend(normal, amber, lambda x, y: (x + y) % 2 == 0)
+        cv.img.alpha_composite(amber)
+        cv.px = cv.img.load()
+        for cx in W4_DOTS_X:
+            _dot_halo(cv, ROLES["amber"]["halo"], cx, CY, W4_R)
+        return cv.img
+    dots = []  # (cx, cy, r)
+    if anim == "idle":
+        for i, cx in enumerate(W4_DOTS_X):
+            big = f < 3 and i == f
+            dots.append((cx, CY - (1 if big else 0), W4_R_BIG if big else W4_R))
+    elif anim == "talk":
+        for i, cx in enumerate(W4_DOTS_X):
+            dots.append((cx, CY - (2 if i == f else 0), W4_R))
+    elif anim == "notice":
+        for cx in W4_DOTS_X:
+            dots.append((cx, CY, W4_R_BIG if f == 0 else W4_R + 0.5))
+    elif anim == "appear":
+        if f == 0:
+            spark(cv, col, int(CX), int(CY), 3)
+            return cv.img
+        for cx in W4_DOTS_X[:f]:
+            dots.append((cx, CY, W4_R))
+    for cx, cy, r in dots:
+        _dot(cv, col, cx, cy, r)
+    if anim == "idle" and variant == "amber" and AMBER_PULSE[f] is not None:
+        for cx, cy, r in dots:
+            _dot_halo(cv, col[AMBER_PULSE[f]], cx, cy, r)
+    elif anim == "talk" and variant == "amber":
+        for cx, cy, r in dots:
+            _dot_halo(cv, col["halo_soft"], cx, cy, r)
+    elif anim == "notice":
+        for cx, cy, r in dots:
+            _dot_halo(cv, col["halo"] if f == 0 else col["halo_soft"], cx, cy, r)
+        if f == 0:
+            spark(cv, col, 27, 7, 2)
+        else:
+            cv.p(27, 7, col["spark_arm"])
+    return cv.img
+
+
+def w4_name(anim, variant):
+    return "%s/eco_w4_%s_%%02d.png" % (OUT_DIR, anim_name(anim, variant))
+
+
 def anim_name(anim, variant):
     return anim + SUFFIX[variant]
 
@@ -368,6 +461,12 @@ def outputs():
             for f in range(count):
                 out["%s/eco_%s_%02d.png" % (OUT_DIR, anim_name(anim, variant), f)] = frame(anim, f, variant)
     out[FRAME_W3] = frame_w3()
+    for variant in ("normal", "amber"):
+        for anim, count, _fps, _loop, variants in ANIMS:
+            if variant not in variants:
+                continue
+            for f in range(count):
+                out[w4_name(anim, variant) % f] = frame_w4(anim, f, variant)
     return out
 
 
@@ -388,6 +487,17 @@ def animations():
             src = anim_name(source, variant)
             paths = ["res://assets/sprites/%s/eco_%s_%02d.png" % (OUT_DIR, src, i) for i in reversed(range(entry[1]))]
             anims.append((anim_name(target, variant), paths, fps, loop))
+    return anims
+
+
+def animations_w4():
+    """SpriteFrames del Eco del Mundo 4: las mismas animaciones con los tres puntos (las _dim, las de la esfera)."""
+    anims = []
+    for name, paths, fps, loop in animations():
+        if name.endswith("_dim"):
+            anims.append((name, paths, fps, loop))
+            continue
+        anims.append((name, [p.replace("/eco_", "/eco_w4_", 1) for p in paths], fps, loop))
     return anims
 
 
@@ -422,6 +532,8 @@ def main(argv):
             im.save(p)
         with open(os.path.join(REPO, FRAMES_TRES), "w", encoding="utf-8") as fh:
             fh.write(sprite_frames_tres(animations()))
+        with open(os.path.join(REPO, FRAMES_TRES_W4), "w", encoding="utf-8") as fh:
+            fh.write(sprite_frames_tres(animations_w4()))
     if "--preview" in argv:
         preview(argv[argv.index("--preview") + 1],
                 int(argv[argv.index("--scale") + 1]) if "--scale" in argv else 8)

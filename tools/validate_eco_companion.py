@@ -78,7 +78,18 @@ def main():
         with open(tres, encoding="utf-8") as fh:
             if fh.read() != sprite_frames_tres(gen.animations()):
                 errs.append(f"{gen.FRAMES_TRES}: no coincide con tools/gen_eco_companion.py (regenera)")
-    print("\n".join(errs) if errs else f"OK ({len(imgs)} PNG y {gen.FRAMES_TRES})")
+    # Eco del Mundo 4 (paso 11 de docs/propuesta-mundo-4.md): su SpriteFrames con los tres puntos.
+    tres_w4 = os.path.join(REPO, gen.FRAMES_TRES_W4)
+    if not os.path.exists(tres_w4):
+        errs.append(f"{gen.FRAMES_TRES_W4}: no existe")
+    else:
+        with open(tres_w4, encoding="utf-8") as fh:
+            if fh.read() != sprite_frames_tres(gen.animations_w4()):
+                errs.append(f"{gen.FRAMES_TRES_W4}: no coincide con tools/gen_eco_companion.py (regenera)")
+        names = [a[0] for a in gen.animations()]
+        if [a[0] for a in gen.animations_w4()] != names:
+            errs.append(f"{gen.FRAMES_TRES_W4}: no tiene las mismas animaciones que {gen.FRAMES_TRES}")
+    print("\n".join(errs) if errs else f"OK ({len(imgs)} PNG, {gen.FRAMES_TRES} y {gen.FRAMES_TRES_W4})")
     return 1 if errs else 0
 
 

@@ -1,0 +1,1499 @@
+{
+	"_notes": "NIVEL 4-1 «Chats recientes» (paso 11 de docs/propuesta-mundo-4.md §8, 2026-10-28; diseño en su §4.1 y §4.1.1, desvíos en §8.1). Torre vertical de 24 x 96 (1536 x 6144 px; cámara de torre del 1-2); se sube de la fila 95 a la 0. Llega con todo el kit del Mundo 3 (pulso, láser, Debug, dash, golpe al suelo y Pellizcar) y SIN Agitar (llega en el 4-2). ESTRUCTURA (decisión tomada: el mapa orientativo de la propuesta subía casi en vertical y su camino salía en ~60 s frente a los 170-210 pedidos): BANDAS; en cada una, una PASARELA (burbujas de chat contiguas, pasarelas de una vía o un forjado) que se recorre de punta a punta y un ESCALÓN 2 filas por encima en el extremo de salida; los extremos alternan banda a banda. Entre pasarelas hay 3 filas (subir 3 pide 192 px y el salto real llega a 177: no hay atajo) o 4 (las dos últimas bajo cada forjado y en el Piso 2: con 3, el salto del escalón a la pasarela pegada al forjado lo rozaría con la cabeza). VESTÍBULO «Lista de chats» (82-95, pasarelas de una vía): vórtice (2, 94), Linterna (linterna_4_1, 7, 94; se recoge al pasar) y 1 punto. PISO 1 «Burbujas» (65-81): burbujas de 1 a 8 tiles (un «jajajajaja» de 2 entre dos huecos de 1 y el puente largo de 7), una burbuja eliminada (sin colisión) sobre un hueco de 2 y 1 punto. PISO 2 «Escribiendo… · Modo oscuro» (49-64; zona oscura en las filas 50-63): mitad izquierda (columnas 1-13), cuatro «escribiendo…» (t1, t2 y t4 por zona, justo antes de despegar; t3 por la burbuja anterior; patrón 18), cargador_1 en el forjado (15, 63) y 1 punto; a la derecha, el vacío de los secretos A y C. PAUSA (47-48): sync_1 (12, 47) en el hueco del forjado y cargador_2 (21, 47). PISO 3 «Troll» (32-46): cinco bandas; el primer Troll (troll_1, 22, 45) está de pie en el escalón de la primera (la burbuja «en línea», 20-21, fila 46): a su altura, el camino lo aturde con el pulso nada más subir y sigue (el láser que lo remata es opcional). PISO 4 «Visto» (12-31): zona «Visto» en el suelo del forjado (visto_suelo, pulso al doble check), una en el aire entre dos burbujas (visto_aire, 2 filas de alto: andando no se salta), cuatro con ciclo de 4 s activa / 5 s en espera (visto_ciclo a visto_ciclo_4; el camino espera el hueco) y 1 punto; sin peligros a 1 tile de una zona (regla del 4-1, sin Agitar). AZOTEA «En línea» (0-11): dos bandas de 3 sobre el forjado y la terminal «Enviar» al final de la pasarela 5 (terminal_enviar, 3, 3; pulso) y 1 punto. SECRETOS: A «Mensaje antiguo» (secreto_mensaje_antiguo): desde t2, una burbuja oculta (h, columnas 14-18, fila 58; solo con el Debug) lleva al nicho de la pared derecha (19-22, filas 56-57) con msg_4_1 (Tomi; 21, 57) y 1 punto; sin dash (forbid_abilities); a 5 tiles de cualquier pasarela. B «Archivado» (secreto_archivado): sala a la izquierda de la Pausa (1-5, filas 46-47; su techo es parte de la pasarela 45) por un marco pequeño (6, 47; Pellizcar); power bank (power_bank_4_1) y 1 punto. C «Vida extra» (secreto_vida_extra; decisión tomada: en el vacío del Piso 2 y no en el Piso 4, cuyas pasarelas lo cubren entero): repisa de la esquina superior derecha del vacío (18-22, fila 52) a 4 tiles del final de la pasarela 52: solo con salto + dash aéreo; pared con glitch visible solo con el Debug (22, filas 50-51) con vida_extra_4_1 (N = 3: la anterior fue la del 3-1). ECONOMÍA: 8 puntos (6 en la ruta + A + B), 2 cargadores (50, reutilizables, 10 s), 1 power bank, 1 punto de sincronización. Textos de las burbujas PROPUESTOS (chat de madrugada; Lía, Marco y Tomi solo se nombran). Validador: unos 192 s de camino (46 % de los 420 del objetivo).",
+	"id": "4-1",
+	"name": "Chats recientes",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"target_duration_s": 420,
+	"difficulty": 4,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"shockwave": false
+	},
+	"camera": {
+		"vertical": "tower",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Azotea «En línea»",
+			"y_from": 0,
+			"y_to": 11,
+			"patterns": []
+		},
+		{
+			"name": "Piso 4 «Visto»",
+			"y_from": 12,
+			"y_to": 31,
+			"patterns": [
+				"pulso_al_visto"
+			]
+		},
+		{
+			"name": "Piso 3 «Troll»",
+			"y_from": 32,
+			"y_to": 46,
+			"patterns": []
+		},
+		{
+			"name": "Pausa",
+			"y_from": 47,
+			"y_to": 48,
+			"patterns": []
+		},
+		{
+			"name": "Piso 2 «Escribiendo…»",
+			"y_from": 49,
+			"y_to": 64,
+			"patterns": [
+				"saltar_antes_de_que_exista"
+			]
+		},
+		{
+			"name": "Piso 1 «Burbujas»",
+			"y_from": 65,
+			"y_to": 81,
+			"patterns": []
+		},
+		{
+			"name": "Vestíbulo «Lista de chats»",
+			"y_from": 82,
+			"y_to": 95,
+			"patterns": []
+		}
+	],
+	"grid": [
+		"########################",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#..G......o............#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"##################-----#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#...................o..#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"##################-----#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#..............o.......#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#######...............E#",
+		"#.....#................#",
+		"#...o.......C..........#",
+		"##########----##########",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#.................######",
+		"#......................#",
+		"#......................#",
+		"#..................#####",
+		"#......................#",
+		"#....................So#",
+		"#.............hhhhh#####",
+		"#......o...............#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"##################-----#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#.........o............#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#......................#",
+		"#-----##################",
+		"#......................#",
+		"#----..................#",
+		"#......................#",
+		"#----------------------#",
+		"#......................#",
+		"#..................----#",
+		"#......................#",
+		"#----------------------#",
+		"#----..................#",
+		"#...........o..........#",
+		"#----------------------#",
+		"#..................----#",
+		"#.P....................#",
+		"########################"
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 12,
+			"y": 47
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_mensaje_antiguo",
+			"x": 21,
+			"y": 57,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 1,
+			"memory_id": "msg_4_1",
+			"needs_debug": true,
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "A"
+		},
+		{
+			"id": "secreto_archivado",
+			"x": 2,
+			"y": 47,
+			"object": "power_bank_pickup",
+			"reward": [
+				"attention_points",
+				"power_bank"
+			],
+			"points": 1,
+			"note": "B"
+		},
+		{
+			"id": "secreto_vida_extra",
+			"x": 22,
+			"y": 50,
+			"object": "glitch_wall",
+			"needs_debug": true,
+			"reward": "extra_life",
+			"note": "C"
+		}
+	],
+	"enemies": [
+		{
+			"id": "troll_1",
+			"type": "troll",
+			"x": 22,
+			"y": 45,
+			"params": {
+				"facing": -1
+			}
+		}
+	],
+	"objects": [
+		{
+			"type": "flashlight_pickup",
+			"x": 7,
+			"y": 94,
+			"params": {
+				"id": "linterna_4_1"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 79,
+			"params": {
+				"id": "b1_sigues",
+				"text": "¿Sigues por ahí?",
+				"side": "left",
+				"stamp": "22:40"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 78,
+			"params": {
+				"id": "b1_78_0",
+				"text": "¿Y si vamos al garaje?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 78,
+			"params": {
+				"id": "b1_78_1",
+				"text": "¿Me oyes? Te escribo desde el bus",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 11,
+			"y": 78,
+			"params": {
+				"id": "b1_78_2",
+				"text": "¿Sigues por ahí?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 14,
+			"y": 78,
+			"params": {
+				"id": "b1_78_3",
+				"text": "No sé qué contestar a eso",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 78,
+			"params": {
+				"id": "b1_78_4",
+				"text": "No, ya la trajo Marco",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 76,
+			"params": {
+				"id": "b1_hora",
+				"text": "¿a qué hora?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 75,
+			"params": {
+				"id": "b1_75_0",
+				"text": "Mañana a las cinco en lo de Lía",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 75,
+			"params": {
+				"id": "b1_75_1",
+				"text": "¿hola? ¿hay alguien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 12,
+			"y": 75,
+			"params": {
+				"id": "b1_jaja",
+				"text": "jajajajaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 15,
+			"y": 75,
+			"params": {
+				"id": "b1_puente",
+				"text": "Te mandé el meme del perro con casco ya",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 22,
+			"y": 75,
+			"params": {
+				"id": "b1_75_4",
+				"text": "ok",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 73,
+			"params": {
+				"id": "b1_otra",
+				"text": "mándamelo otra vez",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 72,
+			"params": {
+				"id": "b1_72_0",
+				"text": "nada, mirar el techo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 72,
+			"params": {
+				"id": "b1_72_1",
+				"text": "Son las tres y no puedo dormir",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 10,
+			"y": 72,
+			"params": {
+				"id": "b1_borrado",
+				"text": "olvídalo",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 12,
+			"y": 72,
+			"params": {
+				"id": "b1_72_3",
+				"text": "yo tampoco, qué raro",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 16,
+			"y": 72,
+			"params": {
+				"id": "b1_72_4",
+				"text": "Te mandé el meme del perro con casco ya",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 70,
+			"params": {
+				"id": "b1_vemos",
+				"text": "nos vemos allí",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 68,
+			"params": {
+				"id": "b1_68_0",
+				"text": "Sé que estás ahí, te veo en línea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 68,
+			"params": {
+				"id": "b1_68_1",
+				"text": "mándamelo otra vez",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 10,
+			"y": 68,
+			"params": {
+				"id": "b1_68_2",
+				"text": "¿te acuerdas de eso?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 14,
+			"y": 68,
+			"params": {
+				"id": "b1_68_3",
+				"text": "y pensar en lo del garaje",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 68,
+			"params": {
+				"id": "b1_68_4",
+				"text": "escribe algo, lo que sea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 66,
+			"params": {
+				"id": "b1_llego",
+				"text": "ya llegué",
+				"side": "left"
+			}
+		},
+		{
+			"type": "dark_zone",
+			"x": 1,
+			"y": 50,
+			"params": {
+				"id": "modo_oscuro",
+				"width_tiles": 22,
+				"height_tiles": 14
+			}
+		},
+		{
+			"type": "charger",
+			"x": 15,
+			"y": 63,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 1,
+			"y": 62,
+			"params": {
+				"id": "t1",
+				"text": "¿estás despierto?",
+				"side": "left",
+				"trigger_zone": [
+					2,
+					62,
+					3,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 60,
+			"params": {
+				"id": "b2_hoy",
+				"text": "Son las tres y no puedo dormir",
+				"side": "left",
+				"stamp": "03:12"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 6,
+			"y": 60,
+			"params": {
+				"id": "b2_60_1",
+				"text": "jaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 60,
+			"params": {
+				"id": "b2_tomi",
+				"text": "Tomi: te mandé un meme, ¿lo viste o qué?",
+				"side": "left",
+				"stamp": "03:14"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 10,
+			"y": 58,
+			"params": {
+				"id": "t2",
+				"text": "yo tampoco, qué raro",
+				"side": "right",
+				"trigger_zone": [
+					8,
+					58,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 21,
+			"y": 57,
+			"params": {
+				"id": "mensaje_4_1",
+				"memory_id": "msg_4_1"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 56,
+			"params": {
+				"id": "b2_hola",
+				"text": "¿hola? ¿hay alguien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 56,
+			"params": {
+				"id": "b2_56_1",
+				"text": "bueno, como quieras",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 9,
+			"y": 56,
+			"params": {
+				"id": "b2_vi",
+				"text": "lo vi, me reí mucho, de verdad",
+				"side": "right"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 1,
+			"y": 54,
+			"params": {
+				"id": "t3",
+				"text": "¿y tú qué haces?",
+				"side": "left",
+				"trigger": "b2_hola"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 52,
+			"params": {
+				"id": "b2_techo",
+				"text": "nada, mirar el techo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 52,
+			"params": {
+				"id": "b2_52_1",
+				"text": "hola otra vez, soy yo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 9,
+			"y": 52,
+			"params": {
+				"id": "b2_garaje",
+				"text": "y pensar en lo del garaje",
+				"side": "right"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 10,
+			"y": 50,
+			"params": {
+				"id": "t4",
+				"text": "¿te acuerdas de eso?",
+				"side": "left",
+				"trigger_zone": [
+					9,
+					50,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 22,
+			"y": 50,
+			"params": {
+				"id": "pared_vida_extra",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"visible_only_with_debug": true
+			}
+		},
+		{
+			"type": "extra_life_pickup",
+			"x": 22,
+			"y": 51,
+			"params": {
+				"id": "vida_extra_4_1",
+				"secret_id": "C"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 21,
+			"y": 47,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 6,
+			"y": 47,
+			"params": {
+				"id": "marco_archivado",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 2,
+			"y": 47,
+			"params": {
+				"id": "power_bank_4_1"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 20,
+			"y": 46,
+			"params": {
+				"id": "b3_linea",
+				"text": "en línea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 45,
+			"params": {
+				"id": "b3_45_0",
+				"text": "¿por qué no contestas?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 11,
+			"y": 45,
+			"params": {
+				"id": "b3_45_1",
+				"text": "vale, mañana",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 45,
+			"params": {
+				"id": "b3_45_2",
+				"text": "No pasa nada, en serio, tranquilo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 45,
+			"params": {
+				"id": "b3_45_3",
+				"text": "no me ignores",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 43,
+			"params": {
+				"id": "b3_ignores",
+				"text": "no me ignores",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 42,
+			"params": {
+				"id": "b3_42_0",
+				"text": "Tomi: te mandé un meme, ¿lo viste o qué?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 8,
+			"y": 42,
+			"params": {
+				"id": "b3_42_1",
+				"text": "¿a qué hora?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 10,
+			"y": 42,
+			"params": {
+				"id": "b3_42_2",
+				"text": "en línea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 12,
+			"y": 42,
+			"params": {
+				"id": "b3_42_3",
+				"text": "lo vi, me reí mucho, de verdad",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 17,
+			"y": 42,
+			"params": {
+				"id": "b3_42_4",
+				"text": "¿Te pasó algo? Dime algo, lo que sea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 40,
+			"params": {
+				"id": "b3_estas",
+				"text": "¿estás ahí, Isak?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 39,
+			"params": {
+				"id": "b3_39_0",
+				"text": "¿Enviar o no enviar?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 39,
+			"params": {
+				"id": "b3_39_1",
+				"text": "buenas noches",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 8,
+			"y": 39,
+			"params": {
+				"id": "b3_39_2",
+				"text": "Marco trajo pizza y sobró un montón",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 14,
+			"y": 39,
+			"params": {
+				"id": "b3_39_3",
+				"text": "Ya no te escribo más",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 18,
+			"y": 39,
+			"params": {
+				"id": "b3_39_4",
+				"text": "Último mensaje de la noche",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 37,
+			"params": {
+				"id": "b3_nada",
+				"text": "nada, nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 35,
+			"params": {
+				"id": "b3_35_0",
+				"text": "Te escribo largo porque nunca contestas corto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 9,
+			"y": 35,
+			"params": {
+				"id": "b3_35_1",
+				"text": "¿Llevo la cadena?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 12,
+			"y": 35,
+			"params": {
+				"id": "b3_35_2",
+				"text": "Mañana te cuento lo del bus",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 17,
+			"y": 35,
+			"params": {
+				"id": "b3_35_3",
+				"text": "¿Me oyes? Te escribo desde el bus",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 33,
+			"params": {
+				"id": "b3_fin",
+				"text": "contesta ya",
+				"side": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 12,
+			"y": 30,
+			"params": {
+				"id": "visto_suelo",
+				"width_tiles": 1,
+				"height_tiles": 1,
+				"icon": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 29,
+			"params": {
+				"id": "b4_visto",
+				"text": "Visto a las 03:47",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 28,
+			"params": {
+				"id": "b4_hola",
+				"text": "hola otra vez, soy yo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 28,
+			"params": {
+				"id": "b4_28_1",
+				"text": "o hasta cuando sea, ya",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 9,
+			"y": 28,
+			"params": {
+				"id": "b4_porque",
+				"text": "¿por qué no contestas?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 28,
+			"params": {
+				"id": "b4_28_3",
+				"text": "Si no puedes hablar, manda un emoji y ya está",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 21,
+			"y": 28,
+			"params": {
+				"id": "b4_28_4",
+				"text": "jajaja ok",
+				"side": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 13,
+			"y": 26,
+			"params": {
+				"id": "visto_aire",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 26,
+			"params": {
+				"id": "b4_sigo",
+				"text": "sigo aquí",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 25,
+			"params": {
+				"id": "b4_25_0",
+				"text": "Visto a las 03:47",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 4,
+			"y": 25,
+			"params": {
+				"id": "b4_25_1",
+				"text": "Leído a las 03:48",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 25,
+			"params": {
+				"id": "b4_25_2",
+				"text": "¿estás despierto?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 10,
+			"y": 25,
+			"params": {
+				"id": "b4_25_3",
+				"text": "¿y tú qué haces?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 25,
+			"params": {
+				"id": "b4_25_4",
+				"text": "me voy a dormir",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 16,
+			"y": 25,
+			"params": {
+				"id": "b4_25_5",
+				"text": "nos vemos allí",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 25,
+			"params": {
+				"id": "b4_25_6",
+				"text": "te dejé un audio largo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 9,
+			"y": 23,
+			"params": {
+				"id": "visto_ciclo",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "right",
+				"on_s": 4.0,
+				"off_s": 5.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 23,
+			"params": {
+				"id": "b4_vale",
+				"text": "vale",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 22,
+			"params": {
+				"id": "b4_22_0",
+				"text": "Lía dice que vengas el sábado",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 6,
+			"y": 22,
+			"params": {
+				"id": "b4_22_1",
+				"text": "¿Y si vamos al garaje?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 10,
+			"y": 22,
+			"params": {
+				"id": "b4_22_2",
+				"text": "No, ya la trajo Marco",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 14,
+			"y": 22,
+			"params": {
+				"id": "b4_22_3",
+				"text": "¿hola? ¿hay alguien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 18,
+			"y": 22,
+			"params": {
+				"id": "b4_22_4",
+				"text": "No sé qué contestar a eso",
+				"side": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 12,
+			"y": 20,
+			"params": {
+				"id": "visto_ciclo_2",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 2.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 20,
+			"params": {
+				"id": "b4_ultimo",
+				"text": "último aviso",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 19,
+			"params": {
+				"id": "b4_19_0",
+				"text": "nada, mirar el techo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 19,
+			"params": {
+				"id": "b4_19_1",
+				"text": "¿Sigues en línea?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 8,
+			"y": 19,
+			"params": {
+				"id": "b4_19_2",
+				"text": "Lía dice que si no vienes te traemos a rastras",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 16,
+			"y": 19,
+			"params": {
+				"id": "b4_19_3",
+				"text": "Bueno, sí. Mañana.",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 19,
+			"params": {
+				"id": "b4_19_4",
+				"text": "yo tampoco, qué raro",
+				"side": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 8,
+			"y": 16,
+			"params": {
+				"id": "visto_ciclo_3",
+				"width_tiles": 2,
+				"height_tiles": 3,
+				"icon": "right",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 4.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 17,
+			"params": {
+				"id": "b4_fin",
+				"text": "en línea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 15,
+			"params": {
+				"id": "b4_15_0",
+				"text": "Mañana a las cinco en lo de Lía",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 15,
+			"params": {
+				"id": "b4_15_1",
+				"text": "¿te acuerdas de eso?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 11,
+			"y": 15,
+			"params": {
+				"id": "b4_15_2",
+				"text": "Leído a las 03:49",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 14,
+			"y": 15,
+			"params": {
+				"id": "b4_15_3",
+				"text": "Son las tres y no puedo dormir",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 15,
+			"params": {
+				"id": "b4_15_4",
+				"text": "escribe algo, lo que sea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 12,
+			"y": 12,
+			"params": {
+				"id": "visto_ciclo_4",
+				"width_tiles": 2,
+				"height_tiles": 3,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 6.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 13,
+			"params": {
+				"id": "b4_casi",
+				"text": "casi",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 9,
+			"params": {
+				"id": "b5_escalon",
+				"text": "escribiendo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 8,
+			"params": {
+				"id": "b5_8_0",
+				"text": "Sé que estás ahí, te veo en línea",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 8,
+			"params": {
+				"id": "b5_8_1",
+				"text": "bueno, como quieras",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 11,
+			"y": 8,
+			"params": {
+				"id": "b5_8_2",
+				"text": "contesta ya",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 8,
+			"params": {
+				"id": "b5_8_3",
+				"text": "y pensar en lo del garaje",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 18,
+			"y": 8,
+			"params": {
+				"id": "b5_8_4",
+				"text": "lo vi, me reí mucho, de verdad",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 6,
+			"params": {
+				"id": "b5_casi",
+				"text": "casi lo envío",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 1,
+			"y": 5,
+			"params": {
+				"id": "b5_5_0",
+				"text": "hola otra vez, soy yo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 5,
+			"y": 5,
+			"params": {
+				"id": "b5_5_1",
+				"text": "No pasa nada, en serio, tranquilo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 11,
+			"y": 5,
+			"params": {
+				"id": "b5_5_2",
+				"text": "Leído a las 03:50",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 14,
+			"y": 5,
+			"params": {
+				"id": "b5_5_3",
+				"text": "Último mensaje de la noche",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 19,
+			"y": 5,
+			"params": {
+				"id": "b5_5_4",
+				"text": "¿por qué no contestas?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 3,
+			"y": 3,
+			"params": {
+				"id": "terminal_enviar",
+				"text": "Enviar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "4-2"
+		}
+	]
+}

@@ -139,6 +139,7 @@ func _ready() -> void:
 	if _dim:
 		modulate.a = float(_data.get("hub_alpha", 0.8))
 	else:
+		_use_world_sprite_frames()
 		_make_world_frame()
 	visible = false
 	EventBus.ally_met.connect(_on_ally_met)
@@ -650,6 +651,21 @@ func _update_visual(delta: float) -> void:
 	var amp: float = float(_data.get("bob_amplitude_px", 4))
 	var bob: float = sin(TAU * float(_data.get("bob_hz", 0.8)) * _time) * amp
 	global_position = (_anchor + Vector2(0.0, bob)).round()
+
+
+## Cuerpo del mundo (paso 11 de docs/propuesta-mundo-4.md §6.3): en el Mundo 4 Eco son tres puntos que laten
+## (world_sprite_frames de data/eco_companion.json; tools/gen_eco_companion.py), con las mismas animaciones que la
+## esfera; no en el hub.
+func _use_world_sprite_frames() -> void:
+	var by_world: Dictionary = _data.get("world_sprite_frames", {}) as Dictionary
+	var path: String = String(by_world.get(str(_world), ""))
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return
+	_sprite.sprite_frames = load(path) as SpriteFrames
+
+
+func get_sprite_frames() -> SpriteFrames:
+	return _sprite.sprite_frames if _sprite != null else null
 
 
 ## Marco del mundo (paso 9 de docs/propuesta-mundo-3.md §6.3): en el Mundo 3, anillo dorado de 1 px

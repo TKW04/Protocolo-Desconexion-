@@ -48,7 +48,7 @@ Salidas (assets/sprites/hub/):
                con el texto en fondo_profundo; margen de 3 px)       16x16
                world_icon_m1_00 (miniatura del Mundo 1:
                campana de notificaciones, en la carpeta)       16x16
-               world_icon_m2_00, world_icon_m3_00 (miniaturas de
+               world_icon_m2_00, world_icon_m3_00, world_icon_m4_00 (miniaturas de
                los Mundos 2 y 3 para el album)                 16x16
                page_dot_current_00, page_dot_other_00          8x8
   menu/        menu_<opcion>_00 y menu_level_<id>_00 (+ _off_00):
@@ -665,6 +665,19 @@ def world_icon_photo():
     return cv.img
 
 
+def world_icon_chat():
+    """Miniatura del Mundo 4 (album y carpeta; paso 11 de docs/propuesta-mundo-4.md §4.6): bocadillo de chat con
+    los tres puntos de «escribiendo…»."""
+    cv = Canvas(16, 16)
+    cv.box(1, 2, 14, 11, PA, BO)
+    cv.rect(3, 12, 4, 12, BO)   # cola del bocadillo
+    cv.p(3, 13, BO)
+    for x in (4, 7, 10):
+        cv.rect(x, 6, x + 1, 7, CA)
+    cv.halo(FP)
+    return cv.img
+
+
 # ---------------------------------------------- iconos de los menus del hub (12x12)
 # Peticion del usuario (2026-10-26): iconos junto a las opciones de los menus de
 # Notas (Guardar con un disquete, Album, Apodo, Volver; Si / No de la
@@ -951,6 +964,40 @@ def _menu_boss_curator(cv):  # Jefe La Curadora: marco dorado con corona y un oj
     cv.rect(5, 7, 6, 7, CA)
 
 
+def _menu_recent_chats(cv):  # 4-1 Chats recientes: tres filas de la lista de chats (avatar y linea)
+    for y0 in (1, 5, 9):
+        cv.rect(1, y0, 2, y0 + 1, CA if y0 == 1 else TT)
+        cv.hline(4, 10, y0, TC)
+        cv.hline(4, 7, y0 + 1, TR)
+
+
+def _menu_group(cv):  # 4-2 Grupo sin respuesta: tres avatares apagados y un bocadillo vacio
+    for x0 in (0, 4, 8):
+        cv.rect(x0 + 1, 6, x0 + 2, 7, TT)
+        cv.hline(x0, x0 + 3, 9, TT)
+        cv.hline(x0, x0 + 3, 10, TR)
+    cv.rect(3, 0, 8, 3, BO)
+    cv.rect(4, 1, 7, 2, SO)
+    cv.p(4, 4, BO)
+
+
+def _menu_unread(cv):  # 4-3 Mensajes sin leer: bocadillo con el punto de no leidos
+    cv.rect(0, 2, 9, 9, BO)
+    cv.rect(1, 3, 8, 8, PA)
+    cv.p(1, 10, BO)
+    cv.hline(2, 7, 5, TC)
+    cv.hline(2, 5, 7, TR)
+    cv.rect(9, 0, 11, 2, AM)
+
+
+def _menu_boss_seen(cv):  # Jefe El Visto: el doble check
+    for dx, col in ((0, CT), (4, CA)):
+        for k in range(3):          # pata corta
+            cv.rect(dx + k, 6 + k, dx + k, 7 + k, col)
+        for k in range(6):          # pata larga
+            cv.rect(dx + 3 + k, 7 - k, dx + 3 + k, 8 - k, col)
+
+
 # --- Menu de pausa (2026-10-27, peticion del usuario: «iconicemos el menu de
 # ESC»). Mismo sistema, tamano y contorno que los de Notas y las carpetas.
 
@@ -1123,6 +1170,8 @@ MENU_DRAW = {"back": _menu_back, "yes": _menu_yes, "no": _menu_no, "enter": _men
              "access_kernel": _menu_access_kernel, "access_root": _menu_access_root,
              "level_3_1": _menu_gallery, "level_3_2": _menu_no_filter, "level_3_3": _menu_mirror,
              "level_3_boss": _menu_boss_curator,
+             "level_4_1": _menu_recent_chats, "level_4_2": _menu_group, "level_4_3": _menu_unread,
+             "level_4_boss": _menu_boss_seen,
              "pause_resume": _pause_resume, "pause_settings": _pause_settings, "pause_exit_hub": _pause_exit_hub,
              "pause_quit": _pause_quit, "pause_eco_help": _pause_eco_help, "pause_low_sync": _pause_low_sync,
              "pause_debug_outline": _pause_debug_outline, "pause_rhythm": _pause_rhythm,
@@ -1132,7 +1181,8 @@ MENU_DRAW = {"back": _menu_back, "yes": _menu_yes, "no": _menu_no, "enter": _men
 MENU_ICONS = ["save", "album", "nickname", "back", "yes", "no", "enter",
               "level_1_1", "level_1_2", "level_1_3", "level_1_boss",
               "level_2_1", "level_2_2", "level_2_3", "level_2_boss",
-              "level_3_1", "level_3_2", "level_3_3", "level_3_boss", "level_unknown",
+              "level_3_1", "level_3_2", "level_3_3", "level_3_boss",
+              "level_4_1", "level_4_2", "level_4_3", "level_4_boss", "level_unknown",
               "attention", "access_cache", "access_kernel", "access_root",
               "pause_resume", "pause_settings", "pause_exit_hub", "pause_quit", "pause_eco_help",
               "pause_low_sync", "pause_debug_outline", "pause_rhythm", "pause_sound", "pause_display",
@@ -1959,6 +2009,7 @@ def outputs():
     out["icons/world_icon_m1_00.png"] = world_icon_bell()
     out["icons/world_icon_m2_00.png"] = world_icon_feed()
     out["icons/world_icon_m3_00.png"] = world_icon_photo()
+    out["icons/world_icon_m4_00.png"] = world_icon_chat()
     out["icons/icon_notas_00.png"] = icon_notas()
     out["icons/icon_calc_00.png"] = icon_calc()
     out["icons/icon_papelera_00.png"] = icon_papelera()

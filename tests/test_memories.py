@@ -73,6 +73,10 @@ class RealData(unittest.TestCase):
         self.assertEqual(world3, [("msg_3_1", "3-1", "secreto_sin_likes", 1),
                                   ("msg_3_2", "3-1", "secreto_marco_decorativo", 2),
                                   ("msg_3_3", "3-3", "secreto_vitrina_oculta", 3)])
+        # Mundo 4 (paso 11 de docs/propuesta-mundo-4.md): el del 4-1, de Tomi.
+        world4 = sorted((m["id"], m["level"], m["secret"], m["order"], m["sender"]) for m in items
+                        if m["kind"] == "secret" and m["world"] == 4)
+        self.assertEqual(world4[:1], [("msg_4_1", "4-1", "secreto_mensaje_antiguo", 1, "Tomi")])
         self.assertEqual(messages["1-1"]["secret"], "secreto_puente_servicio")
         self.assertEqual(messages["1-2"]["secret"], "secreto_spam")
         self.assertEqual((messages["2-1"]["id"], messages["2-1"]["secret"], messages["2-1"]["world"]),
@@ -104,11 +108,16 @@ class RealData(unittest.TestCase):
         self.assertEqual(bosses["boss_w6_l1"]["title"], "Fragmento de pausa")
 
     def test_family_is_the_abuelito_and_mama(self):
-        """Decisión del 2026-10-19: Mamá escribe los mensajes y el Abuelito sale en ellos."""
+        """Decisión del 2026-10-19: Mamá escribe los mensajes y el Abuelito sale en ellos. En el Mundo 4 (decisión del
+        usuario del 2026-10-28, docs/propuesta-mundo-4.md §4.5) escriben los amigos Lía, Marco y Tomi."""
         for m in self.data["memories"]:
             if m["kind"] == "secret":
                 self.assertTrue(m["text"].startswith("Isak, "), m["id"])
-                self.assertTrue(m["text"].split("\n")[-1].startswith("Mamá ("), "Firma con humor")
+                sender = "Mamá" if m["world"] != 4 else m["sender"]
+                if m["world"] == 4:
+                    self.assertIn(sender, ("Lía", "Marco", "Tomi"), m["id"])
+                self.assertEqual(m["sender"], sender, m["id"])
+                self.assertTrue(m["text"].split("\n")[-1].startswith(sender + " ("), "Firma con humor")
         kernels = [m for m in self.data["memories"] if m["kind"] == "boss" and m["layer"] == 2]
         for m in kernels:
             self.assertIn("Abuelito", m["text"], "La persona importante de los recuerdos (%s)" % m["id"])

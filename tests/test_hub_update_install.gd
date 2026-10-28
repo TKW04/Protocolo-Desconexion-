@@ -205,14 +205,16 @@ func test_folders_on_their_pages_and_states() -> void:
 	assert_eq(m6.get_folder_state(), HubWorlds.STATE_LOCKED, "M6 bloqueada hasta 5-boss")
 	assert_eq(m5.get_folder_animation(), &"locked", "Silueta gris con candado")
 	assert_false(m5.is_miniature_visible(), "Sin miniatura")
-	# M4 se abre: «Próximamente» (sin niveles todavia).
+	# M4 se abre con sus subniveles (desde el paso 11 de docs/propuesta-mundo-4.md, el 4-1 jugable; antes,
+	# «Próximamente» sin niveles).
 	var folder: FolderStation = await _stand_on_shelf(&"m4")
 	assert_true(folder.is_key_hint_visible(), "Tecla del pulso")
 	assert_false(folder.is_locked_condition_visible())
 	assert_true(folder.open(_isak), "M4 abre su panel")
 	var panel: FolderPanel = folder.get_folder_panel()
 	assert_eq(panel.get_title(), "Mundo 4 - El Chat")
-	assert_true(Array(panel.get_lines()).has("Próximamente"), "Próximamente: %s" % [panel.get_lines()])
+	assert_true(panel.get_option_ids().has(&"4-1"), "El 4-1 en la carpeta: %s" % [panel.get_option_ids()])
+	assert_eq(panel.level_text(HubWorlds.levels(HubWorlds.world(&"m4"))[0]), "4-1 Chats recientes - Nuevo")
 	folder.close(true)
 	await wait_physics_frames(2)
 	# M5: «Sin descargar» + la condicion.

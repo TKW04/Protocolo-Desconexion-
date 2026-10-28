@@ -21,7 +21,7 @@
 ## (golpe al suelo en la placa -> salto a la plataforma «Cargando...» -> salto
 ## corriendo + dash aereo al bloque -> pulso), pulso al instalador, ve la
 ## instalacion (barra, destello y linea de Notas), vuelve a la pagina 1, guarda
-## en Notas, y abre M4 en la pagina 2 («Próximamente»); M5 (pagina 2) y M6
+## en Notas, y abre M4 en la pagina 2 (con el 4-1 desde el paso 11 del Mundo 4); M5 (pagina 2) y M6
 ## (pagina 3) bloqueadas con «Sin descargar» y la segunda linea. Mide el tiempo
 ## del acertijo (desde que se suelta la linea de Eco en la pagina 2 hasta pedir la
 ## instalacion; objetivo 60-90 s) y el total.
@@ -748,9 +748,12 @@ func _visit_new_folders() -> bool:
 	if not await _pulse_until(func() -> bool: return m4.is_panel_open()):
 		return _check(false, "el pulso no abre M4")
 	await _wait(15)
-	var lines: PackedStringArray = m4.get_folder_panel().get_lines()
-	_check(Array(lines).has("Próximamente"), "M4 no dice «Próximamente» (%s)" % " / ".join(lines))
-	_note("M4 disponible: %s / %s" % [m4.get_folder_panel().get_title(), " / ".join(lines)])
+	var panel: FolderPanel = m4.get_folder_panel()
+	# Desde el paso 11 de docs/propuesta-mundo-4.md el 4-1 es jugable (antes, «Próximamente» sin niveles).
+	var first: String = panel.level_text(HubWorlds.levels(HubWorlds.world(&"m4"))[0])
+	_check(panel.get_option_ids().has(&"4-1") and first == "4-1 Chats recientes - Nuevo",
+		"M4 no lista el 4-1 (%s; %s)" % [first, panel.get_option_ids()])
+	_note("M4 disponible: %s / %s" % [panel.get_title(), first])
 	_press_event(A_JUMP)
 	await _wait(12)
 	_check(not m4.is_panel_open(), "el salto no cierra M4")
