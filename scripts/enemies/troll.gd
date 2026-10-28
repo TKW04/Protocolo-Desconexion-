@@ -12,7 +12,12 @@
 ## - defeated: vida a 0 (laser aturdido); suelta drops y no vuelve.
 ## El cuerpo no dana; sus mensajes si (el dash los atraviesa; Agitar los borra).
 ## Tiempo del mundo. Al reaparecer Isak vuelve al estado inicial. Base de
-## TrollMimic (el disfrazado). Aspecto PROVISIONAL por codigo.
+## TrollMimic (el disfrazado).
+## Arte final con AutoSprite (paso 24, etapa 3b, 2026-10-28; tools/import_troll.py,
+## docs/plan-arte-mundo-4.md): ART_ANIMS por estado (get_art_frame); el dibujo mide
+## 76 px y sobresale 20 por encima de la caja (body_size no cambia). El bocadillo
+## del aviso, los chispazos y el contorno rojo del Modo oscuro siguen por codigo.
+## Sin los cuadros vuelve a la silueta provisional por codigo.
 class_name Troll
 extends Node2D
 
@@ -36,6 +41,26 @@ const GROUP: StringName = &"enemy"
 const TILE: float = 64.0
 const LAYER_WORLD: int = 1
 const LAYER_ENEMY: int = 4
+
+## Arte final (tools/import_troll.py): troll_<anim>_<NN>.png en ART_DIR, lienzo de
+## 80 x 108 colocado en ART_OFFSET de los pies (ART_OFFSET_PX del importador).
+const ART_DIR: String = "res://assets/sprites/enemies/world4/"
+const ART_OFFSET: Vector2 = Vector2(-40.0, -92.0)
+## Alto del dibujo (pies -> capucha): el bocadillo del aviso va por encima.
+const ART_HEIGHT_PX: float = 76.0
+## anim: [cuadros, fps]. idle en reposo (bucle), typing por el progreso del aviso
+## (9 = anticipation_frames), shot al lanzar (una vez), stunned aturdido (bucle).
+const ART_ANIMS: Dictionary = {
+	"idle": [24, 8.0],
+	"typing": [9, 12.0],
+	"shot": [6, 12.0],
+	"stunned": [18, 10.0],
+}
+## Derrotado: el primer cuadro de idle apagado.
+const ART_DEFEATED_MODULATE: Color = Color(0.55, 0.55, 0.6, 0.45)
+
+## Cuadros cargados (anim -> Array[Texture2D]); vacio si faltan.
+static var _art_cache: Dictionary = {}
 
 @export_file("*.json") var data_path: String = DEFAULT_DATA_PATH
 
@@ -75,6 +100,8 @@ var _warn_t: float = 0.0
 var _rest_left: float = 0.0
 var _stun_left: float = 0.0
 var _deflect_left: float = 0.0
+## Tiempo desde el ultimo lanzamiento (cuadros de shot); < 0 = no se dibuja.
+var _shot_anim_t: float = -1.0
 var _time: float = 0.0
 var _shots_fired: int = 0
 var _ready_ok: bool = false
@@ -120,6 +147,10 @@ func step(delta: float) -> void:
 	_time += dt
 	if _deflect_left > 0.0:
 		_deflect_left = maxf(_deflect_left - dt, 0.0)
+	if _shot_anim_t >= 0.0:
+		_shot_anim_t += dt
+		if _shot_anim_t >= get_shot_anim_s():
+			_shot_anim_t = -1.0
 	_step_state(dt)
 	_step_shots(dt)
 	queue_redraw()
@@ -213,6 +244,70 @@ func sees_isak() -> bool:
 	return absf(r.get_center().x - b.get_center().x) <= detect_tiles * TILE
 
 
+# --- Arte ---
+
+## Duracion de los cuadros de lanzar (shot) tras cada mensaje.
+func get_shot_anim_s() -> float:
+	var spec: Array = ART_ANIMS["shot"]
+	return float(spec[0]) / float(spec[1])
+
+
+## [anim, cuadro] del arte final segun el estado (ART_ANIMS).
+func get_art_frame() -> Array:
+	if _state == STATE_DEFEATED:
+		return ["idle", 0]
+	if _state == STATE_STUNNED:
+		return ["stunned", _loop_frame("stunned")]
+	if _state == STATE_WARN:
+		var n: int = int(ART_ANIMS["typing"][0])
+		var k: float = _warn_t / maxf(get_warn_s(), 0.001)
+		return ["typing", clampi(floori(k * float(n)), 0, n - 1)]
+	if _shot_anim_t >= 0.0:
+		var spec: Array = ART_ANIMS["shot"]
+		return ["shot", clampi(floori(_shot_anim_t * float(spec[1])), 0, int(spec[0]) - 1)]
+	return ["idle", _loop_frame("idle")]
+
+
+## Hay cuadros del arte final (si no, la silueta provisional por codigo).
+static func has_art() -> bool:
+	return not _art_frames("idle").is_empty()
+
+
+## Textura del cuadro actual o null sin arte.
+func get_art_texture() -> Texture2D:
+	var f: Array = get_art_frame()
+	var frames: Array = _art_frames(String(f[0]))
+	if frames.is_empty():
+		return null
+	return frames[mini(int(f[1]), frames.size() - 1)]
+
+
+## Lo que se ve del Troll (local): el dibujo sobresale por encima de la caja.
+func get_visual_rect() -> Rect2:
+	var h: float = ART_HEIGHT_PX if has_art() else body_size.y
+	return Rect2(Vector2(-body_size.x * 0.5, -h), Vector2(body_size.x, h))
+
+
+func _loop_frame(anim: String) -> int:
+	var spec: Array = ART_ANIMS[anim]
+	return posmod(floori(_time * float(spec[1])), int(spec[0]))
+
+
+static func _art_frames(anim: String) -> Array:
+	if _art_cache.has(anim):
+		return _art_cache[anim]
+	var out: Array = []
+	var n: int = int(ART_ANIMS[anim][0]) if ART_ANIMS.has(anim) else 0
+	for i: int in n:
+		var path: String = ART_DIR + "troll_%s_%02d.png" % [anim, i]
+		if not ResourceLoader.exists(path):
+			out.clear()
+			break
+		out.append(load(path))
+	_art_cache[anim] = out
+	return out
+
+
 # --- Acciones ---
 
 func on_laser_hit(damage: float, _source: Node) -> void:
@@ -241,6 +336,7 @@ func stun(duration_scale: float = 1.0) -> void:
 		return
 	_stun_left = stun_s * maxf(duration_scale, 0.0)
 	_warn_t = 0.0
+	_shot_anim_t = -1.0
 	_change_state(STATE_STUNNED)
 	stunned.emit()
 
@@ -285,6 +381,7 @@ func reset_patrol() -> void:
 	_shots.clear()
 	_stun_left = 0.0
 	_deflect_left = 0.0
+	_shot_anim_t = -1.0
 	_warn_t = 0.0
 	_rest_left = 0.0
 	_shots_fired = 0
@@ -360,6 +457,7 @@ func _shoot() -> void:
 	shot.global_position = get_mouth_point(shot.size_px.x)
 	_shots.append(shot)
 	_shots_fired += 1
+	_shot_anim_t = 0.0
 	shot_fired.emit(shot)
 
 
@@ -422,9 +520,8 @@ func is_in_dark() -> bool:
 func draw_dark_overlay(canvas: CanvasItem) -> void:
 	if _state == STATE_DEFEATED:
 		return
-	var body := Rect2(Vector2(-body_size.x * 0.5, -body_size.y), body_size)
 	if _state != STATE_STUNNED:
-		canvas.draw_rect(body.grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
+		canvas.draw_rect(get_visual_rect().grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
 	if _state == STATE_WARN:
 		_draw_warn(canvas)
 
@@ -433,10 +530,15 @@ func draw_dark_overlay(canvas: CanvasItem) -> void:
 
 func _draw() -> void:
 	var body := Rect2(Vector2(-body_size.x * 0.5, -body_size.y), body_size)
-	_draw_avatar(self, body, 0.45 if _state == STATE_DEFEATED else 1.0)
+	var art: Texture2D = get_art_texture()
+	if art != null:
+		draw_texture(art, ART_OFFSET, ART_DEFEATED_MODULATE if _state == STATE_DEFEATED else Color.WHITE)
+	else:
+		_draw_avatar(self, body, 0.45 if _state == STATE_DEFEATED else 1.0)
 	if _state == STATE_WARN:
 		_draw_warn(self)
-	elif _state == STATE_STUNNED:
+	elif _state == STATE_STUNNED and art == null:
+		# Las estrellas ya estan en el arte final.
 		var c := Vector2(0.0, body.position.y - 10.0)
 		var cream: Color = World4ObjectsConfig.color("crema", Color("#eee4cc"))
 		for i: int in 3:
@@ -450,8 +552,14 @@ func _draw() -> void:
 			draw_line(center - d, center + d, grey, 2.0)
 
 
-## Silueta anonima PROVISIONAL: cabeza redonda y hombros grises, sin cara.
+## Avatar con `alpha` (el disfrazado lo hace aparecer al descubrirse): el primer
+## cuadro de idle del arte final o, sin el, la silueta anonima PROVISIONAL
+## (cabeza redonda y hombros grises, sin cara).
 func _draw_avatar(canvas: CanvasItem, body: Rect2, alpha: float) -> void:
+	var frames: Array = _art_frames("idle")
+	if not frames.is_empty():
+		canvas.draw_texture(frames[0], ART_OFFSET, Color(1.0, 1.0, 1.0, alpha))
+		return
 	var mid: Color = World4ObjectsConfig.color("gris_medio", Color("#6b7080"))
 	var dark: Color = World4ObjectsConfig.color("gris_oscuro", Color("#3a3f4c"))
 	var shoulders := Rect2(body.position + Vector2(0.0, body.size.y * 0.5), Vector2(body.size.x, body.size.y * 0.5))
@@ -467,7 +575,7 @@ func _draw_avatar(canvas: CanvasItem, body: Rect2, alpha: float) -> void:
 ## y el contorno rojo parpadea.
 func _draw_warn(canvas: CanvasItem) -> void:
 	var k: float = clampf(_warn_t / maxf(get_warn_s(), 0.001), 0.0, 1.0)
-	var rect := Rect2(Vector2(-22.0, -body_size.y - 30.0), Vector2(44.0, 22.0))
+	var rect := Rect2(Vector2(-22.0, -get_visual_rect().size.y - 28.0), Vector2(44.0, 22.0))
 	canvas.draw_rect(rect, World4ObjectsConfig.color("crema", Color("#eee4cc")))
 	if int(floor(_warn_t * anim_fps)) % 2 == 0:
 		canvas.draw_rect(rect.grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)

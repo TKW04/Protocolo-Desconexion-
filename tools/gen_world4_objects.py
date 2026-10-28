@@ -35,6 +35,7 @@ Uso: python3 -I tools/gen_world4_objects.py [--check]   (--check: 1 si algun PNG
 """
 import math
 import os
+import re
 import site
 import sys
 
@@ -383,6 +384,10 @@ def off_palette(images, rows):
     return bad
 
 
+## PNG de otros importadores en las mismas carpetas (no los produce este script).
+IMPORTED_ART = re.compile(r"^troll_(idle|typing|shot|stunned)_\d\d\.png$")
+
+
 def write_or_check(out_dir, images, check):
     errors = []
     for name, img in images.items():
@@ -395,7 +400,8 @@ def write_or_check(out_dir, images, check):
         img.save(path, optimize=True)
     if check and os.path.isdir(os.path.join(REPO, out_dir)):
         for name in sorted(os.listdir(os.path.join(REPO, out_dir))):
-            if name.endswith(".png") and name not in images:
+            # El arte final del Troll lo escribe tools/import_troll.py (etapa 3b del paso 24).
+            if name.endswith(".png") and name not in images and not IMPORTED_ART.match(name):
                 errors.append("%s: no lo produce tools/gen_world4_objects.py" % os.path.join(out_dir, name))
     return errors
 

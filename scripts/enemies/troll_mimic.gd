@@ -247,8 +247,7 @@ func draw_dark_overlay(canvas: CanvasItem) -> void:
 	if _mask == MASK_OPEN:
 		super.draw_dark_overlay(canvas)
 	elif _mask == MASK_UNMASKING:
-		var body := Rect2(Vector2(-body_size.x * 0.5, -body_size.y), body_size)
-		canvas.draw_rect(body.grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
+		canvas.draw_rect(get_visual_rect().grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
 
 
 ## Costuras rojas y avatar anonimo sobre la burbuja (solo con el Debug), por

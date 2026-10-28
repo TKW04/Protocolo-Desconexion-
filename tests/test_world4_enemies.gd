@@ -199,6 +199,34 @@ func test_troll_laser_bounces_awake_and_defeats_it_stunned() -> void:
 	assert_true(t.is_defeated(), "Derrotado no vuelve al reaparecer")
 
 
+## Arte final con AutoSprite (paso 24, etapa 3b; tools/import_troll.py): idle en
+## reposo, typing por el progreso del aviso, shot al lanzar, stunned aturdido e
+## idle apagado derrotado. La caja (body_size) no cambia: el dibujo sobresale.
+func test_troll_art_follows_its_state() -> void:
+	assert_true(Troll.has_art(), "Cuadros de tools/import_troll.py")
+	var t: Troll = _troll(14)
+	assert_eq(t.get_body_rect().size, Vector2(40.0, 56.0), "La caja no cambia")
+	assert_eq(t.get_visual_rect().size.y, 76.0, "El dibujo mide 76 px")
+	_isak.global_position.x = -3000.0
+	_run([t], 0.5)
+	assert_eq(String(t.get_art_frame()[0]), "idle", "En reposo")
+	_stand_at(10)
+	_run([t], DT)
+	assert_eq(t.get_art_frame(), ["typing", 0], "Empieza el aviso")
+	_run([t], 0.7)
+	assert_eq(t.get_art_frame(), ["typing", 8], "Al final del aviso")
+	_run([t], 0.1)
+	assert_eq(t.get_shot_count(), 1)
+	assert_eq(String(t.get_art_frame()[0]), "shot", "Lanza")
+	_run([t], t.get_shot_anim_s())
+	assert_eq(String(t.get_art_frame()[0]), "idle", "Tras lanzar vuelve al reposo")
+	t.stun()
+	assert_eq(String(t.get_art_frame()[0]), "stunned", "Aturdido")
+	assert_not_null(t.get_art_texture())
+	t.take_damage(5.0)
+	assert_eq(t.get_art_frame(), ["idle", 0], "Derrotado: el reposo apagado")
+
+
 func test_shockwave_stuns_a_group_of_trolls_and_erases_their_messages() -> void:
 	var a: Troll = _troll(12, 1)
 	var b: Troll = _troll(16, -1)
