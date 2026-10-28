@@ -20,6 +20,8 @@ const DASH: StringName = &"dash"
 const GROUND_POUND: StringName = &"ground_pound"
 ## Agitar (gesto Agitar, 2026-10-28; ShockwaveState).
 const SHOCKWAVE: StringName = &"shockwave"
+## Congelado (zona y ola de «Visto», mensaje de El Visto; 2026-10-28; FrozenState).
+const FROZEN: StringName = &"frozen"
 
 var isak: Isak
 

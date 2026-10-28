@@ -111,7 +111,8 @@ REQUIRED_FIELDS = {
     "unlocks": list,
 }
 # compress: Pellizcar (Mundo 3, paso 8b de docs/propuesta-mundo-3.md: abilities_available.compress).
-KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound", "compress"}
+# shockwave: Agitar (Mundo 4, paso 2 de docs/propuesta-mundo-4.md: abilities_available.shockwave).
+KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound", "compress", "shockwave"}
 # Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);
 # tower = camara de torre (scripts/player/tower_camera.gd, data/camera_tower.json).
 # autoscroll = scroll forzado del Mundo 2 (2026-10-22; scripts/player/scroll_camera.gd,
@@ -138,7 +139,7 @@ NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "abilit
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
                     "alert_major", "pause_player", "autoplay", "curator",
                     "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror",
-                    "hunter_mirror", "pose_plate"}
+                    "hunter_mirror", "pose_plate", "seen_zone"}
 # Espejos del Mundo 3 (2026-10-26): orientaciones del espejo fijo y ejes de la pared de espejo.
 MIRROR_ORIENTATIONS = ("/", "\\", "|")
 MIRROR_WALL_SIDES = ("center", "left", "right")
@@ -867,6 +868,8 @@ class LevelValidator:
                 self._check_small_frame(what, x, y, params, entry.get("defaults", {}))
             if kind == "filter_zone":
                 self._check_filter_zone(what, x, y, params, entry.get("defaults", {}), catalog)
+            if kind == "seen_zone":
+                self._check_seen_zone(what, x, y, params, entry.get("defaults", {}))
             if kind == "boss_dummy":
                 for cx in (x, x + 1):
                     if not self.in_bounds(cx, y + 1) or self.cell(cx, y + 1) != "#":
@@ -1421,6 +1424,25 @@ class LevelValidator:
                 isinstance(p, list) and len(p) == 2 and all(_is_int(v) for v in p) for p in positions)):
             return None
         return [(p[0], p[1], w, h) for p in positions]
+
+    def _check_seen_zone(self, what, x, y, params, defaults):
+        """Zona «Visto» (Mundo 4, paso 2 de docs/propuesta-mundo-4.md §3.5): el ciclo lleva
+        on_s y off_s juntos y la celda de fuera junto al doble check (lado `icon`, fila del
+        medio) es libre, para pulsarlo desde fuera."""
+        if ("on_s" in params) != ("off_s" in params):
+            self.error("%s: on_s y off_s van juntos (sin los dos, siempre activa)" % what, y, x)
+        if "phase_s" in params and "on_s" not in params:
+            self.error("%s: phase_s solo con ciclo (on_s y off_s)" % what, y, x)
+        w = params.get("width_tiles", defaults.get("width_tiles", 2))
+        h = params.get("height_tiles", defaults.get("height_tiles", 1))
+        if not (_is_int(w) and _is_int(h)):
+            return
+        side = params.get("icon", defaults.get("icon", "left"))
+        cx = x - 1 if side == "left" else x + w
+        cy = y + (h - 1) // 2
+        if not self.in_bounds(cx, cy) or self.cell(cx, cy) in "#^":
+            self.error("%s: el doble check (lado %s) debe dar a una celda libre fuera de la zona, "
+                       "para pulsarlo desde fuera" % (what, side), cy, cx)
 
     def _check_filter_zone(self, what, x, y, params, defaults, catalog):
         """Filtro (Mundo 3, paso 3 de docs/propuesta-mundo-3.md §3.2; decision 5 de §9: el filtro

@@ -151,6 +151,8 @@ rm -f "$IMPORT_LOG"
 # (tests/test_world3_filter_schema.py y tests/test_world3_validator.py, de los pasos 3 y 8, que no estaban en la
 # lista) y las pruebas de conjunto del Mundo 3 (tests/test_world3_negatives.py: perder likes nunca bloquea y el filtro
 # no mata en los niveles reales; su parte con el Isak real, tests/test_world3_negatives.gd, GUT).
+# Desde el paso 2 del Mundo 4 (2026-10-28): el esquema de los objetos del Mundo 4 (tests/test_world4_schema.py:
+# zonas «Visto» y, desde el paso 3, burbujas).
 # Desde los pasos 7-8 de docs/propuesta-hub-mundos-4-6.md (2026-10-27): el arte del acertijo del hub
 # (tools/gen_hub_update_art.py --check) y el bot del hub (tests/test_hub_update_bot.gd, GUT:
 # tools/play_hub_update_bot.gd en procesos aparte, perfiles ideal, quieto, sin guardar y Kernel/Raiz; unos
@@ -202,7 +204,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
-		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py \
+		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_world4_schema.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py \
 		tests/test_hub_update_validator.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \

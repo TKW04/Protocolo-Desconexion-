@@ -1,0 +1,97 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 2 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 36x12 del CONGELADO y las zonas «Visto» del Mundo 4 (§3.3 y §3.5; decision 3 de §9: congelarse no hace dano). Isak llega por la izquierda (P, fila 9) con el pulso, el Debug y Agitar (U / LB); cargador a la vista (columna 5). Zona siempre activa de 1 x 2 en la columna 9 con el doble check a la izquierda: tocarla congela 1,5 s (velo gris, doble check y barra de 4 segmentos); pulso (G) al doble check desde la columna 7 la interrumpe 4 s; congelado, Agitar la rompe al instante. Patron 19: zona en el aire (columnas 16-17, filas 6-7, ciclo 2 s activa / 2 s en espera con aviso de 9 cuadros) entre las repisas de una via de las columnas 13-14 y 19-20; saltar por ella congela en el aire (se sigue con la velocidad que se llevaba). Zona de suelo con ciclo (columnas 23-24, filas 8-9, desfasada 1 s) antes del punto de sincronizacion sync_visto (columna 28). Terminal en (32, 8). Sin Q (help_id previsto seen_zone, paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela el Mundo 4 (paso 9). Escena: scenes/levels/visto_test.tscn (python3 tools/build_level.py data/levels/visto_test.json).",
+	"id": "visto_test",
+	"name": "Visto (prueba)",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": true,
+		"shockwave": true
+	},
+	"checkpoints": [
+		{
+			"id": "sync_visto",
+			"x": 28,
+			"y": 9
+		}
+	],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "charger",
+			"x": 5,
+			"y": 9,
+			"params": {
+				"id": "cargador_visto"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 9,
+			"y": 8,
+			"params": {
+				"id": "visto_suelo",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"icon": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 16,
+			"y": 6,
+			"params": {
+				"id": "visto_aire",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 2.0,
+				"off_s": 2.0
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 23,
+			"y": 8,
+			"params": {
+				"id": "visto_ciclo",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "right",
+				"on_s": 2.0,
+				"off_s": 2.0,
+				"phase_s": 1.0
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 32,
+			"y": 8,
+			"params": {
+				"id": "terminal_visto",
+				"text": "Responder",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"####################################",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#..................................#",
+		"#............--....--..............#",
+		"#..................................#",
+		"#.P.........................C...G..#",
+		"####################################",
+		"####################################"
+	]
+}

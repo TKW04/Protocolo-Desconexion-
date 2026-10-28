@@ -85,7 +85,7 @@ HAZARDS_JSON = "data/hazards.json"
 # Propiedades de los objetos que son StringName (ids que enlazan objetos).
 STRING_NAME_PROPERTIES = {"object_id", "target_id", "ability", "trigger_event", "secret_id", "unless_ability",
                           "done_if_ally", "door_when", "power_source", "switch_id", "dock_id", "guide_id",
-                          "memory_id", "art", "skin"}
+                          "memory_id", "art", "skin", "icon_side"}
 # Propiedades que son listas aunque tengan dos numeros (no un Vector2): los ciclos del metronomo
 # (rhythm_zone, 2026-10-19, paso 5 de docs/propuesta-1-3.md).
 ARRAY_PROPERTIES = {"tempo_steps_s", "contacts", "cover_tiles", "band_rows"}

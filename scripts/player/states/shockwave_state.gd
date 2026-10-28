@@ -6,6 +6,8 @@
 ##     onda (Isak.fire_shockwave).
 ##   - EXPOSED: exposed_s sin moverse ni saltar y SIN invulnerabilidad («deja a
 ##     Isak expuesto un instante»); despues, reposo.
+## Desde el congelado (FrozenState, tambien en el aire) la onda sale al entrar,
+## sin la anticipacion (Isak.consume_shockwave_instant).
 ## La energia se cobra al entrar (como el dash). Un golpe (Hurt), la muerte, un
 ## vortice o la pose de espaldas lo cortan (si es antes de la onda, no sale). El
 ## enfriamiento empieza al salir.
@@ -21,7 +23,13 @@ var _time: float = 0.0
 func enter() -> void:
 	_phase = Phase.WINDUP
 	_time = 0.0
+	var instant: bool = isak.consume_shockwave_instant()
 	isak.begin_shockwave()
+	if instant:
+		# Desde el congelado (2026-10-28, paso 2): rompe la congelacion al instante,
+		# sin la anticipacion; sigue la exposicion.
+		isak.fire_shockwave()
+		_phase = Phase.EXPOSED
 
 
 func exit() -> void:

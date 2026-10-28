@@ -48,6 +48,12 @@ signal compress_changed(compressed: bool)
 signal shockwave_fired(center: Vector2, radius: float)
 ## Agitar pedido sin energia (SHOCKWAVE_DENIED_ENERGY): chispa gris, no sale.
 signal shockwave_denied(reason: StringName)
+## Empieza una congelacion (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md
+## §3.3): `seconds` de tiempo del mundo y quien congela (FREEZE_SOURCE_*).
+signal frozen_started(seconds: float, source: StringName)
+## Termina la congelacion: `broken` = la rompio Agitar (la ola de «Visto» lo
+## distingue: solo retrocede si Isak se descongela solo).
+signal frozen_ended(broken: bool)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -86,7 +92,8 @@ const COMPRESS_ART_MAP: Dictionary = {
 	&"walk": &"compress_walk", &"run": &"compress_walk",
 }
 ## Estados en los que la pose del laser se corta (tienen animacion propia).
-const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD]
+const LASER_POSE_BREAKING_STATES: Array[StringName] = [PlayerState.PULSE, PlayerState.HURT, PlayerState.DEAD,
+	PlayerState.FROZEN]
 ## Margen al pasar del tiempo de anticipacion al cuadro de la pose.
 const LASER_POSE_EPS: float = 0.0001
 ## Cuadro de la animacion de pulso en el que nace la onda (celular al frente).
@@ -129,6 +136,11 @@ const SHOCKWAVE_DENIED_BUSY: StringName = &"busy"
 const SHOCKWAVE_DENIED_COOLDOWN: StringName = &"cooldown"
 const SHOCKWAVE_DENIED_AIR: StringName = &"air"
 const SHOCKWAVE_DENIED_ENERGY: StringName = &"energy"
+## Quien congela (Isak.freeze): zona «Visto» (la unica a la que afecta la
+## inmunidad de frozen.seen_immunity_s), ola de «Visto» y mensaje de El Visto.
+const FREEZE_SOURCE_ZONE: StringName = &"seen_zone"
+const FREEZE_SOURCE_WAVE: StringName = &"seen_wave"
+const FREEZE_SOURCE_BOSS: StringName = &"seen_boss"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 ## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
@@ -267,6 +279,17 @@ var _compressed_shape: CapsuleShape2D
 var _shockwave_requested: bool = false
 var _shockwave_cooldown_left: float = 0.0
 var _shockwave_effect: ShockwaveEffect
+## La siguiente entrada en Shockwave viene del congelado: onda al instante.
+var _shockwave_instant: bool = false
+
+## Congelado (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md §3.3).
+var _frozen_left: float = 0.0
+var _frozen_total: float = 0.0
+var _frozen_source: StringName = &""
+var _frozen_velocity := Vector2.ZERO
+## Inmunidad frente a otra zona «Visto» tras descongelarse (tiempo del mundo).
+var _seen_immunity_left: float = 0.0
+var _frozen_effect: FrozenEffect
 ## Posicion y escala del sprite sin la pose del golpe (aplastado provisional).
 var _sprite_base_position := Vector2.ZERO
 var _sprite_base_scale := Vector2.ONE
@@ -307,6 +330,7 @@ func _ready() -> void:
 		PlayerState.DASH: DashState.new(self),
 		PlayerState.GROUND_POUND: GroundPoundState.new(self),
 		PlayerState.SHOCKWAVE: ShockwaveState.new(self),
+		PlayerState.FROZEN: FrozenState.new(self),
 	}
 	_sprite_base_position = _sprite.position
 	_sprite_base_scale = _sprite.scale
@@ -322,6 +346,10 @@ func _ready() -> void:
 	_shockwave_effect.name = "ShockwaveEffect"
 	_shockwave_effect.configure(abilities.shockwave_visual)
 	add_child(_shockwave_effect)
+	_frozen_effect = FrozenEffect.new()
+	_frozen_effect.name = "FrozenEffect"
+	_frozen_effect.configure(abilities.frozen_visual)
+	add_child(_frozen_effect)
 	_air_dashes_left = abilities.dash_air_dashes
 	_dash_effect = DashEffect.new()
 	_dash_effect.name = "DashEffect"
@@ -369,6 +397,7 @@ func step(delta: float) -> void:
 	_update_pound_effect(delta)
 	_update_compress(delta)
 	_update_shockwave(delta)
+	_update_freeze(delta)
 	_update_laser(delta)
 	_update_hide(delta)
 	_update_regen(delta)
@@ -437,7 +466,8 @@ func can_jump() -> bool:
 
 
 func can_pulse() -> bool:
-	return is_on_floor() and GameState.is_ability_unlocked(GameState.ABILITY_PULSE) and not _compressed
+	return is_on_floor() and GameState.is_ability_unlocked(GameState.ABILITY_PULSE) and not _compressed \
+			and not is_frozen()
 
 
 ## El laser se puede usar: desbloqueado (GameState.ABILITY_LASER), vivo y sin
@@ -445,7 +475,7 @@ func can_pulse() -> bool:
 ## suelo (can_start_laser()).
 func can_laser() -> bool:
 	return _ready_ok and GameState.is_ability_unlocked(GameState.ABILITY_LASER) \
-			and not is_dead() and _state_name != PlayerState.HURT
+			and not is_dead() and _state_name != PlayerState.HURT and _state_name != PlayerState.FROZEN
 
 
 ## Se puede empezar un disparo: como el pulso, solo en el suelo (2026-10-15;
@@ -555,7 +585,10 @@ func take_hit(direction: float = 0.0) -> bool:
 	# Recibir dano revela (el golpe y la invulnerabilidad se aplican igual).
 	if _hide != null:
 		_hide.end(HideMode.REASON_HURT)
-	change_state(PlayerState.HURT)
+	# Congelado (2026-10-28, paso 2 del Mundo 4): el golpe cuenta (invulnerabilidad,
+	# aviso; el Sync lo resta quien golpea) pero no descongela ni empuja.
+	if not is_frozen():
+		change_state(PlayerState.HURT)
 	if _regen != null:
 		_regen.note_combat()
 	hurt.emit()
@@ -617,6 +650,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_reset_pound()
 	_reset_compress()
 	_reset_shockwave()
+	_reset_freeze()
 	play_animation(ANIM_IDLE)
 	if _scroll_camera != null:
 		# Muerte: el scroll de la seccion vuelve a su parada.
@@ -956,7 +990,7 @@ func dash_denial() -> StringName:
 		return DASH_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE]:
+				PlayerState.SHOCKWAVE, PlayerState.FROZEN]:
 		return DASH_DENIED_BUSY
 	if _dash_cooldown_left > 0.0:
 		return DASH_DENIED_COOLDOWN
@@ -1101,7 +1135,7 @@ func ground_pound_denial() -> StringName:
 		return POUND_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE]:
+				PlayerState.SHOCKWAVE, PlayerState.FROZEN]:
 		return POUND_DENIED_BUSY
 	if _pound_cooldown_left > 0.0:
 		return POUND_DENIED_COOLDOWN
@@ -1271,8 +1305,8 @@ func wants_shockwave() -> bool:
 ## Motivo por el que Agitar no saldria ahora (&"" = sale). Ver SHOCKWAVE_DENIED_*.
 ## Orden: sin la habilidad o en el hub; ocupado (comprimido, muerto, vortice, de
 ## espaldas, laser, golpe, pulso, dash, golpe al suelo u otro Agitar);
-## enfriamiento; en el aire (la excepcion del congelado llega con el paso 2) y
-## energia. Con el Debug si sale.
+## enfriamiento; en el aire (salvo congelado: rompe la congelacion tambien en el
+## aire, paso 2) y energia. Con el Debug si sale.
 func shockwave_denial() -> StringName:
 	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE):
 		return SHOCKWAVE_DENIED_LOCKED
@@ -1282,7 +1316,7 @@ func shockwave_denial() -> StringName:
 		return SHOCKWAVE_DENIED_BUSY
 	if _shockwave_cooldown_left > 0.0:
 		return SHOCKWAVE_DENIED_COOLDOWN
-	if not is_on_floor():
+	if not is_on_floor() and not is_frozen():
 		return SHOCKWAVE_DENIED_AIR
 	if GameState.debug_energy + LASER_ENERGY_EPS < abilities.shockwave_energy_cost:
 		return SHOCKWAVE_DENIED_ENERGY
@@ -1384,6 +1418,135 @@ func _reset_shockwave() -> void:
 		_shockwave_effect.clear()
 
 
+## Lo llama FrozenState al pedir Agitar: la proxima entrada en Shockwave saca la
+## onda al instante (rompe la congelacion).
+func mark_shockwave_instant() -> void:
+	_shockwave_instant = true
+
+
+## Lo llama ShockwaveState al entrar: verdadero (una vez) si viene del congelado.
+func consume_shockwave_instant() -> bool:
+	var instant: bool = _shockwave_instant
+	_shockwave_instant = false
+	return instant
+
+
+# --- Congelado (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md §3.3) ---
+
+## Congela a Isak `seconds` de tiempo del mundo (zona «Visto» 1,5 s, ola 2,0 s,
+## mensaje de El Visto 2,5 s; FREEZE_SOURCE_*). Congelarse no hace dano. Devuelve
+## false si no se congela: muerto, sin datos, en un vortice, de espaldas, ya
+## congelado (solo alarga la cuenta si `seconds` es mayor) o, para una zona, en la
+## inmunidad de frozen.seen_immunity_s tras descongelarse.
+func freeze(seconds: float, source: StringName = FREEZE_SOURCE_ZONE) -> bool:
+	if not _ready_ok or is_dead() or _warping or _facing_back or seconds <= 0.0:
+		return false
+	if is_frozen():
+		if seconds > _frozen_left:
+			_frozen_left = seconds
+			_frozen_total = seconds
+		return false
+	if source == FREEZE_SOURCE_ZONE and _seen_immunity_left > 0.0:
+		return false
+	_frozen_left = seconds
+	_frozen_total = seconds
+	_frozen_source = source
+	change_state(PlayerState.FROZEN)
+	frozen_started.emit(seconds, source)
+	return true
+
+
+func is_frozen() -> bool:
+	return _state_name == PlayerState.FROZEN
+
+
+## Segundos (tiempo del mundo) que quedan de congelacion (0 si no lo esta).
+func get_frozen_left() -> float:
+	return _frozen_left if is_frozen() else 0.0
+
+
+## Duracion de la congelacion en curso (0 si no lo esta).
+func get_frozen_total() -> float:
+	return _frozen_total if is_frozen() else 0.0
+
+
+## Quien congelo (FREEZE_SOURCE_*; &"" si no esta congelado).
+func get_frozen_source() -> StringName:
+	return _frozen_source if is_frozen() else &""
+
+
+## Velocidad guardada al congelarse (la que se devuelve al salir).
+func get_frozen_velocity() -> Vector2:
+	return _frozen_velocity
+
+
+## Inmunidad que queda frente a otra zona «Visto» (tiempo del mundo).
+func get_seen_immunity_left() -> float:
+	return _seen_immunity_left
+
+
+func get_frozen_effect() -> FrozenEffect:
+	return _frozen_effect
+
+
+## Lo llama FrozenState al entrar: guarda la velocidad y corta el laser.
+func begin_freeze() -> void:
+	_frozen_velocity = velocity
+	velocity = Vector2.ZERO
+	_cancel_laser()
+	_end_laser_pose(false)
+	_restore_sprite_shape()
+	reset_idle_time()
+	_shockwave_instant = false
+	_show_frozen_effect()
+
+
+## Lo llama FrozenState al salir: devuelve la velocidad, empieza la inmunidad
+## frente a otra zona y avisa (rota = por Agitar).
+func end_freeze() -> void:
+	var broken: bool = _shockwave_instant
+	velocity = _frozen_velocity
+	_frozen_velocity = Vector2.ZERO
+	_frozen_left = 0.0
+	_seen_immunity_left = abilities.frozen_seen_immunity_s
+	if _frozen_effect != null:
+		_frozen_effect.clear()
+	frozen_ended.emit(broken)
+
+
+## Lo llama FrozenState con el delta del mundo.
+func advance_freeze(world_dt: float) -> void:
+	_frozen_left = maxf(_frozen_left - world_dt, 0.0)
+
+
+func _show_frozen_effect() -> void:
+	if _frozen_effect == null:
+		return
+	var left: float = _frozen_left / _frozen_total if _frozen_total > 0.0 else 0.0
+	_frozen_effect.show_frozen(global_position - Vector2(0.0, get_hitbox_size().y), left)
+
+
+## Inmunidad (tiempo del mundo) y efecto que sigue a Isak.
+func _update_freeze(delta: float) -> void:
+	if not is_frozen():
+		_seen_immunity_left = maxf(_seen_immunity_left - WorldTime.scaled_delta(delta), 0.0)
+		return
+	_show_frozen_effect()
+
+
+## Reaparecer: sin congelacion, sin velocidad guardada ni inmunidad.
+func _reset_freeze() -> void:
+	_frozen_left = 0.0
+	_frozen_total = 0.0
+	_frozen_source = &""
+	_frozen_velocity = Vector2.ZERO
+	_seen_immunity_left = 0.0
+	_shockwave_instant = false
+	velocity = Vector2.ZERO
+	if _frozen_effect != null:
+		_frozen_effect.clear()
+
+
 # --- Pellizcar (gesto Pellizcar, 2026-10-26; docs/propuesta-mundo-3.md §3.3) ---
 
 ## Isak esta comprimido (caja compress_width_px x compress_height_px).
@@ -1428,7 +1591,7 @@ func compress_denial() -> StringName:
 		return COMPRESS_DENIED_LOCKED
 	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE]:
+				PlayerState.SHOCKWAVE, PlayerState.FROZEN]:
 		return COMPRESS_DENIED_BUSY
 	if abilities.compress_energy_cost > 0.0 and GameState.debug_energy + LASER_ENERGY_EPS < abilities.compress_energy_cost:
 		return COMPRESS_DENIED_ENERGY

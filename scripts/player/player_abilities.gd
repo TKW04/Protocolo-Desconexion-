@@ -40,6 +40,9 @@ const COMPRESS_KEYS: PackedStringArray = ["width_px", "height_px", "squash_s", "
 ## Agitar, docs/propuesta-mundo-4.md §3.2.1).
 const SHOCKWAVE_KEYS: PackedStringArray = ["radius_px", "windup_s", "exposed_s", "stun_s", "energy_cost",
 	"cooldown_s"]
+## Claves numericas de la seccion opcional frozen (propiedad frozen_<clave>;
+## Congelado, docs/propuesta-mundo-4.md §3.3).
+const FROZEN_KEYS: PackedStringArray = ["seen_immunity_s"]
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -127,6 +130,12 @@ var shockwave_energy_cost: float = 10.0
 var shockwave_cooldown_s: float = 1.0
 ## Aspecto provisional (shockwave.visual): sacudida del sprite y anillo de la onda.
 var shockwave_visual: Dictionary = {}
+## Congelado (seccion frozen, opcional; 2026-10-28, docs/propuesta-mundo-4.md
+## §3.3, valores provisionales): tras descongelarse, otra zona «Visto» no lo
+## vuelve a congelar durante seen_immunity_s.
+var frozen_seen_immunity_s: float = 0.5
+## Aspecto provisional (frozen.visual): velo, doble check y barra de segmentos.
+var frozen_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -220,6 +229,19 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var shockwave_visual: Variant = (shockwave as Dictionary).get("visual", {})
 	if shockwave_visual is Dictionary:
 		abilities.shockwave_visual = shockwave_visual
+	var frozen: Variant = data.get("frozen", {})
+	if not frozen is Dictionary:
+		return _fail("PlayerAbilities: la clave 'frozen' en '%s' debe ser un objeto." % source)
+	for key: String in FROZEN_KEYS:
+		if not (frozen as Dictionary).has(key):
+			continue
+		var value: Variant = frozen[key]
+		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+			return _fail("PlayerAbilities: la clave 'frozen.%s' en '%s' debe ser numerica." % [key, source])
+		abilities.set("frozen_" + key, float(value))
+	var frozen_visual: Variant = (frozen as Dictionary).get("visual", {})
+	if frozen_visual is Dictionary:
+		abilities.frozen_visual = frozen_visual
 	return abilities
 
 

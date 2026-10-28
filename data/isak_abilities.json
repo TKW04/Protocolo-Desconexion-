@@ -88,7 +88,7 @@
 			"blocked_blink_hz": 2.0
 		}
 	},
-	"_shockwave_notes": "AGITAR, gesto Agitar (habilidad GameState.ABILITY_SHOCKWAVE; docs/propuesta-mundo-4.md §3.2.1 y decision 2 de su §9, 2026-10-28: valores PROVISIONALES, ajustar jugando). CONTROL: pulsar gesture_shake (U / LB; reasignable en Ajustes > Controles). Solo en el suelo (la excepcion del congelado llega con el estado Frozen, paso 2). POSE: windup_s de anticipacion (Isak sacude el celular; la onda nace al terminarla) y exposed_s sin moverse ni saltar (pose total 0,4 s), SIN invulnerabilidad. ONDA: circulo de radius_px alrededor del celular (Isak.get_pulse_origin); aturde stun_s a todos los enemigos que alcanza (su stun() con la escala stun_s / stun_duration_s; los que tienen receive_shockwave(center, radius, stun_s) deciden ellos), 0 de dano; los proyectiles de texto y lo que se rompe con la onda se enganchan a EventBus.shockwave_fired (desde el paso 5). COSTE energy_cost de energia (sin ella: chispa gris del laser y EventBus.shockwave_denied); con el Debug SI sale. ENFRIAMIENTO cooldown_s desde el final de la pose. No sale sin la habilidad, en el hub (sin hub_gestures), en Hurt, muerto, de espaldas, en un vortice, comprimido ni durante el dash, el golpe al suelo, el pulso o el laser. Apaga el Ocultarte. Tiempo de Isak (real). visual: aspecto PROVISIONAL por codigo (sacudida del sprite de shake_px a shake_hz y anillo de la onda que crece en ring_s hasta radius_px); la pose final con AutoSprite va en el paso 24 (decision del usuario 2026-10-28).",
+	"_shockwave_notes": "AGITAR, gesto Agitar (habilidad GameState.ABILITY_SHOCKWAVE; docs/propuesta-mundo-4.md §3.2.1 y decision 2 de su §9, 2026-10-28: valores PROVISIONALES, ajustar jugando). CONTROL: pulsar gesture_shake (U / LB; reasignable en Ajustes > Controles). Solo en el suelo, salvo congelado (estado Frozen, paso 2): entonces tambien en el aire, con la onda al instante (sin windup_s) y rompe la congelacion. POSE: windup_s de anticipacion (Isak sacude el celular; la onda nace al terminarla) y exposed_s sin moverse ni saltar (pose total 0,4 s), SIN invulnerabilidad. ONDA: circulo de radius_px alrededor del celular (Isak.get_pulse_origin); aturde stun_s a todos los enemigos que alcanza (su stun() con la escala stun_s / stun_duration_s; los que tienen receive_shockwave(center, radius, stun_s) deciden ellos), 0 de dano; los proyectiles de texto y lo que se rompe con la onda se enganchan a EventBus.shockwave_fired (desde el paso 5). COSTE energy_cost de energia (sin ella: chispa gris del laser y EventBus.shockwave_denied); con el Debug SI sale. ENFRIAMIENTO cooldown_s desde el final de la pose. No sale sin la habilidad, en el hub (sin hub_gestures), en Hurt, muerto, de espaldas, en un vortice, comprimido ni durante el dash, el golpe al suelo, el pulso o el laser. Apaga el Ocultarte. Tiempo de Isak (real). visual: aspecto PROVISIONAL por codigo (sacudida del sprite de shake_px a shake_hz y anillo de la onda que crece en ring_s hasta radius_px); la pose final con AutoSprite va en el paso 24 (decision del usuario 2026-10-28).",
 	"shockwave": {
 		"radius_px": 160.0,
 		"windup_s": 0.15,
@@ -103,6 +103,20 @@
 			"ring_width_px": 4.0,
 			"ring_color": "#3dfff5",
 			"ring_fill_alpha": 0.18
+		}
+	},
+	"_frozen_notes": "CONGELADO, estado Frozen de Isak (docs/propuesta-mundo-4.md §3.3 y decision 3 de su §9; paso 2, 2026-10-28: valores PROVISIONALES, ajustar jugando). Lo pide quien congela (Isak.freeze(segundos, fuente): zona «Visto» 1,5 s, ola 2,0 s, mensaje de El Visto 2,5 s; la duracion es de la fuente). Isak queda QUIETO donde esta (tambien en el aire: sin gravedad) con su velocidad GUARDADA; al terminar sigue con ella. La cuenta va en TIEMPO DEL MUNDO (el Debug la alarga, no la rompe). Salir antes: AGITAR (gesture_shake) en cualquier sitio, tambien en el aire: la onda sale al instante (sin la anticipacion), cobra su energia y sigue la exposicion de Agitar. Congelarse no hace dano; congelado SI se recibe dano (el golpe resta, da su invulnerabilidad y avisa, pero NO descongela ni empuja). Morir, un vortice o la pose de espaldas lo cortan. Sin pulso, laser, dash, golpe al suelo ni Pellizcar mientras dura (corta el laser en curso). seen_immunity_s: tras descongelarse (solo o con Agitar), otra zona «Visto» no lo vuelve a congelar durante ese tiempo (la ola y El Visto si). visual: aspecto PROVISIONAL por codigo: velo de la escena en gris_oscuro de la paleta del Mundo 4 al veil_alpha (regla 5 de tools/palette_mundo4_provisional.py), doble check sobre la cabeza (check_offset_px sobre el tope de la caja) y barra de bar_segments segmentos que se vacia.",
+	"frozen": {
+		"seen_immunity_s": 0.5,
+		"visual": {
+			"veil_alpha": 0.5,
+			"check_offset_px": 18.0,
+			"check_size_px": 14.0,
+			"check_width_px": 3.0,
+			"bar_segments": 4,
+			"bar_width_px": 44.0,
+			"bar_height_px": 6.0,
+			"bar_gap_px": 2.0
 		}
 	},
 	"laser_visual": {
