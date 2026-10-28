@@ -101,7 +101,7 @@ func _action(action: StringName) -> void:
 func test_remappable_actions_exclude_dev_and_ui_keys() -> void:
 	var actions: Array[StringName] = ControlBindings.actions()
 	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"gesture_swipe", &"move_down",
-		&"gesture_pinch", &"debug", &"hide", &"help", &"pause"] as Array[StringName])
+		&"gesture_pinch", &"gesture_shake", &"debug", &"hide", &"help", &"pause"] as Array[StringName])
 	for action: StringName in actions:
 		assert_false(String(action).begins_with("ui_"))
 		assert_false([&"restart_level", &"debug_wipe_save"].has(action), "Sin teclas de pruebas")
@@ -123,6 +123,8 @@ func test_default_labels_and_glyphs() -> void:
 	assert_eq(ControlBindings.action_name(&"move_down"), "Mantener presionado")
 	assert_eq(ControlBindings.binding_label(&"gesture_pinch", font), "I / RB", "Pellizcar (2026-10-26): I / RB")
 	assert_eq(ControlBindings.action_name(&"gesture_pinch"), "Pellizcar")
+	assert_eq(ControlBindings.binding_label(&"gesture_shake", font), "U / LB", "Agitar (2026-10-28): U / LB")
+	assert_eq(ControlBindings.action_name(&"gesture_shake"), "Agitar")
 	assert_eq(ControlBindings.binding_label(&"move_left", font), "A / stick a la izquierda")
 	for action: StringName in ControlBindings.actions():
 		var text: String = ControlBindings.binding_label(action, font)
@@ -159,20 +161,21 @@ func test_serialization_roundtrip() -> void:
 # --- Asignar ---
 
 func test_assign_key_replaces_primary_and_keeps_others() -> void:
-	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_U)), ControlBindings.Result.OK)
-	assert_true(_is_action(_key(KEY_U), &"pulse"), "U es el pulso")
+	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_O)), ControlBindings.Result.OK)
+	assert_true(_is_action(_key(KEY_O), &"pulse"), "O es el pulso")
 	assert_false(_is_action(_key(KEY_G), &"pulse"), "G ya no")
 	assert_true(_is_action(_button(JOY_BUTTON_X), &"pulse"), "El mando no cambia")
 	assert_eq(_changes, 1, "Avisa a los prompts")
 	assert_eq(ControlBindings.assign(&"move_left", _key(KEY_J)), ControlBindings.Result.OK)
 	assert_true(_is_action(_key(KEY_LEFT), &"move_left"), "Las flechas siguen")
-	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_U)), ControlBindings.Result.UNCHANGED)
+	assert_eq(ControlBindings.assign(&"pulse", _key(KEY_O)), ControlBindings.Result.UNCHANGED)
 
 
 func test_assign_pad_button_and_axis() -> void:
-	assert_eq(ControlBindings.assign(&"jump", _button(JOY_BUTTON_LEFT_SHOULDER)), ControlBindings.Result.OK,
-		"LB no es de ninguna accion reasignable")
-	assert_true(_is_action(_button(JOY_BUTTON_LEFT_SHOULDER), &"jump"))
+	# LB es de Agitar (gesture_shake, reasignable desde el 2026-10-28): la cruceta arriba (move_up) no se reasigna.
+	assert_eq(ControlBindings.assign(&"jump", _button(JOY_BUTTON_DPAD_UP)), ControlBindings.Result.OK,
+		"La cruceta arriba no es de ninguna accion reasignable")
+	assert_true(_is_action(_button(JOY_BUTTON_DPAD_UP), &"jump"))
 	assert_false(_is_action(_button(JOY_BUTTON_A), &"jump"))
 	assert_true(_is_action(_key(KEY_SPACE), &"jump"), "El teclado no cambia")
 	assert_eq(ControlBindings.assign(&"laser", _axis(JOY_AXIS_RIGHT_Y, 1.0)), ControlBindings.Result.OK)
@@ -228,20 +231,20 @@ func test_pause_always_keeps_esc_and_start() -> void:
 
 func test_saved_at_once_as_serialized_events_and_loaded_on_start() -> void:
 	ControlBindings.assign(&"jump", _key(KEY_G), true)
-	ControlBindings.assign(&"laser", _button(JOY_BUTTON_LEFT_SHOULDER))
+	ControlBindings.assign(&"laser", _button(JOY_BUTTON_DPAD_UP))
 	var config := ConfigFile.new()
 	assert_eq(config.load(GameSettings.settings_path()), OK, "Guardado al instante")
 	var jump: Variant = config.get_value(GameSettings.SECTION_CONTROLS, "jump")
 	assert_true(jump is Array and (jump as Array).has({"type": "key", "physical_keycode": KEY_G}), "Tecla fisica")
 	assert_true((config.get_value(GameSettings.SECTION_CONTROLS, "laser") as Array).has(
-		{"type": "joy_button", "button": JOY_BUTTON_LEFT_SHOULDER}), "Boton")
+		{"type": "joy_button", "button": JOY_BUTTON_DPAD_UP}), "Boton")
 	assert_false(config.has_section_key(GameSettings.SECTION_CONTROLS, "debug"), "Solo las que cambian")
 	ControlBindings.restore_defaults(false)
 	assert_true(_is_action(_key(KEY_SPACE), &"jump"))
 	GameSettings.load_from_disk()
 	assert_true(_is_action(_key(KEY_G), &"jump"), "Se aplican al arrancar")
 	assert_true(_is_action(_key(KEY_SPACE), &"pulse"))
-	assert_true(_is_action(_button(JOY_BUTTON_LEFT_SHOULDER), &"laser"))
+	assert_true(_is_action(_button(JOY_BUTTON_DPAD_UP), &"laser"))
 	assert_false(GameState.has_unsaved_changes(), "No es progreso")
 
 
@@ -284,9 +287,9 @@ func test_prompts_and_notices_follow_the_new_keys() -> void:
 	ControlBindings.assign(&"help", _key(KEY_E))
 	assert_eq(prompt.get_key_text(), "E", "La Q de la ayuda pasa a E")
 	assert_eq(PulsePrompt.key_text(&"help"), "E")
-	ControlBindings.assign(&"pulse", _key(KEY_U))
+	ControlBindings.assign(&"pulse", _key(KEY_O))
 	var notices: Dictionary = AbilityNotices.load_data()
-	assert_eq(AbilityNotices.control_text(&"pulse", notices), "U / X (mando)", "«Pulso: U / X (mando)»")
+	assert_eq(AbilityNotices.control_text(&"pulse", notices), "O / X (mando)", "«Pulso: O / X (mando)»")
 	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: F / gatillo izquierdo")
 	ControlBindings.assign(&"laser", _key(KEY_V))
 	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: V / gatillo izquierdo")
@@ -300,11 +303,14 @@ func test_dash_is_remappable_and_its_notice_follows() -> void:
 	assert_true(_is_action(_key(KEY_E), &"gesture_swipe"))
 	assert_false(_is_action(_key(KEY_L), &"gesture_swipe"))
 	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / B (mando)", "El aviso se actualiza")
-	# RB es de Pellizcar (gesture_pinch, reasignable desde el 2026-10-26): LB sigue libre.
+	# RB es de Pellizcar (gesture_pinch, reasignable desde el 2026-10-26) y LB de Agitar
+	# (gesture_shake, desde el 2026-10-28): la cruceta arriba sigue libre.
 	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_RIGHT_SHOULDER)), ControlBindings.Result.CONFLICT,
 			"RB es de Pellizcar")
-	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_LEFT_SHOULDER)), ControlBindings.Result.OK)
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / LB (mando)")
+	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_LEFT_SHOULDER)), ControlBindings.Result.CONFLICT,
+			"LB es de Agitar")
+	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_DPAD_UP)), ControlBindings.Result.OK)
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / cruceta arriba (mando)")
 	ControlBindings.restore_defaults()
 	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L / B (mando)")
 
@@ -315,8 +321,8 @@ func test_hub_station_prompt_follows_the_pulse_key() -> void:
 	add_child_autofree(hub)
 	var notas: HubStation = hub.get_notas()
 	assert_eq(notas.get_key_text(), "G")
-	ControlBindings.assign(&"pulse", _key(KEY_U))
-	assert_eq(notas.get_key_text(), "U", "El prompt de la estacion se actualiza")
+	ControlBindings.assign(&"pulse", _key(KEY_O))
+	assert_eq(notas.get_key_text(), "O", "El prompt de la estacion se actualiza")
 	ControlBindings.restore_defaults()
 	assert_eq(notas.get_key_text(), "G")
 
@@ -351,17 +357,17 @@ func test_menu_capture_assigns_and_esc_cancels() -> void:
 	assert_true(_is_action(_key(KEY_G), &"pulse"), "Sin cambios")
 	assert_eq(_menu.get_selected_action(), &"pulse")
 	_action(&"ui_accept")
-	_tap(_key(KEY_U))
+	_tap(_key(KEY_O))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS)
-	assert_true(_is_action(_key(KEY_U), &"pulse"), "U asignada")
-	assert_true(_menu.get_lines().has("– Pulso: U / X"))
+	assert_true(_is_action(_key(KEY_O), &"pulse"), "O asignada")
+	assert_true(_menu.get_lines().has("– Pulso: O / X"))
 	_action(&"ui_accept")
 	_tap(_button(JOY_BUTTON_START))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS, "Start tambien cancela")
 	_action(&"ui_accept")
-	# LB: libre (RB es de Pellizcar desde el 2026-10-26).
-	_tap(_button(JOY_BUTTON_LEFT_SHOULDER))
-	assert_true(_is_action(_button(JOY_BUTTON_LEFT_SHOULDER), &"pulse"), "Boton de mando asignado")
+	# Cruceta arriba: libre (RB es de Pellizcar desde el 2026-10-26 y LB de Agitar desde el 2026-10-28).
+	_tap(_button(JOY_BUTTON_DPAD_UP))
+	assert_true(_is_action(_button(JOY_BUTTON_DPAD_UP), &"pulse"), "Boton de mando asignado")
 	assert_true(get_tree().paused, "Todo con el juego en pausa")
 
 
@@ -386,9 +392,9 @@ func test_menu_conflict_swap_and_cancel() -> void:
 	assert_true(_is_action(_key(KEY_SPACE), &"pulse"))
 	assert_true(_menu.get_lines().has("– Saltar: G / A"))
 	_action(&"ui_accept")
-	_tap(_key(KEY_U))
+	_tap(_key(KEY_O))
 	_action(&"ui_accept")
-	_tap(_key(KEY_U))
+	_tap(_key(KEY_O))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS, "Sin conflicto si ya es suya")
 
 

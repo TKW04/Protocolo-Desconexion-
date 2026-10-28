@@ -156,6 +156,15 @@ signal mirror_bounced(mirror: Node2D, at: Vector2)
 ## Las tarjetas fragiles, los muros y los enemigos que reaccionan se enganchan aqui.
 @warning_ignore("unused_signal")
 signal ground_pound_landed(rect: Rect2, source: Node2D)
+## Agitar (gesto Agitar, 2026-10-28, docs/propuesta-mundo-4.md §3.2): nace la onda,
+## un circulo de `radius` px alrededor de `center` (global, el celular). Los
+## enemigos ya los aturde ShockwaveWave; aqui se enganchan los proyectiles de
+## texto y lo que se borra con la onda (desde el paso 5) y los sonidos (paso 20).
+@warning_ignore("unused_signal")
+signal shockwave_fired(center: Vector2, radius: float, source: Node2D)
+## Agitar pedido sin energia (Isak.SHOCKWAVE_DENIED_ENERGY): chispa gris, no sale.
+@warning_ignore("unused_signal")
+signal shockwave_denied(reason: StringName)
 ## Scroll forzado del Mundo 2 (2026-10-22): Isak toca el borde que dana
 ## (`damaged`: le quito Sync Rate). El reloj del HUD (HudClock) salta +1 h con esto.
 @warning_ignore("unused_signal")

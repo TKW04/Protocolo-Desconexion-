@@ -23,6 +23,8 @@ var hide_pressed: bool = false
 var dash_pressed: bool = false
 ## Pellizcar pulsado en este cuadro (flanco; accion gesture_pinch, 2026-10-26).
 var pinch_pressed: bool = false
+## Agitar pulsado en este cuadro (flanco; accion gesture_shake, 2026-10-28).
+var shake_pressed: bool = false
 ## Gesto Mantener presionado mantenido (golpe al suelo; 2026-10-22: los eventos
 ## de move_down —S / flecha abajo / abajo del mando— o los de gesture_hold).
 var hold_held: bool = false
@@ -41,9 +43,10 @@ func clear_just_pressed() -> void:
 	hide_pressed = false
 	dash_pressed = false
 	pinch_pressed = false
+	shake_pressed = false
 
 
 ## Verdadero si hay cualquier intencion activa (corta la animacion de terminal).
 func has_any_intent() -> bool:
 	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed or hide_pressed or dash_pressed \
-			or hold_held or pinch_pressed
+			or hold_held or pinch_pressed or shake_pressed

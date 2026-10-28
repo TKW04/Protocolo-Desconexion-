@@ -43,6 +43,11 @@ signal scroll_edge_hit(damaged: bool)
 ## Pellizcar (2026-10-26): Isak se comprime (`compressed` true) o recupera el
 ## tamano (false). Tambien EventBus.compress_changed (sonidos).
 signal compress_changed(compressed: bool)
+## Agitar (2026-10-28): nace la onda (`center` global, el celular; `radius` px).
+## Tambien EventBus.shockwave_fired (proyectiles de texto, sonidos).
+signal shockwave_fired(center: Vector2, radius: float)
+## Agitar pedido sin energia (SHOCKWAVE_DENIED_ENERGY): chispa gris, no sale.
+signal shockwave_denied(reason: StringName)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -118,6 +123,12 @@ const POUND_DENIED_ENERGY: StringName = &"energy"
 const COMPRESS_DENIED_LOCKED: StringName = &"locked"
 const COMPRESS_DENIED_BUSY: StringName = &"busy"
 const COMPRESS_DENIED_ENERGY: StringName = &"energy"
+## Motivos por los que Agitar no sale (shockwave_denial()).
+const SHOCKWAVE_DENIED_LOCKED: StringName = &"locked"
+const SHOCKWAVE_DENIED_BUSY: StringName = &"busy"
+const SHOCKWAVE_DENIED_COOLDOWN: StringName = &"cooldown"
+const SHOCKWAVE_DENIED_AIR: StringName = &"air"
+const SHOCKWAVE_DENIED_ENERGY: StringName = &"energy"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 ## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
@@ -250,6 +261,12 @@ var _compress_pose_applied: bool = false
 var _compress_effect: CompressEffect
 var _normal_shape: CapsuleShape2D
 var _compressed_shape: CapsuleShape2D
+## Agitar (gesto Agitar, 2026-10-28; seccion shockwave de
+## data/isak_abilities.json): pulsacion valida en este paso, enfriamiento (desde
+## el final de la pose) y efecto provisional.
+var _shockwave_requested: bool = false
+var _shockwave_cooldown_left: float = 0.0
+var _shockwave_effect: ShockwaveEffect
 ## Posicion y escala del sprite sin la pose del golpe (aplastado provisional).
 var _sprite_base_position := Vector2.ZERO
 var _sprite_base_scale := Vector2.ONE
@@ -289,6 +306,7 @@ func _ready() -> void:
 		PlayerState.DEAD: DeadState.new(self),
 		PlayerState.DASH: DashState.new(self),
 		PlayerState.GROUND_POUND: GroundPoundState.new(self),
+		PlayerState.SHOCKWAVE: ShockwaveState.new(self),
 	}
 	_sprite_base_position = _sprite.position
 	_sprite_base_scale = _sprite.scale
@@ -300,6 +318,10 @@ func _ready() -> void:
 	_compress_effect.name = "CompressEffect"
 	_compress_effect.configure(abilities.compress_visual)
 	add_child(_compress_effect)
+	_shockwave_effect = ShockwaveEffect.new()
+	_shockwave_effect.name = "ShockwaveEffect"
+	_shockwave_effect.configure(abilities.shockwave_visual)
+	add_child(_shockwave_effect)
 	_air_dashes_left = abilities.dash_air_dashes
 	_dash_effect = DashEffect.new()
 	_dash_effect.name = "DashEffect"
@@ -334,6 +356,7 @@ func step(delta: float) -> void:
 	_update_compress_request()
 	_update_dash_request()
 	_update_pound_request(delta)
+	_update_shockwave_request()
 	for i: int in MAX_TRANSITIONS_PER_STEP:
 		var next: StringName = _state.get_transition()
 		if next == PlayerState.NONE:
@@ -345,12 +368,14 @@ func step(delta: float) -> void:
 	_update_dash(delta)
 	_update_pound_effect(delta)
 	_update_compress(delta)
+	_update_shockwave(delta)
 	_update_laser(delta)
 	_update_hide(delta)
 	_update_regen(delta)
 	_update_blink()
 	_dash_requested = false
 	_pound_requested = false
+	_shockwave_requested = false
 	if _tower_camera != null:
 		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
 	if _scroll_camera != null:
@@ -377,6 +402,9 @@ func change_state(state_name: StringName) -> void:
 	elif _hide != null and state_name == PlayerState.GROUND_POUND:
 		# El golpe al suelo apaga el Ocultarte (como el pulso y el laser).
 		_hide.end(HideMode.REASON_POUND)
+	elif _hide != null and state_name == PlayerState.SHOCKWAVE:
+		# Agitar apaga el Ocultarte (es lo contrario de esconderse).
+		_hide.end(HideMode.REASON_SHOCKWAVE)
 	if state_name == PlayerState.DASH:
 		_dash_requested = false
 	if _state != null:
@@ -425,7 +453,7 @@ func can_laser() -> bool:
 ## que el pulso (ni chispa ni enfriamiento).
 func can_start_laser() -> bool:
 	return is_on_floor() and can_laser() and _state_name != PlayerState.DASH \
-			and _state_name != PlayerState.GROUND_POUND and not _compressed
+			and _state_name != PlayerState.GROUND_POUND and _state_name != PlayerState.SHOCKWAVE and not _compressed
 
 
 func get_laser_cooldown_left() -> float:
@@ -588,6 +616,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_reset_dash()
 	_reset_pound()
 	_reset_compress()
+	_reset_shockwave()
 	play_animation(ANIM_IDLE)
 	if _scroll_camera != null:
 		# Muerte: el scroll de la seccion vuelve a su parada.
@@ -926,7 +955,8 @@ func dash_denial() -> StringName:
 	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_DASH):
 		return DASH_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
-			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
+				PlayerState.SHOCKWAVE]:
 		return DASH_DENIED_BUSY
 	if _dash_cooldown_left > 0.0:
 		return DASH_DENIED_COOLDOWN
@@ -1070,7 +1100,8 @@ func ground_pound_denial() -> StringName:
 	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND):
 		return POUND_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
-			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
+				PlayerState.SHOCKWAVE]:
 		return POUND_DENIED_BUSY
 	if _pound_cooldown_left > 0.0:
 		return POUND_DENIED_COOLDOWN
@@ -1229,6 +1260,130 @@ func _reset_pound() -> void:
 		_pound_effect.clear()
 
 
+# --- Agitar (gesto Agitar, 2026-10-28; docs/propuesta-mundo-4.md §3.2) ---
+
+## Un estado ha pedido Agitar en este paso (pulsacion de gesture_shake que
+## cumple shockwave_denial()). Lo consumen los estados del suelo.
+func wants_shockwave() -> bool:
+	return _shockwave_requested
+
+
+## Motivo por el que Agitar no saldria ahora (&"" = sale). Ver SHOCKWAVE_DENIED_*.
+## Orden: sin la habilidad o en el hub; ocupado (comprimido, muerto, vortice, de
+## espaldas, laser, golpe, pulso, dash, golpe al suelo u otro Agitar);
+## enfriamiento; en el aire (la excepcion del congelado llega con el paso 2) y
+## energia. Con el Debug si sale.
+func shockwave_denial() -> StringName:
+	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE):
+		return SHOCKWAVE_DENIED_LOCKED
+	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
+				PlayerState.SHOCKWAVE]:
+		return SHOCKWAVE_DENIED_BUSY
+	if _shockwave_cooldown_left > 0.0:
+		return SHOCKWAVE_DENIED_COOLDOWN
+	if not is_on_floor():
+		return SHOCKWAVE_DENIED_AIR
+	if GameState.debug_energy + LASER_ENERGY_EPS < abilities.shockwave_energy_cost:
+		return SHOCKWAVE_DENIED_ENERGY
+	return &""
+
+
+func is_shockwaving() -> bool:
+	return _state_name == PlayerState.SHOCKWAVE
+
+
+## Fase de Agitar en curso (ShockwaveState.Phase) o -1 si no hay.
+func get_shockwave_phase() -> int:
+	if not is_shockwaving():
+		return -1
+	return int((_state as ShockwaveState).get_phase())
+
+
+func get_shockwave_cooldown_left() -> float:
+	return _shockwave_cooldown_left
+
+
+func get_shockwave_effect() -> ShockwaveEffect:
+	return _shockwave_effect
+
+
+## Centro de la onda (global): el celular, como el pulso.
+func get_shockwave_center() -> Vector2:
+	return global_position + get_pulse_origin()
+
+
+## Lo llama ShockwaveState al entrar: cobra la energia y empieza la pose
+## provisional (la del pulso, que sube el celular, con la sacudida).
+func begin_shockwave() -> void:
+	_shockwave_requested = false
+	_jump_buffer_left = 0.0
+	GameState.debug_energy -= abilities.shockwave_energy_cost
+	reset_idle_time()
+	restart_animation(ANIM_PULSE)
+	update_shockwave_pose(0.0)
+
+
+## Sacudida del sprite durante la anticipacion (`t` s desde el inicio).
+func update_shockwave_pose(t: float) -> void:
+	if _shockwave_effect == null:
+		return
+	_sprite.position = Vector2(_sprite_base_position.x + _shockwave_effect.shake_offset(t), _sprite_base_position.y)
+
+
+## Nace la onda: aturde a los enemigos que alcanza (ShockwaveWave) y avisa
+## (shockwave_fired y EventBus.shockwave_fired: proyectiles de texto, sonidos).
+## Devuelve cuantos enemigos alcanzo.
+func fire_shockwave() -> int:
+	_restore_sprite_shape()
+	var center: Vector2 = get_shockwave_center()
+	var radius: float = abilities.shockwave_radius_px
+	_shockwave_effect.show_wave(center, radius)
+	if _regen != null:
+		_regen.note_combat()
+	var hits: int = ShockwaveWave.apply_to_enemies(get_tree(), center, radius, abilities.shockwave_stun_s)
+	shockwave_fired.emit(center, radius)
+	EventBus.shockwave_fired.emit(center, radius, self)
+	return hits
+
+
+## Lo llama ShockwaveState al salir: enfriamiento y sprite sin la sacudida.
+func end_shockwave() -> void:
+	_shockwave_cooldown_left = abilities.shockwave_cooldown_s
+	_restore_sprite_shape()
+
+
+## Pulsacion de Agitar en este paso: valida -> _shockwave_requested; sin energia,
+## chispa gris (la del laser) y shockwave_denied; el resto, sin aviso.
+func _update_shockwave_request() -> void:
+	_shockwave_requested = false
+	if input == null or not input.shake_pressed:
+		return
+	var denial: StringName = shockwave_denial()
+	if denial == &"":
+		_shockwave_requested = true
+	elif denial == SHOCKWAVE_DENIED_ENERGY:
+		_laser_muzzle.show_fizzle(facing)
+		shockwave_denied.emit(denial)
+		EventBus.shockwave_denied.emit(denial)
+
+
+## Enfriamiento (fuera de la pose) y efecto (tiempo real).
+func _update_shockwave(delta: float) -> void:
+	if not is_shockwaving():
+		_shockwave_cooldown_left = maxf(_shockwave_cooldown_left - delta, 0.0)
+	if _shockwave_effect != null:
+		_shockwave_effect.advance(delta)
+
+
+## Reaparecer: sin Agitar pedido, sin enfriamiento ni onda.
+func _reset_shockwave() -> void:
+	_shockwave_requested = false
+	_shockwave_cooldown_left = 0.0
+	if _shockwave_effect != null:
+		_shockwave_effect.clear()
+
+
 # --- Pellizcar (gesto Pellizcar, 2026-10-26; docs/propuesta-mundo-3.md §3.3) ---
 
 ## Isak esta comprimido (caja compress_width_px x compress_height_px).
@@ -1272,7 +1427,8 @@ func compress_denial() -> StringName:
 	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS):
 		return COMPRESS_DENIED_LOCKED
 	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
-			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND]:
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
+				PlayerState.SHOCKWAVE]:
 		return COMPRESS_DENIED_BUSY
 	if abilities.compress_energy_cost > 0.0 and GameState.debug_energy + LASER_ENERGY_EPS < abilities.compress_energy_cost:
 		return COMPRESS_DENIED_ENERGY

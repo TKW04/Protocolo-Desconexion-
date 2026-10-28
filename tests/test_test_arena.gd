@@ -8,14 +8,18 @@ const ArenaScript = preload("res://scripts/levels/test_arena.gd")
 const SETTLE_FRAMES: int = 60
 
 var _pulse_was_unlocked: bool
+## La arena desbloquea Agitar (paso 1 del Mundo 4): se devuelve para no dar su aviso a otras pruebas.
+var _shockwave_was_unlocked: bool
 
 
 func before_each() -> void:
 	_pulse_was_unlocked = GameState.is_ability_unlocked(GameState.ABILITY_PULSE)
+	_shockwave_was_unlocked = GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE)
 
 
 func after_each() -> void:
 	GameState.set_ability_unlocked(GameState.ABILITY_PULSE, _pulse_was_unlocked)
+	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, _shockwave_was_unlocked)
 
 
 func test_isak_lands_idle_in_arena() -> void:

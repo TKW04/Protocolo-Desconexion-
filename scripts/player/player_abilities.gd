@@ -36,6 +36,10 @@ const POUND_KEYS: PackedStringArray = ["air_hold_s", "ground_hold_s", "anticipat
 ## Pellizcar, docs/propuesta-mundo-3.md §3.3.1).
 const COMPRESS_KEYS: PackedStringArray = ["width_px", "height_px", "squash_s", "walk_speed_px_s",
 	"jump_height_px", "energy_cost"]
+## Claves numericas de la seccion opcional shockwave (propiedad shockwave_<clave>;
+## Agitar, docs/propuesta-mundo-4.md §3.2.1).
+const SHOCKWAVE_KEYS: PackedStringArray = ["radius_px", "windup_s", "exposed_s", "stun_s", "energy_cost",
+	"cooldown_s"]
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -110,6 +114,19 @@ var compress_energy_cost: float = 0.0
 ## Aspecto provisional (compress.visual): escala del sprite comprimido e icono
 ## «sin espacio».
 var compress_visual: Dictionary = {}
+## Agitar (seccion shockwave, opcional; 2026-10-28, docs/propuesta-mundo-4.md
+## §3.2.1, valores provisionales): radio de la onda alrededor del celular,
+## anticipacion (la onda nace al terminarla), exposicion tras la onda (sin
+## moverse ni saltar), aturdimiento de los enemigos, energia y enfriamiento
+## desde el final de la pose.
+var shockwave_radius_px: float = 160.0
+var shockwave_windup_s: float = 0.15
+var shockwave_exposed_s: float = 0.25
+var shockwave_stun_s: float = 3.0
+var shockwave_energy_cost: float = 10.0
+var shockwave_cooldown_s: float = 1.0
+## Aspecto provisional (shockwave.visual): sacudida del sprite y anillo de la onda.
+var shockwave_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -190,6 +207,19 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var compress_visual: Variant = (compress as Dictionary).get("visual", {})
 	if compress_visual is Dictionary:
 		abilities.compress_visual = compress_visual
+	var shockwave: Variant = data.get("shockwave", {})
+	if not shockwave is Dictionary:
+		return _fail("PlayerAbilities: la clave 'shockwave' en '%s' debe ser un objeto." % source)
+	for key: String in SHOCKWAVE_KEYS:
+		if not (shockwave as Dictionary).has(key):
+			continue
+		var value: Variant = shockwave[key]
+		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+			return _fail("PlayerAbilities: la clave 'shockwave.%s' en '%s' debe ser numerica." % [key, source])
+		abilities.set("shockwave_" + key, float(value))
+	var shockwave_visual: Variant = (shockwave as Dictionary).get("visual", {})
+	if shockwave_visual is Dictionary:
+		abilities.shockwave_visual = shockwave_visual
 	return abilities
 
 

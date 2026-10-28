@@ -35,6 +35,8 @@ const REASON_DASH: StringName = &"dash"
 const REASON_POUND: StringName = &"ground_pound"
 ## Pellizcar (2026-10-26): comprimirse lo apaga como el dash.
 const REASON_COMPRESS: StringName = &"compress"
+## Agitar (2026-10-28): lo apaga (es lo contrario de esconderse).
+const REASON_SHOCKWAVE: StringName = &"shockwave"
 const REASON_HURT: StringName = &"hurt"
 const REASON_DEBUG: StringName = &"debug"
 const REASON_DEAD: StringName = &"dead"
@@ -202,7 +204,7 @@ func _check(isak: Isak) -> Denied:
 	if not isak.is_on_floor():
 		return Denied.NOT_ON_FLOOR
 	if isak.is_dead() or isak.is_warping() or isak.is_facing_back() or isak.is_laser_posing() \
-			or isak.is_laser_charging() or isak.get_state_name() in [PlayerState.PULSE, PlayerState.HURT, PlayerState.DASH] \
+			or isak.is_laser_charging() or isak.get_state_name() in [PlayerState.PULSE, PlayerState.HURT, PlayerState.DASH, PlayerState.SHOCKWAVE] \
 			or isak.is_compressed():
 		return Denied.BUSY
 	var minimum: float = enter_min_fraction

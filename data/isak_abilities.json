@@ -88,6 +88,23 @@
 			"blocked_blink_hz": 2.0
 		}
 	},
+	"_shockwave_notes": "AGITAR, gesto Agitar (habilidad GameState.ABILITY_SHOCKWAVE; docs/propuesta-mundo-4.md §3.2.1 y decision 2 de su §9, 2026-10-28: valores PROVISIONALES, ajustar jugando). CONTROL: pulsar gesture_shake (U / LB; reasignable en Ajustes > Controles). Solo en el suelo (la excepcion del congelado llega con el estado Frozen, paso 2). POSE: windup_s de anticipacion (Isak sacude el celular; la onda nace al terminarla) y exposed_s sin moverse ni saltar (pose total 0,4 s), SIN invulnerabilidad. ONDA: circulo de radius_px alrededor del celular (Isak.get_pulse_origin); aturde stun_s a todos los enemigos que alcanza (su stun() con la escala stun_s / stun_duration_s; los que tienen receive_shockwave(center, radius, stun_s) deciden ellos), 0 de dano; los proyectiles de texto y lo que se rompe con la onda se enganchan a EventBus.shockwave_fired (desde el paso 5). COSTE energy_cost de energia (sin ella: chispa gris del laser y EventBus.shockwave_denied); con el Debug SI sale. ENFRIAMIENTO cooldown_s desde el final de la pose. No sale sin la habilidad, en el hub (sin hub_gestures), en Hurt, muerto, de espaldas, en un vortice, comprimido ni durante el dash, el golpe al suelo, el pulso o el laser. Apaga el Ocultarte. Tiempo de Isak (real). visual: aspecto PROVISIONAL por codigo (sacudida del sprite de shake_px a shake_hz y anillo de la onda que crece en ring_s hasta radius_px); la pose final con AutoSprite va en el paso 24 (decision del usuario 2026-10-28).",
+	"shockwave": {
+		"radius_px": 160.0,
+		"windup_s": 0.15,
+		"exposed_s": 0.25,
+		"stun_s": 3.0,
+		"energy_cost": 10.0,
+		"cooldown_s": 1.0,
+		"visual": {
+			"shake_px": 3.0,
+			"shake_hz": 20.0,
+			"ring_s": 0.25,
+			"ring_width_px": 4.0,
+			"ring_color": "#3dfff5",
+			"ring_fill_alpha": 0.18
+		}
+	},
 	"laser_visual": {
 		"core": "#f2f4f8",
 		"glow": "#3dfff5",

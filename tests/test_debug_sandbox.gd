@@ -34,6 +34,8 @@ func before_each() -> void:
 		# La test_arena desbloquea tambien Pellizcar desde el paso 1 del Mundo 3 (paso 20: sin devolverlo,
 		# test_dnd_switch y test_eco_encounter recibian el aviso de Pellizcar de mas en la suite).
 		"compress": GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS),
+		# Y Agitar desde el paso 1 del Mundo 4 (2026-10-28): mismo motivo.
+		"shockwave": GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE),
 		"world": GameState.current_world,
 	}
 	DebugMode.input_enabled = false
@@ -52,6 +54,7 @@ func after_each() -> void:
 	GameState.set_ability_unlocked(GameState.ABILITY_DASH, _saved.dash)
 	GameState.set_ability_unlocked(GameState.ABILITY_GROUND_POUND, _saved.ground_pound)
 	GameState.set_ability_unlocked(GameState.ABILITY_COMPRESS, _saved.compress)
+	GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, _saved.shockwave)
 	GameState.current_world = _saved.world
 
 

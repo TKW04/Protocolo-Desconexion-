@@ -99,10 +99,10 @@ func test_hide_action_in_input_map_and_remappable() -> void:
 	var notices: Dictionary = AbilityNotices.load_data()
 	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: H / L3 (mando)")
 	GameSettings.use_path(GameSettings.settings_path(), true)
-	var u := InputEventKey.new()
-	u.physical_keycode = KEY_U
-	assert_eq(ControlBindings.assign(&"hide", u), ControlBindings.Result.OK)
-	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: U / L3 (mando)", "El aviso sigue la tecla")
+	var o := InputEventKey.new()
+	o.physical_keycode = KEY_O
+	assert_eq(ControlBindings.assign(&"hide", o), ControlBindings.Result.OK)
+	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: O / L3 (mando)", "El aviso sigue la tecla")
 	ControlBindings.restore_defaults()
 	GameSettings.use_path(GameSettings.settings_path(), true)
 	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: H / L3 (mando)")

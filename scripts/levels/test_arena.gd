@@ -4,7 +4,7 @@
 ## 2,5 tiles, hueco de 2 tiles (caminando), hueco de 3 tiles (corriendo),
 ## plataforma de una via y pared. Caer por un hueco devuelve a Isak al inicio.
 ## Pulso (G), dash (L / B, gesto Deslizar; 2026-10-19), golpe al suelo y
-## Pellizcar (I / RB; 2026-10-26) desbloqueados.
+## Pellizcar (I / RB; 2026-10-26) y Agitar (U / LB; 2026-10-28) desbloqueados.
 ## Solo para jugar y ajustar valores; no es un nivel del juego.
 extends Node2D
 
@@ -36,6 +36,8 @@ const JUMP_BUFFER: String = "buffer"
 @export var unlock_ground_pound: bool = true
 ## Desbloquea Pellizcar (gesto Pellizcar: I / RB; 2026-10-26) al cargar esta escena.
 @export var unlock_compress: bool = true
+## Desbloquea Agitar (gesto Agitar: U / LB; 2026-10-28) al cargar esta escena.
+@export var unlock_shockwave: bool = true
 ## Si Isak cae por debajo de esta Y vuelve al punto de inicio.
 @export var fall_limit_y: float = 960.0
 
@@ -57,6 +59,8 @@ func _ready() -> void:
 		GameState.set_ability_unlocked(GameState.ABILITY_GROUND_POUND, true)
 	if unlock_compress:
 		GameState.set_ability_unlocked(GameState.ABILITY_COMPRESS, true)
+	if unlock_shockwave:
+		GameState.set_ability_unlocked(GameState.ABILITY_SHOCKWAVE, true)
 	_debug_signs.visible = DEBUG_OVERLAY
 	if DEBUG_OVERLAY:
 		_setup_debug_overlay()
