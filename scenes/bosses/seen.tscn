@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/bosses/seen.gd" id="1_seen"]
+
+[node name="Seen" type="Node2D" groups=["boss"]]
+script = ExtResource("1_seen")
+boss_id = &"seen"

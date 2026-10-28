@@ -173,6 +173,9 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 11 (2026-10-28): el 4-1 real (tests/test_level_4_1.py, camino exportado y subidas al dia).
 # Desde el paso 13 (2026-10-28): el 4-2 real (tests/test_level_4_2.py, camino exportado y subidas al dia).
 # Desde el paso 14 (2026-10-28): el 4-3 real (tests/test_level_4_3.py, camino exportado y subidas al dia).
+# Desde el paso 15 (2026-10-28): los datos y la logica de El Visto (tests/test_seen_boss.gd, GUT: marca solo con el
+# Debug, un golpe por marca, el punto debil a tiro en cada fase, el escudo con Agitar y la arena limpia y el
+# mensaje que congela sin ataques mientras dura).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

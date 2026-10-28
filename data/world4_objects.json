@@ -493,6 +493,25 @@
 					"story": "papelera_4_2"
 				}
 			}
+		},
+		"seen": {
+			"scene": "res://scenes/bosses/seen.tscn",
+			"description": "Jefe del Mundo 4 «El Visto» (2026-10-28, pasos 15-16 de docs/propuesta-mundo-4.md §8, diseño en §5): Seen (BossBase) con sus tres fases (Ghosting: se esfuma y reaparece por la espalda, burbujas que caen y zonas «Visto»; Grupo: escudo que solo cede a Agitar con la arena limpia, Stickers que invoca y los Trolls de la arena; Escribiendo…: la burbuja gigante que el pulso deja en silencio y el mensaje que congela). Solo en su arena (kind boss, boss seen). (x, y) es la celda de arriba a la izquierda de su doble check de 6 x 3 tiles (no sólido); el resto de posiciones está en arena de data/bosses/seen.json. Daño: Debug -> pulso (marca) -> láser, un golpe por marca y por ventana. Empieza al terminar la llegada de Isak con la línea de intro (pausa; texto PROPUESTO). Tiempo del mundo. Arte PROVISIONAL por código.",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "seen",
+				"x": 7,
+				"y": 1,
+				"params": {
+					"id": "seen"
+				}
+			}
 		}
 	},
 	"seen_zone": {
