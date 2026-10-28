@@ -80,6 +80,11 @@ const CLIMBS_PATH_4_1: String = "res://tests/fixtures/climbs_4-1.json"
 const LEVEL_SCENE_4_2: String = "res://scenes/levels/4-2.tscn"
 const LEVEL_PATH_4_2: String = "res://data/levels/4-2.json"
 const CLIMBS_PATH_4_2: String = "res://tests/fixtures/climbs_4-2.json"
+## 4-3 «Mensajes sin leer» (paso 14, 2026-10-28): bandas de los tramos 1 y 2, la escalera oculta del secreto A
+## (con el Debug) y el suelo alto del Tramo 3.
+const LEVEL_SCENE_4_3: String = "res://scenes/levels/4-3.tscn"
+const LEVEL_PATH_4_3: String = "res://data/levels/4-3.json"
+const CLIMBS_PATH_4_3: String = "res://tests/fixtures/climbs_4-3.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -165,6 +170,15 @@ func _load(scene_path: String = LEVEL_SCENE, level_path: String = LEVEL_PATH) ->
 			typing.auto_process = false
 			typing.trigger()
 			typing.advance(typing.get_type_s() + 0.05)
+		elif child is InkOnly:
+			# Paso 14 (4-3): los pasos en tinta, solidos como bajo la luz de la Linterna (tools/level_climbs.py los
+			# baja con la Linterna; aqui no hay compañera que los ilumine).
+			var ink := child as InkOnly
+			ink.auto_process = false
+			ink.set(&"_lit", true)
+			var shape := ink.get(&"_shape") as CollisionShape2D
+			if shape != null:
+				shape.disabled = false
 	_hidden.clear()
 	for child: Node in _level.get_node(^"HiddenPlatforms").get_children():
 		_hidden.append(child)
@@ -512,6 +526,14 @@ func test_every_climb_of_4_2_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 0, "Subidas del 4-2 en %s" % CLIMBS_PATH_4_2)
 	await _load(LEVEL_SCENE_4_2, LEVEL_PATH_4_2)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_4_3_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_4_3))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 8, "Subidas del 4-3 en %s" % CLIMBS_PATH_4_3)
+	await _load(LEVEL_SCENE_4_3, LEVEL_PATH_4_3)
 	await _measure_all(climbs)
 
 

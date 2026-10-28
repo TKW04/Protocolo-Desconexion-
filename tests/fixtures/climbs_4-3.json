@@ -1,0 +1,1352 @@
+{
+ "format": "isak-climbs/1",
+ "level": "4-3",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "7,11->7,9",
+   "section": "Inicio «Sin leer (37)»",
+   "from": {
+    "cell": [
+     7,
+     11
+    ],
+    "ledge": [
+     1,
+     59
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     7,
+     9
+    ],
+    "ledge": [
+     7,
+     10
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 512.0,
+   "target_x_px": 512.0,
+   "debug": false
+  },
+  {
+   "id": "57,11->57,9",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     57,
+     11
+    ],
+    "ledge": [
+     1,
+     59
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     57,
+     9
+    ],
+    "ledge": [
+     57,
+     58
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3712.0,
+   "target_x_px": 3712.0,
+   "debug": false
+  },
+  {
+   "id": "101,11->102,9",
+   "section": "Pausa 1",
+   "from": {
+    "cell": [
+     101,
+     11
+    ],
+    "ledge": [
+     63,
+     101
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     102,
+     9
+    ],
+    "ledge": [
+     102,
+     103
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6512.0,
+   "target_x_px": 6528.0,
+   "debug": true
+  },
+  {
+   "id": "151,11->151,9",
+   "section": "Tramo 2 «Voces»",
+   "from": {
+    "cell": [
+     151,
+     11
+    ],
+    "ledge": [
+     63,
+     153
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     151,
+     9
+    ],
+    "ledge": [
+     151,
+     152
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 9728.0,
+   "target_x_px": 9728.0,
+   "debug": false
+  },
+  {
+   "id": "205,11->205,9",
+   "section": "Pausa 2",
+   "from": {
+    "cell": [
+     205,
+     11
+    ],
+    "ledge": [
+     165,
+     206
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     205,
+     9
+    ],
+    "ledge": [
+     205,
+     206
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 13184.0,
+   "target_x_px": 13184.0,
+   "debug": false
+  },
+  {
+   "id": "215,11->216,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     215,
+     11
+    ],
+    "ledge": [
+     215,
+     215
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     216,
+     10
+    ],
+    "ledge": [
+     216,
+     216
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 13808.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "225,11->226,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     225,
+     11
+    ],
+    "ledge": [
+     225,
+     225
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     226,
+     10
+    ],
+    "ledge": [
+     226,
+     226
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14448.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "237,11->238,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     237,
+     11
+    ],
+    "ledge": [
+     236,
+     237
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     238,
+     10
+    ],
+    "ledge": [
+     238,
+     238
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 15216.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "248,11->249,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     248,
+     11
+    ],
+    "ledge": [
+     247,
+     248
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     249,
+     10
+    ],
+    "ledge": [
+     249,
+     249
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 15920.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "259,11->260,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     259,
+     11
+    ],
+    "ledge": [
+     257,
+     259
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     260,
+     10
+    ],
+    "ledge": [
+     260,
+     260
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 16624.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "271,11->272,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     271,
+     11
+    ],
+    "ledge": [
+     269,
+     271
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     272,
+     10
+    ],
+    "ledge": [
+     272,
+     272
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 17392.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "280,11->281,10",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     280,
+     11
+    ],
+    "ledge": [
+     276,
+     280
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     281,
+     10
+    ],
+    "ledge": [
+     281,
+     281
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 17968.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "216,10->214,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     216,
+     10
+    ],
+    "ledge": [
+     216,
+     216
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     214,
+     8
+    ],
+    "ledge": [
+     207,
+     214
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 13824.0,
+   "target_x_px": 13760.0,
+   "debug": false
+  },
+  {
+   "id": "216,10->217,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     216,
+     10
+    ],
+    "ledge": [
+     216,
+     216
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     217,
+     8
+    ],
+    "ledge": [
+     217,
+     224
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 13872.0,
+   "target_x_px": 13888.0,
+   "debug": false
+  },
+  {
+   "id": "226,10->224,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     226,
+     10
+    ],
+    "ledge": [
+     226,
+     226
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     224,
+     8
+    ],
+    "ledge": [
+     217,
+     224
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 14464.0,
+   "target_x_px": 14400.0,
+   "debug": false
+  },
+  {
+   "id": "226,10->227,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     226,
+     10
+    ],
+    "ledge": [
+     226,
+     226
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     227,
+     8
+    ],
+    "ledge": [
+     227,
+     235
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14512.0,
+   "target_x_px": 14528.0,
+   "debug": false
+  },
+  {
+   "id": "238,10->235,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     238,
+     10
+    ],
+    "ledge": [
+     238,
+     238
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     235,
+     8
+    ],
+    "ledge": [
+     227,
+     235
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 15232.0,
+   "target_x_px": 15104.0,
+   "debug": false
+  },
+  {
+   "id": "238,10->239,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     238,
+     10
+    ],
+    "ledge": [
+     238,
+     238
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     239,
+     8
+    ],
+    "ledge": [
+     239,
+     246
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 15280.0,
+   "target_x_px": 15296.0,
+   "debug": false
+  },
+  {
+   "id": "249,10->246,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     249,
+     10
+    ],
+    "ledge": [
+     249,
+     249
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     246,
+     8
+    ],
+    "ledge": [
+     239,
+     246
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 15936.0,
+   "target_x_px": 15808.0,
+   "debug": false
+  },
+  {
+   "id": "249,10->250,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     249,
+     10
+    ],
+    "ledge": [
+     249,
+     249
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     250,
+     8
+    ],
+    "ledge": [
+     250,
+     256
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 15984.0,
+   "target_x_px": 16000.0,
+   "debug": false
+  },
+  {
+   "id": "260,10->261,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     260,
+     10
+    ],
+    "ledge": [
+     260,
+     260
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     261,
+     8
+    ],
+    "ledge": [
+     261,
+     268
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 16688.0,
+   "target_x_px": 16704.0,
+   "debug": false
+  },
+  {
+   "id": "272,10->273,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     272,
+     10
+    ],
+    "ledge": [
+     272,
+     272
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     273,
+     8
+    ],
+    "ledge": [
+     273,
+     275
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 17456.0,
+   "target_x_px": 17472.0,
+   "debug": false
+  },
+  {
+   "id": "281,10->280,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     281,
+     10
+    ],
+    "ledge": [
+     281,
+     281
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     280,
+     8
+    ],
+    "ledge": [
+     279,
+     280
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 17984.0,
+   "target_x_px": 17984.0,
+   "debug": false
+  },
+  {
+   "id": "281,10->282,8",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     281,
+     10
+    ],
+    "ledge": [
+     281,
+     281
+    ],
+    "row": 10
+   },
+   "to": {
+    "cell": [
+     282,
+     8
+    ],
+    "ledge": [
+     282,
+     298
+    ],
+    "row": 8
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 18032.0,
+   "target_x_px": 18048.0,
+   "debug": false
+  },
+  {
+   "id": "57,9->56,8",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     57,
+     9
+    ],
+    "ledge": [
+     57,
+     58
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     56,
+     8
+    ],
+    "ledge": [
+     26,
+     56
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3648.0,
+   "target_x_px": 3648.0,
+   "debug": false
+  },
+  {
+   "id": "103,9->104,7",
+   "section": "Pausa 1",
+   "from": {
+    "cell": [
+     103,
+     9
+    ],
+    "ledge": [
+     102,
+     103
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     104,
+     7
+    ],
+    "ledge": [
+     104,
+     105
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6640.0,
+   "target_x_px": 6656.0,
+   "debug": true
+  },
+  {
+   "id": "151,9->150,8",
+   "section": "Tramo 2 «Voces»",
+   "from": {
+    "cell": [
+     151,
+     9
+    ],
+    "ledge": [
+     151,
+     152
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     150,
+     8
+    ],
+    "ledge": [
+     117,
+     150
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 9664.0,
+   "target_x_px": 9664.0,
+   "debug": false
+  },
+  {
+   "id": "206,9->207,8",
+   "section": "Pausa 2",
+   "from": {
+    "cell": [
+     206,
+     9
+    ],
+    "ledge": [
+     205,
+     206
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     207,
+     8
+    ],
+    "ledge": [
+     207,
+     214
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 13232.0,
+   "target_x_px": 13248.0,
+   "debug": false
+  },
+  {
+   "id": "28,8->28,6",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     28,
+     8
+    ],
+    "ledge": [
+     26,
+     56
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     28,
+     6
+    ],
+    "ledge": [
+     27,
+     28
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1856.0,
+   "target_x_px": 1856.0,
+   "debug": false
+  },
+  {
+   "id": "64,8->62,6",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     64,
+     8
+    ],
+    "ledge": [
+     64,
+     99
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     62,
+     6
+    ],
+    "ledge": [
+     61,
+     62
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 4096.0,
+   "target_x_px": 4032.0,
+   "debug": false
+  },
+  {
+   "id": "119,8->119,6",
+   "section": "Tramo 2 «Voces»",
+   "from": {
+    "cell": [
+     119,
+     8
+    ],
+    "ledge": [
+     117,
+     150
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     119,
+     6
+    ],
+    "ledge": [
+     118,
+     119
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 7680.0,
+   "target_x_px": 7680.0,
+   "debug": false
+  },
+  {
+   "id": "166,8->164,6",
+   "section": "Tramo 2 «Voces»",
+   "from": {
+    "cell": [
+     166,
+     8
+    ],
+    "ledge": [
+     166,
+     199
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     164,
+     6
+    ],
+    "ledge": [
+     155,
+     164
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 10624.0,
+   "target_x_px": 10560.0,
+   "debug": false
+  },
+  {
+   "id": "209,8->209,6",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     209,
+     8
+    ],
+    "ledge": [
+     207,
+     214
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     209,
+     6
+    ],
+    "ledge": [
+     209,
+     210
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 13440.0,
+   "target_x_px": 13440.0,
+   "debug": false
+  },
+  {
+   "id": "262,8->262,6",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     262,
+     8
+    ],
+    "ledge": [
+     261,
+     268
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     262,
+     6
+    ],
+    "ledge": [
+     262,
+     263
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 16832.0,
+   "target_x_px": 16832.0,
+   "debug": false
+  },
+  {
+   "id": "105,7->106,5",
+   "section": "Pausa 1",
+   "from": {
+    "cell": [
+     105,
+     7
+    ],
+    "ledge": [
+     104,
+     105
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     106,
+     5
+    ],
+    "ledge": [
+     106,
+     107
+    ],
+    "row": 5
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6768.0,
+   "target_x_px": 6784.0,
+   "debug": true
+  },
+  {
+   "id": "28,6->29,5",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     28,
+     6
+    ],
+    "ledge": [
+     27,
+     28
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     29,
+     5
+    ],
+    "ledge": [
+     29,
+     96
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1856.0,
+   "target_x_px": 1856.0,
+   "debug": false
+  },
+  {
+   "id": "62,6->62,5",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     62,
+     6
+    ],
+    "ledge": [
+     61,
+     62
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     62,
+     5
+    ],
+    "ledge": [
+     29,
+     96
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 4032.0,
+   "target_x_px": 4032.0,
+   "debug": false
+  },
+  {
+   "id": "119,6->120,5",
+   "section": "Tramo 2 «Voces»",
+   "from": {
+    "cell": [
+     119,
+     6
+    ],
+    "ledge": [
+     118,
+     119
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     120,
+     5
+    ],
+    "ledge": [
+     120,
+     196
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 7680.0,
+   "target_x_px": 7680.0,
+   "debug": false
+  },
+  {
+   "id": "164,6->164,5",
+   "section": "Tramo 2 «Voces»",
+   "from": {
+    "cell": [
+     164,
+     6
+    ],
+    "ledge": [
+     155,
+     164
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     164,
+     5
+    ],
+    "ledge": [
+     120,
+     196
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 10560.0,
+   "target_x_px": 10560.0,
+   "debug": false
+  },
+  {
+   "id": "263,6->265,4",
+   "section": "Tramo 3 «Cada vez más lejos»",
+   "from": {
+    "cell": [
+     263,
+     6
+    ],
+    "ledge": [
+     262,
+     263
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     265,
+     4
+    ],
+    "ledge": [
+     265,
+     266
+    ],
+    "row": 4
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 16896.0,
+   "target_x_px": 16960.0,
+   "debug": false
+  },
+  {
+   "id": "50,5->50,3",
+   "section": "Tramo 1 «Recientes»",
+   "from": {
+    "cell": [
+     50,
+     5
+    ],
+    "ledge": [
+     29,
+     96
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     50,
+     3
+    ],
+    "ledge": [
+     50,
+     56
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3264.0,
+   "target_x_px": 3264.0,
+   "debug": false
+  },
+  {
+   "id": "107,5->108,3",
+   "section": "Pausa 1",
+   "from": {
+    "cell": [
+     107,
+     5
+    ],
+    "ledge": [
+     106,
+     107
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     108,
+     3
+    ],
+    "ledge": [
+     108,
+     112
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 6896.0,
+   "target_x_px": 6912.0,
+   "debug": true
+  }
+ ]
+}

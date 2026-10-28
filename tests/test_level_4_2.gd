@@ -290,7 +290,7 @@ func test_exit_terminal_completes_the_level_and_returns_to_the_hub() -> void:
 	assert_true(GameState.is_level_completed(&"4-2"), "4-2 en completed_levels")
 	assert_true(GameState.is_level_unlocked(&"4-3"), "Desbloquea la fila del 4-3")
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m4"))
-	assert_true(HubWorlds.is_coming_soon(levels[2]), "El 4-3, «Próximamente» hasta el paso 14")
+	assert_false(HubWorlds.is_coming_soon(levels[2]), "El 4-3, jugable (paso 14)")
 
 
 func test_world_4_folder_loads_the_4_2() -> void:

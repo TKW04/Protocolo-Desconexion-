@@ -34,13 +34,20 @@
 ## «1»; senal countdown_started) y que NO se cancela al salir de la zona; al
 ## acabar se activa sola (encendido, giro y vortice de salida, como con el
 ## pulso). Por defecto 0: el 1-1 al 1-3 no cambian.
+## SIN CONEXION (2026-10-28, paso 14 de docs/propuesta-mundo-4.md, cierre del
+## 4-3 «Responder más tarde» segun V15, §10.2: en Caché Isak sale sin responder):
+## con offline_text (por defecto vacio: los cierres anteriores no cambian), el
+## pulso la activa como siempre pero antes del encendido pasa offline_s segundos
+## (tiempo del mundo) con Isak sin control, el campo de respuesta con el cursor
+## que parpadea (terminal_prompt) y la placa offline_text («Sin conexión») en
+## lugar de la etiqueta (senal offline_shown); despues, encendido, giro y vortice.
 ## No es solida (Area2D, mascara player: solo detecta la cercania de Isak).
 ## Tiempo del mundo (Debug x0,5; se para con la pausa). El origen del nodo es la
 ## esquina superior izquierda de su primera celda.
 class_name ExitTerminal
 extends Area2D
 
-enum State { OFF, PROMPT, COUNTDOWN, BOOT, TURN, WARP, DONE }
+enum State { OFF, PROMPT, COUNTDOWN, BOOT, TURN, WARP, DONE, OFFLINE }
 
 const GROUP: StringName = &"exit_terminal"
 const ANIM_OFF: StringName = &"terminal_off"
@@ -56,6 +63,8 @@ signal completed(level_id: String)
 signal powered
 ## Empieza la cuenta automatica (countdown_s > 0).
 signal countdown_started(seconds: float)
+## Sale la placa «Sin conexión» (offline_text) al activarla (2026-10-28).
+signal offline_shown(text: String)
 
 @export var object_id: StringName = &""
 ## Etiqueta opcional encima de la terminal (vacio = sin etiqueta).
@@ -74,6 +83,10 @@ signal countdown_started(seconds: float)
 ## Cuenta automatica en segundos (2026-10-22): > 0 = se activa sola al acabar la
 ## cuenta, que empieza al entrar Isak en la zona; sin pulso. 0 = con el pulso.
 @export_range(0.0, 10.0) var countdown_s: float = 0.0
+## Placa que sale al activarla, antes del encendido (2026-10-28; vacio = sin ella).
+@export var offline_text: String = ""
+## Segundos (tiempo del mundo) con la placa offline_text antes del encendido.
+@export_range(0.5, 4.0) var offline_s: float = 1.6
 
 var _config: Dictionary = World1ObjectsConfig.section("exit_terminal")
 var _state: State = State.OFF
@@ -87,6 +100,8 @@ var _key_label: Label
 var _key_base_y: float = 0.0
 var _vortex: WarpVortex
 var _had_power: bool = true
+var _label_root: Node2D
+var _offline_root: Node2D
 
 
 func _ready() -> void:
@@ -161,6 +176,11 @@ func get_animation() -> StringName:
 	return _sprite.animation
 
 
+## La placa offline_text se ve (mientras dura el «Sin conexión»).
+func is_offline_shown() -> bool:
+	return _offline_root != null and _offline_root.visible
+
+
 ## SpriteFrames del aspecto (skin; sin skin o desconocido, frames de la seccion).
 func get_frames_path() -> String:
 	var skins: Dictionary = _config.get("skins", {})
@@ -207,13 +227,15 @@ func receive_pulse(area: Area2D) -> bool:
 func activate(isak: Isak) -> bool:
 	if (_state != State.OFF and _state != State.PROMPT and _state != State.COUNTDOWN) or not is_powered():
 		return false
-	_state = State.BOOT
+	_state = State.OFFLINE if not offline_text.is_empty() else State.BOOT
 	_time = 0.0
 	_player = isak
 	if _valid(_player):
 		_player.begin_warp(false)
 	_apply_visuals()
 	activated.emit(resolved_level_id())
+	if _state == State.OFFLINE:
+		offline_shown.emit(offline_text)
 	return true
 
 
@@ -249,6 +271,13 @@ func advance(delta: float) -> void:
 			if _time >= countdown_s:
 				activate(_player if _valid(_player) else _near)
 			return
+		State.OFFLINE:
+			_loop(ANIM_PROMPT)
+			if _time < offline_s:
+				return
+			_time -= offline_s
+			_state = State.BOOT
+			_apply_visuals()
 	# Encendido y giro: un paso largo puede cruzar los dos (el tiempo sobrante
 	# pasa al giro).
 	if _state == State.BOOT:
@@ -381,13 +410,17 @@ func _apply_visuals() -> void:
 	match _state:
 		State.OFF:
 			_show(ANIM_OFF)
-		State.PROMPT, State.COUNTDOWN:
+		State.PROMPT, State.COUNTDOWN, State.OFFLINE:
 			_show(ANIM_PROMPT)
 		State.BOOT, State.TURN:
 			_show(ANIM_BOOT)
 		_:
 			_show(ANIM_ON)
 	_key_root.visible = _state == State.PROMPT or _state == State.COUNTDOWN
+	if _offline_root != null:
+		_offline_root.visible = _state == State.OFFLINE
+		if _label_root != null:
+			_label_root.visible = _state != State.OFFLINE
 
 
 func _show(anim: StringName) -> void:
@@ -457,8 +490,14 @@ func _build() -> void:
 	_key_label = _key_root.get_node(^"Text") as Label
 	_key_base_y = _key_root.position.y
 	if not text.is_empty():
-		_plate("Label", text, font, String(_config["label_plate_color"]), String(_config["label_border_color"]),
+		_label_root = _plate("Label", text, font, String(_config["label_plate_color"]),
+			String(_config["label_border_color"]), float(_config.get("label_padding_px", 3)), size.x,
+			monitor_top - float(_config.get("label_gap_px", 44)))
+	if not offline_text.is_empty():
+		_offline_root = _plate("Offline", offline_text, font, String(_config["label_plate_color"]),
+			String(_config.get("offline_border_color", _config["label_border_color"])),
 			float(_config.get("label_padding_px", 3)), size.x, monitor_top - float(_config.get("label_gap_px", 44)))
+		_offline_root.visible = false
 
 
 ## Placa con borde y texto (fuente de textos a font_scale), centrada en

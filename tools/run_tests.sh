@@ -142,6 +142,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 12 (2026-10-27): el 3-2 real (tests/test_level_3_2.py, camino exportado y subidas al dia).
 # Desde el paso 13 (2026-10-27): el 3-3 real (tests/test_level_3_3.py, camino exportado y subidas al dia) y el arte
 # del marco dorado de salida (tools/gen_world3_exit_frame.py --check).
+# Desde el paso 14 de docs/propuesta-mundo-4.md (2026-10-28): el arte de la puerta «Responder más tarde» del 4-3
+# (tools/gen_world4_exit_reply.py --check).
 # Desde el paso 14 (2026-10-27): los datos y la logica de La Curadora (tests/test_curator.gd, GUT: marca solo con el
 # Debug, un golpe por marca y la via por el espejo cazador de la fase 2).
 # Desde el paso 15 (2026-10-27): la arena 3-boss «Exposición» (se valida y construye con las demas: esquema,
@@ -170,6 +172,7 @@ rm -f "$IMPORT_LOG"
 # por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).
 # Desde el paso 11 (2026-10-28): el 4-1 real (tests/test_level_4_1.py, camino exportado y subidas al dia).
 # Desde el paso 13 (2026-10-28): el 4-2 real (tests/test_level_4_2.py, camino exportado y subidas al dia).
+# Desde el paso 14 (2026-10-28): el 4-3 real (tests/test_level_4_3.py, camino exportado y subidas al dia).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -179,7 +182,7 @@ _export_test_rooms() {
 		"$PROJECT_DIR"/data/levels/1-3.json "$PROJECT_DIR"/data/levels/2-1.json "$PROJECT_DIR"/data/levels/2-2.json \
 		"$PROJECT_DIR"/data/levels/2-3.json "$PROJECT_DIR"/data/levels/3-1.json \
 		"$PROJECT_DIR"/data/levels/3-2.json "$PROJECT_DIR"/data/levels/3-3.json "$PROJECT_DIR"/data/levels/4-1.json \
-		"$PROJECT_DIR"/data/levels/4-2.json; do
+		"$PROJECT_DIR"/data/levels/4-2.json "$PROJECT_DIR"/data/levels/4-3.json; do
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
@@ -213,7 +216,7 @@ _validate_levels() {
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
-		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
+		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_world4_schema.py tests/test_world4_validator.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py \
@@ -232,6 +235,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/level_climbs.py --check data/levels/3-3.json \
 		&& python3 tools/level_climbs.py --check data/levels/4-1.json \
 		&& python3 tools/level_climbs.py --check data/levels/4-2.json \
+		&& python3 tools/level_climbs.py --check data/levels/4-3.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \
@@ -244,7 +248,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
 		&& python3 -I tools/palette_mundo3_provisional.py --check && python3 -I tools/palette_mundo3_preview.py --check \
-		&& python3 -I tools/gen_world3_exit_frame.py --check && python3 -I tools/palette_mundo4_provisional.py --check \
+		&& python3 -I tools/gen_world3_exit_frame.py --check && python3 -I tools/gen_world4_exit_reply.py --check && python3 -I tools/palette_mundo4_provisional.py --check \
 		&& python3 -I tools/palette_mundo4_variants.py --check && python3 -I tools/gen_world4_objects.py --check \
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \

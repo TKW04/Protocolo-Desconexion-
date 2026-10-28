@@ -5,8 +5,9 @@
 # zonas «Visto» con ciclo, y la terminal «Enviar»), vuelve al hub con el nivel completado, sin morir ni
 # congelarse, y con la duracion de juego entre el 40 y el 55 % del objetivo (§4). Desde el paso 13 tambien el
 # 4-2 «Grupo sin respuesta» (obtiene Agitar en el «¿Deshacer escritura?», deshace el muro de texto, aturde los
-# grupos de Trolls y las tandas de Stickers con Agitar, pulsa a los Fantasmas y cruza las zonas «Visto»). Usa su
-# propio guardado (ISAK_SAVE_PATH).
+# grupos de Trolls y las tandas de Stickers con Agitar, pulsa a los Fantasmas y cruza las zonas «Visto») y desde el
+# paso 14 el 4-3 «Mensajes sin leer» (con Agitar, por delante de la ola de «Visto» sin que lo alcance, y la puerta
+# «Responder más tarde» con «Sin conexión»). Usa su propio guardado (ISAK_SAVE_PATH).
 extends GutTest
 
 const PLAYER: String = "res://tools/play_chat_bot.gd"
@@ -53,6 +54,18 @@ func test_chat_bot_completes_level_4_2_and_obtains_shockwave() -> void:
 			"Linterna conocida", "Fantasma fantasma_pasillo: stunned", "hub: carpeta M4"]:
 		assert_string_contains(text, piece)
 	assert_false(text.contains("Agitar NO SALE"), "Cada Agitar del camino sale")
+	assert_false(text.contains("SIN ATURDIR"), "Cada Fantasma que se activa queda aturdido")
+
+
+func test_chat_bot_completes_level_4_3_ahead_of_the_wave() -> void:
+	var run: Dictionary = _play("4-3")
+	var text: String = run["text"]
+	assert_eq(run["code"], 0, "El bot del 4-3 termina con 0:\n%s" % run["summary"])
+	assert_string_contains(text, "play_chat_bot (4-3): OK")
+	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % run["summary"])
+	for piece: String in ["hub cargado tras completar el 4-3", "CHAT: muertes 0", "golpes 0", "congelaciones 0",
+			"pulsos al doble check 1", "esperas de zonas con ciclo 6", "Linterna conocida", "hub: carpeta M4"]:
+		assert_string_contains(text, piece)
 	assert_false(text.contains("SIN ATURDIR"), "Cada Fantasma que se activa queda aturdido")
 
 

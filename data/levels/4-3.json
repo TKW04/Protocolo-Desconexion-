@@ -1,0 +1,2017 @@
+{
+	"_notes": "NIVEL 4-3 «Mensajes sin leer» (paso 14 de docs/propuesta-mundo-4.md §8, 2026-10-28; diseño en su §4.3 y §4.3.1, desvíos en §8.1). Horizontal de 300 x 14 (suelo en la fila 12; cámara simple), dificultad 5, objetivo 480 s. Llega con todo el kit, la Linterna y Agitar. OLA DE «VISTO» (ola_leido, 1, 0): arranca al cruzar Isak la columna 20, avanza a 1,0 tiles/s hasta la 101, a 1,2 hasta la 207 y de 1,2 a 1,6 en el Tramo 3; paradas parada_sync_1 (espera en la 96 hasta que Isak cruza la 114) y parada_sync_2 (198 / 207); se apaga en la 280, a 6 tiles del cierre. El camino del validador nunca queda a menos de 3 tiles de su frente (lo más cerca, 3,5 tiles, al volver por la banda de la fila 9 del primer bloque). ESTRUCTURA (decisión tomada, como en el 4-1 y el 4-2: la ola va a 1,0-1,6 tiles/s y Isak anda a 3,4, así que el camino recto saldría en unos 100 s): los tramos 1 y 2 son BANDAS en dos bloques cada uno, uno que sube (suelo, banda de la fila 9 hacia la izquierda, banda de la fila 6) y otro que baja (fila 6, caída a la 9 hacia la izquierda, pozo de 1 columna al suelo); las vueltas hacia la izquierda son las que acercan la ola. El Tramo 3 es recto, sobre un suelo alto (macizo desde la fila 9) con fosos de 3 filas (bloque de salida al fondo) que crecen: 2, 2, 3, 3, 4, 4 y el último con dos «escribiendo…». INICIO «Sin leer (37)» (0-20): vórtice (3, 11), la Linterna del 4-1 (linterna_4_3, 1, 11; no sale si ya es conocida: el validador la necesita para la tinta del secreto B), la burbuja «37 mensajes sin leer» y 1 punto. TRAMO 1 «Recientes» (21-100, sin enemigos): burbujas de Lía y de los otros con sellos (2 d, 5 d), la zona «Visto» obligatoria del suelo (patrón 22: pulso al check), dos «escribiendo…», una zona con ciclo, cargador_1 (62, 5) y 2 puntos (uno sobre la burbuja alta de Lía «¿Estás bien? Hace días que no contestas.»). PAUSA 1 (101-108): sync_1 (104, 11). Secreto A «Conversación completa»: escalera de plataformas ocultas (Debug) hasta la pared con glitch que solo se ve con el Debug (110, filas 2-3) y el nicho alto con msg_4_3 (Lía) y 2 puntos; sin dash. TRAMO 2 «Voces» (109-200): seis Fantasmas (detect_tiles 2; en el bloque que sube, flotando un tile sobre su banda para que no los dispare la de abajo), tres Trolls disfrazados de Marco (el Debug los distingue; en el bloque que baja) y la burbuja de verdad «Te guardé un lugar para el torneo.»; dos «escribiendo…», una zona con ciclo, cargador_2 (150, 11) y 1 punto. PAUSA 2 (201-206): sync_2 (203, 11) y el escalón al suelo alto. TRAMO 3 «Cada vez más lejos» (207-285): sellos de hora (hace 2 semanas, 1 mes, 2 meses, 3 meses) sobre los tramos de suelo, cuatro zonas con ciclo, cargador_3 (230, 8), Modo oscuro desde la 258 (madrugada) y 1 punto. Secreto B «Borrador»: paso en tinta (Linterna) y repisa con el power bank. Secreto C: al principio del tramo, de vuelta hacia la ola, la burbuja alta «hace 3 meses» dentro de una zona «Visto» en el aire cuyo check no se alcanza con el pulso: se sube congelado y Agitar suelta; 1 punto. CIERRE «Tomi» (286-299): la última burbuja de Tomi «Ok, cuando quieras hablar, aquí estoy.» sobre un foso, 1 punto y la puerta «Responder más tarde» (terminal_responder, 296, 7; skin chat_reply; V15: al pulsarla, el campo de respuesta con el cursor y «Sin conexión» 1,6 s, e Isak sale sin responder). Desbloquea la fila del jefe (4-boss). 9 puntos (6 + 3), 3 cargadores, 1 power bank, sin vida extra, 2 puntos de sincronización. Valida sin avisos; camino exportado de unos 236 s (49 % de 480); bot del chat, unos 197 s (41 %). Textos de las burbujas PROPUESTOS.",
+	"id": "4-3",
+	"name": "Mensajes sin leer",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"target_duration_s": 480,
+	"difficulty": 5,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"shockwave": true
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio «Sin leer (37)»",
+			"x_from": 0,
+			"x_to": 20
+		},
+		{
+			"name": "Tramo 1 «Recientes»",
+			"x_from": 21,
+			"x_to": 100,
+			"patterns": [
+				"tiempo_contra_distancia"
+			]
+		},
+		{
+			"name": "Pausa 1",
+			"x_from": 101,
+			"x_to": 108
+		},
+		{
+			"name": "Tramo 2 «Voces»",
+			"x_from": 109,
+			"x_to": 200
+		},
+		{
+			"name": "Pausa 2",
+			"x_from": 201,
+			"x_to": 206
+		},
+		{
+			"name": "Tramo 3 «Cada vez más lejos»",
+			"x_from": 207,
+			"x_to": 285,
+			"patterns": [
+				"saltar_antes_de_que_exista"
+			]
+		},
+		{
+			"name": "Cierre «Tomi»",
+			"x_from": 286,
+			"x_to": 299
+		}
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 104,
+			"y": 11
+		},
+		{
+			"id": "sync_2",
+			"x": 203,
+			"y": 11
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_conversacion",
+			"x": 112,
+			"y": 3,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 2,
+			"memory_id": "msg_4_3",
+			"needs_debug": true,
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "A"
+		},
+		{
+			"id": "secreto_borrador",
+			"x": 266,
+			"y": 4,
+			"object": "power_bank_pickup",
+			"reward": "power_bank",
+			"note": "B"
+		},
+		{
+			"id": "secreto_visto_alto",
+			"x": 210,
+			"y": 6,
+			"reward": "attention_points",
+			"points": 1,
+			"note": "C"
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "4-boss"
+		}
+	],
+	"grid": [
+		"############################################################################################################################################################################################################################################################################################################",
+		"#...........................................................#.......................................#.........####........................................#.............................................#..................................................................................................#",
+		"#...........................................................#.......................................#..........o.#........................................#.............................................#..................................................................................................#",
+		"#....................................................o......#.......................................#..........oS#........................................#.............................................#..................................................................................................#",
+		"#...................................................................................................#.......hh####................E..............E......................................................#..................................................................................................#",
+		"#...................................................................................................#.........####....................................................E...................E.............#................................................................##................................#",
+		"#...........................................................#.......................................#.....hh..............................................#...........-...................-.............#........oS........................................................................................#",
+		"#..........................--...............................###.....................................#.................--....................E.............###########...................................#..................................................................................................#",
+		"#...........................................................###.....................................#...hh................................................###########.....E.......E............E........#...........................................o.............................................o.....G..#",
+		"#........o..................................................###.....................................#.....................................................###########.............-.....................#......########..########..#########...########...#######....########....###......#####.......######",
+		"#........................................................--.###.......................................hh...............................................--.###########........................................--########..########..#########...########...#######....########....###......#####.......######",
+		"#..P........................................................###.....................o...................C.................................................###########.................E.......o............C...########.#########.##########..#########..########...#########...####.....######......#######",
+		"############################################################################################################################################################################################################################################################################################################",
+		"############################################################################################################################################################################################################################################################################################################"
+	],
+	"objects": [
+		{
+			"type": "flashlight_pickup",
+			"x": 1,
+			"y": 11,
+			"params": {
+				"id": "linterna_4_3"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 7,
+			"y": 10,
+			"params": {
+				"id": "sin_leer_37",
+				"text": "37 mensajes sin leer",
+				"side": "left",
+				"stamp": "03:47"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 12,
+			"y": 6,
+			"params": {
+				"id": "inicio_lia",
+				"text": "Lía: ¿estás?",
+				"side": "left",
+				"deleted": true,
+				"friend": "lia"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 15,
+			"y": 3,
+			"params": {
+				"id": "inicio_tomi",
+				"text": "Tomi: holaaa",
+				"side": "left",
+				"deleted": true,
+				"friend": "tomi"
+			}
+		},
+		{
+			"type": "seen_wave",
+			"x": 1,
+			"y": 0,
+			"params": {
+				"id": "ola_leido",
+				"start_col": 20,
+				"end_col": 280,
+				"sections": [
+					{
+						"x_from": 0,
+						"x_to": 101,
+						"speed_tiles_s": 1.0
+					},
+					{
+						"x_from": 101,
+						"x_to": 207,
+						"speed_tiles_s": 1.2
+					},
+					{
+						"x_from": 207,
+						"x_to": 281,
+						"speed_tiles_s": 1.2,
+						"speed_to_tiles_s": 1.6
+					}
+				],
+				"stops": [
+					{
+						"id": "parada_sync_1",
+						"at_col": 96,
+						"resume_col": 114
+					},
+					{
+						"id": "parada_sync_2",
+						"at_col": 198,
+						"resume_col": 207
+					}
+				]
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 40,
+			"y": 10,
+			"params": {
+				"id": "visto_espalda",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"icon": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 26,
+			"y": 9,
+			"params": {
+				"id": "t1b2_0",
+				"text": "¿Estás bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 28,
+			"y": 9,
+			"params": {
+				"id": "t1b2_1",
+				"text": "hace días que no sé de ti",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 33,
+			"y": 9,
+			"params": {
+				"id": "t1b2_2",
+				"text": "ok",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 34,
+			"y": 9,
+			"params": {
+				"id": "t1b2_3",
+				"text": "jaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 35,
+			"y": 9,
+			"params": {
+				"id": "t1b2_4",
+				"text": "¿vienes el sábado?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 38,
+			"y": 9,
+			"params": {
+				"id": "t1b2_5",
+				"text": "te escribo luego",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 41,
+			"y": 9,
+			"params": {
+				"id": "t1b2_6",
+				"text": "Lía: ¿todo bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 46,
+			"y": 9,
+			"params": {
+				"id": "t1b2_7",
+				"text": "Tomi: ¿juegas hoy?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 49,
+			"y": 9,
+			"params": {
+				"id": "t1b2_8",
+				"text": "Marco: te guardo sitio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 53,
+			"y": 9,
+			"params": {
+				"id": "t1b2_9",
+				"text": "¿y?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 54,
+			"y": 9,
+			"params": {
+				"id": "t1b2_10",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 55,
+			"y": 9,
+			"params": {
+				"id": "t1b2_11",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 56,
+			"y": 9,
+			"params": {
+				"id": "t1b2_12",
+				"text": "visto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 44,
+			"y": 9,
+			"params": {
+				"id": "t1_escribiendo",
+				"text": "escribiendo",
+				"side": "left",
+				"trigger_zone": [
+					46,
+					7,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 29,
+			"y": 6,
+			"params": {
+				"id": "t1b3_0",
+				"text": "¿hola?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 30,
+			"y": 6,
+			"params": {
+				"id": "t1b3_1",
+				"text": "¿sigues ahí?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 32,
+			"y": 6,
+			"params": {
+				"id": "t1b3_2",
+				"text": "ya",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 33,
+			"y": 6,
+			"params": {
+				"id": "t1b3_3",
+				"text": "cuando puedas",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 38,
+			"y": 6,
+			"params": {
+				"id": "t1b3_4",
+				"text": "un audio",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 40,
+			"y": 6,
+			"params": {
+				"id": "t1b3_5",
+				"text": "¿te acuerdas del garaje?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 44,
+			"y": 6,
+			"params": {
+				"id": "t1b3_6",
+				"text": "mañana sin falta",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 47,
+			"y": 6,
+			"params": {
+				"id": "t1b3_7",
+				"text": "no pasa nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 49,
+			"y": 6,
+			"params": {
+				"id": "t1b3_8",
+				"text": "aquí estamos",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 51,
+			"y": 6,
+			"params": {
+				"id": "t1b3_9",
+				"text": "foto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 52,
+			"y": 6,
+			"params": {
+				"id": "t1b3_10",
+				"text": "¿qué tal?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 54,
+			"y": 6,
+			"params": {
+				"id": "t1b3_11",
+				"text": "¿Estás bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 56,
+			"y": 6,
+			"params": {
+				"id": "t1b3_12",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 57,
+			"y": 6,
+			"params": {
+				"id": "t1b3_13",
+				"text": "jaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 58,
+			"y": 6,
+			"params": {
+				"id": "t1b3_14",
+				"text": "¿y?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 59,
+			"y": 6,
+			"params": {
+				"id": "t1b3_15",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 36,
+			"y": 6,
+			"params": {
+				"id": "t1_escribiendo_2",
+				"text": "escribiendo",
+				"side": "right",
+				"trigger_zone": [
+					34,
+					4,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 50,
+			"y": 4,
+			"params": {
+				"id": "lia_2_dias",
+				"text": "¿Estás bien? Hace días que no contestas.",
+				"side": "left",
+				"friend": "lia",
+				"stamp": "2 d"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 61,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_0",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 62,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_1",
+				"text": "visto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 63,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_2",
+				"text": "¿hola?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 64,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_3",
+				"text": "¿sigues ahí?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 66,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_4",
+				"text": "ya",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 67,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_5",
+				"text": "te echamos de menos",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 71,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_6",
+				"text": "cuando puedas",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 74,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_7",
+				"text": "un audio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 76,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_8",
+				"text": "¿te acuerdas del garaje?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 80,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_9",
+				"text": "mañana sin falta",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 83,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_10",
+				"text": "no pasa nada",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 85,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_11",
+				"text": "aquí estamos",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 87,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_12",
+				"text": "foto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 88,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_13",
+				"text": "¿qué tal?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 90,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_14",
+				"text": "¿Estás bien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 92,
+			"y": 6,
+			"params": {
+				"id": "t1b3b_15",
+				"text": "hace días que no sé de ti",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 64,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_0",
+				"text": "ok",
+				"side": "left",
+				"stamp": "5 d"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 65,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_1",
+				"text": "jaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 66,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_2",
+				"text": "¿vienes el sábado?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 69,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_3",
+				"text": "te escribo luego",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 72,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_4",
+				"text": "Lía: ¿todo bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 75,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_5",
+				"text": "Tomi: ¿juegas hoy?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 78,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_6",
+				"text": "Marco: te guardo sitio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 82,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_7",
+				"text": "¿y?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 83,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_8",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 84,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_9",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 85,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_10",
+				"text": "visto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 86,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_11",
+				"text": "¿hola?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 87,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_12",
+				"text": "¿sigues ahí?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 89,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_13",
+				"text": "ya",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 90,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_14",
+				"text": "te echamos de menos",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 94,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_15",
+				"text": "cuando puedas",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 97,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_16",
+				"text": "un audio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 99,
+			"y": 9,
+			"params": {
+				"id": "t1b2b_17",
+				"text": "foto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 62,
+			"y": 5,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 90,
+			"y": 10,
+			"params": {
+				"id": "visto_ciclo_1",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 110,
+			"y": 2,
+			"params": {
+				"id": "pared_conversacion",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"visible_only_with_debug": true
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 112,
+			"y": 3,
+			"params": {
+				"id": "mensaje_4_3",
+				"memory_id": "msg_4_3"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 117,
+			"y": 9,
+			"params": {
+				"id": "t2b2_0",
+				"text": "¿qué tal?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 119,
+			"y": 9,
+			"params": {
+				"id": "t2b2_1",
+				"text": "¿Estás bien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 121,
+			"y": 9,
+			"params": {
+				"id": "t2b2_2",
+				"text": "hace días que no sé de ti",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 126,
+			"y": 9,
+			"params": {
+				"id": "t2b2_3",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 127,
+			"y": 9,
+			"params": {
+				"id": "t2b2_4",
+				"text": "jaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 128,
+			"y": 9,
+			"params": {
+				"id": "t2b2_5",
+				"text": "¿vienes el sábado?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 131,
+			"y": 9,
+			"params": {
+				"id": "t2b2_6",
+				"text": "te escribo luego",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 136,
+			"y": 9,
+			"params": {
+				"id": "t2b2_7",
+				"text": "Lía: ¿todo bien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 139,
+			"y": 9,
+			"params": {
+				"id": "t2b2_8",
+				"text": "Tomi: ¿juegas hoy?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 142,
+			"y": 9,
+			"params": {
+				"id": "t2b2_9",
+				"text": "Marco: te guardo sitio",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 146,
+			"y": 9,
+			"params": {
+				"id": "t2b2_10",
+				"text": "¿y?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 147,
+			"y": 9,
+			"params": {
+				"id": "t2b2_11",
+				"text": "nada",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 148,
+			"y": 9,
+			"params": {
+				"id": "t2b2_12",
+				"text": "bueno",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 149,
+			"y": 9,
+			"params": {
+				"id": "t2b2_13",
+				"text": "visto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 150,
+			"y": 9,
+			"params": {
+				"id": "t2b2_14",
+				"text": "¿hola?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 134,
+			"y": 9,
+			"params": {
+				"id": "t2_escribiendo",
+				"text": "escribiendo",
+				"side": "left",
+				"trigger_zone": [
+					136,
+					7,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 120,
+			"y": 6,
+			"params": {
+				"id": "t2b3_0",
+				"text": "¿sigues ahí?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 122,
+			"y": 6,
+			"params": {
+				"id": "t2b3_1",
+				"text": "ya",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 123,
+			"y": 6,
+			"params": {
+				"id": "t2b3_2",
+				"text": "te echamos de menos",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 127,
+			"y": 6,
+			"params": {
+				"id": "t2b3_3",
+				"text": "cuando puedas",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 130,
+			"y": 6,
+			"params": {
+				"id": "t2b3_4",
+				"text": "un audio",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 132,
+			"y": 6,
+			"params": {
+				"id": "t2b3_5",
+				"text": "¿te acuerdas del garaje?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 136,
+			"y": 6,
+			"params": {
+				"id": "t2b3_6",
+				"text": "mañana sin falta",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 139,
+			"y": 6,
+			"params": {
+				"id": "t2b3_7",
+				"text": "foto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 142,
+			"y": 6,
+			"params": {
+				"id": "t2b3_8",
+				"text": "¿qué tal?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 144,
+			"y": 6,
+			"params": {
+				"id": "t2b3_9",
+				"text": "¿Estás bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 146,
+			"y": 6,
+			"params": {
+				"id": "t2b3_10",
+				"text": "hace días que no sé de ti",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 151,
+			"y": 6,
+			"params": {
+				"id": "t2b3_11",
+				"text": "ok",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 152,
+			"y": 6,
+			"params": {
+				"id": "t2b3_12",
+				"text": "jaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 153,
+			"y": 6,
+			"params": {
+				"id": "t2b3_13",
+				"text": "¿y?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 140,
+			"y": 6,
+			"params": {
+				"id": "t2_escribiendo_2",
+				"text": "escribiendo",
+				"side": "right",
+				"trigger_zone": [
+					138,
+					4,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "charger",
+			"x": 150,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 155,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_0",
+				"text": "nada",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 156,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_1",
+				"text": "bueno",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 157,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_2",
+				"text": "visto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 158,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_3",
+				"text": "¿hola?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 159,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_4",
+				"text": "¿sigues ahí?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 161,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_5",
+				"text": "ya",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 162,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_6",
+				"text": "te echamos de menos",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 167,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_7",
+				"text": "cuando puedas",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 170,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_8",
+				"text": "un audio",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 172,
+			"y": 6,
+			"params": {
+				"id": "t2b3b_9",
+				"text": "foto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 173,
+			"y": 6,
+			"params": {
+				"id": "marco_torneo",
+				"text": "Te guardé un lugar para el torneo.",
+				"side": "left",
+				"friend": "marco",
+				"stamp": "1 sem"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 179,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_0",
+				"text": "¿qué tal?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 181,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_1",
+				"text": "¿Estás bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 183,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_2",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 184,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_3",
+				"text": "jaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 185,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_4",
+				"text": "¿y?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 187,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_5",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 188,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_6",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 189,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_7",
+				"text": "visto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 190,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_8",
+				"text": "¿hola?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 191,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_9",
+				"text": "¿sigues ahí?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 193,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_10",
+				"text": "ya",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 194,
+			"y": 6,
+			"params": {
+				"id": "t2b3c_11",
+				"text": "cuando puedas",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 166,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_0",
+				"text": "un audio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 168,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_1",
+				"text": "¿te acuerdas del garaje?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 172,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_2",
+				"text": "mañana sin falta",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 175,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_3",
+				"text": "no pasa nada",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 177,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_4",
+				"text": "foto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 179,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_5",
+				"text": "¿qué tal?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 181,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_6",
+				"text": "¿Estás bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 183,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_7",
+				"text": "hace días que no sé de ti",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 188,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_8",
+				"text": "ok",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 189,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_9",
+				"text": "jaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 190,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_10",
+				"text": "¿vienes el sábado?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 193,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_11",
+				"text": "te escribo luego",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 196,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_12",
+				"text": "Lía: ¿todo bien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 199,
+			"y": 9,
+			"params": {
+				"id": "t2b2b_13",
+				"text": "¿y?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 193,
+			"y": 10,
+			"params": {
+				"id": "visto_ciclo_2",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 2.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 211,
+			"y": 6,
+			"params": {
+				"id": "sello_0",
+				"text": "hace 2 semanas",
+				"side": "left",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 218,
+			"y": 6,
+			"params": {
+				"id": "sello_1",
+				"text": "¿sigues ahí?",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 228,
+			"y": 6,
+			"params": {
+				"id": "sello_2",
+				"text": "hace 1 mes",
+				"side": "left",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 240,
+			"y": 6,
+			"params": {
+				"id": "sello_3",
+				"text": "cuando puedas",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 251,
+			"y": 6,
+			"params": {
+				"id": "sello_4",
+				"text": "hace 2 meses",
+				"side": "left",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 283,
+			"y": 6,
+			"params": {
+				"id": "sello_7",
+				"text": "hace 3 meses",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 277,
+			"y": 9,
+			"params": {
+				"id": "t3_escribiendo_1",
+				"text": "…",
+				"side": "left",
+				"trigger_zone": [
+					273,
+					7,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 279,
+			"y": 9,
+			"params": {
+				"id": "t3_escribiendo_2",
+				"text": "ya voy, ya",
+				"side": "left",
+				"trigger_zone": [
+					273,
+					7,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "charger",
+			"x": 230,
+			"y": 8,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 232,
+			"y": 7,
+			"params": {
+				"id": "visto_ciclo_6",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 2.5
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 242,
+			"y": 7,
+			"params": {
+				"id": "visto_ciclo_3",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 253,
+			"y": 7,
+			"params": {
+				"id": "visto_ciclo_4",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 1.5
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 264,
+			"y": 7,
+			"params": {
+				"id": "visto_ciclo_5",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 3.0
+			}
+		},
+		{
+			"type": "dark_zone",
+			"x": 258,
+			"y": 1,
+			"params": {
+				"id": "madrugada",
+				"width_tiles": 28,
+				"height_tiles": 11
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 262,
+			"y": 7,
+			"params": {
+				"id": "borrador_paso",
+				"kind": "step",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 260,
+			"y": 5,
+			"params": {
+				"id": "borrador_texto",
+				"kind": "decor",
+				"text": "perdón por no\ncontestar, es que…",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 266,
+			"y": 4,
+			"params": {
+				"id": "power_bank_4_3"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 209,
+			"y": 7,
+			"params": {
+				"id": "tres_meses_alta",
+				"text": "hace 3 meses",
+				"side": "right",
+				"stamp": "03:12"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 209,
+			"y": 5,
+			"params": {
+				"id": "visto_alto",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 287,
+			"y": 9,
+			"params": {
+				"id": "tomi_ultima",
+				"text": "Ok, cuando quieras hablar, aquí estoy.",
+				"side": "left",
+				"friend": "tomi",
+				"stamp": "3 mes"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 296,
+			"y": 7,
+			"params": {
+				"id": "terminal_responder",
+				"text": "Responder más tarde",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"skin": "chat_reply",
+				"offline_text": "Sin conexión"
+			}
+		}
+	],
+	"enemies": [
+		{
+			"id": "fantasma_voces_1",
+			"type": "ghost",
+			"x": 140,
+			"y": 7,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_voces_2",
+			"type": "ghost",
+			"x": 145,
+			"y": 4,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "marco_falso_1",
+			"type": "troll_mimic",
+			"x": 166,
+			"y": 5,
+			"params": {
+				"text": "¿vienes o qué?",
+				"friend": "marco"
+			}
+		},
+		{
+			"id": "marco_falso_2",
+			"type": "troll_mimic",
+			"x": 186,
+			"y": 5,
+			"params": {
+				"text": "contesta, va",
+				"friend": "marco"
+			}
+		},
+		{
+			"id": "marco_falso_3",
+			"type": "troll_mimic",
+			"x": 178,
+			"y": 8,
+			"params": {
+				"text": "¿me oyes?",
+				"friend": "marco"
+			}
+		},
+		{
+			"id": "fantasma_voces_3",
+			"type": "ghost",
+			"x": 170,
+			"y": 8,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_voces_4",
+			"type": "ghost",
+			"x": 182,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_voces_5",
+			"type": "ghost",
+			"x": 130,
+			"y": 4,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_voces_6",
+			"type": "ghost",
+			"x": 191,
+			"y": 8,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		}
+	]
+}

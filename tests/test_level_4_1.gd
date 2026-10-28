@@ -337,7 +337,7 @@ func test_world_4_folder_lists_4_1_after_the_update_and_loads_it() -> void:
 	assert_eq(levels.size(), 4, "4-1, 4-2, 4-3 y el jefe")
 	assert_eq(panel.level_text(levels[0]), "4-1 Chats recientes - Nuevo")
 	assert_false(HubWorlds.is_coming_soon(levels[1]), "El 4-2 existe desde el paso 13 (bloqueado hasta el 4-1)")
-	assert_true(HubWorlds.is_coming_soon(levels[2]), "El 4-3 aun no existe")
+	assert_false(HubWorlds.is_coming_soon(levels[2]), "El 4-3 existe desde el paso 14 (bloqueado hasta el 4-2)")
 	assert_true(HubWorlds.is_coming_soon(levels[3]), "El jefe aun no existe")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"4-1"))

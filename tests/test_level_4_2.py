@@ -269,7 +269,7 @@ class Level42Test(unittest.TestCase):
             hub = json.load(handle)
         m4 = next(w for w in hub["worlds"] if w["id"] == "m4")
         rows = [(lv["id"], lv["playable"]) for lv in m4["levels"]]
-        self.assertEqual(rows, [("4-1", True), ("4-2", True), ("4-3", False), ("4-boss", False)])
+        self.assertEqual(rows, [("4-1", True), ("4-2", True), ("4-3", True), ("4-boss", False)])
         self.assertTrue(os.path.exists(os.path.join(ROOT, "scenes", "levels", "4-2.tscn")))
         with open(os.path.join(ROOT, "data", "memories.json"), encoding="utf-8") as handle:
             memories = {m["id"]: m for m in json.load(handle)["memories"]}

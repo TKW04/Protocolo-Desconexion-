@@ -305,6 +305,19 @@
       "subject": "Sábado",
       "title": "Sábado",
       "text": "Isak, traje la cadena nueva para la bici de Lía. Falta el mecánico. Ya sabes quién. Sábado, como siempre.\nMarco (hace 3 meses)"
+    },
+    {
+      "id": "msg_4_3",
+      "world": 4,
+      "kind": "secret",
+      "order": 3,
+      "level": "4-3",
+      "secret": "secreto_conversacion",
+      "first_lap": 1,
+      "sender": "Lía",
+      "subject": "Conversación completa",
+      "title": "Conversación completa",
+      "text": "Isak, ¿te acuerdas del garaje? Tomi todavía cuenta lo de la cadena como si fuera magia. Hoy no te escribo más. Mañana sí.\nLía (hace 2 días)"
     }
   ]
 }
