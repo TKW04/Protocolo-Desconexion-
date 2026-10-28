@@ -292,6 +292,19 @@
       "subject": "Meme del día",
       "title": "Meme del día",
       "text": "Isak, te mandé el meme del perro con casco. Si no te ríes es que te secuestraron. Parpadea dos veces.\nTomi (hace 4 meses)"
+    },
+    {
+      "id": "msg_4_2",
+      "world": 4,
+      "kind": "secret",
+      "order": 2,
+      "level": "4-2",
+      "secret": "secreto_silenciado",
+      "first_lap": 1,
+      "sender": "Marco",
+      "subject": "Sábado",
+      "title": "Sábado",
+      "text": "Isak, traje la cadena nueva para la bici de Lía. Falta el mecánico. Ya sabes quién. Sábado, como siempre.\nMarco (hace 3 meses)"
     }
   ]
 }

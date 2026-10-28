@@ -240,7 +240,7 @@ class Level41Test(unittest.TestCase):
         self.assertEqual(m4["miniature"], "res://assets/sprites/hub/icons/world_icon_m4_00.png")
         rows = [(lv["id"], lv["name"], lv["playable"], lv.get("kind"), lv.get("available_text")) for lv in m4["levels"]]
         self.assertEqual(rows, [("4-1", "Chats recientes", True, None, None),
-                                ("4-2", "Grupo sin respuesta", False, None, "Nuevo mensaje"),
+                                ("4-2", "Grupo sin respuesta", True, None, "Nuevo mensaje"),
                                 ("4-3", "Mensajes sin leer", False, None, "Nuevo mensaje"),
                                 ("4-boss", "El Visto", False, "boss", None)])
         self.assertTrue(all(lv["laps"] == [1] for lv in m4["levels"]))

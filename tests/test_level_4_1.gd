@@ -312,7 +312,8 @@ func test_send_terminal_completes_the_level_and_returns_to_the_hub() -> void:
 	assert_true(GameState.is_level_unlocked(&"4-2"), "Desbloquea la fila del 4-2")
 	var panel: FolderPanel = _main.get_hub().get_folder(&"m4").get_folder_panel()
 	assert_eq(panel.get_level_state(&"4-1"), HubWorlds.STATE_COMPLETED)
-	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m4"))[1]), "El 4-2, «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m4"))[1]), "El 4-2, jugable (paso 13)")
+	assert_eq(panel.get_level_state(&"4-2"), HubWorlds.STATE_AVAILABLE, "El 4-2, disponible")
 	# La esfera vuelve en el hub (atenuada): el cuerpo de tres puntos es solo de los niveles del Mundo 4.
 	var hub_eco: EcoCompanion = _main.get_hub().get_eco_companion()
 	if hub_eco != null:
@@ -335,7 +336,7 @@ func test_world_4_folder_lists_4_1_after_the_update_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m4"))
 	assert_eq(levels.size(), 4, "4-1, 4-2, 4-3 y el jefe")
 	assert_eq(panel.level_text(levels[0]), "4-1 Chats recientes - Nuevo")
-	assert_true(HubWorlds.is_coming_soon(levels[1]), "El 4-2 aun no existe")
+	assert_false(HubWorlds.is_coming_soon(levels[1]), "El 4-2 existe desde el paso 13 (bloqueado hasta el 4-1)")
 	assert_true(HubWorlds.is_coming_soon(levels[2]), "El 4-3 aun no existe")
 	assert_true(HubWorlds.is_coming_soon(levels[3]), "El jefe aun no existe")
 	panel.skip_input_delay()

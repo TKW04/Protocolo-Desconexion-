@@ -1,0 +1,2037 @@
+{
+	"_notes": "NIVEL 4-2 «Grupo sin respuesta» (paso 13 de docs/propuesta-mundo-4.md §8, 2026-10-28; diseño en su §4.2, §4.2.1 y §4.2.2, desvíos en §8.1). Horizontal de 260 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Llega con todo el kit del Mundo 3 y la Linterna del 4-1, SIN Agitar: lo da el «¿Deshacer escritura?». ESTRUCTURA (decisión tomada: el mapa orientativo de §4.2 daba un camino de unos 80 s frente a los 192-264 pedidos): BANDAS. Cada tramo se recorre en TRES PASADAS: el suelo (B1, fila 11), una banda de una vía en la fila 9 (B2, de pie en la 8) y otra en la fila 6 (B3, de pie en la 5), de burbujas de chat contiguas; entre bandas hay 3 filas (192 px; el salto real llega a 177: sin atajos) y se sube por un escalón de una vía 2 filas por encima en el extremo de salida. Los tramos alternan: el 1 y el 3 SUBEN (suelo hacia la derecha, B2 hacia la izquierda, B3 hacia la derecha y salida por el hueco de las filas 4-5 de la pared derecha; bajo B2 el suelo es llano y en las bandas que suben puede haber huecos) y el 2 y el 4 BAJAN (entrada por ese hueco a B3, caída a B2 al final, B2 hacia la izquierda, pozo de 1 columna a B1 y salida por abajo, filas 10-11; sus bandas no tienen huecos). INICIO «Mensajes borrados» (0-24): vórtice (3, 11), la Linterna del 4-1 (linterna_4_2, 1, 11; no sale si ya es conocida: la ve el validador para los pasos en tinta), la Papelera (papelera_4_2, 5, 11; momento de historia de §4.2.2), burbujas eliminadas de decorado, una burbuja fija con 1 punto encima, el «¿Deshacer escritura?» (deshacer_4_2, 14, 11; pulso de espaldas: Agitar, Eco «No necesitas a nadie más.» y el aviso) y el muro de texto (muro_4_2, 22, 9; Agitar, a 8 tiles). TRAMO 1 «Grupo» (25-80, sube): tres grupos de Trolls apilados en una columna a distintas alturas (patrón 20; detect_tiles 3: el camino los aturde con UN Agitar a 3 tiles, donde el pulso no llega): en el suelo (40), en B2 (55, mirando a la derecha) y en B3 (62, tres); una «escribiendo…» en un hueco de B2 y otra en B3; 1 punto en B3. TRAMO 2 «Fantasmas» (81-130, baja): seis Fantasmas (detect_tiles 2, patrulla 128 px), dos por pasada (B2 es el pasillo de techo bajo bajo B3); cargador_1 (84, 5); 1 punto. Secreto A «Silenciado»: la burbuja «Garaje · Silenciado» (eliminada: parece decorado) junto al marco pequeño (92, 11; Pellizcar) de una sala a oscuras (81-91, filas 7-11) con los avatares apagados de Lía y Tomi, pinchos y un puente en tinta (solo con la Linterna) hasta msg_4_2 (Marco) y 2 puntos; sin dash. PAUSA (131-135): sync_1 (133, 11). TRAMO 3 «Autocorrector» (136-195, sube): zona «Visto» en el suelo con un Troll en su línea (pulso al check y Agitar al Troll), zona con ciclo en el suelo y cargador_2 (160, 11); en B2 el autocorrector largo «espera, que te explico» que se corrige a «nada más» y abre un hueco justo bajo la zona en el aire (visto_aire: pulso al check desde la burbuja corregida y pasar; patrón 19) y una zona con ciclo; en B3 dos zonas con ciclo y una «escribiendo…»; 1 punto. Secreto B «Ok, ¿y tú?»: el autocorrector al revés «ok» (140, 10), que al acercarse se corrige a «ok, ¿y tú qué tal? cuéntame» (5 tiles) y hace de puente a la repisa (146-147, fila 9) con el power bank y 1 punto; sin dash. TRAMO 4 «Stickers» (196-250, baja): tandas de Stickers (detect_tiles 2): dos parejas en B3, cuatro alrededor de donde Isak cae a B2 y dos donde cae a B1 (un Agitar en la llegada los desinfla a todos), otra pareja en B1 y un Troll en su línea; cargador_3 (203, 8); 1 punto. Secreto C: desde el final de B3, una «escribiendo…» sobre el hueco (escribiendo_c) y, con salto y dash aéreo, la burbuja alta «¿sigues?» con 1 punto. CIERRE «Salir del chat» (251-259): 1 punto y la terminal (terminal_salir, 256, 10; pulso) que vuelve al hub. 10 puntos (6 + 4), 3 cargadores, 1 power bank, sin vida extra, 1 punto de sincronización. Valida sin avisos; camino exportado de unos 231 s (48 % de 480); bot del chat, unos 204 s (42 %). Textos de las burbujas PROPUESTOS.",
+	"id": "4-2",
+	"name": "Grupo sin respuesta",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"target_duration_s": 480,
+	"difficulty": 4,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"shockwave": false
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio «Mensajes borrados»",
+			"x_from": 0,
+			"x_to": 24
+		},
+		{
+			"name": "Tramo 1 «Grupo»",
+			"x_from": 25,
+			"x_to": 80,
+			"patterns": [
+				"limpiar_el_grupo"
+			]
+		},
+		{
+			"name": "Tramo 2 «Fantasmas»",
+			"x_from": 81,
+			"x_to": 130,
+			"patterns": [
+				"rastro"
+			]
+		},
+		{
+			"name": "Pausa",
+			"x_from": 131,
+			"x_to": 135
+		},
+		{
+			"name": "Tramo 3 «Autocorrector»",
+			"x_from": 136,
+			"x_to": 195,
+			"patterns": [
+				"interrumpir_antes_de_pasar"
+			]
+		},
+		{
+			"name": "Tramo 4 «Stickers»",
+			"x_from": 196,
+			"x_to": 250,
+			"patterns": [
+				"limpiar_el_grupo"
+			]
+		},
+		{
+			"name": "Cierre «Salir del chat»",
+			"x_from": 251,
+			"x_to": 259
+		}
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 133,
+			"y": 11
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_silenciado",
+			"x": 82,
+			"y": 11,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 2,
+			"memory_id": "msg_4_2",
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "A"
+		},
+		{
+			"id": "secreto_ok_y_tu",
+			"x": 147,
+			"y": 8,
+			"object": "power_bank_pickup",
+			"reward": [
+				"attention_points",
+				"power_bank"
+			],
+			"points": 1,
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "B"
+		},
+		{
+			"id": "secreto_burbuja_alta",
+			"x": 248,
+			"y": 4,
+			"reward": "attention_points",
+			"points": 1,
+			"note": "C"
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "4-3"
+		}
+	],
+	"grid": [
+		"####################################################################################################################################################################################################################################################################",
+		"#.....................#.........................................................#.................................................#................................................................#......................................................#........#",
+		"#.....................#.........................................................#.................................................#................................................................#......................................................#........#",
+		"#.....................#.......................................E.................#.................................................#................................................................#......................................................#........#",
+		"#.....................#.......................................E...................................................................#....................................................................................................................oS.#........#",
+		"#.....................#.......................................E.......o.....................................E.........E...........#...............................................o....................................EE.........EE......................#........#",
+		"#.....................#.........................................................#############.....................................#................................................................#......................................................#........#",
+		"#.....................#..--............................E........................#...........#.....................................#...........................--...................................####...................................................#........#",
+		"#.....................#................................E........................#...........#.........E.........E.................#...............o................................................####......................................EE.EE........#........#",
+		"#.........o.....................................................................#...........#.....................................#...............##...............................................####...................................................#........#",
+		"#.......................................E....................................--.#...........#...................................................................................................--.####............................................................#",
+		"#..P....................................E.......................................#oSo^^^^^^......................E.....o.....E........C......................E......................................####..EE.........................EE..o...E................o..G..#",
+		"####################################################################################################################################################################################################################################################################",
+		"####################################################################################################################################################################################################################################################################"
+	],
+	"objects": [
+		{
+			"type": "flashlight_pickup",
+			"x": 1,
+			"y": 11,
+			"params": {
+				"id": "linterna_4_2"
+			}
+		},
+		{
+			"type": "papelera_actor",
+			"x": 5,
+			"y": 11,
+			"params": {
+				"id": "papelera_4_2",
+				"story": "papelera_4_2"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 3,
+			"y": 3,
+			"params": {
+				"id": "borrado_1",
+				"text": "Se eliminó este mensaje",
+				"side": "left",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 13,
+			"y": 2,
+			"params": {
+				"id": "borrado_2",
+				"text": "Se eliminó este mensaje",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 2,
+			"y": 6,
+			"params": {
+				"id": "borrado_3",
+				"text": "Se eliminó",
+				"side": "left",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 15,
+			"y": 6,
+			"params": {
+				"id": "borrado_4",
+				"text": "Se eliminó este mensaje",
+				"side": "right",
+				"deleted": true
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 8,
+			"y": 10,
+			"params": {
+				"id": "inicio_nadie",
+				"text": "nadie contesta desde el martes",
+				"side": "left",
+				"stamp": "23:58"
+			}
+		},
+		{
+			"type": "undo_prompt",
+			"x": 14,
+			"y": 11,
+			"params": {
+				"id": "deshacer_4_2",
+				"ability": "shockwave",
+				"story_line": "deshacer_4_2"
+			}
+		},
+		{
+			"type": "typed_wall",
+			"x": 22,
+			"y": 9,
+			"params": {
+				"id": "muro_4_2",
+				"lines": [
+					"y entonces",
+					"le dije",
+					"que…"
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 24,
+			"y": 9,
+			"params": {
+				"id": "t1b2_0",
+				"text": "Clase 4B · 47 participantes",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 29,
+			"y": 9,
+			"params": {
+				"id": "t1b2_1",
+				"text": "¿Alguien tiene los apuntes?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 34,
+			"y": 9,
+			"params": {
+				"id": "t1b2_2",
+				"text": "jajaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 35,
+			"y": 9,
+			"params": {
+				"id": "t1b2_3",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 36,
+			"y": 9,
+			"params": {
+				"id": "t1b2_4",
+				"text": "¿y?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 37,
+			"y": 9,
+			"params": {
+				"id": "t1b2_5",
+				"text": "Marco salió del grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 41,
+			"y": 9,
+			"params": {
+				"id": "t1b2_6",
+				"text": "¿Quién viene el viernes?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 47,
+			"y": 9,
+			"params": {
+				"id": "t1b2_7",
+				"text": "mensaje reenviado",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 50,
+			"y": 9,
+			"params": {
+				"id": "t1b2_8",
+				"text": "sticker",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 52,
+			"y": 9,
+			"params": {
+				"id": "t1b2_9",
+				"text": "audio de 3 minutos",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 55,
+			"y": 9,
+			"params": {
+				"id": "t1b2_10",
+				"text": "¿hola?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 56,
+			"y": 9,
+			"params": {
+				"id": "t1b2_11",
+				"text": "nadie contesta",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 59,
+			"y": 9,
+			"params": {
+				"id": "t1b2_12",
+				"text": "Te añadieron al grupo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 63,
+			"y": 9,
+			"params": {
+				"id": "t1b2_13",
+				"text": "47 mensajes sin leer",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 67,
+			"y": 9,
+			"params": {
+				"id": "t1b2_14",
+				"text": "¿Isak está en el grupo?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 71,
+			"y": 9,
+			"params": {
+				"id": "t1b2_15",
+				"text": "¿quién es Isak?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 74,
+			"y": 9,
+			"params": {
+				"id": "t1b2_16",
+				"text": "silencio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 76,
+			"y": 9,
+			"params": {
+				"id": "t1b2_17",
+				"text": "foto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 45,
+			"y": 9,
+			"params": {
+				"id": "t1_escribiendo",
+				"text": "escribiendo",
+				"side": "left",
+				"trigger_zone": [
+					47,
+					7,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 27,
+			"y": 6,
+			"params": {
+				"id": "t1b3_0",
+				"text": "encuesta: ¿pizza?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 30,
+			"y": 6,
+			"params": {
+				"id": "t1b3_1",
+				"text": "eso no lo dije yo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 33,
+			"y": 6,
+			"params": {
+				"id": "t1b3_2",
+				"text": "¿y tú qué piensas?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 36,
+			"y": 6,
+			"params": {
+				"id": "t1b3_3",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 37,
+			"y": 6,
+			"params": {
+				"id": "t1b3_4",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 38,
+			"y": 6,
+			"params": {
+				"id": "t1b3_5",
+				"text": "jaja vale",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 42,
+			"y": 6,
+			"params": {
+				"id": "t1b3_6",
+				"text": "¿hay alguien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 45,
+			"y": 6,
+			"params": {
+				"id": "t1b3_7",
+				"text": "Clase 4B · 47 participantes",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 50,
+			"y": 6,
+			"params": {
+				"id": "t1b3_8",
+				"text": "¿Alguien tiene los apuntes?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 55,
+			"y": 6,
+			"params": {
+				"id": "t1b3_9",
+				"text": "jajaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 56,
+			"y": 6,
+			"params": {
+				"id": "t1b3_10",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 57,
+			"y": 6,
+			"params": {
+				"id": "t1b3_11",
+				"text": "¿y?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 58,
+			"y": 6,
+			"params": {
+				"id": "t1b3_12",
+				"text": "Marco salió del grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 62,
+			"y": 6,
+			"params": {
+				"id": "t1b3_13",
+				"text": "Lía cambió el nombre del grupo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 67,
+			"y": 6,
+			"params": {
+				"id": "t1b3_14",
+				"text": "¿Quién viene el viernes?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 71,
+			"y": 6,
+			"params": {
+				"id": "t1b3_15",
+				"text": "mensaje reenviado",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 74,
+			"y": 6,
+			"params": {
+				"id": "t1b3_16",
+				"text": "sticker",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 76,
+			"y": 6,
+			"params": {
+				"id": "t1b3_17",
+				"text": "audio de 3 minutos",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 79,
+			"y": 6,
+			"params": {
+				"id": "t1b3_18",
+				"text": "¿hola?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 40,
+			"y": 6,
+			"params": {
+				"id": "t1_escribiendo_2",
+				"text": "escribiendo",
+				"side": "left",
+				"trigger_zone": [
+					38,
+					4,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 93,
+			"y": 6,
+			"params": {
+				"id": "t2b3_0",
+				"text": "nadie contesta",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 96,
+			"y": 6,
+			"params": {
+				"id": "t2b3_1",
+				"text": "Te añadieron al grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 100,
+			"y": 6,
+			"params": {
+				"id": "t2b3_2",
+				"text": "47 mensajes sin leer",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 104,
+			"y": 6,
+			"params": {
+				"id": "t2b3_3",
+				"text": "¿Isak está en el grupo?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 108,
+			"y": 6,
+			"params": {
+				"id": "t2b3_4",
+				"text": "¿quién es Isak?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 111,
+			"y": 6,
+			"params": {
+				"id": "t2b3_5",
+				"text": "silencio",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 113,
+			"y": 6,
+			"params": {
+				"id": "t2b3_6",
+				"text": "visto por 12",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 115,
+			"y": 6,
+			"params": {
+				"id": "t2b3_7",
+				"text": "escribiendo… no",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 118,
+			"y": 6,
+			"params": {
+				"id": "t2b3_8",
+				"text": "yo paso",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 120,
+			"y": 6,
+			"params": {
+				"id": "t2b3_9",
+				"text": "Tomi: ¿alguien juega hoy?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 125,
+			"y": 6,
+			"params": {
+				"id": "t2b3_10",
+				"text": "foto",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 94,
+			"y": 9,
+			"params": {
+				"id": "t2b2_0",
+				"text": "encuesta: ¿pizza?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 97,
+			"y": 9,
+			"params": {
+				"id": "t2b2_1",
+				"text": "eso no lo dije yo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 100,
+			"y": 9,
+			"params": {
+				"id": "t2b2_2",
+				"text": "¿y tú qué piensas?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 103,
+			"y": 9,
+			"params": {
+				"id": "t2b2_3",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 104,
+			"y": 9,
+			"params": {
+				"id": "t2b2_4",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 105,
+			"y": 9,
+			"params": {
+				"id": "t2b2_5",
+				"text": "jaja vale",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 107,
+			"y": 9,
+			"params": {
+				"id": "t2b2_6",
+				"text": "¿hay alguien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 110,
+			"y": 9,
+			"params": {
+				"id": "t2b2_7",
+				"text": "Clase 4B · 47 participantes",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 115,
+			"y": 9,
+			"params": {
+				"id": "t2b2_8",
+				"text": "¿Alguien tiene los apuntes?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 120,
+			"y": 9,
+			"params": {
+				"id": "t2b2_9",
+				"text": "jajaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 121,
+			"y": 9,
+			"params": {
+				"id": "t2b2_10",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 122,
+			"y": 9,
+			"params": {
+				"id": "t2b2_11",
+				"text": "¿y?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 123,
+			"y": 9,
+			"params": {
+				"id": "t2b2_12",
+				"text": "Marco salió del grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 127,
+			"y": 9,
+			"params": {
+				"id": "t2b2_13",
+				"text": "mensaje reenviado",
+				"side": "left"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 84,
+			"y": 5,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 93,
+			"y": 10,
+			"params": {
+				"id": "garaje_silenciado",
+				"text": "Garaje · Silenciado",
+				"side": "left",
+				"deleted": true
+			}
+		},
+		{
+			"type": "small_frame",
+			"x": 92,
+			"y": 11,
+			"params": {
+				"id": "marco_silenciado",
+				"orientation": "wall",
+				"length_tiles": 1
+			}
+		},
+		{
+			"type": "dark_zone",
+			"x": 81,
+			"y": 7,
+			"params": {
+				"id": "silenciado_oscuro",
+				"width_tiles": 11,
+				"height_tiles": 5
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 84,
+			"y": 10,
+			"params": {
+				"id": "tinta_puente_1",
+				"kind": "step",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 87,
+			"y": 10,
+			"params": {
+				"id": "tinta_puente_2",
+				"kind": "step",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 86,
+			"y": 8,
+			"params": {
+				"id": "tinta_camino",
+				"kind": "decor",
+				"text": "por aquí",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 81,
+			"y": 8,
+			"params": {
+				"id": "avatar_lia",
+				"text": "Lía",
+				"side": "left",
+				"deleted": true,
+				"friend": "lia"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 88,
+			"y": 7,
+			"params": {
+				"id": "avatar_tomi",
+				"text": "Tomi",
+				"side": "left",
+				"deleted": true,
+				"friend": "tomi"
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 82,
+			"y": 11,
+			"params": {
+				"id": "mensaje_4_2",
+				"memory_id": "msg_4_2"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 160,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 152,
+			"y": 10,
+			"params": {
+				"id": "visto_suelo",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"icon": "left"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 164,
+			"y": 10,
+			"params": {
+				"id": "visto_ciclo_suelo",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 3.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 176,
+			"y": 9,
+			"params": {
+				"id": "t3b2_0",
+				"text": "sticker",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 178,
+			"y": 9,
+			"params": {
+				"id": "t3b2_1",
+				"text": "audio de 3 minutos",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 181,
+			"y": 9,
+			"params": {
+				"id": "t3b2_2",
+				"text": "¿hola?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 182,
+			"y": 9,
+			"params": {
+				"id": "t3b2_3",
+				"text": "nadie contesta",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 185,
+			"y": 9,
+			"params": {
+				"id": "t3b2_4",
+				"text": "Te añadieron al grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 189,
+			"y": 9,
+			"params": {
+				"id": "t3b2_5",
+				"text": "¿quién es Isak?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "autocorrect_bubble",
+			"x": 172,
+			"y": 9,
+			"params": {
+				"id": "autocorrector_1",
+				"text": "espera, que te explico",
+				"corrected": "nada más",
+				"side": "right",
+				"anchor": "right"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 171,
+			"y": 7,
+			"params": {
+				"id": "visto_aire",
+				"width_tiles": 3,
+				"height_tiles": 2,
+				"icon": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 157,
+			"y": 9,
+			"params": {
+				"id": "t3b2b_0",
+				"text": "silencio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 159,
+			"y": 9,
+			"params": {
+				"id": "t3b2b_1",
+				"text": "visto por 12",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 161,
+			"y": 9,
+			"params": {
+				"id": "t3b2b_2",
+				"text": "escribiendo… no",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 164,
+			"y": 9,
+			"params": {
+				"id": "t3b2b_3",
+				"text": "yo paso",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 166,
+			"y": 9,
+			"params": {
+				"id": "t3b2b_4",
+				"text": "Tomi: ¿alguien juega hoy?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 171,
+			"y": 9,
+			"params": {
+				"id": "t3b2b_5",
+				"text": "foto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 162,
+			"y": 7,
+			"params": {
+				"id": "visto_ciclo_3",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "right",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 1.0
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 160,
+			"y": 6,
+			"params": {
+				"id": "t3b3_0",
+				"text": "encuesta: ¿pizza?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 163,
+			"y": 6,
+			"params": {
+				"id": "t3b3_1",
+				"text": "eso no lo dije yo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 166,
+			"y": 6,
+			"params": {
+				"id": "t3b3_2",
+				"text": "¿y tú qué piensas?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 169,
+			"y": 6,
+			"params": {
+				"id": "t3b3_3",
+				"text": "nada",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 170,
+			"y": 6,
+			"params": {
+				"id": "t3b3_4",
+				"text": "bueno",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 171,
+			"y": 6,
+			"params": {
+				"id": "t3b3_5",
+				"text": "jaja vale",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 173,
+			"y": 6,
+			"params": {
+				"id": "t3b3_6",
+				"text": "¿hay alguien?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 176,
+			"y": 6,
+			"params": {
+				"id": "t3b3_7",
+				"text": "jajaja",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 179,
+			"y": 6,
+			"params": {
+				"id": "t3b3_8",
+				"text": "ok",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 180,
+			"y": 6,
+			"params": {
+				"id": "t3b3_9",
+				"text": "¿y?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 181,
+			"y": 6,
+			"params": {
+				"id": "t3b3_10",
+				"text": "Marco salió del grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 185,
+			"y": 6,
+			"params": {
+				"id": "t3b3_11",
+				"text": "Lía cambió el nombre del grupo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 190,
+			"y": 6,
+			"params": {
+				"id": "t3b3_12",
+				"text": "¿Quién viene el viernes?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 194,
+			"y": 6,
+			"params": {
+				"id": "t3b3_13",
+				"text": "¿hola?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 177,
+			"y": 6,
+			"params": {
+				"id": "t3_escribiendo",
+				"text": "escribiendo",
+				"side": "left",
+				"trigger_zone": [
+					175,
+					4,
+					2,
+					2
+				]
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 170,
+			"y": 4,
+			"params": {
+				"id": "visto_ciclo",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 184,
+			"y": 4,
+			"params": {
+				"id": "visto_ciclo_2",
+				"width_tiles": 2,
+				"height_tiles": 2,
+				"icon": "left",
+				"on_s": 4.0,
+				"off_s": 5.0,
+				"phase_s": 2.0
+			}
+		},
+		{
+			"type": "autocorrect_bubble",
+			"x": 140,
+			"y": 10,
+			"params": {
+				"id": "ok_y_tu",
+				"text": "ok",
+				"corrected": "ok, ¿y tú qué tal? cuéntame",
+				"side": "left",
+				"anchor": "left"
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 147,
+			"y": 8,
+			"params": {
+				"id": "power_bank_4_2"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 196,
+			"y": 6,
+			"params": {
+				"id": "t4b3_0",
+				"text": "nadie contesta",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 199,
+			"y": 6,
+			"params": {
+				"id": "t4b3_1",
+				"text": "Te añadieron al grupo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 203,
+			"y": 6,
+			"params": {
+				"id": "t4b3_2",
+				"text": "47 mensajes sin leer",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 207,
+			"y": 6,
+			"params": {
+				"id": "t4b3_3",
+				"text": "¿Isak está en el grupo?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 211,
+			"y": 6,
+			"params": {
+				"id": "t4b3_4",
+				"text": "¿quién es Isak?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 214,
+			"y": 6,
+			"params": {
+				"id": "t4b3_5",
+				"text": "silencio",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 216,
+			"y": 6,
+			"params": {
+				"id": "t4b3_6",
+				"text": "visto por 12",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 218,
+			"y": 6,
+			"params": {
+				"id": "t4b3_7",
+				"text": "escribiendo… no",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 221,
+			"y": 6,
+			"params": {
+				"id": "t4b3_8",
+				"text": "yo paso",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 223,
+			"y": 6,
+			"params": {
+				"id": "t4b3_9",
+				"text": "Tomi: ¿alguien juega hoy?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 228,
+			"y": 6,
+			"params": {
+				"id": "t4b3_10",
+				"text": "foto",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 229,
+			"y": 6,
+			"params": {
+				"id": "t4b3_11",
+				"text": "encuesta: ¿pizza?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 232,
+			"y": 6,
+			"params": {
+				"id": "t4b3_12",
+				"text": "eso no lo dije yo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 235,
+			"y": 6,
+			"params": {
+				"id": "t4b3_13",
+				"text": "¿y tú qué piensas?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 238,
+			"y": 6,
+			"params": {
+				"id": "t4b3_14",
+				"text": "nada",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 200,
+			"y": 9,
+			"params": {
+				"id": "t4b2_0",
+				"text": "bueno",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 201,
+			"y": 9,
+			"params": {
+				"id": "t4b2_1",
+				"text": "jaja vale",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 203,
+			"y": 9,
+			"params": {
+				"id": "t4b2_2",
+				"text": "¿hay alguien?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 206,
+			"y": 9,
+			"params": {
+				"id": "t4b2_3",
+				"text": "Clase 4B · 47 participantes",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 211,
+			"y": 9,
+			"params": {
+				"id": "t4b2_4",
+				"text": "¿Alguien tiene los apuntes?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 216,
+			"y": 9,
+			"params": {
+				"id": "t4b2_5",
+				"text": "jajaja",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 217,
+			"y": 9,
+			"params": {
+				"id": "t4b2_6",
+				"text": "ok",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 218,
+			"y": 9,
+			"params": {
+				"id": "t4b2_7",
+				"text": "¿y?",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 219,
+			"y": 9,
+			"params": {
+				"id": "t4b2_8",
+				"text": "Marco salió del grupo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 223,
+			"y": 9,
+			"params": {
+				"id": "t4b2_9",
+				"text": "Lía cambió el nombre del grupo",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 228,
+			"y": 9,
+			"params": {
+				"id": "t4b2_10",
+				"text": "¿Quién viene el viernes?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 232,
+			"y": 9,
+			"params": {
+				"id": "t4b2_11",
+				"text": "mensaje reenviado",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 235,
+			"y": 9,
+			"params": {
+				"id": "t4b2_12",
+				"text": "sticker",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 237,
+			"y": 9,
+			"params": {
+				"id": "t4b2_13",
+				"text": "audio de 3 minutos",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 240,
+			"y": 9,
+			"params": {
+				"id": "t4b2_14",
+				"text": "¿hola?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 241,
+			"y": 9,
+			"params": {
+				"id": "t4b2_15",
+				"text": "nadie contesta",
+				"side": "right"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 244,
+			"y": 9,
+			"params": {
+				"id": "t4b2_16",
+				"text": "Te añadieron al grupo",
+				"side": "left"
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 248,
+			"y": 9,
+			"params": {
+				"id": "t4b2_17",
+				"text": "silencio",
+				"side": "right"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 203,
+			"y": 8,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 241,
+			"y": 6,
+			"params": {
+				"id": "escribiendo_c",
+				"text": "espera…",
+				"side": "right",
+				"trigger_zone": [
+					236,
+					4,
+					3,
+					2
+				]
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 247,
+			"y": 5,
+			"params": {
+				"id": "burbuja_alta",
+				"text": "¿sigues?",
+				"side": "left"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 256,
+			"y": 10,
+			"params": {
+				"id": "terminal_salir",
+				"text": "Salir del chat",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"enemies": [
+		{
+			"id": "troll_grupo_1a",
+			"type": "troll",
+			"x": 40,
+			"y": 11,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "troll_grupo_1b",
+			"type": "troll",
+			"x": 40,
+			"y": 10,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "troll_grupo_2a",
+			"type": "troll",
+			"x": 55,
+			"y": 8,
+			"params": {
+				"facing": 1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "troll_grupo_2b",
+			"type": "troll",
+			"x": 55,
+			"y": 7,
+			"params": {
+				"facing": 1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "troll_grupo_3a",
+			"type": "troll",
+			"x": 62,
+			"y": 5,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "troll_grupo_3b",
+			"type": "troll",
+			"x": 62,
+			"y": 4,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "troll_grupo_3c",
+			"type": "troll",
+			"x": 62,
+			"y": 3,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 3
+			}
+		},
+		{
+			"id": "fantasma_burbujas",
+			"type": "ghost",
+			"x": 108,
+			"y": 5,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_pasillo",
+			"type": "ghost",
+			"x": 112,
+			"y": 8,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_suelo",
+			"type": "ghost",
+			"x": 112,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_suelo_2",
+			"type": "ghost",
+			"x": 124,
+			"y": 11,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_burbujas_2",
+			"type": "ghost",
+			"x": 118,
+			"y": 5,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "fantasma_pasillo_2",
+			"type": "ghost",
+			"x": 102,
+			"y": 8,
+			"params": {
+				"patrol_range_px": 128,
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "troll_visto",
+			"type": "troll",
+			"x": 156,
+			"y": 11,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 4
+			}
+		},
+		{
+			"id": "sticker_b3_0",
+			"type": "sticker",
+			"x": 215,
+			"y": 5,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b3_1",
+			"type": "sticker",
+			"x": 216,
+			"y": 5,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b3_2",
+			"type": "sticker",
+			"x": 226,
+			"y": 5,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b3_3",
+			"type": "sticker",
+			"x": 227,
+			"y": 5,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b2_0",
+			"type": "sticker",
+			"x": 237,
+			"y": 8,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b2_1",
+			"type": "sticker",
+			"x": 238,
+			"y": 8,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b2_2",
+			"type": "sticker",
+			"x": 240,
+			"y": 8,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b2_3",
+			"type": "sticker",
+			"x": 241,
+			"y": 8,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b1_0",
+			"type": "sticker",
+			"x": 201,
+			"y": 11,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b1_1",
+			"type": "sticker",
+			"x": 202,
+			"y": 11,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b1_2",
+			"type": "sticker",
+			"x": 228,
+			"y": 11,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "sticker_b1_3",
+			"type": "sticker",
+			"x": 229,
+			"y": 11,
+			"params": {
+				"detect_tiles": 2
+			}
+		},
+		{
+			"id": "troll_stickers",
+			"type": "troll",
+			"x": 236,
+			"y": 11,
+			"params": {
+				"facing": -1,
+				"detect_tiles": 4
+			}
+		}
+	]
+}

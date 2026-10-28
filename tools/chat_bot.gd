@@ -15,8 +15,12 @@
 ##   off_s + on_s): espera esos segundos y, si al terminar la zona esta activa o
 ##   avisando, hasta que se apague; asi el bot no tarda menos que el camino.
 ## - `wait_autocorrect`: quieto hasta que el autocorrector se corrige.
-## - `wait_ghost`: quieto lo que dice el camino (el pulso siguiente espera al
-##   Fantasma a tiro).
+## - `wait_ghost` y el pulso al Fantasma: el validador lo dispara con su caja
+##   ampliada por la patrulla (antes que el Fantasma real, que mira la distancia de
+##   centro a centro), asi que el bot no espera a ciegas: si se ve y esta a tiro,
+##   pulso; si patrulla cerca de la fila de Isak, se acerca andando hasta que se
+##   esfuma; oculto, espera; al reaparecer (aviso), se gira y pulsa. Si patrulla
+##   lejos o en otra banda, no se ha activado y el bot sigue (paso 13).
 ## - `shake` (Agitar, U / LB): en la x del camino pulsa gesture_shake; hecho cuando
 ##   sale la onda.
 ## - pulso a un enemigo del Mundo 4 (`troll`, `ghost`, `sticker`, `troll_mimic`):
@@ -30,7 +34,8 @@
 ## (target_duration_s): debe quedar entre el 40 y el 55 % (§4). Progreso de
 ## partida: La Curadora vencida, la actualizacion del hub instalada y todo el kit
 ## del Mundo 3 (pulso, laser, Debug, dash, golpe al suelo y Pellizcar; Eco, Notas y
-## Calc conocidos); Agitar solo desde el 4-3 (el 4-2 lo da «¿Deshacer escritura?»).
+## Calc conocidos; desde el 4-2 tambien la Linterna, que se recoge en el 4-1); Agitar
+## solo desde el 4-3 (el 4-2 lo da «¿Deshacer escritura?»).
 ## Lo lanza tools/play_chat_bot.gd (uso y argumentos alli).
 extends "res://tools/gallery_bot.gd"
 
@@ -41,6 +46,11 @@ const UPGRADE_4_6: StringName = &"hub_update_4_6"
 ## Banda de la duracion de juego frente al objetivo (§4 de la propuesta).
 const RATIO_MIN: float = 0.40
 const RATIO_MAX: float = 0.55
+## Fantasma: segundos como mucho por encuentro y tiles de mas que el bot se acerca a su alcance.
+const GHOST_MAX_S: int = 8
+const GHOST_APPROACH_TILES: float = 3.0
+## Agitar contra un enemigo: px que el bot se acerca respecto a la x del camino.
+const SHAKE_CLOSER_PX: float = 16.0
 
 var _freezes: int = 0
 var _freeze_watch: bool = false
@@ -90,6 +100,8 @@ func _setup_progress() -> void:
 	GameState.reset_progress()
 	for ally: StringName in [GameState.ALLY_ECO, GameState.ALLY_NOTAS, GameState.ALLY_CALC]:
 		GameState.meet_ally(ally)
+	if _gallery_level in ["4-2", "4-3"]:
+		GameState.meet_ally(GameState.ALLY_LINTERNA)
 	var abilities: Array[StringName] = [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG,
 		GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND, GameState.ABILITY_COMPRESS]
 	if _gallery_level == "4-3":
@@ -143,6 +155,18 @@ func _check_completed() -> bool:
 		return _fail("la duracion (%.1f s) queda fuera del %.0f-%.0f %% del objetivo (%d s)" % [game_s,
 			RATIO_MIN * 100.0, RATIO_MAX * 100.0, int(_target_s)])
 	return true
+
+
+## Tolerancia frente a la duracion del camino: la de siempre mas las esperas que el camino cuenta por el peor caso
+## y el bot acorta (paso 13): el hueco de cada zona «Visto» con ciclo (off_s + on_s; el bot sale al apagarse) y la
+## espera de cada Fantasma (2,05 s; el bot lo pulsa en cuanto se pone a tiro).
+func _duration_tolerance_s() -> float:
+	var slack: float = 0.0
+	for step: Dictionary in _path.get("steps", []):
+		var action: String = String(step.get("action", ""))
+		if action == "wait_ghost" or (action == "wait" and String(step.get("reason", "")).find("zona «Visto»") >= 0):
+			slack += float(step.get("duration_s", step.get("seconds", 0.0)))
+	return super._duration_tolerance_s() + slack
 
 
 ## Hub tras un nivel del chat: llegada por el vortice, sin escenas (Calc conocida); la carpeta M4 sigue abierta.
@@ -212,9 +236,7 @@ func _do_extra_step(s: Dictionary, action: String) -> bool:
 		"wait_autocorrect":
 			return await _wait_autocorrect(s)
 		"wait_ghost":
-			await _settle()
-			await _wait_s(float(s.get("seconds", 0.0)))
-			return true
+			return await _ghost_step(s)
 		"shake":
 			return await _shake_step(s)
 	return await super._do_extra_step(s, action)
@@ -229,6 +251,8 @@ func _pulse_step(s: Dictionary) -> bool:
 		if done:
 			_troll_pulses += 1
 		return done
+	if kind == "ghost":
+		return await _ghost_step(s)
 	if kind in WORLD4_ENEMIES:
 		return await _enemy_pulse_step(s, _object(String(target.get("id", ""))))
 	return await super._pulse_step(s)
@@ -265,6 +289,58 @@ func _troll_pulse_step(s: Dictionary, troll: Troll) -> bool:
 	if ok:
 		_enemy_pulses += 1
 	_note("pulso a troll %s: %s (%s)" % [troll.name, String(troll.get_state()) if ok else "SIN EFECTO", _where()])
+	return ok
+
+
+## Fantasma (`wait_ghost` y el pulso que le sigue): ver la cabecera. Hecho aturdido, derrotado o sin activar.
+func _ghost_step(s: Dictionary) -> bool:
+	var target: Dictionary = s.get("target", {})
+	var ghost := _object(String(target.get("id", ""))) as Ghost
+	if ghost == null:
+		return _fail("paso %d: no hay Fantasma %s" % [_step_index, target.get("id", "?")])
+	if ghost.is_stunned() or ghost.is_defeated():
+		return true
+	var start: int = _play_frames
+	var frames: int = GHOST_MAX_S * 60
+	var engaged: bool = false
+	while frames > 0:
+		if ghost.is_stunned() or ghost.is_defeated():
+			break
+		var rect: Rect2 = ghost.get_body_rect()
+		var dx: float = rect.get_center().x - _isak.global_position.x
+		var dir: float = signf(dx) if dx != 0.0 else float(_isak.facing)
+		var state: StringName = ghost.get_state()
+		if state != Ghost.STATE_PATROL:
+			engaged = true
+		if ghost.is_visible_ghost() and _has_control() and _can_pulse_now() and _in_pulse_range(rect, 0.9, dir):
+			_set_axis(0.0)
+			if signf(_isak.facing) != dir:
+				await _face(dir)
+			if _in_pulse_range(ghost.get_body_rect(), 0.95, _isak.facing):
+				_tap(A_PULSE)
+				await _wait_until(func() -> bool: return ghost.is_stunned() or ghost.is_defeated(), 0.4)
+			continue
+		if state == Ghost.STATE_PATROL:
+			var dy: float = absf(rect.end.y - _isak.global_position.y)
+			if dy > TILE * 1.5 or absf(dx) > (ghost.detect_tiles + GHOST_APPROACH_TILES) * TILE:
+				_set_axis(0.0)
+				_note("Fantasma %s sin activar (%s; a %+.0f px): sigue" % [ghost.name, _where(), dx])
+				return true
+			_set_axis(dir * 0.5)
+		else:
+			_set_axis(0.0)
+			if (state == Ghost.STATE_WARN or state == Ghost.STATE_READY) and signf(_isak.facing) != dir:
+				await _face(dir)
+				continue
+		await _tick()
+		if not get_tree().paused:
+			frames -= 1
+	_set_axis(0.0)
+	var ok: bool = ghost.is_stunned() or ghost.is_defeated()
+	if ok:
+		_enemy_pulses += 1
+	_note("Fantasma %s: %s tras %.1f s (%s; %s)" % [ghost.name, String(ghost.get_state()) if ok else "SIN ATURDIR",
+		(_play_frames - start) / 60.0, "se activo" if engaged else "sin activarse", _where()])
 	return ok
 
 
@@ -388,13 +464,24 @@ func _wait_autocorrect(s: Dictionary) -> bool:
 	return ok
 
 
-## Paso `shake`: Agitar en la x del camino (gesture_shake, en el suelo).
+## Paso `shake`: Agitar en la x del camino (gesture_shake, en el suelo). Contra un enemigo (Troll, Sticker,
+## Fantasma) el validador da la primera x desde la que la onda lo alcanza con el celular hacia cualquier lado
+## (al borde del radio): el bot se acerca SHAKE_CLOSER_PX mas y se gira hacia el antes de agitar (paso 13).
 func _shake_step(s: Dictionary) -> bool:
 	var at: Vector2 = _px(s["at"])
 	var x: float = float(s.get("shot", {}).get("x", s.get("x_px", at.x)))
+	var target := _object(String(s.get("target", {}).get("id", "")))
+	var dir: float = 0.0
+	if target != null and String(s.get("target", {}).get("type", "")) in WORLD4_ENEMIES \
+			and target.has_method(&"get_body_rect"):
+		var rect: Rect2 = target.call(&"get_body_rect")
+		dir = signf(rect.get_center().x - x)
+		x += dir * SHAKE_CLOSER_PX
 	if not await _walk_to(x, at.y):
 		return false
 	_set_axis(0.0)
+	if dir != 0.0 and signf(_isak.facing) != dir:
+		await _face(dir)
 	await _wait_until(func() -> bool: return _has_control() and _isak.is_on_floor(), 2.0)
 	var fired: Array[bool] = [false]
 	var on_fire := func(_c: Vector2, _r: float, _src: Node) -> void: fired[0] = true

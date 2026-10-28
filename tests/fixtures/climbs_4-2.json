@@ -1,0 +1,40 @@
+{
+ "format": "isak-climbs/1",
+ "level": "4-2",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "8,11->8,9",
+   "section": "Inicio «Mensajes borrados»",
+   "from": {
+    "cell": [
+     8,
+     11
+    ],
+    "ledge": [
+     1,
+     21
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     8,
+     9
+    ],
+    "ledge": [
+     8,
+     12
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 576.0,
+   "target_x_px": 576.0,
+   "debug": false
+  }
+ ]
+}

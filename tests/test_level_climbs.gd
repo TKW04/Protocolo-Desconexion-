@@ -75,6 +75,11 @@ const CLIMBS_PATH_3_3: String = "res://tests/fixtures/climbs_3-3.json"
 const LEVEL_SCENE_4_1: String = "res://scenes/levels/4-1.tscn"
 const LEVEL_PATH_4_1: String = "res://data/levels/4-1.json"
 const CLIMBS_PATH_4_1: String = "res://tests/fixtures/climbs_4-1.json"
+## 4-2 «Grupo sin respuesta» (paso 13, 2026-10-28): horizontal en bandas; los escalones de cada banda los mide el
+## validador y el bot; aqui, la subida que tools/level_climbs.py saca del nivel.
+const LEVEL_SCENE_4_2: String = "res://scenes/levels/4-2.tscn"
+const LEVEL_PATH_4_2: String = "res://data/levels/4-2.json"
+const CLIMBS_PATH_4_2: String = "res://tests/fixtures/climbs_4-2.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -499,6 +504,14 @@ func test_every_climb_of_4_1_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 8, "Subidas del 4-1 en %s" % CLIMBS_PATH_4_1)
 	await _load(LEVEL_SCENE_4_1, LEVEL_PATH_4_1)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_4_2_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_4_2))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 0, "Subidas del 4-2 en %s" % CLIMBS_PATH_4_2)
+	await _load(LEVEL_SCENE_4_2, LEVEL_PATH_4_2)
 	await _measure_all(climbs)
 
 

@@ -269,9 +269,16 @@ func _play_level() -> bool:
 	_note("RESULTADO: recorrido %.1f s de juego (camino %.1f s, %+.1f s); energia minima %.1f (camino %.1f, %+.1f); golpes %d, muertes %d, replanificaciones %d, pulsos de defensa %d, lineas importantes %d, cuadros con la Q visible %d (no se pulsa)" % [
 		game_s, path_s, game_s - path_s, _min_energy, path_min, _min_energy - path_min, _hits, _deaths, _replans,
 		_guard_pulses, _important_lines, _help_frames])
-	if absf(game_s - path_s) > DURATION_TOLERANCE_S:
-		return _fail("la duracion se aleja mas de %.0f s de la del camino" % DURATION_TOLERANCE_S)
+	var tolerance: float = _duration_tolerance_s()
+	if absf(game_s - path_s) > tolerance:
+		return _fail("la duracion se aleja mas de %.0f s de la del camino" % tolerance)
 	return _check_completed()
+
+
+## Cuanto puede alejarse la duracion de juego de la del camino (los bots hijos la amplian con las esperas que el
+## camino cuenta por el peor caso).
+func _duration_tolerance_s() -> float:
+	return DURATION_TOLERANCE_S
 
 
 func _wait_hub() -> bool:
