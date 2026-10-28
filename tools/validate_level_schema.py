@@ -848,6 +848,7 @@ class LevelValidator:
             return
         self._bubble_cfg = catalog.get("chat_bubble", {})
         flashlights = []
+        waves = []
         types = catalog.get("types", {})
         bridges = set()
         receivers = []
@@ -915,6 +916,9 @@ class LevelValidator:
                 self._check_filter_zone(what, x, y, params, entry.get("defaults", {}), catalog)
             if kind == "seen_zone":
                 self._check_seen_zone(what, x, y, params, entry.get("defaults", {}))
+            if kind == "seen_wave":
+                waves.append(what)
+                self._check_seen_wave(what, x, y, params, catalog.get("seen_wave", {}))
             if kind in BUBBLE_TYPES:
                 self._check_bubble(what, kind, x, y, params, entry.get("defaults", {}), catalog)
             if kind == "ink_only":
@@ -1031,6 +1035,8 @@ class LevelValidator:
                 self.error("%s: solo puede haber un encuentro con Eco por nivel" % what, y, x)
         for what, fx, fy in flashlights[1:]:
             self.error("%s: una sola Linterna (flashlight_pickup) por nivel" % what, fy, fx)
+        if len(waves) > 1:
+            self.error("%s: una sola ola de «Visto» (seen_wave) por nivel" % waves[1])
         if encounters and self.level.get("abilities_available", {}).get("pulse", False):
             what, x, y = encounters[0]
             self.error("%s: el encuentro con Eco da el pulso; el nivel debe empezar sin el "
@@ -1629,6 +1635,68 @@ class LevelValidator:
             for (c, r) in cells:
                 if self.in_bounds(c, r) and self.cell(c, r) != ".":
                     self.error("%s (step) ocupa una celda que el grid debe dejar vacia ('.')" % what, r, c)
+
+    def _check_seen_wave(self, what, x, y, params, cfg):
+        """Ola de «Visto» (seen_wave, paso 7 de docs/propuesta-mundo-4.md §3.5): nivel horizontal; su
+        celda en la fila 0 (el frente cubre toda la altura); start_col y end_col por delante de ella y
+        dentro del grid; secciones {x_from, x_to, speed_tiles_s[, speed_to_tiles_s]} ordenadas, sin
+        solaparse y con velocidades en [speed_min, speed_max]; paradas {id, at_col, resume_col} con
+        id unico, ordenadas, at_col por delante de la ola y resume_col >= at_col."""
+        width = len(self.level["grid"][0]) if self.level.get("grid") else 0
+        if self.level.get("camera", {}).get("vertical") in ("tower", "autoscroll"):
+            self.error("%s: la ola solo va en niveles horizontales (sin camera.vertical)" % what, y, x)
+        if y != 0:
+            self.error("%s: va en la fila 0 (el frente cubre toda la altura del nivel)" % what, y, x)
+        start, end = params.get("start_col"), params.get("end_col")
+        if _is_int(start) and not x <= start < width:
+            self.error("%s: start_col %s debe estar entre su columna (%d) y el borde del grid" % (what, start, x), y, x)
+        if _is_int(end) and (not _is_int(start) or not start < end < width):
+            self.error("%s: end_col %s debe estar por delante de start_col y dentro del grid" % (what, end), y, x)
+        lo, hi = float(cfg.get("speed_min", 1.0)), float(cfg.get("speed_max", 1.6))
+        sections = params.get("sections", [])
+        if not isinstance(sections, list):
+            self.error("%s: sections debe ser una lista" % what, y, x)
+            sections = []
+        last_to = None
+        for k, sec in enumerate(sections):
+            label = "%s: sections[%d]" % (what, k)
+            if not isinstance(sec, dict) or not (_is_int(sec.get("x_from")) and _is_int(sec.get("x_to"))):
+                self.error("%s debe ser {x_from, x_to, speed_tiles_s} con columnas enteras" % label, y, x)
+                continue
+            if not 0 <= sec["x_from"] < sec["x_to"] <= width:
+                self.error("%s: x_from < x_to dentro del grid" % label, y, x)
+            if last_to is not None and sec["x_from"] < last_to:
+                self.error("%s: se solapa con la anterior (o no van en orden)" % label, y, x)
+            last_to = sec["x_to"]
+            for key in ("speed_tiles_s", "speed_to_tiles_s"):
+                if key == "speed_tiles_s" and key not in sec:
+                    self.error("%s: falta speed_tiles_s" % label, y, x)
+                if key in sec and (not _is_number(sec[key]) or not lo - 1e-9 <= sec[key] <= hi + 1e-9):
+                    self.error("%s: %s debe estar en [%s, %s] tiles/s" % (label, key, lo, hi), y, x)
+            extra = set(sec) - {"x_from", "x_to", "speed_tiles_s", "speed_to_tiles_s"}
+            if extra:
+                self.error("%s: claves desconocidas %s" % (label, ", ".join(sorted(extra))), y, x)
+        stops = params.get("stops", [])
+        if not isinstance(stops, list):
+            self.error("%s: stops debe ser una lista" % what, y, x)
+            stops = []
+        ids, last_at = set(), None
+        for k, stop in enumerate(stops):
+            label = "%s: stops[%d]" % (what, k)
+            if not isinstance(stop, dict) or not isinstance(stop.get("id"), str) \
+                    or not (_is_int(stop.get("at_col")) and _is_int(stop.get("resume_col"))):
+                self.error("%s debe ser {id, at_col, resume_col} (id texto, columnas enteras)" % label, y, x)
+                continue
+            if stop["id"] in ids:
+                self.error("%s: id '%s' repetido" % (label, stop["id"]), y, x)
+            ids.add(stop["id"])
+            if not x < stop["at_col"] <= stop["resume_col"] < width:
+                self.error("%s: at_col por delante de la ola y resume_col >= at_col, dentro del grid" % label, y, x)
+            if last_at is not None and stop["at_col"] <= last_at:
+                self.error("%s: las paradas van en orden de columna" % label, y, x)
+            last_at = stop["at_col"]
+            if _is_int(end) and stop["at_col"] >= end:
+                self.error("%s: la parada esta detras de end_col" % label, y, x)
 
     def _check_seen_zone(self, what, x, y, params, defaults):
         """Zona «Visto» (Mundo 4, paso 2 de docs/propuesta-mundo-4.md §3.5): el ciclo lleva

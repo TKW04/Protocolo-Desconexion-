@@ -331,6 +331,70 @@
 					"width_tiles": 2
 				}
 			}
+		},
+		"seen_wave": {
+			"scene": "res://scenes/levels/seen_wave.tscn",
+			"description": "Ola de «Visto» (2026-10-28, paso 7 de docs/propuesta-mundo-4.md §8, §3.5 y decision 4 de §9; SeenWave). Una por nivel horizontal. Frente vertical de toda la altura que avanza desde la columna de su celda (x; y = 0) hacia la derecha en tiempo del mundo cuando Isak cruza start_col, con la velocidad de la seccion en la que esta el frente (sections: lista de {x_from, x_to, speed_tiles_s[, speed_to_tiles_s]}, de 1,0 a 1,6 tiles/s; fuera de ellas default_speed_tiles_s) y paradas (stops: {id, at_col, resume_col}: el frente espera en at_col hasta que Isak cruza resume_col). Si alcanza a Isak (frente en su espalda): -edge_damage (10) SIN MATAR y congelado freeze_s (2,0 s); al descongelarse solo retrocede retreat_tiles (4) desde su espalda; con Agitar se queda a shake_gap_tiles (1). Al morir o reaparecer Isak vuelve a la parada de su seccion. En end_col se para y se apaga. Sin Q todavia (paso 10). Validador: aun no la modela (paso 9b: wait_wave y validation.wave_margin_tiles). Aspecto PROVISIONAL por codigo (seccion seen_wave).",
+			"required": [
+				"start_col"
+			],
+			"fields": {
+				"id": "object_id",
+				"start_col": "start_col",
+				"end_col": "end_col",
+				"default_speed_tiles_s": "default_speed_tiles_s",
+				"sections": "sections",
+				"stops": "stops"
+			},
+			"defaults": {
+				"default_speed_tiles_s": 1.0
+			},
+			"level_params": {
+				"start_col": {
+					"min": 0,
+					"max": 400,
+					"int": true
+				},
+				"end_col": {
+					"min": 1,
+					"max": 400,
+					"int": true
+				},
+				"default_speed_tiles_s": {
+					"min": 1.0,
+					"max": 1.6
+				}
+			},
+			"example": {
+				"type": "seen_wave",
+				"x": 0,
+				"y": 0,
+				"params": {
+					"id": "ola",
+					"start_col": 20,
+					"end_col": 290,
+					"sections": [
+						{
+							"x_from": 0,
+							"x_to": 100,
+							"speed_tiles_s": 1.0
+						},
+						{
+							"x_from": 207,
+							"x_to": 285,
+							"speed_tiles_s": 1.2,
+							"speed_to_tiles_s": 1.6
+						}
+					],
+					"stops": [
+						{
+							"id": "sync_1",
+							"at_col": 96,
+							"resume_col": 108
+						}
+					]
+				}
+			}
 		}
 	},
 	"seen_zone": {
@@ -391,6 +455,19 @@
 		"line_height_px": 18,
 		"step_height_px": 24,
 		"fade_s": 0.25
+	},
+	"seen_wave": {
+		"_notes": "Ajustes de la ola de «Visto» (§3.5 y decision 4 de §9; PROVISIONAL): edge_damage (Sync que quita al alcanzar, sin matar: nunca baja de 1), freeze_s (congelado de la ola, 2,0 s), retreat_tiles (retroceso al descongelarse solo, 4) y shake_gap_tiles (distancia al romper la congelacion con Agitar, 1); speed_min / speed_max (rango de las secciones que admite el esquema: 1,0-1,6 tiles/s); veil_alpha (velo gris_oscuro detras del frente), beat_hz (latido de los checks del borde), label («Leido 03:47») y z_index (por debajo del velo del Modo oscuro, 40).",
+		"edge_damage": 10.0,
+		"freeze_s": 2.0,
+		"retreat_tiles": 4.0,
+		"shake_gap_tiles": 1.0,
+		"speed_min": 1.0,
+		"speed_max": 1.6,
+		"veil_alpha": 0.45,
+		"beat_hz": 2.0,
+		"label": "Leído 03:47",
+		"z_index": 30
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) salvo debug_coral (#ff9f7a, decidido el 2026-10-27).",

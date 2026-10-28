@@ -8,7 +8,9 @@ pinchos al descubierto; desde el paso 4, sala oscuro_test: escrito en tinta fuer
 dark_zone, sin texto o sobre terreno, y dos Linternas en un nivel; desde el paso 5, sala
 grupo_test: Troll con un ciclo sin reposo, Troll disfrazado sin texto, con un amigo desconocido o
 sin suelo debajo, y params que no existen; desde el paso 6, sala fantasmas_test y params del
-Fantasma fuera de rango) y lo que genera
+Fantasma fuera de rango; desde el paso 7, sala ola_test y olas mal formadas: fuera de la fila 0,
+en una torre, con velocidades fuera de 1,0-1,6, secciones solapadas, paradas desordenadas o
+repetidas y dos olas en un nivel) y lo que genera
 tools/build_level.py (largo por el texto: 1 tile por cada 6 caracteres, entre 1 y 8).
 Uso: python3 -I tests/test_world4_schema.py
 """
@@ -29,6 +31,7 @@ BURBUJAS_TEST = os.path.join(ROOT, "data", "levels", "burbujas_test.json")
 OSCURO_TEST = os.path.join(ROOT, "data", "levels", "oscuro_test.json")
 GRUPO_TEST = os.path.join(ROOT, "data", "levels", "grupo_test.json")
 FANTASMAS_TEST = os.path.join(ROOT, "data", "levels", "fantasmas_test.json")
+OLA_TEST = os.path.join(ROOT, "data", "levels", "ola_test.json")
 
 
 def load(path):
@@ -285,6 +288,59 @@ class GhostSchemaTest(World4SchemaBase):
         level = copy.deepcopy(self.base)
         enemy(level, "fantasma_pasillo")["params"]["start_direction"] = 0
         self.assert_error(level, "params.start_direction debe ser uno de [-1, 1]")
+
+
+
+class WaveSchemaTest(World4SchemaBase):
+    def setUp(self):
+        self.base = load(OLA_TEST)
+
+    def wave(self, level):
+        return by_id(level, "ola_prueba")
+
+    def test_room_passes(self):
+        self.assertEqual(self.errors(self.base), [])
+
+    def test_scene_is_up_to_date(self):
+        self.assertEqual(build_level.main(["build_level", "--check", OLA_TEST]), 0)
+
+    def test_wave_goes_in_row_zero_of_a_horizontal_level(self):
+        level = copy.deepcopy(self.base)
+        self.wave(level)["y"] = 3
+        self.assert_error(level, "va en la fila 0")
+        level = copy.deepcopy(self.base)
+        level["camera"] = {"vertical": "tower"}
+        self.assert_error(level, "solo va en niveles horizontales")
+
+    def test_speeds_between_one_and_one_point_six(self):
+        level = copy.deepcopy(self.base)
+        self.wave(level)["params"]["sections"][1]["speed_to_tiles_s"] = 2.0
+        self.assert_error(level, "speed_to_tiles_s debe estar en [1.0, 1.6]")
+
+    def test_sections_do_not_overlap(self):
+        level = copy.deepcopy(self.base)
+        self.wave(level)["params"]["sections"][1]["x_from"] = 20
+        self.assert_error(level, "se solapa con la anterior")
+
+    def test_stops_are_ordered_and_unique(self):
+        level = copy.deepcopy(self.base)
+        stops = self.wave(level)["params"]["stops"]
+        stops.append({"id": "sync_ola", "at_col": 20, "resume_col": 22})
+        errors = self.errors(level)
+        self.assertTrue(any("repetido" in e for e in errors), errors)
+        self.assertTrue(any("en orden de columna" in e for e in errors), errors)
+
+    def test_resume_col_not_before_the_stop(self):
+        level = copy.deepcopy(self.base)
+        self.wave(level)["params"]["stops"][0]["resume_col"] = 20
+        self.assert_error(level, "resume_col >= at_col")
+
+    def test_one_wave_per_level(self):
+        level = copy.deepcopy(self.base)
+        extra = copy.deepcopy(self.wave(level))
+        extra["params"]["id"] = "ola_2"
+        level["objects"].append(extra)
+        self.assert_error(level, "una sola ola")
 
 
 if __name__ == "__main__":
