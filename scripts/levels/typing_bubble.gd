@@ -225,8 +225,16 @@ func _draw() -> void:
 			draw_bubble(ChatBubble.DELETED_TEXT, false, 1.0)
 
 
+## En la oscuridad los puntos se ven siempre (son luz) y el borde al 30 %.
+func draw_dark_overlay(canvas: CanvasItem) -> void:
+	if _phase == Phase.TYPING:
+		_draw_dots(canvas)
+	else:
+		super.draw_dark_overlay(canvas)
+
+
 ## Burbuja pequena con contorno y los puntos crema (nunca cian: los de Eco son cian).
-func _draw_dots() -> void:
+func _draw_dots(canvas: CanvasItem = self) -> void:
 	var cream: Color = World4ObjectsConfig.color("crema", Color("#eee4cc"))
 	var back: Color = World4ObjectsConfig.color("gris_oscuro", Color("#3c4250"))
 	var shade: Color = World4ObjectsConfig.color("crema_sombra", Color("#b8ad94"))
@@ -234,8 +242,8 @@ func _draw_dots() -> void:
 	var w: float = minf(get_card_size().x, float(_cfg.get("typing_width_px", 64)))
 	var x0: float = 0.0 if author_side == &"left" else get_card_size().x - w
 	var rect := Rect2(Vector2(x0, 0.0), Vector2(w, h))
-	draw_rect(rect, back)
-	draw_rect(rect, shade, false, 2.0)
+	canvas.draw_rect(rect, back)
+	canvas.draw_rect(rect, shade, false, 2.0)
 	var r: float = float(_cfg.get("dot_radius_px", 4))
 	for i: int in get_dots():
-		draw_circle(rect.position + Vector2(w * (0.25 + 0.25 * float(i)), h * 0.5), r, cream)
+		canvas.draw_circle(rect.position + Vector2(w * (0.25 + 0.25 * float(i)), h * 0.5), r, cream)

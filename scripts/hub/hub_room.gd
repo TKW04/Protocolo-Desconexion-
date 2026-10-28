@@ -1061,6 +1061,15 @@ func _build_dormant() -> void:
 		var visual: Node2D = _visual_for(entry, size)
 		visual.name = "Visual"
 		node.add_child(visual)
+		# Hueco que se enciende al conocer a su asistente (Linterna, Mundo 4 paso 4).
+		var ally := StringName(String(entry.get("lit_by_ally", "")))
+		if ally != &"":
+			var light := DockSlotLight.new()
+			light.name = "Light"
+			light.ally = ally
+			light.slot_size = size
+			light.glow = entry.get("lit_glow", {})
+			node.add_child(light)
 		_dormant[id] = node
 
 

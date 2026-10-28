@@ -4,8 +4,9 @@ el esquema y sus escenas estan al dia; variantes rotas que el esquema rechaza (z
 el doble check contra el terreno o con medio ciclo; burbuja con un width_tiles que no cuadra con
 el texto, texto vacio o con glifos fuera de la fuente, «escribiendo…» sin disparo, con un
 disparo que no es una burbuja o con un ciclo demasiado corto, autocorrector que deja un pozo o
-pinchos al descubierto) y lo que genera tools/build_level.py (largo por el texto: 1 tile por
-cada 6 caracteres, entre 1 y 8).
+pinchos al descubierto; desde el paso 4, sala oscuro_test: escrito en tinta fuera de una
+dark_zone, sin texto o sobre terreno, y dos Linternas en un nivel) y lo que genera
+tools/build_level.py (largo por el texto: 1 tile por cada 6 caracteres, entre 1 y 8).
 Uso: python3 -I tests/test_world4_schema.py
 """
 
@@ -22,6 +23,7 @@ import build_level  # noqa: E402
 
 VISTO_TEST = os.path.join(ROOT, "data", "levels", "visto_test.json")
 BURBUJAS_TEST = os.path.join(ROOT, "data", "levels", "burbujas_test.json")
+OSCURO_TEST = os.path.join(ROOT, "data", "levels", "oscuro_test.json")
 
 
 def load(path):
@@ -180,6 +182,45 @@ class BubbleSchemaTest(World4SchemaBase):
         level = copy.deepcopy(self.base)
         by_id(level, "burbuja_lia")["params"]["side"] = "up"
         self.assertTrue(self.errors(level))
+
+
+class DarkSchemaTest(World4SchemaBase):
+    def setUp(self):
+        self.base = load(OSCURO_TEST)
+
+    def test_room_passes(self):
+        self.assertEqual(self.errors(self.base), [])
+
+    def test_scene_is_up_to_date(self):
+        self.assertEqual(build_level.main(["build_level", "--check", OSCURO_TEST]), 0)
+
+    def test_ink_must_be_inside_a_dark_zone(self):
+        level = copy.deepcopy(self.base)
+        by_id(level, "tinta_texto")["x"] = 33
+        self.assert_error(level, "dentro de una dark_zone")
+
+    def test_ink_decor_needs_text(self):
+        level = copy.deepcopy(self.base)
+        del by_id(level, "tinta_texto")["params"]["text"]
+        self.assert_error(level, "necesita un text")
+
+    def test_ink_step_needs_empty_cell(self):
+        level = copy.deepcopy(self.base)
+        set_cell(level, 27, 7, "#")
+        self.assert_error(level, "(step) ocupa una celda")
+
+    def test_one_flashlight_per_level(self):
+        level = copy.deepcopy(self.base)
+        extra = copy.deepcopy(by_id(level, "linterna_prueba"))
+        extra["x"] = 7
+        extra["params"]["id"] = "linterna_2"
+        level["objects"].append(extra)
+        self.assert_error(level, "una sola Linterna")
+
+    def test_flashlight_not_in_terrain(self):
+        level = copy.deepcopy(self.base)
+        set_cell(level, 5, 9, "#")
+        self.assert_error(level, "dentro de terreno")
 
 
 if __name__ == "__main__":

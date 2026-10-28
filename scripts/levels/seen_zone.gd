@@ -62,6 +62,7 @@ func _ready() -> void:
 	EventBus.pulse_fired.connect(receive_pulse)
 	EventBus.player_respawned.connect(_on_player_respawned)
 	reset()
+	_check_dark.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -209,6 +210,13 @@ func _try_freeze() -> void:
 
 func _on_player_respawned(_at: Vector2, _after_death: bool) -> void:
 	reset()
+
+
+## En una zona «Modo oscuro» (paso 4) los checks se ven siempre: por encima del velo.
+func _check_dark() -> void:
+	if is_inside_tree() and DarkZone.covering(get_tree(), get_zone_rect().get_center()) != null:
+		z_as_relative = false
+		z_index = DarkZone.veil_z() + 1
 
 
 ## Checks rellenos: 0, 1 o 2 (aviso: de uno en uno).

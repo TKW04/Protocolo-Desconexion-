@@ -142,7 +142,7 @@ NON_SOLID_PLACED = {"receiver", "exit_door", "exit_terminal", "charger", "abilit
                     "laser_switch", "charge_dock", "calc_actor", "dnd_switch", "exceptions_panel", "boss_dummy",
                     "alert_major", "pause_player", "autoplay", "curator",
                     "heart_pickup", "like_source", "like_reset", "crop_tool", "mirror",
-                    "hunter_mirror", "pose_plate", "seen_zone"}
+                    "hunter_mirror", "pose_plate", "seen_zone", "flashlight_pickup"}
 # Espejos del Mundo 3 (2026-10-26): orientaciones del espejo fijo y ejes de la pared de espejo.
 MIRROR_ORIENTATIONS = ("/", "\\", "|")
 MIRROR_WALL_SIDES = ("center", "left", "right")
@@ -845,6 +845,7 @@ class LevelValidator:
         if catalog is None:
             return
         self._bubble_cfg = catalog.get("chat_bubble", {})
+        flashlights = []
         types = catalog.get("types", {})
         bridges = set()
         receivers = []
@@ -914,6 +915,10 @@ class LevelValidator:
                 self._check_seen_zone(what, x, y, params, entry.get("defaults", {}))
             if kind in BUBBLE_TYPES:
                 self._check_bubble(what, kind, x, y, params, entry.get("defaults", {}), catalog)
+            if kind == "ink_only":
+                self._check_ink_only(what, x, y, params, entry.get("defaults", {}))
+            if kind == "flashlight_pickup":
+                flashlights.append((what, x, y))
             if kind == "boss_dummy":
                 for cx in (x, x + 1):
                     if not self.in_bounds(cx, y + 1) or self.cell(cx, y + 1) != "#":
@@ -1022,6 +1027,8 @@ class LevelValidator:
         if len(encounters) > 1:
             for (what, x, y) in encounters[1:]:
                 self.error("%s: solo puede haber un encuentro con Eco por nivel" % what, y, x)
+        for what, fx, fy in flashlights[1:]:
+            self.error("%s: una sola Linterna (flashlight_pickup) por nivel" % what, fy, fx)
         if encounters and self.level.get("abilities_available", {}).get("pulse", False):
             what, x, y = encounters[0]
             self.error("%s: el encuentro con Eco da el pulso; el nivel debe empezar sin el "
@@ -1553,6 +1560,39 @@ class LevelValidator:
             if not landed:
                 self.error("%s: el autocorrector deja la columna %d al descubierto sin suelo a <= %d tiles "
                            "(o con pinchos): engana, no mata" % (what, cx, drop), y, cx)
+
+    def _check_ink_only(self, what, x, y, params, defaults):
+        """Escrito en tinta (Mundo 4, paso 4 de docs/propuesta-mundo-4.md §3.6): dentro de una
+        dark_zone (solo existe bajo la luz de la Linterna); decor con texto y glifos de la
+        fuente; step sobre celdas vacias."""
+        w = params.get("width_tiles", defaults.get("width_tiles", 1))
+        if not _is_int(w) or w < 1:
+            return
+        cells = [(x + i, y) for i in range(w)]
+        zones = []
+        for o in self.level["objects"]:
+            if isinstance(o, dict) and o.get("type") == "dark_zone" and isinstance(o.get("params"), dict):
+                zp = o["params"]
+                zones.append((o.get("x", 0), o.get("y", 0), zp.get("width_tiles", 8), zp.get("height_tiles", 4)))
+        inside = lambda c, r: any(zx <= c < zx + zw and zy <= r < zy + zh for (zx, zy, zw, zh) in zones
+                                  if _is_int(zw) and _is_int(zh))
+        if not all(inside(c, r) for (c, r) in cells):
+            self.error("%s: el escrito en tinta debe estar dentro de una dark_zone (solo existe bajo la Linterna)"
+                       % what, y, x)
+        kind = params.get("kind")
+        if kind == "decor":
+            text = params.get("text")
+            if not isinstance(text, str) or not text.strip():
+                self.error("%s: kind decor necesita un text no vacio" % what, y, x)
+            else:
+                glyphs = _font_glyphs()
+                missing = sorted({c for c in text if glyphs and c not in glyphs and c != "\n"})
+                if missing:
+                    self.error("%s: text usa glifos que no estan en la fuente: %s" % (what, " ".join(missing)), y, x)
+        elif kind == "step":
+            for (c, r) in cells:
+                if self.in_bounds(c, r) and self.cell(c, r) != ".":
+                    self.error("%s (step) ocupa una celda que el grid debe dejar vacia ('.')" % what, r, c)
 
     def _check_seen_zone(self, what, x, y, params, defaults):
         """Zona «Visto» (Mundo 4, paso 2 de docs/propuesta-mundo-4.md §3.5): el ciclo lleva

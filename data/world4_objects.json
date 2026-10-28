@@ -1,5 +1,5 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 4 «El Chat» (docs/propuesta-mundo-4.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 4 usa los tipos de los Mundos 1-3 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo4_provisional.py). Los tipos llegan desde el paso 2 (seen_zone; burbujas en el paso 3).",
+	"_notes": "Catalogo de objetos del Mundo 4 «El Chat» (docs/propuesta-mundo-4.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 4 usa los tipos de los Mundos 1-3 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo4_provisional.py). Los tipos llegan desde el paso 2 (seen_zone; burbujas en el paso 3; Linterna y Modo oscuro en el paso 4).",
 	"tile_size": 64,
 	"types": {
 		"seen_zone": {
@@ -238,6 +238,99 @@
 					"side": "left"
 				}
 			}
+		},
+		"flashlight_pickup": {
+			"scene": "res://scenes/levels/flashlight_pickup.tscn",
+			"description": "Linterna (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; FlashlightPickup). Objeto de 1 x 1 en (x, y) que se recoge al tocarlo: GameState.meet_ally(\"linterna\") (aliada de registro, como Calc: no marca «sin guardar» y un game over no la quita). Desde entonces una lucecita sigue a Isak (FlashlightCompanion, la crea LevelRunner) y abre la luz en las dark_zone; el hueco del hub (columna 13) se enciende. Con la Linterna ya conocida no aparece. Va en la sala de llegada del 4-1. Sin Q ni linea de Eco todavia (pasos 10 y 20). Aspecto PROVISIONAL por codigo (seccion flashlight).",
+			"required": [],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "flashlight_pickup",
+				"x": 6,
+				"y": 9,
+				"params": {
+					"id": "linterna_4_1"
+				}
+			}
+		},
+		"dark_zone": {
+			"scene": "res://scenes/levels/dark_zone.tscn",
+			"description": "Zona «Modo oscuro» (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; DarkZone). Rectangulo de width_tiles x height_tiles desde (x, y) con un velo chat_noche al veil_alpha (60 %) por encima del mundo; sin colision ni dano. Con la Linterna conocida y Isak dentro, un circulo de luz de light_radius_tiles (3) alrededor de Isak. Siempre se ven por encima del velo el contorno de lo que dana (pinchos, alerta_sombra), los puntos del «escribiendo…», el borde de las burbujas al 30 % y los checks del «Visto»; la Linterna anade el texto, el largo y lo escrito en tinta (ink_only). Puede tapar terreno (no se comprueban sus celdas). Sin Q todavia (paso 10). Validador: aun no la modela (paso 9). Aspecto PROVISIONAL por codigo (seccion dark_zone).",
+			"required": [],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"width_tiles": 8,
+				"height_tiles": 4
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 2,
+					"max": 60,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 2,
+					"max": 14,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "dark_zone",
+				"x": 10,
+				"y": 2,
+				"params": {
+					"id": "oscuro_1",
+					"width_tiles": 12,
+					"height_tiles": 8
+				}
+			}
+		},
+		"ink_only": {
+			"scene": "res://scenes/levels/ink_only.tscn",
+			"description": "Escrito «en tinta» (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; InkOnly). Solo existe bajo la luz de la Linterna, dentro de una dark_zone (el esquema lo exige). kind decor: texto (`text`, solo glifos de la fuente; \\n separa dos lineas) en crema de width_tiles de ancho, sin colision (marca la entrada de un secreto: 4-2 A, 4-3 B). kind step: paso de una via de width_tiles x 1 (tarjeta arriba de su celda; la celda vacia en el grid), solido solo bajo la luz (si Isak esta encima no desaparece hasta que baja). Se dibuja por encima del velo con un fundido de fade_s. Sin Q todavia (paso 10). Validador: requisito «Linterna» de los secretos (paso 9). Aspecto PROVISIONAL por codigo (seccion ink_only).",
+			"required": [
+				"kind"
+			],
+			"fields": {
+				"id": "object_id",
+				"kind": "kind",
+				"text": "text",
+				"width_tiles": "width_tiles"
+			},
+			"defaults": {
+				"width_tiles": 1
+			},
+			"allowed": {
+				"kind": [
+					"decor",
+					"step"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "ink_only",
+				"x": 14,
+				"y": 6,
+				"params": {
+					"id": "tinta_1",
+					"kind": "decor",
+					"text": "por aquí",
+					"width_tiles": 2
+				}
+			}
 		}
 	},
 	"seen_zone": {
@@ -254,7 +347,7 @@
 		"dash_px": 8.0
 	},
 	"chat_bubble": {
-		"_notes": "Ajustes de las burbujas (§3.1 y §3.4; PROVISIONAL): chars_per_tile (6, regla del largo; la misma constante en ChatBubble.CHARS_PER_TILE y tools/build_level.py), min_tiles / max_tiles, card_height_px (tarjeta arriba de la celda, como una '-'), step_tolerance_px (pisada), font / font_size (fuente de textos), tail_px (cola), dash_px (contorno discontinuo eliminada), avatar_radius_px (amigo), escribiendo: type_s (1,0 s hasta aparecer), dot_s (un punto cada 0,33 s), dot_radius_px, typing_width_px; aviso warn_frames a anim_fps (cursor del autocorrector y aviso de eliminarse, 9 a 12 fps = 0,75 s); max_drop_tiles (autocorrector: caida maxima de lo que deja al descubierto).",
+		"_notes": "Ajustes de las burbujas (§3.1 y §3.4; PROVISIONAL): chars_per_tile (6, regla del largo; la misma constante en ChatBubble.CHARS_PER_TILE y tools/build_level.py), min_tiles / max_tiles, card_height_px (tarjeta arriba de la celda, como una '-'), step_tolerance_px (pisada), font / font_size (fuente de textos), tail_px (cola), dash_px (contorno discontinuo eliminada), avatar_radius_px (amigo), escribiendo: type_s (1,0 s hasta aparecer), dot_s (un punto cada 0,33 s), dot_radius_px, typing_width_px; aviso warn_frames a anim_fps (cursor del autocorrector y aviso de eliminarse, 9 a 12 fps = 0,75 s); max_drop_tiles (autocorrector: caida maxima de lo que deja al descubierto). dark_border_alpha: borde de la burbuja por encima del velo del Modo oscuro (30 %, paso 4).",
 		"chars_per_tile": 6,
 		"min_tiles": 1,
 		"max_tiles": 8,
@@ -271,7 +364,33 @@
 		"typing_width_px": 64,
 		"warn_frames": 9,
 		"anim_fps": 12.0,
-		"max_drop_tiles": 3
+		"max_drop_tiles": 3,
+		"dark_border_alpha": 0.3
+	},
+	"flashlight": {
+		"_notes": "Linterna (§3.6; PROVISIONAL): pickup_inset_px (caja de recogida), companion: offset_px (respecto a los pies de Isak; X hacia donde mira: a la altura de la mano, debajo de Eco) y companion_z.",
+		"pickup_inset_px": 12,
+		"offset_px": [
+			-22,
+			-44
+		],
+		"companion_z": 0
+	},
+	"dark_zone": {
+		"_notes": "Modo oscuro (§3.6; PROVISIONAL): veil_alpha (chat_noche; regla 5 de tools/palette_mundo4_provisional.py, DARK_VEIL), veil_z (z_index del velo: lo de encima, veil_z + 1), light_radius_tiles (3), hole_soft_px (borde suave del circulo), hazard_outline_px (contorno de lo que dana por encima del velo).",
+		"veil_alpha": 0.6,
+		"veil_z": 40,
+		"light_radius_tiles": 3.0,
+		"hole_soft_px": 16,
+		"hazard_outline_px": 2.0
+	},
+	"ink_only": {
+		"_notes": "Escrito en tinta (§3.6; PROVISIONAL): font / font_size / line_height_px (decor), step_height_px (paso), fade_s (fundido al entrar y salir de la luz).",
+		"font": "res://assets/sprites/ui/text_font.fnt",
+		"font_size": 16,
+		"line_height_px": 18,
+		"step_height_px": 24,
+		"fade_s": 0.25
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo4_provisional.py; no editar a mano): colores de desarrollo del Mundo 4 por nombre. Los hex no estan cerrados (decision abierta del usuario, paso 10) salvo debug_coral (#ff9f7a, decidido el 2026-10-27).",

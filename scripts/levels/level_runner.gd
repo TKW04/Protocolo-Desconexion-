@@ -57,6 +57,8 @@
 ##   cerrarse el vortice.
 ## - Eco companero (EcoCompanion, data/eco_companion.json): en cada nivel, si Eco
 ##   es conocido, sigue a Isak y entra y sale con el por los vortices.
+## - Linterna companera (FlashlightCompanion, Mundo 4, paso 4): en cada nivel, si la
+##   Linterna es conocida, una lucecita bajo Eco que se enciende en las zonas oscuras.
 ## - Vidas (intentos; docs/propuesta-asistentes-y-vidas.md §5.1, 2026-10-16):
 ##   start_level las repone a GameState.lives_max (empezar un intento: desde el
 ##   hub, al arrancar o con la tecla R); los puntos de sincronizacion no. Cada
@@ -151,6 +153,7 @@ var _prompt_bar: ColorRect
 var _notices: AbilityNotices
 var _arrival: WarpVortex
 var _companion: EcoCompanion
+var _flashlight: FlashlightCompanion
 var _pause_menu: PauseMenu
 ## El hub siguiente enciende la pieza del fondo al llegar (carpeta recien completada).
 var _light_piece_next: bool = false
@@ -400,6 +403,8 @@ func start_level(level_id: String) -> bool:
 	_spawn_position = _isak.global_position
 	_isak.died.connect(_on_isak_died)
 	_companion = EcoCompanion.attach(_isak, _level)
+	# Linterna companera (Mundo 4, paso 4): aparece si la Linterna es conocida.
+	_flashlight = FlashlightCompanion.attach(_isak, _level)
 	_start_arrival()
 	_deaths = 0
 	_falls = 0
@@ -515,6 +520,11 @@ func present_isak() -> bool:
 ## Eco companero del nivel (null en el hub: lo crea HubRoom).
 func get_eco_companion() -> EcoCompanion:
 	return _companion if _level != null and _companion != null and is_instance_valid(_companion) else null
+
+
+## Linterna companera del nivel actual (Mundo 4, paso 4; null sin nivel).
+func get_flashlight_companion() -> FlashlightCompanion:
+	return _flashlight
 
 
 ## Vortice de llegada en curso o esperando al fundido (null si no hay).

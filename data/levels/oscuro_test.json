@@ -1,0 +1,122 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 4 de docs/propuesta-mundo-4.md §8, 2026-10-28): sala de 40x12 de la LINTERNA y el MODO OSCURO del Mundo 4 (§3.6). Isak llega por la izquierda (P, fila 9) con el pulso y el Debug; la Linterna espera en la columna 5 (se recoge al tocarla: aliada de registro; con ella ya conocida no aparece). Zona «Modo oscuro» de las columnas 10-29 (filas 1-9, velo chat_noche al 60 %): con la Linterna, un circulo de luz de 3 tiles alrededor de Isak. Dentro, siempre visibles por encima del velo: el contorno del pincho de la columna 14, el borde de la burbuja «¿Sigues ahí?» (columnas 17-18, fila 7) y los puntos del «escribiendo…» «aquí» (columna 21) que dispara, y los checks de la zona «Visto» de la columna 24. Solo bajo la luz: el texto «por aquí» en tinta (columnas 19-20, fila 4) y el paso en tinta de la columna 27 (fila 7). Punto de sincronizacion sync_oscuro (columna 32). Terminal en (36, 8). Sin Q (help_id previsto en el paso 10). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela el Mundo 4 (paso 9). Escena: scenes/levels/oscuro_test.tscn (python3 tools/build_level.py data/levels/oscuro_test.json).",
+	"id": "oscuro_test",
+	"name": "Modo oscuro (prueba)",
+	"world": 4,
+	"tile_size": 64,
+	"debug_color": "coral",
+	"abilities_available": {
+		"pulse": true,
+		"laser": false,
+		"debug": true
+	},
+	"checkpoints": [
+		{
+			"id": "sync_oscuro",
+			"x": 32,
+			"y": 9
+		}
+	],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "flashlight_pickup",
+			"x": 5,
+			"y": 9,
+			"params": {
+				"id": "linterna_prueba"
+			}
+		},
+		{
+			"type": "dark_zone",
+			"x": 10,
+			"y": 1,
+			"params": {
+				"id": "modo_oscuro",
+				"width_tiles": 20,
+				"height_tiles": 9
+			}
+		},
+		{
+			"type": "chat_bubble",
+			"x": 17,
+			"y": 7,
+			"params": {
+				"id": "burbuja_oscura",
+				"text": "¿Sigues ahí?",
+				"side": "left",
+				"stamp": "03:52"
+			}
+		},
+		{
+			"type": "typing_bubble",
+			"x": 21,
+			"y": 7,
+			"params": {
+				"id": "escribiendo_oscuro",
+				"text": "aquí",
+				"side": "right",
+				"trigger": "burbuja_oscura"
+			}
+		},
+		{
+			"type": "seen_zone",
+			"x": 24,
+			"y": 8,
+			"params": {
+				"id": "visto_oscuro",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"icon": "left"
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 19,
+			"y": 4,
+			"params": {
+				"id": "tinta_texto",
+				"kind": "decor",
+				"text": "por aquí",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 27,
+			"y": 7,
+			"params": {
+				"id": "tinta_paso",
+				"kind": "step",
+				"width_tiles": 1
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 36,
+			"y": 8,
+			"params": {
+				"id": "terminal_oscuro",
+				"text": "Responder",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"########################################",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#.P...........^.................C...G..#",
+		"########################################",
+		"########################################"
+	]
+}

@@ -47,6 +47,7 @@ var _solid: bool = true
 var _stepping: bool = false
 var _isak: Isak
 var _font: Font
+var _dark_outline: _BubbleDarkOutline
 
 
 ## Largo en tiles de un texto (regla de §3.1).
@@ -68,6 +69,7 @@ func _ready() -> void:
 	add_child(_shape)
 	_apply_shape()
 	_set_solid(_initial_solid())
+	_attach_dark_outline.call_deferred()
 
 
 func _physics_process(_delta: float) -> void:
@@ -182,6 +184,50 @@ func _update_stepping() -> void:
 		stepped.emit()
 	elif not now:
 		_stepping = false
+
+
+# --- Modo oscuro (paso 4) ---
+
+## Dentro de una zona «Modo oscuro» (DarkZone) la burbuja queda bajo el velo; una
+## capa hija por encima del velo dibuja lo que siempre se ve: el borde al 30 % (y
+## los puntos del «escribiendo…», TypingBubble). Lo demas lo enseña la Linterna.
+func _attach_dark_outline() -> void:
+	if not is_inside_tree() or _dark_outline != null:
+		return
+	if DarkZone.covering(get_tree(), get_card_rect().get_center()) == null:
+		return
+	_dark_outline = _BubbleDarkOutline.new()
+	_dark_outline.name = "DarkOutline"
+	_dark_outline.bubble = self
+	_dark_outline.z_as_relative = false
+	_dark_outline.z_index = DarkZone.veil_z() + 1
+	add_child(_dark_outline)
+
+
+## Esta bajo el velo de una zona oscura (tiene su capa DarkOutline).
+func is_in_dark() -> bool:
+	return _dark_outline != null
+
+
+## Lo que se ve por encima del velo (local en `canvas`): el borde al dark_border_alpha.
+func draw_dark_overlay(canvas: CanvasItem) -> void:
+	if not _solid:
+		return
+	var shade: Color = World4ObjectsConfig.color("crema", Color("#eee4cc"))
+	var rect := Rect2(Vector2(get_card_offset_x(), 0.0), get_card_size())
+	canvas.draw_rect(rect, Color(shade, float(_cfg.get("dark_border_alpha", 0.3))), false, 2.0)
+
+
+class _BubbleDarkOutline:
+	extends Node2D
+	var bubble: ChatBubble
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		if bubble != null:
+			bubble.draw_dark_overlay(self)
 
 
 # --- Dibujo ---
