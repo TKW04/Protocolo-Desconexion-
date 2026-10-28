@@ -519,8 +519,10 @@ func apply_charger_cooldown(cooldown_s: float) -> void:
 ## Dice una linea del jefe: Eco hablando por el (interlocutor SPEAKER en el
 ## cuadro de texto del nivel: icono con interferencia y su blip; importante =
 ## pausa). Llama a `on_done` cuando esa linea se cierra (las no importantes,
-## enseguida). Sin cuadro de texto en el nivel, por EventBus como Eco.
-func say_line(text: String, important: bool, on_done: Callable = Callable(), kind: StringName = &"") -> void:
+## enseguida). Sin cuadro de texto en el nivel, por EventBus como Eco. `top`: el cuadro arriba aunque haya jefe
+## (EcoTextBox.show_line; abajo taparia algo de la pelea).
+func say_line(text: String, important: bool, on_done: Callable = Callable(), kind: StringName = &"",
+		top: bool = false) -> void:
 	line_said.emit(kind)
 	var box: Node = _text_box()
 	if box == null:
@@ -532,7 +534,7 @@ func say_line(text: String, important: bool, on_done: Callable = Callable(), kin
 		return
 	if important and on_done.is_valid():
 		_watch_line(box, GameState.apply_nickname(text), on_done)
-	box.call(&"show_line", text, -1.0, important, SPEAKER)
+	box.call(&"show_line", text, -1.0, important, SPEAKER, top)
 	if not important and on_done.is_valid():
 		on_done.call()
 

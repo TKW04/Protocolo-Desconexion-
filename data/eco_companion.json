@@ -3,7 +3,7 @@
 	"frames": "res://assets/sprites/eco_companion_frames.tres",
 	"_world_frames_notes": "Marco por mundo (2026-10-26, paso 9 de docs/propuesta-mundo-3.md §6.3): mundo -> imagen que EcoCompanion superpone a la esfera (misma escala) en los niveles de ese mundo, solo con la esfera entera (idle, talk, notice y sus _amber; no al aparecer ni al irse) y nunca en el hub. Mundo 3: marco dorado de 1 px de tools/gen_eco_companion.py.",
 	"world_frames": {"3": "res://assets/sprites/eco/companion/eco_frame_w3_00.png"},
-	"_world_sprite_frames_notes": "Cuerpo por mundo (2026-10-28, paso 11 de docs/propuesta-mundo-4.md §6.3; docs/04-personajes.md §12.1): mundo -> SpriteFrames que EcoCompanion usa en vez de frames en los niveles de ese mundo (nunca en el hub, que sigue con la esfera atenuada). Mundo 4: tres puntos que laten, sin esfera ni burbuja, con las mismas animaciones (idle, talk, notice, appear / disappear, glow_in / glow_out y las _amber de la Q) de tools/gen_eco_companion.py.",
+	"_world_sprite_frames_notes": "Cuerpo por mundo (2026-10-28, paso 11 de docs/propuesta-mundo-4.md §6.3; docs/04-personajes.md §12.1): mundo -> SpriteFrames que EcoCompanion usa en vez de frames en los niveles de ese mundo (nunca en el hub, que sigue con la esfera atenuada). Mundo 4: tres puntos cian (el de Isak, #29defa; desde el 2026-10-28) que laten, sin esfera ni burbuja, con las mismas animaciones (idle, talk, notice, appear / disappear, glow_in / glow_out y las _amber de la Q) de tools/gen_eco_companion.py.",
 	"world_sprite_frames": {"4": "res://assets/sprites/eco_companion_w4_frames.tres"},
 	"sprite_scale": 2,
 	"offset_px": [48, 112],

@@ -77,6 +77,8 @@ func _ready() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_update_stepping()
+	if is_in_dark():
+		queue_redraw()  # el texto sigue a la luz de la Linterna
 
 
 # --- Consultas ---
@@ -274,6 +276,13 @@ func draw_bubble(shown: String, solid: bool, alpha: float) -> void:
 		return
 	var text_color: Color = Color(ink, alpha) if solid else Color(gray, alpha)
 	shown = fit_text(shown, rect.size.x - 12.0)
+	if is_in_dark():
+		# Modo oscuro (2026-10-28, arreglo de las capturas del paso 22): bajo el velo el texto se leia sin la
+		# Linterna; ahora solo se dibujan los caracteres bajo su luz (el borde al 30 % sigue por encima del velo).
+		_draw_text_lit(shown, rect.position + Vector2(6.0, rect.size.y * 0.5 + 5.0), text_color, rect.size.x - 12.0)
+		if not stamp.is_empty() and solid:
+			_draw_text_lit(stamp, Vector2(rect.end.x - stamp_width() - 6.0, rect.end.y - 2.0), Color(shade, alpha))
+		return
 	_draw_text(shown, rect.position + Vector2(6.0, rect.size.y * 0.5 + 5.0), text_color, rect.size.x - 12.0)
 	if not stamp.is_empty() and solid:
 		_draw_text(stamp, Vector2(rect.end.x - stamp_width() - 6.0, rect.end.y - 2.0), Color(shade, alpha))
@@ -303,3 +312,39 @@ func fit_text(shown: String, width: float) -> String:
 func _draw_text(value: String, at: Vector2, color: Color, max_width: float = -1.0) -> void:
 	var px: int = int(_cfg.get("font_size", 16))
 	draw_string(_font, at, value, HORIZONTAL_ALIGNMENT_LEFT, max_width, px, color)
+
+
+## Dibuja `value` caracter a caracter, solo los que caen bajo la luz de la Linterna (DarkZone.lit_by_flashlight
+## en el centro de cada caracter); sin luz no se dibuja nada.
+func _draw_text_lit(value: String, at: Vector2, color: Color, max_width: float = -1.0) -> void:
+	var px: int = int(_cfg.get("font_size", 16))
+	var x: float = 0.0
+	for i: int in value.length():
+		var ch: String = value[i]
+		var w: float = _font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+		if max_width >= 0.0 and x + w > max_width:
+			return
+		var center: Vector2 = to_global(at + Vector2(x + w * 0.5, -px * 0.35))
+		if ch != " " and DarkZone.lit_by_flashlight(get_tree(), center):
+			draw_string(_font, at + Vector2(x, 0.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
+		x += w
+
+
+## Caracteres del texto que se ven ahora (pruebas: en el Modo oscuro, solo los que alumbra la Linterna).
+func count_visible_text_chars() -> int:
+	var shown: String = get_shown_text().replace(" ", "")
+	if not is_in_dark():
+		return shown.length()
+	var size: Vector2 = get_card_size()
+	var rect := Rect2(Vector2(get_card_offset_x(), 0.0), size)
+	var px: int = int(_cfg.get("font_size", 16))
+	var at: Vector2 = rect.position + Vector2(6.0, rect.size.y * 0.5 + 5.0)
+	var x: float = 0.0
+	var n: int = 0
+	var full: String = fit_text(get_shown_text(), rect.size.x - 12.0)
+	for i: int in full.length():
+		var w: float = _font.get_string_size(full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+		if full[i] != " " and DarkZone.lit_by_flashlight(get_tree(), to_global(at + Vector2(x + w * 0.5, -px * 0.35))):
+			n += 1
+		x += w
+	return n

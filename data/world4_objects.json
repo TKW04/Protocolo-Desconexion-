@@ -263,7 +263,7 @@
 		},
 		"dark_zone": {
 			"scene": "res://scenes/levels/dark_zone.tscn",
-			"description": "Zona «Modo oscuro» (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; DarkZone). Rectangulo de width_tiles x height_tiles desde (x, y) con un velo chat_noche al veil_alpha (60 %) por encima del mundo; sin colision ni dano. Con la Linterna conocida y Isak dentro, un circulo de luz de light_radius_tiles (3) alrededor de Isak. Siempre se ven por encima del velo el contorno de lo que dana (pinchos, alerta_sombra), los puntos del «escribiendo…», el borde de las burbujas al 30 % y los checks del «Visto»; la Linterna anade el texto, el largo y lo escrito en tinta (ink_only). Puede tapar terreno (no se comprueban sus celdas). Sin Q todavia (paso 10). Validador: aun no la modela (paso 9). Aspecto PROVISIONAL por codigo (seccion dark_zone).",
+			"description": "Zona «Modo oscuro» (2026-10-28, paso 4 de docs/propuesta-mundo-4.md §8 y §3.6; DarkZone). Rectangulo de width_tiles x height_tiles desde (x, y) con un velo chat_noche al veil_alpha (75 %; 60 % hasta el 2026-10-28) por encima del mundo; sin colision ni dano. Con la Linterna conocida y Isak dentro, un circulo de luz de light_radius_tiles (3) alrededor de Isak. Siempre se ven por encima del velo el contorno de lo que dana (pinchos, alerta_sombra), los puntos del «escribiendo…», el borde de las burbujas al 30 % y los checks del «Visto»; la Linterna anade el texto, el largo y lo escrito en tinta (ink_only). Puede tapar terreno (no se comprueban sus celdas). Sin Q todavia (paso 10). Validador: aun no la modela (paso 9). Aspecto PROVISIONAL por codigo (seccion dark_zone).",
 			"required": [],
 			"fields": {
 				"id": "object_id",
@@ -559,7 +559,7 @@
 	},
 	"dark_zone": {
 		"_notes": "Modo oscuro (§3.6; PROVISIONAL): veil_alpha (chat_noche; regla 5 de tools/palette_mundo4_provisional.py, DARK_VEIL), veil_z (z_index del velo: lo de encima, veil_z + 1), light_radius_tiles (3), hole_soft_px (borde suave del circulo), hazard_outline_px (contorno de lo que dana por encima del velo).",
-		"veil_alpha": 0.6,
+		"veil_alpha": 0.75,
 		"veil_z": 40,
 		"light_radius_tiles": 3.0,
 		"hole_soft_px": 16,

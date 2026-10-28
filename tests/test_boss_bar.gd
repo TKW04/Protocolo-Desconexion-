@@ -238,7 +238,9 @@ func test_seen_bar_is_a_conversation_that_empties_by_thirds() -> void:
 	assert_eq(_bar.get_passed_notches(), 1)
 	_hits(3)
 	assert_eq(_bar.get_counter_text(), "33")
-	assert_almost_eq(_bar.get_screen_rect().get_center().x, 640.0, 1.0, "Arriba en el centro")
+	# Arriba a la DERECHA (2026-10-28): centrada tapaba el borde de arriba del cuerpo (columnas 7-12).
+	assert_almost_eq(_bar.get_screen_rect().end.x, 1280.0 - 64.0, 1.0, "Arriba a la derecha, a side_px del borde")
+	assert_gt(_bar.get_screen_rect().position.x, 13.0 * 64.0, "No tapa las columnas del cuerpo (7-12)")
 	_hits(3)
 	assert_eq(_bar.get_counter_text(), "0")
 	assert_eq(_bar.get_read_messages(), 9, "Golpe final: todo leído")

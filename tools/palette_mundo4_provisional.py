@@ -94,7 +94,7 @@ ECO_DOTS = "29defa"
 ## Verde acido del Debug del Mundo 3 (assets/palettes/mundo3.gpl).
 WORLD3_GREEN = "a6ff2e"
 ## Velos (§3.3 y §3.6; los valores definitivos se ajustan en los pasos 2 y 4).
-DARK_VEIL = 0.60    # chat_noche sobre el fondo en las zonas «Modo oscuro»
+DARK_VEIL = 0.75    # chat_noche sobre el fondo en las zonas «Modo oscuro» (0,60 hasta el 2026-10-28)
 FROZEN_VEIL = 0.50  # gris_oscuro sobre la escena mientras Isak esta congelado
 
 # Umbrales de §6.1.

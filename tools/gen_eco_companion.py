@@ -40,8 +40,9 @@ scripts/levels/eco_companion.gd), no los cuadros.
 
 - Eco del Mundo 4 (2026-10-28, paso 11 de docs/propuesta-mundo-4.md §6.3; docs/04-personajes.md §12.1: «tres
   puntos de escribiendo…, sin cuerpo»): eco_w4_<anim>[_amber]_NN.png, tres puntos en fila (sin esfera, sin
-  burbuja) con los mismos papeles de color que la esfera (nucleo blanco, borde azul luz del Mundo 1, contorno
-  noche) y la misma variante ambar de la Q. idle: los puntos laten de uno en uno (el 4.º cuadro, quietos);
+  burbuja) en el cian de la ropa de Isak (nucleo #29defa, borde #36c0d4, contorno noche; desde el 2026-10-28,
+  antes blanco y azul luz como la esfera, que se confundia con el «escribiendo…» crema) y la misma variante
+  ambar de la Q. idle: los puntos laten de uno en uno (el 4.º cuadro, quietos);
   talk: botan por turnos; notice: los tres grandes con destello; appear: chispa y los puntos de uno en uno;
   glow_in: como el de la esfera. Sin variante _dim (el hub sigue con la esfera atenuada). Escribe ademas
   assets/sprites/eco_companion_w4_frames.tres con las mismas animaciones (las _dim apuntan a las de la
@@ -141,6 +142,22 @@ ROLES = {
         "gleam": M1["banner_blanco"],
     },
 }
+
+# Tres puntos del Mundo 4 (2026-10-28, arreglo de las capturas del paso 22): el cian de la ropa de Isak (el de
+# ECO_DOTS de tools/palette_mundo4_provisional.py, regla 3 de §6.1), no el blanco de la esfera: el «escribiendo…»
+# del nivel es crema y se confundian. Nucleo #29defa, borde #36c0d4, contorno noche y destellos blancos.
+W4_CYAN = (0x29, 0xde, 0xfa, 255)
+W4_CYAN_SHADE = (0x36, 0xc0, 0xd4, 255)
+ROLES["w4"] = {
+    "outline": M1["noche_profunda"],
+    "rim": W4_CYAN_SHADE,
+    "core": W4_CYAN,
+    "spark_core": M1["banner_blanco"],
+    "spark_arm": W4_CYAN,
+    "halo": W4_CYAN_SHADE,
+    "halo_soft": W4_CYAN_SHADE,
+}
+W4_COLORS = {c[:3] for c in ROLES["w4"].values()}
 
 # Orbita: radio, arcos, apertura de cada arco (grados) y giro por cuadro. Con
 # tres arcos el dibujo se repite cada 120 grados: 4 cuadros x 30 = bucle limpio.
@@ -390,7 +407,7 @@ def _dot_halo(cv, color, cx, cy, r):
 
 def frame_w4(anim, f, variant):
     """Eco del Mundo 4: tres puntos en fila (ver el encabezado)."""
-    col = ROLES[variant]
+    col = ROLES["w4" if variant == "normal" else variant]
     cv = Canvas(SIZE, SIZE)
     if anim == "glow_in":
         normal = frame_w4("idle", 0, "normal")
@@ -440,6 +457,29 @@ def frame_w4(anim, f, variant):
             spark(cv, col, 27, 7, 2)
         else:
             cv.p(27, 7, col["spark_arm"])
+    return cv.img
+
+
+# Icono del cuadro de texto en el Mundo 4 (16x16; world_icons de data/eco_text_box.json): los tres puntos cian en
+# lugar de la esfera de assets/sprites/ui/eco_icon.png. Lo escribe main() aparte de outputs() (no es un cuadro
+# de 32x32 del companero).
+ICON_W4 = "assets/sprites/eco/eco_icon_w4.png"
+ICON_W4_SIZE = 16
+
+
+def icon_w4():
+    col = ROLES["w4"]
+    cv = Canvas(ICON_W4_SIZE, ICON_W4_SIZE)
+    for cx in (3.5, 8.0, 12.5):
+        for y in range(ICON_W4_SIZE):
+            for x in range(ICON_W4_SIZE):
+                d = math.hypot(x + 0.5 - cx, y + 0.5 - 8.0)
+                if d < 1.3:
+                    cv.p(x, y, col["core"])
+                elif d < 2.2:
+                    cv.p(x, y, col["rim"])
+                elif d < 3.0 and cv.get(x, y)[3] == 0:
+                    cv.p(x, y, col["outline"])
     return cv.img
 
 
@@ -534,6 +574,8 @@ def main(argv):
             fh.write(sprite_frames_tres(animations()))
         with open(os.path.join(REPO, FRAMES_TRES_W4), "w", encoding="utf-8") as fh:
             fh.write(sprite_frames_tres(animations_w4()))
+        os.makedirs(os.path.dirname(os.path.join(REPO, ICON_W4)), exist_ok=True)
+        icon_w4().save(os.path.join(REPO, ICON_W4))
     if "--preview" in argv:
         preview(argv[argv.index("--preview") + 1],
                 int(argv[argv.index("--scale") + 1]) if "--scale" in argv else 8)

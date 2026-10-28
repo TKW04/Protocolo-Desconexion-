@@ -65,7 +65,7 @@ char id=102 x=120 y=16 width=4 height=12 xoffset=0 yoffset=0 xadvance=5 page=0 c
 char id=103 x=0 y=32 width=5 height=12 xoffset=0 yoffset=0 xadvance=6 page=0 chnl=15
 char id=104 x=8 y=32 width=5 height=12 xoffset=0 yoffset=0 xadvance=6 page=0 chnl=15
 char id=105 x=16 y=32 width=1 height=12 xoffset=0 yoffset=0 xadvance=2 page=0 chnl=15
-char id=106 x=24 y=32 width=4 height=12 xoffset=0 yoffset=0 xadvance=5 page=0 chnl=15
+char id=106 x=24 y=32 width=4 height=12 xoffset=-3 yoffset=0 xadvance=2 page=0 chnl=15
 char id=107 x=32 y=32 width=4 height=12 xoffset=0 yoffset=0 xadvance=5 page=0 chnl=15
 char id=108 x=40 y=32 width=2 height=12 xoffset=0 yoffset=0 xadvance=3 page=0 chnl=15
 char id=109 x=48 y=32 width=5 height=12 xoffset=0 yoffset=0 xadvance=6 page=0 chnl=15

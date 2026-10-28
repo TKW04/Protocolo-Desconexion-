@@ -1234,19 +1234,14 @@ El Mundo 4 «El Chat» se hizo con las decisiones delegadas al orquestador (`pro
 - «Escribiendo…» (1,0 s hasta ser sólida, un punto cada 0,33 s): ¿se aprende a saltar con el segundo punto?
 - Autocorrector: ¿avisa a tiempo el cursor (0,75 s)? ¿Hacen gracia los textos?
 - Ola del 4-3: 1,0 / 1,2 / 1,2 → 1,6 tiles/s, paradas en los puntos de sincronización, retroceso de 4 tiles (1 con Agitar). ¿Presiona sin frustrar?
-- Linterna y Modo oscuro: radio de luz 3 tiles, velo al 60 %; **en las capturas el texto de las burbujas se lee sin la Linterna** (ver «Puntos a vigilar»).
+- Linterna y Modo oscuro: radio de luz 3 tiles, velo al 75 % (60 % hasta el 2026-10-28) y el texto de las burbujas solo bajo la luz.
 - Fantasma: ¿se entiende el rastro con el Debug y la reaparición 2 tiles detrás?
 - El Visto (objetivo 100-150 s en Caché): bot ideal **112,6 / 185,8 / 161,6 s**, torpe **148,4 / 244,6 / 202,7 s** (Caché / Kernel / Raíz). El escudo con Agitar desde la burbuja fija, la interrupción del «escribiendo…» y si los huecos entre ataques alargados (y `typing_gap_s` 10 s) hacen lenta la pelea.
 
 **Puntos a vigilar (vistos en las capturas del paso 22; detalle en `08-pendientes.md`)**
-- Los **tres puntos de Eco** se confunden con los del **«escribiendo…»** (blancos los dos), sobre todo en el Modo oscuro y bajo el «escribiendo…» gigante del jefe. ¿Se distinguen jugando?
-- El **velo del Modo oscuro** deja leer el texto de las burbujas sin la Linterna: ¿basta como «oscuro» o hay que oscurecerlo más?
-- El cuadro de Eco sigue con el **icono de la esfera** en el Mundo 4.
-- La **barra de El Visto** tapa el borde de arriba de su cuerpo, y en la ventana de la fase 2 el **cuadro de Eco** de abajo tapa el check gris del suelo.
-- En lo alto de la torre del 4-1 un Troll queda **detrás del contador de power bank** del HUD.
-- En la página 3 del hub, Eco tapa «Completa el mundo anterior».
-- La «j» de la fuente deja un hueco («Mensa jes», «ja ja»), en todo el juego.
-- El sello «3 mes» de la última burbuja de Tomi parece cortado (es abreviatura).
+- **Arreglado el 2026-10-28** (decisiones del orquestador, `propuesta-mundo-4.md` §8.1): Eco en el Mundo 4 son tres puntos **cian** (el de Isak), distintos de los crema / blancos del «escribiendo…»; el **Modo oscuro** tiene el velo al 75 % y el texto de las burbujas solo se lee bajo la luz de la Linterna (el borde sigue a la vista); el cuadro de Eco lleva el **icono de los tres puntos**; la **barra de El Visto** va arriba a la derecha y la línea de Eco de la fase 2 sale arriba; el contador de power bank tiene **fondo**; la **«j»** ya no deja hueco; el sello de Tomi es la fecha «12/07». ¿Se distinguen bien jugando los puntos de Eco? ¿Es el Modo oscuro lo bastante oscuro?
+- En la torre del 4-1, con Isak en el suelo de la Pausa, el aviso del Troll puede quedar en parte detrás del contador de power bank (ahora con fondo): ¿molesta jugando?
+- En la página 3 del hub, Eco tapa «Completa el mundo anterior» (sin tocar).
 - Arreglado ya en el paso 22: «Se eliminó este mensaje» cortado, sello de hora con ancho fijo, rótulo «Leído 03:47» fuera de la vista y contorno de los pinchos en el Modo oscuro poco visible (ahora en `alerta`).
 
 **Paleta**

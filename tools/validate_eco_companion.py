@@ -59,6 +59,12 @@ def main():
             continue
         amber = "_amber_" in base or "_glow_in_" in base
         pal = pal_hub if "_dim_" in base else (pal_amber if amber else pal_m1)
+        if base.startswith("eco_w4_") and not amber:
+            # Tres puntos del Mundo 4: cian de Isak, contorno noche y destellos blancos (gen.W4_COLORS).
+            pal = set(gen.W4_COLORS)
+        elif base.startswith("eco_w4_glow_in_"):
+            # La transicion al ambar parte de los puntos cian.
+            pal = pal_amber | gen.W4_COLORS
         if amber:
             used = {c[:3] for c in expected.getdata() if c[3] == 255}
             if AMBER not in used or ("_amber_" in base and AMBER_SHADOW not in used):
@@ -71,6 +77,14 @@ def main():
                for p in glob.glob(os.path.join(REPO, "assets/sprites", gen.OUT_DIR, "*.png"))}
     for extra in sorted(on_disk - set(imgs)):
         errs.append(f"{extra}: sobra (no lo genera tools/gen_eco_companion.py)")
+    icon_path = os.path.join(REPO, gen.ICON_W4)
+    icon = gen.icon_w4()
+    if not os.path.exists(icon_path):
+        errs.append(f"{gen.ICON_W4}: falta (regenera con tools/gen_eco_companion.py)")
+    elif Image.open(icon_path).convert("RGBA").tobytes() != icon.tobytes():
+        errs.append(f"{gen.ICON_W4}: no coincide con tools/gen_eco_companion.py (regenera)")
+    if not {c[:3] for c in icon.getdata() if c[3] == 255} <= gen.W4_COLORS:
+        errs.append(f"{gen.ICON_W4}: solo usa los colores de los puntos del Mundo 4")
     tres = os.path.join(REPO, gen.FRAMES_TRES)
     if not os.path.exists(tres):
         errs.append(f"{gen.FRAMES_TRES}: no existe")

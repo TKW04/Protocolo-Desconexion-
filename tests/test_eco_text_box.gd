@@ -420,6 +420,26 @@ func test_layer_position_and_speaker() -> void:
 	assert_eq(fmod(rect.position.x, 2.0), 0.0, "Alineado a pixel de arte")
 
 
+## Mundo 4 (2026-10-28): Eco son tres puntos, tambien en el icono del cuadro (world_icons) y por el jefe (eco_boss).
+func test_world_icon_in_world_4() -> void:
+	var level := GeneratedLevel.new()
+	level.world = 4
+	add_child_autofree(level)
+	var box := BOX_SCENE.instantiate() as EcoTextBox
+	level.add_child(box)
+	box.set_process(false)
+	box.show_line(WELCOME)
+	assert_eq(box.get_icon_texture().resource_path, "res://assets/sprites/eco/eco_icon_w4.png", "Tres puntos en el Mundo 4")
+	var boss_box := BOX_SCENE.instantiate() as EcoTextBox
+	level.add_child(boss_box)
+	boss_box.set_process(false)
+	boss_box.show_line(WELCOME, -1.0, false, &"eco_boss")
+	assert_eq(boss_box.get_icon_texture().resource_path, "res://assets/sprites/eco/eco_icon_w4.png", "Tambien por el jefe")
+	var plain: EcoTextBox = _box()
+	plain.show_line(WELCOME)
+	assert_eq(plain.get_icon_texture().resource_path, "res://assets/sprites/ui/eco_icon.png", "Fuera del Mundo 4, la esfera")
+
+
 # --- No bloquea a Isak ni lo frena el Debug ---
 
 func test_isak_keeps_moving_while_eco_talks() -> void:

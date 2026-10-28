@@ -216,7 +216,17 @@ def build_glyphs():
 
 
 def advance_of(ch, width):
-    return DIGIT_ADVANCE if ch.isdigit() else width + 1
+    return METRIC_OVERRIDES[ch][1] if ch in METRIC_OVERRIDES else (DIGIT_ADVANCE if ch.isdigit() else width + 1)
+
+
+def xoffset_of(ch):
+    return METRIC_OVERRIDES[ch][0] if ch in METRIC_OVERRIDES else 0
+
+
+# Glifos con xoffset / avance propios (2026-10-28, capturas del Mundo 4: «Mensa jes», «ja ja»): la «j» tiene el
+# palo en su 4.ª columna y el gancho del descendente debajo de la letra anterior; sin esto dejaba 3 px de hueco
+# delante. xoffset -3 pone el palo en la pluma y el avance 2 deja 1 px de aire detras, como las demas.
+METRIC_OVERRIDES = {"j": (-3, 2)}
 
 
 def lcd_metrics(width, cell):
@@ -271,7 +281,7 @@ def main():
             for x, v in enumerate(line):
                 if v == "#":
                     atlas.putpixel((cx + x, cy + y), P[COLOR])
-        chars.append((ord(ch), cx, cy, width, LINE_HEIGHT, 0, 0, advance_of(ch, width)))
+        chars.append((ord(ch), cx, cy, width, LINE_HEIGHT, xoffset_of(ch), 0, advance_of(ch, width)))
     chars.append((ord(" "), 0, 0, 0, 0, 0, 0, SPACE_ADVANCE))
     png_path = ga.res_to_path(spec["path"])
     atlas.save(png_path)
@@ -338,9 +348,9 @@ def write_preview(atlas, adv, order):
     for row, text in enumerate(lines):
         x, y = MARGIN, MARGIN + row * LINE_ADVANCE
         for ch in text:
-            _, gx, gy, gw, gh, _, _, a = adv[ch]
+            _, gx, gy, gw, gh, xo, _, a = adv[ch]
             if gw:
-                img.alpha_composite(atlas.crop((gx, gy, gx + gw, gy + gh)), (x, y))
+                img.alpha_composite(atlas.crop((gx, gy, gx + gw, gy + gh)), (max(0, x + xo), y))
             x += a
     img.resize((img.width * PREVIEW_SCALE, img.height * PREVIEW_SCALE), Image.NEAREST).save(PREVIEW)
 

@@ -160,7 +160,12 @@ class TextFontTest(unittest.TestCase):
                 continue
             self.assertEqual(c["height"], data["font_size"], chr(cid))
             self.assertLessEqual(c["width"], fw, chr(cid))
+            if chr(cid) == "j":
+                # 2026-10-28: la «j» pone el palo en la pluma (xoffset -3) y avanza 2 (sin hueco delante).
+                self.assertEqual((c["xoffset"], c["xadvance"]), (-3, 2), "j")
+                continue
             self.assertEqual(c["xadvance"], 6 if chr(cid).isdigit() else c["width"] + 1, chr(cid))
+            self.assertEqual(c["xoffset"], 0, chr(cid))
         # Estrechos para leer mejor: i y l mas estrechas que la m.
         self.assertLess(chars[ord("i")]["width"], chars[ord("m")]["width"])
         self.assertLess(chars[ord("l")]["width"], chars[ord("m")]["width"])

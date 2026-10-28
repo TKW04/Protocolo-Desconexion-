@@ -502,6 +502,9 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 	_power_bank_box.offset_right = -c.margin_px
 	_power_bank_box.offset_top = c.bar_height_px + int(d.get("offset_y_px", 2))
 	_power_bank_box.offset_bottom = _power_bank_box.offset_top + c.bar_height_px
+	# Fondo (2026-10-28, capturas del Mundo 4: en la torre del 4-1 el mundo quedaba detras del contador sin fondo):
+	# rectangulo back al back_alpha con back_pad_px de margen; deja ver algo del mundo de detras.
+	_power_bank_box.draw.connect(_draw_power_bank_back.bind(d))
 	_frame.add_child(_power_bank_box)
 	_power_bank_icon = HudPowerBankIcon.new()
 	_power_bank_icon.name = "Icon"
@@ -525,6 +528,21 @@ func _build_power_bank(c: HudConfig, font: Font) -> void:
 	_power_bank_label.text = POWER_BANK_FORMAT % [0, 0]
 	_power_bank_box.add_child(_power_bank_label)
 	_power_bank_box.visible = false
+
+
+func _draw_power_bank_back(d: Dictionary) -> void:
+	var pad: float = float(d.get("back_pad_px", 2))
+	var back := Color.html(String(d.get("back", "#0b0e1a")))
+	back.a = float(d.get("back_alpha", 0.75))
+	_power_bank_box.draw_rect(Rect2(Vector2(-pad, 0.0), _power_bank_box.size + Vector2(pad * 2.0, 0.0)), back)
+
+
+## Color del fondo del contador de power banks (pruebas).
+func get_power_bank_back_color() -> Color:
+	var d: Dictionary = GameState.get_power_bank_hud_data()
+	var back := Color.html(String(d.get("back", "#0b0e1a")))
+	back.a = float(d.get("back_alpha", 0.75))
+	return back
 
 
 # --- Ocultarte (Pulso 4, tanda M2) ---

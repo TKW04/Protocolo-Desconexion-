@@ -497,7 +497,8 @@ func _on_phase_started(phase_index: int) -> void:
 	if phase_index > 1:
 		var line: String = String((_texts.get("phase_lines", {}) as Dictionary).get(str(phase_index), ""))
 		if not line.is_empty():
-			say_line(line, false, Callable(), &"phase")
+			# Fase 2 arriba (2026-10-28): abajo tapaba el check gris del suelo en la ventana.
+			say_line(line, false, Callable(), &"phase", phase_index == 2)
 	_refresh()
 
 

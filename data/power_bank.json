@@ -7,6 +7,10 @@
 		"format": "%d/%d",
 		"font": "res://assets/sprites/ui/text_font.fnt",
 		"font_size": 12,
-		"font_key_color": "#f2f4f8"
+		"font_key_color": "#f2f4f8",
+		"_back_notes": "Fondo del contador (2026-10-28, arreglo de las capturas del paso 22 del Mundo 4): rectangulo back (noche_profunda de mundo1.gpl) al back_alpha con back_pad_px de margen a los lados; antes no tenia fondo y el mundo de detras (un Troll en la torre del 4-1) se mezclaba con el.",
+		"back": "#0b0e1a",
+		"back_alpha": 0.75,
+		"back_pad_px": 2
 	}
 }

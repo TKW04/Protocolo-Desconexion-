@@ -292,7 +292,12 @@ func _size_px() -> Vector2:
 func _layout() -> void:
 	var screen: Vector2 = get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
 	var size_px: Vector2 = _size_px() * _scale
-	position = Vector2(roundf((screen.x - size_px.x) * 0.5), float(_cfg.get("top_px", 20)) * _scale)
+	var x: float = roundf((screen.x - size_px.x) * 0.5)
+	# align right (2026-10-28, El Visto): pegada a la derecha a side_px del borde, para no tapar el cuerpo del jefe
+	# que flota arriba en el centro de la arena.
+	if String(_cfg.get("align", "center")) == "right":
+		x = screen.x - size_px.x - float(_cfg.get("side_px", 32)) * _scale
+	position = Vector2(x, float(_cfg.get("top_px", 20)) * _scale)
 	size = size_px
 
 

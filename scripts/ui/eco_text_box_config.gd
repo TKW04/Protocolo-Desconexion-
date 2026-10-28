@@ -8,7 +8,7 @@ const DEFAULT_PATH: String = "res://data/eco_text_box.json"
 const MISSING_COLOR: Color = Color.MAGENTA
 ## Claves del JSON que no son numeros sueltos (se leen aparte).
 const SPECIAL_KEYS: Array[String] = ["colors", "assets", "speakers", "speaker_name", "font", "key_swap_shader",
-	"confirm_hint_text", "inline_icons", "speaker_styles"]
+	"confirm_hint_text", "inline_icons", "speaker_styles", "world_icons"]
 
 var layer: int = 11
 ## Pixeles de pantalla por pixel de arte (entero).
@@ -57,6 +57,9 @@ var assets: Dictionary[StringName, Dictionary] = {}
 ## la fuente con el ancho del icono), asset (clave de assets), offset_px ([x, y]
 ## desde la esquina superior izquierda del glifo)}.
 var inline_icons: Dictionary[StringName, Dictionary] = {}
+## Icono de Eco por mundo (2026-10-28; Mundo 4: tres puntos, Eco no es la esfera): numero de mundo (texto) ->
+## ruta de un PNG de 16x16. Sin entrada, el icono `icon` de assets.
+var world_icons: Dictionary[String, String] = {}
 
 static var _cached: EcoTextBoxConfig
 
@@ -104,6 +107,9 @@ static func load_from_file(path: String = DEFAULT_PATH) -> EcoTextBoxConfig:
 	for id: String in raw_icons:
 		if raw_icons[id] is Dictionary:
 			config.inline_icons[StringName(id)] = raw_icons[id]
+	var raw_world_icons: Dictionary = dict.get("world_icons", {})
+	for w: String in raw_world_icons:
+		config.world_icons[w] = String(raw_world_icons[w])
 	var raw_assets: Dictionary = dict.get("assets", {})
 	for name: String in raw_assets:
 		config.assets[StringName(name)] = raw_assets[name]
@@ -118,6 +124,14 @@ func style_for(speaker: StringName) -> Dictionary:
 
 func color(name: StringName) -> Color:
 	return colors.get(name, MISSING_COLOR)
+
+
+## Icono de Eco en el mundo `world` (world_icons) o el de siempre.
+func eco_icon_texture(world: int) -> Texture2D:
+	var path: String = world_icons.get(str(world), "")
+	if not path.is_empty() and ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return asset_texture(&"icon")
 
 
 func asset_texture(name: StringName) -> Texture2D:

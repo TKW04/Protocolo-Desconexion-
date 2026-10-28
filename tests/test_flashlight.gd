@@ -118,7 +118,7 @@ func test_dark_zone_opens_light_only_with_flashlight() -> void:
 	zone.refresh()
 	assert_true(zone.is_isak_inside())
 	assert_false(zone.is_hole_open(), "Sin Linterna, a oscuras")
-	assert_almost_eq(zone.get_veil_alpha(), 0.6, EPS, "chat_noche al 60 %")
+	assert_almost_eq(zone.get_veil_alpha(), 0.75, EPS, "chat_noche al 75 %")
 	GameState.meet_ally(GameState.ALLY_LINTERNA)
 	zone.refresh()
 	assert_true(zone.is_hole_open(), "Con la Linterna, circulo de luz")
@@ -228,6 +228,33 @@ func test_always_visible_above_veil() -> void:
 	var veil: Color = World4ObjectsConfig.color("fondo_claro", Color("#4a6fc4")).lerp(
 		World4ObjectsConfig.color("chat_noche"), float(World4ObjectsConfig.section("dark_zone").get("veil_alpha", 0.6)))
 	assert_gt(_contrast(outline, veil), 3.0, "Contraste del contorno sobre el velo")
+
+
+## Arreglo de las capturas del paso 22 (2026-10-28): bajo el velo el texto de una burbuja solo se ve bajo la luz.
+func test_bubble_text_only_under_light() -> void:
+	var zone := _dark(-6.0, -6.0, 20, 7)
+	var near := CHAT_SCENE.instantiate() as ChatBubble
+	near.position = Vector2(-1.0 * TILE, -2.0 * TILE)
+	near.text = "hola"
+	near.width_tiles = 2
+	_world.add_child(near)
+	var far := CHAT_SCENE.instantiate() as ChatBubble
+	far.position = Vector2(9.0 * TILE, -2.0 * TILE)
+	far.text = "lejos"
+	far.width_tiles = 2
+	_world.add_child(far)
+	var outside := CHAT_SCENE.instantiate() as ChatBubble
+	outside.position = Vector2(30.0 * TILE, -2.0 * TILE)
+	outside.text = "fuera"
+	_world.add_child(outside)
+	await wait_process_frames(2)
+	zone.refresh()
+	assert_eq(near.count_visible_text_chars(), 0, "Sin Linterna no se lee nada bajo el velo")
+	assert_eq(outside.count_visible_text_chars(), 5, "Fuera de la zona, todo el texto")
+	GameState.meet_ally(GameState.ALLY_LINTERNA)
+	zone.refresh()
+	assert_eq(near.count_visible_text_chars(), 4, "Bajo la luz, el texto entero")
+	assert_eq(far.count_visible_text_chars(), 0, "Fuera del circulo, sin texto")
 
 
 func _contrast(a: Color, b: Color) -> float:

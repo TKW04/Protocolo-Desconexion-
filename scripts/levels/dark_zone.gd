@@ -143,7 +143,7 @@ func get_zone_rect() -> Rect2:
 
 
 func get_veil_alpha() -> float:
-	return float(_cfg.get("veil_alpha", 0.6))
+	return float(_cfg.get("veil_alpha", 0.75))
 
 
 ## La Linterna esta conocida (aliada de registro).
