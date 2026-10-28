@@ -201,6 +201,29 @@ func test_curator_grants_the_image_fragment_in_cache() -> void:
 	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w3.png"), "Nitida en Kernel")
 
 
+## Paso 18 de docs/propuesta-mundo-4.md (2026-10-28): El Visto entrega
+## boss_w4_l1 «Fragmento de amistades» en Caché, sin guardar, con la linea del
+## sistema «Visto: retirado.» y la derrota de Eco (§5.9); memory_art_w4 existe.
+func test_seen_grants_the_friendship_fragment_in_cache() -> void:
+	var got: Array[StringName] = BossReward.grant(4, 1)
+	assert_eq(got, [&"boss_w4_l1"] as Array[StringName], "Capa Caché del Mundo 4")
+	assert_true(GameState.has_unsaved_changes(), "Sin guardar")
+	assert_true(GameState.has_unread_memories(), "Placa «!» en Notas")
+	var cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/bosses/seen.json"))
+	assert_eq(int((cfg.get("defeat", {}) as Dictionary).get("memory_world", 0)), 4, "BossReward.grant(4, vuelta)")
+	var line: String = String((cfg.get("texts", {}) as Dictionary).get("final_system", ""))
+	assert_eq(line, "Visto: retirado.", "Linea del sistema del golpe final (propuesta)")
+	assert_eq(String((cfg.get("texts", {}) as Dictionary).get("defeat", "")),
+		"Me quedo yo. Siempre me quedo yo.", "Linea de derrota de Eco (propuesta, §5.9)")
+	var reward: BossReward = BossReward.show_for(&"boss_w4_l1", self, line)
+	assert_eq(reward.get_text(&"title"), "Fragmento de amistades")
+	assert_eq(reward.get_text(&"layer"), "Capa: Caché")
+	assert_string_contains(reward.get_text(&"text"), "Yo siempre estoy. Ellos no", "La linea de Eco del diseño")
+	reward.free()
+	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w4_cache.png"), "Borrosa en Caché")
+	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w4.png"), "Nitida en Kernel")
+
+
 ## Los textos definitivos (paso 6) caben en el panel de la recompensa.
 func test_every_boss_layer_fits_the_reward_panel() -> void:
 	var catalog: MemoryCatalog = MemoryCatalog.shared()

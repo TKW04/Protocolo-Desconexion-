@@ -581,3 +581,167 @@ func test_calc_remark_after_3_1_once() -> void:
 	assert_string_contains(_hub.get_text_box().get_text(), "Likes canjeables: 0.")
 	assert_false(_hub.start_calc_remark(), "Una sola vez")
 	assert_true(GameState.is_notice_seen(&"calc_remark_likes_3_1"))
+
+
+# --- El Visto (paso 18 de docs/propuesta-mundo-4.md, 2026-10-28) ---
+
+func _m4() -> Dictionary:
+	return HubWorlds.world(&"m4")
+
+
+## Mundos 1-3 completos, actualizacion del hub instalada y el 4-1 a 4-3 como sus terminales.
+func _complete_worlds_1_3_and_4_3() -> void:
+	_complete_worlds_1_2_and_3_3()
+	GameState.mark_level_completed(&"3-boss")
+	GameState.install_hub_upgrade(&"hub_update_4_6")
+	for id: String in ["4-1", "4-2", "4-3"]:
+		GameState.unlock_level(StringName(id))
+		GameState.mark_level_completed(StringName(id))
+		var level: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/%s.json" % id))
+		for unlock: Variant in (level as Dictionary).get("unlocks", []):
+			if String((unlock as Dictionary).get("type", "")) == "level":
+				GameState.unlock_level(StringName(String((unlock as Dictionary).get("id", ""))))
+
+
+func test_seen_row_is_playable_after_4_3_and_world_5_waits_for_it() -> void:
+	var boss: Dictionary = _row(_m4(), "4-boss")
+	assert_true(HubWorlds.is_boss(boss))
+	assert_true(HubWorlds.is_playable(boss), "playable: true desde el paso 18")
+	var panel := FolderPanel.new()
+	panel.world_entry = _m4()
+	add_child_autofree(panel)
+	_complete_worlds_1_2_and_3_3()
+	GameState.mark_level_completed(&"3-boss")
+	GameState.install_hub_upgrade(&"hub_update_4_6")
+	assert_eq(panel.level_text(boss), "Jefe: El Visto - Bloqueado", "Antes del 4-3")
+	assert_false(HubWorlds.can_enter(&"4-boss"))
+	_complete_worlds_1_3_and_4_3()
+	assert_eq(panel.level_text(boss), "Jefe: El Visto - Nuevo", "Tras el 4-3")
+	assert_true(HubWorlds.can_enter(&"4-boss"))
+	assert_eq(HubWorlds.folder_state(_m4()), HubWorlds.STATE_AVAILABLE, "Sin el jefe la carpeta no se completa")
+	var m5: Dictionary = HubWorlds.world(&"m5")
+	assert_eq(HubWorlds.folder_state(m5), HubWorlds.STATE_LOCKED, "M5 «Sin descargar» antes de El Visto")
+	GameState.mark_level_completed(&"4-boss")
+	assert_eq(HubWorlds.folder_state(_m4()), HubWorlds.STATE_COMPLETED, "M4 completada con el jefe")
+	assert_eq(HubWorlds.folder_state(m5), HubWorlds.STATE_AVAILABLE, "M5 disponible al vencer a El Visto")
+	assert_true(HubWorlds.levels(m5).is_empty(), "Sin subniveles: «Próximamente»")
+	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m6")), HubWorlds.STATE_LOCKED, "M6 sigue esperando a 5-boss")
+
+
+func test_coral_piece_blinking_then_lit() -> void:
+	_complete_worlds_1_3_and_4_3()
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(4), &"off", "M4 disponible: contorno coral")
+	_hub.free()
+	GameState.mark_level_completed(&"4-boss")
+	_hub = HUB_SCENE.instantiate() as HubRoom
+	add_child(_hub)
+	assert_eq(_hub.get_piece_animation(4), &"on", "El Visto vencido: pieza coral encendida")
+	assert_eq(_hub.get_piece_animation(3), &"on", "La verde sigue encendida")
+	assert_eq(_hub.get_piece_animation(2), &"on", "La ambar sigue encendida")
+
+
+## Terminado cuando (paso 18): desde la carpeta M4 se entra a «Jefe: El Visto», se vence, se recibe
+## boss_w4_l1 sin guardar (panel «Recuerdo recuperado» / «Fragmento de amistades» / «Capa: Caché») y se vuelve
+## al hub con la pieza coral encendida, M5 disponible, la cuarta ranura del candado de M6 y la placa «!» en Notas.
+func test_seen_from_the_m4_folder_and_back_with_the_coral_piece() -> void:
+	EcoTextBox.pause_important = false
+	BossReward.pause_tree = false
+	BossDefeat.freeze_tree = false
+	EcoProgress.meet_eco_with_pulse()
+	_complete_worlds_1_3_and_4_3()
+	for id: StringName in [&"boss_w1_l1", &"boss_w2_l1", &"boss_w3_l1"]:
+		GameState.obtain_memory(id)
+	GameState.save_game()
+	GameState.request_save()
+	var main: LevelRunner = _start_main("hub")
+	var hub: HubRoom = main.get_hub()
+	var arrival: WarpVortex = hub.get_arrival_vortex()
+	if arrival != null:
+		arrival.advance(LONG_STEP_S)
+	assert_eq(hub.get_folder(&"m6").get_lock_slots_lit(), 3, "Tres ranuras antes de El Visto")
+	var folder: FolderStation = hub.get_folder(&"m4")
+	assert_true(folder.open(hub.get_isak()), "La carpeta del Mundo 4 se abre")
+	var panel: FolderPanel = folder.get_folder_panel()
+	panel.skip_input_delay()
+	assert_true(panel.select_option(&"4-boss"), "Fila del jefe elegible")
+	panel.confirm()
+	assert_true(panel.is_confirming_unsaved())
+	assert_true(panel.select_option(FolderPanel.OPTION_ENTER_UNSAVED))
+	panel.confirm()
+	hub.get_departure_vortex().advance(LONG_STEP_S)
+	await wait_process_frames(2)
+	main.advance(LONG_STEP_S)
+	main.advance(LONG_STEP_S)
+	assert_eq(main.get_level_id(), "4-boss", "Entra a la arena de El Visto")
+	assert_eq(GameState.lives, GameState.lives_max, "Tres vidas por intento")
+	main.auto_advance = true
+	var boss := main.get_level().get_node(^"Objects/seen") as Seen
+	boss.intro_on_arrival = false
+	await wait_physics_frames(3)
+	if not boss.is_fighting():
+		boss.start()
+	var hud := main.get_level().get_node_or_null(^"Hud") as Hud
+	assert_not_null(hud, "HUD de la arena")
+	var bar: BossBar = hud.get_boss_bar() if hud != null else null
+	assert_not_null(bar, "Barra del jefe")
+	if bar != null:
+		assert_true(bar.visible, "Barra del jefe en el HUD")
+		assert_eq(bar.get_style(), "conversation", "Barra «conversación»")
+		assert_eq(bar.get_read_messages(), 0, "Ningún mensaje leído al empezar")
+	var guard: int = 0
+	while not boss.is_defeated() and guard < 40:
+		boss.take_core_hit(1)
+		guard += 1
+	assert_true(boss.is_defeated(), "Golpe final (simulado con la API del jefe)")
+	await wait_physics_frames(2)
+	if bar != null:
+		assert_eq(bar.get_read_messages(), bar.get_segment_count(), "Todos los mensajes leídos en el golpe final")
+		assert_eq(bar.get_segment_count(), 9, "9 golpes en Caché")
+	var defeat: BossDefeat = boss.get_defeat()
+	assert_not_null(defeat, "Secuencia de derrota")
+	var texts: Dictionary = {}
+	var t: float = 0.0
+	while t < 25.0 and is_instance_valid(defeat) and defeat.get_stage() < BossDefeat.Stage.DONE:
+		var reward: BossReward = defeat.get_reward()
+		if reward != null and texts.is_empty():
+			for key: StringName in [&"system", &"header", &"title", &"layer", &"notice"]:
+				texts[key] = reward.get_text(key)
+		if reward != null and reward.can_close():
+			reward.confirm()
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(texts.get(&"header", ""), "Recuerdo recuperado")
+	assert_eq(texts.get(&"title", ""), "Fragmento de amistades")
+	assert_eq(texts.get(&"layer", ""), "Capa: Caché")
+	assert_eq(texts.get(&"notice", ""), "Guarda en Notas para conservarlo.")
+	assert_eq(texts.get(&"system", ""), "Visto: retirado.")
+	assert_true(GameState.has_memory(&"boss_w4_l1"), "Capa Caché del Mundo 4")
+	assert_false(GameState.has_memory(&"boss_w4_l2"), "Solo la capa del acceso actual")
+	assert_true(GameState.has_unsaved_changes(), "Sin guardar: se guarda en Notas")
+	t = 0.0
+	while t < 8.0 and not main.is_in_hub():
+		await wait_physics_frames(1)
+		t += DT
+	assert_true(main.is_in_hub(), "Vuelve al hub")
+	assert_true(GameState.is_level_completed(&"4-boss"))
+	hub = main.get_hub()
+	assert_true(hub.light_piece_on_arrival)
+	assert_eq(hub.light_piece_world, 4, "Se enciende la pieza del Mundo 4")
+	watch_signals(hub)
+	t = 0.0
+	while t < 10.0 and (hub.get_piece_animation(4) != &"on" or hub.is_piece_lighting() or hub.is_piece_pending()):
+		await wait_physics_frames(1)
+		t += DT
+	assert_eq(hub.get_piece_animation(4), &"on", "Pieza coral encendida")
+	assert_eq(hub.get_piece_animation(3), &"on", "La verde sigue encendida")
+	assert_signal_emitted_with_parameters(hub, "wallpaper_piece_lit", [4])
+	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m5")), HubWorlds.STATE_AVAILABLE, "Mundo 5 disponible")
+	assert_eq(hub.get_folder(&"m5").get_folder_state(), HubWorlds.STATE_AVAILABLE, "Carpeta M5 disponible")
+	assert_eq(hub.get_folder(&"m6").get_lock_slots_lit(), 4, "Cuarta ranura del candado de La Nube")
+	assert_true(GameState.has_unread_memories(), "Recuerdo sin leer")
+	assert_true(hub.get_notas().is_unread_badge_visible(), "Placa «!» en Notas")
+	EcoTextBox.pause_important = true
+	BossReward.pause_tree = true
+	BossDefeat.freeze_tree = true

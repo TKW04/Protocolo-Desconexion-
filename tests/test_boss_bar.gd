@@ -211,3 +211,52 @@ func test_curator_bar_in_kernel_has_twelve_segments_and_others_keep_their_style(
 	_boss.start()
 	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda el retrato")
 	assert_eq(_bar.get_frame_cracks(), 0, "Sin grietas fuera del retrato")
+
+
+# --- Paso 18 de docs/propuesta-mundo-4.md (2026-10-28): El Visto ---
+
+## El Visto usa el estilo «conversación» (styles.seen de data/hud.json): una
+## burbuja de mensaje por golpe, llenas las que quedan (sin leer) y huecas con
+## doble check las dadas (leidas); se vacia por tercios (99 -> 66 -> 33 -> 0).
+func test_seen_bar_is_a_conversation_that_empties_by_thirds() -> void:
+	_boss = BossBase.new()
+	_boss.boss_id = &"seen"
+	_boss.auto_process = false
+	_boss.lap_override = 1
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_true(_bar.visible)
+	assert_eq(_bar.get_style(), "conversation", "Barra de mensajes")
+	assert_eq(_bar.get_segment_count(), 9, "Caché: 3 golpes por fase")
+	assert_eq(_bar.get_counter_text(), "99+")
+	assert_eq(_bar.get_read_messages(), 0, "Ningún mensaje leído al empezar")
+	_hits(3)
+	assert_eq(_boss.get_phase(), 2)
+	assert_eq(_bar.get_counter_text(), "66")
+	assert_eq(_bar.get_lit_segments(), 6, "Legible sin color: 6 burbujas llenas")
+	assert_eq(_bar.get_read_messages(), 3, "3 leídas")
+	assert_eq(_bar.get_passed_notches(), 1)
+	_hits(3)
+	assert_eq(_bar.get_counter_text(), "33")
+	assert_almost_eq(_bar.get_screen_rect().get_center().x, 640.0, 1.0, "Arriba en el centro")
+	_hits(3)
+	assert_eq(_bar.get_counter_text(), "0")
+	assert_eq(_bar.get_read_messages(), 9, "Golpe final: todo leído")
+	assert_eq(_bar.get_frame_cracks(), 0, "Sin grietas: no es el retrato")
+	assert_true(_bar.is_hiding())
+
+
+func test_seen_bar_in_kernel_has_twelve_messages_and_others_keep_their_style() -> void:
+	_boss = BossBase.new()
+	_boss.boss_id = &"seen"
+	_boss.auto_process = false
+	_boss.lap_override = 2
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_eq(_bar.get_segment_count(), 12, "Kernel: 4 golpes por fase")
+	_boss.queue_free()
+	await wait_frames(2)
+	_spawn()
+	_boss.start()
+	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda la conversación")
+	assert_eq(_bar.get_read_messages(), 0, "Sin mensajes fuera de la conversación")

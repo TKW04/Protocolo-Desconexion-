@@ -242,7 +242,7 @@ class Level41Test(unittest.TestCase):
         self.assertEqual(rows, [("4-1", "Chats recientes", True, None, None),
                                 ("4-2", "Grupo sin respuesta", True, None, "Nuevo mensaje"),
                                 ("4-3", "Mensajes sin leer", True, None, "Nuevo mensaje"),
-                                ("4-boss", "El Visto", False, "boss", None)])
+                                ("4-boss", "El Visto", True, "boss", None)])
         self.assertTrue(all(lv["laps"] == [1] for lv in m4["levels"]))
         for entry in [m4] + m4["levels"]:
             res = entry.get("icon", entry.get("miniature"))

@@ -28,6 +28,13 @@
 ## izquierda) y las tres en el golpe final (99 -> 66 -> 33 -> 0); icono de camara
 ## por codigo (icon_shape "camera"). Legible sin color: segmentos llenos frente a
 ## huecos, grietas (forma, no color) y el contador. Paleta B del Mundo 3.
+## style "conversation" (El Visto, 2026-10-28, paso 18 de docs/propuesta-mundo-4.md
+## §5.3): BARRA DE MENSAJES: cada golpe es una burbuja de chat (esquinas
+## recortadas y cola abajo a la izquierda) agrupadas por fase con la muesca de
+## siempre; las que quedan, llenas (mensajes sin leer) y las dadas, huecas con un
+## doble check (leidas): se vacia por tercios (99 -> 66 -> 33 -> 0). Icono de
+## doble check por codigo (icon_shape "checks"). Legible sin color: llenas frente
+## a huecas con checks (forma) y el contador. Paleta B del Mundo 4.
 class_name BossBar
 extends Control
 
@@ -160,7 +167,8 @@ func get_boss() -> BossBase:
 	return _boss
 
 
-## Estilo de la barra: "segments" (Alerta Mayor), "playback" (Autoplay) o "portrait" (La Curadora).
+## Estilo de la barra: "segments" (Alerta Mayor), "playback" (Autoplay), "portrait" (La Curadora)
+## o "conversation" (El Visto).
 func get_style() -> String:
 	return String(_cfg.get("style", "segments"))
 
@@ -327,6 +335,11 @@ func _draw() -> void:
 				Vector2(ix, iy + isz) * s]), _color("icon", "#ff5cfa"))
 	elif String(_cfg.get("icon_shape", "")) == "camera":
 		_draw_camera_icon(Vector2(float(icon_at[0]), float(icon_at[1])), float(_cfg.get("icon_size_px", 12)))
+	elif String(_cfg.get("icon_shape", "")) == "checks":
+		var isz2: float = float(_cfg.get("icon_size_px", 14))
+		var ink: Color = _color("icon", "#a6abb8")
+		_draw_check(Vector2(float(icon_at[0]), float(icon_at[1])), isz2 * 0.5, ink, 2.0)
+		_draw_check(Vector2(float(icon_at[0]) + isz2 * 0.4, float(icon_at[1])), isz2 * 0.5, ink, 2.0)
 	# Nombre y contador (fila de arriba).
 	if _font != null:
 		var fs: int = int(_cfg.get("font_size", 12))
@@ -366,7 +379,10 @@ func _draw() -> void:
 		for k: int in _hits[p]:
 			var lit: bool = seg_i < _remaining
 			var r := Rect2(Vector2(x, y) * s, Vector2(seg_w, h) * s)
-			if lit:
+			if get_style() == "conversation":
+				var lost: bool = not lit and seg_i == _lost_segment and _hit_flash > 0.0
+				_draw_message(Vector2(x, y), Vector2(seg_w, h), lit, fill, shade, text_c if lost else empty)
+			elif lit:
 				draw_rect(r, fill)
 				draw_rect(Rect2(Vector2(x, y + h - 1) * s, Vector2(seg_w, 1) * s), shade)
 			else:
@@ -388,6 +404,48 @@ func _draw() -> void:
 			x += notch_w
 	if get_style() == "portrait":
 		_draw_cracks(size_px)
+
+
+## Mensajes leidos (style "conversation"): burbujas huecas con doble check, una
+## por golpe dado. 0 en los demas estilos.
+func get_read_messages() -> int:
+	if get_style() != "conversation":
+		return 0
+	return maxi(get_segment_count() - _remaining, 0)
+
+
+## Burbuja de mensaje (style "conversation") en px de arte: esquinas recortadas y
+## cola de 2 px abajo a la izquierda. Llena = sin leer (fill con la sombra abajo);
+## hueca = leida (contorno `outline` y doble check en tick).
+func _draw_message(at: Vector2, sz: Vector2, lit: bool, fill: Color, shade: Color, outline: Color) -> void:
+	var s: float = _scale
+	if lit:
+		draw_rect(Rect2((at + Vector2(1, 0)) * s, Vector2(sz.x - 2, sz.y) * s), fill)
+		draw_rect(Rect2((at + Vector2(0, 1)) * s, Vector2(sz.x, sz.y - 2) * s), fill)
+		draw_rect(Rect2((at + Vector2(1, sz.y - 1)) * s, Vector2(sz.x - 2, 1) * s), shade)
+		draw_rect(Rect2((at + Vector2(0, sz.y)) * s, Vector2(2, 1) * s), fill)
+		return
+	# Contorno con las esquinas recortadas y la cola.
+	draw_rect(Rect2((at + Vector2(1, 0)) * s, Vector2(sz.x - 2, 1) * s), outline)
+	draw_rect(Rect2((at + Vector2(1, sz.y - 1)) * s, Vector2(sz.x - 2, 1) * s), outline)
+	draw_rect(Rect2((at + Vector2(0, 1)) * s, Vector2(1, sz.y - 2) * s), outline)
+	draw_rect(Rect2((at + Vector2(sz.x - 1, 1)) * s, Vector2(1, sz.y - 2) * s), outline)
+	draw_rect(Rect2((at + Vector2(0, sz.y)) * s, Vector2(2, 1) * s), outline)
+	# Doble check dentro (leido), centrado.
+	var tick: Color = _color("tick", "#7f9a84")
+	var w: float = minf(sz.y - 2.0, 4.0)
+	var cx: float = at.x + floorf((sz.x - w * 1.75) * 0.5)
+	var cy: float = at.y + 1.0
+	_draw_check(Vector2(cx, cy), w, tick, 1.0)
+	_draw_check(Vector2(cx + w * 0.75, cy), w, tick, 1.0)
+
+
+## Un check de `w` px de arte de alto en `at` (esquina de arriba a la izquierda).
+func _draw_check(at: Vector2, w: float, color: Color, width_px: float) -> void:
+	var s: float = _scale
+	var pts := PackedVector2Array([(at + Vector2(0, w * 0.55)) * s, (at + Vector2(w * 0.35, w)) * s,
+			(at + Vector2(w, 0)) * s])
+	draw_polyline(pts, color, width_px * s)
 
 
 ## Grietas del marco «retrato» (style "portrait"): una por fase pasada y todas

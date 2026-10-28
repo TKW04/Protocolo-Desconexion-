@@ -257,7 +257,7 @@ func test_reply_later_shows_no_connection_and_returns_to_the_hub() -> void:
 	assert_true(GameState.is_level_completed(&"4-3"), "4-3 en completed_levels")
 	assert_true(GameState.is_level_unlocked(&"4-boss"), "Desbloquea la fila del jefe")
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m4"))
-	assert_true(HubWorlds.is_coming_soon(levels[3]), "El Visto, «Próximamente» (pasos 15-18)")
+	assert_false(HubWorlds.is_coming_soon(levels[3]), "El Visto, jugable (paso 18)")
 
 
 func test_world_4_folder_loads_the_4_3() -> void:
