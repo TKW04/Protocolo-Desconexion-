@@ -232,7 +232,10 @@
 		{"class": "Curator", "signal": "line_said", "when": {"0": ["intro", "defeat"]}, "sound": "mus_eco_motif"},
 		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "move"}, "sound": "ui_move"},
 		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "confirm"}, "sound": "ui_confirm"},
-		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "back"}, "sound": "ui_back"}
+		{"class": "PauseMenu", "signal": "ui_feedback", "when": {"0": "back"}, "sound": "ui_back"},
+		{"class": "CalcPanel", "signal": "ui_feedback", "when": {"0": "move"}, "sound": "ui_move"},
+		{"class": "CalcPanel", "signal": "ui_feedback", "when": {"0": "confirm"}, "sound": "ui_confirm"},
+		{"class": "CalcPanel", "signal": "ui_feedback", "when": {"0": "back"}, "sound": "ui_back"}
 	],
 	"ambience": [
 		{"class": "HubRoom", "sound": "amb_hub", "priority": 0},

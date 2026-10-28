@@ -230,7 +230,7 @@ func _run() -> void:
 	# 9. Comprar Pulso amplio (la primera).
 	var shop: Node = calc.call(&"get_calc_panel")
 	shop.call(&"select_option", &"pulso")
-	shop.call(&"confirm")
+	_buy(shop)
 	_check(state.call(&"is_upgrade_purchased", &"wide_pulse"), "no se compra Pulso amplio (Pulso 2)")
 	_check(state.call(&"has_unsaved_changes"), "comprar no marca sin guardar")
 	await _frames(4)
@@ -238,7 +238,7 @@ func _run() -> void:
 	shop.call(&"finish_buy_animation")
 	# 10. Sin puntos para el Sync Rate 2 (15; quedan 5).
 	shop.call(&"select_option", &"sync")
-	shop.call(&"confirm")
+	_buy(shop)
 	_check(not state.call(&"is_upgrade_purchased", &"sync:2"), "compra sin puntos")
 	await _frames(4)
 	await _save(out_dir, "10_calc_faltan_puntos.png")
@@ -372,3 +372,11 @@ func _save(out_dir: String, file_name: String) -> void:
 	var path: String = out_dir.path_join(file_name)
 	var err: Error = root.get_texture().get_image().save_png(path)
 	print("render_hub: %s (%s)" % [path, error_string(err)])
+
+
+## Pulso en la tienda: con una compra posible abre la confirmacion «¿Comprar
+## …?» (2026-10-27) y un segundo pulso acepta «Sí, comprar».
+func _buy(shop: Node) -> void:
+	shop.call(&"confirm")
+	if shop.call(&"is_confirm_open"):
+		shop.call(&"confirm")

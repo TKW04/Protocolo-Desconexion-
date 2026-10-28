@@ -8,6 +8,8 @@
 ##   03_fila_debug_chip.png      selector en Debug sin obtener: chip «?», sin nombre ni efecto
 ##   04_fila_sync.png            selector en Sync Rate: Sync reforzado (110)
 ##   05_fila_energia.png         selector en Energia: Bateria ampliada (110)
+##   18_confirmacion_si.png     pulso en Pulso: «¿Comprar Pulso amplio?» con «Sí, comprar» elegido
+##   19_confirmacion_no.png     la misma con «No» elegido (salto o No vuelven sin gastar)
 ##   06_compra_cargando.png      tras comprar el Pulso 2: el recuadro nuevo se carga
 ##   07_tras_comprar_2de5.png    Pulso 2 de 5; siguiente, Pulso aturdidor; «Faltan 10 puntos»
 ##   08_sin_puntos.png           Sync elegida con 5 puntos: «Faltan 10 puntos.»
@@ -78,9 +80,22 @@ func _run() -> void:
 		shop.call(&"select_option", StringName(row[0]))
 		await _frames(6)
 		await _save(out_dir, String(row[1]))
-	# Comprar el Pulso 2 (Pulso amplio): el recuadro se carga.
+	# Confirmacion (2026-10-27): «¿Comprar Pulso amplio?» con Sí elegido y con
+	# No elegido; salto vuelve a la lista sin gastar nada.
 	shop.call(&"select_option", &"pulso")
 	shop.call(&"confirm")
+	_check(shop.call(&"is_confirm_open"), "no se abre la confirmacion")
+	await _frames(6)
+	await _save(out_dir, "18_confirmacion_si.png")
+	shop.call(&"move_selection", 1)
+	await _frames(4)
+	await _save(out_dir, "19_confirmacion_no.png")
+	shop.call(&"cancel")
+	_check(not shop.call(&"is_confirm_open") and int(state.call(&"get_upgrade_level", &"pulso")) == 1,
+		"cancelar compra o no cierra la confirmacion")
+	# Comprar el Pulso 2 (Pulso amplio): el recuadro se carga.
+	shop.call(&"select_option", &"pulso")
+	_buy(shop)
 	_check(int(state.call(&"get_upgrade_level", &"pulso")) == 2, "no se compra el Pulso 2")
 	shop.call(&"advance_for_tests", 0.15)
 	await _save_frozen(out_dir, "06_compra_cargando.png")
@@ -88,16 +103,16 @@ func _run() -> void:
 	await _frames(4)
 	await _save(out_dir, "07_tras_comprar_2de5.png")
 	shop.call(&"select_option", &"sync")
-	shop.call(&"confirm")
+	_buy(shop)
 	_check(int(state.call(&"get_upgrade_level", &"sync")) == 1, "compra sin puntos")
 	await _frames(4)
 	await _save(out_dir, "08_sin_puntos.png")
 	# Pulso 3 en Cache: el 4 pide Kernel.
 	state.set(&"attention_points", 60)
 	shop.call(&"select_option", &"pulso")
-	shop.call(&"confirm")
+	_buy(shop)
 	shop.call(&"finish_buy_animation")
-	shop.call(&"confirm")
+	_buy(shop)
 	_check(int(state.call(&"get_upgrade_level", &"pulso")) == 3, "el Pulso no llega al nivel 3")
 	await _frames(4)
 	await _save(out_dir, "09_bloqueado_acceso.png")
@@ -132,7 +147,7 @@ func _run() -> void:
 	await _save(out_dir, "15_raiz_nivel5_sin_pb.png")
 	state.set(&"power_banks", 1)
 	shop.call(&"refresh")
-	shop.call(&"confirm")
+	_buy(shop)
 	_check(int(state.call(&"get_upgrade_level", &"energia")) == 5, "no se compra la Energia 5")
 	_check(int(state.get(&"power_banks")) == 0, "la Energia 5 no gasta el power bank")
 	shop.call(&"finish_buy_animation")
@@ -203,3 +218,11 @@ func _save(out_dir: String, file_name: String) -> void:
 	var path: String = out_dir.path_join(file_name)
 	var err: Error = root.get_texture().get_image().save_png(path)
 	print("render_calc_shop: %s (%s)" % [path, error_string(err)])
+
+
+## Pulso en la tienda: con una compra posible abre la confirmacion «¿Comprar
+## …?» (2026-10-27) y un segundo pulso acepta «Sí, comprar».
+func _buy(shop: Node) -> void:
+	shop.call(&"confirm")
+	if shop.call(&"is_confirm_open"):
+		shop.call(&"confirm")

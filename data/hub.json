@@ -215,7 +215,7 @@
 		}
 	},
 	"calc": {
-		"_notes": "Tienda de Calc POR PISTAS (CalcStation + CalcPanel; tanda M1 de docs/propuesta-mejoras.md §1, 2026-10-17; sustituye a la lista de mejoras sueltas). Solo texto de interfaz y el arte de tools/gen_calc_chips.py (seccion art). Lineas: points (saldo con el rombo de los puntos de atencion, ambar), power_banks (los que se tienen, encontrados y gastados; coleccionable puro desde el 2026-10-25) y status_unsaved / status_saved. Una FILA por pista de data/upgrades.json (Pulso, Laser, Debug, Sync Rate, Energia): chip con el icono (art.chip_icons; elegido = fila 1 del chip, marco cian), el nombre y 5 recuadros (art.box_states): full (comprado; el 1 siempre), next_a/next_b (el siguiente comprable en este acceso: late a next_hz), empty (comprable en este acceso, no el siguiente), locked (por encima del tope del acceso: candado), soon (efecto aun sin hacer: Proximamente; desde la tanda M2, 2026-10-17, ningun nivel lo usa: queda para niveles futuros), unknown (pista con chip «?»: habilidad sin obtener, sin nombre: unknown_name). move_up / move_down eligen (como los demas paneles), pulso compra el siguiente nivel de la elegida (GameState.purchase_upgrade; sin confirmacion) y salto cierra. Detalle de la elegida: detail_header (pista y nivel), detail_next (nombre del siguiente nivel) o detail_max, la descripcion, detail_cost / detail_cost_banks y el estado (state_*: disponible, faltan puntos, falta power bank, requiere acceso <Kernel/Raiz> de access_levels, Proximamente, nivel maximo); la pista «?» solo dice unknown_detail. Al comprar: message_bought y el recuadro nuevo se carga (fill_1..fill_3 y flash en buy_anim_s). Comprar solo marca «sin guardar»: se guarda en Notas. La UI nunca dice vuelta ni Easy/Normal/Hard. APAGADA hasta conocer a Calc (requires_ally de room.stations): animacion powered_off de calc_frames, sin prompt ni tienda. Solo glifos de la fuente de textos. layout: medidas en px de arte del panel (chip, hueco, recuadros y su separacion, alto de fila).",
+		"_notes": "Tienda de Calc POR PISTAS (CalcStation + CalcPanel; tanda M1 de docs/propuesta-mejoras.md §1, 2026-10-17; sustituye a la lista de mejoras sueltas). Solo texto de interfaz y el arte de tools/gen_calc_chips.py (seccion art). Lineas: points (saldo con el rombo de los puntos de atencion, ambar), power_banks (los que se tienen, encontrados y gastados; coleccionable puro desde el 2026-10-25) y status_unsaved / status_saved. Una FILA por pista de data/upgrades.json (Pulso, Laser, Debug, Sync Rate, Energia): chip con el icono (art.chip_icons; elegido = fila 1 del chip, marco cian), el nombre y 5 recuadros (art.box_states): full (comprado; el 1 siempre), next_a/next_b (el siguiente comprable en este acceso: late a next_hz), empty (comprable en este acceso, no el siguiente), locked (por encima del tope del acceso: candado), soon (efecto aun sin hacer: Proximamente; desde la tanda M2, 2026-10-17, ningun nivel lo usa: queda para niveles futuros), unknown (pista con chip «?»: habilidad sin obtener, sin nombre: unknown_name). move_up / move_down eligen (como los demas paneles), pulso compra el siguiente nivel de la elegida (GameState.purchase_upgrade) y salto cierra; desde el 2026-10-27 (peticion del usuario) el pulso con una compra posible abre antes una CONFIRMACION (ver _menu_notes).  Detalle de la elegida: detail_header (pista y nivel), detail_next (nombre del siguiente nivel) o detail_max, la descripcion, detail_cost / detail_cost_banks y el estado (state_*: disponible, faltan puntos, falta power bank, requiere acceso <Kernel/Raiz> de access_levels, Proximamente, nivel maximo); la pista «?» solo dice unknown_detail. Al comprar: message_bought y el recuadro nuevo se carga (fill_1..fill_3 y flash en buy_anim_s). Comprar solo marca «sin guardar»: se guarda en Notas. La UI nunca dice vuelta ni Easy/Normal/Hard. APAGADA hasta conocer a Calc (requires_ally de room.stations): animacion powered_off de calc_frames, sin prompt ni tienda. Solo glifos de la fuente de textos. layout: medidas en px de arte del panel (chip, hueco, recuadros y su separacion, alto de fila).",
 		"_animation_notes": "2026-10-17 (tanda H3 del paso 14 del 1-2): Calc llega al hub despierta y cargada (encuentro en data/calc_intro.json) y, conocida, sigue despierta (awake; antes sleep, la Calc dormida que no hablaba). Mientras espera el encuentro (llegada pendiente, aun sin conocer) tambien se ve awake, pero sin prompt ni tienda.",
 		"animation": "awake",
 		"_remarks_notes": "Comentarios de Calc al llegar al hub (2026-10-27, paso 17 de docs/propuesta-mundo-3.md §2.3; HubRoom.start_calc_remark): al terminar la llegada (tras la presentacion de Notas y el encuentro con Calc, si tocan; nunca tras un game over), si se llega de after_level y Calc es conocida, Calc dice text en su LCD (speaker calc), NO importante (no pausa), una vez por partida guardada (seen_notices calc_remark_<id>; como los avisos de control, no marca «sin guardar»). duration_s: -1 = la del cuadro. requires_pending_upgrade (2026-10-27, paso 6 de docs/propuesta-hub-mundos-4-6.md §1): solo si ese upgrade del hub esta pendiente (HubWorlds.is_hub_upgrade_pending). Textos PROPUESTOS, revisar al jugar.",
@@ -249,9 +249,16 @@
 			"message_not_enough_power_banks": "Falta un power bank completo.",
 			"message_access": "Disponible con acceso %s.",
 			"message_soon": "Próximamente.",
-			"message_unknown": "Aún no tienes esta habilidad."
+			"message_unknown": "Aún no tienes esta habilidad.",
+			"scroll_arrow": "▼",
+			"confirm_title": "¿Comprar %s?",
+			"confirm_level": "%s - Nivel %d de %d",
+			"confirm_yes": "Sí, comprar",
+			"confirm_no": "No"
 		},
 		"colors": {
+			"confirm_title": "texto_claro",
+			"confirm_level": "acento_cian",
 			"points": "ambar",
 			"power_banks": "acento_cian",
 			"unsaved": "ambar",
@@ -282,7 +289,25 @@
 			"box_gap_px": 2,
 			"boxes_gap_px": 12,
 			"next_hz": 2.0,
-			"buy_anim_s": 0.4
+			"buy_anim_s": 0.4,
+			"panel_width_px": 400,
+			"header_rows": 3,
+			"visible_rows": 5,
+			"row_gap_px": 2,
+			"detail_rows": 5,
+			"scroll_arrow_gap_px": 6,
+			"confirm_width_px": 220
+		},
+		"_menu_notes": "Menu de tamano fijo, resalte, sonido y confirmacion (2026-10-27, peticion del usuario; mismo idioma que el menu de ESC, data/pause_menu.json panel_size_notes). TAMANO FIJO: layout.panel_width_px de ancho (cabe el texto mas largo de detalle, mensajes y pie; lo comprueba tests/test_calc_menu.gd) y alto para el titulo, header_rows lineas, una ventana de visible_rows filas de pistas (hoy 5 = todas; con mas, la ventana sigue a la eleccion y salen texts.scroll_arrow ▼ / ▲ —el mismo glifo volteado— a scroll_arrow_gap_px de los recuadros), detail_rows lineas de detalle (reservadas aunque la pista «?» use 2), una de mensaje y el pie de teclas: no cambia al moverse ni con el numero de pistas ni de lineas. El prefijo de seleccion tiene ancho reservado y la columna de nombres mide la pista mas larga: chip, nombre y recuadros no se mueven al elegir. RESALTE: la fila elegida lleva una barra (selection: relleno fill con fill_alpha, contorno de 1 px border y marcador de marker_px a la izquierda; pad_x_px de margen) ademas del texto acento_cian, el prefijo «– » y el chip con marco cian. SONIDO: CalcPanel.ui_feedback move (arriba/abajo, tambien en la confirmacion), confirm (abre la confirmacion) y back (la cancela) -> ui_move / ui_confirm / ui_back de data/audio.json (los del menu de ESC); la compra suena con sfx_calc_purchase como antes. CONFIRMACION: con una compra posible (GameState.check_purchase OK) el pulso abre un cuadro pequeno de tamano fijo (confirm_width_px de ancho) centrado sobre la tienda, que se vela (selection.dim con dim_alpha): confirm_title con el nombre del siguiente nivel, confirm_level (pista y nivel), el coste (detail_cost / detail_cost_banks), confirm_yes / confirm_no con los iconos Sí / No de Notas (notas.option_icons) y el pie hub_confirm de data/menu_hints.json. W/S eligen, pulso acepta, salto vuelve. Sí compra lo de siempre; No o salto vuelven a la lista sin gastar nada. Sin compra posible (faltan puntos, candado, nivel maximo, «?») el pulso NO abre la confirmacion: dice que falta, como antes.",
+		"selection": {
+			"fill": "cian_tenue",
+			"fill_alpha": 0.35,
+			"border": "acento_cian",
+			"marker": "acento_cian",
+			"marker_px": 2,
+			"pad_x_px": 4,
+			"dim": "fondo_profundo",
+			"dim_alpha": 0.6
 		}
 	},
 	"notas": {

@@ -398,6 +398,8 @@ func test_hub_purchase_changes_effective_pulse_radius() -> void:
 	assert_string_contains(panel.get_detail(), "Pulso amplio")
 	assert_string_contains(panel.get_detail(), "96 px a 112 px")
 	panel._unhandled_input(_action(&"pulse"))
+	assert_true(panel.is_confirm_open(), "Antes de comprar, «¿Comprar …?» (2026-10-27)")
+	panel._unhandled_input(_action(&"pulse"))
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 2, "Pulso compra el siguiente nivel")
 	assert_eq(GameState.attention_points, 5)
 	assert_eq(panel.get_lines()[0], "◆ 5 puntos de atención")
@@ -411,6 +413,8 @@ func test_hub_purchase_only_marks_unsaved_and_notas_writes_levels() -> void:
 	GameState.attention_points = 30
 	var panel: CalcPanel = _open_calc()
 	assert_eq(panel.get_lines()[2], "Todo guardado")
+	panel._unhandled_input(_action(&"pulse"))
+	assert_true(panel.is_confirm_open(), "Antes de comprar, «¿Comprar …?» (2026-10-27)")
 	panel._unhandled_input(_action(&"pulse"))
 	assert_true(GameState.is_upgrade_purchased(&"wide_pulse"))
 	assert_false(FileAccess.file_exists(PATH), "Comprar no guarda")

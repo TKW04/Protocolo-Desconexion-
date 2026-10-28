@@ -6,7 +6,8 @@
 # recuadros (lleno, siguiente, vacio, candado por acceso, «Proximamente», «?»),
 # saldo de puntos y power banks; arriba y abajo eligen (detalle del SIGUIENTE
 # nivel con nombre, descripcion, coste y que falta); el pulso compra con
-# GameState.purchase_upgrade y el recuadro nuevo se carga;
+# GameState.purchase_upgrade (desde el 2026-10-27 tras la confirmacion «Sí,
+# comprar»; tests/test_calc_menu.gd) y el recuadro nuevo se carga;
 # comprar solo marca «sin guardar» (nada se escribe); salto cierra.
 # Usa su propia ruta de guardado (nunca user://save.json).
 extends GutTest
@@ -65,6 +66,14 @@ func _action(name: StringName) -> InputEventAction:
 	event.action = name
 	event.pressed = true
 	return event
+
+
+## Pulso para comprar: con una compra posible abre la confirmacion
+## (2026-10-27) y un segundo pulso acepta «Sí, comprar».
+func _buy(panel: CalcPanel) -> void:
+	panel._unhandled_input(_action(&"pulse"))
+	if panel.is_confirm_open():
+		panel._unhandled_input(_action(&"pulse"))
 
 
 func _open() -> void:
@@ -195,7 +204,7 @@ func test_shop_rows_chips_boxes_and_next_level_detail() -> void:
 	_panel._unhandled_input(_action(&"move_down"))
 	assert_eq(_panel.get_detail_lines(), PackedStringArray(["???", "Aún no tienes esta habilidad."]),
 		"Chip «?»: sin nombre ni efecto")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Aún no tienes esta habilidad.")
 	assert_eq(GameState.attention_points, 30)
 	_panel._unhandled_input(_action(&"move_down"))
@@ -213,7 +222,7 @@ func test_shop_rows_chips_boxes_and_next_level_detail() -> void:
 func test_buying_fills_the_next_box_and_only_marks_unsaved() -> void:
 	GameState.attention_points = 30
 	_open()
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 2, "Pulso compra el siguiente nivel")
 	assert_eq(GameState.attention_points, 5)
 	assert_almost_eq(GameState.effective_value(&"isak_abilities.pulse_radius_px", 96.0), 112.0, EPS,
@@ -235,7 +244,7 @@ func test_buying_fills_the_next_box_and_only_marks_unsaved() -> void:
 	assert_true(GameState.has_unsaved_changes(), "Comprar marca sin guardar")
 	assert_false(FileAccess.file_exists(PATH), "Comprar no guarda (guardado manual)")
 	assert_true(_hub.get_hud().is_unsaved_indicator_shown(), "El HUD del hub dice «Sin guardar»")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Faltan 10 puntos.")
 	assert_eq(GameState.attention_points, 5, "No cobra")
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 2)
@@ -251,7 +260,7 @@ func test_access_locks_and_max_level() -> void:
 	assert_eq(_panel.box_states(&"pulso"), [&"full", &"full", &"full", &"locked", &"locked"] as Array[StringName])
 	assert_eq(_panel.get_detail_lines()[1], "Siguiente, nivel 4: Ocultarte")
 	assert_eq(_panel.get_detail_lines()[4], "Requiere acceso Kernel")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Disponible con acceso Kernel.")
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 3)
 	_assert_no_lap_words()
@@ -260,7 +269,7 @@ func test_access_locks_and_max_level() -> void:
 	_panel.refresh()
 	assert_eq(_panel.box_states(&"pulso"), [&"full", &"full", &"full", &"next", &"locked"] as Array[StringName])
 	assert_eq(_panel.get_detail_lines()[4], "Disponible")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Nivel 4 instalado: Ocultarte.")
 	assert_eq(GameState.get_upgrade_level(&"pulso"), 4)
 	assert_eq(GameState.attention_points, 75)
@@ -280,7 +289,7 @@ func test_access_locks_and_max_level() -> void:
 	_panel.select_option(&"sync")
 	assert_eq(_panel.box_states(&"sync"), [&"full", &"full", &"full", &"full", &"full"] as Array[StringName])
 	assert_eq(_panel.get_detail_lines()[1], "Nivel máximo")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Esta mejora está completa.")
 
 
@@ -312,7 +321,7 @@ func test_level_5_in_root_needs_and_spends_a_power_bank() -> void:
 	GameState.power_banks = 1
 	_panel.refresh()
 	assert_eq(_panel.get_detail_lines()[4], "Disponible")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Nivel 5 instalado: Recarga pasiva.")
 	assert_eq(GameState.power_banks, 0, "El power bank se gasta")
 	assert_eq(_panel.power_banks_text(), "Power banks: 0 (encontrados 1, gastados 1)")
@@ -347,17 +356,17 @@ func test_no_points_shows_what_is_missing() -> void:
 	GameState.attention_points = 10
 	_open()
 	assert_eq(_panel.get_detail_lines()[4], "Faltan 15 puntos")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Faltan 15 puntos.")
 	assert_eq(GameState.attention_points, 10)
 	assert_false(GameState.has_unsaved_changes(), "Sin compra no hay cambios")
 	_panel.select_option(&"sync")
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_eq(_panel.get_message(), "Faltan 5 puntos.")
 
 
 func test_input_waits_for_the_panel_delay() -> void:
 	GameState.attention_points = 30
 	assert_true(_calc.open(_isak))
-	_panel._unhandled_input(_action(&"pulse"))
+	_buy(_panel)
 	assert_false(GameState.is_upgrade_purchased(&"wide_pulse"), "El pulso que abre no compra")
