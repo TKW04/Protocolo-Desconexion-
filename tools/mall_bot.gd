@@ -1,0 +1,628 @@
+## Bot de la tienda (Mundo 5 «La Tienda»; paso 11 de docs/propuesta-mundo-5.md §8 y
+## §7.3, 2026-10-29): carga la escena principal (scenes/main.tscn, LevelRunner) en el
+## nivel real (--level 5-1; 5-1 por defecto; tambien las salas *_test del Mundo 5) y
+## sigue el camino que exporta tools/validate_level.py (formato isak-path/1) con la
+## fisica real y las acciones del Input Map, nunca Q ni Esc. Extiende el bot del chat
+## (tools/chat_bot.gd: bandas, Linterna, pulsos a enemigos), que extiende el de la
+## galeria, el del 1-3 y el de la torre.
+## Perfiles (--profile):
+## - `frugal` (por defecto): el camino de tools/validate_level.py (no paga ni compra;
+##   el camino largo). Comprueba que no gasta nada.
+## - `comprador`: el camino de `validate_level.py --buy` (paga el atajo, compra en la
+##   tienda, Devoluciones si el camino pasa). Comprueba que el saldo nunca baja de 0,
+##   que lo gastado es lo del camino y que saldo final = inicial + ganado - gastado
+##   + devuelto.
+## Pasos nuevos del Mundo 5:
+## - `resist_pull`: tramo andando contra (o a favor de) el tiron de una Oferta; se anda
+##   como un tramo normal (la fuerza la pone TemptationField); no frena si el paso
+##   siguiente sigue en la misma direccion.
+## - `wait` con objetivo Suscripcion: quieto hasta que se engancha (o queda aturdida).
+## - `cancel_subscription`: pulso con la Suscripcion enganchada (la suelta aturdida);
+##   la del atajo con trampa (`trampa:<id>`) es la que suelta su puerta.
+## - `laser` a una Suscripcion aturdida: dispara hasta derrotarla.
+## - `buy` / `pay_door` / `refund`: pulso de espaldas a la tienda, al atajo o a
+##   Devoluciones desde la x del camino; hecho cuando se cobra / abre / devuelve.
+## - `wait_countdown` y saltos a una cuenta regresiva: antes de saltar a su tarjeta, el
+##   bot espera a que la cuenta este desplegada con tiempo para cruzarla.
+## Ademas, como un jugador: quieto dentro de la zona de una Oferta mantiene la direccion contraria lo justo para no
+## derivar (_set_axis); despega antes los saltos y dashes aereos con el tiron a favor (_pulled_takeoff); pisa la tapa
+## real de las cajas sorpresa (56 px, 8 por debajo de la fila del camino); vuelve al despegue de un dash en el suelo si
+## la frenada del anterior lo paso; y, si un dash que baja se posa antes en una plataforma de una via, sigue hasta la
+## fila del camino.
+## Los combos (`combo_ram`, `combo_edge`, `combo_quake`) aun no estan: el 5-1 no tiene
+## la Combinacion (se obtiene en el 5-2, paso 13).
+## Comprobaciones (§7.3): completa el nivel y vuelve al hub con el en completed_levels;
+## 0 muertes; 0 «Añadido al carrito»; 0 congelaciones; saldo nunca < 0; energia
+## minima frente al camino; duracion frente al 40-55 % del objetivo (solo frugal; el
+## comprador la anota). Progreso: El Visto vencido (Mundo 5 disponible) y el kit del
+## Mundo 4 (pulso, laser, Debug, dash, golpe al suelo, Pellizcar; Eco, Notas, Calc y la
+## Linterna), con 0 puntos de atencion al entrar (el validador cuenta el saldo desde 0).
+## Lo lanza tools/play_mall_bot.gd (uso y argumentos alli).
+extends "res://tools/chat_bot.gd"
+
+const MALL_LEVELS: PackedStringArray = ["5-1", "5-2", "5-3"]
+const PROFILES: PackedStringArray = ["frugal", "comprador"]
+const TRAP_PREFIX: String = "trampa:"
+## Segundos de cuenta regresiva que el bot quiere por delante al saltar a su tarjeta.
+const COUNTDOWN_NEED_S: float = 2.6
+## Distancia (px, centro a pies) desde la que el bot dispara a una Suscripcion aturdida.
+const LASER_GAP_PX: float = 96.0
+
+var _profile: String = "frugal"
+var _balance_start: int = 0
+var _balance_min: int = 1 << 30
+var _gained: int = 0
+var _lost: int = 0
+var _spent: int = 0
+var _spent_by: Dictionary = {}
+var _refunded: int = 0
+var _drained: int = 0
+var _carts: int = 0
+var _purchases: PackedStringArray = []
+var _subs_cancelled: int = 0
+var _subs_defeated: int = 0
+var _countdown_waits: int = 0
+var _last_balance: int = 0
+var _watched: Dictionary = {}
+
+
+func _ready() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var at: int = args.find("--profile")
+	if at >= 0 and at + 1 < args.size():
+		_profile = args[at + 1]
+		if _profile == "buyer":
+			_profile = "comprador"
+	super._ready()
+	if args.find("--level") < 0:
+		_gallery_level = "5-1"
+
+
+func _level_problem() -> String:
+	if not PROFILES.has(_profile):
+		return "perfil desconocido: %s (usa --profile frugal|comprador)" % _profile
+	var file: String = "res://data/levels/%s.json" % _gallery_level
+	if not MALL_LEVELS.has(_gallery_level) and not _gallery_level.ends_with("_test"):
+		return "nivel desconocido: %s (usa --level 5-1|5-2|5-3 o una sala *_test del Mundo 5)" % _gallery_level
+	if not FileAccess.file_exists(file):
+		return "el %s aun no existe (data/levels/%s.json)" % [_gallery_level, _gallery_level]
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(file))
+	if not data is Dictionary or int((data as Dictionary).get("world", 0)) != 5:
+		return "el %s no es un nivel del Mundo 5" % _gallery_level
+	_target_s = float((data as Dictionary).get("target_duration_s", 0.0))
+	return ""
+
+
+func _is_test_room() -> bool:
+	return not MALL_LEVELS.has(_gallery_level)
+
+
+func _bot_label() -> String:
+	return "play_mall_bot (%s, %s)" % [_gallery_level, _profile]
+
+
+func _path_cache_file() -> String:
+	return "user://mall_bot_path_%s_%s.json" % [_gallery_level, _profile]
+
+
+func _export_args(path_file: String) -> PackedStringArray:
+	var args: PackedStringArray = [ProjectSettings.globalize_path("res://tools/validate_level.py")]
+	if _profile == "comprador":
+		args.append("--buy")
+	args.append_array(["--export-path", path_file,
+		ProjectSettings.globalize_path("res://data/levels/%s.json" % _gallery_level)])
+	return args
+
+
+## Quien acaba de vencer a El Visto (y, para el 5-2 y el 5-3, de completar los niveles
+## anteriores del Mundo 5), con 0 puntos de atencion.
+func _setup_progress() -> void:
+	GameState.reset_progress()
+	for ally: StringName in [GameState.ALLY_ECO, GameState.ALLY_NOTAS, GameState.ALLY_CALC, GameState.ALLY_LINTERNA]:
+		GameState.meet_ally(ally)
+	var abilities: Array[StringName] = [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG,
+		GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND, GameState.ABILITY_COMPRESS]
+	for ability: StringName in abilities:
+		GameState.obtained_abilities[ability] = true
+		GameState.seen_notices[ability] = true
+		GameState.set_ability_unlocked(ability, true)
+	for level: StringName in [&"1-1", &"1-2", &"1-3", &"1-boss", &"2-1", &"2-2", &"2-3", &"2-boss", &"3-1", &"3-2",
+			&"3-3", &"3-boss", &"4-1", &"4-2", &"4-3", &"4-boss"]:
+		GameState.unlock_level(level)
+		GameState.mark_level_completed(level)
+	GameState.install_hub_upgrade(UPGRADE_4_6)
+	for level: String in MALL_LEVELS:
+		GameState.unlock_level(StringName(level))
+		if level == _gallery_level:
+			break
+		GameState.mark_level_completed(StringName(level))
+	GameState.attention_points = 0
+	GameState.sync_rate = GameState.SYNC_RATE_MAX
+	GameState.debug_energy = GameState.get_debug_energy_max()
+
+
+func _check_level_loaded() -> bool:
+	if not super._check_level_loaded():
+		return false
+	if _gallery_level in ["5-1", "5-2"] and GameState.is_ability_obtained(GameState.ABILITY_COMBO):
+		return _fail("el bot empieza el %s con la Combinacion ya obtenida" % _gallery_level)
+	_balance_start = GameState.attention_points
+	_last_balance = _balance_start
+	_balance_min = _balance_start
+	EventBus.attention_points_changed.connect(func(value: int) -> void:
+		if value > _last_balance:
+			_gained += value - _last_balance
+		else:
+			_lost += _last_balance - value
+		_last_balance = value
+		_balance_min = mini(_balance_min, value))
+	EventBus.attention_spent.connect(func(amount: int, reason: StringName) -> void:
+		_spent += amount
+		_spent_by[String(reason)] = int(_spent_by.get(String(reason), 0)) + amount
+		_note("gasta %d punto(s) (%s; saldo %d; %s)" % [amount, String(reason), GameState.attention_points, _where()]))
+	EventBus.attention_refunded.connect(func(amount: int) -> void:
+		_refunded += amount
+		_note("Devoluciones: +%d (saldo %d)" % [amount, GameState.attention_points]))
+	return true
+
+
+## Gasto que pide el camino exportado (pasos con `cost`).
+func _path_spend() -> int:
+	var total: int = 0
+	for step: Dictionary in _steps:
+		if String(step.get("action", "")) in ["buy", "pay_door"]:
+			total += int(step.get("cost", 0))
+	return total
+
+
+func _check_completed() -> bool:
+	if not _is_test_room() and not GameState.is_level_completed(StringName(_gallery_level)):
+		return _fail("el %s no queda completado" % _gallery_level)
+	var game_s: float = (_terminal_frames if _terminal_frames >= 0 else _play_frames) / 60.0
+	var ratio: float = game_s / _target_s if _target_s > 0.0 else 0.0
+	var balance: int = GameState.attention_points
+	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, esperas de cuenta regresiva %d, dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
+		_profile, _deaths, _hits, _freezes, _carts, ", ".join(_purchases), _spent, _spent_by, _path_spend(), _refunded,
+		_drained, _subs_cancelled, _subs_defeated, _countdown_waits, _dashes, _balance_start, balance, _balance_min,
+		_gained, _lost, game_s, int(_target_s), ratio * 100.0])
+	if _deaths > 0:
+		return _fail("Isak muere %d vez/veces" % _deaths)
+	if _freezes > 0:
+		return _fail("Isak se congela %d vez/veces" % _freezes)
+	if _stray_shakes > 0:
+		return _fail("sale %d onda(s) de Agitar (retirado el 2026-10-28)" % _stray_shakes)
+	if _carts > 0:
+		return _fail("%d «Añadido al carrito» (el camino no compra deseos)" % _carts)
+	if _balance_min < 0:
+		return _fail("el saldo baja de 0 (%d)" % _balance_min)
+	if _drained > 0:
+		return _fail("una Suscripcion drena %d punto(s) (el camino la cancela antes)" % _drained)
+	if _profile == "frugal" and _spent > 0:
+		return _fail("el frugal gasta %d punto(s)" % _spent)
+	if _profile == "comprador":
+		if _spent != _path_spend():
+			return _fail("el comprador gasta %d y el camino pide %d" % [_spent, _path_spend()])
+		if _spent == 0:
+			return _fail("el comprador no gasta nada")
+	if balance != _balance_start + _gained - _lost or _lost != _spent:
+		return _fail("cuentas del saldo: %d != %d + %d - %d (gastado %d)" % [balance, _balance_start, _gained, _lost,
+			_spent])
+	if not _is_test_room() and _target_s > 0.0 and _profile == "frugal" and (ratio < RATIO_MIN or ratio > RATIO_MAX):
+		return _fail("la duracion (%.1f s) queda fuera del %.0f-%.0f %% del objetivo (%d s)" % [game_s,
+			RATIO_MIN * 100.0, RATIO_MAX * 100.0, int(_target_s)])
+	return true
+
+
+## Hub tras un nivel de la tienda: llegada por el vortice; la carpeta M5 sigue abierta.
+func _hub() -> bool:
+	if not await super._hub():
+		return false
+	var m5: Dictionary = HubWorlds.world(&"m5")
+	_note("hub: carpeta M5 %s; %s completado %s; saldo %d" % [String(HubWorlds.folder_state(m5)), _gallery_level,
+		GameState.is_level_completed(StringName(_gallery_level)), GameState.attention_points])
+	return true
+
+
+# --- Servicios de cada cuadro ---
+
+func _refresh() -> void:
+	super._refresh()
+	if not is_instance_valid(_level) or _runner == null or _runner.is_in_hub():
+		return
+	for group: String in ["Objects", "Enemies"]:
+		for node: Node in _level.get_node(NodePath(group)).get_children():
+			if _watched.has(node):
+				continue
+			if node is WishlistPlatform:
+				_watched[node] = true
+				var label: String = node.name
+				(node as WishlistPlatform).added_to_cart.connect(func(_s: Subscription) -> void:
+					_carts += 1
+					_note("«Añadido al carrito» en %s (%s)" % [label, _where()]))
+			elif node is Subscription:
+				_watched[node] = true
+				_watch_subscription(node as Subscription)
+
+
+## Tiron de las Ofertas (TemptationField): quieto, Isak deriva hacia ellas (60 px/s con una), asi que el bot, como un
+## jugador, mantiene la direccion contraria lo justo para no moverse. Todo eje parcial (|a| < 1: quieto, frenadas y
+## aproximaciones de _walk_to) se corrige con el eje que da velocidad 0 con el tiron de ahora; el eje a fondo (andar
+## un tramo) no se toca: el camino ya cuenta la velocidad con el tiron. Al girarse (_face) no se corrige.
+var _pull_field: TemptationField
+var _bias_on: bool = true
+
+
+func _set_axis(a: float) -> void:
+	var biased: float = a
+	if _bias_on and absf(a) < 0.999:
+		biased = clampf(a + _pull_bias(), -1.0, 1.0)
+	super._set_axis(biased)
+	_axis = a
+
+
+## Eje que deja a Isak quieto con el tiron de ahora (0 sin tiron, en el aire o sin control).
+func _pull_bias() -> float:
+	if _isak == null or not is_instance_valid(_isak) or not _isak.is_on_floor() or not _isak.is_tempted():
+		return 0.0
+	if _pull_field == null:
+		_pull_field = TemptationField.load_default()
+	_pull_field.sample(get_tree(), LevelLookup.isak_body_rect(_isak).get_center())
+	if not _pull_field.is_pulling():
+		return 0.0
+	var speed: float = _isak.physics.walk_speed
+	var lo: float = -1.0
+	var hi: float = 1.0
+	for i: int in 24:
+		var mid: float = (lo + hi) * 0.5
+		if _pull_field.target_speed(mid, speed) > 0.0:
+			hi = mid
+		else:
+			lo = mid
+	return (lo + hi) * 0.5
+
+
+func _face(facing: float) -> void:
+	_bias_on = false
+	await super._face(facing)
+	_bias_on = true
+	# Si mantener quieto a Isak no le gira (el tiron va hacia su espalda), lo mantiene; si no, deriva.
+	var bias: float = _pull_bias()
+	if bias != 0.0 and signf(bias) == signf(facing):
+		_set_axis(0.0)
+
+
+func _watch_subscription(sub: Subscription) -> void:
+	var label: String = sub.name
+	sub.drained.connect(func(amount: int, _total: int) -> void:
+		_drained += amount
+		_note("DRENA: %s se lleva %d punto(s) (%s)" % [label, amount, _where()]))
+	sub.cancelled.connect(func() -> void: _subs_cancelled += 1)
+	sub.defeated.connect(func() -> void: _subs_defeated += 1)
+
+
+## Defensa: una Suscripcion enganchada a Isak -> pulso (la suelta). Si no, la del chat.
+func _guard() -> void:
+	if _guard_lock == 0 and _has_control() and _can_pulse_now() and is_instance_valid(_level):
+		for node: Node in _subscriptions():
+			var sub := node as Subscription
+			if sub.is_attached() and sub.get_host() == _isak:
+				_tap(A_PULSE)
+				_guard_lock = 4
+				_guard_pulses += 1
+				_note("defensa: pulso a %s enganchada (%s)" % [sub.name, _where()])
+				return
+	super._guard()
+
+
+func _subscriptions() -> Array[Node]:
+	var out: Array[Node] = []
+	for group: String in ["Enemies", "Objects"]:
+		for node: Node in _level.get_node(NodePath(group)).get_children():
+			if node is Subscription:
+				out.append(node)
+	return out
+
+
+# --- Pasos ---
+
+func _continues(index: int, dir: float) -> bool:
+	if index < _steps.size() and String(_steps[index].get("action", "")) == "resist_pull":
+		var n: Dictionary = _steps[index]
+		return signf(_px(n["to"]).x - _px(n["from"]).x) == dir
+	return super._continues(index, dir)
+
+
+func _do_extra_step(s: Dictionary, action: String) -> bool:
+	match action:
+		"resist_pull":
+			var dir: float = signf(_px(s["to"]).x - _px(s["from"]).x)
+			if _continues(_step_index + 1, dir):
+				return await _walk_through(_px(s["to"]).x, _px(s["to"]).y, dir)
+			return await _walk_to(_px(s["to"]).x, _px(s["to"]).y)
+		"cancel_subscription":
+			return await _cancel_step(s)
+		"buy", "pay_door", "refund":
+			return await _pay_step(s, action)
+		"wait_countdown":
+			return await _wait_countdown(s)
+	return await super._do_extra_step(s, action)
+
+
+## Suscripcion del paso: la del nivel por id o la que suelta la puerta de `trampa:<id>`.
+func _subscription_of(s: Dictionary) -> Subscription:
+	var id: String = String(s.get("target", {}).get("id", ""))
+	if id.begins_with(TRAP_PREFIX):
+		var door := _object(id.substr(TRAP_PREFIX.length())) as ShortcutDoor
+		return door.get_trap_spawn() as Subscription if door != null else null
+	return _object(id) as Subscription
+
+
+func _wait_step(s: Dictionary) -> bool:
+	if String(s.get("target", {}).get("type", "")) != "subscription":
+		return await super._wait_step(s)
+	var sub := _subscription_of(s)
+	_set_axis(0.0)
+	var ok: bool = await _wait_until(func() -> bool:
+		return sub == null or sub.is_attached() or sub.is_stunned() or sub.is_defeated(),
+		float(s.get("seconds", 0.0)) + WAIT_SLACK_S)
+	_note("Suscripcion %s: %s (camino %.1f s; %s)" % [s.get("target", {}).get("id", "?"),
+		String(sub.get_state()) if sub != null else "sin nodo", float(s.get("seconds", 0.0)), _where()])
+	return ok
+
+
+## Paso `cancel_subscription`: pulso con la Suscripcion enganchada (o al alcance, aturdida).
+func _cancel_step(s: Dictionary) -> bool:
+	var sub := _subscription_of(s)
+	if sub == null:
+		# La de la trampa puede tardar unos cuadros en salir al cruzar la puerta.
+		await _wait_until(func() -> bool: return _subscription_of(s) != null, 1.0)
+		sub = _subscription_of(s)
+	if sub == null:
+		return _fail("paso %d: no hay Suscripcion %s" % [_step_index, s.get("target", {}).get("id", "?")])
+	var done := func() -> bool: return sub.is_stunned() or sub.is_defeated() or sub.is_spent()
+	_set_axis(0.0)
+	if not sub.is_attached() and not done.call():
+		await _wait_until(func() -> bool: return sub.is_attached() or done.call(), 3.0)
+	for attempt: int in 3:
+		if done.call():
+			break
+		await _wait_can_pulse()
+		if not sub.is_attached():
+			var dir: float = signf(sub.get_center().x - _isak.global_position.x)
+			if dir != 0.0 and dir != signf(_isak.facing):
+				await _face(dir)
+		_tap(A_PULSE)
+		await _wait_until(done, 0.5)
+	var ok: bool = done.call()
+	_note("Suscripcion %s cancelada con el pulso: %s (%s; saldo %d)" % [sub.name, String(sub.get_state())
+		if ok else "SIN EFECTO", _where(), GameState.attention_points])
+	return ok
+
+
+## Laser a una Suscripcion aturdida: dispara hacia ella hasta derrotarla.
+func _laser_step(s: Dictionary) -> bool:
+	if String(s.get("target", {}).get("type", "")) != "subscription":
+		return await super._laser_step(s)
+	var sub := _subscription_of(s)
+	if sub == null or sub.is_defeated():
+		return true
+	_set_axis(0.0)
+	for attempt: int in 4:
+		if sub.is_defeated():
+			break
+		# Cancelada, cae a la espalda de Isak (attach_offset, 20 px detras): pegada al celular el rayo sale ya pasado.
+		# Se aparta LASER_GAP_PX por el lado del camino (o el otro si no hay suelo) y dispara de cara a ella.
+		var dx: float = sub.get_center().x - _isak.global_position.x
+		if absf(dx) < LASER_GAP_PX and sub.is_laser_vulnerable():
+			var side: float = float(s.get("facing", 1))
+			var x: float = sub.get_center().x + side * LASER_GAP_PX
+			if not _ground_at(x, _isak.global_position.y):
+				x = sub.get_center().x - side * LASER_GAP_PX
+			await _walk_to(x, _isak.global_position.y)
+		var dir: float = signf(sub.get_center().x - _isak.global_position.x)
+		if dir == 0.0:
+			dir = float(s.get("facing", 1))
+		await _face(dir)
+		await _wait_until(func() -> bool:
+			return _has_control() and _isak.can_start_laser() and _isak.get_laser_cooldown_left() <= 0.0 \
+				and not _isak.is_laser_posing(), 1.0)
+		if _verbose:
+			_note("laser %d a %s: estado %s, centro %s, cuerpo %s; Isak %s mira %+.0f, laser listo %s" % [attempt, sub.name,
+				String(sub.get_state()), sub.get_center(), sub.get_body_rect(), _isak.global_position, _isak.facing,
+				_isak.can_start_laser()])
+		_tap(A_LASER)
+		await _wait_until(func() -> bool: return sub.is_defeated(), 0.5)
+		await _wait_until(func() -> bool: return not _isak.is_laser_posing(), 0.5)
+	var ok: bool = sub.is_defeated()
+	_note("laser a la Suscripcion %s: %s (%s; energia %.0f)" % [sub.name, "derrotada" if ok else "SIN DERROTAR",
+		_where(), GameState.debug_energy])
+	return ok
+
+
+## Pasos `buy`, `pay_door` y `refund`: pulso de espaldas al objeto desde la x del camino.
+func _pay_step(s: Dictionary, action: String) -> bool:
+	var target: Dictionary = s.get("target", {})
+	var id: String = String(target.get("id", ""))
+	var node: PayPoint = _object(id) as PayPoint
+	if node == null:
+		return _fail("paso %d: no hay %s %s" % [_step_index, target.get("type", "?"), id])
+	var done: Callable
+	var before_spent: int = _spent
+	var before_refunded: int = _refunded
+	match action:
+		"buy":
+			done = func() -> bool: return _spent > before_spent
+		"pay_door":
+			done = func() -> bool: return (node as ShortcutDoor).is_open()
+		_:
+			done = func() -> bool: return _refunded > before_refunded or (node as RefundDesk).is_closed()
+	var at: Vector2 = _px(s["at"])
+	var facing: float = float(s.get("facing", 1))
+	if not await _walk_to(float(s.get("x_px", at.x)), at.y):
+		return false
+	for attempt: int in 3:
+		if done.call():
+			break
+		await _face(facing)
+		await _wait_can_pulse()
+		_tap(A_PULSE)
+		await _wait_until(done, 0.6)
+	var ok: bool = done.call()
+	await _wait_side()
+	if ok and action == "buy":
+		_purchases.append("%s (%d)" % [id, int(s.get("cost", 0))])
+	_note("%s %s con el pulso de espaldas: %s (%s; saldo %d, camino %s; energia %.0f)" % [action, id,
+		"hecho" if ok else "SIN EFECTO", _where(), GameState.attention_points, str(s.get("balance_after", "-")),
+		GameState.debug_energy])
+	return ok
+
+
+## Paso `wait_countdown`: en la celda del camino hasta que la cuenta de su objetivo
+## este desplegada con tiempo para cruzarla.
+func _wait_countdown(s: Dictionary) -> bool:
+	var at: Vector2 = _px(s["at"])
+	if absf(_isak.global_position.x - at.x) > TILE * 0.5 or absf(_isak.global_position.y - at.y) >= ROW_TOL:
+		if not await _walk_to(at.x, at.y):
+			return false
+	var cd := _object(String(s.get("target", {}).get("id", ""))) as CountdownPlatform
+	return await _countdown_ready(cd, float(s.get("seconds", 0.0)) + 8.0)
+
+
+func _countdown_ready(cd: CountdownPlatform, seconds: float) -> bool:
+	if cd == null:
+		return true
+	_set_axis(0.0)
+	var ready := func() -> bool:
+		return cd.is_solid() and not cd.is_waiting() and cd.get_time_left() >= COUNTDOWN_NEED_S
+	if ready.call():
+		return true
+	_countdown_waits += 1
+	var start: int = _play_frames
+	var ok: bool = await _wait_until(ready, seconds)
+	_note("cuenta regresiva %s: %s tras %.1f s (quedan %.1f s; %s)" % [cd.name, "lista" if ok else "SIN DESPLEGAR",
+		(_play_frames - start) / 60.0, cd.get_time_left(), _where()])
+	return ok
+
+
+## Cuenta regresiva bajo la celda de llegada (fila de los pies + 1), o null.
+func _countdown_at(feet: Vector2) -> CountdownPlatform:
+	if not is_instance_valid(_level):
+		return null
+	var probe := Vector2(feet.x, feet.y + 8.0)
+	for node: Node in _level.get_node(^"Objects").get_children():
+		if node is CountdownPlatform and (node as CountdownPlatform).get_card_rect().grow(4.0).has_point(probe):
+			return node as CountdownPlatform
+	return null
+
+
+## Salto a una cuenta regresiva: antes, la espera desplegada con tiempo. Con el tiron de
+## una Oferta hacia donde se salta, despegue adelantado (ver _pulled_takeoff).
+func _jump(s: Dictionary, action: String) -> bool:
+	if s.has("to") and action != "fall":
+		var cd := _countdown_at(_px(s["to"]))
+		if cd != null and not await _countdown_ready(cd, cd.get_count_s() + cd.get_fold_s() + 2.0):
+			return false
+	return await super._jump(_pulled_takeoff(s, float(s.get("direction", 1))), action)
+
+
+## Cajas sorpresa: el validador las trata como una celda solida (tapa a ras de la fila) y la caja real mide 56 x 56
+## (la tapa queda 8 px por debajo). Un punto del camino encima de una caja cerrada lleva los pies a su tapa.
+func _px(p: Dictionary) -> Vector2:
+	var v: Vector2 = super._px(p)
+	var top: float = _box_top_at(v)
+	return Vector2(v.x, top) if not is_nan(top) else v
+
+
+## Tapa (y global) de una caja sorpresa solida bajo `feet` (±12 px en vertical), o NAN.
+func _box_top_at(feet: Vector2) -> float:
+	if not is_instance_valid(_level):
+		return NAN
+	for node: Node in _level.get_node(^"Objects").get_children():
+		var box := node as SurpriseBox
+		if box == null or not box.is_solid():
+			continue
+		var r: Rect2 = box.get_body_rect()
+		if feet.x >= r.position.x - TILE * 0.5 and feet.x <= r.end.x + TILE * 0.5 and absf(feet.y - r.position.y) <= 12.0:
+			return r.position.y
+	return NAN
+
+
+## De pie en la tapa de una caja no es «sobre un enemigo aturdido».
+func _off_grid() -> bool:
+	if _isak != null and not is_nan(_box_top_at(_isak.global_position)):
+		return false
+	return super._off_grid()
+
+
+## Tramo andando que acaba en el despegue de un salto o dash aereo con el tiron a
+## favor: termina en el despegue adelantado (si no, llega a el lanzado y lo pasa).
+func _do_step(s: Dictionary) -> bool:
+	if String(s.get("action", "")) == "walk" and _step_index + 1 < _steps.size():
+		var n: Dictionary = _steps[_step_index + 1]
+		var kind: String = String(n.get("action", ""))
+		var dir: float = float(n.get("dir", n.get("direction", 0)))
+		if (kind == "dash" and bool(n.get("air", false))) or kind in ["jump", "jump_run"]:
+			var shifted: Dictionary = _pulled_takeoff(n, dir)
+			var x: float = float(shifted.get("takeoff_x_px", 0.0))
+			if shifted != n and (_px(s["to"]).x - x) * dir > 0.0:
+				var out: Dictionary = s.duplicate(true)
+				out["to"]["feet_px"] = [x, float(s["to"]["feet_px"][1])]
+				return await super._do_step(out)
+	return await super._do_step(s)
+
+
+func _dash_step(s: Dictionary) -> bool:
+	if bool(s.get("air", false)):
+		s = _pulled_takeoff(s, float(s.get("dir", 1)))
+	elif s.has("takeoff_x_px") and s.has("from"):
+		# Dash en el suelo pasado ya el despegue (la frenada del dash anterior; en las tapas de 56 px de las cajas del
+		# 5-1, salir 20 px tarde deja a Isak fuera de la caja siguiente): vuelve al despegue.
+		var dir: float = float(s.get("dir", 1))
+		var takeoff: float = float(s["takeoff_x_px"])
+		if (_isak.global_position.x - takeoff) * dir > 4.0:
+			await _walk_to(takeoff, _px(s["from"]).y)
+	if await super._dash_step(s):
+		return true
+	# Cae a una fila mas baja y se posa antes en una plataforma de una via que asoma (5-1, Cierre del comprador: la
+	# de la fila 10 en las columnas 251-252 a 8 px del arco del validador): sigue hacia `dir` hasta la fila del camino.
+	var to: Vector2 = _px(s["to"])
+	var d: float = float(s.get("dir", 1))
+	if _isak.is_dead() or not _isak.is_on_floor() or to.y - _isak.global_position.y < TILE * 0.5 \
+			or absf(to.x - _isak.global_position.x) > TILE * 1.5:
+		return false
+	var limit: int = 60
+	while limit > 0 and not (_isak.is_on_floor() and absf(_isak.global_position.y - to.y) < ROW_TOL):
+		_set_axis(d if (to.x - _isak.global_position.x) * d > 0.0 or _isak.is_on_floor() else 0.0)
+		await _tick()
+		limit -= 1
+	_set_axis(0.0)
+	var ok: bool = _isak.is_on_floor() and absf(_isak.global_position.y - to.y) < ROW_TOL
+	_note("paso %d (dash): sigue hasta la fila del camino: %s (%s)" % [_step_index, "llega" if ok else "NO LLEGA", _where()])
+	return ok
+
+
+## Despegue con el tiron de una Oferta a favor: el camino supone llegar al despegue
+## andando a 220 px/s y saltar TAKEOFF_PAUSE_FRAMES despues; acercandose a una Oferta
+## Isak va a 220 x 1,15 + 60 = 313 px/s y en esos cuadros (y en el arranque del salto)
+## recorre PULL_TAKEOFF_PX de mas. El bot despega ese tanto antes (5-1, carrito del
+## Inicio: el pincho queda a 12 px del despegue del camino).
+const PULL_TAKEOFF_PX: float = 24.0
+
+
+func _pulled_takeoff(s: Dictionary, dir: float) -> Dictionary:
+	if not s.has("takeoff_x_px") or not s.has("from") or dir == 0.0:
+		return s
+	var from: Vector2 = _px(s["from"])
+	var point := Vector2(float(s["takeoff_x_px"]), from.y - _isak.get_hitbox_size().y * 0.5)
+	var weight: float = 0.0
+	for node: Node in get_tree().get_nodes_in_group(TemptationField.GROUP):
+		if node.has_method(TemptationField.PULL_METHOD):
+			weight += float(node.call(TemptationField.PULL_METHOD, point))
+	if signf(weight) != signf(dir):
+		return s
+	var out: Dictionary = s.duplicate()
+	out["takeoff_x_px"] = float(s["takeoff_x_px"]) - dir * PULL_TAKEOFF_PX
+	if _verbose:
+		_note("paso %d: tiron a favor (peso %+.1f): despegue %.0f -> %.0f" % [_step_index, weight,
+			float(s["takeoff_x_px"]), float(out["takeoff_x_px"])])
+	return out

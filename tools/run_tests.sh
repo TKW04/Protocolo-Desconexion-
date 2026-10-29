@@ -90,6 +90,10 @@ rm -f "$IMPORT_LOG"
 # Desde el 2026-10-28 (paso 12 de docs/propuesta-mundo-4.md) GUT lanza tambien el bot del chat en el 4-1
 # (tests/test_chat_bot.gd: tools/play_chat_bot.gd en un proceso aparte, logica en tools/chat_bot.gd; unos 65 s de
 # pared con la exportacion del camino; su propio ISAK_SAVE_PATH; falla si la duracion sale del 40-55 % del objetivo).
+# Desde el 2026-10-29 (paso 11 de docs/propuesta-mundo-5.md) GUT lanza tambien el bot de la tienda en el 5-1
+# (tests/test_mall_bot.gd: tools/play_mall_bot.gd en procesos aparte, logica en tools/mall_bot.gd; perfiles frugal
+# —falla si gasta o si la duracion sale del 40-55 % del objetivo— y comprador —compra, paga el atajo, saldo nunca
+# < 0—; unos 90 s de pared con la exportacion de los dos caminos; su propio ISAK_SAVE_PATH).
 # Desde el 2026-10-21 (paso 14 de docs/propuesta-jefe-alerta-mayor.md) GUT lanza tambien el bot del jefe
 # (tests/test_boss_bot.gd: tools/play_boss_bot.gd en procesos aparte, perfiles ideal y torpe en Caché,
 # Kernel y Raíz y el quieto que pierde; unos 50 s de pared en total; usa user://bot_save.json).
