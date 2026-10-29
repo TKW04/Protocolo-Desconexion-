@@ -38,6 +38,10 @@
 ## - `combo_quake` (Sismo): comprimido en `quake.x_px`, salto en el sitio y abajo mantenido al subir.
 ## - `open_box`: caja sorpresa que tapa el camino (pulso de cara pegado a ella: desde la x del camino no llega).
 ## Comprueba que cada combo sale y rompe lo que el paso dice (`breaks`) y que hace tantos como el camino.
+## 5-3 (paso 14; se entra con la Combinacion): `open_box` con el laser (las peligrosas, tras mirarlas con el Debug) se
+## aparta LASER_GAP_PX de la caja (el validador dispara pegado a ella); el pulso y el laser, siempre de cara a la caja;
+## `reject_terms` (laser a «rechazar» de Terminos y condiciones desde `x_px`); el comprador admite las congelaciones
+## de la trampa «Verificando pago…» de los atajos que paga (tantas como pasos `pay_door` con trap processing).
 ## Comprobaciones (§7.3): completa el nivel y vuelve al hub con el en completed_levels;
 ## 0 muertes; 0 «Añadido al carrito»; 0 congelaciones; saldo nunca < 0; energia
 ## minima frente al camino; duracion frente al 40-55 % del objetivo (solo frugal; el
@@ -70,6 +74,9 @@ var _subs_cancelled: int = 0
 var _subs_defeated: int = 0
 var _countdown_waits: int = 0
 var _last_balance: int = 0
+## Congelaciones de la trampa «Verificando pago…» de un atajo pagado (5-3, comprador): las pide el camino.
+var _processing_freezes: int = 0
+var _terms_rejected: PackedStringArray = []
 var _watched: Dictionary = {}
 
 
@@ -143,6 +150,12 @@ func _setup_progress() -> void:
 		if level == _gallery_level:
 			break
 		GameState.mark_level_completed(StringName(level))
+	# El 5-3 (paso 14) se entra con la Combinacion, que da la «Prueba gratis» del 5-2.
+	if _gallery_level == "5-3":
+		GameState.obtained_abilities[GameState.ABILITY_COMBO] = true
+		GameState.seen_notices[GameState.ABILITY_COMBO] = true
+		GameState.seen_notices[&"combo_5_2"] = true
+		GameState.set_ability_unlocked(GameState.ABILITY_COMBO, true)
 	GameState.attention_points = 0
 	GameState.sync_rate = GameState.SYNC_RATE_MAX
 	GameState.debug_energy = GameState.get_debug_energy_max()
@@ -153,6 +166,11 @@ func _check_level_loaded() -> bool:
 		return false
 	if _gallery_level in ["5-1", "5-2"] and GameState.is_ability_obtained(GameState.ABILITY_COMBO):
 		return _fail("el bot empieza el %s con la Combinacion ya obtenida" % _gallery_level)
+	if _gallery_level == "5-3" and not GameState.is_ability_obtained(GameState.ABILITY_COMBO):
+		return _fail("el bot empieza el 5-3 sin la Combinacion")
+	_isak.frozen_started.connect(func(_seconds: float, source: StringName) -> void:
+		if source == &"shortcut_processing":
+			_processing_freezes += 1)
 	_balance_start = GameState.attention_points
 	_last_balance = _balance_start
 	_balance_min = _balance_start
@@ -188,14 +206,19 @@ func _check_completed() -> bool:
 	var game_s: float = (_terminal_frames if _terminal_frames >= 0 else _play_frames) / 60.0
 	var ratio: float = game_s / _target_s if _target_s > 0.0 else 0.0
 	var balance: int = GameState.attention_points
-	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, esperas de cuenta regresiva %d, dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
+	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, esperas de cuenta regresiva %d, «rechazar» [%s], dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
 		_profile, _deaths, _hits, _freezes, _carts, ", ".join(_purchases), _spent, _spent_by, _path_spend(), _refunded,
-		_drained, _subs_cancelled, _subs_defeated, _countdown_waits, _dashes, _balance_start, balance, _balance_min,
+		_drained, _subs_cancelled, _subs_defeated, _countdown_waits, ", ".join(_terms_rejected), _dashes, _balance_start, balance, _balance_min,
 		_gained, _lost, game_s, int(_target_s), ratio * 100.0])
 	if _deaths > 0:
 		return _fail("Isak muere %d vez/veces" % _deaths)
-	if _freezes > 0:
-		return _fail("Isak se congela %d vez/veces" % _freezes)
+	var want_frozen: int = 0
+	for step: Dictionary in _steps:
+		if String(step.get("action", "")) == "pay_door" and String(step.get("trap", "")) == "processing":
+			want_frozen += 1
+	if _freezes != _processing_freezes or _processing_freezes != want_frozen:
+		return _fail("Isak se congela %d vez/veces (%d de «Verificando pago…»; el camino pide %d)" % [_freezes,
+			_processing_freezes, want_frozen])
 	if _stray_shakes > 0:
 		return _fail("sale %d onda(s) de Agitar (retirado el 2026-10-28)" % _stray_shakes)
 	if _carts > 0:
@@ -373,7 +396,39 @@ func _do_extra_step(s: Dictionary, action: String) -> bool:
 			return await _edge_step(s)
 		"combo_quake":
 			return await _quake_step(s)
+		"reject_terms":
+			return await _reject_step(s)
 	return await super._do_extra_step(s, action)
+
+
+## Paso `reject_terms` (5-3, paso 14): «rechazar» de Terminos y condiciones con el laser desde lo alto del pilar de
+## enfrente (`via` laser; el Filo que lo roza no lo usa ningun camino). Hecho cuando la puerta queda abierta sin
+## Suscripcion.
+func _reject_step(s: Dictionary) -> bool:
+	var id: String = String(s.get("target", {}).get("id", ""))
+	var gate := _object(id) as TermsGate
+	if gate == null:
+		return _fail("paso %d: no hay Terminos y condiciones %s" % [_step_index, id])
+	if String(s.get("via", "laser")) != "laser":
+		return _fail("paso %d: «rechazar» con %s (el bot solo lo hace con el laser)" % [_step_index, s.get("via", "?")])
+	var at: Vector2 = _px(s["at"])
+	if not await _walk_to(float(s.get("x_px", at.x)), at.y):
+		return false
+	for attempt: int in 3:
+		if gate.is_open():
+			break
+		await _face(float(s.get("facing", 1)))
+		await _wait_until(func() -> bool:
+			return _has_control() and _isak.can_start_laser() and _isak.get_laser_cooldown_left() <= 0.0 \
+				and not _isak.is_laser_posing(), 1.0)
+		_tap(A_LASER)
+		await _wait_until(func() -> bool: return gate.is_open(), 0.8)
+	var ok: bool = gate.is_open() and gate.get_subscription() == null
+	if ok:
+		_terms_rejected.append(id)
+	_note("Terminos y condiciones %s: %s (%s; %s; energia %.0f)" % [id, "rechazados con el laser" if ok else "SIN ABRIR",
+		String(gate.get_opened_by()), _where(), GameState.debug_energy])
+	return ok
 
 
 ## Paso `open_box`: caja sorpresa que tapa el camino; pulso de cara (o laser, `with`)
@@ -394,21 +449,33 @@ func _open_box_step(s: Dictionary) -> bool:
 	var at: Vector2 = _px(s["at"])
 	var laser: bool = String(s.get("with", "pulse")) == "laser"
 	var x: float = float(s.get("x_px", at.x))
+	var r: Rect2 = box.get_body_rect()
+	# De cara a la caja (el pulso del validador la alcanza mirando a cualquier lado; el real, solo de cara: 5-3, la caja
+	# de la B2 a la izquierda del camino).
+	var f: float = signf(r.get_center().x - at.x)
+	if f == 0.0:
+		f = float(s.get("facing", 1))
 	if not laser:
 		# El pulso real no llega a la caja desde la x del camino (5-2, caja_puntos_t1: 128 px): se pega a ella.
-		var r: Rect2 = box.get_body_rect()
-		var f: float = float(s.get("facing", 1))
 		var near_x: float = r.position.x - BOX_PULSE_GAP_PX if f > 0.0 else r.end.x + BOX_PULSE_GAP_PX
 		if (near_x - x) * f > 0.0:
 			if _verbose:
 				_note("paso %d: se acerca a la caja %s (%.0f -> %.0f)" % [_step_index, id, x, near_x])
 			x = near_x
+	else:
+		# 5-3 (paso 14): el validador dispara pegado a la caja (desde mas lejos su rayo choca con la celda); en el juego,
+		# pegado, el rayo sale ya dentro de ella: el bot se aparta LASER_GAP_PX y dispara de cara.
+		var far_x: float = r.position.x - LASER_GAP_PX if f > 0.0 else r.end.x + LASER_GAP_PX
+		if (x - far_x) * f > 0.0:
+			if _verbose:
+				_note("paso %d: se aparta de la caja %s para el laser (%.0f -> %.0f)" % [_step_index, id, x, far_x])
+			x = far_x
 	if not await _walk_to(x, at.y):
 		return false
 	for attempt: int in 3:
 		if done.call():
 			break
-		await _face(float(s.get("facing", 1)))
+		await _face(f)
 		if laser:
 			await _wait_until(func() -> bool: return _has_control() and _isak.can_start_laser(), 1.0)
 			_tap(A_LASER)
