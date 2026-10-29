@@ -236,6 +236,9 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 14 del Mundo 5 (2026-10-29): el 5-3 real (tests/test_level_5_3.py: camino exportado frugal y del
 # comprador, cajas en cadena con orden seguro, lista de deseos, secretos y subidas al dia, con sus validaciones en
 # procesos aparte; tests/test_level_5_3.gd, GUT).
+# Desde el paso 15 del Mundo 5 (2026-10-29): los datos y la logica de El Vendedor (tests/test_vendor_boss.gd, GUT:
+# siempre de frente y el giro de 1,2 s, el «Cancelar» en la espalda solo con Isak detras, marca solo con el Debug,
+# un golpe por marca, la marca que no cae al girarse y las fichas al reaparecer).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

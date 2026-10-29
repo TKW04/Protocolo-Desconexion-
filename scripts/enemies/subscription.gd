@@ -57,6 +57,10 @@ const HOME_EPS_PX: float = 4.0
 const SPEND_REASON: StringName = &"subscription"
 
 @export_file("*.json") var data_path: String = DEFAULT_DATA_PATH
+## «Te fio» de El Vendedor (2026-10-29, paso 16 de docs/propuesta-mundo-5.md §5.2):
+## > 0 = enganchada drena esta ENERGIA por segundo del mundo (no puntos, sin tope ni
+## «Pago rechazado») hasta cancelarla. 0 = la de siempre.
+var energy_drain_per_s: float = 0.0
 
 var wake_radius_px: float = 320.0
 var give_up_radius_px: float = 768.0
@@ -210,6 +214,10 @@ func step(delta: float) -> void:
 				if _timer <= 0.0:
 					_release(STATE_STUNNED)
 				return
+			if energy_drain_per_s > 0.0:
+				GameState.debug_energy = maxf(GameState.debug_energy - energy_drain_per_s * dt, 0.0)
+				queue_redraw()
+				return
 			_drain_left -= dt
 			if _drain_left <= 0.0:
 				_drain_left += drain_interval_s
@@ -334,7 +342,7 @@ func attach_to(isak: Isak) -> void:
 	_change_state(STATE_ATTACHED)
 	_follow_host()
 	attached.emit(isak)
-	if GameState.attention_points <= 0:
+	if energy_drain_per_s <= 0.0 and GameState.attention_points <= 0:
 		_decline()
 
 

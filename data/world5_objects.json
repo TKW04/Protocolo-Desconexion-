@@ -511,6 +511,25 @@
 					"id": "caja_calc"
 				}
 			}
+		},
+		"vendor": {
+			"scene": "res://scenes/bosses/vendor.tscn",
+			"description": "Jefe del Mundo 5 «El Vendedor» (2026-10-29, pasos 15-16 de docs/propuesta-mundo-5.md §8, diseño en §5): Vendor (BossBase), maquina expendedora de 4 x 5 tiles desde (x, y), SOLIDA (la pone el jefe: en el grid sus celdas son '.'), que siempre te atiende de frente (se gira turn_s despues de que Isak cambie de lado) con el «Cancelar» (WeakPoint) en la espalda; fases 1-3 (plataformas con precio, cajas lanzadas y ticket, oferta con cuenta, escaparate y ranura). Datos en data/bosses/vendor.json; fichas en data/economy.json (boss_tokens). Solo en su arena (kind boss con boss vendor). Aspecto PROVISIONAL por codigo.",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "vendor",
+				"x": 8,
+				"y": 5,
+				"params": {
+					"id": "vendor"
+				}
+			}
 		}
 	},
 	"shop_item": {

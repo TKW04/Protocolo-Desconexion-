@@ -12,6 +12,12 @@
 ##   pulso la deja ATURDIDA stun_s: inerte en el aire, solida, sirve de ESCALON; despues
 ##   sigue cayendo y en el suelo queda como una caja normal. El Filo derrota a la
 ##   aturdida (vida <= 1); el Sismo no le hace nada.
+## - Contenidos de El Vendedor (2026-10-29, pasos 15-16 de docs/propuesta-mundo-5.md,
+##   §5.5; solo las cajas que lanza el jefe): tokens (fichas), bomb y ticket. La caja
+##   solo emite opened(content): el jefe decide (fichas, explosion, devolucion). Una
+##   BOMBA no se abre con el pulso: el pulso la ATURDE tambien en reposo (inerte stun_s
+##   y escalon; despues vuelve a caer y queda como antes). energy_amount >= 0 cambia
+##   la energia del contenido energy (la del jefe: +20).
 ## Los puntos se capturan como un punto de atencion (`box:<id>` del nivel, una vez por
 ## partida guardada): ya capturados, la caja esta vacia (y el Debug lo dice).
 ## El origen es la esquina superior izquierda de su celda. Tiempo del mundo. Aspecto
@@ -26,7 +32,12 @@ const CONTENT_ENERGY: StringName = &"energy"
 const CONTENT_SUBSCRIPTION: StringName = &"subscription"
 const CONTENT_OFFER: StringName = &"offer"
 const CONTENT_EMPTY: StringName = &"empty"
-const CONTENTS: Array[StringName] = [CONTENT_POINTS, CONTENT_ENERGY, CONTENT_SUBSCRIPTION, CONTENT_OFFER, CONTENT_EMPTY]
+## Contenidos de las cajas de El Vendedor (el jefe hace su efecto).
+const CONTENT_TOKENS: StringName = &"tokens"
+const CONTENT_BOMB: StringName = &"bomb"
+const CONTENT_TICKET: StringName = &"ticket"
+const CONTENTS: Array[StringName] = [CONTENT_POINTS, CONTENT_ENERGY, CONTENT_SUBSCRIPTION, CONTENT_OFFER, CONTENT_EMPTY,
+	CONTENT_TOKENS, CONTENT_BOMB, CONTENT_TICKET]
 const STATE_CLOSED: StringName = &"closed"
 const STATE_FLYING: StringName = &"flying"
 const STATE_STUNNED: StringName = &"stunned"
@@ -53,6 +64,8 @@ signal state_changed(previous: StringName, current: StringName)
 		queue_redraw()
 ## Puntos que da (content points; 1-2).
 @export var amount: int = 1
+## Energia del contenido energy (< 0 = la de la seccion surprise_box).
+@export var energy_amount: float = -1.0
 
 var _cfg: Dictionary = {}
 var _state: StringName = STATE_CLOSED
@@ -217,7 +230,7 @@ func open() -> bool:
 		CONTENT_POINTS:
 			GameState.capture_attention_point(GameState.current_level, _point_id(), maxi(amount, 1))
 		CONTENT_ENERGY:
-			GameState.add_debug_energy(float(_cfg.get("energy", 30.0)))
+			GameState.add_debug_energy(energy_amount if energy_amount >= 0.0 else float(_cfg.get("energy", 30.0)))
 		CONTENT_SUBSCRIPTION:
 			_released = Subscription.spawn(get_parent(), _feet())
 		CONTENT_OFFER:
@@ -246,7 +259,7 @@ func launch(initial_velocity: Vector2) -> void:
 
 ## Aturde la caja lanzada: inerte stun_s y solida (escalon). En reposo no hace nada.
 func stun(duration_scale: float = 1.0) -> void:
-	if _state != STATE_FLYING and _state != STATE_STUNNED:
+	if _state != STATE_FLYING and _state != STATE_STUNNED and not (_state == STATE_CLOSED and content == CONTENT_BOMB):
 		return
 	var t: float = float(_cfg.get("stun_s", 3.0)) * maxf(duration_scale, 0.0)
 	if t <= 0.0:
@@ -263,7 +276,7 @@ func stun(duration_scale: float = 1.0) -> void:
 func receive_pulse(area: Area2D) -> bool:
 	if not is_closed() or not PulseReceiver.pulse_reaches(area, get_body_rect()):
 		return false
-	if _state != STATE_CLOSED:
+	if _state != STATE_CLOSED or content == CONTENT_BOMB:
 		stun(GameState.get_pulse_stun_multiplier())
 		return true
 	var isak := area.get_parent() as Isak if area != null else null
@@ -422,6 +435,20 @@ func _draw_icon(c: Vector2, what: StringName) -> void:
 			draw_rect(tag.grow(1.0), ink)
 			draw_rect(tag, _c("box", "crema_cartel"))
 			draw_line(c + Vector2(-6.0, -3.0), c + Vector2(6.0, -3.0), _c("ribbon", "magenta_neon"), 2.0)
+		CONTENT_TOKENS:
+			draw_circle(c, 11.0, ink)
+			draw_circle(c, 10.0, _c("points", "amarillo_rebajas"))
+			draw_circle(c, 5.0, ink)
+		CONTENT_BOMB:
+			draw_circle(c + Vector2(0.0, 2.0), 10.0, ink)
+			draw_circle(c + Vector2(0.0, 2.0), 9.0, _c("gris", "gris_etiqueta"))
+			draw_line(c + Vector2(4.0, -6.0), c + Vector2(8.0, -12.0), ink, 2.0)
+		CONTENT_TICKET:
+			var ticket := Rect2(c + Vector2(-8.0, -11.0), Vector2(16.0, 22.0))
+			draw_rect(ticket.grow(1.0), ink)
+			draw_rect(ticket, _c("box", "crema_cartel"))
+			for i: int in 3:
+				draw_line(c + Vector2(-5.0, -6.0 + 5.0 * i), c + Vector2(5.0, -6.0 + 5.0 * i), ink, 1.0)
 		_:
 			draw_arc(c, 9.0, 0.0, TAU, 16, ink, 3.0)
 			draw_arc(c, 9.0, 0.0, TAU, 16, _c("gris", "gris_etiqueta"), 1.5)
