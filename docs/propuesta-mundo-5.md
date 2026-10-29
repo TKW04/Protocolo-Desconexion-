@@ -788,7 +788,12 @@ Pasos pequeños, como en los Mundos 2-4. Cada paso lleva sus pruebas y **termina
 
 ### 8.1 Avance y desvíos
 
-(Vacía hasta empezar. Cada paso hecho se anota aquí con su fecha, lo que se hizo, los desvíos y, si hace falta decidir algo, la entrada «Decisión tomada» con su razón.)
+(Cada paso hecho se anota aquí con su fecha, lo que se hizo, los desvíos y, si hace falta decidir algo, la entrada «Decisión tomada» con su razón.)
+
+**Decisiones del usuario (2026-10-29, §10):** blanco del Debug = **A «Blanco puro» `#ffffff`** (también la quinta pieza del hub); remitente de `msg_5_x` = **el Abuelito**; arte final con AutoSprite **al final**, con el mundo completo (paso 24; 0 créditos hasta entonces).
+
+- **Paso 0 (2026-10-29):** `tools/palette_mundo5_provisional.py` (16 colores + `debug_blanco`; `--check` con las 7 reglas de §6.1 y el blanco igual que `debug_colors["5"]` de `data/hud.json`, que pasa de `#f4f4f4` a `#ffffff`), `assets/palettes/mundo5_provisional.gpl`, `data/world5_objects.json` (sin tipos; sección `palette`), `data/economy.json` (§3.1, §3.5, §3.6 y fichas de §5.2) y `tests/test_palette_mundo5.py` (también comprueba `data/economy.json`). Desvío: como en el Mundo 4, la regla 5 se cumple ya en este paso: `AttentionPoint.OUTLINE_WORLDS` incluye el 5 (contorno `tienda_noche`) y hay `World5ObjectsConfig` (`scripts/levels/world5_objects_config.gd`); caso nuevo en `tests/test_attention_point_outline.gd`. Medidas: blanco a ΔE 77 del rojo (63 con el tinte), contorno 15,3:1 sobre el amarillo, L\* máx. 90,7, amarillo-puntos ΔE 41, cian de Isak 7,6:1; blanco-texto del HUD ΔE 4 (se informa).
+
 
 ---
 

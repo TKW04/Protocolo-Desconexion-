@@ -1,0 +1,34 @@
+{
+	"_notes": "Economia del Mundo 5 «La Tienda» (V13; docs/propuesta-mundo-5.md §3.1, §3.5, §3.6 y §5.2; valores PROVISIONALES, se ajustan jugando). Por primera vez los puntos de atencion se gastan dentro de un nivel (C3): se gasta el saldo real (GameState.attention_points) y gastar marca «sin guardar». Protecciones: ninguna pieza del camino obligatorio cuesta puntos; todo lo que se vende en un nivel cuesta como mucho lo cogido antes en ese nivel (el validador lo cuenta desde un saldo de 0); el saldo nunca baja de min_balance (sin deuda); un game over devuelve lo gastado sin guardar (rollback). points_per_map: puntos de atencion por mapa del Mundo 5 (9 + 3 «para tentar»); buy_all_per_level: lo que cuesta comprarlo todo en un nivel (rango orientativo; max_spend_per_level es el tope que comprueba el validador). prices (Caché): shop_item por producto (cost en puntos y su efecto: sync / energy al instante; uses_per_attempt), shortcut_door (atajo con trampa), calc_register (atajo legitimo de Calc, sin trampa). subscription: drena drain_points cada drain_interval_s s (tiempo del mundo) hasta drain_cap por Suscripcion; con saldo 0, «Pago rechazado» y se suelta a los declined_release_s s. refund_desk (Devoluciones, secreto A del 5-1): un pulso de espaldas devuelve lo de `refunds` (drenado por Suscripciones y gastado en atajos con trampa) del intento actual de ese nivel, mas bonus_points; uses_per_attempt. boss_tokens (arena de El Vendedor; fichas, no puntos de atencion): start al empezar, priced_platform_cost por plataforma, good_box_bonus por caja buena; con 0 fichas la maquina «te fia» y engancha una Suscripcion que drena credit_drain_energy_per_s de energia hasta cancelarla. Unidades: puntos, s, Sync Rate y energia en puntos de barra.",
+	"currency": "attention_points",
+	"min_balance": 0,
+	"points_per_map": 12,
+	"buy_all_per_level": [9, 11],
+	"max_spend_per_level": 11,
+	"prices": {
+		"shop_item": {
+			"sync": {"cost": 3, "sync": 25},
+			"energy": {"cost": 2, "energy": 40},
+			"uses_per_attempt": 1
+		},
+		"shortcut_door": {"cost": 3, "uses_per_attempt": 1},
+		"calc_register": {"cost": 2, "uses_per_attempt": 1}
+	},
+	"subscription": {
+		"drain_points": 1,
+		"drain_interval_s": 2.0,
+		"drain_cap": 5,
+		"declined_release_s": 3.0
+	},
+	"refund_desk": {
+		"refunds": ["subscription_drain", "shortcut_trap"],
+		"bonus_points": 2,
+		"uses_per_attempt": 1
+	},
+	"boss_tokens": {
+		"start": 12,
+		"priced_platform_cost": 2,
+		"good_box_bonus": 2,
+		"credit_drain_energy_per_s": 2.0
+	}
+}

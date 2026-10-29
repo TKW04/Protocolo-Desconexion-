@@ -32,10 +32,11 @@ signal collected(value: int)
 ## Mundo con contorno en los puntos y color de la paleta del Mundo 2 que lo pinta.
 const OUTLINE_WORLD: int = 2
 const OUTLINE_PALETTE_NAME: String = "feed_noche"
-## Mundos con contorno (2-4) y nombre del color en las paletas de los Mundos 3 y 4.
-const OUTLINE_WORLDS: Array[int] = [2, 3, 4]
+## Mundos con contorno (2-5) y nombre del color en las paletas de los Mundos 3-5.
+const OUTLINE_WORLDS: Array[int] = [2, 3, 4, 5]
 const OUTLINE_PALETTE_NAME_W3: String = "galeria_noche"
 const OUTLINE_PALETTE_NAME_W4: String = "chat_noche"
+const OUTLINE_PALETTE_NAME_W5: String = "tienda_noche"
 ## Grosor del contorno en px de pantalla.
 const OUTLINE_PX: float = 1.0
 
@@ -72,6 +73,8 @@ func has_outline() -> bool:
 
 
 func get_outline_color() -> Color:
+	if get_level_world() == 5:
+		return World5ObjectsConfig.color(OUTLINE_PALETTE_NAME_W5, Color.BLACK)
 	if get_level_world() == 4:
 		return World4ObjectsConfig.color(OUTLINE_PALETTE_NAME_W4, Color.BLACK)
 	if get_level_world() == 3:

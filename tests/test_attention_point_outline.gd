@@ -53,3 +53,13 @@ func test_world_4_points_have_the_chat_outline() -> void:
 	var palette: Dictionary = World4ObjectsConfig.data().get("palette", {})
 	assert_true(palette.has(AttentionPoint.OUTLINE_PALETTE_NAME_W4))
 	assert_eq(point.get_outline_color(), Color(String(palette[AttentionPoint.OUTLINE_PALETTE_NAME_W4])))
+
+
+# Desde el 2026-10-29 (regla 5 de docs/propuesta-mundo-5.md §6.1): tambien en el Mundo 5,
+# con `tienda_noche` de la paleta provisional (data/world5_objects.json).
+func test_world_5_points_have_the_shop_outline() -> void:
+	var point := _point_in_world(5)
+	assert_true(point.has_outline())
+	var palette: Dictionary = World5ObjectsConfig.data().get("palette", {})
+	assert_true(palette.has(AttentionPoint.OUTLINE_PALETTE_NAME_W5))
+	assert_eq(point.get_outline_color(), Color(String(palette[AttentionPoint.OUTLINE_PALETTE_NAME_W5])))

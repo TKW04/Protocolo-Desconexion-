@@ -1,0 +1,25 @@
+{
+	"_notes": "Catalogo de objetos del Mundo 5 «La Tienda» (docs/propuesta-mundo-5.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 5 usa los tipos de los Mundos 1-4 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo5_provisional.py). Precios y economia: data/economy.json. Los tipos llegan desde el paso 2.",
+	"tile_size": 64,
+	"types": {},
+	"palette": {
+		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",
+		"tienda_noche": "#0e0c14",
+		"negro_fondo": "#15121e",
+		"negro_medio": "#221c30",
+		"gris_escaparate": "#3a3448",
+		"gris_etiqueta": "#7a7488",
+		"crema_cartel": "#e8e0c8",
+		"crema_sombra": "#aea690",
+		"amarillo_rebajas": "#ffe600",
+		"amarillo_sombra": "#a89400",
+		"magenta_neon": "#ff3df0",
+		"magenta_sombra": "#9a1c94",
+		"violeta_neon": "#9b5cff",
+		"alerta": "#ff4a2a",
+		"alerta_sombra": "#a3221c",
+		"ambar": "#ffa000",
+		"ambar_sombra": "#a85f00",
+		"debug_blanco": "#ffffff"
+	}
+}
