@@ -227,6 +227,141 @@
 					"side": "left"
 				}
 			}
+		},
+		"shutter": {
+			"scene": "res://scenes/levels/shutter.tscn",
+			"description": "Persiana «Cerrado por inventario» (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §3.9 y patron 25; Shutter). Persiana metalica SOLIDA de length_tiles (2-4) tiles desde (x, y): orientation floor (length_tiles x 1, se pisa) o wall (1 x length_tiles, apoyada en el suelo). El golpe al suelo, el pulso, el laser y el Sismo REBOTAN (chispa gris). SOLO una EMBESTIDA cuya onda la alcanza (EventBus.combo_landed con combo_ram) la rompe para el resto del intento; la de suelo deja caer a Isak a lo de debajo y la onda sigue break_wave_depth_tiles (3) bajo ella con el dano y el aturdimiento de la Embestida («rompe una barrera y limpia a los enemigos de debajo»). Sin Q todavia (help_id previsto shutter, paso 9). Aspecto PROVISIONAL por codigo (seccion shutter).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"length_tiles": "length_tiles",
+				"orientation": "orientation"
+			},
+			"defaults": {
+				"length_tiles": 2,
+				"orientation": "floor"
+			},
+			"allowed": {
+				"orientation": [
+					"floor",
+					"wall"
+				]
+			},
+			"level_params": {
+				"length_tiles": {
+					"min": 2,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "shutter",
+				"x": 20,
+				"y": 12,
+				"params": {
+					"id": "persiana_1",
+					"length_tiles": 4
+				}
+			}
+		},
+		"price_rail": {
+			"scene": "res://scenes/levels/price_rail.tscn",
+			"description": "Ranura de precios (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §3.9 y patron 26; PriceRail). Hilera de etiquetas colgadas sobre un foso: width_tiles (4) x height_tiles (4) desde (x, y) MENOS una ranura de 1 tile de alto en la fila slot_row (desde arriba); las etiquetas se apartan inset_px (32) de cada borde. NO son solidas ni danan: Isak que las toca sale EMPUJADO hacia atras (al borde de la hilera por donde llego; corta el dash y los combos). De pie no cabe por la ranura; comprimido si, pero en ella no hay suelo y el salto comprimido no cruza el foso: solo un FILO (dash comprimido de 4 tiles, gravedad 0) la cruza. El pulso, el laser, el golpe al suelo y los demas combos no le hacen nada. Sin Q todavia (help_id previsto price_rail, paso 9). Aspecto PROVISIONAL por codigo (seccion price_rail).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"slot_row": "slot_row"
+			},
+			"defaults": {
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"slot_row": 2
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 2,
+					"max": 6,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 3,
+					"max": 8,
+					"int": true
+				},
+				"slot_row": {
+					"min": 0,
+					"max": 7,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "price_rail",
+				"x": 40,
+				"y": 5,
+				"params": {
+					"id": "ranura_1",
+					"width_tiles": 4,
+					"height_tiles": 4,
+					"slot_row": 2
+				}
+			}
+		},
+		"clearance_shelf": {
+			"scene": "res://scenes/levels/clearance_shelf.tscn",
+			"description": "Estanteria de saldos (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.2.2, §3.7, §3.9 y patron 27; ClearanceShelf). Columna SOLIDA de cajas de 1 x height_tiles (2-3) desde (x, y), apoyada en el suelo; las de igual group forman un grupo. Un golpe suelto (golpe al suelo cuya onda la alcanza, Embestida, pulso o laser) la TUMBA y a los restock_s (0,5 s) SE REPONE (no con Isak dentro) si queda alguna del grupo en pie; si todas las del grupo estan tumbadas a la vez, caen para el resto del intento. Solo un SISMO (toda la planta en pantalla a la vez) las tumba todas a la vez. Un grupo de una sola estanteria solo cae con el Sismo. Reaparecer repone las tumbadas. Sin Q todavia (help_id previsto clearance_shelf, paso 9). Aspecto PROVISIONAL por codigo (seccion clearance_shelf).",
+			"required": [
+				"group"
+			],
+			"fields": {
+				"id": "object_id",
+				"group": "group_id",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"height_tiles": 2
+			},
+			"level_params": {
+				"height_tiles": {
+					"min": 1,
+					"max": 3,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "clearance_shelf",
+				"x": 30,
+				"y": 9,
+				"params": {
+					"id": "saldos_1a",
+					"group": "saldos_1",
+					"height_tiles": 2
+				}
+			}
+		},
+		"free_trial_box": {
+			"scene": "res://scenes/levels/free_trial_box.tscn",
+			"description": "«Prueba gratis» (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §4.2 y §4.2.2; FreeTrialBox, hereda de DndSwitch como el reproductor del Mundo 2). Caja de regalo con lazo y el cartel del sistema en la pared del FONDO (origen en la celda donde Isak se pone de pie). Un PULSO DE ESPALDAS que alcanza su hit_rect la abre: los tres gestos se juntan por pares y da la Combinacion para siempre (GameState.obtain_ability combo: guardado, Papelera y rollback). Momento de historia una vez por partida guardada (seen_notices combo_5_2): Eco «Todo tiene un precio.», Isak (interlocutor isak, estilo propio) «Esto no lo compré. Es mío.», el aviso de la Combinacion y Eco (no importante) «Una prueba gratis siempre acaba, {apodo}.». Con la Combinacion ya obtenida arranca abierta e inerte (regla unless_ability). Sin Q (es historia). Aspecto PROVISIONAL por codigo (seccion free_trial_box).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "free_trial_box",
+				"x": 11,
+				"y": 8,
+				"params": {
+					"id": "prueba_gratis"
+				}
+			}
 		}
 	},
 	"shop_item": {
@@ -369,6 +504,75 @@
 		"off": "gris_etiqueta",
 		"ink": "negro_medio",
 		"text": "crema_cartel"
+	},
+	"shutter": {
+		"_notes": "Persiana (Shutter). deflect_s: chispa gris del rebote; break_s: lamas que caen al romperse; break_wave_depth_tiles: lo que la onda de la Embestida sigue bajo la persiana de suelo rota (break_wave_damage / break_wave_stun_s si no llega de Isak); slat_px: separacion de las lamas; textos (propuestos); colores por nombre de la paleta provisional.",
+		"deflect_s": 0.25,
+		"break_s": 0.35,
+		"break_wave_depth_tiles": 3.0,
+		"break_wave_damage": 2.0,
+		"break_wave_stun_s": 3.0,
+		"slat_px": 8,
+		"text_sign": "Cerrado por inventario",
+		"metal": "gris_escaparate",
+		"slat": "gris_etiqueta",
+		"ink": "negro_medio",
+		"sign": "crema_cartel",
+		"lock": "amarillo_rebajas",
+		"spark": "gris_etiqueta"
+	},
+	"price_rail": {
+		"_notes": "Ranura de precios (PriceRail). inset_px: lo que las etiquetas se apartan de cada borde de la hilera (para que un Filo de 4 tiles desde el borde del foso las deje atras); push_speed_px_s: velocidad hacia fuera al empujar; bump_s: balanceo de las etiquetas tras empujar; tag_spacing_px: separacion de los hilos; colores por nombre de la paleta provisional.",
+		"inset_px": 32,
+		"push_speed_px_s": 240.0,
+		"bump_s": 0.3,
+		"tag_spacing_px": 16,
+		"string": "gris_etiqueta",
+		"tag": "crema_cartel",
+		"price": "magenta_neon",
+		"ink": "negro_medio"
+	},
+	"clearance_shelf": {
+		"_notes": "Estanteria de saldos (ClearanceShelf). restock_s: tumbada se repone a los 0,5 s del mundo si queda alguna del grupo en pie (§3.7); restock_flash_s: destello al reponerse; textos (propuestos); colores por nombre de la paleta provisional.",
+		"restock_s": 0.5,
+		"restock_flash_s": 0.3,
+		"text_tag": "SALDO",
+		"text_restock": "¡Reponiendo!",
+		"box": "crema_sombra",
+		"tag": "amarillo_rebajas",
+		"frame": "gris_escaparate",
+		"flash": "debug_blanco",
+		"ink": "negro_medio"
+	},
+	"free_trial_box": {
+		"_notes": "«Prueba gratis» (FreeTrialBox, hereda de DndSwitch). hit_rect: zona del pulso en px desde la esquina de la celda de Isak; box_rect: la caja; pose_s: Isak de espaldas; hit_s: destello del golpe; merge_s: los tres gestos que se juntan (tiempo real: corre con la pausa); notice_id: seen_notices de la escena (una vez por partida guardada); line_eco y line_isak (doc, importantes), line_after (propuesta, no importante); text_title y text_sign: cartel del sistema (propuesto); colores por nombre de la paleta provisional.",
+		"hit_rect": [
+			-24,
+			-56,
+			112,
+			120
+		],
+		"box_rect": [
+			-24,
+			-56,
+			112,
+			120
+		],
+		"pose_s": 0.45,
+		"hit_s": 0.25,
+		"merge_s": 1.2,
+		"duration_s": -1.0,
+		"notice_id": "combo_5_2",
+		"line_eco": "Todo tiene un precio.",
+		"line_isak": "Esto no lo compré. Es mío.",
+		"line_after": "Una prueba gratis siempre acaba, {apodo}.",
+		"text_title": "PRUEBA GRATIS",
+		"text_sign": "Prueba gratis: todo lo que necesitas, ya elegido para ti.",
+		"paper": "magenta_sombra",
+		"ribbon": "amarillo_rebajas",
+		"sign": "crema_cartel",
+		"glow": "debug_blanco",
+		"ink": "negro_medio"
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",

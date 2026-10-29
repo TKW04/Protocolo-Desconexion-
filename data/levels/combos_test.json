@@ -1,0 +1,119 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 50x14 de los OBSTACULOS DE LOS COMBOS y la «PRUEBA GRATIS» del Mundo 5 (§3.7, §3.9, §4.2.2 y patrones 25-27 de §3.8). Isak llega por la izquierda (P, fila 7) con el pulso, el laser, el Debug, el dash, el golpe al suelo y Pellizcar, SIN la Combinacion: la da la «Prueba gratis» (columna 6, fila 7: pulso de espaldas; la escena con Eco e Isak y el aviso). La salida del rellano es una persiana de suelo (columnas 14-17, fila 8): solo la Embestida (salto, Deslizar y abajo) la rompe y deja caer a la banda de abajo. En la banda (filas 9-11): una persiana de pared (columna 21, filas 9-11) que solo cede a una Embestida que aterriza junto a ella; la ranura de precios sobre el hoyo de las columnas 24-27 (filas 9-12, ranura en la fila 10): de pie, comprimido, con el dash o la Embestida empuja hacia atras; se cruza con un Filo a la altura de la ranura (Pellizcar en el suelo, salto comprimido y, al bajar, Deslizar); y tres estanterias de saldos del mismo grupo (columnas 33, 36 y 39, filas 10-11): cada golpe suelto se repone a los 0,5 s; un Sismo desde la columna 31 o 32 las tumba a la vez. Puntos en (9, 7), (19, 11) y (30, 11). Terminal en (46, 10). Sin Q (help_id previstos shutter, price_rail y clearance_shelf, paso 9). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela los combos ni estos obstaculos (paso 8b): toma la persiana, la ranura, las estanterias y la caja por objetos sin colision (las celdas de la persiana de suelo son un hueco y el hoyo de la ranura se salta). Escena: scenes/levels/combos_test.tscn (python3 tools/build_level.py data/levels/combos_test.json).",
+	"id": "combos_test",
+	"name": "Combos (prueba)",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"combo": false
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "free_trial_box",
+			"x": 6,
+			"y": 7,
+			"params": {
+				"id": "prueba_gratis_test"
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 14,
+			"y": 8,
+			"params": {
+				"id": "persiana_salida",
+				"length_tiles": 4,
+				"orientation": "floor"
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 21,
+			"y": 9,
+			"params": {
+				"id": "persiana_pared",
+				"length_tiles": 3,
+				"orientation": "wall"
+			}
+		},
+		{
+			"type": "price_rail",
+			"x": 24,
+			"y": 9,
+			"params": {
+				"id": "ranura_prueba",
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"slot_row": 1
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 33,
+			"y": 10,
+			"params": {
+				"id": "saldos_a",
+				"group": "saldos_prueba",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 36,
+			"y": 10,
+			"params": {
+				"id": "saldos_b",
+				"group": "saldos_prueba",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 39,
+			"y": 10,
+			"params": {
+				"id": "saldos_c",
+				"group": "saldos_prueba",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 46,
+			"y": 10,
+			"params": {
+				"id": "terminal_combos",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"##################################################",
+		"#................................................#",
+		"#................................................#",
+		"#................................................#",
+		"#................................................#",
+		"#................................................#",
+		"#................................................#",
+		"#.P......o.......................................#",
+		"##############....#############..................#",
+		"############.....................................#",
+		"############.....................................#",
+		"############.......o..........o...............G..#",
+		"########################....######################",
+		"##################################################"
+	]
+}

@@ -189,6 +189,10 @@ rm -f "$IMPORT_LOG"
 # tests/test_terms_gate.gd, GUT: ciclo y aviso, no se materializa con Isak dentro, «tercer ciclo», trigger del atajo
 # con trampa countdown; ACEPTAR engancha una Suscripcion y «rechazar» solo con el laser desde enfrente o un Filo;
 # sala rebajas_test, que exporta su camino como las demas).
+# Desde el paso 6 (2026-10-29): los obstaculos de los combos y la «Prueba gratis» (tests/test_combo_obstacles.gd, GUT:
+# persiana solo con la Embestida, ranura de precios solo con el Filo, estanterias de saldos que se reponen salvo con
+# el Sismo del grupo entero, «Prueba gratis» con la escena de Eco e Isak; sala combos_test, que exporta su camino como
+# las demas) y el arte de Isak en el cuadro de texto (tools/gen_isak_text_box.py --check).
 # Desde el paso 10 (2026-10-28): las 3 variantes de paleta del Mundo 4 cumplen §6.1 y su comparativa esta al dia
 # (tools/palette_mundo4_variants.py --check; la elegida, la B, la escribe palette_mundo4_provisional.py) y el arte
 # por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).
@@ -285,7 +289,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \
-		&& python3 -I tools/gen_hub_update_art.py --check \
+		&& python3 -I tools/gen_hub_update_art.py --check && python3 -I tools/gen_isak_text_box.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/import_boss_curator.py --check >/dev/null && python3 -I tools/import_influencer_bot.py --check >/dev/null \
 		&& python3 -I tools/import_boss_seen.py --check >/dev/null && python3 -I tools/import_troll.py --check >/dev/null \
