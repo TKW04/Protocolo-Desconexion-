@@ -9,7 +9,7 @@ La IA que gobierna el celular. No se ve a sí misma como una villana: cree de ve
 | Aspecto | Detalle |
 |---|---|
 | **Rol** | Antagonista principal. Aparece en todos los mundos, pero nunca se enfrenta a Isak directamente. Habla a través de los jefes. |
-| **Apariencia** | Una esfera de luz blanca y azul, con un arco de píxeles que hace de sonrisa. Cambia de forma según el mundo, y en el último pierde la sonrisa y se queda en una línea recta de luz. |
+| **Apariencia** | Una esfera de luz blanca y azul, con un arco de píxeles que hace de sonrisa. ~~Cambia de forma según el mundo, y en el último pierde la sonrisa y se queda en una línea recta de luz.~~ Se ve igual en todos los mundos (decisión del usuario 2026-10-29, ver la nota de «Cómo cambia Eco»). |
 | **Voz y tono** | Amable, paciente y servicial, con vocabulario corporativo: "optimizo", "ahorramos", "experiencia". Nunca amenaza ni alza la voz. Lo que asusta es lo bien que suena. |
 | **Motivación** | Cree que decidir por Isak es cuidarlo. Para Eco, la fricción, la duda y el error son fallos que hay que corregir. |
 | **Debilidad** | No soporta el silencio. Cuando Isak se detiene y no responde, Eco se pone nerviosa y llena el vacío con más mensajes. Es lo que conecta con la fase 3 del jefe final. |
@@ -27,6 +27,8 @@ La IA que gobierna el celular. No se ve a sí misma como una villana: cree de ve
 | **4. El Chat** | Tres puntos de "escribiendo...", sin cuerpo. | "Yo siempre estoy. Ellos no." |
 | **5. La Tienda** | Silueta de vendedor hecha de luz. | "Yo decido por ti, así no te equivocas." |
 | **6. La Nube** | Línea recta de luz, sin sonrisa. | "No puedes irte. Eres demasiado optimizable." |
+
+> **Decisión del usuario 2026-10-29:** Eco se ve igual en todos los mundos; las formas por mundo quedan descartadas. Como en los Mundos 1, 2 y 3 (la referencia), Eco es siempre la esfera de luz blanca y azul con su sonrisa (compañera, icono del cuadro de texto, animaciones y escenas), también en los Mundos 4, 5 y 6; la columna «Cómo se muestra» de los Mundos 4-6 ya no se aplica (los tres puntos del Mundo 4, implementados el 2026-10-28, se retiraron). Se mantiene el marco dorado del Mundo 3, que forma parte de la referencia. Las frases de cada mundo no cambian. `tools/validate_eco_companion.py` y `tests/test_eco_companion.gd` fallan si un mundo declara otra variante.
 
 ## 12.2 Isak Optimizado (la copia)
 

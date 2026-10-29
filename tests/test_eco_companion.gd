@@ -284,3 +284,28 @@ func test_world_3_eco_wears_a_gold_frame_only_with_the_whole_sphere() -> void:
 func test_other_worlds_and_hub_have_no_frame() -> void:
 	assert_null(_eco_in_level("res://scenes/levels/correo_test.tscn").get_world_frame(), "Mundo 1: sin marco")
 	assert_null(_attach(true).get_world_frame(), "Hub: sin marco")
+
+
+# --- Eco igual en todos los mundos (decision del usuario 2026-10-29; docs/04-personajes.md §12.1) ---
+
+func test_eco_is_the_same_sphere_in_every_world() -> void:
+	var sphere: String = String(_data["frames"])
+	for scene_path: String in ["res://scenes/levels/correo_test.tscn", "res://scenes/levels/scroll_test.tscn",
+			"res://scenes/levels/likes_test.tscn", "res://scenes/levels/burbujas_test.tscn",
+			"res://scenes/levels/tienda_test.tscn"]:
+		var eco := _eco_in_level(scene_path)
+		assert_eq(eco.get_sprite_frames().resource_path, sphere, "La esfera de siempre en %s" % scene_path)
+		eco.queue_free()
+	assert_eq(_attach(true).get_sprite_frames().resource_path, sphere, "Y en el hub (atenuada, mismas frames)")
+
+
+func test_no_world_declares_its_own_eco() -> void:
+	assert_false(_data.has("world_sprite_frames"), "Sin cuerpo de Eco por mundo (world_sprite_frames)")
+	assert_eq((_data.get("world_frames", {}) as Dictionary).keys(), ["3"],
+		"Solo el marco del Mundo 3 (referencia de los Mundos 1-3)")
+	var box: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/eco_text_box.json"))
+	assert_false(box.has("world_icons"), "Sin icono de Eco por mundo en el cuadro de texto")
+	for id: String in box["speakers"]:
+		assert_false((box["speakers"][id] as Dictionary).has("world_icon"), "Sin world_icon en %s" % id)
+	assert_false(ResourceLoader.exists("res://assets/sprites/eco_companion_w4_frames.tres"), "Sin los tres puntos")
+	assert_false(ResourceLoader.exists("res://assets/sprites/eco/eco_icon_w4.png"), "Sin el icono de tres puntos")

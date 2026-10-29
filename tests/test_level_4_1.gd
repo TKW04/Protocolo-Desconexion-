@@ -4,7 +4,7 @@
 # objetos y economia (8 puntos, 2 cargadores, burbujas, cuatro «escribiendo…»,
 # zona oscura, cinco zonas «Visto», el Troll, power bank, vida extra y msg_4_1),
 # la Linterna que se recoge al pasar (aliada de registro) y enciende su luz en el
-# Modo oscuro, Eco de tres puntos en el Mundo 4 (y la esfera en el hub), los tres
+# Modo oscuro, Eco con la esfera de siempre, los tres
 # secretos (A por la burbuja oculta, B tras el marco pequeno, C tras la pared con
 # glitch), el punto de sincronizacion, la terminal «Enviar» -> hub con el 4-1
 # completado y la carpeta del Mundo 4 tras instalar la actualizacion del hub.
@@ -22,7 +22,6 @@ const LAND_FRAMES: int = 30
 const LONG_STEP_S: float = 5.0
 const POUND: StringName = GameState.ABILITY_GROUND_POUND
 const UPGRADE: StringName = &"hub_update_4_6"
-const W4_FRAMES: String = "res://assets/sprites/eco_companion_w4_frames.tres"
 
 var _saved_path: String
 var _saved_level: StringName
@@ -206,15 +205,13 @@ func test_flashlight_is_met_on_the_way_and_lights_the_dark_floor() -> void:
 	assert_true(DarkZone.lit_by_flashlight(get_tree(), center), "La Linterna abre su circulo de luz")
 
 
-func test_eco_is_three_dots_in_world_4() -> void:
+func test_eco_is_the_usual_sphere_in_world_4() -> void:
 	_start()
 	await _arrive()
 	var eco: EcoCompanion = _main.get_eco_companion()
 	assert_not_null(eco)
-	assert_eq(eco.get_sprite_frames().resource_path, W4_FRAMES, "Eco de tres puntos en el Mundo 4")
-	for anim: StringName in [&"idle", &"talk", &"notice", &"appear", &"disappear", &"idle_amber", &"glow_in",
-			&"glow_out"]:
-		assert_true(eco.get_sprite_frames().has_animation(anim), "Animacion %s" % anim)
+	assert_eq(eco.get_sprite_frames().resource_path, String(EcoCompanion.load_data()["frames"]),
+		"Eco igual en todos los mundos (decision del usuario 2026-10-29): la esfera, no los tres puntos")
 
 
 func test_typing_bubble_appears_one_second_after_its_trigger() -> void:
@@ -314,10 +311,6 @@ func test_send_terminal_completes_the_level_and_returns_to_the_hub() -> void:
 	assert_eq(panel.get_level_state(&"4-1"), HubWorlds.STATE_COMPLETED)
 	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m4"))[1]), "El 4-2, jugable (paso 13)")
 	assert_eq(panel.get_level_state(&"4-2"), HubWorlds.STATE_AVAILABLE, "El 4-2, disponible")
-	# La esfera vuelve en el hub (atenuada): el cuerpo de tres puntos es solo de los niveles del Mundo 4.
-	var hub_eco: EcoCompanion = _main.get_hub().get_eco_companion()
-	if hub_eco != null:
-		assert_ne(hub_eco.get_sprite_frames().resource_path, W4_FRAMES, "En el hub, la esfera")
 
 
 func test_world_4_folder_lists_4_1_after_the_update_and_loads_it() -> void:

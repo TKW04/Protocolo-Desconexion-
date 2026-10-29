@@ -420,8 +420,9 @@ func test_layer_position_and_speaker() -> void:
 	assert_eq(fmod(rect.position.x, 2.0), 0.0, "Alineado a pixel de arte")
 
 
-## Mundo 4 (2026-10-28): Eco son tres puntos, tambien en el icono del cuadro (world_icons) y por el jefe (eco_boss).
-func test_world_icon_in_world_4() -> void:
+## Eco igual en todos los mundos (decision del usuario 2026-10-29): en el Mundo 4 el icono del cuadro es la esfera
+## de siempre; por el jefe (eco_boss), su propio icono con interferencia.
+func test_same_eco_icon_in_world_4() -> void:
 	var level := GeneratedLevel.new()
 	level.world = 4
 	add_child_autofree(level)
@@ -429,15 +430,16 @@ func test_world_icon_in_world_4() -> void:
 	level.add_child(box)
 	box.set_process(false)
 	box.show_line(WELCOME)
-	assert_eq(box.get_icon_texture().resource_path, "res://assets/sprites/eco/eco_icon_w4.png", "Tres puntos en el Mundo 4")
+	assert_eq(box.get_icon_texture().resource_path, "res://assets/sprites/ui/eco_icon.png", "La esfera en el Mundo 4")
 	var boss_box := BOX_SCENE.instantiate() as EcoTextBox
 	level.add_child(boss_box)
 	boss_box.set_process(false)
 	boss_box.show_line(WELCOME, -1.0, false, &"eco_boss")
-	assert_eq(boss_box.get_icon_texture().resource_path, "res://assets/sprites/eco/eco_icon_w4.png", "Tambien por el jefe")
+	assert_eq(boss_box.get_icon_texture().resource_path, "res://assets/sprites/bosses/eco_boss_icon.png",
+		"Por el jefe, el icono de Eco con interferencia (igual en todos los mundos)")
 	var plain: EcoTextBox = _box()
 	plain.show_line(WELCOME)
-	assert_eq(plain.get_icon_texture().resource_path, "res://assets/sprites/ui/eco_icon.png", "Fuera del Mundo 4, la esfera")
+	assert_eq(plain.get_icon_texture().resource_path, "res://assets/sprites/ui/eco_icon.png", "Fuera del Mundo 4, igual")
 
 
 # --- No bloquea a Isak ni lo frena el Debug ---

@@ -10,7 +10,10 @@ verdad (ambar y ambar_sombra presentes; glow_in_00 al menos una chispa) y los
 atenuados (_dim, hub) solo de hub.gpl (sin ambar ni los rojos
 reservados); el marco dorado del Mundo 3 (eco_frame_w3_00) solo dorado y dorado_luz de mundo3.gpl. Ademas: no hay PNG de mas en la carpeta, los PNG estan al dia con
 el generador y el SpriteFrames (assets/sprites/eco_companion_frames.tres)
-coincide con el que escribiria.
+coincide con el que escribiria. Eco se ve igual en todos los mundos (decision del usuario 2026-10-29,
+docs/04-personajes.md §12.1): ni data/eco_companion.json declara un cuerpo por mundo (world_sprite_frames)
+ni data/eco_text_box.json un icono por mundo (world_icons), y el unico marco por mundo (world_frames) es el
+dorado del Mundo 3 (parte de la referencia de los Mundos 1-3).
 
 Uso (desde la raiz del repo): python3 -I tools/validate_eco_companion.py
 Sale con 1 si hay errores.
@@ -36,6 +39,35 @@ AMBER = (0xff, 0xa0, 0x00)
 AMBER_SHADOW = (0xa8, 0x5f, 0x00)
 RESERVED = {(0xdc, 0x00, 0x00), (0xff, 0x38, 0x38)}
 
+# Mundos con marco propio permitidos (world_frames): el dorado del Mundo 3, que forma parte de la referencia.
+ALLOWED_WORLD_FRAMES = {"3": "res://assets/sprites/eco/companion/eco_frame_w3_00.png"}
+
+
+def check_same_eco_everywhere():
+    """Errores si algun mundo declara una variante de Eco (cuerpo, icono o marco nuevo)."""
+    import json
+    errs = []
+    with open(os.path.join(REPO, "data/eco_companion.json"), encoding="utf-8") as fh:
+        comp = json.load(fh)
+    with open(os.path.join(REPO, "data/eco_text_box.json"), encoding="utf-8") as fh:
+        box = json.load(fh)
+    if comp.get("world_sprite_frames"):
+        errs.append("data/eco_companion.json: world_sprite_frames declara un Eco distinto por mundo (Eco es igual en todos)")
+    if comp.get("world_frames", {}) != ALLOWED_WORLD_FRAMES:
+        errs.append("data/eco_companion.json: world_frames solo puede llevar el marco del Mundo 3")
+    if box.get("world_icons"):
+        errs.append("data/eco_text_box.json: world_icons declara un icono de Eco por mundo (Eco es igual en todos)")
+    for sid, info in box.get("speakers", {}).items():
+        if isinstance(info, dict) and "world_icon" in info:
+            errs.append(f"data/eco_text_box.json: speakers.{sid}.world_icon (sin iconos de Eco por mundo)")
+    for k in ("FRAMES_TRES_W4", "ICON_W4", "animations_w4", "frame_w4"):
+        if hasattr(gen, k):
+            errs.append(f"tools/gen_eco_companion.py: {k} (variante de Eco por mundo)")
+    for rel in ("assets/sprites/eco_companion_w4_frames.tres", "assets/sprites/eco/eco_icon_w4.png"):
+        if os.path.exists(os.path.join(REPO, rel)):
+            errs.append(f"{rel}: sobra (Eco es igual en todos los mundos)")
+    return errs
+
 
 def main():
     pal_m1 = load_gpl(os.path.join(REPO, "assets/palettes/mundo1.gpl"), FORBIDDEN_M1)
@@ -59,12 +91,6 @@ def main():
             continue
         amber = "_amber_" in base or "_glow_in_" in base
         pal = pal_hub if "_dim_" in base else (pal_amber if amber else pal_m1)
-        if base.startswith("eco_w4_") and not amber:
-            # Tres puntos del Mundo 4: cian de Isak, contorno noche y destellos blancos (gen.W4_COLORS).
-            pal = set(gen.W4_COLORS)
-        elif base.startswith("eco_w4_glow_in_"):
-            # La transicion al ambar parte de los puntos cian.
-            pal = pal_amber | gen.W4_COLORS
         if amber:
             used = {c[:3] for c in expected.getdata() if c[3] == 255}
             if AMBER not in used or ("_amber_" in base and AMBER_SHADOW not in used):
@@ -77,14 +103,6 @@ def main():
                for p in glob.glob(os.path.join(REPO, "assets/sprites", gen.OUT_DIR, "*.png"))}
     for extra in sorted(on_disk - set(imgs)):
         errs.append(f"{extra}: sobra (no lo genera tools/gen_eco_companion.py)")
-    icon_path = os.path.join(REPO, gen.ICON_W4)
-    icon = gen.icon_w4()
-    if not os.path.exists(icon_path):
-        errs.append(f"{gen.ICON_W4}: falta (regenera con tools/gen_eco_companion.py)")
-    elif Image.open(icon_path).convert("RGBA").tobytes() != icon.tobytes():
-        errs.append(f"{gen.ICON_W4}: no coincide con tools/gen_eco_companion.py (regenera)")
-    if not {c[:3] for c in icon.getdata() if c[3] == 255} <= gen.W4_COLORS:
-        errs.append(f"{gen.ICON_W4}: solo usa los colores de los puntos del Mundo 4")
     tres = os.path.join(REPO, gen.FRAMES_TRES)
     if not os.path.exists(tres):
         errs.append(f"{gen.FRAMES_TRES}: no existe")
@@ -92,18 +110,8 @@ def main():
         with open(tres, encoding="utf-8") as fh:
             if fh.read() != sprite_frames_tres(gen.animations()):
                 errs.append(f"{gen.FRAMES_TRES}: no coincide con tools/gen_eco_companion.py (regenera)")
-    # Eco del Mundo 4 (paso 11 de docs/propuesta-mundo-4.md): su SpriteFrames con los tres puntos.
-    tres_w4 = os.path.join(REPO, gen.FRAMES_TRES_W4)
-    if not os.path.exists(tres_w4):
-        errs.append(f"{gen.FRAMES_TRES_W4}: no existe")
-    else:
-        with open(tres_w4, encoding="utf-8") as fh:
-            if fh.read() != sprite_frames_tres(gen.animations_w4()):
-                errs.append(f"{gen.FRAMES_TRES_W4}: no coincide con tools/gen_eco_companion.py (regenera)")
-        names = [a[0] for a in gen.animations()]
-        if [a[0] for a in gen.animations_w4()] != names:
-            errs.append(f"{gen.FRAMES_TRES_W4}: no tiene las mismas animaciones que {gen.FRAMES_TRES}")
-    print("\n".join(errs) if errs else f"OK ({len(imgs)} PNG, {gen.FRAMES_TRES} y {gen.FRAMES_TRES_W4})")
+    errs += check_same_eco_everywhere()
+    print("\n".join(errs) if errs else f"OK ({len(imgs)} PNG y {gen.FRAMES_TRES})")
     return 1 if errs else 0
 
 

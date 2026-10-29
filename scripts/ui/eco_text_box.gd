@@ -677,16 +677,6 @@ func _update_hint() -> void:
 	_hint.modulate.a = OPAQUE if phase < HINT_ON_FRACTION else TRANSPARENT
 
 
-## Mundo del nivel que contiene el cuadro (0 fuera de un nivel generado, p. ej. el hub).
-func _level_world() -> int:
-	var n: Node = get_parent()
-	while n != null:
-		if n is GeneratedLevel:
-			return (n as GeneratedLevel).world
-		n = n.get_parent()
-	return 0
-
-
 ## Icono de Eco que usa el cuadro ahora (pruebas).
 func get_icon_texture() -> Texture2D:
 	return _icon.texture
@@ -700,16 +690,13 @@ func _apply_speaker(id: StringName) -> void:
 	_speaker_id = id if not info.is_empty() else &""
 	if info.is_empty():
 		_speaker.text = c.speaker_name
-		_icon.texture = c.eco_icon_texture(_level_world())
+		_icon.texture = c.asset_texture(ICON_ASSET)
 		(_speaker.material as ShaderMaterial).set_shader_parameter(&"target_color", c.color(&"speaker"))
 		_apply_style(&"", {})
 		return
 	_speaker.text = String(info.get("name", c.speaker_name))
 	var icon_path: String = String(info.get("icon", ""))
 	_icon.texture = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else c.asset_texture(ICON_ASSET)
-	# Eco a traves de un jefe (eco_boss, world_icon): en un mundo con icono propio de Eco, ese (Mundo 4: puntos).
-	if bool(info.get("world_icon", false)) and c.world_icons.has(str(_level_world())):
-		_icon.texture = c.eco_icon_texture(_level_world())
 	(_speaker.material as ShaderMaterial).set_shader_parameter(&"target_color",
 		Color.html(String(info.get("color", "#9bb0e8"))))
 	var style_id := StringName(String(info.get("style", "")))

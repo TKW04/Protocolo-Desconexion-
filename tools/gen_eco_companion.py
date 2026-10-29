@@ -38,16 +38,9 @@ scripts/levels/eco_companion.gd), no los cuadros.
   animacion: EcoCompanion lo superpone (world_frames de data/eco_companion.json) en los niveles de ese mundo
   mientras la esfera esta entera (idle, talk, notice y sus _amber).
 
-- Eco del Mundo 4 (2026-10-28, paso 11 de docs/propuesta-mundo-4.md §6.3; docs/04-personajes.md §12.1: «tres
-  puntos de escribiendo…, sin cuerpo»): eco_w4_<anim>[_amber]_NN.png, tres puntos en fila (sin esfera, sin
-  burbuja) en el cian de la ropa de Isak (nucleo #29defa, borde #36c0d4, contorno noche; desde el 2026-10-28,
-  antes blanco y azul luz como la esfera, que se confundia con el «escribiendo…» crema) y la misma variante
-  ambar de la Q. idle: los puntos laten de uno en uno (el 4.º cuadro, quietos);
-  talk: botan por turnos; notice: los tres grandes con destello; appear: chispa y los puntos de uno en uno;
-  glow_in: como el de la esfera. Sin variante _dim (el hub sigue con la esfera atenuada). Escribe ademas
-  assets/sprites/eco_companion_w4_frames.tres con las mismas animaciones (las _dim apuntan a las de la
-  esfera); EcoCompanion lo carga en los niveles del Mundo 4 (world_sprite_frames de data/eco_companion.json).
-  Se distinguen del «escribiendo…» del nivel: aquellos son crema dentro de una burbuja con contorno.
+- Eco igual en todos los mundos (decision del usuario 2026-10-29; docs/04-personajes.md §12.1): las formas
+  por mundo (los tres puntos del Mundo 4 del 2026-10-28) quedan descartadas; solo la esfera (y el marco del
+  Mundo 3, que es parte de la referencia de los Mundos 1-3).
 
 Colores: normal solo de assets/palettes/mundo1.gpl (noche_profunda, cielo,
 resplandor, borde_luz, banner_blanco; sin rojos, carmin ni ambar), _amber y
@@ -87,10 +80,6 @@ M1 = load_gpl(os.path.join(REPO, "assets/palettes/mundo1.gpl"))
 HUB = load_gpl(os.path.join(REPO, "assets/palettes/hub.gpl"))
 M3_GPL = "assets/palettes/mundo3.gpl"
 FRAME_W3 = "%s/eco_frame_w3_00.png" % OUT_DIR
-FRAMES_TRES_W4 = "assets/sprites/eco_companion_w4_frames.tres"
-# Tres puntos del Mundo 4: centros (x) a la altura CY, radio normal y radio del que late.
-W4_DOTS_X = (8.0, 16.0, 24.0)
-W4_R, W4_R_BIG = 2.6, 3.6
 
 # Papeles de color -> color de la paleta (normal: Mundo 1; dim: hub, apagado).
 ROLES = {
@@ -142,22 +131,6 @@ ROLES = {
         "gleam": M1["banner_blanco"],
     },
 }
-
-# Tres puntos del Mundo 4 (2026-10-28, arreglo de las capturas del paso 22): el cian de la ropa de Isak (el de
-# ECO_DOTS de tools/palette_mundo4_provisional.py, regla 3 de §6.1), no el blanco de la esfera: el «escribiendo…»
-# del nivel es crema y se confundian. Nucleo #29defa, borde #36c0d4, contorno noche y destellos blancos.
-W4_CYAN = (0x29, 0xde, 0xfa, 255)
-W4_CYAN_SHADE = (0x36, 0xc0, 0xd4, 255)
-ROLES["w4"] = {
-    "outline": M1["noche_profunda"],
-    "rim": W4_CYAN_SHADE,
-    "core": W4_CYAN,
-    "spark_core": M1["banner_blanco"],
-    "spark_arm": W4_CYAN,
-    "halo": W4_CYAN_SHADE,
-    "halo_soft": W4_CYAN_SHADE,
-}
-W4_COLORS = {c[:3] for c in ROLES["w4"].values()}
 
 # Orbita: radio, arcos, apertura de cada arco (grados) y giro por cuadro. Con
 # tres arcos el dibujo se repite cada 120 grados: 4 cuadros x 30 = bucle limpio.
@@ -385,108 +358,6 @@ def frame_w3():
     return cv.img
 
 
-def _dot(cv, col, cx, cy, r):
-    for y in range(SIZE):
-        for x in range(SIZE):
-            d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
-            if d < r - 1.0:
-                cv.p(x, y, col["core"])
-            elif d < r:
-                cv.p(x, y, col["rim"])
-            elif d < r + 1.0 and cv.get(x, y)[3] == 0:
-                cv.p(x, y, col["outline"])
-
-
-def _dot_halo(cv, color, cx, cy, r):
-    for y in range(SIZE):
-        for x in range(SIZE):
-            d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
-            if r + 1.0 <= d < r + 2.0 and cv.get(x, y)[3] == 0:
-                cv.p(x, y, color)
-
-
-def frame_w4(anim, f, variant):
-    """Eco del Mundo 4: tres puntos en fila (ver el encabezado)."""
-    col = ROLES["w4" if variant == "normal" else variant]
-    cv = Canvas(SIZE, SIZE)
-    if anim == "glow_in":
-        normal = frame_w4("idle", 0, "normal")
-        amber = frame_w4("idle", 2, "amber")
-        if f == 0:
-            cv.img.alpha_composite(normal)
-            cv.px = cv.img.load()
-            for x, y in ((4, 9), (27, 9), (4, 23), (27, 23)):
-                spark(cv, ROLES["amber"], x, y, 1)
-            return cv.img
-        if f == 1:
-            return blend(normal, amber, lambda x, y: (x + y) % 2 == 0)
-        cv.img.alpha_composite(amber)
-        cv.px = cv.img.load()
-        for cx in W4_DOTS_X:
-            _dot_halo(cv, ROLES["amber"]["halo"], cx, CY, W4_R)
-        return cv.img
-    dots = []  # (cx, cy, r)
-    if anim == "idle":
-        for i, cx in enumerate(W4_DOTS_X):
-            big = f < 3 and i == f
-            dots.append((cx, CY - (1 if big else 0), W4_R_BIG if big else W4_R))
-    elif anim == "talk":
-        for i, cx in enumerate(W4_DOTS_X):
-            dots.append((cx, CY - (2 if i == f else 0), W4_R))
-    elif anim == "notice":
-        for cx in W4_DOTS_X:
-            dots.append((cx, CY, W4_R_BIG if f == 0 else W4_R + 0.5))
-    elif anim == "appear":
-        if f == 0:
-            spark(cv, col, int(CX), int(CY), 3)
-            return cv.img
-        for cx in W4_DOTS_X[:f]:
-            dots.append((cx, CY, W4_R))
-    for cx, cy, r in dots:
-        _dot(cv, col, cx, cy, r)
-    if anim == "idle" and variant == "amber" and AMBER_PULSE[f] is not None:
-        for cx, cy, r in dots:
-            _dot_halo(cv, col[AMBER_PULSE[f]], cx, cy, r)
-    elif anim == "talk" and variant == "amber":
-        for cx, cy, r in dots:
-            _dot_halo(cv, col["halo_soft"], cx, cy, r)
-    elif anim == "notice":
-        for cx, cy, r in dots:
-            _dot_halo(cv, col["halo"] if f == 0 else col["halo_soft"], cx, cy, r)
-        if f == 0:
-            spark(cv, col, 27, 7, 2)
-        else:
-            cv.p(27, 7, col["spark_arm"])
-    return cv.img
-
-
-# Icono del cuadro de texto en el Mundo 4 (16x16; world_icons de data/eco_text_box.json): los tres puntos cian en
-# lugar de la esfera de assets/sprites/ui/eco_icon.png. Lo escribe main() aparte de outputs() (no es un cuadro
-# de 32x32 del companero).
-ICON_W4 = "assets/sprites/eco/eco_icon_w4.png"
-ICON_W4_SIZE = 16
-
-
-def icon_w4():
-    col = ROLES["w4"]
-    cv = Canvas(ICON_W4_SIZE, ICON_W4_SIZE)
-    for cx in (3.5, 8.0, 12.5):
-        for y in range(ICON_W4_SIZE):
-            for x in range(ICON_W4_SIZE):
-                d = math.hypot(x + 0.5 - cx, y + 0.5 - 8.0)
-                if d < 1.3:
-                    cv.p(x, y, col["core"])
-                elif d < 2.2:
-                    cv.p(x, y, col["rim"])
-                elif d < 3.0 and cv.get(x, y)[3] == 0:
-                    cv.p(x, y, col["outline"])
-    return cv.img
-
-
-def w4_name(anim, variant):
-    return "%s/eco_w4_%s_%%02d.png" % (OUT_DIR, anim_name(anim, variant))
-
-
 def anim_name(anim, variant):
     return anim + SUFFIX[variant]
 
@@ -501,12 +372,6 @@ def outputs():
             for f in range(count):
                 out["%s/eco_%s_%02d.png" % (OUT_DIR, anim_name(anim, variant), f)] = frame(anim, f, variant)
     out[FRAME_W3] = frame_w3()
-    for variant in ("normal", "amber"):
-        for anim, count, _fps, _loop, variants in ANIMS:
-            if variant not in variants:
-                continue
-            for f in range(count):
-                out[w4_name(anim, variant) % f] = frame_w4(anim, f, variant)
     return out
 
 
@@ -527,17 +392,6 @@ def animations():
             src = anim_name(source, variant)
             paths = ["res://assets/sprites/%s/eco_%s_%02d.png" % (OUT_DIR, src, i) for i in reversed(range(entry[1]))]
             anims.append((anim_name(target, variant), paths, fps, loop))
-    return anims
-
-
-def animations_w4():
-    """SpriteFrames del Eco del Mundo 4: las mismas animaciones con los tres puntos (las _dim, las de la esfera)."""
-    anims = []
-    for name, paths, fps, loop in animations():
-        if name.endswith("_dim"):
-            anims.append((name, paths, fps, loop))
-            continue
-        anims.append((name, [p.replace("/eco_", "/eco_w4_", 1) for p in paths], fps, loop))
     return anims
 
 
@@ -572,10 +426,6 @@ def main(argv):
             im.save(p)
         with open(os.path.join(REPO, FRAMES_TRES), "w", encoding="utf-8") as fh:
             fh.write(sprite_frames_tres(animations()))
-        with open(os.path.join(REPO, FRAMES_TRES_W4), "w", encoding="utf-8") as fh:
-            fh.write(sprite_frames_tres(animations_w4()))
-        os.makedirs(os.path.dirname(os.path.join(REPO, ICON_W4)), exist_ok=True)
-        icon_w4().save(os.path.join(REPO, ICON_W4))
     if "--preview" in argv:
         preview(argv[argv.index("--preview") + 1],
                 int(argv[argv.index("--scale") + 1]) if "--scale" in argv else 8)

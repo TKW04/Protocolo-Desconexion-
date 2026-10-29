@@ -91,7 +91,7 @@ Un doble check gigante con aura fantasmal. Es la ausencia convertida en monstruo
 
 Resumen de lo que hay en el juego. El diseño completo, los desvíos y cada decisión están en [propuesta-mundo-4.md](propuesta-mundo-4.md) (§8 y §8.1); lo pendiente, en [08-pendientes.md](08-pendientes.md); lo que hay que revisar al probar, en [preguntas.md](preguntas.md) («Mundo 4: lo que el usuario debe revisar al probar»).
 
-**Todo el arte del Mundo 4 es PROVISIONAL, por script** (burbujas, zonas, ola, Linterna, Modo oscuro, enemigos, El Visto con `_placeholder` en el Troll y el jefe; Eco de tres puntos). El arte final con AutoSprite es el paso 24 y solo se hará con el permiso y el total previo del usuario, cuando los niveles y el jefe estén probados. **Todos los textos son propuestos.**
+**Todo el arte del Mundo 4 es PROVISIONAL, por script** (burbujas, zonas, ola, Linterna, Modo oscuro, enemigos, El Visto con `_placeholder` en el Troll y el jefe; ~~Eco de tres puntos~~: desde el 2026-10-29, decisión del usuario, Eco es la esfera de siempre, igual en todos los mundos). El arte final con AutoSprite es el paso 24 y solo se hará con el permiso y el total previo del usuario, cuando los niveles y el jefe estén probados. **Todos los textos son propuestos.**
 
 **Hecho (pasos 0-22; faltan la suite completa, a petición del usuario, el paso 23 —lista de revisión, ya escrita en `preguntas.md`— y el arte final del 24):**
 - **Paleta** variante B «Pantalla a las 3:47» (`assets/palettes/mundo4.gpl`), Debug coral `#ff9f7a`.

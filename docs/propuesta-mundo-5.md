@@ -41,7 +41,7 @@
 | Mensajes de secretos | 3 por mundo en Caché; reaparecen en Kernel y Raíz; requisito del final real. | **Decisión del usuario** (§10.2): remitente; recomendación, **el Abuelito** (el hilo de las radios). Borradores en §4.5. |
 | Hub | Carpeta M5 en la página 2 (columna 14); **quinta pieza en blanco** al completar el mundo; M6 con `5-boss`. | Filas del panel, `available_text`, miniatura, línea de Calc, el momento del **fondo completo** (§4.6). |
 | Vidas, power banks, puntos | Vida extra cada 3 mapas (1-1, 2-1, 3-1, 4-1): **la siguiente va en el 5-1**. ≈ 9 puntos por mapa. Al menos un power bank por mundo y vuelta. | **12 puntos por mapa** (9 + 3 «para tentar»), 3 power banks, vida extra en el 5-1 (§4). |
-| Eco | «Silueta de vendedor hecha de luz» (`04` §12.1). | Variante del compañero en los niveles del Mundo 5 y cómo no se confunde con los carteles (§6.3). |
+| Eco | ~~«Silueta de vendedor hecha de luz» (`04` §12.1).~~ **Decisión del usuario 2026-10-29: Eco se ve igual en todos los mundos** (la esfera de los Mundos 1-3). | ~~Variante del compañero en los niveles del Mundo 5~~ (descartada; §6.3). |
 
 ---
 
@@ -664,7 +664,7 @@ Precios: personaje 3, pose 3, animación turbo 5, `upload_character` y `regenera
 - `tools/gen_world5_background.py`: fondo horizontal en capas (escaparates con maniquíes, precios que parpadean, escaleras mecánicas al fondo; sin costura).
 - `tools/gen_world5_objects.py`: Oferta (de pie y colgada, precio tachado en magenta), cajas (cerradas, translúcidas con el Debug, abiertas, con sus iconos), tienda y productos con etiqueta, puerta de atajo con sus iconos de trampa, cuenta regresiva (cartel de 5 segmentos), Términos y condiciones (botón enorme y diminuto), persiana, ranura de precios, estanterías de saldos (en pie, tumbada, reponiéndose), «Prueba gratis», lista de deseos y sus objetos, tachón, caja registradora de Calc, mostrador de Devoluciones, puerta «Pagar», carteles, miniaturas de nivel, `world_icon_m5`.
 - `tools/gen_world5_enemies.py`: Suscripción provisional, Oferta animada (latido y aturdida).
-- `tools/gen_eco_companion.py`: variante del Mundo 5 de Eco: **silueta de vendedor hecha de luz** (`04` §12.1), en el **cian de Isak** con el halo dorado de la Q (decisión del Mundo 4: los compañeros de Isak van en su cian), **sin precio ni cartel**: así no se confunde con una Oferta (amarilla, con cartel y precio).
+- ~~`tools/gen_eco_companion.py`: variante del Mundo 5 de Eco: silueta de vendedor hecha de luz (`04` §12.1), en el cian de Isak con el halo dorado de la Q (decisión del Mundo 4: los compañeros de Isak van en su cian), sin precio ni cartel: así no se confunde con una Oferta (amarilla, con cartel y precio).~~ **Descartada (decisión del usuario 2026-10-29: Eco se ve igual en todos los mundos, `04` §12.1):** en el Mundo 5 Eco es la esfera de los Mundos 1-3; `tools/validate_eco_companion.py` falla si un mundo declara otra variante.
 - `tools/gen_boss_vendor.py`: piezas de interfaz del jefe y cuerpo provisional.
 - `tools/gen_hub_update_art.py` / `tools/gen_hub_piece_w5.py`: la quinta pieza con el blanco elegido y el destello del fondo completo; `tools/gen_hub_objects.py`: la apertura del candado.
 - **Poses de combo provisionales** (sin hoja): por transformación del sprite en `tools/build_isak_frames.gd`, como la pose `dash` antes de su hoja.
