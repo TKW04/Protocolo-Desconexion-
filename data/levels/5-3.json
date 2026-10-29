@@ -1,0 +1,573 @@
+{
+	"_notes": "",
+	"id": "5-3",
+	"name": "Última oportunidad",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"target_duration_s": 600,
+	"difficulty": 5,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"combo": true
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0,
+		"laser_required": true,
+		"climbs_open_boxes": true
+	},
+	"sections": [
+		{
+			"name": "Inicio «Rebajas finales»",
+			"x_from": 0,
+			"x_to": 19
+		},
+		{
+			"name": "Tramo 1 «Solo por hoy»",
+			"x_from": 20,
+			"x_to": 100,
+			"patterns": [
+				"falsa_urgencia"
+			]
+		},
+		{
+			"name": "Tramo 2 «Cajas en cadena»",
+			"x_from": 101,
+			"x_to": 181,
+			"patterns": [
+				"mirar_o_no"
+			]
+		},
+		{
+			"name": "Pausa",
+			"x_from": 182,
+			"x_to": 186
+		},
+		{
+			"name": "Tramo 3 «Todo a la vez»",
+			"x_from": 187,
+			"x_to": 272,
+			"patterns": [
+				"resistir",
+				"a_la_vez"
+			]
+		},
+		{
+			"name": "Pausa",
+			"x_from": 273,
+			"x_to": 277
+		},
+		{
+			"name": "Tramo 4 «Lista de deseos»",
+			"x_from": 278,
+			"x_to": 304
+		},
+		{
+			"name": "Cierre «Pago realizado»",
+			"x_from": 305,
+			"x_to": 314
+		}
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 184,
+			"y": 11
+		},
+		{
+			"id": "sync_2",
+			"x": 275,
+			"y": 6
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_ultima_caja",
+			"x": 101,
+			"y": 8,
+			"object": "surprise_box",
+			"reward": "attention_points",
+			"points": 1,
+			"gates": [
+				"caja_secreto_c"
+			],
+			"note": "C. La ultima caja (§4.3.1): repisa al final de la B2 del Tramo 2 (columnas 101-103), al otro lado del hueco de 3 columnas por el que se baja al suelo; pide salto + dash aereo (energia de sobra en un tramo sin cargador); la caja de 1 punto se abre con el pulso de cara."
+		},
+		{
+			"id": "secreto_trastienda",
+			"x": 271,
+			"y": 2,
+			"object": "power_bank_pickup",
+			"reward": "power_bank",
+			"note": "B. Trastienda (§4.3.1): encima de la salida del atajo con trampa, un almacen a oscuras (dark_zone, columnas 264-271, filas 1-4) al que solo se sube por un paso en tinta (ink_only, columnas 265-266, fila 4) que se ve con la Linterna; dentro, el power bank."
+		},
+		{
+			"id": "secreto_tachon",
+			"x": 273,
+			"y": 3,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 1,
+			"memory_id": "msg_5_3",
+			"needs_debug": true,
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "A. Tachon (§4.3.1): encima de la Pausa de la lista de deseos, el cuarto del tachon «arreglar la radio del Abuelito» (wish_strike, solo con el Debug; columna 275, filas 2-3); se llega parandose en la plataforma de una via de las columnas 276-277 (fila 5), antes del primer deseo; detras, msg_5_3 del Abuelito y 1 punto. Ruta sin dash."
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "5-boss"
+		}
+	],
+	"grid": [
+		"###########################################################################################################################################################################################################################################################################################################################",
+		"#...................................................................................................#...........###...........###...........###......................................#...........................................................#..............................####......................................#",
+		"#...................................................................................................#...........###...........###...........###......................................#...........................................................#..............................#.........................................#",
+		"#...................................................................................................#...........###...........###...........###......................................#..................................########...........................................######So.......................................#",
+		"#...............................................................................................................###...........###...........###......................................#...................................................#.......................................###......................................#",
+		"#.............................................................E...o..................................................................................................................#..............................E....................#..........................................--....................................#",
+		"#.........................------------------------..........----------------......------------------#---------------------------------###------------###------------###-------.......#...........----------------------------------------------------------------------------#--...C...........o...........o.......o...G..#",
+		"#.......................--..........................................................................#.................................###............###............###..............#.........--............................................................................#..######...........................##########",
+		"#......................................E...........................E................................#................................................................................#.............................E.........................................................#-.######.........................-.##########",
+		"#.........................----------------......----------------------......---------------------...####...-----------------------------------###------------------------------------#...........-------------------------------------------------------------------------......######...........................##########",
+		"#.................................................................................................--#.........................................###.................................................................................................................E....E...--..-######..........................-##########",
+		"#..P........o...................................o...................................................#...................................................................................C....o.o...............E................................................................######^^^^^^^^^^^^^^^^^^^^^^^^^..##########",
+		"################################.......###############..........################.......####################################################################################################################################################################################################################################",
+		"################################.......###############..........################.......####################################################################################################################################################################################################################################"
+	],
+	"objects": [
+		{
+			"type": "flashlight_pickup",
+			"x": 1,
+			"y": 11,
+			"params": {
+				"id": "linterna_5_3"
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 34,
+			"y": 12,
+			"params": {
+				"id": "cuenta_foso_1",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 56,
+			"y": 12,
+			"params": {
+				"id": "cuenta_foso_2a",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 60,
+			"y": 12,
+			"params": {
+				"id": "cuenta_foso_2b",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 82,
+			"y": 12,
+			"params": {
+				"id": "cuenta_foso_3",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 72,
+			"y": 9,
+			"params": {
+				"id": "cuenta_b2_1",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 44,
+			"y": 9,
+			"params": {
+				"id": "cuenta_b2_2",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 52,
+			"y": 6,
+			"params": {
+				"id": "cuenta_b3_a",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 56,
+			"y": 6,
+			"params": {
+				"id": "cuenta_b3_b",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 78,
+			"y": 6,
+			"params": {
+				"id": "cuenta_b3_c",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "charger",
+			"x": 96,
+			"y": 5,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 111,
+			"y": 5,
+			"params": {
+				"id": "caja_g1_1",
+				"content": "energy"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 125,
+			"y": 5,
+			"params": {
+				"id": "caja_g1_2",
+				"content": "points",
+				"amount": 2
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 139,
+			"y": 5,
+			"params": {
+				"id": "caja_g1_3",
+				"content": "subscription"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 167,
+			"y": 8,
+			"params": {
+				"id": "caja_g2_1",
+				"content": "empty"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 152,
+			"y": 8,
+			"params": {
+				"id": "caja_g2_2",
+				"content": "offer"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 137,
+			"y": 8,
+			"params": {
+				"id": "caja_g2_3",
+				"content": "energy"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 141,
+			"y": 11,
+			"params": {
+				"id": "caja_g3_1",
+				"content": "energy"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 101,
+			"y": 8,
+			"params": {
+				"id": "caja_secreto_c",
+				"content": "points",
+				"amount": 1
+			}
+		},
+		{
+			"type": "charger",
+			"x": 185,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "shortcut_door",
+			"x": 269,
+			"y": 9,
+			"params": {
+				"id": "atajo_verificando",
+				"trap": "processing",
+				"height_tiles": 3
+			}
+		},
+		{
+			"type": "shop_item",
+			"x": 198,
+			"y": 11,
+			"params": {
+				"id": "tienda_sync",
+				"product": "sync"
+			}
+		},
+		{
+			"type": "shop_item",
+			"x": 195,
+			"y": 11,
+			"params": {
+				"id": "tienda_energia",
+				"product": "energy"
+			}
+		},
+		{
+			"type": "terms_gate",
+			"x": 241,
+			"y": 3,
+			"params": {
+				"id": "terminos_t3",
+				"side": "left",
+				"height_tiles": 3
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 217,
+			"y": 4,
+			"params": {
+				"id": "saldos_t3_1",
+				"group": "saldos_t3",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 222,
+			"y": 4,
+			"params": {
+				"id": "saldos_t3_2",
+				"group": "saldos_t3",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "dark_zone",
+			"x": 264,
+			"y": 1,
+			"params": {
+				"id": "trastienda",
+				"width_tiles": 8,
+				"height_tiles": 4
+			}
+		},
+		{
+			"type": "ink_only",
+			"x": 265,
+			"y": 4,
+			"params": {
+				"id": "trastienda_paso",
+				"kind": "step",
+				"width_tiles": 2
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 271,
+			"y": 2,
+			"params": {
+				"id": "power_bank_5_3"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 274,
+			"y": 6,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "wish_strike",
+			"x": 275,
+			"y": 2,
+			"params": {
+				"id": "tachon_radio",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 273,
+			"y": 3,
+			"params": {
+				"id": "mensaje_5_3",
+				"memory_id": "msg_5_3"
+			}
+		},
+		{
+			"type": "wishlist_platform",
+			"x": 281,
+			"y": 7,
+			"params": {
+				"id": "deseo_reloj",
+				"width_tiles": 3,
+				"item": "watch"
+			}
+		},
+		{
+			"type": "wishlist_platform",
+			"x": 287,
+			"y": 7,
+			"params": {
+				"id": "deseo_curso",
+				"width_tiles": 3,
+				"item": "course"
+			}
+		},
+		{
+			"type": "wishlist_platform",
+			"x": 293,
+			"y": 7,
+			"params": {
+				"id": "deseo_cascos",
+				"width_tiles": 3,
+				"item": "headphones"
+			}
+		},
+		{
+			"type": "wishlist_platform",
+			"x": 299,
+			"y": 7,
+			"params": {
+				"id": "deseo_reloj_2",
+				"width_tiles": 3,
+				"item": "watch"
+			}
+		},
+		{
+			"type": "eco_line",
+			"x": 308,
+			"y": 3,
+			"params": {
+				"id": "eco_cierre_5_3",
+				"text": "¿Ves? Ya no tienes que elegir nada.",
+				"duration_s": 4.0,
+				"height_tiles": 4
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 311,
+			"y": 5,
+			"params": {
+				"id": "terminal_pagar",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"skin": "checkout",
+				"offline_text": "Pago realizado. Gracias por elegirnos."
+			}
+		}
+	],
+	"enemies": [
+		{
+			"id": "oferta_b2_1",
+			"type": "offer_sign",
+			"x": 67,
+			"y": 8
+		},
+		{
+			"id": "oferta_b2_2",
+			"type": "offer_sign",
+			"x": 39,
+			"y": 8
+		},
+		{
+			"id": "oferta_b3",
+			"type": "offer_sign",
+			"x": 62,
+			"y": 5
+		},
+		{
+			"id": "oferta_t3_suelo",
+			"type": "offer_sign",
+			"x": 207,
+			"y": 11
+		},
+		{
+			"id": "suscripcion_t3_a",
+			"type": "subscription",
+			"x": 263,
+			"y": 10
+		},
+		{
+			"id": "suscripcion_t3_b",
+			"type": "subscription",
+			"x": 258,
+			"y": 10
+		},
+		{
+			"id": "oferta_t3_b2",
+			"type": "offer_sign",
+			"x": 211,
+			"y": 8
+		},
+		{
+			"id": "oferta_t3_b3",
+			"type": "offer_sign",
+			"x": 212,
+			"y": 5
+		}
+	]
+}

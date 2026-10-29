@@ -7,7 +7,7 @@
 # «Prueba gratis» que da la Combinacion, la persiana de la salida solida hasta la
 # Embestida, el secreto A (Calc tras la pared con glitch), el punto de
 # sincronizacion, la puerta «Pagar» -> hub con el 5-2 completado y el 5-3
-# desbloqueado («Próximamente») y la carpeta del Mundo 5 con el 5-2 jugable tras
+# desbloqueado (jugable desde el paso 14) y la carpeta del Mundo 5 con el 5-2 jugable tras
 # el 5-1. La ruta completa la comprueban tools/validate_level.py
 # (tests/test_level_5_2.py) y el bot de la tienda (tests/test_mall_bot.gd); aqui
 # Isak se coloca en cada punto. Usa su propia ruta de guardado (nunca
@@ -238,7 +238,7 @@ func test_checkout_door_completes_the_level() -> void:
 	assert_true(_main.is_in_hub(), "Vuelve al hub")
 	assert_true(GameState.is_level_completed(&"5-2"), "5-2 en completed_levels")
 	assert_true(GameState.is_level_unlocked(&"5-3"), "Desbloquea la fila del 5-3")
-	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[2]), "El 5-3, «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[2]), "El 5-3, jugable (paso 14)")
 
 
 func test_world_5_folder_lists_5_2_after_5_1_and_loads_it() -> void:
@@ -255,8 +255,8 @@ func test_world_5_folder_lists_5_2_after_5_1_and_loads_it() -> void:
 	var panel: FolderPanel = folder.get_folder_panel()
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m5"))
 	assert_false(HubWorlds.is_coming_soon(levels[1]), "El 5-2 se juega")
-	for i: int in [2, 3]:
-		assert_true(HubWorlds.is_coming_soon(levels[i]), "%s «Próximamente»" % levels[i]["id"])
+	assert_false(HubWorlds.is_coming_soon(levels[2]), "5-3 jugable (paso 14)")
+	assert_true(HubWorlds.is_coming_soon(levels[3]), "El Vendedor «Próximamente»")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"5-2"))
 	panel.confirm()

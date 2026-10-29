@@ -2380,7 +2380,9 @@ class LevelValidator:
         el modelo de techo del paso 10) y, desde el paso 9 de docs/propuesta-1-3.md, dash_required (ids
         de banners cuyo pasillo SOLO se cruza con el dash) y, desde el 2026-10-20 (bot del 1-3),
         hazard_margin_s (0-0,5: holgura de tiempo frente a banners, campanas y plataformas que parpadean
-        en la busqueda por tiempo; 0 por defecto)."""
+        en la busqueda por tiempo; 0 por defecto) y, desde el paso 14 del Mundo 5 (2026-10-29),
+        climbs_open_boxes (booleano: tools/level_climbs.py mide las subidas con las cajas sorpresa abiertas y
+        Terminos y condiciones rechazados, como en el 5-3, cuyas cajas tapan el camino)."""
         if "validation" not in self.level:
             return
         val = self.level["validation"]
@@ -2395,7 +2397,7 @@ class LevelValidator:
                 lo, hi = numbers[key]
                 if isinstance(value, bool) or not isinstance(value, (int, float)) or not lo <= value <= hi:
                     self.error("validation.%s debe ser un numero entre %g y %g" % (key, lo, hi))
-            elif key in ("laser_required", "debug_required"):
+            elif key in ("laser_required", "debug_required", "climbs_open_boxes"):
                 if not isinstance(value, bool):
                     self.error("validation.%s debe ser un booleano" % key)
             elif key == "snooze_required":

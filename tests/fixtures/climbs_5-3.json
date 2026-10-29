@@ -1,0 +1,584 @@
+{
+ "format": "isak-climbs/1",
+ "level": "5-3",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "98,11->98,9",
+   "section": "Tramo 1 «Solo por hoy»",
+   "from": {
+    "cell": [
+     98,
+     11
+    ],
+    "ledge": [
+     87,
+     99
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     98,
+     9
+    ],
+    "ledge": [
+     98,
+     99
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 6336.0,
+   "target_x_px": 6336.0,
+   "debug": false
+  },
+  {
+   "id": "267,11->267,9",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     267,
+     11
+    ],
+    "ledge": [
+     145,
+     268
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     267,
+     9
+    ],
+    "ledge": [
+     267,
+     268
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 17152.0,
+   "target_x_px": 17152.0,
+   "debug": false
+  },
+  {
+   "id": "271,11->271,9",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     271,
+     11
+    ],
+    "ledge": [
+     270,
+     271
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     271,
+     9
+    ],
+    "ledge": [
+     271,
+     271
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 17392.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "304,11->304,9",
+   "section": "Tramo 4 «Lista de deseos»",
+   "from": {
+    "cell": [
+     304,
+     11
+    ],
+    "ledge": [
+     303,
+     304
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     304,
+     9
+    ],
+    "ledge": [
+     304,
+     304
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 19504.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "98,9->96,8",
+   "section": "Tramo 1 «Solo por hoy»",
+   "from": {
+    "cell": [
+     98,
+     9
+    ],
+    "ledge": [
+     98,
+     99
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     96,
+     8
+    ],
+    "ledge": [
+     76,
+     96
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 6272.0,
+   "target_x_px": 6208.0,
+   "debug": false
+  },
+  {
+   "id": "267,9->265,8",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     267,
+     9
+    ],
+    "ledge": [
+     267,
+     268
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     265,
+     8
+    ],
+    "ledge": [
+     193,
+     265
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 17088.0,
+   "target_x_px": 17024.0,
+   "debug": false
+  },
+  {
+   "id": "271,9->270,7",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     271,
+     9
+    ],
+    "ledge": [
+     271,
+     271
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     270,
+     7
+    ],
+    "ledge": [
+     270,
+     270
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "walk",
+   "takeoff_x_px": 17344.0,
+   "target_x_px": null,
+   "debug": false
+  },
+  {
+   "id": "304,9->303,7",
+   "section": "Tramo 4 «Lista de deseos»",
+   "from": {
+    "cell": [
+     304,
+     9
+    ],
+    "ledge": [
+     304,
+     304
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     303,
+     7
+    ],
+    "ledge": [
+     303,
+     303
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 19456.0,
+   "target_x_px": 19456.0,
+   "debug": false
+  },
+  {
+   "id": "26,8->25,6",
+   "section": "Tramo 1 «Solo por hoy»",
+   "from": {
+    "cell": [
+     26,
+     8
+    ],
+    "ledge": [
+     26,
+     41
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     25,
+     6
+    ],
+    "ledge": [
+     24,
+     25
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1664.0,
+   "target_x_px": 1664.0,
+   "debug": false
+  },
+  {
+   "id": "193,8->192,6",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     193,
+     8
+    ],
+    "ledge": [
+     193,
+     265
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     192,
+     6
+    ],
+    "ledge": [
+     191,
+     192
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 12352.0,
+   "target_x_px": 12352.0,
+   "debug": false
+  },
+  {
+   "id": "303,7->301,6",
+   "section": "Tramo 4 «Lista de deseos»",
+   "from": {
+    "cell": [
+     303,
+     7
+    ],
+    "ledge": [
+     303,
+     303
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     301,
+     6
+    ],
+    "ledge": [
+     299,
+     301
+    ],
+    "row": 6
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 19392.0,
+   "target_x_px": 19328.0,
+   "debug": false
+  },
+  {
+   "id": "303,7->305,6",
+   "section": "Tramo 4 «Lista de deseos»",
+   "from": {
+    "cell": [
+     303,
+     7
+    ],
+    "ledge": [
+     303,
+     303
+    ],
+    "row": 7
+   },
+   "to": {
+    "cell": [
+     305,
+     6
+    ],
+    "ledge": [
+     305,
+     313
+    ],
+    "row": 6
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 19456.0,
+   "target_x_px": 19520.0,
+   "debug": false
+  },
+  {
+   "id": "25,6->26,5",
+   "section": "Tramo 1 «Solo por hoy»",
+   "from": {
+    "cell": [
+     25,
+     6
+    ],
+    "ledge": [
+     24,
+     25
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     26,
+     5
+    ],
+    "ledge": [
+     26,
+     49
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1664.0,
+   "target_x_px": 1664.0,
+   "debug": false
+  },
+  {
+   "id": "192,6->193,5",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     192,
+     6
+    ],
+    "ledge": [
+     191,
+     192
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     193,
+     5
+    ],
+    "ledge": [
+     193,
+     232
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 12352.0,
+   "target_x_px": 12352.0,
+   "debug": false
+  },
+  {
+   "id": "277,6->277,4",
+   "section": "Pausa",
+   "from": {
+    "cell": [
+     277,
+     6
+    ],
+    "ledge": [
+     272,
+     277
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     277,
+     4
+    ],
+    "ledge": [
+     276,
+     277
+    ],
+    "row": 4
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 17792.0,
+   "target_x_px": 17792.0,
+   "debug": false
+  },
+  {
+   "id": "232,5->233,3",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     232,
+     5
+    ],
+    "ledge": [
+     193,
+     232
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     233,
+     3
+    ],
+    "ledge": [
+     233,
+     233
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 14896.0,
+   "target_x_px": 14912.0,
+   "debug": false
+  },
+  {
+   "id": "234,5->233,3",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     234,
+     5
+    ],
+    "ledge": [
+     234,
+     271
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     233,
+     3
+    ],
+    "ledge": [
+     233,
+     233
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 14992.0,
+   "target_x_px": 14976.0,
+   "debug": false
+  },
+  {
+   "id": "265,5->265,3",
+   "section": "Tramo 3 «Todo a la vez»",
+   "from": {
+    "cell": [
+     265,
+     5
+    ],
+    "ledge": [
+     234,
+     271
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     265,
+     3
+    ],
+    "ledge": [
+     265,
+     266
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 17024.0,
+   "target_x_px": 17024.0,
+   "debug": false
+  }
+ ]
+}

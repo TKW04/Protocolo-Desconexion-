@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
 [ext_resource type="PackedScene" path="res://scenes/levels/world5_background.tscn" id="2_world5_background"]
@@ -6,13 +6,14 @@
 [ext_resource type="PackedScene" path="res://scenes/levels/attention_point.tscn" id="4_attention_point"]
 [ext_resource type="PackedScene" path="res://scenes/levels/wishlist_platform.tscn" id="5_wishlist_platform"]
 [ext_resource type="PackedScene" path="res://scenes/levels/wish_strike.tscn" id="6_wish_strike"]
-[ext_resource type="PackedScene" path="res://scenes/levels/calc_register.tscn" id="7_calc_register"]
-[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="8_exit_terminal"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/offer_sign.tscn" id="9_offer_sign"]
-[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="10_isak"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="11_hud"]
-[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="12_eco_text_box"]
-[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="13_help_system"]
+[ext_resource type="PackedScene" path="res://scenes/levels/memory_pickup.tscn" id="7_memory_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/levels/calc_register.tscn" id="8_calc_register"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="9_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/offer_sign.tscn" id="10_offer_sign"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="11_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="12_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="13_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="14_help_system"]
 
 [node name="Level_deseos_test" type="Node2D"]
 script = ExtResource("1_generated_level")
@@ -41,8 +42,8 @@ tile_set = ExtResource("3_mundo5")
 position = Vector2(416, 608)
 metadata/help_id = "attention_point"
 
-[node name="Point_32_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
-position = Vector2(2080, 608)
+[node name="Point_32_8" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
+position = Vector2(2080, 544)
 metadata/help_id = "attention_point"
 
 [node name="Point_41_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
@@ -52,6 +53,10 @@ metadata/help_id = "attention_point"
 [node name="Checkpoints" type="Node2D" parent="."]
 
 [node name="Secrets" type="Node2D" parent="."]
+
+[node name="secreto_tachon" type="Marker2D" parent="Secrets" groups=["secret"]]
+position = Vector2(2080, 608)
+metadata/secret_id = "secreto_tachon"
 
 [node name="Objects" type="Node2D" parent="."]
 
@@ -84,13 +89,19 @@ solid_neighbors = 11
 width_tiles = 1
 metadata/help_id = "wish_strike"
 
-[node name="caja_calc_prueba" parent="Objects" instance=ExtResource("7_calc_register") groups=["help_target"]]
+[node name="mensaje_5_3" parent="Objects" instance=ExtResource("7_memory_pickup") groups=["help_target"]]
+position = Vector2(2048, 576)
+object_id = &"mensaje_5_3"
+memory_id = &"msg_5_3"
+metadata/help_id = "memory_pickup"
+
+[node name="caja_calc_prueba" parent="Objects" instance=ExtResource("8_calc_register") groups=["help_target"]]
 position = Vector2(2496, 512)
 height_tiles = 2
 object_id = &"caja_calc_prueba"
 metadata/help_id = "calc_register"
 
-[node name="terminal_deseos" parent="Objects" instance=ExtResource("8_exit_terminal") groups=["help_target"]]
+[node name="terminal_deseos" parent="Objects" instance=ExtResource("9_exit_terminal") groups=["help_target"]]
 position = Vector2(2304, 512)
 height_tiles = 2
 object_id = &"terminal_deseos"
@@ -101,7 +112,7 @@ metadata/help_id = "exit_terminal"
 
 [node name="Enemies" type="Node2D" parent="."]
 
-[node name="oferta_deseos" parent="Enemies" instance=ExtResource("9_offer_sign") groups=["help_target"]]
+[node name="oferta_deseos" parent="Enemies" instance=ExtResource("10_offer_sign") groups=["help_target"]]
 position = Vector2(1312, 704)
 metadata/params = {}
 metadata/help_id = "offer_sign"
@@ -109,13 +120,13 @@ metadata/help_id = "offer_sign"
 [node name="Goal" type="Marker2D" parent="." groups=["goal"]]
 position = Vector2(2336, 640)
 
-[node name="Isak" parent="." instance=ExtResource("10_isak")]
+[node name="Isak" parent="." instance=ExtResource("11_isak")]
 position = Vector2(160, 640)
 camera_limits = Rect2i(0, 0, 2816, 768)
 
-[node name="Hud" parent="." instance=ExtResource("11_hud")]
+[node name="Hud" parent="." instance=ExtResource("12_hud")]
 
-[node name="EcoTextBox" parent="." instance=ExtResource("12_eco_text_box")]
+[node name="EcoTextBox" parent="." instance=ExtResource("13_eco_text_box")]
 
 [node name="Help" type="Node" parent="."]
-script = ExtResource("13_help_system")
+script = ExtResource("14_help_system")

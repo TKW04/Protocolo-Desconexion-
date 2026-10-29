@@ -226,7 +226,7 @@ class Level51Test(unittest.TestCase):
         rows = [(lv["id"], lv["name"], lv["playable"], lv.get("kind"), lv.get("available_text")) for lv in m5["levels"]]
         self.assertEqual(rows, [("5-1", "Oferta del día", True, None, None),
                                 ("5-2", "Prueba gratis", True, None, "Nueva oferta"),
-                                ("5-3", "Última oportunidad", False, None, "Nueva oferta"),
+                                ("5-3", "Última oportunidad", True, None, "Nueva oferta"),
                                 ("5-boss", "El Vendedor", False, "boss", None)])
         self.assertTrue(all(lv["laps"] == [1] for lv in m5["levels"]))
         for entry in [m5] + m5["levels"]:

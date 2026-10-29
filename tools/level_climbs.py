@@ -95,8 +95,12 @@ def climbs(level, root=ROOT):
     # Mundo 5 (paso 13, el 5-2 real, 2026-10-29): con las persianas rotas y las estanterias de saldos tumbadas, como
     # el jugador que las va resolviendo con la Embestida y el Sismo; sin esto la persiana de la salida de «Paquete
     # completo» cerraba el paso y el 5-2 salia con 1 subida. El 5-1 no tiene ninguna: no cambia.
+    # Desde el paso 14 (el 5-3 real), con validation.climbs_open_boxes, tambien las cajas sorpresa abiertas y Terminos y
+    # condiciones rechazados (las cajas del Tramo 2 del 5-3 tapan el camino). Sin la marca (el 5-1, con sus cajas a
+    # saltar por encima, y el 5-2) nada cambia.
     if getattr(model, "w5", None) is not None:
-        state = state | frozenset(g.gid for g in model.w5.gates if g.kind in ("shutter", "shelf"))
+        kinds = ("shutter", "shelf", "box", "terms") if model.validation.get("climbs_open_boxes") else ("shutter", "shelf")
+        state = state | frozenset(g.gid for g in model.w5.gates if g.kind in kinds)
     start_cell = validator.find("P")[0]
     start, why = validator.spawn_node(start_cell, state)
     if start is None:

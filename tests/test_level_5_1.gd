@@ -253,7 +253,8 @@ func test_checkout_door_completes_the_level_and_calc_counts_the_spending() -> vo
 	assert_false(remark.is_empty(), "Comentario de Calc tras el 5-1")
 	assert_string_contains(hub.calc_remark_text(remark), "Has gastado 3 ")
 	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[1]), "El 5-2, jugable (paso 13)")
-	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[2]), "El 5-3, «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[2]), "El 5-3, jugable (paso 14)")
+	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[3]), "El Vendedor, «Próximamente»")
 
 
 func test_calc_remark_without_spending() -> void:
@@ -288,8 +289,8 @@ func test_world_5_folder_lists_5_1_after_el_visto_and_loads_it() -> void:
 	assert_eq(levels.size(), 4, "5-1, 5-2, 5-3 y el jefe")
 	assert_eq(panel.level_text(levels[0]), "5-1 Oferta del día - Nuevo")
 	assert_false(HubWorlds.is_coming_soon(levels[1]), "5-2 jugable (paso 13)")
-	for i: int in [2, 3]:
-		assert_true(HubWorlds.is_coming_soon(levels[i]), "%s «Próximamente»" % levels[i]["id"])
+	assert_false(HubWorlds.is_coming_soon(levels[2]), "5-3 jugable (paso 14)")
+	assert_true(HubWorlds.is_coming_soon(levels[3]), "El Vendedor «Próximamente»")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"5-1"))
 	panel.confirm()
