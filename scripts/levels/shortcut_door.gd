@@ -12,7 +12,9 @@
 ##   trap_distance_tiles tiles de la puerta hacia donde va Isak y lo persigue;
 ## - offer (paso 4): una Oferta de pie a esa distancia, al pie de la puerta (el nivel
 ##   pone los pinchos junto a ella: «tiron hacia pinchos al salir»);
-## - countdown: de momento solo trap_sprung (la pieza llega en el paso 5).
+## - countdown (paso 5): «la salida es una cuenta regresiva»: pone en marcha las
+##   CountdownPlatform del nivel con trigger_id = el id de esta puerta (esperan solidas
+##   y sin cuenta hasta entonces).
 ## Lo que sale de la trampa: get_trap_spawn().
 ## Con el Debug (DebugMode.is_revealing) se ve el icono de la trampa en la puerta.
 ## Aspecto PROVISIONAL por codigo (seccion shortcut_door de data/world5_objects.json).
@@ -181,6 +183,11 @@ func spring_trap(isak: Isak) -> bool:
 			get_parent().add_child(offer)
 			offer.global_position = feet
 			_trap_spawn = offer
+	elif trap == TRAP_COUNTDOWN and object_id != &"" and is_inside_tree():
+		for node: Node in get_tree().get_nodes_in_group(CountdownPlatform.GROUP):
+			var platform := node as CountdownPlatform
+			if platform != null and platform.trigger_id == object_id:
+				platform.start()
 	trap_sprung.emit(trap)
 	queue_redraw()
 	return true

@@ -185,6 +185,10 @@ rm -f "$IMPORT_LOG"
 # tests/test_subscription.gd, GUT: contenido fijo, abrir con pulso de cara o golpe encima, Debug, laser, aturdida
 # como escalon; persecucion, drenaje con tope, «Pago rechazado», cancelar, Filo; trampas subscription y offer del
 # atajo; sala cajas_test, que exporta su camino como las demas).
+# Desde el paso 5 (2026-10-29): la cuenta regresiva y Terminos y condiciones (tests/test_countdown.gd y
+# tests/test_terms_gate.gd, GUT: ciclo y aviso, no se materializa con Isak dentro, «tercer ciclo», trigger del atajo
+# con trampa countdown; ACEPTAR engancha una Suscripcion y «rechazar» solo con el laser desde enfrente o un Filo;
+# sala rebajas_test, que exporta su camino como las demas).
 # Desde el paso 10 (2026-10-28): las 3 variantes de paleta del Mundo 4 cumplen §6.1 y su comparativa esta al dia
 # (tools/palette_mundo4_variants.py --check; la elegida, la B, la escribe palette_mundo4_provisional.py) y el arte
 # por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).

@@ -1,0 +1,105 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/generated_level.gd" id="1_generated_level"]
+[ext_resource type="PackedScene" path="res://scenes/levels/world1_background.tscn" id="2_world1_background"]
+[ext_resource type="TileSet" path="res://assets/tilesets/mundo1.tres" id="3_mundo1"]
+[ext_resource type="PackedScene" path="res://scenes/levels/attention_point.tscn" id="4_attention_point"]
+[ext_resource type="PackedScene" path="res://scenes/levels/countdown_platform.tscn" id="5_countdown_platform"]
+[ext_resource type="PackedScene" path="res://scenes/levels/shortcut_door.tscn" id="6_shortcut_door"]
+[ext_resource type="PackedScene" path="res://scenes/levels/terms_gate.tscn" id="7_terms_gate"]
+[ext_resource type="PackedScene" path="res://scenes/levels/exit_terminal.tscn" id="8_exit_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/offer_sign.tscn" id="9_offer_sign"]
+[ext_resource type="PackedScene" path="res://scenes/player/isak.tscn" id="10_isak"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="11_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/eco_text_box.tscn" id="12_eco_text_box"]
+[ext_resource type="Script" path="res://scripts/levels/help_system.gd" id="13_help_system"]
+
+[node name="Level_rebajas_test" type="Node2D"]
+script = ExtResource("1_generated_level")
+level_id = "rebajas_test"
+level_name = "Rebajas (prueba)"
+world = 5
+tile_size = 64
+size_tiles = Vector2i(40, 12)
+debug_color = "blanco"
+abilities_available = {"combo": true, "compress": true, "dash": true, "debug": true, "ground_pound": true, "laser": true, "pulse": true}
+source_path = "res://data/levels/rebajas_test.json"
+
+[node name="Background" parent="." instance=ExtResource("2_world1_background")]
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 8, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 11, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 13, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 16, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 17, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 21, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 22, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 23, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 25, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 26, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 27, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 28, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 29, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 30, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 31, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 32, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 33, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 34, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 35, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 36, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 37, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 38, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 39, 0, 0, 0, 0, 0, 4, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 0, 1, 0, 0, 0, 19, 0, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0, 20, 0, 4, 0, 0, 0, 1, 0, 4, 0, 0, 0, 21, 0, 4, 0, 0, 0, 2, 0, 4, 0, 0, 0, 22, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0, 39, 0, 4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 22, 0, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 39, 0, 5, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 5, 0, 1, 0, 0, 0, 18, 0, 6, 0, 0, 0, 0, 0, 4, 0, 0, 0, 19, 0, 6, 0, 0, 0, 1, 0, 4, 0, 0, 0, 20, 0, 6, 0, 0, 0, 2, 0, 4, 0, 0, 0, 22, 0, 6, 0, 0, 0, 1, 0, 0, 0, 0, 0, 39, 0, 6, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 7, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 5, 0, 1, 0, 0, 0, 16, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 17, 0, 8, 0, 0, 0, 1, 0, 4, 0, 0, 0, 18, 0, 8, 0, 0, 0, 2, 0, 4, 0, 0, 0, 28, 0, 8, 0, 0, 0, 6, 0, 0, 0, 0, 0, 29, 0, 8, 0, 0, 0, 4, 0, 1, 0, 0, 0, 39, 0, 8, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 28, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 29, 0, 9, 0, 0, 0, 5, 0, 1, 0, 0, 0, 39, 0, 9, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 1, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 2, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 3, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 4, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 5, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 6, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 7, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 8, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 9, 0, 10, 0, 0, 0, 4, 0, 1, 0, 0, 0, 12, 0, 10, 0, 0, 0, 6, 0, 0, 0, 0, 0, 13, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 14, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 15, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 16, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 17, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 18, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 19, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 20, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 21, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 22, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 23, 0, 10, 0, 0, 0, 4, 0, 1, 0, 0, 0, 26, 0, 10, 0, 0, 0, 6, 0, 0, 0, 0, 0, 27, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 28, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0, 29, 0, 10, 0, 0, 0, 1, 0, 2, 0, 0, 0, 30, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 31, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 32, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 33, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 34, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 35, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 36, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 37, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 38, 0, 10, 0, 0, 0, 6, 0, 1, 0, 0, 0, 39, 0, 10, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 3, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 4, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 5, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 6, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 7, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 8, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 9, 0, 11, 0, 0, 0, 1, 0, 2, 0, 0, 0, 10, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 11, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 12, 0, 11, 0, 0, 0, 0, 0, 3, 0, 0, 0, 13, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 14, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 15, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 16, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 17, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 18, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 19, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 20, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 21, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 22, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 23, 0, 11, 0, 0, 0, 1, 0, 2, 0, 0, 0, 24, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 25, 0, 11, 0, 0, 0, 6, 0, 1, 0, 0, 0, 26, 0, 11, 0, 0, 0, 0, 0, 3, 0, 0, 0, 27, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 28, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 29, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 30, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 31, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 32, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 33, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 34, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 35, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 36, 0, 11, 0, 0, 0, 0, 0, 2, 0, 0, 0, 37, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 38, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0, 39, 0, 11, 0, 0, 0, 7, 0, 1, 0, 0, 0)
+tile_set = ExtResource("3_mundo1")
+
+[node name="Hazards" type="Node2D" parent="."]
+
+[node name="HiddenPlatforms" type="Node2D" parent="."]
+
+[node name="AttentionPoints" type="Node2D" parent="."]
+
+[node name="Point_3_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
+position = Vector2(224, 608)
+metadata/help_id = "attention_point"
+
+[node name="Point_27_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
+position = Vector2(1760, 608)
+metadata/help_id = "attention_point"
+
+[node name="Checkpoints" type="Node2D" parent="."]
+
+[node name="Secrets" type="Node2D" parent="."]
+
+[node name="Objects" type="Node2D" parent="."]
+
+[node name="cuenta_foso" parent="Objects" instance=ExtResource("5_countdown_platform")]
+position = Vector2(640, 640)
+object_id = &"cuenta_foso"
+width_tiles = 2
+
+[node name="atajo_cuenta" parent="Objects" instance=ExtResource("6_shortcut_door")]
+position = Vector2(1408, 448)
+height_tiles = 3
+object_id = &"atajo_cuenta"
+trap = "countdown"
+
+[node name="cuenta_salida" parent="Objects" instance=ExtResource("5_countdown_platform")]
+position = Vector2(1536, 640)
+object_id = &"cuenta_salida"
+trigger_id = &"atajo_cuenta"
+truth_cycle = 0
+width_tiles = 2
+
+[node name="terminos_prueba" parent="Objects" instance=ExtResource("7_terms_gate")]
+position = Vector2(2112, 448)
+height_tiles = 3
+object_id = &"terminos_prueba"
+side = "left"
+
+[node name="terminal_rebajas" parent="Objects" instance=ExtResource("8_exit_terminal") groups=["help_target"]]
+position = Vector2(2368, 512)
+height_tiles = 2
+object_id = &"terminal_rebajas"
+text = "Pagar"
+width_tiles = 1
+level_id = "rebajas_test"
+metadata/help_id = "exit_terminal"
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="oferta_rebajas" parent="Enemies" instance=ExtResource("9_offer_sign")]
+position = Vector2(992, 640)
+metadata/params = {}
+
+[node name="Goal" type="Marker2D" parent="." groups=["goal"]]
+position = Vector2(2400, 640)
+
+[node name="Isak" parent="." instance=ExtResource("10_isak")]
+position = Vector2(160, 640)
+camera_limits = Rect2i(0, 0, 2560, 768)
+
+[node name="Hud" parent="." instance=ExtResource("11_hud")]
+
+[node name="EcoTextBox" parent="." instance=ExtResource("12_eco_text_box")]
+
+[node name="Help" type="Node" parent="."]
+script = ExtResource("13_help_system")

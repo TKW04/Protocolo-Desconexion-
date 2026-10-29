@@ -39,7 +39,7 @@
 		},
 		"shortcut_door": {
 			"scene": "res://scenes/levels/shortcut_door.tscn",
-			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription' (paso 4: una Suscripcion «te espera dentro»: sale avisando a trap_distance_tiles (2) tiles de la puerta hacia donde cruza Isak y lo persigue), 'offer' (paso 4: una Oferta de pie a esa distancia, al pie de la puerta; el nivel pone los pinchos junto a ella) o 'countdown' (de momento solo emite trap_sprung al cruzar: la pieza llega en el paso 5). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Sin Q todavia (help_id previsto shortcut_door, paso 9). Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
+			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription' (paso 4: una Suscripcion «te espera dentro»: sale avisando a trap_distance_tiles (2) tiles de la puerta hacia donde cruza Isak y lo persigue), 'offer' (paso 4: una Oferta de pie a esa distancia, al pie de la puerta; el nivel pone los pinchos junto a ella) o 'countdown' (paso 5: «la salida es una cuenta regresiva»: pone en marcha las countdown_platform con trigger = el id de esta puerta). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Sin Q todavia (help_id previsto shortcut_door, paso 9). Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
 			"required": [
 				"id"
 			],
@@ -146,6 +146,87 @@
 					"content": "energy"
 				}
 			}
+		},
+		"countdown_platform": {
+			"scene": "res://scenes/levels/countdown_platform.tscn",
+			"description": "Cuenta regresiva «¡Solo por hoy!» (2026-10-29, paso 5 de docs/propuesta-mundo-5.md §8 y §3.7, patron 28; CountdownPlatform). Plataforma SOLIDA de width_tiles x 1 (tarjeta de card_height_px arriba de su celda; one_way: de una via) con un cartel de cuenta de count_s (5 s del mundo; 5 segmentos): los ultimos warn_frames (9) cuadros parpadea, a 0 SE PLIEGA fold_s (1 s, sin colision, sin dano) y VUELVE con otra cuenta («¡Ultimas horas!»): la urgencia es falsa, siempre vuelve. No se materializa con Isak dentro. «Tercer ciclo» (secreto B del 5-1): si Isak espera cerca (watch_radius_tiles) truth_cycle - 1 cuentas seguidas sin ponerse encima, la siguiente es «Vale, esta vez es verdad» y dura truth_s (10 s); una vez por intento (truth_cycle 0 = sin ella). trigger: id de un shortcut_door con trap countdown; hasta que salte la trampa espera solida y sin cuenta. Tiempo del mundo. Sin Q todavia (help_id previsto countdown_platform, paso 9). Aspecto PROVISIONAL por codigo (seccion countdown_platform).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"count_s": "count_s",
+				"trigger": "trigger_id",
+				"truth_cycle": "truth_cycle",
+				"one_way": "one_way"
+			},
+			"defaults": {
+				"width_tiles": 2
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 3,
+					"int": true
+				},
+				"count_s": {
+					"min": 3,
+					"max": 8
+				},
+				"truth_cycle": {
+					"min": 0,
+					"max": 5,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "countdown_platform",
+				"x": 10,
+				"y": 10,
+				"params": {
+					"id": "cuenta_1",
+					"width_tiles": 2
+				}
+			}
+		},
+		"terms_gate": {
+			"scene": "res://scenes/levels/terms_gate.tscn",
+			"description": "Terminos y condiciones (2026-10-29, paso 5 de docs/propuesta-mundo-5.md §8 y §3.7; TermsGate). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con dos botones en la cara de side (left o right: por donde se llega). «ACEPTAR» enorme (accept_tiles (3) x 1 tiles junto al pie de la puerta): CUALQUIER pulso que lo alcance lo pulsa: abre y ENGANCHA una Suscripcion a Isak. «rechazar» diminuto (reject_size_px en lo alto de la puerta): solo lo alcanza el LASER (hay que disparar desde un suelo de enfrente una fila por debajo de lo alto de la puerta: el laser sale a la altura del celular, a 56-61 px de los pies; desde el suelo de la puerta el disparo choca con ella) o un FILO que lo roza (edge_graze_px): abre sin coste. Abierta se queda abierta el resto del intento. Sin Q todavia (help_id previsto terms_gate, paso 9). Aspecto PROVISIONAL por codigo (seccion terms_gate).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"side": "side",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"side": "left",
+				"height_tiles": 3
+			},
+			"allowed": {
+				"side": [
+					"left",
+					"right"
+				]
+			},
+			"level_params": {
+				"height_tiles": {
+					"min": 2,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "terms_gate",
+				"x": 30,
+				"y": 7,
+				"params": {
+					"id": "terminos_1",
+					"side": "left"
+				}
+			}
 		}
 	},
 	"shop_item": {
@@ -245,6 +326,49 @@
 		"energy_color": "debug_blanco",
 		"gris": "gris_etiqueta",
 		"pop": "amarillo_rebajas"
+	},
+	"countdown_platform": {
+		"_notes": "Cuenta regresiva (CountdownPlatform). card_height_px: alto de la tarjeta; count_s: cuenta por defecto (5 s); fold_s: plegada (1 s); truth_s: la de verdad del tercer ciclo (10 s); warn_frames a anim_fps: parpadeo de aviso antes de plegarse (9 cuadros = 0,75 s); watch_radius_tiles: a cuantos tiles (horizontal) del centro tiene que esperar Isak para que una cuenta cuente como esperada; on_top_tolerance_px: pies sobre la tarjeta = usarla; textos del cartel (propuestos); colores por nombre de la paleta provisional.",
+		"card_height_px": 32,
+		"count_s": 5.0,
+		"fold_s": 1.0,
+		"truth_s": 10.0,
+		"warn_frames": 9,
+		"anim_fps": 12.0,
+		"watch_radius_tiles": 6.0,
+		"on_top_tolerance_px": 6.0,
+		"text_first": "¡Solo por hoy!",
+		"text_again": "¡Últimas horas!",
+		"text_truth": "Vale, esta vez es verdad",
+		"card": "amarillo_rebajas",
+		"seg": "magenta_neon",
+		"off": "gris_etiqueta",
+		"ink": "negro_medio",
+		"text": "crema_cartel"
+	},
+	"terms_gate": {
+		"_notes": "Terminos y condiciones (TermsGate). width_px: ancho de la puerta (centrada en su celda); accept_tiles: ancho del boton «ACEPTAR»; reject_size_px [w, h] y reject_top_px: boton «rechazar» pegado a la cara de la puerta desde lo alto (la zona de impacto; se dibuja de 8 px); edge_graze_px: margen con el que el Filo lo roza; press_s: hundido del boton; message_s: cartel; textos (propuestos); colores por nombre de la paleta provisional.",
+		"width_px": 40,
+		"accept_tiles": 3,
+		"reject_size_px": [
+			8,
+			16
+		],
+		"reject_top_px": 0,
+		"edge_graze_px": 4,
+		"press_s": 0.3,
+		"message_s": 2.0,
+		"text_accepted": "Al continuar aceptas términos que nadie lee",
+		"text_rejected": "Rechazado. Sin coste.",
+		"frame": "gris_escaparate",
+		"door": "crema_cartel",
+		"open": "tienda_noche",
+		"fine": "gris_etiqueta",
+		"accept": "amarillo_rebajas",
+		"reject": "violeta_neon",
+		"off": "gris_etiqueta",
+		"ink": "negro_medio",
+		"text": "crema_cartel"
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",
