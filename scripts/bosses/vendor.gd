@@ -228,11 +228,12 @@ func get_machine_rect() -> Rect2:
 	return _cells_rect(_arena.get("machine", [8, 5, 4, 5]))
 
 
-## Ranura de monedas (fila slot_row de lado a lado de la maquina), global.
+## Ranura de monedas (slot_rows filas desde slot_row, de lado a lado de la maquina), global.
 func get_slot_rect() -> Rect2:
 	var m: Rect2 = get_machine_rect()
 	var row: int = int(_arena.get("slot_row", 7))
-	return Rect2(m.position.x, _to_global(Vector2(0.0, float(row) * _tile)).y, m.size.x, _tile)
+	var rows: int = maxi(int(_arena.get("slot_rows", 1)), 1)
+	return Rect2(m.position.x, _to_global(Vector2(0.0, float(row) * _tile)).y, m.size.x, float(rows) * _tile)
 
 
 ## Bandeja de salida (tunel de la fila tray_row bajo la maquina), global.
@@ -1235,10 +1236,11 @@ func _build() -> void:
 	var m: Rect2 = get_machine_rect()
 	_machine.global_position = m.position
 	var slot_y: float = get_slot_rect().position.y - m.position.y
+	var slot_h: float = get_slot_rect().size.y
 	var tray_y: float = get_tray_tunnel_rect().position.y - m.position.y
 	_add_machine_shape("Top", Rect2(0.0, 0.0, m.size.x, slot_y))
-	_slot_shape = _add_machine_shape("Slot", Rect2(0.0, slot_y, m.size.x, _tile))
-	_add_machine_shape("Middle", Rect2(0.0, slot_y + _tile, m.size.x, tray_y - slot_y - _tile))
+	_slot_shape = _add_machine_shape("Slot", Rect2(0.0, slot_y, m.size.x, slot_h))
+	_add_machine_shape("Middle", Rect2(0.0, slot_y + slot_h, m.size.x, tray_y - slot_y - slot_h))
 	_tray_shape = _add_machine_shape("Tray", Rect2(0.0, tray_y, m.size.x, m.size.y - tray_y))
 	_core = WEAK_POINT_SCENE.instantiate() as WeakPoint
 	_core.name = "CancelButton"

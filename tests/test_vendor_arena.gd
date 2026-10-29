@@ -17,6 +17,8 @@ const PATH: String = "user://test_vendor_arena.json"
 const TILE: float = 64.0
 const DT: float = 1.0 / 60.0
 const EPS: float = 0.001
+const COMBO_ABILITIES: Array[StringName] = [GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND,
+	GameState.ABILITY_COMPRESS, GameState.ABILITY_COMBO]
 
 var _saved_path: String
 var _saved_lap: int
@@ -39,11 +41,11 @@ func before_each() -> void:
 	_saved_path = GameState.save_path
 	_saved_lap = GameState.lap
 	_saved = {}
-	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG]:
+	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG] + COMBO_ABILITIES:
 		_saved[ability] = GameState.is_ability_unlocked(ability)
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
-	for ability: StringName in _saved:
+	for ability: StringName in [GameState.ABILITY_PULSE, GameState.ABILITY_LASER, GameState.ABILITY_DEBUG]:
 		GameState.set_ability_unlocked(ability, true)
 	DebugMode.input_enabled = false
 	DebugMode.reset()
@@ -485,7 +487,8 @@ func test_phase3_the_slot_pushes_out_without_the_edge() -> void:
 	_to_phase(3)
 	assert_true(_boss.is_slot_open(), "Fase 3: abierta")
 	var slot: Rect2 = _boss.get_slot_rect()
-	assert_eq(slot, Rect2(8 * TILE, 7 * TILE, 4 * TILE, TILE), "Ranura: fila 7 de lado a lado (un Filo exacto)")
+	assert_eq(slot, Rect2(8 * TILE, 6 * TILE, 4 * TILE, 2 * TILE),
+		"Ranura: filas 6-7 de lado a lado (4 tiles = un Filo exacto; 2 de alto desde el paso 17)")
 	var pushed: Array = []
 	_boss.slot_pushed.connect(func(d: float) -> void: pushed.append(d))
 	_place_isak(5, 7, 1.0)
@@ -494,3 +497,160 @@ func test_phase3_the_slot_pushes_out_without_the_edge() -> void:
 	_advance(DT)
 	assert_eq(pushed, [-1.0], "Sin el Filo, fuera por donde entro")
 	assert_lt(_isak().global_position.x, slot.position.x, "Fuera de la ranura")
+
+
+# --- Fase 3 con el Isak real (paso 17, 2026-10-29): Embestida desde la vitrina y
+# Filo desde el estante, con la entrada falsa cuadro a cuadro (lo que mide el
+# validador de arenas) ---
+
+func _combo_ready() -> void:
+	for ability: StringName in COMBO_ABILITIES:
+		GameState.set_ability_unlocked(ability, true)
+
+
+## La fase 3 sin ataques ni cuenta que corra (solo la geometria): el tiron sigue.
+func _quiet_phase3() -> void:
+	_boss._attack = Vendor.ATTACK_GAP
+	_boss._gap_left = 999.0
+	_boss._countdown_left = 999.0
+
+
+func _frame(n: int = 1) -> void:
+	for i: int in n:
+		_advance(DT)
+
+
+## Salta desde donde esta; en el cuadro `dash_at` Deslizar hacia la derecha y, `hold_after`
+## cuadros despues, abajo (Embestida). Devuelve si el escaparate se rompio.
+func _ram_from_showcase(dash_at: int, hold_after: int) -> bool:
+	var shutter: Shutter = _boss.get_shutter()
+	_sim.input.jump_pressed = true
+	_sim.input.jump_held = true
+	_frame()
+	for k: int in range(1, 90):
+		if k == dash_at:
+			_sim.input.move_axis = 1.0
+			_sim.input.dash_pressed = true
+		if k == dash_at + hold_after:
+			_sim.input.hold_held = true
+		_frame()
+		if _isak().is_on_floor() and k > dash_at + hold_after:
+			break
+	_sim.input.hold_held = false
+	_sim.input.jump_held = false
+	_sim.input.move_axis = 0.0
+	_frame(6)
+	return shutter.is_broken()
+
+
+## Pellizca en el estante, salta comprimido y Filo hacia la derecha en el cuadro
+## `edge_at` (o Deslizar sin comprimir con compressed = false). Devuelve la x final.
+func _edge_from_shelf(edge_at: int, compressed: bool = true) -> float:
+	if compressed:
+		_sim.input.pinch_pressed = true
+		_frame()
+		assert_true(_isak().is_compressed(), "Comprimido en el estante")
+	_sim.input.jump_pressed = true
+	_sim.input.jump_held = true
+	_frame()
+	for k: int in range(1, 60):
+		if k == edge_at:
+			_sim.input.move_axis = 1.0
+			_sim.input.dash_pressed = true
+		_frame()
+		if _isak().is_on_floor() and k > edge_at:
+			break
+	_sim.input.jump_held = false
+	_sim.input.move_axis = 0.0
+	_frame(60)
+	return _isak().global_position.x
+
+
+func test_phase3_real_ram_from_a_showcase_breaks_the_shutter() -> void:
+	await _arena()
+	_combo_ready()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3)
+	_quiet_phase3()
+	var landed: Array = []
+	EventBus.combo_landed.connect(func(kind: StringName, _r: Rect2, _s: Node2D) -> void: landed.append(kind))
+	# En la cumbre del salto desde la vitrina b, dash aereo y abajo al final del dash.
+	_place_isak(7, 5, 1.0)
+	assert_true(_isak().is_on_floor(), "De pie en la vitrina b (fila 6)")
+	assert_true(_ram_from_showcase(12, 6), "La Embestida desde la vitrina rompe el escaparate")
+	assert_eq(landed, [Isak.COMBO_RAM], "Una Embestida")
+	assert_almost_eq(_isak().global_position.y, 5.0 * TILE, 1.0, "Aterriza en el techo de la maquina")
+	# Sin romperla, el escaparate no se cruza andando ni saltando.
+	_boss._place_shutter()
+	await wait_physics_frames(1)
+	_place_isak(9, 4, 1.0)
+	_sim.input.move_axis = 1.0
+	_frame(90)
+	_sim.input.jump_pressed = true
+	_sim.input.jump_held = true
+	_frame(60)
+	_sim.input.jump_held = false
+	_sim.input.move_axis = 0.0
+	assert_lt(_isak().global_position.x, 11.0 * TILE, "El escaparate entero (3 tiles) para el salto")
+	assert_false(_boss.get_shutter().is_broken())
+
+
+func test_phase3_real_ram_window_is_wide() -> void:
+	await _arena()
+	_combo_ready()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3)
+	_quiet_phase3()
+	var ok: int = 0
+	var tried: int = 0
+	for dash_at: int in [10, 14, 18, 22]:
+		for hold_after: int in [2, 5]:
+			if _isak().is_frozen():
+				_isak().change_state(PlayerState.IDLE)
+			GameState.debug_energy = GameState.get_debug_energy_max()
+			_place_isak(6, 5, 1.0)
+			tried += 1
+			if _ram_from_showcase(dash_at, hold_after):
+				ok += 1
+			_boss._place_shutter()
+			await wait_physics_frames(1)
+	assert_eq(ok, tried, "Dash aereo del cuadro 10 al 22 del salto (cumbre a los 24) y abajo pronto o tarde: siempre llega")
+
+
+func test_phase3_real_edge_from_the_shelf_crosses_the_slot() -> void:
+	await _arena()
+	_combo_ready()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3)
+	_quiet_phase3()
+	var machine: Rect2 = _boss.get_machine_rect()
+	var pushed: Array = []
+	_boss.slot_pushed.connect(func(d: float) -> void: pushed.append(d))
+	# Del principio al final del salto comprimido (unos 30 cuadros): cualquier cuadro vale.
+	for edge_at: int in [2, 8, 15, 22, 28]:
+		if _isak().is_frozen():
+			_isak().change_state(PlayerState.IDLE)
+		GameState.debug_energy = GameState.get_debug_energy_max()
+		_place_isak(5, 7, 1.0)
+		if _isak().is_compressed():
+			_sim.input.pinch_pressed = true
+			_frame()
+		_sim.settle()
+		var x: float = _edge_from_shelf(edge_at)
+		assert_gt(x, machine.end.x, "Filo en el cuadro %d del salto: sale por detras" % edge_at)
+	assert_true(pushed.all(func(d: float) -> bool: return d > 0.0), "Si el Filo acaba dentro, sale por el otro lado")
+
+
+func test_phase3_real_plain_dash_into_the_slot_goes_back() -> void:
+	await _arena()
+	_combo_ready()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3)
+	_quiet_phase3()
+	_place_isak(5, 7, 1.0)
+	var x: float = _edge_from_shelf(4, false)
+	assert_lt(x, _boss.get_machine_rect().position.x, "Un dash normal no cruza la ranura: vuelve delante")
