@@ -712,6 +712,17 @@ class World5:
         out = None
         cm = self.m.w3.cmodel
         target = _grow(gate.openers[0][:4], gate.graze)
+        # Atajo (paso 14, mismo resultado): un Filo no llega mas lejos que su tramo (distance_px) mas el arco del salto
+        # comprimido (andando, hasta la cumbre + AFTER_APEX_S) desde cualquier punto de la celda; sin barrer
+        # (_filo_sweeps simula cada salto) si el boton queda fuera de ese alcance.
+        T = self.m.T
+        t_air = cm.rules.jump_v0 / max(cm.rules.gravity, 1.0) + AFTER_APEX_S + SAMPLE_S
+        reach = float(self.cfg_edge.get("distance_px", 256.0)) + cm.rules.walk_speed * t_air + cm.hw + T
+        c, r = node
+        if target[0] > (c + 1) * T + reach or target[2] < c * T - reach or \
+                target[3] < (r + 1) * T - cm.rules.jump_height - cm.hh - T or target[1] > (r + 1) * T + T:
+            self._graze_cache[key] = None
+            return None
         for x0, jspeed, k, xs, ya, d, pre in self._filo_sweeps(node, state):
             xa = pre[-1][0] if pre else x0
             box = (min(xa, xs[-1]) - cm.hw, ya - cm.hh, max(xa, xs[-1]) + cm.hw, ya)
@@ -1062,6 +1073,16 @@ class World5:
             how = self.box_method(g, n, state)
             steps = []
             look = g.content not in SAFE_CONTENT and m.has_debug(state)
+            # Lo que el Debug ensena que dana (Suscripcion u Oferta) se destruye con el laser, sin abrirla: es lo que
+            # ya cuenta el orden seguro de _check_boxes (mirar + laser). Abrirla con el pulso la soltaria (paso 14).
+            # El laser solo sale limpio desde cerca de la caja (desde mas lejos choca con su celda): se busca la celda
+            # de la misma fila mas cercana, yendo hacia ella, desde la que el disparo la alcanza.
+            if look and how == "pulse" and m.has_laser(state):
+                d = 1 if g.col > n[0] else -1
+                for c in range(n[0], g.col, d):
+                    if m.laser_shot(g.openers[0], (c, n[1]), state) is not None:
+                        how, n = "laser", (c, n[1])
+                        break
             if look:
                 steps.append({"action": "debug_on", "at": n, "state": state, "reason": "mirar dentro de %s" % g.obj_id,
                               "target": tgt})

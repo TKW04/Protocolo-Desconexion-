@@ -61,6 +61,11 @@ var _pop_left: float = 0.0
 var _time: float = 0.0
 var _released: Node
 var _shape: CollisionShape2D
+## Zona del laser (2026-10-29, bot del 5-3): el rayo sale a 56 px sobre los pies de Isak, justo a la altura de la tapa
+## de la caja (8 px por debajo de la fila), y pasaba rozando por encima sin tocarla; esta Area2D del grupo
+## laser_activatable cubre la caja y laser_hit_grow_px (16) por encima de la tapa. No es solida (la caja se pisa igual).
+var _laser_area: Area2D
+var _laser_shape: CollisionShape2D
 
 
 func _ready() -> void:
@@ -76,6 +81,20 @@ func _ready() -> void:
 	_shape.shape = rect
 	_shape.position = r.get_center()
 	add_child(_shape)
+	var grow: float = float(_cfg.get("laser_hit_grow_px", 16.0))
+	_laser_area = Area2D.new()
+	_laser_area.name = "LaserHit"
+	_laser_area.collision_layer = LAYER_ENEMY
+	_laser_area.collision_mask = 0
+	_laser_area.monitoring = false
+	_laser_area.add_to_group(LaserProjectile.GROUP_LASER_ACTIVATABLE)
+	_laser_shape = CollisionShape2D.new()
+	var hit := RectangleShape2D.new()
+	hit.size = Vector2(r.size.x, r.size.y + grow)
+	_laser_shape.shape = hit
+	_laser_shape.position = Vector2(r.get_center().x, r.get_center().y - grow * 0.5)
+	_laser_area.add_child(_laser_shape)
+	add_child(_laser_area)
 	_set_solid(true)
 	EventBus.pulse_fired.connect(receive_pulse)
 	EventBus.ground_pound_landed.connect(_on_ground_pound_landed)
@@ -312,6 +331,8 @@ func _finish(next: StringName) -> void:
 	collision_layer = 0
 	if _shape != null:
 		_shape.set_deferred("disabled", true)
+	if _laser_shape != null:
+		_laser_shape.set_deferred("disabled", true)
 
 
 func _set_solid(on: bool) -> void:

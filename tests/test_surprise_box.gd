@@ -335,3 +335,37 @@ func test_cajas_test_room_loads() -> void:
 		func(n: Node) -> bool: return room.is_ancestor_of(n))
 	assert_eq(doors.size(), 1)
 	assert_eq((doors[0] as ShortcutDoor).trap, ShortcutDoor.TRAP_SUBSCRIPTION)
+
+
+## El laser real de Isak (56 px sobre los pies, justo a la altura de la tapa: la caja mide 56 y empieza 8 px por debajo
+## de su fila) la destruye desde el mismo suelo: su zona del laser (LaserHit, laser_hit_grow_px por encima de la tapa)
+## lo recibe (bot del 5-3, paso 14: antes el rayo pasaba rozando la tapa y la caja seguia cerrada).
+func test_real_laser_from_the_same_floor_destroys_it() -> void:
+	var saved: bool = GameState.is_ability_unlocked(GameState.ABILITY_LASER)
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, true)
+	GameState.debug_energy = GameState.get_debug_energy_max()
+	var box: SurpriseBox = _box(&"subscription", 3.0)
+	assert_eq(box.get_body_rect().position.y - (box.global_position.y), 8.0, "La tapa, 8 px por debajo de la fila")
+	_isak.facing = 1.0
+	var fired: Array[LaserProjectile] = []
+	var on_fired := func(p: LaserProjectile) -> void: fired.append(p)
+	_isak.laser_fired.connect(on_fired)
+	_sim.input.laser_pressed = true
+	_sim.step()
+	_sim.input.laser_pressed = false
+	for i: int in 40:
+		if not fired.is_empty():
+			break
+		_sim.step()
+	_isak.laser_fired.disconnect(on_fired)
+	assert_eq(fired.size(), 1, "Sale el laser")
+	if not fired.is_empty():
+		var p: LaserProjectile = fired[0]
+		p.auto_process = false
+		for i: int in 120:
+			if p.is_finished():
+				break
+			p.step(DT)
+	assert_true(box.is_destroyed(), "El laser desde el mismo suelo la destruye sin abrirla")
+	assert_null(box.get_released(), "Lo de dentro se pierde (no sale la Suscripcion)")
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, saved)
