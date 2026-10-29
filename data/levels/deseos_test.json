@@ -1,0 +1,105 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 7 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 44x12 de la LISTA DE DESEOS, el TACHON y la CAJA REGISTRADORA DE CALC del Mundo 5 (§3.3, §3.7, §4.2.1 y §4.3). Isak llega por la izquierda (P, fila 9) con el pulso, el laser, el Debug, el dash, el golpe al suelo, Pellizcar y la Combinacion. Lista de deseos: tres plataformas de una via (columnas 12-14, 17-19 y 22-24, fila 9: reloj, curso y cascos) sobre un hoyo de 1 fila (sin dano: se sale saltando) con una Oferta de pie en el hoyo (columna 20): el tiron llega al tope (deriva 90 px/s, x0,45 al alejarse); quedarse 1,5 s sobre un objeto = «Añadido al carrito» y una Suscripcion enganchada; se cruza sin pararse (salto, dash) o apagando el tiron con el pulso. Tachon (columna 31, filas 8-9): parece terreno; con el Debug se lee «arreglar la radio del Abuelito» tachado y la pared se disuelve: detras, un punto (32, 9) en un cuarto con techo (fila 7) al que se sube por la repisa de las columnas 28-29. Caja registradora de Calc (columna 39, filas 8-9; 2 ◆, sin trampa): Calc habla con su LCD al acercarse y al pagar; detras, un nicho con un punto (41, 9). Puntos en (6, 9), (32, 9) y (41, 9) (el de Calc, que se puede pagar con lo cogido antes). Terminal en (36, 8). Sin Q (help_id previstos wishlist_platform, wish_strike y calc_register, paso 9). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela la lista de deseos, el tachon ni la caja (paso 8): los toma por objetos sin colision. Escena: scenes/levels/deseos_test.tscn (python3 tools/build_level.py data/levels/deseos_test.json).",
+	"id": "deseos_test",
+	"name": "Deseos (prueba)",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"combo": true
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "oferta_deseos",
+			"type": "offer_sign",
+			"x": 20,
+			"y": 10
+		}
+	],
+	"objects": [
+		{
+			"type": "wishlist_platform",
+			"x": 12,
+			"y": 9,
+			"params": {
+				"id": "deseo_reloj",
+				"width_tiles": 3,
+				"item": "watch"
+			}
+		},
+		{
+			"type": "wishlist_platform",
+			"x": 17,
+			"y": 9,
+			"params": {
+				"id": "deseo_curso",
+				"width_tiles": 3,
+				"item": "course"
+			}
+		},
+		{
+			"type": "wishlist_platform",
+			"x": 22,
+			"y": 9,
+			"params": {
+				"id": "deseo_cascos",
+				"width_tiles": 3,
+				"item": "headphones"
+			}
+		},
+		{
+			"type": "wish_strike",
+			"x": 31,
+			"y": 8,
+			"params": {
+				"id": "tachon_prueba",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"solid_neighbors": 11
+			}
+		},
+		{
+			"type": "calc_register",
+			"x": 39,
+			"y": 8,
+			"params": {
+				"id": "caja_calc_prueba",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 36,
+			"y": 8,
+			"params": {
+				"id": "terminal_deseos",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"############################################",
+		"#..........................................#",
+		"#..........................................#",
+		"#..........................................#",
+		"#..........................................#",
+		"#..........................................#",
+		"#..........................................#",
+		"#..............................###.....#####",
+		"#...........................--...#.........#",
+		"#.P...o.........................o#..G....o.#",
+		"############........E.......################",
+		"############################################"
+	]
+}

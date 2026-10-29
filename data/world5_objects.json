@@ -362,6 +362,143 @@
 					"id": "prueba_gratis"
 				}
 			}
+		},
+		"wishlist_platform": {
+			"scene": "res://scenes/levels/wishlist_platform.tscn",
+			"description": "Lista de deseos (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.3, §3.7 y §4.3; WishlistPlatform). Plataforma DE UNA VIA de width_tiles (3) x 1 (tarjeta arriba de su celda) con un objeto deseado encima (item: watch, headphones, course; item_tile: columna del objeto, -1 = centro) y una OFERTA INTEGRADA: tira hacia el objeto como una Oferta (zona de radius_tiles (6) a cada lado y height_tiles (3) de alto, strength) y se SUMA con las demas con el tope de §3.3 (deriva 90 px/s, x0,45 al alejarse). El objeto NO se coge: con Isak add_s (1,5 s) sobre el, «Añadido al carrito», se le engancha una Suscripcion y la plataforma deja de tirar (una vez por intento). El pulso que alcanza el objeto apaga el tiron stun_s (3 s). Sin Q todavia (help_id previsto wishlist_platform, paso 9). Aspecto PROVISIONAL por codigo (seccion wishlist_platform).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"item": "item",
+				"item_tile": "item_tile",
+				"radius_tiles": "radius_tiles",
+				"height_tiles": "height_tiles",
+				"strength": "strength"
+			},
+			"defaults": {
+				"width_tiles": 3,
+				"item": "watch"
+			},
+			"allowed": {
+				"item": [
+					"watch",
+					"headphones",
+					"course"
+				]
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 2,
+					"max": 4,
+					"int": true
+				},
+				"item_tile": {
+					"min": -1,
+					"max": 3,
+					"int": true
+				},
+				"radius_tiles": {
+					"min": 2,
+					"max": 8
+				},
+				"height_tiles": {
+					"min": 1,
+					"max": 5
+				},
+				"strength": {
+					"min": 0.5,
+					"max": 2
+				}
+			},
+			"example": {
+				"type": "wishlist_platform",
+				"x": 205,
+				"y": 4,
+				"params": {
+					"id": "deseo_reloj",
+					"width_tiles": 4,
+					"item": "watch"
+				}
+			}
+		},
+		"wish_strike": {
+			"scene": "res://scenes/levels/wish_strike.tscn",
+			"description": "Tachon (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.7 y §4.3.1; WishStrike, hereda de GlitchWall). Pared con glitch SOLO VISIBLE CON EL DEBUG (visible_only_with_debug siempre activo) de width_tiles x height_tiles desde (x, y): sin nada revelado parece terreno; con el Debug activo e Isak cerca se disuelve y deja ver lo de detras (en el 5-3, el memory_pickup msg_5_3). Encima, la linea de la lista escrita por Isak y tachada por Eco (text; por defecto «arreglar la radio del Abuelito», propuesto): solo se lee con el Debug y, abierta la pared, se queda a la vista. Sin Q todavia (help_id previsto wish_strike, paso 9). Aspecto PROVISIONAL (pared del Mundo 1 y linea por codigo; seccion wish_strike).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"width_tiles": "width_tiles",
+				"height_tiles": "height_tiles",
+				"solid_neighbors": "solid_neighbors",
+				"text": "text"
+			},
+			"defaults": {
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"solid_neighbors": 0
+			},
+			"level_params": {
+				"width_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 1,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "wish_strike",
+				"x": 228,
+				"y": 2,
+				"params": {
+					"id": "tachon_5_3",
+					"width_tiles": 1,
+					"height_tiles": 2
+				}
+			}
+		},
+		"calc_register": {
+			"scene": "res://scenes/levels/calc_register.tscn",
+			"description": "Caja registradora de Calc (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.7, §4.2.1 y decision 14 de §9; CalcRegister, hereda de ShortcutDoor). El atajo legitimo, NUNCA con trampa: puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con la pantalla LCD de Calc encima («Atajo: 2 ◆ / Trampa: 0»). Un PULSO DE ESPALDAS paga prices.calc_register de data/economy.json (2; cost lo cambia) con el saldo real (sin saldo, «Saldo insuficiente» y chispa gris) y se abre el resto del intento; lo pagado NO va a Devoluciones. Calc habla en el cuadro de texto con su LCD (interlocutor calc, no importante; propuestos): al acercarse Isak, line_near; al pagar, line_paid. Sin Q todavia (help_id previsto calc_register, paso 9). Aspecto PROVISIONAL por codigo (seccion calc_register).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"cost": "cost",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"height_tiles": 3
+			},
+			"level_params": {
+				"cost": {
+					"min": 1,
+					"max": 11,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 2,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "calc_register",
+				"x": 190,
+				"y": 3,
+				"params": {
+					"id": "caja_calc"
+				}
+			}
 		}
 	},
 	"shop_item": {
@@ -573,6 +710,70 @@
 		"sign": "crema_cartel",
 		"glow": "debug_blanco",
 		"ink": "negro_medio"
+	},
+	"wishlist_platform": {
+		"_notes": "Lista de deseos (WishlistPlatform). card_height_px: alto de la tarjeta; item_size_px: caja del objeto; item_half_width_px: a cuanto (horizontal) del objeto cuenta como estar sobre el; on_top_tolerance_px: pies sobre la tarjeta; add_s: tiempo sobre el objeto hasta «Añadido al carrito»; stun_s: tiron apagado por el pulso; message_s: cartel; item_names: rotulos de los objetos (propuestos, §2.2); colores por nombre de la paleta provisional.",
+		"card_height_px": 32,
+		"item_size_px": [
+			40,
+			40
+		],
+		"item_half_width_px": 24.0,
+		"on_top_tolerance_px": 6.0,
+		"add_s": 1.5,
+		"stun_s": 3.0,
+		"message_s": 2.0,
+		"text_added": "Añadido al carrito",
+		"item_names": {
+			"watch": "Reloj que cuenta pasos",
+			"headphones": "Cascos que aprenden lo que te gusta",
+			"course": "Curso de productividad extrema"
+		},
+		"card": "crema_cartel",
+		"lines": "crema_sombra",
+		"edge": "magenta_neon",
+		"glow": "magenta_neon",
+		"item": "amarillo_rebajas",
+		"off": "gris_etiqueta",
+		"ink": "negro_medio",
+		"text": "crema_cartel"
+	},
+	"wish_strike": {
+		"_notes": "Tachon (WishStrike, hereda de GlitchWall: los tiempos de la pared en glitch_wall de data/world1_objects.json). text: la linea tachada (propuesta, §4.3.1); font_size y text_y_px: tamano y altura (px desde lo alto de la pared) de la linea; z_index de la linea; colores por nombre de la paleta provisional.",
+		"text": "arreglar la radio del Abuelito",
+		"font_size": 12,
+		"text_y_px": -12,
+		"z_index": 2,
+		"paper": "crema_cartel",
+		"ink": "negro_medio",
+		"strike": "magenta_neon"
+	},
+	"calc_register": {
+		"_notes": "Caja registradora de Calc (CalcRegister, hereda de ShortcutDoor: width_px, hit_grow_px, pose_s, message_s, spark_s y text_no_funds como el atajo). screen_size_px: pantalla LCD encima de la puerta; talk_radius_tiles: a cuanto habla Calc la primera vez; textos (propuestos; {cost} = precio): text_screen / text_screen_trap en la pantalla, line_near al acercarse, line_paid al pagar; colores por nombre de la paleta provisional.",
+		"width_px": 40,
+		"hit_grow_px": 24,
+		"pose_s": 0.45,
+		"message_s": 1.5,
+		"spark_s": 0.3,
+		"duration_s": -1.0,
+		"screen_size_px": [
+			88,
+			34
+		],
+		"talk_radius_tiles": 3.0,
+		"text_no_funds": "Saldo insuficiente",
+		"text_screen": "Atajo: {cost}",
+		"text_screen_trap": "Trampa: 0",
+		"line_near": "Atajo: {cost} {icono:atencion}. Trampa: 0. Sin letra pequeña. Soy una calculadora, no un vendedor.",
+		"line_paid": "Precio: {cost}. Trampa: 0. Eco llama a esto mal negocio.",
+		"frame": "gris_escaparate",
+		"door": "negro_medio",
+		"open": "tienda_noche",
+		"body": "gris_escaparate",
+		"lcd": "crema_sombra",
+		"lcd_ink": "negro_medio",
+		"ink": "negro_medio",
+		"text": "crema_cartel"
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",

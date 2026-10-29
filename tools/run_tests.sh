@@ -193,6 +193,9 @@ rm -f "$IMPORT_LOG"
 # persiana solo con la Embestida, ranura de precios solo con el Filo, estanterias de saldos que se reponen salvo con
 # el Sismo del grupo entero, «Prueba gratis» con la escena de Eco e Isak; sala combos_test, que exporta su camino como
 # las demas) y el arte de Isak en el cuadro de texto (tools/gen_isak_text_box.py --check).
+# Desde el paso 7 (2026-10-29): la lista de deseos, el tachon y la caja registradora de Calc (tests/test_wishlist.gd,
+# GUT: tiron que se suma con las Ofertas hasta el tope, «Añadido al carrito» con una Suscripcion, el tachon solo con
+# el Debug y el atajo legitimo de Calc sin trampa; sala deseos_test, que exporta su camino como las demas).
 # Desde el paso 10 (2026-10-28): las 3 variantes de paleta del Mundo 4 cumplen §6.1 y su comparativa esta al dia
 # (tools/palette_mundo4_variants.py --check; la elegida, la B, la escribe palette_mundo4_provisional.py) y el arte
 # por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).
