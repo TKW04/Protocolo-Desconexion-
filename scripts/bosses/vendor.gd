@@ -886,9 +886,10 @@ func spawn_box(col: int, surface_row: int, content: StringName) -> SurpriseBox:
 	if content == SurpriseBox.CONTENT_ENERGY:
 		box.energy_amount = float(bx.get("energy", 20.0))
 	_attacks.add_child(box)
-	var lp: Array = _arena.get("launch_px", [96, -80])
-	var from: Vector2 = get_machine_rect().position + Vector2(float(lp[0]), float(lp[1]))
 	var to: Vector2 = _to_global(Vector2(float(col) * _tile, float(surface_row - 1) * _tile))
+	var m: Rect2 = get_machine_rect()
+	var lp: Array = (_arena.get("launch_px", {}) as Dictionary).get("left" if to.x < m.get_center().x else "right", [-64, -80])
+	var from: Vector2 = m.position + Vector2(float(lp[0]), float(lp[1]))
 	box.global_position = from
 	box.launch(_launch_velocity(from, to))
 	_boxes.append(box)

@@ -239,6 +239,10 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 15 del Mundo 5 (2026-10-29): los datos y la logica de El Vendedor (tests/test_vendor_boss.gd, GUT:
 # siempre de frente y el giro de 1,2 s, el «Cancelar» en la espalda solo con Isak detras, marca solo con el Debug,
 # un golpe por marca, la marca que no cae al girarse y las fichas al reaparecer).
+# Desde el paso 16 del Mundo 5 (2026-10-29): la arena 5-boss «Gran almacén» (se valida y construye con las demas:
+# esquema, validate_basic_arena y escena al dia; el validador completo es el paso 17) y sus fases con el Isak real
+# (tests/test_vendor_arena.gd, GUT: plataformas con precio, trampa, «te fio», cajas, bomba, ticket, cuenta, tiron,
+# «Procesando pago…», escaparate y ranura).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
