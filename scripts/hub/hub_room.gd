@@ -744,8 +744,20 @@ func start_calc_remark() -> bool:
 	if remark.is_empty() or _text_box == null:
 		return false
 	GameState.mark_notice_seen(StringName(CALC_REMARK_NOTICE % String(remark.get("id", ""))))
-	_text_box.show_line(String(remark.get("text", "")), float(remark.get("duration_s", -1.0)), false, &"calc")
+	_text_box.show_line(calc_remark_text(remark), float(remark.get("duration_s", -1.0)), false, &"calc")
 	return true
+
+
+## Texto de un comentario de Calc: {gastado} = lo gastado en after_level en el ultimo intento
+## (GameState.get_attempt_spent) y, si es 0, text_if_zero cuando lo hay (paso 10 del Mundo 5).
+func calc_remark_text(remark: Dictionary) -> String:
+	var text: String = String(remark.get("text", ""))
+	if not text.contains("{gastado}"):
+		return text
+	var spent: int = GameState.get_attempt_spent(StringName(String(remark.get("after_level", ""))))
+	if spent == 0 and remark.has("text_if_zero"):
+		return String(remark["text_if_zero"])
+	return text.replace("{gastado}", str(spent))
 
 
 ## Al llegar a la pagina del acertijo por primera vez, la linea de Eco

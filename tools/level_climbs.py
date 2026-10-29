@@ -32,6 +32,7 @@ import validate_level as vl  # noqa: E402
 import level_catalog  # noqa: E402
 import world3_model  # noqa: E402
 import world4_model  # noqa: E402
+import world5_model  # noqa: E402
 
 FORMAT = "isak-climbs/1"
 
@@ -68,6 +69,10 @@ def climbs(level, root=ROOT):
     # ya escritas y el autocorrector corregido) son plataformas de una via, como en validate_level.validate; sin
     # esto el 4-1 solo tenia las subidas del vestibulo. Sin objetos del Mundo 4 el nivel no cambia.
     level = world4_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
+    # Mundo 5 (paso 10 de docs/propuesta-mundo-5.md, el 5-1 real, 2026-10-29): la cuenta regresiva como plataforma
+    # que parpadea, el tachon como pared con glitch y la «Prueba gratis» como interruptor, como en
+    # validate_level.validate. Sin objetos del Mundo 5 el nivel no cambia.
+    level = world5_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     validator = vl.Validator(level, rules)
     model = validator.model
     # Acertijo de Calc (tanda H2 del paso 14, 2026-10-17): con sus piezas hechas la pared con glitch es

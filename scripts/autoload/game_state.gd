@@ -376,6 +376,9 @@ const REFUND_SHORTCUT_TRAP: StringName = &"shortcut_trap"
 ## Registro de Devoluciones del intento actual: id de nivel -> {tipo: puntos}. Lo
 ## vacian begin_attempt, el rollback y reset_progress.
 var _refundable: Dictionary[StringName, Dictionary] = {}
+## Lo gastado en el intento actual (o el ultimo) de cada nivel, menos lo devuelto (paso 10 de
+## docs/propuesta-mundo-5.md: el comentario de Calc tras el 5-1). Mismo ciclo de vida que _refundable.
+var _attempt_spent: Dictionary[StringName, int] = {}
 
 const LIKES_MAX_DEFAULT: int = 30
 var likes: int = 0
@@ -687,6 +690,7 @@ func set_player_hidden(hidden: bool) -> void:
 func begin_attempt() -> void:
 	_pulse_return_claimed.clear()
 	_refundable.clear()
+	_attempt_spent.clear()
 	set_player_hidden(false)
 	reset_likes()
 
@@ -713,6 +717,8 @@ func spend_attention(amount: int, reason: StringName = &"", level: StringName = 
 		return true
 	attention_points -= amount
 	request_save()
+	var spent_level: StringName = level if level != NO_LEVEL else current_level
+	_attempt_spent[spent_level] = int(_attempt_spent.get(spent_level, 0)) + amount
 	if refund_kind != &"":
 		note_refundable(level if level != NO_LEVEL else current_level, refund_kind, amount)
 	EventBus.attention_spent.emit(amount, reason)
@@ -752,9 +758,16 @@ func claim_refunds(level: StringName, kinds: Array = []) -> int:
 			_refundable.erase(level)
 	if amount > 0:
 		attention_points += amount
+		_attempt_spent[level] = maxi(int(_attempt_spent.get(level, 0)) - amount, 0)
 		request_save()
 		EventBus.attention_refunded.emit(amount)
 	return amount
+
+
+## Puntos gastados en `level` en el intento actual (o el ultimo, hasta empezar otro), menos lo
+## devuelto en Devoluciones. No se guarda.
+func get_attempt_spent(level: StringName) -> int:
+	return int(_attempt_spent.get(level, 0))
 
 
 # --- Likes (Mundo 3; no se guardan) ---
@@ -1074,6 +1087,7 @@ func reset_progress() -> void:
 	learned_help.clear()
 	_pulse_return_claimed.clear()
 	_refundable.clear()
+	_attempt_spent.clear()
 	set_player_hidden(false)
 	lives_max = LIVES_MAX_DEFAULT
 	play_time_s = 0.0
@@ -1773,6 +1787,7 @@ func apply_rollback(reason: StringName = ROLLBACK_GAME_OVER) -> Dictionary:
 	var keep_pulse: bool = obtained_abilities.has(ABILITY_PULSE)
 	var keep_read: Dictionary = memories_read.duplicate()
 	_refundable.clear()
+	_attempt_spent.clear()
 	var had_copy: bool = load_game()
 	# Los recuerdos guardados vuelven con la copia (registro: no van a la
 	# papelera); lo leido de los que siguen se queda leido.

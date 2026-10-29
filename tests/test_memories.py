@@ -77,6 +77,10 @@ class RealData(unittest.TestCase):
         world4 = sorted((m["id"], m["level"], m["secret"], m["order"], m["sender"]) for m in items
                         if m["kind"] == "secret" and m["world"] == 4)
         self.assertEqual(world4[:1], [("msg_4_1", "4-1", "secreto_mensaje_antiguo", 1, "Tomi")])
+        # Mundo 5 (paso 10 de docs/propuesta-mundo-5.md): el del 5-1, del Abuelito (decisión del usuario, §10.2).
+        world5 = sorted((m["id"], m["level"], m["secret"], m["order"], m["sender"]) for m in items
+                        if m["kind"] == "secret" and m["world"] == 5)
+        self.assertEqual(world5[:1], [("msg_5_1", "5-1", "secreto_devoluciones", 1, "Abuelito")])
         self.assertEqual(messages["1-1"]["secret"], "secreto_puente_servicio")
         self.assertEqual(messages["1-2"]["secret"], "secreto_spam")
         self.assertEqual((messages["2-1"]["id"], messages["2-1"]["secret"], messages["2-1"]["world"]),
@@ -109,11 +113,12 @@ class RealData(unittest.TestCase):
 
     def test_family_is_the_abuelito_and_mama(self):
         """Decisión del 2026-10-19: Mamá escribe los mensajes y el Abuelito sale en ellos. En el Mundo 4 (decisión del
-        usuario del 2026-10-28, docs/propuesta-mundo-4.md §4.5) escriben los amigos Lía, Marco y Tomi."""
+        usuario del 2026-10-28, docs/propuesta-mundo-4.md §4.5) escriben los amigos Lía, Marco y Tomi; en el Mundo 5
+        (decisión del usuario del 2026-10-29, docs/propuesta-mundo-5.md §10.2), el Abuelito."""
         for m in self.data["memories"]:
             if m["kind"] == "secret":
                 self.assertTrue(m["text"].startswith("Isak, "), m["id"])
-                sender = "Mamá" if m["world"] != 4 else m["sender"]
+                sender = {4: m["sender"], 5: "Abuelito"}.get(m["world"], "Mamá")
                 if m["world"] == 4:
                     self.assertIn(sender, ("Lía", "Marco", "Tomi"), m["id"])
                 self.assertEqual(m["sender"], sender, m["id"])

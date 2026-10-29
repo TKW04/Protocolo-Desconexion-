@@ -624,7 +624,9 @@ func test_seen_row_is_playable_after_4_3_and_world_5_waits_for_it() -> void:
 	GameState.mark_level_completed(&"4-boss")
 	assert_eq(HubWorlds.folder_state(_m4()), HubWorlds.STATE_COMPLETED, "M4 completada con el jefe")
 	assert_eq(HubWorlds.folder_state(m5), HubWorlds.STATE_AVAILABLE, "M5 disponible al vencer a El Visto")
-	assert_true(HubWorlds.levels(m5).is_empty(), "Sin subniveles: «Próximamente»")
+	# Paso 10 de docs/propuesta-mundo-5.md (2026-10-29): M5 ya tiene sus filas; el 5-1, jugable.
+	assert_eq(String(HubWorlds.levels(m5)[0]["id"]), "5-1", "Primera fila de M5: el 5-1")
+	assert_true(HubWorlds.can_enter(&"5-1"), "El 5-1 se juega al vencer a El Visto")
 	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m6")), HubWorlds.STATE_LOCKED, "M6 sigue esperando a 5-boss")
 
 

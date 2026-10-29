@@ -221,6 +221,9 @@ rm -f "$IMPORT_LOG"
 # dia con el contraste de Isak y Eco (tools/validate_world5_tiles.py). Eco se ve igual que en los Mundos 1-3
 # (sin variante del Mundo 5). Pruebas GUT de las ayudas Q del Mundo 5: test_help.gd, test_help_inert.gd y test_notas_album.gd. Las capturas de contraste de las
 # salas (tools/render_world5_rooms.gd + tools/measure_world5_contrast.py) necesitan ventana: no van en la suite.
+# Desde el paso 10 del Mundo 5 (2026-10-29): el 5-1 real (tests/test_level_5_1.py: camino exportado frugal y del
+# comprador, subidas al dia; tests/test_level_5_1.gd, GUT) y la puerta «Pagar» (tools/gen_world5_exit_checkout.py
+# --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -230,7 +233,7 @@ _export_test_rooms() {
 		"$PROJECT_DIR"/data/levels/1-3.json "$PROJECT_DIR"/data/levels/2-1.json "$PROJECT_DIR"/data/levels/2-2.json \
 		"$PROJECT_DIR"/data/levels/2-3.json "$PROJECT_DIR"/data/levels/3-1.json \
 		"$PROJECT_DIR"/data/levels/3-2.json "$PROJECT_DIR"/data/levels/3-3.json "$PROJECT_DIR"/data/levels/4-1.json \
-		"$PROJECT_DIR"/data/levels/4-2.json "$PROJECT_DIR"/data/levels/4-3.json; do
+		"$PROJECT_DIR"/data/levels/4-2.json "$PROJECT_DIR"/data/levels/4-3.json "$PROJECT_DIR"/data/levels/5-1.json; do
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
@@ -242,6 +245,10 @@ _export_test_rooms() {
 	python3 tools/validate_level.py --upgrades pulso:5,laser:5,debug:5,sync:5,energia:5 \
 		--export-path "$EXPORT_DIR/1-2_max.json" "$PROJECT_DIR/data/levels/1-2.json" >/dev/null || return 1
 	[[ -s "$EXPORT_DIR/1-2_max.json" ]] || return 1
+	# El 5-1 con el camino del comprador (--buy, paso 10 del Mundo 5): paga el atajo y compra en la tienda.
+	python3 tools/validate_level.py --buy --export-path "$EXPORT_DIR/5-1_buy.json" \
+		"$PROJECT_DIR/data/levels/5-1.json" >/dev/null || return 1
+	[[ -s "$EXPORT_DIR/5-1_buy.json" ]] || return 1
 }
 # Pasadas del validador de alcanzabilidad sobre todos los niveles (sin mejoras, con mejoras, al maximo,
 # con el tope del acceso) y caminos exportados: son independientes, asi que se lanzan a la vez y se espera
@@ -264,7 +271,7 @@ _validate_levels() {
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
-		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
+		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_level_5_1.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_palette_mundo5.py tests/test_world4_schema.py tests/test_world4_validator.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py tests/test_world4_negatives.py \
@@ -285,6 +292,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/level_climbs.py --check data/levels/4-1.json \
 		&& python3 tools/level_climbs.py --check data/levels/4-2.json \
 		&& python3 tools/level_climbs.py --check data/levels/4-3.json \
+		&& python3 tools/level_climbs.py --check data/levels/5-1.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \
@@ -297,7 +305,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/validate_enemy_sprites.py >/dev/null && python3 -I tools/validate_world1_enemies.py >/dev/null \
 		&& python3 -I tools/palette_mundo2_provisional.py --check && python3 -I tools/gen_world2_cards.py --check \
 		&& python3 -I tools/palette_mundo3_provisional.py --check && python3 -I tools/palette_mundo3_preview.py --check \
-		&& python3 -I tools/gen_world3_exit_frame.py --check && python3 -I tools/gen_world4_exit_reply.py --check && python3 -I tools/palette_mundo4_provisional.py --check && python3 -I tools/palette_mundo5_provisional.py --check \
+		&& python3 -I tools/gen_world3_exit_frame.py --check && python3 -I tools/gen_world4_exit_reply.py --check && python3 -I tools/gen_world5_exit_checkout.py --check && python3 -I tools/palette_mundo4_provisional.py --check && python3 -I tools/palette_mundo5_provisional.py --check \
 		&& python3 -I tools/palette_mundo4_variants.py --check && python3 -I tools/gen_world4_objects.py --check \
 		&& python3 -I tools/palette_mundo5_variants.py --check && python3 -I tools/gen_world5_objects.py --check \
 		&& python3 -I tools/validate_world5_tiles.py >/dev/null \

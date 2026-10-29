@@ -410,7 +410,8 @@ static func can_enter(level_id: StringName) -> bool:
 
 
 ## Puntos de atencion del subnivel: total ('o' de la rejilla de su JSON; 0 si
-## no hay datos).
+## no hay datos). Desde el paso 10 del Mundo 5 (2026-10-29) cuenta tambien cada
+## caja sorpresa con puntos (se captura como un punto del nivel, «box:<id>»).
 static func level_points_total(level_id: String) -> int:
 	var pattern: String = String(HubData.section("folders").get("level_data_pattern", "res://data/levels/%s.json"))
 	var path: String = pattern % level_id
@@ -422,4 +423,8 @@ static func level_points_total(level_id: String) -> int:
 	var total: int = 0
 	for row: Variant in (data as Dictionary).get("grid", []):
 		total += String(row).count("o")
+	for obj: Variant in (data as Dictionary).get("objects", []):
+		if obj is Dictionary and String((obj as Dictionary).get("type", "")) == "surprise_box" \
+				and String(((obj as Dictionary).get("params", {}) as Dictionary).get("content", "")) == "points":
+			total += 1
 	return total

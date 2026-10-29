@@ -85,6 +85,11 @@ const CLIMBS_PATH_4_2: String = "res://tests/fixtures/climbs_4-2.json"
 const LEVEL_SCENE_4_3: String = "res://scenes/levels/4-3.tscn"
 const LEVEL_PATH_4_3: String = "res://data/levels/4-3.json"
 const CLIMBS_PATH_4_3: String = "res://tests/fixtures/climbs_4-3.json"
+## 5-1 «Oferta del día» (paso 10 de docs/propuesta-mundo-5.md, 2026-10-29): escalones de una via entre el suelo y
+## las bandas de los cuatro tramos, las cajas sorpresa y los escalones de los secretos B y C.
+const LEVEL_SCENE_5_1: String = "res://scenes/levels/5-1.tscn"
+const LEVEL_PATH_5_1: String = "res://data/levels/5-1.json"
+const CLIMBS_PATH_5_1: String = "res://tests/fixtures/climbs_5-1.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -534,6 +539,14 @@ func test_every_climb_of_4_3_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 8, "Subidas del 4-3 en %s" % CLIMBS_PATH_4_3)
 	await _load(LEVEL_SCENE_4_3, LEVEL_PATH_4_3)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_5_1_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_5_1))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 8, "Subidas del 5-1 en %s" % CLIMBS_PATH_5_1)
+	await _load(LEVEL_SCENE_5_1, LEVEL_PATH_5_1)
 	await _measure_all(climbs)
 
 

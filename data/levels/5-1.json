@@ -1,0 +1,361 @@
+{
+	"_notes": "NIVEL 5-1 «Oferta del día» (paso 10 de docs/propuesta-mundo-5.md §8, 2026-10-29; diseño en su §4.1 y §4.1.1, desvíos en §8.1). Horizontal de 260 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Llega con todo el kit del Mundo 4 salvo la Combinación (sin combo; la Linterna es conocida pero no hay zonas oscuras). ESTRUCTURA: POR PLANTAS desde el principio (§4 y §11.1): cada tramo se recorre en TRES PASADAS: el suelo (B1, de pie en la 11), una banda de una vía en la fila 9 (B2, de pie en la 8) y otra en la fila 6 (B3, de pie en la 5), con 3 filas entre ellas (192 px: el salto real llega a 177, sin atajos). Los tramos 1 y 3 SUBEN (suelo hacia la derecha, escalón de una vía en la fila 10 al final, B2 hacia la izquierda, escalón en la fila 7 al principio, B3 hacia la derecha y salida por el hueco de las filas 4-5 de la pared derecha); el 2 y el 4 BAJAN (B3 hacia la derecha sin huecos, caída a B2 al final, B2 hacia la izquierda, pozo de 1 columna al suelo y salida por abajo, filas 10-11). Decisión tomada: el mapa de 200 columnas daba un camino de 157 s (33 %): se ensancharon los cuatro tramos (§4: «se alarga con otra pasada, no con esperas»): 260 columnas, camino de unos 207 s (43 %). INICIO «Entrada» (0-13): vórtice (3, 11), línea de Eco no importante (propuesta) y 1 punto. TRAMO 1 «Pasillo de ofertas» (14-80, sube): la Oferta de pie con el carrito de pinchos (patrón 23, columnas 17-19, antes de B2: bajo una banda no se salta un pincho), una Oferta colgada sobre B2 (columna 36) y otra sobre B3 (columna 69) que tira hacia el hueco de B3 de las columnas 66-67 (caída de 3 a B2, con salida); 2 puntos. TRAMO 2 «Primera tienda» (81-135, baja): la tienda en B2 (+25 de Sync por 3 en la columna 104 y +40 de energía por 2 en la 106; antes en la ruta hay 6 puntos), la Oferta colgada «Llévate dos» enfrente (columna 110), cargador_1 en el suelo (columna 95) y una Oferta de pie antes de la salida (columna 125); 3 puntos en B3, antes de la tienda. PAUSA (136-140): sync_1. TRAMO 3 «Caja sorpresa» (141-195, sube): las cuatro cajas sorpresa en B3 (patrón 24: energía, 2 puntos, Suscripción y vacía, columnas 155-164; se saltan, se miran con el Debug o se abren) y la primera Suscripción suelta en el suelo (columna 170). TRAMO 4 «Atajo» (196-249, baja): al final de B3, tras el hueco de las columnas 235-236, la repisa del atajo con trampa «Atajo: 3» (shortcut_door atajo_dos_plantas, trampa subscription, columna 240) que lleva directa a la cuenta regresiva y al Cierre por el hueco alto de la pared 241 (se ahorra B2 y el suelo); el camino largo baja las dos plantas (cargador_2 en el suelo, columna 205) y cruza la primera cuenta regresiva (cuenta_foso, 3 tiles) sobre un foso mortal de 5 columnas (245-249; patrón 28); 1 punto. CIERRE «Caja de pago» (250-259): 1 punto y la terminal «Pagar» (exit_terminal con skin checkout y la placa «Total: 0. Gracias por mirar.» antes del vórtice). SECRETOS: A «Devoluciones» (pared con glitch visible solo con el Debug en lo alto de la pared izquierda del Tramo 3, junto al escalón de B2 a B3; el cuarto, encima de la Pausa: refund_desk con sus 2 puntos y msg_5_1 del Abuelito; sin dash), B «Oferta de verdad» (power bank en la repisa sobre la cuenta, salto + dash aéreo desde el escalón de las columnas 242-243) y C «Vida extra» (vida_extra_5_1 en la repisa alta junto a la pared derecha con la Oferta colgada que tira hacia ella; salto + dash aéreo desde el escalón de las columnas 251-252). ECONOMÍA: 8 puntos en la rejilla + la caja de 2 + los 2 del secreto A = 12; comprarlo todo cuesta 8 (3 + 2 + 3). 2 cargadores (+50, reutilizables, 10 s), 1 power bank, 1 punto de sincronización, 1 vida extra.",
+	"id": "5-1",
+	"name": "Oferta del día",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"target_duration_s": 480,
+	"difficulty": 4,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio «Entrada»",
+			"x_from": 0,
+			"x_to": 13
+		},
+		{
+			"name": "Tramo 1 «Pasillo de ofertas»",
+			"x_from": 14,
+			"x_to": 80,
+			"patterns": [
+				"resistir"
+			]
+		},
+		{
+			"name": "Tramo 2 «Primera tienda»",
+			"x_from": 81,
+			"x_to": 135
+		},
+		{
+			"name": "Pausa",
+			"x_from": 136,
+			"x_to": 140
+		},
+		{
+			"name": "Tramo 3 «Caja sorpresa»",
+			"x_from": 141,
+			"x_to": 195,
+			"patterns": [
+				"mirar_o_no"
+			]
+		},
+		{
+			"name": "Tramo 4 «Atajo»",
+			"x_from": 196,
+			"x_to": 249,
+			"patterns": [
+				"falsa_urgencia"
+			]
+		},
+		{
+			"name": "Cierre «Caja de pago»",
+			"x_from": 250,
+			"x_to": 259
+		}
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 138,
+			"y": 11
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_devoluciones",
+			"x": 139,
+			"y": 6,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 2,
+			"memory_id": "msg_5_1",
+			"needs_debug": true,
+			"forbid_abilities": [
+				"dash"
+			],
+			"note": "A. Devoluciones (§4.1.1): pared con glitch visible solo con el Debug (columna 140, filas 5-6) en lo alto de la pared izquierda del Tramo 3, junto al escalon de B2 a B3 y antes de las cajas; dentro (columnas 136-139, encima de la Pausa), el mostrador refund_desk (sus 2 puntos propios + lo drenado y lo pagado en el atajo con trampa de este intento) y msg_5_1 del Abuelito. Ruta sin dash."
+		},
+		{
+			"id": "secreto_oferta_de_verdad",
+			"x": 247,
+			"y": 7,
+			"object": "power_bank_pickup",
+			"reward": "power_bank",
+			"note": "B. Oferta de verdad (§4.1.1): repisa sobre la cuenta regresiva del foso (columnas 247-248, fila 8); se llega con salto + dash aereo desde el escalon de las columnas 242-243 (la cuenta que se queda 10 s en el tercer ciclo da tiempo de sobra). Power bank."
+		},
+		{
+			"id": "secreto_vida_extra",
+			"x": 257,
+			"y": 7,
+			"object": "extra_life_pickup",
+			"reward": "extra_life",
+			"note": "C. Vida extra (§4.1.1): repisa alta junto a la pared derecha del Cierre (columnas 256-258, fila 8) con la Oferta colgada que tira hacia ella (la unica tentacion buena): salto + dash aereo desde el escalon de las columnas 251-252. vida_extra_5_1 (N = 3: la anterior, la del 4-1)."
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "5-2"
+		}
+	],
+	"grid": [
+		"####################################################################################################################################################################################################################################################################",
+		"#...............................................................................#......................................................#...........................................................#.........................................#####.................#",
+		"#...............................................................................#......................................................#...........................................................#.........................................#####.................#",
+		"#...............................................................................#......................................................#...........................................................#.............................................#.................#",
+		"#....................................................................E.................................................................######......................................................................................................................#",
+		"#......................................................o.......................................o..............o.........o..............#...............................................................................o..........................................E#",
+		"#.....................--------------------------------------------..------------#------------------------------------------------......#...S...----------------------------------------------------#---------------------------------------..----#--...............#",
+		"#...................--..............E...........................................#.............................E........................######--....................................................#.............................................#.................#",
+		"#.................................................o.............................#......................................................#...........................................................#.............................................#.....--.......####",
+		"#.....................-------------------------------------------------------...###.---------------------------------------------------#.......-------------------------------------------------...##.-------------------------------------------#.................#",
+		"#.............................................................................--#.........................................................................................E......................--#..............................................--.......--......#",
+		"#..P........o....^.E............................................................#............................................E............C........................................................#......................................................o...G....#",
+		"#####################################################################################################################################################################################################################################################.....##########",
+		"#####################################################################################################################################################################################################################################################.....##########"
+	],
+	"objects": [
+		{
+			"type": "eco_line",
+			"x": 8,
+			"y": 8,
+			"params": {
+				"id": "eco_bienvenida_5_1",
+				"text": "Aquí todo es para ti, {apodo}. Solo tienes que querer.",
+				"duration_s": 4.0,
+				"height_tiles": 4
+			}
+		},
+		{
+			"type": "shop_item",
+			"x": 104,
+			"y": 8,
+			"params": {
+				"id": "tienda_sync",
+				"product": "sync"
+			}
+		},
+		{
+			"type": "shop_item",
+			"x": 106,
+			"y": 8,
+			"params": {
+				"id": "tienda_energia",
+				"product": "energy"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 95,
+			"y": 11,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 140,
+			"y": 5,
+			"params": {
+				"id": "pared_devoluciones",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"visible_only_with_debug": true
+			}
+		},
+		{
+			"type": "refund_desk",
+			"x": 137,
+			"y": 6,
+			"params": {
+				"id": "devoluciones_5_1"
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 139,
+			"y": 6,
+			"params": {
+				"id": "mensaje_5_1",
+				"memory_id": "msg_5_1"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 155,
+			"y": 5,
+			"params": {
+				"id": "caja_energy",
+				"content": "energy"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 158,
+			"y": 5,
+			"params": {
+				"id": "caja_points",
+				"content": "points",
+				"amount": 2
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 161,
+			"y": 5,
+			"params": {
+				"id": "caja_subscription",
+				"content": "subscription"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 164,
+			"y": 5,
+			"params": {
+				"id": "caja_empty",
+				"content": "empty"
+			}
+		},
+		{
+			"type": "shortcut_door",
+			"x": 240,
+			"y": 3,
+			"params": {
+				"id": "atajo_dos_plantas",
+				"trap": "subscription",
+				"trap_distance_tiles": 3
+			}
+		},
+		{
+			"type": "charger",
+			"x": 205,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 246,
+			"y": 12,
+			"params": {
+				"id": "cuenta_foso",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 247,
+			"y": 7,
+			"params": {
+				"id": "power_bank_5_1"
+			}
+		},
+		{
+			"type": "extra_life_pickup",
+			"x": 257,
+			"y": 7,
+			"params": {
+				"id": "vida_extra_5_1",
+				"secret_id": "C"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 254,
+			"y": 10,
+			"params": {
+				"id": "terminal_pagar",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"skin": "checkout",
+				"offline_text": "Total: 0. Gracias por mirar."
+			}
+		}
+	],
+	"enemies": [
+		{
+			"id": "oferta_carrito",
+			"type": "offer_sign",
+			"x": 19,
+			"y": 11
+		},
+		{
+			"id": "oferta_colgada_b2",
+			"type": "offer_sign",
+			"x": 36,
+			"y": 7,
+			"params": {
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_colgada_b3",
+			"type": "offer_sign",
+			"x": 69,
+			"y": 4,
+			"params": {
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_llevate_dos",
+			"type": "offer_sign",
+			"x": 110,
+			"y": 7,
+			"params": {
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_pie_t2",
+			"type": "offer_sign",
+			"x": 125,
+			"y": 11
+		},
+		{
+			"id": "suscripcion_t3",
+			"type": "subscription",
+			"x": 170,
+			"y": 10
+		},
+		{
+			"id": "oferta_buena",
+			"type": "offer_sign",
+			"x": 258,
+			"y": 5,
+			"params": {
+				"mount": "wall"
+			}
+		}
+	]
+}

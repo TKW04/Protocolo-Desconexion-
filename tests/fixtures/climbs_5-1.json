@@ -1,0 +1,712 @@
+{
+ "format": "isak-climbs/1",
+ "level": "5-1",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "78,11->78,9",
+   "section": "Tramo 1 «Pasillo de ofertas»",
+   "from": {
+    "cell": [
+     78,
+     11
+    ],
+    "ledge": [
+     18,
+     79
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     78,
+     9
+    ],
+    "ledge": [
+     78,
+     79
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 5056.0,
+   "target_x_px": 5056.0,
+   "debug": false
+  },
+  {
+   "id": "193,11->193,9",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     193,
+     11
+    ],
+    "ledge": [
+     81,
+     194
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     193,
+     9
+    ],
+    "ledge": [
+     193,
+     194
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 12416.0,
+   "target_x_px": 12416.0,
+   "debug": false
+  },
+  {
+   "id": "242,11->242,9",
+   "section": "Tramo 4 «Atajo»",
+   "from": {
+    "cell": [
+     242,
+     11
+    ],
+    "ledge": [
+     196,
+     244
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     242,
+     9
+    ],
+    "ledge": [
+     242,
+     243
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 15552.0,
+   "target_x_px": 15552.0,
+   "debug": false
+  },
+  {
+   "id": "246,11->243,9",
+   "section": "Tramo 4 «Atajo»",
+   "from": {
+    "cell": [
+     246,
+     11
+    ],
+    "ledge": [
+     246,
+     248
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     243,
+     9
+    ],
+    "ledge": [
+     242,
+     243
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 15744.0,
+   "target_x_px": 15616.0,
+   "debug": false
+  },
+  {
+   "id": "248,11->251,9",
+   "section": "Tramo 4 «Atajo»",
+   "from": {
+    "cell": [
+     248,
+     11
+    ],
+    "ledge": [
+     246,
+     248
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     251,
+     9
+    ],
+    "ledge": [
+     251,
+     252
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 15936.0,
+   "target_x_px": 16064.0,
+   "debug": false
+  },
+  {
+   "id": "251,11->251,9",
+   "section": "Cierre «Caja de pago»",
+   "from": {
+    "cell": [
+     251,
+     11
+    ],
+    "ledge": [
+     250,
+     258
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     251,
+     9
+    ],
+    "ledge": [
+     251,
+     252
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 16128.0,
+   "target_x_px": 16128.0,
+   "debug": false
+  },
+  {
+   "id": "78,9->76,8",
+   "section": "Tramo 1 «Pasillo de ofertas»",
+   "from": {
+    "cell": [
+     78,
+     9
+    ],
+    "ledge": [
+     78,
+     79
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     76,
+     8
+    ],
+    "ledge": [
+     22,
+     76
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 4992.0,
+   "target_x_px": 4928.0,
+   "debug": false
+  },
+  {
+   "id": "193,9->191,8",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     193,
+     9
+    ],
+    "ledge": [
+     193,
+     194
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     191,
+     8
+    ],
+    "ledge": [
+     143,
+     191
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 12352.0,
+   "target_x_px": 12288.0,
+   "debug": false
+  },
+  {
+   "id": "251,9->248,7",
+   "section": "Cierre «Caja de pago»",
+   "from": {
+    "cell": [
+     251,
+     9
+    ],
+    "ledge": [
+     251,
+     252
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     248,
+     7
+    ],
+    "ledge": [
+     247,
+     248
+    ],
+    "row": 7
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 16064.0,
+   "target_x_px": 15936.0,
+   "debug": false
+  },
+  {
+   "id": "22,8->21,6",
+   "section": "Tramo 1 «Pasillo de ofertas»",
+   "from": {
+    "cell": [
+     22,
+     8
+    ],
+    "ledge": [
+     22,
+     76
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     21,
+     6
+    ],
+    "ledge": [
+     20,
+     21
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1408.0,
+   "debug": false
+  },
+  {
+   "id": "143,8->142,6",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     143,
+     8
+    ],
+    "ledge": [
+     143,
+     191
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     142,
+     6
+    ],
+    "ledge": [
+     141,
+     142
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 9152.0,
+   "target_x_px": 9152.0,
+   "debug": false
+  },
+  {
+   "id": "21,6->22,5",
+   "section": "Tramo 1 «Pasillo de ofertas»",
+   "from": {
+    "cell": [
+     21,
+     6
+    ],
+    "ledge": [
+     20,
+     21
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     22,
+     5
+    ],
+    "ledge": [
+     22,
+     65
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 1408.0,
+   "target_x_px": 1408.0,
+   "debug": false
+  },
+  {
+   "id": "142,6->143,5",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     142,
+     6
+    ],
+    "ledge": [
+     141,
+     142
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     143,
+     5
+    ],
+    "ledge": [
+     143,
+     154
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 9152.0,
+   "target_x_px": 9152.0,
+   "debug": false
+  },
+  {
+   "id": "154,5->155,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     154,
+     5
+    ],
+    "ledge": [
+     143,
+     154
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     155,
+     4
+    ],
+    "ledge": [
+     155,
+     155
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 9904.0,
+   "target_x_px": 9920.0,
+   "debug": false
+  },
+  {
+   "id": "143,5->140,3",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     143,
+     5
+    ],
+    "ledge": [
+     143,
+     154
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     140,
+     3
+    ],
+    "ledge": [
+     136,
+     140
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 9152.0,
+   "target_x_px": 9024.0,
+   "debug": false
+  },
+  {
+   "id": "156,5->155,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     156,
+     5
+    ],
+    "ledge": [
+     156,
+     157
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     155,
+     4
+    ],
+    "ledge": [
+     155,
+     155
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 10000.0,
+   "target_x_px": 9984.0,
+   "debug": false
+  },
+  {
+   "id": "157,5->158,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     157,
+     5
+    ],
+    "ledge": [
+     156,
+     157
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     158,
+     4
+    ],
+    "ledge": [
+     158,
+     158
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 10096.0,
+   "target_x_px": 10112.0,
+   "debug": false
+  },
+  {
+   "id": "159,5->158,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     159,
+     5
+    ],
+    "ledge": [
+     159,
+     160
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     158,
+     4
+    ],
+    "ledge": [
+     158,
+     158
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 10192.0,
+   "target_x_px": 10176.0,
+   "debug": false
+  },
+  {
+   "id": "160,5->161,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     160,
+     5
+    ],
+    "ledge": [
+     159,
+     160
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     161,
+     4
+    ],
+    "ledge": [
+     161,
+     161
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 10288.0,
+   "target_x_px": 10304.0,
+   "debug": false
+  },
+  {
+   "id": "162,5->161,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     162,
+     5
+    ],
+    "ledge": [
+     162,
+     163
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     161,
+     4
+    ],
+    "ledge": [
+     161,
+     161
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 10384.0,
+   "target_x_px": 10368.0,
+   "debug": false
+  },
+  {
+   "id": "163,5->164,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     163,
+     5
+    ],
+    "ledge": [
+     162,
+     163
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     164,
+     4
+    ],
+    "ledge": [
+     164,
+     164
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 10480.0,
+   "target_x_px": 10496.0,
+   "debug": false
+  },
+  {
+   "id": "165,5->164,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     165,
+     5
+    ],
+    "ledge": [
+     165,
+     234
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     164,
+     4
+    ],
+    "ledge": [
+     164,
+     164
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 10576.0,
+   "target_x_px": 10560.0,
+   "debug": false
+  }
+ ]
+}

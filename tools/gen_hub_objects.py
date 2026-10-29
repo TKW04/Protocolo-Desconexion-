@@ -48,8 +48,8 @@ Salidas (assets/sprites/hub/):
                con el texto en fondo_profundo; margen de 3 px)       16x16
                world_icon_m1_00 (miniatura del Mundo 1:
                campana de notificaciones, en la carpeta)       16x16
-               world_icon_m2_00, world_icon_m3_00, world_icon_m4_00 (miniaturas de
-               los Mundos 2 y 3 para el album)                 16x16
+               world_icon_m2_00, world_icon_m3_00, world_icon_m4_00, world_icon_m5_00
+               (miniaturas de los Mundos 2-5 para el album)    16x16
                page_dot_current_00, page_dot_other_00          8x8
   menu/        menu_<opcion>_00 y menu_level_<id>_00 (+ _off_00):
                iconos de las opciones de Notas y de las carpetas 12x12
@@ -678,6 +678,27 @@ def world_icon_chat():
     return cv.img
 
 
+def world_icon_shop():
+    """Miniatura del Mundo 5 (album y carpeta; paso 10 de docs/propuesta-mundo-5.md §4.6): etiqueta de precio
+    colgada de su hilo con el rombo de los puntos de atencion."""
+    cv = Canvas(16, 16)
+    for y in range(3, 14):  # etiqueta con la punta a la izquierda
+        k = max(0, 4 - (y - 3)) if y < 8 else max(0, (y - 8))
+        cv.hline(2 + min(k, 4), 13, y, PA)
+    cv.vline(13, 3, 13, BO)
+    cv.hline(6, 13, 3, BO)
+    cv.hline(6, 13, 13, BO)
+    cv.rect(4, 7, 5, 9, FP)          # agujero
+    cv.p(3, 6, TR)                   # hilo
+    cv.p(2, 5, TR)
+    cv.p(1, 4, TR)
+    for y, x0, x1 in ((6, 9, 9), (7, 8, 10), (8, 7, 11), (9, 8, 10), (10, 9, 9)):  # rombo
+        cv.hline(x0, x1, y, AM)
+    cv.p(9, 7, AS)
+    cv.halo(FP)
+    return cv.img
+
+
 # ---------------------------------------------- iconos de los menus del hub (12x12)
 # Peticion del usuario (2026-10-26): iconos junto a las opciones de los menus de
 # Notas (Guardar con un disquete, Album, Apodo, Volver; Si / No de la
@@ -990,6 +1011,46 @@ def _menu_unread(cv):  # 4-3 Mensajes sin leer: bocadillo con el punto de no lei
     cv.rect(9, 0, 11, 2, AM)
 
 
+def _menu_offer(cv):  # 5-1 Oferta del dia: etiqueta de precio tachada
+    for y in range(2, 10):
+        k = max(0, 3 - (y - 2)) if y < 6 else max(0, y - 6)
+        cv.hline(1 + min(k, 3), 10, y, TC)
+    cv.rect(3, 5, 3, 6, FP)
+    for k in range(8):  # tachon
+        cv.p(3 + k, 9 - k, AM)
+
+
+def _menu_gift(cv):  # 5-2 Prueba gratis: caja de regalo con lazo
+    cv.rect(1, 4, 10, 10, TC)
+    cv.rect(1, 4, 10, 5, TT)
+    cv.vline(5, 4, 10, CA)
+    cv.vline(6, 4, 10, CA)
+    cv.rect(3, 1, 4, 3, CA)
+    cv.rect(7, 1, 8, 3, CA)
+
+
+def _menu_hourglass(cv):  # 5-3 Ultima oportunidad: reloj de arena
+    cv.hline(2, 9, 0, TC)
+    cv.hline(2, 9, 11, TC)
+    for y in range(1, 11):
+        k = abs(y - 5.5)
+        x0, x1 = int(round(5.5 - k * 0.8)), int(round(5.5 + k * 0.8))
+        cv.hline(max(2, x0), min(9, x1), y, TT)
+    cv.rect(5, 5, 6, 6, AM)
+    cv.hline(4, 7, 9, AM)
+    cv.hline(3, 8, 10, AM)
+
+
+def _menu_boss_vendor(cv):  # Jefe El Vendedor: maquina con la sonrisa de neon
+    cv.rect(1, 1, 10, 10, TT)
+    cv.rect(2, 2, 9, 6, SO)
+    cv.rect(3, 3, 4, 4, CA)
+    cv.rect(7, 3, 8, 4, CA)
+    cv.hline(3, 8, 8, AM)
+    cv.p(2, 7, AM)
+    cv.p(9, 7, AM)
+
+
 def _menu_boss_seen(cv):  # Jefe El Visto: el doble check
     for dx, col in ((0, CT), (4, CA)):
         for k in range(3):          # pata corta
@@ -1172,6 +1233,8 @@ MENU_DRAW = {"back": _menu_back, "yes": _menu_yes, "no": _menu_no, "enter": _men
              "level_3_boss": _menu_boss_curator,
              "level_4_1": _menu_recent_chats, "level_4_2": _menu_group, "level_4_3": _menu_unread,
              "level_4_boss": _menu_boss_seen,
+             "level_5_1": _menu_offer, "level_5_2": _menu_gift, "level_5_3": _menu_hourglass,
+             "level_5_boss": _menu_boss_vendor,
              "pause_resume": _pause_resume, "pause_settings": _pause_settings, "pause_exit_hub": _pause_exit_hub,
              "pause_quit": _pause_quit, "pause_eco_help": _pause_eco_help, "pause_low_sync": _pause_low_sync,
              "pause_debug_outline": _pause_debug_outline, "pause_rhythm": _pause_rhythm,
@@ -1182,7 +1245,8 @@ MENU_ICONS = ["save", "album", "nickname", "back", "yes", "no", "enter",
               "level_1_1", "level_1_2", "level_1_3", "level_1_boss",
               "level_2_1", "level_2_2", "level_2_3", "level_2_boss",
               "level_3_1", "level_3_2", "level_3_3", "level_3_boss",
-              "level_4_1", "level_4_2", "level_4_3", "level_4_boss", "level_unknown",
+              "level_4_1", "level_4_2", "level_4_3", "level_4_boss",
+              "level_5_1", "level_5_2", "level_5_3", "level_5_boss", "level_unknown",
               "attention", "access_cache", "access_kernel", "access_root",
               "pause_resume", "pause_settings", "pause_exit_hub", "pause_quit", "pause_eco_help",
               "pause_low_sync", "pause_debug_outline", "pause_rhythm", "pause_sound", "pause_display",
@@ -2010,6 +2074,7 @@ def outputs():
     out["icons/world_icon_m2_00.png"] = world_icon_feed()
     out["icons/world_icon_m3_00.png"] = world_icon_photo()
     out["icons/world_icon_m4_00.png"] = world_icon_chat()
+    out["icons/world_icon_m5_00.png"] = world_icon_shop()
     out["icons/icon_notas_00.png"] = icon_notas()
     out["icons/icon_calc_00.png"] = icon_calc()
     out["icons/icon_papelera_00.png"] = icon_papelera()
