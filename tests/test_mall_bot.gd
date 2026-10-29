@@ -6,6 +6,9 @@
 # objetivo) y comprador (`--buy`: compra la energia, paga el atajo con trampa y cancela su Suscripcion; el saldo
 # nunca baja de 0 y lo gastado es lo del camino). Sin muertes, sin golpes ni «Añadido al carrito», y vuelve al hub
 # con el nivel completado. Usa su propio guardado (ISAK_SAVE_PATH).
+# Desde el paso 13 (2026-10-29), tambien el 5-2 «Prueba gratis»: obtiene la Combinacion en la «Prueba gratis» y hace
+# las 5 Embestidas, los 4 Filos y los 3 Sismos del camino (frugal, en el 40-55 %; comprador: paga el atajo de Calc),
+# y la sala combos_test.
 extends GutTest
 
 const PLAYER: String = "res://tools/play_mall_bot.gd"
@@ -53,6 +56,40 @@ func test_mall_bot_completes_level_5_1_buying() -> void:
 			"buy tienda_energia con el pulso de espaldas: hecho", "pay_door atajo_dos_plantas con el pulso de espaldas: hecho",
 			"(minimo 0;", "hub: carpeta M5"]:
 		assert_string_contains(text, piece)
+
+
+func test_mall_bot_completes_level_5_2_frugal() -> void:
+	var run: Dictionary = _play("5-2")
+	var text: String = run["text"]
+	assert_eq(run["code"], 0, "El bot frugal del 5-2 termina con 0:\n%s" % run["summary"])
+	assert_string_contains(text, "play_mall_bot (5-2, frugal): OK")
+	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % run["summary"])
+	for piece: String in ["linea importante (Isak): «Esto no lo compré. Es mío.»", "hub cargado tras completar el 5-2",
+			"golpes 0, muertes 0", "TIENDA (frugal): muertes 0, golpes 0, congelaciones 0, «Añadido al carrito» 0",
+			"gastado 0", "drenado 0", "Suscripciones canceladas 3 / derrotadas 3",
+			"COMBOS: Combinacion true; Embestidas 5 (camino 5), Filos 4 (camino 4), Sismos 3 (camino 3); denegados []",
+			"caja caja_puntos_t1 abierta con el pulso: hecho", "terminal de la azotea activada", "hub: carpeta M5"]:
+		assert_string_contains(text, piece)
+	assert_false(text.contains("SIN EFECTO"), "Cada pulso del camino hace efecto")
+	assert_false(text.contains("siguen en pie"), "Cada combo rompe lo suyo")
+
+
+func test_mall_bot_completes_level_5_2_buying() -> void:
+	var run: Dictionary = _play("5-2", ["--profile", "comprador"])
+	var text: String = run["text"]
+	assert_eq(run["code"], 0, "El bot comprador del 5-2 termina con 0:\n%s" % run["summary"])
+	assert_string_contains(text, "play_mall_bot (5-2, comprador): OK")
+	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % run["summary"])
+	for piece: String in ["hub cargado tras completar el 5-2", "TIENDA (comprador): muertes 0, golpes 0",
+			"gastado 2", "camino 2)", "drenado 0", "pared con glitch disuelta con el Debug",
+			"pay_door caja_calc con el pulso de espaldas: hecho", "(minimo 0;", "hub: carpeta M5"]:
+		assert_string_contains(text, piece)
+
+
+func test_mall_bot_completes_the_combos_room() -> void:
+	var run: Dictionary = _play("combos_test")
+	assert_eq(run["code"], 0, "El bot recorre combos_test:\n%s" % run["summary"])
+	assert_string_contains(run["text"], "Embestidas 2 (camino 2), Filos 2 (camino 2), Sismos 1 (camino 1)")
 
 
 func test_mall_bot_rejects_other_worlds_and_profiles() -> void:

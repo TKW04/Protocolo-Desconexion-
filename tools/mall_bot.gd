@@ -29,8 +29,15 @@
 ## real de las cajas sorpresa (56 px, 8 por debajo de la fila del camino); vuelve al despegue de un dash en el suelo si
 ## la frenada del anterior lo paso; y, si un dash que baja se posa antes en una plataforma de una via, sigue hasta la
 ## fila del camino.
-## Los combos (`combo_ram`, `combo_edge`, `combo_quake`) aun no estan: el 5-1 no tiene
-## la Combinacion (se obtiene en el 5-2, paso 13).
+## Combinacion (5-2, paso 13; el 5-2 empieza sin ella y la obtiene en la «Prueba gratis», cerrando las lineas de la
+## escena):
+## - `combo_ram` (Embestida): salto vertical desde `ram.x0`, dash aereo a `ram.dash_after_s` y abajo mantenido para que
+##   salga a los `ram.dash_frames` cuadros del dash. El camino sigue desde la celda de despegue: si Isak aterriza en
+##   otra fila (`ram.land_px`), el bot salta los pasos hasta el primero que sale de su fila.
+## - `combo_edge` (Filo): comprimido, salto (en el sitio o andando) desde `takeoff_x_px` y Deslizar a `dash_after_s`.
+## - `combo_quake` (Sismo): comprimido en `quake.x_px`, salto en el sitio y abajo mantenido al subir.
+## - `open_box`: caja sorpresa que tapa el camino (pulso de cara pegado a ella: desde la x del camino no llega).
+## Comprueba que cada combo sale y rompe lo que el paso dice (`breaks`) y que hace tantos como el camino.
 ## Comprobaciones (§7.3): completa el nivel y vuelve al hub con el en completed_levels;
 ## 0 muertes; 0 «Añadido al carrito»; 0 congelaciones; saldo nunca < 0; energia
 ## minima frente al camino; duracion frente al 40-55 % del objetivo (solo frugal; el
@@ -207,6 +214,19 @@ func _check_completed() -> bool:
 	if balance != _balance_start + _gained - _lost or _lost != _spent:
 		return _fail("cuentas del saldo: %d != %d + %d - %d (gastado %d)" % [balance, _balance_start, _gained, _lost,
 			_spent])
+	var want: Dictionary = {"combo_ram": 0, "combo_edge": 0, "combo_quake": 0}
+	for step: Dictionary in _steps:
+		var kind: String = String(step.get("action", ""))
+		if want.has(kind):
+			want[kind] = int(want[kind]) + 1
+	if int(want["combo_ram"]) + int(want["combo_edge"]) + int(want["combo_quake"]) > 0:
+		_note("COMBOS: Combinacion %s; Embestidas %d (camino %d), Filos %d (camino %d), Sismos %d (camino %d); denegados [%s]; cajas abiertas [%s]" % [
+			GameState.is_ability_obtained(GameState.ABILITY_COMBO), _rams, want["combo_ram"], _edges, want["combo_edge"],
+			_quakes, want["combo_quake"], ", ".join(_combo_denials), ", ".join(_boxes_opened)])
+		if not GameState.is_ability_obtained(GameState.ABILITY_COMBO):
+			return _fail("el camino pide combos y la Combinacion no queda obtenida")
+		if _rams != int(want["combo_ram"]) or _edges != int(want["combo_edge"]) or _quakes != int(want["combo_quake"]):
+			return _fail("combos hechos distintos de los del camino")
 	if not _is_test_room() and _target_s > 0.0 and _profile == "frugal" and (ratio < RATIO_MIN or ratio > RATIO_MAX):
 		return _fail("la duracion (%.1f s) queda fuera del %.0f-%.0f %% del objetivo (%d s)" % [game_s,
 			RATIO_MIN * 100.0, RATIO_MAX * 100.0, int(_target_s)])
@@ -345,7 +365,305 @@ func _do_extra_step(s: Dictionary, action: String) -> bool:
 			return await _pay_step(s, action)
 		"wait_countdown":
 			return await _wait_countdown(s)
+		"open_box":
+			return await _open_box_step(s)
+		"combo_ram":
+			return await _ram_step(s)
+		"combo_edge":
+			return await _edge_step(s)
+		"combo_quake":
+			return await _quake_step(s)
 	return await super._do_extra_step(s, action)
+
+
+## Paso `open_box`: caja sorpresa que tapa el camino; pulso de cara (o laser, `with`)
+## desde `x_px` mirando a `facing`. Hecho cuando la caja queda abierta o destruida.
+var _boxes_opened: PackedStringArray = []
+## Distancia (px) del centro de Isak al lado de la caja desde la que el bot la abre con el pulso.
+const BOX_PULSE_GAP_PX: float = 40.0
+
+
+func _open_box_step(s: Dictionary) -> bool:
+	var id: String = String(s.get("target", {}).get("id", ""))
+	var box := _object(id) as SurpriseBox
+	if box == null:
+		return _fail("paso %d: no hay caja sorpresa %s" % [_step_index, id])
+	var done := func() -> bool: return box.is_opened() or box.is_destroyed()
+	if done.call():
+		return true
+	var at: Vector2 = _px(s["at"])
+	var laser: bool = String(s.get("with", "pulse")) == "laser"
+	var x: float = float(s.get("x_px", at.x))
+	if not laser:
+		# El pulso real no llega a la caja desde la x del camino (5-2, caja_puntos_t1: 128 px): se pega a ella.
+		var r: Rect2 = box.get_body_rect()
+		var f: float = float(s.get("facing", 1))
+		var near_x: float = r.position.x - BOX_PULSE_GAP_PX if f > 0.0 else r.end.x + BOX_PULSE_GAP_PX
+		if (near_x - x) * f > 0.0:
+			if _verbose:
+				_note("paso %d: se acerca a la caja %s (%.0f -> %.0f)" % [_step_index, id, x, near_x])
+			x = near_x
+	if not await _walk_to(x, at.y):
+		return false
+	for attempt: int in 3:
+		if done.call():
+			break
+		await _face(float(s.get("facing", 1)))
+		if laser:
+			await _wait_until(func() -> bool: return _has_control() and _isak.can_start_laser(), 1.0)
+			_tap(A_LASER)
+		else:
+			await _wait_can_pulse()
+			_tap(A_PULSE)
+		await _wait_until(done, 0.6)
+	var ok: bool = done.call()
+	if ok:
+		_boxes_opened.append("%s (%s)" % [id, String(s.get("content", "?"))])
+	_note("caja %s abierta con %s: %s (%s; saldo %d)" % [id, "el laser" if laser else "el pulso",
+		"hecho" if ok else "SIN EFECTO", _where(), GameState.attention_points])
+	return ok
+
+
+# --- Combinacion (5-2) ---
+
+## Pasos que el bot salta tras una Embestida que deja a Isak en otra fila (el camino
+## sigue desde la celda de despegue; Isak aterriza en `land_px`).
+var _skip_until: int = -1
+var _rams: int = 0
+var _edges: int = 0
+var _quakes: int = 0
+var _combo_denials: PackedStringArray = []
+
+
+## Cuadros que hay que mantener abajo para que salga un combo de abajo (combo.hold_s).
+func _combo_hold_frames() -> int:
+	return int(ceil(_isak.abilities.combo_hold_s * 60.0)) + 1
+
+
+## Espera a que Isak este en el suelo, con control y sin poses (antes de un combo).
+func _combo_ready() -> bool:
+	if DebugMode.is_active():
+		await _debug_off()
+	var ready := func() -> bool:
+		return _has_control() and _isak.is_on_floor() and not _isak.is_comboing() and _isak.can_jump() \
+			and not _isak.is_laser_posing()
+	return await _wait_until(ready, 2.0)
+
+
+## Anota y comprueba los obstaculos que el paso dice romper (`breaks`).
+func _check_breaks(s: Dictionary, label: String) -> bool:
+	var missing: PackedStringArray = []
+	for id: Variant in s.get("breaks", []):
+		var node: Node = _object(String(id))
+		if node is Shutter and not (node as Shutter).is_broken():
+			missing.append(String(id))
+		elif node is ClearanceShelf and not (node as ClearanceShelf).is_cleared():
+			missing.append(String(id))
+	if not missing.is_empty():
+		_note("paso %d (%s): siguen en pie %s (%s; energia %.0f)" % [_step_index, label, ", ".join(missing), _where(),
+			GameState.debug_energy])
+		return false
+	return true
+
+
+## Paso `combo_ram` (Embestida): salto vertical desde `ram.x0`, dash aereo hacia
+## `ram.dir` a `ram.dash_after_s` del despegue y abajo mantenido para que el combo
+## salga a los `ram.dash_frames` cuadros del dash; cae en diagonal hasta el suelo.
+## El camino sigue desde la celda de despegue: si Isak aterriza en otra fila, el bot
+## reanuda en el primer paso que sale de su fila y se anda desde alli.
+func _ram_step(s: Dictionary) -> bool:
+	var ram: Dictionary = s.get("ram", {})
+	var at: Vector2 = _px(s["at"])
+	var dir: float = float(ram.get("dir", 1))
+	if not await _walk_to(float(ram.get("x0", at.x)), at.y):
+		return false
+	if not await _combo_ready() or not await _wait_dash_ready():
+		_note("paso %d: la Embestida no puede empezar (%s; %s)" % [_step_index, String(_isak.dash_denial()), _where()])
+		return false
+	await _press_jump()
+	var frames: int = roundi(float(ram.get("dash_after_s", 0.2)) * 60.0)
+	var held: int = 0
+	while held < frames:
+		_set_axis(0.0)
+		if held >= 6 and Input.is_action_pressed(A_JUMP) and _isak.velocity.y >= 0.0:
+			_release_jump()
+		await _tick()
+		if not get_tree().paused:
+			held += 1
+	_set_axis(dir)
+	_tap(A_DASH)
+	var started: bool = await _wait_until(func() -> bool: return _isak.is_dashing(), 0.1)
+	_release_jump()
+	if not started:
+		_set_axis(0.0)
+		_combo_denials.append("%d:dash %s" % [_step_index, String(_isak.dash_denial())])
+		_note("paso %d: el dash de la Embestida no sale (%s; %s)" % [_step_index, String(_isak.dash_denial()), _where()])
+		return false
+	_dashes += 1
+	var down_at: int = maxi(0, int(ram.get("dash_frames", 1)) - _combo_hold_frames())
+	var count: int = 0
+	while count < down_at and _isak.is_dashing():
+		await _tick()
+		count += 1
+	_hold(A_DOWN, true)
+	var rammed: bool = await _wait_until(func() -> bool: return _isak.is_comboing(), 0.4)
+	if not rammed:
+		_hold(A_DOWN, false)
+		_set_axis(0.0)
+		_combo_denials.append("%d:ram %s" % [_step_index, String(_isak.combo_denial(Isak.COMBO_RAM))])
+		_note("paso %d: la Embestida no sale (%s; %s)" % [_step_index, String(_isak.combo_denial(Isak.COMBO_RAM)), _where()])
+		return false
+	_rams += 1
+	await _wait_until(func() -> bool: return not _isak.is_comboing() and _isak.is_on_floor(), 3.0)
+	_hold(A_DOWN, false)
+	_set_axis(0.0)
+	await _settle()
+	var land: Array = ram.get("land_px", [at.x, at.y])
+	_note("Embestida %d desde x=%.0f hacia %+.0f: aterriza en %s (camino %.0f, %.0f; energia %.0f)" % [_rams,
+		float(ram.get("x0", at.x)), dir, _where(), float(land[0]), float(land[1]), GameState.debug_energy])
+	if _isak.is_dead() or not _check_breaks(s, "Embestida"):
+		return false
+	_resume_after_landing()
+	return true
+
+
+## Tras un movimiento que deja a Isak fuera de la celda del camino: si esta en otra
+## fila, salta hasta el primer paso que sale de su fila y se anda desde su x.
+func _resume_after_landing() -> void:
+	var pos: Vector2 = _isak.global_position
+	for k: int in range(_step_index + 1, _steps.size()):
+		var n: Dictionary = _steps[k]
+		var origin: Vector2
+		if n.has("from"):
+			origin = _px(n["from"])
+		elif n.has("at"):
+			origin = _px(n["at"])
+		else:
+			continue
+		if absf(origin.y - pos.y) < ROW_TOL and _walkable(pos.x, origin.x, pos.y):
+			if k > _step_index + 1:
+				_skip_until = k
+				_note("tras la Embestida sigue en el paso %d (salta %d paso(s) del camino desde la celda de despegue)" % [
+					k, k - _step_index - 1])
+			return
+	_note("tras la Embestida: ningun paso sale de la fila de %s" % _where())
+
+
+func _do_step(s: Dictionary) -> bool:
+	if _skip_until > _step_index:
+		if _verbose:
+			_note("paso %d (%s): saltado (Isak ya aterrizo mas adelante)" % [_step_index, _describe(s)])
+		return true
+	_skip_until = -1
+	return await _mall_do_step(s)
+
+
+## Paso `combo_edge` (Filo): comprimido, salto (en el sitio o andando, `jump`) desde
+## `takeoff_x_px` y Deslizar a `dash_after_s` del despegue hacia `dir`; tras el tramo
+## sigue comprimido hacia `dir` hasta aterrizar (o frena en `target_x_px`).
+func _edge_step(s: Dictionary) -> bool:
+	var dir: float = float(s.get("dir", 1))
+	var from: Vector2 = _px(s["from"])
+	var to: Vector2 = _px(s["to"])
+	var takeoff: float = float(s.get("takeoff_x_px", from.x))
+	var jump: Dictionary = s.get("jump", {})
+	var standing: bool = jump.get("target_x_px", null) != null and absf(float(jump["target_x_px"]) - takeoff) < 8.0
+	var after_target: Variant = s.get("target_x_px", null)
+	if not _isak.is_compressed():
+		return _fail("paso %d: el Filo pide estar comprimido" % _step_index)
+	if not await _combo_ready():
+		return false
+	if standing:
+		if not await _walk_to(takeoff, from.y):
+			return false
+	else:
+		var back: float = takeoff - dir * 26.0
+		if (_isak.global_position.x - back) * dir > 0.0 and _ground_at(back, from.y):
+			if not await _walk_to(back, from.y):
+				return false
+		var limit: int = 240
+		while limit > 0 and (takeoff - _isak.global_position.x) * dir > 2.0:
+			if not _isak.is_on_floor() or absf(_isak.global_position.y - from.y) > ROW_TOL:
+				_set_axis(0.0)
+				return false
+			_set_axis(dir)
+			await _tick()
+			limit -= 1
+	await _press_jump()
+	var frames: int = roundi(float(s.get("dash_after_s", 0.15)) * 60.0)
+	var held: int = 0
+	while held < frames:
+		_set_axis(0.0 if standing else dir)
+		await _tick()
+		if not get_tree().paused:
+			held += 1
+	_set_axis(dir)
+	_tap(A_DASH)
+	var started: bool = await _wait_until(func() -> bool: return _isak.is_comboing(), 0.1)
+	_release_jump()
+	if not started:
+		_set_axis(0.0)
+		_combo_denials.append("%d:edge %s" % [_step_index, String(_isak.combo_denial(Isak.COMBO_EDGE))])
+		_note("paso %d: el Filo no sale (%s; %s)" % [_step_index, String(_isak.combo_denial(Isak.COMBO_EDGE)), _where()])
+		return false
+	_edges += 1
+	var budget: int = 60 * 3
+	var left_floor: bool = not _isak.is_on_floor()
+	while budget > 0:
+		var edging: bool = _isak.is_comboing()
+		if not _isak.is_on_floor():
+			left_floor = true
+		elif not edging and left_floor:
+			break
+		var axis: float = dir
+		if not edging and after_target != null:
+			var vx: float = _isak.velocity.x
+			var err: float = float(after_target) - (_isak.global_position.x + vx * absf(vx) / (2.0 * _isak.physics.air_acceleration))
+			axis = clampf(err / 16.0, -1.0, 1.0) if absf(err) > 2.0 else 0.0
+		_set_axis(axis)
+		await _tick()
+		if _isak.is_dead():
+			return false
+		budget -= 1
+	_set_axis(0.0)
+	await _settle()
+	var ok: bool = _isak.is_on_floor() and absf(_isak.global_position.y - to.y) < ROW_TOL and _isak.is_compressed()
+	_note("Filo %d desde x=%.0f hacia %+.0f: llega a %s (camino celda %s; ranuras %s; energia %.0f)" % [_edges, takeoff,
+		dir, _where(), str(s["to"].get("cell", "?")), str(s.get("rails", [])), GameState.debug_energy])
+	return ok
+
+
+## Paso `combo_quake` (Sismo): comprimido en `quake.x_px`, salto en el sitio y abajo
+## mantenido al subir; cae en vertical y la onda recorre la planta.
+func _quake_step(s: Dictionary) -> bool:
+	var quake: Dictionary = s.get("quake", {})
+	var at: Vector2 = _px(s["at"])
+	if not _isak.is_compressed():
+		return _fail("paso %d: el Sismo pide estar comprimido" % _step_index)
+	if not await _walk_to(float(quake.get("x_px", at.x)), at.y):
+		return false
+	if not await _combo_ready():
+		return false
+	await _press_jump()
+	var rise: int = 0
+	while rise < 40 and (_isak.is_on_floor() or _isak.velocity.y < -120.0):
+		_set_axis(0.0)
+		await _tick()
+		rise += 1
+	_release_jump()
+	_hold(A_DOWN, true)
+	var started: bool = await _wait_until(func() -> bool: return _isak.is_comboing(), 0.4)
+	if not started:
+		_hold(A_DOWN, false)
+		_combo_denials.append("%d:quake %s" % [_step_index, String(_isak.combo_denial(Isak.COMBO_QUAKE))])
+		_note("paso %d: el Sismo no sale (%s; %s)" % [_step_index, String(_isak.combo_denial(Isak.COMBO_QUAKE)), _where()])
+		return false
+	_quakes += 1
+	await _wait_until(func() -> bool: return not _isak.is_comboing() and _isak.is_on_floor(), 3.0)
+	_hold(A_DOWN, false)
+	await _settle()
+	_note("Sismo %d en x=%.0f: %s (energia %.0f)" % [_quakes, float(quake.get("x_px", at.x)), _where(), GameState.debug_energy])
+	return _check_breaks(s, "Sismo")
 
 
 ## Suscripcion del paso: la del nivel por id o la que suelta la puerta de `trampa:<id>`.
@@ -556,7 +874,7 @@ func _off_grid() -> bool:
 
 ## Tramo andando que acaba en el despegue de un salto o dash aereo con el tiron a
 ## favor: termina en el despegue adelantado (si no, llega a el lanzado y lo pasa).
-func _do_step(s: Dictionary) -> bool:
+func _mall_do_step(s: Dictionary) -> bool:
 	if String(s.get("action", "")) == "walk" and _step_index + 1 < _steps.size():
 		var n: Dictionary = _steps[_step_index + 1]
 		var kind: String = String(n.get("action", ""))
