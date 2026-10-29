@@ -417,6 +417,6 @@ func test_notice_reads_the_keys_from_the_input_map() -> void:
 	var down: String = AbilityNotices.action_key_text(&"move_down", data)
 	var pinch: String = AbilityNotices.action_key_text(&"gesture_pinch", data)
 	assert_false(swipe.is_empty() or down.is_empty() or pinch.is_empty())
-	assert_eq(text, "Combinación: en el aire, Deslizar (%s) + abajo (%s) = Embestida · Pellizcar (%s) + Deslizar = Filo · Pellizcar + abajo = Sismo" % [swipe, down, pinch])
+	assert_eq(text, "Combinación en el aire · Embestida: Deslizar (%s) + abajo (%s) · Filo: Pellizcar (%s) + Deslizar · Sismo: Pellizcar + abajo" % [swipe, down, pinch])
 	assert_false(text.contains("{"), "Sin marcas sin sustituir")
 	assert_true(AbilityNotices.is_available(GameState.ABILITY_COMBO))

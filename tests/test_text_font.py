@@ -74,7 +74,7 @@ def ability_notice_strings():
         out.extend(v for k, v in data[key].items() if not k.startswith("_"))
     for entry in data["abilities"].values():
         out.append(entry["name"])
-        out.append(re.sub(r"\{[a-z]+\}", "", entry["text"]))
+        out.append(re.sub(r"\{[a-z]+(:[a-z_]+)?\}", "", entry["text"]))  # {name}, {control}, {key:<accion>}
     return out
 
 
