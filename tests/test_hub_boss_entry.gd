@@ -627,6 +627,13 @@ func test_seen_row_is_playable_after_4_3_and_world_5_waits_for_it() -> void:
 	# Paso 10 de docs/propuesta-mundo-5.md (2026-10-29): M5 ya tiene sus filas; el 5-1, jugable.
 	assert_eq(String(HubWorlds.levels(m5)[0]["id"]), "5-1", "Primera fila de M5: el 5-1")
 	assert_true(HubWorlds.can_enter(&"5-1"), "El 5-1 se juega al vencer a El Visto")
+	# Paso 13 (2026-10-29): el 5-2, jugable cuando el 5-1 lo desbloquea; el 5-3 y el jefe siguen «Próximamente».
+	assert_false(HubWorlds.can_enter(&"5-2"), "El 5-2 espera al 5-1")
+	GameState.mark_level_completed(&"5-1")
+	GameState.unlock_level(&"5-2")
+	assert_true(HubWorlds.can_enter(&"5-2"), "Tras el 5-1, el 5-2 se juega")
+	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(m5)[2]), "El 5-3, «Próximamente»")
+	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(m5)[3]), "El Vendedor, «Próximamente»")
 	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m6")), HubWorlds.STATE_LOCKED, "M6 sigue esperando a 5-boss")
 
 

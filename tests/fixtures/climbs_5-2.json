@@ -1,0 +1,456 @@
+{
+ "format": "isak-climbs/1",
+ "level": "5-2",
+ "tile_size": 64.0,
+ "note": "Generado por tools/level_climbs.py; no editar a mano.",
+ "climbs": [
+  {
+   "id": "36,11->36,9",
+   "section": "Tramo 1 «Embestida»",
+   "from": {
+    "cell": [
+     36,
+     11
+    ],
+    "ledge": [
+     1,
+     45
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     36,
+     9
+    ],
+    "ledge": [
+     36,
+     37
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 2368.0,
+   "target_x_px": 2368.0,
+   "debug": false
+  },
+  {
+   "id": "58,11->58,9",
+   "section": "Tramo 1 «Embestida»",
+   "from": {
+    "cell": [
+     58,
+     11
+    ],
+    "ledge": [
+     47,
+     67
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     58,
+     9
+    ],
+    "ledge": [
+     58,
+     59
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3776.0,
+   "target_x_px": 3776.0,
+   "debug": false
+  },
+  {
+   "id": "74,11->75,10",
+   "section": "Tramo 1 «Embestida»",
+   "from": {
+    "cell": [
+     74,
+     11
+    ],
+    "ledge": [
+     69,
+     74
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     75,
+     10
+    ],
+    "ledge": [
+     75,
+     75
+    ],
+    "row": 10
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 4784.0,
+   "target_x_px": 4800.0,
+   "debug": false
+  },
+  {
+   "id": "159,11->159,9",
+   "section": "Tramo 2 «Filo»",
+   "from": {
+    "cell": [
+     159,
+     11
+    ],
+    "ledge": [
+     129,
+     160
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     159,
+     9
+    ],
+    "ledge": [
+     159,
+     160
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 10240.0,
+   "target_x_px": 10240.0,
+   "debug": false
+  },
+  {
+   "id": "310,11->310,9",
+   "section": "Tramo 4 «Prueba terminada»",
+   "from": {
+    "cell": [
+     310,
+     11
+    ],
+    "ledge": [
+     167,
+     311
+    ],
+    "row": 11
+   },
+   "to": {
+    "cell": [
+     310,
+     9
+    ],
+    "ledge": [
+     310,
+     311
+    ],
+    "row": 9
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 19904.0,
+   "target_x_px": 19904.0,
+   "debug": false
+  },
+  {
+   "id": "37,9->38,8",
+   "section": "Tramo 1 «Embestida»",
+   "from": {
+    "cell": [
+     37,
+     9
+    ],
+    "ledge": [
+     36,
+     37
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     38,
+     8
+    ],
+    "ledge": [
+     38,
+     49
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 2432.0,
+   "target_x_px": 2432.0,
+   "debug": false
+  },
+  {
+   "id": "59,9->60,8",
+   "section": "Tramo 1 «Embestida»",
+   "from": {
+    "cell": [
+     59,
+     9
+    ],
+    "ledge": [
+     58,
+     59
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     60,
+     8
+    ],
+    "ledge": [
+     60,
+     71
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 3840.0,
+   "target_x_px": 3840.0,
+   "debug": false
+  },
+  {
+   "id": "159,9->157,8",
+   "section": "Tramo 2 «Filo»",
+   "from": {
+    "cell": [
+     159,
+     9
+    ],
+    "ledge": [
+     159,
+     160
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     157,
+     8
+    ],
+    "ledge": [
+     129,
+     157
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 10176.0,
+   "target_x_px": 10112.0,
+   "debug": false
+  },
+  {
+   "id": "310,9->308,8",
+   "section": "Tramo 4 «Prueba terminada»",
+   "from": {
+    "cell": [
+     310,
+     9
+    ],
+    "ledge": [
+     310,
+     311
+    ],
+    "row": 9
+   },
+   "to": {
+    "cell": [
+     308,
+     8
+    ],
+    "ledge": [
+     278,
+     308
+    ],
+    "row": 8
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 19840.0,
+   "target_x_px": 19776.0,
+   "debug": false
+  },
+  {
+   "id": "98,8->98,6",
+   "section": "Tramo 2 «Filo»",
+   "from": {
+    "cell": [
+     98,
+     8
+    ],
+    "ledge": [
+     97,
+     124
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     98,
+     6
+    ],
+    "ledge": [
+     97,
+     98
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 6336.0,
+   "target_x_px": 6336.0,
+   "debug": false
+  },
+  {
+   "id": "246,8->245,6",
+   "section": "Tramo 4 «Prueba terminada»",
+   "from": {
+    "cell": [
+     246,
+     8
+    ],
+    "ledge": [
+     246,
+     273
+    ],
+    "row": 8
+   },
+   "to": {
+    "cell": [
+     245,
+     6
+    ],
+    "ledge": [
+     244,
+     245
+    ],
+    "row": 6
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 15744.0,
+   "target_x_px": 15744.0,
+   "debug": false
+  },
+  {
+   "id": "98,6->99,5",
+   "section": "Tramo 2 «Filo»",
+   "from": {
+    "cell": [
+     98,
+     6
+    ],
+    "ledge": [
+     97,
+     98
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     99,
+     5
+    ],
+    "ledge": [
+     99,
+     124
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 6336.0,
+   "target_x_px": 6336.0,
+   "debug": false
+  },
+  {
+   "id": "245,6->246,5",
+   "section": "Tramo 4 «Prueba terminada»",
+   "from": {
+    "cell": [
+     245,
+     6
+    ],
+    "ledge": [
+     244,
+     245
+    ],
+    "row": 6
+   },
+   "to": {
+    "cell": [
+     246,
+     5
+    ],
+    "ledge": [
+     246,
+     321
+    ],
+    "row": 5
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 15744.0,
+   "target_x_px": 15744.0,
+   "debug": false
+  },
+  {
+   "id": "6,5->6,3",
+   "section": "Inicio «Paquete completo»",
+   "from": {
+    "cell": [
+     6,
+     5
+    ],
+    "ledge": [
+     1,
+     19
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     6,
+     3
+    ],
+    "ledge": [
+     6,
+     9
+    ],
+    "row": 3
+   },
+   "rise_tiles": 2,
+   "direction": 1,
+   "speed": "walk",
+   "takeoff_x_px": 448.0,
+   "target_x_px": 448.0,
+   "debug": false
+  }
+ ]
+}

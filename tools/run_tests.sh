@@ -93,7 +93,9 @@ rm -f "$IMPORT_LOG"
 # Desde el 2026-10-29 (paso 11 de docs/propuesta-mundo-5.md) GUT lanza tambien el bot de la tienda en el 5-1
 # (tests/test_mall_bot.gd: tools/play_mall_bot.gd en procesos aparte, logica en tools/mall_bot.gd; perfiles frugal
 # —falla si gasta o si la duracion sale del 40-55 % del objetivo— y comprador —compra, paga el atajo, saldo nunca
-# < 0—; unos 90 s de pared con la exportacion de los dos caminos; su propio ISAK_SAVE_PATH).
+# < 0—; unos 90 s de pared con la exportacion de los dos caminos; su propio ISAK_SAVE_PATH). Desde el paso 13
+# (2026-10-29) tambien el 5-2 (obtiene la Combinacion y hace los combos del camino; frugal y comprador) y la sala
+# combos_test; unos 4 min de pared en total.
 # Desde el 2026-10-21 (paso 14 de docs/propuesta-jefe-alerta-mayor.md) GUT lanza tambien el bot del jefe
 # (tests/test_boss_bot.gd: tools/play_boss_bot.gd en procesos aparte, perfiles ideal y torpe en Caché,
 # Kernel y Raíz y el quieto que pierde; unos 50 s de pared en total; usa user://bot_save.json).
@@ -228,6 +230,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 10 del Mundo 5 (2026-10-29): el 5-1 real (tests/test_level_5_1.py: camino exportado frugal y del
 # comprador, subidas al dia; tests/test_level_5_1.gd, GUT) y la puerta «Pagar» (tools/gen_world5_exit_checkout.py
 # --check).
+# Desde el paso 13 del Mundo 5 (2026-10-29): el 5-2 real (tests/test_level_5_2.py: camino exportado frugal y del
+# comprador, obstaculos de los combos, secretos y subidas al dia; tests/test_level_5_2.gd, GUT).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -237,7 +241,8 @@ _export_test_rooms() {
 		"$PROJECT_DIR"/data/levels/1-3.json "$PROJECT_DIR"/data/levels/2-1.json "$PROJECT_DIR"/data/levels/2-2.json \
 		"$PROJECT_DIR"/data/levels/2-3.json "$PROJECT_DIR"/data/levels/3-1.json \
 		"$PROJECT_DIR"/data/levels/3-2.json "$PROJECT_DIR"/data/levels/3-3.json "$PROJECT_DIR"/data/levels/4-1.json \
-		"$PROJECT_DIR"/data/levels/4-2.json "$PROJECT_DIR"/data/levels/4-3.json "$PROJECT_DIR"/data/levels/5-1.json; do
+		"$PROJECT_DIR"/data/levels/4-2.json "$PROJECT_DIR"/data/levels/4-3.json "$PROJECT_DIR"/data/levels/5-1.json \
+		"$PROJECT_DIR"/data/levels/5-2.json; do
 		python3 tools/validate_level.py --export-path "$EXPORT_DIR/$(basename "$room")" "$room" >/dev/null || return 1
 		[[ -s "$EXPORT_DIR/$(basename "$room")" ]] || return 1
 	done
@@ -253,6 +258,10 @@ _export_test_rooms() {
 	python3 tools/validate_level.py --buy --export-path "$EXPORT_DIR/5-1_buy.json" \
 		"$PROJECT_DIR/data/levels/5-1.json" >/dev/null || return 1
 	[[ -s "$EXPORT_DIR/5-1_buy.json" ]] || return 1
+	# El 5-2 con el camino del comprador (--buy, paso 13): paga el atajo de Calc.
+	python3 tools/validate_level.py --buy --export-path "$EXPORT_DIR/5-2_buy.json" \
+		"$PROJECT_DIR/data/levels/5-2.json" >/dev/null || return 1
+	[[ -s "$EXPORT_DIR/5-2_buy.json" ]] || return 1
 }
 # Pasadas del validador de alcanzabilidad sobre todos los niveles (sin mejoras, con mejoras, al maximo,
 # con el tope del acceso) y caminos exportados: son independientes, asi que se lanzan a la vez y se espera
@@ -275,7 +284,7 @@ _validate_levels() {
 if command -v python3 >/dev/null 2>&1; then
 	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
-		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_level_5_1.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
+		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_level_5_1.py tests/test_level_5_2.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_palette_mundo5.py tests/test_world4_schema.py tests/test_world4_validator.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py tests/test_world4_negatives.py \
@@ -297,6 +306,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 tools/level_climbs.py --check data/levels/4-2.json \
 		&& python3 tools/level_climbs.py --check data/levels/4-3.json \
 		&& python3 tools/level_climbs.py --check data/levels/5-1.json \
+		&& python3 tools/level_climbs.py --check data/levels/5-2.json \
 		&& python3 -I tools/validate_warp_objects.py >/dev/null && python3 -I tools/validate_hub_objects.py >/dev/null \
 		&& python3 -I tools/validate_eco_companion.py >/dev/null && python3 -I tools/validate_album_cards.py >/dev/null \
 		&& python3 -I tools/validate_extra_life.py >/dev/null && python3 -I tools/validate_help_prompt.py >/dev/null \

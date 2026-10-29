@@ -1,0 +1,517 @@
+{
+	"_notes": "",
+	"id": "5-2",
+	"name": "Prueba gratis",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"target_duration_s": 540,
+	"difficulty": 5,
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"dash": true,
+		"ground_pound": true,
+		"compress": true,
+		"combo": false
+	},
+	"camera": {
+		"vertical": "simple",
+		"limits": "grid"
+	},
+	"validation": {
+		"time_margin_s": 1.5,
+		"ceiling_margin_px": 16,
+		"hazard_margin_s": 0.1,
+		"start_energy": 100,
+		"sync_damage_budget": 0
+	},
+	"sections": [
+		{
+			"name": "Inicio «Paquete completo»",
+			"x_from": 0,
+			"x_to": 24
+		},
+		{
+			"name": "Tramo 1 «Embestida»",
+			"x_from": 25,
+			"x_to": 90,
+			"patterns": [
+				"caer_rompiendo"
+			]
+		},
+		{
+			"name": "Tramo 2 «Filo»",
+			"x_from": 91,
+			"x_to": 161,
+			"patterns": [
+				"ranura"
+			]
+		},
+		{
+			"name": "Pausa",
+			"x_from": 162,
+			"x_to": 166
+		},
+		{
+			"name": "Tramo 3 «Sismo»",
+			"x_from": 167,
+			"x_to": 241,
+			"patterns": [
+				"a_la_vez"
+			]
+		},
+		{
+			"name": "Tramo 4 «Prueba terminada»",
+			"x_from": 242,
+			"x_to": 312,
+			"patterns": [
+				"caer_rompiendo",
+				"ranura",
+				"a_la_vez"
+			]
+		},
+		{
+			"name": "Cierre «Caja de pago»",
+			"x_from": 313,
+			"x_to": 322
+		}
+	],
+	"checkpoints": [
+		{
+			"id": "sync_1",
+			"x": 164,
+			"y": 5
+		}
+	],
+	"secrets": [
+		{
+			"id": "secreto_probador",
+			"x": 91,
+			"y": 8,
+			"object": "power_bank_pickup",
+			"reward": "power_bank",
+			"gates": [
+				"ranura_probador"
+			],
+			"note": "B. Probador (§4.2.1): ranura de precios fuera del camino a la izquierda de la B2 del Tramo 2 (columnas 93-96, ranura en la fila 7) que solo cruza un Filo desde la B2; detras, la repisa del probador (columnas 91-92, cerrada por arriba) con el power bank."
+		},
+		{
+			"id": "secreto_saldo_de_saldos",
+			"x": 167,
+			"y": 8,
+			"reward": "attention_points",
+			"points": 2,
+			"gates": [
+				"saldos_secreto"
+			],
+			"note": "C. Saldo de saldos (§4.2.1): la B2 del Tramo 3 sigue a la izquierda del pozo al suelo (columna 181) con dos estanterias de saldos fuera del camino (columnas 179 y 170); la lejana solo entra en la vista con Isak en la columna justo antes de la primera, al otro lado del pozo (hay que colocarse); detras, 2 puntos."
+		},
+		{
+			"id": "secreto_tienda_calc",
+			"x": 314,
+			"y": 11,
+			"reward": [
+				"attention_points",
+				"memory"
+			],
+			"points": 1,
+			"memory_id": "msg_5_2",
+			"needs_debug": true,
+			"gates": [
+				"caja_calc"
+			],
+			"note": "A. Tienda de Calc (§4.2.1): pared con glitch visible solo con el Debug al final del suelo del Tramo 4 (columna 312, filas 10-11); detras, el cuarto de Calc debajo del Cierre con la caja registradora (atajo legitimo de 2 puntos, sin trampa), msg_5_2 del Abuelito y 1 punto."
+		}
+	],
+	"unlocks": [
+		{
+			"type": "level",
+			"id": "5-3"
+		}
+	],
+	"grid": [
+		"###################################################################################################################################################################################################################################################################################################################################",
+		"#.......................#.....................#.......#.............#.......#.............###....................................................................#....#..........................................................................#......................................................................#.........#",
+		"#.......................#.....................#.......#.............#.......#.............###....................................................................#....#..........................................................................#......................................................................#.........#",
+		"#.......o...............#.....................#.......#.............#.......#.............###....................................................................#....#..........................................................................#.........................................########.....................#.........#",
+		"#.....----..............#.....................#.......#.............#.......#.............###....................................................................................................................................................#................................................................................#",
+		"#..P....................#.....................#.......#.............#.......#.............###.......................................................................C........................E.....o.............................................#........o.................................................................o..G..#",
+		"####################....#.....................#.......#.............#.......#.............###......--------------------------....--------------------------------######--###------###-----------------------------------------------###--###..####....---------------------------######---------------------------------#######--##",
+		"#.......................#.............................#.....................#.............#......--..............................................................######..........................................................................#..--..................................................................#...#....##",
+		"#.......................#.............................#.....................#.............#......................................................................######Soo.......................................................................#......................................................................#...#..--##",
+		"##.---------------------#.............--------#---....#.....--------#---....#......###....###....----------------------------....-----------------------------...####################.##########-------------------------------------------------#....-----------------###--------....-------------------------------...#........##",
+		"#...................................--........#.....E.....--........#..........................................................................................--######.....................................................................................E....E....................................................--.....--..##",
+		"#.............................o...............#.........E...........#..................................o.........................................................######...........................o....E..................................................................................................................So.....##",
+		"#############################################################################################################################....##################################################################################################################################################################################################",
+		"#############################################################################################################################....##################################################################################################################################################################################################"
+	],
+	"objects": [
+		{
+			"type": "free_trial_box",
+			"x": 12,
+			"y": 5,
+			"params": {
+				"id": "prueba_gratis"
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 20,
+			"y": 6,
+			"params": {
+				"id": "persiana_salida",
+				"length_tiles": 4,
+				"orientation": "floor"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 56,
+			"y": 11,
+			"params": {
+				"id": "cargador_1",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 50,
+			"y": 9,
+			"params": {
+				"id": "persiana_banda_a",
+				"length_tiles": 4,
+				"orientation": "floor"
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 72,
+			"y": 9,
+			"params": {
+				"id": "persiana_banda_b",
+				"length_tiles": 4,
+				"orientation": "floor"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 75,
+			"y": 11,
+			"params": {
+				"id": "caja_puntos_t1",
+				"content": "points",
+				"amount": 2
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 84,
+			"y": 10,
+			"params": {
+				"id": "persiana_pared",
+				"length_tiles": 2,
+				"orientation": "wall"
+			}
+		},
+		{
+			"type": "price_rail",
+			"x": 125,
+			"y": 9,
+			"params": {
+				"id": "ranura_suelo",
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"slot_row": 1
+			}
+		},
+		{
+			"type": "price_rail",
+			"x": 125,
+			"y": 6,
+			"params": {
+				"id": "ranura_b2",
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"slot_row": 1
+			}
+		},
+		{
+			"type": "price_rail",
+			"x": 125,
+			"y": 3,
+			"params": {
+				"id": "ranura_b3",
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"slot_row": 1
+			}
+		},
+		{
+			"type": "price_rail",
+			"x": 93,
+			"y": 6,
+			"params": {
+				"id": "ranura_probador",
+				"width_tiles": 4,
+				"height_tiles": 4,
+				"slot_row": 1
+			}
+		},
+		{
+			"type": "power_bank_pickup",
+			"x": 91,
+			"y": 8,
+			"params": {
+				"id": "power_bank_5_2"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 94,
+			"y": 11,
+			"params": {
+				"id": "cargador_2",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "charger",
+			"x": 163,
+			"y": 5,
+			"params": {
+				"id": "cargador_3",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 229,
+			"y": 7,
+			"params": {
+				"id": "saldos_b2_1",
+				"group": "saldos_b2",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 234,
+			"y": 7,
+			"params": {
+				"id": "saldos_b2_2",
+				"group": "saldos_b2",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 239,
+			"y": 7,
+			"params": {
+				"id": "saldos_b2_3",
+				"group": "saldos_b2",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 175,
+			"y": 10,
+			"params": {
+				"id": "saldos_suelo_1",
+				"group": "saldos_suelo",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 180,
+			"y": 10,
+			"params": {
+				"id": "saldos_suelo_2",
+				"group": "saldos_suelo",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 185,
+			"y": 10,
+			"params": {
+				"id": "saldos_suelo_3",
+				"group": "saldos_suelo",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 190,
+			"y": 10,
+			"params": {
+				"id": "saldos_suelo_4",
+				"group": "saldos_suelo",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 179,
+			"y": 7,
+			"params": {
+				"id": "saldos_secreto_1",
+				"group": "saldos_secreto",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 170,
+			"y": 7,
+			"params": {
+				"id": "saldos_secreto_2",
+				"group": "saldos_secreto",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "charger",
+			"x": 244,
+			"y": 11,
+			"params": {
+				"id": "cargador_4",
+				"amount": 50.0,
+				"reusable": true,
+				"cooldown_s": 10.0
+			}
+		},
+		{
+			"type": "shutter",
+			"x": 264,
+			"y": 10,
+			"params": {
+				"id": "persiana_t4",
+				"length_tiles": 2,
+				"orientation": "wall"
+			}
+		},
+		{
+			"type": "price_rail",
+			"x": 274,
+			"y": 7,
+			"params": {
+				"id": "ranura_t4",
+				"width_tiles": 4,
+				"height_tiles": 3,
+				"slot_row": 0
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 284,
+			"y": 4,
+			"params": {
+				"id": "saldos_t4_1",
+				"group": "saldos_t4",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "clearance_shelf",
+			"x": 289,
+			"y": 4,
+			"params": {
+				"id": "saldos_t4_2",
+				"group": "saldos_t4",
+				"height_tiles": 2
+			}
+		},
+		{
+			"type": "glitch_wall",
+			"x": 312,
+			"y": 10,
+			"params": {
+				"id": "pared_tienda_calc",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"visible_only_with_debug": true
+			}
+		},
+		{
+			"type": "calc_register",
+			"x": 316,
+			"y": 9,
+			"params": {
+				"id": "caja_calc",
+				"height_tiles": 3
+			}
+		},
+		{
+			"type": "memory_pickup",
+			"x": 314,
+			"y": 11,
+			"params": {
+				"id": "mensaje_5_2",
+				"memory_id": "msg_5_2"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 319,
+			"y": 4,
+			"params": {
+				"id": "terminal_pagar",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2,
+				"skin": "checkout",
+				"offline_text": "Su prueba gratis se ha convertido en suscripción anual."
+			}
+		}
+	],
+	"enemies": [
+		{
+			"id": "suscripcion_t1",
+			"type": "subscription",
+			"x": 52,
+			"y": 10
+		},
+		{
+			"id": "oferta_t1",
+			"type": "offer_sign",
+			"x": 56,
+			"y": 11
+		},
+		{
+			"id": "oferta_t3_b3",
+			"type": "offer_sign",
+			"x": 189,
+			"y": 5
+		},
+		{
+			"id": "oferta_t3_suelo",
+			"type": "offer_sign",
+			"x": 199,
+			"y": 11
+		},
+		{
+			"id": "suscripcion_t4_a",
+			"type": "subscription",
+			"x": 252,
+			"y": 10
+		},
+		{
+			"id": "suscripcion_t4_b",
+			"type": "subscription",
+			"x": 257,
+			"y": 10
+		}
+	]
+}

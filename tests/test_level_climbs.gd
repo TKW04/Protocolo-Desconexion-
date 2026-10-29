@@ -90,6 +90,11 @@ const CLIMBS_PATH_4_3: String = "res://tests/fixtures/climbs_4-3.json"
 const LEVEL_SCENE_5_1: String = "res://scenes/levels/5-1.tscn"
 const LEVEL_PATH_5_1: String = "res://data/levels/5-1.json"
 const CLIMBS_PATH_5_1: String = "res://tests/fixtures/climbs_5-1.json"
+## 5-2 «Prueba gratis» (paso 13 de docs/propuesta-mundo-5.md, 2026-10-29): escalones de una via del Tramo 1 (repisas de
+## las persianas), del Tramo 2 y del Tramo 4 (las dos subidas), con las persianas rotas y las estanterias tumbadas.
+const LEVEL_SCENE_5_2: String = "res://scenes/levels/5-2.tscn"
+const LEVEL_PATH_5_2: String = "res://data/levels/5-2.json"
+const CLIMBS_PATH_5_2: String = "res://tests/fixtures/climbs_5-2.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
 ## Holgura vertical minima (px) entre la cabeza y el solido de encima al subir.
@@ -141,9 +146,11 @@ func _load(scene_path: String = LEVEL_SCENE, level_path: String = LEVEL_PATH) ->
 	for child: Node in _level.get_node(^"Enemies").get_children():
 		child.free()
 	for child: Node in _level.get_node(^"Objects").get_children():
-		# Las fragiles de pie (puertas del golpe al suelo del 2-2) estan rotas cuando se sube por su lado.
+		# Las fragiles de pie (puertas del golpe al suelo del 2-2) estan rotas cuando se sube por su lado; las persianas
+		# y las estanterias de saldos del 5-2, rotas y tumbadas (como en tools/level_climbs.py).
 		if child is PopupBlocker or child is UpdateBar or child is BossBase or child is LoopSection \
-				or child is CloneZone or (child is FragileCard and (child as FragileCard).variant == FragileCard.VARIANT_UPRIGHT):
+				or child is CloneZone or (child is FragileCard and (child as FragileCard).variant == FragileCard.VARIANT_UPRIGHT) \
+				or child is Shutter or child is ClearanceShelf:
 			child.free()
 	_isak = _level.get_node(^"Isak") as Isak
 	_sim = IsakSim.new(DT)
@@ -547,6 +554,14 @@ func test_every_climb_of_5_1_lands_with_headroom_using_the_real_isak() -> void:
 	var climbs: Array = fixture["climbs"]
 	assert_gt(climbs.size(), 8, "Subidas del 5-1 en %s" % CLIMBS_PATH_5_1)
 	await _load(LEVEL_SCENE_5_1, LEVEL_PATH_5_1)
+	await _measure_all(climbs)
+
+
+func test_every_climb_of_5_2_lands_with_headroom_using_the_real_isak() -> void:
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIMBS_PATH_5_2))
+	var climbs: Array = fixture["climbs"]
+	assert_gt(climbs.size(), 8, "Subidas del 5-2 en %s" % CLIMBS_PATH_5_2)
+	await _load(LEVEL_SCENE_5_2, LEVEL_PATH_5_2)
 	await _measure_all(climbs)
 
 

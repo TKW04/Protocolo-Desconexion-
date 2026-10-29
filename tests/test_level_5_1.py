@@ -225,7 +225,7 @@ class Level51Test(unittest.TestCase):
         self.assertEqual(m5["miniature"], "res://assets/sprites/hub/icons/world_icon_m5_00.png")
         rows = [(lv["id"], lv["name"], lv["playable"], lv.get("kind"), lv.get("available_text")) for lv in m5["levels"]]
         self.assertEqual(rows, [("5-1", "Oferta del día", True, None, None),
-                                ("5-2", "Prueba gratis", False, None, "Nueva oferta"),
+                                ("5-2", "Prueba gratis", True, None, "Nueva oferta"),
                                 ("5-3", "Última oportunidad", False, None, "Nueva oferta"),
                                 ("5-boss", "El Vendedor", False, "boss", None)])
         self.assertTrue(all(lv["laps"] == [1] for lv in m5["levels"]))
