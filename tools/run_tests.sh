@@ -212,6 +212,8 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 19 (2026-10-28) GUT lanza tambien el bot del jefe El Visto (tests/test_seen_bot.gd:
 # tools/play_boss_bot.gd -- --boss seen, logica en tools/seen_bot.gd, en procesos aparte: ideal y torpe en Caché,
 # Kernel y Raíz y el quieto que pierde; usa user://bot_save.json).
+# Desde el paso 8 del Mundo 5 (2026-10-29): el validador del Mundo 5 (tests/test_world5_validator.py:
+# tools/world5_model.py, salas de los pasos 2-7, negativos de §7.1 y el camino del comprador con --buy).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -259,6 +261,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_palette_mundo5.py tests/test_world4_schema.py tests/test_world4_validator.py \
 		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py tests/test_world4_negatives.py \
+			tests/test_world5_validator.py \
 		tests/test_hub_update_validator.py tests/test_import_boss_seen.py tests/test_import_troll.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \
 		&& _validate_levels \

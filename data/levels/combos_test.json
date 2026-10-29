@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 50x14 de los OBSTACULOS DE LOS COMBOS y la «PRUEBA GRATIS» del Mundo 5 (§3.7, §3.9, §4.2.2 y patrones 25-27 de §3.8). Isak llega por la izquierda (P, fila 7) con el pulso, el laser, el Debug, el dash, el golpe al suelo y Pellizcar, SIN la Combinacion: la da la «Prueba gratis» (columna 6, fila 7: pulso de espaldas; la escena con Eco e Isak y el aviso). La salida del rellano es una persiana de suelo (columnas 14-17, fila 8): solo la Embestida (salto, Deslizar y abajo) la rompe y deja caer a la banda de abajo. En la banda (filas 9-11): una persiana de pared (columna 21, filas 9-11) que solo cede a una Embestida que aterriza junto a ella; la ranura de precios sobre el hoyo de las columnas 24-27 (filas 9-12, ranura en la fila 10): de pie, comprimido, con el dash o la Embestida empuja hacia atras; se cruza con un Filo a la altura de la ranura (Pellizcar en el suelo, salto comprimido y, al bajar, Deslizar); y tres estanterias de saldos del mismo grupo (columnas 33, 36 y 39, filas 10-11): cada golpe suelto se repone a los 0,5 s; un Sismo desde la columna 31 o 32 las tumba a la vez. Puntos en (9, 7), (19, 11) y (30, 11). Terminal en (46, 10). Sin Q (help_id previstos shutter, price_rail y clearance_shelf, paso 9). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela los combos ni estos obstaculos (paso 8b): toma la persiana, la ranura, las estanterias y la caja por objetos sin colision (las celdas de la persiana de suelo son un hueco y el hoyo de la ranura se salta). Escena: scenes/levels/combos_test.tscn (python3 tools/build_level.py data/levels/combos_test.json).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 6 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 50x14 de los OBSTACULOS DE LOS COMBOS y la «PRUEBA GRATIS» del Mundo 5 (§3.7, §3.9, §4.2.2 y patrones 25-27 de §3.8). Isak llega por la izquierda (P, fila 7) con el pulso, el laser, el Debug, el dash, el golpe al suelo y Pellizcar, SIN la Combinacion: la da la «Prueba gratis» (columna 6, fila 7: pulso de espaldas; la escena con Eco e Isak y el aviso). La salida del rellano es una persiana de suelo (columnas 14-17, fila 8): solo la Embestida (salto, Deslizar y abajo) la rompe y deja caer a la banda de abajo. En la banda (filas 9-11): una persiana de pared (columna 21, filas 9-11) que solo cede a una Embestida que aterriza junto a ella; la ranura de precios sobre el hoyo de las columnas 24-27 (filas 9-12, ranura en la fila 10): de pie, comprimido, con el dash o la Embestida empuja hacia atras; se cruza con un Filo a la altura de la ranura (Pellizcar en el suelo, salto comprimido y, al bajar, Deslizar); y tres estanterias de saldos del mismo grupo (columnas 31, 36 y 41, filas 10-11, separadas 4 tiles: ningun golpe suelto alcanza a dos) en una banda de 2 filas con techo (fila 9) que no se salta: se sube al piso de arriba por la repisa de una via (29, 10), se baja por el hueco del techo (columnas 33-34) entre las dos primeras y un Sismo desde las columnas 32-35 las tumba a la vez (desde el paso 8; antes, columnas 33, 36 y 39 en abierto, que se saltaban). El piso de arriba de la salida acaba en la pared de la columna 18 (desde el paso 8: antes se cruzaba por encima de la persiana). Puntos en (9, 7), (19, 11) y (30, 11). Terminal en (46, 10). Sin Q (help_id previstos shutter, price_rail y clearance_shelf, paso 9). Tileset y fondo del Mundo 1 (provisional). Desde el paso 8 tools/validate_level.py la modela (tools/world5_model.py; tests/test_world5_validator.py). Escena: scenes/levels/combos_test.tscn (python3 tools/build_level.py data/levels/combos_test.json).",
 	"id": "combos_test",
 	"name": "Combos (prueba)",
 	"world": 5,
@@ -59,7 +59,7 @@
 		},
 		{
 			"type": "clearance_shelf",
-			"x": 33,
+			"x": 31,
 			"y": 10,
 			"params": {
 				"id": "saldos_a",
@@ -79,7 +79,7 @@
 		},
 		{
 			"type": "clearance_shelf",
-			"x": 39,
+			"x": 41,
 			"y": 10,
 			"params": {
 				"id": "saldos_c",
@@ -102,16 +102,16 @@
 	"unlocks": [],
 	"grid": [
 		"##################################################",
-		"#................................................#",
-		"#................................................#",
-		"#................................................#",
-		"#................................................#",
-		"#................................................#",
-		"#................................................#",
-		"#.P......o.......................................#",
-		"##############....#############..................#",
-		"############.....................................#",
-		"############.....................................#",
+		"#.................#..............................#",
+		"#.................#..............................#",
+		"#.................#..............................#",
+		"#.................#..............................#",
+		"#.................#..............................#",
+		"#.................#..............................#",
+		"#.P......o........#..............................#",
+		"##############....##########.....................#",
+		"############..................###..###############",
+		"############.................-...................#",
 		"############.......o..........o...............G..#",
 		"########################....######################",
 		"##################################################"
