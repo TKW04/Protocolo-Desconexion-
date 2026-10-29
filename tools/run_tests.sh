@@ -178,6 +178,9 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 2 (2026-10-29): la tentacion de las Ofertas (tests/test_temptation.gd, GUT: deriva, x0,6 / x1,15,
 # suma con tope, dash y combos la ignoran, pulso la apaga 3 s, laser aturdida la derrota; sala ofertas_test, que
 # exporta su camino como las demas salas *_test).
+# Desde el paso 3 (2026-10-29): la economia en el nivel (tests/test_world5_economy.gd, GUT: spend_attention sin
+# deuda y «sin guardar», tienda, atajo con su trampa processing y el Debug, Devoluciones solo del nivel e intento,
+# rollback que devuelve lo gastado sin guardar; sala tienda_test, que exporta su camino como las demas).
 # Desde el paso 10 (2026-10-28): las 3 variantes de paleta del Mundo 4 cumplen §6.1 y su comparativa esta al dia
 # (tools/palette_mundo4_variants.py --check; la elegida, la B, la escribe palette_mundo4_provisional.py) y el arte
 # por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).

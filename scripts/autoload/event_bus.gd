@@ -13,6 +13,14 @@ signal energy_changed(new_value: float, max_value: float)
 
 @warning_ignore("unused_signal")
 signal attention_points_changed(new_value: int)
+## Mundo 5 (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §3.1): se han gastado
+## `amount` puntos dentro de un nivel (GameState.spend_attention; `reason`: shop_item,
+## shortcut_door, subscription...). El HUD y el sonido se enganchan aqui.
+@warning_ignore("unused_signal")
+signal attention_spent(amount: int, reason: StringName)
+## Devoluciones (refund_desk) ha devuelto `amount` puntos al saldo.
+@warning_ignore("unused_signal")
+signal attention_refunded(amount: int)
 
 ## El Sync Rate cruza el umbral de Sync Rate bajo (data/hud.json). Gancho para
 ## el ruido/distorsion de pantalla y la musica deformada (pendientes).

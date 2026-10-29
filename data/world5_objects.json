@@ -1,7 +1,181 @@
 {
-	"_notes": "Catalogo de objetos del Mundo 5 «La Tienda» (docs/propuesta-mundo-5.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 5 usa los tipos de los Mundos 1-4 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo5_provisional.py). Precios y economia: data/economy.json. Los tipos llegan desde el paso 2.",
+	"_notes": "Catalogo de objetos del Mundo 5 «La Tienda» (docs/propuesta-mundo-5.md). Mismo formato que data/world1_objects.json. Un nivel del Mundo 5 usa los tipos de los Mundos 1-4 mas los de este archivo (tools/level_catalog.py los une en ese orden; gana el del mundo mas alto). Colores: seccion palette (PROVISIONAL, la escribe tools/palette_mundo5_provisional.py). Precios y economia: data/economy.json. Los tipos llegan desde el paso 3 (la Oferta del paso 2 es un enemigo: data/enemies/offer_sign.json).",
 	"tile_size": 64,
-	"types": {},
+	"types": {
+		"shop_item": {
+			"scene": "res://scenes/levels/shop_item.tscn",
+			"description": "Producto de la tienda (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.1 y §3.7; ShopItem). Producto en una estanteria con su etiqueta de precio en la pared del fondo (no solido; origen en la esquina superior izquierda de su celda, Isak de pie en ella). Un PULSO DE ESPALDAS (el pulso alcanza su hit_rect e Isak se pone de espaldas pose_s) lo compra: GameState.spend_attention (saldo real, sin deuda, «sin guardar») y el efecto al instante (product sync: +25 de Sync Rate; energy: +40 de energia; prices.shop_item de data/economy.json). Uno por intento (uses_per_attempt): despues, «Agotado». Sin saldo: «Saldo insuficiente» y chispa gris (no gasta). cost: precio propio (por defecto, el de data/economy.json; -1 = el del catalogo). Sin Q todavia (help_id previsto shop_item, paso 9). Aspecto PROVISIONAL por codigo (seccion shop_item, paleta provisional).",
+			"required": [
+				"product"
+			],
+			"fields": {
+				"id": "object_id",
+				"product": "product",
+				"cost": "cost"
+			},
+			"defaults": {},
+			"allowed": {
+				"product": [
+					"sync",
+					"energy"
+				]
+			},
+			"level_params": {
+				"cost": {
+					"min": 1,
+					"max": 11,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "shop_item",
+				"x": 8,
+				"y": 9,
+				"params": {
+					"id": "tienda_sync",
+					"product": "sync"
+				}
+			}
+		},
+		"shortcut_door": {
+			"scene": "res://scenes/levels/shortcut_door.tscn",
+			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription', 'offer' o 'countdown' (de momento solo emiten trap_sprung al cruzar: las piezas llegan en los pasos 4-5). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Sin Q todavia (help_id previsto shortcut_door, paso 9). Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id",
+				"cost": "cost",
+				"trap": "trap",
+				"height_tiles": "height_tiles"
+			},
+			"defaults": {
+				"trap": "",
+				"height_tiles": 3
+			},
+			"allowed": {
+				"trap": [
+					"",
+					"subscription",
+					"offer",
+					"countdown",
+					"processing"
+				]
+			},
+			"level_params": {
+				"cost": {
+					"min": 1,
+					"max": 11,
+					"int": true
+				},
+				"height_tiles": {
+					"min": 2,
+					"max": 4,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "shortcut_door",
+				"x": 14,
+				"y": 7,
+				"params": {
+					"id": "atajo_1",
+					"trap": "processing"
+				}
+			}
+		},
+		"refund_desk": {
+			"scene": "res://scenes/levels/refund_desk.tscn",
+			"description": "Devoluciones (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.6; RefundDesk). Mostrador del secreto A del 5-1 en la pared del fondo (no solido). Un PULSO DE ESPALDAS devuelve al saldo todo lo de refunds (data/economy.json: lo drenado por Suscripciones y lo pagado en atajos con trampa) del intento actual de ESE nivel (GameState.claim_refunds; no toca lo gastado en Calc ni en otros niveles) mas bonus_points (2) propios del secreto, que se dan UNA vez por partida guardada (como un punto de atencion capturado: GameState.mark_pickup_collected con el id del mostrador; sin id no se apuntan). Una vez por intento (uses_per_attempt): despues, «Cerrado». Sin Q todavia (help_id previsto refund_desk, paso 9). Aspecto PROVISIONAL por codigo (seccion refund_desk).",
+			"required": [
+				"id"
+			],
+			"fields": {
+				"id": "object_id"
+			},
+			"defaults": {},
+			"example": {
+				"type": "refund_desk",
+				"x": 6,
+				"y": 9,
+				"params": {
+					"id": "devoluciones_5_1"
+				}
+			}
+		}
+	},
+	"shop_item": {
+		"_notes": "Producto de la tienda (ShopItem). hit_rect: zona del pulso en px desde la esquina de su celda; shelf_rect: estanteria; pose_s: Isak de espaldas; message_s: lo que dura el cartel («Saldo insuficiente», «Agotado»); spark_s: chispa gris; colores por nombre de la paleta provisional.",
+		"hit_rect": [
+			4,
+			-24,
+			56,
+			72
+		],
+		"shelf_rect": [
+			4,
+			30,
+			56,
+			8
+		],
+		"pose_s": 0.45,
+		"message_s": 1.5,
+		"spark_s": 0.3,
+		"text_no_funds": "Saldo insuficiente",
+		"text_sold_out": "Agotado",
+		"text_bought": "¡Gracias por su compra!",
+		"frame": "gris_escaparate",
+		"shelf": "gris_etiqueta",
+		"tag": "amarillo_rebajas",
+		"ink": "negro_medio",
+		"sync": "magenta_neon",
+		"energy": "violeta_neon",
+		"text": "crema_cartel"
+	},
+	"shortcut_door": {
+		"_notes": "Atajo (ShortcutDoor). width_px: ancho de la puerta (centrada en su celda); hit_grow_px: lo que el pulso alcanza alrededor de la puerta; pose_s, message_s, spark_s: como shop_item; processing_s: congelado de la trampa processing (1,5 s, §3.7); textos del cartel ({cost} = precio); colores por nombre de la paleta provisional.",
+		"width_px": 40,
+		"hit_grow_px": 24,
+		"pose_s": 0.45,
+		"message_s": 1.5,
+		"spark_s": 0.3,
+		"processing_s": 1.5,
+		"text_sign": "Atajo: {cost}",
+		"text_no_funds": "Saldo insuficiente",
+		"text_processing": "Verificando pago…",
+		"frame": "gris_escaparate",
+		"door": "negro_medio",
+		"open": "tienda_noche",
+		"sign": "amarillo_rebajas",
+		"ink": "negro_medio",
+		"trap": "debug_blanco",
+		"text": "crema_cartel"
+	},
+	"refund_desk": {
+		"_notes": "Devoluciones (RefundDesk). hit_rect y desk_rect en px desde la esquina de su celda; pose_s, message_s: como shop_item; textos ({amount} = puntos devueltos); colores por nombre de la paleta provisional.",
+		"hit_rect": [
+			0,
+			-24,
+			64,
+			72
+		],
+		"desk_rect": [
+			2,
+			24,
+			60,
+			40
+		],
+		"pose_s": 0.45,
+		"message_s": 2.0,
+		"text_title": "Devoluciones",
+		"text_done": "Devuelto: {amount}",
+		"text_closed": "Cerrado",
+		"desk": "gris_escaparate",
+		"top": "gris_etiqueta",
+		"sign": "crema_cartel",
+		"ink": "negro_medio",
+		"text": "amarillo_rebajas"
+	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",
 		"tienda_noche": "#0e0c14",

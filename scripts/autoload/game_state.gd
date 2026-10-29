@@ -368,6 +368,15 @@ var _pulse_return_claimed: Dictionary[String, bool] = {}
 ## puntos activados en el intento: un corazon recogido despues del ultimo vuelve
 ## al reaparecer (HeartPickup). Tope y demas valores en la seccion likes de
 ## data/world3_objects.json (get_likes_max; LIKES_MAX_DEFAULT si falta).
+# --- Economia del Mundo 5 (no se guarda el registro; paso 3 de docs/propuesta-mundo-5.md) ---
+
+## Tipos de gasto que Devoluciones (refund_desk) devuelve (refunds de data/economy.json).
+const REFUND_SUBSCRIPTION: StringName = &"subscription_drain"
+const REFUND_SHORTCUT_TRAP: StringName = &"shortcut_trap"
+## Registro de Devoluciones del intento actual: id de nivel -> {tipo: puntos}. Lo
+## vacian begin_attempt, el rollback y reset_progress.
+var _refundable: Dictionary[StringName, Dictionary] = {}
+
 const LIKES_MAX_DEFAULT: int = 30
 var likes: int = 0
 var _likes_at_checkpoint: int = 0
@@ -677,8 +686,75 @@ func set_player_hidden(hidden: bool) -> void:
 ## el Pulso de retorno vuelve a dar energia una vez por enemigo.
 func begin_attempt() -> void:
 	_pulse_return_claimed.clear()
+	_refundable.clear()
 	set_player_hidden(false)
 	reset_likes()
+
+
+# --- Economia del Mundo 5: gastar puntos de atencion dentro de un nivel ---
+# (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §3.1 y §3.6; data/economy.json)
+
+## Se puede pagar `cost` con el saldo actual (sin deuda: el saldo nunca baja de 0).
+func can_afford(cost: int) -> bool:
+	return cost >= 0 and attention_points - cost >= ATTENTION_POINTS_MIN
+
+
+## Gasta `amount` puntos del saldo real (tienda, atajo, Suscripcion). SIN DEUDA: si no
+## llega, no gasta nada y devuelve falso. Gastar marca «sin guardar» (un game over
+## devuelve lo gastado con la copia, como todo). `reason` va en la senal; con
+## `refund_kind` (REFUND_SUBSCRIPTION / REFUND_SHORTCUT_TRAP) se apunta en el registro
+## de Devoluciones de `level` (por defecto current_level) para este intento.
+## Gastar no quita energia. 0 no gasta y devuelve verdadero.
+func spend_attention(amount: int, reason: StringName = &"", level: StringName = NO_LEVEL,
+		refund_kind: StringName = &"") -> bool:
+	if amount < 0 or not can_afford(amount):
+		return false
+	if amount == 0:
+		return true
+	attention_points -= amount
+	request_save()
+	if refund_kind != &"":
+		note_refundable(level if level != NO_LEVEL else current_level, refund_kind, amount)
+	EventBus.attention_spent.emit(amount, reason)
+	return true
+
+
+## Apunta `amount` puntos de tipo `kind` como devolubles en `level` (este intento).
+func note_refundable(level: StringName, kind: StringName, amount: int) -> void:
+	if amount <= 0:
+		return
+	if not _refundable.has(level):
+		_refundable[level] = {}
+	_refundable[level][kind] = int(_refundable[level].get(kind, 0)) + amount
+
+
+## Puntos devolubles en `level` de los tipos `kinds` (vacio: todos) en este intento.
+func get_refundable(level: StringName, kinds: Array = []) -> int:
+	var total: int = 0
+	var entry: Dictionary = _refundable.get(level, {})
+	for kind: Variant in entry:
+		if kinds.is_empty() or kinds.has(String(kind)) or kinds.has(StringName(kind)):
+			total += int(entry[kind])
+	return total
+
+
+## Devuelve al saldo lo devoluble de `level` de los tipos `kinds` (vacio: todos) y lo
+## quita del registro. Solo ese nivel e intento (ni Calc ni otros niveles). Los puntos
+## vuelven sin energia (es dinero devuelto, no puntos nuevos). Marca «sin guardar».
+func claim_refunds(level: StringName, kinds: Array = []) -> int:
+	var amount: int = get_refundable(level, kinds)
+	if _refundable.has(level):
+		var entry: Dictionary = _refundable[level]
+		for kind: Variant in entry.keys():
+			if kinds.is_empty() or kinds.has(String(kind)) or kinds.has(StringName(kind)):
+				entry.erase(kind)
+		if entry.is_empty():
+			_refundable.erase(level)
+	if amount > 0:
+		attention_points += amount
+		request_save()
+		EventBus.attention_refunded.emit(amount)
+	return amount
 
 
 # --- Likes (Mundo 3; no se guardan) ---
@@ -997,6 +1073,7 @@ func reset_progress() -> void:
 	ally_arrivals.clear()
 	learned_help.clear()
 	_pulse_return_claimed.clear()
+	_refundable.clear()
 	set_player_hidden(false)
 	lives_max = LIVES_MAX_DEFAULT
 	play_time_s = 0.0
@@ -1695,6 +1772,7 @@ func apply_rollback(reason: StringName = ROLLBACK_GAME_OVER) -> Dictionary:
 	var keep_help: Dictionary = learned_help.duplicate()
 	var keep_pulse: bool = obtained_abilities.has(ABILITY_PULSE)
 	var keep_read: Dictionary = memories_read.duplicate()
+	_refundable.clear()
 	var had_copy: bool = load_game()
 	# Los recuerdos guardados vuelven con la copia (registro: no van a la
 	# papelera); lo leido de los que siguen se queda leido.

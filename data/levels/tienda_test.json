@@ -1,0 +1,96 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 3 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 40x12 de la ECONOMIA del Mundo 5 (§3.1, §3.6 y §3.7). Isak llega por la izquierda (P, fila 9) con el pulso, el laser y el Debug; 3 puntos de atencion (columnas 3-5). Tienda: +25 de Sync (3 ◆, columna 7) y +40 de energia (2 ◆, columna 9): pulso de espaldas (G) compra, uno por intento, sin saldo «Saldo insuficiente». Atajo CON TRAMPA (columna 16, filas 7-9; 3 ◆; trap processing: al cruzar, «Verificando pago…», congelado 1,5 s y golpe al liberarse; con el Debug (K) se ve el icono en la puerta) o el CAMINO LARGO por las plataformas de una via (filas 8, 6 y 4) y por encima del muro (columna 16, filas 4-6). Devoluciones (columna 22): pulso de espaldas devuelve lo pagado en el atajo con trampa de este intento + 2 del secreto (una vez). Cargador en la 24 y terminal en (28, 8). Tras la terminal, atajo LEGITIMO sin trampa (columna 33; 2 ◆, como el de Calc) que abre un nicho (columnas 34-38) con un punto. Sin Q (help_id previstos shop_item, shortcut_door y refund_desk, paso 9). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela la economia (paso 8a): toma las puertas por objetos sin colision y el camino largo no se exige. Escena: scenes/levels/tienda_test.tscn (python3 tools/build_level.py data/levels/tienda_test.json).",
+	"id": "tienda_test",
+	"name": "Tienda (prueba)",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [],
+	"objects": [
+		{
+			"type": "shop_item",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "tienda_sync",
+				"product": "sync"
+			}
+		},
+		{
+			"type": "shop_item",
+			"x": 9,
+			"y": 9,
+			"params": {
+				"id": "tienda_energia",
+				"product": "energy"
+			}
+		},
+		{
+			"type": "shortcut_door",
+			"x": 16,
+			"y": 7,
+			"params": {
+				"id": "atajo_trampa",
+				"trap": "processing"
+			}
+		},
+		{
+			"type": "shortcut_door",
+			"x": 33,
+			"y": 7,
+			"params": {
+				"id": "atajo_calc",
+				"cost": 2
+			}
+		},
+		{
+			"type": "refund_desk",
+			"x": 22,
+			"y": 9,
+			"params": {
+				"id": "devoluciones_prueba"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 24,
+			"y": 9,
+			"params": {
+				"id": "cargador_tienda"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 28,
+			"y": 8,
+			"params": {
+				"id": "terminal_tienda",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"########################################",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#............---#......................#",
+		"#...............#......................#",
+		"#...........---.#................#######",
+		"#......................................#",
+		"#.........---..........................#",
+		"#.Pooo......................G.......o..#",
+		"########################################",
+		"########################################"
+	]
+}
