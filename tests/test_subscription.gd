@@ -266,6 +266,43 @@ func test_laser_bounces_awake_and_defeats_it_stunned() -> void:
 	assert_true(sub.is_defeated(), "La derrotada no vuelve")
 
 
+## El laser real de Isak (a la altura del celular, 56 px sobre los pies) alcanza a la Suscripcion tumbada en el
+## mismo suelo: aturdida, su zona de golpe sube down_hit_height_px desde los pies (bot del 5-1, paso 11: antes el rayo
+## pasaba por encima del cuerpo de 28 px y el validador la daba por derrotada).
+func test_real_laser_from_the_same_floor_defeats_it_stunned() -> void:
+	var saved: bool = GameState.is_ability_unlocked(GameState.ABILITY_LASER)
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, true)
+	var sub: Subscription = _sub(3.0 * T, 0.0)
+	sub.stun()
+	assert_true(sub.is_stunned())
+	assert_gt(sub.down_hit_height_px, absf(_isak.get_laser_origin().y), "La zona en el suelo llega al celular")
+	_isak.facing = 1.0
+	var fired: Array[LaserProjectile] = []
+	var on_fired := func(p: LaserProjectile) -> void: fired.append(p)
+	_isak.laser_fired.connect(on_fired)
+	_sim.input.laser_pressed = true
+	_sim.step()
+	_sim.input.laser_pressed = false
+	for i: int in 40:
+		if not fired.is_empty():
+			break
+		_sim.step()
+	_isak.laser_fired.disconnect(on_fired)
+	assert_eq(fired.size(), 1, "Sale el laser")
+	if not fired.is_empty():
+		var p: LaserProjectile = fired[0]
+		p.auto_process = false
+		for i: int in 120:
+			if p.is_finished():
+				break
+			p.step(DT)
+	assert_true(sub.is_defeated(), "El laser desde el mismo suelo la derrota aturdida")
+	sub.reset_patrol()
+	var awake: Subscription = _sub(5.0 * T, 0.0)
+	assert_almost_eq(awake.get_body_rect().size.y, 28.0, 0.01, "Despierta, el cuerpo de siempre")
+	GameState.set_ability_unlocked(GameState.ABILITY_LASER, saved)
+
+
 func test_edge_defeats_it_but_not_attached_and_quake_skips_flying_ones() -> void:
 	var flying: Subscription = _sub(4.0 * T)
 	var attached: Subscription = _attached(10)

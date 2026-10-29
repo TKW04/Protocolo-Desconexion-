@@ -70,6 +70,9 @@ var max_fall_px_s: float = 960.0
 var center_y: float = -24.0
 var body_size: Vector2 = Vector2(32.0, 28.0)
 var attach_offset: Vector2 = Vector2(-20.0, -60.0)
+## Alto (px, desde la base del cuerpo, que es la que se posa) de la zona de golpe en el suelo (aturdida o saciada): el laser sale a la altura del
+## celular (56 px sobre los pies) y pasaba por encima del cuerpo tumbado de 28 px (bot del 5-1, paso 11).
+var down_hit_height_px: float = 64.0
 var deflect_s: float = 0.25
 var message_s: float = 1.5
 var text_declined: String = "Pago rechazado"
@@ -524,7 +527,26 @@ func _change_state(next: StringName) -> void:
 		return
 	var previous: StringName = _state
 	_state = next
+	_update_shape()
 	state_changed.emit(previous, next)
+
+
+## Forma de colision (la que ve el rayo del laser): el cuerpo, o en el suelo (aturdida o saciada) el cuerpo alargado
+## hacia arriba hasta down_hit_height_px sobre su base (la que se posa en el suelo), para que el laser de Isak en el mismo suelo la alcance. No choca con Isak
+## (su mascara es el mundo).
+func _update_shape() -> void:
+	if _shape == null or not _shape.shape is RectangleShape2D:
+		return
+	var rect := _shape.shape as RectangleShape2D
+	if _state == STATE_STUNNED or _state == STATE_SPENT:
+		# La base no cambia (la del cuerpo: cae y se posa igual); solo sube el techo hasta down_hit_height_px.
+		var bottom: float = center_y + body_size.y * 0.5
+		var top: float = minf(center_y - body_size.y * 0.5, bottom - down_hit_height_px)
+		rect.size = Vector2(body_size.x, bottom - top)
+		_shape.position = Vector2(0.0, (top + bottom) * 0.5)
+	else:
+		rect.size = body_size
+		_shape.position = Vector2(0.0, center_y)
 
 
 func _defeat() -> void:
@@ -613,6 +635,7 @@ func _load_data() -> bool:
 	center_y = float(d.get("center_y", -24.0))
 	var bs: Array = d.get("body_size", [32.0, 28.0])
 	body_size = Vector2(float(bs[0]), float(bs[1]))
+	down_hit_height_px = float(d.get("down_hit_height_px", down_hit_height_px))
 	var ao: Array = d.get("attach_offset", [-20.0, -60.0])
 	attach_offset = Vector2(float(ao[0]), float(ao[1]))
 	deflect_s = float(d.get("deflect_s", 0.25))
