@@ -35,7 +35,7 @@ La ranura de precios (price_rail) no es una puerta: sus etiquetas son peligros d
 movimiento normal puede tocarlas) y solo la cruza el Filo, una arista nueva desde los nodos comprimidos
 (Pellizcar en el suelo, salto comprimido y Deslizar: distance_px en duration_s con la caja comprimida y gravedad
 0; despues sigue comprimido). La Embestida y el Sismo son acciones de las puertas de arriba (combo_ram,
-combo_quake). Los tres cuestan energy_cost (15), solo con `combo` (abilities_available o la «Prueba gratis") y
+combo_quake). Los tres cuestan energy_cost (15; la Embestida, ademas, el dash aereo del que sale: 10), solo con `combo` (abilities_available o la «Prueba gratis") y
 los dos gestos que combinan, nunca con el Debug.
 
 Sobre el camino (check) y en el plan (plan): economia desde un saldo de 0 (cada cosa que se vende cuesta como
@@ -1080,7 +1080,9 @@ class World5:
             return steps
         if g.kind == "shutter":
             info = self.ram_info(g, n, state)
-            return [{"action": "combo_ram", "at": n, "state": state, "ram": info, "energy_w5": self.combo_cost,
+            # La Embestida sale de un dash aereo, que cobra su energia al salir: combo + dash (el bot del 5-2 lo midio).
+            return [{"action": "combo_ram", "at": n, "state": state, "ram": info,
+                     "energy_w5": self.combo_cost + m.rules.dash_cost,
                      "seconds": info["seconds"] if info else 0.5, "breaks": [g.obj_id], "target": tgt}]
         if g.kind == "shelf":
             info = self.quake_info(g, n, state)
