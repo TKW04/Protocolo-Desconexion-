@@ -32,7 +32,6 @@ const TRAPS: Array[StringName] = [TRAP_NONE, TRAP_SUBSCRIPTION, TRAP_OFFER, TRAP
 const FREEZE_SOURCE: StringName = &"shortcut_processing"
 const LAYER_WORLD: int = 1
 const TILE: float = 64.0
-const OFFER_SCENE_PATH: String = "res://scenes/enemies/offer_sign.tscn"
 
 ## Pagado: la puerta se abre.
 signal paid(cost: int)
@@ -179,10 +178,7 @@ func spring_trap(isak: Isak) -> bool:
 			show_message(String(_cfg.get("text_subscription", "¡Bienvenido!")))
 			_trap_spawn = Subscription.spawn(get_parent(), feet - Vector2(0.0, TILE))
 		else:
-			var offer := (load(OFFER_SCENE_PATH) as PackedScene).instantiate() as OfferSign
-			get_parent().add_child(offer)
-			offer.global_position = feet
-			_trap_spawn = offer
+			_trap_spawn = OfferSign.spawn(get_parent(), feet)
 	elif trap == TRAP_COUNTDOWN and object_id != &"" and is_inside_tree():
 		for node: Node in get_tree().get_nodes_in_group(CountdownPlatform.GROUP):
 			var platform := node as CountdownPlatform

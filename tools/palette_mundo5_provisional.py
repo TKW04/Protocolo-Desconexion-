@@ -22,7 +22,8 @@ significan algo en todo el juego: alerta / alerta_sombra (dano) y ambar / ambar_
      (AttentionPoint.OUTLINE_WORLDS incluye el 5);
   6. sin verde lima ni cian en los neones: ningun color saturado de tono 70-200 ni a dE < 30 del verde acido del
      Mundo 3 (#a6ff2e);
-  7. el cian de Isak (y la silueta de luz de Eco, en el mismo cian) contrasta >= 3:1 sobre el negro (fondo y medio).
+  7. el cian de Isak y la esfera de Eco (la misma que en los Mundos 1-3: Eco se ve igual en todos los mundos,
+     decision del usuario del 2026-10-29) contrastan >= 3:1 sobre el negro (fondo y medio).
 Se informan, sin exigir: dE del blanco frente al texto del HUD (#f2f4f8) y frente al cian de Isak.
 
 Genera assets/palettes/mundo5_provisional.gpl y escribe la seccion palette de data/world5_objects.json.
@@ -67,12 +68,26 @@ COLORS = [
 ## Decidido por el usuario el 2026-10-29 (docs/propuesta-mundo-5.md §10.1, opcion A «Blanco puro»).
 DEBUG = ("debug_blanco", "ffffff", "Debug del Mundo 5: blanco puro (DECIDIDO; debug_colors[\"5\"] de data/hud.json)")
 
+## Paso 9: variante elegida (tools/palette_mundo5_variants.py). Sus hex sustituyen a los de arriba; BASE_COLORS
+## guarda la provisional (las variantes toman de ella los nombres y las funciones).
+BASE_COLORS = list(COLORS)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import palette_mundo5_variants as variants  # noqa: E402
+
+if variants.ACTIVE:
+    COLORS = variants.rows(variants.ACTIVE, BASE_COLORS)
+    GPL = os.path.join(ROOT, "assets", "palettes", "mundo5.gpl")
+    TITLE = "Mundo 5 La Tienda - variante %s (%s)" % (variants.ACTIVE, variants.VARIANTS[variants.ACTIVE]["title"])
+
 ## Reservados del Mundo 1 (significan lo mismo en todo el juego).
 RESERVED = {"alerta": "ff4a2a", "alerta_sombra": "a3221c", "ambar": "ffa000", "ambar_sombra": "a85f00"}
 ## Carmin del punto debil (Mundo 1) y su brillo.
 CARMIN = ("e0004a", "ff5a8c")
-## Cian de la ropa de Isak (hoja importada); la silueta de luz de Eco del Mundo 5 va en el mismo cian (§6.3).
+## Cian de la ropa de Isak (hoja importada).
 ISAK_CYANS = ("29defa", "36c0d4")
+## Esfera de Eco (borde_luz y banner_blanco del Mundo 1, como ECO_CYANS de tools/palette_mundo3_provisional.py):
+## Eco se ve igual en todos los mundos (decision del usuario del 2026-10-29; sin la «silueta de luz» de §6.3).
+ECO_COLORS = ("9bb0e8", "f2f4f8")
 ## Texto del HUD (banner_blanco del Mundo 1).
 HUD_TEXT = "f2f4f8"
 ## Verde acido del Debug del Mundo 3 (assets/palettes/mundo3.gpl).
@@ -173,6 +188,7 @@ def metrics(colors=None, debug_hex=None):
         "cool": [n for n, v in own if _in_hues(v, (COOL_HUES,), COOL_MIN_SAT)
                  or de(p[n], hx(WORLD3_GREEN)) < MIN_DE_GREEN_WORLD3],
         "cr_isak": min(ratio(hx(c), p[b]) for c in ISAK_CYANS for b in BACKS),
+        "cr_eco": min(ratio(hx(c), p[b]) for c in ECO_COLORS for b in BACKS),
         "de_white_hud": de(white, hx(HUD_TEXT)),
         "de_white_isak": min(de(white, hx(c)) for c in ISAK_CYANS),
         "cr_white_black": ratio(white, outline),
@@ -234,6 +250,8 @@ def check_rules(colors=None, debug_hex=None):
     # 7. Isak (y Eco) sobre el negro.
     if m["cr_isak"] < MIN_CONTRAST:
         errors.append("regla 7: el cian de Isak sobre el fondo < 3:1 (%.2f)" % m["cr_isak"])
+    if m["cr_eco"] < MIN_CONTRAST:
+        errors.append("regla 7: la esfera de Eco sobre el fondo < 3:1 (%.2f)" % m["cr_eco"])
     return errors
 
 
@@ -248,9 +266,11 @@ def metrics_line(m):
 
 # ------------------------------------------------------------------ salida
 def gpl_text():
-    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4",
-             "# PROVISIONAL: colores de desarrollo del Mundo 5, sin cerrar (el usuario elige variante en el paso 9);"
-             " el blanco del Debug esta decidido (#ffffff).",
+    head = ("# Variante %s elegida en el paso 9 (tools/palette_mundo5_variants.py; cambiable con --apply); el blanco "
+            "del Debug lo decidio el usuario (#ffffff)." % variants.ACTIVE if variants.ACTIVE else
+            "# PROVISIONAL: colores de desarrollo del Mundo 5, sin cerrar (el usuario elige variante en el paso 9);"
+            " el blanco del Debug esta decidido (#ffffff).")
+    lines = ["GIMP Palette", "Name: " + TITLE, "Columns: 4", head,
              "# Generado por tools/palette_mundo5_provisional.py"]
     for name, value, role in COLORS + [DEBUG]:
         r, g, b = hx(value)
@@ -260,9 +280,15 @@ def gpl_text():
 
 
 def palette_section():
-    out = {"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo "
-                     "del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo "
-                     "debug_blanco (#ffffff, decidido el 2026-10-29)."}
+    if variants.ACTIVE:
+        out = {"_notes": "Variante %s «%s» (paso 9; tools/palette_mundo5_variants.py, la escribe "
+                         "tools/palette_mundo5_provisional.py; no editar a mano): colores del Mundo 5 por nombre. "
+                         "debug_blanco (#ffffff) lo decidio el usuario el 2026-10-29."
+                         % (variants.ACTIVE, variants.VARIANTS[variants.ACTIVE]["title"])}
+    else:
+        out = {"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo "
+                         "del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo "
+                         "debug_blanco (#ffffff, decidido el 2026-10-29)."}
     for name, value, _role in COLORS + [DEBUG]:
         out[name] = "#" + value
     return out

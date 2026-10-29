@@ -4,7 +4,8 @@
 	"types": {
 		"shop_item": {
 			"scene": "res://scenes/levels/shop_item.tscn",
-			"description": "Producto de la tienda (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.1 y §3.7; ShopItem). Producto en una estanteria con su etiqueta de precio en la pared del fondo (no solido; origen en la esquina superior izquierda de su celda, Isak de pie en ella). Un PULSO DE ESPALDAS (el pulso alcanza su hit_rect e Isak se pone de espaldas pose_s) lo compra: GameState.spend_attention (saldo real, sin deuda, «sin guardar») y el efecto al instante (product sync: +25 de Sync Rate; energy: +40 de energia; prices.shop_item de data/economy.json). Uno por intento (uses_per_attempt): despues, «Agotado». Sin saldo: «Saldo insuficiente» y chispa gris (no gasta). cost: precio propio (por defecto, el de data/economy.json; -1 = el del catalogo). Sin Q todavia (help_id previsto shop_item, paso 9). Aspecto PROVISIONAL por codigo (seccion shop_item, paleta provisional).",
+			"help_id": "shop_item",
+			"description": "Producto de la tienda (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.1 y §3.7; ShopItem). Producto en una estanteria con su etiqueta de precio en la pared del fondo (no solido; origen en la esquina superior izquierda de su celda, Isak de pie en ella). Un PULSO DE ESPALDAS (el pulso alcanza su hit_rect e Isak se pone de espaldas pose_s) lo compra: GameState.spend_attention (saldo real, sin deuda, «sin guardar») y el efecto al instante (product sync: +25 de Sync Rate; energy: +40 de energia; prices.shop_item de data/economy.json). Uno por intento (uses_per_attempt): despues, «Agotado». Sin saldo: «Saldo insuficiente» y chispa gris (no gasta). cost: precio propio (por defecto, el de data/economy.json; -1 = el del catalogo). Ayuda Q shop_item y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion shop_item, paleta provisional).",
 			"required": [
 				"product"
 			],
@@ -39,7 +40,8 @@
 		},
 		"shortcut_door": {
 			"scene": "res://scenes/levels/shortcut_door.tscn",
-			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription' (paso 4: una Suscripcion «te espera dentro»: sale avisando a trap_distance_tiles (2) tiles de la puerta hacia donde cruza Isak y lo persigue), 'offer' (paso 4: una Oferta de pie a esa distancia, al pie de la puerta; el nivel pone los pinchos junto a ella) o 'countdown' (paso 5: «la salida es una cuenta regresiva»: pone en marcha las countdown_platform con trigger = el id de esta puerta). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Sin Q todavia (help_id previsto shortcut_door, paso 9). Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
+			"help_id": "shortcut_door",
+			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription' (paso 4: una Suscripcion «te espera dentro»: sale avisando a trap_distance_tiles (2) tiles de la puerta hacia donde cruza Isak y lo persigue), 'offer' (paso 4: una Oferta de pie a esa distancia, al pie de la puerta; el nivel pone los pinchos junto a ella) o 'countdown' (paso 5: «la salida es una cuenta regresiva»: pone en marcha las countdown_platform con trigger = el id de esta puerta). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Ayuda Q shortcut_door y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
 			"required": [
 				"id"
 			],
@@ -92,7 +94,8 @@
 		},
 		"refund_desk": {
 			"scene": "res://scenes/levels/refund_desk.tscn",
-			"description": "Devoluciones (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.6; RefundDesk). Mostrador del secreto A del 5-1 en la pared del fondo (no solido). Un PULSO DE ESPALDAS devuelve al saldo todo lo de refunds (data/economy.json: lo drenado por Suscripciones y lo pagado en atajos con trampa) del intento actual de ESE nivel (GameState.claim_refunds; no toca lo gastado en Calc ni en otros niveles) mas bonus_points (2) propios del secreto, que se dan UNA vez por partida guardada (como un punto de atencion capturado: GameState.mark_pickup_collected con el id del mostrador; sin id no se apuntan). Una vez por intento (uses_per_attempt): despues, «Cerrado». Sin Q todavia (help_id previsto refund_desk, paso 9). Aspecto PROVISIONAL por codigo (seccion refund_desk).",
+			"help_id": "refund_desk",
+			"description": "Devoluciones (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.6; RefundDesk). Mostrador del secreto A del 5-1 en la pared del fondo (no solido). Un PULSO DE ESPALDAS devuelve al saldo todo lo de refunds (data/economy.json: lo drenado por Suscripciones y lo pagado en atajos con trampa) del intento actual de ESE nivel (GameState.claim_refunds; no toca lo gastado en Calc ni en otros niveles) mas bonus_points (2) propios del secreto, que se dan UNA vez por partida guardada (como un punto de atencion capturado: GameState.mark_pickup_collected con el id del mostrador; sin id no se apuntan). Una vez por intento (uses_per_attempt): despues, «Cerrado». Ayuda Q refund_desk y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion refund_desk).",
 			"required": [
 				"id"
 			],
@@ -111,7 +114,8 @@
 		},
 		"surprise_box": {
 			"scene": "res://scenes/levels/surprise_box.tscn",
-			"description": "Caja sorpresa (2026-10-29, paso 4 de docs/propuesta-mundo-5.md §8, §3.4 y §3.7; SurpriseBox). Caja SOLIDA de 1 x 1 tile (box_rect dentro de su celda: se pisa) en el suelo o en una repisa, con un CONTENIDO FIJO en los datos, nunca aleatorio: content points (amount 1-2 puntos de atencion, capturados como un punto del nivel con el id box:<id>, una vez por partida guardada: ya capturados, la caja esta vacia y el Debug lo dice), energy (+30 de energia), subscription (sale una Suscripcion que avisa y persigue), offer (sale una Oferta de pie) o empty. ABRIR: golpe al suelo ENCIMA (pies de Isak sobre la tapa), Embestida que la alcanza o PULSO DE CARA desde el suelo (Isak mirandola; de espaldas no). Sale con un «pop» de pop_frames (9) cuadros. CON EL DEBUG (DebugMode.is_revealing) se vuelve translucida (reveal_alpha) y ensena el icono del contenido con contorno negro de 1 px. LASER (vida 1): la destruye sin abrirla y el contenido se pierde (tambien lo malo). Lanzada (SurpriseBox.launch, para El Vendedor): vuela con gravedad sin ser solida; el pulso la deja ATURDIDA stun_s (3 s) inerte en el aire y solida (sirve de escalon) y luego cae y queda como una caja normal; el Filo destruye a la aturdida; el Sismo no le hace nada. Sin Q todavia (help_id previsto surprise_box, paso 9). Aspecto PROVISIONAL por codigo (seccion surprise_box).",
+			"help_id": "surprise_box",
+			"description": "Caja sorpresa (2026-10-29, paso 4 de docs/propuesta-mundo-5.md §8, §3.4 y §3.7; SurpriseBox). Caja SOLIDA de 1 x 1 tile (box_rect dentro de su celda: se pisa) en el suelo o en una repisa, con un CONTENIDO FIJO en los datos, nunca aleatorio: content points (amount 1-2 puntos de atencion, capturados como un punto del nivel con el id box:<id>, una vez por partida guardada: ya capturados, la caja esta vacia y el Debug lo dice), energy (+30 de energia), subscription (sale una Suscripcion que avisa y persigue), offer (sale una Oferta de pie) o empty. ABRIR: golpe al suelo ENCIMA (pies de Isak sobre la tapa), Embestida que la alcanza o PULSO DE CARA desde el suelo (Isak mirandola; de espaldas no). Sale con un «pop» de pop_frames (9) cuadros. CON EL DEBUG (DebugMode.is_revealing) se vuelve translucida (reveal_alpha) y ensena el icono del contenido con contorno negro de 1 px. LASER (vida 1): la destruye sin abrirla y el contenido se pierde (tambien lo malo). Lanzada (SurpriseBox.launch, para El Vendedor): vuela con gravedad sin ser solida; el pulso la deja ATURDIDA stun_s (3 s) inerte en el aire y solida (sirve de escalon) y luego cae y queda como una caja normal; el Filo destruye a la aturdida; el Sismo no le hace nada. Ayuda Q surprise_box y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion surprise_box).",
 			"required": [
 				"content"
 			],
@@ -149,7 +153,8 @@
 		},
 		"countdown_platform": {
 			"scene": "res://scenes/levels/countdown_platform.tscn",
-			"description": "Cuenta regresiva «¡Solo por hoy!» (2026-10-29, paso 5 de docs/propuesta-mundo-5.md §8 y §3.7, patron 28; CountdownPlatform). Plataforma SOLIDA de width_tiles x 1 (tarjeta de card_height_px arriba de su celda; one_way: de una via) con un cartel de cuenta de count_s (5 s del mundo; 5 segmentos): los ultimos warn_frames (9) cuadros parpadea, a 0 SE PLIEGA fold_s (1 s, sin colision, sin dano) y VUELVE con otra cuenta («¡Ultimas horas!»): la urgencia es falsa, siempre vuelve. No se materializa con Isak dentro. «Tercer ciclo» (secreto B del 5-1): si Isak espera cerca (watch_radius_tiles) truth_cycle - 1 cuentas seguidas sin ponerse encima, la siguiente es «Vale, esta vez es verdad» y dura truth_s (10 s); una vez por intento (truth_cycle 0 = sin ella). trigger: id de un shortcut_door con trap countdown; hasta que salte la trampa espera solida y sin cuenta. Tiempo del mundo. Sin Q todavia (help_id previsto countdown_platform, paso 9). Aspecto PROVISIONAL por codigo (seccion countdown_platform).",
+			"help_id": "countdown_platform",
+			"description": "Cuenta regresiva «¡Solo por hoy!» (2026-10-29, paso 5 de docs/propuesta-mundo-5.md §8 y §3.7, patron 28; CountdownPlatform). Plataforma SOLIDA de width_tiles x 1 (tarjeta de card_height_px arriba de su celda; one_way: de una via) con un cartel de cuenta de count_s (5 s del mundo; 5 segmentos): los ultimos warn_frames (9) cuadros parpadea, a 0 SE PLIEGA fold_s (1 s, sin colision, sin dano) y VUELVE con otra cuenta («¡Ultimas horas!»): la urgencia es falsa, siempre vuelve. No se materializa con Isak dentro. «Tercer ciclo» (secreto B del 5-1): si Isak espera cerca (watch_radius_tiles) truth_cycle - 1 cuentas seguidas sin ponerse encima, la siguiente es «Vale, esta vez es verdad» y dura truth_s (10 s); una vez por intento (truth_cycle 0 = sin ella). trigger: id de un shortcut_door con trap countdown; hasta que salte la trampa espera solida y sin cuenta. Tiempo del mundo. Ayuda Q countdown_platform y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion countdown_platform).",
 			"required": [
 				"id"
 			],
@@ -192,7 +197,8 @@
 		},
 		"terms_gate": {
 			"scene": "res://scenes/levels/terms_gate.tscn",
-			"description": "Terminos y condiciones (2026-10-29, paso 5 de docs/propuesta-mundo-5.md §8 y §3.7; TermsGate). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con dos botones en la cara de side (left o right: por donde se llega). «ACEPTAR» enorme (accept_tiles (3) x 1 tiles junto al pie de la puerta): CUALQUIER pulso que lo alcance lo pulsa: abre y ENGANCHA una Suscripcion a Isak. «rechazar» diminuto (reject_size_px en lo alto de la puerta): solo lo alcanza el LASER (hay que disparar desde un suelo de enfrente una fila por debajo de lo alto de la puerta: el laser sale a la altura del celular, a 56-61 px de los pies; desde el suelo de la puerta el disparo choca con ella) o un FILO que lo roza (edge_graze_px): abre sin coste. Abierta se queda abierta el resto del intento. Sin Q todavia (help_id previsto terms_gate, paso 9). Aspecto PROVISIONAL por codigo (seccion terms_gate).",
+			"help_id": "terms_gate",
+			"description": "Terminos y condiciones (2026-10-29, paso 5 de docs/propuesta-mundo-5.md §8 y §3.7; TermsGate). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con dos botones en la cara de side (left o right: por donde se llega). «ACEPTAR» enorme (accept_tiles (3) x 1 tiles junto al pie de la puerta): CUALQUIER pulso que lo alcance lo pulsa: abre y ENGANCHA una Suscripcion a Isak. «rechazar» diminuto (reject_size_px en lo alto de la puerta): solo lo alcanza el LASER (hay que disparar desde un suelo de enfrente una fila por debajo de lo alto de la puerta: el laser sale a la altura del celular, a 56-61 px de los pies; desde el suelo de la puerta el disparo choca con ella) o un FILO que lo roza (edge_graze_px): abre sin coste. Abierta se queda abierta el resto del intento. Ayuda Q terms_gate y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion terms_gate).",
 			"required": [
 				"id"
 			],
@@ -230,7 +236,8 @@
 		},
 		"shutter": {
 			"scene": "res://scenes/levels/shutter.tscn",
-			"description": "Persiana «Cerrado por inventario» (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §3.9 y patron 25; Shutter). Persiana metalica SOLIDA de length_tiles (2-4) tiles desde (x, y): orientation floor (length_tiles x 1, se pisa) o wall (1 x length_tiles, apoyada en el suelo). El golpe al suelo, el pulso, el laser y el Sismo REBOTAN (chispa gris). SOLO una EMBESTIDA cuya onda la alcanza (EventBus.combo_landed con combo_ram) la rompe para el resto del intento; la de suelo deja caer a Isak a lo de debajo y la onda sigue break_wave_depth_tiles (3) bajo ella con el dano y el aturdimiento de la Embestida («rompe una barrera y limpia a los enemigos de debajo»). Sin Q todavia (help_id previsto shutter, paso 9). Aspecto PROVISIONAL por codigo (seccion shutter).",
+			"help_id": "shutter",
+			"description": "Persiana «Cerrado por inventario» (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §3.9 y patron 25; Shutter). Persiana metalica SOLIDA de length_tiles (2-4) tiles desde (x, y): orientation floor (length_tiles x 1, se pisa) o wall (1 x length_tiles, apoyada en el suelo). El golpe al suelo, el pulso, el laser y el Sismo REBOTAN (chispa gris). SOLO una EMBESTIDA cuya onda la alcanza (EventBus.combo_landed con combo_ram) la rompe para el resto del intento; la de suelo deja caer a Isak a lo de debajo y la onda sigue break_wave_depth_tiles (3) bajo ella con el dano y el aturdimiento de la Embestida («rompe una barrera y limpia a los enemigos de debajo»). Ayuda Q shutter y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion shutter).",
 			"required": [
 				"id"
 			],
@@ -268,7 +275,8 @@
 		},
 		"price_rail": {
 			"scene": "res://scenes/levels/price_rail.tscn",
-			"description": "Ranura de precios (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §3.9 y patron 26; PriceRail). Hilera de etiquetas colgadas sobre un foso: width_tiles (4) x height_tiles (4) desde (x, y) MENOS una ranura de 1 tile de alto en la fila slot_row (desde arriba); las etiquetas se apartan inset_px (32) de cada borde. NO son solidas ni danan: Isak que las toca sale EMPUJADO hacia atras (al borde de la hilera por donde llego; corta el dash y los combos). De pie no cabe por la ranura; comprimido si, pero en ella no hay suelo y el salto comprimido no cruza el foso: solo un FILO (dash comprimido de 4 tiles, gravedad 0) la cruza. El pulso, el laser, el golpe al suelo y los demas combos no le hacen nada. Sin Q todavia (help_id previsto price_rail, paso 9). Aspecto PROVISIONAL por codigo (seccion price_rail).",
+			"help_id": "price_rail",
+			"description": "Ranura de precios (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.7, §3.9 y patron 26; PriceRail). Hilera de etiquetas colgadas sobre un foso: width_tiles (4) x height_tiles (4) desde (x, y) MENOS una ranura de 1 tile de alto en la fila slot_row (desde arriba); las etiquetas se apartan inset_px (32) de cada borde. NO son solidas ni danan: Isak que las toca sale EMPUJADO hacia atras (al borde de la hilera por donde llego; corta el dash y los combos). De pie no cabe por la ranura; comprimido si, pero en ella no hay suelo y el salto comprimido no cruza el foso: solo un FILO (dash comprimido de 4 tiles, gravedad 0) la cruza. El pulso, el laser, el golpe al suelo y los demas combos no le hacen nada. Ayuda Q price_rail y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion price_rail).",
 			"required": [
 				"id"
 			],
@@ -314,7 +322,8 @@
 		},
 		"clearance_shelf": {
 			"scene": "res://scenes/levels/clearance_shelf.tscn",
-			"description": "Estanteria de saldos (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.2.2, §3.7, §3.9 y patron 27; ClearanceShelf). Columna SOLIDA de cajas de 1 x height_tiles (2-3) desde (x, y), apoyada en el suelo; las de igual group forman un grupo. Un golpe suelto (golpe al suelo cuya onda la alcanza, Embestida, pulso o laser) la TUMBA y a los restock_s (0,5 s) SE REPONE (no con Isak dentro) si queda alguna del grupo en pie; si todas las del grupo estan tumbadas a la vez, caen para el resto del intento. Solo un SISMO (toda la planta en pantalla a la vez) las tumba todas a la vez. Un grupo de una sola estanteria solo cae con el Sismo. Reaparecer repone las tumbadas. Sin Q todavia (help_id previsto clearance_shelf, paso 9). Aspecto PROVISIONAL por codigo (seccion clearance_shelf).",
+			"help_id": "clearance_shelf",
+			"description": "Estanteria de saldos (2026-10-29, paso 6 de docs/propuesta-mundo-5.md §8, §3.2.2, §3.7, §3.9 y patron 27; ClearanceShelf). Columna SOLIDA de cajas de 1 x height_tiles (2-3) desde (x, y), apoyada en el suelo; las de igual group forman un grupo. Un golpe suelto (golpe al suelo cuya onda la alcanza, Embestida, pulso o laser) la TUMBA y a los restock_s (0,5 s) SE REPONE (no con Isak dentro) si queda alguna del grupo en pie; si todas las del grupo estan tumbadas a la vez, caen para el resto del intento. Solo un SISMO (toda la planta en pantalla a la vez) las tumba todas a la vez. Un grupo de una sola estanteria solo cae con el Sismo. Reaparecer repone las tumbadas. Ayuda Q clearance_shelf y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion clearance_shelf).",
 			"required": [
 				"group"
 			],
@@ -365,7 +374,8 @@
 		},
 		"wishlist_platform": {
 			"scene": "res://scenes/levels/wishlist_platform.tscn",
-			"description": "Lista de deseos (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.3, §3.7 y §4.3; WishlistPlatform). Plataforma DE UNA VIA de width_tiles (3) x 1 (tarjeta arriba de su celda) con un objeto deseado encima (item: watch, headphones, course; item_tile: columna del objeto, -1 = centro) y una OFERTA INTEGRADA: tira hacia el objeto como una Oferta (zona de radius_tiles (6) a cada lado y height_tiles (3) de alto, strength) y se SUMA con las demas con el tope de §3.3 (deriva 90 px/s, x0,45 al alejarse). El objeto NO se coge: con Isak add_s (1,5 s) sobre el, «Añadido al carrito», se le engancha una Suscripcion y la plataforma deja de tirar (una vez por intento). El pulso que alcanza el objeto apaga el tiron stun_s (3 s). Sin Q todavia (help_id previsto wishlist_platform, paso 9). Aspecto PROVISIONAL por codigo (seccion wishlist_platform).",
+			"help_id": "wishlist_platform",
+			"description": "Lista de deseos (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.3, §3.7 y §4.3; WishlistPlatform). Plataforma DE UNA VIA de width_tiles (3) x 1 (tarjeta arriba de su celda) con un objeto deseado encima (item: watch, headphones, course; item_tile: columna del objeto, -1 = centro) y una OFERTA INTEGRADA: tira hacia el objeto como una Oferta (zona de radius_tiles (6) a cada lado y height_tiles (3) de alto, strength) y se SUMA con las demas con el tope de §3.3 (deriva 90 px/s, x0,45 al alejarse). El objeto NO se coge: con Isak add_s (1,5 s) sobre el, «Añadido al carrito», se le engancha una Suscripcion y la plataforma deja de tirar (una vez por intento). El pulso que alcanza el objeto apaga el tiron stun_s (3 s). Ayuda Q wishlist_platform y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion wishlist_platform).",
 			"required": [
 				"id"
 			],
@@ -426,7 +436,8 @@
 		},
 		"wish_strike": {
 			"scene": "res://scenes/levels/wish_strike.tscn",
-			"description": "Tachon (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.7 y §4.3.1; WishStrike, hereda de GlitchWall). Pared con glitch SOLO VISIBLE CON EL DEBUG (visible_only_with_debug siempre activo) de width_tiles x height_tiles desde (x, y): sin nada revelado parece terreno; con el Debug activo e Isak cerca se disuelve y deja ver lo de detras (en el 5-3, el memory_pickup msg_5_3). Encima, la linea de la lista escrita por Isak y tachada por Eco (text; por defecto «arreglar la radio del Abuelito», propuesto): solo se lee con el Debug y, abierta la pared, se queda a la vista. Sin Q todavia (help_id previsto wish_strike, paso 9). Aspecto PROVISIONAL (pared del Mundo 1 y linea por codigo; seccion wish_strike).",
+			"help_id": "wish_strike",
+			"description": "Tachon (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.7 y §4.3.1; WishStrike, hereda de GlitchWall). Pared con glitch SOLO VISIBLE CON EL DEBUG (visible_only_with_debug siempre activo) de width_tiles x height_tiles desde (x, y): sin nada revelado parece terreno; con el Debug activo e Isak cerca se disuelve y deja ver lo de detras (en el 5-3, el memory_pickup msg_5_3). Encima, la linea de la lista escrita por Isak y tachada por Eco (text; por defecto «arreglar la radio del Abuelito», propuesto): solo se lee con el Debug y, abierta la pared, se queda a la vista. Ayuda Q wish_strike y ficha del album desde el paso 9. Aspecto PROVISIONAL (pared del Mundo 1 y linea por codigo; seccion wish_strike).",
 			"required": [
 				"id"
 			],
@@ -467,7 +478,8 @@
 		},
 		"calc_register": {
 			"scene": "res://scenes/levels/calc_register.tscn",
-			"description": "Caja registradora de Calc (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.7, §4.2.1 y decision 14 de §9; CalcRegister, hereda de ShortcutDoor). El atajo legitimo, NUNCA con trampa: puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con la pantalla LCD de Calc encima («Atajo: 2 ◆ / Trampa: 0»). Un PULSO DE ESPALDAS paga prices.calc_register de data/economy.json (2; cost lo cambia) con el saldo real (sin saldo, «Saldo insuficiente» y chispa gris) y se abre el resto del intento; lo pagado NO va a Devoluciones. Calc habla en el cuadro de texto con su LCD (interlocutor calc, no importante; propuestos): al acercarse Isak, line_near; al pagar, line_paid. Sin Q todavia (help_id previsto calc_register, paso 9). Aspecto PROVISIONAL por codigo (seccion calc_register).",
+			"help_id": "calc_register",
+			"description": "Caja registradora de Calc (2026-10-29, paso 7 de docs/propuesta-mundo-5.md §8, §3.7, §4.2.1 y decision 14 de §9; CalcRegister, hereda de ShortcutDoor). El atajo legitimo, NUNCA con trampa: puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con la pantalla LCD de Calc encima («Atajo: 2 ◆ / Trampa: 0»). Un PULSO DE ESPALDAS paga prices.calc_register de data/economy.json (2; cost lo cambia) con el saldo real (sin saldo, «Saldo insuficiente» y chispa gris) y se abre el resto del intento; lo pagado NO va a Devoluciones. Calc habla en el cuadro de texto con su LCD (interlocutor calc, no importante; propuestos): al acercarse Isak, line_near; al pagar, line_paid. Ayuda Q calc_register y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (seccion calc_register).",
 			"required": [
 				"id"
 			],
@@ -776,19 +788,19 @@
 		"text": "crema_cartel"
 	},
 	"palette": {
-		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",
-		"tienda_noche": "#0e0c14",
-		"negro_fondo": "#15121e",
-		"negro_medio": "#221c30",
-		"gris_escaparate": "#3a3448",
-		"gris_etiqueta": "#7a7488",
-		"crema_cartel": "#e8e0c8",
-		"crema_sombra": "#aea690",
+		"_notes": "Variante B «Cierre a medianoche» (paso 9; tools/palette_mundo5_variants.py, la escribe tools/palette_mundo5_provisional.py; no editar a mano): colores del Mundo 5 por nombre. debug_blanco (#ffffff) lo decidio el usuario el 2026-10-29.",
+		"tienda_noche": "#08070c",
+		"negro_fondo": "#0f0d16",
+		"negro_medio": "#1b1626",
+		"gris_escaparate": "#332c40",
+		"gris_etiqueta": "#757087",
+		"crema_cartel": "#ece4cc",
+		"crema_sombra": "#b2aa92",
 		"amarillo_rebajas": "#ffe600",
-		"amarillo_sombra": "#a89400",
-		"magenta_neon": "#ff3df0",
-		"magenta_sombra": "#9a1c94",
-		"violeta_neon": "#9b5cff",
+		"amarillo_sombra": "#a69200",
+		"magenta_neon": "#ff40f2",
+		"magenta_sombra": "#961a90",
+		"violeta_neon": "#a066ff",
 		"alerta": "#ff4a2a",
 		"alerta_sombra": "#a3221c",
 		"ambar": "#ffa000",

@@ -157,6 +157,22 @@ SOURCES = {
     "seen_boss": ("assets/sprites/enemies/world4/seen_boss_placeholder_00.png", None, 1),
     "seen_shield": ("assets/sprites/enemies/world4/seen_shield_00.png", None, 1),
     "seen_typing": ("assets/sprites/enemies/world4/seen_typing_00.png", None, 1),
+    # Mundo 5 (paso 9 de docs/propuesta-mundo-5.md): arte por script de tools/gen_world5_objects.py (la
+    # Suscripcion, PROVISIONAL hasta AutoSprite, paso 24). El atajo, con la trampa que enseña el Debug.
+    "shop_item": ("assets/sprites/props/world5/shop_item_00.png", None, 1),
+    "surprise_box": ("assets/sprites/props/world5/surprise_box_00.png", None, 1),
+    "refund_desk": ("assets/sprites/props/world5/refund_desk_00.png", None, 1),
+    "shortcut_door": ("assets/sprites/props/world5/shortcut_door_debug_00.png", None, 1),
+    "countdown_platform": ("assets/sprites/props/world5/countdown_platform_00.png", None, 1),
+    "shutter": ("assets/sprites/props/world5/shutter_wall_00.png", None, 1),
+    "price_rail": ("assets/sprites/props/world5/price_rail_00.png", None, 1),
+    "clearance_shelf": ("assets/sprites/props/world5/clearance_shelf_00.png", None, 1),
+    "calc_register": ("assets/sprites/props/world5/calc_register_00.png", None, 1),
+    "terms_gate": ("assets/sprites/props/world5/terms_gate_00.png", None, 1),
+    "wishlist_platform": ("assets/sprites/props/world5/wishlist_platform_00.png", None, 1),
+    "wish_strike": ("assets/sprites/props/world5/wish_strike_00.png", None, 1),
+    "offer_sign": ("assets/sprites/enemies/world5/offer_sign_00.png", None, 1),
+    "subscription": ("assets/sprites/enemies/world5/subscription_placeholder_00.png", None, 1),
 }
 
 

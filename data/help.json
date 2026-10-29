@@ -1040,6 +1040,162 @@
 			"radius_tiles": 7.0,
 			"center_px": [0, 0],
 			"prompt_px": [0, -80]
+		},
+		"shop_item": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Tienda",
+			"text": "Una tienda. De espaldas, un pulso y compras con tus puntos: lo notas al momento. Si no te llegan, no te vende nada.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 1,
+			"center_px": [32, 16],
+			"prompt_px": [32, -40]
+		},
+		"surprise_box": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Caja sorpresa",
+			"text": "Una caja sorpresa. Puede tener puntos, energía, nada… o algo que te persigue. Con el Debug ves lo que hay dentro antes de abrirla con un pulso de cara.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 2,
+			"center_px": [32, 36],
+			"prompt_px": [32, -12]
+		},
+		"refund_desk": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Devoluciones",
+			"text": "Devoluciones. Lo que te cobraron con trampa en este intento, aquí te lo devuelven. Ponte de espaldas y lanza un pulso.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 3,
+			"center_px": [32, 40],
+			"prompt_px": [32, -36]
+		},
+		"shortcut_door": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Atajo",
+			"text": "Un atajo de pago. De espaldas, un pulso y pagas. Promete ahorrarte camino, pero puede esconder una trampa: el Debug te la enseña. El camino largo es gratis.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 4,
+			"center_px": [32, 96],
+			"prompt_px": [32, -12]
+		},
+		"countdown_platform": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "¡Solo por hoy!",
+			"text": "«¡Solo por hoy!» Aguanta mientras cuenta y, al llegar a cero, se pliega un momento. Siempre vuelve con otra cuenta: no hace falta correr.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 5,
+			"center_px": [64, 16],
+			"prompt_px": [64, -24]
+		},
+		"shutter": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Persiana",
+			"text": "Cerrado por inventario. El pulso, el láser y el golpe al suelo rebotan. En el aire, Deslizar y abajo a la vez: una Embestida la rompe.",
+			"first_level": "5-2",
+			"world": 5,
+			"order": 6,
+			"center_px": [64, 32],
+			"prompt_px": [64, -16]
+		},
+		"price_rail": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Ranura de precios",
+			"text": "Etiquetas colgadas: si las tocas, te empujan. Entre ellas queda una ranura muy baja. En el aire, Pellizcar y Deslizar: un Filo te lleva por ella.",
+			"first_level": "5-2",
+			"world": 5,
+			"order": 7,
+			"center_px": [128, 128],
+			"prompt_px": [128, -16]
+		},
+		"clearance_shelf": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Estantería de saldos",
+			"text": "Estanterías de saldos. Un golpe tumba una, pero se repone enseguida si queda otra en pie. En el aire, Pellizcar y abajo: un Sismo las tumba todas a la vez.",
+			"first_level": "5-2",
+			"world": 5,
+			"order": 8,
+			"center_px": [32, 64],
+			"prompt_px": [32, -12]
+		},
+		"calc_register": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Caja de Calc",
+			"text": "La caja de Calc. Vende un atajo sin trampa: lo que pone es lo que cuesta. De espaldas, un pulso y pagas. Yo no lo haría, pero no miente.",
+			"first_level": "5-2",
+			"world": 5,
+			"order": 9,
+			"center_px": [32, 96],
+			"prompt_px": [32, -56]
+		},
+		"terms_gate": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Términos y condiciones",
+			"text": "Términos y condiciones. «ACEPTAR» abre enseguida… y te suscribe. «rechazar» es ese botón diminuto de arriba: dale con el láser desde enfrente o rózalo con un Filo.",
+			"first_level": "5-3",
+			"world": 5,
+			"order": 10,
+			"center_px": [32, 96],
+			"prompt_px": [32, -12]
+		},
+		"wishlist_platform": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Lista de deseos",
+			"text": "Tu lista de deseos: cosas que nunca pediste, y tiran de ti. Si te quedas encima, se añaden al carrito. Un pulso al objeto lo calla un rato.",
+			"first_level": "5-3",
+			"world": 5,
+			"order": 11,
+			"center_px": [96, -8],
+			"prompt_px": [96, -64]
+		},
+		"wish_strike": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "object",
+			"title": "Tachón",
+			"text": "Algo tachado de la lista. Con el Debug se lee lo que ponía y se abre el paso. Yo lo dejaría tachado.",
+			"first_level": "5-3",
+			"world": 5,
+			"order": 12,
+			"center_px": [32, 64],
+			"prompt_px": [32, -6]
+		},
+		"offer_sign": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Oferta",
+			"text": "Cuanto más miras, más te acerca. Aléjate, o apágala con el pulso.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 1,
+			"radius_tiles": 4.0,
+			"center_px": [0, -32],
+			"prompt_px": [0, -84]
+		},
+		"subscription": {
+			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
+			"category": "enemy",
+			"title": "Suscripción",
+			"text": "Una suscripción. Si te alcanza, se te pega y te cobra puntos cada poco. Un pulso o un golpe al suelo la cancelan; aturdida, el láser la quita de en medio.",
+			"first_level": "5-1",
+			"world": 5,
+			"order": 2,
+			"radius_tiles": 4.0,
+			"center_px": [0, -24],
+			"prompt_px": [0, -64]
 		}
 	}
 }

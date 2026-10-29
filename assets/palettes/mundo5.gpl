@@ -1,32 +1,32 @@
 GIMP Palette
-Name: Mundo 5 La Tienda - PROVISIONAL (solo desarrollo, hex sin cerrar salvo el blanco)
+Name: Mundo 5 La Tienda - variante B (Cierre a medianoche)
 Columns: 4
-# PROVISIONAL: colores de desarrollo del Mundo 5, sin cerrar (el usuario elige variante en el paso 9); el blanco del Debug esta decidido (#ffffff).
+# Variante B elegida en el paso 9 (tools/palette_mundo5_variants.py; cambiable con --apply); el blanco del Debug lo decidio el usuario (#ffffff).
 # Generado por tools/palette_mundo5_provisional.py
 # tienda_noche: Negro de referencia de §6.1: contorno de 1 px (lo que revela el Debug, puntos de atencion)
- 14  12  20	tienda_noche
+  8   7  12	tienda_noche
 # negro_fondo: Fondo del centro comercial de madrugada
- 21  18  30	negro_fondo
+ 15  13  22	negro_fondo
 # negro_medio: Fondo medio: escaparates en paralaje
- 34  28  48	negro_medio
+ 27  22  38	negro_medio
 # gris_escaparate: Suelo de baldosa, paredes de escaparate, estanterias
- 58  52  72	gris_escaparate
+ 51  44  64	gris_escaparate
 # gris_etiqueta: Bordes, etiquetas apagadas, maniquies
-122 116 136	gris_etiqueta
+117 112 135	gris_etiqueta
 # crema_cartel: Carteles «blancos» (crema, nunca blanco: L* <= 92)
-232 224 200	crema_cartel
+236 228 204	crema_cartel
 # crema_sombra: Sombra y borde de los carteles
-174 166 144	crema_sombra
+178 170 146	crema_sombra
 # amarillo_rebajas: Amarillo chillon de rebajas: carteles de oferta, etiquetas de precio
 255 230   0	amarillo_rebajas
 # amarillo_sombra: Sombra del amarillo
-168 148   0	amarillo_sombra
+166 146   0	amarillo_sombra
 # magenta_neon: Neon principal y precio tachado (nunca rojo); brillo de la Suscripcion
-255  61 240	magenta_neon
+255  64 242	magenta_neon
 # magenta_sombra: Sombra del magenta
-154  28 148	magenta_sombra
+150  26 144	magenta_sombra
 # violeta_neon: Neon secundario
-155  92 255	violeta_neon
+160 102 255	violeta_neon
 # alerta: Rojo de dano (el del Mundo 1, reservado: pinchos y el «Cancelar»)
 255  74  42	alerta
 # alerta_sombra: Sombra de lo rojo (reservado)

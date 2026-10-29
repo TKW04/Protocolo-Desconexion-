@@ -27,6 +27,7 @@ const MOUNT_FLOOR: StringName = &"floor"
 const MOUNT_WALL: StringName = &"wall"
 
 const DEFAULT_DATA_PATH: String = "res://data/enemies/offer_sign.json"
+const DEFAULT_SCENE_PATH: String = "res://scenes/enemies/offer_sign.tscn"
 const GROUP: StringName = &"enemy"
 const TILE: float = 64.0
 const LAYER_ENEMY: int = 4
@@ -99,6 +100,26 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	step(delta)
+
+
+## Ayuda de Eco de las Ofertas que salen durante el juego (cajas sorpresa, atajos con trampa...;
+## paso 9 de docs/propuesta-mundo-5.md): el help_id de su JSON por defecto.
+static func spawned_help_id() -> StringName:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DEFAULT_DATA_PATH))
+	if parsed is Dictionary:
+		return StringName(String((parsed as Dictionary).get("help_id", "")))
+	return &""
+
+
+## Saca una Oferta de pie con los pies en `feet` (global) bajo `parent`, con su ayuda de Eco.
+static func spawn(parent: Node, feet: Vector2) -> OfferSign:
+	if parent == null:
+		return null
+	var offer := (load(DEFAULT_SCENE_PATH) as PackedScene).instantiate() as OfferSign
+	HelpCatalog.tag(offer, spawned_help_id())
+	parent.add_child(offer)
+	offer.global_position = feet
+	return offer
 
 
 ## Un paso con `delta` real (se escala aqui). Publico para las pruebas.

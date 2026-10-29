@@ -67,9 +67,9 @@ func test_every_help_type_has_a_world() -> void:
 			assert_eq(int(level_world.get("world", 0)), world, "%s: world coincide con su first_level" % id)
 	# Desde el 2026-10-22 (paso 4 de docs/propuesta-mundo-2.md) hay tipos del Mundo 2 y desde el 2026-10-26
 	# (paso 9 de docs/propuesta-mundo-3.md), del Mundo 3; desde el 2026-10-28 (paso 10 de
-	# docs/propuesta-mundo-4.md), del Mundo 4.
+	# docs/propuesta-mundo-4.md), del Mundo 4; desde el 2026-10-29 (paso 9 de docs/propuesta-mundo-5.md), del Mundo 5.
 	for id: StringName in HelpCatalog.shared().ids():
-		assert_between(HelpCatalog.shared().world(id), 1, 4, "Hoy los tipos son de los Mundos 1-4 (%s)" % id)
+		assert_between(HelpCatalog.shared().world(id), 1, 5, "Hoy los tipos son de los Mundos 1-5 (%s)" % id)
 
 
 func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
@@ -79,8 +79,8 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 		&"alert_major", &"alert_major_bubble", &"notification_shot", &"alert_major_clone"] as Array[StringName],
 		"Burbuja (1-1), punto rojo y banner (1-2), banner obligatorio con el dash y campana (1-3) y Alerta Mayor, sus Burbujas, la rafaga y las copias (1-boss), en orden")
 	assert_eq(enemies.size() + objects.size() + NotasAlbum.album_ids(2).size() + NotasAlbum.album_ids(3).size()
-		+ NotasAlbum.album_ids(4).size(), HelpCatalog.shared().ids().size(),
-		"Todos los tipos del Mundo 1 (y los de los Mundos 2, 3 y 4 aparte)")
+		+ NotasAlbum.album_ids(4).size() + NotasAlbum.album_ids(5).size(), HelpCatalog.shared().ids().size(),
+		"Todos los tipos del Mundo 1 (y los de los Mundos 2, 3, 4 y 5 aparte)")
 	assert_eq(objects[0], &"attention_point", "Orden de help.json")
 	for i: int in range(1, objects.size()):
 		assert_true(int(HelpCatalog.shared().entry(objects[i - 1]).get("order", 0))
@@ -108,8 +108,16 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	assert_eq(NotasAlbum.album_ids(4, HelpCatalog.CATEGORY_ENEMY),
 		[&"troll", &"sticker", &"ghost", &"troll_mimic", &"seen_boss", &"lurker"] as Array[StringName],
 		"Mundo 4: Troll (4-1), Sticker y Fantasma (4-2), Troll disfrazado (4-3), El Visto (paso 20) y el Acechador (2026-10-28)")
-	for world: int in range(5, 7):
-		assert_eq(NotasAlbum.album_ids(world).size(), 0, "Mundo %d aun sin tipos" % world)
+	# Mundo 5 (paso 9 de docs/propuesta-mundo-5.md): 12 objetos y 2 enemigos, en el orden de help.json (la
+	# «Prueba gratis» es historia: sin Q ni ficha).
+	assert_eq(NotasAlbum.album_ids(5, HelpCatalog.CATEGORY_OBJECT),
+		[&"shop_item", &"surprise_box", &"refund_desk", &"shortcut_door", &"countdown_platform", &"shutter",
+			&"price_rail", &"clearance_shelf", &"calc_register", &"terms_gate", &"wishlist_platform",
+			&"wish_strike"] as Array[StringName],
+		"Mundo 5: tienda, cajas, Devoluciones, atajo y cuenta (5-1), obstaculos de los combos y la caja de Calc (5-2) y lo del 5-3")
+	assert_eq(NotasAlbum.album_ids(5, HelpCatalog.CATEGORY_ENEMY),
+		[&"offer_sign", &"subscription"] as Array[StringName], "Mundo 5: Oferta y Suscripcion (5-1)")
+	assert_eq(NotasAlbum.album_ids(6).size(), 0, "Mundo 6 aun sin tipos")
 
 
 func test_visited_rule() -> void:

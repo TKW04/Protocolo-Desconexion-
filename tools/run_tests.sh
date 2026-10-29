@@ -214,6 +214,13 @@ rm -f "$IMPORT_LOG"
 # Kernel y Raíz y el quieto que pierde; usa user://bot_save.json).
 # Desde el paso 8 del Mundo 5 (2026-10-29): el validador del Mundo 5 (tests/test_world5_validator.py:
 # tools/world5_model.py, salas de los pasos 2-7, negativos de §7.1 y el camino del comprador con --buy).
+# Desde el paso 9 del Mundo 5 (2026-10-29): las 3 variantes de paleta del Mundo 5 cumplen §6.1 y su comparativa
+# esta al dia (tools/palette_mundo5_variants.py --check; la elegida, la B, la escribe palette_mundo5_provisional.py
+# en assets/palettes/mundo5.gpl; tests/test_palette_mundo5.py), el arte por script de objetos y enemigos del Mundo 5
+# al dia y dentro de la paleta (tools/gen_world5_objects.py --check) y el tileset y el fondo del centro comercial al
+# dia con el contraste de Isak y Eco (tools/validate_world5_tiles.py). Eco se ve igual que en los Mundos 1-3
+# (sin variante del Mundo 5). Pruebas GUT de las ayudas Q del Mundo 5: test_help.gd, test_help_inert.gd y test_notas_album.gd. Las capturas de contraste de las
+# salas (tools/render_world5_rooms.gd + tools/measure_world5_contrast.py) necesitan ventana: no van en la suite.
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -292,6 +299,8 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/palette_mundo3_provisional.py --check && python3 -I tools/palette_mundo3_preview.py --check \
 		&& python3 -I tools/gen_world3_exit_frame.py --check && python3 -I tools/gen_world4_exit_reply.py --check && python3 -I tools/palette_mundo4_provisional.py --check && python3 -I tools/palette_mundo5_provisional.py --check \
 		&& python3 -I tools/palette_mundo4_variants.py --check && python3 -I tools/gen_world4_objects.py --check \
+		&& python3 -I tools/palette_mundo5_variants.py --check && python3 -I tools/gen_world5_objects.py --check \
+		&& python3 -I tools/validate_world5_tiles.py >/dev/null \
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \

@@ -19,6 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import level_catalog  # noqa: E402
 import palette_mundo5_provisional as pal  # noqa: E402
+import palette_mundo5_variants as variants  # noqa: E402
 
 
 def _with(**hexes):
@@ -108,6 +109,23 @@ class PaletteMundo5Test(unittest.TestCase):
         self.assertLessEqual(hi, eco["max_spend_per_level"])
         self.assertLess(eco["max_spend_per_level"], eco["points_per_map"])
         self.assertLessEqual(lo, hi)
+
+
+class PaletteMundo5VariantsTest(unittest.TestCase):
+    """Paso 9: las 3 variantes cumplen las 7 reglas de §6.1; la elegida (B, la de mayor margen minimo de
+    contraste) es la del juego, en assets/palettes/mundo5.gpl (la provisional ya no existe)."""
+
+    def test_three_variants_pass_and_the_chosen_one_is_used(self):
+        self.assertEqual(sorted(variants.VARIANTS), ["A", "B", "C"])
+        self.assertEqual(variants.check_variants(), [])
+        self.assertEqual(variants.ACTIVE, "B")
+        own = {n: v for n, v, _r in pal.COLORS if n not in variants.RESERVED}
+        self.assertEqual(own, variants.VARIANTS["B"]["hex"])
+        self.assertEqual(pal.DEBUG[1], "ffffff")
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "assets", "palettes", "mundo5.gpl")))
+        self.assertFalse(os.path.exists(os.path.join(ROOT, "assets", "palettes", "mundo5_provisional.gpl")))
+        worst = {vid: variants.min_margin(m)[0] for vid, m in variants.measures().items()}
+        self.assertEqual(max(worst, key=worst.get), "B", worst)
 
 
 if __name__ == "__main__":

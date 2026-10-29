@@ -103,6 +103,15 @@ var _health: EnemyHealth
 var _shape: CollisionShape2D
 
 
+## Ayuda de Eco de las Suscripciones que salen durante el juego (cajas sorpresa, atajos con trampa...;
+## paso 9 de docs/propuesta-mundo-5.md): el help_id de su JSON por defecto.
+static func spawned_help_id() -> StringName:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DEFAULT_DATA_PATH))
+	if parsed is Dictionary:
+		return StringName(String((parsed as Dictionary).get("help_id", "")))
+	return &""
+
+
 ## Crea una Suscripcion en `parent` con los pies en `feet` (global). Con `host`, sale
 ## ya enganchada a el; si no, sale avisando (alert) y persigue. La usan la caja
 ## sorpresa, el atajo con trampa y Terminos y condiciones.
@@ -111,6 +120,7 @@ static func spawn(parent: Node, feet: Vector2, host: Isak = null) -> Subscriptio
 		return null
 	var scene := load(SCENE_PATH) as PackedScene
 	var sub := scene.instantiate() as Subscription
+	HelpCatalog.tag(sub, spawned_help_id())
 	parent.add_child(sub)
 	sub.global_position = feet
 	sub._home = feet

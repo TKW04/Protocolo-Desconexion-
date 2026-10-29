@@ -1,0 +1,45 @@
+{
+	"_notes": "Fondo del centro comercial del Mundo 5 (generado por tools/gen_world5_background.py; no editar a mano). Mismo formato que data/world1_background.json (scripts/levels/world1_background.gd): capas de atras hacia delante con scroll_scale y repeat_size; galeria con escaparates apagados, maniquies, precios y la escalera mecanica en paralaje y neones del techo. Sin capa de torre (los niveles del Mundo 5 son horizontales por plantas).",
+	"z_index": -100,
+	"layers": [
+		{
+			"name": "Galeria",
+			"texture": "res://assets/sprites/backgrounds/mundo5_bg_galeria.png",
+			"scroll_scale": [
+				0.1,
+				0.0
+			],
+			"repeat_size": [
+				1280,
+				0
+			],
+			"repeat_times": 3
+		},
+		{
+			"name": "Escaparates",
+			"texture": "res://assets/sprites/backgrounds/mundo5_bg_escaparates.png",
+			"scroll_scale": [
+				0.25,
+				0.0
+			],
+			"repeat_size": [
+				1280,
+				0
+			],
+			"repeat_times": 3
+		},
+		{
+			"name": "Neones",
+			"texture": "res://assets/sprites/backgrounds/mundo5_bg_neones.png",
+			"scroll_scale": [
+				0.45,
+				0.0
+			],
+			"repeat_size": [
+				1280,
+				0
+			],
+			"repeat_times": 3
+		}
+	]
+}

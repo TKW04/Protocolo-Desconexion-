@@ -34,7 +34,6 @@ const STATE_OPENED: StringName = &"opened"
 const STATE_DESTROYED: StringName = &"destroyed"
 const LAYER_WORLD: int = 1
 const LAYER_ENEMY: int = 4
-const OFFER_SCENE_PATH: String = "res://scenes/enemies/offer_sign.tscn"
 
 ## Se abre y suelta `content` (lo efectivo: points ya capturados = empty).
 signal opened(content: StringName)
@@ -203,10 +202,7 @@ func open() -> bool:
 		CONTENT_SUBSCRIPTION:
 			_released = Subscription.spawn(get_parent(), _feet())
 		CONTENT_OFFER:
-			var offer := (load(OFFER_SCENE_PATH) as PackedScene).instantiate() as OfferSign
-			get_parent().add_child(offer)
-			offer.global_position = _feet()
-			_released = offer
+			_released = OfferSign.spawn(get_parent(), _feet())
 	opened.emit(what)
 	return true
 

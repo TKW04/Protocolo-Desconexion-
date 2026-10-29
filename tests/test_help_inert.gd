@@ -1010,7 +1010,10 @@ func test_every_help_type_is_covered() -> void:
 		&"influencer_bot", &"like_thief", &"false_reflection",
 		&"chat_bubble", &"typing_bubble", &"seen_zone", &"flashlight_pickup", &"autocorrect_bubble", &"undo_prompt",
 		&"typed_wall", &"troll", &"sticker", &"ghost", &"troll_mimic", &"lurker",
-		&"seen_boss", &"seen_shield", &"seen_typing"]
+		&"seen_boss", &"seen_shield", &"seen_typing",
+		&"shop_item", &"surprise_box", &"refund_desk", &"shortcut_door", &"countdown_platform", &"shutter",
+		&"price_rail", &"clearance_shelf", &"calc_register", &"terms_gate", &"wishlist_platform", &"wish_strike",
+		&"offer_sign", &"subscription"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 
@@ -1198,3 +1201,139 @@ func test_disguised_troll_mimic_gives_no_help() -> void:
 	assert_false(mimic.is_disguised())
 	assert_true(HelpCatalog.is_help_live(mimic), "Descubierto: ayuda")
 
+
+
+# --- Mundo 5 (2026-10-29, paso 9 de docs/propuesta-mundo-5.md) ---
+
+func _w5_scene(type: String) -> Node2D:
+	var types: Dictionary = World5ObjectsConfig.data().get("types", {})
+	var path: String = String((types.get(type, {}) as Dictionary).get("scene", ""))
+	return (load(path) as PackedScene).instantiate() as Node2D
+
+
+## Tienda: agotada (comprada este intento) no ayuda.
+func test_sold_out_shop_item_gives_no_help() -> void:
+	GameState.add_attention_points(10)
+	var shop := _w5_scene("shop_item") as ShopItem
+	_place(shop, &"shop_item")
+	await _assert_inert_drops_help(shop, func() -> void:
+		assert_eq(shop.buy(), ShopItem.RESULT_OK), "tienda agotada")
+	_assert_no_reread(shop, &"shop_item", "tienda agotada")
+
+
+## Tienda sin saldo: sigue ayudando (no se ha usado).
+func test_shop_item_without_funds_keeps_helping() -> void:
+	var shop := _w5_scene("shop_item") as ShopItem
+	_place(shop, &"shop_item")
+	await _assert_keeps_helping(shop, func() -> void:
+		assert_eq(shop.buy(), ShopItem.RESULT_NO_FUNDS), "tienda sin saldo")
+
+
+## Atajo y caja de Calc: abiertos (pagados) no ayudan.
+func test_open_shortcut_and_calc_register_give_no_help() -> void:
+	for kind: String in ["shortcut_door", "calc_register"]:
+		var door := _w5_scene(kind) as ShortcutDoor
+		_place(door, StringName(kind))
+		await _assert_inert_drops_help(door, func() -> void: door.open(), "%s abierto" % kind)
+		_assert_no_reread(door, StringName(kind), "%s abierto" % kind)
+		door.free()
+
+
+## Devoluciones: cerradas (ya cobradas) no ayudan.
+func test_closed_refund_desk_gives_no_help() -> void:
+	var desk := _w5_scene("refund_desk") as RefundDesk
+	_place(desk, &"refund_desk")
+	await _assert_inert_drops_help(desk, func() -> void:
+		assert_gte(desk.claim(), 0), "Devoluciones cobradas")
+
+
+## Caja sorpresa: abierta no ayuda (la vacia, para que no salga nada que la sustituya).
+func test_opened_surprise_box_gives_no_help() -> void:
+	var box := _w5_scene("surprise_box") as SurpriseBox
+	box.content = &"empty"
+	_place(box, &"surprise_box")
+	await _assert_inert_drops_help(box, func() -> void: assert_true(box.open()), "caja abierta")
+
+
+## La Suscripcion que sale de una caja (o de un atajo, Terminos o la lista de deseos) lleva su Q.
+func test_spawned_subscription_and_offer_are_tagged() -> void:
+	var sub := Subscription.spawn(_root, FEET + Vector2(TILE, 0.0))
+	assert_eq(HelpCatalog.help_id_of(sub), &"subscription", "Suscripcion de una caja: con su Q")
+	assert_true(sub.is_in_group(HelpCatalog.TARGET_GROUP))
+	var offer := OfferSign.spawn(_root, FEET + Vector2(2.0 * TILE, 0.0))
+	assert_eq(HelpCatalog.help_id_of(offer), &"offer_sign", "Oferta de una trampa: con su Q")
+	sub.free()
+	offer.free()
+
+
+## Terminos y condiciones: abierta (rechazada) no ayuda.
+func test_open_terms_gate_gives_no_help() -> void:
+	var gate := _w5_scene("terms_gate") as TermsGate
+	_place(gate, &"terms_gate")
+	await _assert_inert_drops_help(gate, func() -> void: assert_true(gate.reject(&"laser")), "Terminos rechazados")
+
+
+## Persiana: rota no ayuda.
+func test_broken_shutter_gives_no_help() -> void:
+	var shutter := _w5_scene("shutter") as Shutter
+	_place(shutter, &"shutter")
+	await _assert_inert_drops_help(shutter, func() -> void: assert_true(shutter.break_open()), "persiana rota")
+
+
+## Estanteria de saldos: tumbada un momento sigue ayudando; caida para siempre (Sismo), no.
+func test_cleared_clearance_shelf_gives_no_help() -> void:
+	var shelf := _w5_scene("clearance_shelf") as ClearanceShelf
+	_place(shelf, &"clearance_shelf")
+	await _assert_inert_drops_help(shelf, func() -> void:
+		assert_true(shelf.knock(ClearanceShelf.BY_QUAKE))
+		assert_true(shelf.is_cleared()), "estanteria caida para siempre")
+
+
+## Ranura de precios y cuenta regresiva: siempre ayudan.
+func test_price_rail_and_countdown_always_help() -> void:
+	var rail := _w5_scene("price_rail") as PriceRail
+	_place(rail, &"price_rail")
+	await _assert_keeps_helping(rail, func() -> void: pass, "ranura de precios")
+	rail.free()
+	var cd := _w5_scene("countdown_platform") as CountdownPlatform
+	_place(cd, &"countdown_platform")
+	await _assert_keeps_helping(cd, func() -> void: cd.start(), "cuenta regresiva")
+
+
+## Lista de deseos: en el carrito no ayuda (la Suscripcion que sale, ya aprendida, no la sustituye).
+func test_added_wishlist_platform_gives_no_help() -> void:
+	GameState.learn_help(&"subscription")
+	var wish := _w5_scene("wishlist_platform") as WishlistPlatform
+	_place(wish, &"wishlist_platform")
+	await _assert_inert_drops_help(wish, func() -> void: assert_true(wish.add_to_cart()), "deseo en el carrito")
+
+
+## Tachon: disuelto con el Debug no ayuda (como la pared con glitch).
+func test_dissolved_wish_strike_gives_no_help() -> void:
+	var strike := _w5_scene("wish_strike") as WishStrike
+	_place(strike, &"wish_strike")
+	await _assert_inert_drops_help(strike, func() -> void: strike.open_with_debug(), "tachon disolviendose")
+	for i: int in 60:
+		strike.advance(0.1)
+	assert_true(strike.is_open())
+	_assert_no_reread(strike, &"wish_strike", "tachon disuelto")
+
+
+## Oferta y Suscripcion: aturdidas siguen ayudando; derrotadas no.
+func test_defeated_world5_enemies_give_no_help() -> void:
+	for kind: String in ["offer_sign", "subscription"]:
+		var enemy := (load("res://scenes/enemies/%s.tscn" % kind) as PackedScene).instantiate() as Node2D
+		enemy.set_physics_process(false)
+		_place(enemy, StringName(kind))
+		enemy.set(&"target", _isak)
+		await wait_process_frames(1)
+		enemy.set_physics_process(false)
+		enemy.set(&"drops", {})
+		enemy.call(&"stun")
+		assert_true(HelpCatalog.is_help_live(enemy), "%s aturdida: sigue ayudando" % kind)
+		await _assert_inert_drops_help(enemy, func() -> void:
+			enemy.call(&"stun")
+			enemy.call(&"on_laser_hit", 10.0, null)
+			enemy.call(&"on_laser_hit", 10.0, null)
+			assert_true(bool(enemy.call(&"is_defeated")), "%s derrotada" % kind), "%s derrotada" % kind)
+		enemy.free()
