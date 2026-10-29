@@ -171,6 +171,11 @@ const COMBO_DENIED_GROUND: StringName = &"ground"
 const COMBO_DENIED_AIR: StringName = &"air"
 const COMBO_DENIED_DEBUG: StringName = &"debug"
 const COMBO_DENIED_ENERGY: StringName = &"energy"
+## Estados en los que tira la tentacion de las Ofertas (Mundo 5, §3.3): los que
+## mueven a Isak con apply_horizontal por su cuenta. El dash, los combos, el golpe al
+## suelo, el dano, la muerte y el congelado la ignoran.
+const TEMPTATION_STATES: Array[StringName] = [PlayerState.IDLE, PlayerState.RUN, PlayerState.JUMP,
+	PlayerState.FALL, PlayerState.PULSE]
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 ## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
@@ -335,6 +340,8 @@ var _release_hit_pending: bool = false
 var _seen_immunity_left: float = 0.0
 var _frozen_effect: FrozenEffect
 ## Posicion y escala del sprite sin la pose del golpe (aplastado provisional).
+## Tentacion de las Ofertas (TemptationField, Mundo 5): la suma de este paso.
+var _temptation: TemptationField
 var _sprite_base_position := Vector2.ZERO
 var _sprite_base_scale := Vector2.ONE
 
@@ -407,6 +414,7 @@ func _ready() -> void:
 	EventBus.sync_rate_changed.connect(_on_sync_rate_changed)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	_regen = PassiveRegen.new()
+	_temptation = TemptationField.load_default()
 	_hide = HideMode.new()
 	_ready_ok = true
 	change_state(PlayerState.IDLE)
@@ -450,6 +458,8 @@ func step(delta: float) -> void:
 	_update_freeze(delta)
 	_update_laser(delta)
 	_update_hide(delta)
+	if _temptation != null and not is_tempted():
+		_temptation.clear()
 	_update_regen(delta)
 	_update_blink()
 	_dash_requested = false
@@ -607,7 +617,26 @@ func apply_horizontal(axis: float, delta: float) -> void:
 	var rate: float = physics.air_acceleration
 	if is_on_floor():
 		rate = physics.ground_friction if is_zero_approx(axis) else physics.ground_acceleration
-	velocity.x = move_toward(velocity.x, axis * speed, rate * delta)
+	var goal: float = axis * speed
+	# Tentacion (Mundo 5, §3.3): deriva hacia las Ofertas y andar mas pesado al alejarse.
+	if _temptation != null:
+		if is_tempted():
+			_temptation.sample(get_tree(), LevelLookup.isak_body_rect(self).get_center())
+			goal = _temptation.target_speed(axis, speed)
+		else:
+			_temptation.clear()
+	velocity.x = move_toward(velocity.x, goal, rate * delta)
+
+
+## Tira de Isak la tentacion de las Ofertas ahora: en un nivel, en Idle, Run, Jump,
+## Fall o Pulse (TEMPTATION_STATES), sin estar de espaldas ni en un vortice.
+func is_tempted() -> bool:
+	return level_mode and not _facing_back and not _warping and _state_name in TEMPTATION_STATES
+
+
+## Tentacion de este paso (peso, deriva y multiplicador; TemptationField).
+func get_temptation() -> TemptationField:
+	return _temptation
 
 
 ## Gravedad normal al subir y multiplicada al caer.

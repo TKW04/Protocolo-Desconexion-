@@ -175,6 +175,9 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 0 de docs/propuesta-mundo-5.md (2026-10-29): la paleta provisional del Mundo 5 al dia, sus 7 reglas
 # de §6.1 y el blanco decidido (#ffffff) igual en la paleta y en data/hud.json (tools/palette_mundo5_provisional.py
 # --check, tests/test_palette_mundo5.py, que comprueba tambien data/economy.json).
+# Desde el paso 2 (2026-10-29): la tentacion de las Ofertas (tests/test_temptation.gd, GUT: deriva, x0,6 / x1,15,
+# suma con tope, dash y combos la ignoran, pulso la apaga 3 s, laser aturdida la derrota; sala ofertas_test, que
+# exporta su camino como las demas salas *_test).
 # Desde el paso 10 (2026-10-28): las 3 variantes de paleta del Mundo 4 cumplen §6.1 y su comparativa esta al dia
 # (tools/palette_mundo4_variants.py --check; la elegida, la B, la escribe palette_mundo4_provisional.py) y el arte
 # por script de objetos y enemigos del Mundo 4 al dia y dentro de la paleta (tools/gen_world4_objects.py --check).
