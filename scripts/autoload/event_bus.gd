@@ -141,6 +141,19 @@ signal dash_denied(reason: StringName)
 ## sfx_gesture_unpinch.
 @warning_ignore("unused_signal")
 signal compress_changed(compressed: bool)
+## Combinacion (2026-10-29, docs/propuesta-mundo-5.md §3.2): empieza un combo
+## (`kind`: Isak.COMBO_RAM, COMBO_EDGE o COMBO_QUAKE).
+@warning_ignore("unused_signal")
+signal combo_started(kind: StringName)
+## Combo pedido sin energia o con el Debug activo o cargando
+## (Isak.COMBO_DENIED_ENERGY / COMBO_DENIED_DEBUG): chispa gris, no sale.
+@warning_ignore("unused_signal")
+signal combo_denied(reason: StringName)
+## Aterriza una Embestida o un Sismo (`kind`) y nace su onda en `rect` (px
+## globales, a ras de suelo). Persianas, estanterias y demas objetos de los
+## combos se enganchan aqui.
+@warning_ignore("unused_signal")
+signal combo_landed(kind: StringName, rect: Rect2, source: Node2D)
 ## Likes del Mundo 3 (2026-10-26, paso 2 de docs/propuesta-mundo-3.md §3.1):
 ## el contador del intento (GameState.likes, 0-likes_max) ha cambiado. No se
 ## guarda. Lo escuchan HudLikes y las plataformas de likes.

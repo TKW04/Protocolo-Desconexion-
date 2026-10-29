@@ -20,6 +20,9 @@ const NAME_TAG: String = "{name}"
 const CONTROL_TAG: String = "{control}"
 const KEY_TAG: String = "{key}"
 const PAD_TAG: String = "{pad}"
+## {key:<accion>} en el texto: la primera tecla de esa accion del Input Map
+## (avisos con varios controles, como el de la Combinacion).
+const ACTION_KEY_PREFIX: String = "{key:"
 ## Aviso del Ocultarte (Pulso 4 de la tienda de Calc; no es de GameState.ABILITIES).
 const HIDE_NOTICE: StringName = &"hide"
 
@@ -140,8 +143,33 @@ static func notice_text(ability: StringName, data: Dictionary) -> String:
 		return ""
 	if bool(entry.get("hold", false)):
 		control = String(data.get("hold_prefix", "")) + control
-	return String(entry.get("text", NAME_TAG + ": " + CONTROL_TAG)) \
+	var text: String = String(entry.get("text", NAME_TAG + ": " + CONTROL_TAG)) \
 			.replace(NAME_TAG, String(entry.get("name", ability))).replace(CONTROL_TAG, control)
+	return _replace_action_keys(text, data)
+
+
+## Sustituye cada {key:<accion>} por la primera tecla de la accion ("?" si no tiene).
+static func _replace_action_keys(text: String, data: Dictionary) -> String:
+	var from: int = text.find(ACTION_KEY_PREFIX)
+	while from >= 0:
+		var close: int = text.find("}", from)
+		if close < 0:
+			break
+		var action := StringName(text.substr(from + ACTION_KEY_PREFIX.length(), close - from - ACTION_KEY_PREFIX.length()))
+		var key: String = action_key_text(action, data)
+		text = text.substr(0, from) + (key if not key.is_empty() else "?") + text.substr(close + 1)
+		from = text.find(ACTION_KEY_PREFIX, from)
+	return text
+
+
+## Primera tecla de `action` del Input Map, con key_names ("" si no tiene).
+static func action_key_text(action: StringName, data: Dictionary) -> String:
+	if not InputMap.has_action(action):
+		return ""
+	for event: InputEvent in InputMap.action_get_events(action):
+		if event is InputEventKey:
+			return key_name(event as InputEventKey, data)
+	return ""
 
 
 ## Control de `action` leido del Input Map: primera tecla y primer boton o eje

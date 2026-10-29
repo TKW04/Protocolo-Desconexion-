@@ -9,6 +9,10 @@ func enter() -> void:
 
 
 func get_transition() -> StringName:
+	# Combinacion en el aire (Filo o Sismo, comprimido; Isak.wants_combo lo comprueba).
+	var combo: StringName = isak.wants_combo()
+	if combo != NONE:
+		return combo
 	# Dash aereo (uno por estancia en el aire; Isak.wants_dash lo comprueba).
 	if isak.wants_dash():
 		return DASH

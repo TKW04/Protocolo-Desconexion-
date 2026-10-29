@@ -122,6 +122,40 @@
 			"bar_gap_px": 2.0
 		}
 	},
+	"_combo_notes": "COMBINACION (habilidad GameState.ABILITY_COMBO; docs/propuesta-mundo-5.md §3.2 y decision 3 de su §9, paso 1 del 2026-10-29: valores PROVISIONALES, ajustar jugando). SIN TECLA NUEVA: con combo obtenido, las tres combinaciones que hoy se niegan dejan de negarse SOLO EN EL AIRE y dan un super movimiento; sin combo todo sigue igual. EMBESTIDA (ram, estado ComboRam): durante un dash AEREO, mantener abajo (move_down) hold_s -> corta el dash (gasta el dash aereo del salto) y cae en diagonal de angle_deg a speed_px_s hacia donde iba, invulnerable hasta tocar suelo; al aterrizar, onda de wave_half_width_px a cada lado (wave_height_px de alto y wave_below_px por debajo) que aturde stun_s y hace damage; pose de land_pose_s. FILO (edge, estado ComboEdge): comprimido en el aire, pulsar Deslizar (gesture_swipe) -> dash comprimido de distance_px en duration_s con gravedad 0 hacia la direccion mantenida o hacia donde mira, invulnerable; atraviesa y derrota a los enemigos con vida <= defeat_max_health que toca (los que tienen receive_combo deciden); la pared lo para; al acabar conserva end_speed_px_s y SIGUE comprimido. SISMO (quake, estado ComboQuake): comprimido en el aire, mantener abajo hold_s -> cae a drop_speed_px_s; al aterrizar, onda a ras de suelo (wave_height_px por encima de los pies, wave_below_px por debajo) por todo el ancho visible de la pantalla (sin camara, wave_speed_px_s x wave_s a cada lado) que aturde stun_s a todos los enemigos que tocan ese suelo (los que vuelan por encima, no) y hace damage (0); se dibuja creciendo a wave_speed_px_s durante wave_s; pose de land_pose_s; sigue comprimido. COMUN: energy_cost por combo, cobrado al empezar; sin energia o con el Debug activo o cargando: chispa gris (la del laser) y EventBus.combo_denied (sin la habilidad o en el suelo, sin aviso: el gesto se niega como hoy). Apagan el Ocultarte; sin pulso ni laser durante el combo; un vortice, la pose de espaldas o morir lo cortan; reaparecer lo quita. Al aterrizar EventBus.combo_landed(kind, rect, isak): persianas, estanterias y demas objetos (pasos 5-6) se enganchan ahi. Tiempo de Isak (real). visual: poses PROVISIONALES por codigo hasta las de AutoSprite (paso 24): Embestida = pose del dash girada ram_tilt_deg con su estela; Filo = pose comprimida con la estela del dash; Sismo = pose comprimida de caida y anillo de la onda a ras de suelo (la onda del golpe al suelo). Unidades: px, s, px/s, grados, energia.",
+	"combo": {
+		"energy_cost": 15.0,
+		"hold_s": 0.08,
+		"ram": {
+			"angle_deg": 45.0,
+			"speed_px_s": 960.0,
+			"wave_half_width_px": 128.0,
+			"wave_height_px": 64.0,
+			"wave_below_px": 8.0,
+			"stun_s": 3.0,
+			"damage": 2.0,
+			"land_pose_s": 0.3
+		},
+		"edge": {
+			"distance_px": 256.0,
+			"duration_s": 0.22,
+			"defeat_max_health": 1.0,
+			"end_speed_px_s": 160.0
+		},
+		"quake": {
+			"drop_speed_px_s": 960.0,
+			"wave_speed_px_s": 1280.0,
+			"wave_s": 0.5,
+			"wave_height_px": 64.0,
+			"wave_below_px": 8.0,
+			"stun_s": 3.0,
+			"damage": 0.0,
+			"land_pose_s": 0.35
+		},
+		"visual": {
+			"ram_tilt_deg": 30.0
+		}
+	},
 	"laser_visual": {
 		"core": "#f2f4f8",
 		"glow": "#3dfff5",

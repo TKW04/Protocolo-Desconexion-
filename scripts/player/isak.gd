@@ -60,6 +60,13 @@ signal frozen_ended(cut: bool)
 ## prueba del usuario: «que cuando te libere te haga dano como si fuera un ataque de
 ## enemigo»): `damaged` = el golpe entro (false si era invulnerable).
 signal frozen_released(damaged: bool)
+## Empieza un combo de la Combinacion (2026-10-29; `kind` = COMBO_*).
+signal combo_started(kind: StringName)
+## Aterriza una Embestida o un Sismo: nace su onda en `rect` (px globales).
+signal combo_landed(kind: StringName, rect: Rect2)
+## Combo pedido sin energia o con el Debug (COMBO_DENIED_ENERGY / _DEBUG):
+## chispa gris, no sale.
+signal combo_denied(reason: StringName)
 
 ## Nombres de animacion de scenes/player/isak_frames.tres (los fija
 ## tools/build_isak_frames.gd, con sus fps).
@@ -151,6 +158,19 @@ const SHOCKWAVE_DENIED_ENERGY: StringName = &"energy"
 const FREEZE_SOURCE_ZONE: StringName = &"seen_zone"
 const FREEZE_SOURCE_WAVE: StringName = &"seen_wave"
 const FREEZE_SOURCE_BOSS: StringName = &"seen_boss"
+## Combinacion (2026-10-29, docs/propuesta-mundo-5.md §3.2): tipos de combo (los
+## nombres de sus estados) y motivos por los que no sale. Solo DEBUG y ENERGY dan
+## chispa gris y combo_denied; el resto, el gesto se niega como sin la Combinacion.
+const COMBO_RAM: StringName = PlayerState.COMBO_RAM
+const COMBO_EDGE: StringName = PlayerState.COMBO_EDGE
+const COMBO_QUAKE: StringName = PlayerState.COMBO_QUAKE
+const COMBO_STATES: Array[StringName] = [PlayerState.COMBO_RAM, PlayerState.COMBO_EDGE, PlayerState.COMBO_QUAKE]
+const COMBO_DENIED_LOCKED: StringName = &"locked"
+const COMBO_DENIED_BUSY: StringName = &"busy"
+const COMBO_DENIED_GROUND: StringName = &"ground"
+const COMBO_DENIED_AIR: StringName = &"air"
+const COMBO_DENIED_DEBUG: StringName = &"debug"
+const COMBO_DENIED_ENERGY: StringName = &"energy"
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 ## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
@@ -292,6 +312,15 @@ var _shockwave_effect: ShockwaveEffect
 ## La siguiente entrada en Shockwave viene del congelado: onda al instante.
 var _shockwave_instant: bool = false
 
+## Combinacion (2026-10-29; seccion combo de data/isak_abilities.json). Tiempo
+## real. Combo pedido en este paso (COMBO_* o &""), segundos mantenido abajo en el
+## aire, hay que soltar abajo antes de otro combo de abajo (latch) e invulnerable
+## mientras dura la Embestida antes de aterrizar o el Filo.
+var _combo_requested: StringName = &""
+var _combo_hold: float = 0.0
+var _combo_latched: bool = false
+var _combo_invulnerable: bool = false
+
 ## Congelado (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md §3.3).
 var _frozen_left: float = 0.0
 var _frozen_total: float = 0.0
@@ -346,6 +375,9 @@ func _ready() -> void:
 		PlayerState.GROUND_POUND: GroundPoundState.new(self),
 		PlayerState.SHOCKWAVE: ShockwaveState.new(self),
 		PlayerState.FROZEN: FrozenState.new(self),
+		PlayerState.COMBO_RAM: ComboRamState.new(self),
+		PlayerState.COMBO_EDGE: ComboEdgeState.new(self),
+		PlayerState.COMBO_QUAKE: ComboQuakeState.new(self),
 	}
 	_sprite_base_position = _sprite.position
 	_sprite_base_scale = _sprite.scale
@@ -400,6 +432,7 @@ func step(delta: float) -> void:
 	_update_dash_request()
 	_update_pound_request(delta)
 	_update_shockwave_request()
+	_update_combo_request(delta)
 	for i: int in MAX_TRANSITIONS_PER_STEP:
 		var next: StringName = _state.get_transition()
 		if next == PlayerState.NONE:
@@ -422,6 +455,7 @@ func step(delta: float) -> void:
 	_dash_requested = false
 	_pound_requested = false
 	_shockwave_requested = false
+	_combo_requested = &""
 	if _tower_camera != null:
 		_camera.global_position = _tower_camera.update(global_position, is_on_floor(), delta)
 	if _scroll_camera != null:
@@ -451,6 +485,8 @@ func change_state(state_name: StringName) -> void:
 	elif _hide != null and state_name == PlayerState.SHOCKWAVE:
 		# Agitar apaga el Ocultarte (es lo contrario de esconderse).
 		_hide.end(HideMode.REASON_SHOCKWAVE)
+	elif _hide != null and state_name in COMBO_STATES:
+		_hide.end(HideMode.REASON_COMBO)
 	if state_name == PlayerState.DASH:
 		_dash_requested = false
 	if _state != null:
@@ -500,7 +536,8 @@ func can_laser() -> bool:
 ## que el pulso (ni chispa ni enfriamiento).
 func can_start_laser() -> bool:
 	return is_on_floor() and can_laser() and _state_name != PlayerState.DASH \
-			and _state_name != PlayerState.GROUND_POUND and _state_name != PlayerState.SHOCKWAVE and not _compressed
+			and _state_name != PlayerState.GROUND_POUND and _state_name != PlayerState.SHOCKWAVE and not _compressed \
+			and not is_comboing()
 
 
 func get_laser_cooldown_left() -> float:
@@ -542,9 +579,10 @@ func is_dead() -> bool:
 	return _state_name == PlayerState.DEAD
 
 
-## Invulnerable tras un golpe o durante el dash (dash_invulnerable_s desde su inicio).
+## Invulnerable tras un golpe, durante el dash (dash_invulnerable_s desde su
+## inicio), durante el Filo y durante la Embestida hasta aterrizar.
 func is_invulnerable() -> bool:
-	return _invulnerable_left > 0.0 or _dash_invulnerable_left > 0.0
+	return _invulnerable_left > 0.0 or _dash_invulnerable_left > 0.0 or _combo_invulnerable
 
 
 ## Verdadero si se acaba de entrar en Idle aterrizando (lo usa IdleState).
@@ -667,6 +705,7 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_reset_pound()
 	_reset_compress()
 	_reset_shockwave()
+	_reset_combo()
 	_reset_freeze()
 	play_animation(ANIM_IDLE)
 	if _scroll_camera != null:
@@ -1007,7 +1046,7 @@ func dash_denial() -> StringName:
 		return DASH_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE, PlayerState.FROZEN]:
+				PlayerState.SHOCKWAVE, PlayerState.FROZEN] or is_comboing():
 		return DASH_DENIED_BUSY
 	if _dash_cooldown_left > 0.0:
 		return DASH_DENIED_COOLDOWN
@@ -1152,7 +1191,7 @@ func ground_pound_denial() -> StringName:
 		return POUND_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE, PlayerState.FROZEN]:
+				PlayerState.SHOCKWAVE, PlayerState.FROZEN] or is_comboing():
 		return POUND_DENIED_BUSY
 	if _pound_cooldown_left > 0.0:
 		return POUND_DENIED_COOLDOWN
@@ -1311,6 +1350,219 @@ func _reset_pound() -> void:
 		_pound_effect.clear()
 
 
+# --- Combinacion (2026-10-29; docs/propuesta-mundo-5.md §3.2) ---
+
+## Combo pedido en este paso (COMBO_* o &""). Lo consumen Dash (Embestida) y los
+## estados del aire (Filo y Sismo).
+func wants_combo() -> StringName:
+	return _combo_requested
+
+
+func is_comboing() -> bool:
+	return _state_name in COMBO_STATES
+
+
+## Motivo por el que el combo `kind` no saldria ahora (&"" = sale). Ver COMBO_DENIED_*.
+## Orden: sin la Combinacion o sin los gestos que combina, o en el hub; ocupado
+## (muerto, vortice, de espaldas, laser, golpe, pulso, golpe al suelo, congelado,
+## otro combo; la Embestida pide un dash aereo en curso y el Filo y el Sismo,
+## estar comprimido); en el suelo; sin dash aereo (Filo); Debug activo o cargando
+## y energia.
+func combo_denial(kind: StringName) -> StringName:
+	if not _ready_ok or not (level_mode or hub_gestures) or not GameState.is_ability_unlocked(GameState.ABILITY_COMBO):
+		return COMBO_DENIED_LOCKED
+	var needs: Array[StringName] = []
+	match kind:
+		COMBO_RAM:
+			needs = [GameState.ABILITY_DASH, GameState.ABILITY_GROUND_POUND]
+		COMBO_EDGE:
+			needs = [GameState.ABILITY_COMPRESS, GameState.ABILITY_DASH]
+		COMBO_QUAKE:
+			needs = [GameState.ABILITY_COMPRESS, GameState.ABILITY_GROUND_POUND]
+		_:
+			return COMBO_DENIED_LOCKED
+	for ability: StringName in needs:
+		if not GameState.is_ability_unlocked(ability):
+			return COMBO_DENIED_LOCKED
+	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() or is_comboing() \
+			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.GROUND_POUND, PlayerState.SHOCKWAVE,
+				PlayerState.FROZEN]:
+		return COMBO_DENIED_BUSY
+	if kind == COMBO_RAM and (_state_name != PlayerState.DASH or _dash_started_on_floor):
+		return COMBO_DENIED_BUSY
+	if kind != COMBO_RAM and (not _compressed or _state_name == PlayerState.DASH):
+		return COMBO_DENIED_BUSY
+	if is_on_floor():
+		return COMBO_DENIED_GROUND
+	if kind == COMBO_EDGE and _air_dashes_left <= 0:
+		return COMBO_DENIED_AIR
+	if DebugMode.is_engaged():
+		return COMBO_DENIED_DEBUG
+	if GameState.debug_energy + LASER_ENERGY_EPS < abilities.combo_energy_cost:
+		return COMBO_DENIED_ENERGY
+	return &""
+
+
+## Lo llama el estado del combo al entrar: cobra la energia, gasta el dash aereo
+## (Filo), pide soltar abajo antes de otro golpe o combo de abajo, elige la
+## direccion (Embestida: la del dash; Filo: la mantenida o hacia donde mira) y
+## empieza la invulnerabilidad (Embestida y Filo). Devuelve la direccion (-1/1).
+func begin_combo(kind: StringName) -> float:
+	var direction: float = facing
+	if kind == COMBO_EDGE and not is_zero_approx(input.move_axis):
+		direction = signf(input.move_axis)
+	if is_zero_approx(direction):
+		direction = 1.0
+	facing = direction
+	_sprite.flip_h = facing < 0.0
+	_combo_requested = &""
+	_combo_hold = 0.0
+	if kind != COMBO_EDGE:
+		_combo_latched = true
+		_pound_latched = true
+	else:
+		_air_dashes_left = maxi(_air_dashes_left - 1, 0)
+	_combo_invulnerable = kind != COMBO_QUAKE
+	GameState.debug_energy -= abilities.combo_energy_cost
+	_jump_buffer_left = 0.0
+	reset_idle_time()
+	if _regen != null:
+		_regen.note_combat()
+	if kind != COMBO_QUAKE:
+		_dash_effect.begin(direction)
+	combo_started.emit(kind)
+	EventBus.combo_started.emit(kind)
+	return direction
+
+
+## Aterriza la Embestida o el Sismo: nace la onda (ComboWave a los enemigos,
+## combo_landed y EventBus.combo_landed a los objetos). Devuelve su zona.
+func land_combo(kind: StringName) -> Rect2:
+	_combo_invulnerable = false
+	var rect: Rect2
+	var damage: float
+	var stun_s: float
+	var half: float
+	if kind == COMBO_RAM:
+		half = abilities.combo_ram_wave_half_width_px
+		rect = ComboWave.floor_rect(global_position, global_position.x - half, global_position.x + half,
+				abilities.combo_ram_wave_height_px, abilities.combo_ram_wave_below_px)
+		damage = abilities.combo_ram_damage
+		stun_s = abilities.combo_ram_stun_s
+		_dash_effect.end()
+	else:
+		var span: Vector2 = get_quake_span()
+		rect = ComboWave.floor_rect(global_position, span.x, span.y, abilities.combo_quake_wave_height_px,
+				abilities.combo_quake_wave_below_px)
+		half = maxf(global_position.x - span.x, span.y - global_position.x)
+		damage = abilities.combo_quake_damage
+		stun_s = abilities.combo_quake_stun_s
+		_pound_effect.end_drop()
+	_pound_effect.show_wave(global_position, half)
+	if _regen != null:
+		_regen.note_combat()
+	ComboWave.apply_to_enemies(get_tree(), kind, rect, damage, stun_s)
+	combo_landed.emit(kind, rect)
+	EventBus.combo_landed.emit(kind, rect, self)
+	return rect
+
+
+## Ancho (x globales de izquierda a derecha) del Sismo: lo visible de la pantalla
+## con la camara de Isak; sin ella, wave_speed_px_s x wave_s a cada lado.
+func get_quake_span() -> Vector2:
+	var reach: float = abilities.combo_quake_wave_speed_px_s * abilities.combo_quake_wave_s
+	var span := Vector2(global_position.x - reach, global_position.x + reach)
+	if is_inside_tree() and _camera != null and _camera.is_current():
+		var visible: Rect2 = get_viewport().get_canvas_transform().affine_inverse() * get_viewport().get_visible_rect()
+		span = Vector2(visible.position.x, visible.end.x)
+	return span
+
+
+## Lo llama el Filo en cada paso: derrota a los enemigos pequenos que toca.
+func edge_sweep(done: Dictionary) -> int:
+	var size: Vector2 = get_hitbox_size()
+	var rect := Rect2(global_position + Vector2(-size.x * 0.5, -size.y), size)
+	return ComboWave.defeat_small(get_tree(), rect, abilities.combo_edge_defeat_max_health, done)
+
+
+## Lo llama el estado del combo al salir. El Filo con `keep_speed` conserva
+## end_speed_px_s en su direccion; si no, se para en horizontal.
+func end_combo(kind: StringName, direction: float = 0.0, keep_speed: bool = false) -> void:
+	_combo_invulnerable = false
+	if kind == COMBO_EDGE:
+		velocity.x = direction * abilities.combo_edge_end_speed_px_s if keep_speed else 0.0
+		velocity.y = 0.0
+	_sprite.rotation = 0.0
+	_dash_effect.end()
+	_pound_effect.end_drop()
+	_restore_sprite_shape()
+
+
+## Pose PROVISIONAL del combo (hasta las de AutoSprite): Embestida = la del dash
+## girada combo.visual.ram_tilt_deg hacia delante (al aterrizar, la del golpe al
+## suelo); Filo = la comprimida con la estela del dash; Sismo = la comprimida de
+## caida con la estela de la caida (al aterrizar, la onda a ras de suelo).
+func update_combo_pose(kind: StringName, landed: bool) -> void:
+	match kind:
+		COMBO_RAM:
+			if landed:
+				_sprite.rotation = 0.0
+				update_ground_pound_pose(true)
+			else:
+				update_dash_pose()
+				_sprite.rotation = deg_to_rad(float(abilities.combo_visual.get("ram_tilt_deg", 30.0))) * facing
+		COMBO_EDGE:
+			play_animation(ANIM_JUMP_FALL)
+		COMBO_QUAKE:
+			play_animation(ANIM_JUMP_LAND if landed else ANIM_JUMP_FALL)
+			if not landed:
+				_pound_effect.begin_drop(global_position)
+
+
+## Pulsaciones del paso: Filo (Deslizar comprimido en el aire), Embestida (abajo
+## durante un dash aereo) y Sismo (abajo comprimido en el aire). Validas ->
+## _combo_requested; sin energia o con el Debug, chispa gris y combo_denied (una
+## vez por pulsacion); el resto, sin aviso.
+func _update_combo_request(delta: float) -> void:
+	_combo_requested = &""
+	if input == null:
+		return
+	var held: bool = input.hold_held
+	if not held:
+		_combo_latched = false
+	if held and not is_on_floor():
+		_combo_hold += delta
+	else:
+		_combo_hold = 0.0
+	var kind: StringName = &""
+	if input.dash_pressed and _compressed and not is_on_floor():
+		kind = COMBO_EDGE
+	elif held and not _combo_latched and _combo_hold + 0.0001 >= abilities.combo_hold_s:
+		if _state_name == PlayerState.DASH:
+			kind = COMBO_RAM
+		elif _compressed:
+			kind = COMBO_QUAKE
+	if kind == &"":
+		return
+	var denial: StringName = combo_denial(kind)
+	if denial == &"":
+		_combo_requested = kind
+	elif denial == COMBO_DENIED_ENERGY or denial == COMBO_DENIED_DEBUG:
+		if kind != COMBO_EDGE:
+			_combo_latched = true
+		_laser_muzzle.show_fizzle(facing)
+		combo_denied.emit(denial)
+		EventBus.combo_denied.emit(denial)
+
+
+## Reaparecer: sin combo pedido, sin abajo mantenido ni invulnerabilidad.
+func _reset_combo() -> void:
+	_combo_requested = &""
+	_combo_hold = 0.0
+	_combo_latched = false
+	_combo_invulnerable = false
+
+
 # --- Agitar (gesto Agitar, 2026-10-28; docs/propuesta-mundo-4.md §3.2) ---
 
 ## Un estado ha pedido Agitar en este paso (pulsacion de gesture_shake que
@@ -1331,7 +1583,7 @@ func shockwave_denial() -> StringName:
 		return SHOCKWAVE_DENIED_LOCKED
 	if _compressed or is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE]:
+				PlayerState.SHOCKWAVE] or is_comboing():
 		return SHOCKWAVE_DENIED_BUSY
 	if _shockwave_cooldown_left > 0.0:
 		return SHOCKWAVE_DENIED_COOLDOWN
@@ -1653,7 +1905,7 @@ func compress_denial() -> StringName:
 		return COMPRESS_DENIED_LOCKED
 	if is_dead() or _warping or _facing_back or is_laser_posing() or is_laser_charging() \
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.DASH, PlayerState.GROUND_POUND,
-				PlayerState.SHOCKWAVE, PlayerState.FROZEN]:
+				PlayerState.SHOCKWAVE, PlayerState.FROZEN] or is_comboing():
 		return COMPRESS_DENIED_BUSY
 	if abilities.compress_energy_cost > 0.0 and GameState.debug_energy + LASER_ENERGY_EPS < abilities.compress_energy_cost:
 		return COMPRESS_DENIED_ENERGY
@@ -1714,7 +1966,7 @@ func _update_compress_request() -> void:
 
 
 func _try_uncompress() -> bool:
-	if not _compressed or not _uncompress_pending or is_dead() or not has_room_to_uncompress():
+	if not _compressed or not _uncompress_pending or is_dead() or is_comboing() or not has_room_to_uncompress():
 		return false
 	_compressed = false
 	_uncompress_pending = false

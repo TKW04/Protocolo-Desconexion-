@@ -112,7 +112,7 @@ REQUIRED_FIELDS = {
 }
 # compress: Pellizcar (Mundo 3, paso 8b de docs/propuesta-mundo-3.md: abilities_available.compress).
 # shockwave: Agitar (Mundo 4, paso 2 de docs/propuesta-mundo-4.md: abilities_available.shockwave).
-KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound", "compress", "shockwave"}
+KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound", "compress", "shockwave", "combo"}
 # Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);
 # tower = camara de torre (scripts/player/tower_camera.gd, data/camera_tower.json).
 # autoscroll = scroll forzado del Mundo 2 (2026-10-22; scripts/player/scroll_camera.gd,

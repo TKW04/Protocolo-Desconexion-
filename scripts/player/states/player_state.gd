@@ -22,6 +22,11 @@ const GROUND_POUND: StringName = &"ground_pound"
 const SHOCKWAVE: StringName = &"shockwave"
 ## Congelado (zona y ola de «Visto», mensaje de El Visto; 2026-10-28; FrozenState).
 const FROZEN: StringName = &"frozen"
+## Combinacion (2026-10-29; ComboRamState, ComboEdgeState, ComboQuakeState):
+## Embestida, Filo y Sismo. Son tambien los tipos de combo (Isak.COMBO_*).
+const COMBO_RAM: StringName = &"combo_ram"
+const COMBO_EDGE: StringName = &"combo_edge"
+const COMBO_QUAKE: StringName = &"combo_quake"
 
 var isak: Isak
 

@@ -157,6 +157,8 @@ const ABILITY_DASH: StringName = &"dash"
 const ABILITY_GROUND_POUND: StringName = &"ground_pound"
 const ABILITY_COMPRESS: StringName = &"compress"
 const ABILITY_SHOCKWAVE: StringName = &"shockwave"
+## Combinacion (2026-10-29, docs/propuesta-mundo-5.md §3.2): la da la «Prueba gratis» del 5-2.
+const ABILITY_COMBO: StringName = &"combo"
 ## Laser (decision del usuario 2026-10-15): desbloqueable con un ability_pickup;
 ## gasta energia de Debug (data/isak_abilities.json, laser_*).
 const ABILITY_LASER: StringName = &"laser"
@@ -167,6 +169,7 @@ const ABILITIES: Array[StringName] = [
 	ABILITY_GROUND_POUND,
 	ABILITY_COMPRESS,
 	ABILITY_SHOCKWAVE,
+	ABILITY_COMBO,
 	ABILITY_LASER,
 ]
 

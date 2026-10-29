@@ -37,6 +37,9 @@ func exit() -> void:
 func get_transition() -> StringName:
 	if isak.is_warping() or isak.is_facing_back():
 		return resting_state()
+	# Embestida: abajo durante un dash aereo (con la Combinacion; corta el dash).
+	if isak.wants_combo() == COMBO_RAM:
+		return COMBO_RAM
 	if _travelled() >= isak.abilities.dash_distance_px - DISTANCE_EPS \
 			or _time >= isak.abilities.dash_duration_s * 2.0:
 		_completed = true

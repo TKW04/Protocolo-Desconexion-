@@ -43,6 +43,16 @@ const SHOCKWAVE_KEYS: PackedStringArray = ["radius_px", "windup_s", "exposed_s",
 ## Claves numericas de la seccion opcional frozen (propiedad frozen_<clave>;
 ## Congelado, docs/propuesta-mundo-4.md §3.3).
 const FROZEN_KEYS: PackedStringArray = ["seen_immunity_s", "release_damage", "release_warn_s"]
+## Claves numericas de la seccion opcional combo y de sus subsecciones
+## (propiedad combo_<clave> y combo_<sub>_<clave>).
+const COMBO_KEYS: PackedStringArray = ["energy_cost", "hold_s"]
+const COMBO_SUB_KEYS: Dictionary = {
+	"ram": ["angle_deg", "speed_px_s", "wave_half_width_px", "wave_height_px", "wave_below_px", "stun_s",
+		"damage", "land_pose_s"],
+	"edge": ["distance_px", "duration_s", "defeat_max_health", "end_speed_px_s"],
+	"quake": ["drop_speed_px_s", "wave_speed_px_s", "wave_s", "wave_height_px", "wave_below_px", "stun_s",
+		"damage", "land_pose_s"],
+}
 
 var pulse_duration_s: float
 var pulse_radius_px: float
@@ -146,6 +156,33 @@ var frozen_release_damage: float = 10.0
 var frozen_release_warn_s: float = 0.75
 ## Aspecto provisional (frozen.visual): velo, doble check y barra de segmentos.
 var frozen_visual: Dictionary = {}
+## Combinacion (seccion combo, opcional; 2026-10-29, docs/propuesta-mundo-5.md
+## §3.2, valores provisionales): coste por combo y tiempo mantenido de abajo;
+## Embestida (ram), Filo (edge) y Sismo (quake).
+var combo_energy_cost: float = 15.0
+var combo_hold_s: float = 0.08
+var combo_ram_angle_deg: float = 45.0
+var combo_ram_speed_px_s: float = 960.0
+var combo_ram_wave_half_width_px: float = 128.0
+var combo_ram_wave_height_px: float = 64.0
+var combo_ram_wave_below_px: float = 8.0
+var combo_ram_stun_s: float = 3.0
+var combo_ram_damage: float = 2.0
+var combo_ram_land_pose_s: float = 0.3
+var combo_edge_distance_px: float = 256.0
+var combo_edge_duration_s: float = 0.22
+var combo_edge_defeat_max_health: float = 1.0
+var combo_edge_end_speed_px_s: float = 160.0
+var combo_quake_drop_speed_px_s: float = 960.0
+var combo_quake_wave_speed_px_s: float = 1280.0
+var combo_quake_wave_s: float = 0.5
+var combo_quake_wave_height_px: float = 64.0
+var combo_quake_wave_below_px: float = 8.0
+var combo_quake_stun_s: float = 3.0
+var combo_quake_damage: float = 0.0
+var combo_quake_land_pose_s: float = 0.35
+## Aspecto provisional (combo.visual): giro de la pose de la Embestida.
+var combo_visual: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -253,7 +290,37 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var frozen_visual: Variant = (frozen as Dictionary).get("visual", {})
 	if frozen_visual is Dictionary:
 		abilities.frozen_visual = frozen_visual
+	var combo: Variant = data.get("combo", {})
+	if not combo is Dictionary:
+		return _fail("PlayerAbilities: la clave 'combo' en '%s' debe ser un objeto." % source)
+	if not _read_numbers(abilities, combo as Dictionary, COMBO_KEYS, "combo", source):
+		return null
+	for sub: String in COMBO_SUB_KEYS:
+		var section: Variant = (combo as Dictionary).get(sub, {})
+		if not section is Dictionary:
+			return _fail("PlayerAbilities: la clave 'combo.%s' en '%s' debe ser un objeto." % [sub, source])
+		var keys := PackedStringArray(COMBO_SUB_KEYS[sub])
+		if not _read_numbers(abilities, section as Dictionary, keys, "combo_" + sub, source):
+			return null
+	var combo_visual: Variant = (combo as Dictionary).get("visual", {})
+	if combo_visual is Dictionary:
+		abilities.combo_visual = combo_visual
 	return abilities
+
+
+## Copia las claves numericas `keys` de `section` en las propiedades
+## <prefix>_<clave>. Falso (con el error) si alguna no es numerica.
+static func _read_numbers(abilities: PlayerAbilities, section: Dictionary, keys: PackedStringArray,
+		prefix: String, source: String) -> bool:
+	for key: String in keys:
+		if not section.has(key):
+			continue
+		var value: Variant = section[key]
+		if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
+			_fail("PlayerAbilities: la clave '%s.%s' en '%s' debe ser numerica." % [prefix.replace("_", "."), key, source])
+			return false
+		abilities.set(prefix + "_" + key, float(value))
+	return true
 
 
 static func _fail(message: String) -> PlayerAbilities:
