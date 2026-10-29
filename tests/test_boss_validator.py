@@ -613,5 +613,130 @@ class SeenArenaTest(unittest.TestCase):
             self.assertNotIn("seen_windows", rep, name)
 
 
+class VendorArenaTest(unittest.TestCase):
+    """Arena 5-boss de El Vendedor (paso 17 de docs/propuesta-mundo-5.md, §7.2, 2026-10-29): validador completo
+    (geometria por fase con la maquina solida, avisos, fase 1 con la plataforma buena de cada par, su etiqueta a tiro
+    de pulso, su vida y la ventana del giro; fase 2 con un ticket por tanda y la bandeja comprimido; fase 3 con la
+    Embestida real desde la vitrina al escaparate y el Filo real desde el estante por la ranura, contra la cuenta y
+    el tiron; marca, energia torpe con los combos, fichas y cargadores), con casos negativos sinteticos."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.boss = load(os.path.join(ROOT, "data", "bosses", "vendor.json"))
+        cls.level0 = load(os.path.join(ROOT, "data", "levels", "5-boss.json"))
+        cls.result = vb.validate_arena(cls.level0, ROOT)
+
+    def setUp(self):
+        self.level = copy.deepcopy(self.level0)
+
+    def run_arena(self, boss=None, level=None):
+        return vb.validate_arena(level or self.level, ROOT, boss=boss or self.boss)
+
+    def messages(self, result):
+        return " | ".join(e["message"] for e in result["errors"])
+
+    def test_full_validator_passes_without_the_pending_warning(self):
+        self.assertEqual(vls.validate_level(self.level, ROOT), [])
+        result = vl.validate(self.level, ROOT)
+        self.assertTrue(result["ok"], result["errors"])
+        self.assertEqual(result["warnings"], [], "validador completo: sin el aviso del paso 16")
+        self.assertIn("vendor_windows", result["boss"])
+
+    def test_energy_margins_of_the_clumsy_fight_in_every_access(self):
+        energy = self.result["boss"]["energy"]
+        self.assertEqual(sorted(energy), ["1", "2", "3"])
+        for lap, scenarios in energy.items():
+            self.assertEqual(sorted(scenarios), ["base", "todo al maximo", "tope del acceso"])
+            for name, e in scenarios.items():
+                self.assertGreaterEqual(e["min_margin"], 20.0, (lap, name))
+        # Fase 3: Debug + dash + Embestida (15) + laseres por ventana.
+        self.assertEqual([ph["peak"] for ph in energy["1"]["base"]["phases"]], [45.0, 47.5, 62.5])
+
+    def test_windows_fit_by_phase_and_access(self):
+        windows = self.result["boss"]["vendor_windows"]
+        self.assertEqual(len(windows), 3 * (2 + 3 + 4))
+        for w in windows:
+            self.assertLessEqual(w["need_s"], w["window_s"] + 1e-6, w)
+        self.assertEqual({w["phase"]: w["k"] for w in windows}, {1: 1.5, 2: 1.5, 3: 2.0})
+
+    def test_ram_from_the_showcase_and_edge_from_the_shelf(self):
+        p3 = self.result["boss"]["vendor_phase3"]
+        for side in ("izq", "der"):
+            routes = p3["sides"][side]["routes"]
+            self.assertIn("embestida", routes, side)
+            self.assertIn("filo", routes, side)
+            self.assertAlmostEqual(routes["embestida"]["land_px"][1], 5 * 64, delta=2.0, msg="aterriza en el techo")
+        self.assertEqual(sorted(tuple(c) for c in p3["sides"]["izq"]["routes"]["embestida"]["from"]), [(6, 5), (7, 5)])
+        self.assertEqual(p3["slot_px"], [512.0, 384.0, 768.0, 512.0], "ranura de las filas 6-7 (desde el paso 17)")
+
+    def test_edge_does_not_fit_a_one_tile_slot_at_row_7(self):
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["slot_row"] = 7
+        boss["arena"]["slot_rows"] = 1
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("el Filo desde el estante no entra en la ranura (filas 7-7)", msg)
+
+    def test_without_showcases_there_is_no_ram(self):
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["platforms"]["b"] = [6, 8, 2]
+        boss["arena"]["platforms"]["c"] = [12, 8, 2]
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("la Embestida desde la vitrina b no rompe el escaparate", msg)
+
+    def test_a_short_shutter_lets_you_jump_over(self):
+        boss = copy.deepcopy(self.boss)
+        boss["arena"]["showcase"]["length_tiles"] = 2
+        self.assertIn("sin romper el escaparate ni cruzar la ranura se llega detras", self.messages(self.run_arena(boss)))
+
+    def test_traps_tokens_and_platform_life(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["1"]["traps"] = ["a", "b", "c"]
+        boss["laps"]["2"]["traps"] = ["b", "c"]
+        boss["validation_model"]["trap_payments_per_phase"] = 2
+        boss["priced_platforms"]["life_s"] = 2.0
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 1, fase 1: el par a/b debe tener una plataforma buena y una trampa", msg)
+        self.assertIn("vuelta 2, fase 1: 12 fichas y la pelea torpe paga 7 plataformas", msg)
+        self.assertIn("la plataforma a dura 2.0 s", msg)
+
+    def test_phase1_turn_too_fast(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["3"]["turn_s"] = 0.5
+        self.assertIn("vuelta 3, fase 1: el giro tarda 0.75 s del mundo", self.messages(self.run_arena(boss)))
+
+    def test_phase2_ticket_rules(self):
+        boss = copy.deepcopy(self.boss)
+        boss["boxes"]["batches"][0] = [[3, 8, "tokens"], [13, 10, "bomb"], [15, 8, "energy"]]
+        boss["boxes"]["batches"][1] = [[7, 10, "energy"], [6, 10, "ticket"], [15, 8, "bomb"]]
+        boss["boxes"]["refund_s"] = 1.0
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("fase 2, tanda 1: debe llevar un ticket de devolucion (lleva 0)", msg)
+        self.assertIn("fase 2, tanda 2: una caja energy tapa la boca de la bandeja en la columna 7", msg)
+        self.assertIn("procesando + giro dan 2.20 s", msg)
+
+    def test_phase3_countdown_too_short(self):
+        boss = copy.deepcopy(self.boss)
+        boss["laps"]["3"]["countdown_s"] = 6.0
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("vuelta 3, fase 3 (izq): la cuenta dura 6.0 s y por embestida", msg)
+
+    def test_short_telegraphs_mark_and_energy(self):
+        boss = copy.deepcopy(self.boss)
+        boss["turn"]["warn_frames"] = 4
+        boss["laps"]["2"]["mark_duration_s"] = 0.2
+        boss["validation_model"]["laps"]["1"]["debug_s"] = [3.0, 3.5, 12.0]
+        boss["laps"]["3"]["charger_cooldown_s"] = 25.0
+        msg = self.messages(self.run_arena(boss))
+        self.assertIn("aviso de 'giro': 4 cuadros", msg)
+        self.assertIn("vuelta 2: en la marca de 0.20 s caben", msg)
+        self.assertIn("base, vuelta 1, fase 3: pico de la pelea torpe", msg)
+        self.assertIn("vuelta 3: los cargadores se enfrian 25.0", msg)
+
+    def test_other_bosses_do_not_use_the_vendor_model(self):
+        for name in ("1-boss", "2-boss", "3-boss", "4-boss"):
+            rep = vb.validate_arena(load(os.path.join(ROOT, "data", "levels", "%s.json" % name)), ROOT)["boss"]
+            self.assertNotIn("vendor_windows", rep, name)
+
+
 if __name__ == "__main__":
     unittest.main()

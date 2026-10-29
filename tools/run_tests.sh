@@ -243,6 +243,9 @@ rm -f "$IMPORT_LOG"
 # esquema, validate_basic_arena y escena al dia; el validador completo es el paso 17) y sus fases con el Isak real
 # (tests/test_vendor_arena.gd, GUT: plataformas con precio, trampa, «te fio», cajas, bomba, ticket, cuenta, tiron,
 # «Procesando pago…», escaparate y ranura).
+# Desde el paso 17 del Mundo 5 (2026-10-29): el validador completo de la arena 5-boss (validate_vendor_arena de
+# tools/validate_boss.py; tests/test_boss_validator.py, VendorArenaTest, con sus negativos) y la Embestida desde la
+# vitrina y el Filo desde el estante por la ranura de las filas 6-7 con el Isak real (tests/test_vendor_arena.gd).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

@@ -87,15 +87,16 @@ def _err(errors, message, row=None, col=None):
 
 # --- Geometria ---
 
-def geometry_level(level, phase_objects=False):
+def geometry_level(level, phase_objects=False, keep_types=()):
     """Copia del nivel sin el jefe ni los ataques (para el modelo de movimiento de validate_level): sin
-    enemigos, solo los cargadores y una G de servicio en la ultima celda libre del suelo de la fila de P."""
+    enemigos, solo los cargadores (y los objetos de keep_types) y una G de servicio en la ultima celda libre del
+    suelo de la fila de P."""
     g = copy.deepcopy(level)
     for key in ("kind", "boss"):
         g.pop(key, None)
     g["id"] = "arena_test"
     g["enemies"] = []
-    g["objects"] = [o for o in g.get("objects", []) if o.get("type") == "charger"]
+    g["objects"] = [o for o in g.get("objects", []) if o.get("type") == "charger" or o.get("type") in keep_types]
     g.pop("validation", None)
     grid = [row.replace("E", ".") for row in g["grid"]]
     pr = next(r for r, row in enumerate(grid) if "P" in row)
@@ -112,14 +113,14 @@ def geometry_level(level, phase_objects=False):
 class Arena:
     """Datos de la arena: celdas de pie alcanzables desde P, sitios, carriles y cargadores."""
 
-    def __init__(self, level, boss, rules):
+    def __init__(self, level, boss, rules, keep_types=()):
         self.level = level
         self.boss = boss
         self.rules = rules
         self.T = float(level["tile_size"])
         self.grid = level["grid"]
         self.rows, self.cols = len(self.grid), len(self.grid[0])
-        geo = geometry_level(level)
+        geo = geometry_level(level, keep_types=keep_types)
         validator = vl.Validator(geo, rules)
         self.model = validator.model
         start = next((c, r) for r, row in enumerate(geo["grid"]) for c, ch in enumerate(row) if ch == "P")
@@ -839,6 +840,8 @@ def validate_arena(level, root=ROOT, boss=None, upgrades=(), physics_path=None,
         return validate_curator_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
     if boss.get("id") == "seen":
         return validate_seen_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
+    if boss.get("id") == "vendor":
+        return validate_vendor_arena(level, boss, root, upgrades, physics_path, jump_efficiency, limit)
     if boss.get("id") != "alert_major":
         return validate_basic_arena(level, boss, root, physics_path, jump_efficiency, limit)
     rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
@@ -2323,6 +2326,603 @@ def validate_seen_arena(level, boss, root=ROOT, upgrades=(), physics_path=None,
     return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
 
 
+# --- El Vendedor (Mundo 5; paso 17 de docs/propuesta-mundo-5.md, §7.2) ---
+#
+# Valores de juego: data/bosses/vendor.json (arena, giro, plataformas con precio, cajas, oferta, laps y
+# validation_model), data/levels/5-boss.json (estantes, cargadores, debug_drain_scale y debug_world_scale),
+# data/economy.json (boss_tokens), data/isak_abilities.json (combo, compress), data/enemies/offer_sign.json (tiron)
+# y los de Rules (fisica, pulso, laser, Debug, dash y mejoras). La maquina es '.' en el grid (la pone solida el
+# jefe): aqui se dibuja '#' por fase (vendor_level) y la ranura, la persiana del escaparate y las plataformas con
+# precio / vitrinas se anaden por fase. Recorridos: Dijkstra por tiempo (travel_s de validate_level). Lados: la
+# maquina mira al lado de Isak (s) y el «Cancelar» esta en la espalda (-s). Reglas:
+#   A. Basicas (_basic_geometry, con la geometria de la fase 1): pantalla, carril del suelo y cargadores a <=
+#      arena.charger_max_tiles alcanzables desde P (los de detras, por el techo de la maquina).
+#   B. Avisos de 6-12 cuadros a arena.anim_fps (giro, brazo que barre y monedas) y la mecha de la bomba y cada
+#      segundo de la cuenta >= 6 cuadros; con el Debug duran 1 / debug_world_scale mas (escala <= 1). De la columna
+#      de una moneda se sale andando en su aviso.
+#   C. Fase 1 por acceso y lado: cada par (a, b) / (c, d) tiene UNA plataforma buena (laps.<n>.traps); su etiqueta
+#      queda a tiro de pulso desde una celda de pie de su lado; de pagarla a estar en el techo de la maquina cabe
+#      k_life veces en life_s; desde el borde de detras del techo hasta donde el pulso y el laser alcanzan el
+#      «Cancelar» cabe k veces en turn_s con el Debug ya activo (se enciende en el techo: debug_on). Sin las
+#      plataformas no se llega detras (el techo no se alcanza desde el estante ni desde el suelo).
+#   D. Fase 2 por acceso y tanda: un ticket por tanda; se abre (pulso de cara) desde una celda de pie de su lado;
+#      la boca de la bandeja de ese lado no la tapa otra caja que no explote (las bombas explotan a fuse_s); desde
+#      la celda que abre: a la boca, Pellizcar, el tunel comprimido, a donde se alcanza el «Cancelar» y Debug +
+#      poses cabe k veces en refund_s + turn_s (procesando no se gira; al acabar, Isak ya esta detras y el giro
+#      tarda turn_s). El camino por encima con dos bombas aturdidas no se modela (es la alternativa).
+#   E. Fase 3 por acceso y lado: con la ranura cerrada y el escaparate entero no se llega detras (anti-redundancia);
+#      la EMBESTIDA desde la vitrina de delante (ram_info de world5_model: salto, dash aereo y diagonal) alcanza el
+#      escaparate con su onda y aterriza en el techo; el FILO desde el estante de delante (_filo_sweeps: salto
+#      comprimido y Filo) entra en la ranura con la caja comprimida dentro de su alto y sale por detras; cada camino,
+#      desde la peor celda del suelo de delante (andar alejandose de la bandeja cuesta lo del tiron: run x
+#      away_min_mult - drift_cap), cabe k veces en la cuenta (countdown_s) con el Debug despues del combo (los
+#      combos no van con el Debug). Detras la deriva va hacia la maquina: se puede estar quieto.
+#   F. Marca (mark_duration_s, sin el Debug: caso peor): caben los laseres de la peor ventana torpe; un golpe por
+#      marca (mark_hits >= 1) y uno por ventana.
+#   G. Energia torpe por acceso (base, tope del acceso y todo al maximo; energy_lap_vendor: Debug, dashes, combos de
+#      la fase 3 y laseres por ventana): pico <= maximo - min_margin y <= respawn_min_energy + una carga.
+#   H. Fichas: start >= coste x (ventanas torpes de la fase 1 + trap_payments_per_phase): el «te fio» es la red,
+#      nunca el plan. Cargadores: el enfriamiento del acceso cabe en CHARGER_ROTATION ciclos y las cargas de cada
+#      fase <= cargadores x ventanas.
+
+VENDOR_PAIRS = {-1: ("a", "b"), 1: ("c", "d")}
+
+
+def vendor_level(level, boss, phase, facing=-1, slot_open=False, shutter=True, good=("a", "d"), combos=True,
+                 start_side=-1):
+    """Geometria de la fase `phase` para el modelo: la maquina '#' (la ranura abierta si slot_open), las
+    plataformas buenas de la fase 1 (good) o las vitrinas de la fase 3 como '-' en su fila y, en la fase 3, la
+    persiana del escaparate (objeto shutter de pared) en la columna de la espalda (la maquina mira a `facing`).
+    start_side 1: la P de servicio pasa a su simetrica al otro lado de la maquina (la del nivel esta delante a
+    la izquierda), para medir desde la derecha."""
+    ab = boss.get("arena", {})
+    mc, mr, mw, mh = [int(v) for v in ab.get("machine", [8, 5, 4, 5])]
+    g = copy.deepcopy(level)
+    grid = [list(row) for row in g["grid"]]
+    if start_side > 0:
+        pr, pc = next((r, c) for r, row in enumerate(grid) for c, ch in enumerate(row) if ch == "P")
+        grid[pr][pc] = "."
+        grid[pr][len(grid[pr]) - 1 - pc] = "P"
+    slot0 = int(ab.get("slot_row", 7))
+    slot_rows = range(slot0, slot0 + max(int(ab.get("slot_rows", 1)), 1))
+    for r in range(mr, mr + mh):
+        for c in range(mc, mc + mw):
+            grid[r][c] = "." if slot_open and r in slot_rows else "#"
+    names = list(good) if phase == 1 else list(ab.get("showcase", {}).get("showcases", ["b", "c"])) if phase == 3 else []
+    for name in names:
+        c, r, w = [int(v) for v in ab.get("platforms", {}).get(name, [0, 0, 0])]
+        for x in range(c, c + w):
+            if grid[r][x] == ".":
+                grid[r][x] = "-"
+    g["grid"] = ["".join(row) for row in grid]
+    g["objects"] = [o for o in g.get("objects", []) if o.get("type") != "vendor"]
+    if phase == 3 and shutter:
+        length = int(ab.get("showcase", {}).get("length_tiles", 3))
+        x = mc + mw - 1 if facing < 0 else mc
+        g["objects"].append({"type": "shutter", "x": x, "y": mr - length,
+                             "params": {"id": "escaparate", "length_tiles": length, "orientation": "wall"}})
+    if not combos:
+        g["abilities_available"] = dict(g.get("abilities_available", {}), combo=False)
+    return g
+
+
+def energy_lap_vendor(arena, boss, lap, rules, laser_damage, errors, scenario, root):
+    """Pelea torpe de El Vendedor por fase (validation_model): ventanas con sus golpes, Debug por ventana (debug_s,
+    mas early_debug_s en la ventana perdida) al gasto de la arena, dashes, combos (fase 3: la Embestida o el Filo,
+    combo.energy_cost) y un laser fallado. Sin contar la energia de las cajas buenas: solo cargadores y el relleno
+    del cambio de fase."""
+    model = boss.get("validation_model", {})
+    lm = model.get("laps", {}).get(str(lap))
+    entry = boss.get("laps", {}).get(str(lap), {})
+    if lm is None:
+        _err(errors, "validation_model.laps sin la vuelta %s" % lap)
+        return None
+    combo_cost = float(load_json(os.path.join(root, "data", "isak_abilities.json")).get("combo", {}).get("energy_cost", 15.0))
+    drain = rules.debug_drain * float(arena.level.get("debug_drain_scale", 1.0))
+    margin = float(model.get("min_margin", 20.0))
+    emax = rules.energy_max
+    misses = int(model.get("misses_per_window", 1))
+    dashes = model.get("dashes_per_window", [1, 1, 1])
+    combos = model.get("combos_per_window", [0, 0, 1])
+    early = model.get("early_debug_s", [0, 0, 0])
+    hits = entry.get("hits_per_phase", [])
+    refill = float(boss.get("phase_change_refill", {}).get("energy", 0.0))
+    charge = max((float(p.get("amount", 50.0)) for _, _, p in arena.chargers), default=50.0)
+    detour = float(model.get("detour_s_per_charge", 1.3))
+    energy = emax
+    phases = []
+    for p, windows in enumerate(lm.get("windows", [])):
+        if p < len(hits) and sum(windows) != hits[p]:
+            _err(errors, "validation_model vuelta %s fase %d: las ventanas suman %d golpes y la fase tiene %d"
+                 % (lap, p + 1, sum(windows), hits[p]))
+        peaks = []
+        for h in windows:
+            debug_s = float(lm["debug_s"][p]) + (float(early[p] if p < len(early) else 0.0) if h == 0 else 0.0)
+            lasers = math.ceil(h / laser_damage) + misses
+            peaks.append(debug_s * drain + int(dashes[p] if p < len(dashes) else 0) * rules.dash_cost
+                         + int(combos[p] if p < len(combos) else 0) * combo_cost + lasers * rules.laser_cost)
+        peak = max(peaks) if peaks else 0.0
+        spend = sum(peaks)
+        income = refill if p > 0 else 0.0
+        need = max(0.0, spend - energy - income)
+        charges = int(math.ceil(need / charge - EPS)) if need > 0 else 0
+        energy = min(emax, energy + income + charges * charge - spend)
+        if peak > emax - margin + EPS:
+            _err(errors, "%s, vuelta %s, fase %d: pico de la pelea torpe %.1f con %.0f de energia (margen %.1f < %.0f)"
+                 % (scenario, lap, p + 1, peak, emax, emax - peak, margin))
+        phases.append({"peak": round(peak, 2), "margin": round(emax - peak, 2), "spend": round(spend, 2),
+                       "charges": charges, "detour_s": round(charges * detour, 2), "end_energy": round(energy, 2)})
+    return {"energy_max": emax, "debug_drain_per_s": round(drain, 3), "laser_cost": rules.laser_cost,
+            "laser_damage": laser_damage, "dash_cost": rules.dash_cost, "combo_cost": combo_cost, "phases": phases,
+            "min_margin": round(min((ph["margin"] for ph in phases), default=0.0), 2),
+            "total_spend": round(sum(ph["spend"] for ph in phases), 2),
+            "total_charges": sum(ph["charges"] for ph in phases),
+            "total_detour_s": round(sum(ph["detour_s"] for ph in phases), 2)}
+
+
+def validate_vendor_arena(level, boss, root=ROOT, upgrades=(), physics_path=None,
+                          jump_efficiency=vl.DEFAULT_JUMP_EFFICIENCY, limit=vl.DEFAULT_LIMIT):
+    errors, warnings = [], []
+    rules = vl.Rules(root, physics_path, jump_efficiency, limit, True)
+    rules.set_level_debug_world_scale(level.get("debug_world_scale"))
+    ab = boss.get("arena", {})
+    model = boss.get("validation_model", {})
+    laps = boss.get("laps", {})
+    fps = anim_fps(boss)
+    T = float(level["tile_size"])
+    mc, mr, mw, mh = [int(v) for v in ab.get("machine", [8, 5, 4, 5])]
+    mx0, mx1 = mc * T, (mc + mw) * T
+    floor_row = int(ab.get("floor_row", 9))
+    floor_y = (floor_row + 1) * T
+    weak_r = float(load_json(os.path.join(root, "data", "weak_point.json"))["radius_px"])
+    core_r = weak_r - float(ab.get("core_inset_px", 8.0))
+    core_dy = float(ab.get("core_dy_px", 58.0))
+    k_default = float(model.get("window_k", 2.0))
+    k_phase = {int(p): float(v) for p, v in model.get("window_k_by_phase", {}).items()}
+    k_life = float(model.get("life_k", k_default))
+    abilities = load_json(os.path.join(root, "data", "isak_abilities.json"))
+    compress = abilities.get("compress", {})
+    comp_w, comp_h = float(compress.get("width_px", 32.0)), float(compress.get("height_px", 40.0))
+    comp_walk = float(compress.get("walk_speed_px_s", 160.0))
+    squash = float(compress.get("squash_s", 0.15))
+    field = load_json(os.path.join(root, "data", "enemies", "offer_sign.json")).get("field", {})
+    pull_run = rules.run_speed * float(field.get("away_min_mult", 0.45)) - float(field.get("drift_cap_px_s", 90.0))
+
+    def side_of(node):
+        x = (node[0] + 0.5) * T
+        return -1 if x < mx0 else 1 if x > mx1 else 0
+
+    def core_point(facing):
+        return (mx1 + core_r if facing < 0 else mx0 - core_r, floor_y - core_dy)
+
+    report = {"boss": boss.get("id")}
+    # A. Geometria basica (fase 1 de Caché: por el techo se alcanzan los cargadores de detras).
+    traps1 = laps.get("1", {}).get("traps", ["b", "c"])
+    good1 = [n for pair in VENDOR_PAIRS.values() for n in pair if n not in traps1]
+    base = Arena(vendor_level(level, boss, 1, good=good1), boss, rules)
+    report["reachable_cells"] = len(base.reachable)
+    _basic_geometry(base, boss, errors, report)
+    # B. Avisos.
+    lo, hi = TELEGRAPH_FRAMES
+    tele = [("giro", boss.get("turn", {}).get("warn_frames")),
+            ("brazo que barre", boss.get("arm_sweep", {}).get("warn_frames")),
+            ("monedas", boss.get("coins", {}).get("warn_frames"))]
+    tele_out = []
+    for name, frames in tele:
+        if not isinstance(frames, (int, float)) or not lo - EPS <= frames <= hi + EPS:
+            _err(errors, "aviso de '%s': %s cuadros a %g fps (deben ser de %d a %d)" % (name, frames, fps, lo, hi))
+            continue
+        tele_out.append((name, "%g cuadros (%.2f s)" % (frames, frames / fps)))
+    fuse = float(boss.get("boxes", {}).get("fuse_s", 2.5))
+    if fuse * fps + EPS < lo:
+        _err(errors, "la mecha de la bomba dura %.2f s (%.1f cuadros < %d)" % (fuse, fuse * fps, lo))
+    tele_out.append(("mecha de la bomba", "%.1f cuadros (%.2f s)" % (fuse * fps, fuse)))
+    tele_out.append(("cada segundo de la cuenta", "%g cuadros (1 s)" % fps))
+    if not 0.0 < rules.debug_world_scale <= 1.0 + EPS:
+        _err(errors, "con el Debug el mundo va a x%g: los avisos durarian menos que sin el Debug" % rules.debug_world_scale)
+    report["telegraphs"] = tele_out
+    report["debug_world_scale"] = round(rules.debug_world_scale, 3)
+    coin_warn = float(boss.get("coins", {}).get("warn_frames", 9)) / fps
+    coin_walk = (T / 2.0 + rules.hitbox_w / 2.0) / rules.walk_speed
+    if coin_walk > coin_warn + EPS:
+        _err(errors, "monedas: salir de la columna andando tarda %.2f s y el aviso dura %.2f" % (coin_walk, coin_warn))
+    report["vendor_dodge"] = {"coin_walk_s": round(coin_walk, 3), "coin_warn_s": round(coin_warn, 3)}
+
+    def reach_cells(arena, core, side):
+        """Celdas de pie del lado `side` desde las que el pulso y el laser alcanzan el «Cancelar» en `core`."""
+        out = []
+        box = (core[0] - weak_r, core[1] - weak_r, 2 * weak_r, 2 * weak_r)
+        for n in arena.reachable:
+            if is_pinched_node(n) or side_of(n) != side:
+                continue
+            for f in (1.0, -1.0):
+                px, py = arena.phone(n, f)
+                if math.hypot(px - core[0], py - core[1]) <= rules.pulse_radius + weak_r + EPS \
+                        and _laser_to_rect(arena, n, f, box):
+                    out.append(n)
+                    break
+        return out
+
+    def best(tt, targets):
+        return min((tt[g] for g in targets if g in tt), default=None)
+
+    windows_out = []
+    # C. Fase 1.
+    p1_out = {}
+    life = float(boss.get("priced_platforms", {}).get("life_s", 6.0))
+    label_px = [float(v) for v in ab.get("label_px", [56.0, 32.0])]
+    thick = 16.0
+    k1 = k_phase.get(1, k_default)
+    for lap, entry in sorted(laps.items()):
+        traps = entry.get("traps", ["b", "c"])
+        good = []
+        for s, pair in sorted(VENDOR_PAIRS.items()):
+            ok = [n for n in pair if n not in traps]
+            if len(ok) != 1:
+                _err(errors, "vuelta %s, fase 1: el par %s debe tener una plataforma buena y una trampa (trampas %s)"
+                     % (lap, "/".join(pair), traps))
+            good.extend(ok[:1])
+        if len(good) != 2:
+            continue
+        arena1 = Arena(vendor_level(level, boss, 1, good=good), boss, rules)
+        none = Arena(vendor_level(level, boss, 1, good=()), boss, rules)
+        lap_out = {}
+        for s, pair in sorted(VENDOR_PAIRS.items()):
+            name = [n for n in pair if n in good][0]
+            c, r, w = [int(v) for v in ab["platforms"][name]]
+            plat_cells = [(x, r - 1) for x in range(c, c + w) if (x, r - 1) in arena1.reachable]
+            if not plat_cells:
+                _err(errors, "vuelta %s, fase 1: no se sube a la plataforma %s" % (lap, name))
+                continue
+            label = ((c + w / 2.0) * T - label_px[0] / 2.0, r * T + 4.0, label_px[0], label_px[1])
+            pay = sorted(n for n in arena1.reachable if not is_pinched_node(n) and side_of(n) == s
+                         and n not in plat_cells and any(_pulse_to_rect(arena1, n, f, label) for f in (1.0, -1.0)))
+            if not pay:
+                _err(errors, "vuelta %s, fase 1: la etiqueta de %s no queda a tiro de pulso desde su lado" % (lap, name))
+                continue
+            roof = [(x, mr - 1) for x in range(mc, mc + mw) if (x, mr - 1) in arena1.reachable]
+            if not roof:
+                _err(errors, "vuelta %s, fase 1: desde la plataforma %s no se llega al techo de la maquina" % (lap, name))
+                continue
+            back_roof = [n for n in roof if n[0] == (mc + mw - 1 if s < 0 else mc)]
+            targets = reach_cells(arena1, core_point(s), -s)
+            if not targets:
+                _err(errors, "vuelta %s, fase 1: el «Cancelar» de la espalda no se alcanza con pulso y laser" % lap)
+                continue
+            # De pagar a estar en el techo (la plataforma solo hace falta hasta el techo).
+            t_life = None
+            for n in pay:
+                tt = _vendor_times(arena1, {n: 0.0})
+                t_plat = best(tt, plat_cells)
+                if t_plat is None:
+                    continue
+                t_roof = min((best(_vendor_times(arena1, {pc: 0.0}), roof) or 1e9) for pc in plat_cells)
+                t = rules.pulse_pose_s + t_plat + t_roof
+                t_life = t if t_life is None else min(t_life, t)
+            if t_life is None or k_life * t_life > life + EPS:
+                _err(errors, "vuelta %s, fase 1: la plataforma %s dura %.1f s y de pagarla al techo hacen falta %s (k = %g)"
+                     % (lap, name, life, "?" if t_life is None else "%.2f" % (k_life * t_life), k_life))
+            # Ventana: del borde de detras del techo al «Cancelar», con el Debug ya activo.
+            worst = 0.0
+            for n in back_roof or roof:
+                t = best(_vendor_times(arena1, {n: 0.0}), targets)
+                if t is None:
+                    _err(errors, "vuelta %s, fase 1: desde el techo %s no se baja a donde se alcanza el «Cancelar»"
+                         % (lap, list(n)))
+                    continue
+                worst = max(worst, t)
+            turn = float(entry.get("turn_s", 1.2)) + float(boss.get("turn", {}).get("anim_s", 0.0))
+            need = k1 * _window_need_debug_on(rules, worst)
+            if turn + EPS < need:
+                _err(errors, "vuelta %s, fase 1: el giro tarda %.2f s del mundo y desde el techo hacen falta %.2f (k = %g x "
+                             "(recorrido %.2f s + poses))" % (lap, turn, need, k1, worst))
+            windows_out.append({"lap": lap, "phase": 1, "from": "techo (%s)" % ("izq" if s < 0 else "der"), "k": k1,
+                                "strategy": "debug_on", "window_s": turn, "travel_s": round(worst, 3),
+                                "need_s": round(need, 3)})
+            lap_out["izq" if s < 0 else "der"] = {"platform": name, "pay_cells": len(pay),
+                                                  "pay_to_roof_s": None if t_life is None else round(t_life, 3),
+                                                  "core_cells": len(targets)}
+        if any(side_of(n) == 1 for n in none.reachable):
+            _err(errors, "vuelta %s, fase 1: sin las plataformas con precio se llega detras de la maquina" % lap)
+        p1_out[lap] = {"good": good, "traps": traps, "life_s": life, "sides": lap_out}
+    report["vendor_phase1"] = p1_out
+    # D. Fase 2 (sin plataformas: cada lado se mide desde su propia P de servicio).
+    arena2s = {sd: Arena(vendor_level(level, boss, 2, start_side=sd), boss, rules) for sd in (-1, 1)}
+    bx = boss.get("boxes", {})
+    refund = float(bx.get("refund_s", 4.0))
+    clear = float(bx.get("clear_s", 0.6))
+    k2 = k_phase.get(2, k_default)
+    tunnel_s = squash + (mw + 1) * T / max(comp_walk, 1.0)
+    p2_out = []
+    for i, batch in enumerate(bx.get("batches", [])):
+        tickets = [b for b in batch if b[2] == "ticket"]
+        if len(tickets) != 1:
+            _err(errors, "fase 2, tanda %d: debe llevar un ticket de devolucion (lleva %d)" % (i + 1, len(tickets)))
+            continue
+        tc, tsurf = int(tickets[0][0]), int(tickets[0][1])
+        cell = (tc, tsurf - 1)
+        s = side_of(cell)
+        if s == 0:
+            _err(errors, "fase 2, tanda %d: el ticket cae sobre la maquina" % (i + 1))
+            continue
+        arena2 = arena2s[s]
+        box = (tc * T + 8.0, (tsurf - 1) * T + 8.0, T - 16.0, T - 8.0)
+        openers = sorted(n for n in arena2.reachable if not is_pinched_node(n) and side_of(n) == s and n != cell
+                         and any(_pulse_to_rect(arena2, n, f, box) for f in (1.0, -1.0)))
+        if not openers:
+            _err(errors, "fase 2, tanda %d: el ticket de (%d, %d) no se abre con el pulso desde su lado" % (i + 1, tc, tsurf))
+            continue
+        mouth = (mc - 1 if s < 0 else mc + mw, floor_row)
+        out_mouth = (mc + mw if s < 0 else mc - 1, floor_row)
+        wait = 0.0
+        for b in batch:
+            if (int(b[0]), int(b[1]) - 1) in (mouth, out_mouth) and int(b[1]) - 1 == floor_row:
+                if b[2] == "ticket":
+                    wait = max(wait, clear)
+                elif b[2] != "bomb":
+                    _err(errors, "fase 2, tanda %d: una caja %s tapa la boca de la bandeja en la columna %d"
+                         % (i + 1, b[2], int(b[0])))
+        for lap, entry in sorted(laps.items()):
+            back = arena2s[-s]
+            targets = reach_cells(back, core_point(s), -s)
+            t_back = best(_vendor_times(back, {out_mouth: 0.0}), targets)
+            t_in = min((best(_vendor_times(arena2, {n: 0.0}), [mouth]) or 1e9) for n in openers)
+            if t_back is None or t_in >= 1e9:
+                _err(errors, "vuelta %s, fase 2, tanda %d: no hay camino del ticket a la espalda por la bandeja" % (lap, i + 1))
+                continue
+            travel = rules.pulse_pose_s + t_in + wait + tunnel_s + t_back
+            window = refund + float(entry.get("turn_s", 1.2))
+            need = k2 * _window_need(back, travel)
+            if window + EPS < need:
+                _err(errors, "vuelta %s, fase 2, tanda %d: procesando + giro dan %.2f s del mundo y por la bandeja hacen "
+                             "falta %.2f (k = %g x (recorrido %.2f s + Debug + poses))" % (lap, i + 1, window, need, k2,
+                                                                                         travel))
+            windows_out.append({"lap": lap, "phase": 2, "from": "ticket %d (%d, %d)" % (i + 1, tc, tsurf), "k": k2,
+                                "strategy": "debug", "window_s": window, "travel_s": round(travel, 3),
+                                "need_s": round(need, 3)})
+        p2_out.append({"batch": i + 1, "ticket": [tc, tsurf], "side": "izq" if s < 0 else "der",
+                       "openers": len(openers), "mouth_wait_s": wait})
+    report["vendor_phase2"] = {"tunnel_s": round(tunnel_s, 3), "refund_s": refund, "batches": p2_out}
+    # E. Fase 3.
+    import world5_model as w5m  # noqa: E402
+    from world3_model import Pinched  # noqa: E402
+    k3 = k_phase.get(3, k_default)
+    slot0 = int(ab.get("slot_row", 7))
+    slot_h = max(int(ab.get("slot_rows", 1)), 1) * T
+    slot = (mx0, slot0 * T, mx1, slot0 * T + slot_h)
+    countdown = {lap: float(e.get("countdown_s", 15.0)) for lap, e in laps.items()}
+    p3_out = {}
+    for s in (-1, 1):
+        closed = Arena(vendor_level(level, boss, 3, facing=s, start_side=s), boss, rules, keep_types=("shutter",))
+        bare = Arena(vendor_level(level, boss, 3, facing=s, shutter=False, start_side=-s), boss, rules)
+        opened = Arena(vendor_level(level, boss, 3, facing=s, slot_open=True, shutter=True, start_side=s), boss,
+                       rules, keep_types=("shutter",))
+        start_cells = sorted(n for n in closed.reachable if not is_pinched_node(n) and side_of(n) == s
+                             and n[1] == floor_row)
+        if any(side_of(n) == -s for n in closed.reachable):
+            _err(errors, "fase 3 (%s): sin romper el escaparate ni cruzar la ranura se llega detras"
+                 % ("izq" if s < 0 else "der"))
+        targets = reach_cells(bare, core_point(s), -s)
+        if not targets:
+            _err(errors, "fase 3: el «Cancelar» de la espalda no se alcanza con pulso y laser")
+            continue
+        tray_x = mx0 if s < 0 else mx1
+
+        def front_time(a, b):
+            """Recorrido de delante con el tiron hacia la bandeja: lo que se aleja va a pull_run."""
+            t = best(_vendor_times(closed, {a: 0.0}), [b])
+            if t is None:
+                return None
+            xa, xb = (a[0] + 0.5) * T, (b[0] + 0.5) * T
+            away = max(0.0, abs(xb - tray_x) - abs(xa - tray_x))
+            return t + away * (1.0 / max(pull_run, 1.0) - 1.0 / rules.run_speed)
+
+        side = "izq" if s < 0 else "der"
+        routes = {}
+        # Embestida desde la vitrina de delante.
+        gate = next((g for g in closed.model.gates if g.kind == "shutter"), None)
+        vit = ab.get("showcase", {}).get("showcases", ["b", "c"])
+        vname = vit[0] if s < 0 else vit[-1]
+        vc, vr, vw = [int(v) for v in ab["platforms"][vname]]
+        vcells = [(x, vr - 1) for x in range(vc, vc + vw) if (x, vr - 1) in closed.reachable]
+        rams = []
+        if gate is not None:
+            for n in vcells:
+                info = closed.model.w5.ram_info(gate, n, closed.model.initial)
+                if info is not None and info["dir"] == -s and abs(info["land_px"][1] - mr * T) <= 2.0:
+                    rams.append((n, info))
+        if not rams:
+            _err(errors, "fase 3 (%s): la Embestida desde la vitrina %s no rompe el escaparate ni aterriza en el techo"
+                 % (side, vname))
+        else:
+            worst = 0.0
+            for st in start_cells:
+                best_t = None
+                for n, info in rams:
+                    tf = front_time(st, n)
+                    land = (int(info["land_px"][0] // T), mr - 1)
+                    tb = best(_vendor_times(bare, {land: 0.0}), targets) if land in bare.reachable else None
+                    if tf is None or tb is None:
+                        continue
+                    t = tf + info["seconds"] + _window_need(bare, tb)
+                    best_t = t if best_t is None else min(best_t, t)
+                if best_t is not None:
+                    worst = max(worst, best_t)
+            routes["embestida"] = {"from": [list(n) for n, _ in rams], "seconds": rams[0][1]["seconds"],
+                                   "land_px": rams[0][1]["land_px"], "worst_s": round(worst, 3)}
+        # Filo desde el estante de delante.
+        shelves = ab.get("shelves", {})
+        sh = shelves.get("left" if s < 0 else "right", [0, 0, 0])
+        scells = [(x, int(sh[1]) - 1) for x in range(int(sh[0]), int(sh[0]) + int(sh[2]))
+                  if (x, int(sh[1]) - 1) in closed.reachable]
+        filos = []
+        chw = comp_w / 2.0
+        for n in scells:
+            for x0, jspeed, kk, xs, ya, d, pre in opened.model.w5._filo_sweeps(n, opened.model.initial):
+                if d != -s or not xs:
+                    continue
+                if not (slot[1] + comp_h - EPS <= ya <= slot[3] + EPS):
+                    continue
+                inside = xs[-1] + chw > slot[0] + EPS if d > 0 else xs[-1] - chw < slot[2] - EPS
+                if not inside:
+                    continue
+                filos.append((n, kk * w5m.SIM_DT + len(xs) * w5m.SIM_DT, ya))
+        if not filos:
+            _err(errors, "fase 3 (%s): el Filo desde el estante no entra en la ranura (filas %d-%d) con la caja "
+                         "comprimida dentro" % (side, slot0, slot0 + int(slot_h / T) - 1))
+        else:
+            out_cell = (mc + mw if s < 0 else mc - 1, floor_row)
+            worst = 0.0
+            for st in start_cells:
+                best_t = None
+                for n, secs, ya in filos:
+                    tf = front_time(st, n)
+                    tb = best(_vendor_times(bare, {out_cell: 0.0}), targets)
+                    if tf is None or tb is None:
+                        continue
+                    fall = math.sqrt(2.0 * max(floor_y - ya, 0.0) / (rules.gravity * rules.fall_mult))
+                    t = tf + squash + secs + fall + _window_need(bare, tb)
+                    best_t = t if best_t is None else min(best_t, t)
+                if best_t is not None:
+                    worst = max(worst, best_t)
+            frames = sorted({round(secs / w5m.SIM_DT) for _, secs, _ in filos})
+            routes["filo"] = {"from": sorted({tuple(n) for n, _, _ in filos}), "sweeps": len(filos),
+                              "feet_y": [round(min(y for _, _, y in filos), 1), round(max(y for _, _, y in filos), 1)],
+                              "worst_s": round(worst, 3)}
+        for lap in sorted(laps):
+            for rname, rt in sorted(routes.items()):
+                need = k3 * rt["worst_s"]
+                if countdown[lap] + EPS < need:
+                    _err(errors, "vuelta %s, fase 3 (%s): la cuenta dura %.1f s y por %s hacen falta %.2f (k = %g x %.2f s)"
+                         % (lap, side, countdown[lap], rname, need, k3, rt["worst_s"]))
+                windows_out.append({"lap": lap, "phase": 3, "from": "%s, %s" % (rname, side), "k": k3,
+                                    "strategy": "debug", "window_s": countdown[lap], "travel_s": rt["worst_s"],
+                                    "need_s": round(need, 3)})
+        p3_out[side] = {"routes": routes, "start_cells": len(start_cells), "core_cells": len(targets)}
+    report["vendor_phase3"] = {"slot_px": [round(v, 1) for v in slot], "pull_run_px_s": round(pull_run, 1),
+                               "sides": p3_out}
+    windows_out.sort(key=lambda w: (w["lap"], w["phase"], w["from"]))
+    report["vendor_windows"] = windows_out
+    # F. Marca.
+    misses = int(model.get("misses_per_window", 1))
+    mark_out = {}
+    for lap, entry in sorted(laps.items()):
+        mark = float(entry.get("mark_duration_s", 0.0))
+        cap = int(entry.get("mark_hits", 0))
+        lm = model.get("laps", {}).get(str(lap), {})
+        worst = max((h for ws in lm.get("windows", []) for h in ws), default=0)
+        if worst > 1:
+            _err(errors, "vuelta %s: la pelea torpe pide %d golpes en una ventana y cada ventana se cierra con su golpe"
+                 % (lap, worst))
+        if cap <= 0:
+            _err(errors, "vuelta %s: mark_hits debe ser >= 1 (un golpe por marca)" % lap)
+        need = min(worst, 1) + misses
+        shots = mark_shots(rules, mark)
+        if shots < need:
+            _err(errors, "vuelta %s: en la marca de %.2f s caben %d laser(es) y la peor ventana torpe pide %d "
+                         "(%d golpe(s) + %d fallado(s))" % (lap, mark, shots, need, min(worst, 1), misses))
+        scale = max(rules.debug_world_scale, EPS)
+        mark_out[lap] = {"mark_s": mark, "real_with_debug_s": round(mark / scale, 3), "shots": shots,
+                         "shots_with_debug": mark_shots(rules, mark / scale), "need": need}
+    report["mark"] = mark_out
+    # G. Energia.
+    check_energy(base, boss, rules, list(upgrades), errors, report, root, lap_fn=energy_lap_vendor)
+    charge = max((float(pp.get("amount", 50.0)) for _, _, pp in base.chargers), default=50.0)
+    respawn = float(boss.get("respawn_min_energy", 0.0))
+    for lap, scen in sorted(report["energy"].items()):
+        for name, e in scen.items():
+            for p, ph in enumerate(e["phases"]):
+                if ph["peak"] > respawn + charge + EPS:
+                    _err(errors, "%s, vuelta %s, fase %d: el pico torpe %.1f supera lo que hay al reaparecer (%.0f) mas "
+                                 "una carga (%.0f)" % (name, lap, p + 1, ph["peak"], respawn, charge))
+    # H. Fichas y cargadores.
+    tokens = load_json(os.path.join(root, "data", "economy.json")).get("boss_tokens", {})
+    start_tokens = int(tokens.get("start", 12))
+    cost = int(tokens.get("priced_platform_cost", 2))
+    extra = int(model.get("trap_payments_per_phase", 1))
+    tok_out = {}
+    for lap in sorted(laps):
+        windows1 = (model.get("laps", {}).get(str(lap), {}).get("windows") or [[]])[0]
+        need = cost * (len(windows1) + extra)
+        if start_tokens < need:
+            _err(errors, "vuelta %s, fase 1: %d fichas y la pelea torpe paga %d plataformas (%d ventanas + %d trampa(s)) "
+                         "= %d: tendria que fiar" % (lap, start_tokens, len(windows1) + extra, len(windows1), extra, need))
+        tok_out[lap] = {"need": need, "spare": start_tokens - need}
+    report["vendor_tokens"] = {"start": start_tokens, "cost": cost, "trap_payments": extra, "laps": tok_out,
+                               "good_box_bonus": int(tokens.get("good_box_bonus", 2))}
+    level_cd = sorted({float(pp.get("cooldown_s", 0.0)) for _, _, pp in base.chargers})
+    fps_s = 1.0 / fps
+    a = boss.get("arm_sweep", {})
+    co = boss.get("coins", {})
+    dur = {"arm_sweep": float(a.get("warn_frames", 9)) * fps_s + float(a.get("sweep_s", 0.6)),
+           "coins": float(co.get("warn_frames", 9)) * fps_s + float(co.get("fall_s", 0.5))}
+    p1 = boss.get("phase1", {})
+    att = p1.get("attacks", [])
+    cycle1 = sum(dur.get(x, 0.0) for x in att) + float(p1.get("attack_gap_s", 2.5)) * len(att)
+    charger_out = {}
+    for lap, entry in sorted(laps.items()):
+        cd = float(entry.get("charger_cooldown_s", level_cd[0] if level_cd else 0.0))
+        cycles = [cycle1, float(bx.get("interval_s", 5.0)), countdown[lap]]
+        shortest = min(cycles)
+        if cd > CHARGER_ROTATION * shortest + EPS:
+            _err(errors, "vuelta %s: los cargadores se enfrian %.1f s y entre ventanas hay %.2f s (alternando %d "
+                         "cargadores no hay uno listo en cada ventana)" % (lap, cd, shortest, CHARGER_ROTATION))
+        windows = model.get("laps", {}).get(str(lap), {}).get("windows", [])
+        for name, e in report["energy"].get(lap, {}).items():
+            for p, ph in enumerate(e["phases"]):
+                cap = len(base.chargers) * (len(windows[p]) if p < len(windows) else 0)
+                if ph["charges"] > cap:
+                    _err(errors, "%s, vuelta %s, fase %d: %d cargas y solo hay %d (cargadores x ventanas)"
+                         % (name, lap, p + 1, ph["charges"], cap))
+        charger_out[lap] = {"cooldown_s": cd, "cycles_s": [round(c, 2) for c in cycles]}
+    if laps and level_cd and abs(level_cd[0] - float(laps.get("1", {}).get("charger_cooldown_s", level_cd[0]))) > EPS:
+        _err(errors, "los cargadores del nivel se enfrian %g s y Caché pide %g" % (level_cd[0],
+                                                                                float(laps["1"]["charger_cooldown_s"])))
+    report["seen_chargers"] = {"count": len(base.chargers), "level_cooldown_s": level_cd, "laps": charger_out,
+                               "debug_drain_scale": float(level.get("debug_drain_scale", 1.0))}
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "path": [], "boss": report}
+
+
+def is_pinched_node(n):
+    return bool(getattr(n, "pinched", False))
+
+
+def _vendor_times(arena, sources):
+    """Como _travel_times, pero las bajadas cuentan la caida real (raiz(2 h / (g x fall_mult))) en vez de un
+    salto por cada 2 filas: la ventana de El Vendedor empieza al bajar del techo de la maquina."""
+    r = arena.rules
+    T = arena.T
+
+    def cost(a, b):
+        dx = abs(a[0] - b[0]) * T / r.run_speed
+        dy = b[1] - a[1]
+        if dy > 0:
+            fall = math.sqrt(2.0 * dy * T / (r.gravity * r.fall_mult))
+            return max(dx, fall)
+        return dx + math.ceil(-dy / 2.0) * CLIMB_S
+
+    best = {n: float(t) for n, t in sources.items() if n in arena.reachable}
+    heap = [(t, i, n) for i, (n, t) in enumerate(best.items())]
+    heapq.heapify(heap)
+    seq = len(heap)
+    while heap:
+        t, _, n = heapq.heappop(heap)
+        if t > best.get(n, float("inf")) + EPS:
+            continue
+        for e in arena.model.edges(n, arena.model.initial, False):
+            if max(e["h"], e["v"]) > r.limit + EPS:
+                continue
+            to = e["to"]
+            if is_pinched_node(to) != is_pinched_node(n):
+                continue
+            nt = t + cost(n, to)
+            if nt + EPS < best.get(to, float("inf")):
+                best[to] = nt
+                seq += 1
+                heapq.heappush(heap, (nt, seq, to))
+    return best
+
+
 def format_text(path, result):
     out = []
     status = "OK" if result["ok"] else "FALLA"
@@ -2437,6 +3037,43 @@ def format_text(path, result):
                            s3["typing_floor_cells"], s3["typing_bubble_cells"],
                            ", ".join("%s %d" % kv for kv in sorted(s3["stun_cells"].items())), s3["message_freeze_s"]))
         for w in rep.get("seen_windows", []):
+            out.append("  ventana vuelta %s fase %d desde %s (k = %g, %s): %.2f s; hacen falta %.2f (recorrido %.2f s)" % (
+                w["lap"], w["phase"], w["from"], w["k"], "Debug ya activo" if w["strategy"] == "debug_on" else "con el Debug",
+                w["window_s"], w["need_s"], w["travel_s"]))
+        vd = rep.get("vendor_dodge")
+        if vd:
+            out.append("  esquivar: columna de una moneda %.2f s andando (aviso %.2f)" % (vd["coin_walk_s"], vd["coin_warn_s"]))
+            for lap, p1 in sorted(rep["vendor_phase1"].items()):
+                out.append("  fase 1, vuelta %s: buenas %s, trampas %s; %s (la plataforma dura %g s)" % (
+                    lap, "/".join(p1["good"]), "/".join(p1["traps"]), "; ".join(
+                        "%s: %s, etiqueta a tiro desde %d celda(s), de pagar al techo %s s, «Cancelar» desde %d celda(s)"
+                        % (sd, v["platform"], v["pay_cells"], "?" if v["pay_to_roof_s"] is None else "%.2f" % v["pay_to_roof_s"],
+                           v["core_cells"]) for sd, v in sorted(p1["sides"].items())), p1["life_s"]))
+            p2 = rep["vendor_phase2"]
+            out.append("  fase 2: tunel de la bandeja %.2f s comprimido; procesando %g s; %s" % (
+                p2["tunnel_s"], p2["refund_s"], "; ".join("tanda %d: ticket en %s (%s), se abre desde %d celda(s)%s" % (
+                    b["batch"], b["ticket"], b["side"], b["openers"],
+                    ", espera %.1f s a que la boca quede libre" % b["mouth_wait_s"] if b["mouth_wait_s"] else "")
+                    for b in p2["batches"])))
+            p3 = rep["vendor_phase3"]
+            for sd, v in sorted(p3["sides"].items()):
+                parts = []
+                rt = v["routes"]
+                if "embestida" in rt:
+                    parts.append("Embestida desde %s (%.2f s; aterriza en %s) peor %.2f s" % (
+                        rt["embestida"]["from"], rt["embestida"]["seconds"], rt["embestida"]["land_px"],
+                        rt["embestida"]["worst_s"]))
+                if "filo" in rt:
+                    parts.append("Filo desde %s (%d tramo(s), pies entre %s y %s px) peor %.2f s" % (
+                        [list(n) for n in rt["filo"]["from"]], rt["filo"]["sweeps"], rt["filo"]["feet_y"][0],
+                        rt["filo"]["feet_y"][1], rt["filo"]["worst_s"]))
+                out.append("  fase 3 (%s): ranura %s; tiron alejandose %g px/s; %s" % (
+                    sd, p3["slot_px"], p3["pull_run_px_s"], "; ".join(parts) or "sin caminos"))
+            vt = rep["vendor_tokens"]
+            out.append("  fichas: %d al empezar, %d por plataforma (+%d por caja buena); fase 1 torpe: %s" % (
+                vt["start"], vt["cost"], vt["good_box_bonus"], ", ".join(
+                    "vuelta %s paga %d (sobran %d)" % (lap, v["need"], v["spare"]) for lap, v in sorted(vt["laps"].items()))))
+        for w in rep.get("vendor_windows", []):
             out.append("  ventana vuelta %s fase %d desde %s (k = %g, %s): %.2f s; hacen falta %.2f (recorrido %.2f s)" % (
                 w["lap"], w["phase"], w["from"], w["k"], "Debug ya activo" if w["strategy"] == "debug_on" else "con el Debug",
                 w["window_s"], w["need_s"], w["travel_s"]))
