@@ -224,6 +224,29 @@ func test_seen_grants_the_friendship_fragment_in_cache() -> void:
 	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w4.png"), "Nitida en Kernel")
 
 
+## Paso 18 de docs/propuesta-mundo-5.md (2026-10-29): El Vendedor entrega
+## boss_w5_l1 «Fragmento de voluntad» en Caché, sin guardar, con la linea del
+## sistema «Compra cancelada.» y la derrota de Eco (§5.9); memory_art_w5 existe.
+func test_vendor_grants_the_will_fragment_in_cache() -> void:
+	var got: Array[StringName] = BossReward.grant(5, 1)
+	assert_eq(got, [&"boss_w5_l1"] as Array[StringName], "Capa Caché del Mundo 5")
+	assert_true(GameState.has_unsaved_changes(), "Sin guardar")
+	assert_true(GameState.has_unread_memories(), "Placa «!» en Notas")
+	var cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/bosses/vendor.json"))
+	assert_eq(int((cfg.get("defeat", {}) as Dictionary).get("memory_world", 0)), 5, "BossReward.grant(5, vuelta)")
+	var line: String = String((cfg.get("texts", {}) as Dictionary).get("final_system", ""))
+	assert_eq(line, "Compra cancelada.", "Linea del sistema del golpe final (propuesta)")
+	assert_eq(String((cfg.get("texts", {}) as Dictionary).get("defeat", "")),
+		"Te lo dejé todo elegido. Y aun así eliges.", "Linea de derrota de Eco (propuesta, §5.9)")
+	var reward: BossReward = BossReward.show_for(&"boss_w5_l1", self, line)
+	assert_eq(reward.get_text(&"title"), "Fragmento de voluntad")
+	assert_eq(reward.get_text(&"layer"), "Capa: Caché")
+	assert_string_contains(reward.get_text(&"text"), "Se arreglan cosas", "El letrero del diseño")
+	reward.free()
+	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w5_cache.png"), "Borrosa en Caché")
+	assert_true(ResourceLoader.exists("res://assets/sprites/ui/memories/memory_art_w5.png"), "Nitida en Kernel")
+
+
 ## Los textos definitivos (paso 6) caben en el panel de la recompensa.
 func test_every_boss_layer_fits_the_reward_panel() -> void:
 	var catalog: MemoryCatalog = MemoryCatalog.shared()

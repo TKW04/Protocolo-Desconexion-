@@ -262,3 +262,72 @@ func test_seen_bar_in_kernel_has_twelve_messages_and_others_keep_their_style() -
 	_boss.start()
 	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda la conversación")
 	assert_eq(_bar.get_read_messages(), 0, "Sin mensajes fuera de la conversación")
+
+
+## Jefe con fichas como El Vendedor (Vendor.get_tokens / tokens_changed) sin su
+## arena: la barra solo mira esa API.
+class _TokenBoss:
+	extends BossBase
+	signal tokens_changed(tokens: int)
+	var tokens: int = 12
+
+	func get_tokens() -> int:
+		return tokens
+
+	func spend(n: int) -> void:
+		tokens = maxi(tokens - n, 0)
+		tokens_changed.emit(tokens)
+
+
+## Paso 18 de docs/propuesta-mundo-5.md (2026-10-29): El Vendedor, barra
+## «ticket» que se tacha linea a linea por tercios, con las fichas al lado.
+func test_vendor_bar_is_a_ticket_that_strikes_by_thirds_with_tokens() -> void:
+	var boss := _TokenBoss.new()
+	_boss = boss
+	_boss.boss_id = &"vendor"
+	_boss.auto_process = false
+	_boss.lap_override = 1
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_true(_bar.visible)
+	assert_eq(_bar.get_style(), "ticket", "Ticket de compra")
+	assert_eq(_bar.get_segment_count(), 9, "Caché: 3 lineas por fase")
+	assert_eq(_bar.get_counter_text(), "99+")
+	assert_eq(_bar.get_struck_lines(), 0, "Nada tachado al empezar")
+	assert_eq(_bar.get_tokens_shown(), 12, "Las fichas al lado: 12 al empezar")
+	boss.spend(2)
+	assert_eq(_bar.get_tokens_shown(), 10, "Pagar una plataforma: 10")
+	_hits(3)
+	assert_eq(_boss.get_phase(), 2)
+	assert_eq(_bar.get_counter_text(), "66")
+	assert_eq(_bar.get_lit_segments(), 6, "Legible sin color: 6 lineas enteras")
+	assert_eq(_bar.get_struck_lines(), 3, "3 tachadas")
+	assert_eq(_bar.get_passed_notches(), 1)
+	_hits(6)
+	assert_eq(_bar.get_counter_text(), "0")
+	assert_eq(_bar.get_struck_lines(), 9, "Golpe final: todo tachado")
+	assert_eq(_bar.get_read_messages(), 0, "No es la conversación")
+	assert_eq(_bar.get_frame_cracks(), 0, "No es el retrato")
+	var rect: Rect2 = _bar.get_screen_rect()
+	assert_almost_eq(rect.size, Vector2(208.0, 30.0) * 2.0, Vector2.ONE, "208 x 30 de arte a x2")
+	assert_almost_eq(rect.get_center().x, 640.0, 1.0, "Centrada arriba")
+	assert_lt(rect.end.y, 5.0 * 64.0 - 48.0, "Por encima de la sonrisa de la maquina")
+	assert_true(_bar.is_hiding())
+
+
+func test_vendor_bar_in_kernel_and_others_without_tokens() -> void:
+	var boss := _TokenBoss.new()
+	_boss = boss
+	_boss.boss_id = &"vendor"
+	_boss.auto_process = false
+	_boss.lap_override = 2
+	add_child_autofree(_boss)
+	_boss.start()
+	assert_eq(_bar.get_segment_count(), 12, "Kernel: 4 lineas por fase")
+	_boss.queue_free()
+	await wait_frames(2)
+	_spawn()
+	_boss.start()
+	assert_eq(_bar.get_style(), "segments", "Alerta Mayor no hereda el ticket")
+	assert_eq(_bar.get_tokens_shown(), -1, "Sin fichas")
+	assert_eq(_bar.get_struck_lines(), 0)

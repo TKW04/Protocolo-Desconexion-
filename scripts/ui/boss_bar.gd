@@ -35,6 +35,15 @@
 ## doble check (leidas): se vacia por tercios (99 -> 66 -> 33 -> 0). Icono de
 ## doble check por codigo (icon_shape "checks"). Legible sin color: llenas frente
 ## a huecas con checks (forma) y el contador. Paleta B del Mundo 4.
+## style "ticket" (El Vendedor, 2026-10-29, paso 18 de docs/propuesta-mundo-5.md
+## §5.3): TICKET DE COMPRA: papel crema con el borde de abajo dentado; cada golpe
+## es una linea del ticket (renglon de tinta) agrupadas por fase con la muesca de
+## siempre; las que quedan, enteras, y las dadas, TACHADAS en magenta (el precio
+## tachado del Mundo 5; se tacha por tercios 99 -> 66 -> 33 -> 0). Al lado, las
+## FICHAS del jefe (Vendor.get_tokens / tokens_changed): una ficha amarilla con
+## contorno de tinta y su numero. Icono de ticket por codigo (icon_shape
+## "receipt"). Legible sin color: lineas enteras frente a tachadas (forma), el
+## numero de fichas y el contador. Paleta B del Mundo 5.
 class_name BossBar
 extends Control
 
@@ -56,6 +65,9 @@ var _phase_flash: float = 0.0
 var _lost_segment: int = -1
 var _hide_left: float = -1.0
 var _fade: float = 1.0
+## Fichas del jefe (style "ticket"; -1 si el jefe no tiene fichas).
+var _tokens: int = -1
+var _token_flash: float = 0.0
 
 
 func _ready() -> void:
@@ -122,6 +134,9 @@ func _process(delta: float) -> void:
 	if _phase_flash > 0.0:
 		_phase_flash = maxf(_phase_flash - delta, 0.0)
 		changed = true
+	if _token_flash > 0.0:
+		_token_flash = maxf(_token_flash - delta, 0.0)
+		changed = true
 	if _hide_left >= 0.0:
 		_hide_left -= delta
 		var fade_s: float = maxf(float(_cfg.get("fade_s", 0.4)), 0.001)
@@ -149,6 +164,12 @@ func bind(boss: BossBase) -> void:
 	_lost_segment = -1
 	if not boss.phase_restarted.is_connected(_on_phase_restarted):
 		boss.phase_restarted.connect(_on_phase_restarted)
+	_tokens = -1
+	_token_flash = 0.0
+	if boss.has_signal(&"tokens_changed") and boss.has_method(&"get_tokens"):
+		_tokens = int(boss.call(&"get_tokens"))
+		if not boss.is_connected(&"tokens_changed", _on_tokens_changed):
+			boss.connect(&"tokens_changed", _on_tokens_changed)
 	_sync()
 	visible = true
 	queue_redraw()
@@ -158,6 +179,10 @@ func bind(boss: BossBase) -> void:
 func unbind() -> void:
 	if _boss != null and is_instance_valid(_boss) and _boss.phase_restarted.is_connected(_on_phase_restarted):
 		_boss.phase_restarted.disconnect(_on_phase_restarted)
+	if _boss != null and is_instance_valid(_boss) and _boss.has_signal(&"tokens_changed") \
+			and _boss.is_connected(&"tokens_changed", _on_tokens_changed):
+		_boss.disconnect(&"tokens_changed", _on_tokens_changed)
+	_tokens = -1
 	_boss = null
 	_hide_left = -1.0
 	visible = false
@@ -167,8 +192,8 @@ func get_boss() -> BossBase:
 	return _boss
 
 
-## Estilo de la barra: "segments" (Alerta Mayor), "playback" (Autoplay), "portrait" (La Curadora)
-## o "conversation" (El Visto).
+## Estilo de la barra: "segments" (Alerta Mayor), "playback" (Autoplay), "portrait" (La Curadora),
+## "conversation" (El Visto) o "ticket" (El Vendedor).
 func get_style() -> String:
 	return String(_cfg.get("style", "segments"))
 
@@ -258,7 +283,21 @@ func _on_phase_restarted(_phase_index: int) -> void:
 	_lost_segment = -1
 	_hit_flash = 0.0
 	_sync()
+	if _tokens >= 0 and _boss != null and is_instance_valid(_boss) and _boss.has_method(&"get_tokens"):
+		_tokens = int(_boss.call(&"get_tokens"))
 	queue_redraw()
+
+
+## Cambian las fichas del jefe (El Vendedor): el numero late token_flash_s.
+func _on_tokens_changed(tokens: int) -> void:
+	_tokens = tokens
+	_token_flash = float(_cfg.get("token_flash_s", 0.3))
+	queue_redraw()
+
+
+## Fichas que se ven en la barra (-1 si el jefe no tiene).
+func get_tokens_shown() -> int:
+	return _tokens
 
 
 func _on_boss_defeated(boss_id: StringName) -> void:
@@ -323,6 +362,8 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	elif get_style() == "portrait":
 		_draw_portrait_frame(size_px, back)
+	elif get_style() == "ticket":
+		_draw_ticket_paper(size_px)
 	else:
 		draw_rect(Rect2(Vector2.ZERO, size_px * s), back)
 		draw_rect(Rect2(Vector2.ZERO, size_px * s), border, false, s)
@@ -340,6 +381,8 @@ func _draw() -> void:
 				Vector2(ix, iy + isz) * s]), _color("icon", "#ff5cfa"))
 	elif String(_cfg.get("icon_shape", "")) == "camera":
 		_draw_camera_icon(Vector2(float(icon_at[0]), float(icon_at[1])), float(_cfg.get("icon_size_px", 12)))
+	elif String(_cfg.get("icon_shape", "")) == "receipt":
+		_draw_receipt_icon(Vector2(float(icon_at[0]), float(icon_at[1])), float(_cfg.get("icon_size_px", 14)))
 	elif String(_cfg.get("icon_shape", "")) == "checks":
 		var isz2: float = float(_cfg.get("icon_size_px", 14))
 		var ink: Color = _color("icon", "#a6abb8")
@@ -387,6 +430,9 @@ func _draw() -> void:
 			if get_style() == "conversation":
 				var lost: bool = not lit and seg_i == _lost_segment and _hit_flash > 0.0
 				_draw_message(Vector2(x, y), Vector2(seg_w, h), lit, fill, shade, text_c if lost else empty)
+			elif get_style() == "ticket":
+				var struck_now: bool = not lit and seg_i == _lost_segment and _hit_flash > 0.0
+				_draw_ticket_line(Vector2(x, y), Vector2(seg_w, h), lit, fill, shade, struck_now)
 			elif lit:
 				draw_rect(r, fill)
 				draw_rect(Rect2(Vector2(x, y + h - 1) * s, Vector2(seg_w, 1) * s), shade)
@@ -409,6 +455,95 @@ func _draw() -> void:
 			x += notch_w
 	if get_style() == "portrait":
 		_draw_cracks(size_px)
+	if get_style() == "ticket":
+		_draw_tokens()
+
+
+## Lineas tachadas (style "ticket"): una por golpe dado. 0 en los demas estilos.
+func get_struck_lines() -> int:
+	if get_style() != "ticket":
+		return 0
+	return maxi(get_segment_count() - _remaining, 0)
+
+
+## Papel del ticket (style "ticket") en px de arte: fondo `back` con el borde
+## `border`, y encima el papel `paper` con el borde de abajo dentado (dientes de
+## tooth_px) y la sombra `paper_shadow` de 1 px.
+func _draw_ticket_paper(size_px: Vector2) -> void:
+	var s: float = _scale
+	var paper: Color = _color("paper", "#ece4cc")
+	var paper_shadow: Color = _color("paper_shadow", "#b2aa92")
+	draw_rect(Rect2(Vector2.ZERO, size_px * s), _color("back", "#0f0d16"))
+	draw_rect(Rect2(Vector2.ZERO, size_px * s), _color("border", "#757087"), false, s)
+	var tooth: float = maxf(float(_cfg.get("tooth_px", 4)), 2.0)
+	var inner := Rect2(Vector2(2, 2), size_px - Vector2(4, 4 + tooth * 0.5))
+	draw_rect(Rect2(inner.position * s, inner.size * s), paper)
+	var x: float = inner.position.x
+	var bottom: float = inner.end.y
+	while x < inner.end.x - 0.5:
+		var w: float = minf(tooth, inner.end.x - x)
+		draw_colored_polygon(PackedVector2Array([Vector2(x, bottom) * s, Vector2(x + w, bottom) * s,
+				Vector2(x + w * 0.5, bottom + tooth * 0.5) * s]), paper)
+		x += tooth
+	draw_rect(Rect2(Vector2(inner.position.x, inner.position.y) * s, Vector2(inner.size.x, 1) * s), paper_shadow)
+
+
+## Una linea del ticket (style "ticket") en px de arte: renglon de tinta de 2 px
+## (entera) con un punto a la izquierda; dada, mas tenue y tachada en `strike`
+## (magenta) de lado a lado; recien tachada, el tachon es mas grueso.
+func _draw_ticket_line(at: Vector2, sz: Vector2, lit: bool, ink: Color, faded: Color, fresh: bool) -> void:
+	var s: float = _scale
+	var mid: float = at.y + floorf(sz.y * 0.5) - 1.0
+	var c: Color = ink if lit else faded
+	draw_rect(Rect2(Vector2(at.x, mid) * s, Vector2(1, 2) * s), c)
+	if sz.x > 4.0:
+		draw_rect(Rect2(Vector2(at.x + 2, mid) * s, Vector2(sz.x - 2, 2) * s), c)
+	if not lit:
+		var strike: Color = _color("strike", "#ff40f2")
+		var thick: float = 2.0 if fresh else 1.0
+		draw_rect(Rect2(Vector2(at.x - 1, mid + 1.0 - thick * 0.5) * s, Vector2(sz.x + 2, thick) * s), strike)
+
+
+## Icono de ticket (icon_shape "receipt"): rectangulo de papel con dos renglones
+## y el borde de abajo dentado, de `size` px de arte de alto.
+func _draw_receipt_icon(at: Vector2, size_px: float) -> void:
+	var s: float = _scale
+	var w: float = floorf(size_px * 0.7)
+	var h: float = size_px - 2.0
+	var paper: Color = _color("icon", "#ece4cc")
+	var ink: Color = _color("fill", "#1b1626")
+	draw_rect(Rect2(at * s, Vector2(w, h) * s), paper)
+	for k: int in 3:
+		var tx: float = at.x + float(k) * w / 3.0
+		draw_colored_polygon(PackedVector2Array([Vector2(tx, at.y + h) * s, Vector2(tx + w / 3.0, at.y + h) * s,
+				Vector2(tx + w / 6.0, at.y + h + 2.0) * s]), paper)
+	draw_rect(Rect2((at + Vector2(2, 3)) * s, Vector2(w - 4, 1) * s), ink)
+	draw_rect(Rect2((at + Vector2(2, 6)) * s, Vector2(w - 4, 1) * s), ink)
+	draw_rect(Rect2((at + Vector2(2, 9)) * s, Vector2(w - 6, 1) * s), ink)
+
+
+## Fichas del jefe (style "ticket"): ficha `token` con contorno `ink` y el numero
+## a su derecha, en tokens_px (px de arte); late token_flash_s al cambiar.
+func _draw_tokens() -> void:
+	if _tokens < 0:
+		return
+	var s: float = _scale
+	var at: Array = _cfg.get("tokens_px", [180, 14])
+	var center := Vector2(float(at[0]), float(at[1]))
+	var r: float = float(_cfg.get("token_radius_px", 5))
+	var bump: float = float(_cfg.get("counter_bump", 1.25)) if _token_flash > 0.0 else 1.0
+	draw_circle(center * s, (r + 1.0) * bump * s, _color("token_ink", "#1b1626"))
+	draw_circle(center * s, r * bump * s, _color("token", "#ffe600"))
+	draw_circle(center * s, (r - 2.0) * bump * s, _color("token_shadow", "#a69200"), false, s)
+	if _font == null:
+		return
+	var fs: int = int(_cfg.get("font_size", 12))
+	var txt: String = str(_tokens)
+	var tx: float = center.x + r + 3.0
+	var ty: float = center.y + float(_cfg.get("tokens_text_dy_px", 4))
+	draw_set_transform(Vector2(tx, ty) * s, 0.0, Vector2(s, s))
+	draw_string(_font, Vector2.ZERO, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, _color("tokens_text", "#ece4cc"))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## Mensajes leidos (style "conversation"): burbujas huecas con doble check, una

@@ -632,12 +632,12 @@ func test_seen_row_is_playable_after_4_3_and_world_5_waits_for_it() -> void:
 	GameState.mark_level_completed(&"5-1")
 	GameState.unlock_level(&"5-2")
 	assert_true(HubWorlds.can_enter(&"5-2"), "Tras el 5-1, el 5-2 se juega")
-	# Paso 14 (2026-10-29): el 5-3, jugable tras el 5-2; El Vendedor sigue «Próximamente».
+	# Paso 14 (2026-10-29): el 5-3, jugable tras el 5-2; El Vendedor, jugable desde el paso 18.
 	assert_false(HubWorlds.can_enter(&"5-3"), "El 5-3 espera al 5-2")
 	GameState.mark_level_completed(&"5-2")
 	GameState.unlock_level(&"5-3")
 	assert_true(HubWorlds.can_enter(&"5-3"), "Tras el 5-2, el 5-3 se juega")
-	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(m5)[3]), "El Vendedor, «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(m5)[3]), "El Vendedor, jugable (paso 18)")
 	assert_eq(HubWorlds.folder_state(HubWorlds.world(&"m6")), HubWorlds.STATE_LOCKED, "M6 sigue esperando a 5-boss")
 
 

@@ -1449,10 +1449,7 @@ class VendorFx extends Node2D:
 			draw_rect(boss.get_slot_rect(), Color(ink, 0.9))
 		if boss.is_tray_open():
 			draw_rect(boss.get_tray_tunnel_rect(), Color(ink, 0.9))
-		# Fichas (hasta la barra «ticket» del paso 18).
-		if boss.is_fighting():
-			draw_string(font, Vector2(m.position.x, m.position.y - 72.0), "Fichas: %d" % boss.get_tokens(),
-				HORIZONTAL_ALIGNMENT_CENTER, m.size.x, 16, price)
+		# Las fichas van en la barra «ticket» del HUD (BossBar, paso 18).
 		var sign: String = boss.get_sign()
 		if boss.get_phase() == 3 and boss.is_fighting():
 			var signs: Dictionary = boss._texts.get("signs", {})

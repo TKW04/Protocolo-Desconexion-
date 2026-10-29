@@ -125,6 +125,10 @@ signal arrived
 ## La pieza del fondo del mundo `world` se recompone y se ilumina (tras vencer
 ## al jefe que completa la carpeta; audio: sfx_hub_wallpaper_piece).
 signal wallpaper_piece_lit(world: int)
+## La foto del fondo queda COMPLETA (las cinco piezas encendidas): tras encenderse
+## la ultima, su animacion complete (destello que recorre las cinco) termino
+## (paso 18 de docs/propuesta-mundo-5.md; audio futuro: sfx_hub_photo_complete).
+signal wallpaper_completed
 ## Se va a cargar el subnivel `level_id` (Isak ya se fue por el vortice).
 signal level_requested(level_id: StringName)
 ## La camara termino de deslizarse a la pagina `page` (audio futuro:
@@ -187,6 +191,7 @@ var _game_over_intro: GameOverIntro
 var _calc_intro: CalcIntro
 var _piece_pending: bool = false
 var _piece_lighting: bool = false
+var _wallpaper_completing: bool = false
 ## Piezas del fondo de otros mundos (room.pieces): capas encima del fondo con
 ## animaciones hidden (mundo bloqueado), off (desbloqueado, sin completar) y on.
 var _pieces: Dictionary[int, AnimatedSprite2D] = {}
@@ -245,6 +250,7 @@ func _ready() -> void:
 	_build_charger()
 	_build_stations()
 	_build_folders()
+	_prepare_lock_open()
 	_build_update_puzzle()
 	_build_installer_decor()
 	EventBus.ally_met.connect(_on_ally_met)
@@ -763,10 +769,66 @@ func calc_remark_text(remark: Dictionary) -> String:
 ## Al llegar a la pagina del acertijo por primera vez, la linea de Eco
 ## (HubUpdatePuzzle.start_intro; una vez por partida guardada).
 func _on_page_changed(page: int) -> void:
+	for folder: FolderStation in _folders.values():
+		if folder.is_lock_open_pending() and int(folder.world_entry.get("page", 1)) == page:
+			folder.play_lock_open()
 	if _update_puzzle == null or not is_instance_valid(_update_puzzle):
 		return
 	if page == int(HubUpdatePuzzle.load_data().get("page", 2)):
 		_update_puzzle.start_intro()
+
+
+## Candado de ranuras recien abierto (paso 18 de docs/propuesta-mundo-5.md): al
+## llegar tras la victoria que enciende una pieza (light_piece_on_arrival), la
+## carpeta con lock_slots ya desbloqueada y con todas sus ranuras encendidas
+## guarda el candado cerrado hasta que la camara llega a su pagina
+## (_on_page_changed la abre).
+func _prepare_lock_open() -> void:
+	if not light_piece_on_arrival or light_piece_world <= 0:
+		return
+	for folder: FolderStation in _folders.values():
+		var n: int = folder.get_lock_slot_count()
+		if n > 0 and not folder.is_locked() and folder.get_lock_slots_lit() == n:
+			folder.set_lock_open_pending(true)
+
+
+## La foto del fondo esta completa: todas las piezas (la del fondo y las de
+## room.pieces) con su carpeta completada.
+func is_wallpaper_complete() -> bool:
+	var worlds: Array[int] = [int(_room.get("background_on_world", 1))]
+	for entry: Dictionary in _room.get("pieces", []):
+		worlds.append(int(entry.get("world", 0)))
+	for world: int in worlds:
+		var found: bool = false
+		for entry: Dictionary in HubWorlds.worlds():
+			if int(entry.get("world", 0)) == world:
+				found = true
+				if HubWorlds.folder_state(entry) != HubWorlds.STATE_COMPLETED:
+					return false
+		if not found:
+			return false
+	return true
+
+
+## El destello de la foto completa se esta reproduciendo.
+func is_wallpaper_completing() -> bool:
+	return _wallpaper_completing
+
+
+## Tras encender la ultima pieza: su animacion complete (sin bucle) y despues on.
+func _play_wallpaper_complete(world: int) -> bool:
+	var sprite: AnimatedSprite2D = get_piece_sprite(world)
+	if sprite == null or sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(&"complete") \
+			or not is_wallpaper_complete():
+		return false
+	_wallpaper_completing = true
+	sprite.play(&"complete")
+	sprite.animation_finished.connect(func() -> void:
+		_wallpaper_completing = false
+		if sprite.sprite_frames.has_animation(&"on"):
+			sprite.play(&"on")
+		wallpaper_completed.emit(), CONNECT_ONE_SHOT)
+	return true
 
 
 ## Un asistente recien conocido enciende sus estaciones (requires_ally).
@@ -964,7 +1026,8 @@ func _light_piece() -> void:
 	tween.tween_callback(func() -> void:
 		_piece_lighting = false
 		refresh_background()
-		wallpaper_piece_lit.emit(world))
+		wallpaper_piece_lit.emit(world)
+		_play_wallpaper_complete(world))
 
 
 ## Mundo de la pieza que se enciende al llegar.
@@ -1006,7 +1069,7 @@ func refresh_background() -> void:
 		var anim: StringName = &"on" if lit else &"off"
 		if world != on_world and not lit and not HubWorlds.is_world_unlocked(entry):
 			anim = &"hidden"
-		if world == light_world and _piece_lighting:
+		if world == light_world and (_piece_lighting or _wallpaper_completing):
 			continue
 		if sprite.sprite_frames.has_animation(anim) and (sprite.animation != anim or not sprite.is_playing()):
 			sprite.play(anim)

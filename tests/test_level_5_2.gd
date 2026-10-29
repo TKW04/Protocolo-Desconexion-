@@ -256,7 +256,7 @@ func test_world_5_folder_lists_5_2_after_5_1_and_loads_it() -> void:
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m5"))
 	assert_false(HubWorlds.is_coming_soon(levels[1]), "El 5-2 se juega")
 	assert_false(HubWorlds.is_coming_soon(levels[2]), "5-3 jugable (paso 14)")
-	assert_true(HubWorlds.is_coming_soon(levels[3]), "El Vendedor «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(levels[3]), "El Vendedor jugable (paso 18)")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"5-2"))
 	panel.confirm()

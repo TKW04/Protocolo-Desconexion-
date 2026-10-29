@@ -42,6 +42,9 @@ signal level_chosen(station: FolderStation, level_id: StringName)
 ## Ha aparecido el aviso «Sin descargar» (Isak llega a una carpeta bloqueada;
 ## lo usa el audio: el candado, data/audio.json).
 signal locked_shown(station: FolderStation)
+## El candado de ranuras (M6) termino de abrirse (paso 18 de
+## docs/propuesta-mundo-5.md; audio futuro: sfx_hub_lock_open, paso 20).
+signal lock_opened(station: FolderStation)
 
 ## Mundo de la carpeta (entrada de worlds de data/hub.json). Se da antes de
 ## anadirla al arbol.
@@ -56,6 +59,10 @@ var _number: Label
 var _miniature: Sprite2D
 var _shown_state: StringName = &""
 var _entering: StringName = &""
+## El candado espera abierto-pero-cerrado a que se vea su pagina (set_lock_open_pending).
+var _lock_open_pending: bool = false
+var _lock_opening: bool = false
+var _lock_tween: Tween
 
 
 func _ready() -> void:
@@ -121,6 +128,50 @@ func get_locked_condition_text() -> String:
 ## Candado de ranuras (lock_slots; M6) visible: la carpeta esta bloqueada.
 func is_cloud_lock_visible() -> bool:
 	return _cloud_lock != null and _cloud_lock.visible
+
+
+## Apertura del candado (paso 18 de docs/propuesta-mundo-5.md, 2026-10-29): con
+## la carpeta ya desbloqueada, el candado se queda cerrado a la vista hasta
+## play_lock_open() (HubRoom la llama al llegar la camara a su pagina).
+func set_lock_open_pending(pending: bool) -> void:
+	_lock_open_pending = pending and get_lock_slot_count() > 0
+	_apply_visuals()
+
+
+func is_lock_open_pending() -> bool:
+	return _lock_open_pending
+
+
+func is_lock_opening() -> bool:
+	return _lock_opening
+
+
+## Abre el candado: el arco sube lift_px en lift_s, se queda hold_s y todo se
+## desvanece en fade_s (folders.cloud_lock_open; tiempo real); al acabar se
+## oculta y emite lock_opened. false si no estaba pendiente.
+func play_lock_open() -> bool:
+	if not _lock_open_pending or _cloud_lock == null:
+		return false
+	_lock_open_pending = false
+	_lock_opening = true
+	var cfg: Dictionary = _folders.get("cloud_lock_open", {})
+	_cloud_lock.open_t = 0.0
+	_cloud_lock.lift_px = float(cfg.get("lift_px", 12.0))
+	_cloud_lock.modulate.a = 1.0
+	_apply_visuals()
+	if _lock_tween != null:
+		_lock_tween.kill()
+	_lock_tween = create_tween()
+	_lock_tween.tween_property(_cloud_lock, "open_t", 1.0, maxf(float(cfg.get("lift_s", 0.45)), 0.01))
+	_lock_tween.tween_interval(maxf(float(cfg.get("hold_s", 0.5)), 0.0))
+	_lock_tween.tween_property(_cloud_lock, "modulate:a", 0.0, maxf(float(cfg.get("fade_s", 0.45)), 0.01))
+	_lock_tween.tween_callback(func() -> void:
+		_lock_opening = false
+		_cloud_lock.open_t = 0.0
+		_cloud_lock.modulate.a = 1.0
+		_apply_visuals()
+		lock_opened.emit(self))
+	return true
 
 
 ## Ranuras del candado (tamano de lock_slots; 0 sin candado).
@@ -222,7 +273,7 @@ func _apply_visuals() -> void:
 	if _condition_root != null:
 		_condition_root.visible = _locked_root.visible
 	if _cloud_lock != null:
-		_cloud_lock.visible = locked
+		_cloud_lock.visible = locked or _lock_open_pending or _lock_opening
 		_cloud_lock.queue_redraw()
 	if _trash_root != null:
 		_trash_root.visible = blocked and get_state() == State.PROMPT
@@ -364,7 +415,15 @@ class _CloudLock:
 	const PLATE: String = "res://assets/sprites/hub/lock/cloud_lock_plate_00.png"
 	const SLOT_ON: String = "res://assets/sprites/hub/lock/cloud_lock_slot_on_00.png"
 	const ART_SLOTS: int = 5
+	## Alto del arco en la placa de arte (px de pantalla; el resto es el cuerpo).
+	const ARC_PX: float = 16.0
 	var station: FolderStation
+	## Apertura (0 cerrado, 1 el arco arriba lift_px) y altura del arco abierto.
+	var open_t: float = 0.0:
+		set(value):
+			open_t = value
+			queue_redraw()
+	var lift_px: float = 12.0
 	# Referencias propias: una textura cargada dentro de _draw se libera antes
 	# de que se pinte (sale blanca).
 	var _plate: Texture2D
@@ -385,7 +444,15 @@ class _CloudLock:
 			var plate: Texture2D = _plate
 			var on_tex: Texture2D = _on
 			var origin := Vector2(-plate.get_size().x * 0.5, -31.0)
-			draw_texture(plate, origin)
+			if open_t > 0.0:
+				# Abriendose: el arco sube y el cuerpo se queda.
+				var ps: Vector2 = plate.get_size()
+				var arc := Rect2(Vector2.ZERO, Vector2(ps.x, ARC_PX))
+				draw_texture_rect_region(plate, Rect2(origin - Vector2(0.0, lift_px * open_t), arc.size), arc)
+				var body := Rect2(Vector2(0.0, ARC_PX), Vector2(ps.x, ps.y - ARC_PX))
+				draw_texture_rect_region(plate, Rect2(origin + body.position, body.size), body)
+			else:
+				draw_texture(plate, origin)
 			var k: int = 0
 			for id: Variant in station.world_entry.get("lock_slots", []):
 				if GameState.has_memory(StringName(String(id))):

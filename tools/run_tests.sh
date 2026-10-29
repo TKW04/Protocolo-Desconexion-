@@ -246,6 +246,11 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 17 del Mundo 5 (2026-10-29): el validador completo de la arena 5-boss (validate_vendor_arena de
 # tools/validate_boss.py; tests/test_boss_validator.py, VendorArenaTest, con sus negativos) y la Embestida desde la
 # vitrina y el Filo desde el estante por la ranura de las filas 6-7 con el Isak real (tests/test_vendor_arena.gd).
+# Desde el paso 18 del Mundo 5 (2026-10-29): la pieza blanca y el fondo completo del hub (tools/gen_hub_piece_w5.py
+# --check), la barra «ticket» con las fichas (tests/test_boss_bar.gd), la recompensa de El Vendedor
+# (tests/test_boss_reward.gd) y el hub con el Mundo 5 completo (tests/test_hub_world5_complete.gd, GUT: fila jugable,
+# pieza 5, fondo completo, candado que se abre en la pagina 3, M6 disponible, flujo real carpeta M5 -> arena -> hub y
+# game over sin guardar).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -345,7 +350,8 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/validate_world3_objects.py >/dev/null && python3 -I tools/validate_world3_tiles.py >/dev/null \
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \
-		&& python3 -I tools/gen_hub_update_art.py --check && python3 -I tools/gen_isak_text_box.py --check \
+		&& python3 -I tools/gen_hub_update_art.py --check && python3 -I tools/gen_hub_piece_w5.py --check \
+		&& python3 -I tools/gen_isak_text_box.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/import_boss_curator.py --check >/dev/null && python3 -I tools/import_influencer_bot.py --check >/dev/null \
 		&& python3 -I tools/import_boss_seen.py --check >/dev/null && python3 -I tools/import_troll.py --check >/dev/null \

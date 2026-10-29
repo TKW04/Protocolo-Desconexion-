@@ -7,7 +7,7 @@
 # en tinta, 9 puntos, power bank y msg_5_3), el laser real que destruye una caja
 # peligrosa desde la B3, el atajo con trampa processing, «rechazar» con el laser,
 # el secreto A (tachon), los dos puntos de sincronizacion, la puerta «Pagar» -> hub
-# con el 5-3 completado y la fila de El Vendedor desbloqueada («Próximamente») y la
+# con el 5-3 completado y la fila de El Vendedor desbloqueada (jugable desde el paso 18) y la
 # carpeta del Mundo 5 con el 5-3 jugable tras el 5-2. La ruta completa la comprueban
 # tools/validate_level.py (tests/test_level_5_3.py) y el bot de la tienda
 # (tests/test_mall_bot.gd); aqui Isak se coloca en cada punto. Usa su propia ruta de
@@ -263,7 +263,7 @@ func test_checkout_door_completes_the_level_and_unlocks_the_vendor_row() -> void
 	assert_true(_main.is_in_hub(), "Vuelve al hub")
 	assert_true(GameState.is_level_completed(&"5-3"), "5-3 en completed_levels")
 	assert_true(GameState.is_level_unlocked(&"5-boss"), "Desbloquea la fila de El Vendedor")
-	assert_true(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[3]), "El Vendedor, «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(HubWorlds.levels(HubWorlds.world(&"m5"))[3]), "El Vendedor, jugable (paso 18)")
 
 
 func test_world_5_folder_lists_5_3_after_5_2_and_loads_it() -> void:
@@ -280,7 +280,7 @@ func test_world_5_folder_lists_5_3_after_5_2_and_loads_it() -> void:
 	var panel: FolderPanel = folder.get_folder_panel()
 	var levels: Array = HubWorlds.levels(HubWorlds.world(&"m5"))
 	assert_false(HubWorlds.is_coming_soon(levels[2]), "El 5-3 se juega")
-	assert_true(HubWorlds.is_coming_soon(levels[3]), "El Vendedor «Próximamente»")
+	assert_false(HubWorlds.is_coming_soon(levels[3]), "El Vendedor jugable (paso 18)")
 	panel.skip_input_delay()
 	assert_true(panel.select_option(&"5-3"))
 	panel.confirm()

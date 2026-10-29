@@ -7,7 +7,7 @@ Suscripciones, Términos y condiciones (rechazar con el láser) y las estanterí
 lista de deseos sin pararse; las cuatro protecciones de la economía; los secretos (A: el tachón con el Debug y msg_5_3,
 sin dash; B: la trastienda a oscuras con la Linterna; C: la última caja tras salto + dash aéreo); el camino exportado
 (frugal y comprador) y su duración frente al objetivo (40-55 %); escena y subidas al día; el 5-3 jugable desde la
-carpeta del Mundo 5 y la fila de El Vendedor desbloqueada («Próximamente»). Las dos validaciones (frugal y comprador)
+carpeta del Mundo 5 y la fila de El Vendedor desbloqueada (jugable desde el paso 18). Las dos validaciones (frugal y comprador)
 se lanzan en paralelo en dos procesos (cada una tarda unos 2,5 min). Las pasadas con mejoras, al máximo y con el tope
 del acceso las hace tools/run_tests.sh sobre data/levels/*.json.
 Uso: python3 tests/test_level_5_3.py
@@ -260,7 +260,7 @@ class Level53Test(unittest.TestCase):
         m5 = next(w for w in hub["worlds"] if w["id"] == "m5")
         rows = [(lv["id"], lv["playable"], lv.get("available_text")) for lv in m5["levels"]]
         self.assertEqual(rows, [("5-1", True, None), ("5-2", True, "Nueva oferta"), ("5-3", True, "Nueva oferta"),
-                                ("5-boss", False, None)], "5-3 jugable; El Vendedor, «Próximamente»")
+                                ("5-boss", True, None)], "5-3 jugable; El Vendedor, jugable (paso 18)")
         icon = m5["levels"][2]["icon"]
         self.assertTrue(os.path.exists(os.path.join(ROOT, icon[len("res://"):])), icon)
         self.assertTrue(os.path.exists(os.path.join(ROOT, "scenes", "levels", "5-3.tscn")))

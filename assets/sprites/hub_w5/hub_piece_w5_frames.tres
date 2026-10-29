@@ -1,0 +1,61 @@
+[gd_resource type="SpriteFrames" load_steps=10 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_hidden_00.png" id="1_hub_piece_w5_hidden_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_off_00.png" id="2_hub_piece_w5_off_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_off_01.png" id="3_hub_piece_w5_off_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_on_00.png" id="4_hub_piece_w5_on_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_complete_00.png" id="5_hub_piece_w5_complete_00"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_complete_01.png" id="6_hub_piece_w5_complete_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_complete_02.png" id="7_hub_piece_w5_complete_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_complete_03.png" id="8_hub_piece_w5_complete_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub_w5/hub_piece_w5_complete_04.png" id="9_hub_piece_w5_complete_04"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_hub_piece_w5_complete_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_hub_piece_w5_complete_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_hub_piece_w5_complete_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_hub_piece_w5_complete_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_hub_piece_w5_complete_04")
+}],
+"loop": false,
+"name": &"complete",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_hub_piece_w5_hidden_00")
+}],
+"loop": true,
+"name": &"hidden",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_hub_piece_w5_off_00")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_hub_piece_w5_off_01")
+}],
+"loop": true,
+"name": &"off",
+"speed": 1.5
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_hub_piece_w5_on_00")
+}],
+"loop": true,
+"name": &"on",
+"speed": 1.0
+}]

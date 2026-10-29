@@ -252,7 +252,7 @@ class Level52Test(unittest.TestCase):
         m5 = next(w for w in hub["worlds"] if w["id"] == "m5")
         rows = [(lv["id"], lv["playable"], lv.get("available_text")) for lv in m5["levels"]]
         self.assertEqual(rows, [("5-1", True, None), ("5-2", True, "Nueva oferta"), ("5-3", True, "Nueva oferta"),
-                                ("5-boss", False, None)], "5-2 y 5-3 jugables (paso 14); el jefe, «Próximamente»")
+                                ("5-boss", True, None)], "5-2 y 5-3 jugables (paso 14); el jefe, desde el paso 18")
         icon = m5["levels"][1]["icon"]
         self.assertTrue(os.path.exists(os.path.join(ROOT, icon[len("res://"):])), icon)
         self.assertTrue(os.path.exists(os.path.join(ROOT, "scenes", "levels", "5-2.tscn")))
