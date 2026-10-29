@@ -39,7 +39,7 @@
 		},
 		"shortcut_door": {
 			"scene": "res://scenes/levels/shortcut_door.tscn",
-			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription', 'offer' o 'countdown' (de momento solo emiten trap_sprung al cruzar: las piezas llegan en los pasos 4-5). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Sin Q todavia (help_id previsto shortcut_door, paso 9). Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
+			"description": "Atajo (2026-10-29, paso 3 de docs/propuesta-mundo-5.md §8, §3.7; ShortcutDoor). Puerta SOLIDA de 1 x height_tiles (3) desde (x, y) con el cartel «Atajo: N ◆» (cost; por defecto prices.shortcut_door de data/economy.json, 3). Un PULSO DE ESPALDAS paga (GameState.spend_attention; sin saldo, «Saldo insuficiente» y chispa gris) y la puerta se abre para el resto del intento (un uso por intento): deja pasar al pasillo que ahorra el tramo. trap: '' (sin trampa: el atajo legitimo de Calc), 'processing' («Verificando pago…»: al cruzar la puerta abierta, Isak queda CONGELADO processing_s (1,5 s; Isak.freeze, el FrozenState del Mundo 4) y recibe el golpe al liberarse), 'subscription' (paso 4: una Suscripcion «te espera dentro»: sale avisando a trap_distance_tiles (2) tiles de la puerta hacia donde cruza Isak y lo persigue), 'offer' (paso 4: una Oferta de pie a esa distancia, al pie de la puerta; el nivel pone los pinchos junto a ella) o 'countdown' (de momento solo emite trap_sprung al cruzar: la pieza llega en el paso 5). CON EL DEBUG (DebugMode.is_revealing) el icono de la trampa se ve en la puerta. Lo pagado en una puerta CON trampa va al registro de Devoluciones del nivel (shortcut_trap). Sin Q todavia (help_id previsto shortcut_door, paso 9). Aspecto PROVISIONAL por codigo (seccion shortcut_door).",
 			"required": [
 				"id"
 			],
@@ -47,7 +47,8 @@
 				"id": "object_id",
 				"cost": "cost",
 				"trap": "trap",
-				"height_tiles": "height_tiles"
+				"height_tiles": "height_tiles",
+				"trap_distance_tiles": "trap_distance_tiles"
 			},
 			"defaults": {
 				"trap": "",
@@ -70,6 +71,11 @@
 				},
 				"height_tiles": {
 					"min": 2,
+					"max": 4,
+					"int": true
+				},
+				"trap_distance_tiles": {
+					"min": 1,
 					"max": 4,
 					"int": true
 				}
@@ -100,6 +106,44 @@
 				"y": 9,
 				"params": {
 					"id": "devoluciones_5_1"
+				}
+			}
+		},
+		"surprise_box": {
+			"scene": "res://scenes/levels/surprise_box.tscn",
+			"description": "Caja sorpresa (2026-10-29, paso 4 de docs/propuesta-mundo-5.md §8, §3.4 y §3.7; SurpriseBox). Caja SOLIDA de 1 x 1 tile (box_rect dentro de su celda: se pisa) en el suelo o en una repisa, con un CONTENIDO FIJO en los datos, nunca aleatorio: content points (amount 1-2 puntos de atencion, capturados como un punto del nivel con el id box:<id>, una vez por partida guardada: ya capturados, la caja esta vacia y el Debug lo dice), energy (+30 de energia), subscription (sale una Suscripcion que avisa y persigue), offer (sale una Oferta de pie) o empty. ABRIR: golpe al suelo ENCIMA (pies de Isak sobre la tapa), Embestida que la alcanza o PULSO DE CARA desde el suelo (Isak mirandola; de espaldas no). Sale con un «pop» de pop_frames (9) cuadros. CON EL DEBUG (DebugMode.is_revealing) se vuelve translucida (reveal_alpha) y ensena el icono del contenido con contorno negro de 1 px. LASER (vida 1): la destruye sin abrirla y el contenido se pierde (tambien lo malo). Lanzada (SurpriseBox.launch, para El Vendedor): vuela con gravedad sin ser solida; el pulso la deja ATURDIDA stun_s (3 s) inerte en el aire y solida (sirve de escalon) y luego cae y queda como una caja normal; el Filo destruye a la aturdida; el Sismo no le hace nada. Sin Q todavia (help_id previsto surprise_box, paso 9). Aspecto PROVISIONAL por codigo (seccion surprise_box).",
+			"required": [
+				"content"
+			],
+			"fields": {
+				"id": "object_id",
+				"content": "content",
+				"amount": "amount"
+			},
+			"defaults": {},
+			"allowed": {
+				"content": [
+					"points",
+					"energy",
+					"subscription",
+					"offer",
+					"empty"
+				]
+			},
+			"level_params": {
+				"amount": {
+					"min": 1,
+					"max": 2,
+					"int": true
+				}
+			},
+			"example": {
+				"type": "surprise_box",
+				"x": 8,
+				"y": 9,
+				"params": {
+					"id": "caja_1",
+					"content": "energy"
 				}
 			}
 		}
@@ -133,7 +177,7 @@
 		"text": "crema_cartel"
 	},
 	"shortcut_door": {
-		"_notes": "Atajo (ShortcutDoor). width_px: ancho de la puerta (centrada en su celda); hit_grow_px: lo que el pulso alcanza alrededor de la puerta; pose_s, message_s, spark_s: como shop_item; processing_s: congelado de la trampa processing (1,5 s, §3.7); textos del cartel ({cost} = precio); colores por nombre de la paleta provisional.",
+		"_notes": "Atajo (ShortcutDoor). width_px: ancho de la puerta (centrada en su celda); hit_grow_px: lo que el pulso alcanza alrededor de la puerta; pose_s, message_s, spark_s: como shop_item; processing_s: congelado de la trampa processing (1,5 s, §3.7); textos del cartel ({cost} = precio); colores por nombre de la paleta provisional. text_subscription: cartel al saltar la trampa subscription.",
 		"width_px": 40,
 		"hit_grow_px": 24,
 		"pose_s": 0.45,
@@ -149,7 +193,8 @@
 		"sign": "amarillo_rebajas",
 		"ink": "negro_medio",
 		"trap": "debug_blanco",
-		"text": "crema_cartel"
+		"text": "crema_cartel",
+		"text_subscription": "¡Bienvenido!"
 	},
 	"refund_desk": {
 		"_notes": "Devoluciones (RefundDesk). hit_rect y desk_rect en px desde la esquina de su celda; pose_s, message_s: como shop_item; textos ({amount} = puntos devueltos); colores por nombre de la paleta provisional.",
@@ -175,6 +220,31 @@
 		"sign": "crema_cartel",
 		"ink": "negro_medio",
 		"text": "amarillo_rebajas"
+	},
+	"surprise_box": {
+		"_notes": "Caja sorpresa (SurpriseBox). box_rect: caja en px desde la esquina de su celda ([x, y, w, h]; solida); energy: energia del contenido energy; pop_frames a anim_fps: el «pop» al abrirse o destruirse; reveal_alpha: opacidad con el Debug; stun_s: aturdida (lanzada); gravity_px_s2 / max_fall_px_s: vuelo de la lanzada; face_dead_zone_px: el pulso la abre aunque Isak no la mire si esta a menos de esto en horizontal; pound_top_tolerance_px: lo que pueden separarse los pies de Isak de la tapa para que el golpe al suelo cuente como encima; colores por nombre de la paleta provisional.",
+		"box_rect": [
+			4,
+			8,
+			56,
+			56
+		],
+		"energy": 30.0,
+		"pop_frames": 9,
+		"anim_fps": 12.0,
+		"reveal_alpha": 0.45,
+		"stun_s": 3.0,
+		"gravity_px_s2": 2400.0,
+		"max_fall_px_s": 960.0,
+		"face_dead_zone_px": 8.0,
+		"pound_top_tolerance_px": 8.0,
+		"box": "crema_sombra",
+		"ribbon": "magenta_neon",
+		"ink": "negro_medio",
+		"points": "amarillo_rebajas",
+		"energy_color": "debug_blanco",
+		"gris": "gris_etiqueta",
+		"pop": "amarillo_rebajas"
 	},
 	"palette": {
 		"_notes": "PROVISIONAL (tools/palette_mundo5_provisional.py; no editar a mano): colores de desarrollo del Mundo 5 por nombre. Los hex no estan cerrados (decision del usuario, paso 9) salvo debug_blanco (#ffffff, decidido el 2026-10-29).",

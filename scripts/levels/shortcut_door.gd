@@ -8,8 +8,12 @@
 ## puerta abierta:
 ## - processing («Verificando pago…»): Isak.freeze(processing_s) con el FrozenState del
 ##   Mundo 4 y su golpe al liberarse;
-## - subscription, offer, countdown: de momento solo trap_sprung (las piezas llegan en
-##   los pasos 4-5).
+## - subscription (paso 4): una Suscripcion «te espera dentro»: sale avisando a
+##   trap_distance_tiles tiles de la puerta hacia donde va Isak y lo persigue;
+## - offer (paso 4): una Oferta de pie a esa distancia, al pie de la puerta (el nivel
+##   pone los pinchos junto a ella: «tiron hacia pinchos al salir»);
+## - countdown: de momento solo trap_sprung (la pieza llega en el paso 5).
+## Lo que sale de la trampa: get_trap_spawn().
 ## Con el Debug (DebugMode.is_revealing) se ve el icono de la trampa en la puerta.
 ## Aspecto PROVISIONAL por codigo (seccion shortcut_door de data/world5_objects.json).
 class_name ShortcutDoor
@@ -26,6 +30,7 @@ const TRAPS: Array[StringName] = [TRAP_NONE, TRAP_SUBSCRIPTION, TRAP_OFFER, TRAP
 const FREEZE_SOURCE: StringName = &"shortcut_processing"
 const LAYER_WORLD: int = 1
 const TILE: float = 64.0
+const OFFER_SCENE_PATH: String = "res://scenes/enemies/offer_sign.tscn"
 
 ## Pagado: la puerta se abre.
 signal paid(cost: int)
@@ -43,6 +48,8 @@ signal trap_sprung(trap: StringName)
 			t = TRAP_NONE
 		trap = t
 		queue_redraw()
+## Distancia (tiles) de la puerta a la que sale la Suscripcion o la Oferta de la trampa.
+@export var trap_distance_tiles: int = 2
 @export var height_tiles: int = 3:
 	set(value):
 		height_tiles = maxi(value, 1)
@@ -50,6 +57,7 @@ signal trap_sprung(trap: StringName)
 
 var _open: bool = false
 var _sprung: bool = false
+var _trap_spawn: Node
 var _body: StaticBody2D
 var _shape: CollisionShape2D
 
@@ -88,6 +96,18 @@ func is_open() -> bool:
 
 func is_trap_sprung() -> bool:
 	return _sprung
+
+
+## Lo que ha sacado la trampa (Subscription u OfferSign), o null.
+func get_trap_spawn() -> Node:
+	return _trap_spawn if _trap_spawn != null and is_instance_valid(_trap_spawn) else null
+
+
+## Pies (global) de lo que saca la trampa hacia `direction` (+1 derecha, -1 izquierda).
+func get_trap_spawn_feet(direction: float) -> Vector2:
+	var door: Rect2 = get_door_rect()
+	var dir: float = 1.0 if direction >= 0.0 else -1.0
+	return Vector2(door.get_center().x + dir * float(trap_distance_tiles) * TILE, door.end.y)
 
 
 ## El Debug ensena el icono de la trampa.
@@ -150,6 +170,17 @@ func spring_trap(isak: Isak) -> bool:
 		show_message(String(_cfg.get("text_processing", "Verificando pago…")))
 		if isak != null and is_instance_valid(isak):
 			isak.freeze(float(_cfg.get("processing_s", 1.5)), FREEZE_SOURCE, float(isak.facing))
+	elif trap == TRAP_SUBSCRIPTION or trap == TRAP_OFFER:
+		var dir: float = _crossing_direction(isak)
+		var feet: Vector2 = get_trap_spawn_feet(dir)
+		if trap == TRAP_SUBSCRIPTION:
+			show_message(String(_cfg.get("text_subscription", "¡Bienvenido!")))
+			_trap_spawn = Subscription.spawn(get_parent(), feet - Vector2(0.0, TILE))
+		else:
+			var offer := (load(OFFER_SCENE_PATH) as PackedScene).instantiate() as OfferSign
+			get_parent().add_child(offer)
+			offer.global_position = feet
+			_trap_spawn = offer
 	trap_sprung.emit(trap)
 	queue_redraw()
 	return true
@@ -164,6 +195,15 @@ func _advance(_dt: float) -> void:
 
 
 # --- Interno ---
+
+## Hacia donde cruza Isak: su velocidad, o hacia donde mira; sin Isak, a la derecha.
+func _crossing_direction(isak: Isak) -> float:
+	if isak == null or not is_instance_valid(isak):
+		return 1.0
+	if absf(isak.velocity.x) > 1.0:
+		return signf(isak.velocity.x)
+	return 1.0 if isak.facing >= 0.0 else -1.0
+
 
 func _update_body() -> void:
 	if _shape == null:

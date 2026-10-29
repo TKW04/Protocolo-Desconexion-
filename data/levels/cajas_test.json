@@ -1,0 +1,106 @@
+{
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 4 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 40x12 de la CAJA SORPRESA y la SUSCRIPCION del Mundo 5 (§3.4, §3.5, §3.7 y patron 24 «Mirar o no» de §3.8). Isak llega por la izquierda (P, fila 9) con el pulso, el laser, el Debug y el golpe al suelo; 2 puntos de atencion (columnas 3-4). Cuatro cajas en el suelo (columnas 7, 9, 11 y 13): energia (+30), 2 puntos, Suscripcion y vacia; con el Debug (K) se ve cual es cual; se abren con el pulso de cara (G) o con un golpe al suelo encima (S en el aire); el laser (F) las destruye sin abrirlas. Una Suscripcion dormida flota en la columna 18 (fila 7): a 5 tiles se ilumina 9 cuadros y persigue; enganchada drena 1 punto cada 2 s (tope 5; con saldo 0, «Pago rechazado» y se suelta a los 3 s); el pulso o el golpe al suelo la cancelan (queda aturdida 3 s en el suelo) y aturdida el laser la derrota (+5 de energia). Cargador en la 16. Atajo con trampa subscription (columna 28, filas 7-9; 3 ◆): al cruzarlo sale una Suscripcion 2 tiles mas alla; o el camino largo por las plataformas de una via (filas 8, 6 y 4) y por encima del muro (columna 28, filas 4-6). Un punto en la 33 y terminal en (36, 8). Sin Q (help_id previstos surprise_box y subscription, paso 9). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela las cajas ni las Suscripciones (paso 8a). Escena: scenes/levels/cajas_test.tscn (python3 tools/build_level.py data/levels/cajas_test.json).",
+	"id": "cajas_test",
+	"name": "Cajas (prueba)",
+	"world": 5,
+	"tile_size": 64,
+	"debug_color": "blanco",
+	"abilities_available": {
+		"pulse": true,
+		"laser": true,
+		"debug": true,
+		"ground_pound": true
+	},
+	"checkpoints": [],
+	"secrets": [],
+	"enemies": [
+		{
+			"id": "suscripcion_dormida",
+			"type": "subscription",
+			"x": 18,
+			"y": 7
+		}
+	],
+	"objects": [
+		{
+			"type": "surprise_box",
+			"x": 7,
+			"y": 9,
+			"params": {
+				"id": "caja_energia",
+				"content": "energy"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 9,
+			"y": 9,
+			"params": {
+				"id": "caja_puntos",
+				"content": "points",
+				"amount": 2
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 11,
+			"y": 9,
+			"params": {
+				"id": "caja_suscripcion",
+				"content": "subscription"
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 13,
+			"y": 9,
+			"params": {
+				"id": "caja_vacia",
+				"content": "empty"
+			}
+		},
+		{
+			"type": "charger",
+			"x": 16,
+			"y": 9,
+			"params": {
+				"id": "cargador_cajas"
+			}
+		},
+		{
+			"type": "shortcut_door",
+			"x": 28,
+			"y": 7,
+			"params": {
+				"id": "atajo_suscripcion",
+				"trap": "subscription"
+			}
+		},
+		{
+			"type": "exit_terminal",
+			"x": 36,
+			"y": 8,
+			"params": {
+				"id": "terminal_cajas",
+				"text": "Pagar",
+				"width_tiles": 1,
+				"height_tiles": 2
+			}
+		}
+	],
+	"unlocks": [],
+	"grid": [
+		"########################################",
+		"#......................................#",
+		"#......................................#",
+		"#......................................#",
+		"#........................---#..........#",
+		"#...........................#..........#",
+		"#.......................---.#..........#",
+		"#.................E....................#",
+		"#.....................---..............#",
+		"#.Poo............................o..G..#",
+		"########################################",
+		"########################################"
+	]
+}
