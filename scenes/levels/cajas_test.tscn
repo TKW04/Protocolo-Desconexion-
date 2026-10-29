@@ -45,6 +45,10 @@ metadata/help_id = "attention_point"
 position = Vector2(288, 608)
 metadata/help_id = "attention_point"
 
+[node name="Point_5_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
+position = Vector2(352, 608)
+metadata/help_id = "attention_point"
+
 [node name="Point_33_9" parent="AttentionPoints" instance=ExtResource("4_attention_point") groups=["help_target"]]
 position = Vector2(2144, 608)
 metadata/help_id = "attention_point"

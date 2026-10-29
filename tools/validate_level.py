@@ -157,6 +157,7 @@ import level_catalog  # noqa: E402
 import world2_model  # noqa: E402
 import world3_model  # noqa: E402
 import world4_model  # noqa: E402
+import world5_model  # noqa: E402
 
 DEFAULT_LIMIT = 0.85
 DEFAULT_JUMP_EFFICIENCY = 0.92
@@ -514,6 +515,8 @@ class Gate:
         self.col_span = (min(cols), max(cols)) if cols else (col, col)
 
     def label(self):
+        if getattr(self, "w5_label", None):
+            return self.w5_label  # Mundo 5 (paso 8; tools/world5_model.py)
         names = {"bridge": "puente", "popup": "pop-up", "bubble": "Burbuja", "pickup": "objeto de habilidad",
                  "terminal": "terminal de salida", "ad": "anuncio", "bar": "barra del 99 %",
                  "switch": "interruptor de pulso", "lswitch": "interruptor laser", "dock": "punto de carga",
@@ -601,6 +604,9 @@ class LevelModel:
         # Mundo 4 (paso 9): Agitar, zonas «Visto», burbujas, enemigos y ola (tools/world4_model.py); None sin nada
         # del Mundo 4.
         self.w4 = None
+        # Mundo 5 (paso 8): economia, cajas, atajos, Terminos, Combinacion y obstaculos (tools/world5_model.py); None
+        # sin nada del Mundo 5.
+        self.w5 = None
         self._build_objects()
         self._door_gids = set(self.glitch_doors.values())
         self.has_pound_gates = any(g.kind == "pound" for g in self.gates)
@@ -633,6 +639,8 @@ class LevelModel:
             self.w3 = world3_model.World3(self, Gate)
         if world4_model.has_world4(level):
             self.w4 = world4_model.World4(self, Gate)
+        if world5_model.has_world5(level):
+            self.w5 = world5_model.World5(self, Gate)
 
     # Objetos.
     def _params(self, obj):
@@ -1067,6 +1075,9 @@ class LevelModel:
         # Dash (paso 9 de docs/propuesta-1-3.md): sus movimientos se suman a los normales cuando la
         # habilidad esta disponible y nunca con el Debug activo (no se combinan).
         if self.w3 is not None and world3_model.is_pinched(node):
+            if self.w5 is not None:
+                # Mundo 5 (paso 8b): el Filo sale de una celda comprimida.
+                return self.w3.pinched_edges(node, state, debug) + self.w5.pinched_combo_edges(node, state, debug)
             return self.w3.pinched_edges(node, state, debug)
         dash = debug is False and self.has_dash(state)
         key = (node, self.local_key(node, state), debug) if not dash else (
@@ -1097,6 +1108,8 @@ class LevelModel:
             key = key + ("dash",)
         elif self.dash_blocked(state):
             key = key + ("nodash",)
+        if self.w5 is not None and self.w5.has_combo(state):
+            key = key + ("combo",)
         if key not in self._edges:
             normal = self.edges(node, state, False)
             seen = {e["to"] for e in normal}
@@ -1223,6 +1236,8 @@ class LevelModel:
         """Verdadero si desde `node` (de pie) se abre la puerta: el pulso toca algun rectangulo de
         la puerta, el laser alcanza a la Burbuja (si se puede usar) o, si es un ability_pickup,
         Isak toca su celda."""
+        if self.w5 is not None and gate.kind in world5_model.GATE_KINDS:
+            return self.w5.can_open(gate, node, state, debug, use_laser)
         if self.w3 is not None and world3_model.is_pinched(node) and gate.kind not in ("pickup", "bar", "dock"):
             return False  # comprimido no hay pulso, laser ni golpe al suelo
         if gate.kind == "pickup":
@@ -1546,6 +1561,8 @@ class World:
                 self.hazards.append(rect + ("banner %s (sin el dash)" % bid,))
         if model.w3 is not None:
             model.w3.apply_world(self, state, debug)
+        if model.w5 is not None:
+            model.w5.apply_world(self, state, debug)
 
     def is_solid(self, c, r):
         if c < 0 or c >= self.m.cols:
@@ -2330,6 +2347,8 @@ class Validator:
                 model.w3.check(self, start, goal_cells)
             if model.w4 is not None:
                 model.w4.check(self, start, goal_cells)
+            if model.w5 is not None:
+                model.w5.check(self, start, goal_cells)
         else:
             self._describe_path(main)
         # Regla 2.
@@ -2358,6 +2377,9 @@ class Validator:
             if model.w4 is not None:
                 # Mundo 4 (paso 9): regla del congelado, autocorrector y Troll disfrazado sobre el camino.
                 model.w4.check(self, start, goal_cells)
+            if model.w5 is not None:
+                # Mundo 5 (paso 8): economia, tentacion, cajas, anti-redundancia de los combos y estanterias.
+                model.w5.check(self, start, goal_cells)
             if self.is_advanced() or self.export_requested:
                 self._check_plan()
         return self.finish()
@@ -2381,6 +2403,8 @@ class Validator:
             return True
         if self.model.w4 is not None:
             # Mundo 4 (paso 9): plan del camino con las zonas «Visto», las burbujas, Agitar y la ola.
+            return True
+        if self.model.w5 is not None:
             return True
         if any(o["type"] in kinds for o in self.level.get("objects", [])):
             return True
@@ -2853,6 +2877,9 @@ class Validator:
                                             "(%.1f s desde el disparo)"
                                             % (b[1], b[0], via, g.relay["id"], g.label(), relay["time"])})
                     continue
+                if self.model.w5 is not None and g.kind in world5_model.GATE_KINDS:
+                    actions.append(self.model.w5.describe_gate(g, n, stage))
+                    continue
                 if g.kind == "switch":
                     # Tanda H2: pulsos de espaldas (y, si es el panel oculto, antes el Debug que lo descubre).
                     actions.append({"action": "pulse", "from": [n[1], n[0]], "object": g.label(),
@@ -2947,7 +2974,8 @@ class Validator:
     def _move_action(self, prev, e):
         to = e["to"]
         names = {"jump": "saltar", "jump_run": "saltar corriendo", "fall": "caer", "dash": "deslizar (dash)",
-                 "jump_dash": "saltar y deslizar en el aire (dash)"}
+                 "jump_dash": "saltar y deslizar en el aire (dash)",
+                 "combo_edge": "Filo (comprimido, salto y Deslizar)"}
         rise = e["rise"]
         text = "%s de (fila %d, columna %d) a (fila %d, columna %d): %.0f px en el aire, %s %.0f px " \
                "-> %.0f %% horizontal, %.0f %% vertical%s%s" % (
@@ -3054,7 +3082,11 @@ class Validator:
         ids = set()
         for s in self.level.get("secrets", []):
             ids.update(str(i) for i in s.get("gates", []))
-        return frozenset(g.gid for g in self.model.gates if g.obj_id in ids)
+        out = frozenset(g.gid for g in self.model.gates if g.obj_id in ids)
+        if self.model.w5 is not None:
+            # Mundo 5 (paso 8a): nada con precio es obligatorio (atajos, caja de Calc y «ACEPTAR»).
+            out = out | self.model.w5.costly_gids()
+        return out
 
     def _debug_mode(self, calibrated=True):
         """Modo del Debug para «se alcanza con el Debug»: siempre encendido (True) o encendido donde hace falta
@@ -3283,7 +3315,8 @@ class Validator:
     def _check_mandatory(self, start, goal_cells):
         secret = self.secret_gates()
         for g in self.model.gates:
-            if g.bypassable or g.kind in ("pickup", "pound") or g.gid in self.model.initial:
+            if g.bypassable or g.kind in ("pickup", "pound") or g.gid in self.model.initial or (
+                    self.model.w5 is not None and g.kind in world5_model.GATE_KINDS):
                 # Las tarjetas fragiles (Mundo 2) son atajos a proposito: no se exige que hagan falta.
                 continue
             run = self.progression(start, frozenset(), INF, forbid=frozenset({g.gid}), targets=goal_cells)
@@ -3380,6 +3413,8 @@ class Validator:
             return c0 <= node[0] < c0 + w and r0 <= node[1] < r0 + h
         if gate.kind == "dock":
             return True
+        if self.model.w5 is not None and gate.kind in world5_model.GATE_KINDS:
+            return self.model.w5.near(gate, node)
         reach = self.rules.pulse_radius + T
         if gate.kind in ("bubble", "ad", "lswitch") and self.model.laser_possible:
             reach = max(reach, self.rules.laser_range + T)
@@ -3497,7 +3532,8 @@ class Validator:
 
 
 def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP_EFFICIENCY, run=False,
-             physics_path=None, check_schema=True, upgrades=(), time_margin=None, export=None, allies=None):
+             physics_path=None, check_schema=True, upgrades=(), time_margin=None, export=None, allies=None,
+             buy=False):
     """Valida un nivel ya cargado. Devuelve el dict de resultado (ok, errors, warnings, path, margins...).
     time_margin: margen de tiempo minimo (s) de las ventanas y cuentas (None: el del nivel o 1,5 s).
     export: lista; si se pasa, recibe el camino exportado (formato isak-path/1, tools/level_plan.py).
@@ -3527,6 +3563,9 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     # «¿Deshacer escritura?» como interruptor y el muro de texto como pared que se deshace al usarlo
     # (tools/world4_model.py); sin nada del Mundo 4 el nivel no cambia.
     level = world4_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))), allies or ())
+    # Mundo 5 (paso 8 de docs/propuesta-mundo-5.md): tachon, cuentas, lista de deseos y «Prueba gratis» como piezas
+    # conocidas (tools/world5_model.py); sin nada del Mundo 5 el nivel no cambia.
+    level = world5_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     rules = Rules(root, physics_path, jump_efficiency, limit, run or bool(level.get("allow_run", False)),
                   tuple(upgrades), tuple(allies or ()))
     rules.time_margin = time_margin
@@ -3536,6 +3575,12 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     result = validator.run()
     if export is not None and validator.planner is not None and getattr(validator.planner, "steps", None):
         export.append(validator.planner.export())
+    if buy and validator.model.w5 is not None:
+        # Mundo 5 (paso 8a): camino del comprador (--buy): paga los atajos que cruza, compra y Devoluciones.
+        planner = validator.model.w5.buy_planner(validator)
+        if planner is not None and export is not None:
+            export[:] = [planner.export()]
+        result = validator.finish()
     if allies is None and validator.model.ally_pieces:
         known = Validator(level, rules.with_allies(validator.model.ally_pieces))
         # El terreno de cada estado de las puertas es el mismo: se reutilizan los mundos, los movimientos y
@@ -3710,6 +3755,7 @@ def format_text(path, result):
             "" if known.get("energy_min") is None else ", energia minima %.0f" % known["energy_min"]))
     out.extend(world3_model.format_lines(result))
     out.extend(world4_model.format_lines(result))
+    out.extend(world5_model.format_lines(result))
     out.extend(format_plan(result.get("plan")))
     for e in result["errors"]:
         out.append("  ERROR: " + e["message"])
@@ -3859,6 +3905,9 @@ def main(argv):
                         help="asistentes ya conocidos (allies_met, p. ej. calc): las piezas con done_if_ally "
                              "arrancan hechas; sin la opcion se validan los dos casos y se exporta el de "
                              "desconocidos")
+    parser.add_argument("--buy", action="store_true",
+                        help="Mundo 5: camino del comprador (paga los atajos que cruza, compra y pide las Devoluciones); "
+                             "con --export-path se exporta ese")
     args = parser.parse_args(argv[1:])
     if args.export_path and len(args.levels) != 1:
         print("--export-path admite un solo nivel", file=sys.stderr)
@@ -3890,7 +3939,7 @@ def main(argv):
             result = validate(level, limit=args.limit, jump_efficiency=args.jump_efficiency, run=args.run,
                               physics_path=args.physics,
                               upgrades=upgrades,
-                              time_margin=args.time_margin, export=export,
+                              time_margin=args.time_margin, export=export, buy=args.buy,
                               allies=None if args.allies is None else
                               [a.strip() for a in args.allies.split(",") if a.strip()])
         except (OSError, ValueError, KeyError) as exc:

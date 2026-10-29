@@ -44,6 +44,7 @@ import heapq
 import math
 
 import world3_model
+import world5_model
 
 DT = 1.0 / 60.0
 EPS = 1e-6
@@ -182,6 +183,10 @@ class Planner:
                 last_pub = {"id": g.obj_id} if g.kind == "like_source" else {}
                 continue
             last_pub = {}
+            if self.m.w5 is not None and g.kind in world5_model.GATE_KINDS:
+                # Mundo 5 (paso 8; tools/world5_model.py): pagar, abrir cajas, rechazar, Embestida y Sismo.
+                steps.extend(self.m.w5.gate_steps(self, g, n, state))
+                continue
             if g.kind == "pickup":
                 steps.append(self.pickup_step(g, n))
                 continue
@@ -371,6 +376,8 @@ class Planner:
     def duration(self, s):
         a = s["action"]
         r = self.rules
+        if self.m.w5 is not None and a in world5_model.ACTIONS:
+            return self.m.w5.duration(self, s)
         if a == "move":
             real = self.real_arc(s)
             if real is not None:
@@ -635,6 +642,9 @@ class Planner:
         if self.m.w4 is not None:
             # Mundo 4 (paso 9; tools/world4_model.py): zonas «Visto», burbujas, enemigos y ola.
             steps = self.m.w4.plan(self, steps)
+        if self.m.w5 is not None:
+            # Mundo 5 (paso 8; tools/world5_model.py): comprador, tentacion, Suscripciones, deseos, cuentas y saldo.
+            steps = self.m.w5.plan(self, steps)
         steps = self.check_energy(steps)
         self.check_loop_energy(steps)
         self.info["bars"] = []
@@ -648,6 +658,8 @@ class Planner:
         self.info["duration_s"] = round(total, 2)
         self.info["duration_world_s"] = round(total_world, 2)
         self.steps = steps
+        if self.m.w5 is not None and not getattr(self, "w5_buy", False):
+            self.m.w5.budget(self)
         return steps
 
     # --- Scroll forzado (Mundo 2, paso 9 de docs/propuesta-mundo-2.md §7.1) ---
@@ -2931,7 +2943,9 @@ class Planner:
             if a == "laser":
                 need = r.laser_cost
             elif a == "move" and s["edge"].get("dash"):
-                need = r.dash_cost
+                need = s["edge"].get("energy_cost", r.dash_cost)
+            elif self.m.w5 is not None and s.get("energy_w5"):
+                need = s["energy_w5"]
             elif a == "shake":
                 need = self.m.w4.shake_cost
             elif a == "debug_on":
@@ -3223,7 +3237,7 @@ class Planner:
                     and merged[-1]["to"] == s["from"] and merged[-1]["to"][1] == s["to"][1]
                     and (s["to"][0] - s["from"][0]) * (merged[-1]["to"][0] - merged[-1]["from"][0]) > 0
                     and bool(merged[-1]["edge"].get("pinched")) == bool(s["edge"].get("pinched"))
-                    and not s.get("timed") == "x"):
+                    and not s.get("timed") == "x" and bool(merged[-1].get("resist")) == bool(s.get("resist"))):
                 merged[-1] = dict(merged[-1], to=s["to"], dur=merged[-1]["dur"] + self.duration(s))
                 continue
             merged.append(dict(s, dur=self.duration(s)))
@@ -3355,6 +3369,8 @@ class Planner:
             if "energy_before" in s:
                 item["energy_before"] = s["energy_before"]
                 item["energy_after"] = s["energy_after"]
+            if self.m.w5 is not None:
+                self.m.w5.export_extra(item, s)
             out.append(item)
         start = self.v.result.get("start")
         physics = {"walk_speed_px_s": self.rules.walk_speed, "jump_height_px": round(self.rules.jump_height, 1),

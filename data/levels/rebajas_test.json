@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 5 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 40x12 de la CUENTA REGRESIVA y TERMINOS Y CONDICIONES del Mundo 5 (§3.7 y patron 28 «Falsa urgencia» de §3.8). Isak llega por la izquierda (P, fila 9) con el pulso, el laser, el Debug, el dash, el golpe al suelo, Pellizcar y la Combinacion. Patron 28: cuenta regresiva de 2 tiles (columnas 10-11, a ras de suelo) sobre un hoyo de 1 fila (sin dano: se sale saltando) y una Oferta al otro lado (columna 15): cruzar con la cuenta o esperar a la siguiente sin dejarse arrastrar; si Isak espera cerca dos cuentas sin cruzar, la tercera dice «Vale, esta vez es verdad» y dura 10 s. Atajo con trampa countdown (columna 22, filas 7-9; 3 ◆): al cruzarlo, la cuenta de la salida (columnas 24-25, trigger atajo_cuenta) empieza a contar; antes espera solida; o el camino largo por las plataformas de una via (filas 8, 6 y 4) y por encima del muro (columna 22, filas 4-6). Terminos y condiciones (columna 33, filas 7-9, botones por la izquierda): «ACEPTAR» (columnas 30-32, fila 9) lo pulsa cualquier pulso cercano: abre y engancha una Suscripcion; «rechazar» (8 px, en lo alto de la puerta) solo con el laser desde la repisa de enfrente (columnas 28-29, filas 8-9: el disparo sale a la altura de lo alto de la puerta) o con un Filo que lo roza: abre sin coste. Puntos en las columnas 3 y 27. Terminal en (37, 8). Sin Q (help_id previstos countdown_platform y terms_gate, paso 9). Tileset y fondo del Mundo 1 (provisional). tools/validate_level.py aun no modela las cuentas ni la puerta (paso 8): toma las cuentas y la puerta por objetos sin colision (los hoyos se saltan). Escena: scenes/levels/rebajas_test.tscn (python3 tools/build_level.py data/levels/rebajas_test.json).",
+	"_notes": "NIVEL DE PRUEBA (no es del juego ni se enlaza desde el hub; paso 5 de docs/propuesta-mundo-5.md §8, 2026-10-29): sala de 40x12 de la CUENTA REGRESIVA y TERMINOS Y CONDICIONES del Mundo 5 (§3.7 y patron 28 «Falsa urgencia» de §3.8). Isak llega por la izquierda (P, fila 9) con el pulso, el laser, el Debug, el dash, el golpe al suelo, Pellizcar y la Combinacion. Patron 28: cuenta regresiva de 2 tiles (columnas 10-11, a ras de suelo) sobre un hoyo de 1 fila (sin dano: se sale saltando) y una Oferta al otro lado (columna 15): cruzar con la cuenta o esperar a la siguiente sin dejarse arrastrar; si Isak espera cerca dos cuentas sin cruzar, la tercera dice «Vale, esta vez es verdad» y dura 10 s. Atajo con trampa countdown (columna 22, filas 7-9; 3 ◆): al cruzarlo, la cuenta de la salida (columnas 24-25, trigger atajo_cuenta) empieza a contar; antes espera solida; o el camino largo por las plataformas de una via (filas 8, 6 y 4) y por encima del muro (columna 22, filas 4-6). Terminos y condiciones (columna 33, filas 7-9, botones por la izquierda; desde el paso 8 la columna 33 es pared de la fila 1 a la 6: antes se saltaba por encima): «ACEPTAR» (columnas 30-32, fila 9) lo pulsa cualquier pulso cercano: abre y engancha una Suscripcion; «rechazar» (8 px, en lo alto de la puerta) solo con el laser desde la repisa de enfrente (columnas 28-29, filas 8-9: el disparo sale a la altura de lo alto de la puerta) o con un Filo que lo roza: abre sin coste. Puntos en las columnas 3-5 (4 y 5 desde el paso 8: el atajo cuesta 3 y tiene que poder pagarse con lo de antes) y 27. Terminal en (37, 8). Sin Q (help_id previstos countdown_platform y terms_gate, paso 9). Tileset y fondo del Mundo 1 (provisional). Desde el paso 8 tools/validate_level.py la modela (tools/world5_model.py; tests/test_world5_validator.py). Escena: scenes/levels/rebajas_test.tscn (python3 tools/build_level.py data/levels/rebajas_test.json).",
 	"id": "rebajas_test",
 	"name": "Rebajas (prueba)",
 	"world": 5,
@@ -78,15 +78,15 @@
 	"unlocks": [],
 	"grid": [
 		"########################################",
-		"#......................................#",
-		"#......................................#",
-		"#......................................#",
-		"#..................---#................#",
-		"#.....................#................#",
-		"#.................---.#................#",
+		"#................................#.....#",
+		"#................................#.....#",
+		"#................................#.....#",
+		"#..................---#..........#.....#",
+		"#.....................#..........#.....#",
+		"#.................---.#..........#.....#",
 		"#......................................#",
 		"#...............---.........##.........#",
-		"#.Po...........E...........o##.......G.#",
+		"#.Pooo.........E...........o##.......G.#",
 		"##########..############..##############",
 		"########################################"
 	]
