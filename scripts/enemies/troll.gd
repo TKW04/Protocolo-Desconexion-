@@ -16,7 +16,7 @@
 ## Arte final con AutoSprite (paso 24, etapa 3b, 2026-10-28; tools/import_troll.py,
 ## docs/plan-arte-mundo-4.md): ART_ANIMS por estado (get_art_frame); el dibujo mide
 ## 76 px y sobresale 20 por encima de la caja (body_size no cambia). El bocadillo
-## del aviso, los chispazos y el contorno rojo del Modo oscuro siguen por codigo.
+## del aviso, los chispazos y los ojos del Modo oscuro siguen por codigo.
 ## Sin los cuadros vuelve a la silueta provisional por codigo.
 class_name Troll
 extends Node2D
@@ -88,7 +88,8 @@ var shot_min_width_px: float = 48.0
 var deflect_s: float = 0.25
 ## Acecho (2026-10-28, peligros ocultos del Modo oscuro): dentro de una dark_zone, en
 ## reposo y fuera de la Linterna, solo se le ven los ojos (DarkOverlay.draw_lurk_eyes);
-## al empezar a escribir por primera vez se delata (contorno rojo) hasta reaparecer
+## al empezar a escribir por primera vez se delata (su aviso; despierto, ojos mas
+## vivos, sin contorno rojo desde el 2026-10-28) hasta reaparecer
 ## Isak. El comportamiento no cambia. params.lurk del nivel.
 var lurk: bool = false
 var drops: Dictionary = {}
@@ -542,19 +543,36 @@ func has_lurk_woken() -> bool:
 	return _lurk_woke
 
 
-## Por encima del velo: contorno rojo del cuerpo (despierto) y el aviso; acechando,
-## solo los ojos (y su silueta en coral con el Debug).
-func draw_dark_overlay(canvas: CanvasItem) -> void:
-	if _state == STATE_DEFEATED:
-		return
+## Lo que ensena por encima del velo (DarkOverlay.LOOK_*). Sin contorno rojo desde
+## el 2026-10-28 (peticion del usuario): a oscuras se delata por los ojos y, al
+## atacar, por su bocadillo de aviso.
+func get_dark_look() -> StringName:
+	if _state == STATE_DEFEATED or not is_in_dark():
+		return DarkOverlay.LOOK_NONE
 	if is_lurking():
-		if DebugMode.is_revealing():
-			DarkOverlay.draw_debug_reveal(canvas, get_visual_rect().grow(2.0))
-		var vr: Rect2 = get_visual_rect()
-		DarkOverlay.draw_lurk_eyes(canvas, Vector2(0.0, vr.position.y + vr.size.y * 0.3), _dir, _time)
+		return DarkOverlay.LOOK_LURK
+	if DarkOverlay.lit_at(self, get_body_rect().get_center()):
+		return DarkOverlay.LOOK_LIT
+	if _state == STATE_WARN:
+		return DarkOverlay.LOOK_WARN
+	return DarkOverlay.LOOK_EYES
+
+
+## Por encima del velo: acechando, los ojos tenues (y su silueta en coral con el
+## Debug); despierto, los ojos y, al atacar, el bocadillo de aviso.
+func draw_dark_overlay(canvas: CanvasItem) -> void:
+	var look: StringName = get_dark_look()
+	if look == DarkOverlay.LOOK_NONE:
 		return
-	if _state != STATE_STUNNED:
-		canvas.draw_rect(get_visual_rect().grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
+	var vr: Rect2 = get_visual_rect()
+	var eyes := Vector2(0.0, vr.position.y + vr.size.y * 0.3)
+	match look:
+		DarkOverlay.LOOK_LURK:
+			if DebugMode.is_revealing():
+				DarkOverlay.draw_debug_reveal(canvas, vr.grow(2.0))
+			DarkOverlay.draw_lurk_eyes(canvas, eyes, _dir, _time)
+		DarkOverlay.LOOK_EYES, DarkOverlay.LOOK_WARN:
+			DarkOverlay.draw_enemy_eyes(canvas, eyes, _dir, _time)
 	if _state == STATE_WARN:
 		_draw_warn(canvas)
 
@@ -605,13 +623,16 @@ func _draw_avatar(canvas: CanvasItem, body: Rect2, alpha: float) -> void:
 
 
 ## Aviso: bocadillo «escribiendo…» sobre la cabeza; los puntos salen de uno en uno
-## y el contorno rojo parpadea.
+## y el bocadillo parpadea.
 func _draw_warn(canvas: CanvasItem) -> void:
 	var k: float = clampf(_warn_t / maxf(get_warn_s(), 0.001), 0.0, 1.0)
 	var rect := Rect2(Vector2(-22.0, -get_visual_rect().size.y - 28.0), Vector2(44.0, 22.0))
-	canvas.draw_rect(rect, World4ObjectsConfig.color("crema", Color("#eee4cc")))
-	if int(floor(_warn_t * anim_fps)) % 2 == 0:
-		canvas.draw_rect(rect.grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
+	# Bocadillo que parpadea (crema / crema_sombra) con los puntos que crecen; sin
+	# borde rojo desde el 2026-10-28 (peticion del usuario: sin cuadros rojos).
+	var on: bool = int(floor(_warn_t * anim_fps)) % 2 == 0
+	canvas.draw_rect(rect, World4ObjectsConfig.color("crema", Color("#eee4cc")) if on
+			else World4ObjectsConfig.color("crema_sombra", Color("#b8ad94")))
+	canvas.draw_rect(rect, World4ObjectsConfig.color("chat_noche", Color("#0f1422")), false, 1.0)
 	var dots: int = 1 + mini(int(floor(k * 3.0)), 2)
 	var ink: Color = World4ObjectsConfig.color("chat_noche", Color("#0f1422"))
 	for i: int in dots:

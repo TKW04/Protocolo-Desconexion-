@@ -9,13 +9,15 @@
 ##   (shader del velo: hole_center / hole_radius, borde suave hole_soft_px). Sin
 ##   Linterna (no pasa en el Mundo 4) la zona se recorre igual, a oscuras.
 ## - Legibilidad (la exige el validador): por encima del velo siempre se ven el
-##   contorno de lo que dana (los pinchos: alerta desde el paso 22, dibujado por la capa
+##   contorno rojo de los pinchos (alerta desde el paso 22, dibujado por la capa
 ##   Outlines), los puntos del «escribiendo…» y el borde de las burbujas al 30 %
 ##   (ChatBubble crea su DarkOutline) y los checks del «Visto» (SeenZone sube su
 ##   z_index). Lo que la Linterna anade es el texto, el largo exacto y lo escrito «en
 ##   tinta» (InkOnly: solo bajo su luz).
 ## - Acechadores (2026-10-28): un Troll o Sticker con `lurk` dentro de la zona no
 ##   dibuja su contorno mientras acecha (aun no dana) sino sus ojos (DarkOverlay).
+## - Sin contorno rojo en los enemigos (2026-10-28, peticion del usuario): despiertos
+##   tambien se delatan por los ojos y su aviso; el rojo queda para los pinchos.
 ## Estatica: DarkZone.covering(tree, punto) y DarkZone.lit_by_flashlight(tree, punto)
 ## para quien necesite saber si un punto esta a oscuras o bajo la luz. Aspecto
 ## PROVISIONAL por codigo (seccion dark_zone de data/world4_objects.json). El origen es

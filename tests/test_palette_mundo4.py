@@ -79,7 +79,7 @@ class PaletteMundo4Test(unittest.TestCase):
 
     def test_dark_and_frozen_veils(self):
         m = pal.metrics()
-        for key in ("cr_dark_outline", "cr_dark_dots", "cr_dark_checks", "cr_frozen_outline"):
+        for key in ("cr_dark_outline", "cr_dark_eyes", "cr_dark_dots", "cr_dark_checks", "cr_frozen_outline"):
             self.assertGreaterEqual(m[key], 3.0, key)
         self._fails("regla 5", _with(verde_apagado="3c4e40"))  # checks oscuros en el Modo oscuro
         self._fails("regla 5", _with(gris_oscuro="8890a0"))    # velo del congelado claro: contorno perdido
@@ -91,6 +91,19 @@ class PaletteMundo4Test(unittest.TestCase):
             self._fails("regla 5", None)
         finally:
             pal.DARK_VEIL = old
+
+    def test_enemy_eyes_replace_the_red_outline_in_the_dark(self):
+        # 2026-10-28 (peticion del usuario): los enemigos no llevan contorno rojo en lo oscuro; los delatan los ojos
+        # crema al awake_eye_alpha, que deben contrastar >= 3:1 sobre el velo (y mas que los del acechador).
+        m = pal.metrics()
+        self.assertGreater(m["cr_dark_eyes"], m["cr_dark_lurk_eyes"])
+        old = dict(pal.EYE_ALPHA)
+        try:
+            pal.EYE_ALPHA["awake"] = 0.12
+            self._fails("regla 5", None)
+        finally:
+            pal.EYE_ALPHA.clear()
+            pal.EYE_ALPHA.update(old)
 
     def test_world4_catalog_has_types_of_worlds_1_to_3(self):
         catalog = level_catalog.load_catalog(ROOT, 4)

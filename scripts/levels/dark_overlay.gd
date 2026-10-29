@@ -2,12 +2,24 @@
 ## (2026-10-28, paso 5 de docs/propuesta-mundo-4.md §8 y regla de legibilidad de
 ## §3.6): la crea un objeto o enemigo del Mundo 4 que esta dentro de una zona
 ## oscura (DarkOverlay.attach) y llama cada cuadro a host.draw_dark_overlay(capa)
-## para dibujar ahi, en coordenadas locales del host, su contorno rojo o su aviso.
+## para dibujar ahi, en coordenadas locales del host, lo que delata al enemigo (sus
+## ojos) o su aviso. Desde el 2026-10-28 (peticion del usuario) los enemigos no dibujan
+## contorno rojo en lo oscuro: el rojo queda para los pinchos (DarkZone).
 ## Fuera de lo oscuro no se crea (el dibujo normal no cambia).
 class_name DarkOverlay
 extends Node2D
 
 const METHOD: StringName = &"draw_dark_overlay"
+
+## Lo que un enemigo ensena por encima del velo (get_dark_look()):
+## nada (derrotado, oculto o fuera de lo oscuro), los ojos tenues del acechador, los
+## ojos del enemigo despierto, su aviso de ataque, o nada extra porque la Linterna
+## lo ilumina (se ve entero; su aviso sigue por encima del velo).
+const LOOK_NONE: StringName = &"none"
+const LOOK_LURK: StringName = &"lurk"
+const LOOK_EYES: StringName = &"eyes"
+const LOOK_WARN: StringName = &"warn"
+const LOOK_LIT: StringName = &"lit"
 
 ## Nodo que dibuja en la capa (debe tener draw_dark_overlay(canvas)).
 var host: Node
@@ -34,11 +46,12 @@ func _process(_delta: float) -> void:
 
 
 # --- Acecho (2026-10-28, peligros ocultos del Modo oscuro; docs/propuesta-mundo-4.md
-# §8.1): un enemigo con `lurk` que espera a oscuras no dibuja su contorno rojo (aun no
-# dana) sino dos OJOS crema que parpadean; bajo la Linterna se ve entero y, en cuanto
-# ataca (aviso de 9 cuadros), vuelve el contorno rojo. El Debug lo revela: silueta
-# en coral por encima del velo. Valores en la seccion dark_zone.lurk de
-# data/world4_objects.json.
+# §8.1): un enemigo con `lurk` que espera a oscuras solo ensena dos OJOS crema tenues
+# (eye_alpha) que parpadean; bajo la Linterna se ve entero y, en cuanto ataca, da el
+# aviso de siempre (9 cuadros). El Debug lo revela: silueta en coral por encima del
+# velo. Despierto, cualquier enemigo del Mundo 4 a oscuras ensena los mismos ojos mas
+# vivos (awake_eye_alpha) en lugar del contorno rojo de antes (peticion del usuario,
+# 2026-10-28). Valores en la seccion dark_zone.lurk de data/world4_objects.json.
 
 ## Seccion lurk de dark_zone (ojos y revelado).
 static func lurk_cfg() -> Dictionary:
@@ -53,13 +66,13 @@ static func lit_at(host_node: Node2D, point: Vector2) -> bool:
 
 
 ## Ojos del acechador en `center` (coordenadas de la capa), mirando hacia `look`
-## (-1 / 1); cerrados un instante cada blink_every_s.
-static func draw_lurk_eyes(canvas: CanvasItem, center: Vector2, look: int, time_s: float) -> void:
+## (-1 / 1); cerrados un instante cada blink_every_s. `alpha` < 0: eye_alpha.
+static func draw_lurk_eyes(canvas: CanvasItem, center: Vector2, look: int, time_s: float, alpha: float = -1.0) -> void:
 	var cfg: Dictionary = lurk_cfg()
 	var every: float = maxf(float(cfg.get("blink_every_s", 2.6)), 0.1)
 	var closed: bool = fmod(time_s, every) < float(cfg.get("blink_s", 0.15))
 	var color: Color = World4ObjectsConfig.color(String(cfg.get("eye_color", "crema")), Color("#eee4cc"))
-	color.a = float(cfg.get("eye_alpha", 0.6))
+	color.a = float(cfg.get("eye_alpha", 0.6)) if alpha < 0.0 else alpha
 	var gap: float = float(cfg.get("eye_gap_px", 7.0))
 	var size := Vector2(4.0, 1.0 if closed else 3.0)
 	var shift := Vector2(2.0 * float(look), 0.0)
@@ -78,3 +91,14 @@ static func draw_debug_reveal(canvas: CanvasItem, rect: Rect2) -> void:
 func _draw() -> void:
 	if host != null and is_instance_valid(host) and host.has_method(METHOD):
 		host.call(METHOD, self)
+
+
+## Alpha de los ojos de un enemigo despierto a oscuras (awake_eye_alpha).
+static func awake_eye_alpha() -> float:
+	return float(lurk_cfg().get("awake_eye_alpha", 0.9))
+
+
+## Ojos de un enemigo despierto a oscuras (lo que lo delata sin contorno rojo), con
+## su alpha multiplicado por `k` (0-1: p. ej. el Fantasma al reaparecer).
+static func draw_enemy_eyes(canvas: CanvasItem, center: Vector2, look: int, time_s: float, k: float = 1.0) -> void:
+	draw_lurk_eyes(canvas, center, look, time_s, awake_eye_alpha() * clampf(k, 0.0, 1.0))

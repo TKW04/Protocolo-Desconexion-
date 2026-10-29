@@ -243,11 +243,23 @@ func _draw() -> void:
 		_bubble.modulate.a = 1.0 - 0.7 * k
 
 
+## Disfrazado no ensena nada (la burbuja dibuja su borde); al quitarse el disfraz,
+## su aviso: los ojos que se encienden (sin contorno rojo desde el 2026-10-28).
+func get_dark_look() -> StringName:
+	if _mask == MASK_OPEN:
+		return super.get_dark_look()
+	if _mask == MASK_UNMASKING and is_in_dark() and not DarkOverlay.lit_at(self, get_body_rect().get_center()):
+		return DarkOverlay.LOOK_WARN
+	return DarkOverlay.LOOK_NONE
+
+
 func draw_dark_overlay(canvas: CanvasItem) -> void:
 	if _mask == MASK_OPEN:
 		super.draw_dark_overlay(canvas)
-	elif _mask == MASK_UNMASKING:
-		canvas.draw_rect(get_visual_rect().grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
+	elif get_dark_look() == DarkOverlay.LOOK_WARN:
+		var k: float = clampf(_mask_t / maxf(get_unmask_s(), 0.001), 0.0, 1.0)
+		var vr: Rect2 = get_visual_rect()
+		DarkOverlay.draw_enemy_eyes(canvas, Vector2(0.0, vr.position.y + vr.size.y * 0.3), _dir, _time, k)
 
 
 ## Costuras rojas y avatar anonimo sobre la burbuja (solo con el Debug), por

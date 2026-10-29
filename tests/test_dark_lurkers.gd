@@ -7,12 +7,16 @@
 # se delata una vez por intento (`lurk_woke`, sonido sfx_w4_lurker_wake) y ya no se
 # esconde hasta reaparecer Isak (reset_patrol). Fuera de lo oscuro, `lurk` no hace
 # nada; el comportamiento y los tiempos no cambian.
+# Sin contorno rojo (2026-10-28, peticion del usuario): ningun enemigo dibuja el cuadro
+# rojo en lo oscuro; despierto se delata por los ojos (awake_eye_alpha) y al atacar por
+# su aviso (bocadillo del Troll, Sticker que destella, ojos del Fantasma que parpadean).
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
 const TROLL_SCENE: PackedScene = preload("res://scenes/enemies/troll.tscn")
 const STICKER_SCENE: PackedScene = preload("res://scenes/enemies/sticker.tscn")
 const DARK_SCENE: PackedScene = preload("res://scenes/levels/dark_zone.tscn")
+const GHOST_SCENE: PackedScene = preload("res://scenes/enemies/ghost.tscn")
 const PATH: String = "user://test_dark_lurkers_save.json"
 const DT: float = 1.0 / 60.0
 const T: float = 64.0
@@ -131,6 +135,86 @@ func test_lurking_troll_shows_only_its_eyes_until_it_writes() -> void:
 	_stand_at(-20)
 	t.reset_patrol()
 	assert_true(t.is_lurking(), "Al reaparecer Isak vuelve a acechar")
+
+
+func _ghost(col: float) -> Ghost:
+	var g := GHOST_SCENE.instantiate() as Ghost
+	g.position = Vector2((col + 0.5) * T, 0.0)
+	_world.add_child(g)
+	g.set_physics_process(false)
+	g.target = _isak
+	return g
+
+
+func test_awake_troll_in_the_dark_shows_eyes_and_its_bubble_not_a_red_box() -> void:
+	_dark()
+	var t: Troll = _troll(20, false)
+	await wait_physics_frames(2)
+	assert_true(t.is_in_dark())
+	assert_eq(t.get_dark_look(), DarkOverlay.LOOK_EYES, "Despierto a oscuras: los ojos")
+	_stand_at(12)
+	_run([t], 0.1)
+	assert_true(t.is_warning())
+	assert_eq(t.get_dark_look(), DarkOverlay.LOOK_WARN, "Al escribir: su bocadillo de aviso")
+	assert_gt(DarkOverlay.awake_eye_alpha(), float(DarkOverlay.lurk_cfg()["eye_alpha"]),
+		"Despierto, ojos mas vivos que acechando")
+
+
+func test_awake_sticker_in_the_dark_flashes_when_inflating() -> void:
+	_dark()
+	var s: Sticker = _sticker(20, false)
+	await wait_physics_frames(2)
+	assert_eq(s.get_dark_look(), DarkOverlay.LOOK_EYES)
+	_stand_at(18)
+	var t: float = 0.0
+	while not s.is_inflating() and t < 3.0:
+		_run([s], DT)
+		t += DT
+	assert_true(s.is_inflating())
+	assert_eq(s.get_dark_look(), DarkOverlay.LOOK_WARN, "Inflandose: el cuerpo destella sobre el velo")
+
+
+func test_ghost_in_the_dark_shows_eyes_and_blinks_them_when_reappearing() -> void:
+	_dark()
+	var g: Ghost = _ghost(20)
+	await wait_physics_frames(2)
+	assert_true(g.is_in_dark())
+	assert_eq(g.get_dark_look(), DarkOverlay.LOOK_EYES, "Patrullando: los ojos, sin cuadro rojo")
+	g.speed_px_s = 0.0
+	_stand_at(18)
+	_isak.facing = 1.0
+	var t: float = 0.0
+	while g.get_state() != Ghost.STATE_WARN and t < 4.0:
+		g.step(DT)
+		if g.get_state() == Ghost.STATE_HIDDEN:
+			assert_eq(g.get_dark_look(), DarkOverlay.LOOK_NONE, "Oculto: nada")
+		t += DT
+	assert_eq(g.get_state(), Ghost.STATE_WARN)
+	assert_eq(g.get_dark_look(), DarkOverlay.LOOK_WARN, "Reaparece: sus ojos parpadean")
+
+
+func test_ghost_warning_in_the_light_flickers_instead_of_a_red_box() -> void:
+	var g: Ghost = _ghost(20)
+	await wait_physics_frames(2)
+	assert_false(g.is_in_dark())
+	g.speed_px_s = 0.0
+	_stand_at(18)
+	_isak.facing = 1.0
+	var t: float = 0.0
+	while g.get_state() != Ghost.STATE_WARN and t < 4.0:
+		g.step(DT)
+		t += DT
+	var on: Array[float] = []
+	var off: Array[float] = []
+	while g.get_state() == Ghost.STATE_WARN:
+		if g._warn_blink_on():
+			on.append(g.get_alpha())
+		else:
+			off.append(g.get_alpha())
+		g.step(DT)
+	assert_false(on.is_empty() or off.is_empty(), "El aviso parpadea")
+	assert_gt(on.min(), off.max() - 0.001, "Encendido siempre mas visible que apagado")
+	assert_gte(on.min(), 0.25, "Desde el primer cuadro se ve")
 
 
 func test_lurking_sticker_wakes_once_and_chases_as_usual() -> void:

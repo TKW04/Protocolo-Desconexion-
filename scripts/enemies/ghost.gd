@@ -450,13 +450,36 @@ func is_in_dark() -> bool:
 	return _dark != null
 
 
-## Por encima del velo: contorno rojo cuando dana y la silueta del aviso.
+## Lo que ensena por encima del velo (DarkOverlay.LOOK_*). Sin contorno rojo desde
+## el 2026-10-28 (peticion del usuario): a oscuras se delata por los ojos y, al
+## reaparecer (aviso), los ojos se encienden parpadeando.
+func get_dark_look() -> StringName:
+	if not is_in_dark() or not is_visible_ghost():
+		return DarkOverlay.LOOK_NONE
+	if DarkOverlay.lit_at(self, get_body_rect().get_center()):
+		return DarkOverlay.LOOK_LIT
+	if _state == STATE_WARN:
+		return DarkOverlay.LOOK_WARN
+	return DarkOverlay.LOOK_EYES
+
+
+## Por encima del velo: los ojos (crema); en el aviso, parpadeando a anim_fps y cada
+## vez mas vivos.
 func draw_dark_overlay(canvas: CanvasItem) -> void:
-	var body := Rect2(Vector2(-body_size.x * 0.5, -body_size.y), body_size)
-	if is_dangerous() or _state == STATE_READY:
-		canvas.draw_rect(body.grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
-	elif _state == STATE_WARN:
-		_draw_warn(canvas, body)
+	var look: StringName = get_dark_look()
+	var eyes := Vector2(0.0, -body_size.y + body_size.x * 0.5)
+	match look:
+		DarkOverlay.LOOK_EYES:
+			DarkOverlay.draw_enemy_eyes(canvas, eyes, int(_direction), _time)
+		DarkOverlay.LOOK_WARN:
+			if _warn_blink_on():
+				var k: float = 0.4 + 0.6 * clampf(_t / maxf(get_warn_s(), 0.001), 0.0, 1.0)
+				DarkOverlay.draw_enemy_eyes(canvas, eyes, int(_direction), _time, k)
+
+
+## Fase encendida del parpadeo del aviso (a anim_fps).
+func _warn_blink_on() -> bool:
+	return int(floor(_t * anim_fps)) % 2 == 0
 
 
 # --- Dibujo ---
@@ -469,7 +492,9 @@ func get_alpha() -> float:
 		STATE_VANISH:
 			return 0.6 * (1.0 - clampf(_t / maxf(vanish_s, 0.001), 0.0, 1.0))
 		STATE_WARN:
-			return 0.6 * clampf(_t / maxf(get_warn_s(), 0.001), 0.0, 1.0)
+			# Aviso: aparece parpadeando (sin el cuadro rojo de antes, 2026-10-28).
+			var ramp: float = 0.6 * clampf(_t / maxf(get_warn_s(), 0.001), 0.0, 1.0)
+			return maxf(ramp, 0.25) if _warn_blink_on() else ramp * 0.35
 	return 0.6
 
 
@@ -490,20 +515,12 @@ func _draw() -> void:
 		var eyes: String = "x x" if _state == STATE_STUNNED else "o o"
 		draw_string(ThemeDB.fallback_font, Vector2(body.position.x, head_c.y + 5.0), eyes,
 			HORIZONTAL_ALIGNMENT_CENTER, body.size.x, 14, Color(ink, minf(a * 1.6, 1.0)))
-	if _state == STATE_WARN:
-		_draw_warn(self, body)
 	if _deflect_left > 0.0:
 		var grey: Color = World4ObjectsConfig.color("gris_claro", Color("#a9aebb"))
 		var center: Vector2 = body.get_center()
 		for deg: float in [0.0, 45.0, 90.0, 135.0]:
 			var d := Vector2(12.0, 0.0).rotated(deg_to_rad(deg))
 			draw_line(center - d, center + d, grey, 2.0)
-
-
-## Aviso de reaparicion: la silueta en contorno rojo que late (9 cuadros).
-func _draw_warn(canvas: CanvasItem, body: Rect2) -> void:
-	if int(floor(_t * anim_fps)) % 2 == 0:
-		canvas.draw_rect(body.grow(2.0), World4ObjectsConfig.color("alerta", Color("#e8473c")), false, 2.0)
 
 
 ## El rastro (Debug): linea de puntos coral de donde se esfumo a donde reaparece,

@@ -58,7 +58,7 @@ var stun_s: float = 3.0
 var pulse_deflates: bool = true
 ## Acecho (2026-10-28, peligros ocultos del Modo oscuro): dentro de una dark_zone,
 ## dormido y fuera de la Linterna, solo se le ven los ojos (DarkOverlay.draw_lurk_eyes);
-## al despertarse por primera vez se delata (contorno rojo) hasta reaparecer Isak. El
+## al despertarse por primera vez se delata (su aviso; sin contorno rojo) hasta reaparecer Isak. El
 ## comportamiento no cambia. params.lurk del nivel.
 var lurk: bool = false
 var body_size: Vector2 = Vector2(40.0, 40.0)
@@ -395,24 +395,42 @@ func has_lurk_woken() -> bool:
 	return _lurk_woke
 
 
-## Por encima del velo: contorno rojo (vivo), el inflado y la explosion; acechando,
-## solo los ojos (y su silueta en coral con el Debug).
-func draw_dark_overlay(canvas: CanvasItem) -> void:
-	var red: Color = World4ObjectsConfig.color("alerta", Color("#e8473c"))
+## Lo que ensena por encima del velo (DarkOverlay.LOOK_*). Sin contorno rojo desde
+## el 2026-10-28 (peticion del usuario): a oscuras se delata por los ojos y, al
+## inflarse (aviso), su propio cuerpo destella por encima del velo.
+func get_dark_look() -> StringName:
+	if _state == STATE_DEFEATED or _state == STATE_EXPLODED or not is_in_dark():
+		return DarkOverlay.LOOK_NONE
 	if is_lurking():
-		var c: Vector2 = get_center() - global_position
-		if DebugMode.is_revealing():
-			DarkOverlay.draw_debug_reveal(canvas, Rect2(c - body_size * 0.5, body_size).grow(2.0))
-		DarkOverlay.draw_lurk_eyes(canvas, c + Vector2(0.0, -body_size.y * 0.1), int(_direction), _time)
+		return DarkOverlay.LOOK_LURK
+	if DarkOverlay.lit_at(self, get_center()):
+		return DarkOverlay.LOOK_LIT
+	if _state == STATE_INFLATE:
+		return DarkOverlay.LOOK_WARN
+	return DarkOverlay.LOOK_EYES
+
+
+## Por encima del velo: acechando, los ojos tenues (y su silueta en coral con el
+## Debug); despierto, los ojos; inflandose, su cuerpo destellando; al explotar, el
+## anillo de la explosion (dano: rojo, un instante).
+func draw_dark_overlay(canvas: CanvasItem) -> void:
+	var c: Vector2 = get_center() - global_position
+	if is_in_dark() and _state == STATE_EXPLODED and _t < confetti_s * 0.4:
+		canvas.draw_arc(c, blast_tiles * TILE, 0.0, TAU, 32, World4ObjectsConfig.color("alerta", Color("#e8473c")), 2.0)
 		return
-	match _state:
-		STATE_DEFEATED:
-			return
-		STATE_EXPLODED:
-			if _t < confetti_s * 0.4:
-				canvas.draw_arc(get_center() - global_position, blast_tiles * TILE, 0.0, TAU, 32, red, 2.0)
-			return
-	canvas.draw_arc(get_center() - global_position + Vector2(0.0, -_hop()), _radius() + 2.0, 0.0, TAU, 24, red, 2.0)
+	var eyes: Vector2 = c + Vector2(0.0, -body_size.y * 0.1 - _hop())
+	match get_dark_look():
+		DarkOverlay.LOOK_LURK:
+			if DebugMode.is_revealing():
+				DarkOverlay.draw_debug_reveal(canvas, Rect2(c - body_size * 0.5, body_size).grow(2.0))
+			DarkOverlay.draw_lurk_eyes(canvas, eyes, int(_direction), _time)
+		DarkOverlay.LOOK_EYES:
+			DarkOverlay.draw_enemy_eyes(canvas, eyes, int(_direction), _time)
+		DarkOverlay.LOOK_WARN:
+			if _inflate_flash_on():
+				_draw_body(canvas, c, true)
+			else:
+				DarkOverlay.draw_enemy_eyes(canvas, eyes, int(_direction), _time)
 
 
 # --- Dibujo ---
@@ -433,8 +451,6 @@ func _radius() -> float:
 func _draw() -> void:
 	var center: Vector2 = get_center() - global_position + Vector2(0.0, -_hop())
 	var amber: Color = World4ObjectsConfig.color("ambar", Color("#f2b84b"))
-	var ink: Color = World4ObjectsConfig.color("chat_noche", Color("#0f1422"))
-	var red: Color = World4ObjectsConfig.color("alerta", Color("#e8473c"))
 	match _state:
 		STATE_DEFEATED:
 			return
@@ -449,19 +465,30 @@ func _draw() -> void:
 				var p: Vector2 = center + Vector2(cos(ang), sin(ang)) * (12.0 + 60.0 * (1.0 - a)) + Vector2(0.0, 30.0 * (1.0 - a))
 				draw_rect(Rect2(p, Vector2(4.0, 4.0)), Color(colors[i % 3], a))
 			return
+	_draw_body(self, center, _state == STATE_INFLATE and _inflate_flash_on())
+
+
+## Fase encendida del destello del inflado (a anim_fps): el aviso de 9 cuadros.
+func _inflate_flash_on() -> bool:
+	return _state == STATE_INFLATE and int(floor(_t * anim_fps)) % 2 == 0
+
+
+## Cuerpo del Sticker en `center` (local de `canvas`): circulo ambar con cara; al
+## inflarse destella en crema (el aviso; sin anillo rojo desde el 2026-10-28).
+func _draw_body(canvas: CanvasItem, center: Vector2, flash: bool) -> void:
+	var amber: Color = World4ObjectsConfig.color("ambar", Color("#f2b84b"))
+	var ink: Color = World4ObjectsConfig.color("chat_noche", Color("#0f1422"))
 	var r: float = _radius()
-	draw_circle(center, r, amber)
+	canvas.draw_circle(center, r, World4ObjectsConfig.color("crema", Color("#eee4cc")) if flash else amber)
 	# Cara inventada: ojos y boca.
 	var eye_y: float = center.y - r * 0.2
 	if _state == STATE_STUNNED:
-		draw_line(center + Vector2(-r * 0.45, eye_y - center.y - 3.0), center + Vector2(-r * 0.15, eye_y - center.y + 3.0), ink, 2.0)
-		draw_line(center + Vector2(r * 0.15, eye_y - center.y - 3.0), center + Vector2(r * 0.45, eye_y - center.y + 3.0), ink, 2.0)
+		canvas.draw_line(center + Vector2(-r * 0.45, eye_y - center.y - 3.0), center + Vector2(-r * 0.15, eye_y - center.y + 3.0), ink, 2.0)
+		canvas.draw_line(center + Vector2(r * 0.15, eye_y - center.y - 3.0), center + Vector2(r * 0.45, eye_y - center.y + 3.0), ink, 2.0)
 	else:
-		draw_circle(Vector2(center.x - r * 0.3, eye_y), 3.0, ink)
-		draw_circle(Vector2(center.x + r * 0.3, eye_y), 3.0, ink)
-	draw_arc(center + Vector2(0.0, r * 0.1), r * 0.45, 0.3, PI - 0.3, 10, ink, 2.0)
-	if _state == STATE_INFLATE and int(floor(_t * anim_fps)) % 2 == 0:
-		draw_arc(center, r + 2.0, 0.0, TAU, 24, red, 3.0)
+		canvas.draw_circle(Vector2(center.x - r * 0.3, eye_y), 3.0, ink)
+		canvas.draw_circle(Vector2(center.x + r * 0.3, eye_y), 3.0, ink)
+	canvas.draw_arc(center + Vector2(0.0, r * 0.1), r * 0.45, 0.3, PI - 0.3, 10, ink, 2.0)
 
 
 func _load_data() -> bool:
