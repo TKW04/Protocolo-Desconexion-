@@ -341,3 +341,6 @@ func test_deseos_test_room_loads() -> void:
 	assert_eq(get_tree().get_nodes_in_group(WishlistPlatform.GROUP).size(), 3, "Tres deseos")
 	assert_eq(get_tree().get_nodes_in_group(WishStrike.STRIKE_GROUP).size(), 1, "El tachon")
 	assert_eq(get_tree().get_nodes_in_group(CalcRegister.REGISTER_GROUP).size(), 1, "La caja de Calc")
+	# Se quita antes de after_each: GeneratedLevel restaura al salir las habilidades que habia al entrar
+	# (las de before_each); con el autofree salia despues y las dejaba desbloqueadas para la suite.
+	room.free()

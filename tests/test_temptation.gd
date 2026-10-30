@@ -305,3 +305,6 @@ func test_ofertas_test_room_loads() -> void:
 	assert_eq(offers.size(), 3, "Tres Ofertas")
 	var mounts: Array = offers.map(func(o: OfferSign) -> StringName: return o.mount)
 	assert_true(mounts.has(OfferSign.MOUNT_WALL), "Una colgada (params.mount)")
+	# Se quita antes de after_each: GeneratedLevel restaura al salir las habilidades que habia al entrar
+	# (las de before_each); con el autofree salia despues y las dejaba desbloqueadas para la suite.
+	room.free()

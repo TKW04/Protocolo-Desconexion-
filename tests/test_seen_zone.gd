@@ -264,3 +264,6 @@ func test_visto_test_room_loads() -> void:
 	assert_eq(cycle.icon_side, &"right")
 	assert_almost_eq(cycle.phase_s, 1.0, EPS)
 	assert_false(GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE), "Sin Agitar en la sala (retirado)")
+	# Se quita antes de after_each: GeneratedLevel restaura al salir las habilidades que habia al entrar
+	# (las de before_each); con el autofree salia despues y las dejaba desbloqueadas para la suite.
+	level.free()

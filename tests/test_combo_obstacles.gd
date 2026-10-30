@@ -611,3 +611,7 @@ func test_combos_test_room_loads() -> void:
 	assert_eq(get_tree().get_nodes_in_group(PriceRail.GROUP).size(), 1)
 	assert_eq(get_tree().get_nodes_in_group(ClearanceShelf.GROUP).size(), 3)
 	assert_eq(get_tree().get_nodes_in_group(DndSwitch.GROUP).size(), 1, "La «Prueba gratis»")
+	# Se quita aqui, antes de after_each: al salir del arbol GeneratedLevel restaura las habilidades
+	# que habia al entrar (las de before_each, desbloqueadas); con el autofree salia despues de que
+	# after_each las bloqueara y las dejaba desbloqueadas para los scripts siguientes de la suite.
+	room.free()

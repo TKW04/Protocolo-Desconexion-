@@ -51,6 +51,10 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	# La arena se quita antes de restaurar: GeneratedLevel restaura al salir las habilidades que habia al entrar
+	# (las de before_each); con el autofree salia despues y las dejaba desbloqueadas para la suite.
+	if is_instance_valid(_level):
+		_level.free()
 	_level = null
 	_boss = null
 	_sim = null
