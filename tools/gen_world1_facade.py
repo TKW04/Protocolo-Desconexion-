@@ -198,15 +198,16 @@ def text_cells(text):
     out = []
     for ch in text:
         if ch == " ":
-            out.append((None, tf.SPACE_ADVANCE))
+            out.append((None, tf.SPACE_ADVANCE, 0))
         else:
             rows = glyphs[ch]
-            out.append((rows, tf.advance_of(ch, len(rows[0]))))
+            # xoffset propio de la fuente (la «j» desde el 2026-10-28, METRIC_OVERRIDES).
+            out.append((rows, tf.advance_of(ch, len(rows[0])), tf.xoffset_of(ch)))
     return out
 
 
 def text_width(text):
-    return sum(adv for _, adv in text_cells(text)) - 1
+    return sum(adv for _, adv, _ in text_cells(text)) - 1
 
 
 ICONS = {
@@ -245,12 +246,12 @@ def tab(tab_id):
     # Rotulo con los glifos de la fuente de textos.
     x = 8 + iw + 6
     ty = (TAB_H - 2 - 12) // 2 + 1
-    for rows, adv in text_cells(label):
+    for rows, adv, xo in text_cells(label):
         if rows is not None:
             for j, row in enumerate(rows):
                 for i, ch in enumerate(row):
                     if ch == "#":
-                        cv.p(x + i, ty + j, BL)
+                        cv.p(x + xo + i, ty + j, BL)
         x += adv
     return cv.scaled()
 
