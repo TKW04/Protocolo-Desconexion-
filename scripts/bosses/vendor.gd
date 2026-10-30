@@ -50,6 +50,9 @@ signal tokens_changed(tokens: int)
 signal platform_paid(platform: StringName, credit: bool)
 ## Una plataforma trampa se pliega.
 signal platform_folded(platform: StringName)
+## Las etiquetas vuelven a estar a la venta tras reponerse (priced_platforms.restock_s
+## despues de cada golpe de la fase 1; sfx_w5_shelf_restock).
+signal shelf_restocked
 ## Explota una bomba en `at` (global).
 signal bomb_exploded(at: Vector2)
 ## Empieza / termina «Procesando devolución…» (fase 2).
@@ -139,6 +142,8 @@ var _coin_hit: Array[bool] = []
 # Fase 1: plataformas con precio (nombre -> estado).
 var _platforms: Dictionary = {}
 var _trap_drop_left: float = 0.0
+## Fase 1: tras un golpe las etiquetas se reponen (no se pueden pagar) restock_s.
+var _restock_left: float = 0.0
 # Fase 2: cajas.
 var _boxes: Array[SurpriseBox] = []
 var _box_info: Dictionary = {}
@@ -147,6 +152,9 @@ var _batch_index: int = 0
 var _refund_left: float = 0.0
 # Fase 3: oferta, escaparate, vitrinas y ranura.
 var _countdown_left: float = 0.0
+## Fase 3: el cartel «¡SOLO POR HOY!» baja (offer.start_grace_s): sin cuenta, sin
+## tiron y sin «Compra realizada» (Isak puede estar junto a la bandeja al empezar).
+var _offer_grace_left: float = 0.0
 var _last_tick: int = -1
 var _shutter: Shutter
 var _showcases: Array[StaticBody2D] = []
@@ -372,6 +380,15 @@ func is_platform_solid(platform: String) -> bool:
 	return is_platform_active(platform) and not is_platform_folded(platform)
 
 
+## S del mundo que faltan para que las etiquetas se puedan volver a pagar (fase 1).
+func get_restock_left() -> float:
+	return _restock_left if get_phase() == 1 and is_fighting() else 0.0
+
+
+func is_restocking() -> bool:
+	return get_restock_left() > 0.0
+
+
 func get_platform_life_left(platform: String) -> float:
 	return float((_platforms[platform] as Dictionary)["life"]) if is_platform_active(platform) else 0.0
 
@@ -454,6 +471,11 @@ func get_countdown_left() -> float:
 	return _countdown_left if get_phase() == 3 and is_fighting() else 0.0
 
 
+## S del mundo que le quedan al cartel de la fase 3 para bajar (sin cuenta ni tiron).
+func get_offer_grace_left() -> float:
+	return _offer_grace_left if get_phase() == 3 and is_fighting() else 0.0
+
+
 func get_countdown_s() -> float:
 	return float(lap_value("countdown_s", 15.0))
 
@@ -490,7 +512,7 @@ func get_pull_weight(point: Vector2, dead_zone_px: float = 4.0) -> float:
 
 
 func is_pulling() -> bool:
-	if get_phase() != 3 or not is_fighting() or _off:
+	if get_phase() != 3 or not is_fighting() or _off or _offer_grace_left > 0.0:
 		return false
 	var isak: Isak = find_isak()
 	return isak == null or not isak.is_frozen()
@@ -539,8 +561,13 @@ func _on_phase_started(phase_index: int) -> void:
 	_batch_wait = float(p.get("first_delay_s", 1.0))
 	_batch_index = 0
 	_trap_drop_left = 0.0
+	_restock_left = 0.0
 	_slot_passing = false
 	_update_isak_side()
+	# El golpe que cierra la fase 1 lo estaba girando (y _turn vuelve a none): en la
+	# fase 2 empieza ya de frente a Isak, sin regalar una ventana (paso 19, bot).
+	if phase_index == 2 and _isak_side != 0 and _isak_side != _facing:
+		_set_facing(_isak_side)
 	if phase_index == 3:
 		# La oferta: mira a Isak y ya no se gira («ocupada vendiendo»).
 		if _isak_side != 0 and _isak_side != _facing:
@@ -548,9 +575,13 @@ func _on_phase_started(phase_index: int) -> void:
 		add_to_group(TemptationField.GROUP)
 		_build_showcases()
 		_reset_countdown()
-	elif is_in_group(TemptationField.GROUP):
+		_offer_grace_left = float(section("offer").get("start_grace_s", 0.0))
+		_set_slot_open(_offer_grace_left <= 0.0)
+	else:
+		_offer_grace_left = 0.0
+	if phase_index != 3 and is_in_group(TemptationField.GROUP):
 		remove_from_group(TemptationField.GROUP)
-	_set_slot_open(phase_index == 3)
+	_set_slot_open(phase_index == 3 and _offer_grace_left <= 0.0)
 	_set_tray_open(false)
 	_update_core()
 	if phase_index > 1:
@@ -599,9 +630,27 @@ func _on_window_opened(_duration_s: float) -> void:
 func _on_core_hit(_remaining_hits: int) -> void:
 	if is_window_open():
 		close_window()
+	_behind_open = false
+	# Fase 2 (paso 19): el golpe da la devolucion por procesada (un golpe por ventana).
+	if is_refunding():
+		_refund_left = 0.0
+		refund_finished.emit()
+	# Fase 1 (paso 19): las etiquetas se reponen restock_s antes de volver a venderse.
+	if get_phase() == 1 and is_fighting():
+		_restock_left = float(section("priced_platforms").get("restock_s", 0.0))
 	# Fases 1 y 2: el golpe lo hace girarse ya (un golpe por ventana).
 	if can_turn() and is_isak_behind() and _turn != TURN_TURNING:
 		_begin_turn_anim()
+	# Fase 3 (paso 19, 2026-10-29): el golpe vende otra oferta: mira a Isak, la cuenta
+	# vuelve a empezar con el escaparate repuesto tras el cartel (offer.start_grace_s).
+	# Un golpe por cuenta: cada golpe pide volver delante y un combo (§5.7).
+	if get_phase() == 3 and is_fighting():
+		_update_isak_side()
+		if _isak_side != 0 and _isak_side != _facing:
+			_set_facing(_isak_side)
+		_reset_countdown()
+		_offer_grace_left = float(section("offer").get("start_grace_s", 0.0))
+		_set_slot_open(_offer_grace_left <= 0.0)
 
 
 func _on_defeated() -> void:
@@ -747,7 +796,8 @@ func _build_platforms() -> void:
 
 ## Paga la plataforma `name` (pulso a su etiqueta). Verdadero si aparece.
 func pay_platform(platform: String) -> bool:
-	if get_phase() != 1 or not is_fighting() or not _platforms.has(platform) or is_platform_active(platform):
+	if get_phase() != 1 or not is_fighting() or not _platforms.has(platform) or is_platform_active(platform) \
+			or _restock_left > 0.0:
 		return false
 	var cost: int = get_platform_cost()
 	var credit: bool = _tokens < cost
@@ -770,6 +820,10 @@ func _advance_platforms(dt: float) -> void:
 	var pp: Dictionary = section("priced_platforms")
 	var isak: Isak = find_isak()
 	_trap_drop_left = maxf(_trap_drop_left - dt, 0.0)
+	if _restock_left > 0.0:
+		_restock_left = maxf(_restock_left - dt, 0.0)
+		if _restock_left <= 0.0:
+			shelf_restocked.emit()
 	for name: String in _platforms:
 		var st: Dictionary = _platforms[name]
 		if not bool(st["active"]):
@@ -981,6 +1035,11 @@ func _advance_tray(_dt: float) -> void:
 # --- Fase 3: oferta, escaparate, vitrinas y ranura ---
 
 func _advance_offer(dt: float) -> void:
+	if _offer_grace_left > 0.0:
+		_offer_grace_left = maxf(_offer_grace_left - dt, 0.0)
+		if _offer_grace_left <= 0.0:
+			_set_slot_open(true)
+		return
 	_countdown_left = maxf(_countdown_left - dt, 0.0)
 	var left: int = ceili(_countdown_left - 0.0001)
 	if left != _last_tick:
@@ -1220,7 +1279,9 @@ func _clear_attacks() -> void:
 	_attack_t = 0.0
 	_refund_left = 0.0
 	_countdown_left = 0.0
+	_offer_grace_left = 0.0
 	_trap_drop_left = 0.0
+	_restock_left = 0.0
 
 
 # --- Construccion ---
@@ -1455,6 +1516,8 @@ class VendorFx extends Node2D:
 			var signs: Dictionary = boss._texts.get("signs", {})
 			sign = "%s %d" % [String(signs.get("offer", "¡SOLO POR HOY!")), ceili(boss.get_countdown_left() - 0.0001)] \
 				if sign.is_empty() else sign
+		if sign.is_empty() and boss.is_restocking():
+			sign = String((boss._texts.get("signs", {}) as Dictionary).get("restock", "Reponiendo…"))
 		if not sign.is_empty():
 			draw_string(font, Vector2(m.position.x - 64.0, m.position.y + 150.0), sign, HORIZONTAL_ALIGNMENT_CENTER,
 				m.size.x + 128.0, 16, trim)
@@ -1468,6 +1531,11 @@ class VendorFx extends Node2D:
 				elif boss.is_platform_folded(name):
 					draw_line(pr.position, pr.position + Vector2(8.0, 24.0), trim, 3.0)
 				if boss.is_platform_active(name):
+					continue
+				if boss.is_restocking():
+					# Reponiendo: etiqueta vacia (contorno), sin precio.
+					draw_rect(lr, Color(price, 0.35))
+					draw_rect(lr, ink, false, 2.0)
 					continue
 				draw_rect(lr, price)
 				draw_rect(lr, ink, false, 2.0)

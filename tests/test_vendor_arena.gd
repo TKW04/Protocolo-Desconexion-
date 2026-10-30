@@ -119,9 +119,18 @@ func _debug_on() -> void:
 	assert_true(DebugMode.is_active(), "Debug activo")
 
 
-func _to_phase(phase: int) -> void:
+## Pasa a la fase `phase` con golpes directos. En la fase 3, sin el cartel que baja
+## (offer.start_grace_s, paso 19) salvo `keep_grace`: la cuenta y la ranura ya en marcha.
+func _to_phase(phase: int, keep_grace: bool = false) -> void:
 	while _boss.get_phase() < phase:
 		_boss.take_core_hit(1)
+	if phase == 3 and not keep_grace:
+		_skip_grace()
+
+
+func _skip_grace() -> void:
+	_advance_until(func() -> bool: return _boss.get_offer_grace_left() <= 0.0, 10.0)
+	_boss._countdown_left = _boss.get_countdown_s()
 
 
 func _isak() -> Isak:
@@ -654,3 +663,95 @@ func test_phase3_real_plain_dash_into_the_slot_goes_back() -> void:
 	_place_isak(5, 7, 1.0)
 	var x: float = _edge_from_shelf(4, false)
 	assert_lt(x, _boss.get_machine_rect().position.x, "Un dash normal no cruza la ranura: vuelve delante")
+
+
+# --- Ajustes del paso 19 (2026-10-29, bot del jefe) ---
+
+func test_phase1_labels_restock_after_a_hit() -> void:
+	await _arena()
+	_boss.start()
+	var restocked: Array = []
+	_boss.shelf_restocked.connect(func() -> void: restocked.append(true))
+	_boss.take_core_hit(1)
+	var restock: float = float(_boss.section("priced_platforms").get("restock_s", 0.0))
+	assert_gt(restock, 0.0, "restock_s en los datos")
+	assert_almost_eq(_boss.get_restock_left(), restock, EPS, "Tras el golpe, las etiquetas se reponen")
+	assert_false(_boss.pay_platform("a"), "Reponiendo: no se puede pagar")
+	assert_eq(_boss.get_tokens(), 12, "Sin cobrar")
+	_advance(restock + DT)
+	assert_eq(restocked, [true], "shelf_restocked al acabar")
+	assert_true(_boss.pay_platform("a"), "Repuestas: se paga")
+
+
+func test_phase2_starts_facing_isak_without_a_free_window() -> void:
+	await _arena()
+	_boss.start()
+	_place_isak(14, 9, -1.0)
+	_advance(DT)
+	assert_true(_boss.is_isak_behind(), "Detras en la fase 1")
+	_to_phase(2)
+	assert_eq(_boss.get_facing(), Vendor.SIDE_RIGHT, "La fase 2 empieza mirando a Isak")
+	assert_false(_boss.is_window_open(), "Sin ventana regalada")
+	_advance(2.0)
+	assert_eq(_boss.get_turn_stage(), Vendor.TURN_NONE)
+	assert_false(_boss.is_window_open())
+
+
+func test_phase2_a_hit_ends_the_refund_and_turns() -> void:
+	await _arena()
+	_boss.start()
+	_to_phase(2)
+	_place_isak(14, 9, -1.0)
+	_boss.start_refund()
+	_advance(0.5)
+	assert_true(_boss.is_refunding())
+	assert_true(_boss.is_window_open(), "Detras procesando: ventana")
+	var finished: Array = []
+	_boss.refund_finished.connect(func() -> void: finished.append(true))
+	_boss.take_core_hit(1)
+	assert_false(_boss.is_refunding(), "Un golpe por ventana: la devolucion se da por procesada")
+	assert_eq(finished, [true])
+	assert_eq(_boss.get_turn_stage(), Vendor.TURN_TURNING, "Y se gira ya")
+
+
+func test_phase3_offer_grace_then_countdown() -> void:
+	await _arena()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3, true)
+	var grace: float = float(_boss.section("offer").get("start_grace_s", 0.0))
+	assert_gt(grace, 0.0)
+	assert_almost_eq(_boss.get_offer_grace_left(), grace, EPS, "El cartel baja")
+	assert_false(_boss.is_slot_open(), "Con la ranura cerrada")
+	assert_false(_boss.is_pulling(), "Sin tiron")
+	var paid: Array = []
+	_boss.payment_processed.connect(func(by_tray: bool) -> void: paid.append(by_tray))
+	_isak().global_position = _boss.get_tray_zone_rect().get_center() + Vector2(0.0, 31.0)
+	_sim.settle()
+	_advance(grace - 0.5)
+	assert_eq(paid, [], "En la bandeja durante el cartel: no compra")
+	assert_almost_eq(_boss.get_countdown_left(), _boss.get_countdown_s(), EPS, "La cuenta espera")
+	_place_isak(2, 9, 1.0)
+	_advance(0.6)
+	assert_true(_boss.is_slot_open(), "Despues, la ranura se abre")
+	assert_true(_boss.is_pulling(), "y tira")
+	assert_lt(_boss.get_countdown_left(), _boss.get_countdown_s(), "y la cuenta corre")
+
+
+func test_phase3_a_hit_sells_another_offer() -> void:
+	await _arena()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3)
+	assert_eq(_boss.get_facing(), Vendor.SIDE_LEFT)
+	var shutter: Shutter = _boss.get_shutter()
+	_place_isak(14, 9, -1.0)
+	_advance(3.0)
+	assert_true(_boss.is_isak_behind())
+	_boss.take_core_hit(1)
+	assert_eq(_boss.get_facing(), Vendor.SIDE_RIGHT, "Mira a Isak: hay que volver delante")
+	assert_almost_eq(_boss.get_countdown_left(), _boss.get_countdown_s(), EPS, "La cuenta vuelve a empezar")
+	assert_gt(_boss.get_offer_grace_left(), 0.0, "Con el cartel que baja otra vez")
+	assert_false(_boss.is_slot_open(), "Ranura cerrada mientras baja")
+	assert_ne(_boss.get_shutter(), shutter, "Escaparate repuesto")
+

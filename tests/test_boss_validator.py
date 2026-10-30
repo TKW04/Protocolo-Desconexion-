@@ -654,7 +654,8 @@ class VendorArenaTest(unittest.TestCase):
 
     def test_windows_fit_by_phase_and_access(self):
         windows = self.result["boss"]["vendor_windows"]
-        self.assertEqual(len(windows), 3 * (2 + 3 + 4))
+        # Por acceso: 2 plataformas buenas, 4 tandas (la cuarta del paso 19) y 4 caminos de la fase 3.
+        self.assertEqual(len(windows), 3 * (2 + 4 + 4))
         for w in windows:
             self.assertLessEqual(w["need_s"], w["window_s"] + 1e-6, w)
         self.assertEqual({w["phase"]: w["k"] for w in windows}, {1: 1.5, 2: 1.5, 3: 2.0})

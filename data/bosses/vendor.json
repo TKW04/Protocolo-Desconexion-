@@ -44,12 +44,12 @@
 		"trap_color": "debug_blanco"
 	},
 	"turn": {"warn_frames": 9, "anim_s": 0.25},
-	"_attacks_notes": "ATAQUES (§5.4-§5.6). priced_platforms (fase 1): cada plataforma con precio aparece al pagar su etiqueta con un pulso (desde el estante; cost fichas de data/economy.json boss_tokens) y dura life_s; las de laps.<n>.traps (una de cada par; Caché: b y c, las pegadas a la maquina) son TRAMPAS: se pliegan fold_s despues de pisarlas y dejan caer a Isak: al aterrizar, -trap_damage y empuje al frente (lejos de la maquina) a trap_push_px_s. Con el Debug la etiqueta trampa lleva su icono (blanco con contorno negro). arm_sweep: un brazo barre un estante (alternando; el de Isak primero): sombra y brazo recogido warn_frames y barrido sweep_s (-damage al tocarlo; sin el estante, nada). coins: count monedas en columnas (la de Isak y a spread_cols), sombra warn_frames y caida fall_s desde la fila 1 (-damage). boxes (fase 2): tandas de 3 cada interval_s; contenido y destino FIJOS por tanda (batches: [columna, fila de la superficie donde cae, contenido]; en el suelo solo fuera de los estantes (columnas 1, 6-7, 12-13 y 18: bajo un estante la caja caeria en el); contenido tokens = +good_box_bonus fichas, energy = +energy, bomb, ticket); vuelan flight_up_px_s hacia arriba con la gravedad de la caja. Bomba: explota fuse_s despues de caer (radio blast_tiles, -blast_damage; la mecha chisporrotea desde que cae: el aviso); abrirla la hace explotar ya; el pulso la aturde stun (escalon; la mecha se para). Ticket de devolucion: abrirlo deja a la maquina «Procesando devolución…» refund_s s del mundo: no se gira y la bandeja (tunel) se abre. Las cajas abiertas o destruidas se quitan a los clear_s; como mucho max_boxes en la arena. offer (fase 3): cuenta laps.<n>.countdown_s con un tic por segundo; la maquina no se gira y TIRA de Isak hacia la bandeja (por delante) o hacia la maquina (por detras) con peso pull_weight (deriva 90 px/s, x0,45 al alejarse: §3.3); tocar la bandeja o llegar a 0: «Procesando pago…»: congelado pay_freeze_s (FrozenState; golpe al liberarse, hacia fuera) y la cuenta vuelve a empezar con el escaparate repuesto. attack_gap_s entre ataques.",
-	"priced_platforms": {"life_s": 6.0, "fold_s": 0.3, "trap_damage": 10.0, "trap_push_px_s": 360.0, "land_window_s": 1.5},
+	"_attacks_notes": "ATAQUES (§5.4-§5.6). priced_platforms (fase 1): cada plataforma con precio aparece al pagar su etiqueta con un pulso (desde el estante; cost fichas de data/economy.json boss_tokens) y dura life_s; las de laps.<n>.traps (una de cada par; Caché: b y c, las pegadas a la maquina) son TRAMPAS: se pliegan fold_s despues de pisarlas y dejan caer a Isak: al aterrizar, -trap_damage y empuje al frente (lejos de la maquina) a trap_push_px_s. Con el Debug la etiqueta trampa lleva su icono (blanco con contorno negro). arm_sweep: un brazo barre un estante (alternando; el de Isak primero): sombra y brazo recogido warn_frames y barrido sweep_s (-damage al tocarlo; sin el estante, nada). coins: count monedas en columnas (la de Isak y a spread_cols), sombra warn_frames y caida fall_s desde la fila 1 (-damage). boxes (fase 2): tandas de 3 cada interval_s; contenido y destino FIJOS por tanda (batches: [columna, fila de la superficie donde cae, contenido]; en el suelo solo fuera de los estantes (columnas 1, 6-7, 12-13 y 18: bajo un estante la caja caeria en el); contenido tokens = +good_box_bonus fichas, energy = +energy, bomb, ticket); vuelan flight_up_px_s hacia arriba con la gravedad de la caja. Bomba: explota fuse_s despues de caer (radio blast_tiles, -blast_damage; la mecha chisporrotea desde que cae: el aviso); abrirla la hace explotar ya; el pulso la aturde stun (escalon; la mecha se para). Ticket de devolucion: abrirlo deja a la maquina «Procesando devolución…» refund_s s del mundo: no se gira y la bandeja (tunel) se abre. Tras un golpe de la fase 1 las etiquetas se reponen restock_s (paso 19: sin pagar, cartel «Reponiendo…»; afinado de la duracion con el bot ideal, como los huecos de El Visto). Un golpe en la fase 2 da la devolucion por procesada (un golpe por ventana: la maquina se gira ya). Cuatro tandas (paso 19: la cuarta, con el ticket en el estante izquierdo, hace que los tickets alternen de lado D, I, D, I en bucle, como Isak al cruzar la bandeja en cada golpe; con tres, la cuarta ventana de Kernel y Raiz esperaba dos tandas). Las cajas abiertas o destruidas se quitan a los clear_s; como mucho max_boxes en la arena. offer (fase 3): cuenta laps.<n>.countdown_s con un tic por segundo; la maquina no se gira y TIRA de Isak hacia la bandeja (por delante) o hacia la maquina (por detras) con peso pull_weight (deriva 90 px/s, x0,45 al alejarse: §3.3); tocar la bandeja o llegar a 0: «Procesando pago…»: congelado pay_freeze_s (FrozenState; golpe al liberarse, hacia fuera) y la cuenta vuelve a empezar con el escaparate repuesto. start_grace_s (paso 19, 2026-10-29): al empezar la fase 3 el cartel baja esos s del mundo sin cuenta, sin tiron, sin «Compra realizada» y con la ranura cerrada (el golpe que cierra la fase 2 se da junto a la cara de detras, que pasa a ser la de delante: sin esto, Isak compraba en el primer cuadro). Un golpe en la fase 3 vende otra oferta: la maquina mira a Isak, la cuenta vuelve a empezar con el escaparate repuesto y el cartel baja otra vez start_grace_s (un golpe por cuenta: cada golpe pide volver delante y un combo, los «combos minimos» de §5.7). attack_gap_s entre ataques.",
+	"priced_platforms": {"life_s": 6.0, "fold_s": 0.3, "trap_damage": 10.0, "trap_push_px_s": 360.0, "land_window_s": 1.5, "restock_s": 14.0},
 	"arm_sweep": {"warn_frames": 9, "sweep_s": 0.6, "damage": 10.0},
 	"coins": {"count": 3, "spread_cols": 3, "warn_frames": 9, "fall_s": 0.5, "damage": 10.0},
 	"boxes": {
-		"interval_s": 5.0,
+		"interval_s": 12.0,
 		"flight_up_px_s": 720.0,
 		"energy": 20.0,
 		"fuse_s": 2.5,
@@ -61,10 +61,11 @@
 		"batches": [
 			[[3, 8, "tokens"], [13, 10, "bomb"], [16, 8, "ticket"]],
 			[[4, 8, "bomb"], [6, 10, "ticket"], [15, 8, "energy"]],
-			[[12, 10, "ticket"], [7, 10, "bomb"], [14, 8, "bomb"]]
+			[[12, 10, "ticket"], [7, 10, "bomb"], [14, 8, "bomb"]],
+			[[2, 8, "ticket"], [13, 10, "bomb"], [18, 10, "energy"]]
 		]
 	},
-	"offer": {"pull_weight": 1.5, "pay_freeze_s": 2.0},
+	"offer": {"pull_weight": 1.5, "pay_freeze_s": 2.0, "start_grace_s": 5.0},
 	"phase1": {"first_delay_s": 2.0, "attacks": ["arm_sweep", "coins"], "attack_gap_s": 2.5},
 	"phase2": {"first_delay_s": 2.0, "attacks": ["arm_sweep"], "attack_gap_s": 4.0},
 	"phase3": {"first_delay_s": 2.0, "attacks": ["coins"], "attack_gap_s": 4.0},
@@ -93,7 +94,7 @@
 	"texts": {
 		"intro": "Bienvenido, {apodo}. Ya sé lo que vas a llevar.",
 		"phase_lines": {"2": "¿Una sorpresa? Todas son para ti.", "3": "Oferta por tiempo limitado. Solo tienes que no hacer nada."},
-		"signs": {"refund": "Procesando devolución…", "pay": "Procesando pago…", "bought": "Compra realizada", "offer": "¡SOLO POR HOY!", "credit": "Te fío", "price": "%d"},
+		"signs": {"refund": "Procesando devolución…", "pay": "Procesando pago…", "bought": "Compra realizada", "offer": "¡SOLO POR HOY!", "credit": "Te fío", "price": "%d", "restock": "Reponiendo…"},
 		"final_system": "Compra cancelada.",
 		"defeat": "Te lo dejé todo elegido. Y aun así eliges."
 	}
