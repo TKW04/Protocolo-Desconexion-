@@ -397,7 +397,7 @@ Las alturas de repisa se miden desde el suelo donde está la Burbuja. Como el sa
 ## Decisiones del usuario sobre la Burbuja de alerta (2026-10-14)
 
 - **Burbuja:** un pulso sobre una Burbuja ya aturdida reinicia el aturdimiento (aprobado).
-- **Respawn de enemigos:** se decidirá más adelante; por ahora una Burbuja reventada no reaparece, salvo en la escena de prueba (aprobado provisional).
+- **Respawn de enemigos:** se decidirá más adelante; por ahora una Burbuja reventada no reaparece, salvo en la escena de prueba (aprobado provisional). **Decidido el 2026-10-30 (usuario):** al perder una vida (caer por un barranco o morir por daño) los enemigos derrotados se recrean y lo demás se conserva; las arenas de jefe no recrean nada (`docs/propuesta-mundo-5.md` §8.1, cambios 2 y 5).
 
 ## Notas del paso 14b: fuente de textos y voz de Eco (2026-10-14)
 
@@ -438,7 +438,7 @@ Decisiones aplicadas: V2 (reaparecer en el último punto de sincronización o en
 - **Escena principal:** `scenes/main.tscn` (`LevelRunner`) carga el nivel actual (por defecto el 1-1) y empieza siempre de cero: Sync Rate 100 %, energía de Debug 100 (no se usa en el 1-1), 0 puntos de atención, sin punto de sincronización y Debug apagado.
 - **Punto de sincronización:** baliza de 2 tiles con bandera gris a media asta que pasa a bandera cian izada y ondeando al tocarla (el cian del Debug se admite por ser interactivo). Se guarda una sola vez y solo hay uno activo por nivel (el más reciente). Sin texto.
 - **Muerte:** animación `death` completa (19 cuadros a 12 fps, 1,58 s), pausa de 0,5 s, fundido a `noche_profunda` de 0,3 s, reaparición y fundido de entrada de 0,3 s. Al reaparecer: Sync Rate 100 %, Debug apagado, energía sin cambios, 1 s de invulnerabilidad con parpadeo (la misma del golpe).
-- **Estado del nivel al reaparecer (cero castigo):** se conserva todo (puente extendido, receptor activado, pop-up cerrado, puntos recogidos, Burbuja reventada). La Burbuja que sigue viva vuelve a su sitio patrullando y sin aturdir. Los puntos de atención no se pierden.
+- **Estado del nivel al reaparecer (cero castigo):** se conserva todo (puente extendido, receptor activado, pop-up cerrado, puntos recogidos; ~~Burbuja reventada~~: desde el 2026-10-30 los enemigos derrotados se recrean al reaparecer). La Burbuja que sigue viva vuelve a su sitio patrullando y sin aturdir. Los puntos de atención no se pierden.
 - **Red de seguridad:** si Isak cae más de 64 px por debajo del borde inferior del nivel (un hueco sin fondo por error), reaparece en el último punto de sincronización (o en `P`) con el mismo fundido y **sin quitar Sync Rate** (`fall_sync_penalty` 0). No cuenta como muerte. El 1-1 no tiene huecos sin fondo, así que en el slice no debería saltar nunca.
 - **Final:** al cruzar la puerta se marca el 1-1 como completado y se desbloquea el 1-2 (según `unlocks`; el 1-2 no existe y no se carga). Tras un fundido aparece la pantalla provisional del hub con los puntos recogidos; salto reinicia el 1-1 desde cero.
 - **Dudas:** (1) V3 aprobó que caer fuera del nivel quita un 20 % y devuelve al último suelo seguro; aquí la red de seguridad no quita nada y devuelve al punto de sincronización. ¿Se mantiene así en el 1-1 y se aplica el 20 % desde el 1-2? (2) ¿Debe la energía de Debug reponerse también al reaparecer? (3) ¿Los puntos de atención deben guardarse entre partidas? **Resuelta el 2026-10-14:** sí. Se guardan en disco y ya no vuelven a 0 (ver «Decisiones del 2026-10-14: mejoras permanentes, guardado y recargas»).

@@ -303,14 +303,17 @@ func test_level_objects_keep_state_after_respawn() -> void:
 	assert_true(bubble.global_position.is_equal_approx(spawn), "Burbuja en su sitio")
 
 
-func test_popped_bubble_stays_popped_after_respawn() -> void:
+func test_popped_bubble_comes_back_after_respawn() -> void:
 	await _start()
 	var bubble: AlertBubble = _bubble()
 	bubble.free_on_pop = false
 	bubble.stun()
 	bubble.pop()
 	_die_and_respawn()
-	assert_eq(bubble.get_state(), AlertBubble.STATE_POPPED, "Sigue reventada")
+	var again: AlertBubble = _bubble()
+	assert_not_null(again, "Desde el 2026-10-30 morir por dano recrea los derrotados")
+	assert_ne(again, bubble, "Recreada")
+	assert_eq(again.get_state(), AlertBubble.STATE_PATROL, "Patrullando como al empezar")
 
 
 func test_safety_net_respawns_with_full_sync() -> void:

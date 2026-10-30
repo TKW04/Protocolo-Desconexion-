@@ -10,7 +10,8 @@
 ## los vivos solo vuelven a su sitio (reset_patrol, como siempre). Solo toca «Enemies»: los
 ## objetos (puntos, recuerdos, vidas extra, power banks, cajas, puertas, cargadores...) siguen
 ## como estaban, asi que lo recogido de los secretos se conserva. Las arenas de jefe no usan
-## esto (el jefe lleva su propia pelea).
+## esto (el jefe lleva su propia pelea). Desde el 2026-10-30 (decision del usuario) tambien
+## se usa al reaparecer tras perder una vida por dano (LevelRunner.death_respawns_enemies).
 class_name EnemyRespawn
 extends RefCounted
 

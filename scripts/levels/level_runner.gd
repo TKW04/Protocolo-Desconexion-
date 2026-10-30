@@ -30,6 +30,11 @@
 ##   Rate lleno; con fall_respawns_enemies los enemigos derrotados del nivel se recrean
 ##   (EnemyRespawn; no en las arenas de jefe) y lo recogido (secretos, puntos, recuerdos,
 ##   vidas extra, power banks) y los objetos del mapa siguen como estaban.
+##   Desde el 2026-10-30 (decision del usuario; cambio 5 de §8.1) con
+##   death_respawns_enemies lo mismo vale al perder una vida por dano (Sync a 0,
+##   aplastamiento...): al reaparecer en el checkpoint se recrean los enemigos
+##   derrotados y lo demas se conserva. Las arenas de jefe no recrean nada y el game
+##   over (ultima vida) no cambia.
 ## - Jefe (2026-10-21, paso 10 de docs/propuesta-jefe-alerta-mayor.md): la arena
 ##   no tiene terminal; su BossDefeat emite level_completed tras la recompensa y
 ##   el vortice. Si con ello la carpeta del mundo queda completada por primera
@@ -566,6 +571,12 @@ func fall_respawns_enemies() -> bool:
 	return bool(_data.get("fall_respawns_enemies", true)) and not _level_has_boss()
 
 
+## Tras perder una vida por dano (muerte con vidas restantes) tambien se recrean los
+## enemigos derrotados (death_respawns_enemies; 2026-10-30; no en las arenas de jefe).
+func death_respawns_enemies() -> bool:
+	return bool(_data.get("death_respawns_enemies", true)) and not _level_has_boss()
+
+
 func _level_has_boss() -> bool:
 	if _level == null:
 		return false
@@ -601,7 +612,7 @@ func _respawn(after_death: bool) -> void:
 		GameState.apply_sync_damage(float(_data.get("fall_sync_penalty", 0.0)))
 	_isak.respawn(at, float(_data.get("respawn_invulnerability_s", 1.0)))
 	_start_arrival()
-	if not after_death and fall_respawns_enemies():
+	if death_respawns_enemies() if after_death else fall_respawns_enemies():
 		EnemyRespawn.restore(_level, _enemy_templates)
 	for enemy: Node in get_tree().get_nodes_in_group(AlertBubble.GROUP):
 		if _level.is_ancestor_of(enemy) and enemy.has_method(&"reset_patrol"):
