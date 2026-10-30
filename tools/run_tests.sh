@@ -251,6 +251,9 @@ rm -f "$IMPORT_LOG"
 # (tests/test_boss_reward.gd) y el hub con el Mundo 5 completo (tests/test_hub_world5_complete.gd, GUT: fila jugable,
 # pieza 5, fondo completo, candado que se abre en la pagina 3, M6 disponible, flujo real carpeta M5 -> arena -> hub y
 # game over sin guardar).
+# Desde el paso 19 del Mundo 5 (2026-10-29) GUT lanza tambien el bot del jefe El Vendedor (tests/test_vendor_bot.gd:
+# tools/play_boss_bot.gd -- --boss vendor, logica en tools/vendor_bot.gd, en procesos aparte: ideal y torpe en Caché,
+# Kernel y Raíz y el quieto que pierde; usa user://bot_save.json).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
