@@ -7,6 +7,10 @@
 ## - awake: tira; el pulso lo aturde; el laser rebota (chispa gris).
 ## - stunned: stun_s sin tiron; el laser le hace dano.
 ## - defeated: vida a 0; drops y no vuelve.
+## Desde el 2026-10-30 (peticion del usuario; docs/propuesta-mundo-5.md §8.1) mientras tira
+## de Isak le quita Sync Rate segun su descuento (discount_pct, el «-50 %» del cartel; dano
+## de TemptationField.tick_damage, que lleva la Oferta lider: aviso rojo, un golpe cada
+## damage_interval_s, nunca mata).
 ## Origen en sus pies (floor) o en el pie de la celda donde cuelga (wall). Aspecto
 ## PROVISIONAL por codigo.
 class_name OfferSign
@@ -19,6 +23,8 @@ signal stunned
 signal damaged(amount: float, health_left: float)
 signal defeated
 signal deflected
+## La tentacion de las Ofertas quita `amount` de Sync Rate (solo la Oferta lider la emite).
+signal temptation_hit(amount: float)
 
 const STATE_AWAKE: StringName = &"awake"
 const STATE_STUNNED: StringName = &"stunned"
@@ -55,6 +61,11 @@ var pulse_hz_near: float = 3.0
 var particles: int = 6
 var price_text: String = "99"
 var sale_text: String = "9"
+## Descuento que anuncia (el «-50 %» del cartel; param del nivel): su dano al tirar.
+var discount_pct: float = 50.0:
+	set(value):
+		discount_pct = clampf(float(value), 1.0, 99.0)
+		queue_redraw()
 var drops: Dictionary = {}
 var max_health: float = 2.0:
 	set(value):
@@ -141,7 +152,38 @@ func step(delta: float) -> void:
 	if pulling != _pulling:
 		_pulling = pulling
 		pull_changed.emit(pulling)
+	if _is_damage_leader():
+		var hit: float = TemptationField.tick_damage(get_tree(), _find_player(), dt)
+		if hit > 0.0:
+			temptation_hit.emit(hit)
 	queue_redraw()
+
+
+## Una sola Oferta (la de menor id del grupo) lleva la cuenta del dano de todas.
+func _is_damage_leader() -> bool:
+	if not is_inside_tree():
+		return false
+	var mine: int = get_instance_id()
+	for node: Node in get_tree().get_nodes_in_group(TemptationField.GROUP):
+		if node is OfferSign and node != self and (node as OfferSign)._ready_ok \
+				and not node.is_queued_for_deletion() and node.get_instance_id() < mine:
+			return false
+	return true
+
+
+## Despierta y con `point` en su zona (el dano de la tentacion; tambien justo encima).
+func is_tempting_point(point: Vector2) -> bool:
+	return _ready_ok and _state == STATE_AWAKE and get_zone_rect().has_point(point)
+
+
+## Dano de un golpe de esta Oferta mientras tira (TemptationField.damage_for_discount).
+func get_temptation_damage() -> float:
+	return TemptationField.damage_for_discount(discount_pct)
+
+
+## Texto del descuento del cartel («-50 %»).
+func get_discount_text() -> String:
+	return "-%d %%" % int(round(discount_pct))
 
 
 # --- Consultas ---
@@ -378,6 +420,21 @@ func _draw() -> void:
 	var big := Vector2(body.position.x, body.end.y - 6.0)
 	draw_string(font, big, "x x" if stunned_now else sale_text, HORIZONTAL_ALIGNMENT_CENTER, body.size.x,
 		14 if stunned_now else 22, ink)
+	# Descuento («-50 %») en una banderita amarilla sobre el cartel.
+	var tag_text: String = get_discount_text()
+	var tag_w: float = font.get_string_size(tag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x + 8.0
+	var tag := Rect2(Vector2(-tag_w * 0.5, body.position.y - 15.0), Vector2(tag_w, 14.0))
+	draw_rect(tag, _c("amarillo_rebajas", "#ffe600"))
+	draw_string(font, Vector2(tag.position.x, tag.end.y - 3.0), tag_text, HORIZONTAL_ALIGNMENT_CENTER, tag_w, 11, ink)
+	# Dano de la tentacion (rojo = dano; texto, sin contorno rojo en el enemigo): «!» que
+	# parpadea antes del primer golpe y «-N» al quitar Sync.
+	if _pulling and not stunned_now:
+		var hit: float = TemptationField.get_damage_flash()
+		var warn: bool = TemptationField.is_damage_warning()
+		if hit > 0.0 or (warn and int(_time * 12.0) % 2 == 0):
+			var msg: String = "-%d" % int(ceil(hit)) if hit > 0.0 else "!"
+			draw_string(font, Vector2(body.position.x, tag.position.y - 4.0), msg, HORIZONTAL_ALIGNMENT_CENTER,
+				body.size.x, 16, _c("alerta", "#ff4a2a"))
 	# Particulas que van hacia el cartel mientras tira de Isak.
 	if _pulling and particles > 0:
 		var isak: Isak = _find_player()
@@ -418,4 +475,5 @@ func _load_data() -> bool:
 	particles = int(d.get("particles", 6))
 	price_text = String(d.get("price_text", "99"))
 	sale_text = String(d.get("sale_text", "9"))
+	discount_pct = float(d.get("discount_pct", 50.0))
 	return true

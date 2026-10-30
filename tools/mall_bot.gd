@@ -78,6 +78,11 @@ var _last_balance: int = 0
 var _processing_freezes: int = 0
 var _terms_rejected: PackedStringArray = []
 var _watched: Dictionary = {}
+## Dano de la tentacion de las Ofertas (2026-10-30: cuesta Sync segun el descuento, nunca mata): golpes, Sync
+## quitado y Sync minimo tras un golpe. Se anota; no falla (no mata y el camino no lo evita).
+var _tempt_hits: int = 0
+var _tempt_damage: float = 0.0
+var _tempt_sync_min: float = 1.0e9
 
 
 func _ready() -> void:
@@ -206,9 +211,10 @@ func _check_completed() -> bool:
 	var game_s: float = (_terminal_frames if _terminal_frames >= 0 else _play_frames) / 60.0
 	var ratio: float = game_s / _target_s if _target_s > 0.0 else 0.0
 	var balance: int = GameState.attention_points
-	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, esperas de cuenta regresiva %d, «rechazar» [%s], dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
+	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, tentacion %d golpe(s) / %.0f de Sync (Sync minimo %s), esperas de cuenta regresiva %d, «rechazar» [%s], dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
 		_profile, _deaths, _hits, _freezes, _carts, ", ".join(_purchases), _spent, _spent_by, _path_spend(), _refunded,
-		_drained, _subs_cancelled, _subs_defeated, _countdown_waits, ", ".join(_terms_rejected), _dashes, _balance_start, balance, _balance_min,
+		_drained, _subs_cancelled, _subs_defeated, _tempt_hits, _tempt_damage,
+		("%.0f" % _tempt_sync_min) if _tempt_hits > 0 else "-", _countdown_waits, ", ".join(_terms_rejected), _dashes, _balance_start, balance, _balance_min,
 		_gained, _lost, game_s, int(_target_s), ratio * 100.0])
 	if _deaths > 0:
 		return _fail("Isak muere %d vez/veces" % _deaths)
@@ -285,6 +291,12 @@ func _refresh() -> void:
 			elif node is Subscription:
 				_watched[node] = true
 				_watch_subscription(node as Subscription)
+			elif node is OfferSign:
+				_watched[node] = true
+				(node as OfferSign).temptation_hit.connect(func(amount: float) -> void:
+					_tempt_hits += 1
+					_tempt_damage += amount
+					_tempt_sync_min = minf(_tempt_sync_min, GameState.sync_rate))
 
 
 ## Tiron de las Ofertas (TemptationField): quieto, Isak deriva hacia ellas (60 px/s con una), asi que el bot, como un

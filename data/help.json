@@ -1224,7 +1224,7 @@
 			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
 			"category": "enemy",
 			"title": "Oferta",
-			"text": "Cuanto más miras, más te acerca. Aléjate, o apágala con el pulso.",
+			"text": "Cuanto más miras, más te acerca, y mientras tira te cuesta Sync: más cuanto mayor es el descuento. Aléjate, o apágala con el pulso.",
 			"first_level": "5-1",
 			"world": 5,
 			"order": 1,

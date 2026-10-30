@@ -308,3 +308,75 @@ func test_ofertas_test_room_loads() -> void:
 	# Se quita antes de after_each: GeneratedLevel restaura al salir las habilidades que habia al entrar
 	# (las de before_each); con el autofree salia despues y las dejaba desbloqueadas para la suite.
 	room.free()
+
+
+# --- La tentacion cuesta Sync segun el descuento (2026-10-30, docs/propuesta-mundo-5.md §8.1) ---
+
+func test_pull_costs_sync_by_discount_after_a_red_warning() -> void:
+	TemptationField.reset_damage()
+	var offer: OfferSign = _offer(3.0 * T)
+	assert_eq(offer.discount_pct, 50.0, "Descuento por defecto 50")
+	assert_eq(offer.get_discount_text(), "-50 %")
+	assert_almost_eq(offer.get_temptation_damage(), 3.0, 0.001, "0,06 x 50 = 3 por golpe")
+	watch_signals(offer)
+	var sync: float = GameState.sync_rate
+	_step(_sim.frames(0.4))
+	assert_true(TemptationField.is_damage_warning(), "Aviso rojo antes del primer golpe")
+	assert_eq(GameState.sync_rate, sync, "El aviso no quita nada")
+	_step(_sim.frames(0.4))
+	assert_almost_eq(GameState.sync_rate, sync - 3.0, 0.001, "Primer golpe a los 0,75 s")
+	assert_false(TemptationField.is_damage_warning())
+	assert_signal_emitted_with_parameters(offer, "temptation_hit", [3.0])
+	_step(_sim.frames(1.0))
+	assert_almost_eq(GameState.sync_rate, sync - 6.0, 0.001, "Uno cada segundo mientras tira (tambien encima del cartel)")
+
+
+func test_discount_sets_the_damage_with_a_minimum_and_offers_add_with_a_cap() -> void:
+	TemptationField.reset_damage()
+	var small: OfferSign = _offer(2.0 * T)
+	small.discount_pct = 5.0
+	assert_almost_eq(small.get_temptation_damage(), 1.0, 0.001, "Minimo 1")
+	var big: OfferSign = _offer(3.0 * T)
+	big.discount_pct = 70.0
+	assert_almost_eq(big.get_temptation_damage(), 4.2, 0.001)
+	var third: OfferSign = _offer(3.5 * T)
+	third.discount_pct = 50.0
+	var sync: float = GameState.sync_rate
+	_step(_sim.frames(0.8))
+	assert_almost_eq(GameState.sync_rate, sync - 6.0, 0.001, "1 + 4,2 + 3 con tope 6 por golpe")
+
+
+func test_it_never_kills_and_leaving_the_zone_resets_the_warning() -> void:
+	TemptationField.reset_damage()
+	_offer(3.0 * T)
+	GameState.sync_rate = 4.0
+	_step(_sim.frames(0.8))
+	assert_almost_eq(GameState.sync_rate, 1.0, 0.001, "No baja de 1")
+	_step(_sim.frames(3.0))
+	assert_almost_eq(GameState.sync_rate, 1.0, 0.001, "Nunca mata")
+	assert_false(_isak.is_dead())
+	_isak.global_position.x = -20.0 * T
+	_step(2)
+	assert_false(TemptationField.is_damage_warning())
+	GameState.sync_rate = 50.0
+	_isak.global_position.x = 0.0
+	_step(_sim.frames(0.5))
+	assert_true(TemptationField.is_damage_warning(), "Al volver, aviso otra vez")
+	assert_eq(GameState.sync_rate, 50.0)
+
+
+func test_dash_pulse_and_stunned_offers_do_not_hurt() -> void:
+	TemptationField.reset_damage()
+	var offer: OfferSign = _offer(3.0 * T)
+	_stun(offer)
+	var sync: float = GameState.sync_rate
+	_step(_sim.frames(2.0))
+	assert_eq(GameState.sync_rate, sync, "Aturdida no tira ni dana")
+	assert_eq(TemptationField.damage_now(get_tree(), _isak), 0.0)
+	_step(_sim.frames(1.5))
+	_sim.input.move_axis = -1.0
+	_sim.input.dash_pressed = true
+	_step()
+	_sim.input.move_axis = 0.0
+	assert_eq(_sim.state(), PlayerState.DASH)
+	assert_eq(TemptationField.damage_now(get_tree(), _isak), 0.0, "Durante el dash no dana")

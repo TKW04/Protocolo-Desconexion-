@@ -1,5 +1,5 @@
 {
-	"_notes": "OFERTA (offer_sign), Mundo 5 «La Tienda» (paso 2 de docs/propuesta-mundo-5.md §8; reglas en §3.3 y §3.7). Script scripts/enemies/offer_sign.gd (OfferSign), escena scenes/enemies/offer_sign.tscn. Cartel con el precio tachado en MAGENTA (nunca rojo) que no dana ni se mueve: TIENTA. mount floor (de pie en el suelo, origen en sus pies, abajo-centro de la celda E) o wall (colgado en la pared: el Sismo no lo alcanza). ZONA DE TENTACION: radius_tiles (5) a cada lado del centro del cartel en horizontal y height_tiles (3) de alto centrada en el; con el centro del cuerpo de Isak dentro, el cartel TIRA de el hacia su centro (TemptationField de Isak, scripts/player/temptation_field.gd, con los valores de la seccion field: deriva drift_px_s 60 quieto, x away_mult 0,6 al alejarse, x toward_mult 1,15 al acercarse; varias Ofertas suman su peso, strength 1 cada una, con tope drift_cap_px_s 90 y away_min_mult 0,45; dead_zone_px: justo encima no tira). El dash, los combos, el golpe al suelo, el dano, la muerte, el congelado, la pose de espaldas y los vortices ignoran el tiron. AVISO (accesibilidad): el cartel late mas deprisa cuanto mas cerca esta Isak (pulse_hz_far -> pulse_hz_near), particulas que van hacia el y senal pull_changed para el sonido sfx_w5_temptation_pull (paso 20). PULSO: aturde stun_s (3 s; x el Pulso 3; Pulso de retorno con el Pulso 5): el tiron se apaga. Golpe al suelo y Embestida (onda): aturden y hacen su dano. LASER: despierto, chispa gris (deflect_s); aturdido, dano: health 2, a 0 derrotado para siempre con drops (+15 de energia). Filo: no lo derrota (vida 2 > 1). Tiempo del mundo. Al reaparecer Isak vuelve despierto (el derrotado no vuelve). Ayuda Q offer_sign y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (paleta provisional del Mundo 5).",
+	"_notes": "OFERTA (offer_sign), Mundo 5 «La Tienda» (paso 2 de docs/propuesta-mundo-5.md §8; reglas en §3.3 y §3.7). Script scripts/enemies/offer_sign.gd (OfferSign), escena scenes/enemies/offer_sign.tscn. Cartel con el precio tachado en MAGENTA (nunca rojo) que no se mueve: TIENTA (y desde el 2026-10-30 la tentacion cuesta Sync, ver field). mount floor (de pie en el suelo, origen en sus pies, abajo-centro de la celda E) o wall (colgado en la pared: el Sismo no lo alcanza). ZONA DE TENTACION: radius_tiles (5) a cada lado del centro del cartel en horizontal y height_tiles (3) de alto centrada en el; con el centro del cuerpo de Isak dentro, el cartel TIRA de el hacia su centro (TemptationField de Isak, scripts/player/temptation_field.gd, con los valores de la seccion field: deriva drift_px_s 60 quieto, x away_mult 0,6 al alejarse, x toward_mult 1,15 al acercarse; varias Ofertas suman su peso, strength 1 cada una, con tope drift_cap_px_s 90 y away_min_mult 0,45; dead_zone_px: justo encima no tira). El dash, los combos, el golpe al suelo, el dano, la muerte, el congelado, la pose de espaldas y los vortices ignoran el tiron. AVISO (accesibilidad): el cartel late mas deprisa cuanto mas cerca esta Isak (pulse_hz_far -> pulse_hz_near), particulas que van hacia el y senal pull_changed para el sonido sfx_w5_temptation_pull (paso 20). PULSO: aturde stun_s (3 s; x el Pulso 3; Pulso de retorno con el Pulso 5): el tiron se apaga. Golpe al suelo y Embestida (onda): aturden y hacen su dano. LASER: despierto, chispa gris (deflect_s); aturdido, dano: health 2, a 0 derrotado para siempre con drops (+15 de energia). Filo: no lo derrota (vida 2 > 1). Tiempo del mundo. DANA SEGUN SU DESCUENTO mientras tira (discount_pct, el «-50 %» de la banderita amarilla del cartel; seccion field, 2026-10-30). Al reaparecer Isak vuelve despierto (el derrotado no vuelve). Ayuda Q offer_sign y ficha del album desde el paso 9. Aspecto PROVISIONAL por codigo (paleta provisional del Mundo 5).",
 	"help_id": "offer_sign",
 	"mount": "floor",
 	"radius_tiles": 5.0,
@@ -16,6 +16,7 @@
 	"particles": 6,
 	"price_text": "99",
 	"sale_text": "9",
+	"discount_pct": 50,
 	"field": {
 		"_notes": "Fuerza sobre Isak (TemptationField; §3.3 y decision 6 de §9). drift_px_s: deriva hacia la Oferta (quieto, en el suelo y en el aire). away_mult / toward_mult: multiplicador de la velocidad de andar o correr al alejarse / acercarse (con una Oferta). Varias: peso = suma de strength con signo (hacia cada Oferta; opuestas se restan); deriva = peso x drift_px_s con tope drift_cap_px_s; al alejarse 1 - (1 - away_mult) x peso con suelo away_min_mult; al acercarse 1 + (toward_mult - 1) x peso con el peso topado a drift_cap_px_s / drift_px_s. dead_zone_px: distancia horizontal al centro por debajo de la cual una Oferta no tira.",
 		"drift_px_s": 60.0,
@@ -23,7 +24,15 @@
 		"toward_mult": 1.15,
 		"drift_cap_px_s": 90.0,
 		"away_min_mult": 0.45,
-		"dead_zone_px": 4.0
+		"dead_zone_px": 4.0,
+		"_damage_notes": "DANO DE LA TENTACION (2026-10-30, peticion del usuario: «las ofertas de descuento, cuando te halen, te quiten vida en base a un porcentaje del descuento»; docs/propuesta-mundo-5.md §8.1; TemptationField.tick_damage). Mientras una Oferta (no la lista de deseos ni la maquina de El Vendedor) tira de Isak en un estado que deja tirar (no dash, combos, golpe al suelo, pulso, invulnerable ni congelado), tras un aviso de damage_warning_s (0,75 s = 9 cuadros a 12 fps: «!» rojo que parpadea sobre el cartel) le quita damage_per_pct x discount_pct de Sync Rate (0,06 x 50 = 3; minimo damage_min; con 0,1 el bot del 5-1 acababa en 1 de Sync) cada damage_interval_s (1 s, tiempo del mundo), con «-N» rojo sobre el cartel. Varias Ofertas suman con tope damage_cap por golpe (6). NUNCA MATA: no baja de damage_floor (1), como la congelacion. Salir de la zona reinicia la cuenta (el siguiente golpe, otra vez con aviso). damage_flash_s: lo que dura el «-N».",
+		"damage_per_pct": 0.06,
+		"damage_min": 1.0,
+		"damage_interval_s": 1.0,
+		"damage_warning_s": 0.75,
+		"damage_cap": 6.0,
+		"damage_floor": 1.0,
+		"damage_flash_s": 0.5
 	},
 	"level_params": {
 		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max] o sus valores. mount: floor o wall.",
@@ -31,6 +40,7 @@
 		"radius_tiles": {"min": 2, "max": 8},
 		"height_tiles": {"min": 1, "max": 5},
 		"strength": {"min": 0.5, "max": 2},
-		"health": {"min": 1, "max": 6, "int": true}
+		"health": {"min": 1, "max": 6, "int": true},
+		"discount_pct": {"min": 10, "max": 90, "int": true}
 	}
 }
