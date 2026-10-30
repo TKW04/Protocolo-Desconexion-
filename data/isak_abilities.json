@@ -126,6 +126,7 @@
 	"combo": {
 		"energy_cost": 15.0,
 		"hold_s": 0.08,
+		"input_buffer_s": 0.12,
 		"ram": {
 			"angle_deg": 45.0,
 			"speed_px_s": 960.0,

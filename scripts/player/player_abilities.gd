@@ -45,7 +45,7 @@ const SHOCKWAVE_KEYS: PackedStringArray = ["radius_px", "windup_s", "exposed_s",
 const FROZEN_KEYS: PackedStringArray = ["seen_immunity_s", "release_damage", "release_warn_s"]
 ## Claves numericas de la seccion opcional combo y de sus subsecciones
 ## (propiedad combo_<clave> y combo_<sub>_<clave>).
-const COMBO_KEYS: PackedStringArray = ["energy_cost", "hold_s"]
+const COMBO_KEYS: PackedStringArray = ["energy_cost", "hold_s", "input_buffer_s"]
 const COMBO_SUB_KEYS: Dictionary = {
 	"ram": ["angle_deg", "speed_px_s", "wave_half_width_px", "wave_height_px", "wave_below_px", "stun_s",
 		"damage", "land_pose_s"],
@@ -161,6 +161,10 @@ var frozen_visual: Dictionary = {}
 ## Embestida (ram), Filo (edge) y Sismo (quake).
 var combo_energy_cost: float = 15.0
 var combo_hold_s: float = 0.08
+## Margen de entrada (2026-10-30, arreglo tras la prueba del usuario): abajo hasta
+## input_buffer_s despues de acabar un dash aereo aun arma la Embestida, y Deslizar
+## comprimido hasta input_buffer_s antes de despegar aun da el Filo.
+var combo_input_buffer_s: float = 0.12
 var combo_ram_angle_deg: float = 45.0
 var combo_ram_speed_px_s: float = 960.0
 var combo_ram_wave_half_width_px: float = 128.0

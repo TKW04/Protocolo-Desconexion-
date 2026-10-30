@@ -325,6 +325,15 @@ var _combo_requested: StringName = &""
 var _combo_hold: float = 0.0
 var _combo_latched: bool = false
 var _combo_invulnerable: bool = false
+## Margen de entrada (2026-10-30, combo.input_buffer_s; arreglo tras la prueba del
+## usuario con teclado y mando: la Embestida pedia abajo en los primeros 0,12 s del
+## dash y el Filo no salia pulsando Deslizar a la vez que saltar). Tiempo que queda
+## tras acabar un dash aereo para que abajo aun arme la Embestida, abajo armado
+## para la Embestida (pulsado durante el dash aereo o en ese margen) y tiempo que
+## queda de un Deslizar comprimido pulsado en el suelo (vale al despegar: Filo).
+var _ram_grace_left: float = 0.0
+var _ram_armed: bool = false
+var _edge_buffer_left: float = 0.0
 
 ## Congelado (estado Frozen, 2026-10-28; docs/propuesta-mundo-4.md §3.3).
 var _frozen_left: float = 0.0
@@ -1140,6 +1149,9 @@ func end_dash(direction: float, keep_speed: bool, _blocked: bool) -> void:
 	_dash_cooldown_left = abilities.dash_cooldown_s
 	if _dash_started_on_floor and not is_on_floor() and not is_dead():
 		_coyote_left = physics.coyote_time_s
+	# Margen de la Embestida: abajo poco despues de un dash aereo aun cuenta.
+	if not _dash_started_on_floor and not is_on_floor() and not is_dead():
+		_ram_grace_left = abilities.combo_input_buffer_s
 	_sprite.rotation = 0.0
 	_dash_effect.end()
 	dash_ended.emit()
@@ -1391,6 +1403,14 @@ func is_comboing() -> bool:
 	return _state_name in COMBO_STATES
 
 
+## La Embestida cabe ahora: en un dash aereo, o en el aire justo despues de uno
+## con abajo armado a tiempo (combo.input_buffer_s; Fall o Jump).
+func _ram_in_window() -> bool:
+	if _state_name == PlayerState.DASH:
+		return not _dash_started_on_floor
+	return _ram_armed and _state_name in [PlayerState.FALL, PlayerState.JUMP]
+
+
 ## Motivo por el que el combo `kind` no saldria ahora (&"" = sale). Ver COMBO_DENIED_*.
 ## Orden: sin la Combinacion o sin los gestos que combina, o en el hub; ocupado
 ## (muerto, vortice, de espaldas, laser, golpe, pulso, golpe al suelo, congelado,
@@ -1417,7 +1437,7 @@ func combo_denial(kind: StringName) -> StringName:
 			or _state_name in [PlayerState.HURT, PlayerState.PULSE, PlayerState.GROUND_POUND, PlayerState.SHOCKWAVE,
 				PlayerState.FROZEN]:
 		return COMBO_DENIED_BUSY
-	if kind == COMBO_RAM and (_state_name != PlayerState.DASH or _dash_started_on_floor):
+	if kind == COMBO_RAM and not _ram_in_window():
 		return COMBO_DENIED_BUSY
 	if kind != COMBO_RAM and (not _compressed or _state_name == PlayerState.DASH):
 		return COMBO_DENIED_BUSY
@@ -1446,6 +1466,9 @@ func begin_combo(kind: StringName) -> float:
 	_sprite.flip_h = facing < 0.0
 	_combo_requested = &""
 	_combo_hold = 0.0
+	_ram_armed = false
+	_ram_grace_left = 0.0
+	_edge_buffer_left = 0.0
 	if kind != COMBO_EDGE:
 		_combo_latched = true
 		_pound_latched = true
@@ -1554,23 +1577,39 @@ func update_combo_pose(kind: StringName, landed: bool) -> void:
 ## vez por pulsacion); el resto, sin aviso.
 func _update_combo_request(delta: float) -> void:
 	_combo_requested = &""
+	_ram_grace_left = maxf(_ram_grace_left - delta, 0.0)
+	_edge_buffer_left = maxf(_edge_buffer_left - delta, 0.0)
 	if input == null:
 		return
 	var held: bool = input.hold_held
+	var airborne: bool = not is_on_floor()
 	if not held:
 		_combo_latched = false
-	if held and not is_on_floor():
+		_ram_armed = false
+	if held and airborne:
 		_combo_hold += delta
 	else:
 		_combo_hold = 0.0
+	if not airborne:
+		_ram_armed = false
+		_ram_grace_left = 0.0
+	elif held and not _combo_latched and ((_state_name == PlayerState.DASH and not _dash_started_on_floor) \
+			or _ram_grace_left > 0.0):
+		_ram_armed = true
+	# Deslizar comprimido en el suelo (p. ej. a la vez que saltar): vale al despegar.
+	if input.dash_pressed and _compressed and not airborne:
+		_edge_buffer_left = abilities.combo_input_buffer_s
 	var kind: StringName = &""
-	if input.dash_pressed and _compressed and not is_on_floor():
+	if (input.dash_pressed or _edge_buffer_left > 0.0) and _compressed and airborne:
 		kind = COMBO_EDGE
+		_edge_buffer_left = 0.0
 	elif held and not _combo_latched and _combo_hold + 0.0001 >= abilities.combo_hold_s:
-		if _state_name == PlayerState.DASH:
+		if _state_name == PlayerState.DASH and _ram_armed:
 			kind = COMBO_RAM
 		elif _compressed:
 			kind = COMBO_QUAKE
+		elif _ram_armed:
+			kind = COMBO_RAM
 	if kind == &"":
 		return
 	var denial: StringName = combo_denial(kind)
@@ -1588,6 +1627,9 @@ func _update_combo_request(delta: float) -> void:
 func _reset_combo() -> void:
 	_combo_requested = &""
 	_combo_hold = 0.0
+	_ram_armed = false
+	_ram_grace_left = 0.0
+	_edge_buffer_left = 0.0
 	_combo_latched = false
 	_combo_invulnerable = false
 
