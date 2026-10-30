@@ -257,6 +257,10 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 20 del Mundo 5 (2026-10-29): textos, ayudas Q y audio de El Vendedor y del Mundo 5
 # (tests/test_vendor_help.gd, GUT; test_help_inert.gd y test_notas_album.gd con las 4 ayudas nuevas; los 30 IDs de
 # audio con provisional en validate_audio.py; las fichas de tools/gen_world5_objects.py --check).
+# Pruebas de conjunto del Mundo 5 (paso 21 de docs/propuesta-mundo-5.md): tests/test_world5_negatives.py (ningun
+# nivel de los Mundos 1-4 tiene la Combinacion ni piezas del Mundo 5 y el modelo del Mundo 5 no los toca; los
+# precios del 5-1 al 5-3 salen de data/economy.json) y tests/test_world5_negatives.gd (GUT: la Combinacion en cada
+# nivel y arena de los Mundos 1-4 solo toca enemigos: no completa, no da habilidades ni secretos, no golpea al jefe).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"
@@ -316,7 +320,7 @@ if command -v python3 >/dev/null 2>&1; then
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_level_5_1.py tests/test_level_5_2.py tests/test_level_5_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
 		tests/test_world2_schema.py tests/test_world2_feed_validator.py tests/test_palette_mundo3.py tests/test_palette_mundo4.py tests/test_palette_mundo5.py tests/test_world4_schema.py tests/test_world4_validator.py \
-		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py tests/test_world4_negatives.py \
+		tests/test_world3_filter_schema.py tests/test_world3_validator.py tests/test_world3_negatives.py tests/test_world4_negatives.py tests/test_world5_negatives.py \
 			tests/test_world5_validator.py \
 		tests/test_hub_update_validator.py tests/test_import_boss_seen.py tests/test_import_troll.py \
 		&& python3 tools/validate_level_schema.py data/levels/*.json \

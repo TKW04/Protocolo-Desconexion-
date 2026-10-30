@@ -62,6 +62,9 @@ shape = SubResource("RectangleShape2D_1")
 
 [node name="HiddenPlatforms" type="Node2D" parent="."]
 
+[node name="Hidden_13_58" parent="HiddenPlatforms" instance=ExtResource("5_hidden_platform")]
+position = Vector2(864, 3744)
+
 [node name="Hidden_14_58" parent="HiddenPlatforms" instance=ExtResource("5_hidden_platform")]
 position = Vector2(928, 3744)
 
@@ -398,12 +401,12 @@ position = Vector2(448, 3840)
 object_id = &"b2_tomi"
 author_side = &"left"
 stamp = "03:14"
-text = "Tomi: te mandé un meme, ¿lo viste o qué?"
-width_tiles = 7
+text = "Tomi: te mandé un meme, ¿lo viste?"
+width_tiles = 6
 metadata/help_id = "chat_bubble"
 
 [node name="t2" parent="Objects" instance=ExtResource("14_typing_bubble") groups=["help_target"]]
-position = Vector2(640, 3712)
+position = Vector2(576, 3712)
 object_id = &"t2"
 author_side = &"right"
 text = "yo tampoco, qué raro"
@@ -437,8 +440,8 @@ metadata/help_id = "chat_bubble"
 position = Vector2(576, 3584)
 object_id = &"b2_vi"
 author_side = &"right"
-text = "lo vi, me reí mucho, de verdad"
-width_tiles = 5
+text = "lo vi, me reí mucho"
+width_tiles = 4
 metadata/help_id = "chat_bubble"
 
 [node name="t3" parent="Objects" instance=ExtResource("14_typing_bubble") groups=["help_target"]]

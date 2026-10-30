@@ -633,7 +633,7 @@
     ],
     "ledge": [
      1,
-     13
+     12
     ],
     "row": 59
    },
@@ -645,58 +645,58 @@
    "debug": false
   },
   {
-   "id": "10,59->10,57",
+   "id": "9,59->9,57",
    "section": "Piso 2 «Escribiendo…»",
    "from": {
     "cell": [
-     10,
+     9,
      59
     ],
     "ledge": [
      1,
-     13
+     12
     ],
     "row": 59
    },
    "to": {
     "cell": [
-     10,
+     9,
      57
     ],
     "ledge": [
-     10,
-     13
+     9,
+     12
     ],
     "row": 57
    },
    "rise_tiles": 2,
    "direction": 1,
    "speed": "walk",
-   "takeoff_x_px": 704.0,
-   "target_x_px": 704.0,
+   "takeoff_x_px": 640.0,
+   "target_x_px": 640.0,
    "debug": false
   },
   {
-   "id": "13,59->14,57",
+   "id": "12,59->13,57",
    "section": "Piso 2 «Escribiendo…»",
    "from": {
     "cell": [
-     13,
+     12,
      59
     ],
     "ledge": [
      1,
-     13
+     12
     ],
     "row": 59
    },
    "to": {
     "cell": [
-     14,
+     13,
      57
     ],
     "ledge": [
-     10,
+     9,
      22
     ],
     "row": 57
@@ -704,72 +704,72 @@
    "rise_tiles": 2,
    "direction": 1,
    "speed": "run",
-   "takeoff_x_px": 880.0,
-   "target_x_px": 960.0,
+   "takeoff_x_px": 816.0,
+   "target_x_px": 896.0,
    "debug": true
   },
   {
-   "id": "10,57->10,55",
+   "id": "9,57->9,55",
    "section": "Piso 2 «Escribiendo…»",
    "from": {
     "cell": [
-     10,
+     9,
      57
     ],
     "ledge": [
-     10,
-     13
+     9,
+     12
     ],
     "row": 57
    },
    "to": {
     "cell": [
-     10,
+     9,
      55
     ],
     "ledge": [
      1,
-     13
+     12
     ],
     "row": 55
    },
    "rise_tiles": 2,
    "direction": 1,
    "speed": "walk",
-   "takeoff_x_px": 704.0,
-   "target_x_px": 704.0,
+   "takeoff_x_px": 640.0,
+   "target_x_px": 640.0,
    "debug": false
   },
   {
-   "id": "14,57->13,55",
+   "id": "13,57->12,55",
    "section": "Piso 2 «Escribiendo…»",
    "from": {
     "cell": [
-     14,
+     13,
      57
     ],
     "ledge": [
-     10,
+     9,
      22
     ],
     "row": 57
    },
    "to": {
     "cell": [
-     13,
+     12,
      55
     ],
     "ledge": [
      1,
-     13
+     12
     ],
     "row": 55
    },
    "rise_tiles": 2,
    "direction": 1,
    "speed": "walk",
-   "takeoff_x_px": 896.0,
-   "target_x_px": 896.0,
+   "takeoff_x_px": 832.0,
+   "target_x_px": 832.0,
    "debug": true
   },
   {
@@ -782,7 +782,7 @@
     ],
     "ledge": [
      1,
-     13
+     12
     ],
     "row": 55
    },

@@ -133,7 +133,7 @@
 		"#..................#####",
 		"#......................#",
 		"#....................So#",
-		"#.............hhhhh#####",
+		"#............hhhhhh#####",
 		"#......o...............#",
 		"#......................#",
 		"#......................#",
@@ -589,14 +589,14 @@
 			"y": 60,
 			"params": {
 				"id": "b2_tomi",
-				"text": "Tomi: te mandé un meme, ¿lo viste o qué?",
+				"text": "Tomi: te mandé un meme, ¿lo viste?",
 				"side": "left",
 				"stamp": "03:14"
 			}
 		},
 		{
 			"type": "typing_bubble",
-			"x": 10,
+			"x": 9,
 			"y": 58,
 			"params": {
 				"id": "t2",
@@ -645,7 +645,7 @@
 			"y": 56,
 			"params": {
 				"id": "b2_vi",
-				"text": "lo vi, me reí mucho, de verdad",
+				"text": "lo vi, me reí mucho",
 				"side": "right"
 			}
 		},
