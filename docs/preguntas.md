@@ -1281,3 +1281,69 @@ Pedidos del usuario tras jugar el Mundo 4 (textual): Modo oscuro «que solo se p
 **Calc** (al volver al hub tras vencer a El Vendedor, no importante; `vendor_5_boss` de `data/hub.json`): «Compras canceladas: todas. Cambio devuelto: tú. Esa cuenta sí me cuadra.»
 
 **Recuerdo** (sin cambios en el paso 20): «Fragmento de voluntad» (`boss_w5_l1`, ya en `data/memories.json`); los mensajes del Mundo 5 los firma **el Abuelito** (decisión del usuario del 2026-10-29).
+
+## Mundo 5: lo que el usuario debe revisar al probar (2026-10-29)
+
+El Mundo 5 «La Tienda» se hizo con las decisiones delegadas al orquestador (`propuesta-mundo-5.md` §9) y las tres del usuario del 2026-10-29 (§10: blanco `#ffffff`, el Abuelito firma `msg_5_x`, AutoSprite solo al final); avance y desvíos en su §8.1, resumen en `mundo-5-tienda.md` §10.8. **El paso 12 (probar el 5-1 antes de hacer el 5-2 y el 5-3) se saltó** («puedes continuar»): esta es la primera prueba de todo el mundo. Ninguna pregunta bloquea; casi todo se ajusta en datos. **Todo el arte es placeholder por script** (El Vendedor y la Suscripción con `_placeholder`; poses de los combos provisionales) y **todos los textos son propuestos**.
+
+**Cómo probar**
+- Desde el hub: tras vencer a El Visto, carpeta M5 (página 2) → 5-1 → 5-2 (tras el 5-1) → 5-3 (tras el 5-2) → fila «Jefe: El Vendedor» (tras el 5-3). Al vencerlo: «Fragmento de voluntad» sin guardar, quinta pieza (blanca), fondo completo, candado de M6 que se abre en la página 3 y M6 disponible («Próximamente»).
+- Directo (builds de depuración): `$GODOT --path . -- --start-level=5-1` (igual con `5-2`, `5-3` y `5-boss`).
+- Bots: `$GODOT --headless --fixed-fps 60 --path . -s tools/play_mall_bot.gd -- --level 5-1|5-2|5-3 [--profile comprador]` y `tools/play_boss_bot.gd -- --boss vendor --profile ideal|clumsy --lap 1|2|3` (sin `--headless` se ven jugar).
+- Capturas en `docs/capturas/mundo-5-2026-10-29/` y `assets/levels_preview/5-x/`; mapas (con los secretos) en `assets/levels_preview/5-x_mapa.png`.
+- **Suite completa sin correr** desde el paso 21 (a petición del usuario): `tools/run_tests.sh` cuando se decida.
+
+**Tema y economía**
+- **Gastar puntos dentro del nivel** (tienda +25 de Sync o +40 de energía, atajos con precio, caja de Calc, Devoluciones): ¿tientan los precios o dan igual? ¿Se entiende que nada obligatorio cuesta y que se puede jugar sin gastar? ¿El comentario de Calc al volver del 5-1 («Has gastado {gastado}.» / «Gastado fuera: 0. Bien.») se lee como Calc o como reproche?
+- **Atajo con trampa** (la trampa solo se ve con el Debug; «Verificando pago…» congela 1,5 s y el golpe al liberarse): ¿se nota a tiempo que hay que mirar con el Debug antes de pagar?
+- **Devoluciones** (solo lo gastado en ese nivel y ese intento): ¿se entiende sin leer la Q?
+
+**Tentación (Ofertas y lista de deseos)**
+- **El tirón de la Oferta** (deriva 60 px/s hacia ella, ×0,6 al alejarse y ×1,15 al acercarse; suma con tope; el dash y los combos la ignoran; el pulso la apaga 3 s): ¿se siente como «más pesado al alejarse» o como «el juego me mueve»? ¿Se nota antes de sentirse (zona y partículas)?
+- **Lista de deseos** (deriva 90 px/s, ×0,45; quedarse quieto encima 1,5 s es «comprar»: «Añadido al carrito» y una Suscripción enganchada): ¿es claro que pararse en la tarjeta compra? ¿Es justo?
+
+**Piezas de la tienda**
+- **Cajas sorpresa de 56 px** (la tapa queda 8 px por debajo de la fila; el validador la trata como celda llena): al pisarlas o saltar desde ellas, ¿se nota el escalón de 8 px o algún salto que «debería» llegar se queda corto?
+- **Cajas peligrosas** (el Debug enseña el contenido; el láser las destruye): ¿se aprende a mirar antes de abrir?
+- **Suscripción** (persigue, se engancha y drena; el pulso la cancela y el láser la derrota tumbada): ¿se ve bien el láser a una Suscripción tumbada en el mismo suelo (arreglo del paso 11)?
+- **Cuentas regresivas sin desfase**: todas usan el mismo ciclo (5 s + 1 s plegada) porque con ciclos distintos el validador no terminaba; ¿se hacen monótonas? ¿Hace falta desfasarlas (cuando el validador lo admita)?
+- **Términos y condiciones** («ACEPTAR» engancha una Suscripción; «rechazar» solo con el láser desde enfrente o un Filo): ¿se encuentra el «rechazar» pequeño sin la Q?
+
+**La Combinación**
+- Entradas (Embestida = Deslizar + abajo en el aire; Filo = Pellizcar + Deslizar en el aire; Sismo = Pellizcar + abajo en el aire; 15 de energía): ¿son cómodas con teclado y con mando? ¿El Filo y el Sismo, que empiezan con Pellizcar en el aire, salen a la primera?
+- **Sismo redefinido** (sin Agitar: onda por todo el suelo visible que aturde a lo que pisa el suelo y rompe a la vez las estanterías de saldos): ¿se lee como algo distinto del pulso?
+- **Estanterías de saldos y `restock_s`** (se «reponen» a los 0,5 s si no caen todas a la vez): ¿se entiende por qué vuelven a aparecer?
+- **«Prueba gratis»** del 5-2 (la escena con Eco e **Isak hablando por primera vez**, interlocutor `isak`): ¿se lee bien su cuadro y su icono? ¿Quieres más líneas de Isak (o ninguna) en Kernel y Raíz?
+
+**Niveles**
+- **Ancho de los niveles: 260 / 323 / 315 columnas** (5-1, 5-2, 5-3; el plan decía unos 220, se ensancharon para llegar al 40-55 % del objetivo con el camino del validador): bot frugal **212,9 / 242,0 / 257,8 s** (44 / 45 / 43 % de 480 / 540 / 600). ¿El ritmo es bueno o se hacen largos? ¿Cuánto tardas tú?
+- **Por plantas** (tres pasadas por tramo, subiendo y bajando): ¿se entiende hacia dónde seguir en cada planta?
+- 5-3 con la Linterna en la trastienda (secreto) y la lista de deseos: ¿se encuentra la trastienda?
+
+**El Vendedor**
+- Objetivo 100-160 s en Caché: bot ideal **110,6 / 178,9 / 178,9 s**, torpe **168,4 / 198,6 / 236,0 s** (Caché / Kernel / Raíz). ¿Se hace larga la pelea?
+- **Pulso y láser a quemarropa**: el láser pegado a la máquina no cuenta (nace dentro de la carcasa) y hay que disparar desde un paso de distancia (pasa igual con los otros jefes): ¿te pasa jugando? ¿Hay que hacer que cuente pegado?
+- **Giro de 1,2 s** (0,9 en Raíz) con su aviso: ¿frustra en la fase 1 o da tensión? **Márgenes de Raíz**: con el giro de 0,9 s la ventana de la fase 1 va justa (1,15 s para 1,14 necesarios): ¿se puede marcar y disparar sin perfección?
+- **Fichas de Kernel y Raíz sin holgura** (el torpe gasta las 12 y le «fían» 2 veces: Suscripción que drena 2 de energía/s): ¿hacen falta más fichas o es la tensión buscada?
+- **Reglas añadidas al jefe** para alargar la pelea: las etiquetas de la fase 1 se **reponen** 14 s tras cada golpe (`priced_platforms.restock_s`, cartel «Reponiendo…»), las tandas de cajas cada 12 s (antes 5) y una cuarta tanda: ¿se notan las esperas como tiempos muertos?
+- **Tirón detrás de la máquina** en la fase 3 (×0,45 frente a 90 px/s: andando casi no se separa, corriendo sí): ¿se entiende que hay que correr o combinar?
+- **Sonido doble del escaparate**: al romperse suenan a la vez la persiana (`sfx_w5_shutter_break`) y el cristal (`sfx_boss5_glass_break`); con los provisionales no molesta: ¿lo dejamos así con los definitivos o solo el cristal?
+- **Megafonía de la música pendiente**: la capa de la música que sube con la tentación no existe todavía (falta volumen por zona en `AudioManager`): ¿la quieres?
+
+**Hub**
+- **La apertura del candado no se guarda**: si sales del hub sin pasar por la página 3, la próxima vez M6 ya está abierto sin la animación. ¿Basta así o debe esperar a que la veas?
+- Quinta pieza blanca y fondo completo (la foto de antes del celular): ¿se reconoce como «la foto»?
+
+**Textos propuestos (revisar todos)**
+- Niveles: línea de Eco del 5-1 («Aquí todo es para ti, {apodo}. Solo tienes que querer.»), carteles y textos de las piezas (precios, «Añadido al carrito», «Pago rechazado», «Verificando pago…», Términos), la escena de la «Prueba gratis» (Eco e Isak), los comentarios de Calc tras el 5-1 y tras El Vendedor, y los **mensajes del Abuelito** `msg_5_1` a `msg_5_3` (`data/memories.json`).
+- El Vendedor, Isak («No vengo a comprar nada.») y las ayudas Q: lista en «Mundo 5: textos de El Vendedor propuestos», arriba.
+- Al pasar por el 4-1: las burbujas de Tomi («Tomi: te mandé un meme, ¿lo viste?») y «lo vi, me reí mucho» se acortaron en el paso 21 (para que la Combinación no abra el secreto A sin el Debug).
+
+**Paleta**
+- Variante **B «Cierre a medianoche»** (`assets/palettes/mundo5.gpl`; Debug blanco `#ffffff`), elegida por el orquestador por contraste; comparativa en `docs/arte/mundo5_paleta_variantes.png`; se cambia con `tools/palette_mundo5_variants.py --apply A|C`. ¿El tinte blanco del Debug cansa la vista?
+
+**Limitaciones conocidas (no son fallos; decidir si importan)**
+- Arte por script de todo el mundo hasta el paso 24 (El Vendedor y las tres poses de combo con AutoSprite: 57-60 créditos, con tu permiso).
+- Kernel y Raíz del jefe solo a alto nivel (salvo el giro de 0,9 s y la cuenta): los cambios por acceso de §5.8 están sin hacer.
+- Audio provisional: los 30 IDs del Mundo 5 suenan con provisionales hasta los sonidos de tu amigo.
+- El validador no modela el «tercer ciclo» de las cuentas regresivas ni las cuentas desfasadas.
