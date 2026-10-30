@@ -1,7 +1,8 @@
 # Iconos del menu de pausa (2026-10-27, peticion del usuario: «iconicemos el
 # menu de ESC»): cada opcion lleva un icono de 12x12 px de arte del set menu_*
 # del hub (option_icons de data/pause_menu.json), a la izquierda del texto y
-# centrado en la fila; las filas de Controles (BINDING) no llevan. La
+# centrado en la fila; desde el 2026-10-30 las filas de Controles llevan el de su
+# movimiento (tools/gen_control_icons.py; tests/test_controls_menu.gd). La
 # navegacion y los textos no cambian.
 extends GutTest
 
@@ -85,14 +86,15 @@ func test_settings_display_sound_and_confirm_pages() -> void:
 	_menu.close()
 
 
-func test_controls_rows_have_no_icon_but_reset_and_back_do() -> void:
+func test_controls_rows_have_their_move_icon_and_reset_and_back_theirs() -> void:
 	_menu.request_open()
 	_menu.activate(PauseMenu.Option.SETTINGS)
 	_menu.activate(PauseMenu.Option.CONTROLS)
 	var options: Array[PauseMenu.Option] = _menu.get_options()
 	for i: int in options.size():
-		if options[i] == PauseMenu.Option.BINDING:
-			assert_null(_menu.get_option_icon(i), "Fila de accion sin icono")
+		if options[i] == PauseMenu.Option.BINDING or options[i] == PauseMenu.Option.CONTROL_INFO:
+			assert_eq(_menu.get_option_icon(i).resource_path, String(_menu.get_row(i)["icon"]),
+				"Fila con el icono de su movimiento (2026-10-30)")
 	var n: int = options.size()
 	assert_eq(_menu.get_option_icon(n - 2).resource_path, MENU % "pause_reset")
 	assert_eq(_menu.get_option_icon(n - 1).resource_path, MENU % "back")

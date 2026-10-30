@@ -170,7 +170,9 @@ static func explain_lines(ability: StringName, data: Dictionary) -> PackedString
 	return out
 
 
-## Sustituye cada {key:<accion>} por la primera tecla de la accion ("?" si no tiene).
+## Sustituye cada {key:<accion>} por la primera tecla de la accion ("?" si no tiene)
+## o, si el ultimo dispositivo usado es el mando (2026-10-30,
+## ControlBindings.last_device), por su boton.
 static func _replace_action_keys(text: String, data: Dictionary) -> String:
 	var from: int = text.find(ACTION_KEY_PREFIX)
 	while from >= 0:
@@ -179,6 +181,8 @@ static func _replace_action_keys(text: String, data: Dictionary) -> String:
 			break
 		var action := StringName(text.substr(from + ACTION_KEY_PREFIX.length(), close - from - ACTION_KEY_PREFIX.length()))
 		var key: String = action_key_text(action, data)
+		if ControlBindings.last_device() == ControlBindings.Device.PAD:
+			key = ControlBindings.action_label(action, key)
 		text = text.substr(0, from) + (key if not key.is_empty() else "?") + text.substr(close + 1)
 		from = text.find(ACTION_KEY_PREFIX, from)
 	return text

@@ -57,9 +57,23 @@
 ## ICONOS (2026-10-27, peticion del usuario): cada opcion lleva un icono de 12 px
 ## de arte (option_icons de data/pause_menu.json, clave = Option en minusculas;
 ## mismo sistema que los paneles del hub, menu_* de tools/gen_hub_objects.py).
-## Las filas de Controles (BINDING) no llevan. En una pagina con iconos las
+## Las filas de Controles llevan el icono de su movimiento (ver CONTROLES CON
+## ICONOS, abajo). En una pagina con iconos las
 ## opciones se alinean a la izquierda en un bloque centrado y el icono va a la
 ## izquierda del texto, centrado en la fila.
+## CONTROLES CON ICONOS (2026-10-30, peticion del usuario tras el 5-2: «en el
+## menu de controles vamos a colocar iconos a cada movimiento y solo vas a
+## colocar la tecla o el boton… las habilidades no estan en el menu»): la pagina
+## Controles lista las filas de menu_rows de data/settings.json (todos los
+## movimientos, las habilidades, los tres combos, la ayuda, la pausa y
+## reiniciar), cada una con su icono (tools/gen_control_icons.py) y SOLO la tecla
+## o el boton del ULTIMO DISPOSITIVO USADO (ControlBindings.last_device, que
+## alimenta el autoload InputDeviceWatcher: teclado y raton o mando), leidos del
+## Input Map cada vez. El detalle dice el nombre y el uso de la fila elegida; el
+## titulo dice el dispositivo («Controles · teclado» / «Controles · mando Xbox»)
+## y cambia en vivo, con las filas, al usar el otro dispositivo. Las filas de una
+## accion reasignable abren la captura como siempre (BINDING); las de un combo o
+## de una accion fija solo informan (CONTROL_INFO).
 ## El nodo vive siempre en el arbol (oculto si esta cerrado): lo crea LevelRunner
 ## (niveles y hub del flujo del juego) o HubRoom si se abre solo.
 class_name PauseMenu
@@ -73,7 +87,8 @@ const BLOCKER_GROUP: StringName = &"pause_menu_blocker"
 
 enum Page { MAIN, SETTINGS, CONFIRM_HUB, DISPLAY, CONTROLS, CAPTURE, CONFLICT, CONFIRM_RESET, SOUND }
 enum Option { RESUME, SETTINGS, QUIT, ECO_HELP, BACK, EXIT_TO_HUB, CONFIRM_EXIT, LOW_SYNC, DEBUG_OUTLINE, DISPLAY, WINDOW_MODE,
-	WINDOW_SIZE, CONTROLS, BINDING, RESET_CONTROLS, CONFIRM_RESET, SWAP, CANCEL, RHYTHM_CUES, SOUND, VOLUME, SCALE_MODE }
+	WINDOW_SIZE, CONTROLS, BINDING, RESET_CONTROLS, CONFIRM_RESET, SWAP, CANCEL, RHYTHM_CUES, SOUND, VOLUME, SCALE_MODE,
+	CONTROL_INFO }
 
 ## Interruptores Si / No de Ajustes: opcion -> [clave de GameSettings, clave de texto].
 const SWITCHES: Dictionary = {
@@ -110,6 +125,9 @@ var _options: Array[Option] = []
 var _option_actions: Array[StringName] = []
 ## Bus de cada opcion VOLUME (paralela a _options).
 var _option_buses: Array[StringName] = []
+## Fila de menu_rows de cada opcion BINDING / CONTROL_INFO de Controles
+## (paralela a _options; las ultimas, Restablecer y Volver, no tienen).
+var _option_rows: Array[Dictionary] = []
 ## Accion que se esta reasignando (captura y conflicto).
 var _capture_action: StringName = &""
 var _capture_started_ms: int = 0
@@ -154,12 +172,24 @@ func _ready() -> void:
 	_build()
 	visible = false
 	get_viewport().size_changed.connect(_layout)
+	EventBus.input_device_changed.connect(_on_input_device_changed)
 
 
 func _exit_tree() -> void:
 	# Cambio de escena o nodo quitado: nunca deja el arbol en pausa.
 	_open = false
 	_release_pause()
+	if EventBus.input_device_changed.is_connected(_on_input_device_changed):
+		EventBus.input_device_changed.disconnect(_on_input_device_changed)
+
+
+## Otro dispositivo (teclado / mando): las filas, el titulo y la ayuda de
+## Controles cambian en vivo (el bloque se vuelve a medir: otras teclas).
+func _on_input_device_changed(_device: int) -> void:
+	if _title == null:
+		return
+	_block_w = -1.0
+	_refresh()
 
 
 ## La captura de una tecla o boton va antes que nadie (las demas acciones no
@@ -343,6 +373,10 @@ func activate(option: Option) -> void:
 			_show_page(Page.CONTROLS)
 		Option.BINDING:
 			begin_capture(get_selected_action())
+		Option.CONTROL_INFO:
+			var row: Dictionary = get_selected_row()
+			_notice = _text("controls_info_combo" if row.has("sequence") else "controls_info_fixed")
+			_refresh()
 		Option.RESET_CONTROLS:
 			_show_page(Page.CONFIRM_RESET)
 		Option.CONFIRM_RESET:
@@ -448,6 +482,26 @@ func select_action(action: StringName) -> bool:
 	_selected = index
 	_refresh()
 	return true
+
+
+## Fila de menu_rows de la opcion elegida en Controles (vacia si no es una).
+func get_selected_row() -> Dictionary:
+	return get_row(_selected)
+
+
+## Fila de menu_rows de la opcion `index` de Controles (vacia si no es una).
+func get_row(index: int) -> Dictionary:
+	return _option_rows[index] if index >= 0 and index < _option_rows.size() else {}
+
+
+## Elige la fila `row_id` (id de menu_rows) en Controles.
+func select_row(row_id: String) -> bool:
+	for i: int in _option_rows.size():
+		if String(_option_rows[i].get("id", "")) == row_id:
+			_selected = i
+			_refresh()
+			return true
+	return false
 
 
 ## Accion que se esta reasignando.
@@ -616,10 +670,14 @@ func get_all_texts() -> PackedStringArray:
 	return out
 
 
-## Icono de la opcion `index` de la pagina actual (null si no tiene).
+## Icono de la opcion `index` de la pagina actual (null si no tiene). Las filas
+## de Controles, el de su movimiento (icon de menu_rows).
 func get_option_icon(index: int) -> Texture2D:
 	if index < 0 or index >= _options.size():
 		return null
+	var row: Dictionary = get_row(index)
+	if not row.is_empty():
+		return _load_icon(String(row.get("icon", "")))
 	return _icon_for(_options[index])
 
 
@@ -644,15 +702,22 @@ func _icon_for(option: Option) -> Texture2D:
 	var key: String = String(Option.keys()[option]).to_lower()
 	if _icon_cache.has(key):
 		return _icon_cache[key]
-	var path: String = String(_data.get("option_icons", {}).get(key, ""))
-	var tex: Texture2D = load(path) as Texture2D if not path.is_empty() and ResourceLoader.exists(path) else null
+	var tex: Texture2D = _load_icon(String(_data.get("option_icons", {}).get(key, "")))
 	_icon_cache[key] = tex
 	return tex
 
 
+func _load_icon(path: String) -> Texture2D:
+	if path.is_empty():
+		return null
+	if not _icon_cache.has(path):
+		_icon_cache[path] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _icon_cache[path]
+
+
 func _page_has_icons() -> bool:
-	for option: Option in _options:
-		if _icon_for(option) != null:
+	for i: int in _options.size():
+		if get_option_icon(i) != null:
 			return true
 	return false
 
@@ -684,6 +749,7 @@ func _show_page(page: Page) -> void:
 	_block_w = -1.0
 	_option_actions.clear()
 	_option_buses.clear()
+	_option_rows.clear()
 	_notice = ""
 	match page:
 		Page.MAIN:
@@ -701,9 +767,18 @@ func _show_page(page: Page) -> void:
 			_options.append(Option.BACK)
 		Page.CONTROLS:
 			_options = []
-			for action: StringName in ControlBindings.actions():
-				_options.append(Option.BINDING)
-				_option_actions.append(action)
+			var rows: Array[Dictionary] = ControlBindings.menu_rows()
+			for row: Dictionary in rows:
+				var action := StringName(String(row.get("action", "")))
+				var remappable: bool = row.has("action") and ControlBindings.is_remappable(action)
+				_options.append(Option.BINDING if remappable else Option.CONTROL_INFO)
+				_option_actions.append(action if remappable else &"")
+				_option_rows.append(row)
+			if rows.is_empty():
+				# Sin menu_rows: la lista de antes (acciones reasignables con tecla / boton).
+				for action: StringName in ControlBindings.actions():
+					_options.append(Option.BINDING)
+					_option_actions.append(action)
 			_options.append_array([Option.RESET_CONTROLS, Option.BACK])
 		Page.CAPTURE:
 			_options = []
@@ -745,7 +820,7 @@ func _color(key: String) -> Color:
 func _refresh() -> void:
 	if _title == null:
 		return
-	_title.text = _text(_page_title_key())
+	_title.text = _controls_title() if _page == Page.CONTROLS else _text(_page_title_key())
 	while _option_labels.size() < _options.size():
 		_option_labels.append(_new_label("Option_%d" % _option_labels.size(), _color("option")))
 	for i: int in _option_labels.size():
@@ -764,6 +839,8 @@ func _refresh() -> void:
 				_detail.text = _notice
 			elif get_selected_option() == Option.RESET_CONTROLS:
 				_detail.text = _text("controls_reset_detail")
+			elif not get_selected_row().is_empty():
+				_detail.text = String(get_selected_row().get("detail", ""))
 			elif get_selected_option() == Option.BINDING:
 				_detail.text = _text("controls_detail")
 			else:
@@ -780,8 +857,26 @@ func _refresh() -> void:
 			_detail.text = _text("exit_to_hub_detail")
 		_:
 			_detail.text = ""
-	_help.text = _text(_page_help_key())
+	_help.text = _controls_help() if _page == Page.CONTROLS else _text(_page_help_key())
 	_layout()
+
+
+## Titulo de Controles con el dispositivo actual («Controles · teclado»,
+## «Controles · mando», «Controles · mando PlayStation»).
+func _controls_title() -> String:
+	if ControlBindings.last_device() != ControlBindings.Device.PAD:
+		return _text("title_controls_keyboard")
+	var family: String = ControlBindings.pad_family_name()
+	if family.is_empty():
+		return _text("title_controls_pad")
+	return _text("title_controls_pad_family").replace("{family}", family)
+
+
+## Ayuda de Controles con las teclas o botones de aceptar y volver.
+func _controls_help() -> String:
+	var accept: String = ControlBindings.action_label(&"ui_accept", "Intro", true, _font)
+	var back: String = ControlBindings.action_label(&"ui_cancel", "Esc", true, _font)
+	return _text("help_controls").replace("{accept}", accept).replace("{back}", back)
 
 
 ## Texto de la opcion `index` de la pagina actual (las filas de Controles:
@@ -791,6 +886,10 @@ func _option_text_at(index: int) -> String:
 		var bus: StringName = _option_buses[index]
 		return _text("volume").replace("{bus}", GameSettings.volume_label(bus)).replace("{value}",
 			str(roundi(GameSettings.get_volume(bus) * 100.0)))
+	var row: Dictionary = get_row(index)
+	if not row.is_empty():
+		# Solo la tecla o el boton (2026-10-30): el nombre va en el detalle.
+		return ControlBindings.row_label(row, _font)
 	if _options[index] == Option.BINDING and index < _option_actions.size():
 		var action: StringName = _option_actions[index]
 		return _text("binding").replace("{action}", ControlBindings.action_name(action)).replace("{inputs}",

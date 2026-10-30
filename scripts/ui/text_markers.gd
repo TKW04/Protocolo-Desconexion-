@@ -7,7 +7,8 @@
 ##   fuente de textos lo tiene con el ancho del icono) y el cuadro dibuja encima
 ##   el sprite. Un id desconocido se quita (con aviso).
 ## - {tecla:<accion>}: primera tecla de la accion en el Input Map (p. ej. «K»
-##   para debug; cambia al reasignarla). Lo usan las ayudas Q (HelpCatalog.text)
+##   para debug; cambia al reasignarla); con el mando como ultimo dispositivo
+##   (2026-10-30, ControlBindings.last_device), su boton («Y»). Lo usan las ayudas Q (HelpCatalog.text)
 ##   y los carteles del Mundo 2 (LoopSection; 2026-10-23).
 ## Solo texto: dibujar el icono lo hace EcoTextBox.
 class_name TextMarkers
@@ -33,7 +34,12 @@ static func apply_keys(text: String) -> String:
 	for found: RegExMatch in _key_regex.search_all(text):
 		out += text.substr(last, found.get_start() - last)
 		var action: String = found.get_string(1)
-		out += PulsePrompt.key_text(StringName(action), action.to_upper())
+		# Con mando (ultimo dispositivo usado, 2026-10-30), el boton; con teclado, la tecla.
+		if ControlBindings.last_device() == ControlBindings.Device.PAD:
+			out += ControlBindings.action_label(StringName(action), PulsePrompt.key_text(StringName(action),
+				action.to_upper()))
+		else:
+			out += PulsePrompt.key_text(StringName(action), action.to_upper())
 		last = found.get_end()
 	return out + text.substr(last)
 

@@ -254,6 +254,10 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 19 del Mundo 5 (2026-10-29) GUT lanza tambien el bot del jefe El Vendedor (tests/test_vendor_bot.gd:
 # tools/play_boss_bot.gd -- --boss vendor, logica en tools/vendor_bot.gd, en procesos aparte: ideal y torpe en Caché,
 # Kernel y Raíz y el quieto que pierde; usa user://bot_save.json).
+# Desde el 2026-10-30 (peticion del usuario tras el 5-2): los iconos de Pausa > Ajustes > Controles
+# (tools/gen_control_icons.py --check: paleta del hub, contraste con el panel y una fila por icono;
+# tests/test_control_icons.py) y el menu de Controles con todas las habilidades y la deteccion de
+# teclado o mando (tests/test_controls_menu.gd, GUT).
 # Desde el paso 20 del Mundo 5 (2026-10-29): textos, ayudas Q y audio de El Vendedor y del Mundo 5
 # (tests/test_vendor_help.gd, GUT; test_help_inert.gd y test_notas_album.gd con las 4 ayudas nuevas; los 30 IDs de
 # audio con provisional en validate_audio.py; las fichas de tools/gen_world5_objects.py --check).
@@ -315,7 +319,7 @@ _validate_levels() {
 	return $status
 }
 if command -v python3 >/dev/null 2>&1; then
-	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py \
+	if ! (cd "$PROJECT_DIR" && python3 -m unittest -q tests/test_level_schema.py tests/test_text_font.py tests/test_control_icons.py \
 		tests/test_validate_level.py tests/test_level_plan.py tests/test_build_level.py tests/test_run_tests_guard.py \
 		tests/test_level_1_2.py tests/test_level_1_3.py tests/test_level_2_1.py tests/test_level_2_2.py tests/test_level_2_3.py tests/test_level_3_1.py tests/test_level_3_2.py tests/test_level_3_3.py tests/test_level_4_1.py tests/test_level_4_2.py tests/test_level_4_3.py tests/test_level_5_1.py tests/test_level_5_2.py tests/test_level_5_3.py tests/test_upgrade_economy.py tests/test_memories.py tests/test_memory_art.py \
 		tests/test_audio_catalog.py tests/test_boss_data.py tests/test_boss_validator.py tests/test_boss_arena_tuning.py tests/test_reduce_palette.py \
@@ -361,7 +365,7 @@ if command -v python3 >/dev/null 2>&1; then
 		&& python3 -I tools/gen_boss_autoplay.py --check && python3 -I tools/gen_hub_piece_w2.py --check \
 		&& python3 -I tools/gen_boss_curator.py --check && python3 -I tools/gen_hub_piece_w3.py --check \
 		&& python3 -I tools/gen_hub_update_art.py --check && python3 -I tools/gen_hub_piece_w5.py --check \
-		&& python3 -I tools/gen_isak_text_box.py --check \
+		&& python3 -I tools/gen_isak_text_box.py --check && python3 -I tools/gen_control_icons.py --check \
 		&& python3 -I tools/import_boss_autoplay.py --check >/dev/null && python3 -I tools/import_commenter.py --check >/dev/null \
 		&& python3 -I tools/import_boss_curator.py --check >/dev/null && python3 -I tools/import_influencer_bot.py --check >/dev/null \
 		&& python3 -I tools/import_boss_seen.py --check >/dev/null && python3 -I tools/import_troll.py --check >/dev/null \

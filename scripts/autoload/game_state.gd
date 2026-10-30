@@ -1098,6 +1098,10 @@ static func resolve_save_path(args: PackedStringArray, env_path: String) -> Stri
 ## Borra el progreso persistente en memoria (no toca el disco) y la marca de
 ## cambios sin guardar (no queda nada que merezca guardarse).
 func reset_progress() -> void:
+	# El ultimo dispositivo usado vuelve al teclado (2026-10-30): una partida
+	# nueva, y cada prueba, empieza mostrando las teclas; la primera entrada del
+	# mando lo cambia al momento (ControlBindings.note_input).
+	ControlBindings.reset_device()
 	attention_points = ATTENTION_POINTS_MIN
 	reset_likes()
 	lap = LAP_EASY

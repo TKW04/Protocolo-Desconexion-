@@ -25,6 +25,11 @@ const CODE_TAG: String = "{code}"
 
 static var _data: Dictionary = {}
 static var _names: Dictionary = {}
+## Ultimo dispositivo usado (2026-10-30; note_input) y familia del mando
+## (pad_families de data/settings.json: "xbox", "playstation", "nintendo" o ""
+## = generico, con los nombres de ability_notices.json).
+static var _last_device: Device = Device.KEYBOARD
+static var _pad_family: String = ""
 
 
 # --- Datos ---
@@ -445,3 +450,176 @@ static func _has_glyphs(text: String, font: Font) -> bool:
 		if ch != 32 and not font.has_char(ch):
 			return false
 	return true
+
+
+# --- Dispositivo actual (2026-10-30, peticion del usuario: «¿se puede hacer que
+# detecte el control o el teclado?») ---
+# El ultimo dispositivo usado decide que se muestra en Ajustes > Controles y en
+# los textos con teclas ({key:<accion>} de los avisos, {tecla:<accion>} de las
+# ayudas Q): la tecla o el boton del mando. Lo alimenta el autoload
+# InputDeviceWatcher (scripts/autoload/input_device_watcher.gd) con cada
+# entrada, sin consumirla.
+
+## Apunta el dispositivo de `event` (tecla o raton = teclado; boton o eje
+## inclinado mas de device_axis_threshold = mando). Verdadero si cambio (y emite
+## EventBus.input_device_changed).
+static func note_input(event: InputEvent) -> bool:
+	var device: Device = Device.NONE
+	if event is InputEventKey and (event as InputEventKey).pressed:
+		device = Device.KEYBOARD
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		device = Device.KEYBOARD
+	elif event is InputEventJoypadButton and (event as InputEventJoypadButton).pressed:
+		device = Device.PAD
+	elif event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) \
+			> float(config().get("device_axis_threshold", 0.5)):
+		device = Device.PAD
+	if device == Device.NONE:
+		return false
+	var family: String = _pad_family
+	if device == Device.PAD:
+		family = family_for_name(Input.get_joy_name(event.device)) if event.device >= 0 else ""
+	if device == _last_device and family == _pad_family:
+		return false
+	set_last_device(device, family)
+	return true
+
+
+## Ultimo dispositivo usado (KEYBOARD al arrancar).
+static func last_device() -> Device:
+	return _last_device
+
+
+## Familia del ultimo mando ("" = generico).
+static func pad_family() -> String:
+	return _pad_family
+
+
+## Fija el dispositivo (y la familia del mando) y avisa si cambia. Lo usan
+## note_input y las pruebas.
+static func set_last_device(device: Device, family: String = "") -> void:
+	if device == Device.NONE:
+		return
+	var changed: bool = device != _last_device or (device == Device.PAD and family != _pad_family)
+	_last_device = device
+	_pad_family = family if device == Device.PAD else _pad_family
+	if changed:
+		EventBus.input_device_changed.emit(int(device))
+
+
+## Vuelve al teclado sin avisar (GameState.reset_progress: cada prueba empieza
+## igual).
+static func reset_device() -> void:
+	_last_device = Device.KEYBOARD
+	_pad_family = ""
+
+
+## Familia de un mando por su nombre (Input.get_joy_name): la primera de
+## pad_families con alguna palabra de `match` en el nombre ("" si ninguna).
+static func family_for_name(joy_name: String) -> String:
+	var lower: String = joy_name.to_lower()
+	var families: Variant = config().get("pad_families", {})
+	if families is Dictionary:
+		for family: Variant in families:
+			var entry: Variant = (families as Dictionary)[family]
+			if not entry is Dictionary:
+				continue
+			for word: Variant in (entry as Dictionary).get("match", []):
+				if not String(word).is_empty() and lower.contains(String(word).to_lower()):
+					return String(family)
+	return ""
+
+
+## Nombre de la familia del mando para la UI («Xbox»; "" si es generico).
+static func pad_family_name(family: String = _pad_family) -> String:
+	var families: Variant = config().get("pad_families", {})
+	if families is Dictionary and (families as Dictionary).get(family) is Dictionary:
+		return String(((families as Dictionary)[family] as Dictionary).get("name", ""))
+	return ""
+
+
+## Nombre de una entrada para la UI: la tecla como input_label; el boton o el eje
+## con la tabla de la familia del mando (Cruz, L1...) y, con `compact`, la corta
+## de pad_short (LT, «Stick abajo»); si no, el de ability_notices.json.
+static func device_label(event: InputEvent, compact: bool = false, font: Font = null) -> String:
+	if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		var code: String = ""
+		var table: String = "buttons"
+		if event is InputEventJoypadButton:
+			code = str(int((event as InputEventJoypadButton).button_index))
+		else:
+			var motion := event as InputEventJoypadMotion
+			code = "%d%s" % [int(motion.axis), "+" if motion.axis_value >= 0.0 else "-"]
+			table = "axes"
+		var sources: Array = []
+		var families: Variant = config().get("pad_families", {})
+		if families is Dictionary and (families as Dictionary).get(_pad_family) is Dictionary:
+			sources.append(((families as Dictionary)[_pad_family] as Dictionary).get(table, {}))
+		if compact:
+			sources.append((config().get("pad_short", {}) as Dictionary).get(table, {}))
+		for source: Variant in sources:
+			if source is Dictionary and (source as Dictionary).has(code):
+				var label: String = String((source as Dictionary)[code])
+				if _has_glyphs(label, font):
+					return label
+	return input_label(event, font)
+
+
+## Entrada de `action` en el dispositivo actual (o en el otro si en este no
+## tiene); null si no tiene ninguna.
+static func current_event(action: StringName) -> InputEvent:
+	var order: Array = [Device.KEYBOARD, Device.PAD]
+	if _last_device == Device.PAD:
+		order.reverse()
+	for device: Variant in order:
+		var event: InputEvent = primary(action, device as Device)
+		if event != null:
+			return event
+	return null
+
+
+## Tecla o boton de `action` en el dispositivo actual («Espacio», «A»);
+## `fallback` si no tiene. Se lee del Input Map cada vez: si una accion cambia
+## de tecla en project.godot o en Ajustes, el texto cambia solo.
+static func action_label(action: StringName, fallback: String = "", compact: bool = false,
+		font: Font = null) -> String:
+	var event: InputEvent = current_event(action) if InputMap.has_action(action) else null
+	return device_label(event, compact, font) if event != null else fallback
+
+
+# --- Filas del menu de Controles (2026-10-30; menu_rows de data/settings.json) ---
+
+## Filas de Ajustes > Controles en orden: {id, icon, detail y action (una
+## accion) o sequence (un combo: varias acciones en orden)}. Se saltan las que
+## nombran una accion que no existe en el Input Map.
+static func menu_rows() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for raw: Variant in config().get("menu_rows", []):
+		if not raw is Dictionary:
+			continue
+		var row: Dictionary = raw
+		var ok: bool = row.has("action") or row.has("sequence")
+		for action: StringName in row_actions(row):
+			ok = ok and InputMap.has_action(action)
+		if ok:
+			out.append(row)
+	return out
+
+
+## Acciones de una fila (la suya o las del combo, en orden).
+static func row_actions(row: Dictionary) -> Array[StringName]:
+	var out: Array[StringName] = []
+	if row.has("action"):
+		out.append(StringName(String(row["action"])))
+	for action: Variant in row.get("sequence", []):
+		out.append(StringName(String(action)))
+	return out
+
+
+## Texto de una fila: solo la tecla o el boton (los de un combo, en orden,
+## separados por sequence_join).
+static func row_label(row: Dictionary, font: Font = null) -> String:
+	var parts: PackedStringArray = []
+	for action: StringName in row_actions(row):
+		parts.append(action_label(action, String(config().get("none", "Sin asignar")), true, font))
+	return String(config().get("sequence_join", ", ")).join(parts)

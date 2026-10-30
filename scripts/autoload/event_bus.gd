@@ -286,6 +286,12 @@ signal pause_menu_closed
 @warning_ignore("unused_signal")
 signal controls_changed
 
+## Cambio el ultimo dispositivo usado (2026-10-30; ControlBindings.note_input):
+## `device` es ControlBindings.Device (KEYBOARD = teclado y raton, PAD = mando).
+## El menu de Controles y los textos con teclas se vuelven a leer.
+@warning_ignore("unused_signal")
+signal input_device_changed(device: int)
+
 ## El jugador ha vuelto a leer la ayuda de un tipo ya aprendido (Q apagada).
 @warning_ignore("unused_signal")
 signal help_reread(help_id: StringName)

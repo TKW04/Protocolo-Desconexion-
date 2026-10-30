@@ -333,16 +333,21 @@ func EcoProgress_meet_notas() -> void:
 
 # --- Menu ---
 
-func test_menu_lists_actions_with_key_and_pad() -> void:
+func test_menu_lists_actions_with_the_key_of_the_current_device() -> void:
+	# Desde el 2026-10-30 cada fila dice solo la tecla (o el boton, con mando) y el
+	# detalle dice el nombre (tests/test_controls_menu.gd).
 	_spawn_menu()
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS)
 	var lines: PackedStringArray = _menu.get_lines()
-	assert_eq(lines[0], "Controles")
-	assert_true(lines.has("– Mover a la izquierda: A / stick a la izquierda"), "%s" % lines)
-	assert_true(lines.has("  Saltar: Espacio / A"))
-	assert_true(lines.has("  Deslizar: L / B"), "Deslizar (dash, 2026-10-19) reasignable")
+	assert_eq(lines[0], "Controles · teclado")
+	assert_true(lines.has("– A"), "%s" % lines)
+	assert_true(lines.has("Mover a la izquierda"), "El detalle de la fila elegida")
+	assert_true(lines.has("  Espacio"))
+	assert_true(lines.has("  L"), "Deslizar (dash, 2026-10-19) reasignable")
 	assert_true(lines.has("  Restablecer valores"))
 	assert_eq(_menu.get_selected_action(), &"move_left")
+	assert_true(_menu.select_action(&"gesture_swipe"))
+	assert_true(_menu.get_lines().has("Deslizar: dash de 3 tiles"))
 
 
 func test_menu_capture_assigns_and_esc_cancels() -> void:
@@ -360,7 +365,7 @@ func test_menu_capture_assigns_and_esc_cancels() -> void:
 	_tap(_key(KEY_O))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS)
 	assert_true(_is_action(_key(KEY_O), &"pulse"), "O asignada")
-	assert_true(_menu.get_lines().has("– Pulso: O / X"))
+	assert_true(_menu.get_lines().has("– O"), "La fila del pulso dice la tecla nueva")
 	_action(&"ui_accept")
 	_tap(_button(JOY_BUTTON_START))
 	assert_eq(_menu.get_page(), PauseMenu.Page.CONTROLS, "Start tambien cancela")
@@ -390,7 +395,7 @@ func test_menu_conflict_swap_and_cancel() -> void:
 	_menu.activate(PauseMenu.Option.SWAP)
 	assert_true(_is_action(_key(KEY_G), &"jump"), "Intercambiar")
 	assert_true(_is_action(_key(KEY_SPACE), &"pulse"))
-	assert_true(_menu.get_lines().has("– Saltar: G / A"))
+	assert_true(_menu.get_lines().has("– G"), "Saltar con G")
 	_action(&"ui_accept")
 	_tap(_key(KEY_O))
 	_action(&"ui_accept")

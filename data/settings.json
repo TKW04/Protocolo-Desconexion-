@@ -44,6 +44,41 @@
 		"unknown_key": "Tecla {code}",
 		"unknown_button": "Botón {code}",
 		"unknown_axis": "Eje {code}",
-		"none": "Sin asignar"
+		"none": "Sin asignar",
+		"_menu_notes": "Pantalla de Controles con iconos (2026-10-30, peticion del usuario tras el 5-2: «en el menu de controles vamos a colocar iconos a cada movimiento y solo vas a colocar la tecla o el boton… las habilidades no estan en el menu de controles»; docs/05-hub.md §13.7). menu_rows: filas de Pausa > Ajustes > Controles en orden, cada una con su icono (tools/gen_control_icons.py) y SOLO la tecla o el boton del ultimo dispositivo usado (ControlBindings.last_device: teclado y raton o mando), leidos del Input Map cada vez (si una accion cambia en project.godot o se reasigna, la fila cambia sola). action: una accion (reasignable si esta en actions; si no, solo informa: restart_level). sequence: un combo (varias acciones en orden, unidas con sequence_join; se cambia reasignando sus acciones). detail: lo que dice el detalle con la fila elegida (nombre y uso; corto: cabe en el panel). device_axis_threshold: inclinacion minima de un eje para contar como mando. pad_short: nombres cortos de botones y ejes para las filas (LT, RT, Stick abajo); el resto, los de data/ability_notices.json. pad_families: mapeos por mando conocido, por el nombre que da Input.get_joy_name (match, sin mayusculas): sus nombres sustituyen a los genericos (A/B/X/Y, LB/RB, LT/RT, que siguen la convencion del Input Map: boton 0 = abajo); sin coincidencia, generico.",
+		"device_axis_threshold": 0.5,
+		"sequence_join": ", ",
+		"menu_rows": [
+			{"id": "move_left", "action": "move_left", "icon": "res://assets/sprites/controls/ctrl_move_left_00.png", "detail": "Mover a la izquierda"},
+			{"id": "move_right", "action": "move_right", "icon": "res://assets/sprites/controls/ctrl_move_right_00.png", "detail": "Mover a la derecha"},
+			{"id": "jump", "action": "jump", "icon": "res://assets/sprites/controls/ctrl_jump_00.png", "detail": "Saltar"},
+			{"id": "run", "action": "run", "icon": "res://assets/sprites/controls/ctrl_run_00.png", "detail": "Correr (mantén)"},
+			{"id": "pulse", "action": "pulse", "icon": "res://assets/sprites/controls/ctrl_pulse_00.png", "detail": "Pulso: aturde y activa cosas cerca"},
+			{"id": "laser", "action": "laser", "icon": "res://assets/sprites/controls/ctrl_laser_00.png", "detail": "Láser: dispara, con los pies en el suelo"},
+			{"id": "debug", "action": "debug", "icon": "res://assets/sprites/controls/ctrl_debug_00.png", "detail": "Debug (mantén): ves lo oculto"},
+			{"id": "dash", "action": "gesture_swipe", "icon": "res://assets/sprites/controls/ctrl_dash_00.png", "detail": "Deslizar: dash de 3 tiles"},
+			{"id": "compress", "action": "gesture_pinch", "icon": "res://assets/sprites/controls/ctrl_compress_00.png", "detail": "Comprimir: pasa por huecos de 1 tile"},
+			{"id": "ground_pound", "action": "move_down", "icon": "res://assets/sprites/controls/ctrl_ground_pound_00.png", "detail": "Golpe al suelo (mantén abajo)"},
+			{"id": "hide", "action": "hide", "icon": "res://assets/sprites/controls/ctrl_hide_00.png", "detail": "Ocultarte (Pulso 4 de Calc)"},
+			{"id": "combo_ram", "sequence": ["jump", "gesture_swipe", "move_down"], "icon": "res://assets/sprites/controls/ctrl_combo_ram_00.png", "detail": "Embestida: salta, dash y abajo"},
+			{"id": "combo_edge", "sequence": ["jump", "gesture_pinch", "gesture_swipe"], "icon": "res://assets/sprites/controls/ctrl_combo_edge_00.png", "detail": "Filo: salta, Comprimir y dash"},
+			{"id": "combo_quake", "sequence": ["jump", "gesture_pinch", "move_down"], "icon": "res://assets/sprites/controls/ctrl_combo_quake_00.png", "detail": "Sismo: salta, Comprimir y abajo"},
+			{"id": "help", "action": "help", "icon": "res://assets/sprites/controls/ctrl_help_00.png", "detail": "Ayuda de Eco"},
+			{"id": "pause", "action": "pause", "icon": "res://assets/sprites/controls/ctrl_pause_00.png", "detail": "Pausa"},
+			{"id": "restart", "action": "restart_level", "icon": "res://assets/sprites/controls/ctrl_restart_00.png", "detail": "Reiniciar el mapa"}
+		],
+		"pad_short": {
+			"buttons": {"4": "Select", "6": "Start", "11": "Cruceta arriba", "12": "Cruceta abajo", "13": "Cruceta izq.", "14": "Cruceta der."},
+			"axes": {"0-": "Stick izquierda", "0+": "Stick derecha", "1-": "Stick arriba", "1+": "Stick abajo", "2-": "Stick dcho. izq.", "2+": "Stick dcho. der.", "3-": "Stick dcho. arriba", "3+": "Stick dcho. abajo", "4+": "LT", "5+": "RT"}
+		},
+		"pad_families": {
+			"playstation": {"name": "PlayStation", "match": ["playstation", "dualshock", "dualsense", "ps3", "ps4", "ps5", "sony"],
+				"buttons": {"0": "Cruz", "1": "Círculo", "2": "Cuadrado", "3": "Triángulo", "4": "Share", "6": "Options", "9": "L1", "10": "R1"},
+				"axes": {"4+": "L2", "5+": "R2"}},
+			"nintendo": {"name": "Nintendo", "match": ["nintendo", "switch", "joy-con", "pro controller"],
+				"buttons": {"0": "B", "1": "A", "2": "Y", "3": "X", "4": "-", "6": "+", "9": "L", "10": "R"},
+				"axes": {"4+": "ZL", "5+": "ZR"}},
+			"xbox": {"name": "Xbox", "match": ["xbox", "xinput"], "buttons": {}, "axes": {}}
+		}
 	}
 }
