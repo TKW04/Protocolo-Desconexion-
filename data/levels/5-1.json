@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL 5-1 «Oferta del día» (paso 10 de docs/propuesta-mundo-5.md §8, 2026-10-29; diseño en su §4.1 y §4.1.1, desvíos en §8.1). Horizontal de 260 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Llega con todo el kit del Mundo 4 salvo la Combinación (sin combo; la Linterna es conocida pero no hay zonas oscuras). ESTRUCTURA: POR PLANTAS desde el principio (§4 y §11.1): cada tramo se recorre en TRES PASADAS: el suelo (B1, de pie en la 11), una banda de una vía en la fila 9 (B2, de pie en la 8) y otra en la fila 6 (B3, de pie en la 5), con 3 filas entre ellas (192 px: el salto real llega a 177, sin atajos). Los tramos 1 y 3 SUBEN (suelo hacia la derecha, escalón de una vía en la fila 10 al final, B2 hacia la izquierda, escalón en la fila 7 al principio, B3 hacia la derecha y salida por el hueco de las filas 4-5 de la pared derecha); el 2 y el 4 BAJAN (B3 hacia la derecha sin huecos, caída a B2 al final, B2 hacia la izquierda, pozo de 1 columna al suelo y salida por abajo, filas 10-11). Decisión tomada: el mapa de 200 columnas daba un camino de 157 s (33 %): se ensancharon los cuatro tramos (§4: «se alarga con otra pasada, no con esperas»): 260 columnas, camino de unos 207 s (43 %). INICIO «Entrada» (0-13): vórtice (3, 11), línea de Eco no importante (propuesta) y 1 punto. TRAMO 1 «Pasillo de ofertas» (14-80, sube): la Oferta de pie con el carrito de pinchos (patrón 23, columnas 17-19, antes de B2: bajo una banda no se salta un pincho), una Oferta colgada sobre B2 (columna 36) y otra sobre B3 (columna 69) que tira hacia el hueco de B3 de las columnas 66-67 (caída de 3 a B2, con salida); 2 puntos. TRAMO 2 «Primera tienda» (81-135, baja): la tienda en B2 (+25 de Sync por 3 en la columna 104 y +40 de energía por 2 en la 106; antes en la ruta hay 6 puntos), la Oferta colgada «Llévate dos» enfrente (columna 110), cargador_1 en el suelo (columna 95) y una Oferta de pie antes de la salida (columna 125); 3 puntos en B3, antes de la tienda. PAUSA (136-140): sync_1. TRAMO 3 «Caja sorpresa» (141-195, sube): las cuatro cajas sorpresa en B3 (patrón 24: energía, 2 puntos, Suscripción y vacía, columnas 155-164; se saltan, se miran con el Debug o se abren) y la primera Suscripción suelta en el suelo (columna 170). TRAMO 4 «Atajo» (196-249, baja): al final de B3, tras el hueco de las columnas 235-236, la repisa del atajo con trampa «Atajo: 3» (shortcut_door atajo_dos_plantas, trampa subscription, columna 240) que lleva directa a la cuenta regresiva y al Cierre por el hueco alto de la pared 241 (se ahorra B2 y el suelo); el camino largo baja las dos plantas (cargador_2 en el suelo, columna 205) y cruza la primera cuenta regresiva (cuenta_foso, 3 tiles) sobre un foso mortal de 5 columnas (245-249; patrón 28); 1 punto. CIERRE «Caja de pago» (250-259): 1 punto y la terminal «Pagar» (exit_terminal con skin checkout y la placa «Total: 0. Gracias por mirar.» antes del vórtice). SECRETOS: A «Devoluciones» (pared con glitch visible solo con el Debug en lo alto de la pared izquierda del Tramo 3, junto al escalón de B2 a B3; el cuarto, encima de la Pausa: refund_desk con sus 2 puntos y msg_5_1 del Abuelito; sin dash), B «Oferta de verdad» (power bank en la repisa sobre la cuenta, salto + dash aéreo desde el escalón de las columnas 242-243) y C «Vida extra» (vida_extra_5_1 en la repisa alta junto a la pared derecha con la Oferta colgada que tira hacia ella; salto + dash aéreo desde el escalón de las columnas 251-252). ECONOMÍA: 8 puntos en la rejilla + la caja de 2 + los 2 del secreto A = 12; comprarlo todo cuesta 8 (3 + 2 + 3). 2 cargadores (+50, reutilizables, 10 s), 1 power bank, 1 punto de sincronización, 1 vida extra.",
+	"_notes": "NIVEL 5-1 «Oferta del día» (paso 10 de docs/propuesta-mundo-5.md §8, 2026-10-29; diseño en su §4.1 y §4.1.1, desvíos en §8.1). Horizontal de 260 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Llega con todo el kit del Mundo 4 salvo la Combinación (sin combo; la Linterna es conocida pero no hay zonas oscuras). ESTRUCTURA: POR PLANTAS desde el principio (§4 y §11.1): cada tramo se recorre en TRES PASADAS: el suelo (B1, de pie en la 11), una banda de una vía en la fila 9 (B2, de pie en la 8) y otra en la fila 6 (B3, de pie en la 5), con 3 filas entre ellas (192 px: el salto real llega a 177, sin atajos). Los tramos 1 y 3 SUBEN (suelo hacia la derecha, escalón de una vía en la fila 10 al final, B2 hacia la izquierda, escalón en la fila 7 al principio, B3 hacia la derecha y salida por el hueco de las filas 4-5 de la pared derecha); el 2 y el 4 BAJAN (B3 hacia la derecha sin huecos, caída a B2 al final, B2 hacia la izquierda, pozo de 1 columna al suelo y salida por abajo, filas 10-11). Decisión tomada: el mapa de 200 columnas daba un camino de 157 s (33 %): se ensancharon los cuatro tramos (§4: «se alarga con otra pasada, no con esperas»): 260 columnas, camino de unos 207 s (43 %). INICIO «Entrada» (0-13): vórtice (3, 11), línea de Eco no importante (propuesta) y 1 punto. TRAMO 1 «Pasillo de ofertas» (14-80, sube): la Oferta de pie con el carrito de pinchos (patrón 23, columnas 17-19, antes de B2: bajo una banda no se salta un pincho), una Oferta colgada sobre B2 (columna 36) y otra sobre B3 (columna 69) que tira hacia el hueco de B3 de las columnas 66-67 (caída de 3 a B2, con salida); 2 puntos. TRAMO 2 «Primera tienda» (81-135, baja): la tienda en B2 (+25 de Sync por 3 en la columna 104 y +40 de energía por 2 en la 106; antes en la ruta hay 6 puntos), la Oferta colgada «Llévate dos» enfrente (columna 110), cargador_1 en el suelo (columna 95) y una Oferta de pie antes de la salida (columna 125); 3 puntos en B3, antes de la tienda. PAUSA (136-140): sync_1. TRAMO 3 «Caja sorpresa» (141-195, sube): las cuatro cajas sorpresa en B3 (patrón 24: energía, 2 puntos, Suscripción y vacía, columnas 155-164; se saltan, se miran con el Debug o se abren) y la primera Suscripción suelta en el suelo (columna 170). TRAMO 4 «Atajo» (196-249, baja): al final de B3, tras el hueco de las columnas 235-236, la repisa del atajo con trampa «Atajo: 3» (shortcut_door atajo_dos_plantas, trampa subscription, columna 240) que lleva directa a la cuenta regresiva y al Cierre por el hueco alto de la pared 241 (se ahorra B2 y el suelo); el camino largo baja las dos plantas (cargador_2 en el suelo, columna 205) y cruza la primera cuenta regresiva (cuenta_foso, 3 tiles) sobre un foso mortal de 5 columnas (245-249; patrón 28); 1 punto. CIERRE «Caja de pago» (250-259): 1 punto y la terminal «Pagar» (exit_terminal con skin checkout y la placa «Total: 0. Gracias por mirar.» antes del vórtice). SECRETOS: A «Devoluciones» (pared con glitch visible solo con el Debug en lo alto de la pared izquierda del Tramo 3, junto al escalón de B2 a B3; el cuarto, encima de la Pausa: refund_desk con sus 2 puntos y msg_5_1 del Abuelito; sin dash), B «Oferta de verdad» (power bank en la repisa sobre la cuenta, salto + dash aéreo desde el escalón de las columnas 242-243) y C «Vida extra» (vida_extra_5_1 en la repisa alta junto a la pared derecha con la Oferta colgada que tira hacia ella; salto + dash aéreo desde el escalón de las columnas 251-252). ECONOMÍA: 8 puntos en la rejilla + la caja de 2 + los 2 del secreto A = 12; comprarlo todo cuesta 8 (3 + 2 + 3). 2 cargadores (+50, reutilizables, 10 s), 1 power bank, 1 punto de sincronización, 1 vida extra.\n MÁS PELIGRO (2026-10-30, prueba del usuario: «está muy sencillo y se siente vacío»): cada pasada de cada tramo lleva su dosis. Tramo 1: Suscripción en el suelo (36), Oferta de pie (56, -20 %), foso con cuenta regresiva cuenta_t1 (66-68); en B2 una Oferta colgada (50, -20 %) que tira hacia un hueco de 2 (53-54; caída al suelo, con salida; se cruza con el dash); en B3 pinchos en las columnas 32 y 47 con una Oferta colgada (50, -20 %) que tira hacia el segundo. Tramo 2: pinchos en B3 (101 y 113) con una Oferta (117, -20 %) que tira hacia el segundo; Suscripción junto a la tienda en B2 (122); foso con cuenta cuenta_t2 en el suelo (110-112). Tramo 3: Oferta de pie (152, -20 %) y foso con cuenta cuenta_t3 (179-181) en el suelo; Oferta colgada en B2 (170, -30 %); en B3, tras las cajas, pincho (172) con su Oferta (176, -20 %) y una quinta caja con una Oferta escondida (caja_offer, 186). Tramo 4: en B3 pinchos (204 y 222), Suscripción (212) y Oferta (226, -20 %) que tira hacia el segundo pincho; Oferta colgada en B2 (228, -20 %); Oferta de pie (214, -10 %) y foso con cuenta cuenta_t4 (224-226) en el suelo. Los pinchos van en B3 (allí hay techo para saltarlos; bajo una banda no) y los fosos con cuenta en el suelo (bajo una banda se cruzan andando sobre la cuenta o con el dash). Las Ofertas nuevas llevan descuentos bajos (10-30 %: 1-2 de Sync por golpe) porque el camino pasa por todas. Enemigos 7 -> 20 (Ofertas 6 -> 16, Suscripciones 1 -> 4), pinchos 1 -> 8, cuentas regresivas 1 -> 5, cajas 4 -> 5. Sin puntos nuevos: la economía (8 + 2 + 2) no cambia.",
 	"id": "5-1",
 	"name": "Oferta del día",
 	"world": 5,
@@ -124,16 +124,16 @@
 		"#...............................................................................#......................................................#...........................................................#.........................................#####.................#",
 		"#...............................................................................#......................................................#...........................................................#.........................................#####.................#",
 		"#...............................................................................#......................................................#...........................................................#.............................................#.................#",
-		"#....................................................................E.................................................................######......................................................................................................................#",
-		"#......................................................o.......................................o..............o.........o..............#...............................................................................o..........................................E#",
+		"#.................................................E..................E...............................................E.................######...................................E...................................E.............E................................#",
+		"#...............................^..............^.......o.......................................o.....^........o..^......o..............#....................................^...............................^..........o......^...................................E#",
 		"#.....................--------------------------------------------..------------#------------------------------------------------......#...S...----------------------------------------------------#---------------------------------------..----#--...............#",
-		"#...................--..............E...........................................#.............................E........................######--....................................................#.............................................#.................#",
+		"#...................--..............E.............E.............................#.............................E...........E............######--...........................E........................#................................E............#.................#",
 		"#.................................................o.............................#......................................................#...........................................................#.............................................#.....--.......####",
-		"#.....................-------------------------------------------------------...###.---------------------------------------------------#.......-------------------------------------------------...##.-------------------------------------------#.................#",
-		"#.............................................................................--#.........................................................................................E......................--#..............................................--.......--......#",
-		"#..P........o....^.E............................................................#............................................E............C........................................................#......................................................o...G....#",
-		"#####################################################################################################################################################################################################################################################.....##########",
-		"#####################################################################################################################################################################################################################################################.....##########"
+		"#.....................-------------------------------..----------------------...###.---------------------------------------------------#.......-------------------------------------------------...##.-------------------------------------------#.................#",
+		"#...................................E.........................................--#.........................................................................................E......................--#..............................................--.......--......#",
+		"#..P........o....^.E....................................E.......................#............................................E............C.............E..........................................#..................E...................................o...G....#",
+		"##################################################################...#########################################...##################################################################...##########################################...##################.....##########",
+		"##################################################################...#########################################...##################################################################...##########################################...##################.....##########"
 	],
 	"objects": [
 		{
@@ -300,6 +300,51 @@
 				"skin": "checkout",
 				"offline_text": "Total: 0. Gracias por mirar."
 			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 66,
+			"y": 12,
+			"params": {
+				"id": "cuenta_t1",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 110,
+			"y": 12,
+			"params": {
+				"id": "cuenta_t2",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 179,
+			"y": 12,
+			"params": {
+				"id": "cuenta_t3",
+				"width_tiles": 3
+			}
+		},
+		{
+			"type": "surprise_box",
+			"x": 186,
+			"y": 5,
+			"params": {
+				"id": "caja_offer",
+				"content": "offer"
+			}
+		},
+		{
+			"type": "countdown_platform",
+			"x": 224,
+			"y": 12,
+			"params": {
+				"id": "cuenta_t4",
+				"width_tiles": 3
+			}
 		}
 	],
 	"enemies": [
@@ -355,6 +400,121 @@
 			"y": 5,
 			"params": {
 				"mount": "wall"
+			}
+		},
+		{
+			"id": "suscripcion_t1",
+			"type": "subscription",
+			"x": 36,
+			"y": 10
+		},
+		{
+			"id": "oferta_pie_t1",
+			"type": "offer_sign",
+			"x": 56,
+			"y": 11,
+			"params": {
+				"discount_pct": 20
+			}
+		},
+		{
+			"id": "oferta_hueco_b2_t1",
+			"type": "offer_sign",
+			"x": 50,
+			"y": 7,
+			"params": {
+				"discount_pct": 20,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_pinchos_b3_t1",
+			"type": "offer_sign",
+			"x": 50,
+			"y": 4,
+			"params": {
+				"discount_pct": 20,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_pinchos_b3_t2",
+			"type": "offer_sign",
+			"x": 117,
+			"y": 4,
+			"params": {
+				"discount_pct": 20,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "suscripcion_tienda",
+			"type": "subscription",
+			"x": 122,
+			"y": 7
+		},
+		{
+			"id": "oferta_pie_t3",
+			"type": "offer_sign",
+			"x": 152,
+			"y": 11,
+			"params": {
+				"discount_pct": 20
+			}
+		},
+		{
+			"id": "oferta_b2_t3",
+			"type": "offer_sign",
+			"x": 170,
+			"y": 7,
+			"params": {
+				"discount_pct": 30,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_pinchos_b3_t3",
+			"type": "offer_sign",
+			"x": 176,
+			"y": 4,
+			"params": {
+				"discount_pct": 20,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_pinchos_b3_t4",
+			"type": "offer_sign",
+			"x": 226,
+			"y": 4,
+			"params": {
+				"discount_pct": 20,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "suscripcion_b3_t4",
+			"type": "subscription",
+			"x": 212,
+			"y": 4
+		},
+		{
+			"id": "oferta_b2_t4",
+			"type": "offer_sign",
+			"x": 228,
+			"y": 7,
+			"params": {
+				"discount_pct": 20,
+				"mount": "wall"
+			}
+		},
+		{
+			"id": "oferta_pie_t4",
+			"type": "offer_sign",
+			"x": 214,
+			"y": 11,
+			"params": {
+				"discount_pct": 10
 			}
 		}
 	]

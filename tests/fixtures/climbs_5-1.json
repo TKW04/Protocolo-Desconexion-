@@ -216,7 +216,7 @@
      8
     ],
     "ledge": [
-     22,
+     55,
      76
     ],
     "row": 8
@@ -302,7 +302,7 @@
     ],
     "ledge": [
      22,
-     76
+     52
     ],
     "row": 8
    },
@@ -377,7 +377,7 @@
     ],
     "ledge": [
      22,
-     65
+     31
     ],
     "row": 5
    },
@@ -686,7 +686,7 @@
     ],
     "ledge": [
      165,
-     234
+     171
     ],
     "row": 5
    },
@@ -706,6 +706,70 @@
    "speed": "run",
    "takeoff_x_px": 10576.0,
    "target_x_px": 10560.0,
+   "debug": false
+  },
+  {
+   "id": "185,5->186,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     185,
+     5
+    ],
+    "ledge": [
+     173,
+     185
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     186,
+     4
+    ],
+    "ledge": [
+     186,
+     186
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 11888.0,
+   "target_x_px": 11904.0,
+   "debug": false
+  },
+  {
+   "id": "187,5->186,4",
+   "section": "Tramo 3 «Caja sorpresa»",
+   "from": {
+    "cell": [
+     187,
+     5
+    ],
+    "ledge": [
+     187,
+     203
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     186,
+     4
+    ],
+    "ledge": [
+     186,
+     186
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 11984.0,
+   "target_x_px": 11968.0,
    "debug": false
   }
  ]

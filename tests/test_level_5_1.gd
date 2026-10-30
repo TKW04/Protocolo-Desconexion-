@@ -1,8 +1,8 @@
 # Nivel 5-1 «Oferta del día» con el flujo real (scenes/main.tscn, LevelRunner;
 # paso 10 de docs/propuesta-mundo-5.md §8, 2026-10-29): carga por el atajo de
 # depuracion (--start-level=5-1) y llegada por el vortice, objetos y economia
-# (8 puntos, la caja de 2, tienda de Sync y energia, cuatro cajas, seis Ofertas,
-# la Suscripcion suelta, el atajo con trampa, la cuenta regresiva, 2 cargadores,
+# (8 puntos, la caja de 2, tienda de Sync y energia, cinco cajas, dieciseis Ofertas,
+# cuatro Suscripciones sueltas, el atajo con trampa, cinco cuentas regresivas, 2 cargadores,
 # power bank, vida extra y msg_5_1), Eco con la esfera de siempre, los secretos
 # (A tras la pared con glitch con Devoluciones, C con la vida extra), el punto de
 # sincronizacion, la puerta «Pagar» -> hub con el 5-1 completado, el comentario de
@@ -154,13 +154,13 @@ func test_objects_enemies_and_economy() -> void:
 	await _arrive()
 	assert_eq(_main.get_level_id(), LEVEL_ID)
 	assert_eq(_count("Objects", ShopItem), 2, "Tienda: Sync y energia")
-	assert_eq(_count("Objects", SurpriseBox), 4, "Cuatro cajas sorpresa (patron 24)")
+	assert_eq(_count("Objects", SurpriseBox), 5, "Cuatro cajas sorpresa (patron 24) y una Oferta escondida")
 	assert_eq(_count("Objects", ShortcutDoor), 1, "El primer atajo con trampa")
 	assert_eq(_count("Objects", RefundDesk), 1, "Devoluciones (secreto A)")
-	assert_eq(_count("Objects", CountdownPlatform), 1, "La primera cuenta regresiva")
+	assert_eq(_count("Objects", CountdownPlatform), 5, "La del foso grande y una por tramo en el suelo (2026-10-30)")
 	assert_eq(_count("Objects", Charger), 2, "Dos cargadores")
-	assert_eq(_count("Enemies", OfferSign), 6, "Seis Ofertas")
-	assert_eq(_count("Enemies", Subscription), 1, "La primera Suscripcion suelta")
+	assert_eq(_count("Enemies", OfferSign), 16, "Dieciseis Ofertas (seis hasta el 2026-10-30)")
+	assert_eq(_count("Enemies", Subscription), 4, "Una Suscripcion suelta por tramo (una hasta el 2026-10-30)")
 	assert_eq(_count("AttentionPoints", AttentionPoint), 8, "8 puntos de atencion en la rejilla")
 	assert_eq(HubWorlds.level_points_total("5-1"), 9, "8 de la rejilla + la caja de puntos (un punto del nivel)")
 	var door := _obj("atajo_dos_plantas") as ShortcutDoor

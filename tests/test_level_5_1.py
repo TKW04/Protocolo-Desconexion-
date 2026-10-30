@@ -135,21 +135,50 @@ class Level51Test(unittest.TestCase):
         shops = {o["params"]["product"]: (o["x"], o["y"]) for o in of_type(lvl, "shop_item")}
         self.assertEqual(shops, {"sync": (104, 8), "energy": (106, 8)}, "La tienda, a mitad de B2 del Tramo 2")
         self.assertEqual(sorted(o["params"]["content"] for o in of_type(lvl, "surprise_box")),
-                         ["empty", "energy", "points", "subscription"], "Patrón 24")
+                         ["empty", "energy", "offer", "points", "subscription"], "Patrón 24 y una Oferta escondida")
         self.assertTrue(all(section_of(lvl, o["x"]) == "Tramo 3 «Caja sorpresa»" and o["y"] == 5
                             for o in of_type(lvl, "surprise_box")), "En la banda alta del Tramo 3")
         self.assertFalse(any(b["blocks_path"] for b in self.result["world5"]["boxes"]), "Ninguna tapa el camino")
         offers = [e for e in lvl["enemies"] if e["type"] == "offer_sign"]
-        self.assertEqual(len(offers), 6)
+        self.assertEqual(len(offers), 16, "6 del paso 10 + 10 de la prueba del usuario (2026-10-30)")
         self.assertEqual(lvl["grid"][11][17], "^", "El carrito con pinchos junto a la Oferta de pie (patrón 23)")
         self.assertGreater(self.result["world5"]["resist_pull"], 10, "Tramos andando contra el tirón")
         self.assertGreater(self.result["world5"]["temptation"]["min_escape_px_s"], 0, "Siempre se sale andando")
         subs = self.result["world5"]["subscriptions"]
-        self.assertEqual([(s["id"], s["cancel"]) for s in subs], [("suscripcion_t3", "pulse")])
+        self.assertEqual([(s["id"], s["cancel"]) for s in subs],
+                         [(i, "pulse") for i in ("suscripcion_t1", "suscripcion_tienda", "suscripcion_t3",
+                                                 "suscripcion_b3_t4")], "Una Suscripción en cada tramo")
         countdown = of_type(lvl, "countdown_platform")
         self.assertEqual([(o["params"]["id"], o["x"], o["params"]["width_tiles"]) for o in countdown],
-                         [("cuenta_foso", 246, 3)])
+                         [("cuenta_foso", 246, 3), ("cuenta_t1", 66, 3), ("cuenta_t2", 110, 3), ("cuenta_t3", 179, 3),
+                          ("cuenta_t4", 224, 3)])
         self.assertEqual([lvl["grid"][r][245:250] for r in (12, 13)], [".....", "....."], "Foso mortal")
+        for o in countdown[1:]:
+            self.assertEqual([lvl["grid"][r][o["x"]:o["x"] + 3] for r in (12, 13)], ["...", "..."],
+                             "Foso mortal bajo %s" % o["params"]["id"])
+
+    def test_every_pass_has_danger(self):
+        """Prueba del usuario (2026-10-30): «está muy sencillo y se siente vacío». Cada pasada (suelo, B2 y B3) de cada
+        tramo lleva peligro: una Oferta, una Suscripción, un pincho, una caja o un foso con cuenta regresiva."""
+        lvl = self.level
+        rows = {11: (10, 11, 12), 8: (7, 8), 5: (4, 5)}
+        marks = {}
+        for e in lvl["enemies"]:
+            marks.setdefault(e["y"], set()).add(e["x"])
+        for r, row in enumerate(lvl["grid"]):
+            for c, ch in enumerate(row):
+                if ch == "^":
+                    marks.setdefault(r, set()).add(c)
+        for o in of_type(lvl, "countdown_platform") + of_type(lvl, "surprise_box"):
+            marks.setdefault(11 if o["type"] == "countdown_platform" else o["y"], set()).add(o["x"])
+        for name, x0, x1 in SECTIONS[1:]:
+            if not name.startswith("Tramo"):
+                continue
+            for stand, cells in rows.items():
+                cols = sorted(c for r in cells for c in marks.get(r, ()) if x0 <= c <= x1)
+                self.assertTrue(cols, "%s, fila %d: sin peligro" % (name, stand))
+        self.assertEqual(sum(1 for e in lvl["enemies"]), 20, "7 enemigos antes del 2026-10-30, 20 ahora")
+        self.assertEqual("".join(lvl["grid"]).count("^"), 8, "1 pincho antes, 8 ahora")
 
     def test_secret_a_refunds_need_the_debug_without_dash(self):
         a = next(s for s in self.level["secrets"] if s["id"] == "secreto_devoluciones")
