@@ -63,6 +63,15 @@ func _arm() -> void:
 	assert_true(_notices.is_armed())
 
 
+## Lineas de un aviso: el control y su explicacion (campo explain, 2026-10-30).
+func _notice_lines(ability: StringName, control: String) -> Array[String]:
+	var out: Array[String] = [control]
+	for line: String in AbilityNotices.explain_lines(ability, _data):
+		out.append(line)
+	assert_gt(out.size(), 1, "%s tiene explicacion" % ability)
+	return out
+
+
 # --- Texto leido del Input Map ---
 
 func test_texts_from_the_default_input_map() -> void:
@@ -73,7 +82,7 @@ func test_texts_from_the_default_input_map() -> void:
 	assert_eq(AbilityNotices.notice_text(&"debug", _data), "Debug: mantén K / Y (mando)")
 	assert_eq(AbilityNotices.notice_text(&"dash", _data), "Deslizar: L / B (mando)",
 			"Gesto Deslizar (2026-10-19, docs/propuesta-1-3.md §2.4)")
-	assert_eq(AbilityNotices.notice_text(&"ground_pound", _data), "Mantener presionado: mantén S / stick abajo",
+	assert_eq(AbilityNotices.notice_text(&"ground_pound", _data), "Golpe al suelo: mantén S / stick abajo",
 			"Golpe al suelo (2026-10-22, docs/propuesta-mundo-2.md §3.3.3): los eventos de move_down")
 	assert_eq(AbilityNotices.notice_text(&"compress", _data), "Comprimir: I / RB (mando)",
 			"Comprimir (2026-10-26, docs/propuesta-mundo-3.md §3.3.1): accion gesture_pinch")
@@ -114,12 +123,12 @@ func test_unlocked_ability_shows_once_after_the_start_delay() -> void:
 	_notices.advance(float(_data["start_delay_s"]) * 0.5)
 	assert_eq(_lines.size(), 0, "Espera start_delay_s")
 	_notices.advance(float(_data["start_delay_s"]))
-	assert_eq(_lines, ["Debug: mantén K / Y (mando)"] as Array[String])
-	assert_eq(_important, [true] as Array[bool], "Habilidad adquirida: linea importante (pausa)")
+	assert_eq(_lines, _notice_lines(&"debug", "Debug: mantén K / Y (mando)"))
+	assert_eq(_important, [true, true] as Array[bool], "Habilidad adquirida: aviso y explicacion, importantes (pausa)")
 	assert_true(GameState.is_notice_seen(&"debug"))
 	_notices.begin_level()
 	_notices.advance(10.0)
-	assert_eq(_lines.size(), 1, "Una sola vez, aunque se reinicie el nivel")
+	assert_eq(_lines.size(), 2, "Una sola vez (aviso + explicacion), aunque se reinicie el nivel")
 
 
 func test_locked_abilities_do_not_show() -> void:
@@ -131,17 +140,17 @@ func test_locked_abilities_do_not_show() -> void:
 func test_debug_unlock_while_playing_shows_its_notice() -> void:
 	_arm()
 	GameState.set_ability_unlocked(&"debug", true)
-	assert_eq(_lines, ["Debug: mantén K / Y (mando)"] as Array[String])
+	assert_eq(_lines, _notice_lines(&"debug", "Debug: mantén K / Y (mando)"))
 	GameState.set_ability_unlocked(&"debug", false)
 	GameState.set_ability_unlocked(&"debug", true)
-	assert_eq(_lines.size(), 1, "No se repite")
+	assert_eq(_lines.size(), 2, "No se repite")
 
 
 func test_obtaining_the_laser_shows_its_notice() -> void:
 	_arm()
 	watch_signals(_notices)
 	assert_true(GameState.obtain_ability(&"laser"))
-	assert_eq(_lines, ["Láser: F / gatillo izquierdo"] as Array[String])
+	assert_eq(_lines, _notice_lines(&"laser", "Láser: F / gatillo izquierdo"))
 	assert_signal_emitted_with_parameters(_notices, "notice_shown", [&"laser", "Láser: F / gatillo izquierdo"])
 
 
@@ -154,18 +163,18 @@ func test_unlocks_before_arming_wait_and_stop_disarms() -> void:
 	assert_eq(_lines.size(), 0, "Desarmado (hub)")
 	_notices.begin_level()
 	_notices.advance(10.0)
-	assert_eq(_lines, ["Debug: mantén K / Y (mando)"] as Array[String])
+	assert_eq(_lines, _notice_lines(&"debug", "Debug: mantén K / Y (mando)"))
 
 
 func test_obtaining_the_dash_shows_its_notice_once() -> void:
 	_arm()
 	assert_true(GameState.obtain_ability(&"dash"))
-	assert_eq(_lines, ["Deslizar: L / B (mando)"] as Array[String])
-	assert_eq(_important, [true] as Array[bool], "Linea importante (pausa)")
+	assert_eq(_lines, _notice_lines(&"dash", "Deslizar: L / B (mando)"))
+	assert_eq(_important, [true, true] as Array[bool], "Aviso y explicacion, importantes (pausa)")
 	assert_true(GameState.is_notice_seen(&"dash"))
 	_notices.begin_level()
 	_notices.advance(10.0)
-	assert_eq(_lines.size(), 1, "Una vez por partida guardada")
+	assert_eq(_lines.size(), 2, "Una vez por partida guardada")
 
 
 func test_dash_notice_follows_a_remapped_gesture_swipe() -> void:
@@ -209,7 +218,7 @@ func test_old_save_with_the_laser_does_not_repeat_its_notice() -> void:
 	assert_false(GameState.is_notice_seen(&"debug"))
 	GameState.set_ability_unlocked(&"debug", true)
 	_arm()
-	assert_eq(_lines, ["Debug: mantén K / Y (mando)"] as Array[String], "Solo el Debug, no el laser")
+	assert_eq(_lines, _notice_lines(&"debug", "Debug: mantén K / Y (mando)"), "Solo el Debug, no el laser")
 
 
 # --- Flujo de juego ---
@@ -243,3 +252,20 @@ func _pulse_format() -> Dictionary:
 	var format: Dictionary = _data.duplicate(true)
 	format["abilities"] = {"pulse": EcoEncounter.load_data()["notice"]}
 	return format
+
+
+# --- Explicacion (2026-10-30, peticion del usuario tras el 5-2) ---
+
+func test_every_notice_explains_what_the_ability_does() -> void:
+	for key: Variant in _data["abilities"]:
+		var lines: PackedStringArray = AbilityNotices.explain_lines(StringName(String(key)), _data)
+		assert_gt(lines.size(), 0, "%s: explica que hace" % key)
+		for line: String in lines:
+			assert_false(line.contains("{"), "%s: sin marcas sin sustituir (%s)" % [key, line])
+			assert_lt(line.length(), 150, "%s: linea corta para el cuadro de Eco" % key)
+	var combo: PackedStringArray = AbilityNotices.explain_lines(&"combo", _data)
+	for name: String in ["Embestida", "Filo", "Sismo"]:
+		var found: bool = false
+		for line: String in combo:
+			found = found or line.begins_with(name + ":")
+		assert_true(found, "La Combinacion explica %s" % name)

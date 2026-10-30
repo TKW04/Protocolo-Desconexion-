@@ -108,6 +108,11 @@ func try_show(ability: StringName) -> bool:
 		return false
 	GameState.mark_notice_seen(ability)
 	EventBus.eco_line_requested.emit(text, float(_data.get("duration_s", -1.0)), true)
+	# Explicacion (2026-10-30, peticion del usuario tras el 5-2: «uno no sabe como
+	# usarlas»): lineas importantes que siguen al control y dicen que hace la
+	# habilidad (y, en la Combinacion, cada combo con su secuencia y sus teclas).
+	for line: String in explain_lines(ability, _data):
+		EventBus.eco_line_requested.emit(line, float(_data.get("duration_s", -1.0)), true)
 	notice_shown.emit(ability, text)
 	return true
 
@@ -146,6 +151,23 @@ static func notice_text(ability: StringName, data: Dictionary) -> String:
 	var text: String = String(entry.get("text", NAME_TAG + ": " + CONTROL_TAG)) \
 			.replace(NAME_TAG, String(entry.get("name", ability))).replace(CONTROL_TAG, control)
 	return _replace_action_keys(text, data)
+
+
+## Lineas de explicacion de `ability` (campo `explain` de su entrada: texto o
+## lista de textos), con las marcas {key:<accion>} ya sustituidas. Vacio si no
+## tiene.
+static func explain_lines(ability: StringName, data: Dictionary) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var abilities: Variant = data.get("abilities", {})
+	if not abilities is Dictionary or not (abilities as Dictionary).get(String(ability)) is Dictionary:
+		return out
+	var raw: Variant = (abilities[String(ability)] as Dictionary).get("explain", [])
+	var lines: Array = raw if raw is Array else ([raw] if raw is String else [])
+	for line: Variant in lines:
+		var text: String = String(line)
+		if not text.is_empty():
+			out.append(_replace_action_keys(text, data))
+	return out
 
 
 ## Sustituye cada {key:<accion>} por la primera tecla de la accion ("?" si no tiene).

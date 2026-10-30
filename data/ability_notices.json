@@ -47,13 +47,26 @@
 		"4+": "gatillo izquierdo",
 		"5+": "gatillo derecho"
 	},
+	"_abilities_notes": "explain (2026-10-30, peticion del usuario tras jugar el 5-2: «las habilidades no quedan claras… uno no sabe como usarlas»; docs/propuesta-mundo-5.md §8.1): lineas IMPORTANTES que salen en el cuadro de Eco justo despues de la del control y dicen que hace la habilidad (lo que ya hace el juego: nada inventado). {key:<accion>} = la tecla (o el boton, segun el ultimo dispositivo usado) de la accion leida del Input Map. La Combinacion (la da la «Prueba gratis» del 5-2) explica cada combo con su nombre, su secuencia con los nombres de las acciones y sus teclas, y que rompe. Textos PROPUESTOS por el orquestador, revisar al jugar. ground_pound se llama «Golpe al suelo» de cara al jugador (antes «Mantener presionado», el nombre del gesto).",
 	"abilities": {
-		"laser": {"name": "Láser", "action": "laser", "text": "{name}: {control}"},
-		"debug": {"name": "Debug", "action": "debug", "hold": true, "text": "{name}: {control}"},
-		"hide": {"name": "Ocultarte", "action": "hide", "text": "{name}: {control}"},
-		"dash": {"name": "Deslizar", "action": "gesture_swipe", "text": "{name}: {control}"},
-		"ground_pound": {"name": "Mantener presionado", "action": "move_down", "hold": true, "text": "{name}: {control}"},
-		"compress": {"name": "Comprimir", "action": "gesture_pinch", "text": "{name}: {control}"},
-		"combo": {"name": "Combinación", "action": "gesture_swipe", "text": "{name} en el aire · Embestida: Deslizar ({key:gesture_swipe}) + abajo ({key:move_down}) · Filo: Comprimir ({key:gesture_pinch}) + Deslizar · Sismo: Comprimir + abajo"}
+		"laser": {"name": "Láser", "action": "laser", "text": "{name}: {control}",
+			"explain": ["Dispara en horizontal, solo con los pies en el suelo. Cada disparo gasta energía."]},
+		"debug": {"name": "Debug", "action": "debug", "hold": true, "text": "{name}: {control}",
+			"explain": ["Mientras lo mantienes ves lo oculto y el mundo va más lento. Gasta energía mientras dura."]},
+		"hide": {"name": "Ocultarte", "action": "hide", "text": "{name}: {control}",
+			"explain": ["Pulsa para ocultarte y otra vez para salir. Algunos enemigos pierden tu rastro. Gasta Sync y energía, y se apaga solo al 10 %."]},
+		"dash": {"name": "Deslizar", "action": "gesture_swipe", "text": "{name}: {control}",
+			"explain": ["Un dash de 3 tiles hacia donde miras, en el suelo o en el aire. Mientras dura nada te daña. Gasta 10 de energía."]},
+		"ground_pound": {"name": "Golpe al suelo", "action": "move_down", "hold": true, "text": "{name}: {control}",
+			"explain": ["En el aire caes de golpe; en el suelo, cargas y das un saltito. La onda aturde a los enemigos cercanos."]},
+		"compress": {"name": "Comprimir", "action": "gesture_pinch", "text": "{name}: {control}",
+			"explain": ["Te haces pequeño para pasar por huecos de 1 tile. Pulsa otra vez para recuperar tu tamaño. Comprimido no hay pulso ni láser."]},
+		"combo": {"name": "Combinación", "action": "gesture_swipe", "text": "{name}: tres combos, solo en el aire. Cada uno gasta 15 de energía.",
+			"explain": [
+				"Embestida: Saltar ({key:jump}), Deslizar ({key:gesture_swipe}) y mantén abajo ({key:move_down}). Caes en diagonal y rompes persianas. Con el dash, 25 de energía.",
+				"Filo: Saltar ({key:jump}), Comprimir ({key:gesture_pinch}) y Deslizar ({key:gesture_swipe}). Cruzas comprimido las ranuras de precios.",
+				"Sismo: Saltar ({key:jump}), Comprimir ({key:gesture_pinch}) y mantén abajo ({key:move_down}). La onda tumba a la vez todas las estanterías.",
+				"Los tienes todos en el menú de pausa: Ajustes, Controles."
+			]}
 	}
 }

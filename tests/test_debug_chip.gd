@@ -89,7 +89,7 @@ func test_story_line_then_control_notice_both_important() -> void:
 	var notices := _notices()
 	_lines.clear()
 	_chip().collect_by(_isak)
-	assert_eq(_lines.size(), 2, "Linea de historia y aviso de control")
+	assert_eq(_lines.size(), 3, "Linea de historia, aviso de control y su explicacion (2026-10-30)")
 	assert_true(_lines[0].important and _lines[1].important, "Las dos importantes (pausan)")
 	assert_true(String(_lines[0].text).contains("diagnóstico"), "Primero, la historia de Eco")
 	assert_true(String(_lines[0].text).contains("{apodo}"), "Con el apodo (lo sustituye el cuadro)")

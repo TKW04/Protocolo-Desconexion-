@@ -16,7 +16,7 @@ const PATH: String = "user://test_pause_player_save.json"
 const TILE: float = 64.0
 const DT: float = 1.0 / 60.0
 const POUND: StringName = GameState.ABILITY_GROUND_POUND
-const POUND_NOTICE: String = "Mantener presionado: mantén S / stick abajo"
+const POUND_NOTICE: String = "Golpe al suelo: mantén S / stick abajo"
 const ECO_LINE: String = "Mira cuánto tiempo ahorramos juntos."
 
 var _root: Node2D
@@ -138,10 +138,11 @@ func test_one_pulse_gives_the_ground_pound_then_story_then_notice() -> void:
 	assert_true(GameState.is_ability_unlocked(POUND))
 	assert_true(GameState.has_unsaved_changes(), "Queda «sin guardar», como toda habilidad")
 	assert_true(GameState.to_save_data().get("abilities_obtained", []).has("ground_pound"), "En la copia")
-	assert_eq(_lines.size(), 2, "Linea de Eco y aviso de control")
+	assert_eq(_lines.size(), 3, "Linea de Eco, aviso de control y su explicacion (2026-10-30)")
 	assert_true(_lines[0].important and _lines[1].important, "Las dos importantes (pausan)")
 	assert_eq(String(_lines[0].text), ECO_LINE, "Primero la frase de Eco")
 	assert_eq(String(_lines[1].text), POUND_NOTICE, "Despues el aviso, leido del Input Map")
+	assert_true(_lines[2].important, "La explicacion (2026-10-30) sigue al aviso, importante")
 	assert_true(GameState.is_notice_seen(POUND))
 	assert_eq(player.get_animation(), PausePlayer.ANIM_HIT)
 	assert_false(player.is_room_tinted(), "No tine el nivel")

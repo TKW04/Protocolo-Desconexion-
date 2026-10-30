@@ -11,7 +11,7 @@
 	],
 	"notice": {"name": "Pulso", "action": "pulse", "text": "{name}: {control}"},
 	"outro": [
-		"Si algo no lo conoces, acércate y pregúntame. Te ahorro el esfuerzo."
+		"El pulso aturde a los enemigos cercanos y activa terminales y botones. Si algo no lo conoces, acércate y pregúntame."
 	],
 	"bob_px": 4,
 	"bob_hz": 0.8

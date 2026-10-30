@@ -75,6 +75,9 @@ def ability_notice_strings():
     for entry in data["abilities"].values():
         out.append(entry["name"])
         out.append(re.sub(r"\{[a-z]+(:[a-z_]+)?\}", "", entry["text"]))  # {name}, {control}, {key:<accion>}
+        explain = entry.get("explain", [])
+        for line in ([explain] if isinstance(explain, str) else explain):  # explicacion (2026-10-30)
+            out.append(re.sub(r"\{[a-z]+(:[a-z_]+)?\}", "", line))
     return out
 
 

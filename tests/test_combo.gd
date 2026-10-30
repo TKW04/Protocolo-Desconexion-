@@ -417,8 +417,18 @@ func test_notice_reads_the_keys_from_the_input_map() -> void:
 	var down: String = AbilityNotices.action_key_text(&"move_down", data)
 	var pinch: String = AbilityNotices.action_key_text(&"gesture_pinch", data)
 	assert_false(swipe.is_empty() or down.is_empty() or pinch.is_empty())
-	assert_eq(text, "Combinación en el aire · Embestida: Deslizar (%s) + abajo (%s) · Filo: Comprimir (%s) + Deslizar · Sismo: Comprimir + abajo" % [swipe, down, pinch])
-	assert_false(text.contains("{"), "Sin marcas sin sustituir")
+	assert_eq(text, "Combinación: tres combos, solo en el aire. Cada uno gasta 15 de energía.")
+	# Explicacion (2026-10-30, peticion del usuario tras el 5-2): cada combo con su nombre,
+	# su secuencia con los nombres de las acciones y las teclas del Input Map, y que rompe.
+	var jump: String = AbilityNotices.action_key_text(&"jump", data)
+	var lines: PackedStringArray = AbilityNotices.explain_lines(GameState.ABILITY_COMBO, data)
+	assert_eq(lines.size(), 4, "Embestida, Filo, Sismo y donde verlos")
+	assert_eq(lines[0], "Embestida: Saltar (%s), Deslizar (%s) y mantén abajo (%s). Caes en diagonal y rompes persianas. Con el dash, 25 de energía." % [jump, swipe, down])
+	assert_eq(lines[1], "Filo: Saltar (%s), Comprimir (%s) y Deslizar (%s). Cruzas comprimido las ranuras de precios." % [jump, pinch, swipe])
+	assert_eq(lines[2], "Sismo: Saltar (%s), Comprimir (%s) y mantén abajo (%s). La onda tumba a la vez todas las estanterías." % [jump, pinch, down])
+	assert_true(lines[3].contains("Controles"), "Remite al menu de controles")
+	for line: String in [text] + Array(lines):
+		assert_false(line.contains("{"), "Sin marcas sin sustituir: %s" % line)
 	assert_true(AbilityNotices.is_available(GameState.ABILITY_COMBO))
 
 

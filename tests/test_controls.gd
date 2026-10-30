@@ -121,7 +121,7 @@ func test_default_labels_and_glyphs() -> void:
 	assert_eq(ControlBindings.action_name(&"gesture_swipe"), "Deslizar")
 	assert_eq(ControlBindings.binding_label(&"move_down", font), "S / stick abajo",
 			"Mantener presionado (golpe al suelo, 2026-10-22): los eventos de move_down")
-	assert_eq(ControlBindings.action_name(&"move_down"), "Mantener presionado")
+	assert_eq(ControlBindings.action_name(&"move_down"), "Golpe al suelo", "Nombre visible desde el 2026-10-30")
 	assert_eq(ControlBindings.binding_label(&"gesture_pinch", font), "I / RB", "Comprimir (2026-10-26): I / RB")
 	assert_eq(ControlBindings.action_name(&"gesture_pinch"), "Comprimir")
 	assert_eq(ControlBindings.binding_label(&"move_left", font), "A / stick a la izquierda")
