@@ -789,6 +789,29 @@ func test_seen_body_shield_and_typing_only_while_shown() -> void:
 		marker.free()
 
 
+# --- El Vendedor (paso 20 de docs/propuesta-mundo-5.md, 2026-10-29) ---
+
+## La maquina solo ayuda hasta el golpe final; la etiqueta, mientras se puede pagar;
+## el cartel de la oferta, en la fase 3. El ticket lanzado es una SurpriseBox (cerrada).
+func test_vendor_machine_label_and_offer_only_while_shown() -> void:
+	var state: Dictionary = {"vendor_boss": true, "priced_platform": true, "vendor_offer": true}
+	var whys: Dictionary = {"vendor_boss": "maquina desarmada", "priced_platform": "etiqueta pagada",
+		"vendor_offer": "oferta acabada"}
+	for id: String in state:
+		var marker := Vendor.HelpMarker.new()
+		marker.available = func() -> bool: return bool(state[id])
+		_place(marker, StringName(id))
+		await _assert_inert_drops_help(marker, func() -> void: state[id] = false, String(whys[id]))
+		marker.free()
+
+
+func test_vendor_ticket_opened_gives_no_help() -> void:
+	var box := (load("res://scenes/levels/surprise_box.tscn") as PackedScene).instantiate() as SurpriseBox
+	box.content = SurpriseBox.CONTENT_TICKET
+	_place(box, &"vendor_ticket")
+	await _assert_inert_drops_help(box, func() -> void: box.open(), "ticket abierto")
+
+
 # --- Mundo 3: niveles (paso 20 de docs/propuesta-mundo-3.md, 2026-10-27) ---
 
 func _w3_scene(type: String) -> Node2D:
@@ -1013,7 +1036,8 @@ func test_every_help_type_is_covered() -> void:
 		&"seen_boss", &"seen_shield", &"seen_typing",
 		&"shop_item", &"surprise_box", &"refund_desk", &"shortcut_door", &"countdown_platform", &"shutter",
 		&"price_rail", &"clearance_shelf", &"calc_register", &"terms_gate", &"wishlist_platform", &"wish_strike",
-		&"offer_sign", &"subscription"]
+		&"offer_sign", &"subscription",
+		&"vendor_boss", &"priced_platform", &"vendor_ticket", &"vendor_offer"]
 	for id: StringName in HelpCatalog.shared().ids():
 		assert_true(covered.has(id), "Tipo %s sin prueba de «lo destruido no ayuda»" % id)
 

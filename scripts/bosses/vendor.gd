@@ -64,6 +64,8 @@ signal countdown_ticked(left: int)
 signal payment_processed(by_tray: bool)
 ## Isak sale empujado de la ranura (fase 3).
 signal slot_pushed(direction: float)
+## El escaparate (persiana de la fase 3) se rompe con la Embestida (sfx_boss5_glass_break).
+signal showcase_broken
 ## Golpe final (contador a 0).
 signal final_blow
 signal disarmed
@@ -72,6 +74,13 @@ const SHUTTER_SCENE: PackedScene = preload("res://scenes/levels/shutter.tscn")
 const BOX_SCENE: PackedScene = preload("res://scenes/levels/surprise_box.tscn")
 const WEAK_POINT_SCENE: PackedScene = preload("res://scenes/bosses/weak_point.tscn")
 const ECONOMY_PATH: String = "res://data/economy.json"
+## help_id por defecto de las piezas (la seccion help de data/bosses/vendor.json manda).
+const HELP_BOSS: StringName = &"vendor_boss"
+const HELP_PLATFORM: StringName = &"priced_platform"
+const HELP_TICKET: StringName = &"vendor_ticket"
+const HELP_OFFER: StringName = &"vendor_offer"
+## Interlocutor de las lineas de Isak (speakers de data/eco_text_box.json).
+const SPEAKER_ISAK: StringName = &"isak"
 
 const ATTACK_ARM_SWEEP: StringName = &"arm_sweep"
 const ATTACK_COINS: StringName = &"coins"
@@ -162,6 +171,11 @@ var _slot_passing: bool = false
 var _slot_entry: int = SIDE_LEFT
 var _sign: String = ""
 var _sign_left: float = 0.0
+# Ayudas Q (paso 20) y musica.
+var _body_help: HelpMarker
+var _platform_helps: Dictionary = {}
+var _offer_help: HelpMarker
+var _music: VendorMusic
 
 
 func _ready() -> void:
@@ -544,6 +558,7 @@ func set_tokens(tokens: int) -> void:
 
 
 func _on_phase_started(phase_index: int) -> void:
+	_start_music()
 	_clear_attacks()
 	_apply_lap_settings()
 	BossBase.apply_phase_nodes(_level_root(), phase_index)
@@ -654,6 +669,7 @@ func _on_core_hit(_remaining_hits: int) -> void:
 
 
 func _on_defeated() -> void:
+	_stop_music()
 	_clear_attacks()
 	_attack = &""
 	if is_in_group(TemptationField.GROUP):
@@ -938,6 +954,8 @@ func spawn_box(col: int, surface_row: int, content: StringName) -> SurpriseBox:
 	box.name = "VendorBox%d" % (_boxes.size() + _batch_index * 10)
 	box.object_id = StringName(box.name)
 	box.content = content
+	if content == SurpriseBox.CONTENT_TICKET:
+		HelpCatalog.tag(box, help_id("ticket"))
 	if content == SurpriseBox.CONTENT_ENERGY:
 		box.energy_amount = float(bx.get("energy", 20.0))
 	_attacks.add_child(box)
@@ -1088,6 +1106,7 @@ func _place_shutter() -> void:
 	_shutter.length_tiles = length
 	_attacks.add_child(_shutter)
 	_shutter.global_position = Vector2(x, m.position.y - float(length) * _tile)
+	_shutter.broken.connect(func() -> void: showcase_broken.emit())
 
 
 func _build_showcases() -> void:
@@ -1315,6 +1334,11 @@ func _build() -> void:
 	_attacks.top_level = true
 	add_child(_attacks)
 	_build_platforms()
+	_body_help = _make_help_marker("BodyHelp", is_body_help_available, help_id("boss"))
+	for name: String in PLATFORM_NAMES:
+		_platform_helps[name] = _make_help_marker("PlatformHelp_" + name, is_platform_help_available.bind(name),
+			help_id("platform"))
+	_offer_help = _make_help_marker("OfferHelp", is_offer_help_available, help_id("offer"))
 	_fx = VendorFx.new()
 	_fx.name = "VendorFx"
 	_fx.top_level = true
@@ -1405,8 +1429,72 @@ func _make_body_texture() -> Texture2D:
 
 
 func _refresh() -> void:
+	if _body_help != null:
+		_body_help.global_position = get_machine_rect().get_center()
+	for name: String in _platform_helps:
+		(_platform_helps[name] as Node2D).global_position = get_label_rect(name).get_center()
+	if _offer_help != null:
+		_offer_help.global_position = get_offer_sign_rect().get_center()
 	if _fx != null:
 		_fx.queue_redraw()
+
+
+# --- Ayudas Q y musica (paso 20 de docs/propuesta-mundo-5.md) ---
+
+## help_id de la pieza `key` (boss, platform, ticket, offer): seccion help de
+## data/bosses/vendor.json.
+func help_id(key: String) -> StringName:
+	var defaults: Dictionary = {"boss": HELP_BOSS, "platform": HELP_PLATFORM, "ticket": HELP_TICKET, "offer": HELP_OFFER}
+	return StringName(String((get_config().get("help", {}) as Dictionary).get(key, defaults.get(key, ""))))
+
+
+## La maquina ayuda toda la pelea (y antes de empezar); tras el golpe final, no.
+func is_body_help_available() -> bool:
+	return not _off and not is_defeated()
+
+
+## La etiqueta ayuda en la fase 1 mientras se puede pagar (sin pagar y sin reponer).
+func is_platform_help_available(platform: String) -> bool:
+	return not _off and is_fighting() and get_phase() == 1 and not is_platform_active(platform) and not is_restocking()
+
+
+## El cartel de la oferta ayuda en la fase 3.
+func is_offer_help_available() -> bool:
+	return not _off and is_fighting() and get_phase() == 3
+
+
+## Cartel «¡SOLO POR HOY!» de la fase 3 (sobre la maquina; donde se escribe la cuenta), global.
+func get_offer_sign_rect() -> Rect2:
+	var m: Rect2 = get_machine_rect()
+	return Rect2(m.position.x - 32.0, m.position.y + 128.0, m.size.x + 64.0, 32.0)
+
+
+## Musica de la pelea (mus_boss5 mientras exista; null fuera de ella).
+func get_music() -> VendorMusic:
+	return _music if _music != null and is_instance_valid(_music) else null
+
+
+func _start_music() -> void:
+	if _music == null or not is_instance_valid(_music):
+		_music = VendorMusic.new()
+		_music.name = "VendorMusic"
+		add_child(_music)
+
+
+func _stop_music() -> void:
+	if _music != null and is_instance_valid(_music):
+		_music.queue_free()
+	_music = null
+
+
+func _make_help_marker(node_name: String, available: Callable, id: StringName) -> HelpMarker:
+	var marker := HelpMarker.new()
+	marker.name = node_name
+	marker.top_level = true
+	marker.available = available
+	add_child(marker)
+	HelpCatalog.tag(marker, id)
+	return marker
 
 
 func _poll_arrival() -> void:
@@ -1417,6 +1505,23 @@ func _poll_arrival() -> void:
 
 
 func _on_intro_finished() -> void:
+	var reply: String = String(_texts.get("isak_intro", ""))
+	var box: Node = _text_box()
+	if reply.is_empty() or box == null:
+		_intro_state = 2
+		start()
+		return
+	# Isak contesta (importante) y despues empieza la pelea.
+	box.connect(&"line_finished", _on_isak_reply_finished)
+	box.call(&"show_line", reply, -1.0, true, SPEAKER_ISAK)
+
+
+func _on_isak_reply_finished(speaker: StringName) -> void:
+	if speaker != SPEAKER_ISAK or _intro_state != 1:
+		return
+	var box: Node = _text_box()
+	if box != null and box.is_connected(&"line_finished", _on_isak_reply_finished):
+		box.disconnect(&"line_finished", _on_isak_reply_finished)
 	_intro_state = 2
 	start()
 
@@ -1467,6 +1572,16 @@ func _cells_rect(cells: Variant) -> Rect2:
 	return Rect2(pos, Vector2(float(c[2]) * _tile, float(c[3]) * _tile))
 
 
+## Marca de una ayuda Q de una pieza del jefe sin nodo propio (la maquina, las
+## etiquetas, el cartel de la oferta): un punto que solo ayuda mientras
+## `available` diga que se ve (paso 20; como Seen.HelpMarker).
+class HelpMarker extends Node2D:
+	var available: Callable
+
+	func is_help_available() -> bool:
+		return available.is_valid() and bool(available.call())
+
+
 ## Dibujo PROVISIONAL por codigo: maquina con su cara de delante (sonrisa de neon,
 ## brazos, bandeja), plataformas con su etiqueta y precio (con el Debug, el icono de
 ## la trampa), brazo que barre, monedas, cuenta y carteles. Rojo = lo que dana.
@@ -1485,6 +1600,16 @@ class VendorFx extends Node2D:
 		var ink := boss._color("ink_color", Color.BLACK)
 		var warn := boss._color("warn_color", Color.RED)
 		var trap := boss._color("trap_color", Color.WHITE)
+		# Carteles de la tienda (decorado, fila 2; §5.2): «OFERTA» y «-50 %».
+		var walls: Array = (boss._texts.get("signs", {}) as Dictionary).get("wall", [])
+		var wall_x: Array = [3.0, 14.0]
+		for i: int in mini(walls.size(), wall_x.size()):
+			var wr := Rect2(boss._to_global(Vector2(float(wall_x[i]) * boss._tile, 2.0 * boss._tile)),
+				Vector2(3.0 * boss._tile, boss._tile * 0.75))
+			draw_rect(wr, price)
+			draw_rect(wr, ink, false, 2.0)
+			draw_string(font, wr.position + Vector2(0.0, wr.size.y - 14.0), String(walls[i]), HORIZONTAL_ALIGNMENT_CENTER,
+				wr.size.x, 22, ink)
 		if boss.get_pixel_burst() != null:
 			return
 		draw_rect(m, body)

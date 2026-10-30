@@ -184,6 +184,7 @@ def build(rng: np.random.Generator) -> dict[str, np.ndarray]:
     world3(s, rng)
     hub_4_6(s, rng)
     world4(s, rng)
+    world5(s, rng)
     return s
 
 
@@ -490,6 +491,109 @@ def world4(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
         + 0.3 * lowpass(noise(0.035, rng), 1200) * env(len(t_axis(0.035)), 0.002, 0.015, 2)
     d = 0.3
     s["sfx_boss4_send"] = soft_square(sweep(392, 784, d), d, 2) * env(len(t_axis(d)), 0.005, 0.1, 1.0) * 0.7
+
+
+def world5(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
+    """Mundo 5 «La Tienda» y El Vendedor (paso 20 de docs/propuesta-mundo-5.md, §6.4): provisionales con los IDs
+    de data/audio.json; los definitivos los hace el amigo del usuario con el mismo nombre. Va despues de world4
+    (el generador de ruido es comun: asi los anteriores no cambian). Tono de centro comercial: brillante, amable y
+    un poco demasiado dulce; la caja registradora «trucada» frente a la honesta de Calc."""
+    # Tiron de la Oferta (al empezar a tirar): un «uuh» que se acerca (barrido que sube y crece).
+    d = 0.6
+    t = t_axis(d)
+    s["sfx_w5_temptation_pull"] = (0.5 * sine(sweep(220, 330, d), d) + 0.25 * tri(sweep(440, 660, d), d)) \
+        * (t / d) ** 1.5 * env(len(t), 0.01, 0.08)
+    # Caja sorpresa: buena (dos notas que suben y brillo) y mala (dos notas que bajan, sordas).
+    s["sfx_w5_box_open_good"] = np.concatenate([note(784, 0.06, tri, 2), note(1046, 0.16, sine, 1.2)])
+    s["sfx_w5_box_open_bad"] = np.concatenate([note(392, 0.08, soft_square, 1.5), note(311, 0.2, tri, 1.0)])
+    # Suscripcion: se engancha (clic con muelle), drena (tic por punto) y se cancela (tijeretazo que baja).
+    d = 0.18
+    s["sfx_w5_subscription_attach"] = 0.6 * sine(sweep(600, 900, d), d) * env(len(t_axis(d)), 0.002, 0.08, 1.4) \
+        + 0.3 * lowpass(noise(d, rng), 2500) * env(len(t_axis(d)), 0.001, 0.02, 4)
+    s["sfx_w5_subscription_drain"] = note(523, 0.04, tri, 2.4)
+    d = 0.25
+    s["sfx_w5_subscription_cancel"] = 0.5 * tri(sweep(880, 330, d), d) * env(len(t_axis(d)), 0.002, 0.1, 1.6) \
+        + 0.25 * lowpass(noise(d, rng), 5000) * env(len(t_axis(d)), 0.001, 0.04, 3)
+    # Pagar: caja registradora «trucada» (campanilla dulce y un cajon que se cierra de golpe).
+    bell = note(1318, 0.2, sine, 1.2) + 0.4 * pad(note(1975, 0.12, sine, 1.6), 0.2)
+    s["sfx_w5_pay"] = mix_at(np.zeros(len(t_axis(0.35))), bell, 0.0) \
+        + pad(0.4 * lowpass(noise(0.08, rng), 900) * env(len(t_axis(0.08)), 0.001, 0.05, 3), 0.35)
+    # Cuenta regresiva (cada segundo; senal de ritmo): tic seco y claro.
+    s["sfx_w5_countdown"] = note(988, 0.05, soft_square, 2.5)
+    # Ambiente del centro comercial (bucle de 12 s): murmullo, megafonia lejana y el aire acondicionado.
+    d = 12.0
+    t = t_axis(d)
+    air = lowpass(noise(d, rng), 500)
+    chime = np.zeros(len(t))
+    for k, f in enumerate((659, 523, 784)):
+        chime = mix_at(chime, 0.15 * note(f, 0.5, sine, 0.6), 3.0 + k * 0.45)
+    hum = 0.08 * sine(110, d)
+    s["amb_w5_mall"] = normalize(air / max(np.max(np.abs(air)), 1e-9) * 0.7 + chime + hum, 10 ** (-18 / 20))
+    # Musica del nivel (hilo musical, mayor y pegadizo) y del jefe (lo mismo, mas rapido y con un bajo insistente).
+    s["mus_w5_level"] = normalize(loop_bars([523, 659, 784, 659], 0.25, tri, [131, 175, 196, 131], 0.5),
+        10 ** (-14 / 20))
+    s["mus_boss5"] = normalize(loop_bars([784, 659, 784, 988, 880, 784], 0.125, soft_square, [196, 196, 147, 165],
+        0.375), 10 ** (-14 / 20))
+    # Combos: Embestida (golpe grave que cae), Filo (corte rapido y agudo), Sismo (onda grave) y denegado.
+    d = 0.35
+    s["sfx_combo_ram"] = (0.6 * sine(sweep(240, 70, d), d) + 0.3 * lowpass(noise(d, rng), 900)) \
+        * env(len(t_axis(d)), 0.002, 0.15, 1.6)
+    d = 0.2
+    s["sfx_combo_edge"] = (0.4 * tri(sweep(1400, 2200, d), d) + 0.3 * lowpass(noise(d, rng), 7000)) \
+        * env(len(t_axis(d)), 0.001, 0.08, 2.0)
+    d = 0.55
+    s["sfx_combo_quake"] = (0.7 * sine(sweep(90, 50, d), d) * (1 + 0.3 * np.sin(2 * np.pi * 14 * t_axis(d)))
+        + 0.3 * lowpass(noise(d, rng), 400)) * env(len(t_axis(d)), 0.003, 0.25, 1.4)
+    s["sfx_combo_denied"] = np.concatenate([note(330, 0.06, soft_square, 2), note(262, 0.1, soft_square, 2)])
+    # Persiana rota, estanteria repuesta / caida.
+    d = 0.45
+    s["sfx_w5_shutter_break"] = (0.5 * lowpass(noise(d, rng), 3000) + 0.3 * soft_square(sweep(300, 120, d), d, 3)) \
+        * env(len(t_axis(d)), 0.001, 0.2, 1.8)
+    s["sfx_w5_shelf_restock"] = np.concatenate([note(523, 0.05, tri, 2), note(659, 0.05, tri, 2),
+        note(784, 0.12, tri, 1.4)])
+    d = 0.5
+    s["sfx_w5_shelf_fall"] = (0.6 * lowpass(noise(d, rng), 700) + 0.4 * sine(sweep(160, 60, d), d)) \
+        * env(len(t_axis(d)), 0.002, 0.3, 1.5)
+    # Terminos: aceptar (sello alegre: lo malo) y rechazar (clic pequeno y seco).
+    s["sfx_w5_terms_accept"] = np.concatenate([note(659, 0.08, sine, 1.4), note(988, 0.25, sine, 1.0)])
+    s["sfx_w5_terms_reject"] = note(1175, 0.04, tri, 3)
+    # Prueba gratis (la Combinacion): fanfarria corta de regalo.
+    d = 0.8
+    fan = np.zeros(len(t_axis(d)))
+    for k, f in enumerate((523, 659, 784, 1046)):
+        fan = mix_at(fan, 0.5 * note(f, 0.3 if k == 3 else 0.12, tri, 1.2), k * 0.12)
+    s["sfx_w5_free_trial"] = fan
+    # Devoluciones: monedas que vuelven (tres tintineos que bajan).
+    d = 0.5
+    back = np.zeros(len(t_axis(d)))
+    for k, f in enumerate((1568, 1318, 1175)):
+        back = mix_at(back, 0.5 * note(f, 0.1, sine, 2), k * 0.12)
+    s["sfx_w5_refund"] = back
+    # Lista de deseos: «Anadido al carrito» (pop de compra).
+    s["sfx_w5_wishlist_add"] = np.concatenate([note(880, 0.05, sine, 2), note(1175, 0.12, sine, 1.4)])
+    # El Vendedor: intro (jingle de bienvenida), aviso del giro (brazos que se recogen; senal de ritmo),
+    # lanzamiento de cajas, «Procesando…» y el escaparate que se rompe.
+    s["sfx_boss5_intro"] = np.concatenate([note(784, 0.1, tri, 1.2), note(988, 0.1, tri, 1.2),
+        note(1175, 0.1, tri, 1.2), note(784, 0.45, sine, 0.8)])
+    d = 0.3
+    s["sfx_boss5_turn"] = 0.5 * soft_square(sweep(330, 220, d), d, 2) * env(len(t_axis(d)), 0.004, 0.12, 1.2)
+    d = 0.3
+    s["sfx_boss5_throw"] = 0.5 * lowpass(noise(d, rng), 2000) * np.sin(np.pi * t_axis(d) / d) ** 2 \
+        + 0.2 * sine(sweep(400, 800, d), d) * env(len(t_axis(d)), 0.01, 0.1)
+    d = 1.0
+    t = t_axis(d)
+    s["sfx_boss5_processing"] = 0.35 * tri(440, d) * (np.sin(2 * np.pi * 4 * t) > 0) * env(len(t), 0.01, 0.1)
+    d = 0.6
+    s["sfx_boss5_glass_break"] = (0.6 * lowpass(noise(d, rng), 8000) + 0.25 * sine(sweep(2400, 900, d), d)) \
+        * env(len(t_axis(d)), 0.001, 0.3, 2.2)
+    # Hub: el fondo completo (arpegio que recorre las cinco piezas) y el candado de M6 que se abre.
+    d = 1.0
+    arp = np.zeros(len(t_axis(d)))
+    for k, f in enumerate((523, 659, 784, 1046, 1318)):
+        arp = mix_at(arp, 0.45 * note(f, 0.3, sine, 1.0), k * 0.15)
+    s["sfx_hub_photo_complete"] = arp
+    d = 0.5
+    s["sfx_hub_lock_open"] = mix_at(pad(0.5 * note(900, 0.1, tri, 2.5), d), 0.5 * note(1318, 0.3, sine, 1.0), 0.12)
 
 
 def write_wav(path: str, data: np.ndarray) -> None:

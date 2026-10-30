@@ -173,6 +173,12 @@ SOURCES = {
     "wish_strike": ("assets/sprites/props/world5/wish_strike_00.png", None, 1),
     "offer_sign": ("assets/sprites/enemies/world5/offer_sign_00.png", None, 1),
     "subscription": ("assets/sprites/enemies/world5/subscription_placeholder_00.png", None, 1),
+    # Jefe El Vendedor (paso 20 de docs/propuesta-mundo-5.md): arte PROVISIONAL por script del mismo
+    # tools/gen_world5_objects.py (la maquina, a media escala) hasta el arte final (paso 24).
+    "vendor_boss": ("assets/sprites/enemies/world5/vendor_boss_placeholder_00.png", None, 1),
+    "priced_platform": ("assets/sprites/props/world5/priced_platform_00.png", None, 1),
+    "vendor_ticket": ("assets/sprites/props/world5/vendor_ticket_00.png", None, 1),
+    "vendor_offer": ("assets/sprites/props/world5/vendor_offer_00.png", None, 1),
 }
 
 

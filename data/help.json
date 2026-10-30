@@ -1173,6 +1173,53 @@
 			"center_px": [32, 64],
 			"prompt_px": [32, -6]
 		},
+		"vendor_boss": {
+			"_notes": "Jefe El Vendedor (paso 20 de docs/propuesta-mundo-5.md §8, §5.10; arena 5-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: un punto en el centro de la maquina (Vendor.get_machine_rect); en toda la pelea hasta el golpe final.",
+			"category": "enemy",
+			"title": "El Vendedor",
+			"text": "Siempre te mira de frente. El botón de Cancelar está detrás. Con el Debug se ve: márcalo con el pulso y dispárale.",
+			"first_level": "5-boss",
+			"world": 5,
+			"order": 3,
+			"radius_tiles": 7.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -190]
+		},
+		"priced_platform": {
+			"_notes": "Jefe El Vendedor (paso 20 de docs/propuesta-mundo-5.md §8, §5.10; arena 5-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: la etiqueta de cada plataforma con precio de la fase 1 (Vendor.get_label_rect) mientras se puede pagar (sin pagar y sin reponer).",
+			"category": "object",
+			"title": "Plataforma con precio",
+			"text": "Se paga con fichas: un pulso a la etiqueta. Una de cada dos se dobla al pisarla. El Debug sabe cuál.",
+			"first_level": "5-boss",
+			"world": 5,
+			"order": 13,
+			"radius_tiles": 4.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -60]
+		},
+		"vendor_ticket": {
+			"_notes": "Jefe El Vendedor (paso 20 de docs/propuesta-mundo-5.md §8, §5.10; arena 5-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el ticket de devolucion de la fase 2 (la SurpriseBox con contenido ticket lleva este help_id), cerrado.",
+			"category": "object",
+			"title": "Ticket de devolución",
+			"text": "Una devolución. Ábrela con un pulso de cara: mientras la procesa no se gira, y la bandeja de abajo se abre.",
+			"first_level": "5-boss",
+			"world": 5,
+			"order": 14,
+			"center_px": [28, 28],
+			"prompt_px": [28, -16]
+		},
+		"vendor_offer": {
+			"_notes": "Jefe El Vendedor (paso 20 de docs/propuesta-mundo-5.md §8, §5.10; arena 5-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el cartel de la oferta sobre la maquina en la fase 3 (Vendor.get_offer_sign_rect), mientras dura.",
+			"category": "object",
+			"title": "Oferta por tiempo limitado",
+			"text": "No hagas nada y comprarás. Rompe el escaparate desde arriba con una Embestida o cuélate por la ranura con un Filo.",
+			"first_level": "5-boss",
+			"world": 5,
+			"order": 15,
+			"radius_tiles": 7.0,
+			"center_px": [0, 0],
+			"prompt_px": [0, -60]
+		},
 		"offer_sign": {
 			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
 			"category": "enemy",

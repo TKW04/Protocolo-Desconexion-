@@ -254,6 +254,9 @@ rm -f "$IMPORT_LOG"
 # Desde el paso 19 del Mundo 5 (2026-10-29) GUT lanza tambien el bot del jefe El Vendedor (tests/test_vendor_bot.gd:
 # tools/play_boss_bot.gd -- --boss vendor, logica en tools/vendor_bot.gd, en procesos aparte: ideal y torpe en Caché,
 # Kernel y Raíz y el quieto que pierde; usa user://bot_save.json).
+# Desde el paso 20 del Mundo 5 (2026-10-29): textos, ayudas Q y audio de El Vendedor y del Mundo 5
+# (tests/test_vendor_help.gd, GUT; test_help_inert.gd y test_notas_album.gd con las 4 ayudas nuevas; los 30 IDs de
+# audio con provisional en validate_audio.py; las fichas de tools/gen_world5_objects.py --check).
 # Si falla, el script sale con 4 aunque GUT pase; si GUT falla, se devuelve el codigo de GUT.
 PY_STATUS=0
 EXPORT_DIR="$(mktemp -d -t isak_paths.XXXXXX)"

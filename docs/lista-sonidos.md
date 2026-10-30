@@ -501,6 +501,38 @@ Los 24 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (fu
 
 Reutilizados sin cambios: la marca (`sfx_weak_point_*`), `sfx_boss_phase_change`, `sfx_boss_defeat` → `stg_boss_defeated` → `mus_memory`, `mus_eco_motif` en la intro y la derrota (`Seen.line_said`), `vox_boss_eco_filter`, `sfx_hub_wallpaper_piece` y `sfx_memory_pickup`. **Pendiente:** la «capa de silencio» de la música cerca de las burbujas de amigos y la música baja del Tramo 1 del 4-3 (necesitan control de volumen por zona; hoy la música provisional suena igual en todo el nivel); la Papelera habla con su blip (`vox_papelera_blip`, nuevo: `text_blips` del interlocutor `papelera`). `python3 tools/validate_audio.py`: 137 sonidos. Prueba `tests/test_seen_help.gd`.
 
+### Mundo 5 «La Tienda» y El Vendedor (2026-10-29, paso 20 de `docs/propuesta-mundo-5.md`)
+
+Los 30 IDs de su §6.4, con provisional de `tools/gen_audio_placeholders.py` (función `world5`, después de `world4`: los anteriores no cambian, comprobado byte a byte) y enganchados en `data/audio.json` sin tocar la lógica (señales nuevas: `Vendor.shelf_restocked` del paso 19 y `Vendor.showcase_broken`):
+
+| ID | Señal | Notas |
+|---|---|---|
+| `sfx_w5_temptation_pull` | `OfferSign.pull_changed` (`true`) | `cue`; posicional. **Desvío:** golpe al empezar a tirar, no un bucle por nodo que sube al acercarse (un solo bucle de fondo a la vez, como `sfx_w4_seen_wave`); el cartel late y las partículas van hacia él |
+| `sfx_w5_box_open_good` / `sfx_w5_box_open_bad` | `SurpriseBox.opened` (puntos, energía, fichas, ticket / Suscripción, Oferta, bomba, vacía) | Posicionales; también las cajas del jefe |
+| `sfx_w5_subscription_attach` / `_drain` / `_cancel` | `Subscription.attached` / `drained` / `cancelled` | Posicionales; el «te fío» del jefe también |
+| `sfx_w5_pay` | `ShopItem.bought`, `ShortcutDoor.paid`, `Vendor.platform_paid` | La caja registradora «trucada» (la honesta de Calc sigue siendo `sfx_calc_purchase`) |
+| `sfx_w5_countdown` | `CountdownPlatform.second_ticked`, `Vendor.countdown_ticked` | `cue` (accesibilidad) |
+| `amb_w5_mall` | ambiente de `World5Background` (prioridad 0) | |
+| `mus_w5_level` | ambiente de `MallMusic` (prioridad 10) | Clase nueva; la crea `World5Background` fuera de las arenas |
+| `mus_boss5` | ambiente de `VendorMusic` (prioridad 20) | Clase nueva; El Vendedor la crea al empezar cada fase y la quita en el golpe final |
+| `sfx_combo_ram` / `_edge` / `_quake` | `EventBus.combo_started` (`combo_ram` / `combo_edge` / `combo_quake`) | |
+| `sfx_combo_denied` | `EventBus.combo_denied` | |
+| `sfx_w5_shutter_break` | `Shutter.broken` | Posicional; el escaparate del jefe es una persiana: suena también `sfx_boss5_glass_break` |
+| `sfx_w5_shelf_restock` / `sfx_w5_shelf_fall` | `ClearanceShelf.restocked` / `knocked`; `Vendor.shelf_restocked` | |
+| `sfx_w5_terms_accept` / `_reject` | `TermsGate.accepted` / `rejected` | |
+| `sfx_w5_free_trial` | `EventBus.ability_obtained` (`combo`) | La «Prueba gratis» del 5-2 |
+| `sfx_w5_refund` | `RefundDesk.refunded` | |
+| `sfx_w5_wishlist_add` | `WishlistPlatform.added_to_cart` | «Añadido al carrito» |
+| `sfx_boss5_intro` | `EventBus.boss_started` (`vendor`) | |
+| `sfx_boss5_turn` | `Vendor.turn_warned` | `cue` (accesibilidad: avisa del giro); posicional |
+| `sfx_boss5_throw` | `Vendor.attack_started` (`boxes`) | |
+| `sfx_boss5_processing` | `Vendor.refund_started` | «Procesando pago…» reutiliza `sfx_w4_seen_freeze` (`Isak.frozen_started`) |
+| `sfx_boss5_glass_break` | `Vendor.showcase_broken` (nueva) | |
+| `sfx_hub_photo_complete` | `HubRoom.wallpaper_completed` | El fondo completo (paso 18) |
+| `sfx_hub_lock_open` | `FolderStation.lock_opened` | El candado de M6 (paso 18) |
+
+Reutilizados sin cambios: la marca (`sfx_weak_point_*`), `sfx_boss_phase_change`, `sfx_boss_defeat` → `stg_boss_defeated` → `mus_memory`, `mus_eco_motif` en la intro y la derrota (`Vendor.line_said`), `sfx_hub_wallpaper_piece`, `sfx_memory_pickup`, `sfx_w4_seen_freeze` y `sfx_calc_purchase`. **Pendiente:** la capa de megafonía de `mus_w5_level` que sube con la tentación (pide volumen por zona en `AudioManager`). `python3 tools/validate_audio.py`: 168 sonidos. Prueba `tests/test_vendor_help.gd`.
+
 ### Pendiente
 
 - Música (`mus_*`) y la mayoría de los stingers: sin archivo; el hub no lleva música.

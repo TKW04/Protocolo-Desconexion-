@@ -33,10 +33,15 @@ Objetos (assets/sprites/props/world5/):
   wish_strike_00.png           tachon (192 x 64): renglon crema tachado en magenta
   calc_register_00.png         caja registradora de Calc (64 x 192): puerta con la pantalla LCD «2 / 0»
   sale_sign_00.png             cartel de rebajas (128 x 64): decorado, «-50» en magenta sobre amarillo
+  priced_platform_00.png       plataforma con precio de El Vendedor (128 x 64; paso 20): tabla crema y su etiqueta «2»
+  vendor_ticket_00.png         ticket de devolucion (64 x 64; paso 20): la caja sorpresa con un ticket crema encima
+  vendor_offer_00.png          cartel «¡SOLO POR HOY!» de la fase 3 (192 x 64; paso 20): renglones y la cuenta «15»
 Enemigos (assets/sprites/enemies/world5/; la Suscripcion, PROVISIONAL hasta AutoSprite, paso 24 y opcional):
   offer_sign_00.png            Oferta de pie (64 x 64): cartel amarillo con el «99» tachado en magenta y el «9»
   offer_sign_wall_00.png       Oferta colgada (64 x 48)
   subscription_placeholder_00.png  Suscripcion (48 x 48): tarjeta con sonrisa y brillo magenta (nunca roja)
+  vendor_boss_placeholder_00.png   El Vendedor (128 x 160, a media escala; paso 20, PROVISIONAL hasta AutoSprite):
+                               la maquina gris con su vitrina, la sonrisa de neon magenta y la bandeja
 
 Uso: python3 -I tools/gen_world5_objects.py [--check]   (--check: 1 si algun PNG no esta al dia o se sale de la
 paleta del Mundo 5)
@@ -370,6 +375,34 @@ def sale_sign():
     return img
 
 
+def priced_platform():
+    img, d = canvas(128, 64)
+    d.rectangle((0, 0, 127, 15), fill=C("crema_cartel"), outline=C("crema_sombra"))   # tabla de una via
+    d.line((64, 16, 64, 23), fill=C("gris_etiqueta"))
+    price_tag(d, 36, 24, "2")                                          # boss_tokens.priced_platform_cost
+    return img
+
+
+def vendor_ticket():
+    img = surprise_box()
+    d = ImageDraw.Draw(img)
+    d.rectangle((14, 16, 49, 29), fill=C("crema_cartel"), outline=C("negro_medio"))   # ticket de devolucion
+    text_lines(d, 18, 20, [26, 18], "negro_medio", gap=4, h=1)
+    for x in range(14, 50, 6):                                         # borde dentado
+        d.point((x, 29), fill=C("crema_cartel"))
+    return img
+
+
+def vendor_offer():
+    img, d = canvas(192, 64)
+    d.rectangle((0, 0, 191, 47), fill=C("amarillo_rebajas"), outline=C("amarillo_sombra"))
+    text_lines(d, 10, 10, [110, 80], "negro_medio", gap=10, h=4)
+    digits(d, 136, 10, "15", "magenta_neon", k=5)
+    d.line((40, 48, 40, 63), fill=C("gris_etiqueta"))
+    d.line((152, 48, 152, 63), fill=C("gris_etiqueta"))
+    return img
+
+
 # ------------------------------------------------------------------ enemigos
 def offer_sign(wall=False):
     h = 48 if wall else 64
@@ -401,6 +434,21 @@ def subscription_placeholder():
     return img
 
 
+def vendor_boss_placeholder():
+    img, d = canvas(128, 160)
+    d.rectangle((0, 20, 127, 159), fill=C("gris_escaparate"), outline=C("crema_cartel"), width=2)
+    d.rectangle((8, 32, 119, 79), fill=C("negro_medio"))               # vitrina
+    for x in (24, 56, 88):
+        d.rectangle((x, 44, x + 16, 68), outline=C("violeta_neon"))
+    d.arc((40, 0, 88, 30), 20, 160, fill=C("magenta_neon"), width=3)   # sonrisa de neon
+    d.ellipse((50, 2, 55, 7), fill=C("magenta_neon"))
+    d.ellipse((73, 2, 78, 7), fill=C("magenta_neon"))
+    d.rectangle((0, 96, 127, 103), fill=C("negro_medio"))              # ranura
+    d.rectangle((16, 140, 111, 151), fill=C("crema_cartel"))           # bandeja
+    d.line((0, 120, -0, 120), fill=C("crema_cartel"))
+    return img
+
+
 OBJECTS = {
     "shop_item_00.png": shop_item, "shop_item_energy_00.png": lambda: shop_item("energy"),
     "shortcut_door_00.png": shortcut_door, "shortcut_door_debug_00.png": lambda: shortcut_door("debug"),
@@ -412,10 +460,13 @@ OBJECTS = {
     "clearance_shelf_down_00.png": lambda: clearance_shelf(True), "free_trial_box_00.png": free_trial_box,
     "wishlist_platform_00.png": wishlist_platform, "wish_strike_00.png": wish_strike,
     "calc_register_00.png": calc_register, "sale_sign_00.png": sale_sign,
+    "priced_platform_00.png": priced_platform, "vendor_ticket_00.png": vendor_ticket,
+    "vendor_offer_00.png": vendor_offer,
 }
 ENEMIES = {
     "offer_sign_00.png": offer_sign, "offer_sign_wall_00.png": lambda: offer_sign(True),
     "subscription_placeholder_00.png": subscription_placeholder,
+    "vendor_boss_placeholder_00.png": vendor_boss_placeholder,
 }
 ## Lo que puede llevar debug_blanco (regla 3 de §6.1: el blanco, reservado al Debug): lo que revela el Debug y el
 ## brillo de la «Prueba gratis» (su seccion usa glow: debug_blanco), siempre con contorno tienda_noche.

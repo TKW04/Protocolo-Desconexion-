@@ -113,10 +113,11 @@ func test_album_lists_every_type_of_world_1_in_two_sections_in_order() -> void:
 	assert_eq(NotasAlbum.album_ids(5, HelpCatalog.CATEGORY_OBJECT),
 		[&"shop_item", &"surprise_box", &"refund_desk", &"shortcut_door", &"countdown_platform", &"shutter",
 			&"price_rail", &"clearance_shelf", &"calc_register", &"terms_gate", &"wishlist_platform",
-			&"wish_strike"] as Array[StringName],
-		"Mundo 5: tienda, cajas, Devoluciones, atajo y cuenta (5-1), obstaculos de los combos y la caja de Calc (5-2) y lo del 5-3")
+			&"wish_strike", &"priced_platform", &"vendor_ticket", &"vendor_offer"] as Array[StringName],
+		"Mundo 5: tienda, cajas, Devoluciones, atajo y cuenta (5-1), obstaculos de los combos y la caja de Calc (5-2), lo del 5-3 y las piezas de El Vendedor (paso 20)")
 	assert_eq(NotasAlbum.album_ids(5, HelpCatalog.CATEGORY_ENEMY),
-		[&"offer_sign", &"subscription"] as Array[StringName], "Mundo 5: Oferta y Suscripcion (5-1)")
+		[&"offer_sign", &"subscription", &"vendor_boss"] as Array[StringName],
+		"Mundo 5: Oferta y Suscripcion (5-1) y El Vendedor (paso 20)")
 	assert_eq(NotasAlbum.album_ids(6).size(), 0, "Mundo 6 aun sin tipos")
 
 

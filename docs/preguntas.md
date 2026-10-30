@@ -1264,3 +1264,20 @@ Pedidos del usuario tras jugar el Mundo 4 (textual): Modo oscuro «que solo se p
 - **La «pared que te sigue» es la ola del 4-3** (en el 4-1 no hay ninguna): va un 20-25 % más rápida (1,25 / 1,45 / 1,45-1,95 tiles/s), daña al liberarte (ya no al tocar) y espera en las tres vueltas de las bandas. ¿Presiona lo justo?
 - **Sin cuadro rojo en los enemigos** (2026-10-28, petición del usuario: «en ocasiones a los fantasmas se les marca un cuadro rojo, y algunos enemigos que están en la oscuridad»; `propuesta-mundo-4.md` §8.1, cambio 5): a oscuras se ven sus ojos crema y, al atacar, su aviso (bocadillo del Troll, Sticker que destella en crema, ojos del Fantasma que parpadean); a la luz el Fantasma reaparece parpadeando. El rojo en lo oscuro queda solo para los pinchos. ¿Se distinguen a tiempo en la penumbra? ¿Los ojos del enemigo despierto (90 %) frente a los del acechador (60 %)?
 - **Pendiente para el Mundo 5:** la combinación Sismo («golpe al suelo con onda», `02-isak-habilidades.md`) partía de Agitar; habrá que redefinirla.
+
+## Mundo 5: textos de El Vendedor propuestos (2026-10-29, paso 20 de `docs/propuesta-mundo-5.md`)
+
+**Todos son PROPUESTOS** por el orquestador (con la autoridad delegada): revisar al jugar. Los de los niveles 5-1 a 5-3 (Calc, «Prueba gratis», mensajes del Abuelito `msg_5_x`) están en sus pasos (10, 13 y 14) y en `data/levels/5-x.json` / `data/memories.json`.
+
+**El Vendedor** (Eco habla por él; `data/bosses/vendor.json`, `texts`)
+- Intro (importante): «Bienvenido, {apodo}. Ya sé lo que vas a llevar.»
+- **Isak contesta** (importante, interlocutor `isak`; nuevo en el paso 20, `isak_intro`): «No vengo a comprar nada.» Después empieza la pelea.
+- Fase 2: «¿Una sorpresa? Todas son para ti.» · Fase 3: «Oferta por tiempo limitado. Solo tienes que no hacer nada.»
+- Golpe final (sistema): «Compra cancelada.» · Derrota (importante, tras la recompensa): «Te lo dejé todo elegido. Y aun así eliges.»
+- Carteles de la máquina: «Procesando devolución…», «Procesando pago…», «Compra realizada», «¡SOLO POR HOY!» (con la cuenta), «Te fío», «Reponiendo…» (nuevo en el paso 19); en la pared de la arena (decorado, fila 2): «OFERTA» y «-50 %».
+
+**Eco** (ayudas con Q del jefe, `data/help.json`, `world: 5`, primer nivel 5-boss): El Vendedor («Siempre te mira de frente. El botón de Cancelar está detrás. Con el Debug se ve: márcalo con el pulso y dispárale.»), plataforma con precio («Se paga con fichas: un pulso a la etiqueta. Una de cada dos se dobla al pisarla. El Debug sabe cuál.»), ticket de devolución («Una devolución. Ábrela con un pulso de cara: mientras la procesa no se gira, y la bandeja de abajo se abre.») y oferta por tiempo limitado («No hagas nada y comprarás. Rompe el escaparate desde arriba con una Embestida o cuélate por la ranura con un Filo.»). Eco es la esfera estándar (sin variante del Mundo 5).
+
+**Calc** (al volver al hub tras vencer a El Vendedor, no importante; `vendor_5_boss` de `data/hub.json`): «Compras canceladas: todas. Cambio devuelto: tú. Esa cuenta sí me cuadra.»
+
+**Recuerdo** (sin cambios en el paso 20): «Fragmento de voluntad» (`boss_w5_l1`, ya en `data/memories.json`); los mensajes del Mundo 5 los firma **el Abuelito** (decisión del usuario del 2026-10-29).

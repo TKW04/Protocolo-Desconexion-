@@ -227,7 +227,8 @@
 			{"id": "update_3_boss", "after_level": "3-boss", "requires_pending_upgrade": "hub_update_4_6", "text": "Actualización detectada. Tamaño: 3 apps. Precio: 0. Sospechoso.", "duration_s": -1.0},
 			{"id": "chats_4_1", "after_level": "4-1", "text": "Mensajes enviados: 0. Recibidos: 37. Saldo: preocupante.", "duration_s": -1.0},
 			{"id": "chats_4_3", "after_level": "4-3", "text": "Respuestas pendientes: 1. Esa cuenta no la llevo yo.", "duration_s": -1.0},
-			{"id": "spent_5_1", "after_level": "5-1", "text": "Has gastado {gastado} {icono:atencion} en una tienda que no es la mía. No me ofendo. Lo apunto.", "text_if_zero": "Gastado fuera: 0. Bien.", "duration_s": -1.0}
+			{"id": "spent_5_1", "after_level": "5-1", "text": "Has gastado {gastado} {icono:atencion} en una tienda que no es la mía. No me ofendo. Lo apunto.", "text_if_zero": "Gastado fuera: 0. Bien.", "duration_s": -1.0},
+			{"id": "vendor_5_boss", "after_level": "5-boss", "text": "Compras canceladas: todas. Cambio devuelto: tú. Esa cuenta sí me cuadra.", "duration_s": -1.0}
 		],
 		"texts": {
 			"title": "Calc - Mejoras",
