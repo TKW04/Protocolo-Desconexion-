@@ -31,8 +31,8 @@ func before_each() -> void:
 		"pulse": GameState.is_ability_unlocked(GameState.ABILITY_PULSE),
 		"dash": GameState.is_ability_unlocked(GameState.ABILITY_DASH),
 		"ground_pound": GameState.is_ability_unlocked(GameState.ABILITY_GROUND_POUND),
-		# La test_arena desbloquea tambien Pellizcar desde el paso 1 del Mundo 3 (paso 20: sin devolverlo,
-		# test_dnd_switch y test_eco_encounter recibian el aviso de Pellizcar de mas en la suite).
+		# La test_arena desbloquea tambien Comprimir desde el paso 1 del Mundo 3 (paso 20: sin devolverlo,
+		# test_dnd_switch y test_eco_encounter recibian el aviso de Comprimir de mas en la suite).
 		"compress": GameState.is_ability_unlocked(GameState.ABILITY_COMPRESS),
 		# Y Agitar desde el paso 1 del Mundo 4 (2026-10-28): mismo motivo.
 		"shockwave": GameState.is_ability_unlocked(GameState.ABILITY_SHOCKWAVE),

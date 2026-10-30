@@ -1,15 +1,15 @@
 """Mundo 3 «La Vitrina» en el validador (2026-10-26, paso 8a de docs/propuesta-mundo-3.md §7.1 y §8):
-Pellizcar, likes, filtros y espejos fijos para tools/validate_level.py y tools/level_plan.py.
+Comprimir, likes, filtros y espejos fijos para tools/validate_level.py y tools/level_plan.py.
 
 lower(level, catalog) devuelve una copia del nivel en la que la herramienta «Recortar» (crop_tool; CropTool
 hereda de DndSwitch en el juego) es un `dnd_switch` que da `ability` (compress) con la configuracion de la
-seccion crop_tool (`_config`): Pellizcar es una habilidad del grafo que se obtiene en ella (o
+seccion crop_tool (`_config`): Comprimir es una habilidad del grafo que se obtiene en ella (o
 abilities_available.compress). Sin crop_tool el nivel se devuelve tal cual.
 
 World3(model) se crea solo si el nivel tiene algo del Mundo 3 (LevelModel.w3; si no, None y nada cambia: la
 salida del 1-1 al 2-3 y de las arenas es identica byte a byte). Modela:
 
-  - Pellizcar (§3.3): los nodos comprimidos son Pinched(c, r) (una tupla (c, r) que no es igual a la normal):
+  - Comprimir (§3.3): los nodos comprimidos son Pinched(c, r) (una tupla (c, r) que no es igual a la normal):
     caja de compress.width_px x height_px (32 x 40), andar a walk_speed_px_s (160, sin correr) y salto de
     jump_height_px (96) x --jump-efficiency, con el mismo modelo de movimiento (World sobre una copia del
     LevelModel con esas medidas). Aristas «pinch» (de pie, normal -> comprimido) y «unpinch» (comprimido ->
@@ -19,7 +19,7 @@ salida del 1-1 al 2-3 y de las arenas es identica byte a byte). Modela:
     poco cada movimiento comprimido (PINCH_SEARCH_COST) para recuperar el tamano en cuanto se puede. Regla de
     diseno de §3.3.2 en el camino principal (error): toda salida comprimida (ultima celda en la que la caja
     normal no cabe) recupera el tamano a <= RECOVER_MAX_TILES (4) y ningun tramo comprimido pasa de
-    COMPRESSED_MAX_TILES (12). Salida: «Pellizcar: tramo ... (cols. a-b): N marcos, X tiles comprimido como
+    COMPRESSED_MAX_TILES (12). Salida: «Comprimir: tramo ... (cols. a-b): N marcos, X tiles comprimido como
     maximo». Camino exportado: pasos pinch / unpinch y los movimientos comprimidos con "compressed": true.
   - Likes (§3.1) como estado: el estado lleva la cifra del intento como una ficha "likes=N" (0-30). Lo que
     cambia el mundo son solo los UMBRALES cumplidos (las claves de la cache de movimientos llevan que
@@ -29,7 +29,7 @@ salida del 1-1 al 2-3 y de las arenas es identica byte a byte). Modela:
     pulso de espaldas -> 0) son acciones de la progresion (like_gates, aparte de model.gates: no son puertas
     obligatorias). La progresion solo usa una publicacion mientras quede un umbral normal por cumplir y el reset
     mientras haya una plataforma inversa apagada; no repite una accion que deja el mismo estado en el mismo
-    sitio. Abilities_available.compress tambien da Pellizcar (en KNOWN_ABILITIES del esquema desde el paso 8b).
+    sitio. Abilities_available.compress tambien da Comprimir (en KNOWN_ABILITIES del esquema desde el paso 8b).
     Plataformas de likes
     (like_platform): tabla de card_height_px arriba de su celda, encendida con likes >= threshold (invert:
     likes < threshold); one_way, solo apoyo. Las perdidas por golpe no se modelan (el camino no recibe golpes; el
@@ -152,7 +152,7 @@ WAIT_KINDS = ("wait", "wait_hunter", "wait_reflection")
 
 
 class Pinched(tuple):
-    """Nodo comprimido (Pellizcar): se desempaqueta como (c, r) pero no es igual a la tupla normal (c, r)."""
+    """Nodo comprimido (Comprimir): se desempaqueta como (c, r) pero no es igual a la tupla normal (c, r)."""
     __slots__ = ()
     pinched = True
 
@@ -300,7 +300,7 @@ class World3:
             data = {}
         self.cfg_compress = data
         self.squash_s = float(data.get("squash_s", 0.15))
-        # --- Pellizcar ---
+        # --- Comprimir ---
         self.compress_base = bool(abilities.get("compress", False))
         self.crop_gates = [g for g in model.gates if g.kind == "dnd" and g.ability == "compress"]
         self.compress_possible = self.compress_base or bool(self.crop_gates)
@@ -691,7 +691,7 @@ class World3:
                 out.append((node, self.apply(state, g)))
         return out
 
-    # --- Pellizcar ---
+    # --- Comprimir ---
 
     def has_compress(self, state):
         m = self.m
@@ -1073,7 +1073,7 @@ class World3:
     # --- Comprobaciones tras el camino principal ---
 
     def check(self, v, start, goal_cells):
-        """Pellizcar, likes, filtros y espejos sobre el camino principal (Validator.main)."""
+        """Comprimir, likes, filtros y espejos sobre el camino principal (Validator.main)."""
         out = {}
         main = v.main
         if main["ok"]:
@@ -1150,11 +1150,11 @@ class World3:
             items.append(item)
             if recover is not None and recover > RECOVER_MAX_TILES:
                 t = seq[tight[-1]]
-                v.report.error("Pellizcar: la salida comprimida de (fila %d, columna %d) no deja recuperar el tamano "
+                v.report.error("Comprimir: la salida comprimida de (fila %d, columna %d) no deja recuperar el tamano "
                                "hasta %d tiles (maximo %d, docs/propuesta-mundo-3.md §3.3.2)"
                                % (t[1], t[0], recover, RECOVER_MAX_TILES), t[1], t[0])
             if tiles > COMPRESSED_MAX_TILES:
-                v.report.error("Pellizcar: el camino va comprimido %d tiles seguidos de (fila %d, columna %d) a (fila %d, "
+                v.report.error("Comprimir: el camino va comprimido %d tiles seguidos de (fila %d, columna %d) a (fila %d, "
                                "columna %d) (maximo %d, §3.3.2)" % (tiles, seq[0][1], seq[0][0], seq[-1][1], seq[-1][0],
                                                                    COMPRESSED_MAX_TILES), seq[0][1], seq[0][0])
         sections = []
@@ -1396,14 +1396,14 @@ class World3:
             for f in self.small_frames:
                 c = min(cc for cc, _ in f["cells"])
                 if abs(c - far) <= m.K + 2:
-                    out.append(("el marco pequeno %s solo se cruza comprimido y Pellizcar aun no se tiene (lo da %s)"
+                    out.append(("el marco pequeno %s solo se cruza comprimido y Comprimir aun no se tiene (lo da %s)"
                                 % (f["id"], ", ".join(g.label() for g in self.crop_gates) or "-"),
                                 min(r for _, r in f["cells"]), c))
         elif not self.compress_possible:
             for f in self.small_frames:
                 c = min(cc for cc, _ in f["cells"])
                 if abs(c - far) <= m.K + 2:
-                    out.append(("el marco pequeno %s solo se cruza comprimido y el nivel no tiene Pellizcar (ni "
+                    out.append(("el marco pequeno %s solo se cruza comprimido y el nivel no tiene Comprimir (ni "
                                 "abilities_available.compress ni una herramienta Recortar)" % f["id"],
                                 min(r for _, r in f["cells"]), c))
         for d in self.doors:
@@ -2211,10 +2211,10 @@ def format_lines(result):
     pinch = w3.get("pinch")
     if pinch:
         if not pinch["sections"]:
-            out.append("  Pellizcar: caja %.0f x %.0f, %.0f px/s, salto %.0f px; el camino no va comprimido" % (
+            out.append("  Comprimir: caja %.0f x %.0f, %.0f px/s, salto %.0f px; el camino no va comprimido" % (
                 pinch["box_px"][0], pinch["box_px"][1], pinch["walk_speed_px_s"], pinch["jump_height_px"]))
         for s in pinch["sections"]:
-            out.append("  Pellizcar: %s (cols. %d-%d): %d marco(s), %.1f tiles comprimido como maximo" % (
+            out.append("  Comprimir: %s (cols. %d-%d): %d marco(s), %.1f tiles comprimido como maximo" % (
                 "tramo %s" % s["name"] if s["name"] else "sin tramo", s["cols"][0], s["cols"][1], len(s["frames"]),
                 s["max_tiles"]))
         for r in pinch["runs"]:

@@ -1,6 +1,6 @@
 # Nivel 3-3 «Espejo, espejito» con el flujo real (scenes/main.tscn, LevelRunner; paso 13
 # de docs/propuesta-mundo-3.md §8, 2026-10-27): carga por el atajo de depuracion
-# (--start-level=3-3) y llegada por el vortice con Pellizcar y 0 likes, objetos y
+# (--start-level=3-3) y llegada por el vortice con Comprimir y 0 likes, objetos y
 # economia (10 puntos, 3 cargadores, 15 corazones, 4 publicaciones, power bank, msg_3_3),
 # el espejo cazador de la sala (pulso congelado mirando al n -> puente), las placas y
 # puertas de marco con el Reflejo falso, el examen (filtro con pinchos ocultos, Ladrones,
@@ -44,7 +44,7 @@ func before_each() -> void:
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
 	DebugMode.input_enabled = false
-	# Se llega al 3-3 tras completar el 3-2: todo el kit, Pellizcar incluido.
+	# Se llega al 3-3 tras completar el 3-2: todo el kit, Comprimir incluido.
 	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	EcoProgress.meet_calc()
@@ -141,7 +141,7 @@ func test_debug_shortcut_loads_the_3_3_with_compress() -> void:
 	assert_true(_isak.is_on_floor())
 	assert_almost_eq(_isak.global_position.x, 3.5 * TILE, TILE, "Vortice en la columna 3")
 	assert_eq(GameState.likes, 0, "El contador empieza en 0")
-	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Llega con Pellizcar")
+	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Llega con Comprimir")
 
 
 func test_objects_enemies_and_economy() -> void:

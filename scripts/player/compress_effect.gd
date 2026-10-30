@@ -1,4 +1,4 @@
-## Efecto PROVISIONAL de Pellizcar (2026-10-26; docs/propuesta-mundo-3.md §3.3.1),
+## Efecto PROVISIONAL de Comprimir (2026-10-26; docs/propuesta-mundo-3.md §3.3.1),
 ## dibujado por codigo con compress.visual de data/isak_abilities.json: el icono
 ## pequeno «sin espacio» (barra de techo con una flecha hacia arriba debajo) sobre
 ## la cabeza de Isak comprimido mientras la vuelta al tamano esta pedida y no cabe.

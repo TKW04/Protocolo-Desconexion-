@@ -3,7 +3,7 @@ esquema y alcanzabilidad sin avisos, nivel horizontal de 260 x 14 en bandas (cad
 suelo, banda de la fila 9 y banda de la fila 6, que suben o bajan alternando), inicio «Mensajes borrados» con la
 Papelera, el «¿Deshacer escritura?» que deshace el muro de texto a 8 tiles, los grupos de Trolls que se
 aturden con el pulso (patron 20; sin Agitar desde el 2026-10-28), los Fantasmas, el autocorrector junto a las zonas
-«Visto», los enjambres de Stickers que el pulso desinfla, los secretos (A con Pellizcar y la Linterna, B con el autocorrector al reves, C con «escribiendo…» y el
+«Visto», los enjambres de Stickers que el pulso desinfla, los secretos (A con Comprimir y la Linterna, B con el autocorrector al reves, C con «escribiendo…» y el
 dash aereo), economia, camino exportado y su duracion frente al objetivo (40-55 %), escena y subidas al dia, y el
 4-2 jugable desde la carpeta del Mundo 4. Las pasadas con mejoras, con todo al maximo y con el tope del acceso las
 hace tools/run_tests.sh sobre data/levels/*.json.
@@ -234,7 +234,7 @@ class Level42Test(unittest.TestCase):
         def no_pinch(l):
             l["abilities_available"]["compress"] = False
         self.assertFalse(secret_item(variant(self.level, no_pinch), "secreto_silenciado")["reachable"],
-                         "Sin Pellizcar no se entra")
+                         "Sin Comprimir no se entra")
 
     def test_secret_b_autocorrect_in_reverse(self):
         b = next(s for s in self.level["secrets"] if s["id"] == "secreto_ok_y_tu")

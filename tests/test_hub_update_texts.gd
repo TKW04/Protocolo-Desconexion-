@@ -257,7 +257,7 @@ func test_key_hint_after_two_failures() -> void:
 	_puzzle.advance_hints(0.1)
 	assert_true(_puzzle.is_key_hint_visible(&"v2"))
 	assert_eq(_puzzle.get_key_hint_text(&"v2"), PulsePrompt.key_text(&"gesture_swipe", "?"), "Tecla de Deslizar")
-	# V3: laser con el marco cerrado; Pellizcar con el marco abierto.
+	# V3: laser con el marco cerrado; Comprimir con el marco abierto.
 	_puzzle.register_failure(&"v3")
 	_puzzle.register_failure(&"v3")
 	_puzzle.advance_hints(0.1)
@@ -266,7 +266,7 @@ func test_key_hint_after_two_failures() -> void:
 	_puzzle.get_reader3().power()
 	assert_true(_puzzle.is_frame_lit())
 	_puzzle.advance_hints(0.1)
-	assert_eq(_puzzle.get_key_hint_text(&"v3"), PulsePrompt.key_text(&"gesture_pinch", "?"), "Marco abierto: Pellizcar")
+	assert_eq(_puzzle.get_key_hint_text(&"v3"), PulsePrompt.key_text(&"gesture_pinch", "?"), "Marco abierto: Comprimir")
 
 
 func test_bumping_the_frame_uncompressed_counts_as_a_failure() -> void:

@@ -1,8 +1,8 @@
 # Nivel 3-2 «Sin filtro» con el flujo real (scenes/main.tscn, LevelRunner; paso 12
 # de docs/propuesta-mundo-3.md §8, 2026-10-27): carga por el atajo de depuracion
-# (--start-level=3-2) y llegada por el vortice sin Pellizcar y con 0 likes, objetos y
+# (--start-level=3-2) y llegada por el vortice sin Comprimir y con 0 likes, objetos y
 # economia (10 puntos, 3 cargadores, 15 corazones, 2 publicaciones, power bank, sin
-# mensaje ni vida extra), «Recortar» que da Pellizcar con «Te queda mejor así.», la
+# mensaje ni vida extra), «Recortar» que da Comprimir con «Te queda mejor así.», la
 # linea de Eco que recuerda el marco del 3-1, los marcos pequenos, los filtros (suelo
 # falso, pinchos ocultos y el filtro movil), los secretos A (vitrina tras el sotano), B
 # (♥20) y C (nicho tras el marco de la repisa), el punto de sincronizacion, la terminal
@@ -44,7 +44,7 @@ func before_each() -> void:
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
 	DebugMode.input_enabled = false
-	# Se llega al 3-2 tras completar el 3-1: todo el kit del Mundo 2, sin Pellizcar (lo da «Recortar»).
+	# Se llega al 3-2 tras completar el 3-1: todo el kit del Mundo 2, sin Comprimir (lo da «Recortar»).
 	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	EcoProgress.meet_calc()
@@ -148,7 +148,7 @@ func test_debug_shortcut_loads_the_3_2_without_compress() -> void:
 	assert_true(_isak.is_on_floor())
 	assert_almost_eq(_isak.global_position.x, 3.5 * TILE, TILE, "Vortice en la columna 3")
 	assert_eq(GameState.likes, 0, "El contador empieza en 0")
-	assert_false(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Sin Pellizcar: lo da «Recortar»")
+	assert_false(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Sin Comprimir: lo da «Recortar»")
 
 
 func test_objects_enemies_and_economy() -> void:
@@ -177,7 +177,7 @@ func test_crop_tool_gives_compress_with_the_decided_line() -> void:
 	assert_eq(tool.global_position.x, 12 * TILE, "«Recortar» en la columna 12")
 	assert_eq(tool.get_story_text(), "Te queda mejor así.", "La frase decidida del mundo")
 	assert_true(tool.switch_on(), "El pulso de espaldas la usa")
-	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Pellizcar obtenido")
+	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Comprimir obtenido")
 	assert_false(tool.switch_on(), "Un solo uso")
 	var exit := _obj("marco_salida") as SmallFrame
 	assert_eq(exit.global_position, Vector2(21 * TILE, 11 * TILE), "La salida del Estudio es un marco pequeno")
@@ -264,7 +264,7 @@ func test_sync_point_and_lives() -> void:
 	_die()
 	assert_eq(GameState.lives, 2, "Morir resta una vida")
 	assert_true(_isak.global_position.is_equal_approx(sync_1.get_spawn_position()), "Reaparece en sync_1")
-	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Pellizcar sigue obtenido")
+	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Comprimir sigue obtenido")
 
 
 func test_terminal_completes_the_level_and_unlocks_the_3_3() -> void:

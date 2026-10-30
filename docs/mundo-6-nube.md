@@ -50,7 +50,7 @@ Origen: sección 11 del documento original (`docs/original/diseno.md`).
 |---|---|
 | **Objetivo** | Repasar los mundos 3 y 4 y preparar el encuentro con la copia. Duración aproximada: 11 minutos. |
 | **Dificultad** | 5 de 5. |
-| **Tramo 1** | Cables como plataformas, con marcos pequeños y espejos entre ellos. Se usa Pellizcar y el rebote del pulso. |
+| **Tramo 1** | Cables como plataformas, con marcos pequeños y espejos entre ellos. Se usa Comprimir y el rebote del pulso. |
 | **Tramo 2** | Copias de Vitrina con plataformas de likes y filtros que esconden nodos. |
 | **Tramo 3** | Una ola de "Visto" y Copias de Chat que persiguen a Isak por el pasillo. |
 | **Tramo 4** | Un Reflejo falso que sigue a Isak durante todo el tramo. Es una pista de que la copia está cerca. |
@@ -76,7 +76,7 @@ Una copia perfecta de Isak, creada por Eco a partir de meses de aprendizaje. Tie
 | Aspecto | Detalle |
 |---|---|
 | **Arena** | Una réplica exacta del cuarto de Isak, ordenada y vacía, con la única luz del celular. |
-| **Habilidades** | Usa todo el kit de Isak: pulso, dash, golpe al suelo, pellizcar, agitar y combos. Además tiene energía infinita y no pierde Sync Rate. |
+| **Habilidades** | Usa todo el kit de Isak: pulso, dash, golpe al suelo, comprimir, agitar y combos. Además tiene energía infinita y no pierde Sync Rate. |
 | **Punto débil** | No tiene. El Debug no muestra ningún punto débil, porque no hay uno. Lo que muestra son cables que conectan a la copia con el núcleo. |
 | **Fase 1: duelo** | Combate directo, con la copia usando sus ataques en secuencias perfectas. Isak aprende sus ritmos y busca huecos. |
 | **Fase 2: cables** | Hay que cortar cuatro cables de datos que alimentan a la copia, mientras ella ataca. Cada cable cortado la vuelve más humana: aparecen pausas, dudas y glitches. |

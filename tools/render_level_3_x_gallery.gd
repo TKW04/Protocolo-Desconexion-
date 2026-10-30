@@ -9,8 +9,8 @@
 ##   03_publicacion        una publicacion recien pulsada (enfriamiento)
 ##   04_influencer_flash   un Influencer cargando el flash
 ##   05_ladron             un Ladron de likes avisando, persiguiendo o aturdido
-##   06_recortar           «Recortar» encendido: Pellizcar obtenido
-##   07_pellizcar          Isak comprimido
+##   06_recortar           «Recortar» encendido: Comprimir obtenido
+##   07_comprimir          Isak comprimido
 ##   08_marco_pequeno      Isak comprimido dentro de un marco pequeno
 ##   09_filtro             Isak dentro de un filtro sin el Debug
 ##   10_filtro_debug       Isak dentro de un filtro con el Debug (lo de debajo)
@@ -96,7 +96,7 @@ func _watch_shots() -> void:
 		_had_compress = true
 		_own_shot("06_recortar", 30)
 	if compressed and _isak.is_on_floor():
-		_own_shot("07_pellizcar", 0)
+		_own_shot("07_comprimir", 0)
 	for node: Node in _scan_nodes:
 		if not is_instance_valid(node):
 			continue

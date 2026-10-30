@@ -1,7 +1,7 @@
 """Nivel 3-1 «Galería de perfil» (data/levels/3-1.json; paso 10 de docs/propuesta-mundo-3.md §8, 2026-10-26):
 esquema y alcanzabilidad sin avisos, estructura y tramos, likes (corazones, plataformas ♥5 / ♥10 / ♥15 con su
 publicacion anti-atasco), Influencer y Ladron, pared de espejo con las plataformas del reflejo, secretos (A solo con
-Pellizcar: requires_abilities; B con «Borrar publicaciones» y sin dash; C con el Debug y el dash aereo), economia,
+Comprimir: requires_abilities; B con «Borrar publicaciones» y sin dash; C con el Debug y el dash aereo), economia,
 camino exportado, escena y subidas al dia, y el 3-1 jugable desde la carpeta del Mundo 3.
 Uso: python3 -m unittest tests/test_level_3_1.py
 """
@@ -62,7 +62,7 @@ class Level31Test(unittest.TestCase):
         self.assertEqual(lvl["debug_color"], "green", "Debug verde acido en el Mundo 3")
         self.assertEqual(lvl["abilities_available"],
                          {"pulse": True, "laser": True, "debug": True, "dash": True, "ground_pound": True,
-                          "compress": False}, "Todo el kit del Mundo 2; Pellizcar, no (llega en el 3-2)")
+                          "compress": False}, "Todo el kit del Mundo 2; Comprimir, no (llega en el 3-2)")
         self.assertEqual([(s["name"], s["x_from"], s["x_to"]) for s in lvl["sections"]], SECTIONS)
         self.assertNotIn("stands_for", lvl)
         start = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "P")
@@ -151,8 +151,8 @@ class Level31Test(unittest.TestCase):
         self.assertEqual((grid[10][58], grid[11][58], grid[12][58]), ("#", ".", "#"), "Hueco de 1 fila")
         item = next(i for i in self.result["secrets"]["items"] if i["id"] == "secreto_marco_decorativo")
         self.assertEqual(item["requires_abilities"], ["compress"])
-        self.assertTrue(item["reachable"], "Con Pellizcar se alcanza")
-        self.assertFalse(item["reachable_without_abilities"], "Sin Pellizcar, no (no cuenta en la primera visita)")
+        self.assertTrue(item["reachable"], "Con Comprimir se alcanza")
+        self.assertFalse(item["reachable_without_abilities"], "Sin Comprimir, no (no cuenta en la primera visita)")
         memory = next(m for m in self.result["memories"] if m["memory_id"] == "msg_3_2")
         self.assertEqual((memory["secret"], memory["requires_abilities"]), ("secreto_marco_decorativo", ["compress"]))
 
@@ -193,7 +193,7 @@ class Level31Test(unittest.TestCase):
         actions = [s["action"] for s in steps]
         for action in ("heart", "pulse", "jump", "goal"):
             self.assertIn(action, actions)
-        self.assertNotIn("pinch", actions, "Sin Pellizcar en el camino")
+        self.assertNotIn("pinch", actions, "Sin Comprimir en el camino")
         self.assertGreaterEqual(actions.count("heart"), 15, "Corazones suficientes para el umbral 15")
         thief_pulses = [s for s in steps if s["action"] == "pulse" and s["target"]["type"] == "like_thief"]
         self.assertEqual(len(thief_pulses), 1, "Un pulso al Ladron antes de que robe")

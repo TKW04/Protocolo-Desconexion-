@@ -1,8 +1,8 @@
 """Nivel 3-2 «Sin filtro» (data/levels/3-2.json; paso 12 de docs/propuesta-mundo-3.md §8, 2026-10-27):
-esquema y alcanzabilidad sin avisos, estructura y tramos, «Recortar» como puerta obligatoria de Pellizcar (sin ella
+esquema y alcanzabilidad sin avisos, estructura y tramos, «Recortar» como puerta obligatoria de Comprimir (sin ella
 el marco de la salida del Estudio cierra el paso), marcos pequenos del camino, filtros (suelos falsos y pinchos
 ocultos con el Debug y su cargador; el filtro movil), likes (♥10 con su publicacion anti-atasco; ♥20 del secreto B),
-Ladron e Influencer, secretos (A con el Debug y Pellizcar; B con 20 likes; C con el dash aereo), economia, camino
+Ladron e Influencer, secretos (A con el Debug y Comprimir; B con 20 likes; C con el dash aereo), economia, camino
 exportado, escena y subidas al dia, y el 3-2 jugable desde la carpeta del Mundo 3 tras el 3-1.
 Uso: python3 -m unittest tests/test_level_3_2.py
 """
@@ -66,7 +66,7 @@ class Level32Test(unittest.TestCase):
         self.assertEqual(lvl["camera"]["vertical"], "simple")
         self.assertEqual(lvl["abilities_available"],
                          {"pulse": True, "laser": True, "debug": True, "dash": True, "ground_pound": True,
-                          "compress": False}, "Pellizcar no viene dado: lo da «Recortar»")
+                          "compress": False}, "Comprimir no viene dado: lo da «Recortar»")
         self.assertEqual([(s["name"], s["x_from"], s["x_to"]) for s in lvl["sections"]], SECTIONS)
         start = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "P")
         goal = next((c, r) for r, row in enumerate(lvl["grid"]) for c, ch in enumerate(row) if ch == "G")
@@ -88,7 +88,7 @@ class Level32Test(unittest.TestCase):
         actions = [s["action"] for s in self.exported[0]["steps"]]
         crop = next(i for i, s in enumerate(self.exported[0]["steps"])
                     if s["action"] == "pulse" and s["target"]["type"] == "crop_tool")
-        self.assertLess(crop, actions.index("pinch"), "«Recortar» antes del primer pellizco")
+        self.assertLess(crop, actions.index("pinch"), "«Recortar» antes de la primera compresiÃ³n")
         no_tool = copy.deepcopy(self.level)
         no_tool["objects"] = [o for o in no_tool["objects"] if o["type"] != "crop_tool"]
         self.assertFalse(vl.validate(no_tool, check_schema=False)["ok"], "Sin «Recortar» no se sale del Estudio")
@@ -141,7 +141,7 @@ class Level32Test(unittest.TestCase):
 
     def test_secret_a_needs_the_debug(self):
         a = secret_item(self.result, "secreto_original")
-        self.assertEqual((a["without_debug"], a["with_debug"]), (False, True), "Debug + Pellizcar")
+        self.assertEqual((a["without_debug"], a["with_debug"]), (False, True), "Debug + Comprimir")
         frame = obj(self.level, "marco_original")
         self.assertEqual((frame["x"], frame["y"]), (95, 11), "Marco del sotano bajo el suelo falso")
         self.assertIn([94, 10, 1, 1], obj(self.level, "filtro_orejitas")["params"]["fake_floor"])

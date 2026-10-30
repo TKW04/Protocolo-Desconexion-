@@ -62,7 +62,7 @@ def climbs(level, root=ROOT):
         import validate_boss
         level = validate_boss.geometry_level(level)
     # Mundo 3 (paso 12 de docs/propuesta-mundo-3.md, el 3-2 real, 2026-10-27): la herramienta «Recortar» como el
-    # interruptor que da Pellizcar, igual que en validate_level.validate (sin crop_tool el nivel no cambia); sin
+    # interruptor que da Comprimir, igual que en validate_level.validate (sin crop_tool el nivel no cambia); sin
     # esto el marco pequeno de la salida del Estudio cerraba el paso y el 3-2 salia con 0 subidas.
     level = world3_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     # Mundo 4 (paso 11 de docs/propuesta-mundo-4.md, el 4-1 real, 2026-10-28): las burbujas (fijas, «escribiendo…»
@@ -120,7 +120,7 @@ def climbs(level, root=ROOT):
                 queue.append(to)
             if e["kind"] not in ("jump", "jump_run") or e["rise"] <= vl.EPS:
                 continue
-            # Las subidas comprimido (Pellizcar) las mide tests/test_compress.gd con su caja; aqui, el Isak normal.
+            # Las subidas comprimido (Comprimir) las mide tests/test_compress.gd con su caja; aqui, el Isak normal.
             if world3_model.is_pinched(node) or world3_model.is_pinched(to):
                 continue
             w = model.world(state, bool(e.get("debug")))

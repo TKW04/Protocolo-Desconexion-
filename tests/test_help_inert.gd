@@ -884,12 +884,12 @@ func test_like_platform_helps_on_and_off() -> void:
 	assert_true(HelpCatalog.is_help_live(platform), "Apagada: sigue ayudando")
 
 
-## Marco pequeno: decorado fijo, siempre explica (con Pellizcar o sin el).
+## Marco pequeno: decorado fijo, siempre explica (con Comprimir o sin el).
 func test_small_frame_always_helps() -> void:
 	var frame := _w3_scene("small_frame") as SmallFrame
 	_place(frame, &"small_frame")
 	await _assert_keeps_helping(frame, func() -> void: GameState.obtain_ability(&"compress"),
-		"marco pequeno con Pellizcar")
+		"marco pequeno con Comprimir")
 
 
 ## Espejo: indestructible; tras rebotar un laser sigue ayudando.
@@ -921,7 +921,7 @@ func test_hidden_mirror_only_platform_gives_no_help() -> void:
 	assert_true(platform.is_solid(), "Pero sigue siendo solida")
 
 
-## «Recortar»: encendida (Pellizcar ya dado) no ayuda, como el interruptor No molestar.
+## «Recortar»: encendida (Comprimir ya dado) no ayuda, como el interruptor No molestar.
 func test_switched_on_crop_tool_gives_no_help() -> void:
 	var crop := _w3_scene("crop_tool") as CropTool
 	_place(crop, &"crop_tool")

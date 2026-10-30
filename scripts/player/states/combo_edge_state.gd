@@ -1,4 +1,4 @@
-## Filo (Combinacion: Pellizcar + Deslizar en el aire; 2026-10-29,
+## Filo (Combinacion: Comprimir + Deslizar en el aire; 2026-10-29,
 ## docs/propuesta-mundo-5.md §3.2.2; valores provisionales de combo.edge de
 ## data/isak_abilities.json). Comprimido en el aire, Deslizar da un dash
 ## comprimido de distance_px en duration_s con gravedad 0, invulnerable, que

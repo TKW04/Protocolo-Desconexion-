@@ -347,7 +347,7 @@ def render(level, palette):
         elif kind in ("like_source", "like_reset", "crop_tool"):
             x0, y0, x1, y1 = box(x, y)
             d.rectangle((x0 + 3, y0 + 3, x1 - 3, y1 - 3), outline=palette["carmin"], width=2)
-            tag = {"like_source": "publicacion", "like_reset": "borrar", "crop_tool": "Recortar (Pellizcar)"}[kind]
+            tag = {"like_source": "publicacion", "like_reset": "borrar", "crop_tool": "Recortar (Comprimir)"}[kind]
             label((x0 + x1) // 2, y0 - 7, tag, palette["carmin"])
         elif kind == "filter_zone":
             x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 1))

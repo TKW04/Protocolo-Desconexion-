@@ -13,7 +13,7 @@ Reglas:
     requires_upgrade (si esta) es una mejora de data/upgrades.json ("pista:nivel" o legacy_id) y needs_debug un booleano;
     forbid_abilities (2026-10-20, paso 7 de docs/propuesta-1-3.md) una lista no vacia de habilidades conocidas;
     requires_abilities (2026-10-26, paso 8b de docs/propuesta-mundo-3.md §7.1: secreto que se alcanza con un gesto
-    obtenido mas adelante, p. ej. el marco del 3-1 con Pellizcar) una lista no vacia de habilidades conocidas sin
+    obtenido mas adelante, p. ej. el marco del 3-1 con Comprimir) una lista no vacia de habilidades conocidas sin
     repetir y sin ninguna de forbid_abilities;
     reward (opcional) es una recompensa conocida o una lista de ellas (attention_points, power_bank,
     extra_life, memory); la recompensa memory (mensaje de secreto, 2026-10-19, paso 4 de
@@ -110,7 +110,7 @@ REQUIRED_FIELDS = {
     "objects": list,
     "unlocks": list,
 }
-# compress: Pellizcar (Mundo 3, paso 8b de docs/propuesta-mundo-3.md: abilities_available.compress).
+# compress: Comprimir (Mundo 3, paso 8b de docs/propuesta-mundo-3.md: abilities_available.compress).
 # shockwave: Agitar (Mundo 4, paso 2 de docs/propuesta-mundo-4.md: abilities_available.shockwave).
 KNOWN_ABILITIES = {"pulse", "debug", "laser", "dash", "ground_pound", "compress", "shockwave", "combo"}
 # Modos de camara (camera.vertical): simple = Camera2D de Isak con suavizado (1-1);

@@ -33,7 +33,7 @@ World5(model, Gate) (LevelModel.w5) anade las puertas del Mundo 5 (Gate con kind
 
 La ranura de precios (price_rail) no es una puerta: sus etiquetas son peligros del grafo (empujan: ningun
 movimiento normal puede tocarlas) y solo la cruza el Filo, una arista nueva desde los nodos comprimidos
-(Pellizcar en el suelo, salto comprimido y Deslizar: distance_px en duration_s con la caja comprimida y gravedad
+(Comprimir en el suelo, salto comprimido y Deslizar: distance_px en duration_s con la caja comprimida y gravedad
 0; despues sigue comprimido). La Embestida y el Sismo son acciones de las puertas de arriba (combo_ram,
 combo_quake). Los tres cuestan energy_cost (15; la Embestida, ademas, el dash aereo del que sale: 10), solo con `combo` (abilities_available o la «Prueba gratis") y
 los dos gestos que combinan, nunca con el Debug.
@@ -644,7 +644,7 @@ class World5:
         return out
 
     def pinched_combo_edges(self, node, state, debug):
-        """Aristas del Filo desde una celda comprimida (solo con combo, el dash y Pellizcar; nunca con el Debug):
+        """Aristas del Filo desde una celda comprimida (solo con combo, el dash y Comprimir; nunca con el Debug):
         tras el tramo del Filo Isak sigue comprimido a end_speed_px_s y cae hasta una celda comprimida."""
         if debug is True or not self.can_edge(state):
             return []

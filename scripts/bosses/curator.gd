@@ -957,7 +957,7 @@ func _step_reflections(dt: float) -> void:
 		if not is_instance_valid(r):
 			continue
 		r.step(real)
-		# No se pellizca: en un marco pequeño no cabe y el marco lo borra (vuelve
+		# No se comprime: en un marco pequeño no cabe y el marco lo borra (vuelve
 		# a salir pasado reflection_respawn_s).
 		if r.is_present() and _in_small_frame(r.get_body_rect_now().get_center()):
 			r.vanish()

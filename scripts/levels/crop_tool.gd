@@ -6,10 +6,10 @@
 ## reproductor del 2-2 (PausePlayer): monitor con unas tijeras de recorte en la
 ## pared del FONDO; un PULSO que alcanza su zona (hit_rect) con Isak de espaldas
 ## pose_s la usa y da para siempre la habilidad `ability` (compress, gesto
-## Pellizcar) con GameState.obtain_ability: se guarda, va a la Papelera en un game
+## Comprimir) con GameState.obtain_ability: se guarda, va a la Papelera en un game
 ## over y se pierde en un rollback sin guardar. La primera vez Eco dice su frase
 ## del mundo (story_line, linea importante; «Te queda mejor así.», decidida) y
-## despues sale el aviso «Pellizcar: I / RB (mando)» (AbilityNotices). Un solo uso:
+## despues sale el aviso «Comprimir: I / RB (mando)» (AbilityNotices). Un solo uso:
 ## con el gesto ya obtenido arranca recortada e inerte, sin linea, aviso ni Q. Sin
 ## tinte del nivel (no hay room_tint). Su senal switched_on (heredada) es la del
 ## sonido sfx_w3_crop_tool.

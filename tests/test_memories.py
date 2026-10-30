@@ -67,7 +67,7 @@ class RealData(unittest.TestCase):
         self.assertEqual(sorted(messages), ["1-1", "1-2", "1-3", "2-1", "2-2", "2-3"], "Mundo 1 y, desde los pasos "
                          "11, 13 y 14 del Mundo 2, los del 2-1, el 2-2 y el 2-3")
         # Mundo 3 (pasos 10 y 13 de docs/propuesta-mundo-3.md): dos mensajes los ofrece el 3-1 (msg_3_2, con
-        # Pellizcar) y el tercero el 3-3 (la vitrina que solo se ve con el Debug).
+        # Comprimir) y el tercero el 3-3 (la vitrina que solo se ve con el Debug).
         world3 = sorted((m["id"], m["level"], m["secret"], m["order"]) for m in items
                         if m["kind"] == "secret" and m["world"] == 3)
         self.assertEqual(world3, [("msg_3_1", "3-1", "secreto_sin_likes", 1),

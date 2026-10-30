@@ -1,9 +1,9 @@
-# Pellizcar (gesto Pellizcar, accion gesture_pinch; habilidad compress; paso 1 del
+# Comprimir (gesto Comprimir, accion gesture_pinch; habilidad compress; paso 1 del
 # plan de docs/propuesta-mundo-3.md §8, valores de §3.3.1): interruptor, caja
 # 32 x 40 con los pies abajo (cabe por un hueco de 1 tile y sin comprimir no),
 # andar a 160 px/s sin correr, salto bajo, vuelta al tamano pedida que espera a
 # que haya sitio (icono «sin espacio») y vuelve sola, gratis, con el Debug si,
-# sin pulso, laser, dash, golpe al suelo ni Ocultarte comprimido (pellizcarse
+# sin pulso, laser, dash, golpe al suelo ni Ocultarte comprimido (comprimirse
 # apaga el Ocultarte), no sale sin la habilidad, en el hub ni ocupado, el dano
 # lo mantiene comprimido, morir y reaparecer devuelve el tamano, senales para
 # los sonidos, pose provisional por escala y Eco bajo el techo. Isak avanza paso
@@ -270,7 +270,7 @@ func test_pinching_turns_off_hide() -> void:
 	_isak.get_hide_mode().ended.connect(func(r: StringName) -> void: reasons.append(r))
 	_pinch()
 	assert_true(_isak.is_compressed())
-	assert_false(_isak.is_hidden(), "Pellizcarse apaga el Ocultarte")
+	assert_false(_isak.is_hidden(), "Comprimirse apaga el Ocultarte")
 	assert_eq(reasons, [HideMode.REASON_COMPRESS])
 
 
@@ -387,7 +387,7 @@ func test_death_and_respawn_restore_normal_size() -> void:
 	assert_eq(_changes, [true, false])
 	_sim.settle()
 	_pinch()
-	assert_true(_isak.is_compressed(), "Se puede volver a pellizcar al momento")
+	assert_true(_isak.is_compressed(), "Se puede volver a comprimir al momento")
 
 
 func test_warp_requests_normal_size() -> void:

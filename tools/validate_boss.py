@@ -1315,7 +1315,7 @@ def energy_lap_autoplay(arena, boss, lap, rules, laser_damage, errors, scenario,
 #
 # Valores de juego: data/bosses/curator.json (arena, ataques, fases, laps y validation_model), data/levels/3-boss.json
 # (geometria, plataformas de likes, marcos pequenos, espejos, cazador, cargadores, debug_drain_scale y
-# debug_world_scale), data/world3_objects.json (cazador, plataforma de likes), data/isak_abilities.json (Pellizcar) y
+# debug_world_scale), data/world3_objects.json (cazador, plataforma de likes), data/isak_abilities.json (Comprimir) y
 # los de Rules (fisica, pulso, laser, Debug, dash y mejoras): nada se copia aqui. Recorridos: Dijkstra por tiempo
 # (travel_s de cada movimiento del modelo de validate_level) sobre la arena con las plataformas de likes como
 # plataformas de una via (Isak siempre tiene likes >= umbral: respawn_min_likes, regla J). Reglas:
@@ -1768,7 +1768,7 @@ def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=Non
         if not (halves[s][0] <= c and c + w - 1 <= halves[s][1]):
             _err(errors, "marco pequeno %s fuera de su mitad %s" % (s, list(halves[s])))
         entry, crawl_s = frame_exit(s)
-        crawl_in = crawl_s  # entrar cuesta lo mismo que salir (pellizcarse + arrastrarse)
+        crawl_in = crawl_s  # entrar cuesta lo mismo que salir (comprimirse + arrastrarse)
         outside = [n for n in floor if not halves[s][0] <= n[0] <= halves[s][1]]
         worst = 0.0
         worst_cell = None
@@ -2347,7 +2347,7 @@ def validate_seen_arena(level, boss, root=ROOT, upgrades=(), physics_path=None,
 #      plataformas no se llega detras (el techo no se alcanza desde el estante ni desde el suelo).
 #   D. Fase 2 por acceso y tanda: un ticket por tanda; se abre (pulso de cara) desde una celda de pie de su lado;
 #      la boca de la bandeja de ese lado no la tapa otra caja que no explote (las bombas explotan a fuse_s); desde
-#      la celda que abre: a la boca, Pellizcar, el tunel comprimido, a donde se alcanza el «Cancelar» y Debug +
+#      la celda que abre: a la boca, Comprimir, el tunel comprimido, a donde se alcanza el «Cancelar» y Debug +
 #      poses cabe k veces en refund_s + turn_s (procesando no se gira; al acabar, Isak ya esta detras y el giro
 #      tarda turn_s). El camino por encima con dos bombas aturdidas no se modela (es la alternativa).
 #   E. Fase 3 por acceso y lado: con la ranura cerrada y el escaparate entero no se llega detras (anti-redundancia);

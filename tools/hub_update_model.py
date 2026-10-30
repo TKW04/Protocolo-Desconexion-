@@ -4,7 +4,7 @@ docs/propuesta-hub-mundos-4-6.md §2.7 y §5.2).
 El hub no es un nivel (no tiene grid ni G): este modulo lee el acertijo de data/hub_update.json (celdas locales a
 la pagina 2) y la sala de data/hub.json (suelo en floor_row, repisas de 160 px, estaciones) y monta con ellos un
 nivel sintetico para el MISMO modelo de movimiento de tools/validate_level.py (LevelModel, World.simulate,
-search, time_search, pulse_hits, laser_shot, Pellizcar y espejos de tools/world3_model.py). Lo usa
+search, time_search, pulse_hits, laser_shot, Comprimir y espejos de tools/world3_model.py). Lo usa
 validate_level.py cuando se le pasa data/hub_update.json; la salida de los niveles y las arenas no cambia.
 
 Rejilla: medio tile (32 px). La repisa de RE esta a 160 px del dock (y 416) y la plataforma «Cargando...» arriba en
@@ -14,7 +14,7 @@ de Isak de 32 x 80, el salto, el dash y la caja comprimida de 32 x 40 son los mi
 (el borde izquierdo, que en el juego sigue a la pagina 1, es una pared: la pagina 1 no ayuda al acertijo). El techo
 de la sala (y 0) queda por encima de cualquier salto.
 
-Comprueba (con todas las habilidades: pulso, laser, Debug, dash, golpe al suelo y Pellizcar):
+Comprueba (con todas las habilidades: pulso, laser, Debug, dash, golpe al suelo y Comprimir):
 
   V1 «Integridad»: lector1 solo se ve con el Debug (sin el no hay disparo); un laser desde una celda de pie lo
      alcanza; desde el suelo el pulso NO alcanza a RE (hay que subir a la repisa de una via) y el pulso desde una
@@ -35,7 +35,7 @@ Comprueba (con todas las habilidades: pulso, laser, Debug, dash, golpe al suelo 
   Energia: Debug (carga + pose del laser) + 2 laseres + los dashes del camino de V2 <= energia maxima (se llena al
      entrar al hub; el cargador_p2 da mas).
   Negativos (con el modelo mas permisivo: salto real a 60 Hz, corriendo, sin limite de exigencia): sin el Debug
-     falla V1, sin el dash y sin el golpe al suelo falla V2 y sin Pellizcar falla V3. Se informa de lo que falla
+     falla V1, sin el dash y sin el golpe al suelo falla V2 y sin Comprimir falla V3. Se informa de lo que falla
      sin cada habilidad.
 
 Exigencia: el hub no tiene caidas ni dano y sus repisas son las de la pagina 1 (160 px, «un salto desde el
@@ -56,7 +56,7 @@ HUB_LIMIT = 1.0
 DEFAULT_K = 3.0  # k de la formula de ventana del 1-2 (docs/propuesta-1-2.md §0.1, dificultad 1-2): aviso
 ABILITIES = ("pulse", "laser", "debug", "dash", "ground_pound", "compress")
 ABILITY_NAMES = {"pulse": "pulso", "laser": "laser", "debug": "Debug", "dash": "dash",
-                 "ground_pound": "golpe al suelo", "compress": "Pellizcar"}
+                 "ground_pound": "golpe al suelo", "compress": "Comprimir"}
 # Negativos exigidos (§2.7 y paso 4): sin la habilidad, esa verificacion no se puede hacer.
 REQUIRED_NEGATIVES = (("debug", "v1"), ("dash", "v2"), ("ground_pound", "v2"), ("compress", "v3"))
 CHECK_IDS = ("v1", "v2", "v3", "installer")
@@ -183,7 +183,7 @@ class HubPage:
         return {"id": "hub_update_p%d" % self.page, "world": 3, "tile_size": t,
                 "grid": ["".join(row) for row in grid],
                 "abilities_available": {a: True for a in ABILITIES},
-                # Un objeto del Mundo 3 para que LevelModel monte world3_model (Pellizcar y espejos); el marco pequeno
+                # Un objeto del Mundo 3 para que LevelModel monte world3_model (Comprimir y espejos); el marco pequeno
                 # no cambia el terreno.
                 "objects": [{"type": "small_frame", "x": int(self.barrier[0] / t), "y": int(self.barrier[1] / t)}],
                 "enemies": []}
@@ -394,7 +394,7 @@ def _check_v3(ctx, out):
               and page.niche[0] - vl.EPS <= _x_center(mo, n) <= page.niche[2] + vl.EPS]
     if not inside:
         res["why"] = "no se entra al nicho (y se recupera el tamano dentro)" + (
-            "" if mo.w3.has_compress(ctx.state) else " sin Pellizcar")
+            "" if mo.w3.has_compress(ctx.state) else " sin Comprimir")
         return res
     v3 = page.checks["v3"]["rect"]
     pulse = [n for n in inside if mo.pulse_hits([v3], n, ctx.state)]

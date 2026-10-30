@@ -103,7 +103,7 @@ movimiento por celdas:
      su enfriamiento y su invulnerabilidad frente a banners y campanas, sigue los metronomos y las
      plataformas que parpadean, comprueba validation.dash_required y exporta pasos dash y wait_beat.
      forbid_abilities de un secreto: su ruta se busca sin esas habilidades (LevelModel.forbidding).
-  11. Mundo 3 (paso 8a de docs/propuesta-mundo-3.md, 2026-10-26; tools/world3_model.py, LevelModel.w3): Pellizcar
+  11. Mundo 3 (paso 8a de docs/propuesta-mundo-3.md, 2026-10-26; tools/world3_model.py, LevelModel.w3): Comprimir
      (nodos comprimidos y aristas pinch / unpinch), likes (corazones, publicaciones y reset como acciones de la
      progresion; plataformas por umbral; anti-atasco), filtros (Debug junto a lo que esconden; cargador a la
      vista) y espejos fijos (laser con rebotes, plataformas del reflejo). Sin nada del Mundo 3, w3 es None.
@@ -599,7 +599,7 @@ class LevelModel:
         self.glitch_doors = {}
         self.glitch_walls = []  # {"id", "cells", "door_when"}
         self.terminal_power = []  # {"id", "source", "cell"}
-        # Mundo 3 (paso 8a): Pellizcar, likes, filtros y espejos (tools/world3_model.py); None sin nada del Mundo 3.
+        # Mundo 3 (paso 8a): Comprimir, likes, filtros y espejos (tools/world3_model.py); None sin nada del Mundo 3.
         self.w3 = None
         # Mundo 4 (paso 9): Agitar, zonas «Visto», burbujas, enemigos y ola (tools/world4_model.py); None sin nada
         # del Mundo 4.
@@ -869,7 +869,7 @@ class LevelModel:
                                                                           "%s %s" % (what, sid))],
                             col=obj["x"], row=obj["y"], tile=T)
                 gate.player = config == "pause_player"
-                # Herramienta «Recortar» (Mundo 3, paso 8a; tools/world3_model.py): da Pellizcar (compress).
+                # Herramienta «Recortar» (Mundo 3, paso 8a; tools/world3_model.py): da Comprimir (compress).
                 gate.crop = config == "crop_tool"
                 # «¿Deshacer escritura?» (Mundo 4, paso 9; tools/world4_model.py): deshace los muros de texto
                 # (ability = world4_model.TYPED_UNDO; hasta el 2026-10-28 daba Agitar).
@@ -2372,7 +2372,7 @@ class Validator:
             # Paso 10: requisitos del diseno (laser / Debug) y plan del camino.
             self._check_requirements(start, goal_cells)
             if model.w3 is not None:
-                # Mundo 3 (paso 8a): Pellizcar, likes, filtros y espejos sobre el camino principal.
+                # Mundo 3 (paso 8a): Comprimir, likes, filtros y espejos sobre el camino principal.
                 model.w3.check(self, start, goal_cells)
             if model.w4 is not None:
                 # Mundo 4 (paso 9): regla del congelado, autocorrector y Troll disfrazado sobre el camino.
@@ -2399,7 +2399,7 @@ class Validator:
                  "overlay_popup", "update_bar", "power_switch", "debug_switch", "laser_switch", "charge_dock",
                  "dnd_switch", "blink_platform", "rhythm_zone", "alarm_tunnel", "clone_zone"}
         if self.model.w3 is not None:
-            # Mundo 3 (paso 8a): plan del camino con los likes, el Debug de los filtros y Pellizcar.
+            # Mundo 3 (paso 8a): plan del camino con los likes, el Debug de los filtros y Comprimir.
             return True
         if self.model.w4 is not None:
             # Mundo 4 (paso 9): plan del camino con las zonas «Visto», las burbujas, Agitar y la ola.
@@ -2821,10 +2821,10 @@ class Validator:
                     actions.append(self._walk_action(walk_from, prev, pinched=walk_pinched))
                     walk_from = None
                 if e["kind"] in ("pinch", "unpinch"):
-                    # Mundo 3 (paso 8a): comprimirse / recuperar el tamano (Pellizcar).
+                    # Mundo 3 (paso 8a): comprimirse / recuperar el tamano (Comprimir).
                     actions.append({"action": e["kind"], "at": [prev[1], prev[0]],
                                     "text": "%s en (fila %d, columna %d)%s" % (
-                                        "comprimirse (Pellizcar)" if e["kind"] == "pinch" else "recuperar el tamano",
+                                        "comprimirse (Comprimir)" if e["kind"] == "pinch" else "recuperar el tamano",
                                         prev[1], prev[0], self._section_suffix(prev[0], prev[1]))})
                     continue
                 actions.append(self._walk_action(prev, e["to"], debug=True, pinched=bool(e.get("pinched")))
@@ -3103,7 +3103,7 @@ class Validator:
 
     def _granted(self, secret, start):
         """requires_abilities (Mundo 3, paso 8b de docs/propuesta-mundo-3.md §7.1): el secreto se alcanza con un
-        gesto obtenido mas adelante (p. ej. Pellizcar). Devuelve (validador, inicio, habilidades) con esas
+        gesto obtenido mas adelante (p. ej. Comprimir). Devuelve (validador, inicio, habilidades) con esas
         habilidades dadas desde el inicio (abilities_available), o (self, start, ()) sin el campo."""
         needs = tuple(str(a) for a in secret.get("requires_abilities", []) or [])
         if not needs:
@@ -3556,7 +3556,7 @@ def validate(level, root=ROOT, limit=DEFAULT_LIMIT, jump_efficiency=DEFAULT_JUMP
     # Mundo 2 (2026-10-22, paso 4 de docs/propuesta-mundo-2.md): tarjetas fragiles e Historias como las
     # piezas del Mundo 1 que reutilizan (tools/world2_model.py); sin ellas el nivel no cambia.
     level = world2_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
-    # Mundo 3 (paso 8a de docs/propuesta-mundo-3.md): la herramienta Recortar como interruptor que da Pellizcar
+    # Mundo 3 (paso 8a de docs/propuesta-mundo-3.md): la herramienta Recortar como interruptor que da Comprimir
     # (tools/world3_model.py); sin ella el nivel no cambia.
     level = world3_model.lower(level, level_catalog.load_catalog(root, int(level.get("world", 1))))
     # Mundo 4 (paso 9 de docs/propuesta-mundo-4.md): burbujas y pasos en tinta como tablas de una via, el

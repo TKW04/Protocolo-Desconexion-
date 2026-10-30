@@ -1,8 +1,8 @@
 # Herramienta «Recortar» (crop_tool; 2026-10-26, paso 7 de docs/propuesta-mundo-3.md
 # §8, §3.6) y marcos pequenos (small_frame, §3.3.2). Un pulso de espaldas a la
-# herramienta la usa una sola vez y da Pellizcar (compress) para siempre (se
+# herramienta la usa una sola vez y da Comprimir (compress) para siempre (se
 # guarda); Eco dice «Te queda mejor así.» (importante) y despues sale el aviso
-# «Pellizcar: I / RB (mando)»; con el gesto ya obtenido arranca recortada e inerte
+# «Comprimir: I / RB (mando)»; con el gesto ya obtenido arranca recortada e inerte
 # (sin linea, aviso ni Q); un game over sin guardar lo pierde y la herramienta
 # vuelve; guardado, va a la Papelera y se recupera. Sin tinte. El marco pequeno es
 # solo decorado (sin colision). Ademas la sala recorte_test con el Isak real: sin
@@ -17,7 +17,7 @@ const PATH: String = "user://test_crop_tool_save.json"
 const TILE: float = 64.0
 const DT: float = 1.0 / 60.0
 const COMPRESS: StringName = GameState.ABILITY_COMPRESS
-const NOTICE: String = "Pellizcar: I / RB (mando)"
+const NOTICE: String = "Comprimir: I / RB (mando)"
 const ECO_LINE: String = "Te queda mejor así."
 
 var _root: Node2D
@@ -135,7 +135,7 @@ func test_one_pulse_gives_compress_then_story_then_notice() -> void:
 	assert_true(tool.is_on(), "Un pulso de espaldas la usa")
 	assert_signal_emitted_with_parameters(tool, "switched_on", [&"recortar_prueba", true])
 	assert_true(_isak.is_facing_back(), "Isak de espaldas")
-	assert_true(GameState.is_ability_obtained(COMPRESS), "Obtiene Pellizcar para siempre")
+	assert_true(GameState.is_ability_obtained(COMPRESS), "Obtiene Comprimir para siempre")
 	assert_true(GameState.is_ability_unlocked(COMPRESS))
 	assert_true(GameState.has_unsaved_changes(), "Queda «sin guardar», como toda habilidad")
 	assert_eq(_lines.size(), 2, "Linea de Eco y aviso de control")
@@ -177,7 +177,7 @@ func test_eco_line_with_unless_compress_is_skipped_with_the_gesture() -> void:
 	line.text = "Prueba"
 	line.unless_ability = COMPRESS
 	_root.add_child(line)
-	assert_true(line.is_skipped(), "Con Pellizcar ya obtenido la linea no sale")
+	assert_true(line.is_skipped(), "Con Comprimir ya obtenido la linea no sale")
 
 
 # --- Guardado, game over y Papelera ---
@@ -218,7 +218,7 @@ func test_saved_gesture_goes_to_the_trash_and_comes_back() -> void:
 	GameState.apply_rollback(GameState.ROLLBACK_GAME_OVER)
 	assert_true(GameState.get_trash().get(GameState.TRASH_ABILITIES, []).has("compress"),
 		"Eco lo desecha a la Papelera")
-	assert_false(GameState.is_ability_unlocked(COMPRESS), "Hasta recuperarlo no hay Pellizcar")
+	assert_false(GameState.is_ability_unlocked(COMPRESS), "Hasta recuperarlo no hay Comprimir")
 	assert_true(GameState.recover_trash())
 	assert_true(GameState.is_ability_obtained(COMPRESS), "Recuperado de la Papelera")
 	var again := _tool(Vector2i(8, 9))
@@ -283,7 +283,7 @@ func test_recorte_test_room_with_the_real_isak() -> void:
 	assert_not_null(wall_frame, "Marco de la pared")
 	assert_not_null(floor_frame, "Marco del suelo")
 	assert_true(floor_frame.is_vertical())
-	assert_false(GameState.is_ability_unlocked(COMPRESS), "La sala empieza sin Pellizcar")
+	assert_false(GameState.is_ability_unlocked(COMPRESS), "La sala empieza sin Comprimir")
 	# Sin el gesto, el marco de la pared no se cruza.
 	sim.isak.global_position = Vector2(8.5 * TILE, 10 * TILE)
 	sim.settle()

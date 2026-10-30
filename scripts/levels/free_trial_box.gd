@@ -8,7 +8,7 @@
 ## Un PULSO DE ESPALDAS que alcanza su hit_rect la abre y da para siempre la
 ## Combinacion (GameState.ABILITY_COMBO con obtain_ability: se guarda, va a la Papelera
 ## en un game over y se pierde en un rollback sin guardar). Dentro no hay nada nuevo:
-## los tres gestos de Isak (Deslizar, Mantener, Pellizcar) que se juntan por pares
+## los tres gestos de Isak (Deslizar, Mantener, Comprimir) que se juntan por pares
 ## (merge_s, dibujado por codigo; corre tambien con el juego en pausa). Momento de
 ## historia (pausa de principio a fin, lineas importantes en orden):
 ## 1. Eco: «Todo tiene un precio.» (doc);
@@ -203,7 +203,7 @@ func _draw() -> void:
 	_draw_gesture(points[2], &"pinch", glow, ink)
 
 
-## Icono de un gesto (Deslizar = flecha, Mantener = flecha abajo, Pellizcar = dos flechas que se juntan).
+## Icono de un gesto (Deslizar = flecha, Mantener = flecha abajo, Comprimir = dos flechas que se juntan).
 func _draw_gesture(c: Vector2, kind: StringName, col: Color, ink: Color) -> void:
 	draw_circle(c, 11.0, ink)
 	draw_circle(c, 10.0, col)

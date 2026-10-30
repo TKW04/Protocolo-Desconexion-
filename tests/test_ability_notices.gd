@@ -75,8 +75,8 @@ func test_texts_from_the_default_input_map() -> void:
 			"Gesto Deslizar (2026-10-19, docs/propuesta-1-3.md §2.4)")
 	assert_eq(AbilityNotices.notice_text(&"ground_pound", _data), "Mantener presionado: mantén S / stick abajo",
 			"Golpe al suelo (2026-10-22, docs/propuesta-mundo-2.md §3.3.3): los eventos de move_down")
-	assert_eq(AbilityNotices.notice_text(&"compress", _data), "Pellizcar: I / RB (mando)",
-			"Pellizcar (2026-10-26, docs/propuesta-mundo-3.md §3.3.1): accion gesture_pinch")
+	assert_eq(AbilityNotices.notice_text(&"compress", _data), "Comprimir: I / RB (mando)",
+			"Comprimir (2026-10-26, docs/propuesta-mundo-3.md §3.3.1): accion gesture_pinch")
 	assert_eq(AbilityNotices.notice_text(&"shockwave", _data), "",
 			"Agitar retirado (2026-10-28, docs/propuesta-mundo-4.md §8.1): sin aviso")
 	assert_eq(AbilityNotices.notice_text(&"no_such_ability", _data), "", "Sin entrada, sin aviso")

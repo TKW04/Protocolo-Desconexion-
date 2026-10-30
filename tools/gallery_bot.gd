@@ -23,18 +23,18 @@
 ## - `wait_hunter`: quieto hasta que el espejo cazador mira hacia `target.facing`.
 ## - `wait_reflection`: quieto hasta que la puerta de marco esta abierta.
 ## - `ground_pound`: mantiene `move_down` en `shot.x` hasta que sale el golpe.
-## - el «Recortar» (`crop_tool`, pulso de espaldas): hecho encendido (da Pellizcar).
+## - el «Recortar» (`crop_tool`, pulso de espaldas): hecho encendido (da Comprimir).
 ## Comprobaciones (§7.3): completa el nivel y vuelve al hub con el en
 ## completed_levels; 0 muertes; 0 robos del Ladron; anota golpes, likes al pisar
 ## cada plataforma de likes frente a su umbral, corazones, energia minima frente
 ## al camino y la duracion de juego. Progreso de partida: Autoplay vencido (pulso,
 ## laser, Debug, dash y golpe al suelo; Eco, Notas y Calc conocidos, Mundos 1 y 2
-## completados) y los niveles anteriores del Mundo 3 completados; Pellizcar solo
+## completados) y los niveles anteriores del Mundo 3 completados; Comprimir solo
 ## desde el 3-3 (el 3-2 lo da «Recortar»).
 ## El 3-2 «Sin filtro» (paso 12, 2026-10-27) se recorre con los mismos pasos, sin
-## cambios en el bot: «Recortar» de espaldas (Pellizcar), 4 marcos pequenos con pinch
+## cambios en el bot: «Recortar» de espaldas (Comprimir), 4 marcos pequenos con pinch
 ## / unpinch, el Debug en los tres filtros, el Ladron aturdido antes de la ♥10 y
-## dashes; comprueba ademas que Pellizcar queda obtenido.
+## dashes; comprueba ademas que Comprimir queda obtenido.
 ## El 3-3 «Espejo, espejito» (paso 13, 2026-10-27) es el primer camino real con `wait_hunter`, pulsos
 ## reflejados por el espejo cazador hacia un receptor de pulso (el camino nombra su puente: hecho al
 ## extenderse), `wait_reflection` ante las puertas de marco y un pulso al Reflejo falso (de espaldas, sin
@@ -135,7 +135,7 @@ func _path_cache_file() -> String:
 
 ## Un jugador que acaba de vencer a Autoplay (y, para el 3-2 y el 3-3, de
 ## completar los niveles anteriores del Mundo 3): pulso, laser, Debug, dash y
-## golpe al suelo; Eco, Notas y Calc conocidos; Pellizcar solo para el 3-3.
+## golpe al suelo; Eco, Notas y Calc conocidos; Comprimir solo para el 3-3.
 func _setup_progress() -> void:
 	GameState.reset_progress()
 	for ally: StringName in [GameState.ALLY_ECO, GameState.ALLY_NOTAS, GameState.ALLY_CALC]:
@@ -165,7 +165,7 @@ func _check_level_loaded() -> bool:
 	if _isak.camera_mode == Isak.CAMERA_AUTOSCROLL:
 		return _fail("el %s no deberia tener scroll forzado" % _gallery_level)
 	if _gallery_level in ["3-1", "3-2"] and GameState.is_ability_obtained(GameState.ABILITY_COMPRESS):
-		return _fail("el bot empieza el %s con Pellizcar ya obtenido" % _gallery_level)
+		return _fail("el bot empieza el %s con Comprimir ya obtenido" % _gallery_level)
 	if GameState.likes != 0:
 		return _fail("el %s empieza con %d likes" % [_gallery_level, GameState.likes])
 	return true
@@ -186,7 +186,7 @@ func _check_completed() -> bool:
 			else (int(p["likes"]) - int(p["threshold"]))
 		min_margin = mini(min_margin, margin)
 		parts.append("%s %d%s%d" % [id, int(p["likes"]), " < " if bool(p["invert"]) else "/", int(p["threshold"])])
-	_note("GALERIA: muertes %d, golpes %d, robos %d (%d likes), corazones cogidos %d (pasos del camino %d, cogidos al pasar %d)%s, publicaciones %d, resets %d, pellizcos %d / vueltas %d, golpes al suelo %d, pulsos a enemigos %d, esperas del cazador %d y del reflejo %d, dashes %d, likes maximos %d; likes al pisar: %s; margen minimo %s" % [
+	_note("GALERIA: muertes %d, golpes %d, robos %d (%d likes), corazones cogidos %d (pasos del camino %d, cogidos al pasar %d)%s, publicaciones %d, resets %d, compresiones %d / vueltas %d, golpes al suelo %d, pulsos a enemigos %d, esperas del cazador %d y del reflejo %d, dashes %d, likes maximos %d; likes al pisar: %s; margen minimo %s" % [
 		_deaths, _hits, _thefts, _stolen, _hearts_taken, path_hearts, _hearts,
 		" sin coger: %s" % ", ".join(_hearts_missed) if not _hearts_missed.is_empty() else "", _posts, _resets,
 		_pinches, _unpinches, _pounds, _enemy_pulses, _hunter_waits, _reflection_waits, _dashes, _likes_peak,
@@ -196,7 +196,7 @@ func _check_completed() -> bool:
 	if _thefts > 0:
 		return _fail("el Ladron roba %d vez/veces (el camino lo aturde antes)" % _thefts)
 	if _gallery_level == "3-2" and not GameState.is_ability_obtained(GameState.ABILITY_COMPRESS):
-		return _fail("Pellizcar no queda obtenido tras el 3-2")
+		return _fail("Comprimir no queda obtenido tras el 3-2")
 	if _gallery_level == "3-3":
 		if not GameState.is_level_unlocked(&"3-boss"):
 			return _fail("el 3-3 no desbloquea la fila «Jefe: La Curadora»")
@@ -345,11 +345,11 @@ func _pinch_step(s: Dictionary, on: bool) -> bool:
 		if on:
 			_pinches += 1
 			if _pinches == 1:
-				_shot("05_pellizcar", 12)
+				_shot("05_comprimir", 12)
 		else:
 			_unpinches += 1
 	if _verbose or not ok:
-		_note("paso %d: %s %s (%s; caja %s%s)" % [_step_index, "pellizca" if on else "pide el tamano",
+		_note("paso %d: %s %s (%s; caja %s%s)" % [_step_index, "comprime" if on else "pide el tamano",
 			"hecho" if ok else "SIN EFECTO", _where(), _isak.get_hitbox_size(),
 			"; %s" % String(_isak.compress_denial()) if on and not ok else ""])
 	return ok
@@ -383,7 +383,7 @@ func _pulse_step(s: Dictionary) -> bool:
 				before, GameState.likes, _where()])
 			_shot("06_reset")
 		"crop_tool":
-			_note("«Recortar» %s con el pulso de espaldas: Pellizcar obtenido %s (%s)" % [target.get("id", "?"),
+			_note("«Recortar» %s con el pulso de espaldas: Comprimir obtenido %s (%s)" % [target.get("id", "?"),
 				GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), _where()])
 			_shot("02_recortar")
 	return true

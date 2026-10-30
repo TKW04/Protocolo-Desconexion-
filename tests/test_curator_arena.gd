@@ -5,7 +5,7 @@
 # avanzado a mano (advance), como las de Autoplay: sesión de fotos (flash, filtro
 # de suelo, recorte y la ventana bajando a encuadrar), de espaldas (el cazador
 # lleva el pulso y el laser a la espalda) y retrato perfecto (reflejo, marcos que
-# se cierran y Pellizcar). Reaparicion por fase con energia >= 50 y likes >= 10.
+# se cierran y Comprimir). Reaparicion por fase con energia >= 50 y likes >= 10.
 extends GutTest
 
 const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/3-boss.tscn")
@@ -403,7 +403,7 @@ func test_phase3_compressed_in_the_small_frame_is_safe() -> void:
 	await _arena(1, true)
 	_place_isak(2, 9)
 	var isak: Isak = _level.get_isak()
-	assert_true(isak.compress(), "Pellizcar")
+	assert_true(isak.compress(), "Comprimir")
 	_sim.step(20)
 	_boss.start()
 	_to_phase(3)
@@ -427,7 +427,7 @@ func test_phase3_frame_erases_the_reflection_which_comes_back() -> void:
 	var r: FalseReflection = _boss.get_reflections()[0]
 	assert_true(r.is_present())
 	_advance_until(func() -> bool: return _boss.is_window_open(), 5.0)
-	assert_false(r.is_present(), "El marco lo borra (no se pellizca)")
+	assert_false(r.is_present(), "El marco lo borra (no se comprime)")
 	_advance(2.1)
 	assert_true(r.is_present(), "Y vuelve a salir 2 s despues")
 

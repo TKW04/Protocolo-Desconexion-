@@ -277,7 +277,7 @@ def world3(s: dict[str, np.ndarray], rng: np.random.Generator) -> None:
     """Mundo 3 «La Vitrina» (paso 19 de docs/propuesta-mundo-3.md, §6.4): provisionales con los IDs de
     data/audio.json; los definitivos los hace el amigo del usuario con el mismo nombre. Va despues de
     world2: el generador de ruido es comun y asi los del Mundo 1 y 2 no cambian."""
-    # Pellizcar y recuperar el tamano: barrido que baja (se encoge) y que sube.
+    # Comprimir y recuperar el tamano: barrido que baja (se encoge) y que sube.
     d = 0.18
     s["sfx_gesture_pinch"] = tri(sweep(880, 440, d), d) * env(len(t_axis(d)), 0.004, 0.07, 1.4)
     s["sfx_gesture_unpinch"] = tri(sweep(440, 880, d), d) * env(len(t_axis(d)), 0.004, 0.07, 1.4)

@@ -254,7 +254,7 @@ func test_edge_pinch_in_the_air_then_dash() -> void:
 	_key(A_RIGHT, true)
 	await _tap(A_DASH)
 	await _frames(10)
-	assert_has(_seen, PlayerState.COMBO_EDGE, _report("Pellizcar en el aire y Deslizar"))
+	assert_has(_seen, PlayerState.COMBO_EDGE, _report("Comprimir en el aire y Deslizar"))
 
 
 func test_edge_pinch_and_dash_together_in_the_air() -> void:
@@ -263,7 +263,7 @@ func test_edge_pinch_and_dash_together_in_the_air() -> void:
 	_key(A_PINCH, true)
 	await _tap(A_DASH)
 	await _frames(10)
-	assert_has(_seen, PlayerState.COMBO_EDGE, _report("Pellizcar y Deslizar a la vez en el aire"))
+	assert_has(_seen, PlayerState.COMBO_EDGE, _report("Comprimir y Deslizar a la vez en el aire"))
 
 
 func test_quake_down_held_through_the_takeoff() -> void:
@@ -281,10 +281,10 @@ func test_quake_pinch_and_down_together_in_the_air() -> void:
 	_key(A_PINCH, true)
 	_key(A_DOWN, true)
 	await _frames(20)
-	assert_has(_seen, PlayerState.COMBO_QUAKE, _report("Pellizcar y abajo a la vez en el aire"))
+	assert_has(_seen, PlayerState.COMBO_QUAKE, _report("Comprimir y abajo a la vez en el aire"))
 
 
-# --- Mando (B = Deslizar, RB = Pellizcar, stick abajo) ---
+# --- Mando (B = Deslizar, RB = Comprimir, stick abajo) ---
 
 func _pad_button(action: StringName, pressed: bool) -> void:
 	for event: InputEvent in InputMap.action_get_events(action):

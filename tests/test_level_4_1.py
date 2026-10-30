@@ -2,7 +2,7 @@
 esquema y alcanzabilidad sin avisos en todas las pasadas, torre de 24 x 96 en bandas (pasarelas que se recorren
 enteras), burbujas (largo por texto, eliminada, «jajaja» y puente largo), las cuatro «escribiendo…» del Modo
 oscuro, el Troll de la Pausa, las zonas «Visto» del Piso 4 (regla del 4-1: sin peligros junto a ellas), secretos
-(A con el Debug y sin dash, B con Pellizcar, C con el Debug y el dash aereo), economia, camino exportado y su
+(A con el Debug y sin dash, B con Comprimir, C con el Debug y el dash aereo), economia, camino exportado y su
 duracion frente al objetivo (40-55 %), escena y subidas al dia, y el 4-1 jugable desde la carpeta del Mundo 4. Las pasadas con mejoras, con todo al maximo
 y con el tope del acceso las hace tools/run_tests.sh sobre data/levels/*.json.
 Uso: python3 tests/test_level_4_1.py
@@ -201,9 +201,9 @@ class Level41Test(unittest.TestCase):
         self.assertTrue(item["reachable"])
         no_pinch = without(self.level, "compress")
         self.assertFalse(next(i for i in no_pinch["secrets"]["items"] if i["id"] == "secreto_archivado")["reachable"],
-                         "Sin Pellizcar no se entra")
+                         "Sin Comprimir no se entra")
         self.assertEqual([e for e in no_pinch["errors"] if "secreto_archivado" not in e["message"]], [],
-                         "El camino principal no necesita Pellizcar")
+                         "El camino principal no necesita Comprimir")
 
     def test_secret_c_extra_life_needs_the_debug_and_the_air_dash(self):
         c = next(s for s in self.level["secrets"] if s["id"] == "secreto_vida_extra")

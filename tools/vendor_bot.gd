@@ -23,9 +23,9 @@
 ##   de las monedas.
 ## - Fase 2 «Sorpresa»: abre con el pulso (de cara, en el suelo) el ticket de
 ##   devolucion de su lado, aturde las bombas que van a explotar cerca, cruza la
-##   bandeja comprimido (Pellizcar), se descomprime detras y Debug, pulso, laser.
+##   bandeja comprimido (Comprimir), se descomprime detras y Debug, pulso, laser.
 ## - Fase 3 «Oferta por tiempo limitado»: Filo por la ranura (desde el borde
-##   interior del estante de delante: Pellizcar, salto y Deslizar en el aire); detras,
+##   interior del estante de delante: Comprimir, salto y Deslizar en el aire); detras,
 ##   contra el tiron, se descomprime y Debug, pulso, laser hasta acabar.
 ##
 ## Perfiles (--profile):

@@ -11,7 +11,7 @@ const ACTION_LASER: StringName = &"laser"
 const ACTION_HIDE: StringName = &"hide"
 ## Gesto Deslizar (dash; 2026-10-19).
 const ACTION_DASH: StringName = &"gesture_swipe"
-## Gesto Pellizcar (comprimirse; 2026-10-26, docs/propuesta-mundo-3.md §3.3).
+## Gesto Comprimir (comprimirse; 2026-10-26, docs/propuesta-mundo-3.md §3.3).
 const ACTION_PINCH: StringName = &"gesture_pinch"
 ## Gesto Agitar (onda; 2026-10-28, docs/propuesta-mundo-4.md §3.2).
 const ACTION_SHAKE: StringName = &"gesture_shake"

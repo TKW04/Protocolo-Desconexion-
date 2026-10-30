@@ -4,7 +4,7 @@
 ## Mundo 4) y sigue el camino que exporta tools/validate_level.py (formato
 ## isak-path/1) con la fisica real y las acciones del Input Map, nunca Q ni Esc.
 ## Extiende el bot de la galeria (tools/gallery_bot.gd: likes inertes aqui,
-## Pellizcar, pulsos a enemigos), que extiende el del 1-3 (tools/dnd_bot.gd: dash
+## Comprimir, pulsos a enemigos), que extiende el del 1-3 (tools/dnd_bot.gd: dash
 ## y Debug) y, por su base tools/tower_bot.gd, recorre tambien la torre del 4-1.
 ## Anade los pasos del Mundo 4:
 ## - `pulse_seen`: en la x del camino, mirando al doble check, pulsa; hecho cuando
@@ -40,7 +40,7 @@
 ## minima frente al camino y la duracion de juego frente al objetivo
 ## (target_duration_s): debe quedar entre el 40 y el 55 % (§4). Progreso de
 ## partida: La Curadora vencida, la actualizacion del hub instalada y todo el kit
-## del Mundo 3 (pulso, laser, Debug, dash, golpe al suelo y Pellizcar; Eco, Notas y
+## del Mundo 3 (pulso, laser, Debug, dash, golpe al suelo y Comprimir; Eco, Notas y
 ## Calc conocidos; desde el 4-2 tambien la Linterna, que se recoge en el 4-1); sin
 ## Agitar (retirado el 2026-10-28) en ningun nivel: el bot falla si sale una onda.
 ## Lo lanza tools/play_chat_bot.gd (uso y argumentos alli).

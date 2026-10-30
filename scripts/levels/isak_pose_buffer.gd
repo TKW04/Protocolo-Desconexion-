@@ -68,7 +68,7 @@ static func snapshot(isak: Isak, t: float = 0.0) -> Dictionary:
 		"animation": &"", "frame": 0, "flip_h": false,
 		"sprite_position": Vector2.ZERO, "sprite_scale": Vector2.ONE, "sprite_rotation": 0.0,
 		"sprite_offset": Vector2.ZERO, "centered": true,
-		# Caja de colision de ese momento (Pellizcar la cambia; la usa el Reflejo falso).
+		# Caja de colision de ese momento (Comprimir la cambia; la usa el Reflejo falso).
 		"hitbox_size": isak.get_hitbox_size(), "on_floor": isak.is_on_floor()}
 	var sprite := isak.get_node_or_null(^"AnimatedSprite2D") as AnimatedSprite2D
 	if sprite == null:

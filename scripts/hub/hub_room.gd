@@ -89,7 +89,7 @@
 ## «en instalacion» se monta en ella HubUpdatePuzzle (hijo "UpdatePuzzle",
 ## verificaciones V1-V3 e instalador) y un segundo cargador junto a P2
 ## (cargador_p2). Mientras esta activo y no inerte (Papelera llena), Isak puede
-## usar en el hub el dash, el golpe al suelo y Pellizcar obtenidos
+## usar en el hub el dash, el golpe al suelo y Comprimir obtenidos
 ## (Isak.hub_gestures). Con 3/3, el pulso al instalador emite
 ## update_install_requested. Las verificaciones no se guardan: cada visita
 ## empieza en 0/3.

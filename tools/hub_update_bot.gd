@@ -17,7 +17,7 @@
 ## Perfil ideal (por defecto): cruza a la pagina 2 (cierra la linea de Eco, que
 ## pausa), V1 (Debug -> laser a lector1 desde el suelo -> soltar el Debug ->
 ## salto a la repisa -> pulso a RE dentro de los 6 s), V3 (laser al espejo ->
-## Pellizcar -> nicho -> tamano normal -> pulso -> Pellizcar para salir), V2
+## Comprimir -> nicho -> tamano normal -> pulso -> Comprimir para salir), V2
 ## (golpe al suelo en la placa -> salto a la plataforma «Cargando...» -> salto
 ## corriendo + dash aereo al bloque -> pulso), pulso al instalador, ve la
 ## instalacion (barra, destello y linea de Notas), vuelve a la pagina 1, guarda
@@ -376,7 +376,7 @@ func _debug_off() -> void:
 		await _wait(10)
 
 
-## Pellizcar es un interruptor: toques hasta quedar comprimido (o no).
+## Comprimir es un interruptor: toques hasta quedar comprimido (o no).
 func _pinch_to(small: bool) -> bool:
 	for i: int in 5:
 		if _isak.is_compressed() == small:
@@ -421,7 +421,7 @@ func _finish(ok: bool) -> void:
 		("%.1f s" % _puzzle_s) if _puzzle_s >= 0.0 else "sin resolver", TARGET_S.x, TARGET_S.y,
 		float(_frame) / 60.0, float(_paused_frames) / 60.0, _v2_attempts,
 		_min_energy if _min_energy != INF else -1.0])
-	print("  ACCIONES: pulsos %d, laseres %d, dashes %d, golpes al suelo %d, pellizcos %d" % [
+	print("  ACCIONES: pulsos %d, laseres %d, dashes %d, golpes al suelo %d, compresiones %d" % [
 		_pulses, _lasers, _dashes, _pounds, _pinches])
 	finished.emit(0 if ok and _ok else 1)
 
@@ -550,7 +550,7 @@ func _solve_v1(puzzle: HubUpdatePuzzle) -> bool:
 	return true
 
 
-## V3: laser al espejo -> marco iluminado -> Pellizcar -> nicho -> pulso.
+## V3: laser al espejo -> marco iluminado -> Comprimir -> nicho -> pulso.
 func _solve_v3(puzzle: HubUpdatePuzzle) -> bool:
 	# Baja de la repisa por su borde derecho y va al suelo frente al espejo.
 	if not await _walk_to(_p2(13.5), 6.0, true):
@@ -564,7 +564,7 @@ func _solve_v3(puzzle: HubUpdatePuzzle) -> bool:
 	_note("V3: laser por el espejo, marco iluminado (hueco abierto %s)" % (not puzzle.is_frame_blocked()))
 	await _tap(A_PINCH)
 	if not await _wait_until(func() -> bool: return _isak.is_compressed(), 1.0):
-		return _check(false, "V3: Pellizcar no comprime a Isak")
+		return _check(false, "V3: Comprimir no comprime a Isak")
 	if not await _walk_to(_p2(18.7), 10.0, false, 8.0):
 		return _check(false, "V3: comprimido no entra al nicho (x %.0f)" % _x())
 	await _tap(A_PINCH)

@@ -1,6 +1,6 @@
 """Validador de la pagina 2 del hub «Actualizacion del sistema» (paso 4 de docs/propuesta-hub-mundos-4-6.md §2.7,
 2026-10-27; tools/hub_update_model.py, al que delega tools/validate_level.py con data/hub_update.json): con todas las
-habilidades se hacen V1, V2, V3 y se llega al instalador; sin el dash o sin el golpe al suelo falla V2, sin Pellizcar
+habilidades se hacen V1, V2, V3 y se llega al instalador; sin el dash o sin el golpe al suelo falla V2, sin Comprimir
 falla V3 y sin el Debug falla V1; RE no se alcanza desde el suelo, el bloque no sin la plataforma y el nicho no con el
 marco cerrado; ventanas con margen y energia dentro de la barra; datos rotos dan error.
 Uso: python3 tests/test_hub_update_validator.py
@@ -43,7 +43,7 @@ class HubUpdateValidatorTest(unittest.TestCase):
         neg = self.result["negatives"]
         self.assertFalse(neg["dash"]["v2"], "sin dash, V2 no se alcanza")
         self.assertFalse(neg["ground_pound"]["v2"], "sin golpe al suelo, V2 no se alcanza")
-        self.assertFalse(neg["compress"]["v3"], "sin Pellizcar, V3 no se alcanza")
+        self.assertFalse(neg["compress"]["v3"], "sin Comprimir, V3 no se alcanza")
         self.assertFalse(neg["debug"]["v1"], "sin Debug, V1 no se alcanza")
 
     def test_negatives_only_break_their_check(self):

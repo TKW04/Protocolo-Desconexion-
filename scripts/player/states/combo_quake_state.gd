@@ -1,4 +1,4 @@
-## Sismo (Combinacion: Pellizcar + abajo en el aire; 2026-10-29,
+## Sismo (Combinacion: Comprimir + abajo en el aire; 2026-10-29,
 ## docs/propuesta-mundo-5.md §3.2.2 y §3.2.4; valores provisionales de
 ## combo.quake de data/isak_abilities.json). Comprimido en el aire, mantener
 ## abajo: caida vertical a drop_speed_px_s; al aterrizar nace la onda que recorre

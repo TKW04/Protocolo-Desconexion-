@@ -248,7 +248,7 @@ func _ram(axis: float = 1.0) -> void:
 	assert_eq(_sim.state(), PlayerState.COMBO_RAM, "Embestida")
 
 
-## Sismo: salto, Pellizcar y abajo hasta aterrizar.
+## Sismo: salto, Comprimir y abajo hasta aterrizar.
 func _quake() -> void:
 	_sim.press_jump()
 	_step(12)

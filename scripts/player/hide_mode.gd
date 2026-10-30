@@ -33,7 +33,7 @@ const REASON_LASER: StringName = &"laser"
 const REASON_DASH: StringName = &"dash"
 ## Golpe al suelo (2026-10-22): lo apaga como el pulso y el laser.
 const REASON_POUND: StringName = &"ground_pound"
-## Pellizcar (2026-10-26): comprimirse lo apaga como el dash.
+## Comprimir (2026-10-26): comprimirse lo apaga como el dash.
 const REASON_COMPRESS: StringName = &"compress"
 ## Agitar (2026-10-28): lo apaga (es lo contrario de esconderse).
 const REASON_SHOCKWAVE: StringName = &"shockwave"

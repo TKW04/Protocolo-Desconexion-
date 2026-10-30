@@ -72,7 +72,7 @@ const RUN_FPS: float = 14.0
 ##   celdas 13,14 y 22,23 de hojas/ground_pound_right/spritesheet.png
 ##   (AutoSprite; comandos en docs/guia-sprites-ia.md). Sustituyen a la pose
 ##   provisional por escala (Isak.update_ground_pound_pose).
-## compress_idle / compress_walk (2026-10-27): pose del gesto Pellizcar
+## compress_idle / compress_walk (2026-10-27): pose del gesto Comprimir
 ##   (comprimido), 4 cuadros a 8 fps y 13 a 12 fps, en bucle: agachado y
 ##   encogido (52 px visibles, la caja comprimida mide 40) y andando agachado,
 ##   celdas 5-8 y 9-21 de hojas/compress_right/spritesheet.png (AutoSprite;

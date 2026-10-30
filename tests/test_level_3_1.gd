@@ -4,7 +4,7 @@
 # a 0, objetos y economia (7 puntos, 2 cargadores, 18 corazones, 3 publicaciones,
 # power bank, vida extra y los mensajes msg_3_1 / msg_3_2), la Q del contador de
 # likes en el cartel de la sala de inicio, los corazones que encienden la ♥5, los
-# tres secretos (A tras el marco pequeno, tambien rejugado con Pellizcar desde el paso 12, B con «Borrar publicaciones» y las
+# tres secretos (A tras el marco pequeno, tambien rejugado con Comprimir desde el paso 12, B con «Borrar publicaciones» y las
 # inversas, C tras la pared con glitch), el punto de sincronizacion, la terminal
 # «Publicar» -> hub con el 3-1 completado, y la carpeta del Mundo 3 tras Autoplay.
 # La ruta completa la comprueba tools/validate_level.py (tests/test_level_3_1.py);
@@ -43,7 +43,7 @@ func before_each() -> void:
 	GameState.use_save_path(PATH, true)
 	GameState.reset_progress()
 	DebugMode.input_enabled = false
-	# Se llega al 3-1 tras vencer a Autoplay: todo el kit del Mundo 2, sin Pellizcar.
+	# Se llega al 3-1 tras vencer a Autoplay: todo el kit del Mundo 2, sin Comprimir.
 	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	EcoProgress.meet_calc()
@@ -148,7 +148,7 @@ func test_debug_shortcut_loads_the_3_1_with_zero_likes() -> void:
 	assert_almost_eq(_isak.global_position.x, 3.5 * TILE, TILE, "Vortice en la columna 3")
 	assert_eq(roundi(_isak.global_position.y / TILE), 12, "De pie sobre el suelo de la fila 12")
 	assert_eq(GameState.likes, 0, "El contador empieza en 0")
-	assert_false(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Sin Pellizcar (llega en el 3-2)")
+	assert_false(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Sin Comprimir (llega en el 3-2)")
 	assert_true(GameState.is_ability_obtained(POUND), "Con todo el kit del Mundo 2")
 
 
@@ -215,7 +215,7 @@ func test_secret_a_room_behind_the_small_frame() -> void:
 	assert_eq(GameState.get_power_banks_found(), banks + 1, "Y el power bank")
 
 
-## Paso 12 (2026-10-27, §4.1.1 y §9.8): el 3-1 rejugado con Pellizcar ya obtenido en el
+## Paso 12 (2026-10-27, §4.1.1 y §9.8): el 3-1 rejugado con Comprimir ya obtenido en el
 ## 3-2. Sin el gesto el marco pequeno (58, 11) cierra el paso; comprimido, Isak lo cruza
 ## andando desde la derecha y recoge en la salita msg_3_2, su punto y el power bank.
 func test_secret_a_replayed_with_compress_through_the_small_frame() -> void:
@@ -226,7 +226,7 @@ func test_secret_a_replayed_with_compress_through_the_small_frame() -> void:
 	GameState.mark_level_completed(&"3-2")
 	_start()
 	await _arrive()
-	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Pellizcar, del 3-2")
+	assert_true(GameState.is_ability_obtained(GameState.ABILITY_COMPRESS), "Comprimir, del 3-2")
 	assert_false(GameState.has_memory(&"msg_3_2"))
 	var frame_x: float = 58 * TILE
 	# Sin comprimir: el marco no deja pasar.
@@ -240,7 +240,7 @@ func test_secret_a_replayed_with_compress_through_the_small_frame() -> void:
 	# Comprimido: pasa y recoge lo de la salita.
 	var before: int = GameState.attention_points
 	var banks: int = GameState.get_power_banks_found()
-	assert_eq(_isak.compress_denial(), &"", "Pellizcar disponible en el 3-1")
+	assert_eq(_isak.compress_denial(), &"", "Comprimir disponible en el 3-1")
 	# Un toque de gesture_pinch: el flanco se borra en cuanto Isak lo usa (si siguiera puesto, el cuadro
 	# siguiente pediria ya el tamano).
 	var release := func(_compressed: bool) -> void: _isak.input.pinch_pressed = false
@@ -249,7 +249,7 @@ func test_secret_a_replayed_with_compress_through_the_small_frame() -> void:
 	await wait_physics_frames(15)
 	_isak.compress_changed.disconnect(release)
 	_isak.input.pinch_pressed = false
-	assert_true(_isak.is_compressed(), "Pellizcar en el 3-1")
+	assert_true(_isak.is_compressed(), "Comprimir en el 3-1")
 	_isak.input.move_axis = -1.0
 	for i: int in 360:
 		if _isak.global_position.x < 54 * TILE:

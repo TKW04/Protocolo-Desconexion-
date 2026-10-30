@@ -266,7 +266,7 @@ Todos **F** (sin construir). Lista orientativa para no olvidar familias; se deta
 | ID | Descripción | Mundo | Prio | Notas |
 |---|---|---|---|---|
 | `sfx_gesture_ground_pound` | Golpe al suelo (Mantener presionado) | M2 | P1 | Impacto + onda |
-| `sfx_gesture_pinch` / `sfx_gesture_unpinch` | Pellizcar: comprimirse y recuperar el tamaño | M3 | P1 | |
+| `sfx_gesture_pinch` / `sfx_gesture_unpinch` | Comprimir: comprimirse y recuperar el tamaño | M3 | P1 | |
 | `sfx_gesture_shake` | Agitar: onda que aturde (**sin uso**: Agitar retirado el 2026-10-28) | M4 | P1 | |
 | `sfx_combo_embestida` / `sfx_combo_filo` / `sfx_combo_sismo` | Combinaciones | M5 | P1 | Mezcla de las familias de cada gesto |
 | `sfx_w2_autoplay_start` | Video en autoplay que arranca | M2 | P1 | Aviso del ataque |
@@ -282,7 +282,7 @@ Todos **F** (sin construir). Lista orientativa para no olvidar familias; se deta
 | `sfx_w3_mirror_bounce` | Rebote del pulso en espejo | M3 | P2 | |
 | `sfx_w3_filter_shimmer` | Zona con filtro | M3 | P2 | |
 | `sfx_w3_like_source` / `sfx_w3_like_reset` | Publicación que suma likes / «Borrar publicaciones» | M3 | P2 | Nuevos (paso 19 del Mundo 3) |
-| `sfx_w3_crop_tool` | «Recortar»: se obtiene Pellizcar | M3 | P1 | Nuevo (paso 19) |
+| `sfx_w3_crop_tool` | «Recortar»: se obtiene Comprimir | M3 | P1 | Nuevo (paso 19) |
 | `sfx_w3_hunter_turn` | Giro del espejo cazador | M3 | P1 | Nuevo (paso 19); **accesibilidad**: acompaña al brillo del aviso |
 | `sfx_w3_reflection_spawn` / `sfx_w3_pose_plate` | Sale un Reflejo falso / placa de pose pisada | M3 | P2 | Nuevos (paso 19) |
 | `sfx_boss3_intro` / `sfx_boss3_turn` / `sfx_boss3_frame_close` | La Curadora: intro, se pone de espaldas, marco que se cierra | M3 | P1 | Nuevos (paso 19); el marco, **accesibilidad** |

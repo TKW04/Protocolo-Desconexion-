@@ -21,7 +21,7 @@ var laser_pressed: bool = false
 var hide_pressed: bool = false
 ## Dash pulsado en este cuadro (flanco; gesto Deslizar, accion gesture_swipe).
 var dash_pressed: bool = false
-## Pellizcar pulsado en este cuadro (flanco; accion gesture_pinch, 2026-10-26).
+## Comprimir pulsado en este cuadro (flanco; accion gesture_pinch, 2026-10-26).
 var pinch_pressed: bool = false
 ## Agitar pulsado en este cuadro (flanco; accion gesture_shake, 2026-10-28).
 var shake_pressed: bool = false

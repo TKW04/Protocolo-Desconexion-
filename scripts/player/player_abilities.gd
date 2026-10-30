@@ -33,7 +33,7 @@ const POUND_KEYS: PackedStringArray = ["air_hold_s", "ground_hold_s", "anticipat
 	"ground_hop_px", "wave_half_width_px", "wave_height_px", "wave_below_px", "damage", "land_pose_s",
 	"cooldown_s", "energy_cost"]
 ## Claves numericas de la seccion opcional compress (propiedad compress_<clave>;
-## Pellizcar, docs/propuesta-mundo-3.md §3.3.1).
+## Comprimir, docs/propuesta-mundo-3.md §3.3.1).
 const COMPRESS_KEYS: PackedStringArray = ["width_px", "height_px", "squash_s", "walk_speed_px_s",
 	"jump_height_px", "energy_cost"]
 ## Claves numericas de la seccion opcional shockwave (propiedad shockwave_<clave>;
@@ -114,7 +114,7 @@ var pound_cooldown_s: float = 0.4
 var pound_energy_cost: float = 0.0
 ## Aspecto provisional del golpe (ground_pound.visual).
 var pound_visual: Dictionary = {}
-## Pellizcar (seccion compress, opcional; 2026-10-26, docs/propuesta-mundo-3.md
+## Comprimir (seccion compress, opcional; 2026-10-26, docs/propuesta-mundo-3.md
 ## §3.3.1, valores provisionales): caja comprimida (ancho y alto, pies abajo),
 ## tiempo del aplastado del sprite, velocidad al andar (sin correr), altura del
 ## salto (la gravedad no cambia) y energia (0: gratis).

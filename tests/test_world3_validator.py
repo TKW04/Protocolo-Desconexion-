@@ -1,7 +1,7 @@
-"""Paso 8a de docs/propuesta-mundo-3.md §8 (2026-10-26): el validador modela Pellizcar, los likes, los filtros y
+"""Paso 8a de docs/propuesta-mundo-3.md §8 (2026-10-26): el validador modela Comprimir, los likes, los filtros y
 los espejos fijos del Mundo 3 «La Vitrina» (tools/world3_model.py). Las salas de los pasos 2-5 y 7 validan (con
 el camino exportado) y los negativos sinteticos fallan como deben: umbral sin publicacion, filtro obligatorio sin
-Debug o sin energia, espejo de 4 rebotes, hueco de 1 fila sin Pellizcar y la regla de diseno de §3.3.2.
+Debug o sin energia, espejo de 4 rebotes, hueco de 1 fila sin Comprimir y la regla de diseno de §3.3.2.
 Paso 8b (2026-10-26): espejo cazador, Reflejo falso, placas y puertas de marco, Influencer, Ladron y
 requires_abilities; la sala reflejo_test valida y los negativos (reflejo que alcanza a Isak si se para, puerta que
 se cierra sin el reflejo, receptor que el cazador nunca mira, robo del Ladron, salto preciso en la ceguera del flash)
@@ -101,14 +101,14 @@ class PinchTest(unittest.TestCase):
             frames |= set(r["frames"])
         self.assertEqual(frames, {"marco_pared", "marco_suelo"})
         text = validate_level.format_text("recorte_test", result)
-        self.assertIn("Pellizcar: sin tramo", text)
+        self.assertIn("Comprimir: sin tramo", text)
 
     def test_one_row_gap_without_pinch_fails(self):
         level = load("recorte_test")
         drop(level, "recortar_prueba")
         result = run(level)
         self.assertFalse(result["ok"])
-        self.assertTrue(any("marco pequeno marco_pared" in m and "Pellizcar" in m for m in messages(result)),
+        self.assertTrue(any("marco pequeno marco_pared" in m and "Comprimir" in m for m in messages(result)),
                         messages(result))
 
     def test_long_compressed_stretch_is_an_error(self):
@@ -128,7 +128,7 @@ class PinchTest(unittest.TestCase):
 
 
 def pinch_room(tunnel, shaft=False):
-    """Sala sintetica con Pellizcar desde el inicio (abilities_available.compress): inicio en las columnas 1-6, tunel
+    """Sala sintetica con Comprimir desde el inicio (abilities_available.compress): inicio en las columnas 1-6, tunel
     de 1 fila de `tunnel` tiles y sala de salida; con `shaft`, el tunel acaba en un pozo hasta la fila 11."""
     width = 7 + tunnel + 10
     rows = ["#" * width]
@@ -152,7 +152,7 @@ def pinch_room(tunnel, shaft=False):
     gc = width - 3
     rows[g_row] = rows[g_row][:gc] + "G" + rows[g_row][gc + 1:]
     rows[12] = "#" * width
-    return {"id": "pinch_room_test", "name": "Pellizcar (sintetica)", "world": 3, "tile_size": 64,
+    return {"id": "pinch_room_test", "name": "Comprimir (sintetica)", "world": 3, "tile_size": 64,
             "debug_color": "green", "abilities_available": {"pulse": True, "compress": True},
             "checkpoints": [], "secrets": [], "enemies": [], "unlocks": [],
             "objects": [{"type": "exit_terminal", "x": gc, "y": g_row - 1,
@@ -500,7 +500,7 @@ class ColumnJumpTest(unittest.TestCase):
 
 
 def thief_tunnel_room():
-    """Pellizcar desde el inicio, publicacion y corazones antes de un tunel de 1 fila (columnas 12-19) con el Ladron
+    """Comprimir desde el inicio, publicacion y corazones antes de un tunel de 1 fila (columnas 12-19) con el Ladron
     dentro; la salida esta en una repisa a la que solo se sube por una plataforma de likes de umbral 5."""
     def edit(level):
         for r in range(1, 9):
@@ -539,7 +539,7 @@ class ThiefTest(unittest.TestCase):
 
 
 def secret_room(requires=None):
-    """Sala de pinch_room sin Pellizcar: la meta en la zona de inicio y un secreto tras el tunel de 1 fila."""
+    """Sala de pinch_room sin Comprimir: la meta en la zona de inicio y un secreto tras el tunel de 1 fila."""
     level = pinch_room(tunnel=5)
     level["abilities_available"] = {"pulse": True}
     width = len(level["grid"][0])

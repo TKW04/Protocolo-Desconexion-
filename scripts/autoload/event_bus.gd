@@ -144,7 +144,7 @@ signal dash_started(direction: float)
 ## (Isak.DASH_DENIED_ENERGY / DASH_DENIED_DEBUG): chispa gris, no sale.
 @warning_ignore("unused_signal")
 signal dash_denied(reason: StringName)
-## Pellizcar (2026-10-26, docs/propuesta-mundo-3.md §3.3): Isak se comprime
+## Comprimir (2026-10-26, docs/propuesta-mundo-3.md §3.3): Isak se comprime
 ## (`compressed` true) o recupera el tamano (false). Sonidos sfx_gesture_pinch /
 ## sfx_gesture_unpinch.
 @warning_ignore("unused_signal")

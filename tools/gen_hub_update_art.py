@@ -14,7 +14,7 @@ hace dano). Arte a 1 px logico y x2 en pantalla, alfa 0 o 255. En assets/sprites
         marco del color de su mundo (v1 cian, v2 ambar, v3 verde acido; data/hub_update.json colors) y los
         PICTOGRAMAS de las habilidades que pide (CHECK_ABILITIES); hecha = pantalla encendida (2 cuadros).
   pictogram_<habilidad>_00.png   24x24   pictogramas sueltos (pulso, laser y Debug de los chips de Calc,
-        tools/gen_calc_chips.py; Deslizar, golpe al suelo y Pellizcar nuevos), para paneles y Notas.
+        tools/gen_calc_chips.py; Deslizar, golpe al suelo y Comprimir nuevos), para paneles y Notas.
   pound_plate_<on|inert>_00.png  64x32   placa de golpe al suelo (V2) con el dibujo de la onda.
   loading_platform_<00|01>.png   128x16  plataforma temporal «Cargando...» (dos cuadros de las franjas).
   edge_glitch_<00|01>.png        64x64   glitch del borde (HubEdgeGlitch; se repite en vertical; 01 =
@@ -59,7 +59,7 @@ PALETTE = {c[:3] for c in gh.PAL.values()} | {AMBAR[:3], VERDE[:3], CORAL[:3]}
 RESERVED = {(0xdc, 0x00, 0x00), (0xff, 0x38, 0x38)}
 CHECK_COLORS = {"v1": CA, "v2": AMBAR, "v3": VERDE}  # = colors de data/hub_update.json (lo comprueba main)
 # Habilidades que pide cada verificacion (§2.3; el pulso, basico, no se dibuja): V1 Debug + laser (lector1
-# oculto), V2 golpe al suelo + Deslizar (placa y bloque alto), V3 laser + Pellizcar (espejo y nicho).
+# oculto), V2 golpe al suelo + Deslizar (placa y bloque alto), V3 laser + Comprimir (espejo y nicho).
 CHECK_ABILITIES = {"v1": ["debug", "laser"], "v2": ["ground_pound", "dash"], "v3": ["laser", "pinch"]}
 
 # Pictogramas nuevos de 12x12 (mismo formato que gen_calc_chips.ICON_ART: '#' claro, '+' color, 'o' sombra).
@@ -92,7 +92,7 @@ NEW_ICONS = {
         ".++......++.",
         "+..........+",
     ],
-    "pinch": [  # marcas de recorte y flechas que aprietan (Pellizcar)
+    "pinch": [  # marcas de recorte y flechas que aprietan (Comprimir)
         "............",
         "..++....++..",
         "..++....++..",

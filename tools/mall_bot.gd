@@ -46,7 +46,7 @@
 ## 0 muertes; 0 «Añadido al carrito»; 0 congelaciones; saldo nunca < 0; energia
 ## minima frente al camino; duracion frente al 40-55 % del objetivo (solo frugal; el
 ## comprador la anota). Progreso: El Visto vencido (Mundo 5 disponible) y el kit del
-## Mundo 4 (pulso, laser, Debug, dash, golpe al suelo, Pellizcar; Eco, Notas, Calc y la
+## Mundo 4 (pulso, laser, Debug, dash, golpe al suelo, Comprimir; Eco, Notas, Calc y la
 ## Linterna), con 0 puntos de atencion al entrar (el validador cuenta el saldo desde 0).
 ## Lo lanza tools/play_mall_bot.gd (uso y argumentos alli).
 extends "res://tools/chat_bot.gd"

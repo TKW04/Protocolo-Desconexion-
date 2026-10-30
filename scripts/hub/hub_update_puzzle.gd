@@ -13,12 +13,12 @@
 ## - V3 verde acido «Recorte»: laser al Mirror «/» del suelo, que lo sube a
 ##   lector3 (LaserReceiver): el SmallFrame del nicho se ilumina y se quita la
 ##   barrera de su hueco de 1 tile (permanente en la visita). Comprimido
-##   (Pellizcar) se entra al nicho de 2 tiles de alto, se vuelve al tamano y
+##   (Comprimir) se entra al nicho de 2 tiles de alto, se vuelve al tamano y
 ##   pulso a V3 (comprimido no hay pulso).
 ## - Instalar: HubInstaller; con 3/3 un pulso PIDE la instalacion
 ##   (install_requested). La instalacion de verdad es del paso 5.
 ## Mientras esta activo y no inerte, Isak puede usar en el hub el dash, el golpe
-## al suelo y Pellizcar obtenidos (Isak.hub_gestures). INERTE con la Papelera
+## al suelo y Comprimir obtenidos (Isak.hub_gestures). INERTE con la Papelera
 ## llena (GameState.has_trash_pending; se reactiva al recuperarla): las
 ## verificaciones y la placa no responden y el instalador dice «Recupera tus
 ## archivos de la papelera». Nada se guarda: el hub se crea de nuevo en cada
@@ -243,7 +243,7 @@ func get_key_hint_text(id: StringName) -> String:
 
 
 ## Accion cuya tecla ensena la pista 4 de `id` (V3: el laser mientras el marco
-## siga cerrado, Pellizcar despues).
+## siga cerrado, Comprimir despues).
 func get_key_hint_action(id: StringName) -> StringName:
 	var actions: Dictionary = _hint_cfg("key_hint").get("actions", {})
 	var key: String = String(id)
@@ -317,7 +317,7 @@ func refresh_inert(force: bool = false) -> void:
 		inert_changed.emit(_inert)
 
 
-## Isak del hub: activa sus gestos (dash, golpe, Pellizcar) mientras no este inerte.
+## Isak del hub: activa sus gestos (dash, golpe, Comprimir) mientras no este inerte.
 func set_isak(value: Isak) -> void:
 	isak = value
 	refresh_inert()

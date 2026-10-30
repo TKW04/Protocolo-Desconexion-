@@ -556,7 +556,7 @@ func _ram_from_showcase(dash_at: int, hold_after: int) -> bool:
 	return shutter.is_broken()
 
 
-## Pellizca en el estante, salta comprimido y Filo hacia la derecha en el cuadro
+## Se comprime en el estante, salta comprimido y Filo hacia la derecha en el cuadro
 ## `edge_at` (o Deslizar sin comprimir con compressed = false). Devuelve la x final.
 func _edge_from_shelf(edge_at: int, compressed: bool = true) -> float:
 	if compressed:

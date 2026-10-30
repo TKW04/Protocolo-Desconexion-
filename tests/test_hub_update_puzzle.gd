@@ -2,7 +2,7 @@
 # 3 de docs/propuesta-hub-mundos-4-6.md §2; HubUpdatePuzzle, data/hub_update.json).
 # Positivos: cada verificacion se resuelve con las habilidades previstas (V1:
 # Debug + laser + pulso; V2: golpe al suelo + salto + dash aereo + pulso; V3:
-# laser por el espejo + Pellizcar + pulso) y con 3/3 el pulso al instalador
+# laser por el espejo + Comprimir + pulso) y con 3/3 el pulso al instalador
 # PIDE la instalacion (la secuencia es del paso 5: tests/test_hub_update_install.gd). Negativos de §2.7: sin el Debug
 # lector1 no se ve ni se le apunta; sin cable el pulso a RE no hace nada; la
 # placa solo responde al golpe al suelo; la plataforma baja a los 3 s con aviso;
@@ -404,7 +404,7 @@ func test_without_compress_the_niche_cannot_be_entered() -> void:
 	_puzzle.get_reader3().power()
 	await _place(15.5)
 	await _tap(&"pinch_pressed")
-	assert_false(_isak.is_compressed(), "Sin Pellizcar obtenido")
+	assert_false(_isak.is_compressed(), "Sin Comprimir obtenido")
 	_input.move_axis = 1.0
 	await wait_physics_frames(60)
 	_input.move_axis = 0.0

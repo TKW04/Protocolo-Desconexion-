@@ -4,7 +4,7 @@
 ## 2,5 tiles, hueco de 2 tiles (caminando), hueco de 3 tiles (corriendo),
 ## plataforma de una via y pared. Caer por un hueco devuelve a Isak al inicio.
 ## Pulso (G), dash (L / B, gesto Deslizar; 2026-10-19), golpe al suelo y
-## Pellizcar (I / RB; 2026-10-26) y la Combinacion (en el aire; 2026-10-29) desbloqueados
+## Comprimir (I / RB; 2026-10-26) y la Combinacion (en el aire; 2026-10-29) desbloqueados
 ## (Agitar, retirado el 2026-10-28, ya no).
 ## Solo para jugar y ajustar valores; no es un nivel del juego.
 extends Node2D
@@ -35,7 +35,7 @@ const JUMP_BUFFER: String = "buffer"
 ## Desbloquea el golpe al suelo (gesto Mantener presionado: mantener S / flecha
 ## abajo / abajo del mando; 2026-10-22) al cargar esta escena.
 @export var unlock_ground_pound: bool = true
-## Desbloquea Pellizcar (gesto Pellizcar: I / RB; 2026-10-26) al cargar esta escena.
+## Desbloquea Comprimir (gesto Comprimir: I / RB; 2026-10-26) al cargar esta escena.
 @export var unlock_compress: bool = true
 ## Desbloquea la Combinacion (2026-10-29: Embestida, Filo y Sismo en el aire).
 @export var unlock_combo: bool = true

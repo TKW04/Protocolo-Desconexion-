@@ -55,7 +55,7 @@ func _run() -> void:
 	Input.action_release(&"move_down")
 	await _frames(60)
 	_refill(state)
-	# Filo: salto, Pellizcar y Deslizar hacia la izquierda (hay sitio).
+	# Filo: salto, Comprimir y Deslizar hacia la izquierda (hay sitio).
 	Input.action_press(&"move_left")
 	await _frames(2)
 	Input.action_release(&"move_left")

@@ -4,7 +4,7 @@
 ## y ajustes de herramientas; nunca el guardado real):
 ##   3-1, 3-2, 3-3   tools/render_level_3_x_gallery.gd (extiende tools/gallery_bot.gd):
 ##                   llegada, plataformas de likes, publicación, Influencer, Ladrón,
-##                   «Recortar», Pellizcar y marcos pequeños, filtro con y sin el
+##                   «Recortar», Comprimir y marcos pequeños, filtro con y sin el
 ##                   Debug, espejos, pared de espejo, cazador, Reflejo falso,
 ##                   puertas de marco, salida y hub (lista completa en ese archivo;
 ##                   solo las que tiene el nivel y su camino)

@@ -7,7 +7,7 @@
 # invulnerabilidad) de 10 SIN MATAR, avisado 0,75 s antes con la barra en rojo; morir,
 # un vortice o reaparecer la cortan sin golpe (frozen_ended(true)); un golpe congelado resta pero no descongela;
 # inmunidad de 0,5 s solo frente a otra zona «Visto»; morir y reaparecer lo cortan;
-# sin pulso, laser, dash ni Pellizcar mientras dura. Isak avanza con delta fijo.
+# sin pulso, laser, dash ni Comprimir mientras dura. Isak avanza con delta fijo.
 extends GutTest
 
 const IsakSim = preload("res://tests/support/isak_sim.gd")
@@ -269,7 +269,7 @@ func test_no_actions_while_frozen() -> void:
 	assert_false(_isak.can_pulse(), "Sin pulso")
 	assert_false(_isak.can_start_laser(), "Sin laser")
 	assert_eq(_isak.dash_denial(), Isak.DASH_DENIED_BUSY, "Sin dash")
-	assert_eq(_isak.compress_denial(), Isak.COMPRESS_DENIED_BUSY, "Sin Pellizcar")
+	assert_eq(_isak.compress_denial(), Isak.COMPRESS_DENIED_BUSY, "Sin Comprimir")
 	_sim.input.pulse_pressed = true
 	_sim.input.laser_pressed = true
 	_sim.input.dash_pressed = true

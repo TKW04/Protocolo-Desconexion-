@@ -637,7 +637,7 @@ func test_rooftop_climbs_of_the_calc_room_are_measured() -> void:
 	assert_true(shaft, "Salida del hueco de la izquierda a la azotea (fila 11 -> 9)")
 
 
-## Pellizcar (paso 1 de docs/propuesta-mundo-3.md §8, 2026-10-26): subidas con Isak COMPRIMIDO (caja 32 x 40,
+## Comprimir (paso 1 de docs/propuesta-mundo-3.md §8, 2026-10-26): subidas con Isak COMPRIMIDO (caja 32 x 40,
 ## salto de ~96 px, gravedad igual) en un mundo de prueba con un escalon de 1 tile y otro de 2. Desde parado
 ## pegado al escalon y llegando andando desde 2 tiles atras (saltando a 40 px del borde): el de 1 tile se sube
 ## siempre sin tocar techo; el de 2, nunca. Es lo que el validador del Mundo 3 (paso 8) debe suponer para la caja

@@ -1092,7 +1092,7 @@ El Mundo 3 «La Vitrina» se hizo con las decisiones delegadas al orquestador (`
 
 **Valores a ajustar jugando** (tabla completa en `mundo-3-vitrina.md` §8.8)
 - Ritmo de cada nivel y si el 3-1 se siente un paso por encima del 2-1. Duraciones del bot (sin golpes, muertes ni robos): **3-1 68,4 s, 3-2 85,2 s, 3-3 128,7 s**.
-- Pellizcar (I / RB): caja 32 × 40, 160 px/s, salto de ~90 px, vuelta pedida con icono «sin espacio»; ¿es cómoda la tecla?
+- Comprimir (I / RB): caja 32 × 40, 160 px/s, salto de ~90 px, vuelta pedida con icono «sin espacio»; ¿es cómoda la tecla?
 - Likes: −3 por golpe (recuperables 2 s), robo de 5 del Ladrón, umbrales ♥5-♥25, publicación +5 con 8 s de enfriamiento; ¿se lee bien el contador del HUD?
 - Ceguera del flash del Influencer: 1,5 s al 70 % (40 % con «Reducir efectos»).
 - Filtros: ¿se leen como zona antes de entrar? ¿Es justo el filtro móvil (cada 4 s, aviso de 0,75 s) sin el Debug?
@@ -1136,7 +1136,7 @@ Paso 6 de `docs/propuesta-hub-mundos-4-6.md` (sección `hub_update_hints` de `da
 - Notas, al soltar el control tras instalar (no importante): «¡Apuntado! Guárdalo para que no se pierda.».
 
 **Decisiones del orquestador a revisar**
-- Pista 4 (la tecla tras 2 fallos en la visita): V1 enseña la tecla del **pulso** (fallo = se acaba la corriente de lector1), V2 la de **Deslizar** (fallo = baja la plataforma), V3 la del **láser** mientras el marco sigue cerrado y la de **Pellizcar** después (fallo = chocar sin comprimir contra el marco del nicho). Los fallos no se guardan (cada visita, desde 0).
+- Pista 4 (la tecla tras 2 fallos en la visita): V1 enseña la tecla del **pulso** (fallo = se acaba la corriente de lector1), V2 la de **Deslizar** (fallo = baja la plataforma), V3 la del **láser** mientras el marco sigue cerrado y la de **Comprimir** después (fallo = chocar sin comprimir contra el marco del nicho). Los fallos no se guardan (cada visita, desde 0).
 - «Actualización: n/3» va en el resumen de Notas (§2.4); el instalador conserva «Verificaciones n/3» (§1).
 - La cuenta de la pista 3 solo avanza con Isak en la página 2 y se reinicia con cada verificación nueva; con las ayudas ocultas no sale ni se da por vista.
 
@@ -1165,7 +1165,7 @@ El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicie
 
 **Puntos a vigilar (decisión del usuario)**
 - **V1 y V2 son exigentes:** el salto a la repisa de V1 pide el **91 %** del salto y el de V2 el **89 %** (límite de los niveles 85 %), y a V2 solo se llega con **salto corriendo + dash aéreo** (andando no llega). Para suavizarlo hay que mover piezas de `data/hub_update.json` (p. ej. acercar la plataforma al bloque o alargar `up_s`).
-- **Gestos del hub solo durante el acertijo:** el dash, el golpe al suelo y Pellizcar obtenidos solo funcionan en el hub mientras el acertijo está activo (y no con la Papelera llena); antes y después, el hub es como siempre. ¿Se echa de menos poder usarlos siempre en el hub?
+- **Gestos del hub solo durante el acertijo:** el dash, el golpe al suelo y Comprimir obtenidos solo funcionan en el hub mientras el acertijo está activo (y no con la Papelera llena); antes y después, el hub es como siempre. ¿Se echa de menos poder usarlos siempre en el hub?
 - **V3, el láser sube del espejo al lector:** el espejo está en el suelo (columna 16) y el láser rebota **hacia arriba** a `lector3` (la propuesta decía «hacia abajo»; el láser solo se dispara de pie y en horizontal). ¿Se lee el rebote?
 - La línea de Calc al llegar no es importante: **aceptar no la cierra**, se va sola, y tras la línea de Eco de la página 2 vuelve a salir porque el cuadro la reanuda.
 - En las capturas 08-09 la esfera de Eco queda encima de la placa «Completa el mundo anterior» (se lee, pero tapada en parte); en la 11 el contorno coral de la pieza 4 es fino y se ve poco.
@@ -1183,7 +1183,7 @@ El acertijo del hub «Actualización del sistema» y las carpetas M4-M6 se hicie
 
 **Arte y audio provisionales**
 - ~~**Coral de la pieza 4: `#ff7f66`, PROVISIONAL**~~ **Decidido por el usuario el 2026-10-28: `#ff9f7a`** (opción B «Coral melocotón», `propuesta-mundo-4.md` §10.1); `CORAL` de `tools/gen_hub_update_art.py` cambiado y pieza regenerada (paso 0 del Mundo 4).
-- Arte por script: fondos de las páginas 2 y 3, carpetas M4-M6, candado, instalador y su decorado (`tools/gen_hub_objects.py`); verificaciones con sus **pictogramas** (V1 Debug + láser, V2 golpe al suelo + Deslizar, V3 láser + Pellizcar), placa, plataforma, glitch, barra y pieza 4 (`tools/gen_hub_update_art.py`). El destello es un velo blanco por código.
+- Arte por script: fondos de las páginas 2 y 3, carpetas M4-M6, candado, instalador y su decorado (`tools/gen_hub_objects.py`); verificaciones con sus **pictogramas** (V1 Debug + láser, V2 golpe al suelo + Deslizar, V3 láser + Comprimir), placa, plataforma, glitch, barra y pieza 4 (`tools/gen_hub_update_art.py`). El destello es un velo blanco por código.
 - Audio provisional, 5 IDs nuevos (los definitivos, con el mismo nombre): `sfx_hub_update_check`, `sfx_hub_install_bar`, `sfx_hub_install`, `sfx_hub_page_slide` y `sfx_hub_folder_locked`. Reutilizados: `sfx_laser_denied` (verificación que rechaza) y `sfx_w3_pose_plate` (placa).
 
 
@@ -1263,7 +1263,7 @@ Pedidos del usuario tras jugar el Mundo 4 (textual): Modo oscuro «que solo se p
 - **Golpe al liberarse** de toda congelación (zona, ola, mensaje de El Visto): −10 como un golpe de enemigo, sin matar, avisado con la barra en rojo 0,75 s antes. ¿Se entiende? ¿Debería poder matar fuera de la ola? (Hoy nunca mata.)
 - **La «pared que te sigue» es la ola del 4-3** (en el 4-1 no hay ninguna): va un 20-25 % más rápida (1,25 / 1,45 / 1,45-1,95 tiles/s), daña al liberarte (ya no al tocar) y espera en las tres vueltas de las bandas. ¿Presiona lo justo?
 - **Sin cuadro rojo en los enemigos** (2026-10-28, petición del usuario: «en ocasiones a los fantasmas se les marca un cuadro rojo, y algunos enemigos que están en la oscuridad»; `propuesta-mundo-4.md` §8.1, cambio 5): a oscuras se ven sus ojos crema y, al atacar, su aviso (bocadillo del Troll, Sticker que destella en crema, ojos del Fantasma que parpadean); a la luz el Fantasma reaparece parpadeando. El rojo en lo oscuro queda solo para los pinchos. ¿Se distinguen a tiempo en la penumbra? ¿Los ojos del enemigo despierto (90 %) frente a los del acechador (60 %)?
-- ~~**Pendiente para el Mundo 5:** la combinación Sismo («golpe al suelo con onda», `02-isak-habilidades.md`) partía de Agitar; habrá que redefinirla.~~ **Resuelto el 2026-10-29** (`propuesta-mundo-5.md` §3.2.4): Sismo = **Pellizcar + abajo en el aire** (golpe al suelo comprimido cuya onda recorre todo el suelo visible y rompe a la vez las estanterías de saldos); ya no parte de Agitar (`02-isak-habilidades.md` §3.5).
+- ~~**Pendiente para el Mundo 5:** la combinación Sismo («golpe al suelo con onda», `02-isak-habilidades.md`) partía de Agitar; habrá que redefinirla.~~ **Resuelto el 2026-10-29** (`propuesta-mundo-5.md` §3.2.4): Sismo = **Comprimir + abajo en el aire** (golpe al suelo comprimido cuya onda recorre todo el suelo visible y rompe a la vez las estanterías de saldos); ya no parte de Agitar (`02-isak-habilidades.md` §3.5).
 
 ## Mundo 5: textos de El Vendedor propuestos (2026-10-29, paso 20 de `docs/propuesta-mundo-5.md`)
 
@@ -1310,7 +1310,7 @@ El Mundo 5 «La Tienda» se hizo con las decisiones delegadas al orquestador (`p
 - **Términos y condiciones** («ACEPTAR» engancha una Suscripción; «rechazar» solo con el láser desde enfrente o un Filo): ¿se encuentra el «rechazar» pequeño sin la Q?
 
 **La Combinación**
-- Entradas (Embestida = Deslizar + abajo en el aire; Filo = Pellizcar + Deslizar en el aire; Sismo = Pellizcar + abajo en el aire; 15 de energía): ¿son cómodas con teclado y con mando? ¿El Filo y el Sismo, que empiezan con Pellizcar en el aire, salen a la primera?
+- Entradas (Embestida = Deslizar + abajo en el aire; Filo = Comprimir + Deslizar en el aire; Sismo = Comprimir + abajo en el aire; 15 de energía): ¿son cómodas con teclado y con mando? ¿El Filo y el Sismo, que empiezan con Comprimir en el aire, salen a la primera?
 - **Sismo redefinido** (sin Agitar: onda por todo el suelo visible que aturde a lo que pisa el suelo y rompe a la vez las estanterías de saldos): ¿se lee como algo distinto del pulso?
 - **Estanterías de saldos y `restock_s`** (se «reponen» a los 0,5 s si no caen todas a la vez): ¿se entiende por qué vuelven a aparecer?
 - **«Prueba gratis»** del 5-2 (la escena con Eco e **Isak hablando por primera vez**, interlocutor `isak`): ¿se lee bien su cuadro y su icono? ¿Quieres más líneas de Isak (o ninguna) en Kernel y Raíz?

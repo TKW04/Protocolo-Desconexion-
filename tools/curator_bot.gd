@@ -2,7 +2,7 @@
 ## §7.3). Carga la escena principal (scenes/main.tscn, LevelRunner) en la arena
 ## 3-boss real y pelea con el Isak real pulsando SOLO acciones del Input Map
 ## (move_left / move_right, jump, run, pulse, laser, debug, gesture_swipe,
-## gesture_pinch —Pellizcar— y ui_accept para cerrar las lineas importantes y la
+## gesture_pinch —Comprimir— y ui_accept para cerrar las lineas importantes y la
 ## recompensa); nunca Q ni pause, nunca teletransporta, no toca GameState durante
 ## la pelea ni llama a la API de dano del jefe. Como los bots de Alerta Mayor
 ## (tools/boss_bot.gd) y Autoplay (tools/autoplay_bot.gd) es REACTIVO: una
@@ -32,7 +32,7 @@
 ##   radio para que vuelva al norte.
 ## - Fase 3 «Retrato perfecto»: espera junto al marco pequeno de su lado; el pulso
 ##   aturde al Reflejo falso cuando se acerca (y otra vez antes de que despierte).
-##   Con el marco que se cierra en su mitad, Pellizcar y meterse en el marco
+##   Con el marco que se cierra en su mitad, Comprimir y meterse en el marco
 ##   pequeno; tras el cierre, Debug ya, salir, recuperar el tamano, repisa,
 ##   plataforma, pulso, laser, y vuelta al marco.
 ##
@@ -52,7 +52,7 @@
 ## 100-150 s), golpes, muertes, energia minima (toda la pelea, en ventana y por
 ## fase) y gasto por ventana frente al margen del validador, flashes que ciegan,
 ## cierres con Isak fuera de su refugio, corazones, likes al pisar una plataforma,
-## pulsos, laseres, dashes y pellizcos; al final, la recompensa (boss_w3_l<n> sin
+## pulsos, laseres, dashes y compresiones; al final, la recompensa (boss_w3_l<n> sin
 ## guardar) y la vuelta al hub con 3-boss completado, el acertijo del hub
 ## pendiente (desde el paso 5 de docs/propuesta-hub-mundos-4-6.md el Mundo 4 queda
 ## oculto hasta instalar el upgrade, con la pagina 2 «en instalacion») y, en
@@ -247,7 +247,7 @@ func _ready() -> void:
 
 
 ## Progreso de quien acaba de completar el 3-3: Eco, Notas y Calc conocidos, las
-## seis habilidades (con Pellizcar), los avisos vistos y el jefe del Mundo 3
+## seis habilidades (con Comprimir), los avisos vistos y el jefe del Mundo 3
 ## desbloqueado, en la vuelta pedida.
 func _setup_progress() -> void:
 	GameState.lap = _lap
@@ -1382,7 +1382,7 @@ func _resolve_debug() -> void:
 		_debug_tap_cd = 12
 
 
-## Pellizcar es un interruptor: un toque cuando lo pedido no coincide.
+## Comprimir es un interruptor: un toque cuando lo pedido no coincide.
 func _resolve_pinch() -> void:
 	if _isak == null or _pinch_cd > 0 or _isak.is_dead():
 		return
@@ -1572,7 +1572,7 @@ func _finish(ok: bool) -> void:
 			(" (" + ", ".join(causes) + ")") if not causes.is_empty() else "", _deaths,
 			_min_energy if _min_energy != INF else -1.0, _min_energy_window if _min_energy_window != INF else -1.0,
 			VALIDATOR_MARGIN.get(_lap, 0.0), _debug_cut_in_window])
-		print("  ACCIONES: pulsos %d, laseres %d, dashes %d, pellizcos %d, Debug %.1f s, cargas %d, flashes %d (ciegan %d), marcos cerrados %d (fuera del refugio %d), reflejos aturdidos %d, ladrones aturdidos %d, likes al pisar una plataforma min %d" % [
+		print("  ACCIONES: pulsos %d, laseres %d, dashes %d, compresiones %d, Debug %.1f s, cargas %d, flashes %d (ciegan %d), marcos cerrados %d (fuera del refugio %d), reflejos aturdidos %d, ladrones aturdidos %d, likes al pisar una plataforma min %d" % [
 			_pulses, _lasers, _dashes, _pinches, float(_debug_frames) / 60.0, _charges, _flashes, _blinded,
 			_frames_closed, _frames_unsafe, _reflection_stuns, _thief_stuns,
 			_likes_on_plat_min if _likes_on_plat_min < (1 << 30) else -1])
