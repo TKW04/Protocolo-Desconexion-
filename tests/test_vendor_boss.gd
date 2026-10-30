@@ -389,3 +389,52 @@ func test_defeat_turns_the_screen_off() -> void:
 	assert_eq(blows.size(), 1)
 	assert_true(_boss.is_screen_off())
 	assert_false(_boss.get_core().is_enabled())
+
+
+## Arte final con AutoSprite (paso 24, tools/import_boss_vendor.py): el cuadro sigue
+## al estado sin tocar tiempos ni cajas. Mira a Isak (las hojas miran a la derecha:
+## reflejadas mirando a la izquierda), el aviso del giro son los primeros cuadros de
+## turn y el giro el resto, procesa en la devolucion, ofrece al pagar y se apaga al
+## golpe final. El lienzo queda en ART_BODY_OFFSET de la caja (la caja no cambia).
+func test_final_art_follows_its_state() -> void:
+	await _setup()
+	assert_true(_boss.has_final_art(), "Cuadros de tools/import_boss_vendor.py")
+	var m: Rect2 = _boss.get_machine_rect()
+	assert_eq(m.size, Vector2(4.0, 5.0) * TILE, "La caja de 4 x 5 tiles no cambia")
+	assert_eq(_boss.get_art_position(), (m.position + Vendor.ART_BODY_OFFSET).round())
+	assert_eq(_boss.get_art_rect().size, Vector2(512.0, 368.0))
+	var frame: Array = _boss.get_art_frame()
+	assert_eq(frame[0], "idle")
+	assert_true(frame[2], "Mira a la izquierda (Isak delante, a la izquierda): reflejada")
+	# Aviso del giro (9 cuadros antes): los primeros cuadros de turn; giro: el resto.
+	_place_isak(13, -1.0)
+	_advance(1.2 - 0.75 + 2.0 * DT)
+	assert_eq(_boss.get_turn_stage(), Vendor.TURN_WARN)
+	frame = _boss.get_art_frame()
+	assert_eq(frame[0], "turn", "Aviso: turn")
+	assert_lt(frame[1], Vendor.ART_TURN_WARN_CELLS, "Aviso: recoge los brazos")
+	assert_true(frame[2], "De izquierda a derecha: la hoja reflejada")
+	_advance_until(func() -> bool: return _boss.get_turn_stage() == Vendor.TURN_TURNING, 2.0)
+	_advance(0.1)
+	frame = _boss.get_art_frame()
+	assert_eq(frame[0], "turn")
+	assert_gte(frame[1], Vendor.ART_TURN_WARN_CELLS, "Giro: de lado, de espaldas y de frente")
+	_advance(0.25)
+	assert_eq(_boss.get_facing(), Vendor.SIDE_RIGHT)
+	frame = _boss.get_art_frame()
+	assert_eq(frame[0], "idle")
+	assert_false(frame[2], "Mira a la derecha: sin reflejar")
+	# Paga una plataforma: ofrece un momento.
+	assert_true(_boss.pay_platform("a"))
+	assert_eq(_boss.get_art_frame()[0], "offer")
+	_advance(Vendor.ART_OFFER_S + DT)
+	assert_ne(_boss.get_art_frame()[0], "offer")
+	# Golpe final: defeat, ya roto, y se queda en el ultimo.
+	for i: int in 9:
+		_boss.take_core_hit(1)
+	frame = _boss.get_art_frame()
+	assert_eq(frame[0], "defeat")
+	assert_gte(frame[1], Vendor.ART_DEFEAT_FROM)
+	_advance(5.0)
+	assert_eq(_boss.get_art_frame()[1], int(Vendor.ART_ANIMS["defeat"][0]) - 1)
+	assert_eq(_boss.get_machine_rect().size, Vector2(4.0, 5.0) * TILE, "Caja sin cambios")

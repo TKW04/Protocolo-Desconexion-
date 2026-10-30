@@ -35,4 +35,56 @@ En inglés, describiendo solo lo que debe verse (lección de Alerta Mayor), vist
 - **Proporción:** el cuerpo mide ~0,6:1 (unos 580 × 950 del base) y la caja del juego es de 4 × 5 tiles (0,8:1); con los brazos el dibujo entero es ~1,06:1. Para que la máquina llene la caja habría que estirar en x columnas lisas (lados del cuerpo y del escaparate), como el marco de la Curadora, o dejar el cuerpo algo más estrecho que la caja.
 - **Detalles que se perderán en reposo:** a 80 px de arte los ojos de la pantalla quedan en 2 × 2 px y los iconos de los productos se borran (lección de El Visto: el check gris en reposo).
 
-Pendiente: visto bueno del usuario al base; después, limpieza (halo, cian), posible estirado y `upload_character` gratis antes de las poses y animaciones.
+~~Pendiente: visto bueno del usuario al base~~ (aprobado; etapa 2, abajo).
+
+## 2. Etapa 2: limpieza, poses, animaciones e integración (2026-10-30)
+
+Autorizado por el usuario: hasta **39** créditos (3 poses = 9 + 6 animaciones turbo = 30), del tope de 57 del Mundo 5 (los ~15 de las poses de combo de Isak van aparte, en otra tarea).
+
+### 2.1 Créditos
+
+| # | Llamada | Pieza | Créditos | Saldo tras la llamada |
+|---|---|---|---|---|
+| — | `get_account` | | 0 | **252** |
+| — | `upload_character` (`isHumanoid: false`; la herramienta no admite `pixelArt`) | «El Vendedor (limpio)» (`cmvv9qhah00pzzfh0oumwbkj6`) | 0 | 252 |
+| 1 | `generate_pose` | `Offering` (`cmvv9r26600rgzfh0z736ov49`): brazos hacia delante, palmas arriba, sonrisa más ancha | 3 | 249 |
+| 2 | `generate_pose` | `Turning` (`cmvv9sr5001s7tad6ymkoa5cx`): girada hacia la derecha, cara y brazo derecho a la derecha | 3 | 246 |
+| 3 | `generate_pose` | `Processing` (`cmvv9tyz201swtad66zwr8p00`): anillo de 8 puntos en la pantalla, brazos recogidos | 3 | 243 |
+| — | `save_pose` (subida) | `Turning Left` (`cmvv9u2a100fs92j81a2f95eo`): `Turning` reflejada a mano, final del giro | 0 | 243 |
+| 4 | `generate_spritesheet` turbo (una llamada, 6 × 5; `first_frame` con las poses, `raw_prompt`, 25 cuadros de 512) | `idle`, `turn`, `throw`, `processing`, `offer`, `defeat` | **30** | **213** (respuesta de la llamada) |
+| | | **Esta etapa** | **39** (tope 39) | |
+
+Sin reintentos: todo se aceptó a la primera. Total de El Vendedor: 3 + 39 = **42** (dentro del tope de 57 con los ~15 de Isak). El `get_account` final no respondió (dos tiempos de espera agotados); el saldo es el de la respuesta de la última llamada (213, sin contar lo que gaste en paralelo la tarea de Isak).
+
+Jobs: poses `cf_29ce9e86-…` (Offering), `cf_5e1662b0-…` (Turning), `cf_467c6117-…` (Processing); hojas `wf_77641381-…` → `cmvv9xf7201uedt25mnjkaimx` (idle), `wf_21c7069c-…` → `cmvv9xmfo00gs92j85dzqw6yl` (turn), `wf_5d704ffc-…` → `cmvv9wnab00vyzfh03bb399qn` (throw), `wf_048b4bdc-…` → `cmvv9wel401s8dt25wg1xqbay` (processing), `wf_9f7f33c1-…` → `cmvv9xgw301umdt25j0kelplj` (offer), `wf_63483402-…` → `cmvv9wzei00gh92j85k3y16yc` (defeat). Esta vez el orden de las hojas coincidía con el del pedido; se identificaron mirándolas.
+
+### 2.2 Limpieza del base y decisión de subirlo
+
+- **Se sube el base limpio** (como El Visto «sin halo»): las poses y las hojas salen de la imagen subida, así que el halo, el cian y los naranjas/rojos se habrían copiado en cada cuadro. `tools/clean_vendor_base.py` (gratis, en la rejilla nativa de 128 × 128: el base es pixel art a rejilla 8): fondo y halo blancos fuera con un relleno desde el borde (y dos pasadas de grises claros pegados al fondo), el **rim light cian** pasa al violeta del borde, las cajas **naranjas** a violeta neón (el naranja suelto de las etiquetas a amarillo sombra), las **rojo-rosadas** a magenta sombra, la **oliva** a gris violeta y el marrón a violeta oscuro. Resultado en `hojas/vendor/base_upload.png` (copia `docs/capturas/arte-autosprite-2026-10-30/vendedor_base_limpio.png`).
+- **No se aclara ni se estira el base**: el contraste y la proporción los da el importador (más abajo), para que la IA anime desde las proporciones que ella misma pintó.
+
+### 2.3 Prompts
+
+En inglés, describiendo solo lo que debe verse, con la vista fijada y «Only the machine on a plain white background, nothing else in the picture». `idle` (de `Turning` a `Turning`: zumba, se mece, el brazo derecho se balancea, parpadea; bucle), `turn` (de `Turning` a `Turning Left`: recoge los brazos, la sonrisa se apaga, gira en el sitio y la cara se enciende al otro lado), `throw` (de `Turning` a `Turning`: el brazo derecho lanza hacia arriba a la derecha), `processing` (de `Processing` a `Processing`: el anillo de puntos gira; bucle), `offer` (de `Offering` a `Offering`: los brazos ofrecen adelante y atrás, la sonrisa late; bucle) y `defeat` (desde el base: franjas de glitch, la sonrisa se vuelve un ceño, la pantalla se apaga, los brazos caen). Sin rótulos ni texto inventados en ninguna hoja.
+
+### 2.4 Integración
+
+- `python3 -I tools/import_boss_vendor.py` (147 PNG en `assets/sprites/bosses/vendor/`, con sus `.import`; `--check` en `tools/run_tests.sh`; prueba `tests/test_import_boss_vendor.py`, 5): en cada animación la celda de referencia da la **caja del cuerpo** (las columnas opacas en al menos el 70 % del alto; los brazos quedan fuera) y esa caja **llena la caja de 4 × 5 tiles** (64 × 80 de arte a rejilla 4 = 256 × 320; fit «box»: se estira en x de ~0,6:1 a 0,8:1, los brazos con ella), con 32 × 6 de margen para los brazos: lienzo de **512 × 368** en (−128, −24) de la caja (`Vendor.ART_BODY_OFFSET`). Paleta `mundo5.gpl` sin rojos, ámbares ni el blanco del Debug; píxeles sueltos fuera; **borde de la silueta en `violeta_neon`** (≥ 3:1 con `negro_fondo`, `negro_medio` y `gris_escaparate`, medido en la prueba): sin él el cuerpo `gris_escaparate` se fundía con las columnas del gran almacén. Aclarar antes de reducir se probó y se quitó: juntaba la pantalla y el cuerpo en el mismo gris con ruido.
+- Celdas: `idle`, `processing` y `offer` 0-23 (bucles), `turn`, `throw` y `defeat` 0-24.
+- **Cuándo** (`Vendor.get_art_frame()`, `ART_ANIMS`): `idle` por defecto **mirando a Isak** (las hojas de `idle`, `turn` y `throw` miran a la derecha; reflejadas cuando mira a la izquierda, `ART_FLIP`); en el **aviso del giro** (`turn.warn_frames`, 9 cuadros) los 8 primeros cuadros de `turn` (recoge los brazos y la sonrisa se apaga) por su progreso y en el **giro** (`turn.anim_s`) el resto (de lado, de espaldas, de frente al otro lado; `ART_TURN_WARN_CELLS`); `processing` con «Procesando devolución…» o Isak congelado («Procesando pago…»); `throw` una vez al lanzar cada tanda de cajas; `offer` 1 s al pagar una plataforma y mientras baja el cartel de la oferta de la fase 3; `defeat` desde el golpe final (empieza en el cuadro 6, ya con glitch) y el desarme en píxeles suelta su último cuadro. Sin los cuadros vuelve al provisional por código.
+- **La espalda**: no hay arte de espaldas (la máquina siempre mira de frente); la espalda la sigue marcando el «Cancelar» (`WeakPoint`, por código), como antes. Plataformas con precio, brazo que barre, monedas, carteles, bandeja del frente, ranura y túnel abiertos siguen por código (`VendorFx`, encima del dibujo).
+- **Sin cambios**: cajas de colisión, tiempos, giro de 1,2 / 0,9 s con su aviso de 9 cuadros, fases y datos (solo la nota de `data/bosses/vendor.json`).
+- Pruebas: `test_final_art_follows_its_state` (`tests/test_vendor_boss.gd`, 17/17), `test_vendor_arena` 27/27, `test_vendor_help` 11/11, `test_boss_bar` 14/14, `test_vendor_bot` 7/7 (ideal en Caché **110,6 s**, sin golpes ni muertes, como antes), `tests/test_import_boss_vendor.py` 5/5, `tests/test_boss_data.py` 15/15 (sin `-I`: con `-I` el importador de Alerta Mayor no encuentra Pillow, ya pasaba), `tests/test_boss_validator.py` 74/74, `validate_ui_assets` 0 errores, `validate_level.py data/levels/5-boss.json` en verde.
+- Capturas con el flujo real (`tools/render_level_5_x.gd -- --level 5-boss`): `docs/capturas/arte-autosprite-2026-10-30/juego_vendedor_*.png` (y las 17 en `assets/levels_preview/5-boss/`); hojas de contacto `vendedor_cuadros.png` (una de cada tres) y `vendedor_giro_cuadros.png` (los 25 de `turn`); poses `vendedor_pose_*.png`.
+
+### 2.5 Calidad y defectos vistos
+
+- La máquina se reconoce y es coherente entre animaciones: pantalla-cara con la sonrisa magenta, escaparate con etiquetas amarillas, bandeja y dos brazos; sin rojos, ámbares ni blanco del Debug; el borde violeta la separa del fondo; mira a Isak y el giro se lee (brazos que se recogen, pantalla que se apaga, vista de lado y de espaldas).
+- **Pantalla con grano**: en `processing` y algunos cuadros de `idle` el negro de la pantalla queda moteado (`negro_medio` / `gris_escaparate`) aun quitando píxeles sueltos.
+- **Brazos gruesos y grises** en `offer`; en reposo los brazos (`gris_escaparate`) se leen sobre todo por el borde violeta.
+- **Etiquetas en amarillo sombra**: al reducir, las etiquetas de los productos quedan en `amarillo_sombra` (más apagadas que en el base) y los iconos de los productos se borran a 80 px de arte.
+- **`defeat`**: las franjas de glitch eran cian en la hoja; reducidas caen en crema y gris (correcto por la regla 6, pero menos vivas).
+- **El giro es rápido**: los 17 cuadros del giro caben en 0,25 s (`turn.anim_s`): la vista de espaldas dura 1-2 cuadros del juego. El aviso (8 cuadros en 0,75 s) sí se ve.
+- **`throw`**: el brazo lanza un producto pequeño que la IA dibujó (una cajita amarilla); las cajas de verdad siguen saliendo por código, así que hay un instante con las dos.
+- La ranura abierta (fase 3) y el túnel de la bandeja (fase 2) se dibujan como rectángulos oscuros encima del arte (por código, como antes).
+- La captura `04_fase1_giro` cae en el reposo y no en el giro (temporización de la captura); el giro se ve en `vendedor_giro_cuadros.png`.

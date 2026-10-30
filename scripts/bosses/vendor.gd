@@ -33,7 +33,9 @@
 ##   empezar. Monedas.
 ## - Llegada, intro, reaparicion por fase (energia >= 50 y las fichas de esa fase),
 ##   golpe final y secuencia de derrota como El Visto (BossBase, BossDefeat). Sin
-##   rollback. Arte PROVISIONAL por codigo (VendorFx; el final es el paso 24). Tiempo
+##   rollback. Arte final de la maquina con AutoSprite (paso 24, ART_ANIMS; sin los
+##   cuadros, el provisional por codigo de VendorFx); plataformas, brazo que barre,
+##   monedas, carteles y el «Cancelar» siguen por codigo. Tiempo
 ##   del mundo (advance; las pruebas lo llaman a mano con auto_process falso).
 class_name Vendor
 extends BossBase
@@ -105,6 +107,38 @@ const PLATFORM_THICK_PX: float = 16.0
 const SIDE_LEFT: int = -1
 const SIDE_RIGHT: int = 1
 
+## Arte final con AutoSprite (paso 24; tools/import_boss_vendor.py,
+## docs/plan-arte-mundo-5.md): anim -> [cuadros, fps, bucle]. idle por defecto
+## (mirando a Isak); turn durante el aviso y el giro (por su progreso); processing
+## con «Procesando devolución…» o Isak congelado («Procesando pago…»); throw al
+## lanzar una tanda de cajas; offer al pagar una plataforma y mientras baja el
+## cartel de la oferta; defeat desde el golpe final (se queda en el ultimo).
+const ART_ANIMS: Dictionary = {
+	"idle": [24, 10.0, true],
+	"turn": [25, 25.0, false],
+	"throw": [25, 20.0, false],
+	"processing": [24, 12.0, true],
+	"offer": [24, 12.0, true],
+	"defeat": [25, 12.0, false],
+}
+## Las hojas de estas miran a la derecha: se reflejan cuando mira a la izquierda
+## (turn va de derecha a izquierda; reflejada, al reves). Las demas, de frente.
+const ART_FLIP: Array[String] = ["idle", "turn", "throw"]
+## Esquina del lienzo (512 x 368) respecto a la de la caja (arena.machine): el
+## cuerpo llena la caja y los brazos salen 128 px por los lados. Lo fija
+## tools/import_boss_vendor.py (BODY_OFFSET_PX).
+const ART_BODY_OFFSET: Vector2 = Vector2(-128.0, -24.0)
+const ART_DIR: String = "res://assets/sprites/bosses/vendor/"
+## turn: los primeros cuadros (recoge los brazos y la sonrisa se apaga) son el
+## aviso (turn.warn_frames); el resto (de lado, de espaldas y de vuelta de frente
+## al otro lado) es el giro (turn.anim_s).
+const ART_TURN_WARN_CELLS: int = 8
+## S que dura offer tras pagar una plataforma.
+const ART_OFFER_S: float = 1.0
+## Cuadro de defeat con el que se queda al golpe final (la congelacion del golpe
+## final pausa el arbol y el desarme llega enseguida).
+const ART_DEFEAT_FROM: int = 6
+
 ## Id del objeto en el nivel (params.id).
 @export var object_id: StringName = &""
 ## Con Isak llegando por el vortice, espera a que termine y dice la intro.
@@ -124,6 +158,14 @@ var _tray_shape: CollisionShape2D
 var _attacks: Node2D
 var _fx: VendorFx
 var _body_tex: Texture2D
+# Arte final (paso 24): sprite del cuerpo, cuadros cargados y cuando empezo cada gesto.
+var _body_sprite: Sprite2D
+var _textures: Dictionary = {}
+var _art_on: bool = false
+var _art_key: String = ""
+var _art_since: float = 0.0
+var _throw_at: float = -INF
+var _offer_at: float = -INF
 var _burst: PixelBurst
 var _off: bool = false
 var _time: float = 0.0
@@ -203,6 +245,7 @@ func _physics_process(delta: float) -> void:
 
 func advance(dt: float) -> void:
 	_time += dt
+	_art_since += dt
 	_sign_left = maxf(_sign_left - dt, 0.0)
 	if not is_fighting():
 		_refresh()
@@ -702,7 +745,13 @@ func play_disarm() -> PixelBurst:
 	_core.set_enabled(false)
 	_set_machine_solid(false)
 	var root: Node = _level_root()
-	_burst = PixelBurst.spawn(_body_tex, get_machine_rect().get_center(), 1.0, root if root != null else self, cfg)
+	# Con el arte final se suelta el ultimo cuadro de defeat (apagada y rota).
+	var last: Texture2D = _art_texture(["defeat", int(ART_ANIMS["defeat"][0]) - 1])
+	var tex: Texture2D = last if _art_on and last != null else _body_tex
+	var at: Vector2 = get_art_rect().get_center() if tex == last else get_machine_rect().get_center()
+	if _body_sprite != null:
+		_body_sprite.visible = false
+	_burst = PixelBurst.spawn(tex, at, 1.0, root if root != null else self, cfg)
 	disarmed.emit()
 	return _burst
 
@@ -828,6 +877,7 @@ func pay_platform(platform: String) -> bool:
 	st["stood"] = 0.0
 	st["life"] = float(section("priced_platforms").get("life_s", 6.0))
 	_set_body_solid(st["body"], true)
+	_offer_at = _time
 	platform_paid.emit(StringName(platform), credit)
 	return true
 
@@ -942,6 +992,7 @@ func launch_batch() -> Array[SurpriseBox]:
 	var alive: Array[SurpriseBox] = get_boxes()
 	while alive.size() > max_boxes:
 		_remove_box(alive.pop_front())
+	_throw_at = _time
 	attack_started.emit(ATTACK_BOXES)
 	return out
 
@@ -1307,6 +1358,13 @@ func _clear_attacks() -> void:
 
 func _build() -> void:
 	_body_tex = _make_body_texture()
+	_body_sprite = Sprite2D.new()
+	_body_sprite.name = "Body"
+	_body_sprite.top_level = true
+	_body_sprite.centered = false
+	_body_sprite.z_index = -1
+	_body_sprite.visible = false
+	add_child(_body_sprite)
 	_machine = StaticBody2D.new()
 	_machine.name = "Machine"
 	_machine.top_level = true
@@ -1429,6 +1487,7 @@ func _make_body_texture() -> Texture2D:
 
 
 func _refresh() -> void:
+	_refresh_art()
 	if _body_help != null:
 		_body_help.global_position = get_machine_rect().get_center()
 	for name: String in _platform_helps:
@@ -1437,6 +1496,97 @@ func _refresh() -> void:
 		_offer_help.global_position = get_offer_sign_rect().get_center()
 	if _fx != null:
 		_fx.queue_redraw()
+
+
+# --- Arte final (paso 24 de docs/propuesta-mundo-5.md) ---
+
+## La maquina se ve con el arte final (cuadros de tools/import_boss_vendor.py).
+func has_final_art() -> bool:
+	return _art_on
+
+
+## [animacion, cuadro, reflejado] del arte final que toca ahora (ART_ANIMS).
+func get_art_frame() -> Array:
+	var key: String = "idle"
+	var isak: Isak = find_isak()
+	if _off:
+		key = "defeat"
+	elif _turn == TURN_WARN or _turn == TURN_TURNING:
+		return ["turn", get_turn_art_cell(), _facing == SIDE_LEFT]
+	elif is_fighting() and (is_refunding() or (isak != null and isak.is_frozen())):
+		key = "processing"
+	elif is_fighting() and _time - _throw_at < _art_duration("throw"):
+		return ["throw", _art_progress("throw", (_time - _throw_at) / _art_duration("throw")), _facing == SIDE_LEFT]
+	elif is_fighting() and (_time - _offer_at < ART_OFFER_S or (get_phase() == 3 and _offer_grace_left > 0.0)):
+		key = "offer"
+	if key != _art_key:
+		_art_key = key
+		_art_since = 0.0
+	var spec: Array = ART_ANIMS[key]
+	if key == "defeat":
+		return [key, clampi(ART_DEFEAT_FROM + floori(_art_since * float(spec[1])), 0, int(spec[0]) - 1), false]
+	return [key, posmod(floori(_time * float(spec[1])), int(spec[0])), key in ART_FLIP and _facing == SIDE_LEFT]
+
+
+## Cuadro de turn: en el aviso (turn.warn_frames) los ART_TURN_WARN_CELLS primeros
+## por su progreso; en el giro (turn.anim_s) el resto. Un golpe que lo gira ya
+## empieza en el giro.
+func get_turn_art_cell() -> int:
+	var n: int = int(ART_ANIMS["turn"][0])
+	if _turn == TURN_WARN:
+		var warn_s: float = frames_s(section("turn").get("warn_frames", 9))
+		var p: float = clampf((_turn_t - (get_turn_s() - warn_s)) / maxf(warn_s, 0.01), 0.0, 1.0)
+		return clampi(floori(p * float(ART_TURN_WARN_CELLS)), 0, ART_TURN_WARN_CELLS - 1)
+	if _turn == TURN_TURNING:
+		var anim_s: float = float(section("turn").get("anim_s", 0.25))
+		var q: float = clampf(_turn_t / maxf(anim_s, 0.01), 0.0, 1.0)
+		var rest: int = n - ART_TURN_WARN_CELLS
+		return clampi(ART_TURN_WARN_CELLS + floori(q * float(rest)), ART_TURN_WARN_CELLS, n - 1)
+	return 0
+
+
+## Esquina de arriba a la izquierda del lienzo del arte final (global).
+func get_art_position() -> Vector2:
+	return (get_machine_rect().position + ART_BODY_OFFSET).round()
+
+
+## Rectangulo global del dibujo (lienzo del arte final o la caja).
+func get_art_rect() -> Rect2:
+	if _art_on and _body_sprite != null and _body_sprite.texture != null:
+		return Rect2(_body_sprite.global_position, _body_sprite.texture.get_size())
+	return get_machine_rect()
+
+
+func _art_duration(anim: String) -> float:
+	var spec: Array = ART_ANIMS[anim]
+	return float(spec[0]) / maxf(float(spec[1]), 1.0)
+
+
+func _art_progress(anim: String, f: float) -> int:
+	var n: int = int(ART_ANIMS[anim][0])
+	return clampi(floori(clampf(f, 0.0, 1.0) * float(n)), 0, n - 1)
+
+
+func _art_texture(frame: Array) -> Texture2D:
+	var file_name: String = "vendor_%s_%02d.png" % [frame[0], int(frame[1])]
+	if not _textures.has(file_name):
+		var path: String = ART_DIR + file_name
+		_textures[file_name] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _textures[file_name]
+
+
+## Pone el cuadro del arte final (si faltan los cuadros, el provisional de VendorFx).
+func _refresh_art() -> void:
+	if _body_sprite == null:
+		return
+	var frame: Array = get_art_frame()
+	var tex: Texture2D = _art_texture(frame)
+	_art_on = tex != null
+	_body_sprite.visible = _art_on and get_pixel_burst() == null
+	if _art_on:
+		_body_sprite.texture = tex
+		_body_sprite.flip_h = bool(frame[2])
+		_body_sprite.global_position = get_art_position()
 
 
 # --- Ayudas Q y musica (paso 20 de docs/propuesta-mundo-5.md) ---
@@ -1582,8 +1732,8 @@ class HelpMarker extends Node2D:
 		return available.is_valid() and bool(available.call())
 
 
-## Dibujo PROVISIONAL por codigo: maquina con su cara de delante (sonrisa de neon,
-## brazos, bandeja), plataformas con su etiqueta y precio (con el Debug, el icono de
+## Dibujo por codigo: maquina PROVISIONAL con su cara de delante (sonrisa de neon,
+## brazos; solo sin el arte final), bandeja, plataformas con su etiqueta y precio (con el Debug, el icono de
 ## la trampa), brazo que barre, monedas, cuenta y carteles. Rojo = lo que dana.
 class VendorFx extends Node2D:
 	var boss: Vendor
@@ -1612,23 +1762,26 @@ class VendorFx extends Node2D:
 				wr.size.x, 22, ink)
 		if boss.get_pixel_burst() != null:
 			return
-		draw_rect(m, body)
-		draw_rect(m, trim, false, 4.0)
-		var f: int = boss.get_facing()
-		# Cara de delante: vitrina, sonrisa de neon y bandeja.
-		var front_x: float = m.position.x if f < 0 else m.end.x
-		var glass := Rect2(m.position + Vector2(16.0, 24.0), Vector2(m.size.x - 32.0, 96.0))
-		draw_rect(glass, ink)
 		var off: bool = boss.is_screen_off()
-		var blink: bool = boss.get_turn_stage() == Vendor.TURN_WARN and fmod(boss.get_time() * 8.0, 1.0) < 0.5
-		if not off and not blink:
-			var c := Vector2(m.get_center().x + float(f) * 24.0, m.position.y - 24.0)
-			draw_arc(c, 36.0, 0.3, PI - 0.3, 16, neon, 6.0)
-			draw_circle(c + Vector2(-18.0, -22.0), 5.0, neon)
-			draw_circle(c + Vector2(18.0, -22.0), 5.0, neon)
-		# Brazos (no solidos): fuera por la cara de delante; recogidos en el aviso.
-		var reach: float = 0.0 if boss.get_turn_stage() in [Vendor.TURN_WARN, Vendor.TURN_TURNING] else 48.0
-		draw_line(Vector2(front_x, m.position.y + 160.0), Vector2(front_x + float(f) * reach, m.position.y + 176.0), trim, 6.0)
+		# Con el arte final (paso 24) la maquina, la sonrisa y los brazos son el
+		# sprite Body; esto es el provisional.
+		if not boss.has_final_art():
+			draw_rect(m, body)
+			draw_rect(m, trim, false, 4.0)
+			var f: int = boss.get_facing()
+			# Cara de delante: vitrina, sonrisa de neon y bandeja.
+			var front_x: float = m.position.x if f < 0 else m.end.x
+			var glass := Rect2(m.position + Vector2(16.0, 24.0), Vector2(m.size.x - 32.0, 96.0))
+			draw_rect(glass, ink)
+			var blink: bool = boss.get_turn_stage() == Vendor.TURN_WARN and fmod(boss.get_time() * 8.0, 1.0) < 0.5
+			if not off and not blink:
+				var c := Vector2(m.get_center().x + float(f) * 24.0, m.position.y - 24.0)
+				draw_arc(c, 36.0, 0.3, PI - 0.3, 16, neon, 6.0)
+				draw_circle(c + Vector2(-18.0, -22.0), 5.0, neon)
+				draw_circle(c + Vector2(18.0, -22.0), 5.0, neon)
+			# Brazos (no solidos): fuera por la cara de delante; recogidos en el aviso.
+			var reach: float = 0.0 if boss.get_turn_stage() in [Vendor.TURN_WARN, Vendor.TURN_TURNING] else 48.0
+			draw_line(Vector2(front_x, m.position.y + 160.0), Vector2(front_x + float(f) * reach, m.position.y + 176.0), trim, 6.0)
 		var tray: Rect2 = boss.get_tray_zone_rect()
 		draw_rect(Rect2(tray.position + Vector2(0.0, tray.size.y - 12.0), Vector2(tray.size.x, 12.0)), trim)
 		if boss.is_slot_open():
@@ -1691,5 +1844,5 @@ class VendorFx extends Node2D:
 			if fuse >= 0.0 and box.is_closed() and fmod(boss.get_time() * 10.0, 1.0) < 0.5:
 				var top: Vector2 = box.get_body_rect().position + Vector2(box.get_body_rect().size.x * 0.5, -6.0)
 				draw_circle(top, 4.0, warn)
-		if off and boss._body_tex != null:
+		if off and boss._body_tex != null and not boss.has_final_art():
 			draw_line(m.position + Vector2(16, 16), m.end - Vector2(16, 16), warn, 8.0)
