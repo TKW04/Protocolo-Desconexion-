@@ -88,3 +88,34 @@ En inglés, describiendo solo lo que debe verse, con la vista fijada y «Only th
 - **`throw`**: el brazo lanza un producto pequeño que la IA dibujó (una cajita amarilla); las cajas de verdad siguen saliendo por código, así que hay un instante con las dos.
 - La ranura abierta (fase 3) y el túnel de la bandeja (fase 2) se dibujan como rectángulos oscuros encima del arte (por código, como antes).
 - La captura `04_fase1_giro` cae en el reposo y no en el giro (temporización de la captura); el giro se ve en `vendedor_giro_cuadros.png`.
+
+## 3. Poses de combo de Isak (2026-10-30)
+
+Autorizado por el usuario: los ~15 créditos de las tres poses de combo, del tope de 57 del Mundo 5. Las generaciones las lanzó el orquestador (con permiso); esta tarea solo esperó, descargó e integró (sin gastar nada).
+
+### 3.1 Créditos y jobs
+
+Tres `generate_spritesheet` turbo (`custom`, modo `reference`, 25 cuadros de 512, sin bucle) sobre «Isak» (`cmv8jdhmp002dx53v31enxx9m`): **15 créditos** (5 + 5 + 5), saldo **198**. Sin reintentos.
+
+| Hoja | Job | Video | Spritesheet |
+|---|---|---|---|
+| `combo_ram` (Embestida) | `wf_a088557f-6bff-4ca4-a596-64bdb1e401d0` | `cmvvc5749005zpncn8jyiz5mu` | `cmvvc65n500u3qffs0vj3jk9k` |
+| `combo_edge` (Filo) | `wf_0af372c5-ea6f-4705-8e2d-aa0838ec70d5` | `cmvvc574x0061pncnrc26ohvb` | `cmvvc65rm006hpncnp9095v8g` |
+| `combo_quake` (Sismo) | `wf_f6420856-e743-448f-905c-aca03880fcde` | `cmvvc57660063pncntxfxdfup` | `cmvvc69dl00u7qffs7246rflu` |
+
+Hojas reducidas a 256 por cuadro (LANCZOS en RGBA, como las demás de Isak): `hojas/combo_{ram,edge,quake}_right/spritesheet.png`; hojas de contacto con los índices en `docs/capturas/arte-autosprite-2026-10-30/isak_combo_{ram,edge,quake}_cuadros.png`.
+
+### 3.2 Integración
+
+- `tools/import_sheet.py` (comandos en `docs/guia-sprites-ia.md`) → `tools/build_isak_frames.gd` → `scenes/player/isak_frames.tres`, sin bucle: **`combo_ram`** (celdas 10-12 de la hoja de la Embestida, lanzamiento en diagonal, escala 0,539326, 75-90 px visibles, 12 fps), **`combo_edge`** (celdas 15, 17, 19, 21 **de la hoja de la Embestida**: el cuerpo plano en horizontal, a la escala de `compress`, 0,38, ~47 px, 18 fps = 0,22 s), **`combo_quake_air`** (7-10 de la hoja del Sismo, encogido en la caída, 0,38, ~50 px, 12 fps) y **`combo_quake_land`** (13, 14, agachado con el puño en el suelo, 0,38, 42 px, 8 fps; sin las celdas 11-12 con polvo: la onda la dibuja el código).
+- `Isak.update_combo_pose` las usa con `has_animation`, sin rotar ni escalar, una vez y quietas en el último cuadro; la Embestida al aterrizar sigue con `ground_pound_land`. `_update_compress_pose` no aplasta el sprite mientras se ve una pose de combo (el Filo y el Sismo ya van comprimidos). Las estelas (dash y caída) siguen por código. Sin los cuadros, la pose provisional (rotación de 30° del dash, `jump_fall` comprimido y estela de la caída).
+- **Sin cambios**: estados `combo_*_state.gd`, cajas, tiempos, costes y el margen de entrada de 0,12 s.
+- Pruebas: `test_poses_use_the_autosprite_frames_without_the_provisional_tilt` (`tests/test_combo.gd`, 15/15), `test_combo_real_input` 16/16, `test_combo_real_input_5_2` 2/2, `test_player_states` 22/22, `test_combo_obstacles` 17/17, `test_isak_animations` 19/19, `test_compress` 17/17, `tests/test_import_sheet.py` 3/3, `tests/test_reduce_palette.py` 5/5.
+- Capturas en la sala `combos_test` con el Isak real (`$GODOT --fixed-fps 60 --path . -s tools/render_combo_poses.gd -- <carpeta>`, con ventana): `docs/capturas/arte-autosprite-2026-10-30/juego_isak_combo_*.png` (recortes x3).
+
+### 3.3 Defectos vistos (a ojo)
+
+- **Filo: la hoja no sirve.** En vez del cuerpo plano, Isak se queda de pie, estira el brazo en horizontal (celdas 12-17, con una raya fina a la altura de la cabeza) y en las 18-24 sale una mancha gris encima de él. Se usa el cuerpo plano de la hoja de la Embestida (13-24), reducido: el Filo y la Embestida se parecen (cambia el tamaño). Sus 5 créditos no dan cuadros en el juego; la hoja se guarda por si se quiere otra cosa de ella.
+- **Embestida: sube en vez de bajar.** El cuerpo apunta hacia arriba y adelante (lanzamiento tipo «superhéroe»), mientras la Embestida baja a 45°: se lee como un impulso, no como una zambullida. Sin rotar (girar a mano en vecino más cercano deforma el pixel art); si molesta al jugar, se puede girar con `combo.visual.ram_tilt_deg` o pedir otra hoja.
+- Mochila marrón en las tres hojas (la trae el personaje base de AutoSprite, como en las demás poses de Isak).
+- Sismo: bien; el encogido de la caída y el puño en el suelo se leen y cuadran con el golpe al suelo.

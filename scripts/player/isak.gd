@@ -101,6 +101,13 @@ const ANIM_SHOCKWAVE_HOLD: StringName = &"shockwave_hold"
 ## Pose del gesto Pellizcar (AutoSprite, 2026-10-27): comprimido quieto / andando.
 const ANIM_COMPRESS_IDLE: StringName = &"compress_idle"
 const ANIM_COMPRESS_WALK: StringName = &"compress_walk"
+## Poses de la Combinacion (AutoSprite, 2026-10-30; Isak.update_combo_pose).
+const ANIM_COMBO_RAM: StringName = &"combo_ram"
+const ANIM_COMBO_EDGE: StringName = &"combo_edge"
+const ANIM_COMBO_QUAKE_AIR: StringName = &"combo_quake_air"
+const ANIM_COMBO_QUAKE_LAND: StringName = &"combo_quake_land"
+const COMBO_ART_ANIMS: Array[StringName] = [ANIM_COMBO_RAM, ANIM_COMBO_EDGE, ANIM_COMBO_QUAKE_AIR,
+	ANIM_COMBO_QUAKE_LAND]
 ## Animaciones del estado que la pose comprimida sustituye (el resto, p. ej. la
 ## muerte, se ve con los cuadros normales).
 const COMPRESS_ART_MAP: Dictionary = {
@@ -1550,11 +1557,32 @@ func end_combo(kind: StringName, direction: float = 0.0, keep_speed: bool = fals
 	_restore_sprite_shape()
 
 
-## Pose PROVISIONAL del combo (hasta las de AutoSprite): Embestida = la del dash
-## girada combo.visual.ram_tilt_deg hacia delante (al aterrizar, la del golpe al
-## suelo); Filo = la comprimida con la estela del dash; Sismo = la comprimida de
-## caida con la estela de la caida (al aterrizar, la onda a ras de suelo).
+## Pose del combo. Con los cuadros de AutoSprite (2026-10-30; combo_ram,
+## combo_edge, combo_quake_air / _land de isak_frames.tres) se reproducen sin
+## rotar ni escalar, una vez y quietos en el ultimo cuadro; la Embestida al
+## aterrizar usa la del golpe al suelo. Las estelas (dash y caida) siguen por
+## codigo. Sin los cuadros, la pose PROVISIONAL: Embestida = la del dash girada
+## combo.visual.ram_tilt_deg hacia delante (al aterrizar, la del golpe al suelo);
+## Filo = la comprimida con la estela del dash; Sismo = la comprimida de caida
+## con la estela de la caida (al aterrizar, la onda a ras de suelo).
 func update_combo_pose(kind: StringName, landed: bool) -> void:
+	var art: StringName = &""
+	match kind:
+		COMBO_RAM:
+			art = &"" if landed else ANIM_COMBO_RAM
+		COMBO_EDGE:
+			art = ANIM_COMBO_EDGE
+		COMBO_QUAKE:
+			art = ANIM_COMBO_QUAKE_LAND if landed else ANIM_COMBO_QUAKE_AIR
+	var frames: SpriteFrames = _sprite.sprite_frames
+	if art != &"" and frames != null and frames.has_animation(art):
+		_sprite.rotation = 0.0
+		_restore_sprite_shape()
+		if _sprite.animation != art:
+			_sprite.play(art)
+		if kind == COMBO_QUAKE and not landed:
+			_pound_effect.begin_drop(global_position)
+		return
 	match kind:
 		COMBO_RAM:
 			if landed:
@@ -2067,6 +2095,12 @@ func _update_compress(delta: float) -> void:
 func _update_compress_pose() -> void:
 	if is_ground_pounding():
 		_compress_pose_applied = false
+		return
+	# Las poses de AutoSprite del Filo y del Sismo ya van comprimidas: sin aplastar.
+	if is_comboing() and _sprite.animation in COMBO_ART_ANIMS:
+		if _compress_pose_applied:
+			_restore_sprite_shape()
+			_compress_pose_applied = false
 		return
 	if has_compress_art():
 		var art_now: bool = _sprite.animation in [ANIM_COMPRESS_IDLE, ANIM_COMPRESS_WALK]

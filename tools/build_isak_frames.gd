@@ -86,6 +86,15 @@ const RUN_FPS: float = 14.0
 ##   cuadro por el progreso de la anticipacion (windup_s 0,15 s); hold dura la
 ##   exposicion (2 cuadros a 8 fps = 0,25 s = exposed_s). Sustituyen a la
 ##   sacudida provisional del sprite (ShockwaveEffect.shake_offset).
+## combo_ram / combo_edge / combo_quake_air / combo_quake_land (2026-10-30, paso
+##   24 del Mundo 5): poses de la Combinacion, sin bucle (AutoSprite; comandos en
+##   docs/guia-sprites-ia.md). Embestida: lanzamiento en diagonal, celdas 10-12
+##   de hojas/combo_ram_right (escala normal; al aterrizar, ground_pound_land).
+##   Filo: cuerpo plano en horizontal, celdas 15,17,19,21 de la MISMA hoja de la
+##   Embestida (la hoja del Filo no trae el cuerpo plano), a la escala de
+##   compress (0,38). Sismo: encogido en la caida (celdas 7-10) y puno en el suelo
+##   (13, 14) de hojas/combo_quake_right, a 0,38. Sustituyen a la pose provisional
+##   (Isak.update_combo_pose).
 const ANIMATIONS: Dictionary[String, Array] = {
 	"idle": [8.0, true, false],
 	"walk": [WALK_FPS, true, false],
@@ -108,6 +117,10 @@ const ANIMATIONS: Dictionary[String, Array] = {
 	"compress_walk": [12.0, true, false],
 	"shockwave_shake": [24.0, false, false],
 	"shockwave_hold": [8.0, false, false],
+	"combo_ram": [12.0, false, false],
+	"combo_edge": [18.0, false, false],
+	"combo_quake_air": [12.0, false, false],
+	"combo_quake_land": [8.0, false, false],
 }
 
 ## Animaciones hechas con cuadros de otra (sin PNG propios):

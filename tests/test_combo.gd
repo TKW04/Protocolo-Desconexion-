@@ -420,3 +420,52 @@ func test_notice_reads_the_keys_from_the_input_map() -> void:
 	assert_eq(text, "Combinación en el aire · Embestida: Deslizar (%s) + abajo (%s) · Filo: Pellizcar (%s) + Deslizar · Sismo: Pellizcar + abajo" % [swipe, down, pinch])
 	assert_false(text.contains("{"), "Sin marcas sin sustituir")
 	assert_true(AbilityNotices.is_available(GameState.ABILITY_COMBO))
+
+
+# --- Poses de AutoSprite (2026-10-30) ---
+
+func test_poses_use_the_autosprite_frames_without_the_provisional_tilt() -> void:
+	var sprite: AnimatedSprite2D = _isak.get_sprite()
+	var frames: SpriteFrames = sprite.sprite_frames
+	for anim: StringName in [Isak.ANIM_COMBO_RAM, Isak.ANIM_COMBO_EDGE, Isak.ANIM_COMBO_QUAKE_AIR, Isak.ANIM_COMBO_QUAKE_LAND]:
+		assert_true(frames.has_animation(anim), "%s en isak_frames.tres" % anim)
+		assert_false(frames.get_animation_loop(anim), "%s sin bucle" % anim)
+	var base_scale: Vector2 = sprite.scale
+	# Embestida: lanzamiento en diagonal, sin girar; al aterrizar, la del golpe al suelo.
+	_jump()
+	_press_dash(1.0)
+	_sim.input.hold_held = true
+	_sim.step_until(func() -> bool: return _sim.state() == PlayerState.COMBO_RAM, _sim.steps_for(0.5))
+	_sim.step(2)
+	assert_eq(sprite.animation, Isak.ANIM_COMBO_RAM, "Embestida")
+	assert_almost_eq(sprite.rotation, 0.0, EPS, "Sin la rotacion provisional")
+	_sim.step_until(func() -> bool: return _isak.is_on_floor(), _sim.steps_for(2.0))
+	_sim.step()
+	assert_eq(sprite.animation, Isak.ANIM_GROUND_POUND_LAND, "Aterriza con la pose del golpe al suelo")
+	_release_down()
+	_wait_not(PlayerState.COMBO_RAM)
+	_sim.step(30)
+	# Filo: cuerpo plano, sin escalar; se queda en el ultimo cuadro.
+	_jump(8)
+	_pinch()
+	_press_dash(1.0)
+	assert_eq(_sim.state(), PlayerState.COMBO_EDGE)
+	assert_eq(sprite.animation, Isak.ANIM_COMBO_EDGE, "Filo")
+	assert_eq(sprite.scale, base_scale, "Sin aplastar")
+	_sim.step(4)
+	assert_eq(sprite.animation, Isak.ANIM_COMBO_EDGE, "La pose comprimida no la sustituye")
+	_wait_not(PlayerState.COMBO_EDGE)
+	_sim.step_until(func() -> bool: return _isak.is_on_floor(), _sim.steps_for(2.0))
+	_sim.step(10)
+	# Sismo: encogido en la caida y puno en el suelo al aterrizar.
+	_jump()
+	_hold_down(0.1)
+	assert_eq(_sim.state(), PlayerState.COMBO_QUAKE)
+	assert_eq(sprite.animation, Isak.ANIM_COMBO_QUAKE_AIR, "Sismo en el aire")
+	assert_eq(sprite.scale, base_scale)
+	_sim.step_until(func() -> bool: return _isak.is_on_floor(), _sim.steps_for(2.0))
+	_sim.step()
+	assert_eq(sprite.animation, Isak.ANIM_COMBO_QUAKE_LAND, "Sismo al aterrizar")
+	_release_down()
+	_wait_not(PlayerState.COMBO_QUAKE)
+	assert_ne(sprite.animation, Isak.ANIM_COMBO_QUAKE_LAND, "Al terminar vuelve a su animacion")
