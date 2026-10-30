@@ -313,7 +313,7 @@ func test_popped_bubble_stays_popped_after_respawn() -> void:
 	assert_eq(bubble.get_state(), AlertBubble.STATE_POPPED, "Sigue reventada")
 
 
-func test_safety_net_respawns_without_sync_penalty() -> void:
+func test_safety_net_respawns_with_full_sync() -> void:
 	await _start()
 	GameState.sync_rate = 60.0
 	_isak.global_position = Vector2(30.0 * TILE, _main.get_fall_limit_y() + 10.0)
@@ -322,7 +322,7 @@ func test_safety_net_respawns_without_sync_penalty() -> void:
 	assert_eq(_main.get_fall_count(), 1)
 	_main.advance(LONG_STEP_S)
 	assert_true(_isak.global_position.is_equal_approx(_main.get_start_position()), "Sin checkpoint: P")
-	assert_eq(GameState.sync_rate, 60.0, "No quita Sync Rate (PROPUESTA)")
+	assert_eq(GameState.sync_rate, GameState.get_sync_rate_max(), "Cuesta una vida (si cuentan) y reaparece con el Sync Rate lleno (2026-10-30)")
 	assert_false(_isak.is_dead())
 	_main.advance(LONG_STEP_S)
 	assert_eq(_main.get_phase(), LevelRunner.Phase.PLAYING)

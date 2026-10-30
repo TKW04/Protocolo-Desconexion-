@@ -24,6 +24,12 @@
 ##   cero castigo); la Burbuja viva vuelve a su sitio patrullando.
 ## - Red de seguridad: si Isak cae por debajo del nivel (fall_limit_margin_px)
 ##   reaparece igual, quitando fall_sync_penalty (PROPUESTA 0).
+##   Desde el 2026-10-30 (peticion del usuario; docs/propuesta-mundo-5.md §8.1) con
+##   fall_costs_life la caida por un barranco CUESTA UNA VIDA en todos los mapas (con la
+##   ultima, game over como cualquier muerte) y reaparece en el checkpoint con el Sync
+##   Rate lleno; con fall_respawns_enemies los enemigos derrotados del nivel se recrean
+##   (EnemyRespawn; no en las arenas de jefe) y lo recogido (secretos, puntos, recuerdos,
+##   vidas extra, power banks) y los objetos del mapa siguen como estaban.
 ## - Jefe (2026-10-21, paso 10 de docs/propuesta-jefe-alerta-mayor.md): la arena
 ##   no tiene terminal; su BossDefeat emite level_completed tras la recompensa y
 ##   el vortice. Si con ello la carpeta del mundo queda completada por primera
@@ -139,6 +145,8 @@ var _transition: CanvasLayer
 var _fade: ColorRect
 var _deaths: int = 0
 var _falls: int = 0
+## Enemigos del nivel tal como empiezan (EnemyRespawn.capture), para recrearlos tras una caida.
+var _enemy_templates: Array[Dictionary] = []
 var _game_overs: int = 0
 ## La muerte en curso fue la ultima vida: al fundir, game over en lugar de reaparecer.
 var _game_over_pending: bool = false
@@ -396,7 +404,9 @@ func start_level(level_id: String) -> bool:
 	GameState.refill_lives()
 	# Intento nuevo: el Pulso de retorno vuelve a dar energia una vez por enemigo.
 	GameState.begin_attempt()
-	_level = (load(path) as PackedScene).instantiate() as GeneratedLevel
+	var packed := load(path) as PackedScene
+	_enemy_templates = EnemyRespawn.capture(packed)
+	_level = packed.instantiate() as GeneratedLevel
 	_level_id = level_id
 	_holder.add_child(_level)
 	_isak = _level.get_isak()
@@ -539,8 +549,30 @@ func check_fall() -> bool:
 	if _isak.is_dead() or _isak.global_position.y <= get_fall_limit_y():
 		return false
 	_falls += 1
-	_fade_out_then(_respawn.bind(false))
+	if fall_costs_life():
+		_game_over_pending = GameState.lose_life()
+	_fade_out_then(_game_over_now if _game_over_pending else _respawn.bind(false))
 	return true
+
+
+## Caer por un barranco cuesta una vida (fall_costs_life de data/flow.json; 2026-10-30).
+func fall_costs_life() -> bool:
+	return bool(_data.get("fall_costs_life", true))
+
+
+## Tras una caida se recrean los enemigos derrotados (fall_respawns_enemies; no en las
+## arenas de jefe).
+func fall_respawns_enemies() -> bool:
+	return bool(_data.get("fall_respawns_enemies", true)) and not _level_has_boss()
+
+
+func _level_has_boss() -> bool:
+	if _level == null:
+		return false
+	for node: Node in get_tree().get_nodes_in_group(BossBase.GROUP):
+		if _level.is_ancestor_of(node):
+			return true
+	return false
 
 
 # --- Interno ---
@@ -563,12 +595,14 @@ func _respawn(after_death: bool) -> void:
 	var at: Vector2 = get_respawn_position()
 	DebugMode.reset()
 	Engine.time_scale = 1.0
-	if after_death:
+	if after_death or fall_costs_life():
 		GameState.sync_rate = GameState.get_sync_rate_max()
 	else:
 		GameState.apply_sync_damage(float(_data.get("fall_sync_penalty", 0.0)))
 	_isak.respawn(at, float(_data.get("respawn_invulnerability_s", 1.0)))
 	_start_arrival()
+	if not after_death and fall_respawns_enemies():
+		EnemyRespawn.restore(_level, _enemy_templates)
 	for enemy: Node in get_tree().get_nodes_in_group(AlertBubble.GROUP):
 		if _level.is_ancestor_of(enemy) and enemy.has_method(&"reset_patrol"):
 			enemy.call(&"reset_patrol")

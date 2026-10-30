@@ -238,6 +238,7 @@ Notas, la papelera y Calc se presentan con momentos de historia, no con Q.
 - **Los puntos de sincronización no reponen vidas.**
 - **Al morir con vidas restantes:** se resta una y se reaparece en el último punto de sincronización, como hoy (V2).
 - **Al llegar a 0 vidas:** game over (§5.2).
+- **Caer por un barranco (2026-10-30, petición del usuario):** en **todos los mapas** caer por debajo del nivel (la red de seguridad de `LevelRunner.check_fall`) **cuesta una vida** como una muerte (antes no restaba nada ni quitaba Sync Rate): se reaparece en el último punto de sincronización con el Sync Rate lleno y, con la última vida, game over. Antes de que cuenten las vidas (primer recorrido del 1-1) es gratis, como morir. Tras la caída **los enemigos derrotados reaparecen** (se recrean como al empezar el nivel; `EnemyRespawn`; no en las arenas de jefe) y **lo recogido se conserva**: puntos de atención, mensajes de recuerdo (`memory_pickup`), vidas extra, power banks y demás secretos, y los objetos del mapa (puentes, pop-ups, cajas, puertas, cargadores gastados…) siguen como estaban. Morir por daño sigue la regla de siempre (los derrotados no vuelven). `fall_costs_life` y `fall_respawns_enemies` de `data/flow.json`; pruebas `tests/test_fall_life.gd`.
 - **Vida extra:**
   - Cada vida extra encontrada sube **de forma permanente** el máximo base (3 → 4 → …) y se registra como **secreto encontrado** (`found_secrets`).
   - Al cogerla, también suma +1 a las vidas del intento en curso.

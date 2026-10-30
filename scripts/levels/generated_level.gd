@@ -100,10 +100,16 @@ func _apply_enemy_params() -> void:
 	if enemies == null:
 		return
 	for enemy: Node in enemies.get_children():
-		var params: Dictionary = enemy.get_meta(ENEMY_PARAMS_META, {})
-		for key: Variant in params:
-			var property: String = String(ENEMY_PARAM_ALIASES.get(String(key), String(key)))
-			if property in enemy:
-				enemy.set(property, params[key])
-			else:
-				push_warning("GeneratedLevel: %s no tiene la propiedad '%s'" % [enemy.name, property])
+		apply_enemy_params_to(enemy)
+
+
+## Aplica los params del nivel (metadato params) a `enemy` (tambien a los que recrea
+## EnemyRespawn tras una caida).
+func apply_enemy_params_to(enemy: Node) -> void:
+	var params: Dictionary = enemy.get_meta(ENEMY_PARAMS_META, {})
+	for key: Variant in params:
+		var property: String = String(ENEMY_PARAM_ALIASES.get(String(key), String(key)))
+		if property in enemy:
+			enemy.set(property, params[key])
+		else:
+			push_warning("GeneratedLevel: %s no tiene la propiedad '%s'" % [enemy.name, property])
