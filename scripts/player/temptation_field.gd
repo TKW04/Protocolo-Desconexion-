@@ -134,6 +134,8 @@ static func tick_damage(tree: SceneTree, isak: Isak, dt: float) -> float:
 	GameState.sync_rate = after
 	_dmg_last_hit = before - after
 	_dmg_flash_left = field_value("damage_flash_s", 0.5)
+	# La reaccion de un golpe normal, solo visual y sonora (§8.1, cambio 6): un golpe = una.
+	isak.take_temptation_hit()
 	return _dmg_last_hit
 
 

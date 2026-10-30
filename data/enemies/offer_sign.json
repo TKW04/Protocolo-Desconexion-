@@ -32,7 +32,10 @@
 		"damage_warning_s": 0.75,
 		"damage_cap": 6.0,
 		"damage_floor": 1.0,
-		"damage_flash_s": 0.5
+		"damage_flash_s": 0.5,
+		"_hurt_notes": "REACCION DE ISAK A CADA GOLPE (2026-10-30, peticion del usuario: «cuando te quitan dano Isak debe reaccionar como cuando recibe dano de cualquier otro enemigo»; docs/propuesta-mundo-5.md §8.1, cambio 6; Isak.take_temptation_hit). Lo mismo que un golpe normal SOLO en lo visual y sonoro: pose hurt durante hurt_pose_s (0,3 s, la de hurt_duration_s) sin cambiar de estado, parpadeo del sprite durante hurt_blink_s (0,5 s, por debajo del damage_interval_s: un parpadeo por golpe) y sfx_isak_hurt (senal Isak.temptation_hurt). SIN retroceso, sin estado Hurt, sin invulnerabilidad y sin cortar el Ocultarte.",
+		"hurt_pose_s": 0.3,
+		"hurt_blink_s": 0.5
 	},
 	"level_params": {
 		"_notes": "Params por instancia que acepta el esquema del nivel (enemies[].params), con su rango [min, max] o sus valores. mount: floor o wall.",

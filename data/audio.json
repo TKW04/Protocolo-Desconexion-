@@ -228,6 +228,7 @@
 		{"class": "Isak", "signal": "state_changed", "when": {"1": "jump"}, "sound": "sfx_isak_jump"},
 		{"class": "Isak", "signal": "state_changed", "when": {"0": ["fall", "jump"], "1": ["idle", "run"]}, "sound": "sfx_isak_land"},
 		{"class": "Isak", "signal": "hurt", "sound": "sfx_isak_hurt"},
+		{"class": "Isak", "signal": "temptation_hurt", "sound": "sfx_isak_hurt"},
 		{"class": "AttentionPoint", "signal": "collected", "sound": "sfx_attention_point"},
 		{"class": "AbilityPickup", "signal": "collected", "sound": "sfx_ability_pickup"},
 		{"class": "ExitTerminal", "signal": "activated", "sound": "sfx_exit_terminal"},

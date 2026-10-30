@@ -13,6 +13,9 @@ signal pulse_fired(area: Area2D)
 signal idle_terminal_started
 ## Isak ha recibido un golpe.
 signal hurt
+## Golpe de la tentacion de las Ofertas (Mundo 5; take_temptation_hit): la reaccion de
+## `hurt` solo visual y sonora (sfx_isak_hurt), sin retroceso ni invulnerabilidad.
+signal temptation_hurt
 ## Isak ha muerto.
 signal died
 ## Sale un disparo del laser (tras la anticipacion).
@@ -183,6 +186,10 @@ const COMBO_DENIED_ENERGY: StringName = &"energy"
 ## suelo, el dano, la muerte y el congelado la ignoran.
 const TEMPTATION_STATES: Array[StringName] = [PlayerState.IDLE, PlayerState.RUN, PlayerState.JUMP,
 	PlayerState.FALL, PlayerState.PULSE]
+## Estados en los que el golpe de la tentacion pone la pose hurt encima de la suya
+## (take_temptation_hit; sin cambiar de estado). El pulso conserva su pose.
+const TEMPTATION_HURT_POSE_STATES: Array[StringName] = [PlayerState.IDLE, PlayerState.RUN,
+	PlayerState.JUMP, PlayerState.FALL]
 const CAMERA_SIMPLE: StringName = &"simple"
 const CAMERA_TOWER: StringName = &"tower"
 ## Scroll forzado del Mundo 2 (2026-10-22; ScrollCamera, data/camera_scroll.json).
@@ -248,6 +255,9 @@ var _coyote_left: float = 0.0
 var _invulnerable_left: float = 0.0
 ## Duracion del proximo estado Hurt si es >= 0 (take_stun; la consume HurtState).
 var _hurt_duration_override: float = -1.0
+## Golpe de la tentacion (take_temptation_hit): pose hurt y parpadeo que quedan (s).
+var _temptation_hurt_pose_left: float = 0.0
+var _temptation_hurt_blink_left: float = 0.0
 var _idle_time: float = 0.0
 var _terminal_playing: bool = false
 var _knockback_direction: float = 0.0
@@ -706,6 +716,35 @@ func take_stun(seconds: float, direction: float = 0.0) -> bool:
 	return taken
 
 
+## Golpe de la tentacion de las Ofertas (2026-10-30, docs/propuesta-mundo-5.md §8.1,
+## cambio 6; lo llama TemptationField.tick_damage, uno por golpe): la reaccion de take_hit
+## SOLO visual y sonora: pose hurt durante hurt_pose_s sin cambiar de estado (no en el
+## pulso), parpadeo del sprite durante hurt_blink_s y la senal temptation_hurt
+## (sfx_isak_hurt). Sin retroceso, sin estado Hurt, sin invulnerabilidad y sin cortar el
+## Ocultarte, el dash ni los combos. El Sync lo resta quien llama. Devuelve false si se ignora.
+func take_temptation_hit() -> bool:
+	if is_dead() or _warping or _facing_back or not _ready_ok:
+		return false
+	_temptation_hurt_pose_left = TemptationField.field_value("hurt_pose_s", abilities.hurt_duration_s)
+	_temptation_hurt_blink_left = TemptationField.field_value("hurt_blink_s", 0.5)
+	if _state_name in TEMPTATION_HURT_POSE_STATES and not is_laser_posing():
+		restart_animation(_compress_art_anim(ANIM_HURT))
+	if _regen != null:
+		_regen.note_combat()
+	temptation_hurt.emit()
+	return true
+
+
+## Verdadero mientras dura la pose hurt de un golpe de la tentacion.
+func is_temptation_hurt_posing() -> bool:
+	return _temptation_hurt_pose_left > 0.0 and _state_name in TEMPTATION_HURT_POSE_STATES
+
+
+## Verdadero mientras dura el parpadeo de un golpe de la tentacion.
+func is_temptation_hurt_blinking() -> bool:
+	return _temptation_hurt_blink_left > 0.0 and not is_dead()
+
+
 ## Duracion del estado Hurt que empieza (la de take_stun o hurt_duration_s).
 func get_hurt_duration_s() -> float:
 	return _hurt_duration_override if _hurt_duration_override >= 0.0 else abilities.hurt_duration_s
@@ -733,6 +772,8 @@ func respawn(at: Vector2, invulnerable_s: float = 0.0) -> void:
 	_coyote_left = 0.0
 	_knockback_direction = 0.0
 	_invulnerable_left = maxf(invulnerable_s, 0.0)
+	_temptation_hurt_pose_left = 0.0
+	_temptation_hurt_blink_left = 0.0
 	modulate.a = 1.0
 	stop_pulse_effect()
 	set_pulse_area_active(false)
@@ -2221,6 +2262,11 @@ func get_passive_regen() -> PassiveRegen:
 ## Mientras dura la pose del laser o la de espaldas los estados no cambian la
 ## animacion (al acabar, _end_laser_pose o face_side ponen la del estado).
 func play_animation(anim: StringName) -> void:
+	# Golpe de la tentacion: la pose hurt tapa la del estado mientras dura.
+	if is_temptation_hurt_posing():
+		anim = ANIM_HURT
+		if _sprite.animation == _compress_art_anim(anim):
+			return
 	anim = _compress_art_anim(anim)
 	var frames: SpriteFrames = _sprite.sprite_frames
 	if frames == null or not frames.has_animation(anim) or is_laser_posing() or _facing_back:
@@ -2269,6 +2315,9 @@ func get_animation_frame() -> int:
 func update_air_animation() -> void:
 	var frames: SpriteFrames = _sprite.sprite_frames
 	if frames == null or is_laser_posing() or _facing_back:
+		return
+	if is_temptation_hurt_posing() and not is_compress_art_active():
+		play_animation(ANIM_HURT)
 		return
 	if is_compress_art_active():
 		if _sprite.animation != ANIM_COMPRESS_IDLE:
@@ -2426,6 +2475,8 @@ func _update_timers(delta: float) -> void:
 		_jump_buffer_left = maxf(_jump_buffer_left - delta, 0.0)
 	_invulnerable_left = maxf(_invulnerable_left - delta, 0.0)
 	_dash_invulnerable_left = maxf(_dash_invulnerable_left - delta, 0.0)
+	_temptation_hurt_pose_left = maxf(_temptation_hurt_pose_left - delta, 0.0)
+	_temptation_hurt_blink_left = maxf(_temptation_hurt_blink_left - delta, 0.0)
 	_dash_flash_time += delta
 
 
@@ -2434,6 +2485,9 @@ func _update_timers(delta: float) -> void:
 func _update_blink() -> void:
 	var dim: bool = _invulnerable_left > 0.0 and not is_dead() \
 			and fmod(_invulnerable_left, BLINK_PERIOD_S) < BLINK_PERIOD_S * 0.5
+	# Golpe de la tentacion: el mismo parpadeo, sin la invulnerabilidad.
+	if is_temptation_hurt_blinking() and fmod(_temptation_hurt_blink_left, BLINK_PERIOD_S) < BLINK_PERIOD_S * 0.5:
+		dim = true
 	_sprite.modulate.a = BLINK_ALPHA if dim else 1.0
 	var flash: bool = _dash_invulnerable_left > 0.0 and not is_dead() \
 			and fmod(_dash_flash_time * float(abilities.dash_visual.get("flash_hz", 16.0)), 1.0) < 0.5

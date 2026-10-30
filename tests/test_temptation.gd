@@ -380,3 +380,52 @@ func test_dash_pulse_and_stunned_offers_do_not_hurt() -> void:
 	_sim.input.move_axis = 0.0
 	assert_eq(_sim.state(), PlayerState.DASH)
 	assert_eq(TemptationField.damage_now(get_tree(), _isak), 0.0, "Durante el dash no dana")
+
+
+# --- Cada golpe reacciona como uno normal, solo en lo visual y sonoro (2026-10-30, §8.1, cambio 6) ---
+
+func test_each_hit_plays_the_standard_reaction_without_knockback_or_state_change() -> void:
+	TemptationField.reset_damage()
+	_offer(3.0 * T)
+	watch_signals(_isak)
+	_step(_sim.frames(0.4))
+	assert_signal_not_emitted(_isak, "temptation_hurt", "El aviso no reacciona")
+	# Andando hacia atras contra el tiron: el golpe no cambia el estado ni empuja.
+	_sim.input.move_axis = -1.0
+	var sync: float = GameState.sync_rate
+	var hit_frame: int = -1
+	for i: int in _sim.frames(0.5):
+		_step()
+		if GameState.sync_rate < sync:
+			hit_frame = i
+			break
+	assert_true(hit_frame >= 0, "Llega el primer golpe")
+	assert_signal_emit_count(_isak, "temptation_hurt", 1, "Una reaccion por golpe")
+	assert_signal_not_emitted(_isak, "hurt", "No es un golpe de enemigo (ni likes ni contadores de golpes)")
+	assert_eq(_sim.state(), PlayerState.RUN, "Sigue en su estado de movimiento (sin Hurt)")
+	assert_false(_isak.is_invulnerable(), "Sin invulnerabilidad")
+	assert_lt(_isak.velocity.x, 0.0, "Sin retroceso: sigue andando hacia donde iba")
+	assert_gt(_isak.velocity.x, -_isak.abilities.hurt_knockback_x * 0.75, "Nada del empujon de 240 px/s")
+	assert_true(_isak.is_on_floor(), "Sin el salto del retroceso")
+	assert_eq(_isak.get_animation(), Isak.ANIM_HURT, "Pose de dano como un golpe normal")
+	assert_true(_isak.is_temptation_hurt_blinking(), "Parpadeo del sprite")
+	_step(_sim.frames(0.35))
+	assert_ne(_isak.get_animation(), Isak.ANIM_HURT, "La pose dura poco y vuelve la del estado")
+	assert_eq(_sim.state(), PlayerState.RUN)
+	_sim.input.move_axis = 0.0
+	_isak.global_position.x = 0.0
+	_step(_sim.frames(1.0))
+	assert_signal_emit_count(_isak, "temptation_hurt", 2, "El siguiente golpe, otra reaccion (una por segundo)")
+	assert_signal_not_emitted(_isak, "hurt")
+
+
+func test_several_offers_give_a_single_reaction_per_hit() -> void:
+	TemptationField.reset_damage()
+	_offer(2.5 * T)
+	_offer(3.0 * T)
+	_offer(3.5 * T)
+	watch_signals(_isak)
+	_step(_sim.frames(0.8))
+	assert_signal_emit_count(_isak, "temptation_hurt", 1, "Tres Ofertas, un golpe, una reaccion")
+	_step(_sim.frames(1.0))
+	assert_signal_emit_count(_isak, "temptation_hurt", 2)
