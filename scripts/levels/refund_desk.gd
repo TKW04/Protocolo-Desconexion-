@@ -103,9 +103,12 @@ func _draw() -> void:
 	var desk := Rect2(float(dr[0]), float(dr[1]), float(dr[2]), float(dr[3]))
 	draw_rect(desk, _c("desk", "gris_escaparate"))
 	draw_rect(Rect2(desk.position, Vector2(desk.size.x, 6.0)), _c("top", "gris_etiqueta"))
-	var plate := Rect2(Vector2(desk.position.x + 2.0, desk.position.y - 26.0), Vector2(desk.size.x - 4.0, 18.0))
-	draw_rect(plate, _c("sign", "crema_cartel"))
 	var title: String = String(_cfg.get("text_closed", "Cerrado")) if is_closed() else String(_cfg.get("text_title", "Devoluciones"))
+	# El cartel crece con su texto (paso 22, capturas: «Devoluciones» salia cortado en «Devolucio»).
+	var text_w: float = ThemeDB.fallback_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x + 8.0
+	var plate_w: float = maxf(desk.size.x - 4.0, text_w)
+	var plate := Rect2(Vector2(desk.get_center().x - plate_w * 0.5, desk.position.y - 26.0), Vector2(plate_w, 18.0))
+	draw_rect(plate, _c("sign", "crema_cartel"))
 	draw_string(ThemeDB.fallback_font, Vector2(plate.position.x, plate.end.y - 4.0), title,
 		HORIZONTAL_ALIGNMENT_CENTER, plate.size.x, 11, _c("ink", "negro_medio"))
 	if not is_closed():

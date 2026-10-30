@@ -157,14 +157,18 @@ func _draw() -> void:
 	var box := Rect2(get_box_rect().position - global_position, get_box_rect().size)
 	var ink: Color = _c("ink", "negro_medio")
 	var font: Font = ThemeDB.fallback_font
-	# Cartel del sistema encima de la caja.
-	var sign_rect := Rect2(Vector2(box.position.x - 40.0, box.position.y - 40.0), Vector2(box.size.x + 80.0, 30.0))
+	# Cartel del sistema encima de la caja; crece con su texto (paso 22, capturas: la segunda linea
+	# salia cortada en «ya elegido p»).
+	var title: String = String(_config.get("text_title", "PRUEBA GRATIS"))
+	var line: String = String(_config.get("text_sign", "Prueba gratis: todo lo que necesitas, ya elegido para ti."))
+	var sign_w: float = maxf(box.size.x + 80.0, maxf(font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x,
+		font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x) + 12.0)
+	var sign_rect := Rect2(Vector2(box.get_center().x - sign_w * 0.5, box.position.y - 40.0), Vector2(sign_w, 30.0))
 	draw_rect(sign_rect, _c("sign", "crema_cartel"))
 	draw_rect(sign_rect, ink, false, 2.0)
-	draw_string(font, Vector2(sign_rect.position.x, sign_rect.position.y + 12.0),
-		String(_config.get("text_title", "PRUEBA GRATIS")), HORIZONTAL_ALIGNMENT_CENTER, sign_rect.size.x, 11, ink)
-	draw_string(font, Vector2(sign_rect.position.x, sign_rect.end.y - 5.0),
-		String(_config.get("text_sign", "Prueba gratis: todo lo que necesitas, ya elegido para ti.")),
+	draw_string(font, Vector2(sign_rect.position.x, sign_rect.position.y + 12.0), title,
+		HORIZONTAL_ALIGNMENT_CENTER, sign_rect.size.x, 11, ink)
+	draw_string(font, Vector2(sign_rect.position.x, sign_rect.end.y - 5.0), line,
 		HORIZONTAL_ALIGNMENT_CENTER, sign_rect.size.x, 8, ink)
 	var paper: Color = _c("paper", "magenta_sombra")
 	var ribbon: Color = _c("ribbon", "amarillo_rebajas")

@@ -455,6 +455,66 @@ def render(level, palette):
             x0, y0, x1, y1 = box(x, y, 6, 3)
             d.rectangle((x0, y0, x1, y1), outline=palette["alerta"], width=2)
             label((x0 + x1) // 2, (y0 + y1) // 2, "El Visto", palette["banner_blanco"], normal)
+        # Mundo 5 «La Tienda» (paso 22 de docs/propuesta-mundo-5.md; 2026-10-29).
+        elif kind in ("shop_item", "refund_desk", "free_trial_box"):
+            x0, y0, x1, y1 = box(x, y)
+            color = {"shop_item": palette["ambar"], "refund_desk": palette["banner_blanco"],
+                     "free_trial_box": palette["debug_cian"]}[kind]
+            d.rectangle((x0 + 2, y0 + 3, x1 - 2, y1 - 1), outline=color, width=2)
+            tag = {"shop_item": p.get("product", "tienda"), "refund_desk": "Devoluciones",
+                   "free_trial_box": "Prueba gratis"}[kind]
+            label((x0 + x1) // 2, y0 - 7, tag, color)
+        elif kind in ("shortcut_door", "calc_register", "terms_gate"):
+            hh = int(p.get("height_tiles", 3))
+            x0, y0, x1, y1 = box(x, y - hh + 1, 1, hh)
+            color = {"shortcut_door": palette["ambar"], "calc_register": palette["debug_cian"],
+                     "terms_gate": palette["banner_blanco"]}[kind]
+            d.rectangle((x0 + 4, y0 + 1, x1 - 4, y1 - 1), fill=palette["fondo_medio"], outline=color, width=2)
+            tag = {"shortcut_door": "atajo" + (" (trampa %s)" % p["trap"] if p.get("trap") else ""),
+                   "calc_register": "caja de Calc", "terms_gate": "Términos"}[kind]
+            label((x0 + x1) // 2, y0 - 7, tag, color)
+        elif kind == "surprise_box":
+            x0, y0, x1, y1 = box(x, y)
+            d.rectangle((x0 + 3, y0 + 4, x1 - 3, y1 - 1), outline=palette["ambar"], width=2)
+            label((x0 + x1) // 2, (y0 + y1) // 2 + 1, "?", palette["ambar"])
+            label((x0 + x1) // 2, y0 - 7, "caja: %s" % p.get("content", "?"), palette["ambar"])
+        elif kind in ("countdown_platform", "wishlist_platform"):
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 2), 1)
+            color = palette["resplandor"] if kind == "countdown_platform" else palette["carmin_brillo"]
+            for xx in range(x0, x1, 5):
+                d.line((xx, y0, min(xx + 2, x1), y0), fill=color, width=3)
+            label((x0 + x1) // 2, y0 - 7, "cuenta" if kind == "countdown_platform"
+                  else "deseo (%s)" % p.get("item", "?"), color)
+        elif kind == "shutter":
+            n = int(p.get("length_tiles", 3))
+            horizontal = p.get("orientation", "floor") != "wall"
+            x0, y0, x1, y1 = box(x, y, n if horizontal else 1, 1 if horizontal else n)
+            d.rectangle((x0, y0, x1, y1), outline=palette["banner_blanco"], width=2)
+            for yy in range(y0 + 3, y1, 4):
+                d.line((x0 + 1, yy, x1 - 1, yy), fill=palette["banner_gris"])
+            label((x0 + x1) // 2, y0 - 7, "persiana (Embestida)", palette["banner_blanco"])
+        elif kind == "price_rail":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 4), p.get("height_tiles", 2))
+            d.rectangle((x0, y0, x1, y1), outline=palette["ambar"], width=1)
+            if "slot_row" in p:
+                sy = box(x, int(p["slot_row"]))[1]
+                d.line((x0, sy + CELL // 2, x1, sy + CELL // 2), fill=palette["debug_cian"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "ranura (Filo)", palette["ambar"])
+        elif kind == "clearance_shelf":
+            hh = int(p.get("height_tiles", 2))
+            x0, y0, x1, y1 = box(x, y - hh + 1, 1, hh)
+            d.rectangle((x0 + 3, y0 + 1, x1 - 3, y1 - 1), outline=palette["banner_blanco"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "saldos %s" % p.get("group", ""), palette["banner_blanco"])
+        elif kind == "wish_strike":
+            x0, y0, x1, y1 = box(x, y, p.get("width_tiles", 1), p.get("height_tiles", 1))
+            d.rectangle((x0, y0, x1, y1), outline=palette["debug_cian"])
+            d.line((x0, (y0 + y1) // 2, x1, (y0 + y1) // 2), fill=palette["carmin_brillo"], width=2)
+            label((x0 + x1) // 2, y0 - 7, "tachón (Debug)", palette["debug_cian"])
+        elif kind == "vendor":
+            # Maquina de 4 x 5 tiles desde su celda de arriba a la izquierda (5-boss: columnas 8-11, filas 5-9).
+            x0, y0, x1, y1 = box(x, y, 4, 5)
+            d.rectangle((x0, y0, x1, y1), outline=palette["ambar"], width=2)
+            label((x0 + x1) // 2, (y0 + y1) // 2, "El Vendedor", palette["banner_blanco"], normal)
         elif kind == "alert_major":
             # Jefe: caja de su badge de 256 px (4 x 4 tiles) centrada en su celda.
             x0, y0, x1, y1 = box(x - 2, y, 4, 4)
@@ -522,6 +582,16 @@ def render(level, palette):
                 d.line((lx1, yy, lx1, yy + 3), fill=palette["alerta_sombra"])
             d.ellipse((x0 + 3, y0 + 3, x1 - 3, y1 - 3), fill=palette["carmin"], outline=palette["alerta"])
             label(cx, y0 - 8, "punto rojo", palette["alerta"])
+            continue
+        if enemy["type"] in ("offer_sign", "subscription"):
+            # Mundo 5: la Oferta (cartel que tira de Isak) y la Suscripcion (persigue y se engancha).
+            offer = enemy["type"] == "offer_sign"
+            color = palette["ambar"] if offer else palette["resplandor"]
+            if offer:
+                d.rectangle((x0 + 2, y0 + 4, x1 - 2, y1 - 4), fill=color, outline=palette["ambar_sombra"])
+            else:
+                d.ellipse((x0 + 3, y0 + 3, x1 - 3, y1 - 3), outline=color, width=2)
+            label(cx, y0 - 8, "Oferta" if offer else "Suscripción", color)
             continue
         half = enemy.get("params", {}).get("patrol_range_px", 256.0) / 2.0 / tile * CELL
         d.line((cx - half, y1 + 1, cx + half, y1 + 1), fill=palette["alerta_sombra"], width=2)
@@ -632,7 +702,20 @@ def render(level, palette):
              ("dark_zone", "Modo oscuro", palette["banner_gris"]),
              ("ink_only", "tinta (con la Linterna)", palette["ambar"]),
              ("seen_wave", "ola de «Visto» y paradas", palette["alerta"]),
-             ("seen", "jefe El Visto", palette["alerta"])]
+             ("seen", "jefe El Visto", palette["alerta"]),
+             ("offer_sign", "Oferta (tentación)", palette["ambar"]),
+             ("subscription", "Suscripción", palette["resplandor"]),
+             ("shop_item", "tienda", palette["ambar"]),
+             ("shortcut_door", "atajo con precio", palette["ambar"]),
+             ("surprise_box", "caja sorpresa (contenido)", palette["ambar"]),
+             ("countdown_platform", "cuenta regresiva", palette["resplandor"]),
+             ("terms_gate", "Términos y condiciones", palette["banner_blanco"]),
+             ("shutter", "persiana (Embestida)", palette["banner_blanco"]),
+             ("price_rail", "ranura de precios (Filo)", palette["ambar"]),
+             ("clearance_shelf", "estantería de saldos (Sismo)", palette["banner_blanco"]),
+             ("wishlist_platform", "lista de deseos", palette["carmin_brillo"]),
+             ("free_trial_box", "Prueba gratis", palette["debug_cian"]),
+             ("vendor", "jefe El Vendedor", palette["ambar"])]
     items += [(k, text, color) for k, text, color in extra
               if k in present or (k == "rhythm_zone" and "alarm_tunnel" in present)]
     lx = SIDE
