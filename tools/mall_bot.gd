@@ -211,10 +211,10 @@ func _check_completed() -> bool:
 	var game_s: float = (_terminal_frames if _terminal_frames >= 0 else _play_frames) / 60.0
 	var ratio: float = game_s / _target_s if _target_s > 0.0 else 0.0
 	var balance: int = GameState.attention_points
-	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, tentacion %d golpe(s) / %.0f de Sync (Sync minimo %s), esperas de cuenta regresiva %d, «rechazar» [%s], dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
+	_note("TIENDA (%s): muertes %d, golpes %d, congelaciones %d, «Añadido al carrito» %d, compras [%s], gastado %d (%s; camino %d), devuelto %d, drenado %d, Suscripciones canceladas %d / derrotadas %d, tentacion %d golpe(s) / %.0f de Sync (Sync minimo %s; pulsos a Ofertas %d), esperas de cuenta regresiva %d, «rechazar» [%s], dashes %d; saldo %d -> %d (minimo %d; ganado %d, perdido %d); duracion %.1f s de %d s del objetivo (%.0f %%)" % [
 		_profile, _deaths, _hits, _freezes, _carts, ", ".join(_purchases), _spent, _spent_by, _path_spend(), _refunded,
 		_drained, _subs_cancelled, _subs_defeated, _tempt_hits, _tempt_damage,
-		("%.0f" % _tempt_sync_min) if _tempt_hits > 0 else "-", _countdown_waits, ", ".join(_terms_rejected), _dashes, _balance_start, balance, _balance_min,
+		("%.0f" % _tempt_sync_min) if _tempt_hits > 0 else "-", _offer_pulses, _countdown_waits, ", ".join(_terms_rejected), _dashes, _balance_start, balance, _balance_min,
 		_gained, _lost, game_s, int(_target_s), ratio * 100.0])
 	if _deaths > 0:
 		return _fail("Isak muere %d vez/veces" % _deaths)
@@ -366,7 +366,31 @@ func _guard() -> void:
 				_guard_pulses += 1
 				_note("defensa: pulso a %s enganchada (%s)" % [sub.name, _where()])
 				return
+		# Oferta que tira de Isak al alcance del pulso con el Sync Rate por debajo de OFFER_PULSE_SYNC: como un jugador
+		# que ya ha perdido vida con la tentacion, la apaga al pasar a su lado («Aléjate, o apágala con el pulso», ayuda
+		# Q): 3 s sin tiron ni dano (2026-10-30, mas Ofertas en el 5-1). Con el Sync alto anda contra el tiron, como el
+		# camino.
+		if _isak.is_on_floor() and absf(_isak.velocity.y) < 1.0 \
+				and GameState.sync_rate < OFFER_PULSE_SYNC * GameState.get_sync_rate_max():
+			for node: Node in _level.get_node(^"Enemies").get_children():
+				var sign := node as OfferSign
+				if sign == null or not sign.is_awake() or not sign.is_pulling_isak():
+					continue
+				if _in_pulse_range(sign.get_body_rect(), 0.9, _isak.facing):
+					_tap(A_PULSE)
+					_guard_lock = 4
+					_guard_pulses += 1
+					_offer_pulses += 1
+					if _verbose:
+						_note("defensa: pulso a la Oferta %s (%s)" % [sign.name, _where()])
+					return
 	super._guard()
+
+
+## Pulsos de la defensa a Ofertas que tiran (las apagan 3 s), y fraccion del Sync Rate maximo por debajo de la cual
+## el bot las apaga.
+const OFFER_PULSE_SYNC: float = 0.6
+var _offer_pulses: int = 0
 
 
 func _subscriptions() -> Array[Node]:
@@ -874,6 +898,68 @@ func _pay_step(s: Dictionary, action: String) -> bool:
 	return ok
 
 
+## Como un jugador, no se pisa una cuenta regresiva sin mirarla (2026-10-30, mas fosos con cuenta en el suelo del
+## 5-1): el camino cruza andando (o salta desde) tarjetas de cuenta regresiva cuya fase calcula desde el inicio del
+## nivel, y el bot llega a otra hora. Cada tramo andando que entra en una tarjeta desde fuera se parte: andar hasta la
+## celda de antes, `wait_countdown` (desplegada con COUNTDOWN_NEED_S por delante) y el resto del tramo.
+func _load_path(path_file: String) -> bool:
+	if not super._load_path(path_file):
+		return false
+	var level: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/%s.json" % _level_id()))
+	if not level is Dictionary:
+		return true
+	_grid_rows = PackedStringArray((level as Dictionary).get("grid", []))
+	var cards: Array = []
+	for obj: Variant in (level as Dictionary).get("objects", []):
+		if obj is Dictionary and String(obj.get("type", "")) == "countdown_platform":
+			var p: Dictionary = obj.get("params", {})
+			cards.append({"id": String(p.get("id", "")), "x0": int(obj["x"]),
+				"x1": int(obj["x"]) + int(p.get("width_tiles", 2)) - 1, "row": int(obj["y"]) - 1})
+	if cards.is_empty():
+		return true
+	var out: Array = []
+	var splits: int = 0
+	for step: Dictionary in _steps:
+		var action: String = String(step.get("action", ""))
+		if not action in ["walk", "resist_pull"] or not step.has("from") or not step.has("to"):
+			out.append(step)
+			continue
+		var c0: Array = step["from"]["cell"]
+		var c1: Array = step["to"]["cell"]
+		var dir: int = signi(int(c1[0]) - int(c0[0]))
+		var hit: Dictionary = {}
+		for card: Dictionary in cards:
+			if int(c0[1]) != int(card["row"]) or int(c1[1]) != int(card["row"]) or dir == 0:
+				continue
+			var edge: int = int(card["x0"]) if dir > 0 else int(card["x1"])
+			var outside: bool = (int(c0[0]) < edge) if dir > 0 else (int(c0[0]) > edge)
+			var reaches: bool = (int(c1[0]) >= edge) if dir > 0 else (int(c1[0]) <= edge)
+			if outside and reaches:
+				hit = card
+				break
+		if hit.is_empty():
+			out.append(step)
+			continue
+		var before: int = (int(hit["x0"]) - 1) if dir > 0 else (int(hit["x1"]) + 1)
+		var row: int = int(hit["row"])
+		var cell := {"cell": [before, row], "feet_px": [(before + 0.5) * TILE, (row + 1) * TILE]}
+		if before != int(c0[0]):
+			var first: Dictionary = step.duplicate(true)
+			first["to"] = cell
+			out.append(first)
+		out.append({"action": "wait_countdown", "at": cell, "countdown": String(hit["id"]), "seconds": 0.0,
+			"t": float(step.get("t", 0.0)), "duration_s": 0.0, "energy_before": step.get("energy_before", 0.0),
+			"energy_after": step.get("energy_before", 0.0), "_split": true})
+		var rest: Dictionary = step.duplicate(true)
+		rest["from"] = cell
+		out.append(rest)
+		splits += 1
+	if splits > 0:
+		_steps = out
+		_note("cuentas regresivas: %d tramo(s) andando partidos para mirar la cuenta antes de pisarla" % splits)
+	return true
+
+
 ## Paso `wait_countdown`: en la celda del camino hasta que la cuenta de su objetivo
 ## este desplegada con tiempo para cruzarla.
 func _wait_countdown(s: Dictionary) -> bool:
@@ -881,7 +967,8 @@ func _wait_countdown(s: Dictionary) -> bool:
 	if absf(_isak.global_position.x - at.x) > TILE * 0.5 or absf(_isak.global_position.y - at.y) >= ROW_TOL:
 		if not await _walk_to(at.x, at.y):
 			return false
-	var cd := _object(String(s.get("target", {}).get("id", ""))) as CountdownPlatform
+	var target_id: String = String(s.get("target", {}).get("id", s.get("countdown", "")))
+	var cd := _object(target_id) as CountdownPlatform
 	return await _countdown_ready(cd, float(s.get("seconds", 0.0)) + 8.0)
 
 
@@ -919,7 +1006,7 @@ func _jump(s: Dictionary, action: String) -> bool:
 		var cd := _countdown_at(_px(s["to"]))
 		if cd != null and not await _countdown_ready(cd, cd.get_count_s() + cd.get_fold_s() + 2.0):
 			return false
-	return await super._jump(_pulled_takeoff(s, float(s.get("direction", 1))), action)
+	return await super._jump(_spike_takeoff(_pulled_takeoff(s, float(s.get("direction", 1)))), action)
 
 
 ## Cajas sorpresa: el validador las trata como una celda solida (tapa a ras de la fila) y la caja real mide 56 x 56
@@ -969,6 +1056,12 @@ func _mall_do_step(s: Dictionary) -> bool:
 
 
 func _dash_step(s: Dictionary) -> bool:
+	# Dash que se posa en una cuenta regresiva (el foso grande del 5-1 desde 2026-10-30): antes, la espera desplegada
+	# con tiempo, como en los saltos (_jump).
+	if s.has("to"):
+		var cd := _countdown_at(_px(s["to"]))
+		if cd != null and not await _countdown_ready(cd, cd.get_count_s() + cd.get_fold_s() + 2.0):
+			return false
 	if bool(s.get("air", false)):
 		s = _pulled_takeoff(s, float(s.get("dir", 1)))
 	elif s.has("takeoff_x_px") and s.has("from"):
@@ -1004,6 +1097,32 @@ func _dash_step(s: Dictionary) -> bool:
 ## recorre PULL_TAKEOFF_PX de mas. El bot despega ese tanto antes (5-1, carrito del
 ## Inicio: el pincho queda a 12 px del despegue del camino).
 const PULL_TAKEOFF_PX: float = 24.0
+
+
+## Salto sobre un pincho pegado al despegue (2026-10-30, pinchos en las bandas del 5-1): el camino despega en el
+## centro de la celda de antes del pincho, con unos 12 px de holgura hasta su borde, y el bot pulsa el salto uno o dos
+## cuadros tarde; como un jugador, despega SPIKE_TAKEOFF_PX antes (el salto andando cubre de sobra el pincho).
+const SPIKE_TAKEOFF_PX: float = 16.0
+var _grid_rows: PackedStringArray = []
+
+
+func _spike_takeoff(s: Dictionary) -> Dictionary:
+	if not s.has("takeoff_x_px") or not s.has("from") or _grid_rows.is_empty():
+		return s
+	var dir: float = float(s.get("direction", 0))
+	if dir == 0.0:
+		return s
+	var cell: Array = s["from"]["cell"]
+	var row: int = int(cell[1])
+	var col: int = int(floor(float(s["takeoff_x_px"]) / TILE)) + int(dir)
+	if row < 0 or row >= _grid_rows.size() or col < 0 or col >= _grid_rows[row].length() or _grid_rows[row][col] != "^":
+		return s
+	var out: Dictionary = s.duplicate()
+	out["takeoff_x_px"] = float(s["takeoff_x_px"]) - dir * SPIKE_TAKEOFF_PX
+	if _verbose:
+		_note("paso %d: pincho delante: despegue %.0f -> %.0f" % [_step_index, float(s["takeoff_x_px"]),
+			float(out["takeoff_x_px"])])
+	return out
 
 
 func _pulled_takeoff(s: Dictionary, dir: float) -> Dictionary:

@@ -43,11 +43,18 @@ func test_mall_bot_completes_level_5_1_frugal() -> void:
 	assert_false(text.contains("FALLO"), "Sin fallos:\n%s" % run["summary"])
 	for piece: String in ["hub cargado tras completar el 5-1", "RESULTADO: recorrido", "golpes 0, muertes 0",
 			"TIENDA (frugal): muertes 0, golpes 0, congelaciones 0, «Añadido al carrito» 0, compras []",
-			"gastado 0", "drenado 0", "Suscripciones canceladas 1 / derrotadas 1",
-			"laser a la Suscripcion suscripcion_t3: derrotada", "dash 5 (suelo)", "terminal de la azotea activada",
+			"gastado 0", "drenado 0", "Suscripciones canceladas 4 / derrotadas 4",
+			"laser a la Suscripcion suscripcion_t1: derrotada", "laser a la Suscripcion suscripcion_t3: derrotada",
+			"cuentas regresivas: 3 tramo(s) andando partidos", "dash 5 (suelo)", "terminal de la azotea activada",
 			"hub: carpeta M5"]:
 		assert_string_contains(text, piece)
 	assert_false(text.contains("SIN EFECTO"), "Cada pulso del camino hace efecto")
+	# Mas peligro desde el 2026-10-30: la tentacion quita Sync, pero el frugal (que apaga las Ofertas con el pulso con
+	# el Sync por debajo del 60 %) termina con al menos 20.
+	var found := RegEx.create_from_string("Sync minimo (\\d+)").search(text)
+	assert_not_null(found, "El bot anota el Sync minimo de la tentacion")
+	if found != null:
+		assert_gte(int(found.get_string(1)), 20, "Sync minimo de la tentacion >= 20")
 
 
 func test_mall_bot_completes_level_5_1_buying() -> void:
