@@ -17,6 +17,11 @@
 ##   al despertar vuelve a perseguir.
 ## - spent: ha drenado su tope; se suelta, cae y ya no persigue (vulnerable).
 ## - defeated: vida a 0; drops y no vuelve.
+## Devuelve lo robado (2026-10-30, peticion del usuario; docs/propuesta-mundo-5.md §8.1):
+## al derrotarla o cancelarla lanza en arco una moneda (RefundCoin) por cada punto drenado
+## que aun no devolvio (en el «te fio», una por cada energy_per_coin de energia); cada
+## moneda devuelve su punto sacandolo del registro de Devoluciones (o su energia) si se
+## recoge antes de lifetime_s. Seccion refund_coins de data/enemies/subscription.json.
 ## Origen en los pies de su celda (abajo-centro); centro del cuerpo en center_y.
 ## Aspecto PROVISIONAL por codigo.
 class_name Subscription
@@ -31,6 +36,8 @@ signal drained(amount: int, total: int)
 signal declined
 ## Isak la cancela (pulso, golpe al suelo, Embestida o Sismo; sfx_w5_subscription_cancel).
 signal cancelled
+## Lanza las monedas de lo robado (`count` monedas de `kind`, RefundCoin.KIND_*).
+signal coins_thrown(count: int, kind: StringName)
 signal stunned
 signal damaged(amount: float, health_left: float)
 signal defeated
@@ -86,6 +93,8 @@ var drain_points: int = 1
 var drain_interval_s: float = 2.0
 var drain_cap: int = 5
 var declined_release_s: float = 3.0
+## Monedas de lo robado (seccion refund_coins de su JSON; vacia = no lanza).
+var refund_coins: Dictionary = {}
 var max_health: float = 1.0:
 	set(value):
 		max_health = maxf(value, 1.0)
@@ -100,6 +109,10 @@ var _home: Vector2 = Vector2.ZERO
 var _timer: float = 0.0
 var _drain_left: float = 0.0
 var _drained: int = 0
+## Puntos drenados ya lanzados como monedas (no se lanzan dos veces).
+var _thrown: int = 0
+## Energia drenada en el «te fio» y la ya lanzada como monedas.
+var _energy_drained: float = 0.0
 var _host: Isak
 var _deflect_left: float = 0.0
 var _message: String = ""
@@ -215,7 +228,9 @@ func step(delta: float) -> void:
 					_release(STATE_STUNNED)
 				return
 			if energy_drain_per_s > 0.0:
+				var before_e: float = GameState.debug_energy
 				GameState.debug_energy = maxf(GameState.debug_energy - energy_drain_per_s * dt, 0.0)
+				_energy_drained += before_e - GameState.debug_energy
 				queue_redraw()
 				return
 			_drain_left -= dt
@@ -291,6 +306,16 @@ func get_drained() -> int:
 	return _drained
 
 
+## Puntos drenados que aun no ha lanzado como monedas.
+func get_unthrown() -> int:
+	return _drained - _thrown
+
+
+## Energia drenada en el «te fio» que aun no ha lanzado como monedas.
+func get_energy_drained() -> float:
+	return _energy_drained
+
+
 func get_health() -> float:
 	return _health.health if _health != null else 0.0
 
@@ -351,6 +376,7 @@ func cancel() -> bool:
 	if not is_attached():
 		return false
 	_release(STATE_STUNNED)
+	throw_coins()
 	cancelled.emit()
 	return true
 
@@ -455,6 +481,39 @@ func reset_patrol() -> void:
 	_message_left = 0.0
 	_change_state(STATE_SPENT if _drained >= drain_cap else STATE_IDLE)
 	queue_redraw()
+
+
+## Lanza en arco las monedas de lo robado que aun no devolvio (al derrotarla o
+## cancelarla). Puntos: una por punto drenado sin lanzar, nunca mas de lo que sigue en el
+## registro de Devoluciones (lo ya devuelto alli no se duplica). Energia del «te fio»: una
+## por cada energy_per_coin (la ultima, el resto), hasta max_energy_coins. Devuelve las
+## monedas lanzadas.
+func throw_coins() -> Array[RefundCoin]:
+	var out: Array[RefundCoin] = []
+	if refund_coins.is_empty() or not is_inside_tree():
+		return out
+	var parent: Node = get_parent()
+	var origin: Vector2 = get_center()
+	var pts: int = mini(_drained - _thrown, GameState.get_refundable(GameState.current_level, [GameState.REFUND_SUBSCRIPTION]))
+	_thrown = _drained
+	if pts > 0:
+		out.append_array(RefundCoin.launch(parent, origin, pts, RefundCoin.KIND_POINTS, refund_coins,
+			GameState.current_level, GameState.REFUND_SUBSCRIPTION))
+		coins_thrown.emit(pts, RefundCoin.KIND_POINTS)
+	var per: float = maxf(float(refund_coins.get("energy_per_coin", 5.0)), 0.1)
+	var energy: float = _energy_drained
+	_energy_drained = 0.0
+	if energy >= float(refund_coins.get("min_energy", 0.5)):
+		var n: int = mini(int(ceil(energy / per - 0.0001)), int(refund_coins.get("max_energy_coins", 6)))
+		var amounts: Array = []
+		var left: float = energy
+		for i: int in n:
+			var a: float = left if i == n - 1 else minf(per, left)
+			amounts.append(a)
+			left -= a
+		out.append_array(RefundCoin.launch(parent, origin, n, RefundCoin.KIND_ENERGY, refund_coins, &"", &"", amounts))
+		coins_thrown.emit(n, RefundCoin.KIND_ENERGY)
+	return out
 
 
 # --- Interno ---
@@ -562,6 +621,7 @@ func _defeat() -> void:
 	_change_state(STATE_DEFEATED)
 	collision_layer = 0
 	collision_mask = 0
+	throw_coins()
 	defeated.emit()
 	EventBus.enemy_defeated.emit(self)
 	RechargePickup.spawn_drops(get_parent(), global_position, drops)
@@ -655,4 +715,5 @@ func _load_data() -> bool:
 	drain_interval_s = float(eco.get("drain_interval_s", 2.0))
 	drain_cap = int(eco.get("drain_cap", 5))
 	declined_release_s = float(eco.get("declined_release_s", 3.0))
+	refund_coins = d.get("refund_coins", {}) if d.get("refund_coins", {}) is Dictionary else {}
 	return true

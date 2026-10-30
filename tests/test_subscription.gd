@@ -335,6 +335,101 @@ func test_reset_on_respawn_goes_home_asleep_and_keeps_what_it_drained() -> void:
 	assert_eq(sub.get_drained(), 2, "Lo drenado cuenta para el tope")
 
 
+# --- Devuelve lo robado (2026-10-30, docs/propuesta-mundo-5.md §8.1) ---
+
+func _coins() -> Array[RefundCoin]:
+	var out: Array[RefundCoin] = []
+	for child: Node in _world.get_children():
+		if child is RefundCoin and not child.is_queued_for_deletion():
+			(child as RefundCoin).set_physics_process(false)
+			out.append(child as RefundCoin)
+	return out
+
+
+func _advance_coins(seconds: float) -> void:
+	for i: int in _sim.frames(seconds):
+		for coin: RefundCoin in _coins():
+			coin.advance(DT)
+
+
+func test_defeated_it_throws_what_it_stole_and_coins_give_it_back_once() -> void:
+	var sub: Subscription = _attached(10)
+	_step(_sim.frames(10.1))
+	assert_true(sub.is_spent())
+	assert_eq(GameState.attention_points, 5)
+	_isak.global_position.x = -6.0 * T
+	_step(_sim.frames(1.0))
+	watch_signals(sub)
+	sub.on_laser_hit(1.0, _isak)
+	assert_true(sub.is_defeated())
+	assert_signal_emitted_with_parameters(sub, "coins_thrown", [5, RefundCoin.KIND_POINTS])
+	var coins: Array[RefundCoin] = _coins()
+	assert_eq(coins.size(), 5, "Una moneda por punto robado")
+	assert_eq(sub.get_unthrown(), 0)
+	_advance_coins(1.5)
+	for coin: RefundCoin in _coins():
+		assert_true(coin.is_landed(), "Salen en arco y se posan en el suelo")
+		assert_almost_eq(coin.global_position.y, -coin.radius_px, 2.0)
+	for coin: RefundCoin in _coins():
+		coin.collect()
+	assert_eq(GameState.attention_points, 10, "Vuelve todo lo robado, ni un punto mas")
+	assert_eq(GameState.get_refundable(LEVEL, [GameState.REFUND_SUBSCRIPTION]), 0, "Y sale del registro")
+	assert_eq(GameState.claim_refunds(LEVEL), 0, "Devoluciones no lo devuelve dos veces")
+	assert_eq(GameState.attention_points, 10)
+
+
+func test_coins_blink_and_vanish_after_6_s_and_refunds_keep_the_rest() -> void:
+	var sub: Subscription = _attached(10)
+	_step(_sim.frames(4.1))
+	assert_eq(sub.get_drained(), 2)
+	assert_true(sub.receive_pulse(_isak_pulse()), "Cancelarla con el pulso")
+	var coins: Array[RefundCoin] = _coins()
+	assert_eq(coins.size(), 2, "Cancelada tambien devuelve lo robado")
+	_isak.global_position.x = -10.0 * T
+	coins[0].collect()
+	assert_eq(GameState.attention_points, 9)
+	_advance_coins(4.2)
+	assert_true(_coins()[0].is_blinking(), "Parpadea antes de irse")
+	_advance_coins(2.0)
+	assert_eq(_coins().size(), 0, "A los 6 s desaparece")
+	assert_eq(GameState.get_refundable(LEVEL, [GameState.REFUND_SUBSCRIPTION]), 1, "Lo no recogido sigue en Devoluciones")
+	_step(_sim.frames(4.0))
+	sub.on_laser_hit(1.0, _isak)
+	if not sub.is_defeated():
+		sub.stun()
+		sub.on_laser_hit(1.0, _isak)
+	assert_true(sub.is_defeated())
+	assert_eq(_coins().size(), sub.get_drained() - 2, "Al derrotarla, solo lo robado despues de cancelarla")
+
+
+func test_refunds_claimed_first_leave_no_coins() -> void:
+	var sub: Subscription = _attached(10)
+	_step(_sim.frames(10.1))
+	assert_eq(GameState.claim_refunds(LEVEL), 5)
+	sub.on_laser_hit(1.0, _isak)
+	assert_true(sub.is_defeated())
+	assert_eq(_coins().size(), 0, "Ya devuelto en Devoluciones: nada que lanzar")
+	assert_eq(GameState.attention_points, 10)
+
+
+func test_credit_energy_comes_back_in_coins() -> void:
+	var sub: Subscription = _sub(0.0)
+	sub.energy_drain_per_s = 2.0
+	GameState.debug_energy = 50.0
+	sub.attach_to(_isak)
+	_step(_sim.frames(6.0))
+	assert_almost_eq(sub.get_energy_drained(), 12.0, 0.2)
+	var e: float = GameState.debug_energy
+	assert_true(sub.cancel())
+	var coins: Array[RefundCoin] = _coins()
+	assert_eq(coins.size(), 3, "12 de energia en monedas de 5 (la ultima, el resto)")
+	for coin: RefundCoin in coins:
+		assert_eq(coin.kind, RefundCoin.KIND_ENERGY)
+		coin.collect()
+	assert_almost_eq(GameState.debug_energy, e + 12.0, 0.2, "Vuelve la energia robada")
+	assert_eq(GameState.attention_points, 10, "Sin puntos")
+
+
 # --- Trampas del atajo ---
 
 func test_subscription_trap_releases_one_beyond_the_door() -> void:

@@ -1236,7 +1236,7 @@
 			"_notes": "Mundo 5 (paso 9 de docs/propuesta-mundo-5.md §8). Texto de Eco PROPUESTO por el orquestador, revisar al jugar.",
 			"category": "enemy",
 			"title": "Suscripción",
-			"text": "Una suscripción. Si te alcanza, se te pega y te cobra puntos cada poco. Un pulso o un golpe al suelo la cancelan; aturdida, el láser la quita de en medio.",
+			"text": "Una suscripción. Si te alcanza, se te pega y te cobra puntos cada poco. Un pulso o un golpe al suelo la cancelan; aturdida, el láser la quita de en medio. Al cancelarla o quitarla suelta lo que te cobró: recógelo antes de que se apague.",
 			"first_level": "5-1",
 			"world": 5,
 			"order": 2,

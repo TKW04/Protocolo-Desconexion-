@@ -764,6 +764,30 @@ func claim_refunds(level: StringName, kinds: Array = []) -> int:
 	return amount
 
 
+## Devuelve al saldo hasta `amount` puntos del registro de Devoluciones de `level` y tipo
+## `kind` (monedas de lo robado de una Suscripcion, RefundCoin; 2026-10-30). Solo lo que
+## sigue en el registro: lo ya devuelto en Devoluciones no vuelve dos veces y el saldo
+## nunca pasa del que habia antes del robo. Sin energia (es dinero devuelto). Devuelve
+## los puntos que volvieron.
+func reclaim_refundable(level: StringName, kind: StringName, amount: int) -> int:
+	if amount <= 0 or not _refundable.has(level):
+		return 0
+	var entry: Dictionary = _refundable[level]
+	var take: int = mini(amount, int(entry.get(kind, 0)))
+	if take <= 0:
+		return 0
+	entry[kind] = int(entry[kind]) - take
+	if int(entry[kind]) <= 0:
+		entry.erase(kind)
+	if entry.is_empty():
+		_refundable.erase(level)
+	attention_points += take
+	_attempt_spent[level] = maxi(int(_attempt_spent.get(level, 0)) - take, 0)
+	request_save()
+	EventBus.attention_refunded.emit(take)
+	return take
+
+
 ## Puntos gastados en `level` en el intento actual (o el ultimo, hasta empezar otro), menos lo
 ## devuelto en Devoluciones. No se guarda.
 func get_attempt_spent(level: StringName) -> int:
