@@ -11,7 +11,9 @@
 ##   «Actualización: n/3 · Falta: …» (update_progress_text; paso 6 del hub 4-6).
 ## - Opciones Guardar, Álbum, Apodo y Volver. Guardar sin cambios pendientes
 ##   dice «Todo esta guardado» (no escribe); con cambios pide confirmacion
-##   (Si / No) y al confirmar llama a GameState.save_game(): mensaje y destello
+##   (Si / No) y al confirmar llama a GameState.save_game_and_rest() (guardar es
+##   punto de descanso: repone las vidas, 2026-10-31; con vidas perdidas tambien
+##   se puede guardar sin otros cambios): mensaje y destello
 ##   cian en el monitor (senal saved). Álbum y Apodo los abre la estacion
 ##   (senales album_requested y nickname_requested).
 ## - Iconos junto a cada opcion (2026-10-26, peticion del usuario; notas.option_icons):
@@ -179,11 +181,11 @@ func save_now() -> bool:
 		set_message(String(texts.get("message_trash_pending", "")), String(colors.get("message", "texto_claro")))
 		saved.emit(false)
 		return false
-	if not GameState.has_unsaved_changes():
+	if not _has_something_to_save():
 		refresh()
 		set_message(String(texts.get("message_nothing_to_save", "")), String(colors.get("message", "texto_claro")))
 		return true
-	var ok: bool = GameState.save_game()
+	var ok: bool = GameState.save_game_and_rest()
 	if ok:
 		_save_count += 1
 	refresh()
@@ -198,7 +200,7 @@ func save_now() -> bool:
 func _on_confirm(id: StringName) -> void:
 	match id:
 		OPTION_SAVE:
-			if GameState.has_trash_pending() or not GameState.has_unsaved_changes():
+			if GameState.has_trash_pending() or not _has_something_to_save():
 				save_now()
 				return
 			_mode = Mode.CONFIRM
@@ -222,6 +224,11 @@ func _on_cancel() -> void:
 		_back_to_summary()
 	else:
 		close_requested.emit()
+
+
+## Cambios sin guardar o vidas que reponer (guardar es punto de descanso).
+func _has_something_to_save() -> bool:
+	return GameState.has_unsaved_changes() or GameState.lives_need_rest()
 
 
 func _back_to_summary() -> void:

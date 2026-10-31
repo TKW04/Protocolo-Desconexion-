@@ -71,8 +71,9 @@
 ## - Linterna companera (FlashlightCompanion, Mundo 4, paso 4): en cada nivel, si la
 ##   Linterna es conocida, una lucecita bajo Eco que se enciende en las zonas oscuras.
 ## - Vidas (intentos; docs/propuesta-asistentes-y-vidas.md §5.1, 2026-10-16):
-##   start_level las repone a GameState.lives_max (empezar un intento: desde el
-##   hub, al arrancar o con la tecla R); los puntos de sincronizacion no. Cada
+##   se conservan entre niveles y hub (2026-10-31): start_level y la tecla R no
+##   las reponen (GameState.keep_lives_for_attempt); solo el game over, una
+##   partida nueva y guardar en Notas; los puntos de sincronizacion no. Cada
 ##   muerte resta una (GameState.lose_life; antes de la primera llegada al hub
 ##   no cuentan) y reaparece como siempre. Con la ultima: GAME OVER: tras la
 ##   animacion de muerte funde, aplica el rollback a la ultima copia
@@ -406,7 +407,7 @@ func start_level(level_id: String) -> bool:
 	_clear_level()
 	_reset_player_state(level_id)
 	_game_over_pending = false
-	GameState.refill_lives()
+	GameState.keep_lives_for_attempt()
 	# Intento nuevo: el Pulso de retorno vuelve a dar energia una vez por enemigo.
 	GameState.begin_attempt()
 	var packed := load(path) as PackedScene
@@ -430,8 +431,9 @@ func start_level(level_id: String) -> bool:
 ## Arranca en el hub (partida guardada al abrir el juego): como tras completar
 ## un nivel, sin pasar por ninguno; el hub llena energia y Sync Rate, Isak llega
 ## por el vortice al terminar el fundido de entrada (present_isak) y, si Notas
-## aun no es conocida (guardado v1/v2 migrado), sale su presentacion. Vidas al
-## maximo y el «ultimo nivel jugado» (tecla R) es resume_level_id(). No funde
+## aun no es conocida (guardado v1/v2 migrado), sale su presentacion. Vidas las
+## del guardado (2026-10-31; sin guardado, llenas) y el «ultimo nivel jugado»
+## (tecla R) es resume_level_id(). No funde
 ## ni marca «sin guardar». hub_shown se emite con level_id vacio.
 func start_in_hub() -> bool:
 	_clear_hub()
@@ -441,7 +443,7 @@ func start_in_hub() -> bool:
 	DebugMode.reset()
 	Engine.time_scale = 1.0
 	GameState.world_time_scale = GameState.WORLD_TIME_SCALE_NORMAL
-	GameState.refill_lives()
+	GameState.keep_lives_for_attempt()
 	_deaths = 0
 	_falls = 0
 	_show_hub("", GameState.attention_points)
@@ -641,7 +643,8 @@ func enter_level(level_id: String) -> bool:
 
 ## Las vidas NO se reponen al volver al hub (2026-10-31): llegan las que quedan
 ## tras el nivel (completar o «Salir al hub») y el HUD del hub las muestra. Solo
-## las reponen start_level, start_in_hub y el game over (apply_rollback).
+## las reponen el game over (apply_rollback), una partida nueva y guardar en
+## Notas (GameState.save_game_and_rest); tampoco start_level ni la tecla R.
 func _show_hub(level_id: String, attention_points: int, rollback_report: Dictionary = {}) -> void:
 	_notices.stop()
 	_clear_level()

@@ -32,6 +32,7 @@ func _run() -> void:
 	GameState.mark_notice_seen(GameState.ABILITY_LASER)
 	GameState.mark_level_completed(&"1-1")
 	GameState.lives_max = 5
+	GameState.refill_lives()
 	_check(GameState.save_game(), "no se pudo guardar")
 	var runner := (load(MAIN_SCENE) as PackedScene).instantiate() as LevelRunner
 	runner.start_level_id = "1-1"

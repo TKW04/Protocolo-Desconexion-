@@ -1,6 +1,7 @@
 # Vidas (intentos; docs/propuesta-asistentes-y-vidas.md §5.1, paso 11 de §10):
-# GameState (cuentan desde la primera llegada al hub, se reponen al empezar cada
-# intento y no en el punto de sincronizacion, la ultima lleva al game over, hueco
+# GameState (cuentan desde la primera llegada al hub, se conservan al empezar
+# cada intento desde el 2026-10-31 (ver tests/test_hub_lives.gd) y no se reponen
+# en el punto de sincronizacion, se guardan, la ultima lleva al game over, hueco
 # de la vida extra), el flujo real del 1-1 (LevelRunner: morir resta una y
 # reaparece en el checkpoint, ilimitadas antes de conocer a Notas, 0 -> game over
 # y hub) y el HUD de vidas (mini telefonos junto a la senal, oculto antes de que
@@ -115,15 +116,15 @@ func test_lives_start_at_three_and_the_last_one_is_game_over() -> void:
 	assert_true(GameState.lose_life(), "La tercera muerte es game over")
 	assert_eq(GameState.lives, 0)
 	assert_eq(lost, [2, 1, 0])
-	assert_false(GameState.has_unsaved_changes(), "Las vidas actuales no se guardan")
+	assert_false(GameState.has_unsaved_changes(), "Perder vidas no marca «sin guardar»")
 
 
-func test_lives_are_not_saved_but_lives_max_is() -> void:
+func test_current_lives_and_lives_max_are_saved() -> void:
 	EcoProgress.meet_notas()
 	GameState.refill_lives()
 	GameState.lose_life()
 	var data: Dictionary = GameState.to_save_data()
-	assert_false(data.has("lives"), "Las vidas actuales no van a disco")
+	assert_eq(int(data["lives"]), 2, "Las vidas actuales van a disco (2026-10-31)")
 	assert_eq(int(data["lives_max"]), 3)
 
 
@@ -141,12 +142,12 @@ func test_add_max_life_is_the_hook_for_the_extra_life() -> void:
 
 # --- Flujo real (LevelRunner) ---
 
-func test_starting_an_attempt_refills_lives() -> void:
+func test_starting_an_attempt_keeps_lives() -> void:
 	EcoProgress.meet_eco_with_pulse()
 	EcoProgress.meet_notas()
 	GameState.lives = 1
 	await _start()
-	assert_eq(GameState.lives, 3, "Empezar el nivel repone las vidas a lives_max")
+	assert_eq(GameState.lives, 1, "Empezar el nivel conserva las vidas (2026-10-31)")
 
 
 func test_death_loses_one_life_and_respawns_at_the_checkpoint_which_does_not_refill() -> void:

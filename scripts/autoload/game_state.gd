@@ -19,8 +19,9 @@
 #   has_unsaved_changes, EventBus.unsaved_changes_changed); solo save_game()
 #   escribe (en el hub; la copia anterior queda en <ruta>.bak). Esquema v2:
 #   vuelta (lap), secretos encontrados, tutorial del hub, fecha y tiempo de juego.
-# - Vidas (intentos; 2026-10-16): lives (no se guarda) hasta lives_max; ver
-#   are_lives_active, refill_lives y lose_life. Game over y papelera:
+# - Vidas (intentos; 2026-10-16): lives hasta lives_max (ambas se guardan desde
+#   el 2026-10-31); ver are_lives_active, refill_lives, keep_lives_for_attempt,
+#   save_game_and_rest y lose_life. Game over y papelera:
 #   apply_rollback (regla unica, tambien para el futuro rollback del jefe
 #   final), discard_to_trash, recover_trash y has_trash_pending
 #   (docs/propuesta-asistentes-y-vidas.md §5).
@@ -260,11 +261,13 @@ var ally_arrivals: Dictionary[StringName, bool] = {}
 ## Tipos de ayuda con Q ya aprendidos (id de data/help.json -> true; v3). No
 ## marca "sin guardar": va a disco con la siguiente copia (como seen_notices).
 var learned_help: Dictionary[StringName, bool] = {}
-## Vidas (intentos) maximas (v3). Las vidas actuales no se guardan.
+## Vidas (intentos) maximas (v3).
 var lives_max: int = LIVES_MAX_DEFAULT
-## Vidas (intentos) del intento en curso (no se guardan): refill_lives las
-## repone a lives_max al empezar cada intento de nivel; lose_life resta una.
-## Solo cuentan con are_lives_active() (desde la primera llegada al hub).
+## Vidas (intentos) actuales (2026-10-31): se conservan entre niveles y hub
+## (entrar a un nivel o la tecla R no las reponen); lose_life resta una. Solo
+## se reponen con el game over (apply_rollback), una partida nueva y al guardar
+## en Notas (save_game_and_rest). Van al guardado (campo lives; sin el campo,
+## llenas). Solo cuentan con are_lives_active() (desde la primera llegada al hub).
 var lives: int = LIVES_MAX_DEFAULT
 ## Papelera (propuesta §2.5 y §5.2): lo que Eco desecho en el ultimo rollback y
 ## aun no se ha recuperado (claves TRASH_*). Vive en memoria: el disco conserva
@@ -1255,6 +1258,7 @@ func to_save_data() -> Dictionary:
 		"allies_met": _keys_sorted(allies_met),
 		"learned_help": _keys_sorted(learned_help),
 		"lives_max": lives_max,
+		"lives": lives,
 		"saved_at": saved_at,
 		"play_time_s": play_time_s,
 	}
@@ -1376,7 +1380,12 @@ func apply_save_data(data: Dictionary) -> bool:
 	saved_at = raw_saved_at if raw_saved_at is String else ""
 	play_time_s = _as_float(data.get("play_time_s", 0.0))
 	_refresh_maxima()
-	lives = lives_max
+	# Vidas actuales (2026-10-31): guardados sin el campo (o con un valor raro)
+	# empiezan llenos; se acotan a 1..lives_max (nunca se carga con 0: 0 es game
+	# over y el rollback las repone antes de poder guardar).
+	var raw_current: Variant = data.get("lives", lives_max)
+	lives = clampi(int(raw_current), 1, lives_max) if (raw_current is float or raw_current is int) \
+			else lives_max
 	return true
 
 
@@ -1736,12 +1745,44 @@ func are_lives_active() -> bool:
 	return has_met_ally(ALLY_NOTAS)
 
 
-## Repone las vidas a lives_max. Lo llama LevelRunner al empezar cada intento
-## de nivel (desde el hub, al arrancar o con la tecla R); los puntos de
+## Repone las vidas a lives_max. Desde el 2026-10-31 solo lo hacen el game
+## over (apply_rollback), una partida nueva (reset_progress) y guardar en Notas
+## (save_game_and_rest); entrar a un nivel, la tecla R y los puntos de
 ## sincronizacion NO las reponen.
 func refill_lives() -> void:
 	lives = lives_max
 	_emit_lives()
+
+
+## Empezar un intento de nivel o llegar al hub al arrancar (LevelRunner): las
+## vidas se conservan (2026-10-31). Salvaguarda: con 0 (no deberia pasar: 0 es
+## game over y apply_rollback las repone) se reponen para no entrar sin vidas.
+## Emite lives_changed para el HUD.
+func keep_lives_for_attempt() -> void:
+	lives = clampi(lives, 0, lives_max)
+	if lives <= 0:
+		lives = lives_max
+	_emit_lives()
+
+
+## Verdadero si guardar en Notas repondria vidas (vidas activas y alguna perdida).
+func lives_need_rest() -> bool:
+	return are_lives_active() and lives < lives_max
+
+
+## Guardar en Notas = punto de descanso (2026-10-31): repone las vidas al maximo
+## y guarda (save_game). Si no se pudo guardar (papelera llena o error de
+## escritura) las vidas quedan como estaban. Verdadero si se escribio.
+func save_game_and_rest() -> bool:
+	if has_trash_pending():
+		return false
+	var previous: int = lives
+	lives = lives_max
+	if not save_game():
+		lives = previous
+		return false
+	_emit_lives()
+	return true
 
 
 ## Resta una vida al morir (Sync Rate 0). Sin vidas activas no cambia nada.

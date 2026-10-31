@@ -829,6 +829,9 @@ func _run_nosave() -> bool:
 			and _runner.get_level_id() == "1-1" and _runner.get_phase() == LevelRunner.Phase.PLAYING, 15.0):
 		return _check(false, "la carpeta no carga el 1-1")
 	_note("en el 1-1 sin guardar: upgrade en memoria %s" % GameState.has_hub_upgrade(UPGRADE))
+	# Las vidas se conservan entre niveles (2026-10-31): el bot fija las vidas
+	# llenas para que el game over llegue tras lives_max muertes.
+	GameState.refill_lives()
 	for i: int in GameState.lives_max:
 		await _wait_until(func() -> bool: return _runner.get_phase() == LevelRunner.Phase.PLAYING \
 				and _isak != null and not _isak.is_dead() and not _isak.is_warping(), 10.0)

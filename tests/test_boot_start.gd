@@ -214,7 +214,7 @@ func test_restart_in_hub_after_booting_in_hub() -> void:
 	assert_false(_main.is_in_hub())
 	assert_eq(_main.get_level_id(), "1-2", "R en el hub: el subnivel mas avanzado (1-1 completado: el 1-2)")
 	assert_not_null(_main.get_level())
-	assert_eq(GameState.lives, GameState.lives_max, "Empezar un intento repone las vidas")
+	assert_eq(GameState.lives, 1, "Empezar un intento conserva las vidas (2026-10-31)")
 	assert_false(GameState.has_unsaved_changes())
 
 
