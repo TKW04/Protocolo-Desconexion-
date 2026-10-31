@@ -701,9 +701,12 @@
 		"ink": "negro_medio"
 	},
 	"clearance_shelf": {
-		"_notes": "Estanteria de saldos (ClearanceShelf). restock_s: tumbada se repone a los 0,5 s del mundo si queda alguna del grupo en pie (§3.7); restock_flash_s: destello al reponerse; textos (propuestos); colores por nombre de la paleta provisional.",
+		"_notes": "Estanteria de saldos (ClearanceShelf). restock_s: tumbada se repone a los 0,5 s del mundo si queda alguna del grupo en pie (§3.7); restock_flash_s: destello al reponerse; regrow_s: un grupo caido con el Sismo vuelve a levantarse entero a los 13 s del mundo (0 o menos: nunca; 2026-10-31), nunca con Isak en el tramo del grupo (de la primera a la ultima estanteria, con regrow_margin_px a cada lado: espera a que salga, asi que ni aplasta ni encierra); regrow_warn_s: aviso «¡Reponiendo!» antes de volver; textos (propuestos); colores por nombre de la paleta provisional.",
 		"restock_s": 0.5,
 		"restock_flash_s": 0.3,
+		"regrow_s": 13.0,
+		"regrow_margin_px": 8.0,
+		"regrow_warn_s": 2.0,
 		"text_tag": "SALDO",
 		"text_restock": "¡Reponiendo!",
 		"box": "crema_sombra",

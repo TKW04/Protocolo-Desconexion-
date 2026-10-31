@@ -517,6 +517,60 @@ func test_restock_waits_for_isak_to_leave() -> void:
 	assert_true(a.is_standing(), "Al salir, se repone")
 
 
+# Pedido 2026-10-31: el grupo caido con el Sismo vuelve a los regrow_s (13 s) y otro Sismo lo tumba de nuevo.
+func test_quaked_group_regrows_after_regrow_s_and_falls_again() -> void:
+	var a: ClearanceShelf = _shelf(-8.0, &"g")
+	var b: ClearanceShelf = _shelf(3.0, &"g")
+	var c: ClearanceShelf = _shelf(8.0, &"g")
+	var regrow: float = a.get_regrow_s()
+	assert_almost_eq(regrow, 13.0, EPS, "regrow_s de data/world5_objects.json")
+	watch_signals(a)
+	await wait_physics_frames(1)
+	_quake()
+	assert_true(a.is_cleared() and b.is_cleared() and c.is_cleared())
+	assert_gt(a.get_regrow_left(), regrow - 1.5, "La cuenta empieza al caer")
+	# Fuera del tramo del grupo (Isak hizo el Sismo entre ellas).
+	_place(Vector2(14.0 * T, 0.0))
+	_step(_sim.frames(regrow - 1.6))
+	assert_true(a.is_cleared() and b.is_cleared() and c.is_cleared(), "Siguen caidas antes de regrow_s")
+	_step(_sim.frames(1.5))
+	assert_true(a.is_standing() and b.is_standing() and c.is_standing(), "Vuelven las tres a la vez")
+	assert_eq(c.collision_layer, ClearanceShelf.LAYER_WORLD, "Solidas otra vez")
+	assert_signal_emitted(a, "regrown")
+	# Otro Sismo (su onda llega a las tres en el mismo cuadro).
+	for shelf: ClearanceShelf in [a, b, c]:
+		shelf.knock(ClearanceShelf.BY_QUAKE)
+	assert_true(a.is_cleared() and b.is_cleared() and c.is_cleared(), "Otro Sismo las tumba de nuevo")
+	assert_gt(b.get_regrow_left(), regrow - 0.1, "Y la cuenta vuelve a empezar")
+
+
+func test_regrow_waits_while_isak_is_in_the_group_span() -> void:
+	var a: ClearanceShelf = _shelf(3.0, &"g")
+	var b: ClearanceShelf = _shelf(9.0, &"g")
+	a.knock(ClearanceShelf.BY_QUAKE)
+	b.knock(ClearanceShelf.BY_QUAKE)
+	assert_true(a.is_cleared() and b.is_cleared())
+	# Dentro del hueco de `a`.
+	_place(Vector2(a.get_shelf_rect().get_center().x, 0.0))
+	_step(_sim.frames(a.get_regrow_s() + 1.0))
+	assert_true(a.is_cleared() and b.is_cleared(), "Con Isak dentro, el grupo espera (no le aplasta)")
+	assert_eq(a.collision_layer, 0)
+	# Entre las dos (no le encierra).
+	_place(Vector2(6.5 * T, 0.0))
+	_step(10)
+	assert_true(a.is_cleared() and b.is_cleared(), "Entre dos estanterias, tampoco")
+	# Pegado al hueco de fuera (a 4 px, menos que regrow_margin_px).
+	var half: float = _isak.get_hitbox_size().x * 0.5
+	_place(Vector2(a.get_shelf_rect().position.x - half - 4.0, 0.0))
+	_step(10)
+	assert_true(a.is_cleared(), "Pegado a su hueco, tampoco")
+	# Apartado: vuelve.
+	_place(Vector2(0.0, 0.0))
+	_step(2)
+	assert_true(a.is_standing() and b.is_standing(), "Al apartarse, vuelve el grupo")
+	assert_false(LevelLookup.isak_body_rect(_isak).intersects(a.get_shelf_rect()), "Sin Isak dentro")
+
+
 # --- «Prueba gratis» ---
 
 func _box() -> FreeTrialBox:

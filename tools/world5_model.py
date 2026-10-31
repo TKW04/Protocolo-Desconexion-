@@ -67,6 +67,8 @@ SAFE_CONTENT = ("points", "energy", "empty")
 COMBO_ABILITY = "combo"
 # Segundos que el Debug esta activo para leer una caja (tras la carga): lo que cuesta mirar dentro.
 LOOK_S = 1.0
+# Holgura (s) entre cruzar las estanterias y su regrow_s: el camino debe dejarlas atras antes.
+REGROW_SLACK_S = 1.0
 # Media vista de la camara (sin camara, 640 px a cada lado: decision 4 del paso 1).
 VIEW_HALF_W_PX = 640.0
 # Presupuesto de camino (decision 10 de §9): porcentaje del objetivo target_duration_s.
@@ -189,6 +191,10 @@ class World5:
         self.offer_data = offer
         self.field = dict(offer.get("field", {}))
         self.sub_data = _load(root, "data", "enemies", "subscription.json")
+        shelf_cfg = _load(root, "data", "world5_objects.json").get("clearance_shelf", {})
+        # Estanterias que vuelven (2026-10-31): un grupo caido se levanta a los regrow_s del mundo.
+        self.regrow_s = float(shelf_cfg.get("regrow_s", 0.0))
+        self.regrow_margin_px = float(shelf_cfg.get("regrow_margin_px", 8.0))
         avail = level.get("abilities_available", {}) or {}
         self.combo_base = bool(avail.get(COMBO_ABILITY, False))
         self.gates = []
@@ -1112,6 +1118,53 @@ class World5:
                      "target": dict(tgt, group=g.obj_id)}]
         return []
 
+    def check_regrow(self, planner, steps):
+        """Estanterias que vuelven (2026-10-31; regrow_s de la seccion clearance_shelf de data/world5_objects.json):
+        el grupo caido se levanta a los regrow_s, pero nunca con Isak en su tramo (de la primera a la ultima, con
+        regrow_margin_px: ni aplasta ni encierra entre dos). Tras cada Sismo del camino, Isak llega al tramo antes de
+        regrow_s - REGROW_SLACK_S (dentro, ya no vuelve hasta que sale por el otro lado); si llegara tarde, desde
+        donde esta (el lado del Sismo) se puede tumbar otra vez, pero el camino se lo ahorra."""
+        info = planner.v.result.setdefault("world5", {})
+        if getattr(planner, "w5_buy", False):
+            info = info.setdefault("buy", {})
+        out = info["shelf_regrow"] = []
+        if self.regrow_s <= 0.0:
+            return
+        m = self.m
+        grow = self.regrow_margin_px
+        for i, s in enumerate(steps):
+            if s["action"] != "combo_quake":
+                continue
+            g = next((g for g in self.gates if g.kind == "shelf" and g.obj_id == s["target"].get("group")), None)
+            if g is None:
+                continue
+            t0 = s["t"] + planner.duration(s)
+            rs = [it["rect"] for it in g.shelves]
+            span = (min(r[0] for r in rs) - grow, min(r[1] for r in rs), max(r[2] for r in rs) + grow,
+                    max(r[3] for r in rs))
+            feet0 = (s["at"][0] + 0.5) * m.T
+            reach = None
+            if span[0] <= feet0 + m.hw and feet0 - m.hw <= span[2]:
+                reach = t0  # el Sismo sale desde dentro del tramo
+            for nxt in steps[i + 1:]:
+                if reach is not None or nxt["action"] != "move":
+                    continue
+                smp = planner.samples(nxt)
+                dur = planner.duration(nxt)
+                for k, (x, feet, _air) in enumerate(smp):
+                    if _rect_hit((x - m.hw, feet - m.hh, x + m.hw, feet), span):
+                        reach = nxt["t"] + dur * (k + 1) / max(len(smp), 1)
+                        break
+            late = reach is None or reach - t0 > self.regrow_s - REGROW_SLACK_S + EPS
+            entry = {"group": g.obj_id, "reach_s": None if reach is None else round(reach - t0, 2),
+                     "regrow_s": self.regrow_s, "ok": not late}
+            out.append(entry)
+            if late:
+                planner.error("estanterias de saldos %s: vuelven a los %.1f s del Sismo y el camino %s" % (
+                    g.obj_id, self.regrow_s, "no llega a ellas" if reach is None else
+                    "tarda %.1f s en llegar (hace falta menos de %.1f)" % (reach - t0, self.regrow_s - REGROW_SLACK_S)),
+                    s["at"], g.obj_id)
+
     def duration(self, planner, s):
         r = planner.rules
         a = s["action"]
@@ -1595,6 +1648,9 @@ def format_lines(result):
                                                          "NO exige su combo"))
         else:
             out.append("    %s %s: fuera del camino principal" % (name, o["id"]))
+    for e in w5.get("shelf_regrow", []):
+        out.append("    estanterias %s: vuelven a los %.0f s del Sismo; el camino llega a su tramo en %s" % (
+            e["group"], e["regrow_s"], "%.1f s" % e["reach_s"] if e["reach_s"] is not None else "-- (NO)"))
     for e in w5.get("shelf_rule", []):
         out.append("    estanterias %s: %d; ningun golpe suelto alcanza a dos: %s" % (
             e["group"], e["shelves"], "si" if e["ok"] else "NO"))

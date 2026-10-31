@@ -654,6 +654,9 @@ class Planner:
                 self.info["bars"].append({"id": g.obj_id, "wait_s": round(g.wait_s, 2), "at": [st["at"][1], st["at"][0]],
                                           "wave_enemies": len(g.waves)})
         total, total_world = self.timeline(steps)
+        if self.m.w5 is not None:
+            # Mundo 5 (2026-10-31): las estanterias caidas vuelven a los regrow_s; el camino las deja atras antes.
+            self.m.w5.check_regrow(self, steps)
         self.info["calc_puzzle"] = self.puzzle_info(steps)
         self.info["duration_s"] = round(total, 2)
         self.info["duration_world_s"] = round(total_world, 2)

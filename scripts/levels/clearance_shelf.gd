@@ -7,11 +7,17 @@
 ## suelto la TUMBA (sin colision): golpe al suelo cuya onda la alcanza, Embestida
 ## (EventBus.combo_landed), pulso o laser. A los restock_s (0,5 s del mundo) SE
 ## REPONE (sin materializarse con Isak dentro: espera a que salga) SI queda alguna del
-## grupo en pie. Si todas las del grupo estan tumbadas a la vez, el grupo cae PARA
-## SIEMPRE (el resto del intento): solo un SISMO, que llega a la vez a toda la planta
+## grupo en pie. Si todas las del grupo estan tumbadas a la vez, el grupo CAE (hasta
+## que vuelve, abajo): solo un SISMO, que llega a la vez a toda la planta
 ## en pantalla, las tumba todas a la vez. Un grupo de una sola estanteria solo cae
-## para siempre con el Sismo (si no, un golpe suelto bastaria y el Sismo sobraria,
-## §3.9). Reaparecer repone las tumbadas que no han caido para siempre.
+## con el Sismo (si no, un golpe suelto bastaria y el Sismo sobraria,
+## §3.9). Reaparecer (Isak) repone las tumbadas que no han caido con su grupo.
+## Desde el 2026-10-31 el grupo caido VUELVE: a los regrow_s (13 s del mundo; 0 o menos, nunca)
+## de caer, se levanta entero a la vez, pero nunca con Isak en el tramo del grupo (de la
+## primera a la ultima estanteria, con regrow_margin_px a cada lado: dentro de un hueco,
+## entre dos o pegado a una): espera a que salga, asi que ni le aplasta ni le encierra
+## entre dos estanterias. Fuera del tramo, el Sismo con el que llego lo tumba otra vez. Los
+## ultimos regrow_warn_s parpadea («¡Reponiendo!»). En pie otra vez, otro Sismo la tumba.
 ## El origen es la esquina superior izquierda de su celda de arriba. Aspecto PROVISIONAL.
 class_name ClearanceShelf
 extends StaticBody2D
@@ -30,8 +36,10 @@ enum State { STANDING, DOWN, CLEARED }
 signal knocked(by: StringName)
 ## Se ha repuesto («¡Reponiendo!»).
 signal restocked
-## Su grupo ha caido para siempre.
+## Su grupo ha caido (hasta que vuelva, regrow_s).
 signal cleared
+## Su grupo caido ha vuelto a levantarse.
+signal regrown
 
 @export var object_id: StringName = &""
 ## Grupo (params.group): las que deben caer a la vez.
@@ -44,6 +52,7 @@ signal cleared
 var _cfg: Dictionary = {}
 var _state: State = State.STANDING
 var _restock_left: float = 0.0
+var _regrow_left: float = 0.0
 var _flash_left: float = 0.0
 var _last_by: StringName = &""
 var _shape: CollisionShape2D
@@ -105,6 +114,16 @@ func get_restock_left() -> float:
 	return _restock_left if _state == State.DOWN else 0.0
 
 
+## Segundos del mundo que le faltan para volver (caida con el grupo); 0 si no esta caida.
+func get_regrow_left() -> float:
+	return _regrow_left if _state == State.CLEARED else 0.0
+
+
+## Segundos (del mundo) que tarda un grupo caido en volver; 0 o menos, nunca vuelve.
+func get_regrow_s() -> float:
+	return float(_cfg.get("regrow_s", 13.0))
+
+
 ## Las estanterias de su grupo (ella incluida) en el arbol.
 func get_group_members() -> Array[ClearanceShelf]:
 	var out: Array[ClearanceShelf] = []
@@ -161,6 +180,10 @@ func advance(dt: float) -> void:
 			_restock_left = 0.0
 			if not _isak_inside():
 				_restock()
+	elif _state == State.CLEARED and get_regrow_s() > 0.0:
+		_regrow_left = maxf(_regrow_left - dt, 0.0)
+		if _regrow_left <= 0.0:
+			_try_regrow_group()
 	queue_redraw()
 
 
@@ -184,6 +207,7 @@ func _clear() -> void:
 		return
 	_state = State.CLEARED
 	_restock_left = 0.0
+	_regrow_left = get_regrow_s()
 	_set_solid(false)
 	cleared.emit()
 	queue_redraw()
@@ -199,6 +223,39 @@ func _restock() -> void:
 func _isak_inside() -> bool:
 	var isak: Isak = LevelLookup.find_isak(self)
 	return isak != null and not isak.is_dead() and LevelLookup.isak_body_rect(isak).intersects(get_shelf_rect())
+
+
+## El grupo caido vuelve entero cuando a todas se les ha acabado la cuenta y Isak no esta
+## en el tramo del grupo (si no, espera al cuadro siguiente).
+func _try_regrow_group() -> void:
+	var members: Array[ClearanceShelf] = get_group_members()
+	for shelf: ClearanceShelf in members:
+		if shelf._state == State.CLEARED and shelf._regrow_left > 0.0:
+			return
+	if _isak_in_span(members):
+		return
+	for shelf: ClearanceShelf in members:
+		if shelf._state == State.CLEARED:
+			shelf._regrow()
+
+
+## Isak toca el tramo del grupo: el rectangulo de la primera a la ultima estanteria,
+## con regrow_margin_px a cada lado.
+func _isak_in_span(members: Array[ClearanceShelf]) -> bool:
+	var isak: Isak = LevelLookup.find_isak(self)
+	if isak == null or isak.is_dead():
+		return false
+	var span: Rect2 = get_shelf_rect()
+	for shelf: ClearanceShelf in members:
+		span = span.merge(shelf.get_shelf_rect())
+	var margin: float = float(_cfg.get("regrow_margin_px", 8.0))
+	return LevelLookup.isak_body_rect(isak).intersects(span.grow_individual(margin, 0.0, margin, 0.0))
+
+
+func _regrow() -> void:
+	_regrow_left = 0.0
+	_restock()
+	regrown.emit()
 
 
 func _set_solid(solid: bool) -> void:
@@ -268,6 +325,12 @@ func _draw() -> void:
 		var r := Rect2(Vector2(-8.0 + float(i) * 26.0, floor_y - 16.0 - float(i % 2) * 6.0), Vector2(24.0, 16.0))
 		draw_rect(r, Color(box_col, 0.6 if _state == State.CLEARED else 1.0))
 		draw_rect(r, ink, false, 1.0)
+	var warn: float = float(_cfg.get("regrow_warn_s", 2.0))
+	if _state == State.CLEARED and get_regrow_s() > 0.0 and _regrow_left <= warn:
+		var kr: float = 1.0 - _regrow_left / maxf(minf(warn, get_regrow_s()), 0.001)
+		draw_rect(Rect2(Vector2(4.0, size.y - t - 4.0), Vector2((size.x - 8.0) * kr, 4.0)), tag_col)
+		draw_string(font, Vector2(-20.0, size.y - t - 8.0), String(_cfg.get("text_restock", "¡Reponiendo!")),
+			HORIZONTAL_ALIGNMENT_CENTER, size.x + 40.0, 9, tag_col)
 	if _state == State.DOWN:
 		var k: float = 1.0 - _restock_left / maxf(float(_cfg.get("restock_s", 0.5)), 0.001)
 		draw_rect(Rect2(Vector2(4.0, size.y - t - 4.0), Vector2((size.x - 8.0) * k, 4.0)), tag_col)
