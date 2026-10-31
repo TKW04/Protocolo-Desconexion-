@@ -210,6 +210,8 @@ var _last_tick: int = -1
 var _shutter: Shutter
 var _showcases: Array[StaticBody2D] = []
 var _slot_passing: bool = false
+## Fase 2 (2026-10-31): Isak llego a la espalda cruzando la bandeja (tunel) comprimido.
+var _tunnel_crossed: bool = false
 var _slot_entry: int = SIDE_LEFT
 var _sign: String = ""
 var _sign_left: float = 0.0
@@ -638,6 +640,7 @@ func _on_phase_started(phase_index: int) -> void:
 	_trap_drop_left = 0.0
 	_restock_left = 0.0
 	_slot_passing = false
+	_tunnel_crossed = false
 	_update_isak_side()
 	# El golpe que cierra la fase 1 lo estaba girando (y _turn vuelve a none): en la
 	# fase 2 empieza ya de frente a Isak, sin regalar una ventana (paso 19, bot).
@@ -678,6 +681,7 @@ func _on_advance(dt: float) -> void:
 	var isak: Isak = find_isak()
 	var frozen: bool = isak != null and isak.is_frozen()
 	_update_isak_side()
+	_track_tunnel(isak)
 	if not frozen:
 		_advance_turn(dt)
 		match get_phase():
@@ -850,13 +854,44 @@ func _close_behind_window() -> void:
 		close_window()
 
 
-## Boton activo con Isak detras o marcado (la marca no cae al girarse).
+## Boton activo con Isak detras o marcado (la marca no cae al girarse). En la fase 2
+## (arena.phase2_core_via_tray, 2026-10-31), detras solo si llego por la bandeja.
 func _update_core() -> void:
 	if _core == null:
 		return
-	var want: bool = is_fighting() and (is_isak_behind() or _core.is_marked())
+	var behind: bool = is_isak_behind() and (not needs_tunnel() or _tunnel_crossed)
+	var want: bool = is_fighting() and (behind or _core.is_marked())
 	if want != _core.is_enabled():
 		_core.set_enabled(want)
+
+
+## Fase 2 con arena.phase2_core_via_tray: el «Cancelar» solo se alcanza cruzando la
+## bandeja (tunel bajo la maquina) comprimido; por encima (bombas aturdidas) no vale.
+func needs_tunnel() -> bool:
+	return get_phase() == 2 and bool(_arena.get("phase2_core_via_tray", false))
+
+
+## Isak llego a la espalda por la bandeja en esta ventana (fase 2).
+func is_tunnel_crossed() -> bool:
+	return _tunnel_crossed
+
+
+## Con la bandeja abierta y el Debug, el «Cancelar» se ve desde delante al OTRO lado
+## del tunel (con flechas por el tunel): hay que cruzar comprimido para atacarlo.
+## Sin el Debug no se ve (2026-10-31).
+func is_core_previewed() -> bool:
+	return needs_tunnel() and is_fighting() and is_tray_open() and not (_core != null and _core.is_enabled()) \
+		and DebugMode.get_intensity() > 0.0
+
+
+func _track_tunnel(isak: Isak) -> void:
+	if not needs_tunnel() or isak == null or isak.is_dead():
+		return
+	var body: Rect2 = LevelLookup.isak_body_rect(isak)
+	if is_tray_open() and body.intersects(get_tray_tunnel_rect()):
+		_tunnel_crossed = true
+	elif side_of_x(body.get_center().x) == _facing:
+		_tunnel_crossed = false
 
 
 func _place_core() -> void:
@@ -1809,6 +1844,23 @@ class VendorFx extends Node2D:
 			draw_rect(boss.get_slot_rect(), Color(ink, 0.9))
 		if boss.is_tray_open():
 			draw_rect(boss.get_tray_tunnel_rect(), Color(ink, 0.9))
+		if boss.is_core_previewed():
+			# Con el Debug: el «Cancelar» al otro lado del tunel y flechas por debajo.
+			var a: float = DebugMode.get_intensity()
+			var tun: Rect2 = boss.get_tray_tunnel_rect()
+			var back: float = -float(boss.get_facing())
+			var cp: Vector2 = boss.get_core_point()
+			var cr: float = WeakPoint.radius_px()
+			var red: Color = WeakPoint.color_at(boss.get_time())
+			draw_circle(cp, cr + 3.0, Color(ink, a))
+			draw_circle(cp, cr, Color(red, a * 0.85))
+			draw_arc(cp, cr + 6.0, 0.0, TAU, 24, Color(trap, a), 2.0)
+			for i: int in 3:
+				var cx: float = tun.get_center().x + back * (float(i) - 1.0) * 56.0
+				var cy: float = tun.get_center().y + 8.0
+				var tip := Vector2(cx + back * 10.0, cy)
+				draw_polyline(PackedVector2Array([Vector2(cx - back * 8.0, cy - 12.0), tip, Vector2(cx - back * 8.0, cy + 12.0)]),
+					Color(trap, a * (0.5 + 0.25 * float(i))), 4.0)
 		# Las fichas van en la barra «ticket» del HUD (BossBar, paso 18).
 		var sign: String = boss.get_sign()
 		if boss.get_phase() == 3 and boss.is_fighting():

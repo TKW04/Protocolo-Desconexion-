@@ -1201,7 +1201,7 @@
 			"_notes": "Jefe El Vendedor (paso 20 de docs/propuesta-mundo-5.md §8, §5.10; arena 5-boss). Texto PROPUESTO del orquestador, revisar al jugar. Pieza: el ticket de devolucion de la fase 2 (la SurpriseBox con contenido ticket lleva este help_id), cerrado.",
 			"category": "object",
 			"title": "Ticket de devolución",
-			"text": "Una devolución. Ábrela con un pulso de cara: mientras la procesa no se gira, y la bandeja de abajo se abre.",
+			"text": "Una devolución. Ábrela con un pulso de cara: mientras la procesa no se gira y la bandeja de abajo se abre. Con el Debug verás el Cancelar al otro lado: cruza por debajo, comprimido.",
 			"first_level": "5-boss",
 			"world": 5,
 			"order": 14,

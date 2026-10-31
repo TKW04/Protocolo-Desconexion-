@@ -450,6 +450,51 @@ func test_phase2_tray_tunnel_is_crossed_compressed() -> void:
 	assert_lt(tunnel.size.y, _isak().get_hitbox_size().y, "De pie no cabe")
 
 
+## 2026-10-31 (pedido del usuario): en la fase 2 hay que cruzar la bandeja. Con la
+## bandeja abierta y el Debug, el «Cancelar» se ve desde delante al otro lado del
+## tunel (sin el Debug, no); detras solo se activa si Isak llego por el tunel.
+func test_phase2_the_core_is_seen_across_the_tunnel_and_needs_the_tunnel() -> void:
+	await _arena()
+	_boss.start()
+	_to_phase(2)
+	_place_isak(4, 9, 1.0)
+	assert_eq(_boss.get_facing(), Vendor.SIDE_LEFT)
+	assert_true(_boss.needs_tunnel(), "Fase 2: el boton pide la bandeja")
+	_boss.start_refund()
+	_advance(DT)
+	assert_false(_boss.is_core_previewed(), "Sin el Debug no se ve")
+	_debug_on()
+	_advance(0.3)
+	assert_true(_boss.is_core_previewed(), "Con el Debug, delante: se ve al otro lado del tunel")
+	assert_false(_boss.get_core().is_enabled(), "Desde delante no se ataca")
+	# Por encima (sin el tunel): detras pero el boton sigue apagado.
+	_place_isak(14, 9, -1.0)
+	_advance(0.2)
+	assert_true(_boss.is_isak_behind())
+	assert_false(_boss.is_tunnel_crossed())
+	assert_false(_boss.get_core().is_enabled(), "Detras sin cruzar la bandeja: no vale")
+	# Vuelve delante y cruza por la bandeja.
+	_place_isak(5, 9, 1.0)
+	_advance(DT)
+	var tunnel: Rect2 = _boss.get_tray_tunnel_rect()
+	_isak().global_position = Vector2(tunnel.get_center().x, tunnel.end.y)
+	_advance(DT)
+	assert_true(_boss.is_tunnel_crossed(), "En el tunel")
+	_place_isak(13, 9, -1.0)
+	_advance(DT)
+	assert_true(_boss.get_core().is_enabled(), "Por la bandeja: el boton se activa")
+	assert_false(_boss.is_core_previewed(), "Ya detras: se ve el de verdad")
+
+
+func test_phase1_does_not_need_the_tunnel() -> void:
+	await _arena()
+	_boss.start()
+	_place_isak(14, 9, -1.0)
+	_advance(0.1)
+	assert_false(_boss.needs_tunnel())
+	assert_true(_boss.get_core().is_enabled(), "Fase 1: detras basta")
+
+
 # --- Fase 3: oferta por tiempo limitado ---
 
 func test_phase3_countdown_payment_and_nothing_attacks_while_frozen() -> void:

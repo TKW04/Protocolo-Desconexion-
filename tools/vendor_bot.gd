@@ -187,6 +187,11 @@ var _bombs: int = 0
 var _edges: int = 0
 var _rams: int = 0
 var _slot_pushes: int = 0
+## Fase 2 (2026-10-31): veces que vio con el Debug el «Cancelar» al otro lado de la
+## bandeja y golpes de la fase 2 sin haber cruzado el tunel (deben ser 0).
+var _tunnel_views: int = 0
+var _was_previewed: bool = false
+var _hits_without_tunnel: int = 0
 var _tokens_min: int = 999
 var _windows: Dictionary = {}
 var _phase_frames: Dictionary = {}
@@ -365,6 +370,8 @@ func _hook_boss() -> void:
 	_boss.hit_taken.connect(func(_r: int) -> void:
 		_win_hits += 1
 		var p: int = _boss.get_phase()
+		if p == 2 and _boss.needs_tunnel() and not _boss.is_tunnel_crossed():
+			_hits_without_tunnel += 1
 		var w: Dictionary = _windows.get(p, {})
 		w["hits"] = int(w.get("hits", 0)) + 1
 		_windows[p] = w)
@@ -519,6 +526,12 @@ func _measure(delta: float) -> void:
 			_note("Isak congelado (%s; fase %d, x %.0f)" % [_isak.get_frozen_source(), p, _isak.global_position.x])
 	_was_frozen = frozen
 	_tokens_min = mini(_tokens_min, _boss.get_tokens())
+	var previewed: bool = _boss.is_core_previewed()
+	if previewed and not _was_previewed:
+		_tunnel_views += 1
+		if _verbose:
+			_note("con el Debug ve el «Cancelar» al otro lado de la bandeja")
+	_was_previewed = previewed
 
 
 func _fight_s() -> float:
@@ -1007,13 +1020,17 @@ func _cross_tunnel() -> void:
 			_walk_to(mouth - toward * 50.0, 10.0)
 			return
 		_axis = 0.0
+		# Como un jugador: con el Debug mira el «Cancelar» al otro lado del tunel y se comprime.
+		_want_debug(_boss.is_refunding())
+		if _boss.is_refunding() and not _boss.is_core_previewed():
+			return
 		_pinch()
 		return
 	# Comprimido: hacia la salida; antes de salir, si una bomba va a estallar en la boca, espera.
 	if _side_here() == 0 and _bomb_near_exit(-front):
 		_axis = 0.0
 		return
-	_want_debug(_boss.is_refunding() and absf(ix - exit_x) < 3.0 * _tile)
+	_want_debug(_boss.is_refunding())
 	_axis = toward
 	if (toward > 0.0 and ix > exit_x - 8.0) or (toward < 0.0 and ix < exit_x + 8.0):
 		_axis = 0.0
@@ -1628,6 +1645,12 @@ func _check_victory(hub: HubRoom) -> bool:
 	if _min_energy_window <= 0.0:
 		_note("FALLO: energia 0 dentro de una ventana")
 		ok = false
+	if _hits_without_tunnel > 0:
+		_note("FALLO: %d golpes de la fase 2 sin cruzar la bandeja" % _hits_without_tunnel)
+		ok = false
+	if _profile != "idle" and _tunnel_views == 0:
+		_note("FALLO: nunca ve con el Debug el «Cancelar» al otro lado de la bandeja")
+		ok = false
 	if _profile == "ideal" and _lap == 1 and (_fight_s() < IDEAL_CACHE_S.x or _fight_s() > IDEAL_CACHE_S.y):
 		_note("FALLO: el ideal en Caché tarda %.1f s (franja %.0f-%.0f s)" % [_fight_s(), IDEAL_CACHE_S.x,
 			IDEAL_CACHE_S.y])
@@ -1674,9 +1697,9 @@ func _finish(ok: bool) -> void:
 			_payments_time, _min_energy if _min_energy != INF else -1.0,
 			_min_energy_window if _min_energy_window != INF else -1.0, VALIDATOR_MARGIN.get(_lap, 0.0),
 			_debug_cut_in_window])
-		print("  ACCIONES: pulsos %d, laseres %d, dashes %d, Filos %d, Embestidas %d, Debug %.1f s, cargas %d, plataformas pagadas %d (te fio %d, trampas plegadas %d), fichas minimas %d, devoluciones %d, bombas aturdidas %d, expulsiones de la ranura %d" % [
+		print("  ACCIONES: pulsos %d, laseres %d, dashes %d, Filos %d, Embestidas %d, Debug %.1f s, cargas %d, plataformas pagadas %d (te fio %d, trampas plegadas %d), fichas minimas %d, devoluciones %d, bombas aturdidas %d, expulsiones de la ranura %d, vistas por la bandeja %d" % [
 			_pulses, _lasers, _dashes, _edges, _rams, float(_debug_frames) / 60.0, _charges, _platforms_paid, _credits,
-			_traps_folded, _tokens_min if _tokens_min != 999 else -1, _refunds, _bombs, _slot_pushes])
+			_traps_folded, _tokens_min if _tokens_min != 999 else -1, _refunds, _bombs, _slot_pushes, _tunnel_views])
 		print("  FASES: " + "; ".join(phases))
 	finished.emit(0 if ok else 1)
 
