@@ -39,8 +39,9 @@
 ## a la izquierda de la senal, un mini telefono por vida hasta lives_max (lleno
 ## o vacio; hud_lives.png) o, con mas de max_icons, un icono y «x<n>» (seccion
 ## lives de data/hud.json). EventBus.lives_changed. Oculto hasta que las vidas
-## cuentan (primera llegada al hub) y en el hub. Al perder una, el icono que se
-## apaga parpadea y da un bote. Se crea por codigo (no toca hud.tscn).
+## cuentan (primera llegada al hub). En el hub tambien se ven (2026-10-31), a
+## la derecha del Modo Avion. Al perder una, el icono que se apaga parpadea y
+## da un bote. Se crea por codigo (no toca hud.tscn).
 ## Ocultarte (Pulso 4 de las mejoras de Calc, tanda M2): mientras esta activo,
 ## bajo la barra y a la izquierda del contador de power banks, el icono «oculto»
 ## (hud_hide.png) y una barra con lo que queda hasta el corte al 10 %
@@ -699,7 +700,7 @@ func _on_lives_changed(lives: int, lives_max: int, active: bool) -> void:
 func _refresh_lives() -> void:
 	if _lives_box == null:
 		return
-	_lives_box.visible = _lives_active and not _hub_mode
+	_lives_box.visible = _lives_active
 	var max_icons: int = int(_config.lives.get("max_icons", 8))
 	var compact: bool = _lives_max > max_icons
 	var count: int = 1 if compact else _lives_max

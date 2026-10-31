@@ -639,6 +639,9 @@ func enter_level(level_id: String) -> bool:
 	return true
 
 
+## Las vidas NO se reponen al volver al hub (2026-10-31): llegan las que quedan
+## tras el nivel (completar o «Salir al hub») y el HUD del hub las muestra. Solo
+## las reponen start_level, start_in_hub y el game over (apply_rollback).
 func _show_hub(level_id: String, attention_points: int, rollback_report: Dictionary = {}) -> void:
 	_notices.stop()
 	_clear_level()

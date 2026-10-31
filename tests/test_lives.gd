@@ -4,7 +4,7 @@
 # de la vida extra), el flujo real del 1-1 (LevelRunner: morir resta una y
 # reaparece en el checkpoint, ilimitadas antes de conocer a Notas, 0 -> game over
 # y hub) y el HUD de vidas (mini telefonos junto a la senal, oculto antes de que
-# cuenten y en el hub, animacion al perder una, «x<n>» con muchas).
+# cuenten; en el hub tambien desde el 2026-10-31, animacion al perder una, «x<n>» con muchas).
 # Usa su propia ruta de guardado (nunca user://save.json).
 extends GutTest
 
@@ -257,7 +257,7 @@ func test_hud_lives_icons_sit_left_of_the_signal_and_keep_the_other_indicators()
 	assert_eq(_hud.get_sync_text(), "100 %")
 
 
-func test_hud_compacts_many_lives_and_hides_them_in_the_hub() -> void:
+func test_hud_compacts_many_lives_and_shows_them_in_the_hub() -> void:
 	EcoProgress.meet_notas()
 	GameState.lives_max = 9
 	GameState.refill_lives()
@@ -267,7 +267,8 @@ func test_hud_compacts_many_lives_and_hides_them_in_the_hub() -> void:
 	GameState.lose_life()
 	assert_eq(_hud.get_lives_text(), "x8")
 	_hud.enable_hub_mode(HubData.section("hud"))
-	assert_false(_hud.is_lives_shown(), "En el hub no se muestran")
+	assert_true(_hud.is_lives_shown(), "En el hub tambien se muestran (2026-10-31)")
+	assert_eq(_hud.get_lives_text(), "x8")
 
 
 func test_hud_lives_art_has_full_and_empty_frames_without_red() -> void:

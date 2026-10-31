@@ -1634,6 +1634,9 @@ func meet_ally(ally: StringName) -> bool:
 		return false
 	allies_met[ally] = true
 	EventBus.ally_met.emit(ally)
+	# Con Notas las vidas empiezan a contar: el HUD (tambien el del hub) las muestra ya.
+	if ally == ALLY_NOTAS:
+		_emit_lives()
 	return true
 
 
