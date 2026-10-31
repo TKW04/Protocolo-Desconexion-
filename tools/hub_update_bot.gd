@@ -53,14 +53,17 @@ const A_LEFT: StringName = &"move_left"
 const A_RIGHT: StringName = &"move_right"
 const A_DOWN: StringName = &"move_down"
 const A_JUMP: StringName = &"jump"
+## Correr (2026-10-31): ya no es una accion; Isak corre por defecto y el bot
+## mantiene `walk` cuando no corre (`_holds[A_RUN]` falso), como antes.
 const A_RUN: StringName = &"run"
+const A_WALK: StringName = &"walk"
 const A_PULSE: StringName = &"pulse"
 const A_LASER: StringName = &"laser"
 const A_DEBUG: StringName = &"debug"
 const A_DASH: StringName = &"gesture_swipe"
 const A_PINCH: StringName = &"gesture_pinch"
 const A_ACCEPT: StringName = &"ui_accept"
-const HOLD_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_DOWN, A_JUMP, A_RUN, A_DEBUG]
+const HOLD_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_DOWN, A_JUMP, A_WALK, A_DEBUG]
 const T: float = 64.0
 const LINE_READ_FRAMES: int = 10
 const JUMP_HOLD_FRAMES: int = 22
@@ -246,11 +249,15 @@ func _apply_inputs() -> void:
 	else:
 		Input.action_release(A_LEFT)
 		Input.action_release(A_RIGHT)
-	for action: StringName in [A_DOWN, A_JUMP, A_RUN, A_DEBUG]:
+	for action: StringName in [A_DOWN, A_JUMP, A_DEBUG]:
 		if bool(_holds.get(action, false)):
 			Input.action_press(action)
 		else:
 			Input.action_release(action)
+	if bool(_holds.get(A_RUN, false)):
+		Input.action_release(A_WALK)
+	else:
+		Input.action_press(A_WALK)
 	for action: StringName in _taps:
 		Input.action_press(action)
 		_held_taps.append(action)

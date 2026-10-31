@@ -100,7 +100,7 @@ func _action(action: StringName) -> void:
 
 func test_remappable_actions_exclude_dev_and_ui_keys() -> void:
 	var actions: Array[StringName] = ControlBindings.actions()
-	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"run", &"pulse", &"laser", &"gesture_swipe", &"move_down",
+	assert_eq(actions, [&"move_left", &"move_right", &"jump", &"walk", &"pulse", &"laser", &"gesture_swipe", &"move_down",
 		&"gesture_pinch", &"debug", &"hide", &"help", &"pause"] as Array[StringName],
 		"Sin Agitar (gesture_shake): retirado el 2026-10-28")
 	for action: StringName in actions:
@@ -114,7 +114,7 @@ func test_default_labels_and_glyphs() -> void:
 	var font: Font = load(FONT_PATH) as Font
 	assert_eq(ControlBindings.binding_label(&"jump", font), "Espacio / A")
 	assert_eq(ControlBindings.binding_label(&"pulse", font), "G / X")
-	assert_eq(ControlBindings.binding_label(&"run", font), "Mayús / gatillo derecho")
+	assert_eq(ControlBindings.binding_label(&"walk", font), "Mayús / gatillo derecho")
 	assert_eq(ControlBindings.binding_label(&"pause", font), "Esc / Start")
 	assert_eq(ControlBindings.binding_label(&"hide", font), "H / L3", "Ocultarte (Pulso 4): H / L3")
 	assert_eq(ControlBindings.binding_label(&"gesture_swipe", font), "L / B", "Deslizar (dash): L / B")
@@ -245,6 +245,17 @@ func test_saved_at_once_as_serialized_events_and_loaded_on_start() -> void:
 	assert_true(_is_action(_key(KEY_SPACE), &"pulse"))
 	assert_true(_is_action(_button(JOY_BUTTON_DPAD_UP), &"laser"))
 	assert_false(GameState.has_unsaved_changes(), "No es progreso")
+
+
+## 2026-10-31: la accion `run` paso a ser `walk` (mismas entradas); lo guardado
+## con el nombre antiguo se aplica a `walk`.
+func test_old_run_override_moves_to_walk() -> void:
+	ControlBindings.apply_overrides({"run": [{"type": "key", "physical_keycode": KEY_CTRL},
+		{"type": "joy_axis", "axis": JOY_AXIS_TRIGGER_RIGHT, "value": 1.0}]})
+	assert_true(_is_action(_key(KEY_CTRL), &"walk"), "Ctrl camina")
+	assert_false(InputMap.has_action(&"run"), "Ya no hay accion run")
+	ControlBindings.restore_defaults(false)
+	assert_true(_is_action(_key(KEY_SHIFT), &"walk"), "Por defecto, Mayus")
 
 
 func test_bad_saved_controls_fall_back_to_defaults() -> void:

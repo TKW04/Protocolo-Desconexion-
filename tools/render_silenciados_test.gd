@@ -69,7 +69,7 @@ func _run() -> void:
 	await _save("10_aviso.png")
 	await _until(func() -> bool: return bool(banner.call(&"is_sweeping")), 120, "barrido")
 	Input.action_press(&"move_right")
-	Input.action_press(&"run")
+	Input.action_release(&"walk")  # corre (por defecto desde el 2026-10-31)
 	await _until(func() -> bool:
 		var rect: Rect2 = banner.call(&"get_damage_rect")
 		return rect.position.x - _isak.global_position.x < 260.0, 240, "banner cerca")
@@ -85,7 +85,6 @@ func _run() -> void:
 	await _frames(4)
 	await _save("12_dash_atraviesa.png")
 	await _until(func() -> bool: return not bool(_isak.call(&"is_dashing")), 60, "fin del dash")
-	Input.action_release(&"run")
 	Input.action_release(&"move_right")
 	await _frames(12)
 	await _save("13_tras_el_dash.png")

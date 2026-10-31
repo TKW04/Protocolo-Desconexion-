@@ -82,19 +82,19 @@ STAMPS = {
         "............",
         "............",
     ],
-    # Correr: dos chevrones.
-    "run": [
+    # Caminar (mantener; 2026-10-31, Isak corre por defecto): figura que anda.
+    "walk": [
         "............",
-        "............",
-        ".tt..##.....",
-        "..tt..##....",
-        "...tt..##...",
-        "....tt..##..",
-        "....tt..##..",
-        "...tt..##...",
-        "..tt..##....",
-        ".tt..##.....",
-        "............",
+        ".....##.....",
+        ".....##.....",
+        "....###.....",
+        "...#.##.....",
+        "...#.##.#...",
+        "....###.....",
+        "....#.#.....",
+        "...#...#....",
+        "...#....#...",
+        "..tt....tt..",
         "............",
     ],
     # Pulso: onda alrededor de un nucleo cian.
@@ -280,7 +280,7 @@ STAMPS = {
 }
 MIRRORS = {"move_right": "move_left"}
 DRAWN = {"restart": hub._pause_reset}
-ICONS = ["move_left", "move_right", "jump", "run", "pulse", "laser", "debug", "dash", "compress",
+ICONS = ["move_left", "move_right", "jump", "walk", "pulse", "laser", "debug", "dash", "compress",
          "ground_pound", "hide", "combo_ram", "combo_edge", "combo_quake", "help", "pause", "restart"]
 
 

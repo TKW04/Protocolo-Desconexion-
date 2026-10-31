@@ -5,7 +5,10 @@ extends PlayerInput
 const ACTION_MOVE_LEFT: StringName = &"move_left"
 const ACTION_MOVE_RIGHT: StringName = &"move_right"
 const ACTION_JUMP: StringName = &"jump"
-const ACTION_RUN: StringName = &"run"
+## Caminar (2026-10-31, peticion del usuario): Isak corre por defecto y
+## mantener `walk` (Mayus / gatillo derecho, los de la antigua accion `run`)
+## lo hace caminar.
+const ACTION_WALK: StringName = &"walk"
 const ACTION_PULSE: StringName = &"pulse"
 const ACTION_LASER: StringName = &"laser"
 const ACTION_HIDE: StringName = &"hide"
@@ -29,7 +32,8 @@ func poll() -> void:
 	move_axis = Input.get_axis(ACTION_MOVE_LEFT, ACTION_MOVE_RIGHT)
 	jump_pressed = Input.is_action_just_pressed(ACTION_JUMP)
 	jump_held = Input.is_action_pressed(ACTION_JUMP)
-	run_held = Input.is_action_pressed(ACTION_RUN)
+	walk_held = Input.is_action_pressed(ACTION_WALK)
+	run_held = not walk_held
 	pulse_pressed = Input.is_action_just_pressed(ACTION_PULSE)
 	laser_pressed = Input.is_action_just_pressed(ACTION_LASER)
 	hide_pressed = InputMap.has_action(ACTION_HIDE) and Input.is_action_just_pressed(ACTION_HIDE)

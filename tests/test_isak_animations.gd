@@ -293,9 +293,11 @@ func test_terminal_intro_loop_outro_and_cut_by_input() -> void:
 	assert_eq(_isak.get_animation(), Isak.ANIM_TERMINAL_LOOP, "Intro -> bucle")
 	assert_true(_sprite.is_playing())
 	_sprite.speed_scale = 1.0
-	_input.run_held = true
+	# Correr / caminar es un modificador desde el 2026-10-31 (no es intencion):
+	# el corte lo da otra entrada (mantener abajo, sin el golpe al suelo).
+	_input.hold_held = true
 	_sim.step()
-	_input.run_held = false
+	_input.hold_held = false
 	assert_false(_isak.is_terminal_playing(), "El input corta la terminal")
 	assert_eq(_sim.state(), PlayerState.IDLE, "Sin cambiar la logica de Idle")
 	assert_eq(_isak.get_animation(), Isak.ANIM_TERMINAL_OUTRO, "Corte suave: salida del holograma")

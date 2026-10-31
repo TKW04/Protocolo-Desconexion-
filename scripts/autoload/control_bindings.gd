@@ -342,6 +342,10 @@ static func apply_overrides(saved: Dictionary) -> void:
 	restore_defaults(false)
 	for key: Variant in saved:
 		var action := StringName(String(key))
+		# 2026-10-31: la accion `run` (mantener para correr) paso a ser `walk`
+		# (mantener para caminar) con las mismas entradas; lo reasignado se conserva.
+		if action == &"run" and not saved.has("walk"):
+			action = &"walk"
 		if not is_remappable(action) or not saved[key] is Array:
 			continue
 		var events: Array[InputEvent] = []

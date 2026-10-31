@@ -51,6 +51,28 @@ func test_run_uses_walk_or_run_speed() -> void:
 	assert_almost_eq(_isak.velocity.x, _isak.physics.run_speed, 0.01, "Con run_held corre")
 
 
+## 2026-10-31: con la entrada real Isak corre por defecto y mantener `walk`
+## (Mayus / gatillo derecho) lo hace caminar; caminar no es una intencion.
+func test_real_input_runs_by_default_and_walk_held_walks() -> void:
+	assert_true(InputMap.has_action(&"walk"), "Accion walk")
+	assert_false(InputMap.has_action(&"run"), "Sin accion run")
+	var shift := InputEventKey.new()
+	shift.physical_keycode = KEY_SHIFT
+	assert_true(InputMap.event_is_action(shift, &"walk"), "Mayus camina")
+	var input := ActionPlayerInput.new()
+	Input.action_release(&"walk")
+	input.poll()
+	assert_true(input.run_held, "Sin walk, corre")
+	assert_false(input.walk_held)
+	assert_false(input.has_any_intent(), "Correr por defecto no es intencion")
+	Input.action_press(&"walk")
+	input.poll()
+	assert_false(input.run_held, "Con walk, camina")
+	assert_true(input.walk_held)
+	assert_false(input.has_any_intent(), "Caminar sin moverse tampoco")
+	Input.action_release(&"walk")
+
+
 func test_run_to_idle_when_axis_released() -> void:
 	_input.move_axis = -1.0
 	_sim.step(SHORT_RUN_STEPS)
@@ -220,7 +242,12 @@ func test_terminal_animation_after_threshold_and_input_cuts_it() -> void:
 	_sim.step(_sim.steps_for(_isak.terminal_idle_threshold_s))
 	assert_signal_emitted(_isak, "idle_terminal_started")
 	assert_true(_isak.is_terminal_playing())
+	# Correr / caminar es un modificador (2026-10-31): no corta la terminal.
 	_input.run_held = true
+	_input.walk_held = true
+	_sim.step()
+	assert_true(_isak.is_terminal_playing(), "Caminar sin moverse no la corta")
+	_input.hold_held = true
 	_sim.step()
 	assert_false(_isak.is_terminal_playing(), "Cualquier input corta la terminal")
 	assert_eq(_isak.get_idle_time(), 0.0)

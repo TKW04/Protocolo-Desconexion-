@@ -63,14 +63,15 @@ const UPGRADE_4_6: StringName = &"hub_update_4_6"
 const A_LEFT: StringName = &"move_left"
 const A_RIGHT: StringName = &"move_right"
 const A_JUMP: StringName = &"jump"
-const A_RUN: StringName = &"run"
+## Caminar (2026-10-31): Isak corre por defecto; «sin correr» = mantener walk.
+const A_WALK: StringName = &"walk"
 const A_PULSE: StringName = &"pulse"
 const A_LASER: StringName = &"laser"
 const A_DEBUG: StringName = &"debug"
 const A_DASH: StringName = &"gesture_swipe"
 const A_PINCH: StringName = &"gesture_pinch"
 const A_ACCEPT: StringName = &"ui_accept"
-const ALL_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_JUMP, A_RUN, A_PULSE, A_LASER, A_DEBUG, A_DASH, A_PINCH]
+const ALL_ACTIONS: Array[StringName] = [A_LEFT, A_RIGHT, A_JUMP, A_WALK, A_PULSE, A_LASER, A_DEBUG, A_DASH, A_PINCH]
 const ACCESS_NAMES: Dictionary = {1: "Caché", 2: "Kernel", 3: "Raíz"}
 ## Margen de energia del validador de arenas (tools/validate_boss.py, pelea torpe,
 ## paso 17: el peor de las tres fases por acceso, sin mejoras). Solo informe.
@@ -1548,7 +1549,7 @@ func _apply_inputs() -> void:
 	else:
 		Input.action_release(A_LEFT)
 		Input.action_release(A_RIGHT)
-	_hold(A_RUN, _run)
+	_hold(A_WALK, not _run)
 	_hold(A_JUMP, _jump)
 	if not _taps.has(A_DEBUG):
 		_hold(A_DEBUG, _debug_hold)

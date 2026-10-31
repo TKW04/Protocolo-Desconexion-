@@ -11,8 +11,12 @@ var move_axis: float = 0.0
 var jump_pressed: bool = false
 ## Salto mantenido.
 var jump_held: bool = false
-## Correr mantenido.
+## Corre (velocidad de correr). La entrada real (ActionPlayerInput) lo pone a
+## true salvo con `walk` mantenido (2026-10-31: Isak corre por defecto); las
+## entradas falsas de las pruebas lo escriben a mano (false = camina).
 var run_held: bool = false
+## Caminar mantenido (accion `walk`). Es un modificador: no cuenta como intencion.
+var walk_held: bool = false
 ## Pulso pulsado en este cuadro (flanco).
 var pulse_pressed: bool = false
 ## Laser pulsado en este cuadro (flanco).
@@ -48,5 +52,5 @@ func clear_just_pressed() -> void:
 
 ## Verdadero si hay cualquier intencion activa (corta la animacion de terminal).
 func has_any_intent() -> bool:
-	return not is_zero_approx(move_axis) or jump_pressed or jump_held or run_held or pulse_pressed or laser_pressed or hide_pressed or dash_pressed \
+	return not is_zero_approx(move_axis) or jump_pressed or jump_held or pulse_pressed or laser_pressed or hide_pressed or dash_pressed \
 			or hold_held or pinch_pressed or shake_pressed

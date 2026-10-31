@@ -34,7 +34,12 @@ const TILE: float = 64.0
 const A_LEFT: StringName = &"move_left"
 const A_RIGHT: StringName = &"move_right"
 const A_JUMP: StringName = &"jump"
+## Correr (2026-10-31): ya no es una accion del Input Map; Isak corre por
+## defecto y mantener `walk` lo hace caminar. El bot sigue pensando en «correr»
+## (A_RUN, virtual): _hold(A_RUN, x) mantiene `walk` cuando x es falso, asi que
+## camina y corre en los mismos tramos que antes.
 const A_RUN: StringName = &"run"
+const A_WALK: StringName = &"walk"
 const A_PULSE: StringName = &"pulse"
 const A_LASER: StringName = &"laser"
 const A_DEBUG: StringName = &"debug"
@@ -118,10 +123,12 @@ func _run(path_file: String) -> void:
 	if ok:
 		EventBus.pause_menu_opened.connect(func() -> void: _pause_menu_opens += 1)
 		_setup_progress()
+		_hold(A_RUN, false)
 		ok = await _play_level()
 	if ok:
 		ok = await _hub()
 	_release_all()
+	Input.action_release(A_WALK)
 	if ok and _pause_menu_opens > 0:
 		ok = _fail("el menu de pausa se abrio %d veces (el bot no pulsa pause)" % _pause_menu_opens)
 	if ok and not GameState.learned_help.is_empty():
@@ -1202,6 +1209,9 @@ func _set_axis(a: float) -> void:
 
 
 func _hold(action: StringName, on: bool) -> void:
+	if action == A_RUN:
+		action = A_WALK
+		on = not on
 	if on:
 		Input.action_press(action)
 	else:
@@ -1229,8 +1239,10 @@ func _physics_process(_delta: float) -> void:
 
 
 func _release_all() -> void:
-	for action: StringName in [A_LEFT, A_RIGHT, A_JUMP, A_RUN, A_PULSE, A_LASER, A_DEBUG]:
+	for action: StringName in [A_LEFT, A_RIGHT, A_JUMP, A_PULSE, A_LASER, A_DEBUG]:
 		Input.action_release(action)
+	# Sin correr = caminar (como antes, con run suelto).
+	_hold(A_RUN, false)
 	_taps.clear()
 	_tap_queue.clear()
 	_axis = 0.0

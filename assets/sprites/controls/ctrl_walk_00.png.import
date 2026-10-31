@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://llsio5gcff54"
-path="res://.godot/imported/ctrl_run_00.png-740583da97a9a2e80c84e810c2d6d2a7.ctex"
+uid="uid://dlo6dgmdgtrk1"
+path="res://.godot/imported/ctrl_walk_00.png-29d65f8f0245a72f9e25b91b13b16d7a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/controls/ctrl_run_00.png"
-dest_files=["res://.godot/imported/ctrl_run_00.png-740583da97a9a2e80c84e810c2d6d2a7.ctex"]
+source_file="res://assets/sprites/controls/ctrl_walk_00.png"
+dest_files=["res://.godot/imported/ctrl_walk_00.png-29d65f8f0245a72f9e25b91b13b16d7a.ctex"]
 
 [params]
 

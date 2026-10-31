@@ -99,7 +99,7 @@ func test_menu_lists_every_move_ability_and_combo_with_its_icon() -> void:
 		var icon: Texture2D = _menu.get_option_icon(i)
 		assert_not_null(icon, "%s con icono" % row["id"])
 		assert_eq(icon.get_size(), Vector2(12, 12), "Icono de 12 px como los del menu")
-	for needed: String in ["move_left", "move_right", "jump", "run", "pulse", "laser", "debug", "dash", "compress",
+	for needed: String in ["move_left", "move_right", "jump", "walk", "pulse", "laser", "debug", "dash", "compress",
 			"ground_pound", "hide", "combo_ram", "combo_edge", "combo_quake", "help", "pause", "restart"]:
 		assert_has(ids, needed, "Fila de %s" % needed)
 	for action: StringName in ControlBindings.actions():
@@ -177,7 +177,7 @@ func test_device_switches_live_with_simulated_events() -> void:
 	assert_eq(_row_text("debug"), "Y")
 	assert_eq(_row_text("compress"), "RB")
 	assert_eq(_row_text("laser"), "LT")
-	assert_eq(_row_text("run"), "RT")
+	assert_eq(_row_text("walk"), "RT")
 	assert_eq(_row_text("move_left"), "Stick izquierda")
 	assert_eq(_row_text("ground_pound"), "Stick abajo")
 	assert_eq(_row_text("combo_ram"), "A, B, Stick abajo")
