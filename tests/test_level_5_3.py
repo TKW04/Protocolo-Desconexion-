@@ -113,7 +113,10 @@ class Level53Test(unittest.TestCase):
         for o in cds:
             by.setdefault(section_of(self.level, o["x"]), []).append(o["params"]["id"])
         self.assertEqual(len(by["Tramo 1 «Solo por hoy»"]), 9, "Nueve cuentas en las tres pasadas del Tramo 1")
-        self.assertEqual(set(by), {"Tramo 1 «Solo por hoy»"})
+        # 2026-10-31: fosos con cuenta en el suelo de los tramos de solo correr del Tramo 2 y del Tramo 3.
+        self.assertEqual({k: sorted(v) for k, v in by.items() if k != "Tramo 1 «Solo por hoy»"},
+                         {"Tramo 2 «Cajas en cadena»": ["cuenta_t2_suelo_a", "cuenta_t2_suelo_b"],
+                          "Tramo 3 «Todo a la vez»": ["cuenta_t3_suelo"]})
         grid = self.level["grid"]
         for o in cds:
             if o["y"] == 12:
@@ -129,7 +132,9 @@ class Level53Test(unittest.TestCase):
         boxes = {b["id"]: b for b in self.result["world5"]["boxes"]}
         self.assertEqual({k: (v["content"], v["blocks_path"]) for k, v in boxes.items() if k in PATH_BOXES},
                          {k: (c, True) for k, c in PATH_BOXES.items()}, "Siete cajas tapan el camino")
-        self.assertEqual(len(boxes), 8, "Ocho cajas (las siete del camino y la del secreto C)")
+        self.assertEqual(len(boxes), 9, "Nueve cajas (las siete del camino, la del secreto C y la de energía de B3 del "
+                                        "Tramo 2, 2026-10-31)")
+        self.assertEqual(boxes["caja_energia_b3_t2"]["content"], "energy")
         self.assertFalse(boxes["caja_secreto_c"]["blocks_path"])
         for group in ("g1", "g2", "g3"):
             self.assertIn("energy", [c for k, c in PATH_BOXES.items() if "_%s_" % group in k],
@@ -139,7 +144,8 @@ class Level53Test(unittest.TestCase):
         self.assertGreaterEqual(self.result["world5"]["boxes_energy_left"], 0)
         steps = self.exported[0]["steps"]
         opened = {s["target"]["id"]: s for s in steps if s["action"] == "open_box"}
-        self.assertEqual(set(opened), set(PATH_BOXES))
+        self.assertEqual(set(opened), set(PATH_BOXES) | {"caja_energia_b3_t2"})
+        self.assertEqual(opened["caja_energia_b3_t2"]["with"], "pulse", "La de energía de B3 se abre con el pulso")
         for oid in ("caja_g1_3", "caja_g2_2"):
             self.assertEqual((opened[oid]["with"], opened[oid].get("looked")), ("laser", True),
                              "%s: el Debug enseña lo que daña y el láser la destruye sin abrirla" % oid)
@@ -163,9 +169,10 @@ class Level53Test(unittest.TestCase):
         subs = self.result["world5"]["subscriptions"]
         self.assertEqual(sorted((s["id"], s["cancel"], s["defeat"]) for s in subs),
                          [("suscripcion_t3_a", "pulse", "laser"), ("suscripcion_t3_b", "pulse", "laser")])
-        offers = {section_of(self.level, e["x"]) + str(e["y"]) for e in self.level["enemies"]
+        floors = {4: "B3", 5: "B3", 7: "B2", 8: "B2", 10: "suelo", 11: "suelo"}
+        offers = {floors[e["y"]] for e in self.level["enemies"]
                   if e["type"] == "offer_sign" and section_of(self.level, e["x"]) == "Tramo 3 «Todo a la vez»"}
-        self.assertEqual(len(offers), 3, "Ofertas en las tres plantas del Tramo 3")
+        self.assertEqual(offers, {"B3", "B2", "suelo"}, "Ofertas en las tres plantas del Tramo 3")
         self.assertEqual(sorted(o["params"]["product"] for o in of_type(self.level, "shop_item")), ["energy", "sync"])
 
     def test_tramo_4_wishlist_without_stops(self):

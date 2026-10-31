@@ -377,7 +377,7 @@
     ],
     "ledge": [
      99,
-     124
+     114
     ],
     "row": 5
    },
@@ -409,7 +409,7 @@
     ],
     "ledge": [
      246,
-     321
+     264
     ],
     "row": 5
    },
@@ -450,6 +450,262 @@
    "speed": "walk",
    "takeoff_x_px": 448.0,
    "target_x_px": 448.0,
+   "debug": false
+  },
+  {
+   "id": "114,5->115,4",
+   "section": "Tramo 2 «Filo»",
+   "from": {
+    "cell": [
+     114,
+     5
+    ],
+    "ledge": [
+     99,
+     114
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     115,
+     4
+    ],
+    "ledge": [
+     115,
+     115
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 7344.0,
+   "target_x_px": 7360.0,
+   "debug": false
+  },
+  {
+   "id": "116,5->115,4",
+   "section": "Tramo 2 «Filo»",
+   "from": {
+    "cell": [
+     116,
+     5
+    ],
+    "ledge": [
+     116,
+     124
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     115,
+     4
+    ],
+    "ledge": [
+     115,
+     115
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 7440.0,
+   "target_x_px": 7424.0,
+   "debug": false
+  },
+  {
+   "id": "179,5->180,4",
+   "section": "Tramo 3 «Sismo»",
+   "from": {
+    "cell": [
+     179,
+     5
+    ],
+    "ledge": [
+     140,
+     179
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     180,
+     4
+    ],
+    "ledge": [
+     180,
+     180
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 11504.0,
+   "target_x_px": 11520.0,
+   "debug": false
+  },
+  {
+   "id": "181,5->180,4",
+   "section": "Tramo 3 «Sismo»",
+   "from": {
+    "cell": [
+     181,
+     5
+    ],
+    "ledge": [
+     181,
+     214
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     180,
+     4
+    ],
+    "ledge": [
+     180,
+     180
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 11600.0,
+   "target_x_px": 11584.0,
+   "debug": false
+  },
+  {
+   "id": "214,5->215,4",
+   "section": "Tramo 3 «Sismo»",
+   "from": {
+    "cell": [
+     214,
+     5
+    ],
+    "ledge": [
+     181,
+     214
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     215,
+     4
+    ],
+    "ledge": [
+     215,
+     215
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 13744.0,
+   "target_x_px": 13760.0,
+   "debug": false
+  },
+  {
+   "id": "216,5->215,4",
+   "section": "Tramo 3 «Sismo»",
+   "from": {
+    "cell": [
+     216,
+     5
+    ],
+    "ledge": [
+     216,
+     235
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     215,
+     4
+    ],
+    "ledge": [
+     215,
+     215
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 13840.0,
+   "target_x_px": 13824.0,
+   "debug": false
+  },
+  {
+   "id": "264,5->265,4",
+   "section": "Tramo 4 «Prueba terminada»",
+   "from": {
+    "cell": [
+     264,
+     5
+    ],
+    "ledge": [
+     246,
+     264
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     265,
+     4
+    ],
+    "ledge": [
+     265,
+     265
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": 1,
+   "speed": "run",
+   "takeoff_x_px": 16944.0,
+   "target_x_px": 16960.0,
+   "debug": false
+  },
+  {
+   "id": "266,5->265,4",
+   "section": "Tramo 4 «Prueba terminada»",
+   "from": {
+    "cell": [
+     266,
+     5
+    ],
+    "ledge": [
+     266,
+     321
+    ],
+    "row": 5
+   },
+   "to": {
+    "cell": [
+     265,
+     4
+    ],
+    "ledge": [
+     265,
+     265
+    ],
+    "row": 4
+   },
+   "rise_tiles": 1,
+   "direction": -1,
+   "speed": "run",
+   "takeoff_x_px": 17040.0,
+   "target_x_px": 17024.0,
    "debug": false
   }
  ]

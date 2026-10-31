@@ -140,7 +140,8 @@ class Level51Test(unittest.TestCase):
                             for o in of_type(lvl, "surprise_box")), "En la banda alta del Tramo 3")
         self.assertFalse(any(b["blocks_path"] for b in self.result["world5"]["boxes"]), "Ninguna tapa el camino")
         offers = [e for e in lvl["enemies"] if e["type"] == "offer_sign"]
-        self.assertEqual(len(offers), 16, "6 del paso 10 + 10 de la prueba del usuario (2026-10-30)")
+        self.assertEqual(len(offers), 19, "6 del paso 10 + 10 de la prueba del usuario (2026-10-30) + 3 colgadas en B2 "
+                                          "para romper los tramos de solo correr (2026-10-31)")
         self.assertEqual(lvl["grid"][11][17], "^", "El carrito con pinchos junto a la Oferta de pie (patrón 23)")
         self.assertGreater(self.result["world5"]["resist_pull"], 10, "Tramos andando contra el tirón")
         self.assertGreater(self.result["world5"]["temptation"]["min_escape_px_s"], 0, "Siempre se sale andando")
@@ -151,7 +152,7 @@ class Level51Test(unittest.TestCase):
         countdown = of_type(lvl, "countdown_platform")
         self.assertEqual([(o["params"]["id"], o["x"], o["params"]["width_tiles"]) for o in countdown],
                          [("cuenta_foso", 246, 3), ("cuenta_t1", 66, 3), ("cuenta_t2", 110, 3), ("cuenta_t3", 179, 3),
-                          ("cuenta_t4", 224, 3)])
+                          ("cuenta_t4", 224, 3), ("cuenta_t1_b", 44, 3), ("cuenta_t3_b", 140, 3)])
         self.assertEqual([lvl["grid"][r][245:250] for r in (12, 13)], [".....", "....."], "Foso mortal")
         for o in countdown[1:]:
             self.assertEqual([lvl["grid"][r][o["x"]:o["x"] + 3] for r in (12, 13)], ["...", "..."],
@@ -177,8 +178,8 @@ class Level51Test(unittest.TestCase):
             for stand, cells in rows.items():
                 cols = sorted(c for r in cells for c in marks.get(r, ()) if x0 <= c <= x1)
                 self.assertTrue(cols, "%s, fila %d: sin peligro" % (name, stand))
-        self.assertEqual(sum(1 for e in lvl["enemies"]), 20, "7 enemigos antes del 2026-10-30, 20 ahora")
-        self.assertEqual("".join(lvl["grid"]).count("^"), 8, "1 pincho antes, 8 ahora")
+        self.assertEqual(sum(1 for e in lvl["enemies"]), 23, "7 enemigos antes del 2026-10-30, 20 hasta el 2026-10-31")
+        self.assertEqual("".join(lvl["grid"]).count("^"), 9, "1 pincho antes, 8 hasta el 2026-10-31")
 
     def test_secret_a_refunds_need_the_debug_without_dash(self):
         a = next(s for s in self.level["secrets"] if s["id"] == "secreto_devoluciones")

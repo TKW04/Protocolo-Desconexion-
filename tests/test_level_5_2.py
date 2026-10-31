@@ -121,14 +121,15 @@ class Level52Test(unittest.TestCase):
             self.assertFalse(obstacles[oid]["used"], "%s es de un secreto" % oid)
         actions = [s["action"] for s in self.exported[0]["steps"]]
         self.assertEqual((actions.count("combo_ram"), actions.count("combo_edge"), actions.count("combo_quake")),
-                         (5, 4, 3), "12 combos: Embestidas (1 + 3 + 1), Filos (3 + 1) y Sismos (2 + 1)")
+                         (5, 5, 3), "13 combos: Embestidas (1 + 3 + 1), Filos (4 + 1; el pincho de B3 del Tramo 2, "
+                                    "2026-10-31) y Sismos (2 + 1)")
         by_section = {}
         for s in self.exported[0]["steps"]:
             if s["action"].startswith("combo_"):
                 col = (s.get("at") or s.get("from"))["cell"][0]
                 by_section.setdefault(section_of(self.level, col), []).append(s["action"])
         self.assertEqual(by_section["Tramo 1 «Embestida»"], ["combo_ram"] * 3)
-        self.assertEqual(by_section["Tramo 2 «Filo»"], ["combo_edge"] * 3)
+        self.assertEqual(by_section["Tramo 2 «Filo»"], ["combo_edge"] * 4, "3 ranuras y el pincho de B3 (2026-10-31)")
         self.assertEqual(by_section["Tramo 3 «Sismo»"], ["combo_quake"] * 2)
         self.assertEqual(by_section["Tramo 4 «Prueba terminada»"], ["combo_ram", "combo_edge", "combo_quake"],
                          "Tramo 4: persiana, ranura y estanterías, en ese orden")
@@ -151,7 +152,9 @@ class Level52Test(unittest.TestCase):
                                 if e["type"] == "subscription"),
                          ["Tramo 1 «Embestida»", "Tramo 4 «Prueba terminada»", "Tramo 4 «Prueba terminada»"])
         offers = [e for e in self.level["enemies"] if e["type"] == "offer_sign"]
-        self.assertEqual(len(offers), 3)
+        self.assertEqual(len(offers), 7, "3 hasta el 2026-10-31 + 4 de descuento bajo en los tramos de solo correr")
+        self.assertTrue(all(e.get("params", {}).get("discount_pct") == 10 for e in offers
+                            if e["id"] in ("oferta_b2_t2", "oferta_b2_t3", "oferta_b2_t4", "oferta_b3_cierre")))
         self.assertGreater(self.result["world5"]["temptation"]["min_escape_px_s"], 0)
 
     def test_economy_four_protections(self):

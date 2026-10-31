@@ -7,7 +7,7 @@
 # nunca baja de 0 y lo gastado es lo del camino). Sin muertes, sin golpes ni «Añadido al carrito», y vuelve al hub
 # con el nivel completado. Usa su propio guardado (ISAK_SAVE_PATH).
 # Desde el paso 13 (2026-10-29), tambien el 5-2 «Prueba gratis»: obtiene la Combinacion en la «Prueba gratis» y hace
-# las 5 Embestidas, los 4 Filos y los 3 Sismos del camino (frugal, en el 40-55 %; comprador: paga el atajo de Calc),
+# las 5 Embestidas, los 5 Filos (4 hasta el 2026-10-31) y los 3 Sismos del camino (frugal, en el 40-55 %; comprador: paga el atajo de Calc),
 # y la sala combos_test.
 # Desde el paso 14 (2026-10-29), tambien el 5-3 «Última oportunidad» con la Combinacion y 0 puntos de entrada: frugal
 # (las cuentas regresivas, las siete cajas en cadena —las dos peligrosas, miradas con el Debug y destruidas con el
@@ -45,7 +45,7 @@ func test_mall_bot_completes_level_5_1_frugal() -> void:
 			"TIENDA (frugal): muertes 0, golpes 0, congelaciones 0, «Añadido al carrito» 0, compras []",
 			"gastado 0", "drenado 0", "Suscripciones canceladas 4 / derrotadas 4",
 			"laser a la Suscripcion suscripcion_t1: derrotada", "laser a la Suscripcion suscripcion_t3: derrotada",
-			"cuentas regresivas: 3 tramo(s) andando partidos", "dash 5 (suelo)", "terminal de la azotea activada",
+			"cuentas regresivas: 5 tramo(s) andando partidos", "dash 5 (suelo)", "terminal de la azotea activada",
 			"hub: carpeta M5"]:
 		assert_string_contains(text, piece)
 	assert_false(text.contains("SIN EFECTO"), "Cada pulso del camino hace efecto")
@@ -79,7 +79,7 @@ func test_mall_bot_completes_level_5_2_frugal() -> void:
 	for piece: String in ["linea importante (Isak): «Esto no lo compré. Es mío.»", "hub cargado tras completar el 5-2",
 			"golpes 0, muertes 0", "TIENDA (frugal): muertes 0, golpes 0, congelaciones 0, «Añadido al carrito» 0",
 			"gastado 0", "drenado 0", "Suscripciones canceladas 3 / derrotadas 3",
-			"COMBOS: Combinacion true; Embestidas 5 (camino 5), Filos 4 (camino 4), Sismos 3 (camino 3); denegados []",
+			"COMBOS: Combinacion true; Embestidas 5 (camino 5), Filos 5 (camino 5), Sismos 3 (camino 3); denegados []",
 			"caja caja_puntos_t1 abierta con el pulso: hecho", "terminal de la azotea activada", "hub: carpeta M5"]:
 		assert_string_contains(text, piece)
 	assert_false(text.contains("SIN EFECTO"), "Cada pulso del camino hace efecto")
