@@ -545,22 +545,39 @@ func get_showcases() -> Array[StaticBody2D]:
 	return _showcases.duplicate()
 
 
+## Tablas del jefe que se dibujan (las que dibuja VendorFx): las plataformas con
+## precio solidas de la fase 1 y las vitrinas de la fase 3. Toda tabla solida debe
+## estar aqui: si no, Isak camina sobre nada (2026-10-31).
+func get_visible_platform_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	if get_phase() == 1:
+		for name: String in PLATFORM_NAMES:
+			if is_platform_solid(name):
+				out.append(get_platform_rect(name))
+	for body: StaticBody2D in _showcases:
+		if is_instance_valid(body) and body.collision_layer != 0:
+			out.append(Rect2(body.global_position, (body.get_node(^"Shape").shape as RectangleShape2D).size))
+	return out
+
+
 func is_slot_open() -> bool:
 	return _slot_shape != null and _slot_shape.disabled
 
 
 ## Tiron de la oferta (TemptationField, grupo offer_sign; como OfferSign.get_pull_weight):
 ## en la fase 3, por delante hacia la bandeja y por detras hacia la maquina; 0 sin
-## cuenta, con Isak congelado o a menos de `dead_zone_px`.
+## cuenta, con Isak congelado o a menos de `dead_zone_px`. Sobre la maquina (lado 0:
+## el techo tras la Embestida, la ranura) no tira: antes tiraba hacia su centro y,
+## andando hacia la espalda, Isak iba a 9 px/s con la animacion de andar (2026-10-31).
 func get_pull_weight(point: Vector2, dead_zone_px: float = 4.0) -> float:
 	if not is_pulling():
 		return 0.0
 	var m: Rect2 = get_machine_rect()
-	var target: float = m.get_center().x
 	var side: int = side_of_x(point.x)
-	if side == _facing:
-		target = get_tray_zone_rect().get_center().x
-	elif side != 0:
+	if side == 0:
+		return 0.0
+	var target: float = get_tray_zone_rect().get_center().x
+	if side != _facing:
 		target = m.end.x if side == SIDE_RIGHT else m.position.x
 	var dx: float = target - point.x
 	if absf(dx) < dead_zone_px:
@@ -1799,6 +1816,13 @@ class VendorFx extends Node2D:
 		if not sign.is_empty():
 			draw_string(font, Vector2(m.position.x - 64.0, m.position.y + 150.0), sign, HORIZONTAL_ALIGNMENT_CENTER,
 				m.size.x + 128.0, 16, trim)
+		# Vitrinas de la fase 3 (tablas de una via gratis): repisa con su cristal.
+		if boss.get_phase() == 3:
+			for vr: Rect2 in boss.get_visible_platform_rects():
+				draw_rect(Rect2(vr.position + Vector2(4.0, -20.0), Vector2(vr.size.x - 8.0, 20.0)), Color(trim, 0.25))
+				draw_rect(Rect2(vr.position + Vector2(4.0, -20.0), Vector2(vr.size.x - 8.0, 20.0)), trim, false, 2.0)
+				draw_rect(vr, trim)
+				draw_rect(vr, ink, false, 2.0)
 		# Plataformas con precio (fase 1).
 		if boss.get_phase() == 1 and boss.is_fighting():
 			for name: String in Vendor.PLATFORM_NAMES:

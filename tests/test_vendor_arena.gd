@@ -632,6 +632,50 @@ func test_phase3_real_ram_window_is_wide() -> void:
 	assert_eq(ok, tried, "Dash aereo del cuadro 10 al 22 del salto (cumbre a los 24) y abajo pronto o tarde: siempre llega")
 
 
+## Regresion (2026-10-31, «Isak camina en el aire / se queda atascado» tras la
+## Embestida). Dos causas, medidas con el Isak real:
+## 1) en el techo de la maquina (lado 0) el tiron de la oferta apuntaba al CENTRO
+##    de la maquina: andando hacia la espalda (alejandose) Isak iba a 220 x 0,45 - 90
+##    = 9 px/s, con la animacion de andar y casi sin moverse;
+## 2) las vitrinas de la fase 3 eran tablas de una via SIN DIBUJO: al bajar del techo
+##    por detras Isak caia en la vitrina c (fila 6) y caminaba sobre nada.
+func test_phase3_after_the_ram_isak_walks_off_the_roof_onto_something_visible() -> void:
+	await _arena()
+	_combo_ready()
+	_boss.start()
+	_place_isak(2, 9, 1.0)
+	_to_phase(3)
+	_quiet_phase3()
+	_place_isak(7, 5, 1.0)
+	assert_true(_ram_from_showcase(12, 6), "Embestida al techo")
+	assert_almost_eq(_isak().global_position.y, _boss.get_machine_rect().position.y, 1.0, "En el techo")
+	assert_eq(_boss.get_pull_weight(_isak().global_position + Vector2(0.0, -40.0)), 0.0, "En el techo no tira")
+	# Baja del techo por detras ANDANDO (sin correr).
+	_sim.input.move_axis = 1.0
+	var feet: Vector2 = Vector2.ZERO
+	var t: float = 0.0
+	var behind: bool = false
+	while t < 1.5:
+		_frame()
+		t += DT
+		feet = _isak().global_position
+		if _isak().is_on_floor() and feet.x - _isak().get_hitbox_size().x * 0.5 > _boss.get_machine_rect().end.x + 1.0:
+			behind = true
+			break
+	_sim.input.move_axis = 0.0
+	assert_true(behind, "Andando, baja del techo por detras en menos de 1,5 s (%.2f s, x = %.0f)" % [t, feet.x])
+	if behind and feet.y < _boss.get_floor_y() - 8.0:
+		var under := Rect2(feet + Vector2(-1.0, -1.0), Vector2(2.0, 2.0))
+		var drawn: bool = _boss.get_visible_platform_rects().any(func(r: Rect2) -> bool: return r.grow(2.0).intersects(under))
+		assert_true(drawn, "La tabla bajo los pies de Isak se dibuja (y = %.0f)" % feet.y)
+	# Invariante: cada tabla solida del jefe se dibuja (vitrinas de la fase 3).
+	var visible: Array[Rect2] = _boss.get_visible_platform_rects()
+	assert_eq(visible.size(), _boss.get_showcases().size(), "Fase 3: se dibujan las dos vitrinas")
+	for body: StaticBody2D in _boss.get_showcases():
+		var r := Rect2(body.global_position, _boss.get_platform_rect("b").size)
+		assert_true(visible.any(func(v: Rect2) -> bool: return v.is_equal_approx(r)), "Vitrina %s dibujada" % body.name)
+
+
 func test_phase3_real_edge_from_the_shelf_crosses_the_slot() -> void:
 	await _arena()
 	_combo_ready()
