@@ -366,6 +366,37 @@ func test_phase2_tokens_box_and_the_bomb_fuse() -> void:
 	assert_almost_eq(GameState.sync_rate, s0 - 10.0, EPS, "-10 a 1,5 tiles")
 
 
+## 2026-10-31 (pedido del usuario): las cajas dan tambien energia. Fichas y ticket:
+## su contenido + boxes.bonus_energy (10); la de energia, boxes.energy (20); la bomba, nada.
+func test_phase2_boxes_also_give_energy() -> void:
+	await _arena()
+	_boss.start()
+	_to_phase(2)
+	_place_isak(1, 9, 1.0)
+	var bonus: float = float(_boss.section("boxes").get("bonus_energy", 0.0))
+	assert_almost_eq(bonus, 10.0, EPS, "Un cuarto de cargador")
+	for content: StringName in [SurpriseBox.CONTENT_TOKENS, SurpriseBox.CONTENT_TICKET, SurpriseBox.CONTENT_ENERGY]:
+		_boss.spawn_box(3, 10, content)
+		_advance(1.2)
+		var box: SurpriseBox = _box_with(content)
+		GameState.debug_energy = 40.0
+		var tokens: int = _boss.get_tokens()
+		assert_true(box.open(), "Se abre la caja %s" % content)
+		var want: float = 40.0 + (20.0 if content == SurpriseBox.CONTENT_ENERGY else bonus)
+		assert_almost_eq(GameState.debug_energy, want, EPS, "Caja %s: energia" % content)
+		if content == SurpriseBox.CONTENT_TOKENS:
+			assert_eq(_boss.get_tokens(), tokens + 2, "y sus fichas")
+		if content == SurpriseBox.CONTENT_TICKET:
+			assert_true(_boss.is_refunding(), "y la devolucion")
+		_advance(1.0)
+	GameState.debug_energy = 40.0
+	_boss.spawn_box(16, 10, SurpriseBox.CONTENT_BOMB)
+	_advance(1.2)
+	_place_isak(1, 9, 1.0)
+	assert_true(_box_with(SurpriseBox.CONTENT_BOMB).open())
+	assert_almost_eq(GameState.debug_energy, 40.0, EPS, "La bomba no da energia")
+
+
 func test_phase2_pulse_stuns_a_bomb_into_a_step() -> void:
 	await _arena()
 	_boss.start()

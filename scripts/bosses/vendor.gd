@@ -1065,6 +1065,10 @@ func _on_box_state(previous: StringName, current: StringName, box: SurpriseBox) 
 
 
 func _on_box_opened(content: StringName, box: SurpriseBox) -> void:
+	# Ademas de su contenido, las cajas que no son bomba dan boxes.bonus_energy de
+	# energia (2026-10-31, pedido del usuario; la de energia ya da boxes.energy).
+	if content != SurpriseBox.CONTENT_BOMB and content != SurpriseBox.CONTENT_ENERGY:
+		GameState.add_debug_energy(float(section("boxes").get("bonus_energy", 0.0)))
 	match content:
 		SurpriseBox.CONTENT_TOKENS:
 			_tokens += int(_tokens_cfg.get("good_box_bonus", 2))
