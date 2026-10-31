@@ -1642,7 +1642,8 @@ func update_combo_pose(kind: StringName, landed: bool) -> void:
 
 ## Pulsaciones del paso: Filo (Deslizar comprimido en el aire), Embestida (abajo
 ## durante un dash aereo) y Sismo (abajo comprimido en el aire). Validas ->
-## _combo_requested; sin energia o con el Debug, chispa gris y combo_denied (una
+## _combo_requested; con el Debug (y energia para el combo), apaga el Debug y
+## sale (2026-10-31); sin energia, chispa gris y combo_denied (una
 ## vez por pulsacion); el resto, sin aviso.
 func _update_combo_request(delta: float) -> void:
 	_combo_requested = &""
@@ -1682,6 +1683,11 @@ func _update_combo_request(delta: float) -> void:
 	if kind == &"":
 		return
 	var denial: StringName = combo_denial(kind)
+	# El Debug no se combina con los combos (2026-10-31): si solo lo impide el
+	# Debug (y hay energia para el combo), se apaga y el combo sale ahora.
+	if denial == COMBO_DENIED_DEBUG and GameState.debug_energy + LASER_ENERGY_EPS >= abilities.combo_energy_cost:
+		_turn_off_debug_for_combo()
+		denial = combo_denial(kind)
 	if denial == &"":
 		_combo_requested = kind
 	elif denial == COMBO_DENIED_ENERGY or denial == COMBO_DENIED_DEBUG:
@@ -1690,6 +1696,20 @@ func _update_combo_request(delta: float) -> void:
 		_laser_muzzle.show_fizzle(facing)
 		combo_denied.emit(denial)
 		EventBus.combo_denied.emit(denial)
+
+
+## Apaga el Debug (activo o cargando) para que salga un combo. La primera vez por
+## partida guardada, el cuadro de Eco lo explica (combo.debug_off_notice; linea
+## no importante). El sonido es el de apagar el Debug (debug_mode_changed).
+func _turn_off_debug_for_combo() -> void:
+	DebugMode.cancel()
+	var notice: Dictionary = abilities.combo_debug_off_notice
+	var id := StringName(String(notice.get("id", "")))
+	var text: String = String(notice.get("text", ""))
+	if id == &"" or text.is_empty() or GameState.is_notice_seen(id):
+		return
+	GameState.mark_notice_seen(id)
+	EventBus.eco_line_requested.emit(text, -1.0, false)
 
 
 ## Reaparecer: sin combo pedido, sin abajo mantenido ni invulnerabilidad.

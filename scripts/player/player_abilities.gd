@@ -187,6 +187,9 @@ var combo_quake_damage: float = 0.0
 var combo_quake_land_pose_s: float = 0.35
 ## Aspecto provisional (combo.visual): giro de la pose de la Embestida.
 var combo_visual: Dictionary = {}
+## Aviso de la primera vez que un combo apaga el Debug (combo.debug_off_notice:
+## id de GameState.seen_notices y texto del cuadro de Eco; 2026-10-31).
+var combo_debug_off_notice: Dictionary = {}
 
 static var last_error: String = ""
 
@@ -309,6 +312,9 @@ static func from_dict(data: Dictionary, source: String = "<dict>") -> PlayerAbil
 	var combo_visual: Variant = (combo as Dictionary).get("visual", {})
 	if combo_visual is Dictionary:
 		abilities.combo_visual = combo_visual
+	var debug_off_notice: Variant = (combo as Dictionary).get("debug_off_notice", {})
+	if debug_off_notice is Dictionary:
+		abilities.combo_debug_off_notice = debug_off_notice
 	return abilities
 
 

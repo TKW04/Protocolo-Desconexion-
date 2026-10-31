@@ -149,6 +149,7 @@ func _wait_not(state: StringName, seconds: float = 2.0) -> void:
 
 func _activate_debug() -> void:
 	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
+	DebugMode.step(DT, false)
 	for i: int in ceili(DebugMode.get_activation_hold_s() / DT) + 5:
 		DebugMode.step(DT, true)
 	assert_true(DebugMode.is_active(), "Debug activo")
@@ -339,19 +340,79 @@ func test_without_energy_grey_spark_and_denied() -> void:
 	assert_eq(_denied, [Isak.COMBO_DENIED_ENERGY, Isak.COMBO_DENIED_ENERGY], "Un aviso por pulsacion")
 
 
-func test_nothing_with_debug_active_or_charging() -> void:
+## Debug y combos (2026-10-31): el combo apaga el Debug y sale en el mismo intento;
+## el aviso de Eco solo la primera vez por partida guardada.
+func test_combo_turns_off_the_debug_and_goes_out() -> void:
+	var lines: Array = []
+	var on_line := func(text: String, _d: float, important: bool) -> void: lines.append([text, important])
+	EventBus.eco_line_requested.connect(on_line)
+	var notice_id := StringName(String(_isak.abilities.combo_debug_off_notice.get("id", "")))
+	assert_ne(notice_id, &"", "Aviso con id")
+	assert_false(GameState.is_notice_seen(notice_id))
 	_activate_debug()
 	_jump()
 	_pinch()
 	var energy: float = GameState.debug_energy
 	_press_dash(1.0)
-	assert_ne(_sim.state(), PlayerState.COMBO_EDGE, "Con el Debug activo no hay Filo")
-	_hold_down(0.2)
-	assert_ne(_sim.state(), PlayerState.COMBO_QUAKE, "Ni Sismo")
+	assert_eq(_sim.state(), PlayerState.COMBO_EDGE, "El Filo sale con el Debug activo")
+	assert_false(DebugMode.is_engaged(), "El Debug se apaga")
+	assert_almost_eq(GameState.debug_energy, energy - 15.0, 0.5, "Solo cobra el combo (no dos veces)")
+	assert_eq(_denied, [], "Sin chispa ni combo_denied")
+	assert_eq(lines.size(), 1, "Aviso la primera vez")
+	assert_false(bool(lines[0][1]), "No pausa")
+	assert_string_contains(String(lines[0][0]), "Debug")
+	assert_true(GameState.is_notice_seen(notice_id), "Queda visto")
+	_wait_not(PlayerState.COMBO_EDGE)
+	_sim.step_until(func() -> bool: return _isak.is_on_floor(), _sim.steps_for(3.0))
+	# Segunda vez: Sismo con el Debug activo; se apaga sin aviso.
+	_activate_debug()
+	_jump()
+	energy = GameState.debug_energy
+	_hold_down(0.1)
+	assert_eq(_sim.state(), PlayerState.COMBO_QUAKE, "El Sismo sale con el Debug activo")
+	assert_false(DebugMode.is_engaged(), "El Debug se apaga otra vez")
+	assert_almost_eq(GameState.debug_energy, energy - 15.0, 0.5)
+	assert_eq(lines.size(), 1, "Sin aviso la segunda vez")
+	_release_down()
+	_wait_not(PlayerState.COMBO_QUAKE)
+	EventBus.eco_line_requested.disconnect(on_line)
+
+
+func test_combo_cancels_a_debug_charge_too() -> void:
+	GameState.set_ability_unlocked(GameState.ABILITY_DEBUG, true)
+	_jump()
+	_pinch()
+	DebugMode.step(DT, true)
+	assert_eq(DebugMode.get_state(), DebugMode.State.CHARGING, "Cargando")
+	_press_dash(1.0)
+	assert_eq(_sim.state(), PlayerState.COMBO_EDGE, "El Filo sale")
+	assert_false(DebugMode.is_engaged(), "La carga se corta")
+
+
+func test_debug_stays_when_the_combo_has_no_energy() -> void:
+	_activate_debug()
+	_jump()
+	_pinch()
+	GameState.debug_energy = 10.0
+	_press_dash(1.0)
+	assert_ne(_sim.state(), PlayerState.COMBO_EDGE, "Sin energia no sale")
 	assert_true(DebugMode.is_active(), "El Debug sigue")
-	assert_almost_eq(GameState.debug_energy, energy, 1.0, "Solo lo que gasta el Debug")
-	assert_eq(_denied, [Isak.COMBO_DENIED_DEBUG, Isak.COMBO_DENIED_DEBUG])
-	assert_eq(_isak.get_laser_muzzle().get_mode(), LaserMuzzle.Mode.FIZZLE)
+	assert_eq(_denied, [Isak.COMBO_DENIED_DEBUG], "Chispa gris de siempre")
+
+
+func test_without_debug_nothing_changes() -> void:
+	var lines: Array = []
+	var on_line := func(text: String, _d: float, _i: bool) -> void: lines.append(text)
+	EventBus.eco_line_requested.connect(on_line)
+	_jump()
+	_pinch()
+	var energy: float = GameState.debug_energy
+	_press_dash(1.0)
+	assert_eq(_sim.state(), PlayerState.COMBO_EDGE)
+	assert_almost_eq(GameState.debug_energy, energy - 15.0, EPS)
+	assert_eq(lines, [], "Sin aviso")
+	assert_false(GameState.is_notice_seen(&"combo_debug_off"))
+	EventBus.eco_line_requested.disconnect(on_line)
 
 
 func test_combos_turn_off_hide_and_no_pulse_or_laser() -> void:
