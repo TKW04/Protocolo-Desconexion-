@@ -149,6 +149,12 @@ WAIT_MARGIN_S = 2.0 / 60.0
 # Distancia minima (tiles) entre Isak y donde estaba 1 s antes con el Reflejo falso activo (§7.1).
 REFLECTION_GAP_TILES = 1.0
 WAIT_KINDS = ("wait", "wait_hunter", "wait_reflection")
+# Regla de diseno (2026-11-03, fallo del 3-3 encontrado jugando: el lector del techo solo se alcanzaba disparando
+# desde 3 columnas): un objetivo del laser que se alcanza por espejos se alcanza desde al menos estas columnas de pie
+# seguidas de una misma fila (el alcance que queda tras el rebote no puede depender de pararse en una celda exacta).
+MIN_LASER_WINDOW_TILES = 5
+# Alcance «ilimitado» para saber si la ventana la recorta el alcance (y no las paredes de la sala).
+INF_LASER_RANGE_PX = 100000.0
 
 
 class Pinched(tuple):
@@ -974,8 +980,9 @@ class World3:
         hh = self.cmodel.hh if is_pinched(node) else self.m.hh
         return (node[0] + 0.5) * T, (node[1] + 1) * T - hh * 0.5
 
-    def laser_shot(self, rect, node, state, debug=False, max_bounces=None):
-        """Como LevelModel.laser_shot, con el trazado por espejos."""
+    def laser_shot(self, rect, node, state, debug=False, max_bounces=None, center_only=False):
+        """Como LevelModel.laser_shot, con el trazado por espejos. center_only: solo con Isak en el centro de la
+        celda (no en cualquier punto de ella: la ventana de disparo de MIN_LASER_WINDOW_TILES)."""
         if is_pinched(node):
             return None
         m = self.m
@@ -987,9 +994,9 @@ class World3:
         T = m.T
         feet = (r + 1) * T
         py = feet + rules.phone_y
-        x = c * T
+        x = (c + 0.5) * T if center_only else c * T
         hunters = self.hunter_reflectors(node) if self.hunters else None
-        while x <= (c + 1) * T + EPS:
+        while x <= ((c + 0.5) * T if center_only else (c + 1) * T) + EPS:
             if not w.collides(x, feet):
                 for facing in (1.0, -1.0):
                     px = x + rules.phone_x * facing
@@ -1335,6 +1342,7 @@ class World3:
         state = main["stages"][-1]["state"] if main.get("stages") else frozenset()
         nodes = sorted({plain(n) for n in main.get("reached", set()) if not is_pinched(n)}, key=lambda n: (n[0], n[1]))
         items = []
+        required = {st["relay"]["lector"] for st in main.get("stages", []) if st.get("relay")}
         for what, tid, rect, cell in self._laser_targets():
             if not m.has_laser(state):
                 break
@@ -1349,6 +1357,22 @@ class World3:
                 n, shot = best
                 item.update({"from": [n[1], n[0]], "bounces": shot["bounces"], "mirrors": shot["mirrors"],
                              "dist_px": round(shot["dist"], 1), "range_px": m.rules.laser_range})
+                window, lost = self._laser_window(rect, nodes, state)
+                item["window"] = window
+                item["lost_by_range"] = lost
+                # Solo cuenta si la ventana es estrecha POR EL ALCANCE (con alcance ilimitado se dispararia desde
+                # mas columnas de esa fila): una sala corta, limitada por sus paredes, no engana a nadie.
+                if window[0] < MIN_LASER_WINDOW_TILES and lost:
+                    # Obligatorio (su receptor enlazado lo usa el camino principal): error; opcional (un
+                    # secreto): aviso.
+                    report = v.report.error if tid in required else v.report.warning
+                    report(
+                        "el %s %s solo se alcanza con el laser disparando desde %d columna(s) de pie seguidas "
+                        "(Isak en el centro de la celda; fila %d, columnas %d-%d; minimo %d): el alcance del laser "
+                        "(%.0f px) se agota por el camino (los rebotes cuentan) y desde un poco mas lejos el haz se "
+                        "apaga antes de llegar sin que el jugador sepa por que" % (
+                            what, tid, window[0], window[1], window[2], window[3], MIN_LASER_WINDOW_TILES,
+                            m.rules.laser_range), cell[1], cell[0], tid)
             else:
                 more = None
                 for n in nodes:
@@ -1363,6 +1387,41 @@ class World3:
                                                                              self.max_bounces), cell[1], cell[0], tid)
             items.append(item)
         return items
+
+    def _laser_window(self, rect, nodes, state):
+        """((columnas, fila, primera, ultima) del tramo mas largo de celdas de pie seguidas de una misma fila desde
+        las que el laser alcanza `rect` (por espejos o directo), columnas de esa fila desde las que solo llegaria con
+        alcance ilimitado)."""
+        rows = {}
+        for n in nodes:
+            if self.laser_shot(rect, n, state, center_only=True) is not None:
+                rows.setdefault(n[1], set()).add(n[0])
+        best = self._longest_run(rows)
+        if best[0] == 0:
+            return best, 0
+        rules = self.m.rules
+        saved = rules.laser_range
+        rules.laser_range = INF_LASER_RANGE_PX
+        try:
+            unlimited = {n[0] for n in nodes if n[1] == best[1] and n[0] not in rows[best[1]]
+                         and self.laser_shot(rect, n, state, center_only=True) is not None}
+        finally:
+            rules.laser_range = saved
+        return best, len(unlimited)
+
+    @staticmethod
+    def _longest_run(rows):
+        best = (0, -1, -1, -1)
+        for r, cols in rows.items():
+            for c in sorted(cols):
+                if c - 1 in cols:
+                    continue
+                e = c
+                while e + 1 in cols:
+                    e += 1
+                if e - c + 1 > best[0]:
+                    best = (e - c + 1, r, c, e)
+        return best
 
     # --- Explicacion de fallos ---
 
@@ -1577,8 +1636,37 @@ def plan_hunters(planner, steps):
             s["relay"] = dict(s["relay"], time_s=s["relay"]["time_s"] + wait)
         via = s["target"]["via_hunter"]
         via["wait_s"] = round(via.get("wait_s", 0.0) + wait, 3)
+    _check_hunter_windows(planner, w3, items)
     planner.v.result.setdefault("world3", {})["hunters"] = items
     return steps
+
+
+def _check_hunter_windows(planner, w3, items):
+    """Regla de diseno (2026-11-03, fallo del 3-3 encontrado jugando: el puente final no se podia tender): si el
+    pulso por el cazador solo vale mientras gira (mira a donde hace falta un solo turn_interval_s; esperando quieto
+    sigue girando hacia Isak) y el cazador esta en la sala de un Reflejo falso, que alcanza a Isak mientras espera y
+    obliga a aturdirlo de espaldas en esa misma ventana, el acertijo pide dos pulsos en 0,6 s: error. Hace falta un
+    sitio de pie desde el que mire quieto a donde hace falta (p. ej. reposo hacia el receptor y track_radius_tiles
+    menor que la distancia desde la que se pulsa)."""
+    for it in items:
+        if it.get("stable"):
+            continue
+        h = next((x for x in w3.hunters if x["id"] == it["id"]), None)
+        if h is None:
+            continue
+        cx, cy = h["center"]
+        for refl in w3.reflections:
+            z = refl.get("zone")
+            if z is None or not (z[0] <= cx <= z[2] and z[1] <= cy <= z[3]):
+                continue
+            node = (it["from"][1], it["from"][0])
+            planner.error("espejo cazador %s: el camino solo lo pulsa mirando al %s mientras gira (una ventana de "
+                          "%.1f s; esperando quieto en (fila %d, columna %d) sigue girando hacia Isak) y esta en la sala "
+                          "del Reflejo falso %s, que obliga a aturdirlo en la misma ventana: ponle un sitio de pie desde "
+                          "el que mire quieto al %s (docs/propuesta-mundo-3.md §3.6)" % (
+                              h["id"], it["facing"], h["interval"], it["from"][0], it["from"][1], refl["id"],
+                              it["facing"]), node, h["id"])
+            break
 
 
 def _sim_hunters(planner, w3, steps):
@@ -1610,7 +1698,7 @@ def _sim_hunters(planner, w3, steps):
                         return (i, h, dict(st), need, x, feet), items
                     items.append({"id": h["id"], "from": [s["at"][1], s["at"][0]], "facing": via["facing"],
                                   "target": s["target"].get("id"), "wait_s": via.get("wait_s", 0.0),
-                                  "t": round(f * DT_SIM, 2)})
+                                  "t": round(f * DT_SIM, 2), "stable": target == need})
                 if _pulse_reach(rules, x, feet, facings, h["rect"]):
                     st["freeze"] = h["freeze"]
                     st["turn"] = 0.0
@@ -2255,9 +2343,11 @@ def format_lines(result):
         out.append(head)
     for it in w3.get("mirrors", []):
         if it.get("from"):
-            out.append("  espejos: %s %s: laser desde (fila %d, columna %d), %d rebote(s)%s, %.0f de %.0f px" % (
+            out.append("  espejos: %s %s: laser desde (fila %d, columna %d), %d rebote(s)%s, %.0f de %.0f px%s" % (
                 it["what"], it["id"], it["from"][0], it["from"][1], it["bounces"],
-                " (%s)" % ", ".join(it["mirrors"]) if it["mirrors"] else "", it["dist_px"], it["range_px"]))
+                " (%s)" % ", ".join(it["mirrors"]) if it["mirrors"] else "", it["dist_px"], it["range_px"],
+                "; se alcanza desde %d columna(s) de pie seguidas (fila %d, columnas %d-%d)" % tuple(it["window"])
+                if it.get("window") else ""))
         else:
             out.append("  espejos: %s %s: el laser no lo alcanza%s" % (
                 it["what"], it["id"], " (haria falta %d rebotes)" % it["needs_bounces"] if it.get("needs_bounces") else ""))

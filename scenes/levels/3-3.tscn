@@ -205,8 +205,8 @@ orientation = "/"
 metadata/help_id = "mirror"
 
 [node name="lector_techo" parent="Objects" instance=ExtResource("10_laser_receiver") groups=["help_target"]]
-position = Vector2(1280, 128)
-cable_cells = [Vector2(21, 2), Vector2(24, 2), Vector2(24, 10)]
+position = Vector2(1280, 448)
+cable_cells = [Vector2(21, 7), Vector2(24, 7), Vector2(24, 10)]
 object_id = &"lector_techo"
 target_id = &"receptor_techo"
 window_s = 6.0
@@ -453,8 +453,8 @@ object_id = &"cazador_rebote"
 metadata/help_id = "hunter_mirror"
 
 [node name="lector_rebote" parent="Objects" instance=ExtResource("10_laser_receiver") groups=["help_target"]]
-position = Vector2(12032, 320)
-cable_cells = [Vector2(189, 5), Vector2(190, 5), Vector2(190, 10)]
+position = Vector2(12032, 448)
+cable_cells = [Vector2(189, 7), Vector2(190, 7), Vector2(190, 10)]
 object_id = &"lector_rebote"
 target_id = &"receptor_rebote"
 window_s = 6.0
@@ -601,8 +601,9 @@ metadata/help_id = "frame_door"
 
 [node name="cazador_examen" parent="Objects" instance=ExtResource("13_hunter_mirror") groups=["help_target"]]
 position = Vector2(16576, 704)
-facing = "e"
+facing = "n"
 object_id = &"cazador_examen"
+track_radius_tiles = 1.5
 metadata/help_id = "hunter_mirror"
 
 [node name="receiver_259_7" parent="Objects" instance=ExtResource("14_receiver") groups=["help_target"]]

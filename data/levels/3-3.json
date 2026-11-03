@@ -1,5 +1,5 @@
 {
-	"_notes": "NIVEL 3-3 «Espejo, espejito» (paso 13 de docs/propuesta-mundo-3.md §8, 2026-10-27; diseño en su §4.3 y §4.3.1, desvíos en §8.1). Horizontal de 280 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Todo el kit: pulso, láser, Debug, dash, golpe al suelo y Comprimir. INICIO (0-14): vórtice (3, 11), cartel «Tu mejor ángulo es el de otro», 1 punto y publicacion_perfil (12; anti-atasco de la ♥10 desde P: el grafo de los soft-locks no abre los puentes del Tramo 1). TRAMO 1 «Sala de espejos» (15-78): láser al espejo '/' (20, 11) que sube al lector del techo (20, 2) -> receptor enlazado (24) -> puente sobre el foso de pinchos 26-31; dos rebotes ('/' en (38, 11) y (38, 7)) al lector (41, 7) -> receptor (44) -> puente 46-51; espejo cazador cazador_sala (60, 11, reposo al este): con Isak en la 58 gira e -> ne -> n y, congelado mirando al n, su haz llega al receptor (60, 7) que tiende el puente 62-67 (wait_hunter). 1 punto. TRAMO 2 «Ambos lados» (79-138): 10 corazones, publicacion_espejo (90), cargador_1 (91), pared de espejo pared_lados (92-99, side right: enseña lo que hay al otro lado de la pared de marcos de la columna 100), marco pequeño marco_lados (100, 11); al otro lado, dos plataformas del reflejo (102, 10) y (104, 8) suben al bloque A (106-111, túnel debajo: salida si se cae), 1 punto, la ♥10 (113-116, de una vía) al bloque B. PAUSA (139-143): sync_1 (141) y publicacion_pausa (145; anti-atasco de la ♥15). TRAMO 3 «Reflejo falso» (144-200): pared_reflejo (148-153) y el Reflejo falso (sale en la 151, sala 147-180); placa_1 (157) -> puerta_1 (160) y placa_2 (166) -> puerta_2 (169): Isak no llega solo, el reflejo las pisa 1 s después (wait_reflection); 1 punto; cargador_2 (174); secreto B. TRAMO 4 «Examen» (201-266), tres salas: (1) 5 corazones, publicacion_examen (208), ladron_1 (211), ♥15 (213-214) al bloque C (216-221; secreto A en su cara, secreto C encima), 1 punto; (2) cargador_3 (225), filtro «Filtro: Retrato · Sin poros» (228-237) con dos pinchos hundidos (231, 234) y ladron_2 (240); (3) pared_examen (245-250) con reflejo_examen, placa_examen (252) -> puerta_examen (255) y cazador_examen (259) con su receptor (259, 7) y el puente 261-266: esperando el giro del cazador el reflejo alcanza a Isak, que lo aturde de espaldas (el pulso no toca al cazador) y luego pulsa al cazador. CIERRE «Marco dorado» (267-279): 1 punto y la terminal de salida con skin golden_frame (275, 10): vuelta al hub; desbloquea la fila «Jefe: La Curadora» (3-boss, aún sin jugar hasta el paso 17). Escena: scenes/levels/3-3.tscn (python3 tools/build_level.py data/levels/3-3.json).",
+	"_notes": "NIVEL 3-3 «Espejo, espejito» (paso 13 de docs/propuesta-mundo-3.md §8, 2026-10-27; diseño en su §4.3 y §4.3.1, desvíos en §8.1). Horizontal de 280 x 14 (suelo en la fila 12, Isak de pie en la 11; cámara simple), dificultad 4, objetivo 480 s. Todo el kit: pulso, láser, Debug, dash, golpe al suelo y Comprimir. INICIO (0-14): vórtice (3, 11), cartel «Tu mejor ángulo es el de otro», 1 punto y publicacion_perfil (12; anti-atasco de la ♥10 desde P: el grafo de los soft-locks no abre los puentes del Tramo 1). TRAMO 1 «Sala de espejos» (15-78): láser al espejo '/' (20, 11) que sube al lector (20, 7; hasta el 2026-11-03 en el techo, (20, 2): el alcance que quedaba tras el rebote solo llegaba disparando desde 3 columnas) -> receptor enlazado (24) -> puente sobre el foso de pinchos 26-31; dos rebotes ('/' en (38, 11) y (38, 7)) al lector (41, 7) -> receptor (44) -> puente 46-51; espejo cazador cazador_sala (60, 11, reposo al este): con Isak en la 58 gira e -> ne -> n y, congelado mirando al n, su haz llega al receptor (60, 7) que tiende el puente 62-67 (wait_hunter). 1 punto. TRAMO 2 «Ambos lados» (79-138): 10 corazones, publicacion_espejo (90), cargador_1 (91), pared de espejo pared_lados (92-99, side right: enseña lo que hay al otro lado de la pared de marcos de la columna 100), marco pequeño marco_lados (100, 11); al otro lado, dos plataformas del reflejo (102, 10) y (104, 8) suben al bloque A (106-111, túnel debajo: salida si se cae), 1 punto, la ♥10 (113-116, de una vía) al bloque B. PAUSA (139-143): sync_1 (141) y publicacion_pausa (145; anti-atasco de la ♥15). TRAMO 3 «Reflejo falso» (144-200): pared_reflejo (148-153) y el Reflejo falso (sale en la 151, sala 147-180); placa_1 (157) -> puerta_1 (160) y placa_2 (166) -> puerta_2 (169): Isak no llega solo, el reflejo las pisa 1 s después (wait_reflection); 1 punto; cargador_2 (174); secreto B. TRAMO 4 «Examen» (201-266), tres salas: (1) 5 corazones, publicacion_examen (208), ladron_1 (211), ♥15 (213-214) al bloque C (216-221; secreto A en su cara, secreto C encima), 1 punto; (2) cargador_3 (225), filtro «Filtro: Retrato · Sin poros» (228-237) con dos pinchos hundidos (231, 234) y ladron_2 (240); (3) pared_examen (245-250) con reflejo_examen, placa_examen (252) -> puerta_examen (255) y cazador_examen (259, reposo al n y track_radius_tiles 1,5 desde el 2026-11-03) con su receptor (259, 7) y el puente 261-266: desde la 257 el cazador mira quieto al n (Isak queda fuera de su radio) y el pulso tiende el puente; pegado a el (258) gira hacia Isak. El reflejo alcanza a Isak, que lo aturde de espaldas (el pulso no toca al cazador). Antes reposaba al e con el radio de 3: solo miraba al n 0,6 s durante el giro, justo cuando el reflejo obligaba a girarse, y el puente no se podia tender jugando. CIERRE «Marco dorado» (267-279): 1 punto y la terminal de salida con skin golden_frame (275, 10): vuelta al hub; desbloquea la fila «Jefe: La Curadora» (3-boss, aún sin jugar hasta el paso 17). Escena: scenes/levels/3-3.tscn (python3 tools/build_level.py data/levels/3-3.json).",
 	"id": "3-3",
 	"name": "Espejo, espejito",
 	"world": 3,
@@ -129,7 +129,7 @@
 			"forbid_abilities": [
 				"dash"
 			],
-			"note": "B «Doble rebote» (§4.3.1): láser desde la 185 al '/' (185, 11), sube al '/' (185, 8), va al espejo cazador cazador_rebote (188, 8, en reposo al norte sobre un bloque suelto) y sube al lector (188, 5): 3 rebotes. Receptor (190, 11) -> puente puente_rebote (192-195, fila 10, desde el escalon de la 191) -> vitrina alta (196-199, de pie en la 7) con el power bank (power_bank_3_3, esta celda) y 1 punto (198, 7). Sin dash (con salto + dash aereo se llegaria desde el escalon sin el puente). El cazador refleja el láser en reposo (el validador no modela congelarlo para disparar desde dentro de su radio)."
+			"note": "B «Doble rebote» (§4.3.1): láser desde la 185 al '/' (185, 11), sube al '/' (185, 8), va al espejo cazador cazador_rebote (188, 8, en reposo al norte sobre un bloque suelto) y sube al lector (188, 7; hasta el 2026-11-03 en la (188, 5): el alcance que quedaba tras los rebotes solo llegaba disparando desde 3 columnas): 3 rebotes. Receptor (190, 11) -> puente puente_rebote (192-195, fila 10, desde el escalon de la 191) -> vitrina alta (196-199, de pie en la 7) con el power bank (power_bank_3_3, esta celda) y 1 punto (198, 7). Sin dash (con salto + dash aereo se llegaria desde el escalon sin el puente). El cazador refleja el láser en reposo (el validador no modela congelarlo para disparar desde dentro de su radio)."
 		},
 		{
 			"id": "secreto_umbral_25",
@@ -223,7 +223,7 @@
 		{
 			"type": "laser_receiver",
 			"x": 20,
-			"y": 2,
+			"y": 7,
 			"params": {
 				"id": "lector_techo",
 				"target": "receptor_techo",
@@ -231,11 +231,11 @@
 				"cable": [
 					[
 						21,
-						2
+						7
 					],
 					[
 						24,
-						2
+						7
 					],
 					[
 						24,
@@ -596,7 +596,7 @@
 		{
 			"type": "laser_receiver",
 			"x": 188,
-			"y": 5,
+			"y": 7,
 			"params": {
 				"id": "lector_rebote",
 				"target": "receptor_rebote",
@@ -604,11 +604,11 @@
 				"cable": [
 					[
 						189,
-						5
+						7
 					],
 					[
 						190,
-						5
+						7
 					],
 					[
 						190,
@@ -797,7 +797,8 @@
 			"y": 11,
 			"params": {
 				"id": "cazador_examen",
-				"facing": "e"
+				"facing": "n",
+				"track_radius_tiles": 1.5
 			}
 		},
 		{

@@ -184,6 +184,79 @@ func test_hunter_frozen_facing_north_extends_its_bridge() -> void:
 	assert_true(bridge.is_extended(), "El haz hacia el norte llega al receptor del techo y tiende el puente")
 
 
+# Regresion (2026-11-03, fallo encontrado jugando): el lector estaba en el techo (20, 2) y el alcance
+# que quedaba tras el rebote solo llegaba disparando desde las columnas 17-19; desde mas lejos el
+# haz se apagaba y el puente de la entrada «no se podia activar». Ahora (20, 7): Isak real,
+# disparo de verdad desde 6 columnas del espejo, pulso al receptor enlazado y cruce del foso.
+func test_entrance_bridge_laser_from_afar_then_cross() -> void:
+	_start()
+	await _arrive()
+	var reader := _obj("lector_techo") as LaserReceiver
+	var relay := _obj("receptor_techo") as RelayReceiver
+	var bridge := _obj("puente_techo") as PulseBridge
+	for col: int in [12, 14, 16, 19]:
+		_teleport(col, 11)
+		await _face(1.0)
+		GameState.debug_energy = GameState.DEBUG_ENERGY_MAX
+		await _tap(&"laser_pressed", 50)
+		assert_true(reader.is_powered(), "El laser desde la columna %d llega al lector por el espejo" % col)
+	await _run_to(22.5 * TILE)
+	await _tap(&"pulse_pressed", 30)
+	assert_true(relay.is_active(), "El pulso al receptor con corriente lo activa")
+	await wait_physics_frames(120)
+	assert_true(bridge.is_extended(), "El puente de la entrada se tiende")
+	await _run_to(33.5 * TILE)
+	assert_gt(_isak.global_position.x, 33.0 * TILE, "Isak cruza el foso de pinchos 26-31 por el puente")
+	assert_true(_isak.is_on_floor())
+	assert_eq(GameState.sync_rate, GameState.SYNC_RATE_MAX, "Sin pisar los pinchos")
+
+
+# Regresion (2026-11-03, fallo encontrado jugando): cazador_examen reposaba al e con radio 3 y solo
+# miraba al n 0,6 s mientras giraba hacia Isak, justo cuando el reflejo obliga a girarse: el puente
+# final no se podia tender. Ahora reposa al n con radio 1,5: desde la 256-257 sigue mirando al n por
+# mucho que Isak espere, el pulso tiende el puente y se cruza hasta la salida.
+func test_final_bridge_hunter_waits_facing_north_then_cross() -> void:
+	_start()
+	await _arrive()
+	var hunter := _obj("cazador_examen") as HunterMirror
+	var bridge := _obj("puente_examen") as PulseBridge
+	_teleport(257, 11)
+	await _face(1.0)
+	await wait_physics_frames(180)
+	assert_eq(hunter.get_facing_name(), "n", "Con Isak quieto en la 257 (3 s) sigue mirando al n")
+	await _tap(&"pulse_pressed", 30)
+	await wait_physics_frames(120)
+	assert_true(bridge.is_extended(), "Su haz llega al receptor (259, 7) y tiende el puente final")
+	await _run_to(268.5 * TILE)
+	assert_gt(_isak.global_position.x, 268.0 * TILE, "Isak cruza el foso 261-266 por el puente")
+	assert_true(_isak.is_on_floor())
+
+
+func _face(dir: float) -> void:
+	_isak.input.move_axis = dir
+	await wait_physics_frames(1)
+	_isak.input.move_axis = 0.0
+	await wait_physics_frames(20)
+
+
+func _tap(field: StringName, frames: int) -> void:
+	_isak.input.set(field, true)
+	await wait_physics_frames(1)
+	_isak.input.clear_just_pressed()
+	await wait_physics_frames(frames)
+
+
+func _run_to(x: float) -> void:
+	_isak.input.run_held = true
+	_isak.input.move_axis = 1.0
+	for i: int in 600:
+		if _isak.global_position.x >= x:
+			break
+		await wait_physics_frames(1)
+	_isak.input.move_axis = 0.0
+	await wait_physics_frames(20)
+
+
 func test_plates_hold_their_frame_doors() -> void:
 	_start()
 	await _arrive()

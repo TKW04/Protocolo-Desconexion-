@@ -310,6 +310,20 @@ class MirrorTest(unittest.TestCase):
         lasers = [st for st in steps if st["action"] == "laser" and st["target"]["type"] == "laser_receiver"]
         self.assertTrue(lasers, [st["action"] for st in steps])
 
+    def test_narrow_laser_window_is_reported(self):
+        # 2026-11-03 (fallo del 3-3): un lector que solo se alcanza desde menos de MIN_LASER_WINDOW_TILES columnas
+        # seguidas porque el alcance se agota (no por las paredes) se avisa; si es obligatorio, es un error (el
+        # negativo con el 3-3 antiguo esta en tests/test_level_3_3.py).
+        result = run(load("espejos_test"))
+        lectors = {m["id"]: m for m in result["world3"]["mirrors"]}
+        self.assertLess(lectors["lector_cadena"]["window"][0], world3_model.MIN_LASER_WINDOW_TILES)
+        self.assertGreater(lectors["lector_cadena"]["lost_by_range"], 0)
+        self.assertTrue(any("lector_cadena" in w["message"] and "columna(s) de pie seguidas" in w["message"]
+                            for w in result["warnings"]), result["warnings"])
+        # El del techo: sala limitada por la pared (columnas 1-4), no por el alcance: nada.
+        self.assertEqual(lectors["lector_techo"]["lost_by_range"], 0)
+        self.assertFalse(any("lector_techo" in w["message"] for w in result["warnings"]))
+
     def test_four_bounces_fail(self):
         # Cuarto espejo en la cadena: el lector solo se alcanzaria con 4 rebotes.
         level = load("espejos_test")

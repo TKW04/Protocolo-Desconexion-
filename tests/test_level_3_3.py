@@ -93,6 +93,32 @@ class Level33Test(unittest.TestCase):
         no_laser["abilities_available"]["laser"] = False
         self.assertFalse(vl.validate(no_laser, check_schema=False)["ok"], "Sin el laser no se cruza la sala")
 
+    def test_bridges_playable_without_precision(self):
+        # Regresion (2026-11-03, fallo encontrado jugando): el puente de la entrada y el final no se podian activar.
+        mirrors = {m["id"]: m for m in self.result["world3"]["mirrors"]}
+        for lid in ("lector_techo", "lector_doble", "lector_rebote"):
+            self.assertGreaterEqual(mirrors[lid]["window"][0], 5, "%s: ventana de disparo de 5 columnas o mas" % lid)
+        self.assertEqual((obj(self.level, "lector_techo")["x"], obj(self.level, "lector_techo")["y"]), (20, 7))
+        hunter = obj(self.level, "cazador_examen")
+        self.assertEqual((hunter["params"]["facing"], hunter["params"]["track_radius_tiles"]), ("n", 1.5))
+        exam = next(h for h in self.result["world3"]["hunters"] if h["id"] == "cazador_examen")
+        self.assertTrue(exam["stable"], "El cazador del examen mira quieto al n desde donde se le pulsa")
+        self.assertEqual(exam["wait_s"], 0.0)
+
+    def test_old_bridges_fail_the_validator(self):
+        # Lo que dejaba pasar el validador hasta el 2026-11-03: el lector en el techo (20, 2), alcanzable solo desde
+        # 3 columnas, y el cazador del examen en reposo al e con el radio de 3 (al n solo 0,6 s girando, con el
+        # reflejo encima).
+        old = copy.deepcopy(self.level)
+        obj(old, "lector_techo")["y"] = 2
+        obj(old, "lector_techo")["params"]["cable"] = [[21, 2], [24, 2], [24, 10]]
+        hunter = obj(old, "cazador_examen")["params"]
+        hunter["facing"] = "e"
+        del hunter["track_radius_tiles"]
+        msgs = [e["message"] for e in vl.validate(old, check_schema=False)["errors"]]
+        self.assertTrue(any("lector_techo" in m and "columna(s) de pie seguidas" in m for m in msgs), msgs)
+        self.assertTrue(any("cazador_examen" in m and "mientras gira" in m for m in msgs), msgs)
+
     def test_both_sides_of_the_frame_wall(self):
         frame = obj(self.level, "marco_lados")
         self.assertEqual((frame["x"], frame["y"], frame["params"]["orientation"]), (100, 11, "wall"))
@@ -121,14 +147,16 @@ class Level33Test(unittest.TestCase):
                          "Sin el reflejo Isak solo no llega a la puerta abierta")
 
     def test_exam_pulses_the_reflection_without_touching_the_hunter(self):
+        # Desde el 2026-11-03 el cazador del examen mira quieto al n desde la 256-257: el camino lo pulsa al llegar y
+        # puede no necesitar aturdir al reflejo; si lo aturde, de espaldas y sin tocar al cazador.
         pulse = [s for s in self.steps if s["action"] == "pulse" and s["target"]["type"] == "false_reflection"]
-        self.assertEqual(len(pulse), 1)
-        p = pulse[0]
-        self.assertEqual(p["target"]["id"], "reflejo_examen")
-        self.assertEqual(p["facing"], -1, "De espaldas al cazador")
+        self.assertLessEqual(len(pulse), 1)
         hunter = obj(self.level, "cazador_examen")
-        phone_x = p["x_px"] - 36.0
-        self.assertGreater(hunter["x"] * 64 - phone_x, 96.0, "El pulso al reflejo no llega al cazador")
+        for p in pulse:
+            self.assertEqual(p["target"]["id"], "reflejo_examen")
+            self.assertEqual(p["facing"], -1, "De espaldas al cazador")
+            phone_x = p["x_px"] - 36.0
+            self.assertGreater(hunter["x"] * 64 - phone_x, 96.0, "El pulso al reflejo no llega al cazador")
         thieves = {e["id"]: e for e in self.result["world3"]["enemies"] if e["kind"] == "like_thief"}
         self.assertEqual({i: (e["thefts"], e["stuns"]) for i, e in thieves.items()},
                          {"ladron_1": (0, 1), "ladron_2": (0, 1)})
