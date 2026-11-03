@@ -15,7 +15,7 @@ const ECO_LINE_SCENE: String = "res://scenes/levels/eco_line.tscn"
 const PATH: String = "user://test_dnd_switch_save.json"
 const TILE: float = 64.0
 const DT: float = 1.0 / 60.0
-const DASH_NOTICE: String = "Deslizar: L / B (mando)"
+const DASH_NOTICE: String = "Deslizar: L"
 
 var _root: Node2D
 var _isak: Isak
@@ -65,7 +65,8 @@ func after_each() -> void:
 
 
 func _on_line(text: String, _duration: float, important: bool) -> void:
-	_lines.append({"text": text, "important": important})
+	# Los avisos llegan con marcas ({demo:}, {tecla:}): lo que se ve (2026-11-03).
+	_lines.append({"text": TextMarkers.display(text), "important": important})
 
 
 func _switch(cell: Vector2i = Vector2i(4, 9)) -> DndSwitch:

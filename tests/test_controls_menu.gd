@@ -227,13 +227,13 @@ func test_known_controller_families_use_their_names() -> void:
 func test_notices_and_help_follow_the_device() -> void:
 	var data: Dictionary = AbilityNotices.load_data()
 	var ram: String = AbilityNotices.explain_lines(GameState.ABILITY_COMBO, data)[0]
-	assert_true(ram.contains("Saltar (Espacio), Deslizar (L) y mantén abajo (S)"), ram)
+	assert_true(ram.contains("Saltar Espacio, Deslizar L y mantén abajo S"), ram)
 	assert_eq(TextMarkers.apply_keys("{tecla:debug}"), "K")
 	ControlBindings.set_last_device(ControlBindings.Device.PAD)
 	ram = AbilityNotices.explain_lines(GameState.ABILITY_COMBO, data)[0]
-	assert_true(ram.contains("Saltar (A), Deslizar (B) y mantén abajo (stick abajo)"), ram)
+	assert_true(ram.contains("Saltar A, Deslizar B y mantén abajo stick abajo"), ram)
 	assert_eq(TextMarkers.apply_keys("{tecla:debug}"), "Y")
-	assert_eq(AbilityNotices.notice_text(&"dash", data), "Deslizar: L / B (mando)", "El control dice los dos")
+	assert_eq(AbilityNotices.notice_text(&"dash", data), "Deslizar: B", "Con mando, solo el boton (2026-11-03)")
 	ControlBindings.reset_device()
 	assert_eq(TextMarkers.apply_keys("{tecla:debug}"), "K")
 

@@ -97,15 +97,15 @@ func test_hide_action_in_input_map_and_remappable() -> void:
 	var pad: InputEvent = ControlBindings.primary(&"hide", ControlBindings.Device.PAD)
 	assert_eq((pad as InputEventJoypadButton).button_index, JOY_BUTTON_LEFT_STICK, "L3")
 	var notices: Dictionary = AbilityNotices.load_data()
-	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: H / L3 (mando)")
+	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: H")
 	GameSettings.use_path(GameSettings.settings_path(), true)
 	var o := InputEventKey.new()
 	o.physical_keycode = KEY_O
 	assert_eq(ControlBindings.assign(&"hide", o), ControlBindings.Result.OK)
-	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: O / L3 (mando)", "El aviso sigue la tecla")
+	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: O", "El aviso sigue la tecla")
 	ControlBindings.restore_defaults()
 	GameSettings.use_path(GameSettings.settings_path(), true)
-	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: H / L3 (mando)")
+	assert_eq(AbilityNotices.notice_text(&"hide", notices), "Ocultarte: H")
 
 
 func test_notice_only_with_the_upgrade() -> void:

@@ -43,7 +43,8 @@ func after_each() -> void:
 
 
 func _on_line(text: String, _duration: float, important: bool) -> void:
-	_lines.append({"text": text, "important": important})
+	# Los avisos llegan con marcas ({demo:}, {tecla:}): lo que se ve (2026-11-03).
+	_lines.append({"text": TextMarkers.display(text), "important": important})
 
 
 func _chip(refill: bool = true) -> AbilityPickup:
@@ -97,7 +98,7 @@ func test_story_line_then_control_notice_both_important() -> void:
 	var expected: String = AbilityNotices.notice_text(GameState.ABILITY_DEBUG, AbilityNotices.load_data())
 	assert_eq(String(_lines[1].text), expected, "Despues, el aviso del control")
 	assert_true(expected.begins_with("Debug: mantén "), "Mantener, leido del Input Map")
-	var key: String = AbilityNotices.control_text(&"debug", AbilityNotices.load_data())
+	var key: String = AbilityNotices.action_key_text(&"debug", AbilityNotices.load_data())
 	assert_true(expected.contains(key))
 	assert_true(GameState.is_notice_seen(GameState.ABILITY_DEBUG))
 	notices.free()

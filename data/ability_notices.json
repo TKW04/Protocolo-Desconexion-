@@ -1,5 +1,5 @@
 {
-	"_notes": "Avisos de control de las habilidades (AbilityNotices, scripts/ui/ability_notices.gd; decision 2026-10-15, docs/preguntas.md «Avisos de control de las habilidades»). Texto de interfaz, NO es una linea de guion de Eco: dice solo el control; el uso lo explica Eco con la ayuda con Q (data/help.json) y los momentos de historia. Sale UNA vez por habilidad y partida guardada (GameState.seen_notices, clave seen_notices de user://save.json; las habilidades ya obtenidas en un guardado antiguo cuentan como vistas): la primera vez que la habilidad esta desbloqueada al empezar un nivel (tras start_delay_s de tiempo real) o al desbloquearse durante el nivel (ability_pickup o EventBus.ability_unlock_changed). EL PULSO NO ESTA AQUI (2026-10-16, docs/propuesta-asistentes-y-vidas.md §4.2): el 1-1 empieza sin pulso y su aviso («Pulso: G / X (mando)») lo da el encuentro con Eco al regalarlo (seccion notice de data/eco_encounter.json, mismo formato y las mismas tablas de teclas y botones de este archivo); ya no sale al empezar el 1-1. Quedan el laser (al recogerlo) y el Debug (cuando se desbloquee). Se muestra en el cuadro de Eco (EventBus.eco_line_requested, mismo cuadro y fuente text_font que el aviso anterior del laser), como linea IMPORTANTE (decision 2026-10-15): pausa el juego hasta que el jugador la cierra (Espacio / A / Intro); duration_s no se usa para cerrarla. Solo lo crea el flujo de juego (LevelRunner, scenes/main.tscn); las escenas de prueba y el bot no lo tienen. EL CONTROL SE LEE DEL INPUT MAP (project.godot) al mostrar el aviso: primera tecla y primer boton o eje de mando de la accion `action`; si se remapea, el aviso cambia. control_format une las partes ({key} y {pad}; si falta una, solo la otra). key_names: nombre en espanol de teclas cuyo nombre de Godot (OS.get_keycode_string) esta en ingles; el resto se muestra tal cual (letras). pad_buttons: indice JoyButton -> nombre (distribucion tipo Xbox, la que usa el resto de documentacion: A saltar, X pulso, Y Debug); pad_button_format lo envuelve. pad_axes: '<eje><signo>' -> nombre (0-3: sticks; 4+ = gatillo izquierdo, 5+ = gatillo derecho). Las mismas tablas nombran las teclas y botones en Ajustes > Controles (ControlBindings, sin pad_button_format). hold: la accion se mantiene; se antepone hold_prefix al control. abilities: id de GameState.ABILITIES -> {name, action, text, hold}; text usa {name} y {control}. Para una habilidad nueva basta con anadir su entrada. hide (tanda M2 de las mejoras de Calc, 2026-10-17): Ocultarte no es una habilidad de GameState.ABILITIES sino el Pulso 4 de la tienda de Calc; su aviso («Ocultarte: H / L3 (mando)») sale la primera vez que se empieza un nivel con el Ocultarte comprado (GameState.is_hide_available; AbilityNotices.is_available). dash (gesto Deslizar, 2026-10-19, docs/propuesta-1-3.md §2.4): «Deslizar: L / B (mando)», accion gesture_swipe; sale al obtener la habilidad dash en el interruptor «No molestar» (dnd_switch) del 1-3, despues de su linea de historia (las importantes salen en orden), o al empezar un nivel con el dash desbloqueado y sin el aviso visto. ground_pound (gesto Mantener presionado = golpe al suelo, 2026-10-22, docs/propuesta-mundo-2.md §3.3.3, decision del usuario: sin tecla nueva, se mantienen los eventos de move_down): «Mantener presionado: mantén S / stick abajo»; sale al obtener la habilidad ground_pound (reproductor con el boton de pausa, pause_player, del 2-2; paso 8, 2026-10-22) o al empezar un nivel con ella desbloqueada y sin el aviso visto. compress (gesto Comprimir, 2026-10-26, docs/propuesta-mundo-3.md §3.3.1): «Comprimir: I / RB (mando)», accion gesture_pinch; sale al obtener la habilidad compress (3-2) o al empezar un nivel con ella desbloqueada y sin el aviso visto. combo (Combinacion, 2026-10-29, docs/propuesta-mundo-5.md §3.2.1; texto propuesto): «Combinación en el aire · Embestida: Deslizar (L) + abajo (S) · Filo: Comprimir (I) + Deslizar · Sismo: Comprimir + abajo» (2026-10-29: sin «=», que la fuente de textos no tiene); {key:<accion>} pone la primera tecla de esa accion del Input Map (cambia al reasignar); sale al obtener la habilidad combo («Prueba gratis» del 5-2) o al empezar un nivel con ella desbloqueada y sin el aviso visto. shockwave (gesto Agitar): sin aviso desde el 2026-10-28 (Agitar retirado del juego tras la prueba del usuario; docs/propuesta-mundo-4.md §8.1).",
+	"_notes": "Avisos de control de las habilidades (AbilityNotices, scripts/ui/ability_notices.gd; decision 2026-10-15, docs/preguntas.md «Avisos de control de las habilidades»). Texto de interfaz, NO es una linea de guion de Eco: dice solo el control; el uso lo explica Eco con la ayuda con Q (data/help.json) y los momentos de historia. Sale UNA vez por habilidad y partida guardada (GameState.seen_notices, clave seen_notices de user://save.json; las habilidades ya obtenidas en un guardado antiguo cuentan como vistas): la primera vez que la habilidad esta desbloqueada al empezar un nivel (tras start_delay_s de tiempo real) o al desbloquearse durante el nivel (ability_pickup o EventBus.ability_unlock_changed). EL PULSO NO ESTA AQUI (2026-10-16, docs/propuesta-asistentes-y-vidas.md §4.2): el 1-1 empieza sin pulso y su aviso («Pulso: G / X (mando)») lo da el encuentro con Eco al regalarlo (seccion notice de data/eco_encounter.json, mismo formato y las mismas tablas de teclas y botones de este archivo); ya no sale al empezar el 1-1. Quedan el laser (al recogerlo) y el Debug (cuando se desbloquee). Se muestra en el cuadro de Eco (EventBus.eco_line_requested, mismo cuadro y fuente text_font que el aviso anterior del laser), como linea IMPORTANTE (decision 2026-10-15): pausa el juego hasta que el jugador la cierra (Espacio / A / Intro); duration_s no se usa para cerrarla. Solo lo crea el flujo de juego (LevelRunner, scenes/main.tscn); las escenas de prueba y el bot no lo tienen. EL CONTROL SE LEE DEL INPUT MAP (project.godot): desde el 2026-11-03 (peticion del usuario) el aviso dice SOLO la tecla o SOLO el boton del ultimo dispositivo usado (ControlBindings.last_device; «Láser: F» con teclado, «Láser: gatillo izquierdo» con mando) y llega al cuadro de Eco con la marca {tecla:<accion>} sin sustituir: el cuadro la resalta en una cajita y la cambia en vivo si cambia el dispositivo o se reasigna; demo pone la mini animacion (demos, abajo). control_format (las dos partes, {key} / {pad}) ya solo lo usa AbilityNotices.control_text. key_names: nombre en espanol de teclas cuyo nombre de Godot (OS.get_keycode_string) esta en ingles; el resto se muestra tal cual (letras). pad_buttons: indice JoyButton -> nombre (distribucion tipo Xbox, la que usa el resto de documentacion: A saltar, X pulso, Y Debug); pad_button_format lo envuelve. pad_axes: '<eje><signo>' -> nombre (0-3: sticks; 4+ = gatillo izquierdo, 5+ = gatillo derecho). Las mismas tablas nombran las teclas y botones en Ajustes > Controles (ControlBindings, sin pad_button_format). hold: la accion se mantiene; se antepone hold_prefix al control. abilities: id de GameState.ABILITIES -> {name, action, text, hold}; text usa {name} y {control}. Para una habilidad nueva basta con anadir su entrada. hide (tanda M2 de las mejoras de Calc, 2026-10-17): Ocultarte no es una habilidad de GameState.ABILITIES sino el Pulso 4 de la tienda de Calc; su aviso («Ocultarte: H / L3 (mando)») sale la primera vez que se empieza un nivel con el Ocultarte comprado (GameState.is_hide_available; AbilityNotices.is_available). dash (gesto Deslizar, 2026-10-19, docs/propuesta-1-3.md §2.4): «Deslizar: L / B (mando)», accion gesture_swipe; sale al obtener la habilidad dash en el interruptor «No molestar» (dnd_switch) del 1-3, despues de su linea de historia (las importantes salen en orden), o al empezar un nivel con el dash desbloqueado y sin el aviso visto. ground_pound (gesto Mantener presionado = golpe al suelo, 2026-10-22, docs/propuesta-mundo-2.md §3.3.3, decision del usuario: sin tecla nueva, se mantienen los eventos de move_down): «Golpe al suelo: mantén S» (con mando, «mantén stick abajo»); sale al obtener la habilidad ground_pound (reproductor con el boton de pausa, pause_player, del 2-2; paso 8, 2026-10-22) o al empezar un nivel con ella desbloqueada y sin el aviso visto. compress (gesto Comprimir, 2026-10-26, docs/propuesta-mundo-3.md §3.3.1): «Comprimir: I / RB (mando)», accion gesture_pinch; sale al obtener la habilidad compress (3-2) o al empezar un nivel con ella desbloqueada y sin el aviso visto. combo (Combinacion, 2026-10-29, docs/propuesta-mundo-5.md §3.2.1; texto propuesto): «Combinación en el aire · Embestida: Deslizar (L) + abajo (S) · Filo: Comprimir (I) + Deslizar · Sismo: Comprimir + abajo» (2026-10-29: sin «=», que la fuente de textos no tiene); {key:<accion>} pone la primera tecla de esa accion del Input Map (cambia al reasignar); sale al obtener la habilidad combo («Prueba gratis» del 5-2) o al empezar un nivel con ella desbloqueada y sin el aviso visto. shockwave (gesto Agitar): sin aviso desde el 2026-10-28 (Agitar retirado del juego tras la prueba del usuario; docs/propuesta-mundo-4.md §8.1).",
 	"duration_s": 4.0,
 	"start_delay_s": 1.0,
 	"control_format": "{key} / {pad}",
@@ -47,26 +47,76 @@
 		"4+": "gatillo izquierdo",
 		"5+": "gatillo derecho"
 	},
+	"_demos_notes": "Mini animaciones de los avisos (2026-11-03, peticion del usuario: «que se vea como se usa»; AbilityDemo, scripts/ui/ability_demo.gd). {demo:<id>} delante de la linea (campo demo de la entrada o explain_demos) pone a la derecha del cuadro de Eco una ventanita de width_px x height_px de arte con Isak a media escala (las hojas de isak_frames.tres: con el cuadro a x2 se ve a 1:1, sin perder pixeles) que repite steps en bucle: {anim (animacion de isak_frames.tres), time_s, dx_px / dy_px (desplazamiento durante el paso), press (accion que se esta pulsando: su tecla resaltada en el texto se ve pulsada), fx (efecto por codigo: bolt = disparo, ring = pulso, wave = onda en el suelo, trail = estela, debug = tinte y plataforma oculta que aparece, hide = semitransparente)}. start_x / start_y: pies de Isak al empezar cada vuelta (start_y = altura sobre el suelo). Todo en tiempo real (el juego esta en pausa).",
+	"demos": {
+		"pulse": {"start_x": 22, "steps": [
+			{"anim": "idle", "time_s": 0.6},
+			{"anim": "pulse", "time_s": 0.6, "press": "pulse", "fx": "ring"},
+			{"anim": "idle", "time_s": 0.4}]},
+		"laser": {"start_x": 18, "steps": [
+			{"anim": "idle", "time_s": 0.6},
+			{"anim": "laser", "time_s": 0.5, "press": "laser", "fx": "bolt"},
+			{"anim": "idle", "time_s": 0.4}]},
+		"debug": {"start_x": 22, "steps": [
+			{"anim": "idle", "time_s": 0.7},
+			{"anim": "idle", "time_s": 1.3, "press": "debug", "fx": "debug"},
+			{"anim": "idle", "time_s": 0.3}]},
+		"hide": {"start_x": 30, "steps": [
+			{"anim": "idle", "time_s": 0.7},
+			{"anim": "idle", "time_s": 1.2, "press": "hide", "fx": "hide"},
+			{"anim": "idle", "time_s": 0.3}]},
+		"dash": {"start_x": 16, "steps": [
+			{"anim": "idle", "time_s": 0.5},
+			{"anim": "dash", "time_s": 0.3, "dx_px": 30, "press": "gesture_swipe", "fx": "trail"},
+			{"anim": "idle", "time_s": 0.6}]},
+		"ground_pound": {"start_x": 30, "start_y": 9, "steps": [
+			{"anim": "jump_apex", "time_s": 0.4},
+			{"anim": "ground_pound_air", "time_s": 0.15, "dy_px": 9, "press": "move_down"},
+			{"anim": "ground_pound_land", "time_s": 0.4, "press": "move_down", "fx": "wave"},
+			{"anim": "idle", "time_s": 0.5}]},
+		"compress": {"start_x": 30, "steps": [
+			{"anim": "idle", "time_s": 0.6},
+			{"anim": "compress_idle", "time_s": 1.1, "press": "gesture_pinch"},
+			{"anim": "idle", "time_s": 0.4}]},
+		"combo_ram": {"start_x": 16, "steps": [
+			{"anim": "jump_rise", "time_s": 0.25, "dy_px": -9, "press": "jump"},
+			{"anim": "dash", "time_s": 0.15, "dx_px": 8, "press": "gesture_swipe", "fx": "trail"},
+			{"anim": "combo_ram", "time_s": 0.4, "dx_px": 22, "dy_px": 9, "press": "move_down", "fx": "trail"},
+			{"anim": "idle", "time_s": 0.6}]},
+		"combo_edge": {"start_x": 16, "steps": [
+			{"anim": "jump_rise", "time_s": 0.25, "dy_px": -9, "press": "jump"},
+			{"anim": "compress_idle", "time_s": 0.25, "press": "gesture_pinch"},
+			{"anim": "combo_edge", "time_s": 0.4, "dx_px": 30, "press": "gesture_swipe", "fx": "trail"},
+			{"anim": "jump_fall", "time_s": 0.2, "dy_px": 9},
+			{"anim": "idle", "time_s": 0.5}]},
+		"combo_quake": {"start_x": 30, "steps": [
+			{"anim": "jump_rise", "time_s": 0.25, "dy_px": -9, "press": "jump"},
+			{"anim": "combo_quake_air", "time_s": 0.3, "press": "gesture_pinch"},
+			{"anim": "combo_quake_air", "time_s": 0.15, "dy_px": 9, "press": "move_down"},
+			{"anim": "combo_quake_land", "time_s": 0.45, "press": "move_down", "fx": "wave"},
+			{"anim": "idle", "time_s": 0.5}]}
+	},
 	"_abilities_notes": "explain (2026-10-30, peticion del usuario tras jugar el 5-2: «las habilidades no quedan claras… uno no sabe como usarlas»; docs/propuesta-mundo-5.md §8.1): lineas IMPORTANTES que salen en el cuadro de Eco justo despues de la del control y dicen que hace la habilidad (lo que ya hace el juego: nada inventado). {key:<accion>} = la tecla (o el boton, segun el ultimo dispositivo usado) de la accion leida del Input Map. La Combinacion (la da la «Prueba gratis» del 5-2) explica cada combo con su nombre, su secuencia con los nombres de las acciones y sus teclas, y que rompe. Textos PROPUESTOS por el orquestador, revisar al jugar. ground_pound se llama «Golpe al suelo» de cara al jugador (antes «Mantener presionado», el nombre del gesto).",
 	"abilities": {
-		"laser": {"name": "Láser", "action": "laser", "text": "{name}: {control}",
+		"laser": {"name": "Láser", "action": "laser", "text": "{name}: {control}", "demo": "laser",
 			"explain": ["Dispara en horizontal, solo con los pies en el suelo. Cada disparo gasta energía."]},
-		"debug": {"name": "Debug", "action": "debug", "hold": true, "text": "{name}: {control}",
+		"debug": {"name": "Debug", "action": "debug", "hold": true, "text": "{name}: {control}", "demo": "debug",
 			"explain": ["Mientras lo mantienes ves lo oculto y el mundo va más lento. Gasta energía mientras dura."]},
-		"hide": {"name": "Ocultarte", "action": "hide", "text": "{name}: {control}",
-			"explain": ["Pulsa para ocultarte y otra vez para salir. Algunos enemigos pierden tu rastro. Gasta Sync y energía, y se apaga solo al 10 %."]},
-		"dash": {"name": "Deslizar", "action": "gesture_swipe", "text": "{name}: {control}",
+		"hide": {"name": "Ocultarte", "action": "hide", "text": "{name}: {control}", "demo": "hide",
+			"explain": ["Pulsa {key:hide} para ocultarte y otra vez para salir. Algunos enemigos pierden tu rastro. Gasta Sync y energía, y se apaga solo al 10 %."]},
+		"dash": {"name": "Deslizar", "action": "gesture_swipe", "text": "{name}: {control}", "demo": "dash",
 			"explain": ["Un dash de 3 tiles hacia donde miras, en el suelo o en el aire. Mientras dura nada te daña. Gasta 10 de energía."]},
-		"ground_pound": {"name": "Golpe al suelo", "action": "move_down", "hold": true, "text": "{name}: {control}",
+		"ground_pound": {"name": "Golpe al suelo", "action": "move_down", "hold": true, "text": "{name}: {control}", "demo": "ground_pound",
 			"explain": ["En el aire caes de golpe; en el suelo, cargas y das un saltito. La onda aturde a los enemigos cercanos."]},
-		"compress": {"name": "Comprimir", "action": "gesture_pinch", "text": "{name}: {control}",
-			"explain": ["Te haces pequeño para pasar por huecos de 1 tile. Pulsa otra vez para recuperar tu tamaño. Comprimido no hay pulso ni láser."]},
+		"compress": {"name": "Comprimir", "action": "gesture_pinch", "text": "{name}: {control}", "demo": "compress",
+			"explain": ["Te haces pequeño para pasar por huecos de 1 tile. Pulsa {key:gesture_pinch} otra vez para recuperar tu tamaño. Comprimido no hay pulso ni láser."]},
 		"combo": {"name": "Combinación", "action": "gesture_swipe", "text": "{name}: tres combos, solo en el aire. Cada uno gasta 15 de energía.",
 			"explain": [
-				"Embestida: Saltar ({key:jump}), Deslizar ({key:gesture_swipe}) y mantén abajo ({key:move_down}). Caes en diagonal y rompes persianas. Con el dash, 25 de energía.",
-				"Filo: Saltar ({key:jump}), Comprimir ({key:gesture_pinch}) y Deslizar ({key:gesture_swipe}). Cruzas comprimido las ranuras de precios.",
-				"Sismo: Saltar ({key:jump}), Comprimir ({key:gesture_pinch}) y mantén abajo ({key:move_down}). La onda tumba a la vez todas las estanterías.",
+				"Embestida: Saltar {key:jump}, Deslizar {key:gesture_swipe} y mantén abajo {key:move_down}. Caes en diagonal y rompes persianas. Con el dash, 25 de energía.",
+				"Filo: Saltar {key:jump}, Comprimir {key:gesture_pinch} y Deslizar {key:gesture_swipe}. Cruzas comprimido las ranuras de precios.",
+				"Sismo: Saltar {key:jump}, Comprimir {key:gesture_pinch} y mantén abajo {key:move_down}. La onda tumba a la vez todas las estanterías.",
 				"Los tienes todos en el menú de pausa: Ajustes, Controles."
-			]}
+			],
+			"explain_demos": ["combo_ram", "combo_edge", "combo_quake", ""]}
 	}
 }

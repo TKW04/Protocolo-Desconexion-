@@ -7,8 +7,13 @@
 ## el nivel (EventBus.ability_unlock_changed, que tambien emite el
 ## ability_pickup al dar la habilidad). Sale una sola vez por habilidad y
 ## partida guardada (GameState.seen_notices).
-## El control se LEE DEL INPUT MAP al mostrar el aviso (primera tecla y primer
-## boton o eje de mando de la accion): si se remapea, el texto cambia.
+## El control se LEE DEL INPUT MAP al mostrar el aviso: desde el 2026-11-03
+## (peticion del usuario) solo la tecla o solo el boton, segun el ultimo
+## dispositivo usado (ControlBindings.last_device). El aviso va al cuadro de Eco
+## con marcas sin sustituir ({tecla:<accion>} y {demo:<id>}, TextMarkers): el
+## cuadro resalta la tecla en una cajita, la cambia en vivo si cambia el
+## dispositivo o se reasigna, y pone la mini animacion de `demo` (demos de
+## data/ability_notices.json, AbilityDemo).
 ## Se muestra en el cuadro de Eco (EventBus.eco_line_requested) como linea
 ## IMPORTANTE (decision 2026-10-15): pausa el juego hasta que el jugador la cierra. Lo crea LevelRunner (flujo de juego); se arma
 ## con begin_level() y se desarma con stop().
@@ -20,8 +25,8 @@ const NAME_TAG: String = "{name}"
 const CONTROL_TAG: String = "{control}"
 const KEY_TAG: String = "{key}"
 const PAD_TAG: String = "{pad}"
-## {key:<accion>} en el texto: la primera tecla de esa accion del Input Map
-## (avisos con varios controles, como el de la Combinacion).
+## {key:<accion>} en el texto: la tecla (o el boton) de esa accion del Input Map
+## (avisos con varios controles, como el de la Combinacion); es {tecla:<accion>}.
 const ACTION_KEY_PREFIX: String = "{key:"
 ## Aviso del Ocultarte (Pulso 4 de la tienda de Calc; no es de GameState.ABILITIES).
 const HIDE_NOTICE: StringName = &"hide"
@@ -103,17 +108,17 @@ func show_pending() -> Array[StringName]:
 func try_show(ability: StringName) -> bool:
 	if GameState.is_notice_seen(ability) or not is_available(ability):
 		return false
-	var text: String = notice_text(ability, _data)
-	if text.is_empty():
+	var template: String = notice_template(ability, _data)
+	if template.is_empty():
 		return false
 	GameState.mark_notice_seen(ability)
-	EventBus.eco_line_requested.emit(text, float(_data.get("duration_s", -1.0)), true)
+	EventBus.eco_line_requested.emit(template, float(_data.get("duration_s", -1.0)), true)
 	# Explicacion (2026-10-30, peticion del usuario tras el 5-2: «uno no sabe como
 	# usarlas»): lineas importantes que siguen al control y dicen que hace la
 	# habilidad (y, en la Combinacion, cada combo con su secuencia y sus teclas).
-	for line: String in explain_lines(ability, _data):
+	for line: String in explain_templates(ability, _data):
 		EventBus.eco_line_requested.emit(line, float(_data.get("duration_s", -1.0)), true)
-	notice_shown.emit(ability, text)
+	notice_shown.emit(ability, TextMarkers.display(template))
 	return true
 
 
@@ -137,55 +142,81 @@ static func load_data(path: String = DATA_PATH) -> Dictionary:
 	return parsed if parsed is Dictionary else {}
 
 
-## Texto del aviso de `ability` ("" si no tiene entrada o su accion no existe).
+## Texto del aviso de `ability` tal como se ve ahora («Láser: F» con teclado,
+## «Láser: gatillo izquierdo» con mando; "" si no tiene entrada o su accion no
+## existe o no tiene ninguna tecla ni boton).
 static func notice_text(ability: StringName, data: Dictionary) -> String:
-	var abilities: Variant = data.get("abilities", {})
-	if not abilities is Dictionary or not (abilities as Dictionary).get(String(ability)) is Dictionary:
+	return TextMarkers.display(notice_template(ability, data))
+
+
+## El aviso con marcas sin sustituir: {demo:<id>} delante (si la entrada tiene
+## `demo`) y {tecla:<accion>} donde va el control (lo resuelve el cuadro de Eco).
+static func notice_template(ability: StringName, data: Dictionary) -> String:
+	var entry: Dictionary = _entry(ability, data)
+	if entry.is_empty():
 		return ""
-	var entry: Dictionary = abilities[String(ability)]
-	var control: String = control_text(StringName(String(entry.get("action", ""))), data)
-	if control.is_empty():
+	var action := StringName(String(entry.get("action", "")))
+	if control_text(action, data).is_empty():
 		return ""
+	var control: String = TextMarkers.key_marker(action)
 	if bool(entry.get("hold", false)):
 		control = String(data.get("hold_prefix", "")) + control
 	var text: String = String(entry.get("text", NAME_TAG + ": " + CONTROL_TAG)) \
 			.replace(NAME_TAG, String(entry.get("name", ability))).replace(CONTROL_TAG, control)
-	return _replace_action_keys(text, data)
+	return _demo_prefix(String(entry.get("demo", "")), data) + _mark_action_keys(text)
 
 
 ## Lineas de explicacion de `ability` (campo `explain` de su entrada: texto o
-## lista de textos), con las marcas {key:<accion>} ya sustituidas. Vacio si no
-## tiene.
+## lista de textos) tal como se ven ahora. Vacio si no tiene.
 static func explain_lines(ability: StringName, data: Dictionary) -> PackedStringArray:
 	var out: PackedStringArray = []
-	var abilities: Variant = data.get("abilities", {})
-	if not abilities is Dictionary or not (abilities as Dictionary).get(String(ability)) is Dictionary:
-		return out
-	var raw: Variant = (abilities[String(ability)] as Dictionary).get("explain", [])
-	var lines: Array = raw if raw is Array else ([raw] if raw is String else [])
-	for line: Variant in lines:
-		var text: String = String(line)
-		if not text.is_empty():
-			out.append(_replace_action_keys(text, data))
+	for line: String in explain_templates(ability, data):
+		out.append(TextMarkers.display(line))
 	return out
 
 
-## Sustituye cada {key:<accion>} por la primera tecla de la accion ("?" si no tiene)
-## o, si el ultimo dispositivo usado es el mando (2026-10-30,
-## ControlBindings.last_device), por su boton.
-static func _replace_action_keys(text: String, data: Dictionary) -> String:
-	var from: int = text.find(ACTION_KEY_PREFIX)
-	while from >= 0:
-		var close: int = text.find("}", from)
-		if close < 0:
-			break
-		var action := StringName(text.substr(from + ACTION_KEY_PREFIX.length(), close - from - ACTION_KEY_PREFIX.length()))
-		var key: String = action_key_text(action, data)
-		if ControlBindings.last_device() == ControlBindings.Device.PAD:
-			key = ControlBindings.action_label(action, key)
-		text = text.substr(0, from) + (key if not key.is_empty() else "?") + text.substr(close + 1)
-		from = text.find(ACTION_KEY_PREFIX, from)
-	return text
+## Lineas de explicacion con marcas: {key:<accion>} pasa a {tecla:<accion>} y
+## cada una lleva delante su {demo:<id>} si `explain_demos` (lista paralela a
+## `explain`) se lo da.
+static func explain_templates(ability: StringName, data: Dictionary) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var entry: Dictionary = _entry(ability, data)
+	var raw: Variant = entry.get("explain", [])
+	var lines: Array = raw if raw is Array else ([raw] if raw is String else [])
+	var demos: Variant = entry.get("explain_demos", [])
+	for i: int in lines.size():
+		var text: String = String(lines[i])
+		if text.is_empty():
+			continue
+		var demo: String = String((demos as Array)[i]) if demos is Array and i < (demos as Array).size() else ""
+		out.append(_demo_prefix(demo, data) + _mark_action_keys(text))
+	return out
+
+
+## Mini animacion `id` de la tabla demos ({} si no existe).
+static func demo_def(id: StringName, data: Dictionary) -> Dictionary:
+	var demos: Variant = data.get("demos", {})
+	if demos is Dictionary and (demos as Dictionary).get(String(id)) is Dictionary:
+		return (demos as Dictionary)[String(id)]
+	return {}
+
+
+static func _entry(ability: StringName, data: Dictionary) -> Dictionary:
+	var abilities: Variant = data.get("abilities", {})
+	if not abilities is Dictionary or not (abilities as Dictionary).get(String(ability)) is Dictionary:
+		return {}
+	return (abilities as Dictionary)[String(ability)]
+
+
+static func _demo_prefix(demo: String, data: Dictionary) -> String:
+	if demo.is_empty() or demo_def(StringName(demo), data).is_empty():
+		return ""
+	return TextMarkers.DEMO_PREFIX + demo + "}"
+
+
+## {key:<accion>} -> {tecla:<accion>} (la misma marca que las ayudas Q).
+static func _mark_action_keys(text: String) -> String:
+	return text.replace(ACTION_KEY_PREFIX, TextMarkers.KEY_PREFIX)
 
 
 ## Primera tecla de `action` del Input Map, con key_names ("" si no tiene).

@@ -46,14 +46,30 @@
 	"inline_icons": {
 		"atencion": {"glyph": "◆", "asset": "inline_attention", "offset_px": [0, 3]}
 	},
-	"confirm_hint_text": "▼ [Espacio]",
+	"confirm_hint_text": "▼ [{tecla:jump}]",
+	"demo_width_px": 60,
+	"demo_height_px": 64,
+	"demo_gap_px": 6,
+	"key_pad_px": 1,
+	"key_press_period_s": 1.2,
+	"key_press_s": 0.25,
 	"confirm_hint_blink_hz": 2.0,
 	"font": "res://assets/sprites/ui/text_font.fnt",
 	"key_swap_shader": "res://assets/shaders/hud_key_swap.gdshader",
 	"colors": {
 		"body": "#f2f4f8",
 		"speaker": "#9bb0e8",
-		"confirm_hint": "#9bb0e8"
+		"confirm_hint": "#9bb0e8",
+		"key_text": "#3dfff5",
+		"key_plate": "#050e3c",
+		"key_border": "#4f71c4",
+		"key_text_lit": "#c2fffc",
+		"key_plate_lit": "#12857f",
+		"key_border_lit": "#c2fffc",
+		"demo_bg": "#050e3c",
+		"demo_border": "#4f71c4",
+		"demo_floor": "#9bb0e8",
+		"demo_fx": "#3dfff5"
 	},
 	"assets": {
 		"panel": {"path": "res://assets/sprites/ui/eco_text_panel.png", "frame_size": [16, 16], "columns": 1, "rows": 1},

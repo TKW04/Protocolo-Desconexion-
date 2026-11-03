@@ -484,9 +484,9 @@ func test_notice_reads_the_keys_from_the_input_map() -> void:
 	var jump: String = AbilityNotices.action_key_text(&"jump", data)
 	var lines: PackedStringArray = AbilityNotices.explain_lines(GameState.ABILITY_COMBO, data)
 	assert_eq(lines.size(), 4, "Embestida, Filo, Sismo y donde verlos")
-	assert_eq(lines[0], "Embestida: Saltar (%s), Deslizar (%s) y mantén abajo (%s). Caes en diagonal y rompes persianas. Con el dash, 25 de energía." % [jump, swipe, down])
-	assert_eq(lines[1], "Filo: Saltar (%s), Comprimir (%s) y Deslizar (%s). Cruzas comprimido las ranuras de precios." % [jump, pinch, swipe])
-	assert_eq(lines[2], "Sismo: Saltar (%s), Comprimir (%s) y mantén abajo (%s). La onda tumba a la vez todas las estanterías." % [jump, pinch, down])
+	assert_eq(lines[0], "Embestida: Saltar %s, Deslizar %s y mantén abajo %s. Caes en diagonal y rompes persianas. Con el dash, 25 de energía." % [jump, swipe, down])
+	assert_eq(lines[1], "Filo: Saltar %s, Comprimir %s y Deslizar %s. Cruzas comprimido las ranuras de precios." % [jump, pinch, swipe])
+	assert_eq(lines[2], "Sismo: Saltar %s, Comprimir %s y mantén abajo %s. La onda tumba a la vez todas las estanterías." % [jump, pinch, down])
 	assert_true(lines[3].contains("Controles"), "Remite al menu de controles")
 	for line: String in [text] + Array(lines):
 		assert_false(line.contains("{"), "Sin marcas sin sustituir: %s" % line)

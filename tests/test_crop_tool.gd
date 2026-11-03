@@ -17,7 +17,7 @@ const PATH: String = "user://test_crop_tool_save.json"
 const TILE: float = 64.0
 const DT: float = 1.0 / 60.0
 const COMPRESS: StringName = GameState.ABILITY_COMPRESS
-const NOTICE: String = "Comprimir: I / RB (mando)"
+const NOTICE: String = "Comprimir: I"
 const ECO_LINE: String = "Te queda mejor así."
 
 var _root: Node2D
@@ -68,7 +68,8 @@ func after_each() -> void:
 
 
 func _on_line(text: String, _duration: float, important: bool) -> void:
-	_lines.append({"text": text, "important": important})
+	# Los avisos llegan con marcas ({demo:}, {tecla:}): lo que se ve (2026-11-03).
+	_lines.append({"text": TextMarkers.display(text), "important": important})
 
 
 func _types() -> Dictionary:

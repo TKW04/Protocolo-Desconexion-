@@ -35,6 +35,16 @@ var speaker_name: String = "Eco"
 ## derecha del cuadro, parpadea a confirm_hint_blink_hz cuando el texto ya se
 ## ha escrito). El proyecto aun no distingue teclado y mando: texto generico.
 var confirm_hint_text: String = "▼ [Espacio]"
+## Avisos de habilidad (2026-11-03): ventanita de la mini animacion ({demo:<id>},
+## AbilityDemo) a la derecha del texto, en px de arte, y su separacion del texto.
+var demo_width_px: int = 60
+var demo_height_px: int = 64
+var demo_gap_px: int = 6
+## Cajita de las teclas ({tecla:<accion>} sin sustituir): margen lateral (px de
+## arte) y, sin demo, cada cuanto se ve pulsada y cuanto (s, tiempo real).
+var key_pad_px: int = 1
+var key_press_period_s: float = 1.2
+var key_press_s: float = 0.25
 var confirm_hint_blink_hz: float = 2.0
 var font_path: String = ""
 var key_swap_shader_path: String = ""

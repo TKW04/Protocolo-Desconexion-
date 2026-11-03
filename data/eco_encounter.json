@@ -9,7 +9,7 @@
 	"gift": [
 		"Perfecto, {apodo}. Te regalo algo: un pulso. Sabía que lo ibas a necesitar."
 	],
-	"notice": {"name": "Pulso", "action": "pulse", "text": "{name}: {control}"},
+	"notice": {"name": "Pulso", "action": "pulse", "text": "{name}: {control}", "demo": "pulse"},
 	"outro": [
 		"El pulso aturde a los enemigos cercanos y activa terminales y botones. Si algo no lo conoces, acércate y pregúntame."
 	],

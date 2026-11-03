@@ -300,30 +300,33 @@ func test_prompts_and_notices_follow_the_new_keys() -> void:
 	ControlBindings.assign(&"pulse", _key(KEY_O))
 	var notices: Dictionary = AbilityNotices.load_data()
 	assert_eq(AbilityNotices.control_text(&"pulse", notices), "O / X (mando)", "«Pulso: O / X (mando)»")
-	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: F / gatillo izquierdo")
+	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: F")
 	ControlBindings.assign(&"laser", _key(KEY_V))
-	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: V / gatillo izquierdo")
+	assert_eq(AbilityNotices.notice_text(&"laser", notices), "Láser: V")
 
 
 func test_dash_is_remappable_and_its_notice_follows() -> void:
 	var notices: Dictionary = AbilityNotices.load_data()
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L / B (mando)")
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L")
 	assert_eq(ControlBindings.assign(&"jump", _key(KEY_L)), ControlBindings.Result.CONFLICT, "L es de Deslizar")
 	assert_eq(ControlBindings.assign(&"gesture_swipe", _key(KEY_E)), ControlBindings.Result.OK)
 	assert_true(_is_action(_key(KEY_E), &"gesture_swipe"))
 	assert_false(_is_action(_key(KEY_L), &"gesture_swipe"))
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / B (mando)", "El aviso se actualiza")
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E", "El aviso se actualiza")
 	# RB es de Comprimir (gesture_pinch, reasignable desde el 2026-10-26); LB, libre desde que se retiro Agitar
 	# (gesture_shake ya no es una fila de Ajustes, 2026-10-28); la cruceta arriba sigue libre.
 	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_RIGHT_SHOULDER)), ControlBindings.Result.CONFLICT,
 			"RB es de Comprimir")
 	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_LEFT_SHOULDER)), ControlBindings.Result.OK,
 			"LB ya no es de ninguna fila")
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / LB (mando)")
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E", "Con teclado, solo la tecla (2026-11-03)")
+	ControlBindings.set_last_device(ControlBindings.Device.PAD)
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: LB", "Con mando, solo el boton")
 	assert_eq(ControlBindings.assign(&"gesture_swipe", _button(JOY_BUTTON_DPAD_UP)), ControlBindings.Result.OK)
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: E / cruceta arriba (mando)")
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: cruceta arriba")
+	ControlBindings.reset_device()
 	ControlBindings.restore_defaults()
-	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L / B (mando)")
+	assert_eq(AbilityNotices.notice_text(&"dash", notices), "Deslizar: L")
 
 
 func test_hub_station_prompt_follows_the_pulse_key() -> void:

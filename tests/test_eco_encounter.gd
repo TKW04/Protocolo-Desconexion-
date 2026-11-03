@@ -72,7 +72,7 @@ func after_each() -> void:
 
 
 func _on_line(text: String, _duration_s: float, important: bool) -> void:
-	_lines.append(text)
+	_lines.append(TextMarkers.display(text))
 	_important.append(important)
 
 
@@ -142,7 +142,7 @@ func test_texts_and_notice_format() -> void:
 	assert_true(String(_data["gift"][0]).contains(GameState.NICKNAME_TAG), "Eco llama al jugador por el apodo")
 	_level = LEVEL_SCENE.instantiate() as GeneratedLevel
 	add_child(_level)
-	assert_eq(_encounter(_level).get_notice_text(), "Pulso: G / X (mando)", "Control leido del Input Map")
+	assert_eq(_encounter(_level).get_notice_text(), "Pulso: G", "Control leido del Input Map")
 
 
 # --- Secuencia ---
@@ -198,7 +198,7 @@ func test_sequence_intro_nickname_gift_pulse_outro() -> void:
 	assert_true(GameState.is_ability_obtained(GameState.ABILITY_PULSE), "Obtenido para siempre (se guarda)")
 	assert_true(GameState.is_notice_seen(GameState.ABILITY_PULSE))
 	assert_signal_emitted_with_parameters(encounter, "ability_granted", [GameState.ABILITY_PULSE])
-	assert_eq(box.get_text(), "Pulso: G / X (mando)", "Aviso de control del pulso")
+	assert_eq(box.get_text(), "Pulso: G", "Aviso de control del pulso")
 	assert_true(box.is_important())
 	assert_false(GameState.has_met_ally(GameState.ALLY_ECO), "Eco queda conocido al terminar")
 	await _close_line(box)
@@ -214,7 +214,7 @@ func test_sequence_intro_nickname_gift_pulse_outro() -> void:
 	var expected: Array[String] = []
 	expected.append_array(_data["intro"])
 	expected.append(String(_data["gift"][0]))  # Se pide con el marcador; el cuadro pone el apodo.
-	expected.append("Pulso: G / X (mando)")
+	expected.append("Pulso: G")
 	expected.append_array(_data["outro"])
 	assert_eq(_lines, expected, "Orden: presentacion, regalo, aviso del pulso, ultima linea")
 	assert_false(_important.has(false), "Todas importantes")
@@ -272,7 +272,7 @@ func test_main_scene_companion_appears_and_no_duplicate_pulse_notice() -> void:
 			"Empieza en la esfera del encuentro (salvo la oscilacion)")
 	companion.advance(1.5)
 	assert_lt(companion.get_anchor().distance_to(companion.get_target_position()), 8.0, "Y llega junto a Isak")
-	assert_eq(_lines.count("Pulso: G / X (mando)"), 1, "El aviso del pulso sale una vez")
+	assert_eq(_lines.count("Pulso: G"), 1, "El aviso del pulso sale una vez")
 	assert_false(get_tree().paused)
 
 

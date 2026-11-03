@@ -40,6 +40,16 @@
 ## caracteres que aparecen de golpe (instant_chars: una racha seguida, p. ej. las
 ## cifras de un numero, se escribe en un solo paso). Calc usa "lcd" (pantalla de
 ## calculadora: fuente monoespaciada, cifras de golpe). Sin estilo = el de Eco.
+## AVISOS DE HABILIDAD (2026-11-03, peticion del usuario): un texto con
+## {tecla:<accion>} SIN sustituir (AbilityNotices, EcoEncounter) pone la tecla
+## (o el boton, segun el ultimo dispositivo usado) resaltada en una cajita
+## (KeyCap: placa, borde y texto en key_* de colors) que se ve pulsada a ratos;
+## si cambia el dispositivo (EventBus.input_device_changed) o se reasigna
+## (EventBus.controls_changed) con la linea en pantalla, el texto se vuelve a
+## resolver al momento. {demo:<id>} al principio pone a la derecha la mini
+## animacion (AbilityDemo; demos de data/ability_notices.json) y la cajita de la
+## accion que la demo pulsa se ve pulsada a la vez. La indicacion de cierre
+## (confirm_hint_text, «▼ [{tecla:jump}]») tambien sigue al dispositivo.
 ## Pixel base como el HUD: Frame se maqueta en pixeles de arte y se escala
 ## x pixel_scale (entero).
 class_name EcoTextBox
@@ -107,6 +117,19 @@ var _steps: PackedInt32Array = []
 ## Fuentes ya cargadas por ruta (vacia = la de Eco).
 var _fonts: Dictionary[String, Font] = {}
 var _body_material: ShaderMaterial
+## Texto de la linea actual tal como llego (con {tecla:} y {demo:} sin sustituir).
+var _raw: String = ""
+## Teclas resaltadas: {start, length, action} en _text.
+var _key_ranges: Array[Dictionary] = []
+## Cajitas: {cap: ColorRect (borde), plate: ColorRect, label: Label, index (en
+## _wrapped), text, action}; una por tramo de linea.
+var _keycaps: Array[Dictionary] = []
+## Tiempo real con la linea en pantalla (cajitas pulsadas a ratos).
+var _key_time: float = 0.0
+var _demo: AbilityDemo
+var _demo_on: bool = false
+## data/ability_notices.json (tabla demos), leida la primera vez que hace falta.
+var _notice_data: Dictionary = {}
 
 @onready var _frame: Control = $Frame
 @onready var _panel: NinePatchRect = $Frame/Panel
@@ -122,6 +145,8 @@ func _ready() -> void:
 	_apply_config()
 	get_viewport().size_changed.connect(_fit_frame)
 	EventBus.eco_line_requested.connect(_on_eco_line_requested)
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	EventBus.controls_changed.connect(_on_controls_changed)
 	add_to_group(PauseMenu.BLOCKER_GROUP)
 	_set_alpha(TRANSPARENT)
 	_panel.visible = false
@@ -143,6 +168,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _exit_tree() -> void:
 	_release_pause()
+	if EventBus.input_device_changed.is_connected(_on_input_device_changed):
+		EventBus.input_device_changed.disconnect(_on_input_device_changed)
+	if EventBus.controls_changed.is_connected(_on_controls_changed):
+		EventBus.controls_changed.disconnect(_on_controls_changed)
 
 
 # --- API ---
@@ -188,6 +217,11 @@ func confirm() -> bool:
 
 ## Avanza `delta` segundos de tiempo real (lo llama _process; util en pruebas).
 func advance(delta: float) -> void:
+	if _phase != Phase.IDLE:
+		_key_time += delta
+		if _demo_on:
+			_demo.advance(delta)
+		_update_keycaps()
 	match _phase:
 		Phase.TYPING:
 			_type_time += delta
@@ -443,13 +477,11 @@ func _start_next() -> void:
 		_hold_pause()
 	else:
 		_release_pause()
-	_text = TextMarkers.apply(String(item["text"]), _config.inline_icons)
+	_raw = String(item["text"])
 	_apply_speaker(StringName(item.get("speaker", &"")))
 	_force_top = bool(item.get("top", false))
-	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
-	_wrapped = LINE_BREAK.join(_lines)
-	_build_steps()
-	_build_inline_icons()
+	_key_time = 0.0
+	_compose()
 	_current_duration = float(item["duration_s"])
 	_hold_s = _config.hold_time(_text.length(), _current_duration)
 	_type_time = 0.0
@@ -484,9 +516,13 @@ func _clear_line() -> void:
 	_set_alpha(TRANSPARENT)
 	_panel.visible = false
 	_text = ""
+	_raw = ""
 	_wrapped = ""
 	_lines = []
+	_key_ranges.clear()
 	_clear_inline_icons()
+	_clear_keycaps()
+	_set_demo(&"")
 	_set_typed(0)
 
 
@@ -495,7 +531,7 @@ func _clear_line() -> void:
 func _preempt_current() -> void:
 	var speaker: StringName = _speaker_id
 	if _phase != Phase.CLOSING:
-		_queue.insert(_first_normal_index(), {"text": _text, "duration_s": _current_duration, "important": false,
+		_queue.insert(_first_normal_index(), {"text": _raw, "duration_s": _current_duration, "important": false,
 			"speaker": speaker, "top": _force_top})
 	_clear_line()
 	if speaker == &"":
@@ -533,6 +569,7 @@ func _set_typed(count: int) -> void:
 	_body.text = _wrapped.substr(0, count)
 	for icon: Dictionary in _inline:
 		(icon["node"] as TextureRect).visible = int(icon["index"]) < count
+	_update_keycaps()
 
 
 ## Caracteres escritos tras `t` segundos de escritura.
@@ -587,7 +624,12 @@ func _text_left() -> int:
 
 
 func _text_width() -> float:
-	return _config.width_px - _text_left() - _config.padding_px
+	return _config.width_px - _text_left() - _config.padding_px - _demo_reserve()
+
+
+## Ancho que la mini animacion le quita al texto (0 sin demo).
+func _demo_reserve() -> int:
+	return _config.demo_width_px + _config.demo_gap_px if _demo_on else 0
 
 
 func _apply_config() -> void:
@@ -619,7 +661,7 @@ func _apply_config() -> void:
 	_hint.add_theme_constant_override("line_spacing", 0)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hint.text = c.confirm_hint_text
+	_hint.text = TextMarkers.apply_keys(c.confirm_hint_text)
 	_hint.material = c.new_key_swap_material(c.color(&"body"), c.color(&"confirm_hint"))
 	_hint.visible = false
 	_panel.add_child(_hint)
@@ -646,6 +688,8 @@ func _layout() -> void:
 	# Las importantes reservan una fila para la indicacion de cierre.
 	var hint_rows: int = 1 if _important else 0
 	var height: int = maxi(c.padding_px * 2 + line_h * (1 + lines + hint_rows), c.padding_px * 2 + icon_h)
+	if _demo_on:
+		height = maxi(height, c.padding_px * 2 + c.demo_height_px + line_h * hint_rows)
 	var width: int = panel_width_for(_lines)
 	var hint_w: int = ceili(_width(_font, _hint.text, c.font_size))
 	if _important:
@@ -656,7 +700,9 @@ func _layout() -> void:
 		top = _frame.size.y - height - c.boss_bottom_px
 	_panel.position = Vector2(floorf((_frame.size.x - width) * 0.5), top)
 	var left: int = _text_left()
-	var inner: float = width - left - c.padding_px
+	var inner: float = width - left - c.padding_px - _demo_reserve()
+	if _demo_on:
+		_demo.position = Vector2(width - c.padding_px - c.demo_width_px, c.padding_px)
 	_speaker.position = Vector2(left, c.padding_px)
 	_speaker.size = Vector2(inner, line_h)
 	_body.position = Vector2(left, c.padding_px + line_h)
@@ -735,7 +781,7 @@ func panel_width_for(lines: PackedStringArray) -> int:
 	var widest: float = _width(_font, _speaker.text, c.font_size)
 	for line: String in lines:
 		widest = maxf(widest, _width(_font, line, c.font_size))
-	return clampi(_text_left() + ceili(widest) + c.padding_px, c.min_width_px, c.width_px)
+	return clampi(_text_left() + ceili(widest) + c.padding_px + _demo_reserve(), c.min_width_px, c.width_px)
 
 
 ## Pone un TextureRect por cada glifo de icono en linea del texto partido
@@ -784,3 +830,175 @@ func _clear_inline_icons() -> void:
 
 func _on_eco_line_requested(text: String, duration_s: float, important: bool) -> void:
 	show_line(text, duration_s, important)
+
+
+# --- Teclas resaltadas y mini animacion (avisos de habilidad, 2026-11-03) ---
+
+## Texto de _raw ya resuelto (puntos, iconos y teclas del dispositivo actual),
+## partido, con sus iconos, cajitas y demo. Lo usa _start_next y el cambio de
+## dispositivo.
+func _compose() -> void:
+	_set_demo(TextMarkers.demo_id(_raw))
+	var resolved: Dictionary = TextMarkers.apply_keys_ranges(
+		TextMarkers.apply(TextMarkers.strip_demo(_raw), _config.inline_icons))
+	_text = String(resolved["text"])
+	_key_ranges.assign(resolved["ranges"])
+	_hint.text = TextMarkers.apply_keys(_config.confirm_hint_text)
+	_lines = wrap_text(_text, _font, _config.font_size, _text_width())
+	_wrapped = LINE_BREAK.join(_lines)
+	_build_steps()
+	_build_inline_icons()
+	_build_keycaps()
+
+
+## El dispositivo o las teclas cambiaron con la linea en pantalla: vuelve a
+## resolver las teclas sin perder lo escrito (escrita entera sigue entera).
+func refresh_keys() -> void:
+	if _phase == Phase.IDLE or not _raw.contains(TextMarkers.KEY_PREFIX) \
+			and not _config.confirm_hint_text.contains(TextMarkers.KEY_PREFIX):
+		return
+	var was_full: bool = _typed >= _wrapped.length()
+	var typed: int = _typed
+	_compose()
+	_set_typed(_wrapped.length() if was_full else mini(typed, _wrapped.length()))
+	_layout()
+
+
+## Cajitas de las teclas (pruebas): {text, action, lit}.
+func get_key_highlights() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for cap: Dictionary in _keycaps:
+		out.append({"text": cap["text"], "action": cap["action"], "lit": bool(cap.get("lit", false)),
+			"visible": (cap["cap"] as Control).visible})
+	return out
+
+
+## Rectangulo en pantalla de la cajita `i` (pruebas y capturas).
+func get_key_highlight_rect(i: int) -> Rect2:
+	var node := _keycaps[i]["cap"] as Control
+	return Rect2((_panel.position + _body.position + node.position) * _frame.scale, node.size * _frame.scale)
+
+
+## Mini animacion en pantalla (null si la linea no tiene).
+func get_demo() -> AbilityDemo:
+	return _demo if _demo_on else null
+
+
+func _set_demo(id: StringName) -> void:
+	if id != &"" and _notice_data.is_empty():
+		_notice_data = AbilityNotices.load_data()
+	var def: Dictionary = AbilityNotices.demo_def(id, _notice_data) if id != &"" else {}
+	_demo_on = not def.is_empty()
+	if not _demo_on:
+		if _demo != null:
+			_demo.visible = false
+		return
+	if _demo == null:
+		_demo = AbilityDemo.new()
+		_demo.name = "AbilityDemo"
+		_panel.add_child(_demo)
+	if _demo.get_demo_id() != id or not _demo.visible:
+		var c: EcoTextBoxConfig = _config
+		_demo.setup(id, def, {"bg": c.color(&"demo_bg"), "border": c.color(&"demo_border"),
+			"floor": c.color(&"demo_floor"), "fx": c.color(&"demo_fx")},
+			Vector2(c.demo_width_px, c.demo_height_px))
+	_demo.visible = true
+
+
+func _build_keycaps() -> void:
+	_clear_keycaps()
+	if _key_ranges.is_empty():
+		return
+	var c: EcoTextBoxConfig = _config
+	var line_h: int = _line_height()
+	var starts: PackedInt32Array = []
+	var at: int = 0
+	for line: String in _lines:
+		starts.append(at)
+		at += line.length() + 1
+	for key: Dictionary in _key_ranges:
+		var a: int = int(key["start"])
+		var b: int = a + int(key["length"])
+		for li: int in _lines.size():
+			var ls: int = starts[li]
+			var o0: int = maxi(a, ls)
+			var o1: int = mini(b, ls + _lines[li].length())
+			if o1 <= o0:
+				continue
+			var line: String = _lines[li]
+			var seg: String = line.substr(o0 - ls, o1 - o0)
+			var x0: float = _width(_font, line.substr(0, o0 - ls), c.font_size)
+			var w: float = _width(_font, seg, c.font_size)
+			var cap := ColorRect.new()
+			cap.name = "KeyCap%d" % _keycaps.size()
+			cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cap.show_behind_parent = true
+			# A la derecha el glifo ya trae 1 px de aire: no tapa la coma que sigue.
+			cap.position = Vector2(x0 - c.key_pad_px - 1, li * line_h)
+			cap.size = Vector2(w + c.key_pad_px * 2 + 1, line_h)
+			var plate := ColorRect.new()
+			plate.name = "Plate"
+			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cap.add_child(plate)
+			_body.add_child(cap)
+			var label := Label.new()
+			label.name = "KeyText%d" % _keycaps.size()
+			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			label.add_theme_font_override("font", _font)
+			label.add_theme_font_size_override("font_size", c.font_size)
+			label.add_theme_color_override("font_color", NEUTRAL_MODULATE)
+			label.add_theme_constant_override("line_spacing", 0)
+			label.autowrap_mode = TextServer.AUTOWRAP_OFF
+			label.position = Vector2(x0, li * line_h)
+			label.size = Vector2(w, line_h)
+			label.material = c.new_key_swap_material(c.color(&"body"), c.color(&"key_text"))
+			_body.add_child(label)
+			_keycaps.append({"cap": cap, "plate": plate, "label": label, "index": o0, "text": seg,
+				"action": StringName(key["action"])})
+	_update_keycaps()
+
+
+func _clear_keycaps() -> void:
+	for cap: Dictionary in _keycaps:
+		for key: String in ["cap", "label"]:
+			var node: Node = cap[key]
+			if is_instance_valid(node):
+				node.get_parent().remove_child(node)
+				node.queue_free()
+	_keycaps.clear()
+
+
+## Visibilidad (maquina de escribir) y estado pulsado de cada cajita: con demo,
+## pulsada mientras la demo pulsa su accion; sin demo, key_press_s de cada
+## key_press_period_s. Pulsada: placa y borde claros y la placa baja 1 px.
+func _update_keycaps() -> void:
+	if _keycaps.is_empty():
+		return
+	var c: EcoTextBoxConfig = _config
+	var pressed: StringName = _demo.get_pressed_action() if _demo_on else &""
+	var timed: bool = c.key_press_period_s > 0.0 and fmod(_key_time, c.key_press_period_s) < c.key_press_s
+	for cap: Dictionary in _keycaps:
+		var shown: int = clampi(_typed - int(cap["index"]), 0, String(cap["text"]).length())
+		var node := cap["cap"] as ColorRect
+		var label := cap["label"] as Label
+		node.visible = shown > 0
+		label.visible = shown > 0
+		label.text = String(cap["text"]).substr(0, shown)
+		var lit: bool = (StringName(cap["action"]) == pressed) if _demo_on else timed
+		cap["lit"] = lit
+		node.color = c.color(&"key_border_lit" if lit else &"key_border")
+		var plate := cap["plate"] as ColorRect
+		plate.color = c.color(&"key_plate_lit" if lit else &"key_plate")
+		# Tecla con 2 px de fondo; pulsada, la placa baja 1 px (le queda 1).
+		plate.position = Vector2(1, 2 if lit else 1)
+		plate.size = Vector2(node.size.x - 2, node.size.y - 3)
+		(label.material as ShaderMaterial).set_shader_parameter(&"target_color",
+			c.color(&"key_text_lit" if lit else &"key_text"))
+
+
+func _on_input_device_changed(_device: int) -> void:
+	refresh_keys()
+
+
+func _on_controls_changed() -> void:
+	refresh_keys()

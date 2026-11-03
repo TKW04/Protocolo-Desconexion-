@@ -157,14 +157,21 @@ func get_lines(key: String) -> PackedStringArray:
 	return out
 
 
-## Aviso de control de la habilidad que da Eco (p. ej. «Pulso: G / X (mando)»).
+## Aviso de control de la habilidad que da Eco tal como se ve ahora («Pulso: G»
+## con teclado, «Pulso: X» con mando; 2026-11-03).
 func get_notice_text() -> String:
+	return TextMarkers.display(get_notice_template())
+
+
+## El aviso con marcas ({demo:pulse}{tecla:pulse}): el cuadro de Eco resalta la
+## tecla, la cambia con el dispositivo y pone la mini animacion.
+func get_notice_template() -> String:
 	var notice: Variant = _data.get("notice", {})
 	if not notice is Dictionary:
 		return ""
 	var format: Dictionary = AbilityNotices.load_data()
 	format["abilities"] = {get_ability(): notice}
-	return AbilityNotices.notice_text(get_ability(), format)
+	return AbilityNotices.notice_template(get_ability(), format)
 
 
 func get_ability() -> StringName:
@@ -227,7 +234,8 @@ func _say(step: Step, texts: PackedStringArray) -> void:
 	for text: String in texts:
 		if text.is_empty():
 			continue
-		_expected.append(GameState.apply_nickname(text))
+		# El cuadro dice el texto ya resuelto (sin {demo:} y con la tecla del dispositivo).
+		_expected.append(TextMarkers.display(GameState.apply_nickname(text)))
 		EventBus.eco_line_requested.emit(text, duration, true)
 	if _expected.is_empty():
 		_step_done.call_deferred()
@@ -292,7 +300,7 @@ func _say_gift() -> void:
 ## visto: AbilityNotices no lo repite) y sigue con `outro`.
 func _grant() -> void:
 	var ability: StringName = get_ability()
-	var notice: String = get_notice_text()
+	var notice: String = get_notice_template()
 	GameState.mark_notice_seen(ability)
 	GameState.obtain_ability(ability)
 	ability_granted.emit(ability)

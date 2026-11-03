@@ -304,7 +304,9 @@ func test_confirm_hint_only_on_typed_important_lines() -> void:
 	assert_true(box.confirm(), "La primera pulsacion completa el texto")
 	assert_true(box.is_confirm_hint_visible(), "Escrito: sale la indicacion")
 	assert_true(box.is_confirm_hint_lit(), "Empieza encendida")
-	assert_eq(box.get_confirm_hint_text(), _config.confirm_hint_text)
+	# La tecla sale del Input Map y del dispositivo (2026-11-03): «▼ [Espacio]» con teclado.
+	assert_eq(box.get_confirm_hint_text(), TextMarkers.apply_keys(_config.confirm_hint_text))
+	assert_eq(box.get_confirm_hint_text(), "▼ [Espacio]")
 	for ch: String in box.get_confirm_hint_text():
 		assert_true(box.get_font().has_char(ch.unicode_at(0)), "Glifo '%s' en la fuente" % ch)
 	assert_eq(box.get_panel_rect(), rect_typing, "El cuadro no cambia de tamano al salir")
