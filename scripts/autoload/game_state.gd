@@ -1751,6 +1751,7 @@ func are_lives_active() -> bool:
 ## sincronizacion NO las reponen.
 func refill_lives() -> void:
 	lives = lives_max
+	_store_lives_on_disk()
 	_emit_lives()
 
 
@@ -1791,6 +1792,9 @@ func lose_life() -> bool:
 	if not are_lives_active():
 		return false
 	lives = maxi(lives - 1, 0)
+	# Con 0 no se apunta: el game over (apply_rollback) las repone y las apunta.
+	if lives > 0:
+		_store_lives_on_disk()
 	EventBus.life_lost.emit(lives)
 	_emit_lives()
 	return lives == 0
@@ -1818,6 +1822,21 @@ func collect_extra_life(level: StringName, secret_id: StringName) -> bool:
 	add_max_life()
 	EventBus.extra_life_collected.emit(level, secret_id)
 	return true
+
+
+## Apunta las vidas actuales en la copia de disco que ya exista (bug del
+## 2026-11-03: perder vidas no marca «sin guardar», asi que cerrar y abrir el
+## juego volvia a las vidas del ultimo guardado). Solo cambia el campo «lives»
+## de la copia: el resto del progreso sigue siendo el guardado a mano (sin tocar
+## saved_at, la marca «sin guardar» ni el .bak). Sin copia en disco no escribe.
+func _store_lives_on_disk() -> void:
+	if save_path.is_empty() or not FileAccess.file_exists(save_path):
+		return
+	var data: Dictionary = SaveFile.read(save_path)
+	if data.is_empty() or int(data.get("lives", -1)) == lives:
+		return
+	data["lives"] = lives
+	SaveFile.write(save_path, data, false)
 
 
 func _emit_lives() -> void:
