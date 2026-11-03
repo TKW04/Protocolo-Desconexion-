@@ -285,3 +285,102 @@ func test_game_over_loses_unsaved_extra_life_but_keeps_saved_ones() -> void:
 	assert_eq(GameState.lives_max, 4, "Solo se pierde la vida extra sin guardar")
 	_assert_lives(4, "hub tras game over")
 	assert_false(GameState.is_secret_found(&"1-2", &"vida_sin_guardar"), "La vida sin guardar reaparece")
+
+
+# --- Vida extra real del 1-1 y game over (confirmacion del usuario 2026-11-03) ---
+
+func _extra_life_pickup() -> ExtraLifePickup:
+	var level: Node = _main.get_level()
+	return level.get_node_or_null(^"Objects/vida_extra_1_1") as ExtraLifePickup if level != null else null
+
+
+## Abre la pared con glitch del secreto D y recoge la vida extra real.
+func _collect_real_extra_life() -> void:
+	var pickup: ExtraLifePickup = _extra_life_pickup()
+	assert_not_null(pickup, "La vida extra del 1-1 esta en el nivel")
+	if pickup == null:
+		return
+	var wall: GlitchWall = pickup.get_wall()
+	assert_not_null(wall, "La tapa la pared con glitch")
+	assert_true(wall.open_with_debug(), "La pared se disuelve")
+	for i: int in 20:
+		wall.advance(0.1)
+	await wait_physics_frames(3)
+	assert_true(pickup.is_shown(), "La vida extra se ve")
+	assert_true(pickup.collect(), "Se recoge la vida extra")
+	await wait_physics_frames(2)
+
+
+func _game_over_in_current_level() -> void:
+	for i: int in 12:
+		if _main.is_in_hub():
+			break
+		await _die_by_damage()
+	assert_eq(_main.get_game_over_count(), 1, "Game over")
+	assert_true(_main.is_in_hub(), "Tras el game over, en el hub")
+
+
+## Vuelve a entrar al 1-1 desde el hub (recupera antes la papelera, si tiene algo).
+func _reenter_1_1() -> void:
+	GameState.recover_trash()
+	assert_true(_main.enter_level("1-1"), "Volver a entrar al 1-1")
+	await _settle()
+	await wait_physics_frames(3)
+	assert_eq(_main.get_level_id(), "1-1")
+
+
+# (A) Vida extra recogida y NO guardada: game over → lives_max 3 con 3 vidas, y
+# la vida extra reaparece en el 1-1 para volver a cogerla.
+func test_unsaved_real_extra_life_is_lost_on_game_over_and_reappears() -> void:
+	_veteran(3)
+	GameState.mark_level_completed(&"1-1")
+	assert_true(GameState.save_game_and_rest(), "Copia con lives_max 3")
+	await _boot("1-1")
+	await _collect_real_extra_life()
+	assert_eq(GameState.lives_max, 4, "Con la vida extra: 4")
+	assert_eq(GameState.lives, 4)
+	assert_true(GameState.has_unsaved_changes(), "La vida extra queda sin guardar")
+	await _game_over_in_current_level()
+	assert_eq(GameState.lives_max, 3, "Sin guardar, el maximo vuelve a 3")
+	_assert_lives(3, "hub tras game over (A)")
+	assert_false(GameState.is_secret_found(&"1-1", &"D"), "El secreto D vuelve a estar sin encontrar")
+	await _reenter_1_1()
+	var pickup: ExtraLifePickup = _extra_life_pickup()
+	assert_not_null(pickup, "La vida extra reaparece en el 1-1")
+	if pickup != null:
+		assert_false(pickup.is_taken(), "Y se puede volver a coger")
+	await _collect_real_extra_life()
+	assert_eq(GameState.lives_max, 4, "Recogida otra vez: 4")
+
+
+# (B) Vida extra recogida y GUARDADA: game over → lives_max 4 con las 4 llenas,
+# y la vida extra no reaparece en el 1-1. Tambien tras cerrar y abrir.
+func test_saved_real_extra_life_survives_game_over_and_does_not_reappear() -> void:
+	_veteran(3)
+	GameState.mark_level_completed(&"1-1")
+	await _boot("1-1")
+	await _collect_real_extra_life()
+	assert_eq(GameState.lives_max, 4)
+	assert_true(_main.request_exit_to_hub(), "Salir al hub")
+	await _settle()
+	assert_true(GameState.save_game_and_rest(), "Guardar en Notas con la vida extra")
+	assert_true(GameState.has_unsaved_changes() == false)
+	await _reenter_1_1()
+	assert_null(_extra_life_pickup(), "Guardada: la vida extra no esta en el 1-1")
+	await _game_over_in_current_level()
+	assert_eq(GameState.lives_max, 4, "El game over conserva la vida extra guardada")
+	_assert_lives(4, "hub tras game over (B)")
+	assert_true(GameState.is_secret_found(&"1-1", &"D"))
+	await _reenter_1_1()
+	assert_null(_extra_life_pickup(), "Tras el game over la vida extra no reaparece")
+	_assert_lives(4, "1-1 tras game over (B)")
+	# Cerrar y abrir: sigue el maximo guardado y la vida extra no vuelve.
+	_main.free()
+	_main = null
+	GameState.reset_progress()
+	GameState.use_save_path(PATH, false)
+	assert_eq(GameState.lives_max, 4, "Al abrir: lives_max 4")
+	assert_eq(GameState.lives, 4, "Al abrir: llenas")
+	await _boot("1-1")
+	assert_null(_extra_life_pickup(), "Al abrir: la vida extra no reaparece")
+	_assert_lives(4, "1-1 al abrir (B)")
