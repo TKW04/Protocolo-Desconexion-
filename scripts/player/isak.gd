@@ -43,7 +43,7 @@ signal ground_pound_landed(rect: Rect2)
 ## Isak toca el borde que dana del scroll forzado (Mundo 2): `damaged` = le
 ## quito Sync Rate (un segundo contacto dentro de la invulnerabilidad no cuenta).
 signal scroll_edge_hit(damaged: bool)
-## Pellizcar (2026-10-26): Isak se comprime (`compressed` true) o recupera el
+## Comprimir (gesto `gesture_pinch`, antes «Pellizcar»; 2026-10-26): Isak se comprime (`compressed` true) o recupera el
 ## tamano (false). Tambien EventBus.compress_changed (sonidos).
 signal compress_changed(compressed: bool)
 ## Agitar (2026-10-28): nace la onda (`center` global, el celular; `radius` px).
@@ -101,7 +101,7 @@ const ANIM_GROUND_POUND_LAND: StringName = &"ground_pound_land"
 ## anticipacion) y brazo extendido (la exposicion).
 const ANIM_SHOCKWAVE_SHAKE: StringName = &"shockwave_shake"
 const ANIM_SHOCKWAVE_HOLD: StringName = &"shockwave_hold"
-## Pose del gesto Pellizcar (AutoSprite, 2026-10-27): comprimido quieto / andando.
+## Pose de Comprimir (AutoSprite, 2026-10-27): comprimido quieto / andando.
 const ANIM_COMPRESS_IDLE: StringName = &"compress_idle"
 const ANIM_COMPRESS_WALK: StringName = &"compress_walk"
 ## Poses de la Combinacion (AutoSprite, 2026-10-30; Isak.update_combo_pose).
@@ -153,7 +153,7 @@ const POUND_DENIED_BUSY: StringName = &"busy"
 const POUND_DENIED_COOLDOWN: StringName = &"cooldown"
 const POUND_DENIED_LATCHED: StringName = &"latched"
 const POUND_DENIED_ENERGY: StringName = &"energy"
-## Pellizcar (2026-10-26): motivos por los que no se comprime (todos sin aviso).
+## Comprimir (2026-10-26): motivos por los que no se comprime (todos sin aviso).
 const COMPRESS_DENIED_LOCKED: StringName = &"locked"
 const COMPRESS_DENIED_BUSY: StringName = &"busy"
 const COMPRESS_DENIED_ENERGY: StringName = &"energy"
@@ -234,7 +234,7 @@ const CAMERA_AUTOSCROLL: StringName = &"autoscroll"
 ## lo apaga (el hub ya llena las barras y tiene cargador). Tanda M2.
 @export var level_mode: bool = true
 ## Gestos en el hub (2026-10-27, paso 3 de docs/propuesta-hub-mundos-4-6.md
-## §2.3): con level_mode falso, el dash, el golpe al suelo y Pellizcar
+## §2.3): con level_mode falso, el dash, el golpe al suelo y Comprimir
 ## obtenidos funcionan igual si esta bandera es verdadera. La pone
 ## HubUpdatePuzzle mientras el acertijo del hub esta activo (y no inerte); la
 ## regeneracion pasiva y el Ocultarte siguen solo en los niveles.
@@ -313,7 +313,7 @@ var _pound_requested: bool = false
 var _pound_latched: bool = false
 var _pound_cooldown_left: float = 0.0
 var _pound_effect: GroundPoundEffect
-## Pellizcar (gesto Pellizcar, 2026-10-26; seccion compress de
+## Comprimir (gesto `gesture_pinch`, antes «Pellizcar», 2026-10-26; seccion compress de
 ## data/isak_abilities.json, docs/propuesta-mundo-3.md §3.3.1). Tiempo real.
 ## Comprimido (caja compress_width_px x compress_height_px), vuelta al tamano
 ## pedida que espera a que haya sitio, aplastado visible del sprite (0-1) y si la
@@ -2021,7 +2021,7 @@ func _reset_freeze() -> void:
 		_frozen_effect.clear()
 
 
-# --- Pellizcar (gesto Pellizcar, 2026-10-26; docs/propuesta-mundo-3.md §3.3) ---
+# --- Comprimir (gesto `gesture_pinch`, antes «Pellizcar», 2026-10-26; docs/propuesta-mundo-3.md §3.3) ---
 
 ## Isak esta comprimido (caja compress_width_px x compress_height_px).
 func is_compressed() -> bool:
