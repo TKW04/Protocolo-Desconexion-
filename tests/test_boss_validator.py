@@ -424,6 +424,21 @@ class CuratorArenaTest(unittest.TestCase):
         self.assertEqual(froms[("2", 1, "platforms")], 1.0, "Kernel: la lente puede bajar al otro lado")
         self.assertEqual(froms[("3", 3, "after_close")], 1.0)
 
+    def test_phase2_window_fits_a_missed_diagonal_with_slack(self):
+        # 2026-11-03 (queja del usuario: «el tiempo no da»): la ventana de la fase 2 debe caber un intento con la
+        # diagonal fallada (salir del radio del cazador, que vuelva al reposo y vuelva a la esquina) con
+        # window2_miss_k (>= 1,25) de holgura en los tres accesos.
+        self.assertGreaterEqual(self.boss["validation_model"]["window2_miss_k"], 1.25)
+        phase2 = [w for w in self.result["boss"]["cur_windows"] if w["phase"] == 2]
+        self.assertEqual(sorted(w["lap"] for w in phase2), ["1", "2", "3"])
+        for w in phase2:
+            self.assertGreater(w["retry_s"], 2.0, w)
+            self.assertLessEqual(w["miss_need_s"], w["window_s"] + 1e-6, w)
+        boss = copy.deepcopy(self.boss)
+        boss["phase2"]["window_s"] = 5.0
+        self.assertIn("vuelta 1, fase 2: la ventana dura 5.00 s del mundo y con una diagonal fallada",
+                      self.messages(self.run_arena(boss)))
+
     def test_hunter_route_through_the_corner_mirrors(self):
         hunter = self.result["boss"]["cur_hunter"]
         self.assertEqual(hunter["corners"], {"left": "nw", "right": "ne"})

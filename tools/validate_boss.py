@@ -1336,6 +1336,9 @@ def energy_lap_autoplay(arena, boss, lap, rules, laser_damage, errors, scenario,
 #      cazador -> esquina -> espalda no cruza terreno, hay celdas de pie desde las que el cazador, girando hacia
 #      Isak desde su reposo, pasa por una esquina y le llega el pulso y el laser; ventana >= k x (recorrido + giros
 #      del cazador + Debug + poses).
+#      Y con validation_model.window2_miss_k (2026-11-03): ventana >= window2_miss_k x (primer intento + reintento
+#      tras una diagonal fallada: el cazador se queda un giro en la esquina y sigue hacia Isak, Isak sale de su radio,
+#      el cazador vuelve al reposo, Isak vuelve y el cazador gira otra vez a la esquina; con el Debug activo).
 #   F. Fase 3, marcos que se cierran: cada marco pequeno esta libre (hueco sin terreno ni objetos de la fase 3, con
 #      techo: Isak de pie no cabe y comprimido si) y desde cada celda de su mitad se sale de la mitad o se entra
 #      comprimido en el marco en aviso + cierre; el empujon cae fuera de la mitad.
@@ -1689,6 +1692,7 @@ def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=Non
                 _err(errors, "fase 2: el camino cazador -> espejo %s -> espalda cruza terreno" % s)
             corner_index[idx] = s
         cells = []
+        cell_target = {}
         for n in sorted(arena.reachable):
             bx, by = _body_center(arena, n)
             to = (bx - hc[0], by - hc[1])
@@ -1705,17 +1709,42 @@ def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=Non
             f = 1.0 if hc[0] >= arena.feet(n)[0] else -1.0
             if _pulse_to_rect(arena, n, f, hrect) and _laser_to_rect(arena, n, f, hrect):
                 cells.append((n, steps, hit))
+                cell_target[n] = target
         hunter_out = {"cells": [[list(n), st, s] for n, st, s in cells], "turn_s": turn, "freeze_s": freeze,
                       "rest": HUNTER_FACINGS[rest], "corners": {s: HUNTER_FACINGS[i] for i, s in corner_index.items()}}
         if not cells:
             _err(errors, "fase 2: no hay celda de pie desde la que el cazador, al girar hacia Isak, pase por un espejo "
                          "de esquina y le lleguen el pulso y el laser")
         window2 = float(boss.get("phase2", {}).get("window_s", 5.0))
+        miss_k = float(model.get("window2_miss_k", 0.0))
+        scale = arena.rules.debug_world_scale
+        outside = [g for g in floor if math.hypot(_body_center(arena, g)[0] - hc[0],
+                                                  _body_center(arena, g)[1] - hc[1]) > radius + EPS]
+
+        def retry_s(c, st):
+            """Diagonal fallada (s del mundo, con el Debug ya activo): el cazador se queda `turn` en la esquina y
+            sigue hasta mirar a Isak; Isak sale de su radio, el cazador vuelve al reposo, Isak vuelve a la celda y el
+            cazador gira otra vez `st` pasos hasta la esquina. 0 si la esquina es su objetivo (no se pasa de largo)."""
+            target = cell_target.get(c, rest)
+            if target in corner_index:
+                return 0.0
+            back_steps = min((target - rest) % 8, (rest - target) % 8)
+            best_out = None
+            for g in outside:
+                if g in times.get(c, {}) and c in times.get(g, {}):
+                    t = times[c][g] + times[g][c]
+                    if best_out is None or t < best_out:
+                        best_out = t
+            if best_out is None:
+                return float("inf")
+            return turn + scale * best_out + back_steps * turn + st * turn
         for lap, name, kk in [(lap, n, kv) for lap in sorted(laps) for n, kv in specs(lap, 2, "floor")]:
             starts = {n: 0.0 for n in floor} if name == "floor" else start_sets(name, "left")
             worst_need, worst_travel, worst_turn = 0.0, 0.0, 0.0
+            worst_miss, worst_retry = 0.0, 0.0
             for n, t0 in starts.items():
                 best = None
+                best_miss = None
                 for c, st, _ in cells:
                     if c not in times.get(n, {}):
                         continue
@@ -1723,6 +1752,12 @@ def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=Non
                     need = _window_need(arena, t) + st * turn
                     if best is None or need < best[0]:
                         best = (need, t, st * turn)
+                    if miss_k > 0.0:
+                        rs = retry_s(c, st)
+                        if best_miss is None or need + rs < best_miss[0]:
+                            best_miss = (need + rs, rs)
+                if best_miss is not None and best_miss[0] > worst_miss:
+                    worst_miss, worst_retry = best_miss
                 if best is None:
                     _err(errors, "vuelta %s, fase 2: desde %s no se llega a una celda del cazador" % (lap, list(n)))
                     continue
@@ -1733,9 +1768,17 @@ def validate_curator_arena(level, boss, root=ROOT, upgrades=(), physics_path=Non
                 _err(errors, "vuelta %s, fase 2: la ventana dura %.2f s del mundo y desde '%s' hacen falta %.2f (k = %g x "
                              "(recorrido %.2f s + giro del cazador %.2f s + Debug + poses))"
                      % (lap, window2, name, need, kk, worst_travel, worst_turn))
-            cur_windows.append({"lap": lap, "phase": 2, "from": name, "k": kk, "window_s": window2,
-                                "travel_s": round(worst_travel, 3), "turn_s": round(worst_turn, 3),
-                                "need_s": round(need, 3)})
+            entry = {"lap": lap, "phase": 2, "from": name, "k": kk, "window_s": window2,
+                     "travel_s": round(worst_travel, 3), "turn_s": round(worst_turn, 3), "need_s": round(need, 3)}
+            if miss_k > 0.0:
+                miss_need = miss_k * worst_miss
+                if window2 + EPS < miss_need:
+                    _err(errors, "vuelta %s, fase 2: la ventana dura %.2f s del mundo y con una diagonal fallada desde '%s' "
+                                 "hacen falta %.2f (window2_miss_k = %g x (primer intento %.2f s + reintento %.2f s: "
+                                 "salir del radio del cazador, que vuelva al reposo y vuelva a la esquina))"
+                         % (lap, window2, name, miss_need, miss_k, worst_miss - worst_retry, worst_retry))
+                entry.update({"miss_k": miss_k, "retry_s": round(worst_retry, 3), "miss_need_s": round(miss_need, 3)})
+            cur_windows.append(entry)
     cur_windows.sort(key=lambda w: (w["lap"], w["phase"], -w["k"]))
     report["cur_windows"] = cur_windows
     report["cur_hunter"] = hunter_out
@@ -3006,6 +3049,9 @@ def format_text(path, result):
             out.append("  ventana vuelta %s fase %d desde %s (k = %g): %.2f s; hacen falta %.2f (recorrido %.2f s%s)" % (
                 w["lap"], w["phase"], w["from"], w["k"], w["window_s"], w["need_s"], w["travel_s"],
                 "; giro del cazador %.2f s" % w["turn_s"] if "turn_s" in w else ""))
+            if "miss_need_s" in w:
+                out.append("    con una diagonal fallada (x%g): hacen falta %.2f (reintento %.2f s)" % (
+                    w["miss_k"], w["miss_need_s"], w["retry_s"]))
         ch = rep.get("cur_hunter")
         if ch:
             out.append("  cazador (fase 2): reposo %s, esquinas %s; %d celda(s) de pie (%s); giro %.2f s por paso, congelado "

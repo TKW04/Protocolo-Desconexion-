@@ -343,7 +343,8 @@ func test_phase2_attacks_then_pose_window_and_hit_through_the_hunter() -> void:
 	assert_eq(_boss.get_flash_source(), _boss.get_corner_center("left"), "Sale de un espejo de esquina")
 	var t: float = _advance_until(func() -> bool: return _boss.is_window_open(), 20.0)
 	assert_true(_boss.is_window_open(), "Tras 3 ataques posa (%s s)" % t)
-	assert_almost_eq(_boss.get_window_time_left(), 5.0, 0.05, "5 s del mundo")
+	# 6,5 s del mundo (2026-11-03): cabe una diagonal fallada y el reintento.
+	assert_almost_eq(_boss.get_window_time_left(), 6.5, 0.05, "6,5 s del mundo")
 	assert_almost_eq(_boss.get_lowered_offset(), 0.0, EPS, "De espaldas no baja")
 	# Lejos (a mas de 3 tiles) vuelve a su reposo, al norte; al acercarse Isak por
 	# el oeste gira hacia el y pasa por el noroeste.

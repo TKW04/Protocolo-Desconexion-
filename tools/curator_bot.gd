@@ -168,6 +168,15 @@ var _was_window: bool = false
 var _recharging: bool = false
 ## Fase 2: el cazador ya paso de la esquina; hay que apartarse hasta que vuelva.
 var _hunter_reset: bool = false
+## Fase 2, torpe: diagonales a la esquina que deja pasar sin pulsar (la primera
+## de cada ventana: el intento fallado; vuelve a probar en la siguiente pasada)
+## y si la de ahora ya se ha visto.
+var _win_corner_passes: int = 0
+var _win_corner_seen: bool = false
+## Tiempo del mundo de la ventana usado (duracion - lo que queda) y el maximo por fase.
+var _win_duration: float = 0.0
+var _win_used: float = 0.0
+var _used_phase: Dictionary = {}
 ## Fase 1 y 3: lado de casa (donde espera).
 var _home: String = LEFT
 var _last_attack: StringName = &""
@@ -446,6 +455,10 @@ func _on_window_opened(s: float) -> void:
 	_win_spend = 0.0
 	_recharging = false
 	_hunter_reset = false
+	_win_corner_passes = 0
+	_win_corner_seen = false
+	_win_duration = s
+	_win_used = 0.0
 	var p: int = _boss.get_phase()
 	var w: Dictionary = _windows.get(p, {})
 	w["windows"] = int(w.get("windows", 0)) + 1
@@ -461,7 +474,8 @@ func _on_window_closed() -> void:
 	if _profile == "clumsy" and _window_dashes() > 0:
 		_win_dash_pending = true
 	if _verbose:
-		_note("ventana cerrada (%d golpes; Debug %.1f s; gasto %.0f)" % [_win_hits, _win_debug_s, _win_spend])
+		_note("ventana cerrada (%d golpes; Debug %.1f s; gasto %.0f; usados %.2f s del mundo de %.1f)" % [_win_hits,
+			_win_debug_s, _win_spend, _win_used, _win_duration])
 
 
 func _on_phase_changed(phase: int) -> void:
@@ -516,6 +530,8 @@ func _measure(delta: float) -> void:
 		_min_energy_window = minf(_min_energy_window, e)
 		_win_spend = maxf(_win_spend, _win_e0 - e)
 		_spend_phase[p] = maxf(float(_spend_phase.get(p, 0.0)), _win_spend)
+		_win_used = maxf(_win_used, _win_duration - _boss.get_window_time_left())
+		_used_phase[p] = maxf(float(_used_phase.get(p, 0.0)), _win_used)
 		if active:
 			_win_debug_s += delta
 		if _was_debug_active and not active and e <= GameState.DEBUG_ENERGY_MIN + 0.01:
@@ -885,6 +901,9 @@ func _hunter_window() -> void:
 	# El cazador ya paso de la esquina (mira a Isak): fuera de su radio hasta que
 	# vuelva al norte.
 	if not hunter.is_frozen() and facing != rest and corner != side:
+		if _win_corner_seen:
+			_win_corner_passes += 1
+			_win_corner_seen = false
 		_hunter_reset = true
 	if _hunter_reset:
 		if facing == rest:
@@ -900,6 +919,11 @@ func _hunter_window() -> void:
 			_win_missed += 1
 		return
 	if corner == side and not hunter.is_frozen() and DebugMode.is_active():
+		# Torpe: la primera diagonal se le escapa (no pulsa a tiempo); apartarse,
+		# esperar a que el cazador vuelva al norte y probar otra vez.
+		if _profile == "clumsy" and _win_corner_passes < int(_model.get("misses_per_window", 1)):
+			_win_corner_seen = true
+			return
 		_try_pulse()
 
 
@@ -1561,10 +1585,10 @@ func _finish(ok: bool) -> void:
 		var phases: PackedStringArray = []
 		for p: int in [1, 2, 3]:
 			var w: Dictionary = _windows.get(p, {})
-			phases.append("F%d %.1f s, %d ventanas, %d golpes, energia min %.0f, gasto max por ventana %.0f" % [p,
+			phases.append("F%d %.1f s, %d ventanas, %d golpes, energia min %.0f, gasto max por ventana %.0f, ventana usada max %.2f s del mundo" % [p,
 				float(_phase_frames.get(p, 0)) / 60.0, int(w.get("windows", 0)), int(w.get("hits", 0)),
 				float(_min_energy_phase.get(p, INF)) if _min_energy_phase.has(p) else -1.0,
-				float(_spend_phase.get(p, 0.0))])
+				float(_spend_phase.get(p, 0.0)), float(_used_phase.get(p, 0.0))])
 		var causes: PackedStringArray = []
 		for k: String in _hit_causes:
 			causes.append("%s %d" % [k, int(_hit_causes[k])])
