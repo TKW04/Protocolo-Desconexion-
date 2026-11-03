@@ -230,3 +230,58 @@ func test_game_over_refills_and_disk_matches() -> void:
 	GameState.reset_progress()
 	assert_true(GameState.load_game())
 	assert_eq(GameState.lives, 3, "Tras el game over, al abrir: llenas")
+
+
+# Bug del usuario 2026-11-03: el game over rellena hasta el lives_max guardado
+# (vidas extra ya guardadas), no hasta las 3 iniciales. Tambien tras cerrar y abrir.
+func _game_over_with_saved_max(lives_max: int, reopen_before: bool) -> void:
+	_veteran(3)
+	for i: int in lives_max - GameState.LIVES_MAX_DEFAULT:
+		assert_true(GameState.collect_extra_life(&"1-1", StringName("vida_%d" % i)), "Vida extra %d" % i)
+	assert_eq(GameState.lives_max, lives_max)
+	assert_true(GameState.save_game_and_rest(), "Copia con lives_max %d" % lives_max)
+	if reopen_before:
+		GameState.reset_progress()
+		GameState.use_save_path(PATH, false)
+		assert_eq(GameState.lives_max, lives_max, "Al abrir, lives_max guardado")
+	await _boot("1-1")
+	for i: int in lives_max:
+		await _die_by_damage()
+	assert_eq(_main.get_game_over_count(), 1, "Game over con lives_max %d" % lives_max)
+	assert_true(_main.is_in_hub())
+	assert_eq(GameState.lives_max, lives_max, "El game over no quita vidas extra guardadas")
+	_assert_lives(lives_max, "hub tras game over (max %d)" % lives_max)
+	# Cerrar y abrir tras el game over: siguen todas.
+	_main.free()
+	_main = null
+	GameState.reset_progress()
+	GameState.use_save_path(PATH, false)
+	assert_eq(GameState.lives_max, lives_max, "Al abrir tras el game over: lives_max")
+	assert_eq(GameState.lives, lives_max, "Al abrir tras el game over: llenas")
+	await _boot("hub")
+	_assert_lives(lives_max, "hub al abrir tras game over (max %d)" % lives_max)
+
+
+func test_game_over_refills_to_saved_max_4() -> void:
+	await _game_over_with_saved_max(4, false)
+
+
+func test_game_over_refills_to_saved_max_5_after_reopen() -> void:
+	await _game_over_with_saved_max(5, true)
+
+
+# Una vida extra recogida y NO guardada se pierde con el game over (como todo lo
+# no guardado; vuelve a estar en su secreto): rellena hasta el maximo guardado.
+func test_game_over_loses_unsaved_extra_life_but_keeps_saved_ones() -> void:
+	_veteran(3)
+	assert_true(GameState.collect_extra_life(&"1-1", &"vida_guardada"))
+	assert_true(GameState.save_game_and_rest())
+	assert_true(GameState.collect_extra_life(&"1-2", &"vida_sin_guardar"))
+	assert_eq(GameState.lives_max, 5)
+	await _boot("1-1")
+	for i: int in 5:
+		await _die_by_damage()
+	assert_eq(_main.get_game_over_count(), 1)
+	assert_eq(GameState.lives_max, 4, "Solo se pierde la vida extra sin guardar")
+	_assert_lives(4, "hub tras game over")
+	assert_false(GameState.is_secret_found(&"1-2", &"vida_sin_guardar"), "La vida sin guardar reaparece")
